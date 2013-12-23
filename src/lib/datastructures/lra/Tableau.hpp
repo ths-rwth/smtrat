@@ -47,6 +47,9 @@
 //#define LRA_GOMORY_CUTS
 #ifndef LRA_GOMORY_CUTS
 #define LRA_CUTS_FROM_PROOFS
+#ifdef LRA_CUTS_FROM_PROOFS
+//#define LRA_DEBUG_CUTS_FROM_PROOFS
+#endif
 #endif
 
 namespace smtrat
@@ -189,7 +192,6 @@ namespace smtrat
                     const Bound<T>* nextWeakerBound;
                     std::vector< const Bound<T>*>* premise;
                 };
-            private:
                 struct TableauHead
                 {
                     EntryID   mStartEntry;
@@ -197,6 +199,7 @@ namespace smtrat
                     Variable<T>* mName;
                     unsigned  mActivity;
                 };
+            private:
                 unsigned                   mHeight;
                 unsigned                   mWidth;
                 unsigned                   mPivotingSteps;
@@ -2278,8 +2281,10 @@ namespace smtrat
          */        
         template<class T>
         void Tableau<T>::addColumns( unsigned columnA_index, unsigned columnB_index, T multiple)
-        {            
+        {
+            #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
             std::cout << __func__ << "( " << columnA_index << ", " << columnB_index << ", " << multiple << " )" << std::endl;
+            #endif
             Iterator columnA_iterator = Iterator(mColumns.at(columnA_index).mStartEntry, mpEntries);
             Iterator columnB_iterator = Iterator(mColumns.at(columnB_index).mStartEntry, mpEntries);
                 
@@ -2515,22 +2520,22 @@ namespace smtrat
             {
                 Iterator columnB_iterator = Iterator(B.mColumns.at(columnB).mStartEntry,B.mpEntries);
                 unsigned actual_column = revert_diagonals((*rowA_iterator).columnNumber(),diagonals); 
-                    while(true)
+                while(true)
+                {
+                    if(actual_column == position_DC((*columnB_iterator).rowNumber(),dc_positions))
                     {
-                        if(actual_column == position_DC((*columnB_iterator).rowNumber(),dc_positions))
-                        {
-                            result += (*rowA_iterator).content()*(*columnB_iterator).content()*lcm;
-                            break;
-                        }
-                        if(columnB_iterator.columnBegin())
-                        {
-                            break;
-                        }
-                        else
-                        {
-                            columnB_iterator.up();
-                        }
-                    }    
+                        result += (*rowA_iterator).content()*(*columnB_iterator).content()*lcm;
+                        break;
+                    }
+                    if(columnB_iterator.columnBegin())
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        columnB_iterator.up();
+                    }
+                }    
                 if(rowA_iterator.rowEnd())
                 {
                     break;
@@ -2540,11 +2545,12 @@ namespace smtrat
                     rowA_iterator.right();
                 }
             }
-        std::cout << result << std::endl;    
-        return result;    
+            #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+            std::cout << result << std::endl;
+            #endif
+            return result;    
         }
         
-        #define LRA_DEBUG_HNF 
         /**
          * Calculate the Hermite normal form of the calling Tableau. 
          * 
@@ -2677,12 +2683,14 @@ namespace smtrat
                         }    
                     }  
                     T floor_value = T( elim_content / added_content ).floor();
+                    #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                     std::cout << "floor_value = " << floor_value << std::endl;
                     std::cout << "added_content = " << added_content << std::endl;
                     std::cout << "elim_content = " << elim_content << std::endl;
                     std::cout << "T((-1)*floor_value.content()*added_content.content()) = " << T((-1)*floor_value.content()*added_content.content()) << std::endl;
+                    #endif
                     addColumns(elim_pos,added_pos,T((-1)*floor_value.content()));
-                    #ifdef LRA_DEBUG_HNF
+                    #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                     std::cout << "Add " << (added_pos+1) << ". column to " << (elim_pos+1) << ". column:" << std::endl;
                     print();
                     #endif
@@ -2740,15 +2748,19 @@ namespace smtrat
                         * The current entry has to be normalized because it´s
                         * in a diagonal column and greater or equal than the
                         * diagonal entry in the current row.
-                        */   
+                        */
+                        #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                         std::cout << "Normalize" << std::endl;
                         std::cout << (*mpEntries)[row_iterator.entryID()].columnNumber() << std::endl;
                         std::cout << diagonals.at(i) << std::endl;
+                        #endif
                         T floor_value = T( (*row_iterator).content() / added_content ).floor();
                         addColumns((*mpEntries)[row_iterator.entryID()].columnNumber(),
                                   diagonals.at(i),
-                                  (-1)*(floor_value)); 
+                                  (-1)*(floor_value));
+                        #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                         print();
+                        #endif
                     }
                     if(!row_iterator.rowEnd())
                     {

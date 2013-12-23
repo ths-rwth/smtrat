@@ -1604,7 +1604,7 @@ namespace vs
         else return false;
     }
 
-    void State::updateValuation()
+    void State::updateValuation( bool _preferMinInf )
     {
         if( tooHighDegree() )
         {
@@ -1616,7 +1616,7 @@ namespace vs
             // The substitution's valuation is a number between 1 and 9 and the tree depth is equal to
             // number of variables plus one. 4.294.967.295
             if( !isRoot() ) 
-                mValuation = 100 * treeDepth() + 10 * substitution().valuate();
+                mValuation = 100 * treeDepth() + 10 * substitution().valuate( _preferMinInf );
             else 
                 mValuation = 1;
             if( isInconsistent() ) 
@@ -1878,13 +1878,13 @@ namespace vs
         return true;
     }
 
-    vector< carl::DoubleInterval > State::solutionSpace( Condition::Set& _conflictReason )
+    vector< carl::DoubleInterval > State::solutionSpace( Condition::Set& _conflictReason ) const
     {
         vector< carl::DoubleInterval > result = vector< carl::DoubleInterval >();
         assert( !isRoot() );
         if( substitution().type() == Substitution::MINUS_INFINITY )
         {
-            if( rFather().rVariableBounds().getDoubleInterval( substitution().variable() ).leftType() == carl::BoundType::INFTY )
+            if( father().variableBounds().getDoubleInterval( substitution().variable() ).leftType() == carl::BoundType::INFTY )
                 result.push_back( carl::DoubleInterval::unboundedInterval() );
             else
             {
@@ -1895,7 +1895,7 @@ namespace vs
         }
         else
         {
-            smtrat::EvalDoubleIntervalMap intervals = rFather().rVariableBounds().getIntervalMap();
+            smtrat::EvalDoubleIntervalMap intervals = father().variableBounds().getIntervalMap();
             carl::DoubleInterval solutionSpaceConst = carl::IntervalEvaluation::evaluate( substitution().term().constantPart(), intervals );
             carl::DoubleInterval solutionSpaceFactor = carl::IntervalEvaluation::evaluate( substitution().term().factor(), intervals );
             carl::DoubleInterval solutionSpaceRadicand = carl::IntervalEvaluation::evaluate( substitution().term().radicand(), intervals );
@@ -1974,7 +1974,7 @@ namespace vs
         smtrat::EvalDoubleIntervalMap intervals = smtrat::EvalDoubleIntervalMap();
         if( cons.lhs().isUnivariate() )
         {
-            carl::DoubleInterval varDomain = rVariableBounds().getDoubleInterval( index() );
+            carl::DoubleInterval varDomain = variableBounds().getDoubleInterval( index() );
             smtrat::Rational cb = cons.lhs().toUnivariatePolynomial().cauchyBound();
             #ifdef VS_DEBUG_ROOTS_CHECK
             cout << "Cauchy bound of  " << cons.lhs() << "  is  " << cb << "." << endl;
@@ -1987,7 +1987,7 @@ namespace vs
             intervals[index()] = varDomain;
         }
         else
-            intervals = rVariableBounds().getIntervalMap();
+            intervals = variableBounds().getIntervalMap();
         smtrat::Constraint::Relation rel = cons.relation();
         if( rel == smtrat::Constraint::GREATER || rel == smtrat::Constraint::LESS || rel == smtrat::Constraint::NEQ )
         {
@@ -2176,7 +2176,7 @@ namespace vs
             _out << originalCondition().constraint().toString() << " [";
             _out << pOriginalCondition() << "]" << endl;
         }
-        _out << _initiation << "                                    index: " << index() << "     )" << endl;
+        _out << _initiation << "                                    index: " << index() << " " << smtrat::Formula::constraintPool().toString(index().getType()) << "  )" << endl;
         printConditions( _initiation + "   ", _out );
         if( !isRoot() )
         {

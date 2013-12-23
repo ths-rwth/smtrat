@@ -80,17 +80,13 @@ namespace smtrat
         #endif
         public:
             /// Data type for storing the domain and the value of an assignment.
-            typedef struct
+            typedef union
             {
-                Variable_Domain domain;
-                union
-                {
-                    vs::SqrtEx* theoryValue;
-                    bool booleanValue;
-                };
+                vs::SqrtEx* theoryValue;
+                bool booleanValue;
             } Assignment;
             /// Data type for a assignment assigning a variable, represented as a string, a real algebraic number, represented as a string.
-            typedef std::map< const std::string, Assignment* > Model;
+            typedef std::map< const carl::Variable, Assignment > Model;
             ///
             typedef std::chrono::high_resolution_clock clock;
             ///
@@ -320,14 +316,15 @@ namespace smtrat
             {
                 while( !mModel.empty() )
                 {
-                    Assignment* assToDel = mModel.begin()->second;
-                    if( assToDel->domain != BOOLEAN_DOMAIN )
+                    Assignment assToDel = mModel.begin()->second;
+                    if( mModel.begin()->first.getType() != carl::VariableType::VT_BOOL )
+                        mModel.erase( mModel.begin() );
+                    else
                     {
-                        vs::SqrtEx* exToDel = assToDel->theoryValue;
-                        delete assToDel;
+                        vs::SqrtEx* exToDel = assToDel.theoryValue;
+                        mModel.erase( mModel.begin() );
                         delete exToDel;
-                    }
-                    mModel.erase( mModel.begin() );
+                    }   
                 }
             }
             
@@ -339,16 +336,9 @@ namespace smtrat
              * @return true, if the assignment could be successfully added;
              *          false, if the given variable is already assigned to a value by the model of this module.
              */
-            bool extendModel( const std::string& _varName, Assignment* _assignment )
+            bool extendModel( const carl::Variable::Arg _var, Assignment _assignment )
             {
-                if( _assignment->domain != BOOLEAN_DOMAIN )
-                {
-                    return mModel.insert( std::pair< const std::string, Assignment* >( _varName, _assignment ) ).second;
-                }
-                else
-                {
-                    return mModel.insert( std::pair< const std::string, Assignment* >( _varName, _assignment ) ).second;
-                }
+                return mModel.insert( std::pair< const carl::Variable, Assignment >( _var, _assignment ) ).second;
             }
             
             void setOrigins( const Formula* const _formula, vec_set_const_pFormula& _origins )
@@ -398,6 +388,7 @@ namespace smtrat
             vec_set_const_pFormula getInfeasibleSubsets( const Module& ) const;
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
             void branchAt( const carl::Variable& _var, const Rational& _value, bool _leftCaseWeak = true );
+            bool checkModel() const;
         public:
             // Printing methods.
             void print( std::ostream& = std::cout, const std::string = "***" ) const;

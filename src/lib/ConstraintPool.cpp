@@ -86,12 +86,7 @@ namespace smtrat
         }
         mAuxiliaryRealVarCounter = 0;
         mAuxiliaryIntVarCounter = 0;
-        while( !mBooleanVariables.empty() )
-        {
-            const string* toDelete = mBooleanVariables.back();
-            mBooleanVariables.pop_back();
-            delete toDelete;
-        }
+        mBooleanVariables.clear();
         mAuxiliaryBoolVarCounter = 0;
         mConstraints.insert( mConsistentConstraint );
         mConstraints.insert( mInconsistentConstraint );
@@ -144,18 +139,19 @@ namespace smtrat
         return iterBoolPair.first->second;
     }
     
-    const string* ConstraintPool::newBooleanVariable( const string& _name, bool _parsed )
+    const carl::Variable ConstraintPool::newBooleanVariable( const string& _name, bool _parsed )
     {
         lock_guard<mutex> lock( mMutexBooleanVariables );
         assert( !booleanExistsAlready( _name ) );
         if( _parsed ) mExternalPrefixInitialized = false;
         else if( !mExternalPrefixInitialized ) initExternalPrefix();
-        string* result = new string( _name );
-        mBooleanVariables.push_back( result );
+        carl::Variable result = mVariablePool.getFreshVariable( carl::VariableType::VT_BOOL );
+        mVariablePool.setVariableName( result, _name );
+        mBooleanVariables.insert( result );
         return result;
     }
 
-    const string* ConstraintPool::newAuxiliaryBooleanVariable( const std::string& _externalPrefix )
+    const carl::Variable ConstraintPool::newAuxiliaryBooleanVariable( const std::string& _externalPrefix )
     {
         stringstream out;
         mMutexBooleanVariables.lock();

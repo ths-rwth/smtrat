@@ -88,7 +88,6 @@ namespace smtrat
 //            std::cout << iter->first << " in " << iter->second << std::endl;
 
         Polynomial tmp = mLhs.substitute( _assignment );
-        cout << __func__ << ": " << tmp << endl;
         if( tmp.isConstant() )
             return evaluate( (tmp.isZero() ? ZERO_RATIONAL : tmp.trailingTerm()->coeff()), relation() ) ? 1 : 0;
         else return 2;
@@ -309,6 +308,59 @@ namespace smtrat
                     }
                 default:
                     assert( false );
+            }
+        }
+        else if( hasIntegerValuedVariable() && !hasRealValuedVariable() && !lhs().isConstant() && lhs().constantPart() != ZERO_RATIONAL )
+        {
+            // Find the gcd of the coefficients of the non-constant terms.
+            auto term = lhs().rbegin();
+            assert( !(*term)->isConstant() && carl::isInteger( (*term)->coeff() ) );
+            Rational g = carl::abs( (*term)->coeff() );
+            ++term;
+            for( ; term != lhs().rend(); ++term )
+            {
+                if( !(*term)->isConstant() )
+                {
+                    assert( carl::isInteger( (*term)->coeff() ) );
+                    g = carl::gcd( carl::getNum( g ), carl::getNum( carl::abs( (*term)->coeff() ) ) );
+                }
+            }
+            assert( g > ZERO_RATIONAL );
+            if( carl::mod( carl::getNum( lhs().constantPart() ), carl::getNum( g ) ) != 0 )
+            {
+                switch( relation() )
+                {
+                    case EQ:
+                        return new Constraint( ZERO_POLYNOMIAL, LESS );
+                    case NEQ:
+                        return new Constraint( ZERO_POLYNOMIAL, EQ );
+                    case LEQ:
+                    {
+                        Polynomial newLhs = ((lhs() - lhs().constantPart()) * (1 / g));
+                        newLhs += carl::floor( (lhs().constantPart() / g) ) + ONE_RATIONAL;
+                        return new Constraint( newLhs, LEQ );
+                    }
+                    case GEQ:
+                    {
+                        Polynomial newLhs = ((lhs() - lhs().constantPart()) * (1 / g));
+                        newLhs += carl::floor( (lhs().constantPart() / g) );
+                        return new Constraint( newLhs, GEQ );
+                    }
+                    case LESS:
+                    {
+                        Polynomial newLhs = ((lhs() - lhs().constantPart()) * (1 / g));
+                        newLhs += carl::floor( (lhs().constantPart() / g) ) + ONE_RATIONAL;
+                        return new Constraint( newLhs, LEQ );
+                    }
+                    case GREATER:
+                    {
+                        Polynomial newLhs = ((lhs() - lhs().constantPart()) * (1 / g));
+                        newLhs += carl::floor( (lhs().constantPart() / g) );
+                        return new Constraint( newLhs, GEQ );
+                    }
+                    default:
+                        assert( false );
+                }
             }
         }
         return nullptr;

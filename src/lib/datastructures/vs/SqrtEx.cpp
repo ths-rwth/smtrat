@@ -210,17 +210,40 @@ namespace vs
     {
         if( _infix )
         {
-            string result = "((";
-            result += mConstantPart.toString( true, _friendlyNames );
-            result +=  ")+(";
-            result +=  mFactor.toString( true, _friendlyNames );
-            result +=  ")*";
-            result +=  "sqrt(";
-            result +=  mRadicand.toString( true, _friendlyNames );
-            result +=  "))";
-            result +=  "/(";
-            result +=  mDenominator.toString( true, _friendlyNames );
-            result +=  ")";
+            bool complexNum = hasSqrt() && !mConstantPart.isConstant();
+            string result = "";
+            if( complexNum && !(mDenominator == smtrat::ONE_POLYNOMIAL) )
+                result += "(";
+            if( hasSqrt() )
+            {
+                if( mConstantPart.isConstant() )
+                    result += mConstantPart.toString( true, _friendlyNames );
+                else
+                    result += "(" + mConstantPart.toString( true, _friendlyNames ) + ")";
+                result += "+";
+                if( mFactor.isConstant() )
+                    result += mFactor.toString( true, _friendlyNames );
+                else
+                    result += "(" + mFactor.toString( true, _friendlyNames ) + ")";
+                result += "*sqrt(" + mRadicand.toString( true, _friendlyNames ) + ")";
+            }
+            else
+            {
+                if( mConstantPart.isConstant() || mDenominator == smtrat::ONE_POLYNOMIAL )
+                    result += mConstantPart.toString( true, _friendlyNames );
+                else
+                    result += "(" + mConstantPart.toString( true, _friendlyNames ) + ")";
+            }
+            if( !(mDenominator == smtrat::ONE_POLYNOMIAL) )
+            {
+                if( complexNum )
+                    result += ")";
+                result += "/";
+                if( mDenominator.isConstant() )
+                    result += mDenominator.toString( true, _friendlyNames );
+                else
+                    result += "(" + mDenominator.toString( true, _friendlyNames ) + ")";
+            }
             return result;
         }
         else
@@ -237,6 +260,71 @@ namespace vs
             result +=  ")";
             return result;
         }
+    }
+    
+    bool SqrtEx::evaluate( smtrat::Rational& _result, const smtrat::EvalRationalMap& _evalMap, int _rounding ) const
+    {
+        smtrat::Polynomial radicandEvaluated = radicand().substitute( _evalMap );
+        assert( radicandEvaluated.isConstant() );
+        smtrat::Rational radicandValue = radicandEvaluated.constantPart();
+        assert( radicandValue >= 0 );
+        smtrat::Polynomial factorEvaluated = factor().substitute( _evalMap );
+        assert( factorEvaluated.isConstant() );
+        smtrat::Rational factorValue = factorEvaluated.constantPart();
+        smtrat::Polynomial constantPartEvaluated = constantPart().substitute( _evalMap );
+        assert( constantPartEvaluated.isConstant() );
+        smtrat::Rational constantPartValue = constantPartEvaluated.constantPart();
+        smtrat::Polynomial denomEvaluated = denominator().substitute( _evalMap );
+        assert( denomEvaluated.isConstant() );
+        smtrat::Rational denomValue = denomEvaluated.constantPart();
+        // Check whether the resulting assignment is integer.
+        bool rounded = true;
+        smtrat::Rational* sqrtExValue = new smtrat::Rational( 0 );
+        if( !cln::sqrtp( radicandValue, sqrtExValue ) )
+        {
+            assert( _rounding != 0 );
+            rounded = false;
+            assert( factorValue != 0 );
+            double dbSqrt = sqrt( cln::double_approx( radicandValue ) );
+            *sqrtExValue = smtrat::Rational( cln::rationalize( cln::cl_R( dbSqrt ) ) ) ;
+            if( _rounding < 0 )
+            {
+                if( factorValue > 0 && (*sqrtExValue)*(*sqrtExValue) > radicandValue )
+                {
+                    // Force rounding down.
+                    dbSqrt = std::nextafter( dbSqrt, -INFINITY );
+                    *sqrtExValue = smtrat::Rational( cln::rationalize( cln::cl_R( dbSqrt ) ) );
+                    assert( !((*sqrtExValue)*(*sqrtExValue) > radicandValue) );
+                }
+                else if( factorValue < 0 && (*sqrtExValue)*(*sqrtExValue) < radicandValue )
+                {
+                    // Force rounding up.
+                    dbSqrt = std::nextafter( dbSqrt, INFINITY );
+                    *sqrtExValue = smtrat::Rational( cln::rationalize( cln::cl_R( dbSqrt ) ) );
+                    assert( !((*sqrtExValue)*(*sqrtExValue) > radicandValue) );
+                }
+            }
+            else if( _rounding > 0 )
+            {
+                if( factorValue < 0 && (*sqrtExValue)*(*sqrtExValue) > radicandValue )
+                {
+                    // Force rounding down.
+                    dbSqrt = std::nextafter( dbSqrt, -INFINITY );
+                    *sqrtExValue = smtrat::Rational( cln::rationalize( cln::cl_R( dbSqrt ) ) );
+                    assert( !((*sqrtExValue)*(*sqrtExValue) > radicandValue) );
+                }
+                else if( factorValue > 0 && (*sqrtExValue)*(*sqrtExValue) < radicandValue )
+                {
+                    // Force rounding up.
+                    dbSqrt = std::nextafter( dbSqrt, INFINITY );
+                    *sqrtExValue = smtrat::Rational( cln::rationalize( cln::cl_R( dbSqrt ) ) );
+                    assert( !((*sqrtExValue)*(*sqrtExValue) > radicandValue) );
+                }
+            }
+        }
+        _result = (constantPartValue + factorValue * (*sqrtExValue)) / denomValue;
+        delete sqrtExValue;
+        return rounded;
     }
 
     SqrtEx SqrtEx::subBySqrtEx( const smtrat::Polynomial& _substituteIn, const carl::Variable& _varToSubstitute, const SqrtEx& _substituteBy )

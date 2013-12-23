@@ -149,7 +149,7 @@ namespace smtrat
                 }
                 else
                 {
-                    _out << "(" <<  Formula::constraintPool().getArithmeticVariableByName( ass->first ) << " ";
+                    _out << "(" << ass->first << " ";
                     _out << ass->second->theoryValue->toString( true ) << ")" << endl;
                 }
             }

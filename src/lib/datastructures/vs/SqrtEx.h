@@ -212,6 +212,8 @@ namespace vs
              */
             std::string toString( bool _infix = false, bool _friendlyNames = true ) const;
             
+            bool evaluate( smtrat::Rational& _result, const smtrat::EvalRationalMap& _evalMap, int _rounding = 0 ) const;
+            
             /**
              * Substitutes a variable in an expression by a square root expression, which results in a square root expression.
              * @param _substituteIn The polynomial to substitute in.

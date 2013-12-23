@@ -41,6 +41,7 @@
 
 // Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
+//#define MODULE_VERBOSE_INTEGERS
 //#define DEBUG_MODULE_CALLS_IN_SMTLIB
 
 using namespace std;
@@ -349,6 +350,9 @@ namespace smtrat
             ++bound;
             Polynomial geqLhs = Polynomial( _var ) - bound;
             constraintB = Formula::newConstraint( geqLhs, Constraint::GEQ );
+            #ifdef MODULE_VERBOSE_INTEGERS
+            cout << "[" << moduleName(type()) << "]  branch at  " << *constraintA << "  and  " << *constraintB << endl;
+            #endif
         }
         else
         {   
@@ -378,6 +382,17 @@ namespace smtrat
         deductionB->addSubformula( notLeqConstraint );
         deductionB->addSubformula( notGeqConstraint );
         addDeduction( deductionB );
+    }
+    
+    /**
+     * @return false, if the current model of this module does not satisfy the current received formula
+     *                of this module;
+     *         true, if it cannot be said whether the model satisfies the received formula.
+     */
+    bool Module::checkModel() const
+    {
+        
+        return true;
     }
 
     /**
@@ -435,7 +450,16 @@ namespace smtrat
             {
                 assert( modelsDisjoint( mModel, (*module)->model() ) );
                 (*module)->updateModel();
-                mModel.insert( (*module)->model().begin(), (*module)->model().end() );
+                for( auto ass = (*module)->model().begin(); ass != (*module)->model().end(); ++ass )
+                {
+                    Assignment* newAss = new Assignment();
+                    newAss->domain = ass->second->domain;
+                    if( ass->second->domain != BOOLEAN_DOMAIN )
+                        newAss->theoryValue = new vs::SqrtEx( *(ass->second->theoryValue) );
+                    else
+                        newAss->booleanValue = ass->second->booleanValue;
+                    mModel.insert( pair< const string, Assignment* >( ass->first, newAss ) );
+                }
                 break;
             }
             ++module;

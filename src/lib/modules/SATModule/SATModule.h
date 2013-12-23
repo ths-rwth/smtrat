@@ -139,10 +139,11 @@ namespace smtrat
             };
 
             typedef std::map<const Constraint* const, Minisat::Lit> ConstraintLiteralMap;
-            typedef std::map<const std::string, Minisat::Var>       BooleanVarMap;
+            typedef std::map<const carl::Variable, Minisat::Var>    BooleanVarMap;
             typedef Minisat::vec< Abstraction >                     BooleanConstraintMap;
             typedef std::map<const Formula*, Minisat::CRef >        FormulaClauseMap;
             typedef std::vector< std::vector<Minisat::Lit> >        ClauseVector;
+            typedef std::set<std::vector<int>>                      ClauseSet;
 
             static inline VarData mkVarData( Minisat::CRef cr, int l )
             {
@@ -256,6 +257,7 @@ namespace smtrat
             FormulaClauseMap      mFormulaClauseMap;
             /// If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
             ClauseVector          mMaxSatAssigns;
+            ClauseSet             mLearntDeductions;
 
             #ifdef SMTRAT_DEVOPTION_Statistics
             SATModuleStatistics* mpStatistics;

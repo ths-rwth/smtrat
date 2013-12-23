@@ -72,7 +72,7 @@ namespace smtrat
             {
                 std::list<Formula*>* mpSubformulas;
                 const Constraint*    mpConstraint;
-                const std::string*   mpIdentifier;
+                carl::Variable mBoolean;
             };
             /// The formula which contains this formula as sub formula.
             Formula* mpFather;
@@ -101,7 +101,7 @@ namespace smtrat
              * Constructs a formula being a Boolean variable.
              * @param _booleanVarName The pointer to the string representing the name of the Boolean variable.
              */
-            Formula( const std::string* _booleanVarName );
+            Formula( const carl::Variable::Arg _boolean );
             
             /**
              * Constructs a formula being a constraint.
@@ -250,10 +250,10 @@ namespace smtrat
              * Collects all Boolean variables occurring in this formula.
              * @param _booleanVars The container to collect the Boolean variables in.
              */
-            void booleanVars( std::set< std::string >& _booleanVars ) const
+            void booleanVars( std::set< const carl::Variable >& _booleanVars ) const
             {
                 if( mType == BOOL )
-                    _booleanVars.insert( *mpIdentifier );
+                    _booleanVars.insert( mBoolean );
                 else if( isBooleanCombination() )
                 {
                     for( auto subformula = mpSubformulas->begin(); subformula != mpSubformulas->end(); ++subformula )
@@ -315,10 +315,10 @@ namespace smtrat
              * @return The name of the Boolean variable represented by this formula. Note, that
              *          this formula has to be of type BOOL, if you invoke this method.
              */
-            const std::string& identifier() const
+            const carl::Variable::Arg boolean() const
             {
                 assert( mType == BOOL );
-                return *mpIdentifier;
+                return mBoolean;
             }
 
             /**
@@ -556,7 +556,7 @@ namespace smtrat
              * @param _name The intended name of the variable.
              * @return A pointer to the name of the constructed Boolean variable.
              */
-            static const std::string* newBooleanVariable( const std::string& _name )
+            static const carl::Variable newBooleanVariable( const std::string& _name )
             {
                 return mpConstraintPool->newBooleanVariable( _name );
             }
@@ -592,7 +592,7 @@ namespace smtrat
              * Generates a fresh Boolean variable and returns its identifier.
              * @return The identifier of a fresh Boolean variable.
              */
-            static const std::string* newAuxiliaryBooleanVariable()
+            static const carl::Variable newAuxiliaryBooleanVariable()
             {
                 return mpConstraintPool->newAuxiliaryBooleanVariable();
             }
@@ -676,11 +676,11 @@ namespace smtrat
              * Adds a Boolean variable as sub-formula to this formula.
              * @param _boolean The name of the Boolean variable to add.
              */
-            void addSubformula( const std::string* _boolean )
+            void addSubformula( const carl::Variable::Arg _boolean )
             {
                 addSubformula( new Formula( _boolean ) );
             }
-                
+                    
             /**
              * Sets this formulas father to the given formula.
              * @param _father The father to be of this formula.

@@ -151,7 +151,8 @@ namespace smtrat
         mConstraintLiteralMap(),
         mBooleanVarMap(),
         mFormulaClauseMap(),
-        mMaxSatAssigns()
+        mMaxSatAssigns(),
+        mLearntDeductions()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
         stringstream s;
@@ -506,7 +507,7 @@ namespace smtrat
         {
             case BOOL:
             {
-                BooleanVarMap::iterator booleanVarPair = mBooleanVarMap.find( _formula.identifier() );
+                BooleanVarMap::iterator booleanVarPair = mBooleanVarMap.find( _formula.boolean() );
                 if( booleanVarPair != mBooleanVarMap.end() )
                     return mkLit( booleanVarPair->second, false );
                 else
@@ -649,6 +650,15 @@ namespace smtrat
      */
     bool SATModule::addClause( vec<Lit>& _clause, unsigned _type )
     {
+        if( _type == DEDUCTED_CLAUSE )
+        {
+            vector<int> clause;
+            clause.reserve( _clause.size() );
+            for( unsigned i = 0; i < _clause.size(); ++i )
+                clause.push_back( _clause[i].x );
+            if( !mLearntDeductions.insert( clause ).second )
+                return false;
+        }
         assert( _clause.size() != 0 );
         assert( _type >= 0 && _type <= 2);
         add_tmp.clear();
@@ -1329,7 +1339,7 @@ SetWatches:
                     if( madeTheoryCall )
                     {
                         cout << "### Conflict clause: ";
-                        printClause( confl, cout );
+                        printClause( confl );
                     }
                     else
                     {

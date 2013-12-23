@@ -65,7 +65,7 @@ namespace smtrat
             /// The map of external variable names to internal variable names.
             std::map< std::string, carl::Variable > mExternalNamesToVariables;
             /// The collection of Boolean variables in use.
-            std::vector<const std::string*> mBooleanVariables;
+            Variables mBooleanVariables;
             /// The constraint pool.
             FastPointerSet<Constraint> mConstraints;
             /// All external variable names which have been created during parsing.
@@ -157,15 +157,9 @@ namespace smtrat
              * used for debugging or outputting purposes.
              * @return All constructed Boolean variables.
              */
-            std::vector<std::string> booleanVariables() const
+            Variables booleanVariables() const
             {
-                std::vector<std::string> result = std::vector<std::string>();
-                result.reserve(mBooleanVariables.size());
-                for( auto bvar = mBooleanVariables.begin(); bvar != mBooleanVariables.end(); ++bvar )
-                {
-                    result.push_back( **bvar );
-                }
-                return result;
+                return mBooleanVariables;
             }
             
             /**
@@ -325,10 +319,10 @@ namespace smtrat
              * @param _varName The Boolean variable name to check.
              * @return true, if the given Boolean variable name already exists. 
              */
-            bool booleanExistsAlready( const std::string& _varName ) const
+            bool booleanExistsAlready( const std::string& _booleanName ) const
             {
                 for( auto iter = mBooleanVariables.begin(); iter != mBooleanVariables.end(); ++iter )
-                    if( **iter == _varName ) return true;
+                    if( _booleanName == mVariablePool.getName( *iter, true ) ) return true;
                 return false;
             }
             
@@ -404,14 +398,14 @@ namespace smtrat
              * @param _name The external name of the variable to construct.
              * @param _parsed A special flag indicating whether this variable is constructed during parsing.
              */
-            const std::string* newBooleanVariable( const std::string& _name, bool _parsed = false );
+            const carl::Variable newBooleanVariable( const std::string& _name, bool _parsed = false );
             
             /**
              * Creates an auxiliary Boolean variable.
              * @param _externalPrefix The prefix of the external name of the auxiliary variable to construct.
              * @return The internal name of the variable.
              */
-            const std::string* newAuxiliaryBooleanVariable( const std::string& _externalPrefix = "h_b" );
+            const carl::Variable newAuxiliaryBooleanVariable( const std::string& _externalPrefix = "h_b" );
             
             /**
              * Initializes the prefix of the external variable names of internally declared (not parsed) variables.

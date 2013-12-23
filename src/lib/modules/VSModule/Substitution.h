@@ -158,9 +158,11 @@ namespace vs
             }
 
             /**
+             * @param _preferMinusInf A flag indicating whether to valuate the substitution type best or otherwise
+             *                        worst.
              * @return The valuation of this substitution according to a heuristic.
              */
-            unsigned valuate() const;
+            unsigned valuate( bool _preferMinusInf = true ) const;
 
             /**
              * @param The substitution to compare with.

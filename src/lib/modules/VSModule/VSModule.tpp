@@ -211,7 +211,9 @@ namespace smtrat
                 if( solverState() == True )
                     return consistencyTrue();
                 else
+                {
                     return foundAnswer( Unknown );
+                }
             }
             else
                 return foundAnswer( False );
@@ -573,31 +575,62 @@ namespace smtrat
             while( !state->isRoot() )
             {
                 const Substitution& sub = state->substitution();
-                Assignment* ass = new Assignment();
-                SqrtEx* value = new SqrtEx();
+                Assignment ass;
+                ass.theoryValue = NULL;
                 if( sub.type() == Substitution::MINUS_INFINITY )
-                    *value = (*value) + SqrtEx( Polynomial( mVariableVector.at( state->treeDepth()-1 ).first ) );
+                    ass.theoryValue = new SqrtEx( Polynomial( mVariableVector.at( state->treeDepth()-1 ).first ) );
                 else
                 {
-                    *value = (*value) + sub.term();
-                    if( sub.type() == Substitution::PLUS_EPSILON )
-                        *value = (*value) + SqrtEx( Polynomial( mVariableVector.at( state->treeDepth()-1 ).second ) );
+                    if( state->substitution().variable().getType() == carl::VariableType::VT_INT )
+                    {
+                        Rational valueRational;
+                        sub.term().evaluate( valueRational, getIntervalAssignment( state ), 0 );
+                        ass.theoryValue = new SqrtEx( Polynomial( valueRational ) );
+                    }
+                    else
+                    {
+                        ass.theoryValue = new SqrtEx( sub.term() );
+                        if( sub.type() == Substitution::PLUS_EPSILON )
+                            *(*ass.theoryValue) = (*(ass.theoryValue)) + SqrtEx( Polynomial( mVariableVector.at( state->treeDepth()-1 ).second ) );
+                    }
                 }
-                ass->domain = REAL_DOMAIN;
-                ass->theoryValue = value;
-                extendModel( Formula::constraintPool().getVariableName( state->substitution().variable(), true ), ass );
+                extendModel( state->substitution().variable(), ass );
                 state = state->pFather();
             }
             if( mRanking.begin()->second->tooHighDegree() )
                 Module::getBackendsModel();
-            for( auto var = mAllVariables.begin(); var != mAllVariables.end(); ++var )
+            Variables remainingVars;
+            mRanking.begin()->second->variables( remainingVars );
+            for( auto var = remainingVars.begin(); var != remainingVars.end(); ++var )
             {
-                Assignment* ass = new Assignment();
-                ass->domain = REAL_DOMAIN;
-                ass->theoryValue = new SqrtEx( Polynomial( *var ) );
-                extendModel( Formula::constraintPool().getVariableName( *var, true ), ass );
+                if( model().find( *var ) != model().end() )
+                {
+                    Assignment ass;
+                    ass.theoryValue = new SqrtEx( var->getType() == carl::VariableType::VT_INT ? ZERO_POLYNOMIAL : Polynomial( *var ) );
+                    extendModel( *var, ass );
+                }
             }
         }
+    }
+    
+    template<class Settings>
+    Answer VSModule<Settings>::consistencyTrue()
+    {
+        #ifdef VS_LOG_INTERMEDIATE_STEPS
+        checkAnswer();
+        #endif
+        #ifdef VS_PRINT_ANSWERS
+        printAnswer();
+        #endif
+        if( Settings::integer_variables )
+        {
+            #ifdef VS_DEBUG
+            printAll();
+            #endif
+            return solutionInDomain();
+        }
+        else
+            return foundAnswer( True );
     }
 
     /**
@@ -910,13 +943,13 @@ namespace smtrat
         bool allSubstitutionsApplied = true;
         ConditionSetSet conflictSet = ConditionSetSet();
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
-        if( _currentState->rFather().rVariableBounds().isConflicting() )
+        if( _currentState->father().variableBounds().isConflicting() )
         {
-            _currentState->rFather().printAlone();
+            _currentState->father().printAlone();
             _currentState->printAlone();
         }
 //        EvalDoubleIntervalMap solBox = (currentSubs.type() == Substitution::MINUS_INFINITY ? EvalDoubleIntervalMap() : _currentState->rFather().rVariableBounds().getIntervalMap());
-        EvalDoubleIntervalMap solBox = _currentState->rFather().rVariableBounds().getIntervalMap();
+        EvalDoubleIntervalMap solBox = _currentState->father().variableBounds().getIntervalMap();
         #else
         EvalDoubleIntervalMap solBox = EvalDoubleIntervalMap();
         #endif
@@ -1211,7 +1244,7 @@ namespace smtrat
                 increaseIDCounter();
                 _state->rID() = mIDCounter;
             }
-            _state->updateValuation();
+            _state->updateValuation( !Settings::integer_variables );
             UnsignedTriple key = UnsignedTriple( _state->valuation(), pair< unsigned, unsigned> ( _state->id(), _state->backendCallValuation() ) );
             if( (mRanking.insert( ValStatePair( key, _state ) )).second == false )
             {
@@ -1350,17 +1383,18 @@ namespace smtrat
         // of the state's father except of the variable being the index currentState.
         Variables vars;
         _state->father().variables( vars );
-        vars.erase( _state->index() );
+        vars.erase( _state->substitution().variable() );
         EvalRationalMap varSolutions;
         const State* successorState = mRanking.begin()->second;
         while( successorState != _state )
         {
             assert( !successorState->isRoot() );
-            assert( successorState->index().getType() == carl::VariableType::VT_INT );
+            assert( successorState->substitution().variable().getType() == carl::VariableType::VT_INT );
             assert( successorState->substitution().type() == Substitution::NORMAL );
-            assert( successorState->substitution().term().isInteger() );
-            varSolutions[successorState->index()] = successorState->substitution().term().constantPart().lcoeff();
-            vars.erase( successorState->index() );
+            Rational subTermEvaluated;
+            successorState->substitution().term().evaluate( subTermEvaluated, varSolutions );
+            varSolutions[successorState->substitution().variable()] = subTermEvaluated;
+            vars.erase( successorState->substitution().variable() );
             successorState = successorState->pFather();
         }
         // Special case, where the elimination of a variable led to a solution
@@ -1375,13 +1409,14 @@ namespace smtrat
     
     template<class Settings>
     Answer VSModule<Settings>::solutionInDomain()
-    {   
+    {
+        assert( solverState() != False );
         if( !mRanking.empty() )
         {
             const State* currentState = mRanking.begin()->second;
             while( !currentState->isRoot() )
             {
-                if( currentState->index().getType() == carl::VariableType::VT_INT )
+                if( currentState->substitution().variable().getType() == carl::VariableType::VT_INT )
                 {
                     if( currentState->substitution().type() == Substitution::MINUS_INFINITY )
                     {
@@ -1396,12 +1431,28 @@ namespace smtrat
                         {
                             Rational condsLowerCB;
                             if( varSolutions.empty() )
-                                condsLowerCB = (*cond)->constraint().lhs().toUnivariatePolynomial().cauchyBound();
-                            else
-                                condsLowerCB = (*cond)->constraint().lhs().substitute( varSolutions ).toUnivariatePolynomial().cauchyBound();
-                            if( condsLowerCB > weakestCauchyBound )
                             {
-                                weakestCauchyBound = condsLowerCB;
+                                condsLowerCB = (*cond)->constraint().lhs().toUnivariatePolynomial().cauchyBound();
+                                if( condsLowerCB > weakestCauchyBound )
+                                    weakestCauchyBound = condsLowerCB;
+                            }
+                            else
+                            {
+                                Polynomial substituted = (*cond)->constraint().lhs().substitute( varSolutions );
+                                if( !substituted.isConstant() )
+                                {
+                                    condsLowerCB = substituted.toUnivariatePolynomial().cauchyBound();
+                                    if( condsLowerCB > weakestCauchyBound )
+                                        weakestCauchyBound = condsLowerCB;
+                                }
+                            }
+                        }
+                        if( Settings::use_variable_bounds && !Settings::assure_termination )
+                        {
+                            Interval varInterval = currentState->father().variableBounds().getInterval( currentState->substitution().variable() );
+                            if( varInterval.rightType() != carl::BoundType::INFTY && varInterval.right() <= weakestCauchyBound )
+                            {
+                                weakestCauchyBound = varInterval.right() - 1; 
                             }
                         }
                         // We split at the next greater integer I than the calculated weakest lower Cauchy bound.
@@ -1410,7 +1461,10 @@ namespace smtrat
                         // assignment of the other variables in currentState's father cannot hold and must be adapted. 
                         // Note that in the case that there are no other variables in currentState's father, only (A)
                         // can be applied.
-                        branchAt( currentState->index(), weakestCauchyBound );
+                        #ifdef MODULE_VERBOSE_INTEGERS
+                        this->printAnswer();
+                        #endif
+                        branchAt( currentState->substitution().variable(), weakestCauchyBound );
                         return foundAnswer( Unknown );
                     }
                     else
@@ -1418,52 +1472,17 @@ namespace smtrat
                         // Insert the (integer!) assignments of the other variables.
                         EvalRationalMap varSolutions = getIntervalAssignment( currentState );
                         const SqrtEx& subTerm = currentState->substitution().term();
-                        Polynomial radicandEvaluated = subTerm.radicand().substitute( varSolutions );
-                        assert( radicandEvaluated.isConstant() );
-                        Rational radicandValue = radicandEvaluated.lcoeff();
-                        assert( radicandValue >= 0 );
-                        Polynomial factorEvaluated = subTerm.factor().substitute( varSolutions );
-                        assert( factorEvaluated.isConstant() );
-                        Rational factorValue = factorEvaluated.lcoeff();
-                        Polynomial constantPartEvaluated = subTerm.constantPart().substitute( varSolutions );
-                        assert( constantPartEvaluated.isConstant() );
-                        Rational constantPartValue = constantPartEvaluated.lcoeff();
-                        Polynomial denomEvaluated = subTerm.denominator().substitute( varSolutions );
-                        assert( denomEvaluated.isConstant() );
-                        Rational denomValue = denomEvaluated.lcoeff();
-                        // Check whether the resulting assignment is integer.
-                        bool assIsInteger = true;
-                        Rational* sqrtExValue = new Rational( 0 );
-                        if( !cln::sqrtp( radicandValue, sqrtExValue ) )
-                        {
-                            assIsInteger = false;
-                            assert( factorValue != 0 );
-                            double dbSqrt = sqrt( cln::double_approx( radicandValue ) );
-                            *sqrtExValue = Rational( cln::rationalize( cln::cl_R( dbSqrt ) ) ) ;
-                            if( factorValue > 0 && (*sqrtExValue)*(*sqrtExValue) > radicandValue )
-                            {
-                                // Force rounding down.
-                                dbSqrt = std::nextafter( dbSqrt, -INFINITY );
-                                *sqrtExValue = Rational( cln::rationalize( cln::cl_R( dbSqrt ) ) );
-                                assert( !((*sqrtExValue)*(*sqrtExValue) > radicandValue) );
-                            }
-                            else if( factorValue < 0 && (*sqrtExValue)*(*sqrtExValue) < radicandValue )
-                            {
-                                // Force rounding up.
-                                dbSqrt = std::nextafter( dbSqrt, INFINITY );
-                                *sqrtExValue = Rational( cln::rationalize( cln::cl_R( dbSqrt ) ) );
-                                assert( !((*sqrtExValue)*(*sqrtExValue) > radicandValue) );
-                            }
-                        }
-                        *sqrtExValue = (constantPartValue + factorValue * (*sqrtExValue)) / denomValue;
-                        assIsInteger &= carl::isInteger( *sqrtExValue );
+                        Rational evaluatedSubTerm;
+                        bool assIsInteger = subTerm.evaluate( evaluatedSubTerm, varSolutions, -1 );
+                        assIsInteger &= carl::isInteger( evaluatedSubTerm );
                         if( currentState->substitution().type() == Substitution::PLUS_EPSILON || !assIsInteger )
                         {
-                            branchAt( currentState->index(), *sqrtExValue );
-                            delete sqrtExValue;
+                            #ifdef MODULE_VERBOSE_INTEGERS
+                            this->printAnswer();
+                            #endif
+                            branchAt( currentState->substitution().variable(), evaluatedSubTerm );
                             return foundAnswer( Unknown );
                         }
-                        delete sqrtExValue;
                     }
                 }
                 currentState = currentState->pFather();

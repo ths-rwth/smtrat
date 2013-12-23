@@ -127,19 +127,7 @@ namespace smtrat
                 mIDCounter++;
             }
             
-            inline Answer consistencyTrue()
-            {
-                #ifdef VS_LOG_INTERMEDIATE_STEPS
-                checkAnswer();
-                #endif
-                #ifdef VS_PRINT_ANSWERS
-                printAnswer();
-                #endif
-                if( Settings::integer_variables )
-                    return solutionInDomain();
-                else
-                    return foundAnswer( True );
-            }
+            inline Answer consistencyTrue();
             
             void eliminate( vs::State*, const carl::Variable&, const vs::Condition* );
             bool substituteAll( vs::State*, vs::ConditionList& );

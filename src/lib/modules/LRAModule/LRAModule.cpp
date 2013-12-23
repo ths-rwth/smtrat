@@ -30,7 +30,7 @@
 #include "LRAModule.h"
 #include <iostream>
 
-#define DEBUG_LRA_MODULE
+//#define DEBUG_LRA_MODULE
 #define LRA_SIMPLE_THEORY_PROPAGATION
 #define LRA_SIMPLE_CONFLICT_SEARCH
 //#define LRA_ONE_REASON
@@ -332,6 +332,35 @@ namespace smtrat
         cout << "check for consistency" << endl;
         #endif
         Answer result = Unknown;
+        typedef pair<vector<const Variable<lra::Numeric>*>, vector<const Variable<lra::Numeric>*>> TableauConf;
+        struct compTableaus
+        {
+            bool operator()( const TableauConf& _tcA, const TableauConf& _tcB ) const
+            {
+                auto iterA = _tcA.first.begin();
+                auto iterB = _tcB.first.begin();
+                while( iterA != _tcA.first.end() && iterB != _tcB.first.end() )
+                {
+                    if( *iterA < *iterB ) return true;
+                    else if( *iterA > *iterB ) return false;
+                    ++iterA;
+                    ++iterB;
+                }
+                assert( iterA == _tcA.first.end() && iterB == _tcB.first.end() );
+                iterA = _tcA.second.begin();
+                iterB = _tcB.second.begin();
+                while( iterA != _tcA.second.end() && iterB != _tcB.second.end() )
+                {
+                    if( *iterA < *iterB ) return true;
+                    else if( *iterA > *iterB ) return false;
+                    ++iterA;
+                    ++iterB;
+                }
+                assert( iterA == _tcA.second.end() && iterB == _tcB.second.end() );
+                return false;
+            }
+        };
+        set<TableauConf, compTableaus> tcs;
         if( !mpReceivedFormula->isConstraintConjunction() )
         {
             goto Return; // Unknown
@@ -371,7 +400,15 @@ namespace smtrat
             cout << endl;
             #endif
             // Find a pivoting element in the tableau.
+            TableauConf tc;
+            for( auto iter = mTableau.rows().begin(); iter != mTableau.rows().end(); ++iter )
+                tc.first.push_back(iter->mName);
+            for( auto iter = mTableau.columns().begin(); iter != mTableau.columns().end(); ++iter )
+                tc.second.push_back(iter->mName);
+            bool inserted = tcs.insert( tc ).second;
+            assert( inserted );
             struct pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElement();
+//            cout << "\r" << mTableau.numberOfPivotingSteps() << endl;
             #ifdef DEBUG_LRA_MODULE
             cout << "    Next pivoting element: ";
             mTableau.printEntry( pivotingElement.first, cout );
@@ -1478,7 +1515,6 @@ Return:
     #endif
     
     #ifdef LRA_CUTS_FROM_PROOFS
-//    #define LRA_DEBUG_CUTS_FROM_PROOFS
     /**
      * @return true, if a branching occurred.
      *         false, otherwise.
@@ -1585,9 +1621,11 @@ Return:
                 Bound<Numeric>* upper_lower_bound;
                 creatable = dc_Tableau.create_cut_from_proof( dc_Tableau, mTableau, i, lcm_rows.at(i), coefficients2, non_basics_proof, cut, diagonals, dc_positions, upper_lower_bound );
                 Polynomial* pcut = new Polynomial( cut );
-                #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+//                #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+                #ifdef MODULE_VERBOSE_INTEGERS
                 cout << "Proof of unsatisfiability:  " << *pcut << " = 0" << endl;
                 #endif
+//                #endif
                 unsigned j=0;
                 for( auto vector_iterator = non_basics_proof.begin(); vector_iterator != non_basics_proof.end(); ++vector_iterator )
                 {
@@ -1641,26 +1679,10 @@ Return:
             Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
-                ass = cln::floor1( ass );
-                Polynomial leqLhs = Polynomial( var->first ) - ass;
-                const Constraint* leqConstraint = Formula::newConstraint( leqLhs, Constraint::LEQ );
-                ++ass;
-                Polynomial geqLhs = Polynomial( var->first ) - ass;
-                const smtrat::Constraint* geqConstraint = Formula::newConstraint( geqLhs, Constraint::GEQ );
-                // (x<=ass or x>=ass+1)
-                Formula* deductionA = new Formula( OR );
-                deductionA->addSubformula( leqConstraint );
-                deductionA->addSubformula( geqConstraint );
-                addDeduction( deductionA );
-                // (not(x<=ass) or not(x>=ass+1))
-                Formula* deductionB = new Formula( OR );
-                Formula* notLeqConstraint = new Formula( NOT );
-                notLeqConstraint->addSubformula( leqConstraint );
-                Formula* notGeqConstraint = new Formula( NOT );
-                notGeqConstraint->addSubformula( geqConstraint );
-                deductionB->addSubformula( notLeqConstraint );
-                deductionB->addSubformula( notGeqConstraint );
-                addDeduction( deductionB );
+                #ifdef MODULE_VERBOSE_INTEGERS
+                this->printRationalModel();
+                #endif
+                branchAt( var->first, ass );
                 return true;
             }
             ++map_iterator;

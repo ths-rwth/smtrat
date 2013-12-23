@@ -224,9 +224,9 @@ namespace smtrat
             typedef std::set<const Bound<T>*, boundPointerComp> BoundSet;
             private:
                 /// A flag that indicates that the stored exact interval of this variable is up to date.
-                bool            mUpdatedExactInterval;
+                mutable bool    mUpdatedExactInterval;
                 /// A flag that indicates that the stored double interval of this variable is up to date.
-                bool            mUpdatedDoubleInterval;
+                mutable bool    mUpdatedDoubleInterval;
                 /// The least upper bound of this variable.
                 const Bound<T>* mpSupremum;
                 /// The greatest lower bound of this variable.
@@ -285,7 +285,7 @@ namespace smtrat
                 /**
                  * Sets the flag indicating that the stored exact interval representing the variable's bounds is up to date to false.
                  */
-                void exactIntervalHasBeenUpdated()
+                void exactIntervalHasBeenUpdated() const
                 {
                     mUpdatedExactInterval = false;
                 }
@@ -302,7 +302,7 @@ namespace smtrat
                 /**
                  * Sets the flag indicating that the stored double interval representing the variable's bounds is up to date to false.
                  */
-                void doubleIntervalHasBeenUpdated()
+                void doubleIntervalHasBeenUpdated() const
                 {
                     mUpdatedDoubleInterval = false;
                 }
@@ -374,10 +374,10 @@ namespace smtrat
                 ConstraintBoundMap*   mpConstraintBoundMap;
                 /// The stored exact interval map representing the currently tightest bounds.
                 /// Note, that it is updated on demand.
-                EvalIntervalMap       mEvalIntervalMap;
+                mutable EvalIntervalMap       mEvalIntervalMap;
                 /// The stored double interval map representing the currently tightest bounds.
                 /// Note, that it is updated on demand.
-                EvalDoubleIntervalMap mDoubleIntervalMap;
+                mutable EvalDoubleIntervalMap mDoubleIntervalMap;
             public:
                 /*
                  * Constructors:
@@ -423,27 +423,27 @@ namespace smtrat
                  * Creates an evalintervalmap corresponding to the variable bounds.
                  * @return The variable bounds as an evalintervalmap.
                  */
-                const EvalIntervalMap& getEvalIntervalMap();
+                const EvalIntervalMap& getEvalIntervalMap() const;
                 
                 /**
                  * Creates an interval corresponding to the variable bounds of the given variable.
                  * @param _var The variable to compute the variable bounds as interval for.
                  * @return The variable bounds as an interval.
                  */
-                const Interval& getInterval( const carl::Variable& _var );
+                const Interval& getInterval( const carl::Variable& _var ) const;
                 
                 /**
                  * Creates an interval map corresponding to the variable bounds.
                  * @return The variable bounds as an interval map.
                  */
-                const smtrat::EvalDoubleIntervalMap& getIntervalMap();
+                const smtrat::EvalDoubleIntervalMap& getIntervalMap() const;
                 
                 /**
                  * Creates a double interval corresponding to the variable bounds of the given variable.
                  * @param _var The variable to compute the variable bounds as double interval for.
                  * @return The variable bounds as a double interval.
                  */
-                const carl::DoubleInterval& getDoubleInterval( const carl::Variable& _var );
+                const carl::DoubleInterval& getDoubleInterval( const carl::Variable& _var ) const;
                 
                 /**
                  * @param _var The variable to get origins of the bounds for.
@@ -872,7 +872,7 @@ namespace smtrat
         #define CONVERT_BOUND(type, namesp) (type != Bound<T>::WEAK_UPPER_BOUND && type != Bound<T>::WEAK_LOWER_BOUND && type != Bound<T>::EQUAL_BOUND ) ? namesp::STRICT : namesp::WEAK
 
         template<typename T>
-        const smtrat::EvalIntervalMap& VariableBounds<T>::getEvalIntervalMap()
+        const smtrat::EvalIntervalMap& VariableBounds<T>::getEvalIntervalMap() const
         {
             assert( mpConflictingVariable == NULL );
             for( auto varVarPair = mpVariableMap->begin(); varVarPair != mpVariableMap->end(); ++varVarPair )
@@ -912,7 +912,7 @@ namespace smtrat
         }
 
         template<typename T>
-        const Interval& VariableBounds<T>::getInterval( const carl::Variable& _var )
+        const Interval& VariableBounds<T>::getInterval( const carl::Variable& _var ) const
         {
             assert( mpConflictingVariable == NULL );
             typename VariableMap::iterator varVarPair = mpVariableMap->find( _var );
@@ -951,7 +951,7 @@ namespace smtrat
         }
 
         template<typename T>
-        const smtrat::EvalDoubleIntervalMap& VariableBounds<T>::getIntervalMap()
+        const smtrat::EvalDoubleIntervalMap& VariableBounds<T>::getIntervalMap() const
         {
             assert( mpConflictingVariable == NULL );
             for( auto varVarPair = mpVariableMap->begin(); varVarPair != mpVariableMap->end(); ++varVarPair )
@@ -991,7 +991,7 @@ namespace smtrat
         }
 
         template<typename T>
-        const carl::DoubleInterval& VariableBounds<T>::getDoubleInterval( const carl::Variable& _var )
+        const carl::DoubleInterval& VariableBounds<T>::getDoubleInterval( const carl::Variable& _var ) const
         {
             assert( mpConflictingVariable == NULL );
             typename VariableMap::iterator varVarPair = mpVariableMap->find( _var );

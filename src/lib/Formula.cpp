@@ -73,17 +73,17 @@ namespace smtrat
         }
     }
 
-    Formula::Formula( const string* _booleanVarName ):
+    Formula::Formula( const carl::Variable::Arg _boolean ):
         mDeducted( false ),
         mPropositionsUptodate( false ),
         mActivity( 0 ),
         mDifficulty( 0 ),
         mType( BOOL ),
-        mpIdentifier( _booleanVarName ),
+        mBoolean( _boolean ),
         mpFather( NULL ),
         mPropositions()
     {
-        assert( constraintPool().booleanExistsAlready( *_booleanVarName ) );
+        assert( _boolean.getType() == carl::VariableType::VT_BOOL );
     }
 
     Formula::Formula( const Constraint* _constraint ):
@@ -133,7 +133,7 @@ namespace smtrat
                 addSubformula( new Formula( **subFormula ));
         }
         else if( _formula.getType() == BOOL )
-            mpIdentifier = _formula.mpIdentifier;
+            mBoolean = _formula.mBoolean;
     }
 
     Formula::~Formula()
@@ -159,7 +159,7 @@ namespace smtrat
         {
             if( isBooleanCombination() )
                 delete mpSubformulas;
-            mpIdentifier = _formula->mpIdentifier;
+            mBoolean = _formula->mBoolean;
         }
         else if( _formula->getType() == CONSTRAINT )
         {
@@ -440,7 +440,7 @@ namespace smtrat
         }
         if( mType == BOOL )
         {
-            return (_init + (*mpIdentifier) + activity);
+            return (_init + constraintPool().getVariableName( mBoolean, _friendlyNames ) + activity);
         }
         else if( mType == CONSTRAINT )
             return (_init + mpConstraint->toString( _resolveUnequal, _infix, _friendlyNames ) + activity);
@@ -529,7 +529,7 @@ namespace smtrat
                 result += constraint().toString( 1 );
                 break;
             case BOOL:
-                result += *mpIdentifier + " = 1";
+                result += constraintPool().getVariableName( mBoolean, true ) + " = 1";
                 break;
             default:
             {
@@ -540,10 +540,13 @@ namespace smtrat
                     result += variableListToString( "," );
                     result += "}, (";
                     // Make pseudo Booleans.
-                    set<string> boolVars = set<string>();
+                    set<const carl::Variable> boolVars = set<const carl::Variable>();
                     booleanVars( boolVars );
                     for( auto j = boolVars.begin(); j != boolVars.end(); ++j )
-                        result += "(" + *j + " = 0 or " + *j + " = 1) and ";
+                    {
+                        string boolName = constraintPool().getVariableName( *j, true );
+                        result += "(" + boolName + " = 0 or " + boolName + " = 1) and ";
+                    }
                 }
                 else
                     result += "( ";
@@ -564,7 +567,7 @@ namespace smtrat
     {
         Variables realVars = Variables();
         realValuedVars( realVars );
-        set<string> boolVars = set<string>();
+        set<const carl::Variable> boolVars = set<const carl::Variable>();
         booleanVars( boolVars );
         auto i = realVars.begin();
         auto j = boolVars.begin();
@@ -584,13 +587,15 @@ namespace smtrat
         }
         else if( j != boolVars.end() )
         {
-            unordered_map<string, string>::const_iterator vId = _variableIds.find(*j);
-            result += vId == _variableIds.end() ? *j : vId->second;
+            string boolName = constraintPool().getVariableName( *j, true );
+            unordered_map<string, string>::const_iterator vId = _variableIds.find(boolName);
+            result += vId == _variableIds.end() ? boolName : vId->second;
             for( ++j; j != boolVars.end(); ++j )
             {
+                boolName = constraintPool().getVariableName( *j, true );
                 result += _separator;
-                vId = _variableIds.find(*j);
-                result += vId == _variableIds.end() ? *j : vId->second;
+                vId = _variableIds.find(boolName);
+                result += vId == _variableIds.end() ? boolName : vId->second;
             }
         }
         return result;

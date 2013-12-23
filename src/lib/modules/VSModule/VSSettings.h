@@ -31,6 +31,7 @@ namespace smtrat
         static const bool prefer_equation_over_all                              = false;
         static const bool integer_variables                                     = false;
         static const bool real_variables                                        = true;
+        static const bool assure_termination                                    = true;
     };
     
     struct VSSettings2 : VSSettings1
@@ -63,6 +64,7 @@ namespace smtrat
         static const bool prefer_equation_over_all                              = true;
         static const bool integer_variables                                     = true;
         static const bool real_variables                                        = true;
+        static const bool assure_termination                                    = false;
     };
     
     struct VSSettings2345 : VSSettings234

@@ -298,7 +298,8 @@ namespace smtrat
     carl::Variable Driver::addTheoryVariable( const class location& _loc, const string& _theory, const string& _varName, bool _isBindingVariable )
     {
         mLexer->mTheoryVariables.insert( _varName );
-        carl::Variable var( _isBindingVariable ? smtrat::Formula::mpConstraintPool->newAuxiliaryRealVariable() : Formula::newArithmeticVariable( _varName, getDomain( _theory ) ) );
+        carl::VariableType dom = getDomain( _theory );
+        carl::Variable var( _isBindingVariable ? (dom == carl::VariableType::VT_REAL ? smtrat::Formula::mpConstraintPool->newAuxiliaryRealVariable() : smtrat::Formula::mpConstraintPool->newAuxiliaryIntVariable()) : Formula::newArithmeticVariable( _varName, dom ) );
         pair< TheoryVarMap::iterator, bool > res = mTheoryVariables.insert( pair< string, carl::Variable >( _varName.empty() ? smtrat::Formula::mpConstraintPool->getVariableName( var, true ) : _varName, var ) );
         if( !res.second )  error( _loc, "Multiple definition of real variable " + _varName );
         return res.first->second;
@@ -834,10 +835,10 @@ namespace smtrat
     carl::Variable Driver::mkIteInExpr( const class location& _loc, Formula* _condition, Polynomial* _then, Polynomial* _else )
     {
         setTwoFormulaMode( false );
-        carl::Variable auxRealVar( addTheoryVariable( _loc, "Real", "", true ) );
+        carl::Variable auxVar( addTheoryVariable( _loc, (mLogic == QF_NRA || mLogic == QF_LRA) ? "Real" : "Int", "", true ) );
         const string* conditionBool = addBooleanVariable( _loc, "", true );
-        Formula* constraintA = mkConstraint( new Polynomial( auxRealVar ), _then, Constraint::EQ );
-        Formula* constraintB = mkConstraint( new Polynomial( auxRealVar ), _else, Constraint::EQ );
+        Formula* constraintA = mkConstraint( new Polynomial( auxVar ), _then, Constraint::EQ );
+        Formula* constraintB = mkConstraint( new Polynomial( auxVar ), _else, Constraint::EQ );
         Formula* notTmp = new Formula( NOT );
         const string* dependencyBool = addBooleanVariable( _loc, "", true ); 
         notTmp->addSubformula( new Formula( dependencyBool ) );
@@ -865,10 +866,10 @@ namespace smtrat
         Formula* result = new Formula( OR );
         result->addSubformula( notTmp );
         result->addSubformula( innerConstraintBinding );
-        mInnerConstraintBindings.insert( pair< carl::Variable, Formula* >( auxRealVar, result ) );
-        mTheoryIteBindings[auxRealVar] = dependencyBool;
+        mInnerConstraintBindings.insert( pair< carl::Variable, Formula* >( auxVar, result ) );
+        mTheoryIteBindings[auxVar] = dependencyBool;
         restoreTwoFormulaMode();
-        return auxRealVar;
+        return auxVar;
     }
 
     /**
@@ -1070,11 +1071,7 @@ namespace smtrat
                         error( "The logic has already been set!", true );
                     else if( *mInstructionQueue.front().second.key == "QF_NRA" ) mLogic = QF_NRA;
                     else if( *mInstructionQueue.front().second.key == "QF_LRA" ) mLogic = QF_LRA;
-                    else if( *mInstructionQueue.front().second.key == "QF_NIA" )
-                    {
-                        mLogic = QF_NIA;
-                        error( *mInstructionQueue.front().second.key + " is not supported!", true );
-                    }
+                    else if( *mInstructionQueue.front().second.key == "QF_NIA" ) mLogic = QF_NIA;
                     else if( *mInstructionQueue.front().second.key == "QF_LIA" ) mLogic = QF_LIA;
                     else error( *mInstructionQueue.front().second.key + " is not supported!", true );
                     break;
