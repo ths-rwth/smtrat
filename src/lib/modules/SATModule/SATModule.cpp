@@ -313,9 +313,8 @@ namespace smtrat
         {
             for( BooleanVarMap::const_iterator bVar = mBooleanVarMap.begin(); bVar != mBooleanVarMap.end(); ++bVar )
             {
-                Module::Assignment* assignment = new Module::Assignment();
-                assignment->domain = BOOLEAN_DOMAIN;
-                assignment->booleanValue = assigns[bVar->second] == l_True;
+                Module::Assignment assignment = Module::Assignment();
+                assignment.booleanValue = assigns[bVar->second] == l_True;
                 extendModel( bVar->first, assignment );
             }
             Module::getBackendsModel();
@@ -512,8 +511,8 @@ namespace smtrat
                     return mkLit( booleanVarPair->second, false );
                 else
                 {
-                    Var var                               = newVar( _formula.activity() );
-                    mBooleanVarMap[_formula.identifier()] = var;
+                    Var var = newVar( _formula.activity() );
+                    mBooleanVarMap[_formula.boolean()] = var;
                     return mkLit( var, false );
                 }
             }

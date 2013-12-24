@@ -591,7 +591,7 @@ namespace smtrat
                     {
                         ass.theoryValue = new SqrtEx( sub.term() );
                         if( sub.type() == Substitution::PLUS_EPSILON )
-                            *(*ass.theoryValue) = (*(ass.theoryValue)) + SqrtEx( Polynomial( mVariableVector.at( state->treeDepth()-1 ).second ) );
+                            *(ass.theoryValue) = (*(ass.theoryValue)) + SqrtEx( Polynomial( mVariableVector.at( state->treeDepth()-1 ).second ) );
                     }
                 }
                 extendModel( state->substitution().variable(), ass );

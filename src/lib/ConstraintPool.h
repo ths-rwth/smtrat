@@ -259,7 +259,7 @@ namespace smtrat
                 CONSTRAINT_LOCK_GUARD
                 for( auto constraint = mConstraints.begin(); constraint != mConstraints.end(); ++constraint )
                 {
-                    int maxdeg = (*constraint)->lhs().highestDegree();
+                    int maxdeg = (*constraint)->lhs().totalDegree();
                     if(maxdeg > result) 
                         result = maxdeg;
                 }

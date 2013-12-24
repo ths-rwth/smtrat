@@ -372,7 +372,7 @@ namespace smtrat
 
     void Formula::addConstraintPropositions( const Constraint& _constraint )
     {
-        switch( _constraint.lhs().highestDegree() )
+        switch( _constraint.lhs().totalDegree() )
         {
             case 0:
                 mPropositions |= PROP_CONTAINS_LINEAR_POLYNOMIAL;

@@ -577,12 +577,9 @@ Return:
                     {
                         value += mDelta * originalVar->second->assignment().deltaPart().content();
                     }
-                    Assignment* assignment = new Assignment();
-                    assignment->domain = REAL_DOMAIN;
-                    assignment->theoryValue = new vs::SqrtEx( value );
-                    stringstream outA;
-                    outA << originalVar->first;
-                    extendModel( outA.str(), assignment );
+                    Assignment assignment = Assignment();
+                    assignment.theoryValue = new vs::SqrtEx( value );
+                    extendModel( originalVar->first, assignment );
                 }
             }
             else

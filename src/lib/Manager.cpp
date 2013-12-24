@@ -143,14 +143,14 @@ namespace smtrat
             {
                 if( ass != mpPrimaryBackend->model().begin() )
                     _out << " ";
-                if( ass->second->domain == BOOLEAN_DOMAIN )
+                if( ass->first.getType() == carl::VariableType::VT_BOOL )
                 {
-                    _out << "(" << ass->first << " " << (ass->second->booleanValue ? "true" : "false") << ")" << endl;
+                    _out << "(" << ass->first << " " << (ass->second.booleanValue ? "true" : "false") << ")" << endl;
                 }
                 else
                 {
                     _out << "(" << ass->first << " ";
-                    _out << ass->second->theoryValue->toString( true ) << ")" << endl;
+                    _out << ass->second.theoryValue->toString( true ) << ")" << endl;
                 }
             }
             _out << ")" << endl;

@@ -499,7 +499,7 @@ namespace smtrat
                 break;
         }
         _out << "   The number of monomials: " << mLhs.nrTerms() << endl;
-        _out << "   The maximal degree:      " << mLhs.highestDegree() << endl;
+        _out << "   The maximal degree:      " << mLhs.totalDegree() << endl;
         _out << "   The constant part:       " << constantPart() << endl;
         _out << "   Variables:" << endl;
         for( auto vi = mVarInfoMap.begin(); vi != mVarInfoMap.end(); ++vi )

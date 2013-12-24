@@ -452,13 +452,12 @@ namespace smtrat
                 (*module)->updateModel();
                 for( auto ass = (*module)->model().begin(); ass != (*module)->model().end(); ++ass )
                 {
-                    Assignment* newAss = new Assignment();
-                    newAss->domain = ass->second->domain;
-                    if( ass->second->domain != BOOLEAN_DOMAIN )
-                        newAss->theoryValue = new vs::SqrtEx( *(ass->second->theoryValue) );
+                    Assignment newAss = Assignment();
+                    if( ass->first.getType() == carl::VariableType::VT_BOOL )
+                        newAss.booleanValue = ass->second.booleanValue;
                     else
-                        newAss->booleanValue = ass->second->booleanValue;
-                    mModel.insert( pair< const string, Assignment* >( ass->first, newAss ) );
+                        newAss.theoryValue = new vs::SqrtEx( *(ass->second.theoryValue) );
+                    mModel.insert( pair< const carl::Variable, Assignment >( ass->first, newAss ) );
                 }
                 break;
             }
