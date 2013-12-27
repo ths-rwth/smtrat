@@ -235,7 +235,17 @@ namespace smtrat
                 return *mpPassedFormula;
             }
             
-            void printAssignment( std::ostream& = std::cout ) const;
+            /**
+             * Prints the currently found assignment of variables occurring in the so far 
+             * added formulas to values of their domains, if the conjunction of these 
+             * formulas is satisfiable.
+             * @param The stream to print on.
+             */
+            void printAssignment( std::ostream& _out ) const
+            {
+                mpPrimaryBackend->printModel();
+            }
+    
             void printAssertions( std::ostream& = std::cout ) const;
             void printInfeasibleSubset( std::ostream& = std::cout ) const;
             

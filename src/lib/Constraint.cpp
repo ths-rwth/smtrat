@@ -78,19 +78,19 @@ namespace smtrat
     Constraint::~Constraint()
     {}
     
-    unsigned Constraint::satisfiedBy( EvalRationalMap& _assignment ) const
+    unsigned Constraint::satisfiedBy( const EvalRationalMap& _assignment ) const
     {
 //        std::cout << "Is  " << this->toString( 0, true, true ) << std::endl;
-//        this->printProperties( std::cout, true );
-//        std::cout << std::endl;
 //        std::cout << "satisfied by  " << std::endl;
 //        for( auto iter = _assignment.begin(); iter != _assignment.end(); ++iter )
 //            std::cout << iter->first << " in " << iter->second << std::endl;
-
+        unsigned result = 2;
         Polynomial tmp = mLhs.substitute( _assignment );
         if( tmp.isConstant() )
-            return evaluate( (tmp.isZero() ? ZERO_RATIONAL : tmp.trailingTerm()->coeff()), relation() ) ? 1 : 0;
-        else return 2;
+            result = evaluate( (tmp.isZero() ? ZERO_RATIONAL : tmp.trailingTerm()->coeff()), relation() ) ? 1 : 0;
+//        std::cout << "result is " << result << std::endl;
+//        std::cout << std::endl;
+        return result;
     }
 
     unsigned Constraint::isConsistent() const
@@ -114,24 +114,24 @@ namespace smtrat
                 case LESS:
                 {
                     if( mLhsDefinitess == carl::Definiteness::NEGATIVE ) return 1;
-                    if( mLhsDefinitess == carl::Definiteness::POSITIVE_SEMI ) return 0;
+                    if( mLhsDefinitess >= carl::Definiteness::POSITIVE_SEMI ) return 0;
                     break;
                 }
                 case GREATER:
                 {
                     if( mLhsDefinitess == carl::Definiteness::POSITIVE ) return 1;
-                    if( mLhsDefinitess == carl::Definiteness::NEGATIVE_SEMI ) return 0;
+                    if( mLhsDefinitess <= carl::Definiteness::NEGATIVE_SEMI ) return 0;
                     break;
                 }
                 case LEQ:
                 {
-                    if( mLhsDefinitess == carl::Definiteness::NEGATIVE_SEMI ) return 1;
+                    if( mLhsDefinitess <= carl::Definiteness::NEGATIVE_SEMI ) return 1;
                     if( mLhsDefinitess == carl::Definiteness::POSITIVE ) return 0;
                     break;
                 }
                 case GEQ:
                 {
-                    if( mLhsDefinitess == carl::Definiteness::POSITIVE_SEMI ) return 1;
+                    if( mLhsDefinitess >= carl::Definiteness::POSITIVE_SEMI ) return 1;
                     if( mLhsDefinitess == carl::Definiteness::NEGATIVE ) return 0;
                     break;
                 }

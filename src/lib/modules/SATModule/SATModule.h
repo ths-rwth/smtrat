@@ -283,7 +283,7 @@ namespace smtrat
             bool assertSubformula( Formula::const_iterator );
             Answer isConsistent();
             void removeSubformula( Formula::const_iterator );
-            void updateModel();
+            void updateModel() const;
 
             // Printing.
             void print( std::ostream& = std::cout, const std::string = "***" ) const;

@@ -66,6 +66,7 @@ namespace smtrat
         mpManager( _tsManager ),
         mpReceivedFormula( _formula ),
         mpPassedFormula( new Formula( AND ) ),
+        mModel(),
         mSolverState( Unknown ),
         mBackendsFoundAnswer( new std::atomic_bool( false ) ),
         mFoundAnswer( _foundAnswer ),
@@ -77,8 +78,7 @@ namespace smtrat
         mConstraintsToInform(),
         mFirstConstraintToInform( mConstraintsToInform.end() ),
         mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() ),
-        mSmallerMusesCheckCounter(0),
-        mModel()
+        mSmallerMusesCheckCounter(0)
 #ifdef SMTRAT_DEVOPTION_MeasureTime
         ,
         mTimerAddTotal( 0 ),
@@ -244,7 +244,7 @@ namespace smtrat
     /**
      * Updates the model, if the solver has detected the consistency of the received formula, beforehand.
      */
-    void Module::updateModel()
+    void Module::updateModel() const
     {
         clearModel();
         if( mSolverState == True )
@@ -389,10 +389,25 @@ namespace smtrat
      *                of this module;
      *         true, if it cannot be said whether the model satisfies the received formula.
      */
-    bool Module::checkModel() const
+    unsigned Module::checkModel() const
     {
-        
-        return true;
+        updateModel();
+        EvalRationalMap rationalAssignment;
+        for( auto ass = mModel.begin(); ass != mModel.end(); ++ass )
+        {
+            
+            if( ass->first.getType() == carl::VariableType::VT_BOOL )
+            {
+                rationalAssignment.insert( rationalAssignment.end(), pair<carl::Variable, Rational>( ass->first, (ass->second.booleanValue ? ONE_RATIONAL : ZERO_RATIONAL) ) );
+            }
+            else if( ass->second.theoryValue->isConstant() )
+            {
+                Rational value = ass->second.theoryValue->constantPart().constantPart()/ass->second.theoryValue->denominator().constantPart();
+                assert( !(ass->first.getType() == carl::VariableType::VT_INT) || carl::isInteger( value ) );
+                rationalAssignment.insert( rationalAssignment.end(), pair<carl::Variable, Rational>( ass->first, value ) );
+            }
+        }
+        return mpReceivedFormula->satisfiedBy( rationalAssignment );
     }
 
     /**
@@ -440,9 +455,9 @@ namespace smtrat
      * Stores the model of a backend which determined satisfiability of the passed 
      * formula in the model of this module.
      */
-    void Module::getBackendsModel()
+    void Module::getBackendsModel() const
     {
-        vector<Module*>::iterator module = mUsedBackends.begin();
+        auto module = mUsedBackends.begin();
         while( module != mUsedBackends.end() )
         {
             assert( (*module)->solverState() != False );
@@ -726,6 +741,12 @@ namespace smtrat
     Answer Module::foundAnswer( Answer _answer )
     {
         mSolverState = _answer;
+        if( _answer == True && checkModel() == 0 )
+        {
+            storeAssumptionsToCheck( *mpManager );
+            printModel();
+        }
+        assert( _answer != True || checkModel() != 0 );
         // If we are in the SMT environment:
         if( mpManager != NULL && _answer != Unknown )
         {
@@ -862,7 +883,7 @@ namespace smtrat
                 for( auto var = allVariables.begin(); var != allVariables.end(); ++var )
                     smtlibFile << "(declare-fun " << *var << " () Real)\n";
                 // Add all Boolean variables.
-                vector<string> allBooleans = Formula::constraintPool().booleanVariables();
+                Variables allBooleans = Formula::constraintPool().booleanVariables();
                 for( auto var = allBooleans.begin(); var != allBooleans.end(); ++var )
                     smtlibFile << "(declare-fun " << *var << " () Bool)\n";
                 // Add module name variables.
@@ -1019,5 +1040,34 @@ namespace smtrat
             _out << " }";
         }
         _out << " }" << endl;
+    }
+    
+    /**
+     * Prints the assignment of this module satisfying its received formula if it satisfiable
+     * and this module could find an assignment.
+     * @param _out The stream to print the assignment on.
+     */
+    void Module::printModel( ostream& _out ) const
+    {
+        updateModel();
+        if( !model().empty() )
+        {
+            _out << "(";
+            for( Module::Model::const_iterator ass = model().begin(); ass != model().end(); ++ass )
+            {
+                if( ass != model().begin() )
+                    _out << " ";
+                if( ass->first.getType() == carl::VariableType::VT_BOOL )
+                {
+                    _out << "(" << ass->first << " " << (ass->second.booleanValue ? "true" : "false") << ")" << endl;
+                }
+                else
+                {
+                    _out << "(" << ass->first << " ";
+                    _out << ass->second.theoryValue->toString( true ) << ")" << endl;
+                }
+            }
+            _out << ")" << endl;
+        }
     }
 } // namespace smtrat

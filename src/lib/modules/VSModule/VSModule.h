@@ -92,7 +92,7 @@ namespace smtrat
             Variables           mAllVariables;
             FormulaConditionMap mFormulaConditionMap;
             ValuationMap        mRanking;
-            VarNamePairVector   mVariableVector;
+            mutable VarNamePairVector   mVariableVector;
 
         public:
 
@@ -106,7 +106,7 @@ namespace smtrat
             bool assertSubformula( Formula::const_iterator );
             Answer isConsistent();
             void removeSubformula( Formula::const_iterator );
-            void updateModel();
+            void updateModel() const;
 
             // Printing methods.
             void printAll( const std::string& = "", std::ostream& = std::cout ) const;

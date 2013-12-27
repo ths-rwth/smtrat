@@ -32,6 +32,7 @@
 //#define REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
 
 #include "Formula.h"
+#include "Module.h"
 
 using namespace std;
 
@@ -239,6 +240,119 @@ namespace smtrat
         result = mpSubformulas->insert( result, _replacement );
         mPropositionsUptodate = false;
         return result;
+    }
+    
+    unsigned Formula::satisfiedBy( const EvalRationalMap& _assignment ) const
+    {   
+        switch( mType )
+        {
+            case TTRUE:
+            {
+                return 1;
+            }
+            case FFALSE:
+            {
+                return 0;
+            }
+            case BOOL:
+            {
+                auto ass = _assignment.find( mBoolean );
+                return ass == _assignment.end() ? 2 : (ass->second == ONE_RATIONAL ? 1 : 0) ;
+            }
+            case CONSTRAINT:
+            {
+                return mpConstraint->satisfiedBy( _assignment );
+            }
+            case NOT:
+            {
+                switch( mpSubformulas->front()->satisfiedBy( _assignment ) )
+                {
+                    case 0:
+                        return 1;
+                    case 1:
+                        return 0;
+                    default:
+                        return 2;
+                }   
+            }
+            case OR:
+            {
+                unsigned result = 0;
+                for( auto subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
+                {
+                    switch( (*subFormula)->satisfiedBy( _assignment ) )
+                    {
+                        case 0:
+                            break;
+                        case 1:
+                            return 1;
+                        default:
+                            if( result != 2 ) result = 2;
+                    }
+                }
+                return result;
+            }
+            case AND:
+            {
+                unsigned result = 1;
+                for( auto subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
+                {
+                    switch( (*subFormula)->satisfiedBy( _assignment ) )
+                    {
+                        case 0:
+                            return 0;
+                        case 1:
+                            break;
+                        default:
+                            if( result != 2 ) result = 2;
+                    }
+                }
+                return result;
+            }
+            case IMPLIES:
+            {
+                auto subFormula = mpSubformulas->begin();
+                unsigned result = (*subFormula)->satisfiedBy( _assignment );
+                if( result == 0 ) return 1;
+                ++subFormula;
+                switch( (*subFormula)->satisfiedBy( _assignment ) )
+                {
+                    case 0:
+                        return result == 1 ? 0 : 2;
+                    case 1:
+                        return 1;
+                    default:
+                        return 2;
+                }
+            }
+            case IFF:
+            {
+                auto subFormulaA = mpSubformulas->begin();
+                unsigned resultA = (*subFormulaA)->satisfiedBy( _assignment );
+                if( resultA == 2 ) return 2;
+                auto subFormulaB = mpSubformulas->begin();
+                unsigned resultB = (*subFormulaB)->satisfiedBy( _assignment );
+                if( resultB == 2 ) return 2;
+                return resultA == resultB ? 1 : 0;
+            }
+            case XOR:
+            {
+                auto subFormulaA = mpSubformulas->begin();
+                unsigned resultA = (*subFormulaA)->satisfiedBy( _assignment );
+                if( resultA == 2 ) return 2;
+                auto subFormulaB = mpSubformulas->begin();
+                unsigned resultB = (*subFormulaB)->satisfiedBy( _assignment );
+                if( resultB == 2 ) return 2;
+                return resultA == resultB ? 0 : 1;
+            }
+            default:
+            {
+                cerr << "Undefined operator!" << endl;
+                cerr << mType << endl;
+                cerr << *this << endl;
+                assert( false );
+            }
+        }
     }
     
     Condition Formula::getPropositions()

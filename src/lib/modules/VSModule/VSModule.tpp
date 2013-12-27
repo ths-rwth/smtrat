@@ -555,7 +555,7 @@ namespace smtrat
      * Updates the model, if the received formula was found to be satisfiable by this module.
      */
     template<class Settings>
-    void VSModule<Settings>::updateModel()
+    void VSModule<Settings>::updateModel() const
     {
         clearModel();
         if( solverState() == True )
@@ -571,6 +571,8 @@ namespace smtrat
                 mVariableVector.push_back( pair<carl::Variable,carl::Variable>( minfVar, epsVar ) );
             }
             assert( !mRanking.empty() );
+            Variables allVarsInRoot;
+            mpStateTree->variables( allVarsInRoot );
             const State* state = mRanking.begin()->second;
             while( !state->isRoot() )
             {
@@ -594,21 +596,20 @@ namespace smtrat
                             *(ass.theoryValue) = (*(ass.theoryValue)) + SqrtEx( Polynomial( mVariableVector.at( state->treeDepth()-1 ).second ) );
                     }
                 }
-                extendModel( state->substitution().variable(), ass );
+                mModel.insert( std::pair< const carl::Variable, Assignment >( state->substitution().variable(), ass ) );
                 state = state->pFather();
             }
             if( mRanking.begin()->second->tooHighDegree() )
                 Module::getBackendsModel();
-            Variables remainingVars;
-            mRanking.begin()->second->variables( remainingVars );
-            for( auto var = remainingVars.begin(); var != remainingVars.end(); ++var )
+            // All variables which occur in the root of the constructed state tree but were incidentally eliminated
+            // (during the elimination of another variable) can have an arbitrary assignment. If the variable has the
+            // real domain, we leave at as a parameter, and, if it has the integer domain we assign 0 to it.
+            for( auto var = allVarsInRoot.begin(); var != allVarsInRoot.end(); ++var )
             {
-                if( model().find( *var ) != model().end() )
-                {
-                    Assignment ass;
-                    ass.theoryValue = new SqrtEx( var->getType() == carl::VariableType::VT_INT ? ZERO_POLYNOMIAL : Polynomial( *var ) );
-                    extendModel( *var, ass );
-                }
+                Assignment ass;
+                ass.theoryValue = new SqrtEx( var->getType() == carl::VariableType::VT_INT ? ZERO_POLYNOMIAL : Polynomial( *var ) );
+                // Note, that this assignment won't take effect if the variable got an assignment by a backend module.
+                mModel.insert( std::pair< const carl::Variable, Assignment >( *var, ass ) ); 
             }
         }
     }
@@ -1379,12 +1380,22 @@ namespace smtrat
     template<class Settings>
     EvalRationalMap VSModule<Settings>::getIntervalAssignment( const State* _state ) const
     {
-        // Find all assignments of the variables occurring in the conditions
-        // of the state's father except of the variable being the index currentState.
+        EvalRationalMap varSolutions;
+        // The variables have 0 as default assignment, which is going to be overwritten
+        // if the variable has been eliminated by virtual substitution. Note, that it is
+        // possible that variables are eliminated as a side effect of the elimination of 
+        // a different variable, which means that we can choose the assignment of that 
+        // variable arbitrarily.
         Variables vars;
         _state->father().variables( vars );
         vars.erase( _state->substitution().variable() );
-        EvalRationalMap varSolutions;
+        while( !vars.empty() )
+        {
+            varSolutions[*vars.begin()] = ZERO_RATIONAL;
+            vars.erase( vars.begin() );
+        }
+        // Find all assignments of the variables occurring in the conditions
+        // of the state's father except of the variable being the index currentState.
         const State* successorState = mRanking.begin()->second;
         while( successorState != _state )
         {
@@ -1394,15 +1405,7 @@ namespace smtrat
             Rational subTermEvaluated;
             successorState->substitution().term().evaluate( subTermEvaluated, varSolutions );
             varSolutions[successorState->substitution().variable()] = subTermEvaluated;
-            vars.erase( successorState->substitution().variable() );
             successorState = successorState->pFather();
-        }
-        // Special case, where the elimination of a variable led to a solution
-        // although, it hasn't been the last variable to eliminate.
-        while( !vars.empty() )
-        {
-            varSolutions[*vars.begin()] = ZERO_RATIONAL;
-            vars.erase( vars.begin() );
         }
         return varSolutions;
     }

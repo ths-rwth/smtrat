@@ -109,6 +109,8 @@ namespace smtrat
             const Formula* mpReceivedFormula;
             /// The formula passed to the backends of this module.
             Formula* mpPassedFormula;
+            /// Stores the assignment of the current satisfiable result, if existent.
+            mutable Model mModel;
 
         private:
             /// States whether the received formula is known to be satisfiable or unsatisfiable otherwise it is set to unknown.
@@ -135,8 +137,6 @@ namespace smtrat
             Formula::const_iterator mFirstUncheckedReceivedSubformula;
             /// Counter used for the generation of the smt2 files to check for smaller muses.
             mutable unsigned mSmallerMusesCheckCounter;
-            /// Stores the assignment of the current satisfiable result, if existent.
-            Model mModel;
 
         public:
             std::set<Formula::iterator, FormulaIteratorConstraintIdCompare> mScheduledForRemoval;
@@ -158,7 +158,7 @@ namespace smtrat
             virtual bool assertSubformula( Formula::const_iterator );
             virtual Answer isConsistent();
             virtual void removeSubformula( Formula::const_iterator );
-            virtual void updateModel();
+            virtual void updateModel() const;
 
             // Methods to read and write on the members.
             inline Answer solverState() const
@@ -312,12 +312,12 @@ namespace smtrat
             /**
              * Clears the assignment, if any was found
              */
-            void clearModel()
+            void clearModel() const
             {
                 while( !mModel.empty() )
                 {
                     Assignment assToDel = mModel.begin()->second;
-                    if( mModel.begin()->first.getType() != carl::VariableType::VT_BOOL )
+                    if( mModel.begin()->first.getType() == carl::VariableType::VT_BOOL )
                         mModel.erase( mModel.begin() );
                     else
                     {
@@ -326,19 +326,6 @@ namespace smtrat
                         delete exToDel;
                     }   
                 }
-            }
-            
-            /**
-             * Extends the model by the assignment of the given variable to the given value.
-             * 
-             * @param _varName The name of the variable for which we want to add an assignment.
-             * @param _assignment The value and the domain of the assignment.
-             * @return true, if the assignment could be successfully added;
-             *          false, if the given variable is already assigned to a value by the model of this module.
-             */
-            bool extendModel( const carl::Variable::Arg _var, Assignment _assignment )
-            {
-                return mModel.insert( std::pair< const carl::Variable, Assignment >( _var, _assignment ) ).second;
             }
             
             void setOrigins( const Formula* const _formula, vec_set_const_pFormula& _origins )
@@ -382,19 +369,20 @@ namespace smtrat
             void addSubformulaToPassedFormula( Formula*, const Formula* );
             void getInfeasibleSubsets();
             static bool modelsDisjoint( const Model&, const Model& );
-            void getBackendsModel();
+            void getBackendsModel() const;
             Answer runBackends();
             Formula::iterator removeSubformulaFromPassedFormula( Formula::iterator );
             vec_set_const_pFormula getInfeasibleSubsets( const Module& ) const;
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
             void branchAt( const carl::Variable& _var, const Rational& _value, bool _leftCaseWeak = true );
-            bool checkModel() const;
+            unsigned checkModel() const;
         public:
             // Printing methods.
             void print( std::ostream& = std::cout, const std::string = "***" ) const;
             void printReceivedFormula( std::ostream& = std::cout, const std::string = "***" ) const;
             void printPassedFormula( std::ostream& = std::cout, const std::string = "***" ) const;
             void printInfeasibleSubsets( std::ostream& = std::cout, const std::string = "***" ) const;
+            void printModel( std::ostream& = std::cout ) const;
         private:
             // Measuring module times.
             clock::time_point mTimerCheckStarted;

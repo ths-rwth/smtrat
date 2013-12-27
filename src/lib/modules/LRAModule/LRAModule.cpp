@@ -563,23 +563,20 @@ Return:
     /**
      * Updates the current assignment into the model. Note, that this is a unique but symbolic assignment still containing delta as a variable.
      */
-    void LRAModule::updateModel()
+    void LRAModule::updateModel() const
     {
         clearModel();
         if( solverState() == True )
         {
             if( mAssignmentFullfilsNonlinearConstraints )
             {
-                for( auto originalVar = mOriginalVars.begin(); originalVar != mOriginalVars.end(); ++originalVar )
+                EvalRationalMap rationalAssignment = getRationalModel();
+                for( auto ratAss = rationalAssignment.begin(); ratAss != rationalAssignment.end(); ++ratAss )
                 {
-                    Polynomial value = Polynomial( originalVar->second->assignment().mainPart().content() );
-                    if( !originalVar->second->assignment().deltaPart().isZero() )
-                    {
-                        value += mDelta * originalVar->second->assignment().deltaPart().content();
-                    }
+                    Polynomial value = Polynomial( ratAss->second );
                     Assignment assignment = Assignment();
                     assignment.theoryValue = new vs::SqrtEx( value );
-                    extendModel( originalVar->first, assignment );
+                    mModel.insert( mModel.end(), std::pair< const carl::Variable, Assignment >( ratAss->first, assignment ) );
                 }
             }
             else
@@ -1524,13 +1521,18 @@ Return:
         mTableau.print();
         #endif
         // Check if the solution is integer.
+        EvalRationalMap _rMap = getRationalModel();
+        auto map_iterator = _rMap.begin();
         auto var = mOriginalVars.begin();
         while( var != mOriginalVars.end() )
         {
-            if( var->first.getType() == carl::VariableType::VT_INT && !var->second->assignment().mainPart().isInteger() )
+            assert( var->first == map_iterator->first );
+            Rational& ass = map_iterator->second; 
+            if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
                 break;
             }
+            ++map_iterator;
             ++var;
         }
         if( var == mOriginalVars.end() )
@@ -1637,10 +1639,10 @@ Return:
                     #ifndef LRA_DEBUG_CUTS_FROM_PROOFS
                     mTableau.newBasicVariable( pcut, non_basic_vars2, coefficients2 );
                     #else
-                    auto var = mTableau.newBasicVariable( pcut, non_basic_vars2, coefficients2 );
+                    auto var2 = mTableau.newBasicVariable( pcut, non_basic_vars2, coefficients2 );
                     cout << "After adding proof of unsatisfiability:" << endl;
-                    var->print();
-                    var->printAllBounds();
+                    var2->print();
+                    var2->printAllBounds();
                     mTableau.print();
                     cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
                     #endif
@@ -1658,7 +1660,8 @@ Return:
             cout << "No defining constraint!" << endl;
         cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
         #endif
-        return branch_and_bound();
+        branchAt( var->first, map_iterator->second );
+        return true;
     }
     #endif
     
@@ -1707,17 +1710,6 @@ Return:
         {
             if( (*constraint)->constraint().satisfiedBy( model ) != 1 )
             {
-                if( (*constraint)->constraint().satisfiedBy( model ) != 0 )
-                {
-                    
-                    cout << "Rational model:" << endl;
-                    for( auto assign = model.begin(); assign != model.end(); ++assign )
-                    {
-                        cout << setw(10) << assign->first;
-                        cout << " -> " << assign->second << endl;
-                    }
-                    cout << (*constraint)->constraint() << endl;
-                }
                 assert( (*constraint)->constraint().satisfiedBy( model ) == 0 );
                 return false;
             }

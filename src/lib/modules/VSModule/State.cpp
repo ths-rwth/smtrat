@@ -1210,6 +1210,7 @@ namespace vs
                                 {
                                     originsToRemove.insert( *condB );
                                     (*condB)->rRecentlyAdded() = true;
+                                    recentlyAddedConditionLeft = true;
                                     if( index() != carl::Variable::NO_VARIABLE )
                                         (*condB)->rFlag() = !(*condB)->constraint().hasVariable( index() );
                                 }
@@ -1293,6 +1294,7 @@ namespace vs
                             {
                                 originsToRemove.insert( *condB );
                                 (*condB)->rRecentlyAdded() = true;
+                                recentlyAddedConditionLeft = true;
                                 if( index() != carl::Variable::NO_VARIABLE )
                                     (*condB)->rFlag() = !(*condB)->constraint().hasVariable( index() );
                             }

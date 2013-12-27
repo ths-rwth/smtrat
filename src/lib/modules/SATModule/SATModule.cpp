@@ -306,7 +306,7 @@ namespace smtrat
     /**
      *
      */
-    void SATModule::updateModel()
+    void SATModule::updateModel() const
     {
         clearModel();
         if( solverState() == True )
@@ -315,7 +315,7 @@ namespace smtrat
             {
                 Module::Assignment assignment = Module::Assignment();
                 assignment.booleanValue = assigns[bVar->second] == l_True;
-                extendModel( bVar->first, assignment );
+                mModel.insert( std::pair< const carl::Variable, Assignment >( bVar->first, assignment ) );
             }
             Module::getBackendsModel();
         }

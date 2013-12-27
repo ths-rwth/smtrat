@@ -126,36 +126,6 @@ namespace smtrat
         }
     }
     #endif
-
-    /**
-     * Prints the currently found assignment of variables occurring in the so far 
-     * added formulas to values of their domains, if the conjunction of these 
-     * formulas is satisfiable.
-     * @param The stream to print on.
-     */
-    void Manager::printAssignment( ostream& _out ) const
-    {
-        mpPrimaryBackend->updateModel();
-        if( !mpPrimaryBackend->model().empty() )
-        {
-            _out << "(";
-            for( Module::Model::const_iterator ass = mpPrimaryBackend->model().begin(); ass != mpPrimaryBackend->model().end(); ++ass )
-            {
-                if( ass != mpPrimaryBackend->model().begin() )
-                    _out << " ";
-                if( ass->first.getType() == carl::VariableType::VT_BOOL )
-                {
-                    _out << "(" << ass->first << " " << (ass->second.booleanValue ? "true" : "false") << ")" << endl;
-                }
-                else
-                {
-                    _out << "(" << ass->first << " ";
-                    _out << ass->second.theoryValue->toString( true ) << ")" << endl;
-                }
-            }
-            _out << ")" << endl;
-        }
-    }
     
     /**
      * Prints the so far added formulas.

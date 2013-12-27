@@ -292,7 +292,7 @@ namespace smtrat
              *          2, otherwise (possibly not defined for all variables in the constraint,
              *                       even then it could be possible to obtain the first two results.)
              */
-            unsigned satisfiedBy( EvalRationalMap& _assignment ) const;
+            unsigned satisfiedBy( const EvalRationalMap& _assignment ) const;
             
             /**
              * Checks, whether the constraint is consistent.

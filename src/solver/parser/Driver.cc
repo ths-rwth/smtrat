@@ -836,8 +836,10 @@ namespace smtrat
         setTwoFormulaMode( false );
         carl::Variable auxVar( addTheoryVariable( _loc, (mLogic == QF_NRA || mLogic == QF_LRA) ? "Real" : "Int", "", true ) );
         carl::Variable conditionBool = addBooleanVariable( _loc, "", true );
+        setPolarity( true );
         Formula* constraintA = mkConstraint( new Polynomial( auxVar ), _then, Constraint::EQ );
         Formula* constraintB = mkConstraint( new Polynomial( auxVar ), _else, Constraint::EQ );
+        restorePolarity();
         Formula* notTmp = new Formula( NOT );
         carl::Variable dependencyBool = addBooleanVariable( _loc, "", true ); 
         notTmp->addSubformula( new Formula( dependencyBool ) );
