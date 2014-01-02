@@ -875,13 +875,16 @@ namespace smtrat
             { 
                 // For each assumption add a new solver-call by resetting the search state.
                 smtlibFile << "(reset)\n";
-                smtlibFile << "(set-logic QF_NRA)\n";
+                smtlibFile << "(set-logic " << _manager.logicToString() << ")\n";
                 smtlibFile << "(set-option :interactive-mode true)\n";
                 smtlibFile << "(set-info :smt-lib-version 2.0)\n";
                 // Add all real-valued variables.
                 Variables allVariables = Formula::constraintPool().arithmeticVariables();
                 for( auto var = allVariables.begin(); var != allVariables.end(); ++var )
-                    smtlibFile << "(declare-fun " << *var << " () Real)\n";
+                {
+                    if( !(_manager.logic() == Logic::QF_NIA || _manager.logic() == Logic::QF_LIA) || var->getType() == carl::VariableType::VT_INT)
+                        smtlibFile << "(declare-fun " << *var << " () " << Formula::constraintPool().toString( var->getType() ) << ")\n";
+                }
                 // Add all Boolean variables.
                 Variables allBooleans = Formula::constraintPool().booleanVariables();
                 for( auto var = allBooleans.begin(); var != allBooleans.end(); ++var )
@@ -924,7 +927,7 @@ namespace smtrat
                 nextbitvector = tmp | ((((tmp & -tmp) / (bitvector & -bitvector)) >> 1) - 1);
                 // For each assumption add a new solver-call by resetting the search state.
                 smtlibFile << "(reset)\n";
-                smtlibFile << "(set-logic QF_NRA)\n";
+                smtlibFile << "(set-logic " << mpManager->logicToString() << ")\n";
                 smtlibFile << "(set-option :interactive-mode true)\n";
                 smtlibFile << "(set-info :smt-lib-version 2.0)\n";
                 // Add all real-valued variables.

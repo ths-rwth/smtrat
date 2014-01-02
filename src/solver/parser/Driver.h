@@ -42,8 +42,6 @@
 
 namespace smtrat
 {
-    enum Logic { UNDEFINED, QF_NRA, QF_LRA, QF_NIA, QF_LIA };
-
     class Formula;
 
     typedef std::unordered_map< std::string, carl::Variable > TheoryVarMap;
@@ -343,6 +341,11 @@ namespace smtrat
                 InstructionValue iv = InstructionValue();
                 iv.key = new std::string( _value );
                 mInstructionQueue.push( Instruction( SET_LOGIC, iv ) );
+            }
+            
+            Logic logic() const
+            {
+                return mLogic;
             }
             
             void getValue( std::vector< std::pair< std::string, std::string > >* _value )

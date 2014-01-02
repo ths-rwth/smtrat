@@ -237,6 +237,11 @@ namespace smtrat
             #ifdef VS_STATISTICS
             ++mStepCounter;
             #endif
+//            if( mStepCounter >= 21520 )
+//            {
+//                assert(false);
+//            }
+//            cout << "Iteration:  " << mStepCounter << endl;
             State* currentState = mRanking.begin()->second;
             #ifdef VS_DEBUG
             cout << "Ranking:" << endl;
@@ -672,9 +677,8 @@ namespace smtrat
                 }
             }
             // Determine the substitution type: normal or +epsilon
-            Substitution::Type subType = Substitution::PLUS_EPSILON;
-            if( relation == Constraint::EQ || relation == Constraint::LEQ || relation == Constraint::GEQ )
-                subType = Substitution::NORMAL;
+            bool weakConstraint = (relation == Constraint::EQ || relation == Constraint::LEQ || relation == Constraint::GEQ);
+            Substitution::Type subType = (Settings::integer_variables || weakConstraint) ? Substitution::NORMAL : Substitution::PLUS_EPSILON;
             vector< Polynomial > factors = vector< Polynomial >();
             PointerSet<Constraint> sideConditions = PointerSet<Constraint>();
             if( Settings::elimination_with_factorization && constraint->hasFactorization() )
@@ -733,6 +737,8 @@ namespace smtrat
                             if( cons != Formula::constraintPool().consistentConstraint() )
                                 sideCond.insert( cons );
                             SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, coeffs.rbegin()->second, ZERO_POLYNOMIAL );
+                            if( Settings::integer_variables && !weakConstraint )
+                                sqEx = sqEx + SqrtEx( ONE_POLYNOMIAL );
                             Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
                             if( _currentState->addChild( sub ) )
                             {
@@ -775,6 +781,8 @@ namespace smtrat
                                 if( cons12 != Formula::constraintPool().consistentConstraint() )
                                     sideCond.insert( cons12 );
                                 SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, linearCoeff, ZERO_POLYNOMIAL );
+                                if( Settings::integer_variables && !weakConstraint )
+                                    sqEx = sqEx + SqrtEx( ONE_POLYNOMIAL );
                                 Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
                                 if( _currentState->addChild( sub ) )
                                 {
@@ -806,6 +814,8 @@ namespace smtrat
                                 if( cons22 != Formula::constraintPool().consistentConstraint() )
                                     sideCond.insert( cons22 );
                                 SqrtEx sqEx = SqrtEx( -linearCoeff, ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
+                                if( Settings::integer_variables && !weakConstraint )
+                                    sqEx = sqEx + SqrtEx( ONE_POLYNOMIAL );
                                 Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
                                 if( _currentState->addChild( sub ) )
                                 {
@@ -837,6 +847,8 @@ namespace smtrat
                                 if( cons32 != Formula::constraintPool().consistentConstraint() )
                                     sideCond.insert( cons32 );
                                 SqrtEx sqEx = SqrtEx( -linearCoeff, MINUS_ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
+                                if( Settings::integer_variables && !weakConstraint )
+                                    sqEx = sqEx + SqrtEx( ONE_POLYNOMIAL );
                                 Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
                                 if( _currentState->addChild( sub ) )
                                 {
@@ -1100,6 +1112,13 @@ namespace smtrat
                 allSubResults.pop_back();
             }
         }
+//        if( _currentState->hasSubstitutionResults() )
+//        {
+//            unsigned numOfCombs = 1;
+//            for( auto iter = _currentState->substitutionResults().begin(); iter != _currentState->substitutionResults().end(); ++iter )
+//                numOfCombs *= iter->size();
+//            cout << numOfCombs << endl;
+//        }
         return !anySubstitutionFailed;
     }
 

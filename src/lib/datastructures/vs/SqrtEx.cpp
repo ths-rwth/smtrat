@@ -287,38 +287,39 @@ namespace vs
             assert( factorValue != 0 );
             double dbSqrt = sqrt( cln::double_approx( radicandValue ) );
             *sqrtExValue = smtrat::Rational( cln::rationalize( cln::cl_R( dbSqrt ) ) ) ;
-            if( _rounding < 0 )
+            // As there is no rational number representing the resulting square root we have to round.
+            if( _rounding < 0 ) // If the result should round down in this case.
             {
                 if( factorValue > 0 && (*sqrtExValue)*(*sqrtExValue) > radicandValue )
                 {
-                    // Force rounding down.
+                    // The factor of the resulting square root is positive, hence force rounding down.
                     dbSqrt = std::nextafter( dbSqrt, -INFINITY );
                     *sqrtExValue = smtrat::Rational( cln::rationalize( cln::cl_R( dbSqrt ) ) );
                     assert( !((*sqrtExValue)*(*sqrtExValue) > radicandValue) );
                 }
                 else if( factorValue < 0 && (*sqrtExValue)*(*sqrtExValue) < radicandValue )
                 {
-                    // Force rounding up.
+                    // The factor of the resulting square root is negative, hence force rounding up.
                     dbSqrt = std::nextafter( dbSqrt, INFINITY );
                     *sqrtExValue = smtrat::Rational( cln::rationalize( cln::cl_R( dbSqrt ) ) );
-                    assert( !((*sqrtExValue)*(*sqrtExValue) > radicandValue) );
+                    assert( !((*sqrtExValue)*(*sqrtExValue) < radicandValue) );
                 }
             }
-            else if( _rounding > 0 )
+            else if( _rounding > 0 ) // If the result should round up in this case.
             {
                 if( factorValue < 0 && (*sqrtExValue)*(*sqrtExValue) > radicandValue )
                 {
-                    // Force rounding down.
+                    // The factor of the resulting square root is negative, hence force rounding down.
                     dbSqrt = std::nextafter( dbSqrt, -INFINITY );
                     *sqrtExValue = smtrat::Rational( cln::rationalize( cln::cl_R( dbSqrt ) ) );
                     assert( !((*sqrtExValue)*(*sqrtExValue) > radicandValue) );
                 }
                 else if( factorValue > 0 && (*sqrtExValue)*(*sqrtExValue) < radicandValue )
                 {
-                    // Force rounding up.
+                    // The factor of the resulting square root is positive, hence force rounding up.
                     dbSqrt = std::nextafter( dbSqrt, INFINITY );
                     *sqrtExValue = smtrat::Rational( cln::rationalize( cln::cl_R( dbSqrt ) ) );
-                    assert( !((*sqrtExValue)*(*sqrtExValue) > radicandValue) );
+                    assert( !((*sqrtExValue)*(*sqrtExValue) < radicandValue) );
                 }
             }
         }

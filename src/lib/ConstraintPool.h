@@ -207,7 +207,7 @@ namespace smtrat
                     case carl::VT_REAL:
                         return "Real";
                     case carl::VT_INT:
-                        return "Integer";
+                        return "Int";
                     default:
                         return "Undefined";
                 }

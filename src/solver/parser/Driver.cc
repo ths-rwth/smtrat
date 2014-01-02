@@ -56,7 +56,7 @@ namespace smtrat
         mNumOfChecks( 0 ),
         mInfos(),
         mOptions(),
-        mLogic( UNDEFINED ),
+        mLogic( Logic::UNDEFINED ),
         mInstructionQueue(),
         mRegularOutputChannel( std::cout.rdbuf() ),
         mDiagnosticOutputChannel( std::cerr.rdbuf() ),
@@ -662,16 +662,16 @@ namespace smtrat
                 resultB->addSubformula( tmpFormula->pruneFront() );
                 delete tmpFormula;
             }
-            if( mPolarity )
-            {
+//            if( mPolarity )
+//            {
                 result->addSubformula( resultA );
                 result->addSubformula( resultB );
-            }
-            else
-            {
-                result->addSubformula( resultB );
-                result->addSubformula( resultA );
-            }
+//            }
+//            else
+//            {
+//                result->addSubformula( resultB );
+//                result->addSubformula( resultA );
+//            }
             delete _subformulas;
             return result;
         }
@@ -834,7 +834,7 @@ namespace smtrat
     carl::Variable Driver::mkIteInExpr( const class location& _loc, Formula* _condition, Polynomial* _then, Polynomial* _else )
     {
         setTwoFormulaMode( false );
-        carl::Variable auxVar( addTheoryVariable( _loc, (mLogic == QF_NRA || mLogic == QF_LRA) ? "Real" : "Int", "", true ) );
+        carl::Variable auxVar( addTheoryVariable( _loc, (mLogic == Logic::QF_NRA || mLogic == Logic::QF_LRA) ? "Real" : "Int", "", true ) );
         carl::Variable conditionBool = addBooleanVariable( _loc, "", true );
         setPolarity( true );
         Formula* constraintA = mkConstraint( new Polynomial( auxVar ), _then, Constraint::EQ );
@@ -923,7 +923,7 @@ namespace smtrat
                         mRegularOutputChannel << *mInstructionQueue.front().second.formula;
                         mRegularOutputChannel << ")" << endl;
                     }
-                    if( mLogic == UNDEFINED )
+                    if( mLogic == Logic::UNDEFINED )
                         error( "Before using assert the logic must be defined!", true );
                     else
                     {
@@ -937,7 +937,7 @@ namespace smtrat
                 {
                     if( mOptions.print_instruction )
                         mRegularOutputChannel << "> (push " << mInstructionQueue.front().second.num << ")" << endl;
-                    if( mLogic == UNDEFINED )
+                    if( mLogic == Logic::UNDEFINED )
                         error( "Before using push the logic must be defined!", true );
                     else
                     {
@@ -956,7 +956,7 @@ namespace smtrat
                 {
                     if( mOptions.print_instruction )
                         mRegularOutputChannel << "> (pop " << mInstructionQueue.front().second.num << ")" << endl;
-                    if( mLogic == UNDEFINED )
+                    if( mLogic == Logic::UNDEFINED )
                         error( "Before using pop the logic must be defined!", true );
                     else
                     {
@@ -975,7 +975,7 @@ namespace smtrat
                 {
                     if( mOptions.print_instruction )
                         mRegularOutputChannel << "> (check-sat)" << endl;
-                    if( mLogic == UNDEFINED )
+                    if( mLogic == Logic::UNDEFINED )
                         error( "Before using check-sat the logic must be defined!", true );
                     else
                     {
@@ -1069,13 +1069,21 @@ namespace smtrat
                 {
                     if( mOptions.print_instruction )
                         mRegularOutputChannel << "> (set-logic " << *mInstructionQueue.front().second.key << ")" << endl;
-                    if( mLogic != UNDEFINED )
+                    if( mLogic != Logic::UNDEFINED )
                         error( "The logic has already been set!", true );
-                    else if( *mInstructionQueue.front().second.key == "QF_NRA" ) mLogic = QF_NRA;
-                    else if( *mInstructionQueue.front().second.key == "QF_LRA" ) mLogic = QF_LRA;
-                    else if( *mInstructionQueue.front().second.key == "QF_NIA" ) mLogic = QF_NIA;
-                    else if( *mInstructionQueue.front().second.key == "QF_LIA" ) mLogic = QF_LIA;
-                    else error( *mInstructionQueue.front().second.key + " is not supported!", true );
+                    else
+                    {
+                        mSentSolverInstruction = true;
+                        if( *mInstructionQueue.front().second.key == "QF_NRA" ) mLogic = Logic::QF_NRA;
+                        else if( *mInstructionQueue.front().second.key == "QF_LRA" ) mLogic = Logic::QF_LRA;
+                        else if( *mInstructionQueue.front().second.key == "QF_NIA" ) mLogic = Logic::QF_NIA;
+                        else if( *mInstructionQueue.front().second.key == "QF_LIA" ) mLogic = Logic::QF_LIA;
+                        else
+                        {
+                            mSentSolverInstruction = false;
+                            error( *mInstructionQueue.front().second.key + " is not supported!", true );
+                        }
+                    }
                     break;
                 }
                 default:
@@ -1156,7 +1164,7 @@ namespace smtrat
     {
         if( _key.compare( ":produce-models" ) == 0 )
         {
-            if( mLogic != UNDEFINED )
+            if( mLogic != Logic::UNDEFINED )
                 error( "The " + _key + " flag must be set before the logic is defined!", true );
             else if( _value.compare( "true" ) == 0 )
                 mOptions.produce_models = true;
@@ -1167,7 +1175,7 @@ namespace smtrat
         }
         else if( _key.compare( ":interactive-mode" ) == 0 )
         {
-            if( mLogic != UNDEFINED )
+            if( mLogic != Logic::UNDEFINED )
                 error( "The " + _key + " flag must be set before the logic is defined!", true );
             else if( _value.compare( "true" ) == 0 ) 
                 mOptions.interactive_mode = true;
@@ -1178,7 +1186,7 @@ namespace smtrat
         }
         else if( _key.compare( ":produce-unsat-cores" ) == 0 )
         {
-            if( mLogic != UNDEFINED )
+            if( mLogic != Logic::UNDEFINED )
                 error( "The " + _key + " flag must be set before the logic is defined!", true );
             else if( _value.compare( "true" ) == 0 ) 
                 mOptions.produce_unsat_cores = true;
@@ -1189,7 +1197,7 @@ namespace smtrat
         }
         else if( _key.compare( ":produce-assignments" ) == 0 )
         {
-            if( mLogic != UNDEFINED )
+            if( mLogic != Logic::UNDEFINED )
                 error( "The " + _key + " flag must be set before the logic is defined!", true );
             else if( _value.compare( "true" ) == 0 ) 
                 mOptions.produce_assignments = true;

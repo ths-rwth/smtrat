@@ -73,6 +73,8 @@ namespace smtrat
             StrategyGraph mStrategyGraph;
             /// channel to write debug output
             std::ostream mDebugOutputChannel;
+            /// the logic this solver 
+            Logic mLogic;
             #ifdef SMTRAT_DEVOPTION_Statistics
             ///
             GeneralStatistics* mpStatistics;
@@ -268,6 +270,31 @@ namespace smtrat
             std::ostream& rDebugOutputChannel()
             {
                 return mDebugOutputChannel;
+            }
+            
+            const Logic logic() const
+            {
+                return mLogic;
+            }
+            
+            Logic& rLogic()
+            {
+                return mLogic;
+            }
+            
+            std::string logicToString() const
+            {
+                switch( mLogic )
+                {
+                    case Logic::QF_LIA:
+                        return "QF_LIA";
+                    case Logic::QF_NIA:
+                        return "QF_NIA";
+                    case Logic::QF_LRA:
+                        return "QF_LRA";
+                    default:
+                        return "QF_NRA";
+                }
             }
             
         protected:

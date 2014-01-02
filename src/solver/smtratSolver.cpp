@@ -218,6 +218,11 @@ int main( int argc, char* argv[] )
                 solver->printInfeasibleSubset( parser.rRegularOutputChannel() );
                 break;
             }
+            case smtrat::SET_LOGIC:
+            {
+                solver->rLogic() = parser.logic();
+                break;
+            }
             default:
             {
                 parser.error( "Unknown order!" );

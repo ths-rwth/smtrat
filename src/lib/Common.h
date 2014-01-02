@@ -41,7 +41,9 @@ namespace smtrat
 {
     // Enumerations.
     
-    enum Variable_Domain { BOOLEAN_DOMAIN = 0, REAL_DOMAIN = 1, INTEGER_DOMAIN = 2 };
+    enum class Variable_Domain: unsigned { BOOLEAN = 0, REAL = 1, INTEGER = 2 };
+    
+    enum class Logic : unsigned { UNDEFINED, QF_NRA, QF_LRA, QF_NIA, QF_LIA };
     
     ///An enum with the possible answer a Module can give
     enum Answer { True, False, Unknown };
