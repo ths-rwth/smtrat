@@ -37,8 +37,6 @@
 #include <typeinfo>
 #include <cln/cln.h>
 
-//#define MODEL_IN_SMTLIB
-
 using namespace std;
 
 namespace smtrat

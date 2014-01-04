@@ -162,13 +162,13 @@ namespace smtrat
     
     static const Polynomial MINUS_ONE_POLYNOMIAL = Polynomial( MINUS_ONE_RATIONAL );
     
-    static const unsigned MAX_DEGREE_FOR_FACTORIZATION = 40;
+    static const unsigned MAX_DEGREE_FOR_FACTORIZATION = 6;
     
     static const unsigned MIN_DEGREE_FOR_FACTORIZATION = 2;
     
     static const unsigned MAX_DIMENSION_FOR_FACTORIZATION = 6;
     
-    static const unsigned MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION = 300;
+    static const unsigned MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION = 7;
     
     // Macros.
     

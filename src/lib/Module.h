@@ -375,6 +375,7 @@ namespace smtrat
             vec_set_const_pFormula getInfeasibleSubsets( const Module& ) const;
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
             void branchAt( const carl::Variable& _var, const Rational& _value, bool _leftCaseWeak = true );
+            static EvalRationalMap modelToERM( const Model& _model );
             unsigned checkModel() const;
         public:
             // Printing methods.

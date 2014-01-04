@@ -31,6 +31,7 @@
 #include "Constraint.h"
 #include "ConstraintPool.h"
 #include "Formula.h"
+#include "carl/converter/GinacConverter.h"
 
 using namespace std;
 using namespace carl;
@@ -377,10 +378,12 @@ namespace smtrat
     void Constraint::initFactorization() const 
     {
         #ifdef SMTRAT_STRAT_Factorization
-        if( mNumMonomials <= MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION && mVariables.size() <= MAX_DIMENSION_FOR_FACTORIZATION
-            && mMaxMonomeDegree <= MAX_DEGREE_FOR_FACTORIZATION && mMaxMonomeDegree >= MIN_DEGREE_FOR_FACTORIZATION )
+        if( lhs().nrTerms() <= MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION && mVariables.size() <= MAX_DIMENSION_FOR_FACTORIZATION
+            && maxDegree() <= MAX_DEGREE_FOR_FACTORIZATION && maxDegree() >= MIN_DEGREE_FOR_FACTORIZATION )
         {
-            mFactorization = factor( mLhs );
+//            cout << "factorize:   " << mLhs << endl;
+            mFactorization = ginacFactorization( mLhs );
+//            cout << "factorize:   finished" << endl;
         }
         #else
         mFactorization.insert( pair<Polynomial, unsigned>( mLhs, 1 ) );

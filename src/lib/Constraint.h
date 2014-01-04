@@ -195,6 +195,21 @@ namespace smtrat
             }
 
             /**
+             * @return The maximal degree of all variables in this constraint. (Monomial-wise)
+             */
+            unsigned maxDegree() const
+            {
+                unsigned result = 0;
+                for( auto var = mVariables.begin(); var != mVariables.end(); ++var)
+                {
+                    unsigned deg = maxDegree( *var );
+                    if( deg > result )
+                        result = deg;
+                }
+                return result;
+            }
+
+            /**
              * @param _variable The variable for which to determine the minimal degree.
              * @return The minimal degree of the given variable in this constraint. (Monomial-wise)
              */

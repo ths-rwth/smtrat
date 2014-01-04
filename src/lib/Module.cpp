@@ -34,6 +34,7 @@
 #include <iostream>
 #include <iomanip>
 #include <limits.h>
+#include <cmath>
 
 #include "Manager.h"
 #include "Module.h"
@@ -371,7 +372,9 @@ namespace smtrat
         // (x<=I-1 or x>=I)
         Formula* deductionA = new Formula( OR );
         deductionA->addSubformula( constraintA );
+        deductionA->back()->setActivity( INFINITY );
         deductionA->addSubformula( constraintB );
+        deductionA->back()->setActivity( INFINITY );
         addDeduction( deductionA );
         // (not(x<=I-1) or not(x>=I))
         Formula* deductionB = new Formula( OR );
@@ -384,16 +387,10 @@ namespace smtrat
         addDeduction( deductionB );
     }
     
-    /**
-     * @return false, if the current model of this module does not satisfy the current received formula
-     *                of this module;
-     *         true, if it cannot be said whether the model satisfies the received formula.
-     */
-    unsigned Module::checkModel() const
+    EvalRationalMap Module::modelToERM( const Model& _model )
     {
-        updateModel();
         EvalRationalMap rationalAssignment;
-        for( auto ass = mModel.begin(); ass != mModel.end(); ++ass )
+        for( auto ass = _model.begin(); ass != _model.end(); ++ass )
         {
             
             if( ass->first.getType() == carl::VariableType::VT_BOOL )
@@ -407,7 +404,17 @@ namespace smtrat
                 rationalAssignment.insert( rationalAssignment.end(), pair<carl::Variable, Rational>( ass->first, value ) );
             }
         }
-        return mpReceivedFormula->satisfiedBy( rationalAssignment );
+        return rationalAssignment;
+    }
+    
+    /**
+     * @return false, if the current model of this module does not satisfy the current given formula;
+     *         true, if it cannot be said whether the model satisfies the given formula.
+     */
+    unsigned Module::checkModel() const
+    {
+        updateModel();
+        return mpReceivedFormula->satisfiedBy( modelToERM( mModel ) );
     }
 
     /**

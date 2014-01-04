@@ -284,6 +284,8 @@ namespace smtrat
             Answer isConsistent();
             void removeSubformula( Formula::const_iterator );
             void updateModel() const;
+            
+            void addBooleanAssignments( EvalRationalMap& _rationalAssignment ) const;
 
             // Printing.
             void print( std::ostream& = std::cout, const std::string = "***" ) const;
@@ -390,9 +392,11 @@ namespace smtrat
             // Shrink 'cs' to contain only non-satisfied clauses.
             void removeSatisfied( Minisat::vec<Minisat::CRef>& cs );
             void rebuildOrderHeap();
+            bool conflictingVars( const Minisat::vec<Minisat::CRef>& _clauses, const EvalRationalMap& _rationalAssignment, Minisat::vec<Minisat::Var>& _result, bool _includeConflicting = true ) const;
 
             // Maintaining Variable/Clause activity:
             //
+            double maxActivity() const;
             // Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.
             void varDecayActivity();
             // Increase a variable with the current 'bump' value.
@@ -476,6 +480,17 @@ namespace smtrat
     {
         if( !order_heap.inHeap( x ) && decision[x] )
             order_heap.insert( x );
+    }
+    
+    inline double SATModule::maxActivity() const
+    {
+        double result = 0;
+        for( unsigned i = 0; i < activity.size(); ++i )
+        {
+            if( result < activity[i] )
+                result = activity[i];
+        }
+        return result;
     }
 
     inline void SATModule::varDecayActivity()

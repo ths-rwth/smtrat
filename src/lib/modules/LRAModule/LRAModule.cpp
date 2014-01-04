@@ -36,7 +36,7 @@
 //#define LRA_ONE_REASON
 #ifndef LRA_GOMORY_CUTS
 #ifndef LRA_CUTS_FROM_PROOFS
-//#define LRA_BRANCH_AND_BOUND
+#define LRA_BRANCH_AND_BOUND
 #endif
 #endif
 

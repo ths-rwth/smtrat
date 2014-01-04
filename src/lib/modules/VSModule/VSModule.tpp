@@ -177,6 +177,9 @@ namespace smtrat
     template<class Settings>
     Answer VSModule<Settings>::isConsistent()
     {
+        #ifdef VS_STATISTICS
+        mStepCounter = 0;
+        #endif
         if( !Settings::incremental_solving )
         {
             removeStatesFromRanking( *mpStateTree );
