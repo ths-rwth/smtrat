@@ -485,7 +485,7 @@ namespace smtrat
     inline double SATModule::maxActivity() const
     {
         double result = 0;
-        for( unsigned i = 0; i < activity.size(); ++i )
+        for( int i = 0; i < activity.size(); ++i )
         {
             if( result < activity[i] )
                 result = activity[i];

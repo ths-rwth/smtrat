@@ -654,7 +654,7 @@ namespace smtrat
                     result += variableListToString( "," );
                     result += "}, (";
                     // Make pseudo Booleans.
-                    set<const carl::Variable> boolVars = set<const carl::Variable>();
+                    set<carl::Variable> boolVars = set<carl::Variable>();
                     booleanVars( boolVars );
                     for( auto j = boolVars.begin(); j != boolVars.end(); ++j )
                     {
@@ -681,7 +681,7 @@ namespace smtrat
     {
         Variables realVars = Variables();
         realValuedVars( realVars );
-        set<const carl::Variable> boolVars = set<const carl::Variable>();
+        set<carl::Variable> boolVars = set<carl::Variable>();
         booleanVars( boolVars );
         auto i = realVars.begin();
         auto j = boolVars.begin();

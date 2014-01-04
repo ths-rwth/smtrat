@@ -250,7 +250,7 @@ namespace smtrat
              * Collects all Boolean variables occurring in this formula.
              * @param _booleanVars The container to collect the Boolean variables in.
              */
-            void booleanVars( std::set< const carl::Variable >& _booleanVars ) const
+            void booleanVars( std::set< carl::Variable >& _booleanVars ) const
             {
                 if( mType == BOOL )
                     _booleanVars.insert( mBoolean );
