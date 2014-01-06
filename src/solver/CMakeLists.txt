@@ -63,6 +63,9 @@ target_link_libraries( smtratSolver
                         lib_carl # arithmetic library
 						${libraries} # libraries definied in top-level CMakeLists.txt
 )
+if(${USE_GINAC} STREQUAL "ON")
+  target_link_libraries( smtratSolver ginac ${libraries})
+endif()
 set_target_properties( smtratSolver PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
 if(${STATICLIB_SWITCH} STREQUAL "ON")
   set_target_properties( smtratSolver PROPERTIES LINK_SEARCH_END_STATIC TRUE )

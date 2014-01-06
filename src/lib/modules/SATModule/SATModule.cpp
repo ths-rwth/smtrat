@@ -674,7 +674,7 @@ namespace smtrat
         {
             vector<int> clause;
             clause.reserve( _clause.size() );
-            for( unsigned i = 0; i < _clause.size(); ++i )
+            for( int i = 0; i < _clause.size(); ++i )
                 clause.push_back( _clause[i].x );
             if( !mLearntDeductions.insert( clause ).second )
             {

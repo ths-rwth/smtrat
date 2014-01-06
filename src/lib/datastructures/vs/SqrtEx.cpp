@@ -26,7 +26,9 @@
  */
 
 #include "SqrtEx.h"
+#ifdef USE_GINAC
 #include "carl/converter/GinacConverter.h"
+#endif
 
 namespace vs
 {
@@ -92,6 +94,7 @@ namespace vs
             mFactor *= (smtrat::Rational)1/radicand().coprimeFactor();
             mRadicand *= radicand().coprimeFactor();
         }
+        #ifdef USE_GINAC
         smtrat::Polynomial gcdA;
         if( mFactor.isZero() )
         {
@@ -118,6 +121,7 @@ namespace vs
             }
             carl::ginacDivide( mDenominator, gcdA, mDenominator );
         }
+        #endif
         smtrat::Rational numGcd = smtrat::ZERO_RATIONAL;
         smtrat::Rational denomLcm = smtrat::ONE_RATIONAL;
         if( factor().isZero() )
