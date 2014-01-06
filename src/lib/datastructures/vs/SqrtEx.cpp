@@ -91,8 +91,14 @@ namespace vs
         }
         else if( !radicand().isZero() )
         {
-            mFactor *= (smtrat::Rational)1/radicand().coprimeFactor();
-            mRadicand *= radicand().coprimeFactor();
+            smtrat::Rational absOfLCoeff = abs( radicand().coprimeFactor() );
+            smtrat::Rational* sqrtResult = new smtrat::Rational();
+            if( cln::sqrtp( absOfLCoeff, sqrtResult ) )
+            {
+                mFactor *= (smtrat::Rational)1/(*sqrtResult);
+                mRadicand *= absOfLCoeff;
+            }
+            delete sqrtResult;
         }
         #ifdef USE_GINAC
         smtrat::Polynomial gcdA;
