@@ -351,6 +351,7 @@ namespace smtrat
                 cerr << mType << endl;
                 cerr << *this << endl;
                 assert( false );
+                return 2;
             }
         }
     }
