@@ -77,7 +77,7 @@ namespace smtrat
         mDeductions(),
         mFirstSubformulaToPass( mpPassedFormula->end() ),
         mConstraintsToInform(),
-        mFirstConstraintToInform( mConstraintsToInform.end() ),
+        mInformedConstraints(),
         mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() ),
         mSmallerMusesCheckCounter(0)
 #ifdef SMTRAT_DEVOPTION_MeasureTime
@@ -96,16 +96,8 @@ namespace smtrat
     
     Module::~Module()
     {
-//        cout << "Constraints to inform: " << endl;
-//        for( auto iter = mConstraintsToInform.begin(); iter != mConstraintsToInform.end(); ++iter )
-//            cout << "   " << **iter << endl;
-//        cout << "test0" << endl;
-        while( !mConstraintsToInform.empty() )
-        {
-//            cout << "pop " << *mConstraintsToInform.back() << endl;
-            mConstraintsToInform.pop_back();
-        }
-//        cout << "test1" << endl;
+        mConstraintsToInform.clear();
+        mInformedConstraints.clear();
         delete mpPassedFormula;
         mFoundAnswer.clear();
         delete mBackendsFoundAnswer;
@@ -571,12 +563,8 @@ namespace smtrat
                     #ifdef SMTRAT_DEVOPTION_MeasureTime
                     (*module)->startAddTimer();
                     #endif
-                    if( mFirstConstraintToInform != mConstraintsToInform.end() )
-                    {
-                        auto iter = mFirstConstraintToInform;
-                        for( ; iter != mConstraintsToInform.end(); ++iter )
-                            (*module)->inform( *iter );
-                    }
+                    for( auto iter = mConstraintsToInform.begin(); iter != mConstraintsToInform.end(); ++iter )
+                        (*module)->inform( *iter );
                     for( Formula::const_iterator subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end(); ++subformula )
                     {
                         if( !(*module)->assertSubformula( subformula ) )
@@ -587,7 +575,8 @@ namespace smtrat
                     #endif
                 }
                 mFirstSubformulaToPass = mpPassedFormula->end();
-                mFirstConstraintToInform = mConstraintsToInform.end();
+                mInformedConstraints.insert( mConstraintsToInform.begin(), mConstraintsToInform.end() );
+                mConstraintsToInform.clear();
                 if( assertionFailed )
                 {
                     #ifdef SMTRAT_DEVOPTION_MeasureTime
@@ -770,9 +759,9 @@ namespace smtrat
      */
     void Module::addConstraintToInform( const Constraint* const constraint )
     {
-        mConstraintsToInform.push_back(constraint);
-        if(mFirstConstraintToInform == mConstraintsToInform.end())
-            mFirstConstraintToInform = --mConstraintsToInform.end();
+        // We can give the hint that this constraint will probably be inserted in the end of this container,
+        // as it is compared by an id which gets incremented every time a new constraint is constructed.
+        mConstraintsToInform.insert( mConstraintsToInform.end(), constraint );
     }
 
     /**

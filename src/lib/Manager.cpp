@@ -222,7 +222,7 @@ namespace smtrat
                 allBackends.push_back( pBackend );
                 backends.push_back( pBackend );
                 // Inform it about all constraints.
-                for( auto cons = _requiredBy->constraintsToInform().begin(); cons != _requiredBy->constraintsToInform().end(); ++cons )
+                for( auto cons = _requiredBy->informedConstraints().begin(); cons != _requiredBy->informedConstraints().end(); ++cons )
                 {
                     pBackend->inform( *cons );
                 }

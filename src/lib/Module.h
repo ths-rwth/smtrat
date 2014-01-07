@@ -130,9 +130,9 @@ namespace smtrat
             /// Stores the position of the first sub-formula in the passed formula, which has not yet been considered for a consistency check of the backends.
             Formula::iterator mFirstSubformulaToPass;
             /// Stores the constraints which the backends must be informed about.
-            std::list<const Constraint* > mConstraintsToInform;
+            std::set<const Constraint* > mConstraintsToInform;
             /// Stores the position of the first constraint of which no backend has been informed about.
-            std::list<const Constraint* >::iterator mFirstConstraintToInform;
+            std::set<const Constraint* > mInformedConstraints;
             /// Stores the position of the first (by this module) unchecked sub-formula of the received formula.
             Formula::const_iterator mFirstUncheckedReceivedSubformula;
             /// Counter used for the generation of the smt2 files to check for smaller muses.
@@ -227,9 +227,14 @@ namespace smtrat
                 return mUsedBackends;
             }
 
-            const std::list< const Constraint* >& constraintsToInform() const
+            const std::set< const Constraint* >& constraintsToInform() const
             {
                 return mConstraintsToInform;
+            }
+
+            const std::set< const Constraint* >& informedConstraints() const
+            {
+                return mInformedConstraints;
             }
 
             void addDeduction( Formula* _deduction )
