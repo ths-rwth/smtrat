@@ -1140,16 +1140,16 @@ namespace smtrat
                 boundConstraints.push_back( *cons );
                 if( mBoundDeductions.find( boundConstraints ) == mBoundDeductions.end() )
                 {
-                    std::cout << std::endl << (**cons) << std::endl;
-                    std::cout << "find variable" << std::endl;
+//                    std::cout << std::endl << (**cons) << std::endl;
+//                    std::cout << "find variable" << std::endl;
                     // Check whether all variables in the constraint but one are bounded (upper, lower or both)
                     if( notBoundedVars.size() == 1 )
                     {
                         carl::Variable var = *notBoundedVars.begin();
-                        std::cout << "var = " << var << std::endl;
-                        std::cout << "with the bounds: " << std::endl;
-                        for( auto bcons = boundConstraints.begin(); bcons != boundConstraints.end(); ++bcons )
-                            std::cout << (**bcons) << std::endl;
+//                        std::cout << "var = " << var << std::endl;
+//                        std::cout << "with the bounds: " << std::endl;
+//                        for( auto bcons = boundConstraints.begin(); bcons != boundConstraints.end(); ++bcons )
+//                            std::cout << (**bcons) << std::endl;
                         Polynomial varCoeff = (*cons)->coefficient( var, 1 );
                         assert( !varCoeff.isZero() );
                         Interval varCoeffEvaluated = carl::IntervalEvaluation::evaluate( varCoeff, bounds );
@@ -1160,7 +1160,7 @@ namespace smtrat
                         Interval newBoundsB;
                         if( remainderEvaluated.div_ext( newBoundsA, newBoundsB, varCoeffEvaluated ) )
                         {
-                            std::cout << "case a: " << newBoundsA << " and " << newBoundsB << std::endl;
+//                            std::cout << "case a: " << newBoundsA << " and " << newBoundsB << std::endl;
                             carl::BoundType lt = carl::BoundType::INFTY;
                             carl::BoundType rt = carl::BoundType::INFTY;
                             Rational lb;
@@ -1187,7 +1187,7 @@ namespace smtrat
                                     Polynomial boundLhs = Polynomial( var ) - newBoundsA.left();
                                     Constraint::Relation boundRel = newBoundsA.leftType() == carl::BoundType::STRICT ? Constraint::LEQ : Constraint::LESS;
                                     const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
-                                    std::cout << "it follows: " << *newBoundConstraint << std::endl;
+//                                    std::cout << "it follows: " << *newBoundConstraint << std::endl;
                                     result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
                                 }
                                 if( newBoundsB.rightType() != carl::BoundType::INFTY )
@@ -1195,14 +1195,14 @@ namespace smtrat
                                     Polynomial boundLhs = Polynomial( var ) - newBoundsB.right();
                                     Constraint::Relation boundRel = newBoundsA.rightType() == carl::BoundType::STRICT ? Constraint::LEQ : Constraint::LESS;
                                     const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
-                                    std::cout << "it follows: " << *newBoundConstraint << std::endl;
+//                                    std::cout << "it follows: " << *newBoundConstraint << std::endl;
                                     result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
                                 }
                             }
                         }
                         else
                         {
-                            std::cout << "case b: " << newBoundsA << std::endl;
+//                            std::cout << "case b: " << newBoundsA << std::endl;
                             Constraint::Relation rel = (*cons)->relation();
                             if( varCoeffEvaluated.sgn() == carl::Sign::NEGATIVE )
                             {
@@ -1233,7 +1233,7 @@ namespace smtrat
                                     if( newBoundsA.leftType() == carl::BoundType::STRICT || rel == Constraint::GREATER )
                                         boundRel = Constraint::GREATER;
                                     const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
-                                    std::cout << "it follows: " << *newBoundConstraint << std::endl;
+//                                    std::cout << "it follows: " << *newBoundConstraint << std::endl;
                                     result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
                                 }
                             }
@@ -1246,7 +1246,7 @@ namespace smtrat
                                     if( newBoundsA.rightType() == carl::BoundType::STRICT || rel == Constraint::LESS )
                                         boundRel = Constraint::LESS;
                                     const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
-                                    std::cout << "it follows: " << *newBoundConstraint << std::endl;
+//                                    std::cout << "it follows: " << *newBoundConstraint << std::endl;
                                     result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
                                 }
                             }
