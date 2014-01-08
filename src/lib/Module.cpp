@@ -332,7 +332,7 @@ namespace smtrat
      *                             or greater or equal than the given value.
      */
     void Module::branchAt( const carl::Variable& _var, const Rational& _value, bool _leftCaseWeak )
-    {   
+    {
         const Constraint* constraintA = NULL;
         const Constraint* constraintB = NULL;
         if( _var.getType() == carl::VariableType::VT_INT )

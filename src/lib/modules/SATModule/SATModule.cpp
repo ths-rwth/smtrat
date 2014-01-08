@@ -55,6 +55,7 @@
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION
 //#define SATMODULE_WITH_CALL_NUMBER
 //#define WITH_PROGRESS_ESTIMATION
+//#define SAT_MODULE_OUTPUT_PROGRESS
 #define SAT_MODULE_THEORY_PROPAGATION
 #define SAT_MODULE_DETECT_DEDUCTIONS
 
@@ -148,6 +149,7 @@ namespace smtrat
         propagation_budget( -1 ),
         asynch_interrupt( false ),
         mChangedPassedFormula( false ),
+        mSatisfiedClauses( 0 ),
         mConstraintLiteralMap(),
         mBooleanVarMap(),
         mFormulaClauseMap(),
@@ -262,6 +264,9 @@ namespace smtrat
 #endif
 
             #ifdef SATMODULE_WITH_CALL_NUMBER
+            cout << endl << endl;
+            #endif
+            #ifdef SAT_MODULE_OUTPUT_PROGRESS
             cout << endl << endl;
             #endif
             if( result == l_True )
@@ -1264,8 +1269,15 @@ SetWatches:
                                     (*backend)->updateModel();
                                     EvalRationalMap rationalAssignment = modelToERM( (*backend)->model() );
                                     vec<Var> conflVars;
+                                    #ifdef SAT_MODULE_OUTPUT_PROGRESS
+                                    mSatisfiedClauses = 0;
+                                    #endif
                                     bool noconfl = conflictingVars( clauses, rationalAssignment, conflVars, true );
                                     noconfl &= conflictingVars( learnts, rationalAssignment, conflVars, true );
+                                    #ifdef SAT_MODULE_OUTPUT_PROGRESS
+                                    cout << "\r" << "Satisfied clauses: " << ((mSatisfiedClauses/(clauses.size()+learnts.size()))*100) << "%";
+                                    cout.flush();
+                                    #endif
                                     if( noconfl )
                                     {
                                         return l_True;
@@ -1969,6 +1981,9 @@ NextClause:
         }
         vec<Var> conflictingVars;
         vec<Var> conflictingVarsExt;
+        #ifdef SAT_MODULE_OUTPUT_PROGRESS
+        int numSatisfiedClauses = 0;
+        #endif
         for( int i = 0; i < _clauses.size(); ++i )
         {
             vec<Var> conflVarsInClause;
@@ -1979,6 +1994,9 @@ NextClause:
             {
                 if( (assigns[var( c[j] )] ^ sign( c[j] )) == l_True )
                 {
+                    #ifdef SAT_MODULE_OUTPUT_PROGRESS
+                    ++numSatisfiedClauses;
+                    #endif
                     conflVarsInClause.clear();
                     break;
                 }
@@ -2005,6 +2023,9 @@ NextClause:
                 conflVarsInClauseExt.clear();
             }
         }
+        #ifdef SAT_MODULE_OUTPUT_PROGRESS
+        mSatisfiedClauses += numSatisfiedClauses;
+        #endif
         if( conflictingVars.size() > 0 )
         {
             conflictingVars.moveTo( _result );

@@ -456,7 +456,24 @@ namespace std
             return _constraint.getHash();
         }
     };
+    
+    template<>
+    struct hash<std::vector<const smtrat::Constraint* >>
+    {
+    public:
+        size_t operator()( const std::vector<const smtrat::Constraint* >& _arg ) const
+        {
+            size_t result = 0;
+            for( auto cons = _arg.begin(); cons != _arg.end(); ++cons )
+            {
+                result <<= 5;
+                result ^= (*cons)->id();
+            }
+            return result;
+        }
+    };
 } // namespace std
+
 
 #ifdef SMTRAT_STRAT_PARALLEL_MODE
 #define CONSTRAINT_LOCK_GUARD std::lock_guard<std::recursive_mutex> lock( smtrat::Constraint::mMutex );

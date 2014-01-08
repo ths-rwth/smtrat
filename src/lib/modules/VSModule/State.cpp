@@ -1615,8 +1615,6 @@ namespace vs
         }
         else
         {
-            // The substitution's valuation is a number between 1 and 9 and the tree depth is equal to
-            // number of variables plus one. 4.294.967.295
             if( !isRoot() ) 
                 mValuation = 100 * treeDepth() + 10 * substitution().valuate( _preferMinInf );
             else 
@@ -1632,7 +1630,15 @@ namespace vs
                 if( type() == SUBSTITUTION_TO_APPLY ) 
                     mValuation += 2;
                 else if( type() == TEST_CANDIDATE_TO_GENERATE ) 
-                    mValuation += 4;
+                {
+//                    if( _preferMinInf || isRoot() || substitution().type() != Substitution::MINUS_INFINITY )
+                        mValuation += 4;
+//                    else
+//                    {
+//                        mBackendCallValuation = mValuation + 4;
+//                        mValuation = 2;
+//                    }
+                }   
                 else 
                     mValuation += 3;
             }

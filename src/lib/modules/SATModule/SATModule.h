@@ -251,6 +251,7 @@ namespace smtrat
             bool                  asynch_interrupt;
 
             bool                  mChangedPassedFormula;
+            mutable double        mSatisfiedClauses;
             BooleanConstraintMap  mBooleanConstraintMap;
             ConstraintLiteralMap  mConstraintLiteralMap;
             BooleanVarMap         mBooleanVarMap;

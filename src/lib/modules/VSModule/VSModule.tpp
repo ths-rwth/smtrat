@@ -230,6 +230,23 @@ namespace smtrat
             assert( !mInfeasibleSubsets.back().empty() );
             return foundAnswer( False );
         }
+        if( Settings::use_variable_bounds )
+        {
+            vector<pair<vector<const Constraint*>, const Constraint*>> bDeds = mpStateTree->variableBounds().getBoundDeductions();
+            for( auto bDed = bDeds.begin(); bDed != bDeds.end(); ++bDed )
+            {
+                Formula* deduction = new Formula( OR );
+                for( auto cons = bDed->first.begin(); cons != bDed->first.end(); ++cons )
+                {
+                    Formula* notCons = new Formula( NOT );
+                    notCons->addSubformula( *cons );
+                    deduction->addSubformula( notCons );
+                }
+                deduction->addSubformula( bDed->second );
+//                cout << "learn: " << deduction->toString( true, true ) << endl;
+                addDeduction( deduction );
+            }
+        }
         while( !mRanking.empty() )
         {
 //                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -887,16 +904,19 @@ namespace smtrat
         #endif
         if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
         {
-            // Create state ( Conditions, [x -> -infinity]):
-            Substitution sub = Substitution( _eliminationVar, Substitution::MINUS_INFINITY, oConditions );
-            if( _currentState->addChild( sub ) )
+            if( !Settings::use_variable_bounds || _currentState->variableBounds().getDoubleInterval( _eliminationVar ).leftType() == carl::BoundType::INFTY )
             {
-                // Add its valuation to the current ranking.
-                addStateToRanking( (*_currentState).rChildren().back() );
-                numberOfAddedChildren++;
-                #ifdef VS_DEBUG
-                (*(*_currentState).rChildren().back()).print( "   ", cout );
-                #endif
+                // Create state ( Conditions, [x -> -infinity]):
+                Substitution sub = Substitution( _eliminationVar, Substitution::MINUS_INFINITY, oConditions );
+                if( _currentState->addChild( sub ) )
+                {
+                    // Add its valuation to the current ranking.
+                    addStateToRanking( (*_currentState).rChildren().back() );
+                    numberOfAddedChildren++;
+                    #ifdef VS_DEBUG
+                    (*(*_currentState).rChildren().back()).print( "   ", cout );
+                    #endif
+                }
             }
         }
         if( generatedTestCandidateBeingASolution )
@@ -1477,7 +1497,10 @@ namespace smtrat
                             Interval varInterval = currentState->father().variableBounds().getInterval( currentState->substitution().variable() );
                             if( varInterval.rightType() != carl::BoundType::INFTY && varInterval.right() <= weakestCauchyBound )
                             {
-                                weakestCauchyBound = varInterval.right() - 1; 
+                                weakestCauchyBound = varInterval.right() - 1;
+                                mpStateTree->printAlone();
+                                currentState->printAlone();
+                                assert(false);
                             }
                         }
                         // We split at the next greater integer I than the calculated weakest lower Cauchy bound.
