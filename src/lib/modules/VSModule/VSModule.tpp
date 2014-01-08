@@ -1498,9 +1498,6 @@ namespace smtrat
                             if( varInterval.rightType() != carl::BoundType::INFTY && varInterval.right() <= weakestCauchyBound )
                             {
                                 weakestCauchyBound = varInterval.right() - 1;
-                                mpStateTree->printAlone();
-                                currentState->printAlone();
-                                assert(false);
                             }
                         }
                         // We split at the next greater integer I than the calculated weakest lower Cauchy bound.
