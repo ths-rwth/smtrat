@@ -1202,52 +1202,55 @@ namespace smtrat
                         }
                         else
                         {
-//                            std::cout << "case b: " << newBoundsA << std::endl;
-                            Constraint::Relation rel = (*cons)->relation();
-                            if( varCoeffEvaluated.sgn() == carl::Sign::NEGATIVE )
+                            if( !varCoeffEvaluated.contains( ZERO_RATIONAL ) || (*cons)->relation() == Constraint::EQ )
                             {
-                                switch( rel )
+//                                std::cout << "case b: " << newBoundsA << std::endl;
+                                Constraint::Relation rel = (*cons)->relation();
+                                if( varCoeffEvaluated.sgn() == carl::Sign::NEGATIVE )
                                 {
-                                    case Constraint::LEQ:
-                                        rel = Constraint::GEQ;
-                                        break;
-                                    case Constraint::GEQ:
-                                        rel = Constraint::LEQ;
-                                        break;
-                                    case Constraint::LESS:
-                                        rel = Constraint::GREATER;
-                                        break;
-                                    case Constraint::GREATER:
-                                        rel = Constraint::LESS;
-                                        break;
-                                    default:
-                                        break;
+                                    switch( rel )
+                                    {
+                                        case Constraint::LEQ:
+                                            rel = Constraint::GEQ;
+                                            break;
+                                        case Constraint::GEQ:
+                                            rel = Constraint::LEQ;
+                                            break;
+                                        case Constraint::LESS:
+                                            rel = Constraint::GREATER;
+                                            break;
+                                        case Constraint::GREATER:
+                                            rel = Constraint::LESS;
+                                            break;
+                                        default:
+                                            break;
+                                    }
                                 }
-                            }
-                            if( newBoundsA.leftType() != carl::BoundType::INFTY )
-                            {
-                                if( rel == Constraint::EQ || rel == Constraint::GEQ || rel == Constraint::GREATER )
+                                if( newBoundsA.leftType() != carl::BoundType::INFTY )
                                 {
-                                    Polynomial boundLhs = Polynomial( var ) - newBoundsA.left();
-                                    Constraint::Relation boundRel = Constraint::GEQ;
-                                    if( newBoundsA.leftType() == carl::BoundType::STRICT || rel == Constraint::GREATER )
-                                        boundRel = Constraint::GREATER;
-                                    const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
-//                                    std::cout << "it follows: " << *newBoundConstraint << std::endl;
-                                    result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
+                                    if( rel == Constraint::EQ || rel == Constraint::GEQ || rel == Constraint::GREATER )
+                                    {
+                                        Polynomial boundLhs = Polynomial( var ) - newBoundsA.left();
+                                        Constraint::Relation boundRel = Constraint::GEQ;
+                                        if( newBoundsA.leftType() == carl::BoundType::STRICT || rel == Constraint::GREATER )
+                                            boundRel = Constraint::GREATER;
+                                        const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
+//                                        std::cout << "it follows: " << *newBoundConstraint << std::endl;
+                                        result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
+                                    }
                                 }
-                            }
-                            if( newBoundsA.rightType() != carl::BoundType::INFTY )
-                            {
-                                if( rel == Constraint::EQ || rel == Constraint::LEQ || rel == Constraint::LESS )
+                                if( newBoundsA.rightType() != carl::BoundType::INFTY )
                                 {
-                                    Polynomial boundLhs = Polynomial( var ) - newBoundsA.right();
-                                    Constraint::Relation boundRel = Constraint::LEQ;
-                                    if( newBoundsA.rightType() == carl::BoundType::STRICT || rel == Constraint::LESS )
-                                        boundRel = Constraint::LESS;
-                                    const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
-//                                    std::cout << "it follows: " << *newBoundConstraint << std::endl;
-                                    result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
+                                    if( rel == Constraint::EQ || rel == Constraint::LEQ || rel == Constraint::LESS )
+                                    {
+                                        Polynomial boundLhs = Polynomial( var ) - newBoundsA.right();
+                                        Constraint::Relation boundRel = Constraint::LEQ;
+                                        if( newBoundsA.rightType() == carl::BoundType::STRICT || rel == Constraint::LESS )
+                                            boundRel = Constraint::LESS;
+                                        const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
+//                                        std::cout << "it follows: " << *newBoundConstraint << std::endl;
+                                        result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
+                                    }
                                 }
                             }
                         }
