@@ -164,7 +164,7 @@ command:
 	| 	OB DECLARE_FUN SYM OB CB SYM CB         { dv.addVariable( @3, $3, $6 ); }
 	| 	OB DECLARE_FUN SYM OB symlist CB SYM CB { error( @3, "Declaration of function with arguments is not allowed in supported logics!" );
                                                   delete $3; delete $7; dv.free( $5 ); }
-        |   OB DECLARE_SORT SYM NUM CB              { error( @3, "Declaration of types are not allowed in supported logics!" );
+    |   OB DECLARE_SORT SYM NUM CB              { error( @3, "Declaration of types are not allowed in supported logics!" );
                                                   delete $3; delete $4; }
 	| 	OB DEFINE_FUN SYM OB CB SYM CB          { error( @3, "Definition of functions are not allowed in supported logics!" );
                                                   delete $3; delete $6; }

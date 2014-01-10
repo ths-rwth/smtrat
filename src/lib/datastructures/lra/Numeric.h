@@ -83,13 +83,18 @@ namespace smtrat
 
             Numeric numer() const;
             Numeric denom() const;
+            Numeric floor() const;
 
             bool isPositive() const;
             bool isNegative() const;
             bool isZero() const;
+            bool isInteger() const;
         };
 
         Numeric abs( const Numeric& );
+        Numeric mod( const Numeric&, const Numeric& );
+        Numeric lcm( const Numeric&, const Numeric& );
+        Numeric gcd( const Numeric&, const Numeric& );
         Numeric operator+( const Numeric&, const Numeric& );
         Numeric operator-( const Numeric&, const Numeric& );
         Numeric operator*( const Numeric&, const Numeric& );

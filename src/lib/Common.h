@@ -41,7 +41,9 @@ namespace smtrat
 {
     // Enumerations.
     
-    enum Variable_Domain { BOOLEAN_DOMAIN = 0, REAL_DOMAIN = 1, INTEGER_DOMAIN = 2 };
+    enum class Variable_Domain: unsigned { BOOLEAN = 0, REAL = 1, INTEGER = 2 };
+    
+    enum class Logic : unsigned { UNDEFINED, QF_NRA, QF_LRA, QF_NIA, QF_LIA };
     
     ///An enum with the possible answer a Module can give
     enum Answer { True, False, Unknown };
@@ -160,18 +162,20 @@ namespace smtrat
     
     static const Polynomial MINUS_ONE_POLYNOMIAL = Polynomial( MINUS_ONE_RATIONAL );
     
-    static const unsigned MAX_DEGREE_FOR_FACTORIZATION = 40;
+    static const unsigned MAX_DEGREE_FOR_FACTORIZATION = 6;
     
     static const unsigned MIN_DEGREE_FOR_FACTORIZATION = 2;
     
     static const unsigned MAX_DIMENSION_FOR_FACTORIZATION = 6;
     
-    static const unsigned MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION = 300;
+    static const unsigned MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION = 7;
     
     // Macros.
     
     #define ANSWER_TO_STRING(_ans) (_ans == True ? "True" : (_ans == False ? "False" : (_ans == Unknown ? "Unknown" : "Undefined")))
     
 }    // namespace smtrat
+
+
 
 

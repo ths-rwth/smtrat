@@ -31,6 +31,9 @@
 #include "Constraint.h"
 #include "ConstraintPool.h"
 #include "Formula.h"
+#ifdef USE_GINAC
+#include "carl/converter/GinacConverter.h"
+#endif
 
 using namespace std;
 using namespace carl;
@@ -78,19 +81,19 @@ namespace smtrat
     Constraint::~Constraint()
     {}
     
-    unsigned Constraint::satisfiedBy( EvalRationalMap& _assignment ) const
+    unsigned Constraint::satisfiedBy( const EvalRationalMap& _assignment ) const
     {
 //        std::cout << "Is  " << this->toString( 0, true, true ) << std::endl;
-//        this->printProperties( std::cout, true );
-//        std::cout << std::endl;
 //        std::cout << "satisfied by  " << std::endl;
 //        for( auto iter = _assignment.begin(); iter != _assignment.end(); ++iter )
 //            std::cout << iter->first << " in " << iter->second << std::endl;
-
+        unsigned result = 2;
         Polynomial tmp = mLhs.substitute( _assignment );
         if( tmp.isConstant() )
-            return evaluate( (tmp.isZero() ? ZERO_RATIONAL : tmp.trailingTerm()->coeff()), relation() ) ? 1 : 0;
-        else return 2;
+            result = evaluate( (tmp.isZero() ? ZERO_RATIONAL : tmp.trailingTerm()->coeff()), relation() ) ? 1 : 0;
+//        std::cout << "result is " << result << std::endl;
+//        std::cout << std::endl;
+        return result;
     }
 
     unsigned Constraint::isConsistent() const
@@ -114,24 +117,24 @@ namespace smtrat
                 case LESS:
                 {
                     if( mLhsDefinitess == carl::Definiteness::NEGATIVE ) return 1;
-                    if( mLhsDefinitess == carl::Definiteness::POSITIVE_SEMI ) return 0;
+                    if( mLhsDefinitess >= carl::Definiteness::POSITIVE_SEMI ) return 0;
                     break;
                 }
                 case GREATER:
                 {
                     if( mLhsDefinitess == carl::Definiteness::POSITIVE ) return 1;
-                    if( mLhsDefinitess == carl::Definiteness::NEGATIVE_SEMI ) return 0;
+                    if( mLhsDefinitess <= carl::Definiteness::NEGATIVE_SEMI ) return 0;
                     break;
                 }
                 case LEQ:
                 {
-                    if( mLhsDefinitess == carl::Definiteness::NEGATIVE_SEMI ) return 1;
+                    if( mLhsDefinitess <= carl::Definiteness::NEGATIVE_SEMI ) return 1;
                     if( mLhsDefinitess == carl::Definiteness::POSITIVE ) return 0;
                     break;
                 }
                 case GEQ:
                 {
-                    if( mLhsDefinitess == carl::Definiteness::POSITIVE_SEMI ) return 1;
+                    if( mLhsDefinitess >= carl::Definiteness::POSITIVE_SEMI ) return 1;
                     if( mLhsDefinitess == carl::Definiteness::NEGATIVE ) return 0;
                     break;
                 }
@@ -310,6 +313,59 @@ namespace smtrat
                     assert( false );
             }
         }
+        else if( hasIntegerValuedVariable() && !hasRealValuedVariable() && !lhs().isConstant() && lhs().constantPart() != ZERO_RATIONAL )
+        {
+            // Find the gcd of the coefficients of the non-constant terms.
+            auto term = lhs().rbegin();
+            assert( !(*term)->isConstant() && carl::isInteger( (*term)->coeff() ) );
+            Rational g = carl::abs( (*term)->coeff() );
+            ++term;
+            for( ; term != lhs().rend(); ++term )
+            {
+                if( !(*term)->isConstant() )
+                {
+                    assert( carl::isInteger( (*term)->coeff() ) );
+                    g = carl::gcd( carl::getNum( g ), carl::getNum( carl::abs( (*term)->coeff() ) ) );
+                }
+            }
+            assert( g > ZERO_RATIONAL );
+            if( carl::mod( carl::getNum( lhs().constantPart() ), carl::getNum( g ) ) != 0 )
+            {
+                switch( relation() )
+                {
+                    case EQ:
+                        return new Constraint( ZERO_POLYNOMIAL, LESS );
+                    case NEQ:
+                        return new Constraint( ZERO_POLYNOMIAL, EQ );
+                    case LEQ:
+                    {
+                        Polynomial newLhs = ((lhs() - lhs().constantPart()) * (1 / g));
+                        newLhs += carl::floor( (lhs().constantPart() / g) ) + ONE_RATIONAL;
+                        return new Constraint( newLhs, LEQ );
+                    }
+                    case GEQ:
+                    {
+                        Polynomial newLhs = ((lhs() - lhs().constantPart()) * (1 / g));
+                        newLhs += carl::floor( (lhs().constantPart() / g) );
+                        return new Constraint( newLhs, GEQ );
+                    }
+                    case LESS:
+                    {
+                        Polynomial newLhs = ((lhs() - lhs().constantPart()) * (1 / g));
+                        newLhs += carl::floor( (lhs().constantPart() / g) ) + ONE_RATIONAL;
+                        return new Constraint( newLhs, LEQ );
+                    }
+                    case GREATER:
+                    {
+                        Polynomial newLhs = ((lhs() - lhs().constantPart()) * (1 / g));
+                        newLhs += carl::floor( (lhs().constantPart() / g) );
+                        return new Constraint( newLhs, GEQ );
+                    }
+                    default:
+                        assert( false );
+                }
+            }
+        }
         return nullptr;
     }
 
@@ -324,11 +380,17 @@ namespace smtrat
     void Constraint::initFactorization() const 
     {
         #ifdef SMTRAT_STRAT_Factorization
-        if( mNumMonomials <= MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION && mVariables.size() <= MAX_DIMENSION_FOR_FACTORIZATION
-            && mMaxMonomeDegree <= MAX_DEGREE_FOR_FACTORIZATION && mMaxMonomeDegree >= MIN_DEGREE_FOR_FACTORIZATION )
+        #ifdef USE_GINAC
+        if( lhs().nrTerms() <= MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION && mVariables.size() <= MAX_DIMENSION_FOR_FACTORIZATION
+            && maxDegree() <= MAX_DEGREE_FOR_FACTORIZATION && maxDegree() >= MIN_DEGREE_FOR_FACTORIZATION )
         {
-            mFactorization = factor( mLhs );
+//            cout << "factorize:   " << mLhs << endl;
+            mFactorization = ginacFactorization( mLhs );
+//            cout << "factorize:   finished" << endl;
         }
+        #else
+        mFactorization.insert( pair<Polynomial, unsigned>( mLhs, 1 ) );
+        #endif
         #else
         mFactorization.insert( pair<Polynomial, unsigned>( mLhs, 1 ) );
         #endif
@@ -446,7 +508,7 @@ namespace smtrat
                 break;
         }
         _out << "   The number of monomials: " << mLhs.nrTerms() << endl;
-        _out << "   The maximal degree:      " << mLhs.highestDegree() << endl;
+        _out << "   The maximal degree:      " << mLhs.totalDegree() << endl;
         _out << "   The constant part:       " << constantPart() << endl;
         _out << "   Variables:" << endl;
         for( auto vi = mVarInfoMap.begin(); vi != mVarInfoMap.end(); ++vi )

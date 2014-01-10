@@ -47,6 +47,9 @@
 //#define LRA_GOMORY_CUTS
 #ifndef LRA_GOMORY_CUTS
 //#define LRA_CUTS_FROM_PROOFS
+#ifdef LRA_CUTS_FROM_PROOFS
+//#define LRA_DEBUG_CUTS_FROM_PROOFS
+#endif
 #endif
 
 namespace smtrat
@@ -189,7 +192,6 @@ namespace smtrat
                     const Bound<T>* nextWeakerBound;
                     std::vector< const Bound<T>*>* premise;
                 };
-            private:
                 struct TableauHead
                 {
                     EntryID   mStartEntry;
@@ -197,6 +199,7 @@ namespace smtrat
                     Variable<T>* mName;
                     unsigned  mActivity;
                 };
+            private:
                 unsigned                   mHeight;
                 unsigned                   mWidth;
                 unsigned                   mPivotingSteps;
@@ -430,7 +433,7 @@ namespace smtrat
                 T Scalar_Product( Tableau<T>&, Tableau<T>&, unsigned, unsigned, T, std::vector<unsigned>&, std::vector<unsigned>& );
                 void calculate_hermite_normalform( std::vector<unsigned>& );
                 void invert_HNF_Matrix( std::vector<unsigned> );
-                bool create_cut_from_proof( Tableau<T>&, Tableau<T>&, unsigned&, T&, std::vector<T>&, std::vector<bool>&, ex&, std::vector<unsigned>&, std::vector<unsigned>&, Bound<T>*&);
+                bool create_cut_from_proof( Tableau<T>&, Tableau<T>&, unsigned&, T&, std::vector<T>&, std::vector<bool>&, smtrat::Polynomial&, std::vector<unsigned>&, std::vector<unsigned>&, Bound<T>*&);
                 #endif
                 #ifdef LRA_GOMORY_CUTS
                 const smtrat::Constraint* gomoryCut( const T&, unsigned, std::vector<const smtrat::Constraint*>& );
@@ -2129,7 +2132,7 @@ namespace smtrat
                 {
                     _variables.push_back( (*row_iterator).columnNumber() );
                     _coefficients.push_back( (*row_iterator).content() );
-                    _lcmOfCoeffDenoms = T( carl::lcm( _lcmOfCoeffDenoms.content(), (*row_iterator).content().content().denom() ) );
+                    _lcmOfCoeffDenoms = lcm( _lcmOfCoeffDenoms, (*row_iterator).content().denom() );
                     if( !row_iterator.rowEnd() )
                     {
                         row_iterator.right();
@@ -2277,9 +2280,11 @@ namespace smtrat
          * @return 
          */        
         template<class T>
-        void Tableau<T>::addColumns(unsigned columnA_index,unsigned columnB_index,T multiple)
-        {            
-            cout << __func__ << "( " << columnA_index << ", " << columnB_index << ", " << multiple << " )" << endl;
+        void Tableau<T>::addColumns( unsigned columnA_index, unsigned columnB_index, T multiple)
+        {
+            #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+            std::cout << __func__ << "( " << columnA_index << ", " << columnB_index << ", " << multiple << " )" << std::endl;
+            #endif
             Iterator columnA_iterator = Iterator(mColumns.at(columnA_index).mStartEntry, mpEntries);
             Iterator columnB_iterator = Iterator(mColumns.at(columnB_index).mStartEntry, mpEntries);
                 
@@ -2515,22 +2520,22 @@ namespace smtrat
             {
                 Iterator columnB_iterator = Iterator(B.mColumns.at(columnB).mStartEntry,B.mpEntries);
                 unsigned actual_column = revert_diagonals((*rowA_iterator).columnNumber(),diagonals); 
-                    while(true)
+                while(true)
+                {
+                    if(actual_column == position_DC((*columnB_iterator).rowNumber(),dc_positions))
                     {
-                        if(actual_column == position_DC((*columnB_iterator).rowNumber(),dc_positions))
-                        {
-                            result += (*rowA_iterator).content()*(*columnB_iterator).content()*lcm;
-                            break;
-                        }
-                        if(columnB_iterator.columnBegin())
-                        {
-                            break;
-                        }
-                        else
-                        {
-                            columnB_iterator.up();
-                        }
-                    }    
+                        result += (*rowA_iterator).content()*(*columnB_iterator).content()*lcm;
+                        break;
+                    }
+                    if(columnB_iterator.columnBegin())
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        columnB_iterator.up();
+                    }
+                }    
                 if(rowA_iterator.rowEnd())
                 {
                     break;
@@ -2540,11 +2545,12 @@ namespace smtrat
                     rowA_iterator.right();
                 }
             }
-        cout << result << endl;    
-        return result;    
+            #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+            std::cout << result << std::endl;
+            #endif
+            return result;    
         }
         
-        #define LRA_DEBUG_HNF 
         /**
          * Calculate the Hermite normal form of the calling Tableau. 
          * 
@@ -2676,19 +2682,21 @@ namespace smtrat
                             row_iterator.right();  
                         }    
                     }  
-                    T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() / added_content.toCLN() ) ) );
-                    cout << "floor_value = " << floor_value << endl;
-                    cout << "added_content = " << added_content << endl;
-                    cout << "elim_content = " << elim_content << endl;
-                    cout << "T((-1)*floor_value.content()*added_content.content()) = " << T((-1)*floor_value.content()*added_content.content()) << endl;
+                    T floor_value = T( elim_content / added_content ).floor();
+                    #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+                    std::cout << "floor_value = " << floor_value << std::endl;
+                    std::cout << "added_content = " << added_content << std::endl;
+                    std::cout << "elim_content = " << elim_content << std::endl;
+                    std::cout << "T((-1)*floor_value.content()*added_content.content()) = " << T((-1)*floor_value.content()*added_content.content()) << std::endl;
+                    #endif
                     addColumns(elim_pos,added_pos,T((-1)*floor_value.content()));
-                    #ifdef LRA_DEBUG_HNF
-                    cout << "Add " << (added_pos+1) << ". column to " << (elim_pos+1) << ". column:" << endl;
+                    #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+                    std::cout << "Add " << (added_pos+1) << ". column to " << (elim_pos+1) << ". column:" << std::endl;
                     print();
                     #endif
                     number_of_entries = mRows.at(i).mSize; 
                     first_loop = false;
-                    if(mod(( cln::the<cln::cl_RA>( elim_content.toCLN() )  ) , cln::the<cln::cl_RA>( added_content.toCLN() ) ) == 0)
+                    if(mod( elim_content, added_content ) == 0)
                     {
                         /*
                          * If the remain of the division is zero,
@@ -2740,15 +2748,19 @@ namespace smtrat
                         * The current entry has to be normalized because it´s
                         * in a diagonal column and greater or equal than the
                         * diagonal entry in the current row.
-                        */   
-                        cout << "Normalize" << endl;
-                        cout << (*mpEntries)[row_iterator.entryID()].columnNumber() << endl;
-                        cout << diagonals.at(i) << endl;
-                        T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( (*row_iterator).content().toCLN() / added_content.toCLN() ) ) );
+                        */
+                        #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+                        std::cout << "Normalize" << std::endl;
+                        std::cout << (*mpEntries)[row_iterator.entryID()].columnNumber() << std::endl;
+                        std::cout << diagonals.at(i) << std::endl;
+                        #endif
+                        T floor_value = T( (*row_iterator).content() / added_content ).floor();
                         addColumns((*mpEntries)[row_iterator.entryID()].columnNumber(),
                                   diagonals.at(i),
-                                  (-1)*(floor_value)); 
+                                  (-1)*(floor_value));
+                        #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                         print();
+                        #endif
                     }
                     if(!row_iterator.rowEnd())
                     {
@@ -2841,7 +2853,7 @@ namespace smtrat
          *         false,   otherwise   
          */        
         template<class T>
-        bool Tableau<T>::create_cut_from_proof(Tableau<T>& Inverted_Tableau, Tableau<T>& DC_Tableau, unsigned& row_index, T& lcm,std::vector<T>& coefficients,std::vector<bool>& non_basics_proof,ex& cut,std::vector<unsigned>& diagonals,std::vector<unsigned>& dc_positions, Bound<T>*& upper_lower)
+        bool Tableau<T>::create_cut_from_proof(Tableau<T>& Inverted_Tableau, Tableau<T>& DC_Tableau, unsigned& row_index, T& _lcm,std::vector<T>& coefficients,std::vector<bool>& non_basics_proof, smtrat::Polynomial& cut,std::vector<unsigned>& diagonals,std::vector<unsigned>& dc_positions, Bound<T>*& upper_lower)
         {
             Value<T> result = T(0);
             Iterator row_iterator = Iterator(mRows.at(row_index).mStartEntry,mpEntries); 
@@ -2854,7 +2866,7 @@ namespace smtrat
                 i = revert_diagonals((*row_iterator).columnNumber(),diagonals);
                 const Variable<T>& basic_var = *(DC_Tableau.mRows)[dc_positions.at(i)].mName;
                 const Value<T>& basic_var_assignment = basic_var.assignment();
-                result += basic_var_assignment*(*row_iterator).content()*lcm;                    
+                result += basic_var_assignment * (*row_iterator).content() * _lcm;                    
                 if(row_iterator.rowEnd())
                 {
                     break;
@@ -2864,14 +2876,14 @@ namespace smtrat
                     row_iterator.right();
                 }                
             }
-            if(!((result.mainPart()).content().is_integer()))
+            if( !result.mainPart().isInteger() )
             {
                // Calculate the lcm of all entries in the row with index row_index in the DC_Tableau
                Iterator row_iterator = Iterator(DC_Tableau.mRows.at(dc_positions.at(row_index)).mStartEntry,DC_Tableau.mpEntries);
                T lcm_row = T(1);
                while(true)
                {
-                   lcm  = T(carl::lcm( lcm.content(),(*row_iterator).content().content()));
+                   _lcm  = lcm( _lcm, (*row_iterator).content() );
                    if(!row_iterator.rowEnd())
                    {
                        row_iterator.right();
@@ -2886,12 +2898,12 @@ namespace smtrat
                unsigned i=0;
                while(i < Inverted_Tableau.mRows.size())
                {
-                   product = Scalar_Product(Inverted_Tableau,DC_Tableau,row_index,i,lcm,diagonals,dc_positions);
+                   product = Scalar_Product(Inverted_Tableau,DC_Tableau,row_index,i,_lcm,diagonals,dc_positions);
                    const Variable<T>& non_basic_var = *mColumns[diagonals.at(i)].mName;
                    if(product != 0)
                    {
-                       cut += (non_basic_var.expression())*(((product.content())*((result.mainPart()).content()).denom())/lcm_row.content());
-                       coefficients.push_back(product.content()/lcm_row.content());
+                       cut += non_basic_var.expression() * (product.content() * (result.mainPart().denom().content() / lcm_row.content()));
+                       coefficients.push_back( product/lcm_row );
                        non_basics_proof.push_back(true);
                    }
                    else
@@ -2907,7 +2919,7 @@ namespace smtrat
                 return false;                
             }
         }
-                #endif
+        #endif
         
         #ifdef LRA_GOMORY_CUTS
         enum GOMORY_SET
@@ -3103,7 +3115,7 @@ namespace smtrat
         void Tableau<T>::printVariables( bool _allBounds, std::ostream& _out, const std::string _init ) const
         {
             _out << _init << "Basic variables:" << std::endl;
-            for( class std::vector<TableauHead>::const_iterator row = mRows.begin(); row != mRows.end(); ++row )
+            for( typename std::vector<TableauHead>::const_iterator row = mRows.begin(); row != mRows.end(); ++row )
             {
                 _out << _init << "  ";
                 row->mName->print( _out );
@@ -3111,7 +3123,7 @@ namespace smtrat
                 if( _allBounds ) row->mName->printAllBounds( _out, _init + "                    " );
             }
             _out << _init << "Nonbasic variables:" << std::endl;
-            for( class std::vector<TableauHead>::const_iterator column = mColumns.begin(); column != mColumns.end(); ++column )
+            for( typename std::vector<TableauHead>::const_iterator column = mColumns.begin(); column != mColumns.end(); ++column )
             {
                 _out << _init << "  ";
                 column->mName->print( _out );

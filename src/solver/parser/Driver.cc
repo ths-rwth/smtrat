@@ -56,7 +56,7 @@ namespace smtrat
         mNumOfChecks( 0 ),
         mInfos(),
         mOptions(),
-        mLogic( UNDEFINED ),
+        mLogic( Logic::UNDEFINED ),
         mInstructionQueue(),
         mRegularOutputChannel( std::cout.rdbuf() ),
         mDiagnosticOutputChannel( std::cerr.rdbuf() ),
@@ -183,24 +183,29 @@ namespace smtrat
      * @param l
      * @param _varName
      */
-    const string* Driver::addBooleanVariable( const class location& _loc, const string& _varName, bool _isBindingVariable )
+    carl::Variable Driver::addBooleanVariable( const class location& _loc, const string& _varName, bool _isBindingVariable )
     {
         if( _varName != "" )
             mLexer->mBooleanVariables.insert( _varName );
-        const string* booleanName;
         if( _isBindingVariable )
-            booleanName = Formula::newAuxiliaryBooleanVariable();
+        {
+            carl::Variable bvar = Formula::newAuxiliaryBooleanVariable();
+            if( !mBooleanVariables.insert( pair< string, carl::Variable >( (_varName == "" ? Formula::constraintPool().getVariableName( bvar, true ) : _varName), bvar ) ).second )
+                error( _loc, "Multiple definition of Boolean variable " + _varName );
+            return bvar;
+        }
         else
         {
             assert( _varName != "" );
             string tmpName = _varName;
             if( tmpName.size() > 3 && tmpName[0] == 'h' && tmpName[1] == '_' && tmpName[2] != '_' )
                 tmpName.insert( 1, "_" );
-            booleanName = Formula::newBooleanVariable( tmpName );
+            carl::Variable bvar = Formula::newBooleanVariable( tmpName );
+            if( !mBooleanVariables.insert( pair< string, carl::Variable >( (_varName == "" ? Formula::constraintPool().getVariableName( bvar, true ) : _varName), bvar ) ).second )
+                error( _loc, "Multiple definition of Boolean variable " + _varName );
+            return bvar;
         }
-        if( !mBooleanVariables.insert( pair< string, const string* >( (_varName == "" ? *booleanName : _varName), booleanName ) ).second )
-            error( _loc, "Multiple definition of Boolean variable " + _varName );
-        return booleanName;
+        
     }
 
     /**
@@ -253,14 +258,14 @@ namespace smtrat
     {
         assert( _formula->getType() == smtrat::AND && _formula->size() == 2 );
         mVariableStack.top().push_back( pair< string, unsigned >( *_varName, 0 ) );
-        const string* varName = addBooleanVariable( _loc, *_varName, true );
+        carl::Variable bvar = addBooleanVariable( _loc, *_varName, true );
         Formula* notBindingBool = new Formula( NOT );
-        notBindingBool->addSubformula( new Formula( varName ) );
+        notBindingBool->addSubformula( new Formula( bvar ) );
         Formula* posCase = _formula->pruneFront();
         Formula* negCase = _formula->pruneFront();
         delete _formula;
         delete _varName;
-        return mkIff( posCase, new Formula( varName ), negCase, notBindingBool, false );
+        return mkIff( posCase, new Formula( bvar ), negCase, notBindingBool, false );
     }
     
     /**
@@ -298,7 +303,8 @@ namespace smtrat
     carl::Variable Driver::addTheoryVariable( const class location& _loc, const string& _theory, const string& _varName, bool _isBindingVariable )
     {
         mLexer->mTheoryVariables.insert( _varName );
-        carl::Variable var( _isBindingVariable ? smtrat::Formula::mpConstraintPool->newAuxiliaryRealVariable() : Formula::newArithmeticVariable( _varName, getDomain( _theory ) ) );
+        carl::VariableType dom = getDomain( _theory );
+        carl::Variable var( _isBindingVariable ? (dom == carl::VariableType::VT_REAL ? smtrat::Formula::mpConstraintPool->newAuxiliaryRealVariable() : smtrat::Formula::mpConstraintPool->newAuxiliaryIntVariable()) : Formula::newArithmeticVariable( _varName, dom ) );
         pair< TheoryVarMap::iterator, bool > res = mTheoryVariables.insert( pair< string, carl::Variable >( _varName.empty() ? smtrat::Formula::mpConstraintPool->getVariableName( var, true ) : _varName, var ) );
         if( !res.second )  error( _loc, "Multiple definition of real variable " + _varName );
         return res.first->second;
@@ -309,7 +315,7 @@ namespace smtrat
      * @param l
      * @param _varName
      */
-    const string* Driver::getBooleanVariable( const class location& _loc, const string& _varName )
+    carl::Variable Driver::getBooleanVariable( const class location& _loc, const string& _varName )
     {
         auto bvar = mBooleanVariables.find( _varName );
         if( bvar != mBooleanVariables.end() )
@@ -317,7 +323,7 @@ namespace smtrat
         else
         {
             error( _loc, "Boolean variable " + _varName + " has not been defined!" );
-            return NULL;
+            return carl::Variable::NO_VARIABLE;
         }
     }
 
@@ -352,13 +358,7 @@ namespace smtrat
         auto var = mTheoryVariables.find( _varName );
         if( var != mTheoryVariables.end() )
         {
-            auto tib = mTheoryIteBindings.find( var->second );
-            if( tib != mTheoryIteBindings.end() )
-            {
-                const string* toDelete = tib->second;
-                mTheoryIteBindings.erase( tib );
-                delete toDelete;
-            }
+            mTheoryIteBindings.erase( var->second );
         }
     }
 
@@ -549,7 +549,7 @@ namespace smtrat
         if( mTwoFormulaMode )
         {
             Formula* result = new Formula( smtrat::AND );
-            const string* varName = getBooleanVariable( _loc, *_varName );
+            carl::Variable varName = getBooleanVariable( _loc, *_varName );
             if( mPolarity )
             {
                 result->addSubformula( new Formula( varName ) );
@@ -662,16 +662,16 @@ namespace smtrat
                 resultB->addSubformula( tmpFormula->pruneFront() );
                 delete tmpFormula;
             }
-            if( mPolarity )
-            {
+//            if( mPolarity )
+//            {
                 result->addSubformula( resultA );
                 result->addSubformula( resultB );
-            }
-            else
-            {
-                result->addSubformula( resultB );
-                result->addSubformula( resultA );
-            }
+//            }
+//            else
+//            {
+//                result->addSubformula( resultB );
+//                result->addSubformula( resultA );
+//            }
             delete _subformulas;
             return result;
         }
@@ -769,7 +769,7 @@ namespace smtrat
         assert( _condition->getType() == smtrat::AND && _condition->size() == 2 );
         assert( _condition->getType() == smtrat::AND && _condition->size() == 2 );
         Formula* result = new Formula( AND );
-        const string* auxBool = Formula::newAuxiliaryBooleanVariable();
+        carl::Variable auxBool = Formula::newAuxiliaryBooleanVariable();
         // Add: (iff auxBool _condition)
         Formula* notAuxBool = new Formula( NOT );
         notAuxBool->addSubformula( new Formula( auxBool ) );
@@ -834,12 +834,14 @@ namespace smtrat
     carl::Variable Driver::mkIteInExpr( const class location& _loc, Formula* _condition, Polynomial* _then, Polynomial* _else )
     {
         setTwoFormulaMode( false );
-        carl::Variable auxRealVar( addTheoryVariable( _loc, "Real", "", true ) );
-        const string* conditionBool = addBooleanVariable( _loc, "", true );
-        Formula* constraintA = mkConstraint( new Polynomial( auxRealVar ), _then, Constraint::EQ );
-        Formula* constraintB = mkConstraint( new Polynomial( auxRealVar ), _else, Constraint::EQ );
+        carl::Variable auxVar( addTheoryVariable( _loc, (mLogic == Logic::QF_NRA || mLogic == Logic::QF_LRA) ? "Real" : "Int", "", true ) );
+        carl::Variable conditionBool = addBooleanVariable( _loc, "", true );
+        setPolarity( true );
+        Formula* constraintA = mkConstraint( new Polynomial( auxVar ), _then, Constraint::EQ );
+        Formula* constraintB = mkConstraint( new Polynomial( auxVar ), _else, Constraint::EQ );
+        restorePolarity();
         Formula* notTmp = new Formula( NOT );
-        const string* dependencyBool = addBooleanVariable( _loc, "", true ); 
+        carl::Variable dependencyBool = addBooleanVariable( _loc, "", true ); 
         notTmp->addSubformula( new Formula( dependencyBool ) );
         Formula* innerConstraintBinding = new Formula( AND );
         // Add to inner constraint bindings:  (or (not conditionBool) (= auxRealVar $4))
@@ -865,10 +867,11 @@ namespace smtrat
         Formula* result = new Formula( OR );
         result->addSubformula( notTmp );
         result->addSubformula( innerConstraintBinding );
-        mInnerConstraintBindings.insert( pair< carl::Variable, Formula* >( auxRealVar, result ) );
-        mTheoryIteBindings[auxRealVar] = dependencyBool;
+        mInnerConstraintBindings.insert( pair< carl::Variable, Formula* >( auxVar, result ) );
+        assert( mTheoryIteBindings.find( auxVar ) == mTheoryIteBindings.end() );
+        mTheoryIteBindings.insert( pair< carl::Variable, carl::Variable >( auxVar, dependencyBool ) );
         restoreTwoFormulaMode();
-        return auxRealVar;
+        return auxVar;
     }
 
     /**
@@ -920,7 +923,7 @@ namespace smtrat
                         mRegularOutputChannel << *mInstructionQueue.front().second.formula;
                         mRegularOutputChannel << ")" << endl;
                     }
-                    if( mLogic == UNDEFINED )
+                    if( mLogic == Logic::UNDEFINED )
                         error( "Before using assert the logic must be defined!", true );
                     else
                     {
@@ -934,7 +937,7 @@ namespace smtrat
                 {
                     if( mOptions.print_instruction )
                         mRegularOutputChannel << "> (push " << mInstructionQueue.front().second.num << ")" << endl;
-                    if( mLogic == UNDEFINED )
+                    if( mLogic == Logic::UNDEFINED )
                         error( "Before using push the logic must be defined!", true );
                     else
                     {
@@ -953,7 +956,7 @@ namespace smtrat
                 {
                     if( mOptions.print_instruction )
                         mRegularOutputChannel << "> (pop " << mInstructionQueue.front().second.num << ")" << endl;
-                    if( mLogic == UNDEFINED )
+                    if( mLogic == Logic::UNDEFINED )
                         error( "Before using pop the logic must be defined!", true );
                     else
                     {
@@ -972,7 +975,7 @@ namespace smtrat
                 {
                     if( mOptions.print_instruction )
                         mRegularOutputChannel << "> (check-sat)" << endl;
-                    if( mLogic == UNDEFINED )
+                    if( mLogic == Logic::UNDEFINED )
                         error( "Before using check-sat the logic must be defined!", true );
                     else
                     {
@@ -1066,17 +1069,21 @@ namespace smtrat
                 {
                     if( mOptions.print_instruction )
                         mRegularOutputChannel << "> (set-logic " << *mInstructionQueue.front().second.key << ")" << endl;
-                    if( mLogic != UNDEFINED )
+                    if( mLogic != Logic::UNDEFINED )
                         error( "The logic has already been set!", true );
-                    else if( *mInstructionQueue.front().second.key == "QF_NRA" ) mLogic = QF_NRA;
-                    else if( *mInstructionQueue.front().second.key == "QF_LRA" ) mLogic = QF_LRA;
-                    else if( *mInstructionQueue.front().second.key == "QF_NIA" )
+                    else
                     {
-                        mLogic = QF_NIA;
-                        error( *mInstructionQueue.front().second.key + " is not supported!", true );
+                        mSentSolverInstruction = true;
+                        if( *mInstructionQueue.front().second.key == "QF_NRA" ) mLogic = Logic::QF_NRA;
+                        else if( *mInstructionQueue.front().second.key == "QF_LRA" ) mLogic = Logic::QF_LRA;
+                        else if( *mInstructionQueue.front().second.key == "QF_NIA" ) mLogic = Logic::QF_NIA;
+                        else if( *mInstructionQueue.front().second.key == "QF_LIA" ) mLogic = Logic::QF_LIA;
+                        else
+                        {
+                            mSentSolverInstruction = false;
+                            error( *mInstructionQueue.front().second.key + " is not supported!", true );
+                        }
                     }
-                    else if( *mInstructionQueue.front().second.key == "QF_LIA" ) mLogic = QF_LIA;
-                    else error( *mInstructionQueue.front().second.key + " is not supported!", true );
                     break;
                 }
                 default:
@@ -1157,7 +1164,7 @@ namespace smtrat
     {
         if( _key.compare( ":produce-models" ) == 0 )
         {
-            if( mLogic != UNDEFINED )
+            if( mLogic != Logic::UNDEFINED )
                 error( "The " + _key + " flag must be set before the logic is defined!", true );
             else if( _value.compare( "true" ) == 0 )
                 mOptions.produce_models = true;
@@ -1168,7 +1175,7 @@ namespace smtrat
         }
         else if( _key.compare( ":interactive-mode" ) == 0 )
         {
-            if( mLogic != UNDEFINED )
+            if( mLogic != Logic::UNDEFINED )
                 error( "The " + _key + " flag must be set before the logic is defined!", true );
             else if( _value.compare( "true" ) == 0 ) 
                 mOptions.interactive_mode = true;
@@ -1179,7 +1186,7 @@ namespace smtrat
         }
         else if( _key.compare( ":produce-unsat-cores" ) == 0 )
         {
-            if( mLogic != UNDEFINED )
+            if( mLogic != Logic::UNDEFINED )
                 error( "The " + _key + " flag must be set before the logic is defined!", true );
             else if( _value.compare( "true" ) == 0 ) 
                 mOptions.produce_unsat_cores = true;
@@ -1190,7 +1197,7 @@ namespace smtrat
         }
         else if( _key.compare( ":produce-assignments" ) == 0 )
         {
-            if( mLogic != UNDEFINED )
+            if( mLogic != Logic::UNDEFINED )
                 error( "The " + _key + " flag must be set before the logic is defined!", true );
             else if( _value.compare( "true" ) == 0 ) 
                 mOptions.produce_assignments = true;

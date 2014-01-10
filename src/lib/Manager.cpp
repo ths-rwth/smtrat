@@ -37,8 +37,6 @@
 #include <typeinfo>
 #include <cln/cln.h>
 
-//#define MODEL_IN_SMTLIB
-
 using namespace std;
 
 namespace smtrat
@@ -53,7 +51,8 @@ namespace smtrat
         mBackendsOfModules(),
         mpPrimaryBackend( mGeneratedModules.back() ),
         mStrategyGraph(),
-        mDebugOutputChannel( cout.rdbuf() )
+        mDebugOutputChannel( cout.rdbuf() ),
+        mLogic( Logic::UNDEFINED )
         #ifdef SMTRAT_DEVOPTION_Statistics
         ,
         mpStatistics( new GeneralStatistics() )
@@ -126,36 +125,6 @@ namespace smtrat
         }
     }
     #endif
-
-    /**
-     * Prints the currently found assignment of variables occurring in the so far 
-     * added formulas to values of their domains, if the conjunction of these 
-     * formulas is satisfiable.
-     * @param The stream to print on.
-     */
-    void Manager::printAssignment( ostream& _out ) const
-    {
-        mpPrimaryBackend->updateModel();
-        if( !mpPrimaryBackend->model().empty() )
-        {
-            _out << "(";
-            for( Module::Model::const_iterator ass = mpPrimaryBackend->model().begin(); ass != mpPrimaryBackend->model().end(); ++ass )
-            {
-                if( ass != mpPrimaryBackend->model().begin() )
-                    _out << " ";
-                if( ass->second->domain == BOOLEAN_DOMAIN )
-                {
-                    _out << "(" << ass->first << " " << (ass->second->booleanValue ? "true" : "false") << ")" << endl;
-                }
-                else
-                {
-                    _out << "(" <<  Formula::constraintPool().getArithmeticVariableByName( ass->first ) << " ";
-                    _out << ass->second->theoryValue->toString( true ) << ")" << endl;
-                }
-            }
-            _out << ")" << endl;
-        }
-    }
     
     /**
      * Prints the so far added formulas.
@@ -253,7 +222,7 @@ namespace smtrat
                 allBackends.push_back( pBackend );
                 backends.push_back( pBackend );
                 // Inform it about all constraints.
-                for( auto cons = _requiredBy->constraintsToInform().begin(); cons != _requiredBy->constraintsToInform().end(); ++cons )
+                for( auto cons = _requiredBy->informedConstraints().begin(); cons != _requiredBy->informedConstraints().end(); ++cons )
                 {
                     pBackend->inform( *cons );
                 }

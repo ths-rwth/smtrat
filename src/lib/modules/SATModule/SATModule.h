@@ -139,10 +139,11 @@ namespace smtrat
             };
 
             typedef std::map<const Constraint* const, Minisat::Lit> ConstraintLiteralMap;
-            typedef std::map<const std::string, Minisat::Var>       BooleanVarMap;
+            typedef std::map<const carl::Variable, Minisat::Var>    BooleanVarMap;
             typedef Minisat::vec< Abstraction >                     BooleanConstraintMap;
             typedef std::map<const Formula*, Minisat::CRef >        FormulaClauseMap;
             typedef std::vector< std::vector<Minisat::Lit> >        ClauseVector;
+            typedef std::set<std::vector<int>>                      ClauseSet;
 
             static inline VarData mkVarData( Minisat::CRef cr, int l )
             {
@@ -250,12 +251,14 @@ namespace smtrat
             bool                  asynch_interrupt;
 
             bool                  mChangedPassedFormula;
+            mutable double        mSatisfiedClauses;
             BooleanConstraintMap  mBooleanConstraintMap;
             ConstraintLiteralMap  mConstraintLiteralMap;
             BooleanVarMap         mBooleanVarMap;
             FormulaClauseMap      mFormulaClauseMap;
             /// If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
             ClauseVector          mMaxSatAssigns;
+            ClauseSet             mLearntDeductions;
 
             #ifdef SMTRAT_DEVOPTION_Statistics
             SATModuleStatistics* mpStatistics;
@@ -281,7 +284,9 @@ namespace smtrat
             bool assertSubformula( Formula::const_iterator );
             Answer isConsistent();
             void removeSubformula( Formula::const_iterator );
-            void updateModel();
+            void updateModel() const;
+            
+            void addBooleanAssignments( EvalRationalMap& _rationalAssignment ) const;
 
             // Printing.
             void print( std::ostream& = std::cout, const std::string = "***" ) const;
@@ -388,9 +393,11 @@ namespace smtrat
             // Shrink 'cs' to contain only non-satisfied clauses.
             void removeSatisfied( Minisat::vec<Minisat::CRef>& cs );
             void rebuildOrderHeap();
+            bool conflictingVars( const Minisat::vec<Minisat::CRef>& _clauses, const EvalRationalMap& _rationalAssignment, Minisat::vec<Minisat::Var>& _result, bool _includeConflicting = true ) const;
 
             // Maintaining Variable/Clause activity:
             //
+            double maxActivity() const;
             // Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.
             void varDecayActivity();
             // Increase a variable with the current 'bump' value.
@@ -474,6 +481,17 @@ namespace smtrat
     {
         if( !order_heap.inHeap( x ) && decision[x] )
             order_heap.insert( x );
+    }
+    
+    inline double SATModule::maxActivity() const
+    {
+        double result = 0;
+        for( int i = 0; i < activity.size(); ++i )
+        {
+            if( result < activity[i] )
+                result = activity[i];
+        }
+        return result;
     }
 
     inline void SATModule::varDecayActivity()

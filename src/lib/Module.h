@@ -80,17 +80,13 @@ namespace smtrat
         #endif
         public:
             /// Data type for storing the domain and the value of an assignment.
-            typedef struct
+            typedef union
             {
-                Variable_Domain domain;
-                union
-                {
-                    vs::SqrtEx* theoryValue;
-                    bool booleanValue;
-                };
+                vs::SqrtEx* theoryValue;
+                bool booleanValue;
             } Assignment;
             /// Data type for a assignment assigning a variable, represented as a string, a real algebraic number, represented as a string.
-            typedef std::map< const std::string, Assignment* > Model;
+            typedef std::map< const carl::Variable, Assignment > Model;
             ///
             typedef std::chrono::high_resolution_clock clock;
             ///
@@ -113,6 +109,8 @@ namespace smtrat
             const Formula* mpReceivedFormula;
             /// The formula passed to the backends of this module.
             Formula* mpPassedFormula;
+            /// Stores the assignment of the current satisfiable result, if existent.
+            mutable Model mModel;
 
         private:
             /// States whether the received formula is known to be satisfiable or unsatisfiable otherwise it is set to unknown.
@@ -132,15 +130,13 @@ namespace smtrat
             /// Stores the position of the first sub-formula in the passed formula, which has not yet been considered for a consistency check of the backends.
             Formula::iterator mFirstSubformulaToPass;
             /// Stores the constraints which the backends must be informed about.
-            std::list<const Constraint* > mConstraintsToInform;
+            std::set<const Constraint* > mConstraintsToInform;
             /// Stores the position of the first constraint of which no backend has been informed about.
-            std::list<const Constraint* >::iterator mFirstConstraintToInform;
+            std::set<const Constraint* > mInformedConstraints;
             /// Stores the position of the first (by this module) unchecked sub-formula of the received formula.
             Formula::const_iterator mFirstUncheckedReceivedSubformula;
             /// Counter used for the generation of the smt2 files to check for smaller muses.
             mutable unsigned mSmallerMusesCheckCounter;
-            /// Stores the assignment of the current satisfiable result, if existent.
-            Model mModel;
 
         public:
             std::set<Formula::iterator, FormulaIteratorConstraintIdCompare> mScheduledForRemoval;
@@ -162,7 +158,7 @@ namespace smtrat
             virtual bool assertSubformula( Formula::const_iterator );
             virtual Answer isConsistent();
             virtual void removeSubformula( Formula::const_iterator );
-            virtual void updateModel();
+            virtual void updateModel() const;
 
             // Methods to read and write on the members.
             inline Answer solverState() const
@@ -231,9 +227,14 @@ namespace smtrat
                 return mUsedBackends;
             }
 
-            const std::list< const Constraint* >& constraintsToInform() const
+            const std::set< const Constraint* >& constraintsToInform() const
             {
                 return mConstraintsToInform;
+            }
+
+            const std::set< const Constraint* >& informedConstraints() const
+            {
+                return mInformedConstraints;
             }
 
             void addDeduction( Formula* _deduction )
@@ -316,38 +317,19 @@ namespace smtrat
             /**
              * Clears the assignment, if any was found
              */
-            void clearModel()
+            void clearModel() const
             {
                 while( !mModel.empty() )
                 {
-                    Assignment* assToDel = mModel.begin()->second;
-                    if( assToDel->domain != BOOLEAN_DOMAIN )
+                    Assignment assToDel = mModel.begin()->second;
+                    if( mModel.begin()->first.getType() == carl::VariableType::VT_BOOL )
+                        mModel.erase( mModel.begin() );
+                    else
                     {
-                        vs::SqrtEx* exToDel = assToDel->theoryValue;
-                        delete assToDel;
+                        vs::SqrtEx* exToDel = assToDel.theoryValue;
+                        mModel.erase( mModel.begin() );
                         delete exToDel;
-                    }
-                    mModel.erase( mModel.begin() );
-                }
-            }
-            
-            /**
-             * Extends the model by the assignment of the given variable to the given value.
-             * 
-             * @param _varName The name of the variable for which we want to add an assignment.
-             * @param _assignment The value and the domain of the assignment.
-             * @return true, if the assignment could be successfully added;
-             *          false, if the given variable is already assigned to a value by the model of this module.
-             */
-            bool extendModel( const std::string& _varName, Assignment* _assignment )
-            {
-                if( _assignment->domain != BOOLEAN_DOMAIN )
-                {
-                    return mModel.insert( std::pair< const std::string, Assignment* >( _varName, _assignment ) ).second;
-                }
-                else
-                {
-                    return mModel.insert( std::pair< const std::string, Assignment* >( _varName, _assignment ) ).second;
+                    }   
                 }
             }
             
@@ -392,18 +374,21 @@ namespace smtrat
             void addSubformulaToPassedFormula( Formula*, const Formula* );
             void getInfeasibleSubsets();
             static bool modelsDisjoint( const Model&, const Model& );
-            void getBackendsModel();
+            void getBackendsModel() const;
             Answer runBackends();
             Formula::iterator removeSubformulaFromPassedFormula( Formula::iterator );
             vec_set_const_pFormula getInfeasibleSubsets( const Module& ) const;
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
-            const vec_set_const_pFormula& getBackendsInfeasibleSubsets() const;
+            void branchAt( const carl::Variable& _var, const Rational& _value, bool _leftCaseWeak = true );
+            static EvalRationalMap modelToERM( const Model& _model );
+            unsigned checkModel() const;
         public:
             // Printing methods.
             void print( std::ostream& = std::cout, const std::string = "***" ) const;
             void printReceivedFormula( std::ostream& = std::cout, const std::string = "***" ) const;
             void printPassedFormula( std::ostream& = std::cout, const std::string = "***" ) const;
             void printInfeasibleSubsets( std::ostream& = std::cout, const std::string = "***" ) const;
+            void printModel( std::ostream& = std::cout ) const;
         private:
             // Measuring module times.
             clock::time_point mTimerCheckStarted;

@@ -55,6 +55,7 @@
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION
 //#define SATMODULE_WITH_CALL_NUMBER
 //#define WITH_PROGRESS_ESTIMATION
+//#define SAT_MODULE_OUTPUT_PROGRESS
 #define SAT_MODULE_THEORY_PROPAGATION
 #define SAT_MODULE_DETECT_DEDUCTIONS
 
@@ -148,10 +149,12 @@ namespace smtrat
         propagation_budget( -1 ),
         asynch_interrupt( false ),
         mChangedPassedFormula( false ),
+        mSatisfiedClauses( 0 ),
         mConstraintLiteralMap(),
         mBooleanVarMap(),
         mFormulaClauseMap(),
-        mMaxSatAssigns()
+        mMaxSatAssigns(),
+        mLearntDeductions()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
         stringstream s;
@@ -263,6 +266,9 @@ namespace smtrat
             #ifdef SATMODULE_WITH_CALL_NUMBER
             cout << endl << endl;
             #endif
+            #ifdef SAT_MODULE_OUTPUT_PROGRESS
+            cout << endl << endl;
+            #endif
             if( result == l_True )
             {
                 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -305,19 +311,35 @@ namespace smtrat
     /**
      *
      */
-    void SATModule::updateModel()
+    void SATModule::updateModel() const
     {
         clearModel();
         if( solverState() == True )
         {
             for( BooleanVarMap::const_iterator bVar = mBooleanVarMap.begin(); bVar != mBooleanVarMap.end(); ++bVar )
             {
-                Module::Assignment* assignment = new Module::Assignment();
-                assignment->domain = BOOLEAN_DOMAIN;
-                assignment->booleanValue = assigns[bVar->second] == l_True;
-                extendModel( bVar->first, assignment );
+                Module::Assignment assignment = Module::Assignment();
+                assignment.booleanValue = assigns[bVar->second] == l_True;
+                mModel.insert( std::pair< const carl::Variable, Assignment >( bVar->first, assignment ) );
             }
             Module::getBackendsModel();
+        }
+    }
+    
+    void SATModule::addBooleanAssignments( EvalRationalMap& _rationalAssignment ) const
+    {
+        for( BooleanVarMap::const_iterator bVar = mBooleanVarMap.begin(); bVar != mBooleanVarMap.end(); ++bVar )
+        {
+            if( assigns[bVar->second] == l_True )
+            {
+                assert( _rationalAssignment.find( bVar->first ) == _rationalAssignment.end() );
+                _rationalAssignment.insert( std::pair< const carl::Variable, Rational >( bVar->first, ONE_RATIONAL ) );
+            }
+            else if( assigns[bVar->second] == l_False )
+            {
+                assert( _rationalAssignment.find( bVar->first ) == _rationalAssignment.end() );
+                _rationalAssignment.insert( std::pair< const carl::Variable, Rational >( bVar->first, ZERO_RATIONAL ) );
+            }
         }
     }
 
@@ -506,13 +528,13 @@ namespace smtrat
         {
             case BOOL:
             {
-                BooleanVarMap::iterator booleanVarPair = mBooleanVarMap.find( _formula.identifier() );
+                BooleanVarMap::iterator booleanVarPair = mBooleanVarMap.find( _formula.boolean() );
                 if( booleanVarPair != mBooleanVarMap.end() )
                     return mkLit( booleanVarPair->second, false );
                 else
                 {
-                    Var var                               = newVar( _formula.activity() );
-                    mBooleanVarMap[_formula.identifier()] = var;
+                    Var var = newVar( _formula.activity() );
+                    mBooleanVarMap[_formula.boolean()] = var;
                     return mkLit( var, false );
                 }
             }
@@ -540,7 +562,11 @@ namespace smtrat
     {
         ConstraintLiteralMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( _constraint );
         if( constraintLiteralPair != mConstraintLiteralMap.end() )
+        {
+            if( _activity == INFINITY )
+                activity[var(constraintLiteralPair->second)] = maxActivity() + 1;
             return constraintLiteralPair->second;
+        }
         else
         {
             // Add a fresh Boolean variable as an abstraction of the constraint.
@@ -629,7 +655,7 @@ namespace smtrat
         mBooleanConstraintMap.last().origin = _origin;
         mBooleanConstraintMap.last().updateInfo = 0;
         vardata.push( mkVarData( CRef_Undef, 0 ) );
-        activity.push( _activity );
+        activity.push( _activity == INFINITY ? maxActivity() + 1 : _activity );
         // activity.push( rnd_init_act ? drand( random_seed ) * 0.00001 : 0 );
         seen.push( 0 );
         polarity.push( sign );
@@ -649,6 +675,17 @@ namespace smtrat
      */
     bool SATModule::addClause( vec<Lit>& _clause, unsigned _type )
     {
+        if( _type == DEDUCTED_CLAUSE )
+        {
+            vector<int> clause;
+            clause.reserve( _clause.size() );
+            for( int i = 0; i < _clause.size(); ++i )
+                clause.push_back( _clause[i].x );
+            if( !mLearntDeductions.insert( clause ).second )
+            {
+                return false;
+            }
+        }
         assert( _clause.size() != 0 );
         assert( _type >= 0 && _type <= 2);
         add_tmp.clear();
@@ -1157,7 +1194,6 @@ SetWatches:
             CONSTRAINT_LOCK
             if( anAnswerFound() )
             {
-                CONSTRAINT_UNLOCK
                 return l_Undef;
             }
             bool deductionsLearned = false;
@@ -1216,9 +1252,7 @@ SetWatches:
                     }
                     #endif
                     mChangedPassedFormula = false;
-                    CONSTRAINT_UNLOCK
                     currentAssignmentConsistent = runBackends();
-                    CONSTRAINT_LOCK
                     switch( currentAssignmentConsistent )
                     {
                         case True:
@@ -1226,6 +1260,34 @@ SetWatches:
                             #ifdef SAT_MODULE_THEORY_PROPAGATION
                             //Theory propagation.
                             deductionsLearned = processLemmas();
+                            // Get backends assignment and update the variable order heap.
+                            vector<Module*>::const_iterator backend = usedBackends().begin();
+                            while( backend != usedBackends().end() )
+                            {
+                                if( (*backend)->solverState() == True )
+                                {
+                                    (*backend)->updateModel();
+                                    EvalRationalMap rationalAssignment = modelToERM( (*backend)->model() );
+                                    vec<Var> conflVars;
+                                    #ifdef SAT_MODULE_OUTPUT_PROGRESS
+                                    mSatisfiedClauses = 0;
+                                    #endif
+                                    bool noconfl = conflictingVars( clauses, rationalAssignment, conflVars, true );
+                                    noconfl &= conflictingVars( learnts, rationalAssignment, conflVars, true );
+                                    #ifdef SAT_MODULE_OUTPUT_PROGRESS
+                                    cout << "\r" << "Satisfied clauses: " << ((mSatisfiedClauses/(clauses.size()+learnts.size()))*100) << "%";
+                                    cout.flush();
+                                    #endif
+                                    if( noconfl )
+                                    {
+                                        return l_True;
+                                    }
+//                                    order_heap.build( conflVars );
+                                    break;
+                                }
+                                ++backend;
+                            }
+                            assert( backend != usedBackends().end() );
                             #endif
                             #ifdef DEBUG_SATMODULE
                             if( numberOfTheoryCalls >= debugFromCall )
@@ -1244,7 +1306,6 @@ SetWatches:
                             }
                             #endif
                             confl = learnTheoryConflict();
-                            CONSTRAINT_UNLOCK
                             if( confl == CRef_Undef )
                             {
                                 if( !ok ) return l_False;
@@ -1271,7 +1332,6 @@ SetWatches:
                         {
                             cerr << "Backend returns undefined answer!" << endl;
                             assert( false );
-                            CONSTRAINT_UNLOCK
                             return l_Undef;
                         }
                     }
@@ -1280,7 +1340,6 @@ SetWatches:
             #ifdef SAT_MODULE_THEORY_PROPAGATION
             if( deductionsLearned )
             {
-                CONSTRAINT_UNLOCK
                 continue;
             }
             #endif
@@ -1317,7 +1376,6 @@ SetWatches:
                 conflictC++;
                 if( decisionLevel() == 0 )
                 {
-                    CONSTRAINT_UNLOCK
                     return l_False;
                 }
 
@@ -1329,7 +1387,7 @@ SetWatches:
                     if( madeTheoryCall )
                     {
                         cout << "### Conflict clause: ";
-                        printClause( confl, cout );
+                        printClause( confl );
                     }
                     else
                     {
@@ -1416,7 +1474,6 @@ SetWatches:
                     // Reached bound on number of conflicts:
                     progress_estimate = progressEstimate();
                     cancelUntil( 0 );
-                    CONSTRAINT_UNLOCK
                     return l_Undef;
                 }
 #endif
@@ -1424,7 +1481,6 @@ SetWatches:
                 // Simplify the set of problem clauses:
                 if( decisionLevel() == 0 && !simplify() )
                 {
-                    CONSTRAINT_UNLOCK
                     return l_False;
                 }
 
@@ -1444,7 +1500,6 @@ SetWatches:
                     }
                     else if( value( p ) == l_False )
                     {
-                        CONSTRAINT_UNLOCK
                         return l_False;
                     }
                     else
@@ -1468,13 +1523,11 @@ SetWatches:
                         if( currentAssignmentConsistent == True )
                         {
                             // Model found:
-                            CONSTRAINT_UNLOCK
                             return l_True;
                         }
                         else
                         {
                             assert( currentAssignmentConsistent == Unknown );
-                            CONSTRAINT_UNLOCK
                             return l_Undef;
                         }
                     }
@@ -1485,7 +1538,6 @@ SetWatches:
                 assert( value( next ) == l_Undef );
                 uncheckedEnqueue( next );
             }
-            CONSTRAINT_UNLOCK
         }
     }
 
@@ -1897,6 +1949,94 @@ NextClause:
             if( decision[v] && value( v ) == l_Undef )
                 vs.push( v );
         order_heap.build( vs );
+    }
+    
+    bool SATModule::conflictingVars( const vec<CRef>& _clauses, const EvalRationalMap& _rationalAssignment, vec<Var>& _result, bool _includeConflicting ) const
+    {
+        vec<lbool> ass;
+        ass.growTo( assigns.size() );
+        for( Var v = 0; v < nVars(); ++v )
+        {
+            if( assigns[v] == l_Undef )
+            {
+                if( mBooleanConstraintMap[v].formula != NULL )
+                {
+                    switch( mBooleanConstraintMap[v].formula->constraint().satisfiedBy( _rationalAssignment ) )
+                    {
+                        case 0:
+                            ass[v] = l_False;
+                            break;
+                        case 1:
+                            ass[v] = l_True;
+                            break;
+                        default:
+                            ass[v] = l_Undef;
+                    }
+                }
+            }
+            else
+            {
+                ass[v] = assigns[v];
+            }
+        }
+        vec<Var> conflictingVars;
+        vec<Var> conflictingVarsExt;
+        #ifdef SAT_MODULE_OUTPUT_PROGRESS
+        int numSatisfiedClauses = 0;
+        #endif
+        for( int i = 0; i < _clauses.size(); ++i )
+        {
+            vec<Var> conflVarsInClause;
+            vec<Var> conflVarsInClauseExt;
+            const Clause& c = ca[_clauses[i]];
+            int j = 0;
+            for( ; j < c.size(); j++ )
+            {
+                if( (assigns[var( c[j] )] ^ sign( c[j] )) == l_True )
+                {
+                    #ifdef SAT_MODULE_OUTPUT_PROGRESS
+                    ++numSatisfiedClauses;
+                    #endif
+                    conflVarsInClause.clear();
+                    break;
+                }
+                else if( _includeConflicting || (assigns[var( c[j] )] ^ sign( c[j] )) == l_Undef )
+                {
+                    conflVarsInClause.push( var( c[j] ) );
+                }
+                else
+                {
+                    conflVarsInClauseExt.push( var( c[j] ) );
+                }
+            }
+            if( j == c.size() )
+            {
+                int sizeBefore = conflictingVars.size();
+                conflictingVars.growTo( sizeBefore + conflVarsInClause.size() );
+                for( int k = 0; k < conflVarsInClause.size(); ++k )
+                    conflictingVars[sizeBefore+k] = conflVarsInClause[k];
+                conflVarsInClause.clear();
+                sizeBefore = conflictingVarsExt.size();
+                conflictingVarsExt.growTo( sizeBefore + conflVarsInClauseExt.size() );
+                for( int k = 0; k < conflVarsInClauseExt.size(); ++k )
+                    conflictingVarsExt[sizeBefore+k] = conflVarsInClauseExt[k];
+                conflVarsInClauseExt.clear();
+            }
+        }
+        #ifdef SAT_MODULE_OUTPUT_PROGRESS
+        mSatisfiedClauses += numSatisfiedClauses;
+        #endif
+        if( conflictingVars.size() > 0 )
+        {
+            conflictingVars.moveTo( _result );
+            return false;
+        }
+        else if( conflictingVarsExt.size() > 0 )
+        {
+            conflictingVarsExt.moveTo( _result );
+            return false;
+        }
+        return true;
     }
 
     /**

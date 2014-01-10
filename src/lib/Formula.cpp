@@ -32,6 +32,7 @@
 //#define REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
 
 #include "Formula.h"
+#include "Module.h"
 
 using namespace std;
 
@@ -73,17 +74,17 @@ namespace smtrat
         }
     }
 
-    Formula::Formula( const string* _booleanVarName ):
+    Formula::Formula( const carl::Variable::Arg _boolean ):
         mDeducted( false ),
         mPropositionsUptodate( false ),
         mActivity( 0 ),
         mDifficulty( 0 ),
         mType( BOOL ),
-        mpIdentifier( _booleanVarName ),
+        mBoolean( _boolean ),
         mpFather( NULL ),
         mPropositions()
     {
-        assert( constraintPool().booleanExistsAlready( *_booleanVarName ) );
+        assert( _boolean.getType() == carl::VariableType::VT_BOOL );
     }
 
     Formula::Formula( const Constraint* _constraint ):
@@ -133,7 +134,7 @@ namespace smtrat
                 addSubformula( new Formula( **subFormula ));
         }
         else if( _formula.getType() == BOOL )
-            mpIdentifier = _formula.mpIdentifier;
+            mBoolean = _formula.mBoolean;
     }
 
     Formula::~Formula()
@@ -159,7 +160,7 @@ namespace smtrat
         {
             if( isBooleanCombination() )
                 delete mpSubformulas;
-            mpIdentifier = _formula->mpIdentifier;
+            mBoolean = _formula->mBoolean;
         }
         else if( _formula->getType() == CONSTRAINT )
         {
@@ -239,6 +240,120 @@ namespace smtrat
         result = mpSubformulas->insert( result, _replacement );
         mPropositionsUptodate = false;
         return result;
+    }
+    
+    unsigned Formula::satisfiedBy( const EvalRationalMap& _assignment ) const
+    {   
+        switch( mType )
+        {
+            case TTRUE:
+            {
+                return 1;
+            }
+            case FFALSE:
+            {
+                return 0;
+            }
+            case BOOL:
+            {
+                auto ass = _assignment.find( mBoolean );
+                return ass == _assignment.end() ? 2 : (ass->second == ONE_RATIONAL ? 1 : 0) ;
+            }
+            case CONSTRAINT:
+            {
+                return mpConstraint->satisfiedBy( _assignment );
+            }
+            case NOT:
+            {
+                switch( mpSubformulas->front()->satisfiedBy( _assignment ) )
+                {
+                    case 0:
+                        return 1;
+                    case 1:
+                        return 0;
+                    default:
+                        return 2;
+                }   
+            }
+            case OR:
+            {
+                unsigned result = 0;
+                for( auto subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
+                {
+                    switch( (*subFormula)->satisfiedBy( _assignment ) )
+                    {
+                        case 0:
+                            break;
+                        case 1:
+                            return 1;
+                        default:
+                            if( result != 2 ) result = 2;
+                    }
+                }
+                return result;
+            }
+            case AND:
+            {
+                unsigned result = 1;
+                for( auto subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
+                {
+                    switch( (*subFormula)->satisfiedBy( _assignment ) )
+                    {
+                        case 0:
+                            return 0;
+                        case 1:
+                            break;
+                        default:
+                            if( result != 2 ) result = 2;
+                    }
+                }
+                return result;
+            }
+            case IMPLIES:
+            {
+                auto subFormula = mpSubformulas->begin();
+                unsigned result = (*subFormula)->satisfiedBy( _assignment );
+                if( result == 0 ) return 1;
+                ++subFormula;
+                switch( (*subFormula)->satisfiedBy( _assignment ) )
+                {
+                    case 0:
+                        return result == 1 ? 0 : 2;
+                    case 1:
+                        return 1;
+                    default:
+                        return 2;
+                }
+            }
+            case IFF:
+            {
+                auto subFormulaA = mpSubformulas->begin();
+                unsigned resultA = (*subFormulaA)->satisfiedBy( _assignment );
+                if( resultA == 2 ) return 2;
+                auto subFormulaB = mpSubformulas->begin();
+                unsigned resultB = (*subFormulaB)->satisfiedBy( _assignment );
+                if( resultB == 2 ) return 2;
+                return resultA == resultB ? 1 : 0;
+            }
+            case XOR:
+            {
+                auto subFormulaA = mpSubformulas->begin();
+                unsigned resultA = (*subFormulaA)->satisfiedBy( _assignment );
+                if( resultA == 2 ) return 2;
+                auto subFormulaB = mpSubformulas->begin();
+                unsigned resultB = (*subFormulaB)->satisfiedBy( _assignment );
+                if( resultB == 2 ) return 2;
+                return resultA == resultB ? 0 : 1;
+            }
+            default:
+            {
+                cerr << "Undefined operator!" << endl;
+                cerr << mType << endl;
+                cerr << *this << endl;
+                assert( false );
+                return 2;
+            }
+        }
     }
     
     Condition Formula::getPropositions()
@@ -372,7 +487,7 @@ namespace smtrat
 
     void Formula::addConstraintPropositions( const Constraint& _constraint )
     {
-        switch( _constraint.lhs().highestDegree() )
+        switch( _constraint.lhs().totalDegree() )
         {
             case 0:
                 mPropositions |= PROP_CONTAINS_LINEAR_POLYNOMIAL;
@@ -440,7 +555,7 @@ namespace smtrat
         }
         if( mType == BOOL )
         {
-            return (_init + (*mpIdentifier) + activity);
+            return (_init + constraintPool().getVariableName( mBoolean, _friendlyNames ) + activity);
         }
         else if( mType == CONSTRAINT )
             return (_init + mpConstraint->toString( _resolveUnequal, _infix, _friendlyNames ) + activity);
@@ -529,7 +644,7 @@ namespace smtrat
                 result += constraint().toString( 1 );
                 break;
             case BOOL:
-                result += *mpIdentifier + " = 1";
+                result += constraintPool().getVariableName( mBoolean, true ) + " = 1";
                 break;
             default:
             {
@@ -540,10 +655,13 @@ namespace smtrat
                     result += variableListToString( "," );
                     result += "}, (";
                     // Make pseudo Booleans.
-                    set<string> boolVars = set<string>();
+                    set<carl::Variable> boolVars = set<carl::Variable>();
                     booleanVars( boolVars );
                     for( auto j = boolVars.begin(); j != boolVars.end(); ++j )
-                        result += "(" + *j + " = 0 or " + *j + " = 1) and ";
+                    {
+                        string boolName = constraintPool().getVariableName( *j, true );
+                        result += "(" + boolName + " = 0 or " + boolName + " = 1) and ";
+                    }
                 }
                 else
                     result += "( ";
@@ -564,7 +682,7 @@ namespace smtrat
     {
         Variables realVars = Variables();
         realValuedVars( realVars );
-        set<string> boolVars = set<string>();
+        set<carl::Variable> boolVars = set<carl::Variable>();
         booleanVars( boolVars );
         auto i = realVars.begin();
         auto j = boolVars.begin();
@@ -584,13 +702,15 @@ namespace smtrat
         }
         else if( j != boolVars.end() )
         {
-            unordered_map<string, string>::const_iterator vId = _variableIds.find(*j);
-            result += vId == _variableIds.end() ? *j : vId->second;
+            string boolName = constraintPool().getVariableName( *j, true );
+            unordered_map<string, string>::const_iterator vId = _variableIds.find(boolName);
+            result += vId == _variableIds.end() ? boolName : vId->second;
             for( ++j; j != boolVars.end(); ++j )
             {
+                boolName = constraintPool().getVariableName( *j, true );
                 result += _separator;
-                vId = _variableIds.find(*j);
-                result += vId == _variableIds.end() ? *j : vId->second;
+                vId = _variableIds.find(boolName);
+                result += vId == _variableIds.end() ? boolName : vId->second;
             }
         }
         return result;

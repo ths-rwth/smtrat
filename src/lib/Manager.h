@@ -73,6 +73,8 @@ namespace smtrat
             StrategyGraph mStrategyGraph;
             /// channel to write debug output
             std::ostream mDebugOutputChannel;
+            /// the logic this solver 
+            Logic mLogic;
             #ifdef SMTRAT_DEVOPTION_Statistics
             ///
             GeneralStatistics* mpStatistics;
@@ -235,7 +237,17 @@ namespace smtrat
                 return *mpPassedFormula;
             }
             
-            void printAssignment( std::ostream& = std::cout ) const;
+            /**
+             * Prints the currently found assignment of variables occurring in the so far 
+             * added formulas to values of their domains, if the conjunction of these 
+             * formulas is satisfiable.
+             * @param The stream to print on.
+             */
+            void printAssignment( std::ostream& _out ) const
+            {
+                mpPrimaryBackend->printModel();
+            }
+    
             void printAssertions( std::ostream& = std::cout ) const;
             void printInfeasibleSubset( std::ostream& = std::cout ) const;
             
@@ -258,6 +270,31 @@ namespace smtrat
             std::ostream& rDebugOutputChannel()
             {
                 return mDebugOutputChannel;
+            }
+            
+            const Logic logic() const
+            {
+                return mLogic;
+            }
+            
+            Logic& rLogic()
+            {
+                return mLogic;
+            }
+            
+            std::string logicToString() const
+            {
+                switch( mLogic )
+                {
+                    case Logic::QF_LIA:
+                        return "QF_LIA";
+                    case Logic::QF_NIA:
+                        return "QF_NIA";
+                    case Logic::QF_LRA:
+                        return "QF_LRA";
+                    default:
+                        return "QF_NRA";
+                }
             }
             
         protected:

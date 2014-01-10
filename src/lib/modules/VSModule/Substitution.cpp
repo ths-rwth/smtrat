@@ -65,41 +65,83 @@ namespace vs
         delete mpOriginalConditions;
     }
 
-    unsigned Substitution::valuate() const
+    unsigned Substitution::valuate( bool _preferMinusInf ) const
     {
-        if( type() == MINUS_INFINITY )
-            return 9;
-        else if( type() == NORMAL )
+        if( _preferMinusInf )
         {
-            if( term().isConstant() )
-                return 8;
-            else
+            if( type() == MINUS_INFINITY )
+                return 9;
+            else if( type() == NORMAL )
             {
-                if( term().hasSqrt() )
-                    return 4;
+                if( term().isConstant() )
+                    return 8;
                 else
                 {
-                    if( term().denominator().isConstant() )
-                        return 6;
+                    if( term().hasSqrt() )
+                        return 4;
                     else
-                        return 5;
+                    {
+                        if( term().denominator().isConstant() )
+                            return 6;
+                        else
+                            return 5;
+                    }
+                }
+            }
+            else
+            {
+                if( term().isConstant() )
+                    return 7;
+                else
+                {
+                    if( term().hasSqrt() )
+                        return 1;
+                    else
+                    {
+                        if( term().denominator().isConstant() )
+                            return 3;
+                        else
+                            return 2;
+                    }
                 }
             }
         }
         else
         {
-            if( term().isConstant() )
-                return 7;
-            else
+            if( type() == MINUS_INFINITY )
+                return 1;
+            else if( type() == NORMAL )
             {
-                if( term().hasSqrt() )
-                    return 1;
+                if( term().isConstant() )
+                    return 9;
                 else
                 {
-                    if( term().denominator().isConstant() )
-                        return 3;
+                    if( term().hasSqrt() )
+                        return 5;
                     else
+                    {
+                        if( term().denominator().isConstant() )
+                            return 7;
+                        else
+                            return 6;
+                    }
+                }
+            }
+            else
+            {
+                if( term().isConstant() )
+                    return 8;
+                else
+                {
+                    if( term().hasSqrt() )
                         return 2;
+                    else
+                    {
+                        if( term().denominator().isConstant() )
+                            return 4;
+                        else
+                            return 3;
+                    }
                 }
             }
         }

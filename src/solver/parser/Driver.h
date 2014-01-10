@@ -42,8 +42,6 @@
 
 namespace smtrat
 {
-    enum Logic { UNDEFINED, QF_NRA, QF_LRA, QF_NIA, QF_LIA };
-
     class Formula;
 
     typedef std::unordered_map< std::string, carl::Variable > TheoryVarMap;
@@ -122,13 +120,13 @@ namespace smtrat
             /// stream name (file or input stream) used for error messages.
             std::string* mStreamname;
             ///
-            std::unordered_map< std::string, const std::string* > mBooleanVariables;
+            std::unordered_map< std::string, carl::Variable > mBooleanVariables;
             ///
             TheoryVarMap mTheoryVariables;
             ///
             std::unordered_map< std::string, smtrat::Polynomial* > mTheoryBindings;
             ///
-            std::unordered_map< carl::Variable, const std::string* > mTheoryIteBindings;
+            std::unordered_map< carl::Variable, carl::Variable > mTheoryIteBindings;
             ///
             std::stack< std::vector< std::pair< std::string, unsigned > > > mVariableStack;
             ///
@@ -203,7 +201,7 @@ namespace smtrat
                 return mRegularOutputChannel;
             }
             
-            const std::unordered_map< std::string, const std::string* >& booleanVariables() const
+            const std::unordered_map< std::string, carl::Variable >& booleanVariables() const
             {
                  return mBooleanVariables;
             }
@@ -345,6 +343,11 @@ namespace smtrat
                 mInstructionQueue.push( Instruction( SET_LOGIC, iv ) );
             }
             
+            Logic logic() const
+            {
+                return mLogic;
+            }
+            
             void getValue( std::vector< std::pair< std::string, std::string > >* _value )
             {
                 InstructionValue iv = InstructionValue();
@@ -394,12 +397,12 @@ namespace smtrat
             void error( const std::string&, bool = false );
             void applySetLogic( const std::string& );
             void addVariable( const class location&, std::string*, std::string* );
-            const std::string* addBooleanVariable( const class location&, const std::string&, bool = false );
+            carl::Variable addBooleanVariable( const class location&, const std::string&, bool = false );
             smtrat::Formula* addTheoryBinding( const class location&, std::string*, smtrat::Polynomial* );
             smtrat::Formula* booleanBinding( const class location&, std::string*, Formula* );
             smtrat::Formula* appendBindings( std::vector< smtrat::Formula* >*, smtrat::Formula* );
             carl::Variable addTheoryVariable( const class location&, const std::string&, const std::string&, bool = false );
-            const std::string* getBooleanVariable( const class location&, const std::string& );
+            carl::Variable getBooleanVariable( const class location&, const std::string& );
             void freeBooleanVariableName( const std::string& );
             void freeTheoryVariableName( const std::string& );
             smtrat::Polynomial* mkPolynomial( const class location&, std::string* );

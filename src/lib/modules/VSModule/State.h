@@ -871,9 +871,10 @@ namespace vs
         bool addChild( const Substitution& _substitution );
         
         /**
-         *  Updates the valuation of this state.
+         * Updates the valuation of this state.
+         * @param _preferMinusInf A flag indicating whether to valuate the substitution type best or otherwise worst.
          */
-        void updateValuation();
+        void updateValuation( bool _preferMinInf = true );
         
         /**
          * Valuates the state's currently considered conditions according to a backend call.
@@ -915,7 +916,7 @@ namespace vs
          *                         responsible for this conflict are stored in here.
          * @return The disjoint intervals representing the solution space.
          */
-        std::vector< carl::DoubleInterval > solutionSpace( Condition::Set& _conflictReason );
+        std::vector< carl::DoubleInterval > solutionSpace( Condition::Set& _conflictReason ) const;
         
         /**
          * Checks whether there are no zeros for the left-hand side of the constraint of the given condition.

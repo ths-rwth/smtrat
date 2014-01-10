@@ -195,6 +195,21 @@ namespace smtrat
             }
 
             /**
+             * @return The maximal degree of all variables in this constraint. (Monomial-wise)
+             */
+            unsigned maxDegree() const
+            {
+                unsigned result = 0;
+                for( auto var = mVariables.begin(); var != mVariables.end(); ++var)
+                {
+                    unsigned deg = maxDegree( *var );
+                    if( deg > result )
+                        result = deg;
+                }
+                return result;
+            }
+
+            /**
              * @param _variable The variable for which to determine the minimal degree.
              * @return The minimal degree of the given variable in this constraint. (Monomial-wise)
              */
@@ -292,7 +307,7 @@ namespace smtrat
              *          2, otherwise (possibly not defined for all variables in the constraint,
              *                       even then it could be possible to obtain the first two results.)
              */
-            unsigned satisfiedBy( EvalRationalMap& _assignment ) const;
+            unsigned satisfiedBy( const EvalRationalMap& _assignment ) const;
             
             /**
              * Checks, whether the constraint is consistent.
@@ -441,7 +456,24 @@ namespace std
             return _constraint.getHash();
         }
     };
+    
+    template<>
+    struct hash<std::vector<const smtrat::Constraint* >>
+    {
+    public:
+        size_t operator()( const std::vector<const smtrat::Constraint* >& _arg ) const
+        {
+            size_t result = 0;
+            for( auto cons = _arg.begin(); cons != _arg.end(); ++cons )
+            {
+                result <<= 5;
+                result ^= (*cons)->id();
+            }
+            return result;
+        }
+    };
 } // namespace std
+
 
 #ifdef SMTRAT_STRAT_PARALLEL_MODE
 #define CONSTRAINT_LOCK_GUARD std::lock_guard<std::recursive_mutex> lock( smtrat::Constraint::mMutex );

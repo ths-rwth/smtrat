@@ -48,6 +48,7 @@ set(smtrat_DESCRIPTION ${PROJECT_DESCRIPTION} )
 option(STATICLIB_SWITCH "Compile a statically linked version of the library." OFF)
 option(BUILD_SOLVER "Build the SMT-RAT Solver" ON)
 option(BUILD_GUI "Build the GUI" OFF)
+option(USE_GINAC "If disabled, all implementations using the ginac library are disabled." OFF)
 
 # Strategy
 option( SMTRAT_STRAT_Factorization "Factorization" ON )
@@ -68,8 +69,12 @@ include( smtratmacros )
 # general compiler and linker settings
 set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wall -std=c++0x")
 if(${STATICLIB_SWITCH} STREQUAL "ON")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
+endif()
+
+if(${SMTRAT_STRAT_PARALLEL_MODE} STREQUAL "ON")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--whole-archive -lpthread -Wl,--no-whole-archive")
 endif()
 
 # path to put in the executables
@@ -89,7 +94,9 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 # C.1. Required libraries for core.
 # # # # # # # # # # # # # # # # # # # # # #
 
-set( libraries pthread )
+if(${SMTRAT_STRAT_PARALLEL_MODE} STREQUAL "ON")
+  set( libraries pthread )
+endif()
 
 # GiNaC and GiNaCRA are necessary
 # TODO: add support for version number

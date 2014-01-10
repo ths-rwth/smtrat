@@ -29,6 +29,7 @@
 #define	VARIABLEBOUNDS_H
 
 #include "Constraint.h"
+#include "Formula.h"
 #include <iomanip>
 
 namespace smtrat
@@ -224,9 +225,9 @@ namespace smtrat
             typedef std::set<const Bound<T>*, boundPointerComp> BoundSet;
             private:
                 /// A flag that indicates that the stored exact interval of this variable is up to date.
-                bool            mUpdatedExactInterval;
+                mutable bool    mUpdatedExactInterval;
                 /// A flag that indicates that the stored double interval of this variable is up to date.
-                bool            mUpdatedDoubleInterval;
+                mutable bool    mUpdatedDoubleInterval;
                 /// The least upper bound of this variable.
                 const Bound<T>* mpSupremum;
                 /// The greatest lower bound of this variable.
@@ -285,7 +286,7 @@ namespace smtrat
                 /**
                  * Sets the flag indicating that the stored exact interval representing the variable's bounds is up to date to false.
                  */
-                void exactIntervalHasBeenUpdated()
+                void exactIntervalHasBeenUpdated() const
                 {
                     mUpdatedExactInterval = false;
                 }
@@ -302,7 +303,7 @@ namespace smtrat
                 /**
                  * Sets the flag indicating that the stored double interval representing the variable's bounds is up to date to false.
                  */
-                void doubleIntervalHasBeenUpdated()
+                void doubleIntervalHasBeenUpdated() const
                 {
                     mUpdatedDoubleInterval = false;
                 }
@@ -363,7 +364,7 @@ namespace smtrat
         {
             public:
                 typedef PointerMap<Constraint,const Bound<T>*> ConstraintBoundMap;
-                typedef FastMap<carl::Variable, Variable<T>*>      VariableMap;
+                typedef FastMap<carl::Variable, Variable<T>*>  VariableMap;
             private:
                 /// A pointer to one of the conflicting variables (its supremum is smaller than its infimum)
                 /// or NULL if there is no conflict.
@@ -374,10 +375,14 @@ namespace smtrat
                 ConstraintBoundMap*   mpConstraintBoundMap;
                 /// The stored exact interval map representing the currently tightest bounds.
                 /// Note, that it is updated on demand.
-                EvalIntervalMap       mEvalIntervalMap;
+                mutable EvalIntervalMap       mEvalIntervalMap;
                 /// The stored double interval map representing the currently tightest bounds.
                 /// Note, that it is updated on demand.
-                EvalDoubleIntervalMap mDoubleIntervalMap;
+                mutable EvalDoubleIntervalMap mDoubleIntervalMap;
+                ///
+                FastPointerSet<Constraint> mNonBoundConstraints;
+                ///
+                mutable std::unordered_set<std::vector<const Constraint* >> mBoundDeductions;
             public:
                 /*
                  * Constructors:
@@ -423,27 +428,27 @@ namespace smtrat
                  * Creates an evalintervalmap corresponding to the variable bounds.
                  * @return The variable bounds as an evalintervalmap.
                  */
-                const EvalIntervalMap& getEvalIntervalMap();
+                const EvalIntervalMap& getEvalIntervalMap() const;
                 
                 /**
                  * Creates an interval corresponding to the variable bounds of the given variable.
                  * @param _var The variable to compute the variable bounds as interval for.
                  * @return The variable bounds as an interval.
                  */
-                const Interval& getInterval( const carl::Variable& _var );
+                const Interval& getInterval( const carl::Variable& _var ) const;
                 
                 /**
                  * Creates an interval map corresponding to the variable bounds.
                  * @return The variable bounds as an interval map.
                  */
-                const smtrat::EvalDoubleIntervalMap& getIntervalMap();
+                const smtrat::EvalDoubleIntervalMap& getIntervalMap() const;
                 
                 /**
                  * Creates a double interval corresponding to the variable bounds of the given variable.
                  * @param _var The variable to compute the variable bounds as double interval for.
                  * @return The variable bounds as a double interval.
                  */
-                const carl::DoubleInterval& getDoubleInterval( const carl::Variable& _var );
+                const carl::DoubleInterval& getDoubleInterval( const carl::Variable& _var ) const;
                 
                 /**
                  * @param _var The variable to get origins of the bounds for.
@@ -462,6 +467,8 @@ namespace smtrat
                  * @return A set of origins corresponding to the supremums and infimums of all variables.
                  */
                 std::set< const T* > getOriginsOfBounds() const;
+                
+                std::vector<std::pair<std::vector< const Constraint* >, const Constraint* >> getBoundDeductions() const;
                 
                 /**
                  * Prints the variable bounds.
@@ -659,52 +666,61 @@ namespace smtrat
         template<typename T>
         const Bound<T>* Variable<T>::addBound( const Constraint* _constraint, const carl::Variable& _var, const T* _origin )
         {
-            assert( _constraint->variables().size() == 1 && _constraint->maxDegree( _var ) == 1 );
-            const Rational& coeff = _constraint->lhs().lterm()->coeff();
-            Constraint::Relation rel = _constraint->relation();
-            Rational* limit = new Rational( -_constraint->constantPart()/coeff );
-            std::pair< typename Variable<T>::BoundSet::iterator, bool> result;
-            if( rel == Constraint::EQ )
+            assert( _constraint->variables().size() == 1 );
+            if( _constraint->maxDegree( _var ) == 1 )
             {
-                Bound<T>* newBound = new Bound<T>( limit, this, Bound<T>::EQUAL_BOUND );
-                result = mUpperbounds.insert( newBound );
-                if( !result.second )
-                    delete newBound;
+                const Rational& coeff = _constraint->lhs().lterm()->coeff();
+                Constraint::Relation rel = _constraint->relation();
+                Rational* limit = new Rational( -_constraint->constantPart()/coeff );
+                std::pair< typename Variable<T>::BoundSet::iterator, bool> result;
+                if( rel == Constraint::EQ )
+                {
+                    Bound<T>* newBound = new Bound<T>( limit, this, Bound<T>::EQUAL_BOUND );
+                    result = mUpperbounds.insert( newBound );
+                    if( !result.second )
+                        delete newBound;
+                    else
+                        mLowerbounds.insert( newBound );
+                }
+                else if( ( rel == Constraint::GEQ && coeff < 0 ) || ( rel == Constraint::LEQ && coeff > 0 ) )
+                {
+                    Bound<T>* newBound = new Bound<T>( limit, this, Bound<T>::WEAK_UPPER_BOUND );
+                    result = mUpperbounds.insert( newBound );
+                    if( !result.second )
+                        delete newBound;
+                }
+                else if( ( rel == Constraint::LEQ && coeff < 0 ) || ( rel == Constraint::GEQ && coeff > 0 ) )
+                {
+                    Bound<T>* newBound = new Bound<T>( limit, this, Bound<T>::WEAK_LOWER_BOUND );
+                    result = mLowerbounds.insert( newBound );
+                    if( !result.second )
+                        delete newBound;
+                }
+                else if( ( rel == Constraint::GREATER && coeff < 0 ) || ( rel == Constraint::LESS && coeff > 0 ) )
+                {
+                    Bound<T>* newBound = new Bound<T>( limit, this, Bound<T>::STRICT_UPPER_BOUND );
+                    result = mUpperbounds.insert( newBound );
+                    if( !result.second )
+                        delete newBound;
+                }
+                else if( ( rel == Constraint::LESS && coeff < 0 ) || ( rel == Constraint::GREATER && coeff > 0 ) )
+                {
+                    Bound<T>* newBound = new Bound<T>( limit, this, Bound<T>::STRICT_LOWER_BOUND );
+                    result = mLowerbounds.insert( newBound );
+                    if( !result.second )
+                        delete newBound;
+                }
                 else
-                    mLowerbounds.insert( newBound );
+                    assert( false );
+                (*result.first)->activate( _origin );
+                return *result.first;
             }
-            else if( ( rel == Constraint::GEQ && coeff < 0 ) || ( rel == Constraint::LEQ && coeff > 0 ) )
+            else if( _constraint->lhs().nrTerms() == 1 || (_constraint->lhs().nrTerms() == 2 && _constraint->lhs().hasConstantTerm()) )
             {
-                Bound<T>* newBound = new Bound<T>( limit, this, Bound<T>::WEAK_UPPER_BOUND );
-                result = mUpperbounds.insert( newBound );
-                if( !result.second )
-                    delete newBound;
+                // TODO: Retrieve bounds from constraints of the form x^n+b~0
             }
-            else if( ( rel == Constraint::LEQ && coeff < 0 ) || ( rel == Constraint::GEQ && coeff > 0 ) )
-            {
-                Bound<T>* newBound = new Bound<T>( limit, this, Bound<T>::WEAK_LOWER_BOUND );
-                result = mLowerbounds.insert( newBound );
-                if( !result.second )
-                    delete newBound;
-            }
-            else if( ( rel == Constraint::GREATER && coeff < 0 ) || ( rel == Constraint::LESS && coeff > 0 ) )
-            {
-                Bound<T>* newBound = new Bound<T>( limit, this, Bound<T>::STRICT_UPPER_BOUND );
-                result = mUpperbounds.insert( newBound );
-                if( !result.second )
-                    delete newBound;
-            }
-            else if( ( rel == Constraint::LESS && coeff < 0 ) || ( rel == Constraint::GREATER && coeff > 0 ) )
-            {
-                Bound<T>* newBound = new Bound<T>( limit, this, Bound<T>::STRICT_LOWER_BOUND );
-                result = mLowerbounds.insert( newBound );
-                if( !result.second )
-                    delete newBound;
-            }
-            else
-                assert( false );
-            (*result.first)->activate( _origin );
-            return *result.first;
+            assert( false );
+            return NULL;
         }
 
         template<typename T>
@@ -749,7 +765,8 @@ namespace smtrat
             mpVariableMap( new VariableMap() ),
             mpConstraintBoundMap( new ConstraintBoundMap() ),
             mEvalIntervalMap(),
-            mDoubleIntervalMap()
+            mDoubleIntervalMap(),
+            mBoundDeductions()
         {}
 
         template<typename T>
@@ -768,10 +785,10 @@ namespace smtrat
         template<typename T>
         bool VariableBounds<T>::addBound( const Constraint* _constraint, const T* _origin )
         {
-            if( _constraint->relation() != Constraint::NEQ && _constraint->variables().size() == 1 )
+            if( _constraint->relation() != Constraint::NEQ )
             {
                 const carl::Variable& var = *_constraint->variables().begin();
-                if( _constraint->maxDegree( var ) == 1 )
+                if( _constraint->variables().size() == 1 && _constraint->maxDegree( var ) == 1 )
                 {
                     typename VariableBounds<T>::ConstraintBoundMap::iterator cbPair = mpConstraintBoundMap->find( _constraint );
                     if( cbPair != mpConstraintBoundMap->end() )
@@ -805,8 +822,18 @@ namespace smtrat
                     }
                     return true;
                 }
-                else
-                    mpVariableMap->insert( std::pair< const carl::Variable, Variable<T>* >( var, new Variable<T>() ) );
+                else // No bound.
+                {
+                    if( mNonBoundConstraints.insert( _constraint ).second )
+                    {
+                        for( auto sym = _constraint->variables().begin(); sym !=  _constraint->variables().end(); ++sym )
+                        {
+                            Variable<T>* variable = new Variable<T>();
+                            if( !mpVariableMap->insert( std::pair< const carl::Variable, Variable<T>* >( *sym, variable ) ).second )
+                                delete variable;
+                        }
+                    }
+                }
             }
             else
             {
@@ -823,10 +850,10 @@ namespace smtrat
         template<typename T>
         unsigned VariableBounds<T>::removeBound( const Constraint* _constraint, const T* _origin )
         {
-            if( _constraint->relation() != Constraint::NEQ && _constraint->variables().size() == 1 )
+            if( _constraint->relation() != Constraint::NEQ )
             {
                 const carl::Variable& var = *_constraint->variables().begin();
-                if( _constraint->maxDegree( var ) == 1 )
+                if( _constraint->variables().size() == 1 && _constraint->maxDegree( var ) == 1 )
                 {
                     assert( mpConstraintBoundMap->find( _constraint ) != mpConstraintBoundMap->end() );
                     const Bound<T>& bound = *(*mpConstraintBoundMap)[_constraint];
@@ -840,6 +867,10 @@ namespace smtrat
                     }
                     return 1;
                 }
+                else
+                {
+                    mNonBoundConstraints.erase( _constraint );
+                }
             }
             return 0;
         }
@@ -847,10 +878,10 @@ namespace smtrat
         template<typename T>
         unsigned VariableBounds<T>::removeBound( const Constraint* _constraint, const T* _origin, carl::Variable*& _changedVariable )
         {
-            if( _constraint->relation() != Constraint::NEQ && _constraint->variables().size() == 1 )
+            if( _constraint->relation() != Constraint::NEQ )
             {
                 const carl::Variable& var = *_constraint->variables().begin();
-                if( _constraint->maxDegree( var ) == 1 )
+                if( _constraint->variables().size() == 1 && _constraint->maxDegree( var ) == 1 )
                 {
                     assert( mpConstraintBoundMap->find( _constraint ) != mpConstraintBoundMap->end() );
                     const Bound<T>& bound = *(*mpConstraintBoundMap)[_constraint];
@@ -865,6 +896,10 @@ namespace smtrat
                     }
                     return 1;
                 }
+                else
+                {
+                    mNonBoundConstraints.erase( _constraint );
+                }
             }
             return 0;
         }
@@ -872,7 +907,7 @@ namespace smtrat
         #define CONVERT_BOUND(type, namesp) (type != Bound<T>::WEAK_UPPER_BOUND && type != Bound<T>::WEAK_LOWER_BOUND && type != Bound<T>::EQUAL_BOUND ) ? namesp::STRICT : namesp::WEAK
 
         template<typename T>
-        const smtrat::EvalIntervalMap& VariableBounds<T>::getEvalIntervalMap()
+        const smtrat::EvalIntervalMap& VariableBounds<T>::getEvalIntervalMap() const
         {
             assert( mpConflictingVariable == NULL );
             for( auto varVarPair = mpVariableMap->begin(); varVarPair != mpVariableMap->end(); ++varVarPair )
@@ -912,7 +947,7 @@ namespace smtrat
         }
 
         template<typename T>
-        const Interval& VariableBounds<T>::getInterval( const carl::Variable& _var )
+        const Interval& VariableBounds<T>::getInterval( const carl::Variable& _var ) const
         {
             assert( mpConflictingVariable == NULL );
             typename VariableMap::iterator varVarPair = mpVariableMap->find( _var );
@@ -951,7 +986,7 @@ namespace smtrat
         }
 
         template<typename T>
-        const smtrat::EvalDoubleIntervalMap& VariableBounds<T>::getIntervalMap()
+        const smtrat::EvalDoubleIntervalMap& VariableBounds<T>::getIntervalMap() const
         {
             assert( mpConflictingVariable == NULL );
             for( auto varVarPair = mpVariableMap->begin(); varVarPair != mpVariableMap->end(); ++varVarPair )
@@ -991,7 +1026,7 @@ namespace smtrat
         }
 
         template<typename T>
-        const carl::DoubleInterval& VariableBounds<T>::getDoubleInterval( const carl::Variable& _var )
+        const carl::DoubleInterval& VariableBounds<T>::getDoubleInterval( const carl::Variable& _var ) const
         {
             assert( mpConflictingVariable == NULL );
             typename VariableMap::iterator varVarPair = mpVariableMap->find( _var );
@@ -1065,6 +1100,166 @@ namespace smtrat
                 if( !var.supremum().isInfinite() ) originsOfBounds.insert( *var.supremum().origins().begin() );
             }
             return originsOfBounds;
+        }
+        
+        template<typename T>
+        std::vector<std::pair<std::vector< const Constraint* >, const Constraint* >> VariableBounds<T>::getBoundDeductions() const
+        {
+            std::vector<std::pair<std::vector< const Constraint* >, const Constraint* >> result = std::vector<std::pair<std::vector< const Constraint* >, const Constraint* >>();   
+            for( auto cons = mNonBoundConstraints.begin(); cons != mNonBoundConstraints.end(); ++cons )
+            {
+                assert( (*cons)->relation() != Constraint::NEQ );
+                std::vector< const Constraint* > boundConstraints;
+                Variables boundedVars;
+                Variables notBoundedVars;
+                for( auto carlVar = (*cons)->variables().begin(); carlVar != (*cons)->variables().end(); ++carlVar )
+                {
+                    const Variable<T>& var = *(mpVariableMap->find( *carlVar )->second);
+                    if( !var.infimum().isInfinite() || !var.supremum().isInfinite() )
+                    {
+                        boundedVars.insert( *carlVar );
+                        if( !var.infimum().isInfinite() )
+                        {
+                            boundConstraints.push_back( (*var.infimum().origins().begin())->pConstraint() );
+                        }
+                        if( !var.supremum().isInfinite() )
+                        {
+                            boundConstraints.push_back( (*var.supremum().origins().begin())->pConstraint() );
+                        }
+                    }
+                    else
+                    {
+                        notBoundedVars.insert( *carlVar );
+                        if( notBoundedVars.size() > 1 )
+                            break;
+                    }
+                }
+                if( notBoundedVars.size() > 1 )
+                    continue;
+                EvalIntervalMap bounds = getEvalIntervalMap();
+                boundConstraints.push_back( *cons );
+                if( mBoundDeductions.find( boundConstraints ) == mBoundDeductions.end() )
+                {
+//                    std::cout << std::endl << (**cons) << std::endl;
+//                    std::cout << "find variable" << std::endl;
+                    // Check whether all variables in the constraint but one are bounded (upper, lower or both)
+                    if( notBoundedVars.size() == 1 )
+                    {
+                        carl::Variable var = *notBoundedVars.begin();
+//                        std::cout << "var = " << var << std::endl;
+//                        std::cout << "with the bounds: " << std::endl;
+//                        for( auto bcons = boundConstraints.begin(); bcons != boundConstraints.end(); ++bcons )
+//                            std::cout << (**bcons) << std::endl;
+                        Polynomial varCoeff = (*cons)->coefficient( var, 1 );
+                        assert( !varCoeff.isZero() );
+                        Interval varCoeffEvaluated = carl::IntervalEvaluation::evaluate( varCoeff, bounds );
+                        Polynomial remainder = (*cons)->lhs() - (varCoeff * var);
+                        Interval remainderEvaluated = carl::IntervalEvaluation::evaluate( remainder, bounds ).inverse();
+                        
+                        Interval newBoundsA;
+                        Interval newBoundsB;
+                        if( remainderEvaluated.div_ext( newBoundsA, newBoundsB, varCoeffEvaluated ) )
+                        {
+//                            std::cout << "case a: " << newBoundsA << " and " << newBoundsB << std::endl;
+                            carl::BoundType lt = carl::BoundType::INFTY;
+                            carl::BoundType rt = carl::BoundType::INFTY;
+                            Rational lb;
+                            Rational rb;
+                            if( newBoundsA <= newBoundsB )
+                            {
+                                lt = newBoundsA.leftType();
+                                rt = newBoundsB.rightType();
+                                if( lt != carl::BoundType::INFTY ) lb = newBoundsA.left();
+                                if( rt != carl::BoundType::INFTY ) rb = newBoundsB.right();
+                            }
+                            else
+                            {
+                                assert( newBoundsA >= newBoundsB );
+                                lt = newBoundsB.leftType();
+                                rt = newBoundsA.rightType();
+                                if( lt != carl::BoundType::INFTY ) lb = newBoundsB.left();
+                                if( rt != carl::BoundType::INFTY ) rb = newBoundsA.right();
+                            }
+                            if( (*cons)->relation() == Constraint::EQ )
+                            {
+                                if( newBoundsA.leftType() != carl::BoundType::INFTY )
+                                {
+                                    Polynomial boundLhs = Polynomial( var ) - newBoundsA.left();
+                                    Constraint::Relation boundRel = newBoundsA.leftType() == carl::BoundType::STRICT ? Constraint::LEQ : Constraint::LESS;
+                                    const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
+//                                    std::cout << "it follows: " << *newBoundConstraint << std::endl;
+                                    result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
+                                }
+                                if( newBoundsB.rightType() != carl::BoundType::INFTY )
+                                {
+                                    Polynomial boundLhs = Polynomial( var ) - newBoundsB.right();
+                                    Constraint::Relation boundRel = newBoundsA.rightType() == carl::BoundType::STRICT ? Constraint::LEQ : Constraint::LESS;
+                                    const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
+//                                    std::cout << "it follows: " << *newBoundConstraint << std::endl;
+                                    result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if( !varCoeffEvaluated.contains( ZERO_RATIONAL ) || (*cons)->relation() == Constraint::EQ )
+                            {
+//                                std::cout << "case b: " << newBoundsA << std::endl;
+                                Constraint::Relation rel = (*cons)->relation();
+                                if( varCoeffEvaluated.sgn() == carl::Sign::NEGATIVE )
+                                {
+                                    switch( rel )
+                                    {
+                                        case Constraint::LEQ:
+                                            rel = Constraint::GEQ;
+                                            break;
+                                        case Constraint::GEQ:
+                                            rel = Constraint::LEQ;
+                                            break;
+                                        case Constraint::LESS:
+                                            rel = Constraint::GREATER;
+                                            break;
+                                        case Constraint::GREATER:
+                                            rel = Constraint::LESS;
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                }
+                                if( newBoundsA.leftType() != carl::BoundType::INFTY )
+                                {
+                                    if( rel == Constraint::EQ || rel == Constraint::GEQ || rel == Constraint::GREATER )
+                                    {
+                                        Polynomial boundLhs = Polynomial( var ) - newBoundsA.left();
+                                        Constraint::Relation boundRel = Constraint::GEQ;
+                                        if( newBoundsA.leftType() == carl::BoundType::STRICT || rel == Constraint::GREATER )
+                                            boundRel = Constraint::GREATER;
+                                        const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
+//                                        std::cout << "it follows: " << *newBoundConstraint << std::endl;
+                                        result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
+                                    }
+                                }
+                                if( newBoundsA.rightType() != carl::BoundType::INFTY )
+                                {
+                                    if( rel == Constraint::EQ || rel == Constraint::LEQ || rel == Constraint::LESS )
+                                    {
+                                        Polynomial boundLhs = Polynomial( var ) - newBoundsA.right();
+                                        Constraint::Relation boundRel = Constraint::LEQ;
+                                        if( newBoundsA.rightType() == carl::BoundType::STRICT || rel == Constraint::LESS )
+                                            boundRel = Constraint::LESS;
+                                        const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
+//                                        std::cout << "it follows: " << *newBoundConstraint << std::endl;
+                                        result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    mBoundDeductions.insert( boundConstraints );
+                }
+                boundConstraints.pop_back();
+            }
+            return result;
         }
 
         template<typename T>

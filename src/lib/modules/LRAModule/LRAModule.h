@@ -100,7 +100,7 @@ namespace smtrat
             bool assertSubformula( Formula::const_iterator );
             void removeSubformula( Formula::const_iterator );
             Answer isConsistent();
-            void updateModel();
+            void updateModel() const;
             EvalRationalMap getRationalModel() const;
             EvalIntervalMap getVariableBounds() const;
             void initialize();

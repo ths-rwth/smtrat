@@ -140,6 +140,15 @@ namespace vs
         public:
             
             /**
+             * @return true, if the this square root expression corresponds to an integer value;
+             *         false, otherwise.
+             */
+            bool isInteger() const
+            {
+                return radicand().isZero() && denominator() == smtrat::ONE_POLYNOMIAL && constantPart().isConstant() && carl::isInteger( constantPart().lcoeff() );
+            }
+            
+            /**
              * @param _sqrtEx Square root expression to compare with.
              * @return  true, if this square root expression and the given one are equal;
              *          false, otherwise.
@@ -202,6 +211,8 @@ namespace vs
              * @return The string representation of this square root expression.
              */
             std::string toString( bool _infix = false, bool _friendlyNames = true ) const;
+            
+            bool evaluate( smtrat::Rational& _result, const smtrat::EvalRationalMap& _evalMap, int _rounding = 0 ) const;
             
             /**
              * Substitutes a variable in an expression by a square root expression, which results in a square root expression.

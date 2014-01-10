@@ -31,9 +31,9 @@
 #define VS_INCREMENTAL
 #define VS_INFEASIBLE_SUBSET_GENERATION
 
-//#define VS_STATISTICS
+#define VS_STATISTICS
 //#define VS_PRINT_ANSWERS
-#define VS_LOG_INTERMEDIATE_STEPS
+//#define VS_LOG_INTERMEDIATE_STEPS
 
 #include "Substitute.h"
 #include "State.h"
@@ -92,7 +92,7 @@ namespace smtrat
             Variables           mAllVariables;
             FormulaConditionMap mFormulaConditionMap;
             ValuationMap        mRanking;
-            VarNamePairVector   mVariableVector;
+            mutable VarNamePairVector   mVariableVector;
 
         public:
 
@@ -106,7 +106,7 @@ namespace smtrat
             bool assertSubformula( Formula::const_iterator );
             Answer isConsistent();
             void removeSubformula( Formula::const_iterator );
-            void updateModel();
+            void updateModel() const;
 
             // Printing methods.
             void printAll( const std::string& = "", std::ostream& = std::cout ) const;
@@ -127,6 +127,8 @@ namespace smtrat
                 mIDCounter++;
             }
             
+            inline Answer consistencyTrue();
+            
             void eliminate( vs::State*, const carl::Variable&, const vs::Condition* );
             bool substituteAll( vs::State*, vs::ConditionList& );
             void propagateNewConditions( vs::State* );
@@ -136,6 +138,8 @@ namespace smtrat
             bool removeStateFromRanking( vs::State& );
             void removeStatesFromRanking( vs::State& );
             void updateInfeasibleSubset( bool = false );
+            EvalRationalMap getIntervalAssignment( const vs::State* _state ) const;
+            Answer solutionInDomain();
             static void allMinimumCoveringSets( const vs::ConditionSetSetSet&, vs::ConditionSetSet& );
             bool adaptPassedFormula( const vs::State&, FormulaConditionMap&, bool = false );
             Answer runBackendSolvers( vs::State*, bool = false );
