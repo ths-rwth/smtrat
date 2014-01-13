@@ -1007,14 +1007,36 @@ Return:
             findSimpleConflicts( *result.first );
             #endif
         }
-        else if( _constraint->relation() == Constraint::LEQ )
+        if( _constraint->relation() == Constraint::LEQ || ( _constraint->integerValued() && _constraint->relation() == Constraint::NEQ ) )
         {
-            Value<Numeric>* value = new Value<Numeric>( _boundValue );
-            pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), _constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), _constraint );
+            
+            const Constraint* constraint;
+            Value<Numeric>* value;
+            if( _constraint->integerValued() && _constraint->relation() == Constraint::NEQ )
+            {
+                constraint = Formula::newConstraint( _constraint->lhs(), Constraint::LESS );
+                value = new Value<Numeric>( _boundValue - ONE_RATIONAL );
+            }
+            else
+            {
+                constraint = _constraint;
+                value = new Value<Numeric>( _boundValue );
+            }
+            pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), constraint );
             vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
-            result.first->boundExists();
             boundVector->push_back( result.first );
-            mConstraintToBound[_constraint] = boundVector;
+            mConstraintToBound[constraint] = boundVector;
+            if( _constraint->integerValued() && _constraint->relation() == Constraint::NEQ )
+            {
+                vector< const Bound<Numeric>* >* boundVectorB = new vector< const Bound<Numeric>* >();
+                boundVectorB->push_back( result.first );
+                mConstraintToBound[_constraint] = boundVectorB;
+                result.first->setNeqRepresentation( _constraint );
+            }
+            else
+            {  
+                result.first->boundExists();
+            }
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
             if( result.second.first != NULL && !result.second.first->isInfinite() )
             {
@@ -1027,7 +1049,7 @@ Return:
                 mpStatistics->addDeduction();
                 #endif
             }
-            if( result.second.second != NULL && !result.second.second->isInfinite() )
+            if( result.second.second != NULL && !result.second.second->isInfinite() && !(_constraint->integerValued() && _constraint->relation() == Constraint::NEQ) )
             {
                 Formula* deduction = new Formula( OR );
                 deduction->addSubformula( new Formula( NOT ) );
@@ -1043,14 +1065,33 @@ Return:
             findSimpleConflicts( *result.first );
             #endif
         }
-        else if( _constraint->relation() == Constraint::GEQ )
+        if( _constraint->relation() == Constraint::GEQ || ( _constraint->integerValued() && _constraint->relation() == Constraint::NEQ ) )
         {
-            Value<Numeric>* value = new Value<Numeric>( _boundValue );
-            pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), _constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), _constraint );
+            const Constraint* constraint;
+            Value<Numeric>* value;
+            if( _constraint->integerValued() && _constraint->relation() == Constraint::NEQ )
+            {
+                constraint = Formula::newConstraint( _constraint->lhs(), Constraint::GREATER );
+                value = new Value<Numeric>( _boundValue + ONE_RATIONAL );
+            }
+            else
+            {
+                constraint = _constraint;
+                value = new Value<Numeric>( _boundValue );
+            }
+            pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), constraint );
             vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
-            result.first->boundExists();
             boundVector->push_back( result.first );
-            mConstraintToBound[_constraint] = boundVector;
+            mConstraintToBound[constraint] = boundVector;
+            if( _constraint->integerValued() && _constraint->relation() == Constraint::NEQ )
+            {
+                mConstraintToBound[_constraint]->push_back( result.first );
+                result.first->setNeqRepresentation( _constraint );
+            }
+            else
+            {  
+                result.first->boundExists();
+            }
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
             if( result.second.first != NULL && !result.second.first->isInfinite() )
             {
@@ -1063,7 +1104,7 @@ Return:
                 mpStatistics->addDeduction();
                 #endif
             }
-            if( result.second.second != NULL && !result.second.second->isInfinite() )
+            if( result.second.second != NULL && !result.second.second->isInfinite() && !(_constraint->integerValued() && _constraint->relation() == Constraint::NEQ) )
             {
                 Formula* deduction = new Formula( OR );
                 deduction->addSubformula( new Formula( NOT ) );
@@ -1079,116 +1120,113 @@ Return:
             findSimpleConflicts( *result.first );
             #endif
         }
-        else
+        if( _constraint->relation() == Constraint::LESS || _constraint->relation() == Constraint::NEQ )
         {
-            if( _constraint->relation() == Constraint::LESS || _constraint->relation() == Constraint::NEQ )
+            const Constraint* constraint;
+            if( _constraint->relation() != Constraint::NEQ )
             {
-                const Constraint* constraint;
-                if( _constraint->relation() != Constraint::NEQ )
-                {
-                    constraint = _constraint;
-                }
-                else
-                {
-                    constraint = Formula::newConstraint( _constraint->lhs(), Constraint::LESS );
-                }
-                Value<Numeric>* value = new Value<Numeric>( _boundValue, (_constraintInverted ? 1 : -1) );
-                pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), constraint );
-                vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
-                boundVector->push_back( result.first );
-                mConstraintToBound[constraint] = boundVector;
-                if( _constraint->relation() == Constraint::NEQ )
-                {
-                    vector< const Bound<Numeric>* >* boundVectorB = new vector< const Bound<Numeric>* >();
-                    boundVectorB->push_back( result.first );
-                    mConstraintToBound[_constraint] = boundVectorB;
-                    result.first->setNeqRepresentation( _constraint );
-                }
-                else
-                {  
-                    result.first->boundExists();
-                }
-                #ifdef LRA_SIMPLE_THEORY_PROPAGATION
-                if( result.second.first != NULL && !result.second.first->isInfinite() )
-                {
-                    Formula* deduction = new Formula( OR );
-                    deduction->addSubformula( new Formula( NOT ) );
-                    deduction->back()->addSubformula( result.second.first->pAsConstraint() );
-                    deduction->addSubformula( _constraint );
-                    addDeduction( deduction );
-                    #ifdef SMTRAT_DEVOPTION_Statistics
-                    mpStatistics->addDeduction();
-                    #endif
-                }
-                if( result.second.second != NULL && !result.second.second->isInfinite() && _constraint->relation() != Constraint::NEQ )
-                {
-                    Formula* deduction = new Formula( OR );
-                    deduction->addSubformula( new Formula( NOT ) );
-                    deduction->back()->addSubformula( _constraint );
-                    deduction->addSubformula( result.second.second->pAsConstraint() );
-                    addDeduction( deduction );
-                    #ifdef SMTRAT_DEVOPTION_Statistics
-                    mpStatistics->addDeduction();
-                    #endif
-                }
-                #endif
-                #ifdef LRA_SIMPLE_CONFLICT_SEARCH
-                findSimpleConflicts( *result.first );
+                constraint = _constraint;
+            }
+            else
+            {
+                constraint = Formula::newConstraint( _constraint->lhs(), Constraint::LESS );
+            }
+            Value<Numeric>* value = new Value<Numeric>( _boundValue, (_constraintInverted ? 1 : -1) );
+            pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), constraint );
+            vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
+            boundVector->push_back( result.first );
+            mConstraintToBound[constraint] = boundVector;
+            if( _constraint->relation() == Constraint::NEQ )
+            {
+                vector< const Bound<Numeric>* >* boundVectorB = new vector< const Bound<Numeric>* >();
+                boundVectorB->push_back( result.first );
+                mConstraintToBound[_constraint] = boundVectorB;
+                result.first->setNeqRepresentation( _constraint );
+            }
+            else
+            {  
+                result.first->boundExists();
+            }
+            #ifdef LRA_SIMPLE_THEORY_PROPAGATION
+            if( result.second.first != NULL && !result.second.first->isInfinite() )
+            {
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( result.second.first->pAsConstraint() );
+                deduction->addSubformula( _constraint );
+                addDeduction( deduction );
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                mpStatistics->addDeduction();
                 #endif
             }
-            if( _constraint->relation() == Constraint::GREATER || _constraint->relation() == Constraint::NEQ )
+            if( result.second.second != NULL && !result.second.second->isInfinite() && _constraint->relation() != Constraint::NEQ )
             {
-                const Constraint* constraint;
-                if( _constraint->relation() != Constraint::NEQ )
-                {
-                    constraint = _constraint;
-                }
-                else
-                {
-                    constraint = Formula::newConstraint( _constraint->lhs(), Constraint::GREATER );
-                }
-                Value<Numeric>* value = new Value<Numeric>( _boundValue, (_constraintInverted ? -1 : 1) );
-                pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), constraint );
-                vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
-                boundVector->push_back( result.first );
-                mConstraintToBound[constraint] = boundVector;
-                if( _constraint->relation() == Constraint::NEQ )
-                {
-                    mConstraintToBound[_constraint]->push_back( result.first );
-                    result.first->setNeqRepresentation( _constraint );
-                }
-                else
-                {  
-                    result.first->boundExists();
-                }
-                #ifdef LRA_SIMPLE_THEORY_PROPAGATION
-                if( result.second.first != NULL && !result.second.first->isInfinite() )
-                {
-                    Formula* deduction = new Formula( OR );
-                    deduction->addSubformula( new Formula( NOT ) );
-                    deduction->back()->addSubformula( result.second.first->pAsConstraint() );
-                    deduction->addSubformula( _constraint );
-                    addDeduction( deduction );
-                    #ifdef SMTRAT_DEVOPTION_Statistics
-                    mpStatistics->addDeduction();
-                    #endif
-                }
-                if( result.second.second != NULL && !result.second.second->isInfinite() && _constraint->relation() != Constraint::NEQ )
-                {
-                    Formula* deduction = new Formula( OR );
-                    deduction->addSubformula( new Formula( NOT ) );
-                    deduction->back()->addSubformula( _constraint );
-                    deduction->addSubformula( result.second.second->pAsConstraint() );
-                    addDeduction( deduction );
-                    #ifdef SMTRAT_DEVOPTION_Statistics
-                    mpStatistics->addDeduction();
-                    #endif
-                }
-                #endif
-                #ifdef LRA_SIMPLE_CONFLICT_SEARCH
-                findSimpleConflicts( *result.first );
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( _constraint );
+                deduction->addSubformula( result.second.second->pAsConstraint() );
+                addDeduction( deduction );
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                mpStatistics->addDeduction();
                 #endif
             }
+            #endif
+            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
+            findSimpleConflicts( *result.first );
+            #endif
+        }
+        if( _constraint->relation() == Constraint::GREATER || _constraint->relation() == Constraint::NEQ )
+        {
+            const Constraint* constraint;
+            if( _constraint->relation() != Constraint::NEQ )
+            {
+                constraint = _constraint;
+            }
+            else
+            {
+                constraint = Formula::newConstraint( _constraint->lhs(), Constraint::GREATER );
+            }
+            Value<Numeric>* value = new Value<Numeric>( _boundValue, (_constraintInverted ? -1 : 1) );
+            pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), constraint );
+            vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
+            boundVector->push_back( result.first );
+            mConstraintToBound[constraint] = boundVector;
+            if( _constraint->relation() == Constraint::NEQ )
+            {
+                mConstraintToBound[_constraint]->push_back( result.first );
+                result.first->setNeqRepresentation( _constraint );
+            }
+            else
+            {  
+                result.first->boundExists();
+            }
+            #ifdef LRA_SIMPLE_THEORY_PROPAGATION
+            if( result.second.first != NULL && !result.second.first->isInfinite() )
+            {
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( result.second.first->pAsConstraint() );
+                deduction->addSubformula( _constraint );
+                addDeduction( deduction );
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                mpStatistics->addDeduction();
+                #endif
+            }
+            if( result.second.second != NULL && !result.second.second->isInfinite() && _constraint->relation() != Constraint::NEQ )
+            {
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( _constraint );
+                deduction->addSubformula( result.second.second->pAsConstraint() );
+                addDeduction( deduction );
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                mpStatistics->addDeduction();
+                #endif
+            }
+            #endif
+            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
+            findSimpleConflicts( *result.first );
+            #endif
         }
     }
 

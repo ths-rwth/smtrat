@@ -270,6 +270,32 @@ namespace smtrat
             }
             
             /**
+             * @return true, if it contains only integer valued variables.
+             */
+            bool integerValued() const
+            {
+                for( auto var = mVariables.begin(); var != mVariables.end(); ++var )
+                {
+                    if( var->getType() != carl::VariableType::VT_INT )
+                        return false;
+                }
+                return true;
+            }
+            
+            /**
+             * @return true, if it contains only real valued variables.
+             */
+            bool realValued() const
+            {
+                for( auto var = mVariables.begin(); var != mVariables.end(); ++var )
+                {
+                    if( var->getType() != carl::VariableType::VT_REAL )
+                        return false;
+                }
+                return true;
+            }
+            
+            /**
              * Checks if this constraints contains an integer valued variable.
              * @return true, if it does;
              *          false, otherwise.
