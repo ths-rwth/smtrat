@@ -205,23 +205,32 @@ namespace smtrat
     {
         if( _rel == Constraint::GREATER )
         {
-            Polynomial lhs = _lhs.isZero() ? ZERO_POLYNOMIAL : -_lhs.coprimeCoefficients();
-            assert( _lhs.isZero() || (_lhs.lterm()->coeff() < 0) == (_lhs.coprimeCoefficients().lterm()->coeff() < 0) );
+            Polynomial lhs = _lhs.isZero() ? ZERO_POLYNOMIAL : _lhs.coprimeCoefficients();
+            if( !lhs.isZero() && (_lhs.lterm()->coeff() < 0) == (lhs.lterm()->coeff() < 0) )
+            {
+                lhs = -lhs;
+            }
             return new Constraint( lhs, Constraint::LESS );
         }
         else if( _rel == Constraint::GEQ )
         {
-            Polynomial lhs = _lhs.isZero() ? ZERO_POLYNOMIAL : -_lhs.coprimeCoefficients();
-            assert( _lhs.isZero() || (_lhs.lterm()->coeff() < 0) == (_lhs.coprimeCoefficients().lterm()->coeff() < 0) );
+            Polynomial lhs = _lhs.isZero() ? ZERO_POLYNOMIAL : _lhs.coprimeCoefficients();
+            if( !lhs.isZero() && (_lhs.lterm()->coeff() < 0) == (lhs.lterm()->coeff() < 0) )
+            {
+                lhs = -lhs;
+            }
             return new Constraint( lhs, Constraint::LEQ );
         }
         else
         {
             Polynomial lhs = _lhs.isZero() ? ZERO_POLYNOMIAL : _lhs.coprimeCoefficients();
-            assert( _lhs.isZero() || (_lhs.lterm()->coeff() < 0) == (_lhs.coprimeCoefficients().lterm()->coeff() < 0) );
             if( _rel == Constraint::EQ || _rel == Constraint::NEQ ) 
             {
                 if( !_lhs.isZero() && lhs.lterm()->coeff() < ZERO_RATIONAL ) lhs = -lhs;
+            }
+            else if( !lhs.isZero() && (_lhs.lterm()->coeff() < 0) != (lhs.lterm()->coeff() < 0) )
+            {
+                lhs = -lhs;
             }
             return new Constraint( lhs, _rel );
         }
@@ -229,7 +238,6 @@ namespace smtrat
 
     const Constraint* ConstraintPool::addConstraintToPool( Constraint* _constraint )
     {
-        _constraint->init();
         unsigned constraintConsistent = _constraint->isConsistent();
 //        cout << *_constraint << " is consistent: " << constraintConsistent << endl;
         if( constraintConsistent == 2 ) // Constraint contains variables.

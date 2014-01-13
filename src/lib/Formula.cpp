@@ -586,7 +586,7 @@ namespace smtrat
             for( auto subformula = mpSubformulas->begin(); subformula != mpSubformulas->end(); ++subformula )
             {
                 if( subformula != mpSubformulas->begin() )
-                    result += stringOfType;
+                    result += " " + stringOfType + " ";
                 if( !_oneline ) 
                     result += "\n";
                 result += (*subformula)->toString( _withActivity, _resolveUnequal, _oneline ? "" : (_init + "   "), _oneline, true, _friendlyNames );

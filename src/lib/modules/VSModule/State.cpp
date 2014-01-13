@@ -66,7 +66,8 @@ namespace vs
         mpConflictSets( new ConflictSets() ),
         mpChildren( new std::list< State* >() ),
         mpTooHighDegreeConditions( new set< const Condition* >() ),
-        mpVariableBounds( _withVariableBounds ? new VariableBoundsCond() : NULL )
+        mpVariableBounds( _withVariableBounds ? new VariableBoundsCond() : NULL ),
+        mMinIntTestCandidate( smtrat::ZERO_RATIONAL )
     {}
 
     State::State( State* const _father, const Substitution& _substitution, bool _withVariableBounds ):
@@ -94,7 +95,8 @@ namespace vs
         mpConflictSets( new ConflictSets() ),
         mpChildren( new std::list< State* >() ),
         mpTooHighDegreeConditions( new set< const Condition* >() ),
-        mpVariableBounds( _withVariableBounds ? new VariableBoundsCond() : NULL )
+        mpVariableBounds( _withVariableBounds ? new VariableBoundsCond() : NULL ),
+        mMinIntTestCandidate( smtrat::ZERO_RATIONAL )
     {}
 
     State::~State()
@@ -1235,11 +1237,11 @@ namespace vs
         }
         if( conditionDeleted )
         {
-            if( !isRoot() )
-            {
-                mTakeSubResultCombAgain = true;
-                mType = COMBINE_SUBRESULTS;
-            }
+//            if( !isRoot() )
+//            {
+//                mTakeSubResultCombAgain = true;
+//                mType = COMBINE_SUBRESULTS;
+//            }
             mInconsistent = false;
             mHasRecentlyAddedConditions = recentlyAddedConditionLeft;
         }
@@ -1313,11 +1315,11 @@ namespace vs
         }
         if( conditionDeleted )
         {
-            if( !isRoot() )
-            {
-                mTakeSubResultCombAgain = true;
-                mType = COMBINE_SUBRESULTS;
-            }
+//            if( !isRoot() )
+//            {
+//                mTakeSubResultCombAgain = true;
+//                mType = COMBINE_SUBRESULTS;
+//            }
             mInconsistent = false;
             mHasRecentlyAddedConditions = recentlyAddedConditionLeft;
         }
@@ -1594,8 +1596,20 @@ namespace vs
             {
                 std::vector<DisjunctionOfConditionConjunctions> subResults = std::vector<DisjunctionOfConditionConjunctions>();
                 subResults.push_back( DisjunctionOfConditionConjunctions() );
-                subResults.back().push_back( ConditionList() );
-                subResults.back().back().push_back( new Condition( *sideCond, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+                if( _substitution.variable().getType() == carl::VariableType::VT_INT && (*sideCond)->relation() == smtrat::Constraint::NEQ )
+                {
+                    subResults.back().push_back( ConditionList() );
+                    const smtrat::Constraint* consLess = smtrat::Formula::newConstraint( (*sideCond)->lhs(), smtrat::Constraint::LESS );
+                    subResults.back().back().push_back( new vs::Condition( consLess, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+                    const smtrat::Constraint* consGreater = smtrat::Formula::newConstraint( (*sideCond)->lhs(), smtrat::Constraint::GREATER );
+                    subResults.back().push_back( ConditionList() );
+                    subResults.back().back().push_back( new vs::Condition( consGreater, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+                }
+                else
+                {
+                    subResults.back().push_back( ConditionList() );
+                    subResults.back().back().push_back( new Condition( *sideCond, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+                }
                 state->addSubstitutionResults( subResults );
                 state->rType() = SUBSTITUTION_TO_APPLY;
             }
@@ -1606,7 +1620,7 @@ namespace vs
         else return false;
     }
 
-    void State::updateValuation( bool _preferMinInf )
+    void State::updateValuation()
     {
         if( tooHighDegree() )
         {
@@ -1616,7 +1630,7 @@ namespace vs
         else
         {
             if( !isRoot() ) 
-                mValuation = 100 * treeDepth() + 10 * substitution().valuate( _preferMinInf );
+                mValuation = 100 * treeDepth() + 10 * substitution().valuate( substitution().variable().getType() == carl::VariableType::VT_REAL );
             else 
                 mValuation = 1;
             if( isInconsistent() ) 

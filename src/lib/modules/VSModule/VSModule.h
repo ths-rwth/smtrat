@@ -82,16 +82,16 @@ namespace smtrat
             typedef std::vector<std::pair<carl::Variable,carl::Variable>>   VarNamePairVector;
 
             // Members.
-            bool                mConditionsChanged;
-            bool                mInconsistentConstraintAdded;
-            unsigned            mIDCounter;
+            bool                        mConditionsChanged;
+            bool                        mInconsistentConstraintAdded;
+            unsigned                    mIDCounter;
             #ifdef VS_STATISTICS
-            unsigned            mStepCounter;
+            unsigned                    mStepCounter;
             #endif
-            vs::State*          mpStateTree;
-            Variables           mAllVariables;
-            FormulaConditionMap mFormulaConditionMap;
-            ValuationMap        mRanking;
+            vs::State*                  mpStateTree;
+            Variables                   mAllVariables;
+            FormulaConditionMap         mFormulaConditionMap;
+            ValuationMap                mRanking;
             mutable VarNamePairVector   mVariableVector;
 
         public:
@@ -137,6 +137,7 @@ namespace smtrat
             void insertTooHighDegreeStatesInRanking( vs::State* );
             bool removeStateFromRanking( vs::State& );
             void removeStatesFromRanking( vs::State& );
+            std::set<const Formula*> getReasons( const vs::Condition::Set& _conditions ) const;
             void updateInfeasibleSubset( bool = false );
             EvalRationalMap getIntervalAssignment( const vs::State* _state ) const;
             Answer solutionInDomain();

@@ -860,52 +860,6 @@ Return:
     }
 
     /**
-     * Adds the following lemmas for the given constraint p!=0
-     *
-     *      (p!=0 <-> (p<0 or p>0))
-     * and  not(p<0 and p>0)
-     *
-     * @param _unequalConstraint A constraint having the relation symbol !=.
-     */
-    void LRAModule::splitUnequalConstraint( const Constraint* _unequalConstraint )
-    {
-        assert( _unequalConstraint->relation() == Constraint::NEQ );
-        const Constraint* lessConstraint = Formula::newConstraint( _unequalConstraint->lhs(), Constraint::LESS );
-        const Constraint* greaterConstraint = Formula::newConstraint( _unequalConstraint->lhs(), Constraint::GREATER );
-        // (not p!=0 or p<0 or p>0)
-        Formula* deductionA = new Formula( OR );
-        Formula* notConstraint = new Formula( NOT );
-        notConstraint->addSubformula( _unequalConstraint );
-        deductionA->addSubformula( notConstraint );
-        deductionA->addSubformula( lessConstraint );
-        deductionA->addSubformula( greaterConstraint );
-        addDeduction( deductionA );
-        // (not p<0 or p!=0)
-        Formula* deductionB = new Formula( OR );
-        Formula* notLessConstraint = new Formula( NOT );
-        notLessConstraint->addSubformula( lessConstraint );
-        deductionB->addSubformula( notLessConstraint );
-        deductionB->addSubformula( _unequalConstraint );
-        addDeduction( deductionB );
-        // (not p>0 or p!=0)
-        Formula* deductionC = new Formula( OR );
-        Formula* notGreaterConstraint = new Formula( NOT );
-        notGreaterConstraint->addSubformula( greaterConstraint );
-        deductionC->addSubformula( notGreaterConstraint );
-        deductionC->addSubformula( _unequalConstraint );
-        addDeduction( deductionC );
-        // (not p>0 or not p>0)
-        Formula* deductionD = new Formula( OR );
-        Formula* notGreaterConstraintB = new Formula( NOT );
-        notGreaterConstraintB->addSubformula( greaterConstraint );
-        Formula* notLessConstraintB = new Formula( NOT );
-        notLessConstraintB->addSubformula( lessConstraint );
-        deductionD->addSubformula( notGreaterConstraintB );
-        deductionD->addSubformula( notLessConstraintB );
-        addDeduction( deductionD );
-    }
-
-    /**
      * Activate the given bound and update the supremum, the infimum and the assignment of
      * variable to which the bound belongs.
      *

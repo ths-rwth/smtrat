@@ -65,6 +65,26 @@ namespace smtrat
         mLhsDefinitess( carl::Definiteness::NON )
     {
         mLhs.gatherVariables( mVariables );
+        
+        if( hasIntegerValuedVariable() && !hasRealValuedVariable() )
+        {
+            if( relation() == LESS )
+            {
+                mLhs = mLhs + ONE_RATIONAL;
+                mRelation = LEQ;
+                mHash = CONSTRAINT_HASH( mLhs, mRelation );
+            }
+            if( relation() == GREATER )
+            {
+                mLhs = mLhs - ONE_RATIONAL;
+                mRelation = GEQ;
+                mHash = CONSTRAINT_HASH( mLhs, mRelation );
+            }
+        }
+        carl::VariablesInformation<false,Polynomial> varinfos = mLhs.getVarInfo<false>();
+        for( auto varInfo = varinfos.begin(); varInfo != varinfos.end(); ++varInfo )
+            mVarInfoMap.emplace_hint( mVarInfoMap.end(), *varInfo );
+        mLhsDefinitess = mLhs.definiteness();
     }
 
     Constraint::Constraint( const Constraint& _constraint, bool _rehash ):
@@ -313,64 +333,82 @@ namespace smtrat
                     assert( false );
             }
         }
-        else if( hasIntegerValuedVariable() && !hasRealValuedVariable() && !lhs().isConstant() && lhs().constantPart() != ZERO_RATIONAL )
+        else if( hasIntegerValuedVariable() && !hasRealValuedVariable() && !lhs().isConstant() )
         {
-            // Find the gcd of the coefficients of the non-constant terms.
-            auto term = lhs().rbegin();
-            assert( !(*term)->isConstant() && carl::isInteger( (*term)->coeff() ) );
-            Rational g = carl::abs( (*term)->coeff() );
-            ++term;
-            for( ; term != lhs().rend(); ++term )
+            if( lhs().constantPart() != ZERO_RATIONAL )
             {
-                if( !(*term)->isConstant() )
+                // Find the gcd of the coefficients of the non-constant terms.
+                auto term = lhs().rbegin();
+                assert( !(*term)->isConstant() && carl::isInteger( (*term)->coeff() ) );
+                Rational g = carl::abs( (*term)->coeff() );
+                ++term;
+                for( ; term != lhs().rend(); ++term )
                 {
-                    assert( carl::isInteger( (*term)->coeff() ) );
-                    g = carl::gcd( carl::getNum( g ), carl::getNum( carl::abs( (*term)->coeff() ) ) );
+                    if( !(*term)->isConstant() )
+                    {
+                        assert( carl::isInteger( (*term)->coeff() ) );
+                        g = carl::gcd( carl::getNum( g ), carl::getNum( carl::abs( (*term)->coeff() ) ) );
+                    }
                 }
-            }
-            assert( g > ZERO_RATIONAL );
-            if( carl::mod( carl::getNum( lhs().constantPart() ), carl::getNum( g ) ) != 0 )
-            {
-                switch( relation() )
+                assert( g > ZERO_RATIONAL );
+                if( carl::mod( carl::getNum( lhs().constantPart() ), carl::getNum( g ) ) != 0 )
                 {
-                    case EQ:
-                        return new Constraint( ZERO_POLYNOMIAL, LESS );
-                    case NEQ:
-                        return new Constraint( ZERO_POLYNOMIAL, EQ );
-                    case LEQ:
+                    switch( relation() )
                     {
-                        Polynomial newLhs = ((lhs() - lhs().constantPart()) * (1 / g));
-                        newLhs += carl::floor( (lhs().constantPart() / g) ) + ONE_RATIONAL;
-                        return new Constraint( newLhs, LEQ );
+                        case EQ:
+                            return new Constraint( ZERO_POLYNOMIAL, LESS );
+                        case NEQ:
+                            return new Constraint( ZERO_POLYNOMIAL, EQ );
+                        case LEQ:
+                        {
+                            Polynomial newLhs = ((lhs() - lhs().constantPart()) * (1 / g));
+                            newLhs += carl::floor( (lhs().constantPart() / g) ) + ONE_RATIONAL;
+                            return new Constraint( newLhs, LEQ );
+                        }
+                        case GEQ:
+                        {
+                            Polynomial newLhs = ((lhs() - lhs().constantPart()) * (1 / g));
+                            newLhs += carl::floor( (lhs().constantPart() / g) );
+                            return new Constraint( newLhs, GEQ );
+                        }
+                        case LESS:
+                        {
+                            Polynomial newLhs = ((lhs() - lhs().constantPart()) * (1 / g));
+                            newLhs += carl::floor( (lhs().constantPart() / g) ) + ONE_RATIONAL;
+                            return new Constraint( newLhs, LEQ );
+                        }
+                        case GREATER:
+                        {
+                            Polynomial newLhs = ((lhs() - lhs().constantPart()) * (1 / g));
+                            newLhs += carl::floor( (lhs().constantPart() / g) );
+                            return new Constraint( newLhs, GEQ );
+                        }
+                        default:
+                            assert( false );
                     }
-                    case GEQ:
-                    {
-                        Polynomial newLhs = ((lhs() - lhs().constantPart()) * (1 / g));
-                        newLhs += carl::floor( (lhs().constantPart() / g) );
-                        return new Constraint( newLhs, GEQ );
-                    }
-                    case LESS:
-                    {
-                        Polynomial newLhs = ((lhs() - lhs().constantPart()) * (1 / g));
-                        newLhs += carl::floor( (lhs().constantPart() / g) ) + ONE_RATIONAL;
-                        return new Constraint( newLhs, LEQ );
-                    }
-                    case GREATER:
-                    {
-                        Polynomial newLhs = ((lhs() - lhs().constantPart()) * (1 / g));
-                        newLhs += carl::floor( (lhs().constantPart() / g) );
-                        return new Constraint( newLhs, GEQ );
-                    }
-                    default:
-                        assert( false );
                 }
             }
         }
         return nullptr;
     }
 
-    void Constraint::init() const
+    void Constraint::init()
     {
+        if( hasIntegerValuedVariable() && !hasRealValuedVariable() )
+        {
+            if( relation() == LESS )
+            {
+                mLhs = mLhs + ONE_RATIONAL;
+                mRelation = LEQ;
+                mHash = CONSTRAINT_HASH( mLhs, mRelation );
+            }
+            if( relation() == GREATER )
+            {
+                mLhs = mLhs - ONE_RATIONAL;
+                mRelation = GEQ;
+                mHash = CONSTRAINT_HASH( mLhs, mRelation );
+            }
+        }
         carl::VariablesInformation<false,Polynomial> varinfos = mLhs.getVarInfo<false>();
         for( auto varInfo = varinfos.begin(); varInfo != varinfos.end(); ++varInfo )
             mVarInfoMap.emplace_hint( mVarInfoMap.end(), *varInfo );

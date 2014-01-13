@@ -145,7 +145,6 @@ namespace smtrat
             #endif
             void adaptPassedFormula();
             bool checkAssignmentForNonlinearConstraint();
-            void splitUnequalConstraint( const Constraint* );
             bool activateBound( const lra::Bound<lra::Numeric>*, std::set<const Formula*>& );
             void setBound( lra::Variable<lra::Numeric>&, bool, const lra::Numeric&, const Constraint* );
             void findSimpleConflicts( const lra::Bound<lra::Numeric>& );

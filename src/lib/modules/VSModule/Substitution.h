@@ -103,6 +103,13 @@ namespace vs
             {
                 return *mpTerm;
             }
+            
+            void setTerm( const smtrat::Rational& _value )
+            {
+                assert( mType == Type::MINUS_INFINITY );
+                *mpTerm = SqrtEx( smtrat::Polynomial( _value ) );
+                mType = Type::NORMAL;
+            }
 
             /**
              * @return A reference to the type of this substitution.

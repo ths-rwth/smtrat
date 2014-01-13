@@ -326,12 +326,15 @@ namespace smtrat
      * given value is rounded down and up, if the given variable is integer-valued.
      * @param _var The variable to branch for.
      * @param _value The value to branch at.
+     * @param _premise The sub-formulas of the received formula from which the branch is followed.
+     *                 Note, that a premise is not necessary, as every branch is a valid formula.
+     *                 But a premise can prevent from branching unnecessarily.
      * @param _leftCaseWeak true, if the given variable should be less or equal than the given value
      *                            or greater than the given value;
      *                      false, if the given variable should be less than the given value or
      *                             or greater or equal than the given value.
      */
-    void Module::branchAt( const carl::Variable& _var, const Rational& _value, bool _leftCaseWeak )
+    void Module::branchAt( const carl::Variable& _var, const Rational& _value, const set<const Formula*>& _premise, bool _leftCaseWeak )
     {
         const Constraint* constraintA = NULL;
         const Constraint* constraintB = NULL;
@@ -363,6 +366,13 @@ namespace smtrat
         }
         // (x<=I-1 or x>=I)
         Formula* deductionA = new Formula( OR );
+        for( auto pre = _premise.begin(); pre != _premise.end(); ++pre )
+        {
+            assert( find( mpReceivedFormula->begin(), mpReceivedFormula->end(), *pre ) != mpReceivedFormula->end() );
+            Formula* notPre = new Formula( NOT );
+            notPre->addSubformula( new Formula( **pre ) );
+            deductionA->addSubformula( notPre );
+        }
         deductionA->addSubformula( constraintA );
         deductionA->back()->setActivity( INFINITY );
         deductionA->addSubformula( constraintB );
@@ -370,6 +380,13 @@ namespace smtrat
         addDeduction( deductionA );
         // (not(x<=I-1) or not(x>=I))
         Formula* deductionB = new Formula( OR );
+        for( auto pre = _premise.begin(); pre != _premise.end(); ++pre )
+        {
+            assert( find( mpReceivedFormula->begin(), mpReceivedFormula->end(), *pre ) != mpReceivedFormula->end() );
+            Formula* notPre = new Formula( NOT );
+            notPre->addSubformula( new Formula( **pre ) );
+            deductionB->addSubformula( notPre );
+        }
         Formula* notLeqConstraint = new Formula( NOT );
         notLeqConstraint->addSubformula( constraintA );
         Formula* notGeqConstraint = new Formula( NOT );
@@ -377,6 +394,52 @@ namespace smtrat
         deductionB->addSubformula( notLeqConstraint );
         deductionB->addSubformula( notGeqConstraint );
         addDeduction( deductionB );
+    }
+    
+    /**
+     * Adds the following lemmas for the given constraint p!=0
+     *
+     *      (p!=0 <-> (p<0 or p>0))
+     * and  not(p<0 and p>0)
+     *
+     * @param _unequalConstraint A constraint having the relation symbol !=.
+     */
+    void Module::splitUnequalConstraint( const Constraint* _unequalConstraint )
+    {
+        assert( _unequalConstraint->relation() == Constraint::NEQ );
+        const Constraint* lessConstraint = Formula::newConstraint( _unequalConstraint->lhs(), Constraint::LESS );
+        const Constraint* greaterConstraint = Formula::newConstraint( _unequalConstraint->lhs(), Constraint::GREATER );
+        // (not p!=0 or p<0 or p>0)
+        Formula* deductionA = new Formula( OR );
+        Formula* notConstraint = new Formula( NOT );
+        notConstraint->addSubformula( _unequalConstraint );
+        deductionA->addSubformula( notConstraint );
+        deductionA->addSubformula( lessConstraint );
+        deductionA->addSubformula( greaterConstraint );
+        addDeduction( deductionA );
+        // (not p<0 or p!=0)
+        Formula* deductionB = new Formula( OR );
+        Formula* notLessConstraint = new Formula( NOT );
+        notLessConstraint->addSubformula( lessConstraint );
+        deductionB->addSubformula( notLessConstraint );
+        deductionB->addSubformula( _unequalConstraint );
+        addDeduction( deductionB );
+        // (not p>0 or p!=0)
+        Formula* deductionC = new Formula( OR );
+        Formula* notGreaterConstraint = new Formula( NOT );
+        notGreaterConstraint->addSubformula( greaterConstraint );
+        deductionC->addSubformula( notGreaterConstraint );
+        deductionC->addSubformula( _unequalConstraint );
+        addDeduction( deductionC );
+        // (not p>0 or not p>0)
+        Formula* deductionD = new Formula( OR );
+        Formula* notGreaterConstraintB = new Formula( NOT );
+        notGreaterConstraintB->addSubformula( greaterConstraint );
+        Formula* notLessConstraintB = new Formula( NOT );
+        notLessConstraintB->addSubformula( lessConstraint );
+        deductionD->addSubformula( notGreaterConstraintB );
+        deductionD->addSubformula( notLessConstraintB );
+        addDeduction( deductionD );
     }
     
     EvalRationalMap Module::modelToERM( const Model& _model )
@@ -741,6 +804,7 @@ namespace smtrat
         {
             storeAssumptionsToCheck( *mpManager );
             printModel();
+//            exit( 7771 );
         }
         assert( _answer != True || checkModel() != 0 );
         // If we are in the SMT environment:

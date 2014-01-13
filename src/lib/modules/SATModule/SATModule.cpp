@@ -2096,7 +2096,7 @@ NextClause:
                 #endif
                 #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
                 cout << "Learned a theory deduction from a backend module!" << endl;
-                (*deduction)->print();
+                cout << (*deduction)->toString( false, 0, "", true, true, true ) << endl;
                 #endif
                 addFormula( *deduction, DEDUCTED_CLAUSE );
             }

@@ -49,7 +49,7 @@ namespace smtrat
         //position = addBackendIntoStrategyGraph( position, MT_CacheModule );
         #endif
         #ifdef SMTRAT_ENABLE_LRAModule
-        position = addBackendIntoStrategyGraph( position, MT_LRAModule );
+//        position = addBackendIntoStrategyGraph( position, MT_LRAModule );
         #endif
         #ifdef SMTRAT_ENABLE_GroebnerModule
 //        position = addBackendIntoStrategyGraph( position, MT_GroebnerModule );

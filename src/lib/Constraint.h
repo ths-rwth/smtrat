@@ -379,7 +379,7 @@ namespace smtrat
              * Initializes some basic information of the constraint, such as the definiteness of the left-hand 
              * side and specific information to each variable.
              */
-            void init() const;
+            void init();
             
             /**
              * Initializes the stored factorization.

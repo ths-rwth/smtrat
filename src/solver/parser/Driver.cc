@@ -997,7 +997,9 @@ namespace smtrat
                     if( mOptions.print_instruction )
                         mRegularOutputChannel << "> (get-assignment)" << endl;
                     if( !mOptions.produce_assignments )
-                        error( "The assignment production must be activated to retrieve them!", true );
+                    {
+//                        error( "The assignment production must be activated to retrieve them!", true );
+                    }
                     else if( !mCheckResultActive )
                         error( "There must be a check provoked before an assignment can be found!", true );
                     else

@@ -139,6 +139,8 @@ namespace vs
         /// These bounds are filtered from the conditions this state considers. Note that if we do not use 
         /// optimizations based on variable bounds.
         VariableBoundsCond*   mpVariableBounds;
+        ///
+        mutable smtrat::Rational mMinIntTestCandidate;
     public:
 
         /**
@@ -597,6 +599,25 @@ namespace vs
         {
             mpOriginalCondition = _pOCondition;
         }
+        
+        /**
+         * Sets the minimal integer test candidate to the given value, if it is less than it.
+         * @param _value The value to update the minimal integer test candidate for.
+         */
+        const smtrat::Rational& minIntTestCandidate() const
+        {
+            return mMinIntTestCandidate;
+        }
+        
+        /**
+         * Sets the minimal integer test candidate to the given value, if it is less than it.
+         * @param _value The value to update the minimal integer test candidate for.
+         */
+        void updateMinIntTestCandidate( const smtrat::Rational& _value ) const
+        {
+            if( _value < mMinIntTestCandidate )
+                mMinIntTestCandidate = _value;
+        }
 
         /**
          * @return The depth of the subtree with this state as root node.
@@ -872,9 +893,8 @@ namespace vs
         
         /**
          * Updates the valuation of this state.
-         * @param _preferMinusInf A flag indicating whether to valuate the substitution type best or otherwise worst.
          */
-        void updateValuation( bool _preferMinInf = true );
+        void updateValuation();
         
         /**
          * Valuates the state's currently considered conditions according to a backend call.

@@ -278,7 +278,7 @@ polyOp:
 
 polylistPlus:
 		poly polylistPlus { (*$1) += (*$2); $$ = $1; delete $2; }
-	|	poly poly         { (*$1) += (*$2); $$ = $1; delete $2; }
+	|	poly              { $$ = $1; }
 
 polylistMinus:
 		poly polylistMinus { (*$1) -= (*$2); $$ = $1; delete $2; }
@@ -286,7 +286,7 @@ polylistMinus:
 
 polylistTimes:
 		poly polylistTimes  { (*$1) *= (*$2); $$ = $1; delete $2; }
-	|	poly poly           { (*$1) *= (*$2); $$ = $1; delete $2; }
+	|	poly                { $$ = $1; }
 
 %% /* Additional Code */
 
