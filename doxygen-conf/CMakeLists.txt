@@ -11,6 +11,14 @@
 # Version: 2012-02-21                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+# Quick self-configuration if only doc is built
+if("${PROJECT_NAME}" STREQUAL "")
+	project(SMT-RAT-doxygen NONE)
+	set(CMAKE_CURRENT_BINARY_DIR "build")
+	set(CMAKE_SOURCE_DIR "..")
+	include(FindDoxygen)
+endif()
+
 # Cmake doxygen settings
 # # # # # # # # # # # # #
 
