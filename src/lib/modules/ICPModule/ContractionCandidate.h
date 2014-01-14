@@ -32,16 +32,13 @@
 
 //#define CCPRINTORIGINS
 
-#include <ginac/ginac.h>
-#include <ginacra/ginacra.h>
 #include "../../Formula.h"
-#include "ContractionCandidateManager.h"
+//#include "ContractionCandidateManager.h"
+#include "../../Common.h"
 
 namespace smtrat
 {
     namespace icp{
-    using GiNaC::ex;
-    using GiNaC::symbol;
     
     class ContractionCandidateManager;
     
@@ -58,8 +55,8 @@ namespace smtrat
             {
                 bool operator() (const Formula* const lhs, const Formula* const rhs) const
                 {
-                    assert(lhs->getType() == REALCONSTRAINT);
-                    assert(rhs->getType() == REALCONSTRAINT);
+                    assert(lhs->getType() == CONSTRAINT);
+                    assert(rhs->getType() == CONSTRAINT);
                     return (lhs->constraint().variables().size() < rhs->constraint().variables().size() || (lhs->constraint().variables().size() == rhs->constraint().variables().size() && lhs->constraint() < rhs->constraint()) );
                 }
             };
@@ -70,16 +67,18 @@ namespace smtrat
              * Members:
              */
 //            const Constraint* mConstraint;
-            const ex          mRhs;
-            const Constraint* mConstraint;
+            const Polynomial          mRhs;
+            const Constraint*         mConstraint;
+            Contractor<carl::SimpleNewton>&  mContractor;
             
-            symbol      mLhs;
-            symbol      mDerivationVar;
-            ex          mDerivative;
+            carl::Variable            mLhs;
+            carl::Variable            mDerivationVar;
+            Polynomial                mDerivative;
             std::set<const Formula*,originComp> mOrigin;
             unsigned    mId;
             bool        mIsLinear;
             bool        mActive;
+            bool        mDerived;
 
 
             // RWA
@@ -97,6 +96,7 @@ namespace smtrat
             ContractionCandidate( const ContractionCandidate& _original ):
             mRhs(_original.rhs()),
             mConstraint(_original.constraint()),
+            mContractor(_original.contractor()),
             mLhs(_original.lhs()),
             mDerivationVar(_original.derivationVar()),
             mDerivative(_original.derivative()),
@@ -104,15 +104,17 @@ namespace smtrat
             mId(_original.id()),
             mIsLinear(_original.isLinear()),
             mActive(_original.isActive()),
+            mDerived(_original.isDerived()),
             mRWA(_original.RWA()),
             mLastPayoff(_original.lastPayoff())
             {
                 mOrigin.insert(_original.origin().begin(), _original.origin().end());
             }
 
-            ContractionCandidate( symbol _lhs, const ex _rhs, const Constraint* _constraint, symbol _derivationVar, const Formula* _origin, unsigned _id ):
+            ContractionCandidate( carl::Variable _lhs, const Polynomial _rhs, const Constraint* _constraint, carl::Variable _derivationVar, Contractor<carl::SimpleNewton>& _contractor, const Formula* _origin, unsigned _id ):
             mRhs(_rhs),
             mConstraint(_constraint),
+            mContractor(_contractor),
             mLhs(_lhs),
             mDerivationVar(_derivationVar),
             mDerivative(),
@@ -120,6 +122,7 @@ namespace smtrat
             mId(_id),
             mIsLinear(true),
             mActive(false),
+            mDerived(false),
             mRWA(1),
             mLastPayoff(0)
             {
@@ -131,9 +134,10 @@ namespace smtrat
              * @param _constraint
              * @param _derivationVar
              */
-            ContractionCandidate( symbol _lhs, const ex _rhs, const Constraint* _constraint, symbol _derivationVar, unsigned _id ):
+            ContractionCandidate( carl::Variable _lhs, const Polynomial _rhs, const Constraint* _constraint, carl::Variable _derivationVar, Contractor<carl::SimpleNewton>& _contractor, unsigned _id ):
             mRhs(_rhs),
             mConstraint(_constraint),
+            mContractor(_contractor),
             mLhs(_lhs),
             mDerivationVar(_derivationVar),
             mDerivative(),
@@ -141,6 +145,7 @@ namespace smtrat
             mId(_id),
             mIsLinear(false),
             mActive(false),
+            mDerived(false),
             mRWA(1),
             mLastPayoff(0)
             {
@@ -150,16 +155,13 @@ namespace smtrat
             * Destructor:
             */
             ~ContractionCandidate()
-            {
-                if ( !isLinear() )
-                    delete mConstraint;
-            }
+            {}
 
             /**
              * Functions:
              */
 
-            const ex rhs() const
+            const Polynomial rhs() const
             {
                 return mRhs;
             }
@@ -168,18 +170,28 @@ namespace smtrat
             {
                 return mConstraint;
             }
+            
+            Contractor<carl::SimpleNewton>& contractor() const
+            {
+                return mContractor;
+            }
+            
+            bool contract(EvalDoubleIntervalMap& _intervals, carl::DoubleInterval& _resA, carl::DoubleInterval& _resB)
+            {
+                return mContractor(_intervals, mDerivationVar, _resA, _resB);
+            }
 
-            const symbol& derivationVar() const
+            const carl::Variable& derivationVar() const
             {
                 return mDerivationVar;
             }
 
-            const ex& derivative() const
+            const Polynomial& derivative() const
             {
                 return mDerivative;
             }
 
-            const symbol& lhs() const
+            const carl::Variable& lhs() const
             {
                 return mLhs;
             }
@@ -196,7 +208,7 @@ namespace smtrat
 
             void addOrigin( const Formula* _origin )
             {
-                assert(_origin->getType() == REALCONSTRAINT);
+                assert(_origin->getType() == CONSTRAINT);
                 mOrigin.insert(_origin);
             }
 
@@ -258,12 +270,12 @@ namespace smtrat
                 return mId;
             }
 
-            void setDerivationVar( symbol _var )
+            void setDerivationVar( carl::Variable _var )
             {
                 mDerivationVar = _var;
             }
 
-            void setLhs( symbol _lhs )
+            void setLhs( carl::Variable _lhs )
             {
                 mLhs = _lhs;
             }
@@ -275,8 +287,11 @@ namespace smtrat
 
             void calcDerivative() throw ()
             {
-                if( mDerivative == ex() )
-                    mDerivative = mRhs.diff( mDerivationVar );
+                if( !mDerived )
+                {
+                    mDerivative = mRhs.derivative(mDerivationVar);
+                    mDerived = true;
+                }
             }
 
             void activate()
@@ -293,6 +308,11 @@ namespace smtrat
             {
                 return mActive;
             }
+            
+            const bool isDerived() const
+            {
+                return mDerived;
+            }
 
             void resetWeights()
             {
@@ -300,7 +320,7 @@ namespace smtrat
                 mRWA = 0;
             }
 
-            void print( ostream& _out = std::cout ) const
+            void print( std::ostream& _out = std::cout ) const
             {
                 _out << mId << ": \t" << mRhs << ", LHS = " << mLhs <<  ", VAR = " << mDerivationVar << ", DERIVATIVE = " << mDerivative;
 //                _out << mId << ": \t" << ", LHS = " << mLhs <<  ", VAR = " << mDerivationVar << ", DERIVATIVE = " << mDerivative;
@@ -316,7 +336,7 @@ namespace smtrat
                     }
                 }
 #else
-                cout << ", #Origins: " << mOrigin.size() << endl;
+                _out << ", #Origins: " << mOrigin.size() << std::endl;
 #endif
             }
 

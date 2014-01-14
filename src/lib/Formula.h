@@ -23,11 +23,11 @@
 /**
  * @file Formula.h
  *
- * @author Ulrich Loup
  * @author Florian Corzilius
+ * @author Ulrich Loup
  * @author Sebastian Junges
  * @since 2012-02-09
- * @version 2013-04-01
+ * @version 2013-10-21
  */
 
 #ifndef SMTRAT_FORMULA_H
@@ -36,47 +36,43 @@
 #include <string.h>
 #include <string>
 #include <set>
-#include <unordered_map>
 #include "Condition.h"
 #include "modules/ModuleType.h"
 #include "ConstraintPool.h"
 
 namespace smtrat
 {
-    enum Type
-    {
-        AND, OR, NOT, IFF, XOR, IMPLIES, BOOL, REALCONSTRAINT, TTRUE, FFALSE
-    };
+    enum Type { AND, OR, NOT, IFF, XOR, IMPLIES, BOOL, CONSTRAINT, TTRUE, FFALSE };
 
     class Formula
     {
+        public:
+            typedef std::list<Formula*>::iterator               iterator;
+            typedef std::list<Formula*>::reverse_iterator       reverse_iterator;
+            typedef std::list<Formula*>::const_iterator         const_iterator;
+            typedef std::list<Formula*>::const_reverse_iterator const_reverse_iterator;
+            
         private:
 
-            /**
-             *  Members.
-             */
+            // Members.
 
-            /// A flag indicating whether this formula is a deduction of the other sub-formulas of its father.
+            /// The deduction flag, which indicates, that this formula g is a direct sub-formula of
+            /// a conjunction of formulas (and g f_1 .. f_n), and, that (implies (and f_1 .. f_n) g) holds.
             bool mDeducted;
             /// A flag indicating whether the propositions of this formula are updated.
             bool mPropositionsUptodate;
-            /// The set (initial) activity for this formula
+            /// The activity for this formula, which means, how much is this formula involved in the solving procedure.
             double mActivity;
-            ///
+            /// Some value stating an expected difficulty of solving this formula for satisfiability.
             double mDifficulty;
             /// The type of this formula.
             Type mType;
-            /// All real valued variables used within this formula (and its sub formulas).
-            GiNaC::symtab mRealValuedVars;
-            /// All Boolean variables used within this formula (and its sub formulas).
-            std::set< std::string > mBooleanVars;
-
             /// The content of this formula.
             union
             {
                 std::list<Formula*>* mpSubformulas;
                 const Constraint*    mpConstraint;
-                const std::string*   mpIdentifier;
+                carl::Variable mBoolean;
             };
             /// The formula which contains this formula as sub formula.
             Formula* mpFather;
@@ -85,286 +81,372 @@ namespace smtrat
 
         public:
 
-            /// A pool to manage all generated constraints.
+            // A pool to manage all generated constraints.
             static std::unique_ptr<ConstraintPool> mpConstraintPool;
 
-
             /**
-             *  Constructors and destructor.
+             * [Default constructor] Constructs the formula (true).
              */
             Formula();
-            Formula( const Type );
-            Formula( const std::string& );
+            
+            /**
+             * Constructs the formula of the given type. It is either one of the atoms (true) and (false)
+             * or it is a formula (boolean_op arglist), where arglist is still empty. The arguments can/have
+             * to be added belatedly with, e.g., addSubformula( .. ).
+             * @param _type The type of the formula to construct.
+             */
+            Formula( const Type _type );
+            
+            /**
+             * Constructs a formula being a Boolean variable.
+             * @param _booleanVarName The pointer to the string representing the name of the Boolean variable.
+             */
+            Formula( const carl::Variable::Arg _boolean );
+            
+            /**
+             * Constructs a formula being a constraint.
+             * @param _constraint The pointer to the constraint.
+             */
             Formula( const Constraint* _constraint );
-            Formula( const Formula& );
+            
+            /**
+             * [Copy constructor] Constructs a copy the given formula. Note that all sub-formulas are also
+             * copied and not only the pointers to them. Hence, this is a rather expensive operation.
+             * @param _formula The formula to copy.
+             */
+            Formula( const Formula& _formula );
 
+            /**
+             * Destructor.
+             */
             ~Formula();
 
-            /**
-             * Type definitions.
-             */
-            typedef std::list<Formula*>::iterator               iterator;
-            typedef std::list<Formula*>::reverse_iterator       reverse_iterator;
-            typedef std::list<Formula*>::const_iterator         const_iterator;
-            typedef std::list<Formula*>::const_reverse_iterator const_reverse_iterator;
+            // Methods.
 
             /**
-             * Methods.
+             * Sets the deduction flag to the given value..
+             * @param _deducted The value to set the deduction flag to.
              */
-
             void setDeducted( bool _deducted )
             {
                 mDeducted = _deducted;
             }
 
+            /**
+             * @return The deduction flag, which indicates, that this formula g is a direct sub-formula of
+             *          a conjunction of formulas (and g f_1 .. f_n), and, that (implies (and f_1 .. f_n) g) holds.
+             */
             bool deducted() const
             {
                 return mDeducted;
             }
 
+            /**
+             * @return Some value stating an expected difficulty of solving this formula for satisfiability.
+             */
             const double& difficulty() const
             {
                 return mDifficulty;
             }
 
-            double difficulty()
-            {
-                return mDifficulty;
-            }
-
+            /**
+             * Sets the difficulty to the given value.
+             * @param difficulty The value to set the difficulty to.
+             */
             void setDifficulty( double difficulty )
             {
                 mDifficulty = difficulty;
             }
 
+            /**
+             * @return The activity for this formula, which means, how much is this formula involved in the solving procedure.
+             */
             double activity() const
             {
                 return mActivity;
             }
 
+            /**
+             * Sets the activity to the given value.
+             * @param _activity The value to set the activity to.
+             */
             void setActivity( double _activity )
             {
                 mActivity = _activity;
             }
 
+            /**
+             * @return The type of this formula.
+             */
             Type getType() const
             {
                 return mType;
             }
 
-            void copyAndDelete( Formula* _formula )
-            {
-                assert( _formula != this );
-                mType = _formula->getType();
-                mDifficulty = _formula->difficulty();
-
-                if( _formula->getType() == BOOL )
-                {
-                    if( isBooleanCombination() )
-                    {
-                        delete mpSubformulas;
-                    }
-                    mpIdentifier = new std::string( _formula->identifier() );
-                }
-                else if( _formula->getType() == REALCONSTRAINT )
-                {
-                    if( isBooleanCombination() )
-                    {
-                        delete mpSubformulas;
-                    }
-                    else if( mType == BOOL )
-                    {
-                        delete mpIdentifier;
-                    }
-                    mpConstraint = _formula->pConstraint();
-                }
-                else if( _formula->getType() == TTRUE || _formula->getType() == FFALSE )
-                {
-                    if( isBooleanCombination() )
-                    {
-                        delete mpSubformulas;
-                    }
-                    else if( mType == BOOL )
-                    {
-                        delete mpIdentifier;
-                    }
-                    mpSubformulas = NULL;
-                }
-                else
-                {
-                    if( mType == BOOL )
-                    {
-                        delete mpIdentifier;
-                    }
-                    if( !isBooleanCombination() )
-                    {
-                        mpSubformulas = new std::list<Formula*>();
-                    }
-                    while( !_formula->empty() )
-                    {
-                        addSubformula( _formula->pruneFront() );
-                    }
-                }
-                delete _formula;
-            }
-
+            /**
+             * @return The bit-vector representing the propositions of this formula. For further
+             *          information see the Condition class.
+             */
             Condition proposition() const
             {
                 assert( mPropositionsUptodate );
                 return mPropositions;
             }
 
-            unsigned numberOfRealVariables() const
+            /**
+             * Collects all real valued variables occurring in this formula.
+             * @param _realVars The container to collect the real valued variables in.
+             */
+            void realValuedVars( Variables& _realVars ) const
             {
-                return mRealValuedVars.size();
+                if( mType == CONSTRAINT )
+                {
+                    for( auto var = mpConstraint->variables().begin(); var != mpConstraint->variables().end(); ++var )
+                        if( var->getType() == carl::VariableType::VT_REAL )
+                            _realVars.insert( *var );
+                }
+                else if( isBooleanCombination() )
+                {
+                    for( auto subformula = mpSubformulas->begin(); subformula != mpSubformulas->end(); ++subformula )
+                        (*subformula)->realValuedVars( _realVars );
+                }
+            }
+            
+            /**
+             * Collects all integer valued variables occurring in this formula.
+             * @param _intVars The container to collect the integer valued variables in.
+             */
+            void integerValuedVars( Variables& _intVars ) const
+            {
+                if( mType == CONSTRAINT )
+                {
+                    for( auto var = mpConstraint->variables().begin(); var != mpConstraint->variables().end(); ++var )
+                        if( var->getType() == carl::VariableType::VT_INT )
+                            _intVars.insert( *var );
+                }
+                else if( isBooleanCombination() )
+                {
+                    for( auto subformula = mpSubformulas->begin(); subformula != mpSubformulas->end(); ++subformula )
+                        (*subformula)->integerValuedVars( _intVars );
+                }
+            }
+            
+            /**
+             * Collects all arithmetic variables occurring in this formula.
+             * @param _arithmeticVars The container to collect the arithmetic variables in.
+             */
+            void arithmeticVars( Variables& _arithmeticVars ) const
+            {
+                if( mType == CONSTRAINT )
+                    _arithmeticVars.insert( mpConstraint->variables().begin(), mpConstraint->variables().end() );
+                else if( isBooleanCombination() )
+                {
+                    for( auto subformula = mpSubformulas->begin(); subformula != mpSubformulas->end(); ++subformula )
+                        (*subformula)->arithmeticVars( _arithmeticVars );
+                }
             }
 
-            const GiNaC::symtab& realValuedVars() const
+            /**
+             * Collects all Boolean variables occurring in this formula.
+             * @param _booleanVars The container to collect the Boolean variables in.
+             */
+            void booleanVars( std::set< carl::Variable >& _booleanVars ) const
             {
-                return mRealValuedVars;
+                if( mType == BOOL )
+                    _booleanVars.insert( mBoolean );
+                else if( isBooleanCombination() )
+                {
+                    for( auto subformula = mpSubformulas->begin(); subformula != mpSubformulas->end(); ++subformula )
+                        (*subformula)->booleanVars( _booleanVars );
+                }
             }
 
-            GiNaC::symtab& rRealValuedVars()
-            {
-                return mRealValuedVars;
-            }
-
-            unsigned numberOfBooleanVariables() const
-            {
-                return mBooleanVars.size();
-            }
-
-            const std::set< std::string >& booleanVars() const
-            {
-                return mBooleanVars;
-            }
-
+            /**
+             * @return A pointer to the list of sub-formulas of this formula. Note, that
+             *          this formula has to be a Boolean combination, if you invoke this method.
+             */
             std::list<Formula*>* const pSubformulas()
             {
                 assert( isBooleanCombination() );
                 return mpSubformulas;
             }
 
+            /**
+             * @return A constant reference to the list of sub-formulas of this formula. Note, that
+             *          this formula has to be a Boolean combination, if you invoke this method.
+             */
             const std::list<Formula*>& subformulas() const
             {
                 assert( isBooleanCombination() );
                 return *mpSubformulas;
             }
 
+            /**
+             * @return A pointer to the constraint represented by this formula. Note, that
+             *          this formula has to be of type CONSTRAINT, if you invoke this method.
+             */
             const Constraint* const pConstraint() const
             {
-                assert( mType == REALCONSTRAINT || mType == TTRUE || mType == FFALSE );
+                assert( mType == CONSTRAINT || mType == TTRUE || mType == FFALSE );
                 return mpConstraint;
             }
 
+            /**
+             * @return A pointer to the constraint represented by this formula. Note, that
+             *          this formula has to be of type CONSTRAINT, if you invoke this method.
+             */
             const Constraint* pConstraint()
             {
-                assert( mType == REALCONSTRAINT || mType == TTRUE || mType == FFALSE );
+                assert( mType == CONSTRAINT || mType == TTRUE || mType == FFALSE );
                 return mpConstraint;
             }
 
+            /**
+             * @return A constant reference to the constraint represented by this formula. Note, that
+             *          this formula has to be of type CONSTRAINT, if you invoke this method.
+             */
             const Constraint& constraint() const
             {
-                assert( mType == REALCONSTRAINT || mType == TTRUE || mType == FFALSE );
+                assert( mType == CONSTRAINT || mType == TTRUE || mType == FFALSE );
                 return *mpConstraint;
             }
 
-            const std::string& identifier() const
+            /**
+             * @return The name of the Boolean variable represented by this formula. Note, that
+             *          this formula has to be of type BOOL, if you invoke this method.
+             */
+            const carl::Variable::Arg boolean() const
             {
                 assert( mType == BOOL );
-                return *mpIdentifier;
+                return mBoolean;
             }
 
+            /**
+             * @return A pointer to the father of this formula. Note, that this formula has 
+             *          to have a father if you invoke this method.
+             */
             Formula* const pFather()
             {
                 return mpFather;
             }
 
+            /**
+             * @return A pointer to the father of this formula. Note, that this formula has 
+             *          to have a father if you invoke this method.
+             */
             const Formula* const cpFather() const
             {
                 return mpFather;
             }
 
+            /**
+             * @return A constant reference to the father of this formula. Note, that this formula has 
+             *          to have a father if you invoke this method.
+             */
             const Formula& father() const
             {
                 assert( mpFather != NULL );
                 return *mpFather;
             }
 
+            /**
+             * @return The number of sub-formulas of this formula.
+             */
             unsigned size() const
             {
-                if( mType == BOOL || mType == REALCONSTRAINT || mType == TTRUE || mType == FFALSE )
-                {
+                if( mType == BOOL || mType == CONSTRAINT || mType == TTRUE || mType == FFALSE )
                     return 1;
-                }
                 else
-                {
                     return mpSubformulas->size();
-                }
             }
 
+            /**
+             * @return true, if this formula has sub-formulas;
+             *          false, otherwise.
+             */
             bool empty() const
             {
-                if( mType == BOOL || mType == REALCONSTRAINT || mType == TTRUE || mType == FFALSE )
-                {
+                if( mType == BOOL || mType == CONSTRAINT || mType == TTRUE || mType == FFALSE )
                     return false;
-                }
                 else
-                {
                     return mpSubformulas->empty();
-                }
             }
 
-            // Important: Only the last subformula is allowed to be changed. This ensures the right assignment of the ID.
-            const_iterator begin() const
-            {
-                assert( isBooleanCombination() );
-                return mpSubformulas->begin();
-            }
-
+            /**
+             * @return An iterator to the beginning of the list of sub-formulas of this formula.
+             */
             iterator begin()
             {
                 assert( isBooleanCombination() );
                 return mpSubformulas->begin();
             }
 
+            /**
+             * @return An iterator to the end of the list of sub-formulas of this formula.
+             */
             iterator end()
             {
                 assert( isBooleanCombination() );
                 return mpSubformulas->end();
             }
 
+            /**
+             * @return A constant iterator to the beginning of the list of sub-formulas of this formula.
+             */
+            const_iterator begin() const
+            {
+                assert( isBooleanCombination() );
+                return mpSubformulas->begin();
+            }
+
+            /**
+             * @return A constant iterator to the end of the list of sub-formulas of this formula.
+             */
             const_iterator end() const
             {
                 assert( isBooleanCombination() );
                 return mpSubformulas->end();
             }
 
-            // Important: Only the last sub formula is allowed to be changed. This ensures the right assignment of the ID.
-            const_reverse_iterator rbegin() const
-            {
-                assert( isBooleanCombination() );
-                return mpSubformulas->rbegin();
-            }
-
+            /**
+             * @return An reverse iterator to the beginning of the list of sub-formulas of this formula.
+             */
             reverse_iterator rbegin()
             {
                 assert( isBooleanCombination() );
                 return mpSubformulas->rbegin();
             }
 
+            /**
+             * @return An reverse iterator to the end of the list of sub-formulas of this formula.
+             */
             reverse_iterator rend()
             {
                 assert( isBooleanCombination() );
                 return mpSubformulas->rend();
             }
 
+            /**
+             * @return A constant reverse iterator to the beginning of the list of sub-formulas of this formula.
+             */
+            const_reverse_iterator rbegin() const
+            {
+                assert( isBooleanCombination() );
+                return mpSubformulas->rbegin();
+            }
+
+            /**
+             * @return A constant reverse iterator to the end of the list of sub-formulas of this formula.
+             */
             const_reverse_iterator rend() const
             {
                 assert( isBooleanCombination() );
                 return mpSubformulas->rend();
             }
 
+            /**
+             * @return An iterator to the last element. Note, that it presumes that there is at least one sub-formula.
+             */
             iterator last()
             {
                 assert( isBooleanCombination() );
@@ -373,6 +455,9 @@ namespace smtrat
                 return result;
             }
 
+            /**
+             * @return A constant iterator to the last element. Note, that it presumes that there is at least one sub-formula.
+             */
             const_iterator last() const
             {
                 assert( isBooleanCombination() );
@@ -381,37 +466,9 @@ namespace smtrat
                 return result;
             }
 
-            // Important: Only the last subformula is allowed to be changed. This ensures the right assignment of the ID.
-            const Formula* at( unsigned _pos ) const
-            {
-                assert( isBooleanCombination() );
-                assert( mpSubformulas->size() > _pos );
-                unsigned                posNr = 0;
-                Formula::const_iterator pos   = begin();
-                while( posNr < _pos )
-                {
-                    ++pos;
-                    ++posNr;
-                }
-                return *pos;
-
-            }
-
-            const Formula& rAt( unsigned _pos ) const
-            {
-                assert( isBooleanCombination() );
-                assert( mpSubformulas->size() > _pos );
-                unsigned                posNr = 0;
-                Formula::const_iterator pos   = begin();
-                while( posNr < _pos )
-                {
-                    ++pos;
-                    ++posNr;
-                }
-                return **pos;
-
-            }
-
+            /**
+             * @return A pointer to the last sub-formula of this formula.
+             */
             Formula* back()
             {
                 assert( isBooleanCombination() );
@@ -419,6 +476,9 @@ namespace smtrat
                 return mpSubformulas->back();
             }
 
+            /**
+             * @return A pointer to the last sub-formula of this formula.
+             */
             const Formula* back() const
             {
                 assert( isBooleanCombination() );
@@ -426,6 +486,9 @@ namespace smtrat
                 return mpSubformulas->back();
             }
 
+            /**
+             * @return A reference to the last sub-formula of this formula.
+             */
             const Formula& rBack() const
             {
                 assert( isBooleanCombination() );
@@ -433,36 +496,74 @@ namespace smtrat
                 return *mpSubformulas->back();
             }
 
-            void resetFather()
-            {
-                mpFather = NULL;
-            }
-
-            static const Constraint* newBound( const GiNaC::symbol& _var, const Constraint_Relation _rel, const GiNaC::numeric& _bound )
+           /**
+             * Constructs a new constraint and adds it to the shared constraint pool, if it is not yet a member. If it is a
+             * member, this will be returned instead of a new constraint.
+             * Note, that the left-hand side of the constraint is simplified and normalized, hence it is
+             * not necessarily equal to the given left-hand side. The same holds for the relation symbol.
+             * However, it is assured that the returned constraint has the same solutions as
+             * the expected one.
+             * @param _lhs The left-hand side of the constraint.
+             * @param _rel The relation symbol of the constraint.
+             * @param _variables An over-approximation of the variables which occur on the left-hand side.
+             * @return The constructed constraint.
+             */
+            static const Constraint* newBound( const carl::Variable& _var, const Constraint::Relation _rel, const Rational& _bound )
             {
                 return mpConstraintPool->newBound( _var, _rel, _bound );
             }
 
-            static const Constraint* newConstraint( const GiNaC::ex& _lhs, const Constraint_Relation _rel, const GiNaC::symtab& _variables )
+            /**
+             * Constructs a new constraint and adds it to the shared constraint pool, if it is not yet a member. If it is a
+             * member, this will be returned instead of a new constraint.
+             * Note, that the left-hand side of the constraint is simplified and normalized, hence it is
+             * not necessarily equal to the given left-hand side. The same holds for the relation symbol.
+             * However, it is assured that the returned constraint has the same solutions as
+             * the expected one.
+             * @param _lhs The left-hand side of the constraint.
+             * @param _rel The relation symbol of the constraint.
+             * @param _variables An over-approximation of the variables which occur on the left-hand side.
+             * @return The constructed constraint.
+             */
+            static const Constraint* newConstraint( const Polynomial& _lhs, const Constraint::Relation _rel )
             {
-                return mpConstraintPool->newConstraint( _lhs, _rel, _variables );
+                return mpConstraintPool->newConstraint( _lhs, _rel );
             }
 
-            static std::pair< std::string, GiNaC::ex > newRealVariable( const std::string& _name )
+            /**
+             * Constructs a new real variable.
+             * @param _name The intended name of the real variable.
+             * @return The constructed real variable.
+             */
+            static carl::Variable newRealVariable( const std::string& _name )
             {
-                return mpConstraintPool->newArithmeticVariable( _name, REAL_DOMAIN );
+                return mpConstraintPool->newArithmeticVariable( _name, carl::VariableType::VT_REAL );
             }
-
-            static std::pair< std::string, GiNaC::ex> newArithmeticVariable( const std::string& _name, Variable_Domain _domain )
+            
+            /**
+             * Constructs a new arithmetic variable of the given domain.
+             * @param _name The intended name of the arithmetic variable.
+             * @param _domain The domain of the arithmetic variable.
+             * @return The constructed arithmetic variable.
+             */
+            static carl::Variable newArithmeticVariable( const std::string& _name, carl::VariableType _domain )
             {
                 return mpConstraintPool->newArithmeticVariable( _name, _domain );
             }
 
-            static void newBooleanVariable( const std::string& _name )
+            /**
+             * Constructs a new Boolean variable.
+             * @param _name The intended name of the variable.
+             * @return A pointer to the name of the constructed Boolean variable.
+             */
+            static const carl::Variable newBooleanVariable( const std::string& _name )
             {
-                mpConstraintPool->newBooleanVariable( _name );
+                return mpConstraintPool->newBooleanVariable( _name );
             }
 
+            /**
+             * @return A constant reference to the shared constraint pool.
+             */
             static const ConstraintPool& constraintPool()
             {
                 return *mpConstraintPool;
@@ -470,142 +571,333 @@ namespace smtrat
 
             /**
              * Generates a fresh real variable and returns its identifier.
-             *
              * @return The fresh real variable.
              */
-            static std::pair< std::string, GiNaC::ex > newAuxiliaryRealVariable()
+            static carl::Variable newAuxiliaryRealVariable()
             {
                 return mpConstraintPool->newAuxiliaryRealVariable();
             }
 
             /**
              * Generates a fresh real variable and returns its identifier.
-             * 
-             * @param _varName
-             * 
+             * @param _varName The dedicated name of the real variable.
              * @return The fresh real variable.
              */
-            static std::pair< std::string, GiNaC::ex > newAuxiliaryRealVariable( const std::string& _varName )
+            static carl::Variable newAuxiliaryRealVariable( const std::string& _varName )
             {
                 return mpConstraintPool->newAuxiliaryRealVariable( _varName );
             }
             
             /**
              * Generates a fresh Boolean variable and returns its identifier.
-             *
              * @return The identifier of a fresh Boolean variable.
              */
-            static std::string newAuxiliaryBooleanVariable()
+            static const carl::Variable newAuxiliaryBooleanVariable()
             {
                 return mpConstraintPool->newAuxiliaryBooleanVariable();
             }
 
-            static Variable_Domain domain( const GiNaC::ex& _variable )
-            {
-                return mpConstraintPool->domain( _variable );
-            }
-
+            /**
+             * @return true, if this formula is a Boolean atom.
+             */
             bool isAtom() const
             {
-                return (mType == REALCONSTRAINT || mType == BOOL || mType == FFALSE || mType == TTRUE);
+                return (mType == CONSTRAINT || mType == BOOL || mType == FFALSE || mType == TTRUE);
             }
 
+            /**
+             * @return true, if the outermost operator of this formula is Boolean;
+             *          false, otherwise.
+             */
             bool isBooleanCombination() const
             {
                 return (mType == AND || mType == OR || mType == NOT || mType == IMPLIES || mType == IFF || mType == XOR);
             }
-
+            
+            /**
+             * @return true, if this formula is a conjunction of constraints;
+             *          false, otherwise.
+             */
             bool isConstraintConjunction() const
             {
                 if( PROP_IS_PURE_CONJUNCTION <= proposition() )
-                {
                     return !(PROP_CONTAINS_BOOLEAN <= proposition());
-                }
                 else
-                {
                     return false;
-                }
             }
 
+            /**
+             * @return true, if this formula is a conjunction of real constraints;
+             *          false, otherwise.
+             */
             bool isRealConstraintConjunction() const
             {
                 if( PROP_IS_PURE_CONJUNCTION <= proposition() )
-                {
                     return (!(PROP_CONTAINS_INTEGER_VALUED_VARS <= proposition()) && !(PROP_CONTAINS_BOOLEAN <= proposition()));
-                }
                 else
-                {
                     return false;
-                }
             }
 
+            /**
+             * @return true, if this formula is a conjunction of integer constraints;
+             *         false, otherwise.
+             */
+            bool isIntegerConstraintConjunction() const
+            {
+                if( PROP_IS_PURE_CONJUNCTION <= proposition() )
+                    return (!(PROP_CONTAINS_REAL_VALUED_VARS <= proposition()) && !(PROP_CONTAINS_BOOLEAN <= proposition()));
+                else
+                    return false;
+            }
+
+            /**
+             * @param _formula The pointer to the formula for which to check whether it points to a sub-formula
+             *                  of this formula.
+             * @return true, the given pointer to a formula points to a sub-formula of this formula;
+             *          false, otherwise.
+             */
             bool contains( const Formula* const _formula ) const
             {
                 if( isBooleanCombination() )
-                {
                     return (std::find( mpSubformulas->begin(), mpSubformulas->end(), _formula ) != mpSubformulas->end());
-                }
                 return false;
             }
-
-            bool contains( const std::vector<const Formula*>& _formulas ) const
+            
+            /**
+             * Adds a constraint as sub-formula to this formula.
+             * @param _constraint The constraint to add.
+             */
+            void addSubformula( const Constraint* _constraint )
             {
-                std::set<const Formula*> subformulas = std::set<const Formula*>();
-                for( std::vector<const Formula*>::const_iterator subformula = _formulas.begin(); subformula != _formulas.end(); ++subformula )
-                {
-                    subformulas.insert( *subformula );
-                }
-                return contains( subformulas );
+                addSubformula( new Formula( _constraint ) );
             }
 
-            bool contains( const std::set<const Formula*>& _formulas ) const
+            /**
+             * Adds a Boolean variable as sub-formula to this formula.
+             * @param _boolean The name of the Boolean variable to add.
+             */
+            void addSubformula( const carl::Variable::Arg _boolean )
             {
-                std::set<const Formula*> subformulas = std::set<const Formula*>();
-                for( const_iterator subformula = begin(); subformula != end(); ++subformula )
-                {
-                    subformulas.insert( *subformula );
-                }
-                std::set<const Formula*>::iterator subformula = subformulas.begin();
-                std::set<const Formula*>::iterator iter       = _formulas.begin();
-                while( subformula != subformulas.end() && iter != _formulas.end() )
-                {
-                    subformula = subformulas.insert( subformula, *iter );
-                    ++iter;
-                }
-                return (iter == _formulas.end());
+                addSubformula( new Formula( _boolean ) );
+            }
+                    
+            /**
+             * Sets this formulas father to the given formula.
+             * @param _father The father to be of this formula.
+             */
+            void setFather( Formula* _father )
+            {
+                assert( mpFather == NULL );
+                mpFather = _father;
             }
 
+            /**
+             * Removes the last sub-formula of this formula.
+             */
+            void pop_back()
+            {
+                assert( isBooleanCombination() );
+                Formula* pSubForm = mpSubformulas->back();
+                mpSubformulas->pop_back();
+                delete pSubForm;
+                mPropositionsUptodate = false;
+            }
+
+            /**
+             * Removes the first sub-formula of this formula.
+             */
+            void pop_front()
+            {
+                assert( isBooleanCombination() );
+                Formula* pSubForm = mpSubformulas->front();
+                mpSubformulas->pop_front();
+                delete pSubForm;
+                mPropositionsUptodate = false;
+            }
+
+            /**
+             * Erases the sub-formula at the given position of this formula.
+             * @param _subformula The position of the sub-formula to erase.
+             * @return The position after the erased element.
+             */
+            iterator erase( iterator _subformula )
+            {
+                assert( isBooleanCombination() );
+                assert( _subformula != mpSubformulas->end() );
+                Formula* pSubFormula = *_subformula;
+                iterator result = mpSubformulas->erase( _subformula );
+                delete pSubFormula;
+                mPropositionsUptodate = false;
+                return result;
+            }
+
+            /**
+             * Prunes the last sub-formula off this formula.
+             * @return The sub-formula which has been pruned off.
+             */
+            Formula* pruneBack()
+            {
+                assert( isBooleanCombination() );
+                assert( !mpSubformulas->empty() );
+                Formula* result = mpSubformulas->back();
+                result->mpFather = NULL;
+                mpSubformulas->pop_back();
+                mPropositionsUptodate = false;
+                return result;
+            }
+
+            /**
+             * Prunes the first sub-formula off this formula.
+             * @return The sub-formula which has been pruned off.
+             */
+            Formula* pruneFront()
+            {
+                assert( isBooleanCombination() );
+                assert( !mpSubformulas->empty() );
+                Formula* result = mpSubformulas->front();
+                result->mpFather = NULL;
+                mpSubformulas->pop_front();
+                mPropositionsUptodate = false;
+                return result;
+            }
+            
+            /**
+             * Prunes the sub-formula at the given position off this formula.
+             * @param _subformula The position of the sub-formula to prune.
+             * @return The position after the sub-formula which has been pruned off.
+             */
+            iterator prune( iterator _subformula )
+            {
+                assert( isBooleanCombination() );
+                assert( _subformula != mpSubformulas->end() );
+                mPropositionsUptodate = false;
+                return mpSubformulas->erase( _subformula );
+            }
+            
+            /**
+             * Collects all constraint occurring in this formula.
+             * @param _constraints The container to insert the constraint into.
+             */
+            void getConstraints( std::vector<const Constraint*>& _constraints ) const
+            {
+                if( mType == CONSTRAINT )
+                    _constraints.push_back( mpConstraint );
+                else if( mType == AND || mType == OR || mType == NOT || mType == IFF || mType == XOR || mType == IMPLIES )
+                    for( const_iterator subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
+                        (*subFormula)->getConstraints( _constraints );
+            }
+
+            /**
+             * Replaces the content of this formula by the content of the given formula and
+             * deletes the given formula and the old content afterwards.
+             * @param _formula The formula to copy.
+             */
+            void copyAndDelete( Formula* _formula );
+            
+            /**
+             * Adds the given formula as the last sub-formula of this formula.
+             * @param _formula The formula to add.
+             */
+            void addSubformula( Formula* _formula );
+            
+            /**
+             * Replaces the sub-formula at the given position by the given formula.
+             * @param _toReplace The position of the sub-formula to replace.
+             * @param _replacement The formula replacing the given sub-formula.
+             * @return An iterator to the changed sub-formula.
+             */
+            iterator replace( iterator _toReplace, Formula* _replacement );
+            
+            /**
+             * @param _assignment The assignment for which to check whether this formula is satisfied by it.
+             * @return 0, if this formula is violated by the given assignment;
+             *         1, if this formula is satisfied by the given assignment;
+             *         2, otherwise.
+             */
+            unsigned satisfiedBy( const EvalRationalMap& _assignment ) const;
+
+            /**
+             * Gets the propositions of this formula. It updates and stores the propositions
+             * if they are not up to date, hence this method is quite efficient.
+             * @return The bit vector representing the conditions of this formula.
+             */
             Condition getPropositions();
-            void setFather( Formula* );
-            void addSubformula( Formula* );
-            void addSubformula( const Constraint* );
-            iterator replace( iterator, Formula* );
-            void pop_back();
-            void pop_front();
-            iterator erase( iterator );
-
-            Formula* pruneBack();
-            Formula* pruneFront();
-            Formula* prune( unsigned );
-            iterator prune( iterator );
-            void clear();
-            //void notSolvableBy( ModuleType );
-            void print( std::ostream& = std::cout, const std::string = "", bool = false, bool = false ) const;
-            void printProposition( std::ostream& _out = std::cout, const std::string _init = "" ) const;
-            friend std::ostream& operator <<( std::ostream&, const Formula& );
-            std::string toString( bool = false, bool = true ) const;
-            void getConstraints( std::vector<const Constraint*>& ) const;
-            static void toCNF( Formula&, bool = true );
-            static bool resolveNegation( Formula&, bool = true );
-            static std::string FormulaTypeToString( Type type);
-
-            std::string variableListToString(std::string seperator, const std::unordered_map<string, string>& variableIds) const;
-            std::string toRedlogFormat(bool withVariables = true) const;
-            std::string toQepcadFormat(bool withVariables, const std::unordered_map<string, string>& variableIds) const;
-
+            
         private:
 
-            void addConstraintPropositions( const Constraint& );
+            /**
+             * Adds the propositions of the given constraint to the propositions of this formula.
+             * @param _constraint The constraint to add propositions for.
+             */
+            void addConstraintPropositions( const Constraint& _constraint );
+            
+        public:
+            
+            /**
+             * Gives the string representation of this formula.
+             * @param _withActivity A flag which indicates whether to add the formula's activity to the result.
+             * @param _resolveUnequal A switch which indicates how to represent the relation symbol for unequal. 
+             *                         (for further description see documentation of Constraint::toString( .. ))
+             * @param _init The initial string of every row of the result.
+             * @param _oneline A flag indicating whether the formula shall be printed on one line.
+             * @param _infix A flag indicating whether to print the formula in infix or prefix notation.
+             * @param _friendlyNames A flag that indicates whether to print the variables with their internal representation (false)
+             *                        or with their dedicated names.
+             * @return The resulting string representation of this formula.
+             */
+            std::string toString( bool _withActivity = false, unsigned _resolveUnequal = 0, const std::string _init = "", bool _oneline = true, bool _infix = false, bool _friendlyNames = true ) const; 
+            
+            /**
+             * The output operator of a formula.
+             * @param _out The stream to print on.
+             * @param _init
+             */
+            friend std::ostream& operator<<( std::ostream& _out, const Formula& _formula );
+            
+            /**
+             * Prints the propositions of this formula.
+             * @param _out The stream to print on.
+             * @param _init The string to print initially in every row.
+             */
+            void printProposition( std::ostream& _out = std::cout, const std::string _init = "" ) const;
+            
+            /**
+             * @param _withVariables A flag indicating whether the variables shall be displayed before the formula.
+             * @return A string which represents this formula in the input format of the tool Redlog.
+             */
+            std::string toRedlogFormat( bool _withVariables = true ) const;
+            
+            /**
+             * Gets a string, which represents all variables occurring in this formula in a row, separated by the given separator.
+             * @param _separator The separator between the variables.
+             * @param _variableIds Maps variable names to names, which shall be used instead in the result.
+             * @return The string, which represents all variables occurring in this formula in a row, separated by the given separator.
+             */
+            std::string variableListToString( std::string _separator = ",", const std::unordered_map<std::string, std::string>& _variableIds = (std::unordered_map<std::string, std::string>())) const;
+            
+            /**
+             * @param _type The formula type to get the string representation for.
+             * @return The string representation of the given type.
+             */
+            static std::string FormulaTypeToString( Type _type );
+            
+            /**
+             * Resolves the outermost negation of the given formula.
+             * @param _formula The formula to resolve the negation for.
+             * @param _keepConstraints A flag indicating whether to change constraints in order 
+             * to resolve the negation in front of them, or to keep the constraints and leave 
+             * the negation.
+             */
+            static bool resolveNegation( Formula& _formula, bool _keepConstraints = true );
+            
+            /**
+             * Transforms the given formula to conjunctive normal form (CNF).
+             * @param _formula The formula to transform to CNF.
+             * @param _keepConstraints A flag indicating whether to keep the constraints as they are, or to
+             *                          resolve constraints p!=0 to (or p<0 p>0) and to resolve negations in
+             *                          front of constraints, e.g., (not p<0) gets p>=0.
+             */
+            static void toCNF( Formula& _formula, bool _keepConstraints = true );
     };
 
     struct FormulaIteratorConstraintIdCompare
@@ -616,7 +908,6 @@ namespace smtrat
         }
     };
     
-    
     struct FormulaConstraintCompare
     {
         bool operator( ) (const Formula::const_iterator& c1, const Formula::const_iterator & c2 ) const
@@ -624,8 +915,6 @@ namespace smtrat
             return (( *c1 )->constraint( ) < ( *c2 )->constraint( ) );
         }
     };
-
-
 }    // namespace smtrat
 
 #endif // SMTRAT_FORMULA_H

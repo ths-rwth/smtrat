@@ -9,8 +9,7 @@
 #define	VSSETTINGS_H
 
 #include "../../config.h"
-
-
+    
 namespace smtrat
 {   
     struct VSSettings1
@@ -29,6 +28,11 @@ namespace smtrat
         static const bool infeasible_subset_generation                          = true;
         static const bool virtual_substitution_according_paper                  = false;
         static const bool prefer_equation_over_all                              = false;
+        static const bool int_constraints_allowed                               = false;
+        static const bool mixed_int_real_constraints_allowed                    = false;
+        static const bool assure_termination                                    = true;
+        static const bool branch_and_bound                                      = false;
+        static const bool split_neq_constraints                                 = false;
     };
     
     struct VSSettings2 : VSSettings1
@@ -45,6 +49,22 @@ namespace smtrat
     {
         static const bool check_conflict_for_side_conditions                    = true;
         static const bool prefer_equation_over_all                              = true;
+    };
+    
+    struct VSSettings2346 : VSSettings234
+    {
+        static const bool int_constraints_allowed                               = true;
+    };
+    
+    
+    struct VSSettings23468 : VSSettings2346
+    {
+        static const bool branch_and_bound                                      = false;
+    };
+    
+    struct VSSettings23467 : VSSettings2346
+    {
+        static const bool assure_termination                                    = false;
     };
     
     struct VSSettings2345 : VSSettings234

@@ -14,3 +14,4 @@
 
 #cmakedefine SMTRAT_STRAT_Factorization
 #cmakedefine SMTRAT_STRAT_PARALLEL_MODE
+#cmakedefine USE_GINAC

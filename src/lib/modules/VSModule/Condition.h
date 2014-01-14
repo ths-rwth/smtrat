@@ -42,28 +42,32 @@ namespace vs
     class Condition
     {
         public:
-            struct condComp
+            struct condPointerLess
             {
-                bool operator ()( const Condition* const pCondA, const Condition* const pCondB ) const
+                bool operator ()( const Condition* pCondA, const Condition* pCondB ) const
                 {
                     return (*pCondA).constraint() < (*pCondB).constraint();
                 }
             };
-            typedef std::set<const Condition*, condComp> ConditionSet;
+            typedef std::set<const Condition*, condPointerLess> Set;
+            
+            // Members:
+            
+            static const double INFINITLY_MANY_SOLUTIONS_WEIGHT;
 
         private:
 
-            // Members:
             mutable bool              mFlag;
             mutable bool              mRecentlyAdded;
             mutable unsigned          mValuation;
             const smtrat::Constraint* mpConstraint;
-            ConditionSet*             mpOriginalConditions;
+            Set*                      mpOriginalConditions;
+            
 
         public:
 
             // Constructors:
-            Condition( const smtrat::Constraint*, unsigned = 0, bool = false, const ConditionSet& = ConditionSet(), bool = false );
+            Condition( const smtrat::Constraint*, unsigned = 0, bool = false, const Set& = Set(), bool = false );
             Condition( const Condition& );
 
             // Destructor:
@@ -110,23 +114,21 @@ namespace vs
                 return mpConstraint;
             }
 
-            ConditionSet* const pOriginalConditions() const
+            Set* pOriginalConditions() const
             {
                 return mpOriginalConditions;
             }
 
-            const ConditionSet& originalConditions() const
+            const Set& originalConditions() const
             {
                 return *mpOriginalConditions;
             }
 
-            double valuate( const std::string&, unsigned, bool, bool ) const;
+            double valuate( const carl::Variable&, unsigned, bool, bool ) const;
             bool operator ==( const Condition& ) const;
             bool operator <( const Condition& ) const;
             void print( std::ostream& = std::cout ) const;
     };
-
-    typedef std::set<const Condition*, Condition::condComp> ConditionSet;
 
 }    // end namspace vs
 

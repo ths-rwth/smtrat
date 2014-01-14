@@ -35,13 +35,13 @@
 
 #include <vector>
 
-#include "Answer.h"
 #include "ModuleFactory.h"
 #include "StrategyGraph.h"
 #include "modules/ModuleType.h"
 #include "Module.h"
 #include "config.h"
 #include "modules/StandardModuleFactory.h"
+#include "GeneralStatistics.h"
 
 namespace smtrat
 {
@@ -73,6 +73,12 @@ namespace smtrat
             StrategyGraph mStrategyGraph;
             /// channel to write debug output
             std::ostream mDebugOutputChannel;
+            /// the logic this solver 
+            Logic mLogic;
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            ///
+            GeneralStatistics* mpStatistics;
+            #endif
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
             /// contains all threads to assign jobs to
             ThreadPool* mpThreadPool;
@@ -124,13 +130,9 @@ namespace smtrat
                 {
                     --btp;
                     if( *btp == mpPassedFormula->end() )
-                    {
                         *btp = pos;
-                    }
                     else
-                    {
                         break;
-                    }
                 }
                 return mpPrimaryBackend->assertSubformula( pos );
             }
@@ -195,9 +197,7 @@ namespace smtrat
                 if( mBacktrackPoints.empty() ) return false;
                 auto subFormula = mBacktrackPoints.back();
                 while( subFormula != mpPassedFormula->end() )
-                {
                     subFormula = remove( subFormula );
-                }
                 mBacktrackPoints.pop_back();
                 return true;
             }
@@ -237,10 +237,19 @@ namespace smtrat
                 return *mpPassedFormula;
             }
             
-            void printAssignment( std::ostream& ) const;
-            void printValue( const std::string&, std::ostream& ) const;
-            void printAssertions( std::ostream& ) const;
-            void printInfeasibleSubset( std::ostream& ) const;
+            /**
+             * Prints the currently found assignment of variables occurring in the so far 
+             * added formulas to values of their domains, if the conjunction of these 
+             * formulas is satisfiable.
+             * @param The stream to print on.
+             */
+            void printAssignment( std::ostream& _out ) const
+            {
+                mpPrimaryBackend->printModel();
+            }
+    
+            void printAssertions( std::ostream& = std::cout ) const;
+            void printInfeasibleSubset( std::ostream& = std::cout ) const;
             
             // Internally used interfaces
             void addModuleType( const ModuleType _moduleType, ModuleFactory* _factory )
@@ -261,6 +270,31 @@ namespace smtrat
             std::ostream& rDebugOutputChannel()
             {
                 return mDebugOutputChannel;
+            }
+            
+            const Logic logic() const
+            {
+                return mLogic;
+            }
+            
+            Logic& rLogic()
+            {
+                return mLogic;
+            }
+            
+            std::string logicToString() const
+            {
+                switch( mLogic )
+                {
+                    case Logic::QF_LIA:
+                        return "QF_LIA";
+                    case Logic::QF_NIA:
+                        return "QF_NIA";
+                    case Logic::QF_LRA:
+                        return "QF_LRA";
+                    default:
+                        return "QF_NRA";
+                }
             }
             
         protected:

@@ -11,7 +11,8 @@
 # Version: 2013-03-31                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-include_directories( ${GINACRA_INCLUDE_DIR} )
+include_directories( ${carl_INCLUDE_DIR} )
+message(${carl_INCLUDE_DIR})
 if(ReallyNull_FOUND)
     include_directories( ${ReallyNull_INCLUDE_DIR} )
 endif()
@@ -33,13 +34,13 @@ set(lib_core_src
 
 set(lib_core_headers
     Manager.h
-    Answer.h
     Module.h
     Condition.h
     Formula.h
     StrategyGraph.h
     ModuleFactory.h
     ModuleType.h
+    Common.h
     Constraint.h
     ConstraintPool.h
 	RuntimeSettings.h
@@ -71,9 +72,11 @@ set(lib_datastructures_headers
 	datastructures/lra/Value.hpp
 	datastructures/lra/Variable.hpp
 	datastructures/lra/Numeric.h
+	datastructures/vs/SqrtEx.h
 )
 set(lib_datastructures_src
 	datastructures/lra/Numeric.cpp
+	datastructures/vs/SqrtEx.cpp
 )
 
 set(lib_misc_headers
@@ -103,6 +106,23 @@ set(lib_${PROJECT_NAME}_SRCS
 	${lib_utilities_src}
 )
 
+# compiler flags
+# # # # # # # # #
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+	message("using clang")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	message("using gcc")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x ")	
+else()
+	message("possibly unsupported compiler")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x ")	
+endif()
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
+if(DEVELOPER)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wconversion ")
+endif()
+
 # set linking flags
 # # # # # # # # # #
 
@@ -130,7 +150,7 @@ if(${STATICLIB_SWITCH} STREQUAL "ON")
   set_target_properties( lib_${PROJECT_NAME} PROPERTIES LINK_SEARCH_END_STATIC TRUE )
   set_target_properties( lib_${PROJECT_NAME} PROPERTIES LINK_SEARCH_START_STATIC TRUE )
 endif()
-target_link_libraries( lib_${PROJECT_NAME} ${libraries} ) # libraries definied in top-level CMakeLists.txt
+target_link_libraries( lib_${PROJECT_NAME} lib_carl ${libraries} ) # libraries definied in top-level CMakeLists.txt
 
 
 # Install destination and permissions for the library

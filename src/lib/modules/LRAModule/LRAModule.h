@@ -37,8 +37,8 @@
 #include "../../datastructures/lra/Variable.hpp"
 #include "../../datastructures/lra/Bound.hpp"
 #include "../../datastructures/lra/Tableau.hpp"
+#include "LRAModuleStatistics.h"
 #include <stdio.h>
-#include <ginacra/ginacra.h>
 
 namespace smtrat
 {
@@ -46,40 +46,38 @@ namespace smtrat
         public Module
     {
         public:
-            struct exPointerComp
-            {
-                bool operator ()( const GiNaC::ex* const pExA, const GiNaC::ex* const pExB ) const
-                {
-                    return GiNaC::ex_is_less()( *pExA, *pExB );
-                }
-            };
             struct Context
             {
                 const smtrat::Formula* origin;
                 smtrat::Formula::iterator position;
             };
-            typedef std::map< const GiNaC::ex*, lra::Variable<lra::Numeric>*, exPointerComp>                              ExVariableMap;
-            typedef std::map< const Constraint*, std::vector< const lra::Bound<lra::Numeric>* >*, constraintPointerComp > ConstraintBoundsMap;
-            typedef std::map< const Constraint*, Context, constraintPointerComp >                                         ConstraintContextMap;
+            typedef std::map< carl::Variable, lra::Variable<lra::Numeric>*>                  VarVariableMap;
+            typedef FastPointerMap<Polynomial,lra::Variable<lra::Numeric>*>                  ExVariableMap;
+            typedef FastPointerMap<Constraint,std::vector<const lra::Bound<lra::Numeric>*>*> ConstraintBoundsMap;
+            typedef FastPointerMap<Constraint,Context>                                       ConstraintContextMap;
 
         private:
 
             /**
              * Members:
              */
-            bool                         mInitialized;
-            bool                         mAssignmentFullfilsNonlinearConstraints;
-            lra::Tableau<lra::Numeric>   mTableau;
-            ConstraintSet                mLinearConstraints;
-            ConstraintSet                mNonlinearConstraints;
-            ConstraintContextMap         mActiveResolvedNEQConstraints;
-            ConstraintContextMap         mActiveUnresolvedNEQConstraints;
-            ConstraintSet                mResolvedNEQConstraints;
-            ExVariableMap                mOriginalVars;
-            ExVariableMap                mSlackVars;
-            ConstraintBoundsMap          mConstraintToBound;
+            bool                       mInitialized;
+            bool                       mAssignmentFullfilsNonlinearConstraints;
+            lra::Tableau<lra::Numeric> mTableau;
+            PointerSet<Constraint>     mLinearConstraints;
+            PointerSet<Constraint>     mNonlinearConstraints;
+            ConstraintContextMap       mActiveResolvedNEQConstraints;
+            ConstraintContextMap       mActiveUnresolvedNEQConstraints;
+            PointerSet<Constraint>     mResolvedNEQConstraints;
+            VarVariableMap             mOriginalVars;
+            ExVariableMap              mSlackVars;
+            ConstraintBoundsMap        mConstraintToBound;
+            carl::Variable             mDelta;
             std::vector<const lra::Bound<lra::Numeric>* >  mBoundCandidatesToPass;
-            std::pair< std::string, GiNaC::ex > mDelta;
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            ///
+            LRAModuleStatistics* mpStatistics;
+            #endif
 
         public:
 
@@ -102,9 +100,9 @@ namespace smtrat
             bool assertSubformula( Formula::const_iterator );
             void removeSubformula( Formula::const_iterator );
             Answer isConsistent();
-            void updateModel();
-            GiNaC::exmap getRationalModel() const;
-            GiNaCRA::evalintervalmap getVariableBounds() const;
+            void updateModel() const;
+            EvalRationalMap getRationalModel() const;
+            EvalIntervalMap getVariableBounds() const;
             void initialize();
 
             void printLinearConstraints ( std::ostream& = std::cout, const std::string = "" ) const;
@@ -121,7 +119,7 @@ namespace smtrat
                 mTableau.print( _out, 28, _init );
             }
 
-            const ExVariableMap& originalVariables() const
+            const VarVariableMap& originalVariables() const
             {
                 return mOriginalVars;
             }
@@ -147,7 +145,6 @@ namespace smtrat
             #endif
             void adaptPassedFormula();
             bool checkAssignmentForNonlinearConstraint();
-            void splitUnequalConstraint( const Constraint* );
             bool activateBound( const lra::Bound<lra::Numeric>*, std::set<const Formula*>& );
             void setBound( lra::Variable<lra::Numeric>&, bool, const lra::Numeric&, const Constraint* );
             void findSimpleConflicts( const lra::Bound<lra::Numeric>& );

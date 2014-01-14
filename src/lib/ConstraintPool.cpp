@@ -24,39 +24,28 @@
  * @author Florian Corzilius
  * @author Sebastian Junges
  * @author Ulrich Loup
- * @version 2013-06-20
+ * @version 2013-10-21
  */
 
 #include "ConstraintPool.h"
 
 using namespace std;
-using namespace GiNaC;
 
 namespace smtrat
 {
-    /**
-     * Constructor of the constraint pool.
-     * 
-     * @param _capacity Expected necessary capacity of the pool.
-     */
     ConstraintPool::ConstraintPool( unsigned _capacity ):
         mExternalPrefixInitialized( true ),
         mIdAllocator( 1 ),
         mAuxiliaryBoolVarCounter( 0 ),
         mAuxiliaryRealVarCounter( 0 ),
         mAuxiliaryIntVarCounter( 0 ),
-        mArithmeticVarCounter( 0 ),
-        mConsistentConstraint( new Constraint( 0, CR_EQ, symtab(), 1 ) ),
-        mInconsistentConstraint( new Constraint( 0, CR_LESS, symtab(), 2 ) ),
-        mInternalRealVarNamePrefix( "r_" ),
-        mInternalIntVarNamePrefix( "i_" ),
+        mConsistentConstraint( new Constraint( ZERO_POLYNOMIAL, Constraint::EQ, 1 ) ),
+        mInconsistentConstraint( new Constraint( ZERO_POLYNOMIAL, Constraint::LESS, 2 ) ),
         mExternalVarNamePrefix( "_" ),
-        mInternalToExternalVarNames(),
-        mExternalToInternalVarNames(),
-        mArithmeticVariables(),
+        mExternalNamesToVariables(),
         mBooleanVariables(),
         mConstraints(),
-        mDomain()
+        mVariablePool( carl::VariablePool::getInstance() )
     {
         mConstraints.reserve( _capacity );
         mConstraints.insert( mConsistentConstraint );
@@ -81,11 +70,6 @@ namespace smtrat
         }
     }
 
-    /**
-     * Resets the constraint pool.
-     * 
-     * Note: Do not use it. It is only made for the Benchmax.
-     */
     void ConstraintPool::clear()
     {
         lock_guard<mutex> lock1( mMutexArithmeticVariables );
@@ -100,193 +84,82 @@ namespace smtrat
             mConstraints.erase( mConstraints.begin() );
             delete pCons;
         }
-        mArithmeticVariables.clear();
         mAuxiliaryRealVarCounter = 0;
         mAuxiliaryIntVarCounter = 0;
         mBooleanVariables.clear();
         mAuxiliaryBoolVarCounter = 0;
-        mArithmeticVarCounter = 0;
         mConstraints.insert( mConsistentConstraint );
         mConstraints.insert( mInconsistentConstraint );
-        mInternalToExternalVarNames.clear();
+        mExternalNamesToVariables.clear();
         mIdAllocator = 3;
     }
-
-    /**
-     * Determines the length of the longest variable name occurring in the pool.
-     * 
-     * @return The length of the longest variable name occurring in the pool.
-     */
-    unsigned ConstraintPool::maxLenghtOfVarName() const
-    {
-        unsigned result = 0;
-        for( symtab::const_iterator var = mArithmeticVariables.begin(); var != mArithmeticVariables.end(); ++var )
-        {
-            if( var->first.size() > result ) result = var->first.size();
-        }
-        for( set<string>::const_iterator var = mBooleanVariables.begin(); var != mBooleanVariables.end(); ++var )
-        {
-            if( var->size() > result ) result = var->size();
-        }
-        return result;
-    }
-
-    /**
-     * Constructs a new constraint and adds it to the pool, if it is not yet a member. If it is a
-     * member, this will be returned instead of a new constraint.
-     * 
-     * Note, that the left-hand side of the constraint is simplified and normalized, hence it is
-     * not necessarily equal to the given left-hand side. The same holds for the relation symbol.
-     * However, it is assured that the returned constraint has the same solutions as
-     * the expected one.
-     * 
-     * @param _lhs The left-hand side of the constraint.
-     * @param _rel The relation symbol of the constraint.
-     * @param _variables An over-approximation of the variables which occur on the left-hand side.
-     * @return The constructed constraint.
-     */
-    const Constraint* ConstraintPool::newBound( const symbol& _var, const Constraint_Relation _rel, const numeric& _bound )
+    
+    const Constraint* ConstraintPool::newBound( const carl::Variable& _var, const Constraint::Relation _rel, const Rational& _bound )
     {
         CONSTRAINT_LOCK_GUARD
         // TODO: Maybe it's better to increment the allocator even if the constraint already exists.
         //       Avoids long waiting for access (mutual exclusion) but increases the allocator to fast.
         Constraint* constraint = createNormalizedBound( _var, _rel, _bound );
-        pair<fastConstraintSet::iterator, bool> iterBoolPair = mConstraints.insert( constraint );
+        auto iterBoolPair = mConstraints.insert( constraint );
         if( !iterBoolPair.second )
             delete constraint;
-        else
-            constraint->setBoundProperties( _var, ((_rel == CR_GREATER || _rel == CR_GEQ) ? _bound : -_bound ) );
         return *iterBoolPair.first;
     }
 
-    /**
-     * Constructs a new constraint and adds it to the pool, if it is not yet a member. If it is a
-     * member, this will be returned instead of a new constraint.
-     * 
-     * Note, that the left-hand side of the constraint is simplified and normalized, hence it is
-     * not necessarily equal to the given left-hand side. The same holds for the relation symbol.
-     * However, it is assured that the returned constraint has the same solutions as
-     * the expected one.
-     * 
-     * @param _lhs The left-hand side of the constraint.
-     * @param _rel The relation symbol of the constraint.
-     * @param _variables An over-approximation of the variables which occur on the left-hand side.
-     * @return The constructed constraint.
-     */
-    const Constraint* ConstraintPool::newConstraint( const ex& _lhs, const Constraint_Relation _rel, const symtab& _variables )
+    const Constraint* ConstraintPool::newConstraint( const Polynomial& _lhs, const Constraint::Relation _rel )
     {
         CONSTRAINT_LOCK_GUARD
-        assert( hasNoOtherVariables( _lhs ) );
         // TODO: Maybe it's better to increment the allocator even if the constraint already exists.
         //       Avoids long waiting for access (mutual exclusion) but increases the allocator to fast.
-        Constraint* constraint = createNormalizedConstraint( _lhs, _rel, _variables );
+//        cout << "create polynomial  " << _lhs << " " << Constraint::relationToString( _rel ) << "0" << endl;
+        Constraint* constraint = createNormalizedConstraint( _lhs, _rel );
+//        cout << "   " << *constraint << endl;
         if( constraint->variables().empty() )
         {
-            bool constraintConsistent = Constraint::evaluate( ex_to<numeric>( constraint->lhs() ), constraint->relation() );
+            bool constraintConsistent = Constraint::evaluate( constraint->constantPart(), constraint->relation() );
             delete constraint;
             return ( constraintConsistent ? mConsistentConstraint : mInconsistentConstraint );
         }
-        constraint->collectProperties();
         const Constraint* result = addConstraintToPool( constraint );
         return result;
     }
 
-    /**
-     * Creates an arithmetic variable.
-     * 
-     * @param _name The external name of the variable to construct.
-     * @param _domain The domain of the variable to construct.
-     * @param _parsed A special flag indicating whether this variable is constructed during parsing.
-     * 
-     * @return A pair of the internal name of the variable and the variable as an expression.
-     */
-    pair<string,ex> ConstraintPool::newArithmeticVariable( const string& _name, Variable_Domain _domain, bool _parsed )
+    carl::Variable ConstraintPool::newArithmeticVariable( const string& _name, carl::VariableType _domain, bool _parsed )
     {
+        assert( !_name.empty() );
+        assert( _domain == carl::VariableType::VT_REAL || _domain == carl::VariableType::VT_INT );
         // Initialize the prefix for the external representation of internally generated (not parsed) variable names
         if( _parsed ) mExternalPrefixInitialized = false;
         else if( !mExternalPrefixInitialized ) initExternalPrefix();
         lock_guard<mutex> lock( mMutexArithmeticVariables );
-        // Fix the internal name (used in GiNaC) of this variable
-        stringstream out;
-        if( _domain == REAL_DOMAIN ) out << mInternalRealVarNamePrefix;
-        else out << mInternalIntVarNamePrefix;
-        out << mArithmeticVarCounter++;
-        mInternalToExternalVarNames[out.str()] = _name;
-        mExternalToInternalVarNames[_name] = out.str();
-        // Create the GiNaC variable
-        symtab emptySymtab;
-        parser reader( emptySymtab );
-        ex var = reader( out.str() );
-        // Set the variable's domain
-        mMutexDomain.lock();
-        mDomain.insert( pair< ex, Variable_Domain >( var, _domain ) );
-        mMutexDomain.unlock();
-        return *mArithmeticVariables.insert( pair<string, ex>( out.str(), var ) ).first;
+        // Create the arithmetic variable
+        auto iterBoolPair = mExternalNamesToVariables.insert( pair<string,carl::Variable>( _name, mVariablePool.getFreshVariable( _domain ) ) );
+        assert( iterBoolPair.second );
+        mVariablePool.setVariableName( iterBoolPair.first->second, _name );
+        return iterBoolPair.first->second;
     }
-
-    /**
-     * Creates an auxiliary real valued variable.
-     * 
-     * @param _externalPrefix The prefix of the external name of the auxiliary variable to construct.
-     * 
-     * @return A pair of the internal name of the variable and the a variable as an expression.
-     */
-    pair<string,ex> ConstraintPool::newAuxiliaryRealVariable( const std::string& _externalPrefix )
-    {
-        stringstream out;
-        out << mExternalVarNamePrefix << _externalPrefix << "_" << mAuxiliaryRealVarCounter++;
-        return newArithmeticVariable( out.str(), REAL_DOMAIN );
-    }
-
-    /**
-     * Creates an auxiliary integer valued variable.
-     * 
-     * @param _externalPrefix The prefix of the external name of the auxiliary variable to construct.
-     * 
-     * @return A pair of the internal name of the variable and the a variable as an expression.
-     */
-    pair<string,ex> ConstraintPool::newAuxiliaryIntVariable( const std::string& _externalPrefix )
-    {
-        stringstream out;
-        out << mExternalVarNamePrefix << _externalPrefix << mAuxiliaryIntVarCounter++;
-        return newArithmeticVariable( out.str(), INTEGER_DOMAIN );
-    }
-
-    /**
-     * Creates a new Boolean variable.
-     * 
-     * @param _name The external name of the variable to construct.
-     * @param _parsed A special flag indicating whether this variable is constructed during parsing.
-     */
-    void ConstraintPool::newBooleanVariable( const string& _name, bool _parsed )
+    
+    const carl::Variable ConstraintPool::newBooleanVariable( const string& _name, bool _parsed )
     {
         lock_guard<mutex> lock( mMutexBooleanVariables );
-        assert( mBooleanVariables.find( _name ) == mBooleanVariables.end() );
+        assert( !booleanExistsAlready( _name ) );
         if( _parsed ) mExternalPrefixInitialized = false;
         else if( !mExternalPrefixInitialized ) initExternalPrefix();
-        mBooleanVariables.insert( _name );
+        carl::Variable result = mVariablePool.getFreshVariable( carl::VariableType::VT_BOOL );
+        mVariablePool.setVariableName( result, _name );
+        mBooleanVariables.insert( result );
+        return result;
     }
 
-    /**
-     * Creates an auxiliary Boolean variable.
-     * 
-     * @param _externalPrefix The prefix of the external name of the auxiliary variable to construct.
-     * 
-     * @return The internal name of the variable.
-     */
-    string ConstraintPool::newAuxiliaryBooleanVariable( const std::string& _externalPrefix )
+    const carl::Variable ConstraintPool::newAuxiliaryBooleanVariable( const std::string& _externalPrefix )
     {
         stringstream out;
         mMutexBooleanVariables.lock();
         out << mExternalVarNamePrefix << _externalPrefix << mAuxiliaryBoolVarCounter++;
         mMutexBooleanVariables.unlock();
-        newBooleanVariable( out.str() );
-        return out.str();
+        return newBooleanVariable( out.str() );;
     }
     
-    /**
-     * Initializes the prefix of the external variable names of internally declared (not parsed) variables.
-     */
     void ConstraintPool::initExternalPrefix()
     {
         bool foundExternalPrefix = false;
@@ -308,468 +181,111 @@ namespace smtrat
         }
     }
 
-    /**
-     * Determines the highest degree occurring in all constraints.
-     *
-     * Note: This method makes the other accesses to the constraint pool waiting.
-     * @return The highest degree occurring in all constraints
-     */
-    int ConstraintPool::maxDegree() const
+    Constraint* ConstraintPool::createNormalizedBound( const carl::Variable& _var, const Constraint::Relation _rel, const Rational& _bound ) const
     {
-        int result = 0;
-        CONSTRAINT_LOCK_GUARD
-        for( fcs_const_iterator constraint = mConstraints.begin();
-             constraint != mConstraints.end(); ++constraint )
+        assert( _rel != Constraint::EQ && _rel != Constraint::NEQ );
+        if( _rel == Constraint::GREATER )
         {
-            int maxdeg = (*constraint)->maxDegree();
-            if(maxdeg > result) result = maxdeg;
+            Polynomial lhs = Polynomial( _bound ) - Polynomial( _var );
+            return new Constraint( lhs, Constraint::LESS, mIdAllocator );
         }
-        return result;
-    }
-
-    /**
-     * Determines the number of non-linear constraints in the pool.
-     * 
-     * Note: This method makes the other accesses to the constraint pool waiting.
-     * @return
-     */
-    unsigned ConstraintPool::nrNonLinearConstraints() const
-    {
-        unsigned nonlinear = 0;
-        CONSTRAINT_LOCK_GUARD
-        for( fcs_const_iterator constraint = mConstraints.begin();
-             constraint != mConstraints.end(); ++constraint )
+        else if( _rel == Constraint::GEQ )
         {
-            if(!(*constraint)->isLinear()) ++nonlinear;
-        }
-        return nonlinear;
-    }
-
-    /**
-     * Checks whether the given expression contains variables which do not 
-     * yet occur in the constraint pool. This method is only for debug purpose.
-     * 
-     * @param _expression The expression, for which to check its variables.
-     * @return True, if it contains only variables which already occur in the constraint pool.
-     */
-    bool ConstraintPool::hasNoOtherVariables( const ex& _expression ) const
-    {
-        lst substitutionList = lst();
-        lock_guard<mutex> lock( mMutexArithmeticVariables );
-        for( symtab::const_iterator var = mArithmeticVariables.begin(); var != mArithmeticVariables.end(); ++var )
-        {
-            substitutionList.append( ex_to<symbol>( var->second ) == 0 );
-        }
-        bool result = _expression.subs( substitutionList ).info( info_flags::rational );
-        return result;
-    }
-
-    /**
-     * Creates a normalized constraint, which has the same solutions as the constraint consisting of the given
-     * left-hand side and relation symbol.
-     * 
-     * Note, that this method uses the allocator which is locked before calling.
-     *
-     * @param _lhs The left-hand side of the constraint before normalization,
-     * @param _rel The relation symbol of the constraint before normalization,
-     * @param _variables An over-approximation of the variables occurring in the given left-hand side.
-     * 
-     * @return The constructed constraint.
-     */
-    Constraint* ConstraintPool::createNormalizedBound( const symbol& _var, const Constraint_Relation _rel, const numeric& _bound ) const
-    {
-        assert( _rel != CR_EQ && _rel != CR_NEQ );
-        symtab vars = symtab();
-        vars[_var.get_name()] = _var;
-        if( _rel == CR_GREATER )
-        {
-            ex lhs = _bound - _var;
-            return new Constraint( lhs, CR_LESS, vars, mIdAllocator );
-        }
-        else if( _rel == CR_GEQ )
-        {
-            ex lhs = _bound - _var;
-            return new Constraint( lhs, CR_LEQ, vars, mIdAllocator );
+            Polynomial lhs = Polynomial( _bound ) - Polynomial( _var );
+            return new Constraint( lhs, Constraint::LEQ, mIdAllocator );
         }
         else
         {
-            ex lhs = _var - _bound;
-            return new Constraint( lhs, _rel, vars, mIdAllocator );
+            Polynomial lhs = Polynomial( _var ) - Polynomial( _bound );
+            return new Constraint( lhs, _rel, mIdAllocator );
         }
     }
     
-    /**
-     * Yet another unnecessary auxiliary method due to the non-determinism of GiNaC.
-     * @param _ex An expanded polynomial.
-     * @return True, if the lexicographically smallest monomial has a negative coefficient.
-     *          False, otherwise.
-     */
-    bool lexicograficallySmallestMonomialHasNegativeCoefficient( const ex& _ex, const symtab& _variables )
+    Constraint* ConstraintPool::createNormalizedConstraint( const Polynomial& _lhs, const Constraint::Relation _rel ) const
     {
-        if( is_exactly_a<add>( _ex ) )
+        if( _rel == Constraint::GREATER )
         {
-            bool smallestMonomialHasNegativeCoefficient = false;
-            bool currentMonomialHasNegativeCoefficient = false;
-            map<string,unsigned> varDegreeMapA = map<string,unsigned>();
-            map<string,unsigned> varDegreeMapB = map<string,unsigned>();
-            for( auto var = _variables.begin(); var != _variables.end(); ++var )
+            Polynomial lhs = _lhs.isZero() ? ZERO_POLYNOMIAL : _lhs.coprimeCoefficients();
+            if( !lhs.isZero() && (_lhs.lterm()->coeff() < 0) == (lhs.lterm()->coeff() < 0) )
             {
-                varDegreeMapA[var->first] = 0;
-                varDegreeMapB[var->first] = 0;
+                lhs = -lhs;
             }
-            for( GiNaC::const_iterator summand = _ex.begin(); summand != _ex.end(); ++summand )
+            return new Constraint( lhs, Constraint::LESS );
+        }
+        else if( _rel == Constraint::GEQ )
+        {
+            Polynomial lhs = _lhs.isZero() ? ZERO_POLYNOMIAL : _lhs.coprimeCoefficients();
+            if( !lhs.isZero() && (_lhs.lterm()->coeff() < 0) == (lhs.lterm()->coeff() < 0) )
             {
-                if( summand != _ex.begin() )
-                {
-                    currentMonomialHasNegativeCoefficient = false;
-                    for( auto var = varDegreeMapB.begin(); var != varDegreeMapB.end(); ++var )
-                        var->second = 0;
-                }
-                const ex summandEx = *summand;
-                if( is_exactly_a<mul>( summandEx ) )
-                {
-                    for( GiNaC::const_iterator factor = summandEx.begin(); factor != summandEx.end(); ++factor )
-                    {
-                        const ex factorEx = *factor;
-                        if( is_exactly_a<symbol>( factorEx ) )
-                        {
-                            stringstream tmpStream;
-                            tmpStream << factorEx;
-                            varDegreeMapB[tmpStream.str()] = 1;
-                        }
-                        else if( is_exactly_a<numeric>( factorEx ) )
-                        {
-                            currentMonomialHasNegativeCoefficient = factorEx.info( info_flags::negative );
-                        }
-                        else if( is_exactly_a<power>( factorEx ) )
-                        {
-                            assert( factorEx.nops() == 2 );
-                            ex exponent = *(++(factorEx.begin()));
-                            assert( !exponent.info( info_flags::negative ) );
-                            unsigned exp = static_cast<unsigned>( exponent.integer_content().to_int() );
-                            ex subterm = *factorEx.begin();
-                            assert( is_exactly_a<symbol>( subterm ) );
-                            stringstream tmpStream;
-                            tmpStream << subterm;
-                            varDegreeMapB[tmpStream.str()] = exp;
-                        }
-                        else assert( false );
-                    }
-                }
-                else if( is_exactly_a<symbol>( summandEx ) )
-                {
-                    stringstream tmpStream;
-                    tmpStream << summandEx;
-                    varDegreeMapB[tmpStream.str()] = 1;
-                }
-                else if( is_exactly_a<numeric>( summandEx ) )
-                {
-                    return summandEx.info( info_flags::negative );
-                }
-                else if( is_exactly_a<power>( summandEx ) )
-                {
-                    assert( summandEx.nops() == 2 );
-                    ex exponent = *(++(summandEx.begin()));
-                    assert( !exponent.info( info_flags::negative ) );
-                    unsigned exp = static_cast<unsigned>( exponent.integer_content().to_int() );
-                    ex subterm = *summandEx.begin();
-                    assert( is_exactly_a<symbol>( subterm ) );
-                    stringstream tmpStream;
-                    tmpStream << subterm;
-                    varDegreeMapB[tmpStream.str()] = exp;
-                }
-                else assert( false );
-                if( summand == _ex.begin() )
-                {
-                    varDegreeMapA.swap( varDegreeMapB );
-                    smallestMonomialHasNegativeCoefficient = currentMonomialHasNegativeCoefficient;
-                }
-                else
-                {
-                    auto iterA = varDegreeMapA.begin();
-                    auto iterB = varDegreeMapB.begin();
-                    while( iterA != varDegreeMapA.end() )
-                    {
-                        assert( iterB != varDegreeMapB.end() );
-                        if( iterA->second < iterB->second )
-                        {
-                            break;
-                        }
-                        else if( iterA->second > iterB->second )
-                        {
-                            varDegreeMapA.swap( varDegreeMapB );
-                            smallestMonomialHasNegativeCoefficient = currentMonomialHasNegativeCoefficient;
-                            break;
-                        }
-                        ++iterA;
-                        ++iterB;
-                    }
-                }
+                lhs = -lhs;
             }
-            return smallestMonomialHasNegativeCoefficient;
-        }
-        else if( is_exactly_a<mul>( _ex ) )
-        {
-            for( GiNaC::const_iterator factor = _ex.begin(); factor != _ex.end(); ++factor )
-                if( is_exactly_a<numeric>( *factor ) )
-                    return _ex.info( info_flags::negative );
-            return false;
-        }
-        else if( is_exactly_a<numeric>( _ex ) )
-            return _ex.info( info_flags::negative );
-        else
-            return false;
-    }
-
-    /**
-     * Creates a normalized constraint, which has the same solutions as the constraint consisting of the given
-     * left-hand side and relation symbol.
-     * 
-     * Note, that this method uses the allocator which is locked before calling.
-     *
-     * @param _lhs The left-hand side of the constraint before normalization,
-     * @param _rel The relation symbol of the constraint before normalization,
-     * @param _variables An over-approximation of the variables occurring in the given left-hand side.
-     * 
-     * @return The constructed constraint.
-     */
-    Constraint* ConstraintPool::createNormalizedConstraint( const ex& _lhs, const Constraint_Relation _rel, const symtab& _variables ) const
-    {
-        if( _rel == CR_GREATER )
-        {
-            ex lhs = Constraint::normalizeA( -_lhs );
-            return new Constraint( lhs, CR_LESS, _variables, mIdAllocator );
-        }
-        else if( _rel == CR_GEQ )
-        {
-            ex lhs = Constraint::normalizeA( -_lhs );
-            return new Constraint( lhs, CR_LEQ, _variables, mIdAllocator );
+            return new Constraint( lhs, Constraint::LEQ );
         }
         else
         {
-            ex lhs = Constraint::normalizeA( _lhs );
-            if( _rel == CR_EQ || _rel == CR_NEQ ) 
+            Polynomial lhs = _lhs.isZero() ? ZERO_POLYNOMIAL : _lhs.coprimeCoefficients();
+            if( _rel == Constraint::EQ || _rel == Constraint::NEQ ) 
             {
-                if( lexicograficallySmallestMonomialHasNegativeCoefficient( lhs, _variables ) ) lhs = ex( -lhs ).expand();
+                if( !_lhs.isZero() && lhs.lterm()->coeff() < ZERO_RATIONAL ) lhs = -lhs;
             }
-            return new Constraint( lhs, _rel, _variables, mIdAllocator );
+            else if( !lhs.isZero() && (_lhs.lterm()->coeff() < 0) != (lhs.lterm()->coeff() < 0) )
+            {
+                lhs = -lhs;
+            }
+            return new Constraint( lhs, _rel );
         }
     }
 
-    /**
-     * Adds the given constraint to the pool, if it does not yet occur in there.
-     * 
-     * Note, that this method uses the allocator which is locked before calling.
-     * 
-     * @sideeffect The given constraint will be deleted, if it already occurs in the pool.
-     *
-     * @param _constraint The constraint to add to the pool.
-     * 
-     * @return The given constraint, if it did not yet occur in the pool;
-     *          The equivalent constraint already occurring in the pool.
-     */
     const Constraint* ConstraintPool::addConstraintToPool( Constraint* _constraint )
     {
         unsigned constraintConsistent = _constraint->isConsistent();
-        if( constraintConsistent == 2 )
+//        cout << *_constraint << " is consistent: " << constraintConsistent << endl;
+        if( constraintConsistent == 2 ) // Constraint contains variables.
         {
-            // Constraint contains variables.
-            pair<fastConstraintSet::iterator, bool> iterBoolPair = mConstraints.insert( _constraint );
-            if( !iterBoolPair.second )
-            {
-                // Constraint has already been generated.
+            auto iterBoolPair = mConstraints.insert( _constraint );
+            if( !iterBoolPair.second ) // Constraint has already been generated.
                 delete _constraint;
-            }
             else
             {
                 Constraint* constraint = _constraint->simplify();
-                if( constraint != NULL )
+                if( constraint != NULL ) // Constraint could be simplified.
                 {
-                    // Constraint could be simplified.
-                    pair<fastConstraintSet::iterator, bool> iterBoolPairB = mConstraints.insert( constraint );
-                    if( !iterBoolPairB.second )
-                    {
-                        // Simplified version already exists, then set the id of the generated constraint to the id of the simplified one.
-                        _constraint->rId() = (*iterBoolPairB.first)->id();
+//                    cout << *_constraint << " can be simplified to " << *constraint << endl;
+                    mConstraints.erase( iterBoolPair.first );
+                    delete _constraint;
+                    auto iterBoolPairB = mConstraints.insert( constraint );
+                    if( !iterBoolPairB.second ) // Simplified version already exists
                         delete constraint;
-                    }
-                    else
+                    else // Simplified version has not been generated before.
                     {
-                        // Simplified version has not been generated before.
                         constraint->init();
+                        constraint->mID = mIdAllocator;
                         ++mIdAllocator;
                     }
                     return *iterBoolPairB.first;
                 }
-                else
+                else // Constraint could not be simplified.
                 {
-                    // Constraint could not be simplified.
-                    _constraint->init();
+                    _constraint->mID = mIdAllocator;
                     ++mIdAllocator;
                 }
             }
             return *iterBoolPair.first;
         }
-        else
+        else // Constraint contains no variables.
         {
-            // Constraint contains no variables.
             delete _constraint;
             return (constraintConsistent ? mConsistentConstraint : mInconsistentConstraint );
         }
     }
-    
-    /**
-     * Determines the external name of the variable which corresponds to the given internal variable name.
-     * 
-     * Note, that this method uses the allocator which is locked before calling.
-     * 
-     * @param _varname The internal variable name.
-     * @return The external variable name.
-     */
-    string ConstraintPool::externalName( const string& _varname ) const
-    {
-        auto iter = mInternalToExternalVarNames.find( _varname );
-        assert( iter != mInternalToExternalVarNames.end() );
-        return iter->second;
-    }
-    
-    /**
-     * Determines the internal name of the variable which corresponds to the given external variable name.
-     * 
-     * Note, that this method uses the allocator which is locked before calling.
-     * 
-     * @param _varname The external variable name.
-     * @return The internal variable name.
-     */
-    string ConstraintPool::internalName( const string& _varname ) const
-    {
-        auto iter = mExternalToInternalVarNames.find( _varname );
-        assert( iter != mExternalToInternalVarNames.end() );
-        return iter->second;
-    }
-    
-    /**
-     * Transforms the given expression to a string and replaces on the fly the internal GiNaC 
-     * variables by their external representation.
-     * 
-     * @param _toTransform The expression to transform to a string.
-     * 
-     * @return The resulting string.
-     */
-    string ConstraintPool::stringOf( const ex& _toTransform ) const
-    {
-        string result = "";
-        if( is_exactly_a<add>( _toTransform ) )
-        {
-            result += "(+";
-            for( GiNaC::const_iterator subterm = _toTransform.begin(); subterm != _toTransform.end(); ++subterm )
-                result += " " + stringOf( *subterm );
-            result += ")";
-        }
-        else if( is_exactly_a<mul>( _toTransform ) )
-        {
-            result += "(*";
-            for( GiNaC::const_iterator subterm = _toTransform.begin(); subterm != _toTransform.end(); ++subterm )
-                result += " " + stringOf( *subterm );
-            result += ")";
-        }
-        else if( is_exactly_a<power>( _toTransform ) )
-        {
-            assert( _toTransform.nops() == 2 );
-            numeric exponent = ex_to<numeric>( *(++_toTransform.begin()) );
-            if( exponent.is_integer() )
-            {
-                int expAsInt = exponent.to_int();
-                if( expAsInt < 0 )
-                    result += "(/ 1 ";
-                ex subterm = *_toTransform.begin();
-                if( abs( exponent ) > 1 )
-                    result += "(*";
-                for( int i = 0; i < expAsInt; ++i )
-                    result += " " + stringOf( subterm );
-                if( abs( exponent ) > 1 )
-                    result += ")";
-                if( expAsInt < 0 )
-                    result += ")";
-            }
-            else
-            {
-                stringstream out;
-                out << _toTransform;
-                result += out.str();
-            }
-        }
-        else if( is_exactly_a<numeric>( _toTransform ) )
-        {
-            numeric num = ex_to<numeric>( _toTransform );
-            if( num.is_negative() )
-                result += "(- ";
-            numeric absOfNum = abs( num );
-            stringstream out;
-            if( absOfNum.is_integer() )
-            {
-                out << absOfNum;
-            }
-            else
-            {
-                out << "(/ " << absOfNum.numer() << " " << absOfNum.denom() << ")";
-            }
-            result += out.str();
-            if( num.is_negative() )
-                result += ")";
-        }
-        else if( is_exactly_a<symbol>( _toTransform ) )
-        {
-            stringstream out;
-            out << _toTransform;
-            auto iter = mInternalToExternalVarNames.find( out.str() );
-            assert( iter != mInternalToExternalVarNames.end() );
-            result += iter->second;
-        }
-        else
-        {
-            assert( false );
-        }
-        return result;
-    }
 
-    /**
-     * Prints all constraints in the constraint pool on the given stream.
-     *
-     * @param _out The stream to print on.
-     */
     void ConstraintPool::print( ostream& _out ) const
     {
         CONSTRAINT_LOCK_GUARD
         _out << "---------------------------------------------------" << endl;
         _out << "Constraint pool:" << endl;
-        for( fcs_const_iterator constraint = mConstraints.begin();
-                constraint != mConstraints.end(); ++constraint )
-        {
-            _out << "    " << **constraint << endl;
-        }
-        _out << "---------------------------------------------------" << endl;
-    }
-
-    /**
-     * Prints all variables in the constraint pool on the given stream.
-     *
-     * @param _out The stream to print on.
-     */
-    void ConstraintPool::printVariables( ostream& _out ) const
-    {
-        CONSTRAINT_LOCK_GUARD
-        _out << "---------------------------------------------------" << endl;
-        _out << "Arithmetic variable pool:" << endl;
-        for( auto arithVar = mArithmeticVariables.begin(); arithVar != mArithmeticVariables.end(); ++arithVar )
-        {
-            _out << "    " << arithVar->first << "   ( " << toString( domain( arithVar->second ) ) << " )" << endl;
-        }
-        _out << "Boolean variable pool:" << endl;
-        for( auto boolVar = mBooleanVariables.begin(); boolVar != mBooleanVariables.end(); ++boolVar )
-        {
-            _out << "    " << *boolVar << endl;
-        }
+        for( auto constraint = mConstraints.begin(); constraint != mConstraints.end(); ++constraint )
+            _out << "    " << **constraint << "  [id=" << (*constraint)->id() << ", hash=" << (*constraint)->getHash() << "]" << endl;
         _out << "---------------------------------------------------" << endl;
     }
 

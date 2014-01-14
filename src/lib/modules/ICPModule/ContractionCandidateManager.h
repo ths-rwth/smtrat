@@ -30,12 +30,14 @@
 #define	CONTRACTIONCANDIDATEMANAGER_H
 
 #include "ContractionCandidate.h"
+#include "../../Common.h"
 
 namespace smtrat
 {   
     namespace icp{
     class ContractionCandidateManager
     {
+        
     private:
         
         /**
@@ -74,7 +76,12 @@ namespace smtrat
          * @param _origin The pointer to the original formula, needed for assertions and removals of subformulas
          * @return a pointer to the created contraction candidate
          */
-        ContractionCandidate* createCandidate ( symbol _lhs, const ex _rhs, const Constraint* _constraint, symbol _derivationVar, const Formula* _origin = NULL );
+        ContractionCandidate* createCandidate ( carl::Variable _lhs,
+                                                const Polynomial _rhs,
+                                                const Constraint* _constraint,
+                                                carl::Variable _derivationVar,
+                                                Contractor<carl::SimpleNewton>& _contractor,
+                                                const Formula* _origin = NULL );
         
         /**
          * Returns the id of the given contraction candidate

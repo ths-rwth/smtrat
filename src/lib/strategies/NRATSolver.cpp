@@ -18,8 +18,6 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-
 /**
  * @file NRATSolver.cpp
  *
@@ -27,9 +25,6 @@
 
 #include "NRATSolver.h"
 #include "config.h"
-
-#include <ginacra/settings.h>
-
 
 namespace smtrat
 {
@@ -54,7 +49,7 @@ namespace smtrat
         //position = addBackendIntoStrategyGraph( position, MT_CacheModule );
         #endif
         #ifdef SMTRAT_ENABLE_LRAModule
-        position = addBackendIntoStrategyGraph( position, MT_LRAModule );
+//        position = addBackendIntoStrategyGraph( position, MT_LRAModule );
         #endif
         #ifdef SMTRAT_ENABLE_GroebnerModule
 //        position = addBackendIntoStrategyGraph( position, MT_GroebnerModule );

@@ -32,7 +32,9 @@
 
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <limits.h>
+#include <cmath>
 
 #include "Manager.h"
 #include "Module.h"
@@ -40,6 +42,7 @@
 
 // Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
+//#define MODULE_VERBOSE_INTEGERS
 //#define DEBUG_MODULE_CALLS_IN_SMTLIB
 
 using namespace std;
@@ -64,6 +67,7 @@ namespace smtrat
         mpManager( _tsManager ),
         mpReceivedFormula( _formula ),
         mpPassedFormula( new Formula( AND ) ),
+        mModel(),
         mSolverState( Unknown ),
         mBackendsFoundAnswer( new std::atomic_bool( false ) ),
         mFoundAnswer( _foundAnswer ),
@@ -73,10 +77,9 @@ namespace smtrat
         mDeductions(),
         mFirstSubformulaToPass( mpPassedFormula->end() ),
         mConstraintsToInform(),
-        mFirstConstraintToInform( mConstraintsToInform.end() ),
+        mInformedConstraints(),
         mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() ),
-        mSmallerMusesCheckCounter(0),
-        mModel()
+        mSmallerMusesCheckCounter(0)
 #ifdef SMTRAT_DEVOPTION_MeasureTime
         ,
         mTimerAddTotal( 0 ),
@@ -93,6 +96,8 @@ namespace smtrat
     
     Module::~Module()
     {
+        mConstraintsToInform.clear();
+        mInformedConstraints.clear();
         delete mpPassedFormula;
         mFoundAnswer.clear();
         delete mBackendsFoundAnswer;
@@ -145,7 +150,7 @@ namespace smtrat
     bool Module::inform( const Constraint* const _constraint )
     {
         #ifdef MODULE_VERBOSE
-        cout << __func__ << " in " << this << " with name " << moduleName( mModuleType ) << ": " << _constraint->smtlibString() << endl;
+        cout << __func__ << " in " << this << " with name " << moduleName( mModuleType ) << ": " << _constraint->toString() << endl;
         #endif
         addConstraintToInform(_constraint);
         return true;
@@ -232,7 +237,7 @@ namespace smtrat
     /**
      * Updates the model, if the solver has detected the consistency of the received formula, beforehand.
      */
-    void Module::updateModel()
+    void Module::updateModel() const
     {
         clearModel();
         if( mSolverState == True )
@@ -314,6 +319,158 @@ namespace smtrat
         }
         return result;
     }
+    
+    /**
+     * Adds a deductions which provoke a branching for the given variable at the given value,
+     * if this module returns Unknown and there exists a preceding SATModule. Note that the 
+     * given value is rounded down and up, if the given variable is integer-valued.
+     * @param _var The variable to branch for.
+     * @param _value The value to branch at.
+     * @param _premise The sub-formulas of the received formula from which the branch is followed.
+     *                 Note, that a premise is not necessary, as every branch is a valid formula.
+     *                 But a premise can prevent from branching unnecessarily.
+     * @param _leftCaseWeak true, if the given variable should be less or equal than the given value
+     *                            or greater than the given value;
+     *                      false, if the given variable should be less than the given value or
+     *                             or greater or equal than the given value.
+     */
+    void Module::branchAt( const carl::Variable& _var, const Rational& _value, const set<const Formula*>& _premise, bool _leftCaseWeak )
+    {
+        const Constraint* constraintA = NULL;
+        const Constraint* constraintB = NULL;
+        if( _var.getType() == carl::VariableType::VT_INT )
+        {
+            Rational bound = cln::floor1( _value );
+            Polynomial leqLhs = Polynomial( _var ) - bound;
+            constraintA = Formula::newConstraint( leqLhs, Constraint::LEQ );
+            ++bound;
+            Polynomial geqLhs = Polynomial( _var ) - bound;
+            constraintB = Formula::newConstraint( geqLhs, Constraint::GEQ );
+            #ifdef MODULE_VERBOSE_INTEGERS
+            cout << "[" << moduleName(type()) << "]  branch at  " << *constraintA << "  and  " << *constraintB << endl;
+            #endif
+        }
+        else
+        {   
+            Polynomial constraintLhs = Polynomial( _var ) - _value;
+            if( _leftCaseWeak )
+            {
+                constraintA = Formula::newConstraint( constraintLhs, Constraint::LEQ );
+                constraintB = Formula::newConstraint( constraintLhs, Constraint::GREATER );
+            }
+            else
+            {
+                constraintA = Formula::newConstraint( constraintLhs, Constraint::LESS );
+                constraintB = Formula::newConstraint( constraintLhs, Constraint::GEQ );   
+            }
+        }
+        // (x<=I-1 or x>=I)
+        Formula* deductionA = new Formula( OR );
+        for( auto pre = _premise.begin(); pre != _premise.end(); ++pre )
+        {
+            assert( find( mpReceivedFormula->begin(), mpReceivedFormula->end(), *pre ) != mpReceivedFormula->end() );
+            Formula* notPre = new Formula( NOT );
+            notPre->addSubformula( new Formula( **pre ) );
+            deductionA->addSubformula( notPre );
+        }
+        deductionA->addSubformula( constraintA );
+        deductionA->back()->setActivity( INFINITY );
+        deductionA->addSubformula( constraintB );
+        deductionA->back()->setActivity( INFINITY );
+        addDeduction( deductionA );
+        // (not(x<=I-1) or not(x>=I))
+        Formula* deductionB = new Formula( OR );
+        for( auto pre = _premise.begin(); pre != _premise.end(); ++pre )
+        {
+            assert( find( mpReceivedFormula->begin(), mpReceivedFormula->end(), *pre ) != mpReceivedFormula->end() );
+            Formula* notPre = new Formula( NOT );
+            notPre->addSubformula( new Formula( **pre ) );
+            deductionB->addSubformula( notPre );
+        }
+        Formula* notLeqConstraint = new Formula( NOT );
+        notLeqConstraint->addSubformula( constraintA );
+        Formula* notGeqConstraint = new Formula( NOT );
+        notGeqConstraint->addSubformula( constraintB );
+        deductionB->addSubformula( notLeqConstraint );
+        deductionB->addSubformula( notGeqConstraint );
+        addDeduction( deductionB );
+    }
+    
+    /**
+     * Adds the following lemmas for the given constraint p!=0
+     *
+     *      (p!=0 <-> (p<0 or p>0))
+     * and  not(p<0 and p>0)
+     *
+     * @param _unequalConstraint A constraint having the relation symbol !=.
+     */
+    void Module::splitUnequalConstraint( const Constraint* _unequalConstraint )
+    {
+        assert( _unequalConstraint->relation() == Constraint::NEQ );
+        const Constraint* lessConstraint = Formula::newConstraint( _unequalConstraint->lhs(), Constraint::LESS );
+        const Constraint* greaterConstraint = Formula::newConstraint( _unequalConstraint->lhs(), Constraint::GREATER );
+        // (not p!=0 or p<0 or p>0)
+        Formula* deductionA = new Formula( OR );
+        Formula* notConstraint = new Formula( NOT );
+        notConstraint->addSubformula( _unequalConstraint );
+        deductionA->addSubformula( notConstraint );
+        deductionA->addSubformula( lessConstraint );
+        deductionA->addSubformula( greaterConstraint );
+        addDeduction( deductionA );
+        // (not p<0 or p!=0)
+        Formula* deductionB = new Formula( OR );
+        Formula* notLessConstraint = new Formula( NOT );
+        notLessConstraint->addSubformula( lessConstraint );
+        deductionB->addSubformula( notLessConstraint );
+        deductionB->addSubformula( _unequalConstraint );
+        addDeduction( deductionB );
+        // (not p>0 or p!=0)
+        Formula* deductionC = new Formula( OR );
+        Formula* notGreaterConstraint = new Formula( NOT );
+        notGreaterConstraint->addSubformula( greaterConstraint );
+        deductionC->addSubformula( notGreaterConstraint );
+        deductionC->addSubformula( _unequalConstraint );
+        addDeduction( deductionC );
+        // (not p>0 or not p>0)
+        Formula* deductionD = new Formula( OR );
+        Formula* notGreaterConstraintB = new Formula( NOT );
+        notGreaterConstraintB->addSubformula( greaterConstraint );
+        Formula* notLessConstraintB = new Formula( NOT );
+        notLessConstraintB->addSubformula( lessConstraint );
+        deductionD->addSubformula( notGreaterConstraintB );
+        deductionD->addSubformula( notLessConstraintB );
+        addDeduction( deductionD );
+    }
+    
+    EvalRationalMap Module::modelToERM( const Model& _model )
+    {
+        EvalRationalMap rationalAssignment;
+        for( auto ass = _model.begin(); ass != _model.end(); ++ass )
+        {
+            
+            if( ass->first.getType() == carl::VariableType::VT_BOOL )
+            {
+                rationalAssignment.insert( rationalAssignment.end(), pair<carl::Variable, Rational>( ass->first, (ass->second.booleanValue ? ONE_RATIONAL : ZERO_RATIONAL) ) );
+            }
+            else if( ass->second.theoryValue->isConstant() )
+            {
+                Rational value = ass->second.theoryValue->constantPart().constantPart()/ass->second.theoryValue->denominator().constantPart();
+                assert( !(ass->first.getType() == carl::VariableType::VT_INT) || carl::isInteger( value ) );
+                rationalAssignment.insert( rationalAssignment.end(), pair<carl::Variable, Rational>( ass->first, value ) );
+            }
+        }
+        return rationalAssignment;
+    }
+    
+    /**
+     * @return false, if the current model of this module does not satisfy the current given formula;
+     *         true, if it cannot be said whether the model satisfies the given formula.
+     */
+    unsigned Module::checkModel() const
+    {
+        updateModel();
+        return mpReceivedFormula->satisfiedBy( modelToERM( mModel ) );
+    }
 
     /**
      * Copies the infeasible subsets of the passed formula
@@ -360,9 +517,9 @@ namespace smtrat
      * Stores the model of a backend which determined satisfiability of the passed 
      * formula in the model of this module.
      */
-    void Module::getBackendsModel()
+    void Module::getBackendsModel() const
     {
-        vector<Module*>::iterator module = mUsedBackends.begin();
+        auto module = mUsedBackends.begin();
         while( module != mUsedBackends.end() )
         {
             assert( (*module)->solverState() != False );
@@ -370,7 +527,15 @@ namespace smtrat
             {
                 assert( modelsDisjoint( mModel, (*module)->model() ) );
                 (*module)->updateModel();
-                mModel.insert( (*module)->model().begin(), (*module)->model().end() );
+                for( auto ass = (*module)->model().begin(); ass != (*module)->model().end(); ++ass )
+                {
+                    Assignment newAss = Assignment();
+                    if( ass->first.getType() == carl::VariableType::VT_BOOL )
+                        newAss.booleanValue = ass->second.booleanValue;
+                    else
+                        newAss.theoryValue = new vs::SqrtEx( *(ass->second.theoryValue) );
+                    mModel.insert( pair< const carl::Variable, Assignment >( ass->first, newAss ) );
+                }
                 break;
             }
             ++module;
@@ -461,12 +626,8 @@ namespace smtrat
                     #ifdef SMTRAT_DEVOPTION_MeasureTime
                     (*module)->startAddTimer();
                     #endif
-                    if( mFirstConstraintToInform != mConstraintsToInform.end() )
-                    {
-                        auto iter = mFirstConstraintToInform;
-                        for( ; iter != mConstraintsToInform.end(); ++iter )
-                            (*module)->inform( *iter );
-                    }
+                    for( auto iter = mConstraintsToInform.begin(); iter != mConstraintsToInform.end(); ++iter )
+                        (*module)->inform( *iter );
                     for( Formula::const_iterator subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end(); ++subformula )
                     {
                         if( !(*module)->assertSubformula( subformula ) )
@@ -477,7 +638,8 @@ namespace smtrat
                     #endif
                 }
                 mFirstSubformulaToPass = mpPassedFormula->end();
-                mFirstConstraintToInform = mConstraintsToInform.end();
+                mInformedConstraints.insert( mConstraintsToInform.begin(), mConstraintsToInform.end() );
+                mConstraintsToInform.clear();
                 if( assertionFailed )
                 {
                     #ifdef SMTRAT_DEVOPTION_MeasureTime
@@ -561,7 +723,7 @@ namespace smtrat
             #endif
         }
         #ifdef MODULE_VERBOSE
-        cout << "Result:   " << (result == True ? "True" : (result == False ? "False" : (result == Unknown ? "Unknown" : "Undefined"))) << endl;
+        cout << "Result:   " << ANSWER_TO_STRING( result ) << endl;
         #endif
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         startCheckTimer();
@@ -638,6 +800,13 @@ namespace smtrat
     Answer Module::foundAnswer( Answer _answer )
     {
         mSolverState = _answer;
+        if( _answer == True && checkModel() == 0 )
+        {
+            storeAssumptionsToCheck( *mpManager );
+            printModel();
+//            exit( 7771 );
+        }
+        assert( _answer != True || checkModel() != 0 );
         // If we are in the SMT environment:
         if( mpManager != NULL && _answer != Unknown )
         {
@@ -654,9 +823,9 @@ namespace smtrat
      */
     void Module::addConstraintToInform( const Constraint* const constraint )
     {
-        mConstraintsToInform.push_back(constraint);
-        if(mFirstConstraintToInform == mConstraintsToInform.end())
-            mFirstConstraintToInform = --mConstraintsToInform.end();
+        // We can give the hint that this constraint will probably be inserted in the end of this container,
+        // as it is compared by an id which gets incremented every time a new constraint is constructed.
+        mConstraintsToInform.insert( mConstraintsToInform.end(), constraint );
     }
 
     /**
@@ -697,7 +866,7 @@ namespace smtrat
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
         assumption += "(assert (and ";
-        assumption += _formula.toString( false, true );
+        assumption += _formula.toString( false, 1, "", true, false, true );
         assumption += " " + _moduleName;
         assumption += "))\n";
         assumption += "(get-assertions)\n";
@@ -719,7 +888,7 @@ namespace smtrat
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
         assumption += "(assert (and";
         for( auto formula = _formulas.begin(); formula != _formulas.end(); ++formula )
-            assumption += " " + (*formula)->toString( false, true );
+            assumption += " " + (*formula)->toString( false, 1, "", true, false, true );
         assumption += " " + _moduleName;
         assumption += "))\n";
         assumption += "(get-assertions)\n";
@@ -741,7 +910,7 @@ namespace smtrat
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
         assumption += "(assert (and";
         for( auto constraint = _constraints.begin(); constraint != _constraints.end(); ++constraint )
-            assumption += " " + (*constraint)->smtlibString();
+            assumption += " " + (*constraint)->toString( 1, false, true );
         assumption += " " + _moduleName;
         assumption += "))\n";
         assumption += "(get-assertions)\n";
@@ -766,15 +935,18 @@ namespace smtrat
             { 
                 // For each assumption add a new solver-call by resetting the search state.
                 smtlibFile << "(reset)\n";
-                smtlibFile << "(set-logic QF_NRA)\n";
+                smtlibFile << "(set-logic " << _manager.logicToString() << ")\n";
                 smtlibFile << "(set-option :interactive-mode true)\n";
                 smtlibFile << "(set-info :smt-lib-version 2.0)\n";
                 // Add all real-valued variables.
-                GiNaC::symtab allVariables = Formula::constraintPool().realVariables();
+                Variables allVariables = Formula::constraintPool().arithmeticVariables();
                 for( auto var = allVariables.begin(); var != allVariables.end(); ++var )
-                    smtlibFile << "(declare-fun " << var->first << " () Real)\n";
+                {
+                    if( !(_manager.logic() == Logic::QF_NIA || _manager.logic() == Logic::QF_LIA) || var->getType() == carl::VariableType::VT_INT)
+                        smtlibFile << "(declare-fun " << *var << " () " << Formula::constraintPool().toString( var->getType() ) << ")\n";
+                }
                 // Add all Boolean variables.
-                set<string> allBooleans = Formula::constraintPool().booleanVariables();
+                Variables allBooleans = Formula::constraintPool().booleanVariables();
                 for( auto var = allBooleans.begin(); var != allBooleans.end(); ++var )
                     smtlibFile << "(declare-fun " << *var << " () Bool)\n";
                 // Add module name variables.
@@ -815,13 +987,13 @@ namespace smtrat
                 nextbitvector = tmp | ((((tmp & -tmp) / (bitvector & -bitvector)) >> 1) - 1);
                 // For each assumption add a new solver-call by resetting the search state.
                 smtlibFile << "(reset)\n";
-                smtlibFile << "(set-logic QF_NRA)\n";
+                smtlibFile << "(set-logic " << mpManager->logicToString() << ")\n";
                 smtlibFile << "(set-option :interactive-mode true)\n";
                 smtlibFile << "(set-info :smt-lib-version 2.0)\n";
                 // Add all real-valued variables.
-                GiNaC::symtab allVars = Formula::constraintPool().realVariables();
-                for( GiNaC::symtab::const_iterator var = allVars.begin(); var != allVars.end(); ++var )
-                    smtlibFile << "(declare-fun " << var->first << " () Real)\n";
+                Variables allVars = Formula::constraintPool().arithmeticVariables();
+                for( auto var = allVars.begin(); var != allVars.end(); ++var )
+                    smtlibFile << "(declare-fun " << *var << " () Real)\n";
                 string assumption = "";
                 assumption += "(set-info :status sat)\n";
                 assumption += "(assert (and ";
@@ -931,5 +1103,34 @@ namespace smtrat
             _out << " }";
         }
         _out << " }" << endl;
+    }
+    
+    /**
+     * Prints the assignment of this module satisfying its received formula if it satisfiable
+     * and this module could find an assignment.
+     * @param _out The stream to print the assignment on.
+     */
+    void Module::printModel( ostream& _out ) const
+    {
+        updateModel();
+        if( !model().empty() )
+        {
+            _out << "(";
+            for( Module::Model::const_iterator ass = model().begin(); ass != model().end(); ++ass )
+            {
+                if( ass != model().begin() )
+                    _out << " ";
+                if( ass->first.getType() == carl::VariableType::VT_BOOL )
+                {
+                    _out << "(" << ass->first << " " << (ass->second.booleanValue ? "true" : "false") << ")" << endl;
+                }
+                else
+                {
+                    _out << "(" << ass->first << " ";
+                    _out << ass->second.theoryValue->toString( true ) << ")" << endl;
+                }
+            }
+            _out << ")" << endl;
+        }
     }
 } // namespace smtrat

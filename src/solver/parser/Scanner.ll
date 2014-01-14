@@ -124,6 +124,7 @@ typedef smtrat::Parser::token_type token_type;
 
 "get-value"      { return token::GET_VALUE; }
 "get-assignment" { return token::GET_ASSIGNMENT; }
+"get-model"      { return token::GET_ASSIGNMENT; }
 "get-assertions" { return token::GET_ASSERTIONS; }
 "get-proof"      { return token::GET_PROOF; }
 "get-unsat-core" { return token::GET_UNSAT_CORE; }
@@ -160,7 +161,7 @@ bv[0-9]+ {
     return token::HEX;
 }
 
-0|[1-9][0-9]* {
+[0-9]* {
     yylval->sval = new string( yytext );
     return token::NUM;
 }

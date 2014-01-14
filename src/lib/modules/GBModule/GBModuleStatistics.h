@@ -82,18 +82,18 @@ class GroebnerModuleStats : public Statistics
      /**
       * Count the kind of constraint which was added 
       */
-     void constraintAdded(Constraint_Relation relation) {
+     void constraintAdded(Constraint::Relation relation) {
          switch(relation) {
-         case CR_EQ:
+         case Constraint::EQ:
              EqualityAdded();
              break;
-         case CR_GEQ:
-         case CR_LEQ:
+         case Constraint::GEQ:
+         case Constraint::LEQ:
              NonStrictInequalityAdded();
              break;
-         case CR_NEQ:
-         case CR_GREATER:
-         case CR_LESS:
+         case Constraint::NEQ:
+         case Constraint::GREATER:
+         case Constraint::LESS:
              StrictInequalityAdded();
              break;
          }
@@ -102,18 +102,18 @@ class GroebnerModuleStats : public Statistics
        /**
       * Count the kind of constraint which was added 
       */
-     void constraintRemoved(Constraint_Relation relation) {
+     void constraintRemoved(Constraint::Relation relation) {
          switch(relation) {
-         case CR_EQ:
+         case Constraint::EQ:
              EqualityRemoved();
              break;
-         case CR_GEQ:
-         case CR_LEQ:
+         case Constraint::GEQ:
+         case Constraint::LEQ:
              NonStrictInequalityRemoved();
              break;
-         case CR_NEQ:
-         case CR_GREATER:
-         case CR_LESS:
+         case Constraint::NEQ:
+         case Constraint::GREATER:
+         case Constraint::LESS:
              StrictInequalityRemoved();
              break;
          }

@@ -28,9 +28,6 @@
 #include "NRATSolverCAD.h"
 #include "config.h"
 
-#include <ginacra/settings.h>
-
-
 namespace smtrat
 {
 

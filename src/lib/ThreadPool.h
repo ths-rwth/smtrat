@@ -38,7 +38,7 @@
 #include <thread>
 #include <vector>
 
-#include "Answer.h"
+#include "Common.h"
 
 namespace smtrat
 {

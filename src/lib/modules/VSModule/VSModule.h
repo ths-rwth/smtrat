@@ -18,8 +18,6 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-
 /**
  * @file VSModule.h
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
@@ -33,7 +31,7 @@
 #define VS_INCREMENTAL
 #define VS_INFEASIBLE_SUBSET_GENERATION
 
-//#define VS_STATISTICS
+#define VS_STATISTICS
 //#define VS_PRINT_ANSWERS
 //#define VS_LOG_INTERMEDIATE_STEPS
 
@@ -42,7 +40,6 @@
 #include "VSSettings.h"
 #include "../../Module.h"
 #include "../../RuntimeSettings.h"
-#include "VSSettings.h"
 
 namespace smtrat
 {
@@ -52,24 +49,50 @@ namespace smtrat
         private:
 
             // Type and object definitions.
-            typedef std::pair<vs::UnsignedTriple, vs::State*>                       ValStatePair;
-            typedef std::map<vs::UnsignedTriple, vs::State*, vs::unsignedTripleCmp> ValuationMap;
-            typedef std::map<const Formula* const, const vs::Condition*>            FormulaConditionMap;
-            typedef std::pair< std::string, GiNaC::ex >                             VarNamePair;
-            typedef std::vector<std::pair< VarNamePair, VarNamePair > >             VarNamePairVector;
+            
+            typedef std::pair<unsigned, std::pair<unsigned, unsigned> > UnsignedTriple;
+            
+            struct unsignedTripleCmp
+            {
+                bool operator ()( UnsignedTriple n1, UnsignedTriple n2 ) const
+                {
+                    if( n1.first > n2.first )
+                        return true;
+                    else if( n1.first == n2.first )
+                    {
+                        if( n1.first != 1 )
+                            return n1.second.first > n2.second.first;
+                        else
+                        {
+                            if( n1.second.second < n2.second.second )
+                                return true;
+                            else if( n1.second.second == n2.second.second )
+                                return n1.second.first > n2.second.first;
+                            return false;
+                        }
+                    }
+                    else
+                        return false;
+                }
+            };
+            
+            typedef std::pair<UnsignedTriple, vs::State*>                   ValStatePair;
+            typedef std::map<UnsignedTriple, vs::State*, unsignedTripleCmp> ValuationMap;
+            typedef std::map<const Formula* const, const vs::Condition*>    FormulaConditionMap;
+            typedef std::vector<std::pair<carl::Variable,carl::Variable>>   VarNamePairVector;
 
             // Members.
-            bool                mConditionsChanged;
-            bool                mInconsistentConstraintAdded;
-            unsigned            mIDCounter;
+            bool                        mConditionsChanged;
+            bool                        mInconsistentConstraintAdded;
+            unsigned                    mIDCounter;
             #ifdef VS_STATISTICS
-            unsigned            mStepCounter;
+            unsigned                    mStepCounter;
             #endif
-            vs::State*          mpStateTree;
-            GiNaC::symtab       mAllVariables;
-            FormulaConditionMap mFormulaConditionMap;
-            ValuationMap        mRanking;
-            VarNamePairVector   mVariableVector;
+            vs::State*                  mpStateTree;
+            Variables                   mAllVariables;
+            FormulaConditionMap         mFormulaConditionMap;
+            ValuationMap                mRanking;
+            mutable VarNamePairVector   mVariableVector;
 
         public:
 
@@ -83,7 +106,7 @@ namespace smtrat
             bool assertSubformula( Formula::const_iterator );
             Answer isConsistent();
             void removeSubformula( Formula::const_iterator );
-            void updateModel();
+            void updateModel() const;
 
             // Printing methods.
             void printAll( const std::string& = "", std::ostream& = std::cout ) const;
@@ -94,7 +117,7 @@ namespace smtrat
         private:
 
             // Some more type definitions.
-            typedef std::pair<vs::Substitution, vs::StateVector> ChildrenGroup;
+            typedef std::pair<vs::Substitution, std::list< vs::State* >> ChildrenGroup;
             typedef std::vector<ChildrenGroup>                   ChildrenGroups;
 
             // Methods.
@@ -104,15 +127,20 @@ namespace smtrat
                 mIDCounter++;
             }
             
-            void eliminate( vs::State*, const std::string&, const vs::Condition* );
+            inline Answer consistencyTrue();
+            
+            void eliminate( vs::State*, const carl::Variable&, const vs::Condition* );
             bool substituteAll( vs::State*, vs::ConditionList& );
             void propagateNewConditions( vs::State* );
-            void insertDTinRanking( vs::State* );
-            void insertDTsinRanking( vs::State* );
-            bool eraseDTofRanking( vs::State& );
-            void eraseDTsOfRanking( vs::State& );
+            void addStateToRanking( vs::State* );
+            void addStatesToRanking( vs::State* );
+            void insertTooHighDegreeStatesInRanking( vs::State* );
+            bool removeStateFromRanking( vs::State& );
+            void removeStatesFromRanking( vs::State& );
+            std::set<const Formula*> getReasons( const vs::Condition::Set& _conditions ) const;
             void updateInfeasibleSubset( bool = false );
-            std::vector<std::pair<std::string, std::pair<vs::Substitution_Type, GiNaC::ex> > > getSymbolicAssignment() const;
+            EvalRationalMap getIntervalAssignment( const vs::State* _state ) const;
+            Answer solutionInDomain();
             static void allMinimumCoveringSets( const vs::ConditionSetSetSet&, vs::ConditionSetSet& );
             bool adaptPassedFormula( const vs::State&, FormulaConditionMap&, bool = false );
             Answer runBackendSolvers( vs::State*, bool = false );

@@ -30,8 +30,9 @@
 #define LRA_VARIABLE_H
 
 #include "Bound.hpp"
-#include <ginacra/ginacra.h>
+#include "../../Common.h"
 #include <sstream>
+#include <iomanip>
 
 namespace smtrat
 {
@@ -45,17 +46,17 @@ namespace smtrat
                 /**
                  * Members.
                  */
-                bool                     mBasic;
-                unsigned                 mPosition;
-                typename Bound<T>::BoundSet mUpperbounds;
-                typename Bound<T>::BoundSet mLowerbounds;
-                const Bound<T>*          mpSupremum;
-                const Bound<T>*          mpInfimum;
-                const GiNaC::ex*         mExpression;
-                Value<T>                 mAssignment;
+                bool                      mBasic;
+                unsigned                  mPosition;
+                typename Bound<T>::BoundSet  mUpperbounds;
+                typename Bound<T>::BoundSet  mLowerbounds;
+                const Bound<T>*           mpSupremum;
+                const Bound<T>*           mpInfimum;
+                const smtrat::Polynomial* mExpression;
+                Value<T>                  mAssignment;
 
             public:
-                Variable( unsigned, bool, const GiNaC::ex*, smtrat::Formula::iterator );
+                Variable( unsigned, bool, const smtrat::Polynomial*, smtrat::Formula::iterator );
                 virtual ~Variable();
 
                 const Value<T>& assignment() const
@@ -174,12 +175,12 @@ namespace smtrat
                     return mPosition;
                 }
 
-                const GiNaC::ex* pExpression() const
+                const smtrat::Polynomial* pExpression() const
                 {
                     return mExpression;
                 }
 
-                const GiNaC::ex expression() const
+                const smtrat::Polynomial expression() const
                 {
                     return *mExpression;
                 }
@@ -188,15 +189,16 @@ namespace smtrat
                 std::pair<const Bound<T>*, std::pair<const Bound<T>*, const Bound<T>*> > addLowerBound( Value<T>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL, bool = false );
                 std::pair<const Bound<T>*, std::pair<const Bound<T>*, const Bound<T>*> > addEqualBound( Value<T>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL );
                 void deactivateBound( const Bound<T>*, smtrat::Formula::iterator );
-                GiNaCRA::Interval getVariableBounds() const;
+//                carl::Interval getVariableBounds() const;
                 std::set< const smtrat::Formula* > getDefiningOrigins() const;
 
                 void print( std::ostream& = std::cout ) const;
                 void printAllBounds( std::ostream& = std::cout, const std::string = "" ) const;
         };
 
-        template<typename T>
-        Variable<T>::Variable( unsigned _position, bool _basic, const GiNaC::ex* _expression, smtrat::Formula::iterator _defaultBoundPosition ):
+		
+        template<class T>
+        Variable<T>::Variable( unsigned _position, bool _basic, const smtrat::Polynomial* _expression, smtrat::Formula::iterator _defaultBoundPosition ):
             mBasic( _basic ),
             mPosition( _position ),
             mUpperbounds(),
@@ -233,7 +235,7 @@ namespace smtrat
         template<typename T>
         std::pair<const Bound<T>*, std::pair<const Bound<T>*, const Bound<T>*> > Variable<T>::addUpperBound( Value<T>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint, bool _deduced )
         {
-            typename Bound<T>::Info* boundInfo = new typename Bound<T>::Info();
+            struct Bound<T>::Info* boundInfo = new struct Bound<T>::Info();
             boundInfo->updated = 0;
             boundInfo->position = _position;
             boundInfo->neqRepresentation = NULL;
@@ -284,7 +286,7 @@ namespace smtrat
         template<typename T>
         std::pair<const Bound<T>*,std::pair<const Bound<T>*, const Bound<T>*> > Variable<T>::addLowerBound( Value<T>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint, bool _deduced )
         {
-            typename Bound<T>::Info* boundInfo = new typename Bound<T>::Info();
+            struct Bound<T>::Info* boundInfo = new struct Bound<T>::Info();
             boundInfo->updated = 0;
             boundInfo->position = _position;
             boundInfo->neqRepresentation = NULL;
@@ -331,7 +333,7 @@ namespace smtrat
         template<typename T>
         std::pair<const Bound<T>*,std::pair<const Bound<T>*, const Bound<T>*> > Variable<T>::addEqualBound( Value<T>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint )
         {
-            typename Bound<T>::Info* boundInfo = new typename Bound<T>::Info();
+            struct Bound<T>::Info* boundInfo = new struct Bound<T>::Info();
             boundInfo->updated = 0;
             boundInfo->position = _position;
             boundInfo->neqRepresentation = NULL;
@@ -429,36 +431,36 @@ namespace smtrat
          *
          * @return
          */
-        template<typename T>
-        GiNaCRA::Interval Variable<T>::getVariableBounds() const
-        {
-            GiNaCRA::Interval::BoundType lowerBoundType;
-            GiNaC::numeric lowerBoundValue;
-            GiNaCRA::Interval::BoundType upperBoundType;
-            GiNaC::numeric upperBoundValue;
-            if( infimum().isInfinite() )
-            {
-                lowerBoundType = GiNaCRA::Interval::INFINITY_BOUND;
-                lowerBoundValue = 0;
-            }
-            else
-            {
-                lowerBoundType = infimum().isWeak() ? GiNaCRA::Interval::WEAK_BOUND : GiNaCRA::Interval::STRICT_BOUND;
-                lowerBoundValue = infimum().limit().mainPart().toGinacNumeric();
-            }
-            if( supremum().isInfinite() )
-            {
-                upperBoundType = GiNaCRA::Interval::INFINITY_BOUND;
-                upperBoundValue = 0;
-            }
-            else
-            {
-                upperBoundType = supremum().isWeak() ? GiNaCRA::Interval::WEAK_BOUND : GiNaCRA::Interval::STRICT_BOUND;
-                upperBoundValue = supremum().limit().mainPart().toGinacNumeric();
-            }
-            GiNaCRA::Interval result = GiNaCRA::Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
-            return result;
-        }
+//        template<class T>
+//        carl::Interval Variable<T>::getVariableBounds() const
+//        {
+//            carl::Interval::BoundType lowerBoundType;
+//            smtrat::Numeric lowerBoundValue;
+//            carl::Interval::BoundType upperBoundType;
+//            smtrat::Numeric upperBoundValue;
+//            if( infimum().isInfinite() )
+//            {
+//                lowerBoundType = carl::Interval::INFINITY_BOUND;
+//                lowerBoundValue = 0;
+//            }
+//            else
+//            {
+//                lowerBoundType = infimum().isWeak() ? carl::Interval::WEAK_BOUND : carl::Interval::STRICT_BOUND;
+//                lowerBoundValue = infimum().limit().mainPart().content();
+//            }
+//            if( supremum().isInfinite() )
+//            {
+//                upperBoundType = carl::Interval::INFINITY_BOUND;
+//                upperBoundValue = 0;
+//            }
+//            else
+//            {
+//                upperBoundType = supremum().isWeak() ? carl::Interval::WEAK_BOUND : carl::Interval::STRICT_BOUND;
+//                upperBoundValue = supremum().limit().mainPart().content();
+//            }
+//            carl::Interval result = carl::Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
+//            return result;
+//        }
 
         /**
          *

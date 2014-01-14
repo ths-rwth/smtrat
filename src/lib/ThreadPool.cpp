@@ -27,8 +27,8 @@
  * @version 2013-02-01
  */
 
-#include "Module.h"
 #include "ThreadPool.h"
+#include "Module.h"
 
 using namespace std;
 

@@ -37,13 +37,7 @@
 #include <typeinfo>
 #include <cln/cln.h>
 
-//#define MODEL_IN_SMTLIB
-
 using namespace std;
-
-using GiNaC::ex;
-using GiNaC::numeric;
-using GiNaC::symbol;
 
 namespace smtrat
 {
@@ -57,7 +51,12 @@ namespace smtrat
         mBackendsOfModules(),
         mpPrimaryBackend( mGeneratedModules.back() ),
         mStrategyGraph(),
-        mDebugOutputChannel( cout.rdbuf() )
+        mDebugOutputChannel( cout.rdbuf() ),
+        mLogic( Logic::UNDEFINED )
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        ,
+        mpStatistics( new GeneralStatistics() )
+        #endif
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         ,
         mpThreadPool( NULL ),
@@ -68,7 +67,7 @@ namespace smtrat
     {
         mpModuleFactories = new map<const ModuleType, ModuleFactory*>();
         // inform it about all constraints
-        for( fcs_const_iterator constraint = Formula::constraintPool().begin(); constraint != Formula::constraintPool().end(); ++constraint )
+        for( auto constraint = Formula::constraintPool().begin(); constraint != Formula::constraintPool().end(); ++constraint )
             mpPrimaryBackend->inform( (*constraint) );
     }
 
@@ -126,55 +125,6 @@ namespace smtrat
         }
     }
     #endif
-
-    /**
-     * Prints the currently found assignment of variables occurring in the so far 
-     * added formulas to values of their domains, if the conjunction of these 
-     * formulas is satisfiable.
-     * @param The stream to print on.
-     */
-    void Manager::printAssignment( ostream& _out ) const
-    {
-        mpPrimaryBackend->updateModel();
-        if( !mpPrimaryBackend->model().empty() )
-        {
-            _out << "(";
-            for( Module::Model::const_iterator ass = mpPrimaryBackend->model().begin(); ass != mpPrimaryBackend->model().end(); ++ass )
-            {
-                if( ass != mpPrimaryBackend->model().begin() )
-                    _out << " ";
-                if( ass->second->domain == BOOLEAN_DOMAIN )
-                {
-                    _out << "(" << ass->first << " " << (ass->second->booleanValue ? "true" : "false") << ")" << endl;
-                }
-                else
-                {
-                    _out << "(" <<  Formula::constraintPool().externalName( ass->first ) << " ";
-                    _out << Formula::constraintPool().stringOf( *ass->second->theoryValue ) << ")" << endl;
-                }
-            }
-            _out << ")" << endl;
-        }
-    }
-    
-    /**
-     * Prints the assignment of the given variable, if it has one.
-     * @param _varName Internal variable name.
-     * @param _out The stream to print on.
-     */
-    void Manager::printValue( const string& _varName, ostream& _out ) const
-    {
-        auto ass = mpPrimaryBackend->model().find( _varName );
-        if( ass->second->domain == BOOLEAN_DOMAIN )
-        {
-            _out << "(" << _varName << " " << (ass->second->booleanValue ? "true" : "false") << ")";
-        }
-        else
-        {
-            _out << "(" << Formula::constraintPool().externalName( _varName );
-            _out << " " << Formula::constraintPool().stringOf( *ass->second->theoryValue ) << ")";
-        }
-    }
     
     /**
      * Prints the so far added formulas.
@@ -185,14 +135,13 @@ namespace smtrat
         _out << "(";
         if( mpPassedFormula->size() == 1 )
         {
-            mpPassedFormula->back()->print( _out, "", true, true );
+            _out << *mpPassedFormula->back();
         }
         else
         {
             for( auto subFormula = mpPassedFormula->begin(); subFormula != mpPassedFormula->end(); ++subFormula )
             {
-                (*subFormula)->print( _out, "", true, true );
-                _out << endl;
+                _out << **subFormula << endl;
             }
         }
         _out << ")" << endl;
@@ -210,14 +159,13 @@ namespace smtrat
             set< const Formula* > infSubSet = *mpPrimaryBackend->infeasibleSubsets().begin();
             if( infSubSet.size() == 1 )
             {
-                (*infSubSet.begin())->print( _out, "", true, true );
+                _out << **infSubSet.begin();
             }
             else
             {
                 for( auto subFormula = infSubSet.begin(); subFormula != infSubSet.end(); ++subFormula )
                 {
-                    (*subFormula)->print( _out, "", true, true );
-                    _out << endl;
+                    _out << **subFormula << endl;
                 }
             }
         }
@@ -274,7 +222,7 @@ namespace smtrat
                 allBackends.push_back( pBackend );
                 backends.push_back( pBackend );
                 // Inform it about all constraints.
-                for( auto cons = _requiredBy->constraintsToInform().begin(); cons != _requiredBy->constraintsToInform().end(); ++cons )
+                for( auto cons = _requiredBy->informedConstraints().begin(); cons != _requiredBy->informedConstraints().end(); ++cons )
                 {
                     pBackend->inform( *cons );
                 }

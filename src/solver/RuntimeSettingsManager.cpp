@@ -22,8 +22,9 @@
 /** 
  * @file   RuntimeSettingsManager.cpp
  * @author Sebastian Junges
- *
- * @version 10/01/2013
+ * @author Florian Corzilius
+ * @since   2013-01-10
+ * @version 2013-10-30
  */
 
 #include <stdio.h>
@@ -38,13 +39,14 @@
 #include "../lib/config.h"
 #include "../lib/CompileInfo.h"
 
-namespace smtrat {
-
-RuntimeSettingsManager::RuntimeSettingsManager() 
-: mDoPrintTimings(false), mPrintModel(false)
+namespace smtrat
 {
-    
-}
+
+RuntimeSettingsManager::RuntimeSettingsManager() : 
+    mDoPrintTimings( false ), 
+    mPrintModel( false ),
+    mPrintStatistics( false )
+{}
 
 /**
  * Add a settings object with a unique name
@@ -98,9 +100,11 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
     for(int argi = 1; argi < argc; ++argi) 
     {
         // Check if a option is passed.
-        if( strlen(argv[argi]) > 2 && argv[argi][0] == '-' && argv[argi][1] == '-') 
+        bool foundOption = strlen(argv[argi]) > 2 && argv[argi][0] == '-' && argv[argi][1] == '-';
+        bool foundOptionShortcut = strlen(argv[argi]) == 2 && argv[argi][0] == '-';
+        if( foundOption || foundOptionShortcut )
         {
-            std::string optionName(argv[argi] + 2);
+            std::string optionName( argv[argi] + ( foundOptionShortcut ? 1 : 2 ) );
             // check for global options.
             if(optionName == "help") 
             {
@@ -133,13 +137,22 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
                 exit(SMTRAT_EXIT_SUCCESS);
             }
             #endif
-            // no more global options, so we expect module options
-            else if(optionName == "print-model")
+            else if(optionName == "model" || optionName == "m")
             {
                 mPrintModel = true;
             }
-            else 
+            else if(optionName == "statistics" || optionName == "s")
             {
+                mPrintStatistics = true;
+            }
+            // no more global options, so we expect module options
+            else
+            {
+                if( foundOptionShortcut )
+                {
+                    std::cerr << "Unknown option short cut: " << argv[argi] << std::endl;
+                    exit(SMTRAT_EXIT_UNEXPECTED_INPUT);
+                }
                 size_t semicolonPosition(optionName.find(':'));
                 // Check if a semicolon was found
                 if(semicolonPosition == optionName.npos) 
@@ -150,7 +163,7 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
                 // Split into  name and keyvalue string.
                 std::string settingsObjectName = optionName.substr(0,semicolonPosition);
                 std::string keyValueString = optionName.substr(semicolonPosition+1);
-                
+
                 // Check safely and without exception-usage whether such a module exists.
                 if(mSettingObjects.count(settingsObjectName) == 0) 
                 {
@@ -192,7 +205,8 @@ void RuntimeSettingsManager::printHelp() const
     std::cout << "\t --warranty \t\t prints the warranty." << std::endl;
     std::cout << "\t --toc  \t\t\t prints the terms of condition" << std::endl;
     std::cout << "\t --info \t\t\t prints information about the binary" << std::endl;
-    std::cout << "\t --print-model \t\t\t a model is printed if the example is found to be satisfiable" << std::endl;
+    std::cout << "\t --model (-m) \t\t\t prints a model is printed if the example is found to be satisfiable" << std::endl;
+    std::cout << "\t --statistics (-s) \t\t\t prints any statistics collected in the solving process" << std::endl;
     std::cout << std::endl;
     std::cout << "Developer options:" <<std::endl;
     std::cout << "\t --list-modules \t prints all compiled modules" << std::endl;
@@ -261,16 +275,6 @@ void RuntimeSettingsManager::printInfo() const
     std::cout << "Build type:" << smtrat::CompileInfo::BuildType << std::endl;   
     std::cout << "Code is based on commit " << smtrat::CompileInfo::GitRevisionSHA1 << ". " << std::endl;
     std::cout << "Build on a " << smtrat::CompileInfo::SystemName << " (" << CompileInfo::SystemVersion << ") machine." << std::endl;
-}
-
-bool RuntimeSettingsManager::doPrintTimings() const 
-{
-    return mDoPrintTimings;
-}
-
-bool RuntimeSettingsManager::printModel() const 
-{
-    return mPrintModel;
 }
 
 }

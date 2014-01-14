@@ -26,13 +26,10 @@
  * Created on April 15th, 2013
  */
 
-#include <ginacra/settings.h>
-
 #include "Numeric.h"
 
 using namespace smtrat;
 using namespace std;
-using namespace GiNaC;
 
 namespace smtrat
 {
@@ -42,15 +39,15 @@ namespace smtrat
          * Default constructor.
          */
         Numeric::Numeric():
-            mContent( new numeric( 0 ) )
+            mContent( new Rational( 0 ) )
         {}
 
         /**
-         * Constructing from a GiNaC::numeric.
-         * @param The GiNaC::numeric.
+         * Constructing from a Rational.
+         * @param The Rational.
          */
-        Numeric::Numeric( const numeric& _value ):
-            mContent( new numeric( _value ) )
+        Numeric::Numeric( const Rational& _value ):
+            mContent( new Rational( _value ) )
         {}
 
         /**
@@ -58,7 +55,7 @@ namespace smtrat
          * @param _value The integer.
          */
         Numeric::Numeric( int _value ):
-            mContent( new numeric( _value ) )
+            mContent( new Rational( _value ) )
         {}
 
         /**
@@ -66,7 +63,7 @@ namespace smtrat
          * @param _value The unsigned integer
          */
         Numeric::Numeric( unsigned int _value ):
-            mContent( new numeric( _value ) )
+            mContent( new Rational( _value ) )
         {}
 
         /**
@@ -74,7 +71,7 @@ namespace smtrat
          * @param _value The unsigned long integer.
          */
         Numeric::Numeric( long _value ):
-            mContent( new numeric( _value ) )
+            mContent( new Rational( _value ) )
         {}
 
         /**
@@ -82,15 +79,7 @@ namespace smtrat
          * @param _value The unsigned long integer.
          */
         Numeric::Numeric( unsigned long _value ):
-            mContent( new numeric( _value ) )
-        {}
-
-        /**
-         * Constructing from a double.
-         * @param _value The double.
-         */
-        Numeric::Numeric( double _value ):
-            mContent( new numeric( _value ) )
+            mContent( new Rational( _value ) )
         {}
 
         /**
@@ -98,15 +87,7 @@ namespace smtrat
          * @param _value The char array.
          */
         Numeric::Numeric( const char* _value ):
-            mContent( new numeric( _value ) )
-        {}
-
-        /**
-         * Constructing from a CLN.
-         * @param _value The CLN.
-         */
-        Numeric::Numeric( const cln::cl_N& _value ):
-            mContent( new numeric( _value ) )
+            mContent( new Rational( _value ) )
         {}
 
         /**
@@ -114,7 +95,7 @@ namespace smtrat
          * @param _value The Numeric to copy.
          */
         Numeric::Numeric( const Numeric& _value ):
-            mContent( new numeric( *_value.mContent ) )
+            mContent( new Rational( *_value.mContent ) )
         {}
 
         Numeric::~Numeric()
@@ -158,16 +139,6 @@ namespace smtrat
          * @return The corresponding Numeric.
          */
         Numeric& Numeric::operator=( unsigned long _value )
-        {
-            return operator=( Numeric( _value ) );
-        }
-
-        /**
-         * Cast from a double.
-         * @param _value The double.
-         * @return The corresponding Numeric.
-         */
-        Numeric& Numeric::operator=( double _value )
         {
             return operator=( Numeric( _value ) );
         }
@@ -260,56 +231,11 @@ namespace smtrat
         }
 
         /**
-         * Cast to integer.
-         * @return This Numeric represented by an integer.
-         */
-        int Numeric::toInt() const
-        {
-            return this->content().to_int();
-        }
-
-        /**
-         * Cast to long integer.
-         * @return This Numeric represented by a long integer.
-         */
-        long Numeric::toLong() const
-        {
-            return this->content().to_long();
-        }
-
-        /**
-         * Cast to double.
-         * @return This Numeric represented by a double.
-         */
-        double Numeric::toDouble() const
-        {
-            return this->content().to_double();
-        }
-
-        /** 
-         *  Returns a new CLN object of type cl_N, representing the value of *this.
-         *  This method may be used when mixing GiNaC and CLN in one project.
-         */
-        cln::cl_N Numeric::toCLN() const
-        {
-            return this->content().to_cl_N();
-        }
-
-        /**
-         * 
-         * @return 
-         */
-        numeric Numeric::toGinacNumeric() const
-        {
-            return this->content();
-        }
-
-        /**
          * @return The enumerator of this Numeric.
          */
         Numeric Numeric::numer() const
         {
-            return Numeric( this->content().numer() );
+            return Numeric( cln::numerator( this->content() ) );
         }
 
         /**
@@ -317,7 +243,15 @@ namespace smtrat
          */
         Numeric Numeric::denom() const
         {
-            return Numeric( this->content().denom() );
+            return Numeric( cln::denominator( this->content() ) );
+        }
+        
+        /**
+         * @return The next smaller integer to this Numeric.
+         */
+        Numeric Numeric::floor() const
+        {
+            return Numeric( cln::floor1( this->content() ) );
         }
 
         /**
@@ -327,27 +261,34 @@ namespace smtrat
          */
         bool Numeric::isPositive() const
         {
-            return this->content().is_positive();
+            return ( this->content() > 0 );
         }
 
         /**
-         * Checks whether this Numeric corresponds to a positive rational number.
-         * @return True, if this Numeric corresponds to a positive rational number;
-         *          False, otherwise.
+         * @return true, if this Numeric corresponds to a positive rational number;
+         *         false, otherwise.
          */
         bool Numeric::isNegative() const
         {
-            return this->content().is_negative();
+            return ( this->content() < 0 );
         }
 
         /**
-         * Checks whether this Numeric corresponds to zero.
-         * @return True, if this Numeric corresponds to zero;
-         *          False, otherwise.
+         * @return true, if this Numeric corresponds to zero;
+         *         false, otherwise.
          */
         bool Numeric::isZero() const
         {
-            return this->content().is_zero();
+            return ( this->content() == 0 );
+        }
+
+        /**
+         * @return true, if this Numeric is integer;
+         *         false, otherwise.
+         */
+        bool Numeric::isInteger() const
+        {
+            return ( this->denom() == 1 );
         }
 
         /**
@@ -357,7 +298,51 @@ namespace smtrat
          */
         Numeric abs( const Numeric& _value )
         {
-            return Numeric( abs( _value.content() ) );
+            return Numeric( cln::abs( _value.content() ) );
+        }
+        
+        /**
+         * Calculates the result of the first argument modulo the second argument.
+         * Note, that this method can only be applied to integers.
+         * @param _valueA An integer.
+         * @param _valueB An integer != 0.
+         * @return The first argument modulo the second argument.
+         */
+        Numeric mod( const Numeric& _valueA, const Numeric& _valueB )
+        {
+            assert( _valueA.isInteger() && _valueB.isInteger() );
+            assert( !_valueB.isZero() );
+            return Numeric( cln::mod( cln::numerator( _valueA.content() ), cln::numerator( _valueB.content() ) ) );
+        }
+        
+        /**
+         * Calculates the least common multiple of the two arguments.
+         * Note, that this method can only be applied to integers.
+         * @param _valueA An integer.
+         * @param _valueB An integer.
+         * @return The least common multiple of the two arguments.
+         */
+        Numeric lcm( const Numeric& _valueA, const Numeric& _valueB )
+        {
+            assert( _valueA.isInteger() && _valueB.isInteger() );
+            if( _valueA.isZero() || _valueB.isZero() )
+                return Numeric( 0 );
+            return Numeric( cln::lcm( cln::numerator( _valueA.content() ), cln::numerator( _valueB.content() ) ) );
+        }
+        
+        /**
+         * Calculates the greatest common divisor of the two arguments.
+         * Note, that this method can only be applied to integers.
+         * @param _valueA An integer.
+         * @param _valueB An integer.
+         * @return The least common divisor of the two arguments.
+         */
+        Numeric gcd( const Numeric& _valueA, const Numeric& _valueB )
+        {
+            assert( _valueA.isInteger() && _valueB.isInteger() );
+            if( _valueA.isZero() || _valueB.isZero() )
+                return Numeric( 0 );
+            return Numeric( cln::gcd( cln::numerator( _valueA.content() ), cln::numerator( _valueB.content() ) ) );
         }
 
         /**
@@ -492,7 +477,7 @@ namespace smtrat
          */
         ostream& operator <<( ostream& _out, const Numeric& _value )
         {
-            _out << ex( _value.content() );
+            _out << _value.content();
             return _out;
         }
     } // end namespace lra

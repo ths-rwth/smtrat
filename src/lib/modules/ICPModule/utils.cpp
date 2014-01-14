@@ -15,7 +15,7 @@ namespace smtrat
 {
     namespace icp
     {
-        bool isLinear( const Constraint* _constr, const ex& _expr, ExToConstraintMap& _tempMonomes )
+        bool isLinear( const Constraint* _constr, const Polynomial& _expr, FastMap<Polynomial, const Constraint*>& _tempMonomes )
         {
             bool isLinear = true;
             ex term = _expr.expand();
@@ -187,7 +187,7 @@ namespace smtrat
             }
         }
 
-        bool isBoundIn( const ex _var, const Constraint* _constraint )
+        bool isBoundIn( const carl::Variable _var, const Constraint* _constraint )
         {
             if( is_exactly_a<symbol>( _var ) )
                 return (isBound( _constraint ) && _constraint->hasVariable( ex_to<symbol>( _var ).get_name() ));
@@ -205,10 +205,10 @@ namespace smtrat
             return false;
         }
         
-        const smtrat::lra::Variable<smtrat::lra::Numeric>* getOriginalLraVar ( const ex& _var, LRAModule& _lra )
+        const smtrat::lra::Variable<smtrat::lra::Numeric>* getOriginalLraVar ( const Polynomial& _var, LRAModule& _lra )
         {
             LRAModule::ExVariableMap originalVars = _lra.originalVariables();
-            const ex* tmp = &_var;
+            const Polynomial* tmp = &_var;
             LRAModule::ExVariableMap::iterator target = originalVars.find(tmp);
 //            cout << "VAR: " << _var << endl;
             assert(target != originalVars.end());

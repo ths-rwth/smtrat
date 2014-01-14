@@ -163,7 +163,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
      */
     Formula* PreprocessingModule::splitProductConstraints( Formula* _formula )
     {
-        if( _formula->getType() == REALCONSTRAINT )
+        if( _formula->getType() == CONSTRAINT )
         {
             #ifdef SMTRAT_DEVOPTION_Validation
             Formula assumption = Formula( NOT );
@@ -249,7 +249,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             {
                 rewritePotentialInequalities(subformula, !invert);
             }
-            else if(subformula->getType() == REALCONSTRAINT)
+            else if(subformula->getType() == CONSTRAINT)
             {
                 const Constraint* constraint = subformula->pConstraint();
                 // Since we are considering a not, invert is in fact "inverted" ;-)
@@ -339,7 +339,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             }
         }
         #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
-        else if( formula->getType() == REALCONSTRAINT )
+        else if( formula->getType() == CONSTRAINT )
         {
             formula->print();
             const Constraint* constraint = formula->pConstraint();
@@ -440,7 +440,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             double difficulty = std::max(formula->subformulas().front()->difficulty(), formula->subformulas().back()->difficulty());
             formula->setDifficulty(difficulty);
         }
-        else if( formula->getType() == REALCONSTRAINT )
+        else if( formula->getType() == CONSTRAINT )
         {
             const Constraint* constraint = formula->pConstraint();
             double difficulty;
@@ -493,7 +493,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 for( std::list<Formula*>::const_iterator jt = (*it)->subformulas().begin(); jt != (*it)->subformulas().end(); ++jt )
                 {
                     // Special treatment for identities.
-                    if( (*jt)->getType() == REALCONSTRAINT )
+                    if( (*jt)->getType() == CONSTRAINT )
                     {
                         const Constraint* constraint = (*jt)->pConstraint();
 
@@ -538,7 +538,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         assert(formula->getType() == AND);
         for( std::list<Formula*>::const_iterator it = formula->subformulas().begin(); it != formula->subformulas().end(); ++it )
         {
-            if((*it)->getType() == REALCONSTRAINT)
+            if((*it)->getType() == CONSTRAINT)
             {
                 const Constraint* constraint = (*it)->pConstraint();
                 // If we already have a linear equation, we are not going to extract other linear equations from it

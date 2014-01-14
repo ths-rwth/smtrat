@@ -46,7 +46,7 @@ namespace icp
             /*
              * Members
              */
-            const GiNaC::symbol                        mVar;
+            const carl::Variable                        mVar;
             bool                                       mOriginal;
             std::vector<ContractionCandidate*> mCandidates;
             const lra::Variable<lra::Numeric>*               mLraVar;
@@ -61,18 +61,18 @@ namespace icp
             smtrat::Formula::iterator                  mExternalLeftBound;
             smtrat::Formula::iterator                  mExternalRightBound;
 
+        private:
+            IcpVariable();
+            
         public:
             
             /*
              * Constructors
              */
             
-            IcpVariable()
-            {
-                assert(false);
-            }
+            
 
-            IcpVariable( symbol _var, bool _original, const lra::Variable<lra::Numeric>* _lraVar = NULL ):
+            IcpVariable( carl::Variable _var, bool _original, const lra::Variable<lra::Numeric>* _lraVar = NULL ):
                 mVar( _var ),
                 mOriginal( _original ),
                 mCandidates(),
@@ -88,7 +88,7 @@ namespace icp
             {
             }
 
-            IcpVariable( symbol _var,
+            IcpVariable( carl::Variable _var,
                          bool _original,
                          ContractionCandidate* _candidate,
                          const lra::Variable<lra::Numeric>* _lraVar = NULL ):
@@ -121,7 +121,7 @@ namespace icp
              * Getter/Setter
              */
 
-            const GiNaC::symbol var() const
+            const carl::Variable var() const
             {
                 return mVar;
             }
@@ -170,14 +170,14 @@ namespace icp
                 }
             }
 
-            void print( ostream& _out = std::cout ) const
+            void print( std::ostream& _out = std::cout ) const
             {
                 _out << "Original: " << mOriginal << ", " << mVar << ", ";
                 if( mLinear && (mLraVar != NULL) )
                 {
                     mLraVar->print();
                 }
-                _out << endl;
+                _out << std::endl;
             }
 
             const bool isActive() const
@@ -330,19 +330,19 @@ namespace icp
             
             bool operator< (IcpVariable const& rhs) const
             {
-                return (this->mVar.get_name() < rhs.var().get_name());
+                return (this->mVar < rhs.var());
             }
             
             friend std::ostream& operator<<( std::ostream& os, const IcpVariable& _var )
             {
                 os << _var.var() << " [Orig.: " << _var.isOriginal() << ", act.: " << _var.isActive() << "]";
-//                if( _var.mLraVar != NULL )
-//                {
-//                    os << endl;
-//                    _var.mLraVar->print(os);
-//                    os << endl;
-//                    _var.mLraVar->printAllBounds(os);
-//                }
+                if( _var.mLraVar != NULL )
+                {
+                    os << std::endl;
+                    _var.mLraVar->print(os);
+                    os << std::endl;
+                    _var.mLraVar->printAllBounds(os);
+                }
                 return os;
             }
 
@@ -357,7 +357,7 @@ namespace icp
     {
         bool operator() (const IcpVariable* const _lhs, const IcpVariable* const _rhs ) const
         {
-            return (_lhs->var().get_name() < _rhs->var().get_name());
+            return (_lhs->var() < _rhs->var());
         }
     };
             
