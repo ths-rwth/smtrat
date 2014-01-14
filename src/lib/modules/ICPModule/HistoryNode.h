@@ -363,21 +363,11 @@ namespace smtrat
                     return mReasons;
                 }
 
-<<<<<<< HEAD
-                ConstraintSet reasons( const symbol _variable )
-                {
-                    std::map<string, ConstraintSet>::iterator reasonsIt= mReasons.find( _variable.get_name() );
-                    if( reasonsIt == mReasons.end() )
-                    {
-                        return ConstraintSet();
-                    }
-                    return mReasons.at( _variable.get_name() );
-=======
+
                 std::set<const Constraint*>& reasons( const carl::Variable _variable )
                 {
                     assert( mReasons.find( _variable ) != mReasons.end() );
                     return mReasons.at( _variable );
->>>>>>> 7a7f16e94e978904ea89842780c723c58832a5ba
                 }
 
                 void addReason( carl::Variable _variable, const Constraint* _reason )
@@ -444,11 +434,7 @@ namespace smtrat
                     return mVariableReasons;
                 }
                 
-<<<<<<< HEAD
-                set_icpVariable variableReasons( string _variable ) const
-=======
                 set_icpVariable variableReasons( carl::Variable _variable )
->>>>>>> 7a7f16e94e978904ea89842780c723c58832a5ba
                 {
                     assert(mVariableReasons.find(_variable) != mVariableReasons.end());
                     return mVariableReasons.at(_variable);

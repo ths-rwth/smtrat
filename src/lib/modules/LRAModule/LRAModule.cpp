@@ -1608,18 +1608,6 @@ Return:
 
             dc_Tableau.invert_HNF_Matrix( diagonals );
             bool creatable = false;
-<<<<<<< HEAD
-            ex cut = ex();
-            for(unsigned i=0;i<dc_positions.size();i++)
-            {
-                vector<lra::Numeric> coefficients2 = vector<lra::Numeric>();
-                vector<bool> non_basics_proof = vector<bool>();
-                vector< lra::Variable<lra::Numeric>* > non_basic_vars2 = vector< lra::Variable<lra::Numeric>* >();
-                Bound<Numeric>* upper_lower_bound;
-                creatable = dc_Tableau.create_cut_from_proof( dc_Tableau, mTableau, i, lcm_rows.at(i), coefficients2, non_basics_proof, cut, diagonals, dc_positions, upper_lower_bound );
-                ex* pcut = new ex(cut);
-                #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-=======
             Polynomial cut;
             for( unsigned i = 0; i < dc_positions.size(); ++i )
             {
@@ -1631,7 +1619,6 @@ Return:
                 Polynomial* pcut = new Polynomial( cut );
 //                #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                 #ifdef MODULE_VERBOSE_INTEGERS
->>>>>>> 7a7f16e94e978904ea89842780c723c58832a5ba
                 cout << "Proof of unsatisfiability:  " << *pcut << " = 0" << endl;
                 #endif
 //                #endif
@@ -1649,17 +1636,10 @@ Return:
                     #ifndef LRA_DEBUG_CUTS_FROM_PROOFS
                     mTableau.newBasicVariable( pcut, non_basic_vars2, coefficients2 );
                     #else
-<<<<<<< HEAD
-                    auto var = mTableau.newBasicVariable( pcut, non_basic_vars2, coefficients2 );
-                    cout << "After adding proof of unsatisfiability:" << endl;
-                    var->print();
-                    var->printAllBounds();
-=======
                     auto var2 = mTableau.newBasicVariable( pcut, non_basic_vars2, coefficients2 );
                     cout << "After adding proof of unsatisfiability:" << endl;
                     var2->print();
                     var2->printAllBounds();
->>>>>>> 7a7f16e94e978904ea89842780c723c58832a5ba
                     mTableau.print();
                     cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
                     #endif
