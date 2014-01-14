@@ -53,8 +53,6 @@ namespace smtrat
     
     struct VSSettings2346 : VSSettings234
     {
-        static const bool check_conflict_for_side_conditions                    = true;
-        static const bool prefer_equation_over_all                              = true;
         static const bool int_constraints_allowed                               = true;
     };
     

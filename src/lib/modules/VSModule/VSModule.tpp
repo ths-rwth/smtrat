@@ -34,6 +34,7 @@ using namespace std;
 using namespace vs;
 
 //#define VS_DEBUG
+//#define VS_MODULE_VERBOSE_INTEGERS
 #define VS_TERMINATION_INVARIANCE
 
 namespace smtrat
@@ -407,9 +408,13 @@ namespace smtrat
                                 #ifdef VS_DEBUG
                                 cout << "*** SubstituteAll changes it to:" << endl;
                                 #else
-                                #ifdef MODULE_VERBOSE_INTEGERS
-                                cout << string( currentState->treeDepth()*3, ' ') << "Test candidate  " << endl; 
-                                currentState->substitution().print( true, false, cout, string( currentState->treeDepth()*3, ' '));
+                                #ifdef VS_MODULE_VERBOSE_INTEGERS
+                                bool minf = currentState->substitution().type() == Substitution::MINUS_INFINITY;
+                                if( !minf )
+                                {
+                                    cout << string( currentState->treeDepth()*3, ' ') << "Test candidate  " << endl;
+                                    currentState->substitution().print( true, false, cout, string( currentState->treeDepth()*3, ' '));
+                                }
                                 #endif
                                 #endif
                                 if( !substituteAll( currentState, currentState->rFather().rConditions() ) )
@@ -418,6 +423,15 @@ namespace smtrat
                                     currentState->rInconsistent() = true;
                                     removeStateFromRanking( *currentState );
                                 }
+                                #ifndef VS_DEBUG
+                                #ifdef VS_MODULE_VERBOSE_INTEGERS
+                                if( minf )
+                                {
+                                    cout << string( currentState->treeDepth()*3, ' ') << "Test candidate  [from -inf]" << endl;
+                                    currentState->substitution().print( true, false, cout, string( currentState->treeDepth()*3, ' '));
+                                }
+                                #endif
+                                #endif
                                 #ifdef VS_DEBUG
                                 cout << "*** SubstituteAll ready." << endl;
                                 #endif
@@ -584,6 +598,7 @@ namespace smtrat
                                                 }
                                                 case Unknown:
                                                 {
+                                                    cout << "too high degree!" << endl;
                                                     return foundAnswer( Unknown );
                                                 }
                                                 default:
@@ -1792,7 +1807,7 @@ namespace smtrat
                         // assignment of the other variables in currentState's father cannot hold and must be adapted. 
                         // Note that in the case that there are no other variables in currentState's father, only (A)
                         // can be applied.
-                        #ifdef MODULE_VERBOSE_INTEGERS
+                        #ifdef VS_MODULE_VERBOSE_INTEGERS
                         this->printAnswer();
                         #endif
                         branchAt( currentState->substitution().variable(), weakestCauchyBound, getReasons( currentState->substitution().originalConditions() ) );
@@ -1810,7 +1825,7 @@ namespace smtrat
                         assert( currentState->substitution().type() != Substitution::PLUS_EPSILON );
                         if( !assIsInteger )
                         {
-                            #ifdef MODULE_VERBOSE_INTEGERS
+                            #ifdef VS_MODULE_VERBOSE_INTEGERS
                             this->printAnswer();
                             #endif
                             currentState->father().updateMinIntTestCandidate( evaluatedSubTerm );
