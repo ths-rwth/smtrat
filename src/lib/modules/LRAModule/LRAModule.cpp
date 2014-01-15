@@ -31,6 +31,7 @@
 #include <iostream>
 
 //#define DEBUG_LRA_MODULE
+//#define LRA_TERMINATION_INVARIANCE
 #define LRA_SIMPLE_THEORY_PROPAGATION
 #define LRA_SIMPLE_CONFLICT_SEARCH
 //#define LRA_ONE_REASON
@@ -360,7 +361,9 @@ namespace smtrat
                 return false;
             }
         };
+        #ifdef LRA_TERMINATION_INVARIANCE
         set<TableauConf, compTableaus> tcs;
+        #endif
         if( !mpReceivedFormula->isConstraintConjunction() )
         {
             goto Return; // Unknown
@@ -400,13 +403,16 @@ namespace smtrat
             cout << endl;
             #endif
             // Find a pivoting element in the tableau.
+            #ifdef LRA_TERMINATION_INVARIANCE
             TableauConf tc;
             for( auto iter = mTableau.rows().begin(); iter != mTableau.rows().end(); ++iter )
                 tc.first.push_back(iter->mName);
             for( auto iter = mTableau.columns().begin(); iter != mTableau.columns().end(); ++iter )
                 tc.second.push_back(iter->mName);
             bool inserted = tcs.insert( tc ).second;
+            if( inserted ) cout << "non-terminating" << endl;
             assert( inserted );
+            #endif
             struct pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElement();
 //            cout << "\r" << mTableau.numberOfPivotingSteps() << endl;
             #ifdef DEBUG_LRA_MODULE
@@ -1287,12 +1293,9 @@ Return:
                         deduction->addSubformula( new Formula( NOT ) );
                         deduction->back()->addSubformula( (*lbound)->pAsConstraint() );
                         addDeduction( deduction );
-<<<<<<< HEAD
-=======
                         #ifdef SMTRAT_DEVOPTION_Statistics
                         mpStatistics->addDeduction();
                         #endif
->>>>>>> 7a7f16e94e978904ea89842780c723c58832a5ba
                     }
                 }
                 else

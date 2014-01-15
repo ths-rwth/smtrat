@@ -806,15 +806,6 @@ namespace smtrat
                             sideConditions.insert( cons );
                         }
                     }
-                    else
-                    {
-                        const smtrat::Constraint* cons = smtrat::Formula::newConstraint( *iter, CR_NEQ, vars );
-                        if( cons != Formula::constraintPool().consistentConstraint() )
-                        {
-                            assert( cons != Formula::constraintPool().inconsistentConstraint() );
-                            sideConditions.insert( cons );
-                        }
-                    }
                 }
             }
             else
