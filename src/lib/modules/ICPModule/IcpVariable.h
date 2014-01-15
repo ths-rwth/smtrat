@@ -145,6 +145,7 @@ namespace icp
                 {
                     mActive = true;
                 }
+                checkLinear();
             }
 
             void setLraVar( const lra::Variable<lra::Numeric>* _lraVar )

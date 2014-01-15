@@ -898,8 +898,7 @@ FirstTrue:
                 l1 = i;
                 levelL2 = levelL1;
                 levelL1 = level( var( clause[i] ) );
-                goto FirstUndefSecondTrue;
-            }
+                goto FirstUndefSecondTrue;            }
             else if( lb == l_True )
             {
                 if( level( var( clause[i] ) ) > levelL1 )
@@ -1388,6 +1387,10 @@ SetWatches:
                     {
                         cout << "### Conflict clause: ";
                         printClause( confl );
+                    }
+                    else
+                    {
+                        cout << "### SAT conflict!" << endl;
                     }
                     else
                     {

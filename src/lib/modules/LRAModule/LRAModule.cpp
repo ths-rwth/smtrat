@@ -1024,6 +1024,7 @@ Return:
             }
             pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), constraint );
             vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
+            result.first->boundExists();
             boundVector->push_back( result.first );
             mConstraintToBound[constraint] = boundVector;
             if( _constraint->integerValued() && _constraint->relation() == Constraint::NEQ )
@@ -1081,6 +1082,7 @@ Return:
             }
             pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), constraint );
             vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
+            result.first->boundExists();
             boundVector->push_back( result.first );
             mConstraintToBound[constraint] = boundVector;
             if( _constraint->integerValued() && _constraint->relation() == Constraint::NEQ )
@@ -1285,9 +1287,12 @@ Return:
                         deduction->addSubformula( new Formula( NOT ) );
                         deduction->back()->addSubformula( (*lbound)->pAsConstraint() );
                         addDeduction( deduction );
+<<<<<<< HEAD
+=======
                         #ifdef SMTRAT_DEVOPTION_Statistics
                         mpStatistics->addDeduction();
                         #endif
+>>>>>>> 7a7f16e94e978904ea89842780c723c58832a5ba
                     }
                 }
                 else

@@ -38,7 +38,7 @@ namespace smtrat
 {
     namespace lra
     {
-        template<class T>
+        template<typename T>
         class Variable
         {
             private:
@@ -196,6 +196,7 @@ namespace smtrat
                 void printAllBounds( std::ostream& = std::cout, const std::string = "" ) const;
         };
 
+		
         template<class T>
         Variable<T>::Variable( unsigned _position, bool _basic, const smtrat::Polynomial* _expression, smtrat::Formula::iterator _defaultBoundPosition ):
             mBasic( _basic ),
@@ -209,7 +210,7 @@ namespace smtrat
             mpInfimum  = addLowerBound( NULL, _defaultBoundPosition ).first;
         }
 
-        template<class T>
+        template<typename T>
         Variable<T>::~Variable()
         {
             while( !mLowerbounds.empty() )
@@ -231,7 +232,7 @@ namespace smtrat
          * @param _val
          * @return
          */
-        template<class T>
+        template<typename T>
         std::pair<const Bound<T>*, std::pair<const Bound<T>*, const Bound<T>*> > Variable<T>::addUpperBound( Value<T>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint, bool _deduced )
         {
             struct Bound<T>::Info* boundInfo = new struct Bound<T>::Info();
@@ -282,7 +283,7 @@ namespace smtrat
          * @param _val
          * @return
          */
-        template<class T>
+        template<typename T>
         std::pair<const Bound<T>*,std::pair<const Bound<T>*, const Bound<T>*> > Variable<T>::addLowerBound( Value<T>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint, bool _deduced )
         {
             struct Bound<T>::Info* boundInfo = new struct Bound<T>::Info();
@@ -329,7 +330,7 @@ namespace smtrat
          * @param _val
          * @return
          */
-        template<class T>
+        template<typename T>
         std::pair<const Bound<T>*,std::pair<const Bound<T>*, const Bound<T>*> > Variable<T>::addEqualBound( Value<T>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint )
         {
             struct Bound<T>::Info* boundInfo = new struct Bound<T>::Info();
@@ -376,7 +377,7 @@ namespace smtrat
          *
          * @param bound
          */
-        template<class T>
+        template<typename T>
         void Variable<T>::deactivateBound( const Bound<T>* bound, smtrat::Formula::iterator _position )
         {
             assert( !bound->isInfinite() );
@@ -465,7 +466,7 @@ namespace smtrat
          *
          * @return
          */
-        template<class T>
+        template<typename T>
         std::set< const smtrat::Formula* > Variable<T>::getDefiningOrigins() const
         {
             std::set< const smtrat::Formula* > result = std::set< const smtrat::Formula* >();
@@ -484,7 +485,7 @@ namespace smtrat
          *
          * @param _out
          */
-        template<class T>
+        template<typename T>
         void Variable<T>::print( std::ostream& _out ) const
         {
             std::stringstream out;
@@ -499,7 +500,7 @@ namespace smtrat
             _out << std::setw( 1 ) << "]";
         }
 
-        template<class T>
+        template<typename T>
         void Variable<T>::printAllBounds( std::ostream& _out, const std::string _init ) const
         {
             _out << _init << " Upper bounds: " << std::endl;

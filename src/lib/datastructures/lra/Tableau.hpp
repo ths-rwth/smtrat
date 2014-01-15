@@ -59,7 +59,7 @@ namespace smtrat
         typedef unsigned EntryID;
         static EntryID LAST_ENTRY_ID = 0;
 
-        template<class T>
+        template<typename T>
         class TableauEntry
         {
             private:
@@ -183,7 +183,7 @@ namespace smtrat
                 }
         };
 
-        template <class T> class Tableau
+        template <typename T> class Tableau
         {
             public:
                 struct LearnedBound
@@ -448,7 +448,7 @@ namespace smtrat
 
         };
 
-        template<class T>
+        template<typename T>
         Tableau<T>::Tableau( smtrat::Formula::iterator _defaultBoundPosition ):
             mHeight( 0 ),
             mWidth( 0 ),
@@ -475,7 +475,7 @@ namespace smtrat
             mpTheta = new Value<T>();
         };
 
-        template<class T>
+        template<typename T>
         Tableau<T>::~Tableau()
         {
             #ifdef LRA_PRINT_STATS
@@ -507,7 +507,7 @@ namespace smtrat
          *
          * @return
          */
-        template<class T>
+        template<typename T>
         EntryID Tableau<T>::newTableauEntry( const T& _content )
         {
             if( mUnusedIDs.empty() )
@@ -528,7 +528,7 @@ namespace smtrat
          *
          * @param _entryID
          */
-        template<class T>
+        template<typename T>
         void Tableau<T>::removeEntry( EntryID _entryID )
         {
             TableauEntry<T>& entry = (*mpEntries)[_entryID];
@@ -671,7 +671,7 @@ namespace smtrat
     //     * @param x
     //     * @return
     //     */
-    //    template<class T>
+    //    template<typename T>
     //    static unsigned luby( unsigned _numberOfRestarts )
     //    {
     //        // Find the finite subsequence that contains index 'x', and the
@@ -700,7 +700,7 @@ namespace smtrat
          *
          * @return
          */
-        template<class T>
+        template<typename T>
         std::pair<EntryID,bool> Tableau<T>::nextPivotingElement()
         {
             #ifdef LRA_USE_PIVOTING_STRATEGY
@@ -810,7 +810,7 @@ namespace smtrat
          * @param _rowNumber
          * @return
          */
-        template<class T>
+        template<typename T>
         std::pair<EntryID,bool> Tableau<T>::isSuitable( unsigned _rowNumber, Value<T>& _theta ) const
         {
             EntryID bestEntry = LAST_ENTRY_ID;
@@ -921,7 +921,7 @@ namespace smtrat
             return std::pair<EntryID,bool>( bestEntry, true );
         }
 
-        template<class T>
+        template<typename T>
         bool Tableau<T>::betterEntry( EntryID _isBetter, EntryID _than ) const
         {
             assert( _isBetter != LAST_ENTRY_ID );
@@ -941,7 +941,7 @@ namespace smtrat
          * @param _startRow
          * @return
          */
-        template<class T>
+        template<typename T>
         std::vector< const Bound<T>* > Tableau<T>::getConflict( EntryID _rowEntry ) const
         {
             assert( _rowEntry != LAST_ENTRY_ID );
@@ -1012,7 +1012,7 @@ namespace smtrat
          * @param _startRow
          * @return
          */
-        template<class T>
+        template<typename T>
         std::vector< std::set< const Bound<T>* > > Tableau<T>::getConflictsFrom( EntryID _rowEntry ) const
         {
             std::vector< std::set< const Bound<T>* > > conflicts = std::vector< std::set< const Bound<T>* > >();
@@ -1117,7 +1117,7 @@ namespace smtrat
          * @param _column
          * @param _change
          */
-        template<class T>
+        template<typename T>
         void Tableau<T>::updateBasicAssignments( unsigned _column, const Value<T>& _change )
         {
             if( mColumns[_column].mSize > 0 )
@@ -1143,7 +1143,7 @@ namespace smtrat
          *
          * @param _pivotingElement
          */
-        template<class T>
+        template<typename T>
         void Tableau<T>::pivot( EntryID _pivotingElement )
         {
             // TODO: refine the pivoting row
@@ -1228,7 +1228,7 @@ namespace smtrat
          * @param _pivotingElement
          * @param _pivotingRow
          */
-        template<class T>
+        template<typename T>
         void Tableau<T>::updateDownwards( EntryID _pivotingElement, std::vector<Iterator>& _pivotingRowLeftSide, std::vector<Iterator>& _pivotingRowRightSide )
         {
             std::vector<Iterator> leftColumnIters = std::vector<Iterator>( _pivotingRowLeftSide );
@@ -1419,7 +1419,7 @@ namespace smtrat
          * @param _pivotingElement
          * @param _pivotingRow
          */
-        template<class T>
+        template<typename T>
         void Tableau<T>::updateUpwards( EntryID _pivotingElement, std::vector<Iterator>& _pivotingRowLeftSide, std::vector<Iterator>& _pivotingRowRightSide )
         {
             std::vector<Iterator> leftColumnIters = std::vector<Iterator>( _pivotingRowLeftSide );
@@ -1602,7 +1602,7 @@ namespace smtrat
         }
 
         #ifdef LRA_REFINEMENT
-        template<class T>
+        template<typename T>
         void Tableau<T>::rowRefinement( const TableauHead& _row )
         {
             /*
@@ -1839,7 +1839,7 @@ namespace smtrat
             }
         }
 
-        template<class T>
+        template<typename T>
         void Tableau<T>::columnRefinement( const TableauHead& _column )
         {
             /*
@@ -1921,7 +1921,7 @@ namespace smtrat
                  * Found an upper refinement.
                  */
                 Value<T>* newlimit = new Value<T>();
-                class std::vector< const Bound<T>* >::iterator bound = uPremise->begin();
+                typename std::vector< const Bound<T>* >::iterator bound = uPremise->begin();
                 Iterator columnEntry = Iterator( _column.mStartEntry, mpEntries );
                 while( true )
                 {
@@ -1934,7 +1934,7 @@ namespace smtrat
                  * Learn that the strongest weaker upper bound should be activated.
                  */
                 Variable<T>& bvar = *_column.mName;
-                const class Bound<T>::BoundSet& upperBounds = bvar.upperbounds();
+                const typename Bound<T>::BoundSet& upperBounds = bvar.upperbounds();
                 auto ubound = upperBounds.begin();
                 while( ubound != upperBounds.end() )
                 {
@@ -1972,7 +1972,7 @@ namespace smtrat
                     delete newlimit;
                     learnedBound.newBound = NULL;
                     #endif
-                    std::pair<class std::map<Variable<T>*, LearnedBound>::iterator, bool> insertionResult = mLearnedUpperBounds.insert( std::pair<Variable<T>*, LearnedBound>( _column.mName, learnedBound ) );
+                    std::pair<typename std::map<Variable<T>*, LearnedBound>::iterator, bool> insertionResult = mLearnedUpperBounds.insert( std::pair<Variable<T>*, LearnedBound>( _column.mName, learnedBound ) );
                     if( !insertionResult.second )
                     {
                         if( *learnedBound.nextWeakerBound < *insertionResult.first->second.nextWeakerBound )
@@ -2001,7 +2001,7 @@ namespace smtrat
                  * Found an lower refinement.
                  */
                 Value<T>* newlimit = new Value<T>();
-                class std::vector< const Bound<T>* >::iterator bound = lPremise->begin();
+                typename std::vector< const Bound<T>* >::iterator bound = lPremise->begin();
                 Iterator columnEntry = Iterator( _column.mStartEntry, mpEntries );
                 while( true )
                 {
@@ -2014,7 +2014,7 @@ namespace smtrat
                  * Learn that the strongest weaker lower bound should be activated.
                  */
                 Variable<T>& bvar = *_column.mName;
-                const class Bound<T>::BoundSet& lowerBounds = bvar.lowerbounds();
+                const typename Bound<T>::BoundSet& lowerBounds = bvar.lowerbounds();
                 auto lbound = lowerBounds.rbegin();
                 while( lbound != lowerBounds.rend() )
                 {
@@ -2052,7 +2052,7 @@ namespace smtrat
                     delete newlimit;
                     learnedBound.newBound = NULL;
                     #endif
-                    std::pair<class std::map<Variable<T>*, LearnedBound>::iterator, bool> insertionResult = mLearnedLowerBounds.insert( std::pair<Variable<T>*, LearnedBound>( _column.mName, learnedBound ) );
+                    std::pair<typename std::map<Variable<T>*, LearnedBound>::iterator, bool> insertionResult = mLearnedLowerBounds.insert( std::pair<Variable<T>*, LearnedBound>( _column.mName, learnedBound ) );
                     if( !insertionResult.second )
                     {
                         if( *learnedBound.nextWeakerBound > *insertionResult.first->second.nextWeakerBound )
@@ -2081,7 +2081,7 @@ namespace smtrat
          *
          * @return
          */
-        template<class T>
+        template<typename T>
         unsigned Tableau<T>::checkCorrectness() const
         {
             unsigned rowNumber = 0;
@@ -2096,7 +2096,7 @@ namespace smtrat
          *
          * @return
          */
-        template<class T>
+        template<typename T>
         bool Tableau<T>::rowCorrect( unsigned _rowNumber ) const
         {
             smtrat::Polynomial sumOfNonbasics = *mRows[_rowNumber].mName->pExpression();
@@ -2118,7 +2118,7 @@ namespace smtrat
          * @return true,    if the constraint is a defining constraint
          *         false,   otherwise   
          */
-        template<class T>
+        template<typename T>
         bool Tableau<T>::isDefining( unsigned row_index, std::vector<unsigned>& _variables, std::vector<T>& _coefficients, T& _lcmOfCoeffDenoms, T& max_value ) const
         {
             const Variable<T>& basic_var = *mRows.at(row_index).mName;
@@ -2173,7 +2173,7 @@ namespace smtrat
          * @return true,    if so
          *         false,   otherwise   
          */ 
-        template<class T>
+        template<typename T>
         bool Tableau<T>::isDefining_Easy(std::vector<unsigned>& dc_positions,unsigned row_index)
         {
             auto vector_iterator = dc_positions.begin();
@@ -2194,7 +2194,7 @@ namespace smtrat
          * @return true,    if the column with index column_index is a diagonal column
          *         false,   otherwise   
          */        
-        template<class T>
+        template<typename T>
         bool Tableau<T>::isDiagonal(unsigned column_index , std::vector<unsigned>& diagonals)
         {
         unsigned i=0;
@@ -2214,7 +2214,7 @@ namespace smtrat
          * in the Tableau containing this DC.
          * 
          */ 
-        template<class T>
+        template<typename T>
         unsigned Tableau<T>::position_DC(unsigned row_index,std::vector<unsigned>& dc_positions)
         {
             auto vector_iterator = dc_positions.begin();
@@ -2235,7 +2235,7 @@ namespace smtrat
          * Returns the the actual index of the column with
          * index column_index in the permutated tableau.   
          */        
-        template<class T>
+        template<typename T>
         unsigned Tableau<T>::revert_diagonals(unsigned column_index,std::vector<unsigned>& diagonals)
         {
             unsigned i=0;
@@ -2255,7 +2255,7 @@ namespace smtrat
          * 
          * @return   
          */        
-        template<class T>
+        template<typename T>
         void Tableau<T>::invertColumn(unsigned column_index)
         {   
             Iterator column_iterator = Iterator(mColumns.at(column_index).mStartEntry, mpEntries);   
@@ -2278,7 +2278,7 @@ namespace smtrat
          * to the column with index columnA_index.
          * 
          * @return 
-         */        
+         */
         template<class T>
         void Tableau<T>::addColumns( unsigned columnA_index, unsigned columnB_index, T multiple)
         {
@@ -2486,7 +2486,7 @@ namespace smtrat
          * 
          * @return 
          */        
-        template<class T> 
+        template<typename T> 
         void Tableau<T>::multiplyRow(unsigned row_index,T multiple)
         {            
             Iterator row_iterator = Iterator(mRows.at(row_index).mStartEntry, mpEntries);
@@ -2511,7 +2511,7 @@ namespace smtrat
          * 
          * @return   the value (T) of the scalarproduct.
          */        
-        template<class T> 
+        template<typename T> 
         T Tableau<T>::Scalar_Product(Tableau<T>& A, Tableau<T>& B,unsigned rowA, unsigned columnB, T lcm,std::vector<unsigned>& diagonals,std::vector<unsigned>& dc_positions) 
         {
             Iterator rowA_iterator = Iterator(A.mRows.at(rowA).mStartEntry,A.mpEntries);
@@ -2556,7 +2556,7 @@ namespace smtrat
          * 
          * @return   the vector containing the indices of the diagonal elements.
          */        
-        template<class T> 
+        template<typename T> 
         void Tableau<T>::calculate_hermite_normalform(std::vector<unsigned>& diagonals)
         { 
             for(unsigned i=0;i<mColumns.size();i++)
@@ -2681,7 +2681,7 @@ namespace smtrat
                         {
                             row_iterator.right();  
                         }    
-                    }  
+                    }
                     T floor_value = T( elim_content / added_content ).floor();
                     #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                     std::cout << "floor_value = " << floor_value << std::endl;
@@ -2779,7 +2779,7 @@ namespace smtrat
          * 
          * @return 
          */
-        template<class T> 
+        template<typename T> 
         void Tableau<T>::invert_HNF_Matrix(std::vector<unsigned> diagonals)
         {
             /*
@@ -2851,7 +2851,7 @@ namespace smtrat
          * 
          * @return true,    if the proof can be constructed.
          *         false,   otherwise   
-         */        
+         */
         template<class T>
         bool Tableau<T>::create_cut_from_proof(Tableau<T>& Inverted_Tableau, Tableau<T>& DC_Tableau, unsigned& row_index, T& _lcm,std::vector<T>& coefficients,std::vector<bool>& non_basics_proof, smtrat::Polynomial& cut,std::vector<unsigned>& diagonals,std::vector<unsigned>& dc_positions, Bound<T>*& upper_lower)
         {
@@ -2936,7 +2936,7 @@ namespace smtrat
          * @return NULL,    if the cut can´t be constructed;
          *         otherwise the valid constraint is returned.   
          */ 
-        template<class T>
+        template<typename T>
         const smtrat::Constraint* Tableau<T>::gomoryCut( const T& _ass, unsigned _rowPosition, vector<const smtrat::Constraint*>& _constrVec )
         {     
             Iterator row_iterator = Iterator( mRows.at(_rowPosition).mStartEntry, mpEntries );
@@ -3012,7 +3012,7 @@ namespace smtrat
             Value<T>* bound = new Value<T>( gomory_constr->constantPart() );
             Variable<T>* var = new Variable<T>( mHeight++, true, psum, mDefaultBoundPosition );
             (*var).addLowerBound( bound, mDefaultBoundPosition, gomory_constr );
-            class std::vector<T>::const_iterator coeffs_iter = coeffs.begin();
+            typename std::vector<T>::const_iterator coeffs_iter = coeffs.begin();
             row_iterator = Iterator( mRows.at(_rowPosition).mStartEntry, mpEntries );
             mRows.push_back( TableauHead() );
             EntryID currentStartEntryOfRow = LAST_ENTRY_ID;
@@ -3060,7 +3060,7 @@ namespace smtrat
          * @param _maxEntryLength
          * @param _init
          */
-        template<class T>
+        template<typename T>
         void Tableau<T>::printHeap( std::ostream& _out, unsigned _maxEntryLength, const std::string _init ) const
         {
             for( EntryID pos = 1; pos < mpEntries->size(); ++pos )
@@ -3077,7 +3077,7 @@ namespace smtrat
          * @param _entry
          * @param _maxEntryLength
          */
-        template<class T>
+        template<typename T>
         void Tableau<T>::printEntry( EntryID _entry, std::ostream& _out, unsigned _maxEntryLength ) const
         {
             _out << std::setw( 4 ) << _entry << ": ";
@@ -3111,7 +3111,7 @@ namespace smtrat
          * @param _out
          * @param _init
          */
-        template<class T>
+        template<typename T>
         void Tableau<T>::printVariables( bool _allBounds, std::ostream& _out, const std::string _init ) const
         {
             _out << _init << "Basic variables:" << std::endl;
@@ -3138,7 +3138,7 @@ namespace smtrat
          * @param _out
          * @param _init
          */
-        template<class T>
+        template<typename T>
         void Tableau<T>::printLearnedBounds( const std::string _init, std::ostream& _out  ) const
         {
             for( auto learnedBound = mLearnedLowerBounds.begin(); learnedBound != mLearnedLowerBounds.end(); ++learnedBound )
@@ -3186,7 +3186,7 @@ namespace smtrat
          * @param _maxEntryLength
          * @param _init
          */
-        template<class T>
+        template<typename T>
         void Tableau<T>::print( std::ostream& _out, unsigned _maxEntryLength, const std::string _init ) const
         {
             char     frameSign     = '-';

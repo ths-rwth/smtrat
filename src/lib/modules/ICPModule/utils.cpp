@@ -210,6 +210,7 @@ namespace smtrat
             LRAModule::ExVariableMap originalVars = _lra.originalVariables();
             const Polynomial* tmp = &_var;
             LRAModule::ExVariableMap::iterator target = originalVars.find(tmp);
+//            cout << "VAR: " << _var << endl;
             assert(target != originalVars.end());
             if( target != originalVars.end() )
                 return (*target).second;

@@ -220,6 +220,7 @@ formlist:
 
 equation:
        OB eqOp form form CB { dv.restoreTwoFormulaMode(); $$ = dv.mkFormula( (dv.polarity() ? smtrat::IFF : smtrat::XOR), $3, $4 ); }
+
     |  OB eqOp poly poly CB { dv.restoreTwoFormulaMode(); $$ = dv.mkConstraint( $3, $4, Constraint::EQ ); }
 
 eqOp:

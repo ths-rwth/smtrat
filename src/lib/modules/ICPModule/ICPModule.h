@@ -31,9 +31,9 @@
 //#define ICP_BOXLOG
 #define BOXMANAGEMENT
 #define RAISESPLITTOSATSOLVER
-//#ifdef SMTRAT_DEVOPTION_Validation
-//#define SMTRAT_DEVOPTION_VALIDATION_ICP
-//#endif
+#ifdef SMTRAT_DEVOPTION_Validation
+#define SMTRAT_DEVOPTION_VALIDATION_ICP
+#endif
 
 
 #include "../../Module.h"
@@ -149,6 +149,7 @@ namespace smtrat
             #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
             Formula*                                                                            mCheckContraction;
             #endif
+            int                                                                                 mCountBackendCalls;
 
             /*
              *  Constants
@@ -248,6 +249,10 @@ namespace smtrat
              * @return 
              */
             const double calculateSplittingImpact ( const carl::Variable& _var, icp::ContractionCandidate& _candidate ) const;
+            
+            Formula* createPremiseDeduction();
+            
+            set<Formula*> createContractionDeduction();
             
             /**
              * Checks if there is a need for a split and manages the splitting and branching in the
@@ -408,6 +413,6 @@ namespace smtrat
             /**
              * Prints all intervals from mIntervals, should be the same intervals as in mHistoryActual->intervals().
              */
-            void printIntervals();
+            void printIntervals( bool _original = false);
     };
 }    // namespace smtrat

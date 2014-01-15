@@ -363,6 +363,7 @@ namespace smtrat
                     return mReasons;
                 }
 
+
                 std::set<const Constraint*>& reasons( const carl::Variable _variable )
                 {
                     assert( mReasons.find( _variable ) != mReasons.end() );
@@ -439,6 +440,13 @@ namespace smtrat
                     return mVariableReasons.at(_variable);
                 }
                 
+                
+                void variableHull( string _variable, set_icpVariable& _result ) const
+                {
+                    gatherVariables(_variable, _result);
+                }
+                
+                
                 void propagateStateInfeasibleConstraints() const
                 {
                     if( !this->isRoot() )
@@ -454,8 +462,16 @@ namespace smtrat
                 {
                     if( !this->isRoot() )
                     {
+                        set_icpVariable result;
                         for( set_icpVariable::iterator variableIt = mStateInfeasibleVariables.begin(); variableIt != mStateInfeasibleVariables.end(); ++variableIt )
-                            mParent->addInfeasibleVariable(*variableIt);
+                        {
+                            gatherVariables((*variableIt)->var().get_name(), result);
+                            for( set_icpVariable::iterator collectedVarIt = result.begin(); collectedVarIt != result.end(); ++collectedVarIt )
+                            {
+                                mParent->addInfeasibleVariable(*collectedVarIt);
+                            }
+                        }
+                        
                         
                         mParent->propagateStateInfeasibleVariables();
                     }
@@ -585,6 +601,22 @@ namespace smtrat
                         _out << std::endl;
                     }
                 }
+                
+                void printVariableReasons( ostream& _out = std::cout ) const
+                {
+                    _out << "VariableReasons(" << mVariableReasons.size() << ")" << endl;
+                    for( std::map<string, set_icpVariable>::const_iterator variablesIt = mVariableReasons.begin();
+                            variablesIt != mVariableReasons.end(); ++variablesIt )
+                    {
+                        _out << (*variablesIt).first << ":\t";
+                        for( set_icpVariable::const_iterator reasonIt = (*variablesIt).second.begin();
+                                reasonIt != (*variablesIt).second.end(); ++reasonIt )
+                        {
+                            _out << **reasonIt << ", ";
+                        }
+                        cout << endl;
+                    }
+                }
 
                 /**
                  * Search for Candidates in the tree below this node.
@@ -684,6 +716,27 @@ namespace smtrat
                             mLeftChild->findFirstOccurrence( _candidate, _result );
                         if( mRightChild != NULL )
                             mRightChild->findFirstOccurrence( _candidate, _result );
+                    }
+                }
+                
+                void gatherVariables(const string _var, set_icpVariable& _result) const
+                {
+                    if( mVariableReasons.find(_var) != mVariableReasons.end() )
+                    {
+//                        cout << "search." << endl;
+                        set_icpVariable variables = mVariableReasons.at(_var);
+                        for( set_icpVariable::iterator varIt = variables.begin(); varIt != variables.end(); ++varIt )
+                        {
+                            if( _result.insert( *varIt ).second )
+                            {
+//                                cout << "Inserted " << (*varIt)->var().get_name() << endl;
+                                gatherVariables((*varIt)->var().get_name(), _result);
+                            }
+                            else
+                            {
+//                                cout << "Already contained: " << (*varIt)->var().get_name() << endl;
+                            }
+                        }
                     }
                 }
         };    // class HistoryNode
