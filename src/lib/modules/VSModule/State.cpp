@@ -614,7 +614,10 @@ namespace vs
             {
                 auto cond = condSet->begin();
                 while( cond != condSet->end() )
-                    redundantConditionSet.erase( *cond++ );
+                {
+                    redundantConditionSet.erase( *cond );
+                    ++cond;
+                }
                 ++condSet;
             }
             if( _stateConditions )
@@ -625,18 +628,18 @@ namespace vs
                 auto cond = _conditionVectorToSimplify.begin();
                 while( cond != _conditionVectorToSimplify.end() )
                 {
-                    if( redundantConditionSet.find( *cond ) != redundantConditionSet.end() )
+                    auto iter = redundantConditionSet.find( *cond );
+                    if( iter != redundantConditionSet.end() )
+                    {
+                        redundantConditionSet.erase( iter );
+                        const Condition* toDel = *cond;
                         cond = _conditionVectorToSimplify.erase( cond );
+                        delete toDel;
+                        toDel = NULL;
+                    }
                     else
                         ++cond;
                 }
-            }
-            while( !redundantConditionSet.empty() )
-            {
-                const Condition* toDelete = *redundantConditionSet.begin();
-                redundantConditionSet.erase( redundantConditionSet.begin() );
-                delete toDelete;
-                toDelete = NULL;
             }
         }
         return _conflictSet.empty();
@@ -910,7 +913,7 @@ namespace vs
                         else
                             (**cond).pOriginalConditions()->insert( (**newCond).originalConditions().begin(), (**newCond).originalConditions().end() );
                         const Condition* pCond = *newCond;
-                        newCombination.erase( newCond );
+                        newCond = newCombination.erase( newCond );
                         delete pCond;
                         pCond = NULL;
                         condOccursInNewConds = true;
@@ -933,23 +936,16 @@ namespace vs
             if( !condsToDelete.empty() )
             {
                 deleteConditions( condsToDelete );
-                while( !condsToDelete.empty() )
-                {
-                    const vs::Condition* toDelete = *condsToDelete.begin();
-                    condsToDelete.erase( condsToDelete.begin() );
-                    delete toDelete;
-                    toDelete = NULL;
-                }
             }
             // Add the remaining conditions of the current combination to the conditions this state considers.
             for( auto newCond = newCombination.begin(); newCond != newCombination.end(); ++newCond )
                 addCondition( (**newCond).pConstraint(), (**newCond).originalConditions(), (**newCond).valuation(), true );
             while( !newCombination.empty() )
             {
-                // const Condition*& rpCond = newCombination.back();
+                const Condition* rpCond = newCombination.back();
                 newCombination.pop_back();
-                // delete rpCond; // TODO: this has to be done maybe in some situations or somewhere else
-                // rpCond = NULL;
+                delete rpCond; // TODO: this has to be done maybe in some situations or somewhere else
+                rpCond = NULL;
             }
         }
         mType = TEST_CANDIDATE_TO_GENERATE;
@@ -1305,7 +1301,10 @@ namespace vs
                     }
                 }
                 conditionDeleted = true;
+                const Condition* toDel = *cond;
                 cond = rConditions().erase( cond );
+                delete toDel;
+                toDel = NULL;
             }
             else
             {

@@ -913,6 +913,8 @@ namespace smtrat
             mLastInstructionFailed = false;
             if( mInstructionQueue.empty() ) return false;
             _instruction = mInstructionQueue.front().first;
+            _arg = mInstructionQueue.front().second;
+            mInstructionQueue.pop();
             switch( _instruction )
             {
                 case ASSERT:
@@ -920,7 +922,7 @@ namespace smtrat
                     if( mOptions.print_instruction )
                     {
                         mRegularOutputChannel << "> (assert ";
-                        mRegularOutputChannel << *mInstructionQueue.front().second.formula;
+                        mRegularOutputChannel << *_arg.formula;
                         mRegularOutputChannel << ")" << endl;
                     }
                     if( mLogic == Logic::UNDEFINED )
@@ -928,7 +930,6 @@ namespace smtrat
                     else
                     {
                         mCheckResultActive = false;
-                        _arg = mInstructionQueue.front().second;
                         mSentSolverInstruction = true;
                     }
                     break;
@@ -936,17 +937,16 @@ namespace smtrat
                 case PUSHBT:
                 {
                     if( mOptions.print_instruction )
-                        mRegularOutputChannel << "> (push " << mInstructionQueue.front().second.num << ")" << endl;
+                        mRegularOutputChannel << "> (push " << _arg.num << ")" << endl;
                     if( mLogic == Logic::UNDEFINED )
                         error( "Before using push the logic must be defined!", true );
                     else
                     {
-                        if( mInstructionQueue.front().second.num < 0 )
+                        if( _arg.num < 0 )
                             error( "Argument of push-instruction is not legal!", true );
                         else
                         {
                             mCheckResultActive = false;
-                            _arg = mInstructionQueue.front().second;
                             mSentSolverInstruction = true;
                         }
                     }
@@ -955,17 +955,16 @@ namespace smtrat
                 case POPBT:
                 {
                     if( mOptions.print_instruction )
-                        mRegularOutputChannel << "> (pop " << mInstructionQueue.front().second.num << ")" << endl;
+                        mRegularOutputChannel << "> (pop " << _arg.num << ")" << endl;
                     if( mLogic == Logic::UNDEFINED )
                         error( "Before using pop the logic must be defined!", true );
                     else
                     {
-                        if( mInstructionQueue.front().second.num < 0 )
+                        if( _arg.num < 0 )
                             error( "Argument of pop-instruction is not legal!", true );
                         else
                         {
                             mCheckResultActive = false;
-                            _arg = mInstructionQueue.front().second;
                             mSentSolverInstruction = true;
                         }
                     }
@@ -1036,56 +1035,61 @@ namespace smtrat
                 case GET_INFO:
                 {
                     if( mOptions.print_instruction )
-                        mRegularOutputChannel << "> (get-info " << *mInstructionQueue.front().second.key << ")" << endl;
-                    applyGetInfo( *mInstructionQueue.front().second.key );
+                        mRegularOutputChannel << "> (get-info " << *_arg.key << ")" << endl;
+                    applyGetInfo( *_arg.key );
+                    delete _arg.key;
                     break;
                 }
                 case SET_INFO:
                 {
                     if( mOptions.print_instruction )
                     {
-                        mRegularOutputChannel << "> (set-info " << mInstructionQueue.front().second.keyValuePair->first << " ";
-                        mRegularOutputChannel << mInstructionQueue.front().second.keyValuePair->second << ")" << endl;
+                        mRegularOutputChannel << "> (set-info " << _arg.keyValuePair->first << " ";
+                        mRegularOutputChannel << _arg.keyValuePair->second << ")" << endl;
                     }
-                    applySetInfo( mInstructionQueue.front().second.keyValuePair->first, mInstructionQueue.front().second.keyValuePair->second );
+                    applySetInfo( _arg.keyValuePair->first, _arg.keyValuePair->second );
+                    delete _arg.keyValuePair;
                     break;
                 }
                 case GET_OPTION:
                 {
                     if( mOptions.print_instruction )
-                        mRegularOutputChannel << "> (get-option " << *mInstructionQueue.front().second.key << ")" << endl;
-                    applyGetOption( *mInstructionQueue.front().second.key );
+                        mRegularOutputChannel << "> (get-option " << *_arg.key << ")" << endl;
+                    applyGetOption( *_arg.key );
+                    delete _arg.key;
                     break;
                 }
                 case SET_OPTION:
                 {
                     if( mOptions.print_instruction )
                     {
-                        mRegularOutputChannel << "> (set-option " << mInstructionQueue.front().second.keyValuePair->first << " ";
-                        mRegularOutputChannel << mInstructionQueue.front().second.keyValuePair->second << ")" << endl;
+                        mRegularOutputChannel << "> (set-option " << _arg.keyValuePair->first << " ";
+                        mRegularOutputChannel << _arg.keyValuePair->second << ")" << endl;
                     }
-                    applySetOption( mInstructionQueue.front().second.keyValuePair->first, mInstructionQueue.front().second.keyValuePair->second );
+                    applySetOption( _arg.keyValuePair->first, _arg.keyValuePair->second );
+                    delete _arg.keyValuePair;
                     break;
                 }
                 case SET_LOGIC:
                 {
                     if( mOptions.print_instruction )
-                        mRegularOutputChannel << "> (set-logic " << *mInstructionQueue.front().second.key << ")" << endl;
+                        mRegularOutputChannel << "> (set-logic " << *_arg.key << ")" << endl;
                     if( mLogic != Logic::UNDEFINED )
                         error( "The logic has already been set!", true );
                     else
                     {
                         mSentSolverInstruction = true;
-                        if( *mInstructionQueue.front().second.key == "QF_NRA" ) mLogic = Logic::QF_NRA;
-                        else if( *mInstructionQueue.front().second.key == "QF_LRA" ) mLogic = Logic::QF_LRA;
-                        else if( *mInstructionQueue.front().second.key == "QF_NIA" ) mLogic = Logic::QF_NIA;
-                        else if( *mInstructionQueue.front().second.key == "QF_LIA" ) mLogic = Logic::QF_LIA;
+                        if( *_arg.key == "QF_NRA" ) mLogic = Logic::QF_NRA;
+                        else if( *_arg.key == "QF_LRA" ) mLogic = Logic::QF_LRA;
+                        else if( *_arg.key == "QF_NIA" ) mLogic = Logic::QF_NIA;
+                        else if( *_arg.key == "QF_LIA" ) mLogic = Logic::QF_LIA;
                         else
                         {
                             mSentSolverInstruction = false;
-                            error( *mInstructionQueue.front().second.key + " is not supported!", true );
+                            error( *_arg.key + " is not supported!", true );
                         }
                     }
+                    delete _arg.key;
                     break;
                 }
                 default:
@@ -1097,7 +1101,6 @@ namespace smtrat
             }
             if( mOptions.print_success && !mLastInstructionFailed && !mSentSolverInstruction )
                 mRegularOutputChannel << "(success)" << endl;
-            mInstructionQueue.pop();
         }
         return true;
     }

@@ -326,7 +326,7 @@ namespace smtrat
                         mModel.erase( mModel.begin() );
                     else
                     {
-                        vs::SqrtEx* exToDel = assToDel.theoryValue;
+                        vs::SqrtEx*& exToDel = assToDel.theoryValue;
                         mModel.erase( mModel.begin() );
                         delete exToDel;
                     }   

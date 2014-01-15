@@ -96,6 +96,7 @@ namespace smtrat
     
     Module::~Module()
     {
+        clearModel();
         mConstraintsToInform.clear();
         mInformedConstraints.clear();
         delete mpPassedFormula;
@@ -534,7 +535,11 @@ namespace smtrat
                         newAss.booleanValue = ass->second.booleanValue;
                     else
                         newAss.theoryValue = new vs::SqrtEx( *(ass->second.theoryValue) );
-                    mModel.insert( pair< const carl::Variable, Assignment >( ass->first, newAss ) );
+                    if( !mModel.insert( pair< const carl::Variable, Assignment >( ass->first, newAss ) ).second )
+                    {
+                        if( ass->first.getType() != carl::VariableType::VT_BOOL )
+                            delete newAss.theoryValue;
+                    }
                 }
                 break;
             }

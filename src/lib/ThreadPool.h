@@ -42,11 +42,12 @@
 
 namespace smtrat
 {
-    class Module;
 
     // pair: first = thread id, second = priority
     typedef std::pair<unsigned, unsigned> thread_priority;
     typedef std::shared_ptr< std::packaged_task<Answer()> > packaged_task;
+    
+    class Module;
 
     class ThreadPool
     {

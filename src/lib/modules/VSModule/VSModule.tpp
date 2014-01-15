@@ -703,7 +703,10 @@ namespace smtrat
                             *(ass.theoryValue) = (*(ass.theoryValue)) + SqrtEx( Polynomial( mVariableVector.at( state->treeDepth()-1 ).second ) );
                     }
                 }
-                mModel.insert( std::pair< const carl::Variable, Assignment >( state->substitution().variable(), ass ) );
+                if( !mModel.insert( std::pair< const carl::Variable, Assignment >( state->substitution().variable(), ass ) ).second )
+                {
+                    delete ass.theoryValue;
+                }
                 state = state->pFather();
             }
             if( mRanking.begin()->second->tooHighDegree() )
@@ -716,7 +719,10 @@ namespace smtrat
                 Assignment ass;
                 ass.theoryValue = new SqrtEx( var->getType() == carl::VariableType::VT_INT ? ZERO_POLYNOMIAL : Polynomial( *var ) );
                 // Note, that this assignment won't take effect if the variable got an assignment by a backend module.
-                mModel.insert( std::pair< const carl::Variable, Assignment >( *var, ass ) ); 
+                if( !mModel.insert( std::pair< const carl::Variable, Assignment >( *var, ass ) ).second )
+                {
+                    delete ass.theoryValue;
+                }
             }
         }
     }

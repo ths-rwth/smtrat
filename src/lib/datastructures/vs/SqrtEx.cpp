@@ -420,8 +420,7 @@ namespace vs
             resConstantPart += coeff->second * qk.at( coeff->first - 1 ) * sk.at( lastDegree - coeff->first );
             resFactor       += coeff->second * rk.at( coeff->first - 1 ) * sk.at( lastDegree - coeff->first );
         }
-        SqrtEx result = SqrtEx( resConstantPart, resFactor, sk.back(), _substituteBy.radicand() );
-        return result;
+        return SqrtEx( resConstantPart, resFactor, sk.back(), _substituteBy.radicand() );
     }
 }    // end namspace vs
 
