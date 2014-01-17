@@ -239,9 +239,10 @@ namespace smtrat
         template<class T>
         bool Bound<T>::operator <( const Bound& _bound ) const
         {
+            assert( mType == EQUAL || _bound.type() == EQUAL || mType == _bound.type() );
             if( mLimit == NULL && _bound.pLimit() == NULL )
             {
-                return (mType == LOWER  && _bound.type() == LOWER);
+                return false;
             }
             else if( mLimit == NULL && _bound.pLimit() != NULL )
             {
@@ -259,7 +260,8 @@ namespace smtrat
                 }
                 else if( (*mLimit) == _bound.limit() )
                 {
-                    if( mType == EQUAL && _bound.type() != EQUAL ) return true;
+                    if( mType == LOWER && _bound.type() == EQUAL ) return true;
+                    if( mType == EQUAL && _bound.type() == UPPER ) return true;
                 }
                 return false;
             }

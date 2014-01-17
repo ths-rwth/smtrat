@@ -67,7 +67,8 @@ namespace vs
         mpChildren( new std::list< State* >() ),
         mpTooHighDegreeConditions( new set< const Condition* >() ),
         mpVariableBounds( _withVariableBounds ? new VariableBoundsCond() : NULL ),
-        mMinIntTestCandidate( smtrat::ZERO_RATIONAL )
+        mMinIntTestCandidate( smtrat::ONE_RATIONAL ),
+        mpInfinityChild( NULL )
     {}
 
     State::State( State* const _father, const Substitution& _substitution, bool _withVariableBounds ):
@@ -96,7 +97,8 @@ namespace vs
         mpChildren( new std::list< State* >() ),
         mpTooHighDegreeConditions( new set< const Condition* >() ),
         mpVariableBounds( _withVariableBounds ? new VariableBoundsCond() : NULL ),
-        mMinIntTestCandidate( smtrat::ZERO_RATIONAL )
+        mMinIntTestCandidate( smtrat::ONE_RATIONAL ),
+        mpInfinityChild( NULL )
     {}
 
     State::~State()
@@ -108,6 +110,7 @@ namespace vs
         {
             State* rpChild = rChildren().back();
             rChildren().pop_back();
+            if( rpChild == mpInfinityChild ) mpInfinityChild = NULL;
             delete rpChild;
         }
         delete mpChildren;
@@ -711,6 +714,11 @@ namespace vs
             // getting nasty.
             if( (**child).substitution() == _substitution )
             {
+                if( index().getType() == carl::VariableType::VT_INT && mpInfinityChild == *child )
+                {
+                    mpInfinityChild = NULL;
+                    (**child).rSubstitution().rOriginalConditions().clear();
+                }
                 (**child).rSubstitution().rOriginalConditions().insert( _substitution.originalConditions().begin(),
                                                                         _substitution.originalConditions().end() );
                 return true;
@@ -1061,10 +1069,6 @@ namespace vs
     {
         // Check if the constraint is variable-free and consistent. If so, discard it.
         unsigned constraintConsistency = _constraint->isConsistent();
-        if( constraintConsistency == 0 )
-        {
-            cout << *_constraint << endl;
-        }
         assert( constraintConsistency != 0 );
         if( constraintConsistency != 1 )
         {
@@ -1094,6 +1098,13 @@ namespace vs
                 }
                 else
                 {
+                    if( mpInfinityChild != NULL )
+                    {
+                        mpConflictSets->erase( mpInfinityChild->pSubstitution() );
+                        mpChildren->remove( mpInfinityChild );
+                        delete mpInfinityChild;
+                        mpInfinityChild = NULL;
+                    }
                     rConditions().push_back( new Condition( _constraint, _valutation, false, _originalConditions, _recentlyAdded ) );
                     if( mpVariableBounds != NULL && mpVariableBounds->addBound( _constraint, rConditions().back() ) )
                         mTestCandidateCheckedForBounds = false;
@@ -1102,6 +1113,7 @@ namespace vs
             // The state is a leaf.
             else
             {
+                assert( mpInfinityChild == NULL );
                 rConditions().push_back( new Condition( _constraint, _valutation, false, _originalConditions, false ) );
                 if( mpVariableBounds != NULL && mpVariableBounds->addBound( _constraint, rConditions().back() ) )
                     mTestCandidateCheckedForBounds = false;
@@ -1264,7 +1276,7 @@ namespace vs
 
     void State::deleteConditions( set<const Condition*>& _conditionsToDelete )
     {
-        if( _conditionsToDelete.empty() ) return;    
+        if( _conditionsToDelete.empty() ) return;
         // Delete the conditions to delete from the set of conditions with too high degree to
         // be entirely used for test candidate generation.
         for( auto cond = _conditionsToDelete.begin(); cond != _conditionsToDelete.end(); ++cond )
@@ -1274,6 +1286,7 @@ namespace vs
         // Remove the given conditions from this state.
         bool conditionDeleted = false;
         bool recentlyAddedConditionLeft = false;
+        vector<const Condition* > condsToDelete;
         set<const Condition*> originsToRemove = set<const Condition*>();
         for( auto cond = rConditions().begin(); cond != conditions().end(); )
         {
@@ -1301,10 +1314,8 @@ namespace vs
                     }
                 }
                 conditionDeleted = true;
-                const Condition* toDel = *cond;
+                condsToDelete.push_back( *cond );
                 cond = rConditions().erase( cond );
-                delete toDel;
-                toDel = NULL;
             }
             else
             {
@@ -1329,6 +1340,13 @@ namespace vs
         deleteOriginsFromConflictSets( originsToRemove, true );
         // Delete everything originated by the conditions to delete in the state's children.
         deleteOriginsFromChildren( originsToRemove );
+        while( !condsToDelete.empty() )
+        {
+            const Condition* condToDel = condsToDelete.back();
+            condsToDelete.pop_back();
+            delete condToDel;
+            condToDel = NULL;
+        }
         mToHighDegree      = false;
         mMarkedAsDeleted   = false;
         mTryToRefreshIndex = true;
@@ -1349,6 +1367,7 @@ namespace vs
                     rConflictSets().erase( conflictSet );
                 State* toDelete = *child;
                 child = rChildren().erase( child );
+                if( toDelete == mpInfinityChild ) mpInfinityChild = NULL;
                 delete toDelete;
             }
             else
@@ -1614,6 +1633,10 @@ namespace vs
             }
             state->updateValuation();
             rChildren().push_back( state );
+            if( _substitution.term().isInteger() )
+            {
+                updateMinIntTestCandidate( _substitution.term().constantPart().constantPart() );
+            }
             return true;
         }
         else return false;
@@ -1681,75 +1704,86 @@ namespace vs
 
     void State::passConflictToFather( bool _checkConflictForSideCondition, bool _includeInconsistentTestCandidates )
     {
+//        cout << "Pass conflict to father: " << endl;
+//        father().printAlone( "***" );
+//        printAlone( "***   " );
         assert( isInconsistent() );
-        // Determine a covering set of the conflict sets.
-        Condition::Set covSet         = Condition::Set();
-        ConditionSetSetSet confSets = ConditionSetSetSet();
-        auto nullConfSet = rConflictSets().find( NULL );
-        if( nullConfSet != conflictSets().end() && !_includeInconsistentTestCandidates )
-            confSets.insert( nullConfSet->second.begin(), nullConfSet->second.end() );
-        else
-        {
-            for( auto confSet = rConflictSets().begin(); confSet != conflictSets().end(); ++confSet )
-                confSets.insert( confSet->second.begin(), confSet->second.end() );
-        }
-        coveringSet( confSets, covSet, treeDepth() );
-        #ifdef VS_LOG_INFSUBSETS
-        set< const smtrat::Constraint* > constraints = set< const smtrat::Constraint* >();
-        for( auto cond = covSet.begin(); cond != covSet.end(); ++cond )
-            constraints.insert( (**cond).pConstraint() );
-        smtrat::Module::addAssumptionToCheck( constraints, false, "VSModule_IS_1" );
-        #endif
-        // Get the original conditions to the covering set.
-        Condition::Set coverSetOConds = Condition::Set();
         bool coverSetOCondsContainIndexOfFather = false;
-        bool sideConditionIsPartOfConflict = !_checkConflictForSideCondition || (pOriginalCondition() == NULL || originalCondition().constraint().relation() != smtrat::Constraint::EQ);
-        const smtrat::PointerSet<smtrat::Constraint>& subsSideConds = substitution().sideCondition();
-        for( auto cond = covSet.begin(); cond != covSet.end(); ++cond )
+        if( index().getType() != carl::VariableType::VT_INT || !mpConflictSets->empty() )
         {
-            // Add the original conditions of the condition to the conflict set.
-            if( !(**cond).originalConditions().empty() )
+            // Determine a covering set of the conflict sets.
+            Condition::Set covSet         = Condition::Set();
+            ConditionSetSetSet confSets = ConditionSetSetSet();
+            auto nullConfSet = rConflictSets().find( NULL );
+            if( nullConfSet != conflictSets().end() && !_includeInconsistentTestCandidates )
+                confSets.insert( nullConfSet->second.begin(), nullConfSet->second.end() );
+            else
             {
-                auto oCond = (**cond).originalConditions().begin();
-                while( oCond != (**cond).originalConditions().end() )
-                {
-                    assert( father().index() != carl::Variable::NO_VARIABLE );
-                    if( (**oCond).constraint().hasVariable( father().index() ) )
-                        coverSetOCondsContainIndexOfFather = true;
-                    coverSetOConds.insert( *oCond );
-                    oCond++;
-                }
+                for( auto confSet = rConflictSets().begin(); confSet != conflictSets().end(); ++confSet )
+                    confSets.insert( confSet->second.begin(), confSet->second.end() );
             }
-            sideConditionIsPartOfConflict |= subsSideConds.find( (*cond)->pConstraint() ) != subsSideConds.end();
+            coveringSet( confSets, covSet, treeDepth() );
+            #ifdef VS_LOG_INFSUBSETS
+            set< const smtrat::Constraint* > constraints = set< const smtrat::Constraint* >();
+            for( auto cond = covSet.begin(); cond != covSet.end(); ++cond )
+                constraints.insert( (**cond).pConstraint() );
+            smtrat::Module::addAssumptionToCheck( constraints, false, "VSModule_IS_1" );
+            #endif
+            // Get the original conditions to the covering set.
+            Condition::Set coverSetOConds = Condition::Set();
+            bool sideConditionIsPartOfConflict = !_checkConflictForSideCondition || (pOriginalCondition() == NULL || originalCondition().constraint().relation() != smtrat::Constraint::EQ);
+            const smtrat::PointerSet<smtrat::Constraint>& subsSideConds = substitution().sideCondition();
+            for( auto cond = covSet.begin(); cond != covSet.end(); ++cond )
+            {
+                // Add the original conditions of the condition to the conflict set.
+                if( !(**cond).originalConditions().empty() )
+                {
+                    auto oCond = (**cond).originalConditions().begin();
+                    while( oCond != (**cond).originalConditions().end() )
+                    {
+                        assert( father().index() != carl::Variable::NO_VARIABLE );
+                        if( (**oCond).constraint().hasVariable( father().index() ) )
+                            coverSetOCondsContainIndexOfFather = true;
+                        coverSetOConds.insert( *oCond );
+                        oCond++;
+                    }
+                }
+                sideConditionIsPartOfConflict |= subsSideConds.find( (*cond)->pConstraint() ) != subsSideConds.end();
+            }
+            if( !sideConditionIsPartOfConflict )
+            {
+                for( auto cond = rFather().rConditions().begin(); cond != father().conditions().end(); ++cond )
+                    (*cond)->rFlag() = true;
+            }
+            // If a test candidate was provided by an equation and its side condition hold always,
+            // add the corresponding constraint to the conflict set. (Because we omit the other test candidates )
+            if( pOriginalCondition() != NULL )
+            {
+                // Add the corresponding original condition to the conflict set.
+                coverSetOConds.insert( pOriginalCondition() );
+                // This original condition of course contains the index of the father, as it served as test candidate provider.
+                coverSetOCondsContainIndexOfFather = true;
+            }
+            ConditionSetSet conflictSet = ConditionSetSet();
+            conflictSet.insert( coverSetOConds );
+    //        if( coverSetOConds.empty() )
+    //        {
+    //            exit( 7771 );
+    //        }
+            assert( !coverSetOConds.empty() );
+            // Add the original conditions of the covering set as a conflict set to the father.
+            if( !coverSetOCondsContainIndexOfFather )
+                rFather().addConflictSet( NULL, conflictSet );
+            else
+                rFather().addConflictSet( pSubstitution(), conflictSet );
+            // Delete all children, the conflict sets and the conditions of this state.
+            mpConflictSets->clear();
         }
-        if( !sideConditionIsPartOfConflict )
-        {
-            for( auto cond = rFather().rConditions().begin(); cond != father().conditions().end(); ++cond )
-                (*cond)->rFlag() = true;
-        }
-        // If a test candidate was provided by an equation and its side condition hold always,
-        // add the corresponding constraint to the conflict set. (Because we omit the other test candidates )
-        if( pOriginalCondition() != NULL )
-        {
-            // Add the corresponding original condition to the conflict set.
-            coverSetOConds.insert( pOriginalCondition() );
-            // This original condition of course contains the index of the father, as it served as test candidate provider.
-            coverSetOCondsContainIndexOfFather = true;
-        }
-        ConditionSetSet conflictSet = ConditionSetSet();
-        conflictSet.insert( coverSetOConds );
-        assert( !coverSetOConds.empty() );
-        // Add the original conditions of the covering set as a conflict set to the father.
-        if( !coverSetOCondsContainIndexOfFather )
-            rFather().addConflictSet( NULL, conflictSet );
-        else
-            rFather().addConflictSet( pSubstitution(), conflictSet );
-        // Delete all children, the conflict sets and the conditions of this state.
-        mpConflictSets->clear();
         while( !children().empty() )
         {
             State* toDelete = rChildren().back();
             rChildren().pop_back();
+            if( toDelete == mpInfinityChild ) mpInfinityChild = NULL;
             delete toDelete;
         }
         mpTooHighDegreeConditions->clear();
@@ -2196,6 +2230,10 @@ namespace vs
             _out << _initiation << "                       original condition: ";
             _out << originalCondition().constraint().toString() << " [";
             _out << pOriginalCondition() << "]" << endl;
+        }
+        if( mpInfinityChild != NULL )
+        {
+            _out << _initiation << "                           infinity child: " << mpInfinityChild << endl;
         }
         _out << _initiation << "                                    index: " << index() << " " << smtrat::Formula::constraintPool().toString(index().getType()) << "  )" << endl;
         printConditions( _initiation + "   ", _out );

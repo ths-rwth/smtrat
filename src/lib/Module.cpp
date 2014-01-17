@@ -447,8 +447,7 @@ namespace smtrat
     {
         EvalRationalMap rationalAssignment;
         for( auto ass = _model.begin(); ass != _model.end(); ++ass )
-        {
-            
+        {   
             if( ass->first.getType() == carl::VariableType::VT_BOOL )
             {
                 rationalAssignment.insert( rationalAssignment.end(), pair<carl::Variable, Rational>( ass->first, (ass->second.booleanValue ? ONE_RATIONAL : ZERO_RATIONAL) ) );
@@ -807,7 +806,8 @@ namespace smtrat
         mSolverState = _answer;
         if( _answer == True && checkModel() == 0 )
         {
-            storeAssumptionsToCheck( *mpManager );
+//            storeAssumptionsToCheck( *mpManager );
+            cout << Module::moduleName( this->type() ) << endl;
             printModel();
 //            exit( 7771 );
         }

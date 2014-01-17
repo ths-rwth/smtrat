@@ -242,7 +242,7 @@ namespace smtrat
             {
                 for( auto nameVarPair = mExternalNamesToVariables.begin(); nameVarPair != mExternalNamesToVariables.end(); ++nameVarPair )
                 {
-                    if( mVariablePool.getVariableName( nameVarPair->second, _byFriendlyName ) == _varName )
+                    if( mVariablePool.getName( nameVarPair->second, _byFriendlyName ) == _varName )
                         return nameVarPair->second;
                 }
                 assert( false );

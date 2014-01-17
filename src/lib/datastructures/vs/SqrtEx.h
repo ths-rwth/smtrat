@@ -145,7 +145,8 @@ namespace vs
              */
             bool isInteger() const
             {
-                return radicand().isZero() && denominator() == smtrat::ONE_POLYNOMIAL && constantPart().isConstant() && carl::isInteger( constantPart().lcoeff() );
+                return radicand().isZero() && denominator() == smtrat::ONE_POLYNOMIAL && 
+                       (constantPart().isZero() || (constantPart().isConstant() && carl::isInteger( constantPart().lcoeff() ) ) );
             }
             
             /**

@@ -141,6 +141,8 @@ namespace vs
         VariableBoundsCond*   mpVariableBounds;
         ///
         mutable smtrat::Rational mMinIntTestCandidate;
+        ///
+        State*                mpInfinityChild;
     public:
 
         /**
@@ -617,6 +619,23 @@ namespace vs
         {
             if( _value < mMinIntTestCandidate )
                 mMinIntTestCandidate = _value;
+        }
+        
+        bool hasInfinityChild() const
+        {
+            return mpInfinityChild != NULL;
+        }
+        
+        void resetInfinityChild( const State* _state )
+        {
+            if( mpInfinityChild == _state )
+                mpInfinityChild = NULL;
+        }
+        
+        void setInfinityChild( State* _state )
+        {
+            assert( mpInfinityChild == NULL );
+            mpInfinityChild = _state;
         }
 
         /**

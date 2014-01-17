@@ -1153,7 +1153,7 @@ namespace smtrat
                             break;
                     }
                 }
-                if( notBoundedVars.size() > 1 )
+                if( boundedVars.size() == 0 || notBoundedVars.size() > 1 )
                     continue;
                 EvalIntervalMap bounds = getEvalIntervalMap();
                 boundConstraints.push_back( *cons );

@@ -226,7 +226,19 @@ namespace smtrat
             if( mInfeasibleSubsets.empty() )
             {
                 if( solverState() == True )
-                    return consistencyTrue();
+                {
+                    if( Settings::int_constraints_allowed && !solutionInDomain() )
+                    {
+                        if( Settings::branch_and_bound )
+                        {
+                            return foundAnswer( Unknown );
+                        }
+                    }
+                    else
+                    {
+                        return consistencyTrue();
+                    }
+                }
                 else
                 {
                     return foundAnswer( Unknown );
@@ -237,7 +249,19 @@ namespace smtrat
         }
         mConditionsChanged = false;
         if( mpReceivedFormula->empty() )
-            return consistencyTrue();
+        {
+            if( Settings::int_constraints_allowed && !solutionInDomain() )
+            {
+                if( Settings::branch_and_bound )
+                {
+                    return foundAnswer( Unknown );
+                }
+            }
+            else
+            {
+                return consistencyTrue();
+            }
+        }
         if( mInconsistentConstraintAdded )
         {
             assert( !mInfeasibleSubsets.empty() );
@@ -292,7 +316,7 @@ namespace smtrat
             if( numOfNotConsideredConditions == tmp && previousId == currentState->id() && previousValuation == currentState->valuation() && previousTakeSubResultAgain == currentState->takeSubResultCombAgain() && previousConditionsSimplified == currentState->conditionsSimplified() && previousSubResultsSimplified == currentState->subResultsSimplified() )
             {
 //                currentState->printAlone();
-                cout << "non-termination" << endl; 
+                cout << "[VS] non-termination" << endl; 
 //                exit( 7771 );
             }
             assert( !(numOfNotConsideredConditions == tmp && previousId == currentState->id() && previousValuation == currentState->valuation() && previousTakeSubResultAgain == currentState->takeSubResultCombAgain() && previousConditionsSimplified == currentState->conditionsSimplified() && previousSubResultsSimplified == currentState->subResultsSimplified()) );
@@ -399,11 +423,14 @@ namespace smtrat
                                 if( Settings::int_constraints_allowed && currentState->father().index().getType() == carl::VariableType::VT_INT 
                                     && currentState->substitution().type() == Substitution::MINUS_INFINITY && !currentState->father().tooHighDegreeConditions().empty() )
                                 {
+                                    if( currentState->father().hasNoninvolvedCondition() )
+                                    {
+                                        currentState->father().printAlone();
+                                        currentState->printAlone();
+                                    }
                                     assert( !currentState->father().hasNoninvolvedCondition() );
                                     removeStatesFromRanking( *currentState );
                                     currentState->rMarkedAsDeleted() = true;
-//                                    currentState->father().printAlone();
-//                                    currentState->printAlone();
                                 }
                                 #ifdef VS_DEBUG
                                 cout << "*** SubstituteAll changes it to:" << endl;
@@ -482,6 +509,7 @@ namespace smtrat
                                             State* toDelete = currentState->rChildren().back();
                                             removeStatesFromRanking( *toDelete );
                                             currentState->rChildren().pop_back();
+                                            currentState->resetInfinityChild( toDelete );
                                             delete toDelete;
                                         }
                                     }
@@ -493,6 +521,29 @@ namespace smtrat
                                     if( currentState->tooHighDegreeConditions().empty() )
                                     {
                                         // It is a state, where no more elimination could be applied to the conditions.
+                                        if( Settings::int_constraints_allowed && !Settings::branch_and_bound && currentState->index().getType() == carl::VariableType::VT_INT )
+                                        {
+                                            if( currentState->conflictSets().empty() && !currentState->hasInfinityChild() )
+                                            {
+                                                if( !Settings::use_variable_bounds || currentState->variableBounds().getDoubleInterval( currentState->index() ).leftType() == carl::BoundType::INFTY )
+                                                {
+                                                    // Create state ( Conditions, [x -> -infinity]):
+                                                    vs::Condition::Set oConditions = vs::Condition::Set();
+                                                    for( auto cond : currentState->conditions() )
+                                                        oConditions.insert( cond );
+                                                    Substitution sub = Substitution( currentState->index(), Substitution::MINUS_INFINITY, oConditions );
+                                                    if( currentState->addChild( sub ) )
+                                                    {
+                                                        // Add its valuation to the current ranking.
+                                                        currentState->setInfinityChild( currentState->rChildren().back() );
+                                                        addStateToRanking( currentState->rChildren().back() );
+                                                        #ifdef VS_DEBUG
+                                                        currentState->rChildren().back()->print( "   ", cout );
+                                                        #endif
+                                                    }
+                                                }
+                                            }
+                                        }
                                         if( currentState->conditions().empty() )
                                         {
                                             #ifdef VS_DEBUG
@@ -516,7 +567,19 @@ namespace smtrat
                                                 #endif
                                             }
                                             else // Solution.
-                                                return consistencyTrue();
+                                            {
+                                                if( Settings::int_constraints_allowed && !solutionInDomain() )
+                                                {
+                                                    if( Settings::branch_and_bound )
+                                                    {
+                                                        return foundAnswer( Unknown );
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    return consistencyTrue();
+                                                }
+                                            }
                                         }
                                         // It is a state, where all conditions have been used for test candidate generation.
                                         else
@@ -589,7 +652,19 @@ namespace smtrat
                                                             addStatesToRanking( unfinishedAncestor );
                                                     }
                                                     else // Solution.
-                                                        return consistencyTrue();
+                                                    {
+                                                        if( Settings::int_constraints_allowed && !solutionInDomain() )
+                                                        {
+                                                            if( Settings::branch_and_bound )
+                                                            {
+                                                                return foundAnswer( Unknown );
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            return consistencyTrue();
+                                                        }
+                                                    }
                                                     break;
                                                 }
                                                 case False:
@@ -650,6 +725,10 @@ namespace smtrat
         #ifdef VS_LOG_INTERMEDIATE_STEPS
         if( mpStateTree->conflictSets().empty() ) logConditions( *mpStateTree, false, "Intermediate_conflict_of_VSModule" );
         #endif
+//        if( mpStateTree->conflictSets().empty() )
+//        {
+//            exit( 7771 );
+//        }
         assert( !mpStateTree->conflictSets().empty() );
         updateInfeasibleSubset();
         #ifdef VS_DEBUG
@@ -736,15 +815,10 @@ namespace smtrat
         #ifdef VS_PRINT_ANSWERS
         printAnswer();
         #endif
-        if( Settings::int_constraints_allowed )
-        {
-            #ifdef VS_DEBUG
-            printAll();
-            #endif
-            return solutionInDomain();
-        }
-        else
-            return foundAnswer( True );
+        #ifdef VS_DEBUG
+        printAll();
+        #endif
+        return foundAnswer( True );
     }
 
     /**
@@ -781,6 +855,7 @@ namespace smtrat
                 if( relation == Constraint::LESS || relation == Constraint::GREATER || relation == Constraint::NEQ )
                 {
                     _currentState->rTooHighDegreeConditions().insert( _condition );
+                    _condition->rFlag() = true;
                     return;
                 }
             }
@@ -1186,20 +1261,23 @@ namespace smtrat
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
         }
         #endif
-        if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
+        if( !(Settings::int_constraints_allowed && !Settings::branch_and_bound && _eliminationVar.getType() == carl::VariableType::VT_INT) )
         {
-            if( !Settings::use_variable_bounds || _currentState->variableBounds().getDoubleInterval( _eliminationVar ).leftType() == carl::BoundType::INFTY )
+            if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
             {
-                // Create state ( Conditions, [x -> -infinity]):
-                Substitution sub = Substitution( _eliminationVar, Substitution::MINUS_INFINITY, oConditions );
-                if( _currentState->addChild( sub ) )
+                if( !Settings::use_variable_bounds || _currentState->variableBounds().getDoubleInterval( _eliminationVar ).leftType() == carl::BoundType::INFTY )
                 {
-                    // Add its valuation to the current ranking.
-                    addStateToRanking( (*_currentState).rChildren().back() );
-                    numberOfAddedChildren++;
-                    #ifdef VS_DEBUG
-                    (*(*_currentState).rChildren().back()).print( "   ", cout );
-                    #endif
+                    // Create state ( Conditions, [x -> -infinity]):
+                    Substitution sub = Substitution( _eliminationVar, Substitution::MINUS_INFINITY, oConditions );
+                    if( _currentState->addChild( sub ) )
+                    {
+                        // Add its valuation to the current ranking.
+                        addStateToRanking( (*_currentState).rChildren().back() );
+                        numberOfAddedChildren++;
+                        #ifdef VS_DEBUG
+                        (*(*_currentState).rChildren().back()).print( "   ", cout );
+                        #endif
+                    }
                 }
             }
         }
@@ -1215,6 +1293,7 @@ namespace smtrat
                 removeStatesFromRanking( *toDelete );
                 _currentState->resetConflictSets();
                 _currentState->rChildren().erase( _currentState->rChildren().begin() );
+                _currentState->resetInfinityChild( toDelete );
                 delete toDelete;
             }
             if( numberOfAddedChildren == 0 )
@@ -1256,7 +1335,9 @@ namespace smtrat
         assert( !_currentState->isRoot() );
         if( Settings::int_constraints_allowed && _currentState->father().index().getType() == carl::VariableType::VT_INT && _currentState->substitution().type() == Substitution::MINUS_INFINITY )
         {
-            _currentState->rSubstitution().setTerm( _currentState->father().minIntTestCandidate() );
+            assert( carl::isInteger( _currentState->father().minIntTestCandidate() ) );
+            Rational newTerm = cln::floor1( _currentState->father().minIntTestCandidate() );
+            _currentState->rSubstitution().setTerm( _currentState->father().minIntTestCandidate() - 1 );
 //            _currentState->father().printAlone();
 //            _currentState->printAlone();
         }
@@ -1344,6 +1425,7 @@ namespace smtrat
             {
                 State* toDelete = _currentState->rChildren().back();
                 _currentState->rChildren().pop_back();
+                _currentState->resetInfinityChild( toDelete );
                 delete toDelete;
             }
             while( !_currentState->conditions().empty() )
@@ -1377,6 +1459,7 @@ namespace smtrat
                     {
                         State* toDelete = _currentState->rChildren().back();
                         _currentState->rChildren().pop_back();
+                        _currentState->resetInfinityChild( toDelete );
                         delete toDelete;
                     }
                     while( !_currentState->conditions().empty() )
@@ -1476,6 +1559,7 @@ namespace smtrat
                 {
                     State* toDelete = _currentState->rChildren().back();
                     _currentState->rChildren().pop_back();
+                    _currentState->resetInfinityChild( toDelete );
                     delete toDelete;
                 }
             }
@@ -1756,94 +1840,65 @@ namespace smtrat
     }
     
     template<class Settings>
-    Answer VSModule<Settings>::solutionInDomain()
+    bool VSModule<Settings>::solutionInDomain()
     {
         assert( solverState() != False );
         if( !mRanking.empty() )
         {
-            const State* currentState = mRanking.begin()->second;
+            State* currentState = mRanking.begin()->second;
             while( !currentState->isRoot() )
             {
                 if( currentState->substitution().variable().getType() == carl::VariableType::VT_INT )
                 {
-                    if( currentState->substitution().type() == Substitution::MINUS_INFINITY )
+                    assert( currentState->substitution().type() != Substitution::MINUS_INFINITY );
+                    assert( currentState->substitution().type() != Substitution::PLUS_EPSILON );
+                    // Insert the (integer!) assignments of the other variables.
+                    EvalRationalMap varSolutions = getIntervalAssignment( currentState );
+                    const SqrtEx& subTerm = currentState->substitution().term();
+                    Rational evaluatedSubTerm;
+                    bool assIsInteger = subTerm.evaluate( evaluatedSubTerm, varSolutions, -1 );
+                    assIsInteger &= carl::isInteger( evaluatedSubTerm );
+                    if( !assIsInteger )
                     {
-                        currentState->father().print();
-                        assert( false );
-                        // We establish a set of univariate polynomials being the left-hand sides of
-                        // currentState's father's conditions with all their variables (except of 
-                        // currentState's index) substituted by the found (integer!) assignments. Then 
-                        // we know that the weakest lower Cauchy bound of these univariate polynomials
-                        // under-approximates all of their roots.
-                        EvalRationalMap varSolutions = getIntervalAssignment( currentState );
-                        Rational weakestCauchyBound;
-                        for( auto cond = currentState->father().conditions().begin(); cond != currentState->father().conditions().end(); ++cond )
-                        {
-                            Rational condsLowerCB;
-                            if( varSolutions.empty() )
-                            {
-                                condsLowerCB = (*cond)->constraint().lhs().toUnivariatePolynomial().cauchyBound();
-                                if( condsLowerCB > weakestCauchyBound )
-                                    weakestCauchyBound = condsLowerCB;
-                            }
-                            else
-                            {
-                                Polynomial substituted = (*cond)->constraint().lhs().substitute( varSolutions );
-                                if( !substituted.isConstant() )
-                                {
-                                    condsLowerCB = substituted.toUnivariatePolynomial().cauchyBound();
-                                    if( condsLowerCB > weakestCauchyBound )
-                                        weakestCauchyBound = condsLowerCB;
-                                }
-                            }
-                        }
-                        if( Settings::use_variable_bounds && !Settings::assure_termination )
-                        {
-                            Interval varInterval = currentState->father().variableBounds().getInterval( currentState->substitution().variable() );
-                            if( varInterval.rightType() != carl::BoundType::INFTY && varInterval.right() <= weakestCauchyBound )
-                            {
-                                weakestCauchyBound = varInterval.right() - 1;
-                            }
-                            currentState->father().printAlone();
-                            cout << "bla" << endl;  
-                        }
-                        // We split at the next greater integer I than the calculated weakest lower Cauchy bound.
-                        // By this we force in one case (A) that currentState's test candidate (-infinity) gets
-                        // invalid and a new (integer) test candidate at I is generated. In the other case (B) the 
-                        // assignment of the other variables in currentState's father cannot hold and must be adapted. 
-                        // Note that in the case that there are no other variables in currentState's father, only (A)
-                        // can be applied.
                         #ifdef VS_MODULE_VERBOSE_INTEGERS
                         this->printAnswer();
                         #endif
-                        branchAt( currentState->substitution().variable(), weakestCauchyBound, getReasons( currentState->substitution().originalConditions() ) );
-                        return foundAnswer( Unknown );
-                    }
-                    else
-                    {
-                        // Insert the (integer!) assignments of the other variables.
-                        EvalRationalMap varSolutions = getIntervalAssignment( currentState );
-                        const SqrtEx& subTerm = currentState->substitution().term();
-                        Rational evaluatedSubTerm;
-//                        currentState->printAlone();
-                        bool assIsInteger = subTerm.evaluate( evaluatedSubTerm, varSolutions, -1 );
-                        assIsInteger &= carl::isInteger( evaluatedSubTerm );
-                        assert( currentState->substitution().type() != Substitution::PLUS_EPSILON );
-                        if( !assIsInteger )
+                        if( Settings::branch_and_bound )
                         {
-                            #ifdef VS_MODULE_VERBOSE_INTEGERS
-                            this->printAnswer();
-                            #endif
-                            currentState->father().updateMinIntTestCandidate( evaluatedSubTerm );
+                            currentState->father().updateMinIntTestCandidate( cln::floor1( evaluatedSubTerm ) );
                             branchAt( currentState->substitution().variable(), evaluatedSubTerm, getReasons( currentState->substitution().originalConditions() ) );
-                            return foundAnswer( Unknown );
                         }
+                        else
+                        {
+                            // Add test candidate to father, being the next greater integer than the found non-integer assignment of the
+                            // substituted variable of the current state.
+                            State* toRemove = mRanking.begin()->second;
+                            const Substitution& currSub = currentState->substitution();
+                            SqrtEx t = SqrtEx( Polynomial( cln::floor1( evaluatedSubTerm ) + 1 ) );
+                            Substitution newSub = Substitution( currSub.variable(), t, Substitution::Type::NORMAL, currSub.originalConditions() );
+                            if( currentState->rFather().addChild( newSub ) )
+                            {
+                                // Add its valuation to the current ranking.
+                                addStateToRanking( currentState->rFather().rChildren().back() );
+                                #ifdef VS_DEBUG
+                                currentState->rFather().rChildren().back()->print( "   ", cout );
+                                #endif
+                            }
+//                            currentState->father().print();
+//                            currentState->printAlone();
+//                            mRanking.begin()->second->printAlone();
+//                            assert( false );
+                            removeStatesFromRanking( *toRemove );
+                            toRemove->rFather().rChildren().remove( toRemove );
+                            delete toRemove;
+                        }
+                        return false;
                     }
                 }
                 currentState = currentState->pFather();
             }
         }
-        return foundAnswer( True );
+        return true;
     }
 
     /**

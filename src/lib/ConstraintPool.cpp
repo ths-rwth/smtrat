@@ -135,7 +135,7 @@ namespace smtrat
         // Create the arithmetic variable
         auto iterBoolPair = mExternalNamesToVariables.insert( pair<string,carl::Variable>( _name, mVariablePool.getFreshVariable( _domain ) ) );
         assert( iterBoolPair.second );
-        mVariablePool.setVariableName( iterBoolPair.first->second, _name );
+        mVariablePool.setName( iterBoolPair.first->second, _name );
         return iterBoolPair.first->second;
     }
     
@@ -146,7 +146,7 @@ namespace smtrat
         if( _parsed ) mExternalPrefixInitialized = false;
         else if( !mExternalPrefixInitialized ) initExternalPrefix();
         carl::Variable result = mVariablePool.getFreshVariable( carl::VariableType::VT_BOOL );
-        mVariablePool.setVariableName( result, _name );
+        mVariablePool.setName( result, _name );
         mBooleanVariables.insert( result );
         return result;
     }

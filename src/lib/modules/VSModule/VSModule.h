@@ -140,7 +140,7 @@ namespace smtrat
             std::set<const Formula*> getReasons( const vs::Condition::Set& _conditions ) const;
             void updateInfeasibleSubset( bool = false );
             EvalRationalMap getIntervalAssignment( const vs::State* _state ) const;
-            Answer solutionInDomain();
+            bool solutionInDomain();
             static void allMinimumCoveringSets( const vs::ConditionSetSetSet&, vs::ConditionSetSet& );
             bool adaptPassedFormula( const vs::State&, FormulaConditionMap&, bool = false );
             Answer runBackendSolvers( vs::State*, bool = false );

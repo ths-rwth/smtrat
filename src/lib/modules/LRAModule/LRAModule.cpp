@@ -410,7 +410,7 @@ namespace smtrat
             for( auto iter = mTableau.columns().begin(); iter != mTableau.columns().end(); ++iter )
                 tc.second.push_back(iter->mName);
             bool inserted = tcs.insert( tc ).second;
-            if( inserted ) cout << "non-terminating" << endl;
+            if( inserted ) cout << "[LRA] non-termination" << endl;
             assert( inserted );
             #endif
             struct pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElement();
@@ -1821,7 +1821,7 @@ Return:
         {
             _out << _init << "   ";
             (*iter)->print( true, cout, true );
-            _out << endl;
+            _out << " [" << (*iter)->pInfo()->updated << "]" << endl;
         }
     }
 

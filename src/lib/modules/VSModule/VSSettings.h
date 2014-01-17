@@ -30,7 +30,6 @@ namespace smtrat
         static const bool prefer_equation_over_all                              = false;
         static const bool int_constraints_allowed                               = false;
         static const bool mixed_int_real_constraints_allowed                    = false;
-        static const bool assure_termination                                    = true;
         static const bool branch_and_bound                                      = false;
         static const bool split_neq_constraints                                 = false;
     };
@@ -56,15 +55,9 @@ namespace smtrat
         static const bool int_constraints_allowed                               = true;
     };
     
-    
-    struct VSSettings23468 : VSSettings2346
-    {
-        static const bool branch_and_bound                                      = false;
-    };
-    
     struct VSSettings23467 : VSSettings2346
     {
-        static const bool assure_termination                                    = false;
+        static const bool branch_and_bound                                      = true;
     };
     
     struct VSSettings2345 : VSSettings234
