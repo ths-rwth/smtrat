@@ -617,6 +617,7 @@ namespace vs
          */
         void updateMinIntTestCandidate( const smtrat::Rational& _value ) const
         {
+            assert( carl::isInteger( _value ) );
             if( _value < mMinIntTestCandidate )
                 mMinIntTestCandidate = _value;
         }

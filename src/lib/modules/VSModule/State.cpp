@@ -972,7 +972,30 @@ namespace vs
         assert( index() != carl::Variable::NO_VARIABLE );
         for( auto cond = rConditions().begin(); cond != conditions().end(); ++cond )
         {
-            (**cond).rFlag() = !(**cond).constraint().hasVariable( index() ) || (**cond).constraint().isUpperBound();
+            
+            if( mpVariableBounds == NULL && index().getType() == carl::VariableType::VT_INT )
+            {
+                if( (**cond).constraint().hasVariable( index() ) )
+                {
+                    if( (**cond).constraint().isUpperBound() )
+                    {
+                        assert( (*cond)->constraint().relation() == smtrat::Constraint::LEQ || (*cond)->constraint().relation() == smtrat::Constraint::GEQ );
+                        (**cond).rFlag() = true;
+                        smtrat::Rational ubound = (*cond)->constraint().constantPart()/(*cond)->constraint().lhs().lterm()->coeff();
+                        updateMinIntTestCandidate( cln::floor1( ubound ) );
+                    }
+                    else
+                        (**cond).rFlag() = false;
+                }
+                else
+                {
+                    (**cond).rFlag() = true;
+                }
+            }
+            else
+            {
+                (**cond).rFlag() = !(**cond).constraint().hasVariable( index() ) || (**cond).constraint().isUpperBound();
+            }
         }
     }
 

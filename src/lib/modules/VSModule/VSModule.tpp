@@ -1336,8 +1336,16 @@ namespace smtrat
         if( Settings::int_constraints_allowed && _currentState->father().index().getType() == carl::VariableType::VT_INT && _currentState->substitution().type() == Substitution::MINUS_INFINITY )
         {
             assert( carl::isInteger( _currentState->father().minIntTestCandidate() ) );
-            Rational newTerm = cln::floor1( _currentState->father().minIntTestCandidate() );
-            _currentState->rSubstitution().setTerm( _currentState->father().minIntTestCandidate() - 1 );
+            Rational newTerm = _currentState->father().minIntTestCandidate() - 1;
+            if( Settings::use_variable_bounds )
+            {
+                Interval indexBounds = _currentState->father().variableBounds().getInterval( _currentState->father().index() );
+                if( indexBounds.rightType() != carl::BoundType::INFTY && indexBounds.right() < newTerm )
+                {
+                    newTerm = indexBounds.right();
+                }
+            }
+            _currentState->rSubstitution().setTerm( newTerm );
 //            _currentState->father().printAlone();
 //            _currentState->printAlone();
         }
