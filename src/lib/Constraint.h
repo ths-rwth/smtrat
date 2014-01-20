@@ -325,6 +325,22 @@ namespace smtrat
                 return false;
             }
             
+            bool isUpperBound() const
+            {
+                if( mVariables.size() == 1 && maxDegree( *mVariables.begin() ) == 1 )
+                {
+                    const Rational& coeff = mLhs.lterm()->coeff();
+                    if( coeff > 0 )
+                        return (mRelation == LEQ || mRelation == LESS );
+                    else
+                    {
+                        assert( coeff < 0 );
+                        return (mRelation == GEQ || mRelation == GREATER );
+                    }
+                }
+                return false;
+            }
+            
             /**
              * Checks whether the given assignment satisfies this constraint.
              * @param _assignment The assignment.

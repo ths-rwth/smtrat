@@ -1861,7 +1861,7 @@ namespace smtrat
                     if( !assIsInteger )
                     {
                         #ifdef VS_MODULE_VERBOSE_INTEGERS
-                        this->printAnswer();
+//                        this->printAnswer();
                         #endif
                         if( Settings::branch_and_bound )
                         {

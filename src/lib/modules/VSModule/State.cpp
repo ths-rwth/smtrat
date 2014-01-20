@@ -971,7 +971,9 @@ namespace vs
     {
         assert( index() != carl::Variable::NO_VARIABLE );
         for( auto cond = rConditions().begin(); cond != conditions().end(); ++cond )
-            (**cond).rFlag() = !(**cond).constraint().hasVariable( index() );
+        {
+            (**cond).rFlag() = !(**cond).constraint().hasVariable( index() ) || (**cond).constraint().isUpperBound();
+        }
     }
 
     bool State::initIndex( const smtrat::Variables& _allVariables, bool _preferEquation )
