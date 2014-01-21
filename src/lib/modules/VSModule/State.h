@@ -140,8 +140,6 @@ namespace vs
         /// optimizations based on variable bounds.
         VariableBoundsCond*   mpVariableBounds;
         ///
-        mutable smtrat::Rational mMinIntTestCandidate;
-        ///
         State*                mpInfinityChild;
     public:
 
@@ -606,20 +604,29 @@ namespace vs
          * Sets the minimal integer test candidate to the given value, if it is less than it.
          * @param _value The value to update the minimal integer test candidate for.
          */
-        const smtrat::Rational& minIntTestCandidate() const
+        smtrat::Rational minIntTestCandidate() const
         {
-            return mMinIntTestCandidate;
-        }
-        
-        /**
-         * Sets the minimal integer test candidate to the given value, if it is less than it.
-         * @param _value The value to update the minimal integer test candidate for.
-         */
-        void updateMinIntTestCandidate( const smtrat::Rational& _value ) const
-        {
-            assert( carl::isInteger( _value ) );
-            if( _value < mMinIntTestCandidate )
-                mMinIntTestCandidate = _value;
+            bool anyIntegerChildFound = false;
+            smtrat::Rational result = 1;
+            for( auto child = mpChildren->begin(); child != mpChildren->end(); ++child )
+            {
+                if( (*child)->substitution().type() != Substitution::MINUS_INFINITY && (*child)->substitution().term().isInteger() )
+                {
+                    smtrat::Rational termValue = (*child)->substitution().term().constantPart().constantPart();
+                    if( anyIntegerChildFound )
+                    {
+                        if( termValue < result )
+                            result = termValue;
+                    }
+                    else
+                    {
+                        result = termValue;
+                        anyIntegerChildFound = true;
+                    }
+                }
+                        
+            }
+            return result;
         }
         
         bool hasInfinityChild() const

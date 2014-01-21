@@ -523,7 +523,7 @@ namespace smtrat
                                         // It is a state, where no more elimination could be applied to the conditions.
                                         if( Settings::int_constraints_allowed && !Settings::branch_and_bound && currentState->index().getType() == carl::VariableType::VT_INT )
                                         {
-                                            if( currentState->conflictSets().empty() && !currentState->hasInfinityChild() )
+                                            if( !currentState->hasInfinityChild() )
                                             {
                                                 if( !Settings::use_variable_bounds || currentState->variableBounds().getDoubleInterval( currentState->index() ).leftType() == carl::BoundType::INFTY )
                                                 {
@@ -1335,14 +1335,42 @@ namespace smtrat
         assert( !_currentState->isRoot() );
         if( Settings::int_constraints_allowed && _currentState->father().index().getType() == carl::VariableType::VT_INT && _currentState->substitution().type() == Substitution::MINUS_INFINITY )
         {
-            assert( carl::isInteger( _currentState->father().minIntTestCandidate() ) );
-            Rational newTerm = _currentState->father().minIntTestCandidate() - 1;
+            Rational newTerm = _currentState->father().minIntTestCandidate();
+            assert( carl::isInteger( newTerm ) );
+            newTerm = newTerm - 1;
             if( Settings::use_variable_bounds )
             {
                 Interval indexBounds = _currentState->father().variableBounds().getInterval( _currentState->father().index() );
                 if( indexBounds.rightType() != carl::BoundType::INFTY && indexBounds.right() < newTerm )
                 {
                     newTerm = indexBounds.right();
+                }
+            }
+            else
+            {
+                smtrat::Rational leastRightBound = 0;
+                bool foundRightBound = false;
+                for( auto cond = _currentState->father().conditions().begin(); cond != _currentState->father().conditions().end(); ++cond )
+                {
+                    if( (**cond).constraint().hasVariable( _currentState->father().index() ) && (**cond).constraint().isUpperBound() )
+                    {
+                        assert( (*cond)->constraint().relation() == smtrat::Constraint::LEQ || (*cond)->constraint().relation() == smtrat::Constraint::GEQ );
+                        smtrat::Rational ubound = cln::floor1( (*cond)->constraint().constantPart()/(*cond)->constraint().lhs().lterm()->coeff() );
+                        if( foundRightBound )
+                        {
+                            if( ubound < leastRightBound )
+                                leastRightBound = ubound;
+                        }
+                        else
+                        {
+                            leastRightBound = ubound;
+                            foundRightBound = true;
+                        }
+                    }
+                }
+                if( foundRightBound && leastRightBound < newTerm )
+                {
+                    newTerm = leastRightBound;
                 }
             }
             _currentState->rSubstitution().setTerm( newTerm );
@@ -1873,7 +1901,6 @@ namespace smtrat
                         #endif
                         if( Settings::branch_and_bound )
                         {
-                            currentState->father().updateMinIntTestCandidate( cln::floor1( evaluatedSubTerm ) );
                             branchAt( currentState->substitution().variable(), evaluatedSubTerm, getReasons( currentState->substitution().originalConditions() ) );
                         }
                         else
