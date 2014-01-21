@@ -107,8 +107,25 @@ namespace vs
         unsigned lCoeffWeight = 0;
         if( degreeWeight <= 1 )
         {
-            if( mpConstraint->coefficient( _consideredVariable, degreeWeight ).isConstant() )
-                lCoeffWeight = 1;
+            smtrat::Polynomial coeff = mpConstraint->coefficient( _consideredVariable, degreeWeight );
+            if( coeff.isConstant() )
+            {
+                if( _consideredVariable.getType() == carl::VariableType::VT_INT )
+                {
+                    if( coeff == smtrat::ONE_POLYNOMIAL || coeff == smtrat::MINUS_ONE_POLYNOMIAL )
+                    {
+                        lCoeffWeight = 1;
+                    }
+                    else
+                    {
+                        lCoeffWeight = 2;
+                    }
+                }
+                else
+                {
+                    lCoeffWeight = 1;
+                }
+            }
             else
                 lCoeffWeight = 3;
         }
