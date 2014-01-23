@@ -317,7 +317,7 @@ namespace smtrat
             {
 //                currentState->printAlone();
                 cout << "[VS] non-termination" << endl; 
-//                exit( 7771 );
+                exit( 7771 );
             }
             assert( !(numOfNotConsideredConditions == tmp && previousId == currentState->id() && previousValuation == currentState->valuation() && previousTakeSubResultAgain == currentState->takeSubResultCombAgain() && previousConditionsSimplified == currentState->conditionsSimplified() && previousSubResultsSimplified == currentState->subResultsSimplified()) );
             previousId = currentState->id();
@@ -673,7 +673,6 @@ namespace smtrat
                                                 }
                                                 case Unknown:
                                                 {
-                                                    cout << "too high degree!" << endl;
                                                     return foundAnswer( Unknown );
                                                 }
                                                 default:
@@ -685,6 +684,7 @@ namespace smtrat
                                         }
                                         else
                                         {
+//                                            return foundAnswer( Unknown );
                                             currentState->rToHighDegree() = true;
                                             addStateToRanking( currentState );
                                         }
@@ -693,7 +693,8 @@ namespace smtrat
                                 // Generate test candidates for the chosen variable and the chosen condition.
                                 else
                                 {
-                                    if( Settings::local_conflict_search && currentState->hasLocalConflict() )
+                                    if( Settings::local_conflict_search && Settings::int_constraints_allowed
+                                        && currentState->index().getType() == carl::VariableType::VT_REAL && currentState->hasLocalConflict() )
                                     {
                                         removeStatesFromRanking( *currentState );
                                         addStateToRanking( currentState );
