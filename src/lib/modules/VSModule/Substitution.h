@@ -245,7 +245,7 @@ namespace vs
     };
     
     template<typename T> 
-    using SubstitutionFastPointerMap = std::unordered_map<const Polynomial*, T, substitutionPointerHash, substitutionPointerEqual>;
+    using SubstitutionFastPointerMap = std::unordered_map<const smtrat::Polynomial*, T, substitutionPointerHash, substitutionPointerEqual>;
 }
 
 #endif
