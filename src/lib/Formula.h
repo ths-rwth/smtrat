@@ -899,6 +899,8 @@ namespace smtrat
              */
             static void toCNF( Formula& _formula, bool _keepConstraints = true );
     };
+    
+    std::ostream& operator<<( std::ostream& _out, const Formula& _formula );
 
     struct FormulaIteratorConstraintIdCompare
     {

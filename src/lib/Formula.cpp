@@ -607,7 +607,7 @@ namespace smtrat
         return result;
     }
     
-    ostream& operator<<( ostream& _ostream, const Formula& _formula )
+    std::ostream& operator<<( std::ostream& _ostream, const Formula& _formula )
     {
         return (_ostream << _formula.toString( false, 0, "", true, false, true ));
     }
