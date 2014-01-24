@@ -1100,6 +1100,7 @@ namespace vs
                 {
                     if( mpInfinityChild != NULL )
                     {
+                        mpInfinityChild->print();
                         mpConflictSets->erase( mpInfinityChild->pSubstitution() );
                         mpChildren->remove( mpInfinityChild );
                         delete mpInfinityChild;
@@ -1608,7 +1609,71 @@ namespace vs
     {
         if( !updateOCondsOfSubstitutions( _substitution ) )
         {
-            State* state = new State( this, _substitution, mpVariableBounds != NULL );
+            State* state;
+            if( _substitution.variable().getType() == carl::VariableType::VT_INT && !(_substitution.term().denominator() == smtrat::ONE_POLYNOMIAL) )
+            {
+                if( _substitution.term().hasSqrt() )
+                {
+                    state = new State( this, _substitution, mpVariableBounds != NULL );
+                }
+                else
+                {
+                    const smtrat::Constraint* sideConsA = smtrat::Formula::newConstraint( _substitution.term().denominator() - _substitution.term().constantPart(), smtrat::Constraint::LEQ );
+                    const smtrat::Constraint* sideConsB = smtrat::Formula::newConstraint( _substitution.term().denominator() + _substitution.term().constantPart(), smtrat::Constraint::GEQ );
+                    const smtrat::Constraint* sideConsC = smtrat::Formula::newConstraint( _substitution.term().denominator() + _substitution.term().constantPart(), smtrat::Constraint::LEQ );
+                    const smtrat::Constraint* sideConsD = smtrat::Formula::newConstraint( _substitution.term().denominator() - _substitution.term().constantPart(), smtrat::Constraint::GEQ );
+                    if( ( sideConsA == smtrat::Formula::constraintPool().inconsistentConstraint() || sideConsB == smtrat::Formula::constraintPool().inconsistentConstraint() )
+                        && ( sideConsC == smtrat::Formula::constraintPool().inconsistentConstraint() || sideConsD == smtrat::Formula::constraintPool().inconsistentConstraint() ) )
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        state = new State( this, _substitution, mpVariableBounds != NULL );
+                        std::vector<DisjunctionOfConditionConjunctions> subResults = std::vector<DisjunctionOfConditionConjunctions>();
+                        if( sideConsA != smtrat::Formula::constraintPool().inconsistentConstraint() && sideConsB != smtrat::Formula::constraintPool().inconsistentConstraint() )
+                        {
+                            DisjunctionOfConditionConjunctions case1;
+                            if( sideConsA != smtrat::Formula::constraintPool().consistentConstraint() )
+                            {
+                                case1.push_back( ConditionList() );
+                                case1.back().push_back( new vs::Condition( sideConsA, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+                            }
+                            if( sideConsB != smtrat::Formula::constraintPool().consistentConstraint() )
+                            {
+                                if( case1.empty() )
+                                    case1.push_back( ConditionList() );
+                                case1.back().push_back( new vs::Condition( sideConsB, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+                            }
+                            if( !case1.empty() )
+                                subResults.push_back( case1 );
+                        }
+                        if( sideConsC != smtrat::Formula::constraintPool().inconsistentConstraint() && sideConsD != smtrat::Formula::constraintPool().inconsistentConstraint() )
+                        {
+                            DisjunctionOfConditionConjunctions case2;
+                            if( sideConsC != smtrat::Formula::constraintPool().consistentConstraint() )
+                            {
+                                case2.push_back( ConditionList() );
+                                case2.back().push_back( new vs::Condition( sideConsC, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+                            }
+                            if( sideConsD != smtrat::Formula::constraintPool().consistentConstraint() )
+                            {
+                                if( case2.empty() )
+                                    case2.push_back( ConditionList() );
+                                case2.back().push_back( new vs::Condition( sideConsD, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+                            }
+                            if( !case2.empty() )
+                                subResults.push_back( case2 );   
+                        }
+                        if( !subResults.empty() )
+                            state->addSubstitutionResults( subResults );
+                    }
+                }
+            }
+            else
+            {
+                state = new State( this, _substitution, mpVariableBounds != NULL );
+            }
             const smtrat::PointerSet<smtrat::Constraint>& sideConds = _substitution.sideCondition();
             for( auto sideCond = sideConds.begin(); sideCond != sideConds.end(); ++sideCond )
             {
