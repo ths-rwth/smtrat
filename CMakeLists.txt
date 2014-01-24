@@ -45,6 +45,7 @@ set(smtrat_DESCRIPTION ${PROJECT_DESCRIPTION} )
 # # # # # # # # # # # # # # # # # # # # # #
 
 # options
+option( DEVELOPER "Compile with extra warnings" ON )
 option(STATICLIB_SWITCH "Compile a statically linked version of the library." OFF)
 option(BUILD_SOLVER "Build the SMT-RAT Solver" ON)
 option(BUILD_GUI "Build the GUI" OFF)
@@ -66,11 +67,30 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 include( smtratmacros )
 # TODO: iteratively search for cmake files and include them here.
 
-# general compiler and linker settings
-set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wall -std=c++0x")
-if(${STATICLIB_SWITCH} STREQUAL "ON")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
-  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    if (APPLE)
+        message("-- Using clang on apple")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
+    else()
+        message("-- Using clang")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    endif()
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    message("-- Using g++")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+else()
+    message("-- Possibly unsupported compiler")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+endif()
+if(DEVELOPER)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wconversion")
+    set(CMAKE_BUILD_TYPE "DEBUG")
+endif()
+
+if("${STATICLIB_SWITCH}" STREQUAL "ON")
+	message("-- linking static")
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+	set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
 endif()
 
 if(${SMTRAT_STRAT_PARALLEL_MODE} STREQUAL "ON")
