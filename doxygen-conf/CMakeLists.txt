@@ -13,6 +13,7 @@
 
 # Quick self-configuration if only doc is built
 if("${PROJECT_NAME}" STREQUAL "")
+	cmake_minimum_required (VERSION 2.8 FATAL_ERROR)
 	project(SMT-RAT-doxygen NONE)
 	set(CMAKE_CURRENT_BINARY_DIR "build")
 	set(CMAKE_SOURCE_DIR "..")
