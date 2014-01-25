@@ -46,7 +46,7 @@ using namespace smtrat::lra;
 
 namespace smtrat
 {
-    LRAModule::LRAModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+    LRAModule::LRAModule( ModuleType _type, const Formula* const _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         mInitialized( false ),
         mAssignmentFullfilsNonlinearConstraints( false ),
@@ -131,7 +131,7 @@ namespace smtrat
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->add( *constraint );
             #endif
-            int consistency = constraint->isConsistent();
+            unsigned consistency = constraint->isConsistent();
             if( consistency == 2 )
             {
                 mAssignmentFullfilsNonlinearConstraints = false;
@@ -1457,7 +1457,7 @@ Return:
                 initialize( *constraint );
             }
             #ifdef LRA_USE_PIVOTING_STRATEGY
-            mTableau.setBlandsRuleStart( mTableau.columns().size() );
+            mTableau.setBlandsRuleStart( (unsigned) mTableau.columns().size() );
             #endif
         }
     }

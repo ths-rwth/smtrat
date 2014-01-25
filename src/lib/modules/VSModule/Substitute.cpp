@@ -159,32 +159,32 @@ namespace vs
                 {
                     case smtrat::Constraint::EQ:
                     {
-                        substituteNormalSqrtEq( _cons, _subs, sub.radicand(), sub.constantPart(), sub.factor(), _result, _accordingPaper );
+                        substituteNormalSqrtEq( sub.radicand(), sub.constantPart(), sub.factor(), _result, _accordingPaper );
                         break;
                     }
                     case smtrat::Constraint::NEQ:
                     {
-                        substituteNormalSqrtNeq( _cons, _subs, sub.radicand(), sub.constantPart(), sub.factor(), _result, _accordingPaper );
+                        substituteNormalSqrtNeq( sub.radicand(), sub.constantPart(), sub.factor(), _result, _accordingPaper );
                         break;
                     }
                     case smtrat::Constraint::LESS:
                     {
-                        substituteNormalSqrtLess( _cons, _subs, sub.radicand(), sub.constantPart(), sub.factor(), s, _result, _accordingPaper );
+                        substituteNormalSqrtLess( sub.radicand(), sub.constantPart(), sub.factor(), s, _result, _accordingPaper );
                         break;
                     }
                     case smtrat::Constraint::GREATER:
                     {
-                        substituteNormalSqrtLess( _cons, _subs, sub.radicand(), sub.constantPart(), sub.factor(), -s, _result, _accordingPaper );
+                        substituteNormalSqrtLess( sub.radicand(), sub.constantPart(), sub.factor(), -s, _result, _accordingPaper );
                         break;
                     }
                     case smtrat::Constraint::LEQ:
                     {
-                        substituteNormalSqrtLeq( _cons, _subs, sub.radicand(), sub.constantPart(), sub.factor(), s, _result, _accordingPaper );
+                        substituteNormalSqrtLeq( sub.radicand(), sub.constantPart(), sub.factor(), s, _result, _accordingPaper );
                         break;
                     }
                     case smtrat::Constraint::GEQ:
                     {
-                        substituteNormalSqrtLeq( _cons, _subs, sub.radicand(), sub.constantPart(), sub.factor(), -s, _result, _accordingPaper );
+                        substituteNormalSqrtLeq( sub.radicand(), sub.constantPart(), sub.factor(), -s, _result, _accordingPaper );
                         break;
                     }
                     default:
@@ -201,9 +201,7 @@ namespace vs
         simplify( _result, _conflictingVariables, _solutionSpace );
     }
 
-    void substituteNormalSqrtEq( const smtrat::Constraint* _cons,
-                                 const Substitution& _subs,
-                                 const smtrat::Polynomial& _radicand,
+    void substituteNormalSqrtEq( const smtrat::Polynomial& _radicand,
                                  const smtrat::Polynomial& _q,
                                  const smtrat::Polynomial& _r,
                                  DisjunctionOfConstraintConjunctions& _result,
@@ -241,9 +239,7 @@ namespace vs
         }
     }
 
-    void substituteNormalSqrtNeq( const smtrat::Constraint* _cons,
-                                  const Substitution& _subs,
-                                  const smtrat::Polynomial& _radicand,
+    void substituteNormalSqrtNeq( const smtrat::Polynomial& _radicand,
                                   const smtrat::Polynomial& _q,
                                   const smtrat::Polynomial& _r,
                                   DisjunctionOfConstraintConjunctions& _result,
@@ -274,9 +270,7 @@ namespace vs
         }
     }
 
-    void substituteNormalSqrtLess( const smtrat::Constraint* _cons,
-                                   const Substitution& _subs,
-                                   const smtrat::Polynomial& _radicand,
+    void substituteNormalSqrtLess( const smtrat::Polynomial& _radicand,
                                    const smtrat::Polynomial& _q,
                                    const smtrat::Polynomial& _r,
                                    const smtrat::Polynomial& _s,
@@ -336,9 +330,7 @@ namespace vs
         }
     }
 
-    void substituteNormalSqrtLeq( const smtrat::Constraint* _cons,
-                                  const Substitution& _subs,
-                                  const smtrat::Polynomial& _radicand,
+    void substituteNormalSqrtLeq( const smtrat::Polynomial& _radicand,
                                   const smtrat::Polynomial& _q,
                                   const smtrat::Polynomial& _r,
                                   const smtrat::Polynomial& _s,

@@ -34,7 +34,7 @@ using namespace std;
 
 namespace smtrat
 {
-    CNFerModule::CNFerModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+    CNFerModule::CNFerModule( ModuleType _type, const Formula* const _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         mFirstNotCheckedFormula()
     {

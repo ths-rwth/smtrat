@@ -56,7 +56,7 @@ namespace smtrat
 {
     namespace lra
     {
-        typedef unsigned EntryID;
+        typedef size_t EntryID;
         static EntryID LAST_ENTRY_ID = 0;
 
         template<typename T>
@@ -67,8 +67,8 @@ namespace smtrat
                 EntryID  mDown;
                 EntryID  mLeft;
                 EntryID  mRight;
-                unsigned mRowNumber;
-                unsigned mColumnNumber;
+                size_t mRowNumber;
+                size_t mColumnNumber;
                 T        mpContent;
 
             public:
@@ -86,8 +86,8 @@ namespace smtrat
                               EntryID _down,
                               EntryID _left,
                               EntryID _right,
-                              unsigned _rowNumber,
-                              unsigned _columnNumber,
+                              size_t _rowNumber,
+                              size_t _columnNumber,
                               const T& _content ):
                     mUp( _up ),
                     mDown( _down ),
@@ -152,22 +152,22 @@ namespace smtrat
                     mRight = _right;
                 }
 
-                unsigned rowNumber() const
+                size_t rowNumber() const
                 {
                     return mRowNumber;
                 }
 
-                void setRowNumber( unsigned _rowNumber )
+                void setRowNumber( size_t _rowNumber )
                 {
                     mRowNumber = _rowNumber;
                 }
 
-                unsigned columnNumber() const
+                size_t columnNumber() const
                 {
                     return mColumnNumber;
                 }
 
-                void setColumnNumber( unsigned _columnNumber )
+                void setColumnNumber( size_t _columnNumber )
                 {
                     mColumnNumber = _columnNumber;
                 }
@@ -195,24 +195,24 @@ namespace smtrat
                 struct TableauHead
                 {
                     EntryID   mStartEntry;
-                    unsigned  mSize;
+                    size_t  mSize;
                     Variable<T>* mName;
-                    unsigned  mActivity;
+                    size_t  mActivity;
                 };
             private:
-                unsigned                   mHeight;
-                unsigned                   mWidth;
-                unsigned                   mPivotingSteps;
+                size_t                   mHeight;
+                size_t                   mWidth;
+                size_t                   mPivotingSteps;
                 #ifdef LRA_USE_PIVOTING_STRATEGY
-                unsigned                   mRestarts;
-                unsigned                   mNextRestartBegin;
-                unsigned                   mNextRestartEnd;
+                size_t                   mRestarts;
+                size_t                   mNextRestartBegin;
+                size_t                   mNextRestartEnd;
                 #endif
                 smtrat::Formula::iterator  mDefaultBoundPosition;
                 std::stack<EntryID>        mUnusedIDs;
                 std::vector<TableauHead>   mRows;       // First element is the head of the row and the second the length of the row.
                 std::vector<TableauHead>   mColumns;    // First element is the end of the column and the second the length of the column.
-                std::set< unsigned >       mActiveRows;
+                std::set< size_t >       mActiveRows;
                 std::vector<TableauEntry<T> >* mpEntries;
                 Value<T>*                     mpTheta;
                 #ifdef LRA_REFINEMENT
@@ -224,7 +224,7 @@ namespace smtrat
                 class Iterator
                 {
                     private:
-                        unsigned                   mEntryID;
+                        EntryID                   mEntryID;
                         std::vector<TableauEntry<T> >* mpEntries;
 
                     public:
@@ -313,20 +313,20 @@ namespace smtrat
                 Tableau( smtrat::Formula::iterator );
                 ~Tableau();
 
-                void setSize( unsigned _expectedHeight, unsigned _expectedWidth )
+                void setSize( size_t _expectedHeight, size_t _expectedWidth )
                 {
                     mRows.reserve( _expectedHeight );
                     mColumns.reserve( _expectedWidth );
                     mpEntries->reserve( _expectedHeight*_expectedWidth+1 );
                 }
                 
-                unsigned size() const
+                size_t size() const
                 {
                     return mpEntries->capacity();
                 }
 
                 #ifdef LRA_USE_PIVOTING_STRATEGY
-                void setBlandsRuleStart( unsigned _start )
+                void setBlandsRuleStart( size_t _start )
                 {
                     mNextRestartEnd = _start;
                 }
@@ -370,12 +370,12 @@ namespace smtrat
                     --mColumns[_var.position()].mActivity;
                 }
 
-                unsigned numberOfPivotingSteps() const
+                size_t numberOfPivotingSteps() const
                 {
                     return mPivotingSteps;
                 }
                 
-                unsigned numberOfRestarts() const
+                size_t numberOfRestarts() const
                 {
                     return mRestarts;
                 }
@@ -411,7 +411,7 @@ namespace smtrat
                 bool betterEntry( EntryID, EntryID ) const;
                 std::vector< const Bound<T>* > getConflict( EntryID ) const;
                 std::vector< std::set< const Bound<T>* > > getConflictsFrom( EntryID ) const;
-                void updateBasicAssignments( unsigned, const Value<T>& );
+                void updateBasicAssignments( size_t, const Value<T>& );
                 void pivot( EntryID );
                 void updateDownwards( EntryID, std::vector<Iterator>&, std::vector<Iterator>& );
                 void updateUpwards( EntryID, std::vector<Iterator>&, std::vector<Iterator>& );
@@ -419,32 +419,32 @@ namespace smtrat
                 void rowRefinement( const TableauHead& );
                 void columnRefinement( const TableauHead& );
                 #endif
-                unsigned checkCorrectness() const;
-                bool rowCorrect( unsigned _rowNumber ) const;
+                size_t checkCorrectness() const;
+                bool rowCorrect( size_t _rowNumber ) const;
                 #ifdef LRA_CUTS_FROM_PROOFS
-                bool isDefining( unsigned, std::vector<unsigned>&, std::vector<T>&, T&, T& ) const;
-                bool isDefining_Easy( std::vector<unsigned>&, unsigned );
-                bool isDiagonal( unsigned, std::vector<unsigned>& );
-                unsigned position_DC( unsigned, std::vector<unsigned>& );
-                unsigned revert_diagonals( unsigned, std::vector<unsigned>& );
-                void invertColumn( unsigned );
-                void addColumns( unsigned, unsigned, T );
-                void multiplyRow( unsigned, T );
-                T Scalar_Product( Tableau<T>&, Tableau<T>&, unsigned, unsigned, T, std::vector<unsigned>&, std::vector<unsigned>& );
-                void calculate_hermite_normalform( std::vector<unsigned>& );
-                void invert_HNF_Matrix( std::vector<unsigned> );
-                bool create_cut_from_proof( Tableau<T>&, Tableau<T>&, unsigned&, T&, std::vector<T>&, std::vector<bool>&, smtrat::Polynomial&, std::vector<unsigned>&, std::vector<unsigned>&, Bound<T>*&);
+                bool isDefining( size_t, std::vector<size_t>&, std::vector<T>&, T&, T& ) const;
+                bool isDefining_Easy( std::vector<size_t>&, size_t );
+                bool isDiagonal( size_t, std::vector<size_t>& );
+                size_t position_DC( size_t, std::vector<size_t>& );
+                size_t revert_diagonals( size_t, std::vector<size_t>& );
+                void invertColumn( size_t );
+                void addColumns( size_t, size_t, T );
+                void multiplyRow( size_t, T );
+                T Scalar_Product( Tableau<T>&, Tableau<T>&, size_t, size_t, T, std::vector<size_t>&, std::vector<size_t>& );
+                void calculate_hermite_normalform( std::vector<size_t>& );
+                void invert_HNF_Matrix( std::vector<size_t> );
+                bool create_cut_from_proof( Tableau<T>&, Tableau<T>&, size_t&, T&, std::vector<T>&, std::vector<bool>&, smtrat::Polynomial&, std::vector<size_t>&, std::vector<size_t>&, Bound<T>*&);
                 #endif
                 #ifdef LRA_GOMORY_CUTS
-                const smtrat::Constraint* gomoryCut( const T&, unsigned, std::vector<const smtrat::Constraint*>& );
+                const smtrat::Constraint* gomoryCut( const T&, size_t, std::vector<const smtrat::Constraint*>& );
                 #endif
-                void printHeap( std::ostream& = std::cout, unsigned = 30, const std::string = "" ) const;
-                void printEntry( EntryID, std::ostream& = std::cout, unsigned = 20 ) const;
+                void printHeap( std::ostream& = std::cout, int = 30, const std::string = "" ) const;
+                void printEntry( EntryID, std::ostream& = std::cout, int = 20 ) const;
                 void printVariables( bool = true, std::ostream& = std::cout, const std::string = "" ) const;
                 #ifdef LRA_REFINEMENT
                 void printLearnedBounds( const std::string = "", std::ostream& = std::cout ) const;
                 #endif
-                void print( std::ostream& = std::cout, unsigned = 28, const std::string = "" ) const;
+                void print( std::ostream& = std::cout, int = 28, const std::string = "" ) const;
 
         };
 
@@ -513,7 +513,7 @@ namespace smtrat
             if( mUnusedIDs.empty() )
             {
                 mpEntries->push_back( TableauEntry<T>( LAST_ENTRY_ID, LAST_ENTRY_ID, LAST_ENTRY_ID, LAST_ENTRY_ID, 0, 0, _content ) );
-                return (mpEntries->size() - 1);
+                return ( ( mpEntries->size() ) - 1);
             }
             else
             {
@@ -709,8 +709,8 @@ namespace smtrat
             if( mPivotingSteps < mNextRestartEnd )
             {
                 #ifdef LRA_USE_OCCURENCE_STRATEGY
-                unsigned smallestRowSize = mWidth;
-                unsigned smallestColumnSize = mHeight;
+                size_t smallestRowSize = mWidth;
+                size_t smallestColumnSize = mHeight;
                 #endif
                 EntryID beginOfBestRow = LAST_ENTRY_ID;
                 EntryID beginOfFirstConflictRow = LAST_ENTRY_ID;
@@ -811,7 +811,7 @@ namespace smtrat
          * @return
          */
         template<typename T>
-        std::pair<EntryID,bool> Tableau<T>::isSuitable( unsigned _rowNumber, Value<T>& _theta ) const
+        std::pair<EntryID,bool> Tableau<T>::isSuitable( size_t _rowNumber, Value<T>& _theta ) const
         {
             EntryID bestEntry = LAST_ENTRY_ID;
             const TableauHead& _rowHead = mRows[_rowNumber];
@@ -1016,7 +1016,7 @@ namespace smtrat
         std::vector< std::set< const Bound<T>* > > Tableau<T>::getConflictsFrom( EntryID _rowEntry ) const
         {
             std::vector< std::set< const Bound<T>* > > conflicts = std::vector< std::set< const Bound<T>* > >();
-            for( unsigned rowNumber = (*mpEntries)[_rowEntry].rowNumber(); rowNumber < mRows.size(); ++rowNumber )
+            for( size_t rowNumber = (*mpEntries)[_rowEntry].rowNumber(); rowNumber < mRows.size(); ++rowNumber )
             {
                 // Upper bound is violated
                 if( mRows[rowNumber].mName->supremum() < mRows[rowNumber].mName->assignment() )
@@ -1118,7 +1118,7 @@ namespace smtrat
          * @param _change
          */
         template<typename T>
-        void Tableau<T>::updateBasicAssignments( unsigned _column, const Value<T>& _change )
+        void Tableau<T>::updateBasicAssignments( size_t _column, const Value<T>& _change )
         {
             if( mColumns[_column].mSize > 0 )
             {
@@ -1180,7 +1180,7 @@ namespace smtrat
             // Swap the row and the column head.
             rowHead.mName = columnHead.mName;
             columnHead.mName = nameTmp;
-            unsigned activityTmp = rowHead.mActivity;
+            size_t activityTmp = rowHead.mActivity;
             rowHead.mActivity = columnHead.mActivity;
             if( activityTmp == 0 && rowHead.mActivity > 0 )
             {
@@ -2082,9 +2082,9 @@ namespace smtrat
          * @return
          */
         template<typename T>
-        unsigned Tableau<T>::checkCorrectness() const
+        size_t Tableau<T>::checkCorrectness() const
         {
-            unsigned rowNumber = 0;
+            size_t rowNumber = 0;
             for( ; rowNumber < mRows.size(); ++rowNumber )
             {
                 if( !rowCorrect( rowNumber ) ) return rowNumber;
@@ -2097,7 +2097,7 @@ namespace smtrat
          * @return
          */
         template<typename T>
-        bool Tableau<T>::rowCorrect( unsigned _rowNumber ) const
+        bool Tableau<T>::rowCorrect( size_t _rowNumber ) const
         {
             smtrat::Polynomial sumOfNonbasics = *mRows[_rowNumber].mName->pExpression();
             Iterator rowEntry = Iterator( mRows[_rowNumber].mStartEntry, mpEntries );
@@ -2119,7 +2119,7 @@ namespace smtrat
          *         false,   otherwise   
          */
         template<typename T>
-        bool Tableau<T>::isDefining( unsigned row_index, std::vector<unsigned>& _variables, std::vector<T>& _coefficients, T& _lcmOfCoeffDenoms, T& max_value ) const
+        bool Tableau<T>::isDefining( size_t row_index, std::vector<size_t>& _variables, std::vector<T>& _coefficients, T& _lcmOfCoeffDenoms, T& max_value ) const
         {
             const Variable<T>& basic_var = *mRows.at(row_index).mName;
             Iterator row_iterator = Iterator( mRows.at(row_index).mStartEntry, mpEntries );
@@ -2174,7 +2174,7 @@ namespace smtrat
          *         false,   otherwise   
          */ 
         template<typename T>
-        bool Tableau<T>::isDefining_Easy(std::vector<unsigned>& dc_positions,unsigned row_index)
+        bool Tableau<T>::isDefining_Easy(std::vector<size_t>& dc_positions,size_t row_index)
         {
             auto vector_iterator = dc_positions.begin();
             while(vector_iterator != dc_positions.end())
@@ -2195,9 +2195,9 @@ namespace smtrat
          *         false,   otherwise   
          */        
         template<typename T>
-        bool Tableau<T>::isDiagonal(unsigned column_index , std::vector<unsigned>& diagonals)
+        bool Tableau<T>::isDiagonal(size_t column_index , std::vector<size_t>& diagonals)
         {
-        unsigned i=0;
+        size_t i=0;
         while(diagonals.at(i) != mColumns.size())
         {
             if(diagonals.at(i) == column_index)
@@ -2215,10 +2215,10 @@ namespace smtrat
          * 
          */ 
         template<typename T>
-        unsigned Tableau<T>::position_DC(unsigned row_index,std::vector<unsigned>& dc_positions)
+        size_t Tableau<T>::position_DC(size_t row_index,std::vector<size_t>& dc_positions)
         {
             auto vector_iterator = dc_positions.begin();
-            unsigned i=0;
+            size_t i=0;
             while(vector_iterator != dc_positions.end())
             {
                 if(*vector_iterator == row_index)
@@ -2236,9 +2236,9 @@ namespace smtrat
          * index column_index in the permutated tableau.   
          */        
         template<typename T>
-        unsigned Tableau<T>::revert_diagonals(unsigned column_index,std::vector<unsigned>& diagonals)
+        size_t Tableau<T>::revert_diagonals(size_t column_index,std::vector<size_t>& diagonals)
         {
-            unsigned i=0;
+            size_t i=0;
             while(diagonals.at(i) != mColumns.size())   
             {
                 if(diagonals.at(i) == column_index)
@@ -2256,7 +2256,7 @@ namespace smtrat
          * @return   
          */        
         template<typename T>
-        void Tableau<T>::invertColumn(unsigned column_index)
+        void Tableau<T>::invertColumn(size_t column_index)
         {   
             Iterator column_iterator = Iterator(mColumns.at(column_index).mStartEntry, mpEntries);   
             while(true)
@@ -2280,7 +2280,7 @@ namespace smtrat
          * @return 
          */
         template<class T>
-        void Tableau<T>::addColumns( unsigned columnA_index, unsigned columnB_index, T multiple)
+        void Tableau<T>::addColumns( size_t columnA_index, size_t columnB_index, T multiple)
         {
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
             std::cout << __func__ << "( " << columnA_index << ", " << columnB_index << ", " << multiple << " )" << std::endl;
@@ -2487,7 +2487,7 @@ namespace smtrat
          * @return 
          */        
         template<typename T> 
-        void Tableau<T>::multiplyRow(unsigned row_index,T multiple)
+        void Tableau<T>::multiplyRow(size_t row_index,T multiple)
         {            
             Iterator row_iterator = Iterator(mRows.at(row_index).mStartEntry, mpEntries);
             while(true)
@@ -2512,14 +2512,14 @@ namespace smtrat
          * @return   the value (T) of the scalarproduct.
          */        
         template<typename T> 
-        T Tableau<T>::Scalar_Product(Tableau<T>& A, Tableau<T>& B,unsigned rowA, unsigned columnB, T lcm,std::vector<unsigned>& diagonals,std::vector<unsigned>& dc_positions) 
+        T Tableau<T>::Scalar_Product(Tableau<T>& A, Tableau<T>& B,size_t rowA, size_t columnB, T lcm,std::vector<size_t>& diagonals,std::vector<size_t>& dc_positions) 
         {
             Iterator rowA_iterator = Iterator(A.mRows.at(rowA).mStartEntry,A.mpEntries);
             T result = T(0);
             while(true)
             {
                 Iterator columnB_iterator = Iterator(B.mColumns.at(columnB).mStartEntry,B.mpEntries);
-                unsigned actual_column = revert_diagonals((*rowA_iterator).columnNumber(),diagonals); 
+                size_t actual_column = revert_diagonals((*rowA_iterator).columnNumber(),diagonals); 
                 while(true)
                 {
                     if(actual_column == position_DC((*columnB_iterator).rowNumber(),dc_positions))
@@ -2557,9 +2557,9 @@ namespace smtrat
          * @return   the vector containing the indices of the diagonal elements.
          */        
         template<typename T> 
-        void Tableau<T>::calculate_hermite_normalform(std::vector<unsigned>& diagonals)
+        void Tableau<T>::calculate_hermite_normalform(std::vector<size_t>& diagonals)
         { 
-            for(unsigned i=0;i<mColumns.size();i++)
+            for(size_t i=0;i<mColumns.size();i++)
             {
                 diagonals.push_back(mColumns.size());
             }       
@@ -2570,13 +2570,13 @@ namespace smtrat
             /*
              * Iterate through all rows in order to construct the HNF.
              */
-            for(unsigned i=0;i<mRows.size();i++)
+            for(size_t i=0;i<mRows.size();i++)
             {
-                unsigned elim_pos=mColumns.size(),added_pos=mColumns.size();
+                size_t elim_pos=mColumns.size(),added_pos=mColumns.size();
                 EntryID added_entry,elim_entry;
                 T elim_content, added_content;     
                 row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
-                unsigned number_of_entries = mRows.at(i).mSize;
+                size_t number_of_entries = mRows.at(i).mSize;
                 first_loop = true;
                 first_free = true;
                 just_deleted = false;
@@ -2584,8 +2584,8 @@ namespace smtrat
                  * Count how many zero entries of diagonal columns are in the
                  * current row.
                  */
-                unsigned diag_zero_entries=0;
-                for(unsigned j=0;j<i;j++)
+                size_t diag_zero_entries=0;
+                for(size_t j=0;j<i;j++)
                 {
                     Iterator diagonal_iterator = Iterator(mColumns.at(diagonals.at(j)).mStartEntry, mpEntries);
                     while((*diagonal_iterator).rowNumber() > i && !diagonal_iterator.columnBegin())
@@ -2648,7 +2648,7 @@ namespace smtrat
                     while(elim_pos == added_pos)
                     { 
                         T content = (*mpEntries)[row_iterator.entryID()].content();
-                        unsigned column = (*mpEntries)[row_iterator.entryID()].columnNumber();   
+                        size_t column = (*mpEntries)[row_iterator.entryID()].columnNumber();   
                         if(!isDiagonal(column,diagonals))
                         {    
                             if(first_free)
@@ -2780,7 +2780,7 @@ namespace smtrat
          * @return 
          */
         template<typename T> 
-        void Tableau<T>::invert_HNF_Matrix(std::vector<unsigned> diagonals)
+        void Tableau<T>::invert_HNF_Matrix(std::vector<size_t> diagonals)
         {
             /*
              * Iterate through the tableau beginning in the the last
@@ -2812,7 +2812,7 @@ namespace smtrat
                     while(true)
                     {
                         entry_changed = false;
-                        unsigned j = i + 1;
+                        size_t j = i + 1;
                         T new_value = T(0);
                         while(j < mRows.size())
                         {
@@ -2853,14 +2853,14 @@ namespace smtrat
          *         false,   otherwise   
          */
         template<class T>
-        bool Tableau<T>::create_cut_from_proof(Tableau<T>& Inverted_Tableau, Tableau<T>& DC_Tableau, unsigned& row_index, T& _lcm,std::vector<T>& coefficients,std::vector<bool>& non_basics_proof, smtrat::Polynomial& cut,std::vector<unsigned>& diagonals,std::vector<unsigned>& dc_positions, Bound<T>*& upper_lower)
+        bool Tableau<T>::create_cut_from_proof(Tableau<T>& Inverted_Tableau, Tableau<T>& DC_Tableau, size_t& row_index, T& _lcm,std::vector<T>& coefficients,std::vector<bool>& non_basics_proof, smtrat::Polynomial& cut,std::vector<size_t>& diagonals,std::vector<size_t>& dc_positions, Bound<T>*& upper_lower)
         {
             Value<T> result = T(0);
             Iterator row_iterator = Iterator(mRows.at(row_index).mStartEntry,mpEntries); 
             /*
              * Calculate H^(-1)*b 
              */
-            unsigned i;
+            size_t i;
             while(true)
             {
                 i = revert_diagonals((*row_iterator).columnNumber(),diagonals);
@@ -2895,7 +2895,7 @@ namespace smtrat
                }
                // Construct the Cut
                T product = T(0);
-               unsigned i=0;
+               size_t i=0;
                while(i < Inverted_Tableau.mRows.size())
                {
                    product = Scalar_Product(Inverted_Tableau,DC_Tableau,row_index,i,_lcm,diagonals,dc_positions);
@@ -2937,7 +2937,7 @@ namespace smtrat
          *         otherwise the valid constraint is returned.   
          */ 
         template<typename T>
-        const smtrat::Constraint* Tableau<T>::gomoryCut( const T& _ass, unsigned _rowPosition, vector<const smtrat::Constraint*>& _constrVec )
+        const smtrat::Constraint* Tableau<T>::gomoryCut( const T& _ass, size_t _rowPosition, vector<const smtrat::Constraint*>& _constrVec )
         {     
             Iterator row_iterator = Iterator( mRows.at(_rowPosition).mStartEntry, mpEntries );
             std::vector<GOMORY_SET> splitting = std::vector<GOMORY_SET>();
@@ -3061,7 +3061,7 @@ namespace smtrat
          * @param _init
          */
         template<typename T>
-        void Tableau<T>::printHeap( std::ostream& _out, unsigned _maxEntryLength, const std::string _init ) const
+        void Tableau<T>::printHeap( std::ostream& _out, int _maxEntryLength, const std::string _init ) const
         {
             for( EntryID pos = 1; pos < mpEntries->size(); ++pos )
             {
@@ -3078,7 +3078,7 @@ namespace smtrat
          * @param _maxEntryLength
          */
         template<typename T>
-        void Tableau<T>::printEntry( EntryID _entry, std::ostream& _out, unsigned _maxEntryLength ) const
+        void Tableau<T>::printEntry( EntryID _entry, std::ostream& _out, int _maxEntryLength ) const
         {
             _out << std::setw( 4 ) << _entry << ": ";
             std::stringstream out;
@@ -3187,10 +3187,11 @@ namespace smtrat
          * @param _init
          */
         template<typename T>
-        void Tableau<T>::print( std::ostream& _out, unsigned _maxEntryLength, const std::string _init ) const
+        void Tableau<T>::print( std::ostream& _out, int _maxEntryLength, const std::string _init ) const
         {
             char     frameSign     = '-';
-            _out << _init << std::setw( _maxEntryLength * (mWidth + 1) ) << std::setfill( frameSign ) << "" << std::endl;
+            int width = mWidth >= (unsigned) INT_MAX ? INT_MAX - 1 : (int) mWidth; 
+            _out << _init << std::setw( _maxEntryLength * (width + 1) ) << std::setfill( frameSign ) << "" << std::endl;
             _out << _init << std::setw( _maxEntryLength ) << std::setfill( ' ' ) << "#";
             for( typename std::vector<TableauHead>::const_iterator column = mColumns.begin(); column != mColumns.end(); ++column )
             {
@@ -3199,7 +3200,7 @@ namespace smtrat
                 _out << std::setw( _maxEntryLength ) << out.str() + " #";
             }
             _out << std::endl;
-            _out << _init << std::setw( _maxEntryLength * (mWidth + 1) ) << std::setfill( '#' ) << "" << std::endl;
+            _out << _init << std::setw( _maxEntryLength * (width + 1) ) << std::setfill( '#' ) << "" << std::endl;
             _out << std::setfill( ' ' );
             for( typename std::vector<TableauHead>::const_iterator row = mRows.begin(); row != mRows.end(); ++row )
             {
@@ -3208,10 +3209,10 @@ namespace smtrat
                 out << *row->mName->pExpression();
                 _out << std::setw( _maxEntryLength ) << out.str() + " #";
                 Iterator rowIter = Iterator( row->mStartEntry, mpEntries );
-                unsigned currentColumn = 0;
+                size_t currentColumn = 0;
                 while( true )
                 {
-                    for( unsigned i = currentColumn; i < (*rowIter).columnNumber(); ++i )
+                    for( size_t i = currentColumn; i < (*rowIter).columnNumber(); ++i )
                     {
                         _out << std::setw( _maxEntryLength ) << "0 #";
                     }
@@ -3221,7 +3222,7 @@ namespace smtrat
                     currentColumn = (*rowIter).columnNumber()+1;
                     if( rowIter.rowEnd() )
                     {
-                        for( unsigned i = currentColumn; i < mWidth; ++i )
+                        for( size_t i = currentColumn; i < mWidth; ++i )
                         {
                             _out << std::setw( _maxEntryLength ) << "0 #";
                         }
@@ -3231,7 +3232,7 @@ namespace smtrat
                     rowIter.right();
                 }
             }
-            _out << _init << std::setw( _maxEntryLength * (mWidth + 1) ) << std::setfill( frameSign ) << "" << std::endl;
+            _out << _init << std::setw( _maxEntryLength * (width + 1) ) << std::setfill( frameSign ) << "" << std::endl;
             _out << std::setfill( ' ' );
         }
     }    // end namspace lra

@@ -31,7 +31,7 @@ using namespace std;
 
 namespace vs
 {
-    Condition::Condition( const smtrat::Constraint* _cons, unsigned _val, bool _flag, const Set& _oConds, bool _rAdded ):
+    Condition::Condition( const smtrat::Constraint* _cons, size_t _val, bool _flag, const Set& _oConds, bool _rAdded ):
         mFlag( _flag ),
         mRecentlyAdded( _rAdded ),
         mValuation( _val ),
@@ -64,7 +64,7 @@ namespace vs
      *
      * @return A valuation of the constraint according to an heuristic.
      */
-    double Condition::valuate( const carl::Variable& _consideredVariable, unsigned _maxNumberOfVars, bool _forElimination, bool _preferEquation ) const
+    double Condition::valuate( const carl::Variable& _consideredVariable, size_t _maxNumberOfVars, bool _forElimination, bool _preferEquation ) const
     {
         if( !constraint().hasVariable( _consideredVariable ) )
             return 0;

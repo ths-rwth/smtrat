@@ -66,8 +66,6 @@ namespace vs
      * The term then looks like:    ------------------
      *                                      _s
      *
-     * @param _cons The constraint to substitute in.
-     * @param _subs The substitution to apply.
      * @param _radicand The radicand of the square root.
      * @param _q The summand not containing the square root.
      * @param _r The coefficient of the radicand.
@@ -76,7 +74,7 @@ namespace vs
      *                        for real algebra - the quadratic case and beyond." by Volker Weispfenning (true) or in an adapted way which omits a higher
      *                        degree in the result by splitting the result in more cases (false).
      */
-    void substituteNormalSqrtEq( const smtrat::Constraint* _cons, const Substitution& _subs, const smtrat::Polynomial& _radicand, const smtrat::Polynomial& _q, const smtrat::Polynomial& _r, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
+    void substituteNormalSqrtEq( const smtrat::Polynomial& _radicand, const smtrat::Polynomial& _q, const smtrat::Polynomial& _r, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
     
     /**
      * Sub-method of substituteNormalSqrt, where applying the substitution led to a term
@@ -86,8 +84,6 @@ namespace vs
      * The term then looks like:    -----------------------
      *                                      _s
      *
-     * @param _cons The constraint to substitute in.
-     * @param _subs The substitution to apply.
      * @param _radicand The radicand of the square root.
      * @param _q The summand not containing the square root.
      * @param _r The coefficient of the radicand.
@@ -96,7 +92,7 @@ namespace vs
      *                        for real algebra - the quadratic case and beyond." by Volker Weispfenning (true) or in an adapted way which omits a higher
      *                        degree in the result by splitting the result in more cases (false).
      */
-    void substituteNormalSqrtNeq( const smtrat::Constraint* _cons, const Substitution& _subs, const smtrat::Polynomial& _radicand, const smtrat::Polynomial& _q, const smtrat::Polynomial& _r, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
+    void substituteNormalSqrtNeq( const smtrat::Polynomial& _radicand, const smtrat::Polynomial& _q, const smtrat::Polynomial& _r, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
     
     /**
      * Sub-method of substituteNormalSqrt, where applying the substitution led to a term
@@ -106,8 +102,6 @@ namespace vs
      * The term then looks like:    ----------------------
      *                                      _s
      *
-     * @param _cons The constraint to substitute in.
-     * @param _subs The substitution to apply.
      * @param _radicand The radicand of the square root.
      * @param _q The summand not containing the square root.
      * @param _r The coefficient of the radicand.
@@ -117,7 +111,7 @@ namespace vs
      *                        for real algebra - the quadratic case and beyond." by Volker Weispfenning (true) or in an adapted way which omits a higher
      *                        degree in the result by splitting the result in more cases (false).
      */
-    void substituteNormalSqrtLess( const smtrat::Constraint* _cons, const Substitution& _subs, const smtrat::Polynomial& _radicand, const smtrat::Polynomial& _q, const smtrat::Polynomial& _r, const smtrat::Polynomial& _s, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
+    void substituteNormalSqrtLess( const smtrat::Polynomial& _radicand, const smtrat::Polynomial& _q, const smtrat::Polynomial& _r, const smtrat::Polynomial& _s, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
     
     /**
      * Sub-method of substituteNormalSqrt, where applying the substitution led to a term
@@ -127,8 +121,6 @@ namespace vs
      * The term then looks like:    ----------------------
      *                                      _s
      *
-     * @param _cons The constraint to substitute in.
-     * @param _subs The substitution to apply.
      * @param _radicand The radicand of the square root.
      * @param _q The summand not containing the square root.
      * @param _r The coefficient of the radicand.
@@ -138,7 +130,7 @@ namespace vs
      *                        for real algebra - the quadratic case and beyond." by Volker Weispfenning (true) or in an adapted way which omits a higher
      *                        degree in the result by splitting the result in more cases (false).
      */
-    void substituteNormalSqrtLeq( const smtrat::Constraint* _cons, const Substitution& _subs, const smtrat::Polynomial& _radicand, const smtrat::Polynomial& _q, const smtrat::Polynomial& _r, const smtrat::Polynomial& _s, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
+    void substituteNormalSqrtLeq( const smtrat::Polynomial& _radicand, const smtrat::Polynomial& _q, const smtrat::Polynomial& _r, const smtrat::Polynomial& _s, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
     
     /**
      * Applies the given substitution to the given constraint, where the substitution

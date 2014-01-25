@@ -33,7 +33,7 @@ using namespace std;
 
 namespace smtrat
 {
-    unsigned StrategyGraph::Edge::mPriorityAllocator = 1;
+    size_t StrategyGraph::Edge::mPriorityAllocator = 1;
 
     StrategyGraph::StrategyGraph():
         mStrategyGraph(),
@@ -52,7 +52,7 @@ namespace smtrat
         }
     }
 
-    void StrategyGraph::addCondition( unsigned _from, unsigned _to, ConditionEvaluation _conditionEvaluation )
+    void StrategyGraph::addCondition( size_t _from, size_t _to, ConditionEvaluation _conditionEvaluation )
     {
         assert( _from<mStrategyGraph.size() );
         assert( _to<mStrategyGraph.size() );
@@ -66,9 +66,9 @@ namespace smtrat
         mStrategyGraph[ _from ]->addSuccessorVertex( _to, _conditionEvaluation );
     }
 
-    unsigned StrategyGraph::setThreadIds( unsigned _from, unsigned _threadId )
+    size_t StrategyGraph::setThreadIds( size_t _from, size_t _threadId )
     {
-        unsigned threadId = _threadId;
+        size_t threadId = _threadId;
         vector<Edge>& edges = mStrategyGraph[ _from ]->edgeList();
         if( edges.size()!=0 )
         {
@@ -97,20 +97,20 @@ namespace smtrat
         return threadId;
     }
 
-    unsigned StrategyGraph::addBackend( unsigned _at, ModuleType _moduleType, ConditionEvaluation _conditionEvaluation )
+    size_t StrategyGraph::addBackend( size_t _at, ModuleType _moduleType, ConditionEvaluation _conditionEvaluation )
     {
         mStrategyGraph.push_back( new Vertex( _moduleType ) );
         addCondition( _at, mStrategyGraph.size()-1, _conditionEvaluation );
         return mStrategyGraph.size()-1;
     }
 
-    void StrategyGraph::addBacklink( unsigned _from, unsigned _to, ConditionEvaluation _conditionEvaluation )
+    void StrategyGraph::addBacklink( size_t _from, size_t _to, ConditionEvaluation _conditionEvaluation )
     {
         addCondition( _from, _to, _conditionEvaluation );
     }
 
     // Returns module types ordered by priority, highest priority (lowest value) first
-    vector< pair< thread_priority, ModuleType > > StrategyGraph::getNextModuleTypes( unsigned _from, Condition _condition )
+    vector< pair< thread_priority, ModuleType > > StrategyGraph::getNextModuleTypes( size_t _from, Condition _condition )
     {
         vector< pair< thread_priority, ModuleType > > result = vector< pair< thread_priority, ModuleType > >();
         const vector<Edge>& edges = mStrategyGraph[ _from ]->edgeList();
@@ -124,31 +124,4 @@ namespace smtrat
         }
         return result;
     }
-
-
-
-
-
-
-
-
-// To be deleted
-//    void StrategyGraph::tmpPrint()
-//    {
-//        std::cout << std::endl << std::endl << "GRAPH:" << std::endl << std::endl;
-//        for( unsigned i=0; i<mStrategyGraph.size(); ++i )
-//        {
-//            std::cout << "Id: " << i << std::endl;
-//            const vector<Edge>& edges = mStrategyGraph.at(i)->edgeList();
-//            for( auto edge = edges.begin(); edge!=edges.end(); ++edge )
-//            {
-//                std::cout << "  Succ: " << edge->successorVertex() << std::endl;
-//                std::cout << "  Thread: " << edge->threadId() << std::endl;
-//                std::cout << "  Priority: " << edge->priority() << std::endl;
-//                cout << std::endl;
-//            }
-//            std::cout << std::endl;
-//        }
-//    }
-
 }    // namespace smtrat

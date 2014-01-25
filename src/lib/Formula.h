@@ -265,7 +265,7 @@ namespace smtrat
              * @return A pointer to the list of sub-formulas of this formula. Note, that
              *          this formula has to be a Boolean combination, if you invoke this method.
              */
-            std::list<Formula*>* const pSubformulas()
+            std::list<Formula*>* pSubformulas()
             {
                 assert( isBooleanCombination() );
                 return mpSubformulas;
@@ -285,7 +285,7 @@ namespace smtrat
              * @return A pointer to the constraint represented by this formula. Note, that
              *          this formula has to be of type CONSTRAINT, if you invoke this method.
              */
-            const Constraint* const pConstraint() const
+            const Constraint* pConstraint() const
             {
                 assert( mType == CONSTRAINT || mType == TTRUE || mType == FFALSE );
                 return mpConstraint;
@@ -325,7 +325,7 @@ namespace smtrat
              * @return A pointer to the father of this formula. Note, that this formula has 
              *          to have a father if you invoke this method.
              */
-            Formula* const pFather()
+            Formula* pFather()
             {
                 return mpFather;
             }
@@ -334,7 +334,7 @@ namespace smtrat
              * @return A pointer to the father of this formula. Note, that this formula has 
              *          to have a father if you invoke this method.
              */
-            const Formula* const cpFather() const
+            const Formula* cpFather() const
             {
                 return mpFather;
             }
@@ -352,7 +352,7 @@ namespace smtrat
             /**
              * @return The number of sub-formulas of this formula.
              */
-            unsigned size() const
+            size_t size() const
             {
                 if( mType == BOOL || mType == CONSTRAINT || mType == TTRUE || mType == FFALSE )
                     return 1;

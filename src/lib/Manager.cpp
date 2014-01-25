@@ -217,7 +217,7 @@ namespace smtrat
                 foundAnswers.push_back( _foundAnswer );
                 Module* pBackend = backendFactory->second->create( iter->second, _requiredBy->pPassedFormula(), foundAnswers, this );
                 mGeneratedModules.push_back( pBackend );
-                pBackend->setId( mGeneratedModules.size()-1 );
+                pBackend->setId( (unsigned)mGeneratedModules.size()-1 );
                 pBackend->setThreadPriority( iter->first );
                 allBackends.push_back( pBackend );
                 backends.push_back( pBackend );

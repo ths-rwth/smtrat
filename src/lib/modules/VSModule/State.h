@@ -96,14 +96,14 @@ namespace vs
         /// A heuristically determined value stating the expected difficulty of this state's considered
         /// conditions to be solved by a backend. The higher this value, the easier it should be to
         /// solve this state's considered conditions.
-        unsigned              mBackendCallValuation;
+        size_t              mBackendCallValuation;
         /// A unique id identifying this state.
-        unsigned		      mID;
+        size_t		      mID;
         /// A heuristically determined value stating the expected difficulty of this state's considered
         /// conditions to be solved by virtual substitution. The higher this value, the easier it should be to
         /// solve this state's considered conditions. Furthermore, this value enforces currently a depth first
         /// search, as a child has always a higher valuation than its father.
-        unsigned		      mValuation;
+        size_t		      mValuation;
         /// The type of this state, which states whether this state has still a substitution to apply or either
         /// test candidates shall be generated or a new combination of the substitution results must be found
         /// in order to consider it next.
@@ -240,7 +240,7 @@ namespace vs
          * @return The heuristically determined valuation of this state (see for the description of the
          *          corresponding member).
          */
-        const unsigned& valuation() const
+        size_t valuation() const
         {
             return mValuation;
         }
@@ -248,7 +248,7 @@ namespace vs
         /**
          * @return The valuation of the state's considered conditions for a possible backend call.
          */
-        const unsigned& backendCallValuation() const
+        size_t backendCallValuation() const
         {
             return mBackendCallValuation;
         }
@@ -256,7 +256,7 @@ namespace vs
         /**
          * @return The id of this state.
          */
-        unsigned id() const
+        size_t id() const
         {
             return mID;
         }
@@ -264,7 +264,7 @@ namespace vs
         /**
          * @return A reference to the id of this state.
          */
-        unsigned& rID()
+        size_t& rID()
         {
             return mID;
         }
@@ -288,7 +288,7 @@ namespace vs
         /**
          * @return A pointer to the father of this state. It is NULL if this state is the root.
          */
-        State* const pFather() const
+        State* pFather() const
         {
             return mpFather;
         }
@@ -744,7 +744,7 @@ namespace vs
          * @return true, if it has a condition and a variable in it to generate test candidates for;
          *          false, otherwise.
          */
-        bool bestCondition( const Condition*& _bestCondition, unsigned _numberOfAllVariables, bool _preferEquation );
+        bool bestCondition( const Condition*& _bestCondition, size_t _numberOfAllVariables, bool _preferEquation );
         
         /**
          * Checks if the given constraint already exists as condition in the state.
@@ -863,7 +863,7 @@ namespace vs
          * @param _recentlyAdded Is the condition a recently added one.
          * @sideeffect The state can obtain a new condition.
          */
-        void addCondition( const smtrat::Constraint* _constraint, const Condition::Set& _originalConditions, unsigned _valutation, bool _recentlyAdded );
+        void addCondition( const smtrat::Constraint* _constraint, const Condition::Set& _originalConditions, size_t _valutation, bool _recentlyAdded );
             
         /**
          * Checks whether no condition in this state points to a deleted condition.
@@ -1032,7 +1032,7 @@ namespace vs
          * @param _currentTreeDepth The tree depth of the state from which this method is invoked.
          * @return The greatest level, where a condition of the covering set has been created.
          */
-        static unsigned coveringSet( const ConditionSetSetSet& _conflictSets, Condition::Set& _minCovSet, unsigned _currentTreeDepth );
+        static size_t coveringSet( const ConditionSetSetSet& _conflictSets, Condition::Set& _minCovSet, unsigned _currentTreeDepth );
     };
 } // end namspace vs
 #endif

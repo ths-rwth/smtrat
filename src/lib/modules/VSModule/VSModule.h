@@ -50,7 +50,7 @@ namespace smtrat
 
             // Type and object definitions.
             
-            typedef std::pair<unsigned, std::pair<unsigned, unsigned> > UnsignedTriple;
+            typedef std::pair<size_t, std::pair<size_t, size_t> > UnsignedTriple;
             
             struct unsignedTripleCmp
             {
@@ -84,9 +84,9 @@ namespace smtrat
             // Members.
             bool                        mConditionsChanged;
             bool                        mInconsistentConstraintAdded;
-            unsigned                    mIDCounter;
+            size_t                    mIDCounter;
             #ifdef VS_STATISTICS
-            unsigned                    mStepCounter;
+            size_t                    mStepCounter;
             #endif
             vs::State*                  mpStateTree;
             Variables                   mAllVariables;
@@ -142,8 +142,8 @@ namespace smtrat
             EvalRationalMap getIntervalAssignment( const vs::State* _state ) const;
             bool solutionInDomain();
             static void allMinimumCoveringSets( const vs::ConditionSetSetSet&, vs::ConditionSetSet& );
-            bool adaptPassedFormula( const vs::State&, FormulaConditionMap&, bool = false );
-            Answer runBackendSolvers( vs::State*, bool = false );
+            bool adaptPassedFormula( const vs::State&, FormulaConditionMap& );
+            Answer runBackendSolvers( vs::State* );
             #ifdef VS_LOG_INTERMEDIATE_STEPS
             void checkAnswer() const;
             void logConditions( const vs::State&, bool, const std::string& ) const;

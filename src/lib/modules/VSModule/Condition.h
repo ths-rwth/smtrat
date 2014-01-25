@@ -59,7 +59,7 @@ namespace vs
 
             mutable bool              mFlag;
             mutable bool              mRecentlyAdded;
-            mutable unsigned          mValuation;
+            mutable size_t          mValuation;
             const smtrat::Constraint* mpConstraint;
             Set*                      mpOriginalConditions;
             
@@ -67,7 +67,7 @@ namespace vs
         public:
 
             // Constructors:
-            Condition( const smtrat::Constraint*, unsigned = 0, bool = false, const Set& = Set(), bool = false );
+            Condition( const smtrat::Constraint*, size_t = 0, bool = false, const Set& = Set(), bool = false );
             Condition( const Condition& );
 
             // Destructor:
@@ -89,17 +89,17 @@ namespace vs
                 return mRecentlyAdded;
             }
 
-            const bool recentlyAdded() const
+            bool recentlyAdded() const
             {
                 return mRecentlyAdded;
             }
 
-            unsigned& rValuation() const
+            size_t& rValuation() const
             {
                 return mValuation;
             }
 
-            unsigned valuation() const
+            size_t valuation() const
             {
                 return mValuation;
             }
@@ -124,7 +124,7 @@ namespace vs
                 return *mpOriginalConditions;
             }
 
-            double valuate( const carl::Variable&, unsigned, bool, bool ) const;
+            double valuate( const carl::Variable&, size_t, bool, bool ) const;
             bool operator ==( const Condition& ) const;
             bool operator <( const Condition& ) const;
             void print( std::ostream& = std::cout ) const;

@@ -145,12 +145,12 @@ namespace smtrat
                     return mType != UPPER;
                 }
 
-                const smtrat::Constraint* const pAsConstraint() const
+                const smtrat::Constraint* pAsConstraint() const
                 {
                     return mpAsConstraint;
                 }
                 
-                const smtrat::Constraint* const neqRepresentation() const
+                const smtrat::Constraint* neqRepresentation() const
                 {
                     return mpInfo->neqRepresentation;
                 }
@@ -169,7 +169,7 @@ namespace smtrat
                     mpInfo->exists = true;
                 }
 
-                std::vector<std::set< const smtrat::Formula* > >* const pOrigins() const
+                std::vector<std::set< const smtrat::Formula* > >* pOrigins() const
                 {
                     return mpOrigins;
                 }

@@ -187,7 +187,7 @@ namespace smtrat
                 mThreadPriority = _threadPriority;
             }
 
-            inline const Formula* const pReceivedFormula() const
+            inline const Formula* pReceivedFormula() const
             {
                 return mpReceivedFormula;
             }
@@ -197,7 +197,7 @@ namespace smtrat
                 return *mpReceivedFormula;
             }
 
-            inline const Formula* const pPassedFormula() const
+            inline const Formula* pPassedFormula() const
             {
                 return mpPassedFormula;
             }
@@ -217,7 +217,7 @@ namespace smtrat
                 return mInfeasibleSubsets;
             }
 
-            const ModuleType type() const
+            const ModuleType& type() const
             {
                 return mModuleType;
             }

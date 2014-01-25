@@ -616,7 +616,7 @@ namespace smtrat
         // Get the backends to be considered from the manager.
         mUsedBackends = mpManager->getBackends( mpPassedFormula, this, mBackendsFoundAnswer );
         mAllBackends = mpManager->getAllBackends( this );
-        unsigned numberOfUsedBackends = mUsedBackends.size();
+        size_t numberOfUsedBackends = mUsedBackends.size();
         if( numberOfUsedBackends>0 )
         {
             // Update the backends.
@@ -804,13 +804,6 @@ namespace smtrat
     Answer Module::foundAnswer( Answer _answer )
     {
         mSolverState = _answer;
-        if( _answer == True && checkModel() == 0 )
-        {
-//            storeAssumptionsToCheck( *mpManager );
-            cout << Module::moduleName( this->type() ) << endl;
-            printModel();
-//            exit( 7771 );
-        }
         assert( _answer != True || checkModel() != 0 );
         // If we are in the SMT environment:
         if( mpManager != NULL && _answer != Unknown )
@@ -929,7 +922,11 @@ namespace smtrat
      * header including all variables used.
      * @param _filename The name of the smt2-file to store the formulas.
      */
-    void Module::storeAssumptionsToCheck( const Manager& _manager )
+    void Module::storeAssumptionsToCheck( const Manager& 
+                                          #ifdef SMTRAT_DEVOPTION_Validation
+                                          _manager
+                                          #endif
+                                        )
     {
         #ifdef SMTRAT_DEVOPTION_Validation
         if( !Module::mAssumptionToCheck.empty() )
@@ -978,17 +975,17 @@ namespace smtrat
         filename << _filename << "_" << moduleName(mModuleType) << "_" << mSmallerMusesCheckCounter << ".smt2";
         ofstream smtlibFile;
         smtlibFile.open( filename.str() );
-        for( unsigned size = _infsubset->size() - _maxSizeDifference; size < _infsubset->size(); ++size )
+        for( size_t size = _infsubset->size() - _maxSizeDifference; size < _infsubset->size(); ++size )
         {
             // 000000....000011111 (size-many ones)
-            unsigned bitvector = (1 << size) - 1;
+            size_t bitvector = (1 << size) - 1;
             // 000000....100000000
-            unsigned limit = (1 << _infsubset->size());
-            unsigned nextbitvector;
+            size_t limit = (1 << _infsubset->size());
+            size_t nextbitvector;
             while( bitvector < limit )
             {
                 // Compute lexicographical successor of the bit vector.
-                unsigned int tmp = (bitvector | (bitvector - 1)) + 1;
+                size_t tmp = (bitvector | (bitvector - 1)) + 1;
                 nextbitvector = tmp | ((((tmp & -tmp) / (bitvector & -bitvector)) >> 1) - 1);
                 // For each assumption add a new solver-call by resetting the search state.
                 smtlibFile << "(reset)\n";

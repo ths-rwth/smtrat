@@ -122,7 +122,7 @@ namespace vs
             /**
              * @return A constant reference to the type of this substitution.
              */
-            const Type type() const
+            const Type& type() const
             {
                 return mType;
             }

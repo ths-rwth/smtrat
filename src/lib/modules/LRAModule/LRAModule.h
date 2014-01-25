@@ -129,7 +129,7 @@ namespace smtrat
                 return mSlackVars;
             }
 
-            const lra::Variable<lra::Numeric>* const getSlackVariable( const Constraint* const _constraint ) const
+            const lra::Variable<lra::Numeric>* getSlackVariable( const Constraint* _constraint ) const
             {
                 ConstraintBoundsMap::const_iterator iter = mConstraintToBound.find( _constraint );
                 assert( iter != mConstraintToBound.end() );

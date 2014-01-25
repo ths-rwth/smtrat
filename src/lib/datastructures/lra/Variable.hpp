@@ -47,7 +47,7 @@ namespace smtrat
                  * Members.
                  */
                 bool                      mBasic;
-                unsigned                  mPosition;
+                size_t                  mPosition;
                 typename Bound<T>::BoundSet  mUpperbounds;
                 typename Bound<T>::BoundSet  mLowerbounds;
                 const Bound<T>*           mpSupremum;
@@ -56,7 +56,7 @@ namespace smtrat
                 Value<T>                  mAssignment;
 
             public:
-                Variable( unsigned, bool, const smtrat::Polynomial*, smtrat::Formula::iterator );
+                Variable( size_t, bool, const smtrat::Polynomial*, smtrat::Formula::iterator );
                 virtual ~Variable();
 
                 const Value<T>& assignment() const
@@ -130,22 +130,22 @@ namespace smtrat
                     return *mpInfimum;
                 }
 
-                const unsigned position() const
+                size_t position() const
                 {
                     return mPosition;
                 }
                 
-                void setPosition( unsigned _position )
+                void setPosition( size_t _position )
                 {
                     mPosition = _position;
                 }
 
-                unsigned rLowerBoundsSize()
+                size_t rLowerBoundsSize()
                 {
                     return mLowerbounds.size();
                 }
 
-                unsigned rUpperBoundsSize()
+                size_t rUpperBoundsSize()
                 {
                     return mUpperbounds.size();
                 }
@@ -170,7 +170,7 @@ namespace smtrat
                     return mLowerbounds;
                 }
 
-                unsigned& rPosition()
+                size_t& rPosition()
                 {
                     return mPosition;
                 }
@@ -198,7 +198,7 @@ namespace smtrat
 
 		
         template<class T>
-        Variable<T>::Variable( unsigned _position, bool _basic, const smtrat::Polynomial* _expression, smtrat::Formula::iterator _defaultBoundPosition ):
+        Variable<T>::Variable( size_t _position, bool _basic, const smtrat::Polynomial* _expression, smtrat::Formula::iterator _defaultBoundPosition ):
             mBasic( _basic ),
             mPosition( _position ),
             mUpperbounds(),

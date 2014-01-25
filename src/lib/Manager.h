@@ -245,7 +245,7 @@ namespace smtrat
              */
             void printAssignment( std::ostream& _out ) const
             {
-                mpPrimaryBackend->printModel();
+                mpPrimaryBackend->printModel( _out );
             }
     
             void printAssertions( std::ostream& = std::cout ) const;
@@ -272,7 +272,7 @@ namespace smtrat
                 return mDebugOutputChannel;
             }
             
-            const Logic logic() const
+            const Logic& logic() const
             {
                 return mLogic;
             }
@@ -313,12 +313,12 @@ namespace smtrat
                 return result;
             }
             
-            unsigned addBackendIntoStrategyGraph( unsigned _at, ModuleType _moduleType, ConditionEvaluation _conditionEvaluation = isCondition )
+            size_t addBackendIntoStrategyGraph( size_t _at, ModuleType _moduleType, ConditionEvaluation _conditionEvaluation = isCondition )
             {
                 return mStrategyGraph.addBackend( _at, _moduleType, _conditionEvaluation );
             }
 
-            void addBacklinkIntoStrategyGraph( unsigned _from, unsigned _to, ConditionEvaluation _conditionEvaluation = isCondition )
+            void addBacklinkIntoStrategyGraph( size_t _from, size_t _to, ConditionEvaluation _conditionEvaluation = isCondition )
             {
                 mStrategyGraph.addBacklink( _from, _to, _conditionEvaluation );
             }

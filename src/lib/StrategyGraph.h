@@ -51,14 +51,14 @@ namespace smtrat
             class Edge
             {
                 private:
-                    static unsigned mPriorityAllocator;
-                    unsigned mSuccessorVertex;
-                    unsigned mThreadId;
-                    unsigned mPriority;
+                    static size_t mPriorityAllocator;
+                    size_t mSuccessorVertex;
+                    size_t mThreadId;
+                    size_t mPriority;
                     ConditionEvaluation mpConditionEvaluation;
 
                 public:
-                    Edge( unsigned _to, ConditionEvaluation _conditionEvaluation ):
+                    Edge( size_t _to, ConditionEvaluation _conditionEvaluation ):
                         mSuccessorVertex( _to ),
                         mPriority( mPriorityAllocator++ ),
                         mpConditionEvaluation( _conditionEvaluation )
@@ -66,27 +66,27 @@ namespace smtrat
 
                     ~Edge(){}
 
-                    unsigned successorVertex() const
+                    size_t successorVertex() const
                     {
                         return mSuccessorVertex;
                     }
 
-                    unsigned threadId() const
+                    size_t threadId() const
                     {
                         return mThreadId;
                     }
 
-                    void setThreadId( unsigned _threadId )
+                    void setThreadId( size_t _threadId )
                     {
                         mThreadId = _threadId;
                     }
 
-                    unsigned priority() const
+                    size_t priority() const
                     {
                         return mPriority;
                     }
 
-                    const ConditionEvaluation conditionEvaluation() const
+                    ConditionEvaluation conditionEvaluation() const
                     {
                         return *mpConditionEvaluation;
                     }
@@ -98,7 +98,7 @@ namespace smtrat
                     std::vector<Edge>* mpEdgeList;
                     ModuleType mModuleType;
 
-                    bool successorVertexExists( unsigned _to ) const
+                    bool successorVertexExists( size_t _to ) const
                     {
                         for( auto edge = mpEdgeList->begin(); edge!=mpEdgeList->end(); ++edge )
                         {
@@ -136,7 +136,7 @@ namespace smtrat
                         return mModuleType;
                     }
 
-                    void addSuccessorVertex( unsigned _to, ConditionEvaluation _conditionEvaluation )
+                    void addSuccessorVertex( size_t _to, ConditionEvaluation _conditionEvaluation )
                     {
                         assert( !successorVertexExists( _to ) );
                         mpEdgeList->push_back( Edge( _to, _conditionEvaluation ) );
@@ -144,16 +144,16 @@ namespace smtrat
             };
 
             std::vector<Vertex*> mStrategyGraph;
-            unsigned mNumberOfBranches;
+            size_t mNumberOfBranches;
 
-            void addCondition( unsigned, unsigned, ConditionEvaluation );
-            unsigned setThreadIds( unsigned, unsigned );
+            void addCondition( size_t, size_t, ConditionEvaluation );
+            size_t setThreadIds( size_t, size_t );
 
         public:
             StrategyGraph();
             ~StrategyGraph();
 
-            const unsigned numberOfBranches() const
+            size_t numberOfBranches() const
             {
                 return mNumberOfBranches;
             }
@@ -164,9 +164,9 @@ namespace smtrat
             }
 
             // Backends and back links must be added by priority, i.e. starting with highest priority (lowest value)
-            unsigned addBackend( unsigned, ModuleType, ConditionEvaluation = isCondition );
-            void addBacklink( unsigned, unsigned, ConditionEvaluation = isCondition );
-            std::vector< std::pair< thread_priority, ModuleType > > getNextModuleTypes( unsigned, Condition );
+            size_t addBackend( size_t, ModuleType, ConditionEvaluation = isCondition );
+            void addBacklink( size_t, size_t, ConditionEvaluation = isCondition );
+            std::vector< std::pair< thread_priority, ModuleType > > getNextModuleTypes( size_t, Condition );
 
 // To be deleted
 //            void tmpPrint();

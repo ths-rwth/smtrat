@@ -110,7 +110,7 @@ namespace smtrat
                 /**
                  * @return A pointer to the limit of this bound.
                  */
-                const Rational* const pLimit() const
+                const Rational* pLimit() const
                 {
                     return mpLimit;
                 }

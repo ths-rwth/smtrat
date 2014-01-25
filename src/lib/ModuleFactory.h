@@ -65,7 +65,7 @@ namespace smtrat
 
             virtual Module* create( ModuleType, const Formula* const, Conditionals&, Manager* const ) = 0;
 
-            const ModuleType type() const
+            const ModuleType& type() const
             {
                 return this->mModuleType;
             }

@@ -143,10 +143,10 @@ namespace smtrat
             /**
              * @return The number of constraint in this pool.
              */
-            unsigned size() const
+            size_t size() const
             {
                 CONSTRAINT_LOCK_GUARD
-                unsigned result = mConstraints.size();
+                size_t result = mConstraints.size();
                 return result;
             }
 
@@ -253,13 +253,13 @@ namespace smtrat
              * Note: This method makes the other accesses to the constraint pool waiting.
              * @return The highest degree occurring in all constraints
              */
-            int maxDegree() const
+            carl::exponent maxDegree() const
             {
-                int result = 0;
+                carl::exponent result = 0;
                 CONSTRAINT_LOCK_GUARD
                 for( auto constraint = mConstraints.begin(); constraint != mConstraints.end(); ++constraint )
                 {
-                    int maxdeg = (*constraint)->lhs().totalDegree();
+                    carl::exponent maxdeg = (*constraint)->lhs().totalDegree();
                     if(maxdeg > result) 
                         result = maxdeg;
                 }
@@ -285,7 +285,7 @@ namespace smtrat
             /**
              * @return The number of Boolean variables which have been generated.
              */
-            unsigned numberOfBooleanVariables() const
+            size_t numberOfBooleanVariables() const
             {
                 return mBooleanVariables.size();
             }

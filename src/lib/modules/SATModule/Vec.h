@@ -42,13 +42,13 @@ namespace Minisat
         int cap;
 
         // Don't allow copying (error prone):
-        vec<T>& operator = ( vec<T>& other )
+        vec<T>& operator = ( vec<T>& )
         {
             assert( 0 );
             return *this;
         }
 
-        vec( vec<T>& other )
+        vec( vec<T>& )
         {
             assert( 0 );
         }

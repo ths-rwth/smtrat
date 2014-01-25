@@ -40,7 +40,7 @@ using namespace vs;
 namespace smtrat
 {
     template<class Settings>
-    VSModule<Settings>::VSModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+    VSModule<Settings>::VSModule( ModuleType _type, const Formula* const _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         mConditionsChanged( false ),
         mInconsistentConstraintAdded( false ),
@@ -286,12 +286,12 @@ namespace smtrat
             }
         }
         #ifdef VS_TERMINATION_INVARIANCE
-        unsigned previousId = 0;
-        unsigned previousValuation = 0;
+        size_t previousId = 0;
+        size_t previousValuation = 0;
         bool previousConditionsSimplified = false;
         bool previousSubResultsSimplified = false;
         bool previousTakeSubResultAgain = false;
-        unsigned numOfNotConsideredConditions = 0;
+        size_t numOfNotConsideredConditions = 0;
         #endif
         while( !mRanking.empty() )
         {
@@ -310,7 +310,7 @@ namespace smtrat
 //            cout << "Iteration:  " << mStepCounter << endl;
             State* currentState = mRanking.begin()->second;
             #ifdef VS_TERMINATION_INVARIANCE
-            unsigned tmp = 0;
+            size_t tmp = 0;
             for( auto cond = currentState->conditions().begin(); cond != currentState->conditions().end(); ++cond )
                 if( !(*cond)->flag() ) ++tmp;
             if( numOfNotConsideredConditions == tmp && previousId == currentState->id() && previousValuation == currentState->valuation() && previousTakeSubResultAgain == currentState->takeSubResultCombAgain() && previousConditionsSimplified == currentState->conditionsSimplified() && previousSubResultsSimplified == currentState->subResultsSimplified() )
@@ -747,7 +747,7 @@ namespace smtrat
         clearModel();
         if( solverState() == True )
         {
-            for( unsigned i = mVariableVector.size(); i<=mRanking.begin()->second->treeDepth(); ++i )
+            for( size_t i = mVariableVector.size(); i<=mRanking.begin()->second->treeDepth(); ++i )
             {
                 stringstream outA;
                 outA << "m_inf_" << id() << "_" << i;
@@ -908,97 +908,33 @@ namespace smtrat
                         Polynomial constantCoeff;
                         auto iter = coeffs.find( 0 );
                         if( iter != coeffs.end() ) constantCoeff = iter->second;
-//                        cout << "test" << endl;
-                        if( Settings::int_constraints_allowed && _eliminationVar.getType() == carl::VariableType::VT_INT )
+                        // Create state ({b!=0} + oldConditions, [x -> -c/b]):
+                        const smtrat::Constraint* cons = smtrat::Formula::newConstraint( coeffs.rbegin()->second, Constraint::NEQ );
+                        if( cons == Formula::constraintPool().inconsistentConstraint() )
                         {
-//                            cout << __func__ << endl;
-//                            cout << *constraint << endl;
-//                            cout << _eliminationVar << endl;
-//                            cout << "Eliminate for " << *factor << endl;
-                            bool constraintHasZeros = false;
-                            // Create state ({b < 0} + oldConditions, [x -> -c/b]):
-                            const smtrat::Constraint* consA = smtrat::Formula::newConstraint( coeffs.rbegin()->second, Constraint::LESS );
-                            if( consA != Formula::constraintPool().inconsistentConstraint() )
-                            {
-                                PointerSet<Constraint> sideCond = sideConditions;
-                                if( consA != Formula::constraintPool().consistentConstraint() )
-                                    sideCond.insert( consA );
-                                SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, coeffs.rbegin()->second, ZERO_POLYNOMIAL );
-                                Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
-                                if( _currentState->addChild( sub ) )
-                                {
-                                    if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
-                                    {
-                                        _currentState->rChildren().back()->setOriginalCondition( _condition );
-                                        generatedTestCandidateBeingASolution = true;
-                                    }
-                                    // Add its valuation to the current ranking.
-                                    addStateToRanking( (*_currentState).rChildren().back() );
-                                    ++numberOfAddedChildren;
-                                    #ifdef VS_DEBUG
-                                    (*(*_currentState).rChildren().back()).print( "   ", cout );
-                                    #endif
-                                }
-                                constraintHasZeros = true;
-                            }
-                            // Create state ({b > 0} + oldConditions, [x -> -c/b]):
-                            const smtrat::Constraint* consB = smtrat::Formula::newConstraint( coeffs.rbegin()->second, Constraint::GREATER );
-                            if( consB != Formula::constraintPool().inconsistentConstraint() )
-                            {
-                                PointerSet<Constraint> sideCond = sideConditions;
-                                if( consB != Formula::constraintPool().consistentConstraint() )
-                                    sideCond.insert( consB );
-                                SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, coeffs.rbegin()->second, ZERO_POLYNOMIAL );
-                                Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
-                                if( _currentState->addChild( sub ) )
-                                {
-                                    if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
-                                    {
-                                        _currentState->rChildren().back()->setOriginalCondition( _condition );
-                                        generatedTestCandidateBeingASolution = true;
-                                    }
-                                    // Add its valuation to the current ranking.
-                                    addStateToRanking( (*_currentState).rChildren().back() );
-                                    ++numberOfAddedChildren;
-                                    #ifdef VS_DEBUG
-                                    (*(*_currentState).rChildren().back()).print( "   ", cout );
-                                    #endif
-                                }
-                                constraintHasZeros = true;
-                            }
-                            if( !constraintHasZeros && relation == Constraint::EQ )
+                            if( relation == Constraint::EQ )
                                 generatedTestCandidateBeingASolution = sideConditions.empty();
                         }
                         else
                         {
-                            // Create state ({b!=0} + oldConditions, [x -> -c/b]):
-                            const smtrat::Constraint* cons = smtrat::Formula::newConstraint( coeffs.rbegin()->second, Constraint::NEQ );
-                            if( cons == Formula::constraintPool().inconsistentConstraint() )
+                            PointerSet<Constraint> sideCond = sideConditions;
+                            if( cons != Formula::constraintPool().consistentConstraint() )
+                                sideCond.insert( cons );
+                            SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, coeffs.rbegin()->second, ZERO_POLYNOMIAL );
+                            Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
+                            if( _currentState->addChild( sub ) )
                             {
-                                if( relation == Constraint::EQ )
-                                    generatedTestCandidateBeingASolution = sideConditions.empty();
-                            }
-                            else
-                            {
-                                PointerSet<Constraint> sideCond = sideConditions;
-                                if( cons != Formula::constraintPool().consistentConstraint() )
-                                    sideCond.insert( cons );
-                                SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, coeffs.rbegin()->second, ZERO_POLYNOMIAL );
-                                Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
-                                if( _currentState->addChild( sub ) )
+                                if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
                                 {
-                                    if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
-                                    {
-                                        _currentState->rChildren().back()->setOriginalCondition( _condition );
-                                        generatedTestCandidateBeingASolution = true;
-                                    }
-                                    // Add its valuation to the current ranking.
-                                    addStateToRanking( (*_currentState).rChildren().back() );
-                                    ++numberOfAddedChildren;
-                                    #ifdef VS_DEBUG
-                                    (*(*_currentState).rChildren().back()).print( "   ", cout );
-                                    #endif
+                                    _currentState->rChildren().back()->setOriginalCondition( _condition );
+                                    generatedTestCandidateBeingASolution = true;
                                 }
+                                // Add its valuation to the current ranking.
+                                addStateToRanking( (*_currentState).rChildren().back() );
+                                ++numberOfAddedChildren;
+                                #ifdef VS_DEBUG
+                                (*(*_currentState).rChildren().back()).print( "   ", cout );
+                                #endif
                             }
                         }
                         break;
@@ -1017,234 +953,80 @@ namespace smtrat
                         const smtrat::Constraint* cons11 = smtrat::Formula::newConstraint( coeffs.rbegin()->second, Constraint::EQ );
                         if( cons11 != Formula::constraintPool().inconsistentConstraint() )
                         {
-                            if( Settings::int_constraints_allowed && _eliminationVar.getType() == carl::VariableType::VT_INT )
+                            // Create state ({a==0, b!=0} + oldConditions, [x -> -c/b]):
+                            const smtrat::Constraint* cons12 = smtrat::Formula::newConstraint( linearCoeff, Constraint::NEQ );
+                            if( cons12 != Formula::constraintPool().inconsistentConstraint() )
                             {
-                                // Create state ({a==0, b< 0} + oldConditions, [x -> -c/b]):
-                                const smtrat::Constraint* cons12A = smtrat::Formula::newConstraint( linearCoeff, Constraint::LESS );
-                                if( cons12A != Formula::constraintPool().inconsistentConstraint() )
+                                PointerSet<Constraint> sideCond = sideConditions;
+                                if( cons11 != Formula::constraintPool().consistentConstraint() )
+                                    sideCond.insert( cons11 );
+                                if( cons12 != Formula::constraintPool().consistentConstraint() )
+                                    sideCond.insert( cons12 );
+                                SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, linearCoeff, ZERO_POLYNOMIAL );
+                                Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
+                                if( _currentState->addChild( sub ) )
                                 {
-                                    PointerSet<Constraint> sideCond = sideConditions;
-                                    if( cons11 != Formula::constraintPool().consistentConstraint() )
-                                        sideCond.insert( cons11 );
-                                    if( cons12A != Formula::constraintPool().consistentConstraint() )
-                                        sideCond.insert( cons12A );
-                                    SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, linearCoeff, ZERO_POLYNOMIAL );
-                                    Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
-                                    if( _currentState->addChild( sub ) )
+                                    if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
                                     {
-                                        if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
-                                        {
-                                            _currentState->rChildren().back()->setOriginalCondition( _condition );
-                                            generatedTestCandidateBeingASolution = true;
-                                        }
-                                        // Add its valuation to the current ranking.
-                                        addStateToRanking( (*_currentState).rChildren().back() );
-                                        ++numberOfAddedChildren;
-                                        #ifdef VS_DEBUG
-                                        (*(*_currentState).rChildren().back()).print( "   ", cout );
-                                        #endif
+                                        _currentState->rChildren().back()->setOriginalCondition( _condition );
+                                        generatedTestCandidateBeingASolution = true;
                                     }
-                                    constraintHasZeros = true;
+                                    // Add its valuation to the current ranking.
+                                    addStateToRanking( (*_currentState).rChildren().back() );
+                                    ++numberOfAddedChildren;
+                                    #ifdef VS_DEBUG
+                                    (*(*_currentState).rChildren().back()).print( "   ", cout );
+                                    #endif
                                 }
-                                // Create state ({a==0, b > 0} + oldConditions, [x -> -c/b]):
-                                const smtrat::Constraint* cons12B = smtrat::Formula::newConstraint( linearCoeff, Constraint::GREATER );
-                                if( cons12B != Formula::constraintPool().inconsistentConstraint() )
-                                {
-                                    PointerSet<Constraint> sideCond = sideConditions;
-                                    if( cons11 != Formula::constraintPool().consistentConstraint() )
-                                        sideCond.insert( cons11 );
-                                    if( cons12B != Formula::constraintPool().consistentConstraint() )
-                                        sideCond.insert( cons12B );
-                                    SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, linearCoeff, ZERO_POLYNOMIAL );
-                                    Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
-                                    if( _currentState->addChild( sub ) )
-                                    {
-                                        if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
-                                        {
-                                            _currentState->rChildren().back()->setOriginalCondition( _condition );
-                                            generatedTestCandidateBeingASolution = true;
-                                        }
-                                        // Add its valuation to the current ranking.
-                                        addStateToRanking( (*_currentState).rChildren().back() );
-                                        ++numberOfAddedChildren;
-                                        #ifdef VS_DEBUG
-                                        (*(*_currentState).rChildren().back()).print( "   ", cout );
-                                        #endif
-                                    }
-                                    constraintHasZeros = true;
-                                }
-                            }
-                            else
-                            {
-                                // Create state ({a==0, b!=0} + oldConditions, [x -> -c/b]):
-                                const smtrat::Constraint* cons12 = smtrat::Formula::newConstraint( linearCoeff, Constraint::NEQ );
-                                if( cons12 != Formula::constraintPool().inconsistentConstraint() )
-                                {
-                                    PointerSet<Constraint> sideCond = sideConditions;
-                                    if( cons11 != Formula::constraintPool().consistentConstraint() )
-                                        sideCond.insert( cons11 );
-                                    if( cons12 != Formula::constraintPool().consistentConstraint() )
-                                        sideCond.insert( cons12 );
-                                    SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, linearCoeff, ZERO_POLYNOMIAL );
-                                    Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
-                                    if( _currentState->addChild( sub ) )
-                                    {
-                                        if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
-                                        {
-                                            _currentState->rChildren().back()->setOriginalCondition( _condition );
-                                            generatedTestCandidateBeingASolution = true;
-                                        }
-                                        // Add its valuation to the current ranking.
-                                        addStateToRanking( (*_currentState).rChildren().back() );
-                                        ++numberOfAddedChildren;
-                                        #ifdef VS_DEBUG
-                                        (*(*_currentState).rChildren().back()).print( "   ", cout );
-                                        #endif
-                                    }
-                                    constraintHasZeros = true;
-                                }
+                                constraintHasZeros = true;
                             }
                         }
                         const smtrat::Constraint* cons21 = smtrat::Formula::newConstraint( radicand, Constraint::GEQ );
                         if( cons21 != Formula::constraintPool().inconsistentConstraint() )
                         {
-                            if( Settings::int_constraints_allowed && _eliminationVar.getType() == carl::VariableType::VT_INT )
+                            const smtrat::Constraint* cons22 = smtrat::Formula::newConstraint( coeffs.rbegin()->second, Constraint::NEQ );
+                            if( cons22 != Formula::constraintPool().inconsistentConstraint() )
                             {
-                                // Create state ({a< 0, b^2-4ac>=0} + oldConditions, [x -> (-b+sqrt(b^2-4ac))/2a]):
-                                const smtrat::Constraint* cons22A = smtrat::Formula::newConstraint( coeffs.rbegin()->second, Constraint::LESS );
-                                if( cons22A != Formula::constraintPool().inconsistentConstraint() )
+                                PointerSet<Constraint> sideCond = sideConditions;
+                                if( cons21 != Formula::constraintPool().consistentConstraint() )
+                                    sideCond.insert( cons21 );
+                                if( cons22 != Formula::constraintPool().consistentConstraint() )
+                                    sideCond.insert( cons22 );
+                                // Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b+sqrt(b^2-4ac))/2a]):
+                                SqrtEx sqExA = SqrtEx( -linearCoeff, ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
+                                Substitution subA = Substitution( _eliminationVar, sqExA, subType, oConditions, sideCond );
+                                if( _currentState->addChild( subA ) )
                                 {
-                                    PointerSet<Constraint> sideCond = sideConditions;
-                                    if( cons21 != Formula::constraintPool().consistentConstraint() )
-                                        sideCond.insert( cons21 );
-                                    if( cons22A != Formula::constraintPool().consistentConstraint() )
-                                        sideCond.insert( cons22A );
-                                    SqrtEx sqExA = SqrtEx( -linearCoeff, ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
-                                    Substitution subA = Substitution( _eliminationVar, sqExA, subType, oConditions, sideCond );
-                                    if( _currentState->addChild( subA ) )
+                                    if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
                                     {
-                                        if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
-                                        {
-                                            _currentState->rChildren().back()->setOriginalCondition( _condition );
-                                            generatedTestCandidateBeingASolution = true;
-                                        }
-                                        // Add its valuation to the current ranking.
-                                        addStateToRanking( (*_currentState).rChildren().back() );
-                                        ++numberOfAddedChildren;
-                                        #ifdef VS_DEBUG
-                                        (*(*_currentState).rChildren().back()).print( "   ", cout );
-                                        #endif
+                                        _currentState->rChildren().back()->setOriginalCondition( _condition );
+                                        generatedTestCandidateBeingASolution = true;
                                     }
-                                    // Create state ({a< 0, b^2-4ac>=0} + oldConditions, [x -> (-b-sqrt(b^2-4ac))/2a]):
-                                    SqrtEx sqExB = SqrtEx( -linearCoeff, MINUS_ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
-                                    Substitution subB = Substitution( _eliminationVar, sqExB, subType, oConditions, sideCond );
-                                    if( _currentState->addChild( subB ) )
-                                    {
-                                        if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
-                                        {
-                                            _currentState->rChildren().back()->setOriginalCondition( _condition );
-                                            generatedTestCandidateBeingASolution = true;
-                                        }
-                                        // Add its valuation to the current ranking.
-                                        addStateToRanking( (*_currentState).rChildren().back() );
-                                        ++numberOfAddedChildren;
-                                        #ifdef VS_DEBUG
-                                        (*(*_currentState).rChildren().back()).print( "   ", cout );
-                                        #endif
-                                    }
-                                    constraintHasZeros = true;
+                                    // Add its valuation to the current ranking.
+                                    addStateToRanking( (*_currentState).rChildren().back() );
+                                    ++numberOfAddedChildren;
+                                    #ifdef VS_DEBUG
+                                    (*(*_currentState).rChildren().back()).print( "   ", cout );
+                                    #endif
                                 }
-                                const smtrat::Constraint* cons22B = smtrat::Formula::newConstraint( coeffs.rbegin()->second, Constraint::GREATER );
-                                if( cons22B != Formula::constraintPool().inconsistentConstraint() )
+                                // Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b-sqrt(b^2-4ac))/2a]):
+                                SqrtEx sqExB = SqrtEx( -linearCoeff, MINUS_ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
+                                Substitution subB = Substitution( _eliminationVar, sqExB, subType, oConditions, sideCond );
+                                if( _currentState->addChild( subB ) )
                                 {
-                                    PointerSet<Constraint> sideCond = sideConditions;
-                                    if( cons21 != Formula::constraintPool().consistentConstraint() )
-                                        sideCond.insert( cons21 );
-                                    if( cons22B != Formula::constraintPool().consistentConstraint() )
-                                        sideCond.insert( cons22B );
-                                    // Create state ({a > 0, b^2-4ac>=0} + oldConditions, [x -> (-b+sqrt(b^2-4ac))/2a]):
-                                    SqrtEx sqExA = SqrtEx( -linearCoeff, ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
-                                    Substitution subA = Substitution( _eliminationVar, sqExA, subType, oConditions, sideCond );
-                                    if( _currentState->addChild( subA ) )
+                                    if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
                                     {
-                                        if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
-                                        {
-                                            _currentState->rChildren().back()->setOriginalCondition( _condition );
-                                            generatedTestCandidateBeingASolution = true;
-                                        }
-                                        // Add its valuation to the current ranking.
-                                        addStateToRanking( (*_currentState).rChildren().back() );
-                                        ++numberOfAddedChildren;
-                                        #ifdef VS_DEBUG
-                                        (*(*_currentState).rChildren().back()).print( "   ", cout );
-                                        #endif
+                                        _currentState->rChildren().back()->setOriginalCondition( _condition );
+                                        generatedTestCandidateBeingASolution = true;
                                     }
-                                    // Create state ({a > 0, b^2-4ac>=0} + oldConditions, [x -> (-b-sqrt(b^2-4ac))/2a]):
-                                    SqrtEx sqExB = SqrtEx( -linearCoeff, MINUS_ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
-                                    Substitution subB = Substitution( _eliminationVar, sqExB, subType, oConditions, sideCond );
-                                    if( _currentState->addChild( subB ) )
-                                    {
-                                        if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
-                                        {
-                                            _currentState->rChildren().back()->setOriginalCondition( _condition );
-                                            generatedTestCandidateBeingASolution = true;
-                                        }
-                                        // Add its valuation to the current ranking.
-                                        addStateToRanking( (*_currentState).rChildren().back() );
-                                        ++numberOfAddedChildren;
-                                        #ifdef VS_DEBUG
-                                        (*(*_currentState).rChildren().back()).print( "   ", cout );
-                                        #endif
-                                    }
-                                    constraintHasZeros = true;
+                                    // Add its valuation to the current ranking.
+                                    addStateToRanking( (*_currentState).rChildren().back() );
+                                    ++numberOfAddedChildren;
+                                    #ifdef VS_DEBUG
+                                    (*(*_currentState).rChildren().back()).print( "   ", cout );
+                                    #endif
                                 }
-                            }
-                            else
-                            {
-                                const smtrat::Constraint* cons22 = smtrat::Formula::newConstraint( coeffs.rbegin()->second, Constraint::NEQ );
-                                if( cons22 != Formula::constraintPool().inconsistentConstraint() )
-                                {
-                                    PointerSet<Constraint> sideCond = sideConditions;
-                                    if( cons21 != Formula::constraintPool().consistentConstraint() )
-                                        sideCond.insert( cons21 );
-                                    if( cons22 != Formula::constraintPool().consistentConstraint() )
-                                        sideCond.insert( cons22 );
-                                    // Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b+sqrt(b^2-4ac))/2a]):
-                                    SqrtEx sqExA = SqrtEx( -linearCoeff, ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
-                                    Substitution subA = Substitution( _eliminationVar, sqExA, subType, oConditions, sideCond );
-                                    if( _currentState->addChild( subA ) )
-                                    {
-                                        if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
-                                        {
-                                            _currentState->rChildren().back()->setOriginalCondition( _condition );
-                                            generatedTestCandidateBeingASolution = true;
-                                        }
-                                        // Add its valuation to the current ranking.
-                                        addStateToRanking( (*_currentState).rChildren().back() );
-                                        ++numberOfAddedChildren;
-                                        #ifdef VS_DEBUG
-                                        (*(*_currentState).rChildren().back()).print( "   ", cout );
-                                        #endif
-                                    }
-                                    // Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b-sqrt(b^2-4ac))/2a]):
-                                    SqrtEx sqExB = SqrtEx( -linearCoeff, MINUS_ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
-                                    Substitution subB = Substitution( _eliminationVar, sqExB, subType, oConditions, sideCond );
-                                    if( _currentState->addChild( subB ) )
-                                    {
-                                        if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
-                                        {
-                                            _currentState->rChildren().back()->setOriginalCondition( _condition );
-                                            generatedTestCandidateBeingASolution = true;
-                                        }
-                                        // Add its valuation to the current ranking.
-                                        addStateToRanking( (*_currentState).rChildren().back() );
-                                        ++numberOfAddedChildren;
-                                        #ifdef VS_DEBUG
-                                        (*(*_currentState).rChildren().back()).print( "   ", cout );
-                                        #endif
-                                    }
-                                    constraintHasZeros = true;
-                                }
+                                constraintHasZeros = true;
                             }
                         }
                         if( !constraintHasZeros && relation == Constraint::EQ )
@@ -1689,7 +1471,7 @@ namespace smtrat
         {
             if( _state->id() != 0 )
             {
-                unsigned id = _state->id();
+                size_t id = _state->id();
                 removeStateFromRanking( *_state );
                 _state->rID()= id;
             }
@@ -1699,7 +1481,7 @@ namespace smtrat
                 _state->rID() = mIDCounter;
             }
             _state->updateValuation();
-            UnsignedTriple key = UnsignedTriple( _state->valuation(), pair< unsigned, unsigned> ( _state->id(), _state->backendCallValuation() ) );
+            UnsignedTriple key = UnsignedTriple( _state->valuation(), pair< size_t, size_t> ( _state->id(), _state->backendCallValuation() ) );
             if( (mRanking.insert( ValStatePair( key, _state ) )).second == false )
             {
                 cout << "Warning: Could not insert. Entry already exists.";
@@ -2039,7 +1821,7 @@ namespace smtrat
      *          false,  otherwise.
      */
     template<class Settings>
-    bool VSModule<Settings>::adaptPassedFormula( const State& _state, FormulaConditionMap& _formulaCondMap, bool _strictInequalitiesOnly )
+    bool VSModule<Settings>::adaptPassedFormula( const State& _state, FormulaConditionMap& _formulaCondMap )
     {
         bool changedPassedFormula = false;
         // Collect the constraints to check.
@@ -2117,7 +1899,7 @@ namespace smtrat
      *          TS_Unknown, if the theory solver cannot give an answer for these conditons.
      */
     template<class Settings>
-    Answer VSModule<Settings>::runBackendSolvers( State* _state, bool _strictInequalitiesOnly )
+    Answer VSModule<Settings>::runBackendSolvers( State* _state )
     {
         // Run the backends on the constraint of the state.
         FormulaConditionMap formulaToConditions = FormulaConditionMap();
@@ -2297,7 +2079,7 @@ namespace smtrat
     void VSModule<Settings>::printRanking( const string& _init, ostream& _out ) const
     {
         for( auto valDTPair = mRanking.begin(); valDTPair != mRanking.end(); ++valDTPair )
-            (*(*valDTPair).second).printAlone( "   ", _out );
+            (*(*valDTPair).second).printAlone( _init + "   ", _out );
     }
 
     /**
