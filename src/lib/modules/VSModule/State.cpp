@@ -1098,7 +1098,6 @@ namespace vs
                 {
                     if( mpInfinityChild != NULL )
                     {
-                        mpInfinityChild->print();
                         mpConflictSets->erase( mpInfinityChild->pSubstitution() );
                         mpChildren->remove( mpInfinityChild );
                         delete mpInfinityChild;
@@ -1633,57 +1632,108 @@ namespace vs
                         std::vector<DisjunctionOfConditionConjunctions> subResults;
                         subResults.push_back( cases );
                         state->addSubstitutionResults( subResults );
+                        state->rType() = SUBSTITUTION_TO_APPLY;
                     }
 //                }
 //                else
 //                {
+//                    // the substitutions test candidate is q/s
 //                    const smtrat::Constraint* numNotNeg = smtrat::Formula::newConstraint( _substitution.term().constantPart(), smtrat::Constraint::GEQ );
 //                    const smtrat::Constraint* numNotPos = smtrat::Formula::newConstraint( _substitution.term().constantPart(), smtrat::Constraint::LEQ );
 //                    const smtrat::Constraint* sideConsA = smtrat::Formula::newConstraint( _substitution.term().denominator() - _substitution.term().constantPart(), smtrat::Constraint::LEQ );
-//                    const smtrat::Constraint* sideConsB = smtrat::Formula::newConstraint( _substitution.term().denominator() + _substitution.term().constantPart(), smtrat::Constraint::GEQ );
-//                    const smtrat::Constraint* sideConsC = smtrat::Formula::newConstraint( _substitution.term().denominator() + _substitution.term().constantPart(), smtrat::Constraint::LEQ );
+//                    const smtrat::Constraint* sideConsB = smtrat::Formula::newConstraint( _substitution.term().denominator() + _substitution.term().constantPart(), smtrat::Constraint::LEQ );
+//                    const smtrat::Constraint* sideConsC = smtrat::Formula::newConstraint( _substitution.term().denominator() + _substitution.term().constantPart(), smtrat::Constraint::GEQ );
 //                    const smtrat::Constraint* sideConsD = smtrat::Formula::newConstraint( _substitution.term().denominator() - _substitution.term().constantPart(), smtrat::Constraint::GEQ );
 //                    state = new State( this, _substitution, mpVariableBounds != NULL );
 //                    DisjunctionOfConditionConjunctions cases;
-//                    if( sideConsA != smtrat::Formula::constraintPool().inconsistentConstraint() && sideConsB != smtrat::Formula::constraintPool().inconsistentConstraint() )
+//                    if( denomPos != smtrat::Formula::constraintPool().inconsistentConstraint() )
 //                    {
-//                        ConditionList case1;
-//                        if( sideConsA != smtrat::Formula::constraintPool().consistentConstraint() )
+//                        // add the case (s>0 and q>=0 and s<=q)
+//                        if( numNotNeg != smtrat::Formula::constraintPool().inconsistentConstraint() && sideConsA != smtrat::Formula::constraintPool().inconsistentConstraint() )
 //                        {
-//                            cout << "add:  " << *sideConsA;
-//                            case1.push_back( new vs::Condition( sideConsA, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+//                            ConditionList c;
+//                            if( denomPos != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            {
+//                                c.push_back( new vs::Condition( denomPos, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+//                            }
+//                            if( numNotNeg != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            {
+//                                c.push_back( new vs::Condition( numNotNeg, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+//                            }
+//                            if( sideConsA != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            {
+//                                c.push_back( new vs::Condition( sideConsA, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+//                            }
+//                            if( !c.empty() )
+//                                cases.push_back( c );
 //                        }
-//                        if( sideConsB != smtrat::Formula::constraintPool().consistentConstraint() )
+//                        // add the case (s>0 and q<=0 and s<=-q)
+//                        if( numNotPos != smtrat::Formula::constraintPool().inconsistentConstraint() && sideConsB != smtrat::Formula::constraintPool().inconsistentConstraint() )
 //                        {
-//                            cout << "  and  " << *sideConsB;
-//                            case1.push_back( new vs::Condition( sideConsB, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+//                            ConditionList c;
+//                            if( denomPos != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            {
+//                                c.push_back( new vs::Condition( denomPos, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+//                            }
+//                            if( numNotPos != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            {
+//                                c.push_back( new vs::Condition( numNotPos, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+//                            }
+//                            if( sideConsB != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            {
+//                                c.push_back( new vs::Condition( sideConsB, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+//                            }
+//                            if( !c.empty() )
+//                                cases.push_back( c );
 //                        }
-//                        cout << endl;
-//                        if( !case1.empty() )
-//                            cases.push_back( case1 );
 //                    }
-//                    if( sideConsC != smtrat::Formula::constraintPool().inconsistentConstraint() && sideConsD != smtrat::Formula::constraintPool().inconsistentConstraint() )
+//                    if( denomNeg != smtrat::Formula::constraintPool().inconsistentConstraint() )
 //                    {
-//                        ConditionList case2;
-//                        if( sideConsA != smtrat::Formula::constraintPool().consistentConstraint() )
+//                        // add the case (s<0 and q>=0 and -q<=s)
+//                        if( numNotNeg != smtrat::Formula::constraintPool().inconsistentConstraint() && sideConsC != smtrat::Formula::constraintPool().inconsistentConstraint() )
 //                        {
-//                            cout << "add:  " << *sideConsC;
-//                            case2.push_back( new vs::Condition( sideConsC, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+//                            ConditionList c;
+//                            if( denomNeg != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            {
+//                                c.push_back( new vs::Condition( denomNeg, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+//                            }
+//                            if( numNotNeg != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            {
+//                                c.push_back( new vs::Condition( numNotNeg, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+//                            }
+//                            if( sideConsC != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            {
+//                                c.push_back( new vs::Condition( sideConsC, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+//                            }
+//                            if( !c.empty() )
+//                                cases.push_back( c );
 //                        }
-//                        if( sideConsB != smtrat::Formula::constraintPool().consistentConstraint() )
+//                        // add the case (s<0 and q<=0 and s<=q)
+//                        if( numNotPos != smtrat::Formula::constraintPool().inconsistentConstraint() && sideConsD != smtrat::Formula::constraintPool().inconsistentConstraint() )
 //                        {
-//                            cout << "  and  " << *sideConsD;
-//                            case2.push_back( new vs::Condition( sideConsD, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+//                            ConditionList c;
+//                            if( denomNeg != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            {
+//                                c.push_back( new vs::Condition( denomNeg, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+//                            }
+//                            if( numNotPos != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            {
+//                                c.push_back( new vs::Condition( numNotPos, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+//                            }
+//                            if( sideConsD != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            {
+//                                c.push_back( new vs::Condition( sideConsD, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+//                            }
+//                            if( !c.empty() )
+//                                cases.push_back( c );
 //                        }
-//                        cout << endl;
-//                        if( !case2.empty() )
-//                            cases.push_back( case2 );   
 //                    }
 //                    if( !cases.empty() )
 //                    {
 //                        std::vector<DisjunctionOfConditionConjunctions> subResults;
 //                        subResults.push_back( cases );
 //                        state->addSubstitutionResults( subResults );
+//                        state->rType() = SUBSTITUTION_TO_APPLY;
 //                    }
 //                }
             }

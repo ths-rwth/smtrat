@@ -222,7 +222,10 @@ namespace vs
 
     string Substitution::toString( bool _friendlyNames ) const
     {
-        string result = "[" + smtrat::Formula::constraintPool().getVariableName( mVariable, _friendlyNames ) + " -> ";
+        stringstream o;
+        o << mVariable;
+        string result = "[" + o.str() + " -> ";
+//        string result = "[" + smtrat::Formula::constraintPool().getVariableName( mVariable, _friendlyNames ) + " -> ";
         switch( type() )
         {
             case NORMAL:

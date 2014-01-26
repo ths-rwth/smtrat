@@ -684,9 +684,9 @@ namespace smtrat
                                         }
                                         else
                                         {
-//                                            return foundAnswer( Unknown );
-                                            currentState->rToHighDegree() = true;
-                                            addStateToRanking( currentState );
+                                            return foundAnswer( Unknown );
+//                                            currentState->rToHighDegree() = true;
+//                                            addStateToRanking( currentState );
                                         }
                                     }
                                 }

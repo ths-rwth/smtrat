@@ -227,7 +227,7 @@ namespace smtrat
              *                       internal representation (false) or with its dedicated name.
              * @return The name of the given variable.
              */
-            std::string getVariableName( const carl::Variable& _var, bool _friendlyName ) const
+            std::string getVariableName( const carl::Variable& _var, bool _friendlyName = true ) const
             {
                 return mVariablePool.getName( _var, _friendlyName );
             }
