@@ -70,8 +70,6 @@ namespace smtrat
             FastPointerSet<Constraint> mConstraints;
             /// All external variable names which have been created during parsing.
             std::vector< std::string > mParsedVarNames;
-            /// The container where all constraints generated with this pool are located.
-            carl::VariablePool& mVariablePool;
             
             /**
              * Creates a normalized constraint, which has the same solutions as the constraint consisting of the given
@@ -229,7 +227,7 @@ namespace smtrat
              */
             std::string getVariableName( const carl::Variable& _var, bool _friendlyName = true ) const
             {
-                return mVariablePool.getName( _var, _friendlyName );
+                return carl::VariablePool::getInstance().getName( _var, _friendlyName );
             }
             
             /**
@@ -242,7 +240,7 @@ namespace smtrat
             {
                 for( auto nameVarPair = mExternalNamesToVariables.begin(); nameVarPair != mExternalNamesToVariables.end(); ++nameVarPair )
                 {
-                    if( mVariablePool.getName( nameVarPair->second, _byFriendlyName ) == _varName )
+                    if( carl::VariablePool::getInstance().getName( nameVarPair->second, _byFriendlyName ) == _varName )
                         return nameVarPair->second;
                 }
                 assert( false );
@@ -322,7 +320,7 @@ namespace smtrat
             bool booleanExistsAlready( const std::string& _booleanName ) const
             {
                 for( auto iter = mBooleanVariables.begin(); iter != mBooleanVariables.end(); ++iter )
-                    if( _booleanName == mVariablePool.getName( *iter, true ) ) return true;
+                    if( _booleanName == carl::VariablePool::getInstance().getName( *iter, true ) ) return true;
                 return false;
             }
             
