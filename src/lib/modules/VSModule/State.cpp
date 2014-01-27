@@ -222,7 +222,7 @@ namespace vs
     bool State::occursInEquation( const carl::Variable& _variable ) const
     {
         for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
-            if( (*cond)->constraint().relation() == smtrat::Constraint::EQ && (*cond)->constraint().hasVariable( _variable ) )
+            if( (*cond)->constraint().relation() == smtrat::Relation::EQ && (*cond)->constraint().hasVariable( _variable ) )
                 return true;
         return false;
     }
@@ -305,7 +305,7 @@ namespace vs
         // Find the best condition.
         _bestCondition = *cond;
         ++cond;
-        double bestConditionValuation    = _bestCondition->valuate( index(), _numberOfAllVariables, true, _preferEquation );
+        double bestConditionValuation    = _bestCondition->valuate( index(), _numberOfAllVariables, _preferEquation );
         double currentConditionValuation = 0;
         while( cond != conditions().end() )
         {
@@ -314,11 +314,11 @@ namespace vs
                 if( (*_bestCondition).flag() )
                 {
                     _bestCondition         = *cond;
-                    bestConditionValuation = _bestCondition->valuate( index(), _numberOfAllVariables, true, _preferEquation );
+                    bestConditionValuation = _bestCondition->valuate( index(), _numberOfAllVariables, _preferEquation );
                 }
                 else
                 {
-                    currentConditionValuation = (**cond).valuate( index(), _numberOfAllVariables, true, _preferEquation );
+                    currentConditionValuation = (**cond).valuate( index(), _numberOfAllVariables, _preferEquation );
                     if( currentConditionValuation != 0 && ( currentConditionValuation < bestConditionValuation || bestConditionValuation == 0 ) )
                     {
                         _bestCondition         = *cond;
@@ -533,36 +533,36 @@ namespace vs
                         const smtrat::Constraint* nConstraint = NULL;
                         size_t nValuation = 0;
                         bool nFlag = false;
-                        if( (constraintA.relation() == smtrat::Constraint::GEQ && constraintB.relation() == smtrat::Constraint::GEQ)
-                                || (constraintA.relation() == smtrat::Constraint::GEQ && constraintB.relation() == smtrat::Constraint::LEQ)
-                                || (constraintA.relation() == smtrat::Constraint::LEQ && constraintB.relation() == smtrat::Constraint::GEQ)
-                                || (constraintA.relation() == smtrat::Constraint::LEQ && constraintB.relation() == smtrat::Constraint::LEQ) )
+                        if( (constraintA.relation() == smtrat::Relation::GEQ && constraintB.relation() == smtrat::Relation::GEQ)
+                                || (constraintA.relation() == smtrat::Relation::GEQ && constraintB.relation() == smtrat::Relation::LEQ)
+                                || (constraintA.relation() == smtrat::Relation::LEQ && constraintB.relation() == smtrat::Relation::GEQ)
+                                || (constraintA.relation() == smtrat::Relation::LEQ && constraintB.relation() == smtrat::Relation::LEQ) )
                         {
-                            nConstraint = smtrat::Formula::newConstraint( constraintB.lhs(), smtrat::Constraint::EQ );
+                            nConstraint = smtrat::Formula::newConstraint( constraintB.lhs(), smtrat::Relation::EQ );
                             nValuation = condB->valuation();
                             nFlag = condB->flag();
                         }
-                        else if( (constraintA.relation() == smtrat::Constraint::NEQ && constraintB.relation() == smtrat::Constraint::GEQ) )
+                        else if( (constraintA.relation() == smtrat::Relation::NEQ && constraintB.relation() == smtrat::Relation::GEQ) )
                         {
-                            nConstraint = smtrat::Formula::newConstraint( constraintB.lhs(), smtrat::Constraint::GREATER );
+                            nConstraint = smtrat::Formula::newConstraint( constraintB.lhs(), smtrat::Relation::GREATER );
                             nValuation = condB->valuation();
                             nFlag = condB->flag();
                         }
-                        else if( (constraintA.relation() == smtrat::Constraint::GEQ && constraintB.relation() == smtrat::Constraint::NEQ) )
+                        else if( (constraintA.relation() == smtrat::Relation::GEQ && constraintB.relation() == smtrat::Relation::NEQ) )
                         {
-                            nConstraint = smtrat::Formula::newConstraint( constraintA.lhs(), smtrat::Constraint::GREATER );
+                            nConstraint = smtrat::Formula::newConstraint( constraintA.lhs(), smtrat::Relation::GREATER );
                             nValuation = condA->valuation();
                             nFlag = condA->flag();
                         }
-                        else if( (constraintA.relation() == smtrat::Constraint::NEQ && constraintB.relation() == smtrat::Constraint::LEQ) )
+                        else if( (constraintA.relation() == smtrat::Relation::NEQ && constraintB.relation() == smtrat::Relation::LEQ) )
                         {
-                            nConstraint = smtrat::Formula::newConstraint( constraintB.lhs(), smtrat::Constraint::LESS );
+                            nConstraint = smtrat::Formula::newConstraint( constraintB.lhs(), smtrat::Relation::LESS );
                             nValuation = condB->valuation();
                             nFlag = condB->flag();
                         }
-                        else if( (constraintA.relation() == smtrat::Constraint::LEQ && constraintB.relation() == smtrat::Constraint::NEQ) )
+                        else if( (constraintA.relation() == smtrat::Relation::LEQ && constraintB.relation() == smtrat::Relation::NEQ) )
                         {
-                            nConstraint = smtrat::Formula::newConstraint( constraintA.lhs(), smtrat::Constraint::LESS );
+                            nConstraint = smtrat::Formula::newConstraint( constraintA.lhs(), smtrat::Relation::LESS );
                             nValuation = condA->valuation();
                             nFlag = condA->flag();
                         }
@@ -993,7 +993,7 @@ namespace vs
             // Check for all variables their valuation for the given constraint.
             for( auto var = varVals.begin(); var != varVals.end(); ++var )
             {
-                double varInConsVal = (**cond).valuate( var->first, _allVariables.size(), true, _preferEquation );
+                double varInConsVal = (**cond).valuate( var->first, _allVariables.size(), _preferEquation );
                 if( varInConsVal != 0 )
                     varVals.at( var->first ).insert( varInConsVal );
             }
@@ -1609,8 +1609,8 @@ namespace vs
             State* state;
             if( _substitution.variable().getType() == carl::VariableType::VT_INT && !(_substitution.term().denominator() == smtrat::ONE_POLYNOMIAL) )
             {
-                const smtrat::Constraint* denomPos = smtrat::Formula::newConstraint( _substitution.term().denominator(), smtrat::Constraint::GREATER );
-                const smtrat::Constraint* denomNeg = smtrat::Formula::newConstraint( _substitution.term().denominator(), smtrat::Constraint::LESS );
+                const smtrat::Constraint* denomPos = smtrat::Formula::newConstraint( _substitution.term().denominator(), smtrat::Relation::GREATER );
+                const smtrat::Constraint* denomNeg = smtrat::Formula::newConstraint( _substitution.term().denominator(), smtrat::Relation::LESS );
                 assert( denomPos != smtrat::Formula::constraintPool().inconsistentConstraint() || denomNeg != smtrat::Formula::constraintPool().inconsistentConstraint() );
 //                if( _substitution.term().hasSqrt() )
 //                {
@@ -1638,12 +1638,12 @@ namespace vs
 //                else
 //                {
 //                    // the substitutions test candidate is q/s
-//                    const smtrat::Constraint* numNotNeg = smtrat::Formula::newConstraint( _substitution.term().constantPart(), smtrat::Constraint::GEQ );
-//                    const smtrat::Constraint* numNotPos = smtrat::Formula::newConstraint( _substitution.term().constantPart(), smtrat::Constraint::LEQ );
-//                    const smtrat::Constraint* sideConsA = smtrat::Formula::newConstraint( _substitution.term().denominator() - _substitution.term().constantPart(), smtrat::Constraint::LEQ );
-//                    const smtrat::Constraint* sideConsB = smtrat::Formula::newConstraint( _substitution.term().denominator() + _substitution.term().constantPart(), smtrat::Constraint::LEQ );
-//                    const smtrat::Constraint* sideConsC = smtrat::Formula::newConstraint( _substitution.term().denominator() + _substitution.term().constantPart(), smtrat::Constraint::GEQ );
-//                    const smtrat::Constraint* sideConsD = smtrat::Formula::newConstraint( _substitution.term().denominator() - _substitution.term().constantPart(), smtrat::Constraint::GEQ );
+//                    const smtrat::Constraint* numNotNeg = smtrat::Formula::newConstraint( _substitution.term().constantPart(), smtrat::Relation::GEQ );
+//                    const smtrat::Constraint* numNotPos = smtrat::Formula::newConstraint( _substitution.term().constantPart(), smtrat::Relation::LEQ );
+//                    const smtrat::Constraint* sideConsA = smtrat::Formula::newConstraint( _substitution.term().denominator() - _substitution.term().constantPart(), smtrat::Relation::LEQ );
+//                    const smtrat::Constraint* sideConsB = smtrat::Formula::newConstraint( _substitution.term().denominator() + _substitution.term().constantPart(), smtrat::Relation::LEQ );
+//                    const smtrat::Constraint* sideConsC = smtrat::Formula::newConstraint( _substitution.term().denominator() + _substitution.term().constantPart(), smtrat::Relation::GEQ );
+//                    const smtrat::Constraint* sideConsD = smtrat::Formula::newConstraint( _substitution.term().denominator() - _substitution.term().constantPart(), smtrat::Relation::GEQ );
 //                    state = new State( this, _substitution, mpVariableBounds != NULL );
 //                    DisjunctionOfConditionConjunctions cases;
 //                    if( denomPos != smtrat::Formula::constraintPool().inconsistentConstraint() )
@@ -1744,7 +1744,7 @@ namespace vs
             const smtrat::PointerSet<smtrat::Constraint>& sideConds = _substitution.sideCondition();
             for( auto sideCond = sideConds.begin(); sideCond != sideConds.end(); ++sideCond )
             {
-                if( _substitution.variable().getType() != carl::VariableType::VT_INT || (*sideCond)->relation() != smtrat::Constraint::NEQ )
+                if( _substitution.variable().getType() != carl::VariableType::VT_INT || (*sideCond)->relation() != smtrat::Relation::NEQ )
                 {
                     std::vector<DisjunctionOfConditionConjunctions> subResults = std::vector<DisjunctionOfConditionConjunctions>();
                     subResults.push_back( DisjunctionOfConditionConjunctions() );
@@ -1803,18 +1803,18 @@ namespace vs
     void State::updateBackendCallValuation()
     {
         smtrat::Variables occuringVars = smtrat::Variables();
-        set<smtrat::Constraint::Relation> relationSymbols = set<smtrat::Constraint::Relation>();
+        set<smtrat::Relation> relationSymbols = set<smtrat::Relation>();
         for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
         {
             occuringVars.insert( (*cond)->constraint().variables().begin(), (*cond)->constraint().variables().end() );
             relationSymbols.insert( (*cond)->constraint().relation() );
         }
         mBackendCallValuation = 300000*occuringVars.size();
-        if( relationSymbols.find( smtrat::Constraint::EQ ) != relationSymbols.end() )
+        if( relationSymbols.find( smtrat::Relation::EQ ) != relationSymbols.end() )
         {
             mBackendCallValuation += 200000;
         }
-        else if( relationSymbols.find( smtrat::Constraint::LEQ ) != relationSymbols.end() || relationSymbols.find( smtrat::Constraint::GEQ ) != relationSymbols.end() )
+        else if( relationSymbols.find( smtrat::Relation::LEQ ) != relationSymbols.end() || relationSymbols.find( smtrat::Relation::GEQ ) != relationSymbols.end() )
         {
             mBackendCallValuation += 100000;
         }
@@ -1850,7 +1850,7 @@ namespace vs
             #endif
             // Get the original conditions to the covering set.
             Condition::Set coverSetOConds = Condition::Set();
-            bool sideConditionIsPartOfConflict = !_checkConflictForSideCondition || (pOriginalCondition() == NULL || originalCondition().constraint().relation() != smtrat::Constraint::EQ);
+            bool sideConditionIsPartOfConflict = !_checkConflictForSideCondition || (pOriginalCondition() == NULL || originalCondition().constraint().relation() != smtrat::Relation::EQ);
             const smtrat::PointerSet<smtrat::Constraint>& subsSideConds = substitution().sideCondition();
             for( auto cond = covSet.begin(); cond != covSet.end(); ++cond )
             {
@@ -2162,8 +2162,8 @@ namespace vs
         }
         else
             intervals = variableBounds().getIntervalMap();
-        smtrat::Constraint::Relation rel = cons.relation();
-        if( rel == smtrat::Constraint::GREATER || rel == smtrat::Constraint::LESS || rel == smtrat::Constraint::NEQ )
+        smtrat::Relation rel = cons.relation();
+        if( rel == smtrat::Relation::GREATER || rel == smtrat::Relation::LESS || rel == smtrat::Relation::NEQ )
         {
             auto indexDomain = intervals.find( index() );
             if( indexDomain->second.leftType() == carl::BoundType::STRICT )
@@ -2204,18 +2204,18 @@ namespace vs
                 bool constraintInconsistent = false;
                 if( numberOfRoots == 0 )
                 {
-                    if( cons.relation() == smtrat::Constraint::EQ )
+                    if( cons.relation() == smtrat::Relation::EQ )
                         constraintInconsistent = true;
-                    else if( imageOfLeftBound > 0 && (cons.relation() == smtrat::Constraint::LESS || cons.relation() == smtrat::Constraint::LEQ) )
+                    else if( imageOfLeftBound > 0 && (cons.relation() == smtrat::Relation::LESS || cons.relation() == smtrat::Relation::LEQ) )
                         constraintInconsistent = true;
-                    else if( imageOfLeftBound < 0 && (cons.relation() == smtrat::Constraint::GREATER || cons.relation() == smtrat::Constraint::GEQ) )
+                    else if( imageOfLeftBound < 0 && (cons.relation() == smtrat::Relation::GREATER || cons.relation() == smtrat::Relation::GEQ) )
                         constraintInconsistent = true;
                 }
                 else if( numberOfRoots == 1 )
                 {
-                    if( imageOfLeftBound > smtrat::ZERO_RATIONAL && imageOfRightBound > smtrat::ZERO_RATIONAL && cons.relation() == smtrat::Constraint::LESS )
+                    if( imageOfLeftBound > smtrat::ZERO_RATIONAL && imageOfRightBound > smtrat::ZERO_RATIONAL && cons.relation() == smtrat::Relation::LESS )
                         constraintInconsistent = true;
-                    if( imageOfLeftBound < smtrat::ZERO_RATIONAL && imageOfRightBound < smtrat::ZERO_RATIONAL && cons.relation() == smtrat::Constraint::GREATER )
+                    if( imageOfLeftBound < smtrat::ZERO_RATIONAL && imageOfRightBound < smtrat::ZERO_RATIONAL && cons.relation() == smtrat::Relation::GREATER )
                         constraintInconsistent = true;
                 }
                 if( constraintInconsistent )
@@ -2250,15 +2250,15 @@ namespace vs
             }
         }
         bool constraintInconsistent = false;
-        if( cons.relation() == smtrat::Constraint::EQ )
+        if( cons.relation() == smtrat::Relation::EQ )
             constraintInconsistent = true;
-        else if( solutionSpace.left() > 0 && cons.relation() == smtrat::Constraint::LEQ )
+        else if( solutionSpace.left() > 0 && cons.relation() == smtrat::Relation::LEQ )
             constraintInconsistent = true;
-        else if( solutionSpace.right() < 0 && cons.relation() == smtrat::Constraint::GEQ )
+        else if( solutionSpace.right() < 0 && cons.relation() == smtrat::Relation::GEQ )
             constraintInconsistent = true;
-        else if( solutionSpace.left() >= 0 && cons.relation() == smtrat::Constraint::LESS )
+        else if( solutionSpace.left() >= 0 && cons.relation() == smtrat::Relation::LESS )
             constraintInconsistent = true;
-        else if( solutionSpace.right() <= 0 && cons.relation() == smtrat::Constraint::GREATER )
+        else if( solutionSpace.right() <= 0 && cons.relation() == smtrat::Relation::GREATER )
             constraintInconsistent = true;
         Condition::Set origins = Condition::Set();
         origins.insert( _condition );

@@ -137,7 +137,7 @@ namespace smtrat
                 mAssignmentFullfilsNonlinearConstraints = false;
                 if( constraint->lhs().isLinear() )
                 {
-                    if( (*_subformula)->constraint().relation() != Constraint::NEQ )
+                    if( (*_subformula)->constraint().relation() != Relation::NEQ )
                     {
                         vector< const Bound<Numeric>* >* bounds = mConstraintToBound[constraint];
                         assert( bounds != NULL );
@@ -233,7 +233,7 @@ namespace smtrat
             {
                 if( constraint->lhs().isLinear() )
                 {
-                    if( (*_subformula)->constraint().relation() != Constraint::NEQ )
+                    if( (*_subformula)->constraint().relation() != Relation::NEQ )
                     {
                         // Deactivate the bounds regarding the given constraint
                         vector< const Bound<Numeric>* >* bounds = mConstraintToBound[constraint];
@@ -954,7 +954,7 @@ Return:
      */
     void LRAModule::setBound( Variable<Numeric>& _var, bool _constraintInverted, const Numeric& _boundValue, const Constraint* _constraint )
     {
-        if( _constraint->relation() == Constraint::EQ )
+        if( _constraint->relation() == Relation::EQ )
         {
             // TODO: Take value from an allocator to assure the values are located close to each other in the memory.
             Value<Numeric>* value  = new Value<Numeric>( _boundValue );
@@ -1013,14 +1013,14 @@ Return:
             findSimpleConflicts( *result.first );
             #endif
         }
-        if( _constraint->relation() == Constraint::LEQ || ( _constraint->integerValued() && _constraint->relation() == Constraint::NEQ ) )
+        if( _constraint->relation() == Relation::LEQ || ( _constraint->integerValued() && _constraint->relation() == Relation::NEQ ) )
         {
             
             const Constraint* constraint;
             Value<Numeric>* value;
-            if( _constraint->integerValued() && _constraint->relation() == Constraint::NEQ )
+            if( _constraint->integerValued() && _constraint->relation() == Relation::NEQ )
             {
-                constraint = Formula::newConstraint( _constraint->lhs(), Constraint::LESS );
+                constraint = Formula::newConstraint( _constraint->lhs(), Relation::LESS );
                 value = new Value<Numeric>( _boundValue - ONE_RATIONAL );
             }
             else
@@ -1033,7 +1033,7 @@ Return:
             result.first->boundExists();
             boundVector->push_back( result.first );
             mConstraintToBound[constraint] = boundVector;
-            if( _constraint->integerValued() && _constraint->relation() == Constraint::NEQ )
+            if( _constraint->integerValued() && _constraint->relation() == Relation::NEQ )
             {
                 vector< const Bound<Numeric>* >* boundVectorB = new vector< const Bound<Numeric>* >();
                 boundVectorB->push_back( result.first );
@@ -1056,7 +1056,7 @@ Return:
                 mpStatistics->addDeduction();
                 #endif
             }
-            if( result.second.second != NULL && !result.second.second->isInfinite() && !(_constraint->integerValued() && _constraint->relation() == Constraint::NEQ) )
+            if( result.second.second != NULL && !result.second.second->isInfinite() && !(_constraint->integerValued() && _constraint->relation() == Relation::NEQ) )
             {
                 Formula* deduction = new Formula( OR );
                 deduction->addSubformula( new Formula( NOT ) );
@@ -1072,13 +1072,13 @@ Return:
             findSimpleConflicts( *result.first );
             #endif
         }
-        if( _constraint->relation() == Constraint::GEQ || ( _constraint->integerValued() && _constraint->relation() == Constraint::NEQ ) )
+        if( _constraint->relation() == Relation::GEQ || ( _constraint->integerValued() && _constraint->relation() == Relation::NEQ ) )
         {
             const Constraint* constraint;
             Value<Numeric>* value;
-            if( _constraint->integerValued() && _constraint->relation() == Constraint::NEQ )
+            if( _constraint->integerValued() && _constraint->relation() == Relation::NEQ )
             {
-                constraint = Formula::newConstraint( _constraint->lhs(), Constraint::GREATER );
+                constraint = Formula::newConstraint( _constraint->lhs(), Relation::GREATER );
                 value = new Value<Numeric>( _boundValue + ONE_RATIONAL );
             }
             else
@@ -1091,7 +1091,7 @@ Return:
             result.first->boundExists();
             boundVector->push_back( result.first );
             mConstraintToBound[constraint] = boundVector;
-            if( _constraint->integerValued() && _constraint->relation() == Constraint::NEQ )
+            if( _constraint->integerValued() && _constraint->relation() == Relation::NEQ )
             {
                 mConstraintToBound[_constraint]->push_back( result.first );
                 result.first->setNeqRepresentation( _constraint );
@@ -1112,7 +1112,7 @@ Return:
                 mpStatistics->addDeduction();
                 #endif
             }
-            if( result.second.second != NULL && !result.second.second->isInfinite() && !(_constraint->integerValued() && _constraint->relation() == Constraint::NEQ) )
+            if( result.second.second != NULL && !result.second.second->isInfinite() && !(_constraint->integerValued() && _constraint->relation() == Relation::NEQ) )
             {
                 Formula* deduction = new Formula( OR );
                 deduction->addSubformula( new Formula( NOT ) );
@@ -1128,23 +1128,23 @@ Return:
             findSimpleConflicts( *result.first );
             #endif
         }
-        if( _constraint->relation() == Constraint::LESS || _constraint->relation() == Constraint::NEQ )
+        if( _constraint->relation() == Relation::LESS || _constraint->relation() == Relation::NEQ )
         {
             const Constraint* constraint;
-            if( _constraint->relation() != Constraint::NEQ )
+            if( _constraint->relation() != Relation::NEQ )
             {
                 constraint = _constraint;
             }
             else
             {
-                constraint = Formula::newConstraint( _constraint->lhs(), Constraint::LESS );
+                constraint = Formula::newConstraint( _constraint->lhs(), Relation::LESS );
             }
             Value<Numeric>* value = new Value<Numeric>( _boundValue, (_constraintInverted ? 1 : -1) );
             pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), constraint );
             vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
             boundVector->push_back( result.first );
             mConstraintToBound[constraint] = boundVector;
-            if( _constraint->relation() == Constraint::NEQ )
+            if( _constraint->relation() == Relation::NEQ )
             {
                 vector< const Bound<Numeric>* >* boundVectorB = new vector< const Bound<Numeric>* >();
                 boundVectorB->push_back( result.first );
@@ -1167,7 +1167,7 @@ Return:
                 mpStatistics->addDeduction();
                 #endif
             }
-            if( result.second.second != NULL && !result.second.second->isInfinite() && _constraint->relation() != Constraint::NEQ )
+            if( result.second.second != NULL && !result.second.second->isInfinite() && _constraint->relation() != Relation::NEQ )
             {
                 Formula* deduction = new Formula( OR );
                 deduction->addSubformula( new Formula( NOT ) );
@@ -1183,23 +1183,23 @@ Return:
             findSimpleConflicts( *result.first );
             #endif
         }
-        if( _constraint->relation() == Constraint::GREATER || _constraint->relation() == Constraint::NEQ )
+        if( _constraint->relation() == Relation::GREATER || _constraint->relation() == Relation::NEQ )
         {
             const Constraint* constraint;
-            if( _constraint->relation() != Constraint::NEQ )
+            if( _constraint->relation() != Relation::NEQ )
             {
                 constraint = _constraint;
             }
             else
             {
-                constraint = Formula::newConstraint( _constraint->lhs(), Constraint::GREATER );
+                constraint = Formula::newConstraint( _constraint->lhs(), Relation::GREATER );
             }
             Value<Numeric>* value = new Value<Numeric>( _boundValue, (_constraintInverted ? -1 : 1) );
             pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), constraint );
             vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
             boundVector->push_back( result.first );
             mConstraintToBound[constraint] = boundVector;
-            if( _constraint->relation() == Constraint::NEQ )
+            if( _constraint->relation() == Relation::NEQ )
             {
                 mConstraintToBound[_constraint]->push_back( result.first );
                 result.first->setNeqRepresentation( _constraint );
@@ -1220,7 +1220,7 @@ Return:
                 mpStatistics->addDeduction();
                 #endif
             }
-            if( result.second.second != NULL && !result.second.second->isInfinite() && _constraint->relation() != Constraint::NEQ )
+            if( result.second.second != NULL && !result.second.second->isInfinite() && _constraint->relation() != Relation::NEQ )
             {
                 Formula* deduction = new Formula( OR );
                 deduction->addSubformula( new Formula( NOT ) );

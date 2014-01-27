@@ -53,8 +53,6 @@ namespace smtrat
         friend class ConstraintPool;
         
         public:
-            // Type definitions.
-            enum Relation { EQ = 0, NEQ = 1, LESS = 2, GREATER = 3, LEQ = 4, GEQ = 5 };
             typedef std::vector<const Constraint*>                                   PointerVector;
             typedef std::vector<PointerSet<Constraint>>                              PointerSetVector;
             typedef PointerMap<Constraint,PointerSetVector>                          OriginsMap;
@@ -63,7 +61,7 @@ namespace smtrat
             /// A unique id.
             unsigned             mID;
             /// The hash value.
-            unsigned             mHash;
+            size_t             mHash;
             /// The relation symbol comparing the polynomial considered by this constraint to zero.
             Relation             mRelation;
             /// The polynomial which is compared by this constraint to zero.
@@ -146,7 +144,7 @@ namespace smtrat
             /**
              * @return A hash value for this constraint.
              */
-            unsigned getHash() const
+            size_t getHash() const
             {
                 return mHash;
             }
@@ -255,7 +253,7 @@ namespace smtrat
              */
             static bool constraintRelationIsStrict( Relation _rel )
             {
-                return (_rel == NEQ || _rel == LESS || _rel == GREATER);
+                return (_rel == Relation::NEQ || _rel == Relation::LESS || _rel == Relation::GREATER);
             }
             
             /**
@@ -331,11 +329,11 @@ namespace smtrat
                 {
                     const Rational& coeff = mLhs.lterm()->coeff();
                     if( coeff > 0 )
-                        return (mRelation == LEQ || mRelation == LESS );
+                        return (mRelation == Relation::LEQ || mRelation == Relation::LESS );
                     else
                     {
                         assert( coeff < 0 );
-                        return (mRelation == GEQ || mRelation == GREATER );
+                        return (mRelation == Relation::GEQ || mRelation == Relation::GREATER );
                     }
                 }
                 return false;
@@ -446,7 +444,7 @@ namespace smtrat
              * @param _friendlyVarNames A flag that indicates whether to print the variables with their internal representation (false)
              *                           or with their dedicated names.
              */
-            void printProperties( std::ostream& _out = std::cout, bool _friendlyVarNames = true ) const;
+            void printProperties( std::ostream& _out = std::cout ) const;
             
             /**
              * Gives the string to the given relation symbol.
@@ -485,7 +483,7 @@ namespace smtrat
     };
 }    // namespace smtrat
 
-#define CONSTRAINT_HASH( _lhs, _rel ) ((std::hash<smtrat::Polynomial>()( _lhs ) << 3) ^ _rel)
+#define CONSTRAINT_HASH( _lhs, _rel ) (size_t)((size_t)(std::hash<smtrat::Polynomial>()( _lhs ) << 3) ^ (size_t)_rel)
 
 namespace std
 {

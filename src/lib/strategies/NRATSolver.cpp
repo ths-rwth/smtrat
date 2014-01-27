@@ -32,7 +32,7 @@ namespace smtrat
     NRATSolver::NRATSolver():
         Manager()
     {
-        unsigned position = 0;
+        size_t position = 0;
         #ifdef SMTRAT_ENABLE_Preprocessing
         position = addBackendIntoStrategyGraph( position, MT_Preprocessing );
         #else

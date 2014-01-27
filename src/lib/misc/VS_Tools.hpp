@@ -168,13 +168,13 @@ namespace vs
      * @param _length The maximal length of the bit strings with odd parity to compute.
      * @param _strings All bit strings of length less or equal the given length with odd parity.
      */
-    void getOddBitStrings( unsigned _length, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >& _strings );
+    void getOddBitStrings( size_t _length, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >& _strings );
         
     /**
      * @param _length The maximal length of the bit strings with even parity to compute.
      * @param _strings All bit strings of length less or equal the given length with even parity.
      */
-    void getEvenBitStrings( unsigned _length, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >& _strings );
+    void getEvenBitStrings( size_t _length, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >& _strings );
     
     /**
      * Prints the given disjunction of conjunction of constraints.

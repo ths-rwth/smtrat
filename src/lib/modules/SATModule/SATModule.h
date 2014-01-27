@@ -296,7 +296,7 @@ namespace smtrat
             void printClause( std::ostream&, Minisat::Clause& );
             void printClause( Minisat::CRef, bool = false, std::ostream& = std::cout, const std::string& = "" ) const;
             void printClause( const Minisat::vec<Minisat::Lit>&, bool = false, std::ostream& = std::cout, const std::string& = "" ) const;
-            void printClauses( std::ostream&, Minisat::Clause&, Minisat::vec<Minisat::Var>&, Minisat::Var& );
+            void printClauses( std::ostream&, Minisat::Clause& );
             void printClauses( const Minisat::vec<Minisat::CRef>&, const std::string, std::ostream& = std::cout, const std::string = "***" );
             void printDecisions( std::ostream& = std::cout, std::string = "***" ) const;
 
@@ -387,7 +387,7 @@ namespace smtrat
             //
             Minisat::CRef learnTheoryConflict();
             // Search for a given number of conflicts.
-            Minisat::lbool search( int nof_conflicts = 100 );
+            Minisat::lbool search();// int nof_conflicts = 100 );
             // Reduce the set of learned clauses.
             void reduceDB();
             // Shrink 'cs' to contain only non-satisfied clauses.
@@ -458,7 +458,7 @@ namespace smtrat
 
             Minisat::CRef addFormula( Formula*, unsigned );
             Minisat::CRef addClause( const Formula*, unsigned = 0 );
-            Minisat::Lit getLiteral( const Formula&, const Formula* = NULL, bool = true );
+            Minisat::Lit getLiteral( const Formula&, const Formula* = NULL );
             //Deprecated method
             Minisat::Lit getLiteral( const Constraint*, const Formula* = NULL, double = 0, bool = false, bool = true );
             void adaptPassedFormula();
@@ -625,12 +625,12 @@ namespace smtrat
 
     inline void SATModule::setConfBudget( int64_t x )
     {
-        conflict_budget = conflicts + x;
+        conflict_budget = (int64_t)conflicts + x;
     }
 
     inline void SATModule::setPropBudget( int64_t x )
     {
-        propagation_budget = propagations + x;
+        propagation_budget = (int64_t)propagations + x;
     }
 
     inline void SATModule::interrupt()

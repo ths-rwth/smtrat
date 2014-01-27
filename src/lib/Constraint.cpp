@@ -45,8 +45,8 @@ namespace smtrat
 
     Constraint::Constraint():
         mID( 0 ),
-        mHash( CONSTRAINT_HASH( ZERO_POLYNOMIAL, EQ ) ), 
-        mRelation( EQ ),
+        mHash( CONSTRAINT_HASH( ZERO_POLYNOMIAL, Relation::EQ ) ), 
+        mRelation( Relation::EQ ),
         mLhs( Rational( 0 ) ),
         mFactorization(),
         mVariables(),
@@ -68,16 +68,16 @@ namespace smtrat
         
         if( hasIntegerValuedVariable() && !hasRealValuedVariable() )
         {
-            if( relation() == LESS )
+            if( relation() == Relation::LESS )
             {
                 mLhs = mLhs + ONE_RATIONAL;
-                mRelation = LEQ;
+                mRelation = Relation::LEQ;
                 mHash = CONSTRAINT_HASH( mLhs, mRelation );
             }
-            if( relation() == GREATER )
+            if( relation() == Relation::GREATER )
             {
                 mLhs = mLhs - ONE_RATIONAL;
-                mRelation = GEQ;
+                mRelation = Relation::GEQ;
                 mHash = CONSTRAINT_HASH( mLhs, mRelation );
             }
         }
@@ -124,35 +124,35 @@ namespace smtrat
         {
             switch( relation() )
             {
-                case EQ:
+                case Relation::EQ:
                 {
                     if( mLhsDefinitess == carl::Definiteness::POSITIVE || mLhsDefinitess == carl::Definiteness::NEGATIVE ) return 0;
                     break;
                 }
-                case NEQ:
+                case Relation::NEQ:
                 {
                     if( mLhsDefinitess == carl::Definiteness::POSITIVE || mLhsDefinitess == carl::Definiteness::NEGATIVE ) return 1;
                     break;
                 }
-                case LESS:
+                case Relation::LESS:
                 {
                     if( mLhsDefinitess == carl::Definiteness::NEGATIVE ) return 1;
                     if( mLhsDefinitess >= carl::Definiteness::POSITIVE_SEMI ) return 0;
                     break;
                 }
-                case GREATER:
+                case Relation::GREATER:
                 {
                     if( mLhsDefinitess == carl::Definiteness::POSITIVE ) return 1;
                     if( mLhsDefinitess <= carl::Definiteness::NEGATIVE_SEMI ) return 0;
                     break;
                 }
-                case LEQ:
+                case Relation::LEQ:
                 {
                     if( mLhsDefinitess <= carl::Definiteness::NEGATIVE_SEMI ) return 1;
                     if( mLhsDefinitess == carl::Definiteness::POSITIVE ) return 0;
                     break;
                 }
-                case GEQ:
+                case Relation::GEQ:
                 {
                     if( mLhsDefinitess >= carl::Definiteness::POSITIVE_SEMI ) return 1;
                     if( mLhsDefinitess == carl::Definiteness::NEGATIVE ) return 0;
@@ -184,7 +184,7 @@ namespace smtrat
                 return 2;
             switch( relation() )
             {
-                case EQ:
+                case Relation::EQ:
                 {
                     if( solutionSpace.diameter() == 0 && solutionSpace.left() == 0 )
                         return 1;
@@ -192,13 +192,13 @@ namespace smtrat
                         return 0;
                     break;
                 }
-                case NEQ:
+                case Relation::NEQ:
                 {
                     if( !solutionSpace.contains( 0 ) )
                         return 1;
                     break;
                 }
-                case LESS:
+                case Relation::LESS:
                 {
                     if( solutionSpace.rightType() != carl::BoundType::INFTY )
                     {
@@ -211,7 +211,7 @@ namespace smtrat
                         return 0;
                     break;
                 }
-                case GREATER:
+                case Relation::GREATER:
                 {
                     if( solutionSpace.leftType() != carl::BoundType::INFTY )
                     {
@@ -224,7 +224,7 @@ namespace smtrat
                         return 0;
                     break;
                 }
-                case LEQ:
+                case Relation::LEQ:
                 {
                     if( solutionSpace.rightType() != carl::BoundType::INFTY && solutionSpace.right() <= 0)
                         return 1;
@@ -237,7 +237,7 @@ namespace smtrat
                     }
                     break;
                 }
-                case GEQ:
+                case Relation::GEQ:
                 {
                     if( solutionSpace.leftType() != carl::BoundType::INFTY && solutionSpace.left() >= 0 )
                         return 1;
@@ -264,7 +264,7 @@ namespace smtrat
     {
         if( variables().find( _var ) == variables().end() )
             return true;
-        if( relation() == EQ )
+        if( relation() == Relation::EQ )
         {
             if( variables().size() == 1 )
                 return true;
@@ -288,30 +288,30 @@ namespace smtrat
     Constraint* Constraint::simplify() const
     {
         Relation rel = mRelation;
-        if( (mLhsDefinitess == carl::Definiteness::POSITIVE_SEMI && rel == LEQ) || (mLhsDefinitess == carl::Definiteness::NEGATIVE_SEMI && rel == GEQ) )
-            rel = EQ;
+        if( (mLhsDefinitess == carl::Definiteness::POSITIVE_SEMI && rel == Relation::LEQ) || (mLhsDefinitess == carl::Definiteness::NEGATIVE_SEMI && rel == Relation::GEQ) )
+            rel = Relation::EQ;
         // Left-hand side is a non-linear univariate monomial
         if( mVariables.size() == 1 && !mLhs.isLinear() && mLhs.nrTerms() == 1 )
         {
             switch( rel )
             {
-                case EQ:
+                case Relation::EQ:
                     return new Constraint( Polynomial( *mVariables.begin() ), rel );
-                case NEQ:
+                case Relation::NEQ:
                     return new Constraint( Polynomial( *mVariables.begin() ), rel );
-                case LEQ:
+                case Relation::LEQ:
                     if( mLhsDefinitess == carl::Definiteness::NEGATIVE_SEMI )
                         return new Constraint( MINUS_ONE_POLYNOMIAL * Polynomial( *mVariables.begin() ) * Polynomial( *mVariables.begin() ), rel );
                     else
                         return new Constraint( (mLhs.trailingTerm()->coeff() > 0 ? ONE_POLYNOMIAL : MINUS_ONE_POLYNOMIAL ) * Polynomial( *mVariables.begin() ), rel );
-                case GEQ:
+                case Relation::GEQ:
                     if( mLhsDefinitess == carl::Definiteness::POSITIVE_SEMI )
                         return new Constraint( Polynomial( *mVariables.begin() ) * Polynomial( *mVariables.begin() ), rel );
                     else
                         return new Constraint( (mLhs.trailingTerm()->coeff() > 0 ? ONE_POLYNOMIAL : MINUS_ONE_POLYNOMIAL ) * Polynomial( *mVariables.begin() ), rel );
-                case LESS:
+                case Relation::LESS:
                     if( mLhsDefinitess == carl::Definiteness::NEGATIVE_SEMI )
-                        return new Constraint( Polynomial( *mVariables.begin() ), NEQ );
+                        return new Constraint( Polynomial( *mVariables.begin() ), Relation::NEQ );
                     else
                     {
                         if( mLhsDefinitess == carl::Definiteness::POSITIVE_SEMI )
@@ -319,9 +319,9 @@ namespace smtrat
                         else
                             return new Constraint( (mLhs.trailingTerm()->coeff() > 0 ? ONE_POLYNOMIAL : MINUS_ONE_POLYNOMIAL ) * Polynomial( *mVariables.begin() ), rel );
                     }
-                case GREATER:
+                case Relation::GREATER:
                     if( mLhsDefinitess == carl::Definiteness::POSITIVE_SEMI )
-                        return new Constraint( Polynomial( *mVariables.begin() ), NEQ );
+                        return new Constraint( Polynomial( *mVariables.begin() ), Relation::NEQ );
                     else
                     {
                         if( mLhsDefinitess == carl::Definiteness::NEGATIVE_SEMI )
@@ -355,33 +355,33 @@ namespace smtrat
                 {
                     switch( relation() )
                     {
-                        case EQ:
-                            return new Constraint( ZERO_POLYNOMIAL, LESS );
-                        case NEQ:
-                            return new Constraint( ZERO_POLYNOMIAL, EQ );
-                        case LEQ:
+                        case Relation::EQ:
+                            return new Constraint( ZERO_POLYNOMIAL, Relation::LESS );
+                        case Relation::NEQ:
+                            return new Constraint( ZERO_POLYNOMIAL, Relation::EQ );
+                        case Relation::LEQ:
                         {
                             Polynomial newLhs = ((lhs() - lhs().constantPart()) * (1 / g));
                             newLhs += carl::floor( (lhs().constantPart() / g) ) + ONE_RATIONAL;
-                            return new Constraint( newLhs, LEQ );
+                            return new Constraint( newLhs, Relation::LEQ );
                         }
-                        case GEQ:
+                        case Relation::GEQ:
                         {
                             Polynomial newLhs = ((lhs() - lhs().constantPart()) * (1 / g));
                             newLhs += carl::floor( (lhs().constantPart() / g) );
-                            return new Constraint( newLhs, GEQ );
+                            return new Constraint( newLhs, Relation::GEQ );
                         }
-                        case LESS:
+                        case Relation::LESS:
                         {
                             Polynomial newLhs = ((lhs() - lhs().constantPart()) * (1 / g));
                             newLhs += carl::floor( (lhs().constantPart() / g) ) + ONE_RATIONAL;
-                            return new Constraint( newLhs, LEQ );
+                            return new Constraint( newLhs, Relation::LEQ );
                         }
-                        case GREATER:
+                        case Relation::GREATER:
                         {
                             Polynomial newLhs = ((lhs() - lhs().constantPart()) * (1 / g));
                             newLhs += carl::floor( (lhs().constantPart() / g) );
-                            return new Constraint( newLhs, GEQ );
+                            return new Constraint( newLhs, Relation::GEQ );
                         }
                         default:
                             assert( false );
@@ -396,16 +396,16 @@ namespace smtrat
     {
         if( hasIntegerValuedVariable() && !hasRealValuedVariable() )
         {
-            if( relation() == LESS )
+            if( relation() == Relation::LESS )
             {
                 mLhs = mLhs + ONE_RATIONAL;
-                mRelation = LEQ;
+                mRelation = Relation::LEQ;
                 mHash = CONSTRAINT_HASH( mLhs, mRelation );
             }
-            if( relation() == GREATER )
+            if( relation() == Relation::GREATER )
             {
                 mLhs = mLhs - ONE_RATIONAL;
-                mRelation = GEQ;
+                mRelation = Relation::GEQ;
                 mHash = CONSTRAINT_HASH( mLhs, mRelation );
             }
         }
@@ -472,10 +472,10 @@ namespace smtrat
             result += "(";
         switch( relation() )
         {
-            case EQ:
+            case Relation::EQ:
                 result += "=";
                 break;
-            case NEQ:
+            case Relation::NEQ:
                 if( _infix )
                 {
                     if( _unequalSwitch == 1 )
@@ -501,16 +501,16 @@ namespace smtrat
                     }
                 }
                 break;
-            case LESS:
+            case Relation::LESS:
                 result += "<";
                 break;
-            case GREATER:
+            case Relation::GREATER:
                 result += ">";
                 break;
-            case LEQ:
+            case Relation::LEQ:
                 result += "<=";
                 break;
-            case GEQ:
+            case Relation::GEQ:
                 result += ">=";
                 break;
             default:
@@ -520,7 +520,7 @@ namespace smtrat
         return result;
     }
 
-    void Constraint::printProperties( ostream& _out, bool _friendlyVarNames ) const
+    void Constraint::printProperties( ostream& _out ) const
     {
         _out << "Properties:" << endl;
         _out << "   Definitess:              ";
@@ -561,17 +561,17 @@ namespace smtrat
     {
         switch( _rel )
         {
-            case EQ:
+            case Relation::EQ:
                 return "=";
-            case NEQ:
+            case Relation::NEQ:
                 return "!=";
-            case LEQ:
+            case Relation::LEQ:
                 return "<=";
-            case GEQ:
+            case Relation::GEQ:
                 return ">=";
-            case LESS:
+            case Relation::LESS:
                 return "<";
-            case GREATER:
+            case Relation::GREATER:
                 return ">";
             default:
                 return "~";
@@ -582,32 +582,32 @@ namespace smtrat
     {
         switch( _relation )
         {
-            case EQ:
+            case Relation::EQ:
             {
                 if( _value == 0 ) return true;
                 else return false;
             }
-            case NEQ:
+            case Relation::NEQ:
             {
                 if( _value == 0 ) return false;
                 else return true;
             }
-            case LESS:
+            case Relation::LESS:
             {
                 if( _value < 0 ) return true;
                 else return false;
             }
-            case GREATER:
+            case Relation::GREATER:
             {
                 if( _value > 0 ) return true;
                 else return false;
             }
-            case LEQ:
+            case Relation::LEQ:
             {
                 if( _value <= 0 ) return true;
                 else return false;
             }
-            case GEQ:
+            case Relation::GEQ:
             {
                 if( _value >= 0 ) return true;
                 else return false;
@@ -620,25 +620,25 @@ namespace smtrat
         }
     }
     
-    Constraint::Relation Constraint::invertRelation( const Constraint::Relation _rel )
+    Relation Constraint::invertRelation( const Relation _rel )
     {
         switch( _rel )
         {
-            case EQ:
-                return NEQ;
-            case NEQ:
-                return EQ;
-            case LEQ:
-                return GREATER;
-            case GEQ:
-                return LESS;
-            case LESS:
-                return GEQ;
-            case GREATER:
-                return LEQ;
+            case Relation::EQ:
+                return Relation::NEQ;
+            case Relation::NEQ:
+                return Relation::EQ;
+            case Relation::LEQ:
+                return Relation::GREATER;
+            case Relation::GEQ:
+                return Relation::LESS;
+            case Relation::LESS:
+                return Relation::GEQ;
+            case Relation::GREATER:
+                return Relation::LEQ;
             default:
                 assert( false );
-                return EQ;
+                return Relation::EQ;
         }
     }
     
@@ -747,21 +747,21 @@ namespace smtrat
 //        cout << "test3" << endl;
             switch( (termACoeffGreater ? relB : relA ) )
             {
-                case LEQ:
-                    if( termACoeffGreater ) relB = GEQ; 
-                    else relA = GEQ;
+                case Relation::LEQ:
+                    if( termACoeffGreater ) relB = Relation::GEQ; 
+                    else relA = Relation::GEQ;
                     break;
-                case GEQ:
-                    if( termACoeffGreater ) relB = LEQ; 
-                    else relA = LEQ;
+                case Relation::GEQ:
+                    if( termACoeffGreater ) relB = Relation::LEQ; 
+                    else relA = Relation::LEQ;
                     break;
-                case LESS:
-                    if( termACoeffGreater ) relB = GREATER;
-                    else relA = GREATER;
+                case Relation::LESS:
+                    if( termACoeffGreater ) relB = Relation::GREATER;
+                    else relA = Relation::GREATER;
                     break;
-                case GREATER:
-                    if( termACoeffGreater )  relB = LESS;
-                    else relA = LESS;
+                case Relation::GREATER:
+                    if( termACoeffGreater )  relB = Relation::LESS;
+                    else relA = Relation::LESS;
                     break;
                 default:
                     break;
@@ -772,133 +772,133 @@ namespace smtrat
         // Compare the adapted constant parts.
         switch( relB )
         {
-            case EQ:
+            case Relation::EQ:
                 switch( relA )
                 {
-                    case EQ: // p+c=0  and  p+d=0
+                    case Relation::EQ: // p+c=0  and  p+d=0
                         if( c == d ) return A_IFF_B; 
                         else return NOT__A_AND_B;
-                    case NEQ: // p+c!=0  and  p+d=0
+                    case Relation::NEQ: // p+c!=0  and  p+d=0
                         if( c == d ) return A_XOR_B;
                         else return B_IMPLIES_A;
-                    case LESS: // p+c<0  and  p+d=0
+                    case Relation::LESS: // p+c<0  and  p+d=0
                         if( c < d ) return B_IMPLIES_A;
                         else return NOT__A_AND_B;
-                    case GREATER: // p+c>0  and  p+d=0
+                    case Relation::GREATER: // p+c>0  and  p+d=0
                         if( c > d ) return B_IMPLIES_A;
                         else return NOT__A_AND_B;
-                    case LEQ: // p+c<=0  and  p+d=0
+                    case Relation::LEQ: // p+c<=0  and  p+d=0
                         if( c <= d ) return B_IMPLIES_A;
                         else return NOT__A_AND_B;
-                    case GEQ: // p+c>=0  and  p+d=0
+                    case Relation::GEQ: // p+c>=0  and  p+d=0
                         if( c >= d ) return B_IMPLIES_A;
                         else return NOT__A_AND_B;
                     default:
                         return false;
                 }
-            case NEQ:
+            case Relation::NEQ:
                 switch( relA )
                 {
-                    case EQ: // p+c=0  and  p+d!=0
+                    case Relation::EQ: // p+c=0  and  p+d!=0
                         if( c == d ) return A_XOR_B;
                         else return A_IMPLIES_B;
-                    case NEQ: // p+c!=0  and  p+d!=0
+                    case Relation::NEQ: // p+c!=0  and  p+d!=0
                         if( c == d ) return A_IFF_B;
                         else return 0;
-                    case LESS: // p+c<0  and  p+d!=0
+                    case Relation::LESS: // p+c<0  and  p+d!=0
                         if( c >= d ) return A_IMPLIES_B;
                         else return 0;
-                    case GREATER: // p+c>0  and  p+d!=0
+                    case Relation::GREATER: // p+c>0  and  p+d!=0
                         if( c <= d ) return A_IMPLIES_B;
                         else return 0;
-                    case LEQ: // p+c<=0  and  p+d!=0
+                    case Relation::LEQ: // p+c<=0  and  p+d!=0
                         if( c > d ) return A_IMPLIES_B;
                         else if( c == d ) return A_AND_B__IFF_C;
                         else return 0;
-                    case GEQ: // p+c>=0  and  p+d!=0
+                    case Relation::GEQ: // p+c>=0  and  p+d!=0
                         if( c < d ) return A_IMPLIES_B;
                         else if( c == d ) return A_AND_B__IFF_C;
                         else return 0;
                     default:
                         return 0;
                 }
-            case LESS:
+            case Relation::LESS:
                 switch( relA )
                 {
-                    case EQ: // p+c=0  and  p+d<0
+                    case Relation::EQ: // p+c=0  and  p+d<0
                         if( c > d ) return A_IMPLIES_B;
                         else return NOT__A_AND_B;
-                    case NEQ: // p+c!=0  and  p+d<0
+                    case Relation::NEQ: // p+c!=0  and  p+d<0
                         if( c <= d ) return B_IMPLIES_A;
                         else return 0;
-                    case LESS: // p+c<0  and  p+d<0
+                    case Relation::LESS: // p+c<0  and  p+d<0
                         if( c == d ) return A_IFF_B;
                         else if( c < d ) return B_IMPLIES_A;
                         else return A_IMPLIES_B;
-                    case GREATER: // p+c>0  and  p+d<0
+                    case Relation::GREATER: // p+c>0  and  p+d<0
                         if( c <= d ) return NOT__A_AND_B;
                         else return 0;
-                    case LEQ: // p+c<=0  and  p+d<0
+                    case Relation::LEQ: // p+c<=0  and  p+d<0
                         if( c > d ) return A_IMPLIES_B;
                         else return B_IMPLIES_A;
-                    case GEQ: // p+c>=0  and  p+d<0
+                    case Relation::GEQ: // p+c>=0  and  p+d<0
                         if( c < d ) return NOT__A_AND_B;
                         else if( c == d ) return A_XOR_B;
                         else return 0;
                     default:
                         return 0;
                 }
-            case GREATER:
+            case Relation::GREATER:
             {
                 switch( relA )
                 {
-                    case EQ: // p+c=0  and  p+d>0
+                    case Relation::EQ: // p+c=0  and  p+d>0
                         if( c < d ) return A_IMPLIES_B;
                         else return NOT__A_AND_B;
-                    case NEQ: // p+c!=0  and  p+d>0
+                    case Relation::NEQ: // p+c!=0  and  p+d>0
                         if( c >= d ) return B_IMPLIES_A;
                         else return 0;
-                    case LESS: // p+c<0  and  p+d>0
+                    case Relation::LESS: // p+c<0  and  p+d>0
                         if( c >= d ) return NOT__A_AND_B;
                         else return 0;
-                    case GREATER: // p+c>0  and  p+d>0
+                    case Relation::GREATER: // p+c>0  and  p+d>0
                         if( c == d ) return A_IFF_B;
                         else if( c > d ) return B_IMPLIES_A;
                         else return A_IMPLIES_B;
-                    case LEQ: // p+c<=0  and  p+d>0
+                    case Relation::LEQ: // p+c<=0  and  p+d>0
                         if( c > d ) return NOT__A_AND_B;
                         else if( c == d ) return A_XOR_B;
                         else return 0;
-                    case GEQ: // p+c>=0  and  p+d>0
+                    case Relation::GEQ: // p+c>=0  and  p+d>0
                         if( c > d ) return B_IMPLIES_A;
                         else return A_IMPLIES_B;
                     default:
                         return 0;
                 }
             }
-            case LEQ:
+            case Relation::LEQ:
             {
                 switch( relA )
                 {
-                    case EQ: // p+c=0  and  p+d<=0
+                    case Relation::EQ: // p+c=0  and  p+d<=0
                         if( c >= d ) return A_IMPLIES_B;
                         else return NOT__A_AND_B;
-                    case NEQ: // p+c!=0  and  p+d<=0
+                    case Relation::NEQ: // p+c!=0  and  p+d<=0
                         if( c < d ) return B_IMPLIES_A;
                         else if( c == d ) return A_AND_B__IFF_C;
                         else return 0;
-                    case LESS: // p+c<0  and  p+d<=0
+                    case Relation::LESS: // p+c<0  and  p+d<=0
                         if( c < d ) return B_IMPLIES_A;
                         else return A_IMPLIES_B;
-                    case GREATER: // p+c>0  and  p+d<=0
+                    case Relation::GREATER: // p+c>0  and  p+d<=0
                         if( c < d ) return NOT__A_AND_B;
                         else if( c == d ) return A_XOR_B;
                         else return 0;
-                    case LEQ: // p+c<=0  and  p+d<=0
+                    case Relation::LEQ: // p+c<=0  and  p+d<=0
                         if( c == d ) return A_IFF_B;
                         else if( c < d ) return B_IMPLIES_A;
                         else return A_IMPLIES_B;
-                    case GEQ: // p+c>=0  and  p+d<=0
+                    case Relation::GEQ: // p+c>=0  and  p+d<=0
                         if( c < d ) return NOT__A_AND_B;
                         else if( c == d ) return A_AND_B__IFF_C;
                         else return 0;
@@ -906,29 +906,29 @@ namespace smtrat
                         return 0;
                 }
             }
-            case GEQ:
+            case Relation::GEQ:
             {
                 switch( relA )
                 {
-                    case EQ: // p+c=0  and  p+d>=0
+                    case Relation::EQ: // p+c=0  and  p+d>=0
                         if( c <= d ) return A_IMPLIES_B;
                         else return NOT__A_AND_B;
-                    case NEQ: // p+c!=0  and  p+d>=0
+                    case Relation::NEQ: // p+c!=0  and  p+d>=0
                         if( c > d ) return B_IMPLIES_A;
                         else if( c == d ) return A_AND_B__IFF_C;
                         else return 0;
-                    case LESS: // p+c<0  and  p+d>=0
+                    case Relation::LESS: // p+c<0  and  p+d>=0
                         if( c > d ) return NOT__A_AND_B;
                         else if( c == d ) return A_XOR_B;
                         else return 0;
-                    case GREATER: // p+c>0  and  p+d>=0
+                    case Relation::GREATER: // p+c>0  and  p+d>=0
                         if( c < d ) return B_IMPLIES_A;
                         else return A_IMPLIES_B;
-                    case LEQ: // p+c<=0  and  p+d>=0
+                    case Relation::LEQ: // p+c<=0  and  p+d>=0
                         if( c > d ) return NOT__A_AND_B;
                         else if( c == d ) return A_AND_B__IFF_C;
                         else return 0;
-                    case GEQ: // p+c>=0  and  p+d>=0
+                    case Relation::GEQ: // p+c>=0  and  p+d>=0
                         if( c == d ) return A_IFF_B;
                         else if( c < d ) return A_IMPLIES_B;
                         else return B_IMPLIES_A;

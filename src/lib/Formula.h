@@ -508,7 +508,7 @@ namespace smtrat
              * @param _variables An over-approximation of the variables which occur on the left-hand side.
              * @return The constructed constraint.
              */
-            static const Constraint* newBound( const carl::Variable& _var, const Constraint::Relation _rel, const Rational& _bound )
+            static const Constraint* newBound( const carl::Variable& _var, const Relation _rel, const Rational& _bound )
             {
                 return mpConstraintPool->newBound( _var, _rel, _bound );
             }
@@ -525,7 +525,7 @@ namespace smtrat
              * @param _variables An over-approximation of the variables which occur on the left-hand side.
              * @return The constructed constraint.
              */
-            static const Constraint* newConstraint( const Polynomial& _lhs, const Constraint::Relation _rel )
+            static const Constraint* newConstraint( const Polynomial& _lhs, const Relation _rel )
             {
                 return mpConstraintPool->newConstraint( _lhs, _rel );
             }

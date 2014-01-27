@@ -91,7 +91,7 @@ namespace smtrat
     /**
      * Constructor
      */
-    SATModule::SATModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+    SATModule::SATModule( ModuleType _type, const Formula* const _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         // Parameters (user settable):
         //
@@ -402,7 +402,7 @@ namespace smtrat
                             {
                                 case CONSTRAINT:
                                 {
-                                    Lit literal = getLiteral( subsubformula, _type == NORMAL_CLAUSE ? _formula : NULL, false );
+                                    Lit literal = getLiteral( subsubformula, _type == NORMAL_CLAUSE ? _formula : NULL );
                                     clauseLits.push( mkLit( var( literal ), !sign( literal ) ) );
                                     break;
                                 }
@@ -463,7 +463,7 @@ namespace smtrat
                 {
                     case CONSTRAINT:
                     {
-                        Lit literal = getLiteral( subformula, _type == NORMAL_CLAUSE ? _formula : NULL, false );
+                        Lit literal = getLiteral( subformula, _type == NORMAL_CLAUSE ? _formula : NULL );
                         vec<Lit> learned_clause;
                         learned_clause.push( mkLit( var( literal ), !sign( literal ) ) );
                         return addClause( learned_clause, _type ) ? (_type == NORMAL_CLAUSE ? clauses.last() : learnts.last() ) : CRef_Undef;
@@ -522,7 +522,7 @@ namespace smtrat
      * @param _origin
      * @return
      */
-    Lit SATModule::getLiteral( const Formula& _formula, const Formula* _origin, bool _polarity )
+    Lit SATModule::getLiteral( const Formula& _formula, const Formula* _origin )
     {
         switch( _formula.getType() )
         {
@@ -533,7 +533,7 @@ namespace smtrat
                     return mkLit( booleanVarPair->second, false );
                 else
                 {
-                    Var var = newVar( _formula.activity() );
+                    Var var = newVar( true, true, _formula.activity() );
                     mBooleanVarMap[_formula.boolean()] = var;
                     return mkLit( var, false );
                 }
@@ -678,7 +678,7 @@ namespace smtrat
         if( _type == DEDUCTED_CLAUSE )
         {
             vector<int> clause;
-            clause.reserve( _clause.size() );
+            clause.reserve( (size_t)_clause.size() );
             for( int i = 0; i < _clause.size(); ++i )
                 clause.push_back( _clause[i].x );
             if( !mLearntDeductions.insert( clause ).second )
@@ -1045,11 +1045,11 @@ SetWatches:
         watches[~c[1]].push( Watcher( cr, c[0] ) );
         if( c.learnt() )
         {
-            learnts_literals += c.size();
+            learnts_literals += (uint64_t)c.size();
             claBumpActivity( c );
         }
         else
-            clauses_literals += c.size();
+            clauses_literals += (uint64_t)c.size();
     }
 
     /**
@@ -1076,9 +1076,9 @@ SetWatches:
         }
 
         if( c.learnt() )
-            learnts_literals -= c.size();
+            learnts_literals -= (uint64_t)c.size();
         else
-            clauses_literals -= c.size();
+            clauses_literals -= (uint64_t)c.size();
     }
 
     /**
@@ -1160,7 +1160,7 @@ SetWatches:
      *
      * @return
      */
-    lbool SATModule::search( int nof_conflicts )
+    lbool SATModule::search()// int nof_conflicts )
     {
         #ifdef DEBUG_SATMODULE
         cout << "### search( " << nof_conflicts << " )" << endl << "###" << endl;
@@ -1682,9 +1682,9 @@ SetWatches:
         else
             i = j = out_learnt.size();
 
-        max_literals += out_learnt.size();
+        max_literals += (uint64_t)out_learnt.size();
         out_learnt.shrink( i - j );
-        tot_literals += out_learnt.size();
+        tot_literals += (uint64_t)out_learnt.size();
 
         // Find correct backtrack level:
         //
@@ -1876,10 +1876,10 @@ SetWatches:
 NextClause:
                 ;
             }
-            ws.shrink( i - j );
+            ws.shrink( (int) (i - j) );
         }
-        propagations += num_props;
-        simpDB_props -= num_props;
+        propagations += (uint64_t)num_props;
+        simpDB_props -= (uint64_t)num_props;
 
         return confl;
     }
@@ -2069,7 +2069,7 @@ NextClause:
         rebuildOrderHeap();
 
         simpDB_assigns = nAssigns();
-        simpDB_props   = clauses_literals + learnts_literals;    // (shouldn't depend on stats really, but it will do for now)
+        simpDB_props   = (int64_t)(clauses_literals + learnts_literals);    // (shouldn't depend on stats really, but it will do for now)
 
         return true;
     }
@@ -2429,9 +2429,8 @@ NextClause:
      * @param c     The clause to print.
      * @param c     The clause to print.
      * @param map
-     * @param max
      */
-    void SATModule::printClauses( ostream& _out, Clause& c, vec<Var>& map, Var& max )
+    void SATModule::printClauses( ostream& _out, Clause& c )
     {
         for( int i = 0; i < c.size(); i++ )
         {
@@ -2448,26 +2447,26 @@ NextClause:
     void SATModule::printClause( CRef _clause, bool _withAssignment, ostream& _out, const string& _init ) const
     {
         const Clause& c = ca[_clause];
-        cout << _init;
+        _out << _init;
         for( int pos = 0; pos < c.size(); ++pos )
         {
-            cout << " ";
+            _out << " ";
             if( sign( c[pos] ) )
             {
-                cout << "-";
+                _out << "-";
             }
-            cout << var( c[pos] );
+            _out << var( c[pos] );
             if( _withAssignment )
             {
-                cout << " [" << (value( c[pos] ) == l_True ? "true@" : (value( c[pos] ) == l_False ? "false@" : "undef"));
+                _out << " [" << (value( c[pos] ) == l_True ? "true@" : (value( c[pos] ) == l_False ? "false@" : "undef"));
                 if( value( c[pos] ) != l_Undef )
                 {
-                    cout << level( var( c[pos] ) );
+                    _out << level( var( c[pos] ) );
                 }
-                cout << "]";
+                _out << "]";
             }
         }
-        cout << endl;
+        _out << endl;
     }
 
     /**
@@ -2478,19 +2477,19 @@ NextClause:
      */
     void SATModule::printClause( const vec<Lit>& _clause, bool _withAssignment, ostream& _out, const string& _init ) const
     {
-        cout << _init;
+        _out << _init;
         for( int pos = 0; pos < _clause.size(); ++pos )
         {
-            cout << " ";
+            _out << " ";
             if( sign( _clause[pos] ) )
             {
-                cout << "-";
+                _out << "-";
             }
-            cout << var( _clause[pos] );
+            _out << var( _clause[pos] );
             if( _withAssignment )
-                cout << "(" << (value( _clause[pos] ) == l_True ? "true" : (value( _clause[pos] ) == l_False ? "false" : "undef")) << "@" << level( var( _clause[pos] ) ) << ")";
+                _out << "(" << (value( _clause[pos] ) == l_True ? "true" : (value( _clause[pos] ) == l_False ? "false" : "undef")) << "@" << level( var( _clause[pos] ) ) << ")";
         }
-        cout << endl;
+        _out << endl;
     }
 
     /**
@@ -2544,7 +2543,7 @@ NextClause:
         for( int i = 0; i < _clauses.size(); i++ )
         {
             _out << _init << " ";
-            printClauses( _out, ca[_clauses[i]], map, max );
+            printClauses( _out, ca[_clauses[i]] );
             _out << endl;
         }
 
@@ -2619,12 +2618,12 @@ NextClause:
             signed tmp = (sign( trail[pos] ) ? -1 : 1) * var( trail[pos] );
             _out << setw( 6 ) << tmp << " @ " << level;
             // if it is not a Boolean variable
-            if( mBooleanConstraintMap[(unsigned)var(trail[pos])].formula != NULL )
+            if( mBooleanConstraintMap[var(trail[pos])].formula != NULL )
             {
-                if( assigns[(unsigned)var(trail[pos])] == l_True )
+                if( assigns[var(trail[pos])] == l_True )
                 {
-                    cout << "   ( " << *mBooleanConstraintMap[(unsigned)var(trail[pos])].formula << " )";
-                    cout << " [" << mBooleanConstraintMap[(unsigned)var(trail[pos])].updateInfo << "]";
+                    cout << "   ( " << *mBooleanConstraintMap[var(trail[pos])].formula << " )";
+                    cout << " [" << mBooleanConstraintMap[var(trail[pos])].updateInfo << "]";
                 }
             }
             cout << endl;

@@ -45,6 +45,8 @@ namespace smtrat
     
     enum class Logic : unsigned { UNDEFINED, QF_NRA, QF_LRA, QF_NIA, QF_LIA };
     
+    enum class Relation : unsigned { EQ = 0, NEQ = 1, LESS = 2, GREATER = 3, LEQ = 4, GEQ = 5 };
+    
     ///An enum with the possible answer a Module can give
     enum Answer { True, False, Unknown };
     

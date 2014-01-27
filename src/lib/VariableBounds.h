@@ -678,10 +678,10 @@ namespace smtrat
             if( _constraint->maxDegree( _var ) == 1 )
             {
                 const Rational& coeff = _constraint->lhs().lterm()->coeff();
-                Constraint::Relation rel = _constraint->relation();
+                Relation rel = _constraint->relation();
                 Rational* limit = new Rational( -_constraint->constantPart()/coeff );
                 std::pair< typename Variable<T>::BoundSet::iterator, bool> result;
-                if( rel == Constraint::EQ )
+                if( rel == Relation::EQ )
                 {
                     Bound<T>* newBound = new Bound<T>( limit, this, Bound<T>::EQUAL_BOUND );
                     result = mUpperbounds.insert( newBound );
@@ -690,28 +690,28 @@ namespace smtrat
                     else
                         mLowerbounds.insert( newBound );
                 }
-                else if( ( rel == Constraint::GEQ && coeff < 0 ) || ( rel == Constraint::LEQ && coeff > 0 ) )
+                else if( ( rel == Relation::GEQ && coeff < 0 ) || ( rel == Relation::LEQ && coeff > 0 ) )
                 {
                     Bound<T>* newBound = new Bound<T>( limit, this, Bound<T>::WEAK_UPPER_BOUND );
                     result = mUpperbounds.insert( newBound );
                     if( !result.second )
                         delete newBound;
                 }
-                else if( ( rel == Constraint::LEQ && coeff < 0 ) || ( rel == Constraint::GEQ && coeff > 0 ) )
+                else if( ( rel == Relation::LEQ && coeff < 0 ) || ( rel == Relation::GEQ && coeff > 0 ) )
                 {
                     Bound<T>* newBound = new Bound<T>( limit, this, Bound<T>::WEAK_LOWER_BOUND );
                     result = mLowerbounds.insert( newBound );
                     if( !result.second )
                         delete newBound;
                 }
-                else if( ( rel == Constraint::GREATER && coeff < 0 ) || ( rel == Constraint::LESS && coeff > 0 ) )
+                else if( ( rel == Relation::GREATER && coeff < 0 ) || ( rel == Relation::LESS && coeff > 0 ) )
                 {
                     Bound<T>* newBound = new Bound<T>( limit, this, Bound<T>::STRICT_UPPER_BOUND );
                     result = mUpperbounds.insert( newBound );
                     if( !result.second )
                         delete newBound;
                 }
-                else if( ( rel == Constraint::LESS && coeff < 0 ) || ( rel == Constraint::GREATER && coeff > 0 ) )
+                else if( ( rel == Relation::LESS && coeff < 0 ) || ( rel == Relation::GREATER && coeff > 0 ) )
                 {
                     Bound<T>* newBound = new Bound<T>( limit, this, Bound<T>::STRICT_LOWER_BOUND );
                     result = mLowerbounds.insert( newBound );
@@ -797,7 +797,7 @@ namespace smtrat
         template<typename T>
         bool VariableBounds<T>::addBound( const Constraint* _constraint, const T* _origin )
         {
-            if( _constraint->relation() != Constraint::NEQ )
+            if( _constraint->relation() != Relation::NEQ )
             {
                 const carl::Variable& var = *_constraint->variables().begin();
                 if( _constraint->variables().size() == 1 && _constraint->maxDegree( var ) == 1 )
@@ -863,7 +863,7 @@ namespace smtrat
         template<typename T>
         unsigned VariableBounds<T>::removeBound( const Constraint* _constraint, const T* _origin )
         {
-            if( _constraint->relation() != Constraint::NEQ )
+            if( _constraint->relation() != Relation::NEQ )
             {
                 const carl::Variable& var = *_constraint->variables().begin();
                 if( _constraint->variables().size() == 1 && _constraint->maxDegree( var ) == 1 )
@@ -891,7 +891,7 @@ namespace smtrat
         template<typename T>
         unsigned VariableBounds<T>::removeBound( const Constraint* _constraint, const T* _origin, carl::Variable*& _changedVariable )
         {
-            if( _constraint->relation() != Constraint::NEQ )
+            if( _constraint->relation() != Relation::NEQ )
             {
                 const carl::Variable& var = *_constraint->variables().begin();
                 if( _constraint->variables().size() == 1 && _constraint->maxDegree( var ) == 1 )
@@ -1127,7 +1127,7 @@ namespace smtrat
             std::vector<std::pair<std::vector< const Constraint* >, const Constraint* >> result = std::vector<std::pair<std::vector< const Constraint* >, const Constraint* >>();   
             for( auto cons = mNonBoundConstraints.begin(); cons != mNonBoundConstraints.end(); ++cons )
             {
-                assert( (*cons)->relation() != Constraint::NEQ );
+                assert( (*cons)->relation() != Relation::NEQ );
                 std::vector< const Constraint* > boundConstraints;
                 Variables boundedVars;
                 Variables notBoundedVars;
@@ -1199,12 +1199,12 @@ namespace smtrat
                                 if( lt != carl::BoundType::INFTY ) lb = newBoundsB.left();
                                 if( rt != carl::BoundType::INFTY ) rb = newBoundsA.right();
                             }
-                            if( (*cons)->relation() == Constraint::EQ )
+                            if( (*cons)->relation() == Relation::EQ )
                             {
                                 if( newBoundsA.leftType() != carl::BoundType::INFTY )
                                 {
                                     Polynomial boundLhs = Polynomial( var ) - newBoundsA.left();
-                                    Constraint::Relation boundRel = newBoundsA.leftType() == carl::BoundType::STRICT ? Constraint::LEQ : Constraint::LESS;
+                                    Relation boundRel = newBoundsA.leftType() == carl::BoundType::STRICT ? Relation::LEQ : Relation::LESS;
                                     const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
 //                                    std::cout << "it follows: " << *newBoundConstraint << std::endl;
                                     result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
@@ -1212,7 +1212,7 @@ namespace smtrat
                                 if( newBoundsB.rightType() != carl::BoundType::INFTY )
                                 {
                                     Polynomial boundLhs = Polynomial( var ) - newBoundsB.right();
-                                    Constraint::Relation boundRel = newBoundsA.rightType() == carl::BoundType::STRICT ? Constraint::LEQ : Constraint::LESS;
+                                    Relation boundRel = newBoundsA.rightType() == carl::BoundType::STRICT ? Relation::LEQ : Relation::LESS;
                                     const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
 //                                    std::cout << "it follows: " << *newBoundConstraint << std::endl;
                                     result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
@@ -1221,25 +1221,25 @@ namespace smtrat
                         }
                         else
                         {
-                            if( !varCoeffEvaluated.contains( ZERO_RATIONAL ) || (*cons)->relation() == Constraint::EQ )
+                            if( !varCoeffEvaluated.contains( ZERO_RATIONAL ) || (*cons)->relation() == Relation::EQ )
                             {
 //                                std::cout << "case b: " << newBoundsA << std::endl;
-                                Constraint::Relation rel = (*cons)->relation();
+                                Relation rel = (*cons)->relation();
                                 if( varCoeffEvaluated.sgn() == carl::Sign::NEGATIVE )
                                 {
                                     switch( rel )
                                     {
-                                        case Constraint::LEQ:
-                                            rel = Constraint::GEQ;
+                                        case Relation::LEQ:
+                                            rel = Relation::GEQ;
                                             break;
-                                        case Constraint::GEQ:
-                                            rel = Constraint::LEQ;
+                                        case Relation::GEQ:
+                                            rel = Relation::LEQ;
                                             break;
-                                        case Constraint::LESS:
-                                            rel = Constraint::GREATER;
+                                        case Relation::LESS:
+                                            rel = Relation::GREATER;
                                             break;
-                                        case Constraint::GREATER:
-                                            rel = Constraint::LESS;
+                                        case Relation::GREATER:
+                                            rel = Relation::LESS;
                                             break;
                                         default:
                                             break;
@@ -1247,12 +1247,12 @@ namespace smtrat
                                 }
                                 if( newBoundsA.leftType() != carl::BoundType::INFTY )
                                 {
-                                    if( rel == Constraint::EQ || rel == Constraint::GEQ || rel == Constraint::GREATER )
+                                    if( rel == Relation::EQ || rel == Relation::GEQ || rel == Relation::GREATER )
                                     {
                                         Polynomial boundLhs = Polynomial( var ) - newBoundsA.left();
-                                        Constraint::Relation boundRel = Constraint::GEQ;
-                                        if( newBoundsA.leftType() == carl::BoundType::STRICT || rel == Constraint::GREATER )
-                                            boundRel = Constraint::GREATER;
+                                        Relation boundRel = Relation::GEQ;
+                                        if( newBoundsA.leftType() == carl::BoundType::STRICT || rel == Relation::GREATER )
+                                            boundRel = Relation::GREATER;
                                         const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
 //                                        std::cout << "it follows: " << *newBoundConstraint << std::endl;
                                         result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
@@ -1260,12 +1260,12 @@ namespace smtrat
                                 }
                                 if( newBoundsA.rightType() != carl::BoundType::INFTY )
                                 {
-                                    if( rel == Constraint::EQ || rel == Constraint::LEQ || rel == Constraint::LESS )
+                                    if( rel == Relation::EQ || rel == Relation::LEQ || rel == Relation::LESS )
                                     {
                                         Polynomial boundLhs = Polynomial( var ) - newBoundsA.right();
-                                        Constraint::Relation boundRel = Constraint::LEQ;
-                                        if( newBoundsA.rightType() == carl::BoundType::STRICT || rel == Constraint::LESS )
-                                            boundRel = Constraint::LESS;
+                                        Relation boundRel = Relation::LEQ;
+                                        if( newBoundsA.rightType() == carl::BoundType::STRICT || rel == Relation::LESS )
+                                            boundRel = Relation::LESS;
                                         const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
 //                                        std::cout << "it follows: " << *newBoundConstraint << std::endl;
                                         result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );

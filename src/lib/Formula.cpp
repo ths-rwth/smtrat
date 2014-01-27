@@ -516,22 +516,22 @@ namespace smtrat
         }
         switch( _constraint.relation() )
         {
-            case Constraint::EQ:
+            case Relation::EQ:
                 mPropositions |= PROP_CONTAINS_EQUATION;
                 break;
-            case Constraint::NEQ:
+            case Relation::NEQ:
                 mPropositions |= PROP_CONTAINS_STRICT_INEQUALITY;
                 break;
-            case Constraint::LEQ:
+            case Relation::LEQ:
                 mPropositions |= PROP_CONTAINS_INEQUALITY;
                 break;
-            case Constraint::GEQ:
+            case Relation::GEQ:
                 mPropositions |= PROP_CONTAINS_INEQUALITY;
                 break;
-            case Constraint::LESS:
+            case Relation::LESS:
                 mPropositions |= PROP_CONTAINS_STRICT_INEQUALITY;
                 break;
-            case Constraint::GREATER:
+            case Relation::GREATER:
                 mPropositions |= PROP_CONTAINS_STRICT_INEQUALITY;
                 break;
             default:
@@ -759,30 +759,30 @@ namespace smtrat
                     _formula.pop_back();
                     switch( constraint->relation() )
                     {
-                        case Constraint::EQ:
+                        case Relation::EQ:
                             #ifdef REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
                             _formula.copyAndDelete( new Formula( OR ));
-                            _formula.addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), Constraint::LESS )));
-                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), Constraint::LESS )));
+                            _formula.addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), Relation::LESS )));
+                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), Relation::LESS )));
                             #else
-                            _formula.copyAndDelete( new Formula( Formula::newConstraint( constraint->lhs(), Constraint::NEQ )));
+                            _formula.copyAndDelete( new Formula( Formula::newConstraint( constraint->lhs(), Relation::NEQ )));
                             #endif
                             return true;
-                        case Constraint::LEQ:
-                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), Constraint::LESS )));
+                        case Relation::LEQ:
+                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), Relation::LESS )));
                             return false;
-                        case Constraint::LESS:
+                        case Relation::LESS:
                             #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
                             _formula.copyAndDelete( new Formula( OR ));
-                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), Constraint::LESS )));
-                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), Constraint::EQ )));
+                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), Relation::LESS )));
+                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), Relation::EQ )));
                             return true;
                             #else
-                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), Constraint::LEQ )));
+                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), Relation::LEQ )));
                             return false;
                             #endif
-                        case Constraint::NEQ:
-                            _formula.copyAndDelete( new Formula( Formula::newConstraint( constraint->lhs(), Constraint::EQ )));
+                        case Relation::NEQ:
+                            _formula.copyAndDelete( new Formula( Formula::newConstraint( constraint->lhs(), Relation::EQ )));
                             return false;
                         default:
                             cerr << "Unexpected relation symbol!" << endl;

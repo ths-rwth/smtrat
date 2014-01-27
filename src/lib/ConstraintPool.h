@@ -82,7 +82,7 @@ namespace smtrat
              * @param _variables An over-approximation of the variables occurring in the given left-hand side.
              * @return The constructed constraint.
              */
-            Constraint* createNormalizedBound( const carl::Variable& _var, const Constraint::Relation _rel, const Rational& _bound ) const;
+            Constraint* createNormalizedBound( const carl::Variable& _var, const Relation _rel, const Rational& _bound ) const;
             
             /**
              * Creates a normalized constraint, which has the same solutions as the constraint consisting of the given
@@ -93,7 +93,7 @@ namespace smtrat
              * @param _variables An over-approximation of the variables occurring in the given left-hand side.
              * @return The constructed constraint.
              */
-            Constraint* createNormalizedConstraint( const Polynomial& _lhs, const Constraint::Relation _rel ) const;
+            Constraint* createNormalizedConstraint( const Polynomial& _lhs, const Relation _rel ) const;
             
             /**
              * Adds the given constraint to the pool, if it does not yet occur in there.
@@ -368,7 +368,7 @@ namespace smtrat
              * @param _variables An over-approximation of the variables which occur on the left-hand side.
              * @return The constructed constraint.
              */
-            const Constraint* newBound( const carl::Variable& _var, const Constraint::Relation _rel, const Rational& _bound );
+            const Constraint* newBound( const carl::Variable& _var, const Relation _rel, const Rational& _bound );
             
             /**
              * Constructs a new constraint and adds it to the pool, if it is not yet a member. If it is a
@@ -382,7 +382,7 @@ namespace smtrat
              * @param _variables An over-approximation of the variables which occur on the left-hand side.
              * @return The constructed constraint.
              */
-            const Constraint* newConstraint( const Polynomial& _lhs, const Constraint::Relation _rel );
+            const Constraint* newConstraint( const Polynomial& _lhs, const Relation _rel );
             
             /**
              * Creates an arithmetic variable.

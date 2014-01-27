@@ -157,7 +157,7 @@ namespace smtrat
                 
                 void setNeqRepresentation( const smtrat::Constraint* _constraint ) const
                 {
-                    assert( _constraint->relation() == smtrat::Constraint::NEQ );
+                    assert( _constraint->relation() == smtrat::Relation::NEQ );
                     if( mpInfo->neqRepresentation == NULL )
                     {
                         mpInfo->neqRepresentation = _constraint;

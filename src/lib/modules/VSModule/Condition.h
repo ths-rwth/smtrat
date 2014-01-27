@@ -124,7 +124,7 @@ namespace vs
                 return *mpOriginalConditions;
             }
 
-            double valuate( const carl::Variable&, size_t, bool, bool ) const;
+            double valuate( const carl::Variable&, size_t, bool ) const;
             bool operator ==( const Condition& ) const;
             bool operator <( const Condition& ) const;
             void print( std::ostream& = std::cout ) const;

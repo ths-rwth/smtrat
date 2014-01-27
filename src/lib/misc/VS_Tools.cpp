@@ -123,8 +123,8 @@ namespace vs
     bool splitProducts( DisjunctionOfConstraintConjunctions& _toSimplify, bool _onlyNeq )
     {
         bool result = true;
-        unsigned toSimpSize = _toSimplify.size();
-        for( unsigned pos = 0; pos < toSimpSize; )
+        size_t toSimpSize = _toSimplify.size();
+        for( size_t pos = 0; pos < toSimpSize; )
         {
             if( !_toSimplify.begin()->empty() )
             {
@@ -150,7 +150,7 @@ namespace vs
             {
                 switch( (*constraint)->relation() )
                 {
-                    case smtrat::Constraint::EQ:
+                    case smtrat::Relation::EQ:
                     {
                         if( !_onlyNeq )
                         {
@@ -159,7 +159,7 @@ namespace vs
                             for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
                             {
                                 toCombine.back().push_back( ConstraintVector() );
-                                toCombine.back().back().push_back( smtrat::Formula::newConstraint( factor->first, smtrat::Constraint::EQ ) );
+                                toCombine.back().back().push_back( smtrat::Formula::newConstraint( factor->first, smtrat::Relation::EQ ) );
                             }
                             simplify( toCombine.back() );
                         }
@@ -171,13 +171,13 @@ namespace vs
                         }
                         break;
                     }
-                    case smtrat::Constraint::NEQ:
+                    case smtrat::Relation::NEQ:
                     {
                         toCombine.push_back( DisjunctionOfConstraintConjunctions() );
                         toCombine.back().push_back( ConstraintVector() );
                         const smtrat::Factorization& factorization = (*constraint)->factorization();
                         for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
-                            toCombine.back().back().push_back( smtrat::Formula::newConstraint( factor->first, smtrat::Constraint::NEQ ) );
+                            toCombine.back().back().push_back( smtrat::Formula::newConstraint( factor->first, smtrat::Relation::NEQ ) );
                         simplify( toCombine.back() );
                         break;
                     }
@@ -218,7 +218,7 @@ namespace vs
         {
             switch( _constraint->relation() )
             {
-                case smtrat::Constraint::EQ:
+                case smtrat::Relation::EQ:
                 {
                     if( !_onlyNeq )
                     {
@@ -226,7 +226,7 @@ namespace vs
                         for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
                         {
                             result.push_back( ConstraintVector() );
-                            result.back().push_back( smtrat::Formula::newConstraint( factor->first, smtrat::Constraint::EQ ) );
+                            result.back().push_back( smtrat::Formula::newConstraint( factor->first, smtrat::Relation::EQ ) );
                         }
                     }
                     else
@@ -237,12 +237,12 @@ namespace vs
                     simplify( result );
                     break;
                 }
-                case smtrat::Constraint::NEQ:
+                case smtrat::Relation::NEQ:
                 {
                     result.push_back( ConstraintVector() );
                     const smtrat::Factorization& factorization = _constraint->factorization();
                     for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
-                        result.back().push_back( smtrat::Formula::newConstraint( factor->first, smtrat::Constraint::NEQ ) );
+                        result.back().push_back( smtrat::Formula::newConstraint( factor->first, smtrat::Relation::NEQ ) );
                     simplify( result );
                     break;
                 }
@@ -275,21 +275,21 @@ namespace vs
         DisjunctionOfConstraintConjunctions combinations = DisjunctionOfConstraintConjunctions();
         if( _constraint->hasFactorization() && _constraint->factorization().size() <= MAX_PRODUCT_SPLIT_NUMBER )
         {
-            if( !(_constraint->relation() == smtrat::Constraint::GREATER || _constraint->relation() == smtrat::Constraint::LESS
-                    || _constraint->relation() == smtrat::Constraint::GEQ || _constraint->relation() == smtrat::Constraint::LEQ ))
+            if( !(_constraint->relation() == smtrat::Relation::GREATER || _constraint->relation() == smtrat::Relation::LESS
+                    || _constraint->relation() == smtrat::Relation::GEQ || _constraint->relation() == smtrat::Relation::LEQ ))
             {
                 cout << *_constraint << endl;
             }
-            assert( _constraint->relation() == smtrat::Constraint::GREATER || _constraint->relation() == smtrat::Constraint::LESS
-                    || _constraint->relation() == smtrat::Constraint::GEQ || _constraint->relation() == smtrat::Constraint::LEQ );
-            smtrat::Constraint::Relation relPos = smtrat::Constraint::GREATER;
-            smtrat::Constraint::Relation relNeg = smtrat::Constraint::LESS;
-            if( _constraint->relation() == smtrat::Constraint::GEQ || _constraint->relation() == smtrat::Constraint::LEQ )
+            assert( _constraint->relation() == smtrat::Relation::GREATER || _constraint->relation() == smtrat::Relation::LESS
+                    || _constraint->relation() == smtrat::Relation::GEQ || _constraint->relation() == smtrat::Relation::LEQ );
+            smtrat::Relation relPos = smtrat::Relation::GREATER;
+            smtrat::Relation relNeg = smtrat::Relation::LESS;
+            if( _constraint->relation() == smtrat::Relation::GEQ || _constraint->relation() == smtrat::Relation::LEQ )
             {
-                relPos = smtrat::Constraint::GEQ;
-                relNeg = smtrat::Constraint::LEQ;
+                relPos = smtrat::Relation::GEQ;
+                relNeg = smtrat::Relation::LEQ;
             }
-            bool positive = (_constraint->relation() == smtrat::Constraint::GEQ || _constraint->relation() == smtrat::Constraint::GREATER);
+            bool positive = (_constraint->relation() == smtrat::Relation::GEQ || _constraint->relation() == smtrat::Relation::GREATER);
             ConstraintVector positives = ConstraintVector();
             ConstraintVector alwayspositives = ConstraintVector();
             ConstraintVector negatives = ConstraintVector();
@@ -372,13 +372,13 @@ namespace vs
         return combinations;
     }
 
-    void getOddBitStrings( unsigned _length, vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >& _strings )
+    void getOddBitStrings( size_t _length, vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >& _strings )
     {
         assert( _length > 0 );
         if( _length == 1 )  _strings.push_back( bitset<MAX_PRODUCT_SPLIT_NUMBER>( 1 ) );
         else
         {
-            unsigned pos = _strings.size();
+            size_t pos = _strings.size();
             getEvenBitStrings( _length - 1, _strings );
             for( ; pos < _strings.size(); ++pos )
             {
@@ -390,13 +390,13 @@ namespace vs
         }
     }
 
-    void getEvenBitStrings( unsigned _length, vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >& _strings )
+    void getEvenBitStrings( size_t _length, vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >& _strings )
     {
         assert( _length > 0 );
         if( _length == 1 ) _strings.push_back( bitset<MAX_PRODUCT_SPLIT_NUMBER>( 0 ) );
         else
         {
-            unsigned pos = _strings.size();
+            size_t pos = _strings.size();
             getEvenBitStrings( _length - 1, _strings );
             for( ; pos < _strings.size(); ++pos ) _strings[pos] <<= 1;
             getOddBitStrings( _length - 1, _strings );

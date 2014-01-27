@@ -59,7 +59,7 @@ Lit mkLit(Var var, bool sign = false);
 
 inline  Lit  mkLit     (Var var, bool sign) { Lit p; p.x = var + var + (int)sign; return p; }
 inline  Lit  operator ~(Lit p)              { Lit q; q.x = p.x ^ 1; return q; }
-inline  Lit  operator ^(Lit p, bool b)      { Lit q; q.x = p.x ^ (unsigned int)b; return q; }
+inline  Lit  operator ^(Lit p, bool b)      { Lit q; q.x = p.x ^ (int)(unsigned int)b; return q; }
 inline  bool sign      (Lit p)              { return p.x & 1; }
 inline  int  var       (Lit p)              { return p.x >> 1; }
 
@@ -101,12 +101,12 @@ public:
     lbool operator ^  (bool  b) const { return lbool((uint8_t)(value^(uint8_t)b)); }
 
     lbool operator && (lbool b) const {
-        uint8_t sel = (this->value << 1) | (b.value << 3);
+        uint8_t sel = ((uint8_t) (this->value << 1)) | ((uint8_t) (b.value << 3));
         uint8_t v   = (0xF7F755F4 >> sel) & 3;
         return lbool(v); }
 
     lbool operator || (lbool b) const {
-        uint8_t sel = (this->value << 1) | (b.value << 3);
+        uint8_t sel = ((uint8_t) (this->value << 1)) | ((uint8_t) (b.value << 3));
         uint8_t v   = (0xFCFCF400 >> sel) & 3;
         return lbool(v); }
 
@@ -144,7 +144,7 @@ class Clause {
         header.type      = _type;
         header.has_extra = use_extra;
         header.reloced   = 0;
-        header.size      = ps.size();
+        header.size      = (unsigned)ps.size();
 
         for (int i = 0; i < ps.size(); i++)
             data[i].lit = ps[i];
@@ -211,7 +211,7 @@ const CRef CRef_Undef = RegionAllocator<uint32_t>::Ref_Undef;
 class ClauseAllocator : public RegionAllocator<uint32_t>
 {
     static int clauseWord32Size(int size, bool has_extra){
-        return (sizeof(Clause) + (sizeof(Lit) * (size + (int)has_extra))) / sizeof(uint32_t); }
+        return ((int)sizeof(Clause) + ((int)sizeof(Lit) * (size + (int)has_extra))) / (int)sizeof(uint32_t); }
  public:
     bool extra_clause_field;
 

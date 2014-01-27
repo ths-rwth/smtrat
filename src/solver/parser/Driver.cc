@@ -395,8 +395,8 @@ namespace smtrat
         if( mTwoFormulaMode )
         {
             Formula* result = new Formula( AND );
-            Constraint::Relation relA = (Constraint::Relation) _rel;
-            Constraint::Relation relB = Constraint::invertRelation( relA );
+            Relation relA = (Relation) _rel;
+            Relation relB = Constraint::invertRelation( relA );
             const Constraint* consA = Formula::newConstraint( (*_lhs)-(*_rhs), relA );
             const Constraint* consB = Formula::newConstraint( (*_lhs)-(*_rhs), relB );
             delete _lhs;
@@ -449,7 +449,7 @@ namespace smtrat
         }
         else 
         {
-            Constraint::Relation rel = (Constraint::Relation) _rel;
+            Relation rel = (Relation) _rel;
             const Constraint* cons = Formula::newConstraint( (*_lhs)-(*_rhs), (mPolarity ? rel : Constraint::invertRelation( rel ) ) );
             delete _lhs;
             delete _rhs;
@@ -837,8 +837,8 @@ namespace smtrat
         carl::Variable auxVar( addTheoryVariable( _loc, (mLogic == Logic::QF_NRA || mLogic == Logic::QF_LRA) ? "Real" : "Int", "", true ) );
         carl::Variable conditionBool = addBooleanVariable( _loc, "", true );
         setPolarity( true );
-        Formula* constraintA = mkConstraint( new Polynomial( auxVar ), _then, Constraint::EQ );
-        Formula* constraintB = mkConstraint( new Polynomial( auxVar ), _else, Constraint::EQ );
+        Formula* constraintA = mkConstraint( new Polynomial( auxVar ), _then, (unsigned) Relation::EQ );
+        Formula* constraintB = mkConstraint( new Polynomial( auxVar ), _else, (unsigned) Relation::EQ );
         restorePolarity();
         Formula* notTmp = new Formula( NOT );
         carl::Variable dependencyBool = addBooleanVariable( _loc, "", true ); 
@@ -884,7 +884,7 @@ namespace smtrat
         size_t pos = _numString->find('.');
         if( pos != string::npos )
         {
-            unsigned numDecDigits = _numString->size()-pos-1;
+            size_t numDecDigits = _numString->size()-pos-1;
             Rational rational = Rational( string( _numString->substr( 0, pos ) + _numString->substr( pos+1, numDecDigits ) ).c_str() );
             rational /= Rational( string( "1" + string( numDecDigits, '0' ) ).c_str() );
             delete _numString;

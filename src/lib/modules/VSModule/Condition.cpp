@@ -60,11 +60,10 @@ namespace vs
      *
      * @param _consideredVariable The variable which is considered in this valuation.
      * @param _maxNumberOfVars
-     * @param _forElimination
      *
      * @return A valuation of the constraint according to an heuristic.
      */
-    double Condition::valuate( const carl::Variable& _consideredVariable, size_t _maxNumberOfVars, bool _forElimination, bool _preferEquation ) const
+    double Condition::valuate( const carl::Variable& _consideredVariable, size_t _maxNumberOfVars, bool _preferEquation ) const
     {
         if( !constraint().hasVariable( _consideredVariable ) )
             return 0;
@@ -78,22 +77,22 @@ namespace vs
         double relationSymbolWeight = 0;
         switch( mpConstraint->relation() )
         {
-            case smtrat::Constraint::EQ:
+            case smtrat::Relation::EQ:
                 relationSymbolWeight += 1;
                 break;
-            case smtrat::Constraint::GEQ:
+            case smtrat::Relation::GEQ:
                 relationSymbolWeight += 2;
                 break;
-            case smtrat::Constraint::LEQ:
+            case smtrat::Relation::LEQ:
                 relationSymbolWeight += 2;
                 break;
-            case smtrat::Constraint::LESS:
+            case smtrat::Relation::LESS:
                 relationSymbolWeight += 4;
                 break;
-            case smtrat::Constraint::GREATER:
+            case smtrat::Relation::GREATER:
                 relationSymbolWeight += 4;
                 break;
-            case smtrat::Constraint::NEQ:
+            case smtrat::Relation::NEQ:
                 relationSymbolWeight += 3;
                 break;
             default:
@@ -107,7 +106,7 @@ namespace vs
         unsigned lCoeffWeight = 0;
         if( degreeWeight <= 1 )
         {
-            smtrat::Polynomial coeff = mpConstraint->coefficient( _consideredVariable, degreeWeight );
+            smtrat::Polynomial coeff = mpConstraint->coefficient( _consideredVariable, varInfo.maxDegree() );
             if( coeff.isConstant() )
             {
                 if( _consideredVariable.getType() == carl::VariableType::VT_INT )
@@ -131,8 +130,8 @@ namespace vs
         }
         else if( degreeWeight == 2 )
         {
-            bool hasRationalLeadingCoefficient = mpConstraint->coefficient( _consideredVariable, degreeWeight ).isConstant();
-            if( hasRationalLeadingCoefficient && mpConstraint->coefficient( _consideredVariable, degreeWeight - 1 ).isConstant() )
+            bool hasRationalLeadingCoefficient = mpConstraint->coefficient( _consideredVariable, varInfo.maxDegree() ).isConstant();
+            if( hasRationalLeadingCoefficient && mpConstraint->coefficient( _consideredVariable, varInfo.maxDegree() - 1 ).isConstant() )
                 lCoeffWeight = 1;
             else if( hasRationalLeadingCoefficient )
                 lCoeffWeight = 2;
@@ -191,14 +190,14 @@ namespace vs
             if( allOtherMonomialsPos || allOtherMonomialsNeg )
             {
                 otherMonomialsPositiveWeight = 1;
-                if( constraint().relation() == smtrat::Constraint::EQ )
+                if( constraint().relation() == smtrat::Relation::EQ )
                     finitlyManySolutionsWeight = 1;
             }
         }
         double weightFactorTmp = maximum;
         double result = finitlyManySolutionsWeight;
         if( _preferEquation )
-            result += ((constraint().relation() == smtrat::Constraint::EQ || degreeWeight <= 2) ? 1 : 2)/weightFactorTmp;
+            result += ((constraint().relation() == smtrat::Relation::EQ || degreeWeight <= 2) ? 1 : 2)/weightFactorTmp;
         else
             result += (degreeWeight <= 2 ? 1 : 2)/weightFactorTmp;
         weightFactorTmp *= maximum;

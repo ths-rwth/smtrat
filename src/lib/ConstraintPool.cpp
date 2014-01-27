@@ -39,8 +39,8 @@ namespace smtrat
         mAuxiliaryBoolVarCounter( 0 ),
         mAuxiliaryRealVarCounter( 0 ),
         mAuxiliaryIntVarCounter( 0 ),
-        mConsistentConstraint( new Constraint( ZERO_POLYNOMIAL, Constraint::EQ, 1 ) ),
-        mInconsistentConstraint( new Constraint( ZERO_POLYNOMIAL, Constraint::LESS, 2 ) ),
+        mConsistentConstraint( new Constraint( ZERO_POLYNOMIAL, Relation::EQ, 1 ) ),
+        mInconsistentConstraint( new Constraint( ZERO_POLYNOMIAL, Relation::LESS, 2 ) ),
         mExternalVarNamePrefix( "_" ),
         mExternalNamesToVariables(),
         mBooleanVariables(),
@@ -94,7 +94,7 @@ namespace smtrat
         mIdAllocator = 3;
     }
     
-    const Constraint* ConstraintPool::newBound( const carl::Variable& _var, const Constraint::Relation _rel, const Rational& _bound )
+    const Constraint* ConstraintPool::newBound( const carl::Variable& _var, const Relation _rel, const Rational& _bound )
     {
         CONSTRAINT_LOCK_GUARD
         // TODO: Maybe it's better to increment the allocator even if the constraint already exists.
@@ -106,7 +106,7 @@ namespace smtrat
         return *iterBoolPair.first;
     }
 
-    const Constraint* ConstraintPool::newConstraint( const Polynomial& _lhs, const Constraint::Relation _rel )
+    const Constraint* ConstraintPool::newConstraint( const Polynomial& _lhs, const Relation _rel )
     {
         CONSTRAINT_LOCK_GUARD
         // TODO: Maybe it's better to increment the allocator even if the constraint already exists.
@@ -181,18 +181,18 @@ namespace smtrat
         }
     }
 
-    Constraint* ConstraintPool::createNormalizedBound( const carl::Variable& _var, const Constraint::Relation _rel, const Rational& _bound ) const
+    Constraint* ConstraintPool::createNormalizedBound( const carl::Variable& _var, const Relation _rel, const Rational& _bound ) const
     {
-        assert( _rel != Constraint::EQ && _rel != Constraint::NEQ );
-        if( _rel == Constraint::GREATER )
+        assert( _rel != Relation::EQ && _rel != Relation::NEQ );
+        if( _rel == Relation::GREATER )
         {
             Polynomial lhs = Polynomial( _bound ) - Polynomial( _var );
-            return new Constraint( lhs, Constraint::LESS, mIdAllocator );
+            return new Constraint( lhs, Relation::LESS, mIdAllocator );
         }
-        else if( _rel == Constraint::GEQ )
+        else if( _rel == Relation::GEQ )
         {
             Polynomial lhs = Polynomial( _bound ) - Polynomial( _var );
-            return new Constraint( lhs, Constraint::LEQ, mIdAllocator );
+            return new Constraint( lhs, Relation::LEQ, mIdAllocator );
         }
         else
         {
@@ -201,30 +201,30 @@ namespace smtrat
         }
     }
     
-    Constraint* ConstraintPool::createNormalizedConstraint( const Polynomial& _lhs, const Constraint::Relation _rel ) const
+    Constraint* ConstraintPool::createNormalizedConstraint( const Polynomial& _lhs, const Relation _rel ) const
     {
-        if( _rel == Constraint::GREATER )
+        if( _rel == Relation::GREATER )
         {
             Polynomial lhs = _lhs.isZero() ? ZERO_POLYNOMIAL : _lhs.coprimeCoefficients();
             if( !lhs.isZero() && (_lhs.lterm()->coeff() < 0) == (lhs.lterm()->coeff() < 0) )
             {
                 lhs = -lhs;
             }
-            return new Constraint( lhs, Constraint::LESS );
+            return new Constraint( lhs, Relation::LESS );
         }
-        else if( _rel == Constraint::GEQ )
+        else if( _rel == Relation::GEQ )
         {
             Polynomial lhs = _lhs.isZero() ? ZERO_POLYNOMIAL : _lhs.coprimeCoefficients();
             if( !lhs.isZero() && (_lhs.lterm()->coeff() < 0) == (lhs.lterm()->coeff() < 0) )
             {
                 lhs = -lhs;
             }
-            return new Constraint( lhs, Constraint::LEQ );
+            return new Constraint( lhs, Relation::LEQ );
         }
         else
         {
             Polynomial lhs = _lhs.isZero() ? ZERO_POLYNOMIAL : _lhs.coprimeCoefficients();
-            if( _rel == Constraint::EQ || _rel == Constraint::NEQ ) 
+            if( _rel == Relation::EQ || _rel == Relation::NEQ ) 
             {
                 if( !_lhs.isZero() && lhs.lterm()->coeff() < ZERO_RATIONAL ) lhs = -lhs;
             }

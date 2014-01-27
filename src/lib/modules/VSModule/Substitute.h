@@ -165,7 +165,7 @@ namespace vs
      *                               container.
      * @param _solutionSpace The solution space in form of double intervals of the variables occurring in the given constraint.
      */
-    bool substituteEpsGradients( const smtrat::Constraint* _cons, const Substitution& _subs, const smtrat::Constraint::Relation _relation, DisjunctionOfConstraintConjunctions&, bool _accordingPaper, smtrat::Variables& _conflictingVariables, const smtrat::EvalDoubleIntervalMap& _solutionSpace );
+    bool substituteEpsGradients( const smtrat::Constraint* _cons, const Substitution& _subs, const smtrat::Relation _relation, DisjunctionOfConstraintConjunctions&, bool _accordingPaper, smtrat::Variables& _conflictingVariables, const smtrat::EvalDoubleIntervalMap& _solutionSpace );
     
     /**
      * Applies the given substitution to the given constraint, where the substitution

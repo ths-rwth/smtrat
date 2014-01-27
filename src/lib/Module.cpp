@@ -343,10 +343,10 @@ namespace smtrat
         {
             Rational bound = cln::floor1( _value );
             Polynomial leqLhs = Polynomial( _var ) - bound;
-            constraintA = Formula::newConstraint( leqLhs, Constraint::LEQ );
+            constraintA = Formula::newConstraint( leqLhs, Relation::LEQ );
             ++bound;
             Polynomial geqLhs = Polynomial( _var ) - bound;
-            constraintB = Formula::newConstraint( geqLhs, Constraint::GEQ );
+            constraintB = Formula::newConstraint( geqLhs, Relation::GEQ );
             #ifdef MODULE_VERBOSE_INTEGERS
             cout << "[" << moduleName(type()) << "]  branch at  " << *constraintA << "  and  " << *constraintB << endl;
             #endif
@@ -356,13 +356,13 @@ namespace smtrat
             Polynomial constraintLhs = Polynomial( _var ) - _value;
             if( _leftCaseWeak )
             {
-                constraintA = Formula::newConstraint( constraintLhs, Constraint::LEQ );
-                constraintB = Formula::newConstraint( constraintLhs, Constraint::GREATER );
+                constraintA = Formula::newConstraint( constraintLhs, Relation::LEQ );
+                constraintB = Formula::newConstraint( constraintLhs, Relation::GREATER );
             }
             else
             {
-                constraintA = Formula::newConstraint( constraintLhs, Constraint::LESS );
-                constraintB = Formula::newConstraint( constraintLhs, Constraint::GEQ );   
+                constraintA = Formula::newConstraint( constraintLhs, Relation::LESS );
+                constraintB = Formula::newConstraint( constraintLhs, Relation::GEQ );   
             }
         }
         // (x<=I-1 or x>=I)
@@ -407,9 +407,9 @@ namespace smtrat
      */
     void Module::splitUnequalConstraint( const Constraint* _unequalConstraint )
     {
-        assert( _unequalConstraint->relation() == Constraint::NEQ );
-        const Constraint* lessConstraint = Formula::newConstraint( _unequalConstraint->lhs(), Constraint::LESS );
-        const Constraint* greaterConstraint = Formula::newConstraint( _unequalConstraint->lhs(), Constraint::GREATER );
+        assert( _unequalConstraint->relation() == Relation::NEQ );
+        const Constraint* lessConstraint = Formula::newConstraint( _unequalConstraint->lhs(), Relation::LESS );
+        const Constraint* greaterConstraint = Formula::newConstraint( _unequalConstraint->lhs(), Relation::GREATER );
         // (not p!=0 or p<0 or p>0)
         Formula* deductionA = new Formula( OR );
         Formula* notConstraint = new Formula( NOT );

@@ -117,13 +117,13 @@ namespace smtrat
                         
                         if( Settings::int_constraints_allowed && Settings::split_neq_constraints
                             && constraint->hasIntegerValuedVariable() && !constraint->hasRealValuedVariable()
-                            && constraint->relation() == Constraint::NEQ )
+                            && constraint->relation() == Relation::NEQ )
                         {
                             ConditionList condVectorA = ConditionList();
-                            condVectorA.push_back( new vs::Condition( Formula::newConstraint( constraint->lhs(), Constraint::LESS ), 0, false, oConds ) );
+                            condVectorA.push_back( new vs::Condition( Formula::newConstraint( constraint->lhs(), Relation::LESS ), 0, false, oConds ) );
                             subResult.push_back( condVectorA );
                             ConditionList condVectorB = ConditionList();
-                            condVectorB.push_back( new vs::Condition( Formula::newConstraint( constraint->lhs(), Constraint::GREATER ), 0, false, oConds ) );
+                            condVectorB.push_back( new vs::Condition( Formula::newConstraint( constraint->lhs(), Relation::GREATER ), 0, false, oConds ) );
                             subResult.push_back( condVectorB );
                         }
                         else
@@ -349,7 +349,7 @@ namespace smtrat
                 for( auto cond = currentState->conditions().begin(); cond != currentState->conditions().end(); ++cond )
                 {
                     if( (*cond)->constraint().hasIntegerValuedVariable() && !(*cond)->constraint().hasRealValuedVariable()
-                        && (*cond)->constraint().relation() == Constraint::NEQ )
+                        && (*cond)->constraint().relation() == Relation::NEQ )
                     {
                         // Split the neq-constraint in a preceeding sat module (make sure that it is there in your strategy when choosing this vssetting)
                         splitUnequalConstraint( (*cond)->pConstraint() );
@@ -850,10 +850,10 @@ namespace smtrat
         if( !Settings::use_variable_bounds || _currentState->hasRootsInVariableBounds( _condition, Settings::sturm_sequence_for_root_check ) )
         {
             #endif
-            Constraint::Relation relation = (*_condition).constraint().relation();
+            Relation relation = (*_condition).constraint().relation();
             if( !Settings::use_strict_inequalities_for_test_candidate_generation )
             {
-                if( relation == Constraint::LESS || relation == Constraint::GREATER || relation == Constraint::NEQ )
+                if( relation == Relation::LESS || relation == Relation::GREATER || relation == Relation::NEQ )
                 {
                     _currentState->rTooHighDegreeConditions().insert( _condition );
                     _condition->rFlag() = true;
@@ -861,7 +861,7 @@ namespace smtrat
                 }
             }
             // Determine the substitution type: normal or +epsilon
-            bool weakConstraint = (relation == Constraint::EQ || relation == Constraint::LEQ || relation == Constraint::GEQ);
+            bool weakConstraint = (relation == Relation::EQ || relation == Relation::LEQ || relation == Relation::GEQ);
             Substitution::Type subType = weakConstraint ? Substitution::NORMAL : Substitution::PLUS_EPSILON;
             vector< Polynomial > factors = vector< Polynomial >();
             PointerSet<Constraint> sideConditions = PointerSet<Constraint>();
@@ -875,7 +875,7 @@ namespace smtrat
                         factors.push_back( iter->first );
                     else
                     {
-                        const smtrat::Constraint* cons = smtrat::Formula::newConstraint( iter->first, Constraint::NEQ );
+                        const smtrat::Constraint* cons = smtrat::Formula::newConstraint( iter->first, Relation::NEQ );
                         if( cons != Formula::constraintPool().consistentConstraint() )
                         {
                             assert( cons != Formula::constraintPool().inconsistentConstraint() );
@@ -909,10 +909,10 @@ namespace smtrat
                         auto iter = coeffs.find( 0 );
                         if( iter != coeffs.end() ) constantCoeff = iter->second;
                         // Create state ({b!=0} + oldConditions, [x -> -c/b]):
-                        const smtrat::Constraint* cons = smtrat::Formula::newConstraint( coeffs.rbegin()->second, Constraint::NEQ );
+                        const smtrat::Constraint* cons = smtrat::Formula::newConstraint( coeffs.rbegin()->second, Relation::NEQ );
                         if( cons == Formula::constraintPool().inconsistentConstraint() )
                         {
-                            if( relation == Constraint::EQ )
+                            if( relation == Relation::EQ )
                                 generatedTestCandidateBeingASolution = sideConditions.empty();
                         }
                         else
@@ -924,7 +924,7 @@ namespace smtrat
                             Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
                             if( _currentState->addChild( sub ) )
                             {
-                                if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
+                                if( relation == Relation::EQ && !_currentState->children().back()->hasSubstitutionResults() )
                                 {
                                     _currentState->rChildren().back()->setOriginalCondition( _condition );
                                     generatedTestCandidateBeingASolution = true;
@@ -950,11 +950,11 @@ namespace smtrat
                         if( iter != coeffs.end() ) linearCoeff = iter->second;
                         Polynomial radicand = linearCoeff.pow( 2 ) - Rational( 4 ) * coeffs.rbegin()->second * constantCoeff;
                         bool constraintHasZeros = false;
-                        const smtrat::Constraint* cons11 = smtrat::Formula::newConstraint( coeffs.rbegin()->second, Constraint::EQ );
+                        const smtrat::Constraint* cons11 = smtrat::Formula::newConstraint( coeffs.rbegin()->second, Relation::EQ );
                         if( cons11 != Formula::constraintPool().inconsistentConstraint() )
                         {
                             // Create state ({a==0, b!=0} + oldConditions, [x -> -c/b]):
-                            const smtrat::Constraint* cons12 = smtrat::Formula::newConstraint( linearCoeff, Constraint::NEQ );
+                            const smtrat::Constraint* cons12 = smtrat::Formula::newConstraint( linearCoeff, Relation::NEQ );
                             if( cons12 != Formula::constraintPool().inconsistentConstraint() )
                             {
                                 PointerSet<Constraint> sideCond = sideConditions;
@@ -966,7 +966,7 @@ namespace smtrat
                                 Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
                                 if( _currentState->addChild( sub ) )
                                 {
-                                    if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
+                                    if( relation == Relation::EQ && !_currentState->children().back()->hasSubstitutionResults() )
                                     {
                                         _currentState->rChildren().back()->setOriginalCondition( _condition );
                                         generatedTestCandidateBeingASolution = true;
@@ -981,10 +981,10 @@ namespace smtrat
                                 constraintHasZeros = true;
                             }
                         }
-                        const smtrat::Constraint* cons21 = smtrat::Formula::newConstraint( radicand, Constraint::GEQ );
+                        const smtrat::Constraint* cons21 = smtrat::Formula::newConstraint( radicand, Relation::GEQ );
                         if( cons21 != Formula::constraintPool().inconsistentConstraint() )
                         {
-                            const smtrat::Constraint* cons22 = smtrat::Formula::newConstraint( coeffs.rbegin()->second, Constraint::NEQ );
+                            const smtrat::Constraint* cons22 = smtrat::Formula::newConstraint( coeffs.rbegin()->second, Relation::NEQ );
                             if( cons22 != Formula::constraintPool().inconsistentConstraint() )
                             {
                                 PointerSet<Constraint> sideCond = sideConditions;
@@ -997,7 +997,7 @@ namespace smtrat
                                 Substitution subA = Substitution( _eliminationVar, sqExA, subType, oConditions, sideCond );
                                 if( _currentState->addChild( subA ) )
                                 {
-                                    if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
+                                    if( relation == Relation::EQ && !_currentState->children().back()->hasSubstitutionResults() )
                                     {
                                         _currentState->rChildren().back()->setOriginalCondition( _condition );
                                         generatedTestCandidateBeingASolution = true;
@@ -1014,7 +1014,7 @@ namespace smtrat
                                 Substitution subB = Substitution( _eliminationVar, sqExB, subType, oConditions, sideCond );
                                 if( _currentState->addChild( subB ) )
                                 {
-                                    if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
+                                    if( relation == Relation::EQ && !_currentState->children().back()->hasSubstitutionResults() )
                                     {
                                         _currentState->rChildren().back()->setOriginalCondition( _condition );
                                         generatedTestCandidateBeingASolution = true;
@@ -1029,7 +1029,7 @@ namespace smtrat
                                 constraintHasZeros = true;
                             }
                         }
-                        if( !constraintHasZeros && relation == Constraint::EQ )
+                        if( !constraintHasZeros && relation == Relation::EQ )
                             generatedTestCandidateBeingASolution = sideConditions.empty();
                         break;
                     }
@@ -1137,7 +1137,7 @@ namespace smtrat
                 {
                     if( (**cond).constraint().hasVariable( _currentState->father().index() ) && (**cond).constraint().isUpperBound() )
                     {
-                        assert( (*cond)->constraint().relation() == smtrat::Constraint::LEQ || (*cond)->constraint().relation() == smtrat::Constraint::GEQ );
+                        assert( (*cond)->constraint().relation() == Relation::LEQ || (*cond)->constraint().relation() == Relation::GEQ );
                         smtrat::Rational ubound = cln::floor1( (*cond)->constraint().constantPart()/(*cond)->constraint().lhs().lterm()->coeff() );
                         if( foundRightBound )
                         {
@@ -1405,7 +1405,7 @@ namespace smtrat
                                     auto oCond = (**child).rSubstitution().rOriginalConditions().begin();
                                     while( !worseConditionFound && oCond != (**child).substitution().originalConditions().end() )
                                     {
-                                        if( (**cond).valuate( _currentState->index(), mAllVariables.size(), true, Settings::prefer_equation_over_all ) > (**oCond).valuate( _currentState->index(), mAllVariables.size(), true, Settings::prefer_equation_over_all ) )
+                                        if( (**cond).valuate( _currentState->index(), mAllVariables.size(), Settings::prefer_equation_over_all ) > (**oCond).valuate( _currentState->index(), mAllVariables.size(), Settings::prefer_equation_over_all ) )
                                         {
                                             newTestCandidatesGenerated = true;
                                             #ifdef VS_DEBUG
@@ -1833,15 +1833,15 @@ namespace smtrat
                 const Constraint* constraint = (*cond)->pConstraint();
                 switch( constraint->relation() )
                 {
-                    case Constraint::GEQ:
+                    case Relation::GEQ:
                     {
-                        const Constraint* strictVersion = Formula::newConstraint( constraint->lhs(), Constraint::GREATER );
+                        const Constraint* strictVersion = Formula::newConstraint( constraint->lhs(), Relation::GREATER );
                         constraintsToCheck.insert( pair< const Constraint*, const vs::Condition*>( strictVersion, *cond ) );
                         break;
                     }
-                    case Constraint::LEQ:
+                    case Relation::LEQ:
                     {
-                        const Constraint* strictVersion = Formula::newConstraint( constraint->lhs(), Constraint::LESS );
+                        const Constraint* strictVersion = Formula::newConstraint( constraint->lhs(), Relation::LESS );
                         constraintsToCheck.insert( pair< const Constraint*, const vs::Condition*>( strictVersion, *cond ) );
                         break;
                     }

@@ -74,7 +74,7 @@ namespace Minisat
 
             void free( int size )
             {
-                wasted_ += size;
+                wasted_ += (uint32_t)size;
             }
 
             // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
@@ -136,7 +136,7 @@ namespace Minisat
             // result even by clearing the least significant bit. The resulting sequence of capacities
             // is carefully chosen to hit a maximum capacity that is close to the '2^32-1' limit when
             // using 'uint32_t' as indices so that as much as possible of this space can be used.
-            uint32_t delta = ((cap >> 1) + (cap >> 3) + 2) & ~1;
+            uint32_t delta = ((cap >> 1) + (cap >> 3) + 2) & (uint32_t)~1;
             cap            += delta;
 
             if( cap <= prev_cap )
@@ -153,10 +153,10 @@ namespace Minisat
     {
         // printf("ALLOC called (this = %p, size = %d)\n", this, size); fflush(stdout);
         assert( size > 0 );
-        capacity( sz + size );
+        capacity( sz + (uint32_t)size );
 
         uint32_t prev_sz = sz;
-        sz               += size;
+        sz               += (uint32_t)size;
 
         // Handle overflow:
         if( sz < prev_sz )

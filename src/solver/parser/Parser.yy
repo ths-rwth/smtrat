@@ -221,17 +221,17 @@ formlist:
 equation:
        OB eqOp form form CB { dv.restoreTwoFormulaMode(); $$ = dv.mkFormula( (dv.polarity() ? smtrat::IFF : smtrat::XOR), $3, $4 ); }
 
-    |  OB eqOp poly poly CB { dv.restoreTwoFormulaMode(); $$ = dv.mkConstraint( $3, $4, Constraint::EQ ); }
+    |  OB eqOp poly poly CB { dv.restoreTwoFormulaMode(); $$ = dv.mkConstraint( $3, $4, (unsigned) Relation::EQ ); }
 
 eqOp:
         EQ { dv.setTwoFormulaMode( true ); }
 
 relation:
-		LEQ     { $$ = Constraint::LEQ; }
-    |	GEQ     { $$ = Constraint::GEQ; }
-    |	LESS    { $$ = Constraint::LESS; }
-    |	GREATER { $$ = Constraint::GREATER; }
-    |	NEQ     { $$ = Constraint::NEQ; }
+		LEQ     { $$ = (unsigned) Relation::LEQ; }
+    |	GEQ     { $$ = (unsigned) Relation::GEQ; }
+    |	LESS    { $$ = (unsigned) Relation::LESS; }
+    |	GREATER { $$ = (unsigned) Relation::GREATER; }
+    |	NEQ     { $$ = (unsigned) Relation::NEQ; }
 
 negation:
 		NOT { dv.changePolarity(); $$ = smtrat::NOT; }
