@@ -977,6 +977,15 @@ namespace vs
         mTryToRefreshIndex = false;
         if( conditions().empty() )
             return false;
+        if( _allVariables.size() == 1 )
+        {
+            if( index() != *_allVariables.begin() )
+            {
+                setIndex( *_allVariables.begin() );
+                return true;
+            }
+            return false;
+        }
         map<carl::Variable, multiset<double> > realVarVals = map<carl::Variable, multiset<double> >();
         map<carl::Variable, multiset<double> > intVarVals = map<carl::Variable, multiset<double> >();
         for( auto var = _allVariables.begin(); var != _allVariables.end(); ++var )
@@ -1019,10 +1028,14 @@ namespace vs
                 if( var->second.size() == 1 && bestVar->second.size() == 1 )
                 {
                     if( *var->second.begin() < *bestVar->second.begin() )
+                    {
                         bestVar = var;
+                    }
                 }
-                else if( !(*bestVar->second.begin() < Condition::INFINITLY_MANY_SOLUTIONS_WEIGHT) && var->second.size() == 1 ) 
-                    bestVar = var;
+//                else if( !(*bestVar->second.begin() < Condition::INFINITLY_MANY_SOLUTIONS_WEIGHT) && var->second.size() == 1 ) 
+//                {
+//                    bestVar = var;
+//                }
                 else
                 {
                     auto varInConsVal     = var->second.begin();
@@ -1035,32 +1048,30 @@ namespace vs
                             break;
                         }
                         else if( *varInConsVal > *bestVarInConsVal )
+                        {
                             break;
+                        }
                         ++varInConsVal;
                         ++bestVarInConsVal;
                     }
                     if( varInConsVal == var->second.end() && bestVarInConsVal != bestVar->second.end() )
+                    {
                         bestVar = var;
+                    } 
                 }
             }
             else if( !var->second.empty() && bestVar->second.empty() )
+            {
                 bestVar = var;
+            }
             ++var;
         }
-        if( index() == carl::Variable::NO_VARIABLE )
+        if( index() != bestVar->first )
         {
-            setIndex( bestVar->first );
+            setIndex( (*bestVar).first );
             return true;
         }
-        else
-        {
-            if( index() != bestVar->first )
-            {
-                setIndex( (*bestVar).first );
-                return true;
-            }
-            return false;
-        }
+        return false;
     }
 
     void State::addCondition( const smtrat::Constraint* _constraint, const Condition::Set& _originalConditions, size_t _valutation, bool _recentlyAdded )
@@ -2419,7 +2430,7 @@ namespace vs
     {
         if( hasSubstitutionResults() )
         {
-            _out << _initiation << "Substitution results:" << endl;
+//            _out << _initiation << "Substitution results:" << endl;
             for( auto subResult = mpSubstitutionResults->begin(); subResult != mpSubstitutionResults->end(); ++subResult )
             {
                 if( subResult == mpSubstitutionResults->begin() )
@@ -2436,11 +2447,12 @@ namespace vs
                     for( auto cond = condConjunction->first.begin(); cond != condConjunction->first.end(); ++cond )
                     {
                         if( cond != condConjunction->first.begin() ) _out << " and ";
-                        (**cond).print( _out );
+//                        (**cond).print( _out );
+                        cout << (*cond)->constraint();
                     }
                     _out << " )";
-                    if( condConjunction->second ) _out << "_[True]  ";
-                    else _out << "_[False]  ";
+//                    if( condConjunction->second ) _out << "_[True]  ";
+//                    else _out << "_[False]  ";
                     auto nextCondConjunction = condConjunction;
                     ++nextCondConjunction;
                     if( nextCondConjunction != subResult->end() ) _out << endl;

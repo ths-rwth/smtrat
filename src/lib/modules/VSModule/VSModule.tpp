@@ -194,6 +194,9 @@ namespace smtrat
     template<class Settings>
     Answer VSModule<Settings>::isConsistent()
     {
+        #ifdef VS_MODULE_VERBOSE_INTEGERS
+        cout << mpReceivedFormula->toString( false, 0, "", true, true, true ) << endl;
+        #endif
         #ifdef VS_STATISTICS
         mStepCounter = 0;
         #endif
@@ -1268,6 +1271,9 @@ namespace smtrat
                     allSubResults.push_back( DisjunctionOfConditionConjunctions() );
                     allSubResults.back().push_back( oldConditions );
                     _currentState->addSubstitutionResults( allSubResults );
+                    #ifdef VS_MODULE_VERBOSE_INTEGERS
+                    _currentState->printSubstitutionResults( string( _currentState->treeDepth()*3, ' '), cout );
+                    #endif
                     addStateToRanking( _currentState );
                 }
                 else

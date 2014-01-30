@@ -104,26 +104,17 @@ namespace vs
             degreeWeight = maximum - 1;
         //Check the leading coefficient of the  given variable.
         unsigned lCoeffWeight = 0;
+        unsigned lCoeffWeightB = 2;
         if( degreeWeight <= 1 )
         {
             smtrat::Polynomial coeff = mpConstraint->coefficient( _consideredVariable, varInfo.maxDegree() );
             if( coeff.isConstant() )
             {
-                if( _consideredVariable.getType() == carl::VariableType::VT_INT )
+                if( _consideredVariable.getType() == carl::VariableType::VT_INT && (coeff == smtrat::ONE_POLYNOMIAL || coeff == smtrat::MINUS_ONE_POLYNOMIAL) )
                 {
-                    if( coeff == smtrat::ONE_POLYNOMIAL || coeff == smtrat::MINUS_ONE_POLYNOMIAL )
-                    {
-                        lCoeffWeight = 1;
-                    }
-                    else
-                    {
-                        lCoeffWeight = 2;
-                    }
+                    lCoeffWeightB = 1;
                 }
-                else
-                {
-                    lCoeffWeight = 1;
-                }
+                lCoeffWeight = 1;
             }
             else
                 lCoeffWeight = 3;
@@ -195,6 +186,20 @@ namespace vs
             }
         }
         double weightFactorTmp = maximum;
+//        cout << "valuate " << *mpConstraint << " for " << _consideredVariable << endl;
+//        cout << "finitlyManySolutionsWeight = " << finitlyManySolutionsWeight << endl;
+//        cout << "wtfweight = " << (_preferEquation ? ((constraint().relation() == smtrat::Relation::EQ || degreeWeight <= 2) ? 1 : 2) : (degreeWeight <= 2 ? 1 : 2)) << endl;
+//        cout << "relationSymbolWeight = " << relationSymbolWeight << endl;
+//        cout << "univariateWeight = " << (degreeWeight <= 2 && numberOfVariableWeight == 1 ? 1 : 2) << endl;
+//        cout << "degreeWeight = " << degreeWeight << endl;
+//        cout << "lCoeffWeight = " << lCoeffWeight << endl;
+//        if( _consideredVariable.getType() == carl::VariableType::VT_INT )
+//        {
+//            cout << "lCoeffWeightB = " << lCoeffWeightB << endl;
+//        }
+//        cout << "numberOfVariableWeight = " << numberOfVariableWeight << endl;
+//        cout << "numberOfVariableOccurencesWeight = " << numberOfVariableOccurencesWeight << endl;
+//        cout << "otherMonomialsPositiveWeight = " << otherMonomialsPositiveWeight << endl;
         double result = finitlyManySolutionsWeight;
         if( _preferEquation )
             result += ((constraint().relation() == smtrat::Relation::EQ || degreeWeight <= 2) ? 1 : 2)/weightFactorTmp;
@@ -203,10 +208,17 @@ namespace vs
         weightFactorTmp *= maximum;
         result += relationSymbolWeight/weightFactorTmp;
         weightFactorTmp *= maximum;
-        result += lCoeffWeight/weightFactorTmp;
+        result += (degreeWeight <= 2 && numberOfVariableWeight == 1 ? 1 : 2) /weightFactorTmp;
         weightFactorTmp *= maximum;
         result += degreeWeight/weightFactorTmp;
         weightFactorTmp *= maximum;
+        result += lCoeffWeight/weightFactorTmp;
+        weightFactorTmp *= maximum;
+        if( _consideredVariable.getType() == carl::VariableType::VT_INT )
+        {
+            result += lCoeffWeightB/weightFactorTmp;
+            weightFactorTmp *= maximum;
+        }
         result += numberOfVariableWeight/weightFactorTmp;
         weightFactorTmp *= maximum;
         result += numberOfVariableOccurencesWeight/weightFactorTmp;

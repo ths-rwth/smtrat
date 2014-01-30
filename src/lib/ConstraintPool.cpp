@@ -110,9 +110,9 @@ namespace smtrat
         CONSTRAINT_LOCK_GUARD
         // TODO: Maybe it's better to increment the allocator even if the constraint already exists.
         //       Avoids long waiting for access (mutual exclusion) but increases the allocator to fast.
-        cout << "create polynomial  " << _lhs << " " << Constraint::relationToString( _rel ) << "0" << endl;
+//        cout << "create polynomial  " << _lhs << " " << Constraint::relationToString( _rel ) << "0" << endl;
         Constraint* constraint = createNormalizedConstraint( _lhs, _rel );
-        cout << "   " << *constraint << endl;
+//        cout << "   " << *constraint << endl;
         if( constraint->variables().empty() )
         {
             bool constraintConsistent = Constraint::evaluate( constraint->constantPart(), constraint->relation() );
