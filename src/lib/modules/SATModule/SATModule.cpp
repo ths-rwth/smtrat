@@ -318,9 +318,8 @@ namespace smtrat
         {
             for( BooleanVarMap::const_iterator bVar = mBooleanVarMap.begin(); bVar != mBooleanVarMap.end(); ++bVar )
             {
-                Module::Assignment assignment = Module::Assignment();
-                assignment.booleanValue = assigns[bVar->second] == l_True;
-                mModel.insert( std::pair< const carl::Variable, Assignment >( bVar->first, assignment ) );
+                Assignment assignment = assigns[bVar->second] == l_True;
+                mModel.insert(std::make_pair(bVar->first, assignment));
             }
             Module::getBackendsModel();
         }

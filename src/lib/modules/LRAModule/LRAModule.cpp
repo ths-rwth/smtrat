@@ -580,9 +580,8 @@ Return:
                 for( auto ratAss = rationalAssignment.begin(); ratAss != rationalAssignment.end(); ++ratAss )
                 {
                     Polynomial value = Polynomial( ratAss->second );
-                    Assignment assignment = Assignment();
-                    assignment.theoryValue = new vs::SqrtEx( value );
-                    mModel.insert( mModel.end(), std::pair< const carl::Variable, Assignment >( ratAss->first, assignment ) );
+                    Assignment assignment = vs::SqrtEx(value);
+                    mModel.insert(mModel.end(), std::make_pair(ratAss->first, assignment));
                 }
             }
             else
