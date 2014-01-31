@@ -769,28 +769,24 @@ namespace smtrat
             {
                 const Substitution& sub = state->substitution();
                 Assignment ass;
-                ass.theoryValue = NULL;
                 if( sub.type() == Substitution::MINUS_INFINITY )
-                    ass.theoryValue = new SqrtEx( Polynomial( mVariableVector.at( state->treeDepth()-1 ).first ) );
+                    ass = SqrtEx( Polynomial( mVariableVector.at( state->treeDepth()-1 ).first ) );
                 else
                 {
                     if( state->substitution().variable().getType() == carl::VariableType::VT_INT )
                     {
                         Rational valueRational;
                         sub.term().evaluate( valueRational, getIntervalAssignment( state ), 0 );
-                        ass.theoryValue = new SqrtEx( Polynomial( valueRational ) );
+                        ass = SqrtEx( Polynomial( valueRational ) );
                     }
                     else
                     {
-                        ass.theoryValue = new SqrtEx( sub.term() );
+                        ass = SqrtEx( sub.term() );
                         if( sub.type() == Substitution::PLUS_EPSILON )
-                            *(ass.theoryValue) = (*(ass.theoryValue)) + SqrtEx( Polynomial( mVariableVector.at( state->treeDepth()-1 ).second ) );
+                            ass = ass.asSqrtEx() + SqrtEx( Polynomial( mVariableVector.at( state->treeDepth()-1 ).second ) );
                     }
                 }
-                if( !mModel.insert( std::pair< const carl::Variable, Assignment >( state->substitution().variable(), ass ) ).second )
-                {
-                    delete ass.theoryValue;
-                }
+                mModel.insert(std::make_pair(state->substitution().variable(), ass));
                 state = state->pFather();
             }
             if( mRanking.begin()->second->tooHighDegree() )
@@ -801,12 +797,9 @@ namespace smtrat
             for( auto var = allVarsInRoot.begin(); var != allVarsInRoot.end(); ++var )
             {
                 Assignment ass;
-                ass.theoryValue = new SqrtEx( var->getType() == carl::VariableType::VT_INT ? ZERO_POLYNOMIAL : Polynomial( *var ) );
+                ass = SqrtEx( var->getType() == carl::VariableType::VT_INT ? ZERO_POLYNOMIAL : Polynomial( *var ) );
                 // Note, that this assignment won't take effect if the variable got an assignment by a backend module.
-                if( !mModel.insert( std::pair< const carl::Variable, Assignment >( *var, ass ) ).second )
-                {
-                    delete ass.theoryValue;
-                }
+                mModel.insert(std::make_pair(*var, ass));
             }
         }
     }

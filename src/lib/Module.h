@@ -44,12 +44,13 @@
 #include <chrono>
 #include <atomic>
 
+#include "Assignment.h"
 #include "Common.h"
 #include "Formula.h"
 #include "ValidationSettings.h"
 #include "ThreadPool.h"
 #include "config.h"
-#include "datastructures/vs/SqrtEx.h"
+
 
 
 namespace smtrat
@@ -79,14 +80,8 @@ namespace smtrat
         friend class ValidationSettings;
         #endif
         public:
-            /// Data type for storing the domain and the value of an assignment.
-            typedef union
-            {
-                vs::SqrtEx* theoryValue;
-                bool booleanValue;
-            } Assignment;
             /// Data type for a assignment assigning a variable, represented as a string, a real algebraic number, represented as a string.
-            typedef std::map< const carl::Variable, Assignment > Model;
+            typedef std::map<const carl::Variable, Assignment> Model;
             ///
             typedef std::chrono::high_resolution_clock clock;
             ///
@@ -319,18 +314,8 @@ namespace smtrat
              */
             void clearModel() const
             {
-                while( !mModel.empty() )
-                {
-                    Assignment assToDel = mModel.begin()->second;
-                    if( mModel.begin()->first.getType() == carl::VariableType::VT_BOOL )
-                        mModel.erase( mModel.begin() );
-                    else
-                    {
-                        vs::SqrtEx*& exToDel = assToDel.theoryValue;
-                        mModel.erase( mModel.begin() );
-                        delete exToDel;
-                    }   
-                }
+				// the Assignments should not contain any values that must be deleted explicitly...
+				mModel.clear();
             }
             
             void setOrigins( const Formula* const _formula, vec_set_const_pFormula& _origins )
