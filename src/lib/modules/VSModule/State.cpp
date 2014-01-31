@@ -50,7 +50,7 @@ namespace vs
         mSubResultsSimplified( false ),
         mTakeSubResultCombAgain( false ),
         mTestCandidateCheckedForBounds( false ),
-        mToHighDegree( false ),
+        mCannotBeSolved( false ),
         mTryToRefreshIndex( false ),
         mBackendCallValuation( 0 ),
         mID( 0 ),
@@ -82,7 +82,7 @@ namespace vs
         mSubResultsSimplified( false ),
         mTakeSubResultCombAgain( false ),
         mTestCandidateCheckedForBounds( false ),
-        mToHighDegree( false ),
+        mCannotBeSolved( false ),
         mTryToRefreshIndex( false ),
         mBackendCallValuation( 0 ),
         mID( 0 ),
@@ -309,7 +309,7 @@ namespace vs
         }
         assert( carl::isInteger( result ) );
         ++mCurrentIntRange;
-        return result;
+        return true;
     }
 
     bool State::unfinishedAncestor( State*& _unfinAnt )
@@ -783,7 +783,7 @@ namespace vs
         }
         // Mark this state as not yet simplified.
         mSubResultsSimplified = false;
-        mToHighDegree         = false;
+        mCannotBeSolved       = false;
         mMarkedAsDeleted      = false;
         mType                 = COMBINE_SUBRESULTS;
     }
@@ -1128,7 +1128,7 @@ namespace vs
         {
             // Check if the condition already exists.
             mConditionsSimplified = false;
-            mToHighDegree         = false;
+            mCannotBeSolved       = false;
             mMarkedAsDeleted      = false;
             // The state is not a leaf.
             if( index() != carl::Variable::NO_VARIABLE )
@@ -1307,7 +1307,7 @@ namespace vs
             mInconsistent = false;
             mHasRecentlyAddedConditions = recentlyAddedConditionLeft;
         }
-        mToHighDegree      = false;
+        mCannotBeSolved    = false;
         mMarkedAsDeleted   = false;
         mTryToRefreshIndex = true;
         // Delete everything originated by it in all children of this state.
@@ -1401,7 +1401,7 @@ namespace vs
             delete condToDel;
             condToDel = NULL;
         }
-        mToHighDegree      = false;
+        mCannotBeSolved    = false;
         mMarkedAsDeleted   = false;
         mTryToRefreshIndex = true;
     }
@@ -1857,7 +1857,7 @@ namespace vs
 
     void State::updateValuation()
     {
-        if( tooHighDegree() )
+        if( cannotBeSolved() )
         {
             mValuation = 1;
             updateBackendCallValuation();
@@ -1880,13 +1880,7 @@ namespace vs
                     mValuation += 2;
                 else if( type() == TEST_CANDIDATE_TO_GENERATE ) 
                 {
-//                    if( _preferMinInf || isRoot() || substitution().type() != Substitution::MINUS_INFINITY )
-                        mValuation += 4;
-//                    else
-//                    {
-//                        mBackendCallValuation = mValuation + 4;
-//                        mValuation = 2;
-//                    }
+                    mValuation += 4;
                 }   
                 else 
                     mValuation += 3;
@@ -2430,7 +2424,7 @@ namespace vs
             _out << _initiation << "                        tryToRefreshIndex: yes" << endl;
         else
             _out << _initiation << "                        tryToRefreshIndex: no" << endl;
-        if( tooHighDegree() )
+        if( cannotBeSolved() )
             _out << _initiation << "                             toHighDegree: yes" << endl;
         else
             _out << _initiation << "                             toHighDegree: no" << endl;

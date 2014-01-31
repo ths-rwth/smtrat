@@ -34,8 +34,8 @@
 using namespace std;
 using namespace vs;
 
-#define VS_DEBUG
-#define VS_MODULE_VERBOSE_INTEGERS
+//#define VS_DEBUG
+//#define VS_MODULE_VERBOSE_INTEGERS
 #define VS_TERMINATION_INVARIANCE
 
 namespace smtrat
@@ -598,7 +598,7 @@ namespace smtrat
                                                 {
                                                     if( !(**child).markedAsDeleted() )
                                                         addStateToRanking( *child );
-                                                    if( !(**child).tooHighDegree() && !(**child).markedAsDeleted() )
+                                                    if( !(**child).cannotBeSolved() && !(**child).markedAsDeleted() )
                                                         currentStateHasChildrenToConsider = true;
                                                     else 
                                                         currentStateHasChildrenWithToHighDegree = true;
@@ -634,7 +634,7 @@ namespace smtrat
                                     }
                                     else
                                     {
-                                        if( (*currentState).tooHighDegree() )
+                                        if( (*currentState).cannotBeSolved() )
                                         {
                                             // If we need to involve another approach.
                                             Answer result = runBackendSolvers( currentState );
@@ -642,7 +642,7 @@ namespace smtrat
                                             {
                                                 case True:
                                                 {
-                                                    currentState->rToHighDegree() = true;
+                                                    currentState->rCannotBeSolved() = true;
                                                     State * unfinishedAncestor;
                                                     if( currentState->unfinishedAncestor( unfinishedAncestor ) )
                                                     {
@@ -689,7 +689,7 @@ namespace smtrat
                                         else
                                         {
 //                                            return foundAnswer( Unknown );
-                                            currentState->rToHighDegree() = true;
+                                            currentState->rCannotBeSolved() = true;
                                             addStateToRanking( currentState );
                                         }
                                     }
@@ -789,7 +789,7 @@ namespace smtrat
                 mModel.insert(std::make_pair(state->substitution().variable(), ass));
                 state = state->pFather();
             }
-            if( mRanking.begin()->second->tooHighDegree() )
+            if( mRanking.begin()->second->cannotBeSolved() )
                 Module::getBackendsModel();
             // All variables which occur in the root of the constructed state tree but were incidentally eliminated
             // (during the elimination of another variable) can have an arbitrary assignment. If the variable has the
@@ -927,7 +927,15 @@ namespace smtrat
                                     generatedTestCandidateBeingASolution = true;
                                 }
                                 // Add its valuation to the current ranking.
-                                addStateToRanking( (*_currentState).rChildren().back() );
+                                if( Settings::int_constraints_allowed && Settings::branch_and_bound && _eliminationVar.getType() == carl::VariableType::VT_INT )
+                                {
+                                    removeStatesFromRanking( *_currentState );
+                                    addStatesToRanking( _currentState );
+                                }
+                                else
+                                {
+                                    addStateToRanking( _currentState->rChildren().back() );
+                                }
                                 ++numberOfAddedChildren;
                                 #ifdef VS_DEBUG
                                 (*(*_currentState).rChildren().back()).print( "   ", cout );
@@ -969,7 +977,15 @@ namespace smtrat
                                         generatedTestCandidateBeingASolution = true;
                                     }
                                     // Add its valuation to the current ranking.
-                                    addStateToRanking( (*_currentState).rChildren().back() );
+                                    if( Settings::int_constraints_allowed && Settings::branch_and_bound && _eliminationVar.getType() == carl::VariableType::VT_INT )
+                                    {
+                                        removeStatesFromRanking( *_currentState );
+                                        addStatesToRanking( _currentState );
+                                    }
+                                    else
+                                    {
+                                        addStateToRanking( _currentState->rChildren().back() );
+                                    }
                                     ++numberOfAddedChildren;
                                     #ifdef VS_DEBUG
                                     (*(*_currentState).rChildren().back()).print( "   ", cout );
@@ -1000,7 +1016,15 @@ namespace smtrat
                                         generatedTestCandidateBeingASolution = true;
                                     }
                                     // Add its valuation to the current ranking.
-                                    addStateToRanking( (*_currentState).rChildren().back() );
+                                    if( Settings::int_constraints_allowed && Settings::branch_and_bound && _eliminationVar.getType() == carl::VariableType::VT_INT )
+                                    {
+                                        removeStatesFromRanking( *_currentState );
+                                        addStatesToRanking( _currentState );
+                                    }
+                                    else
+                                    {
+                                        addStateToRanking( _currentState->rChildren().back() );
+                                    }
                                     ++numberOfAddedChildren;
                                     #ifdef VS_DEBUG
                                     (*(*_currentState).rChildren().back()).print( "   ", cout );
@@ -1017,7 +1041,15 @@ namespace smtrat
                                         generatedTestCandidateBeingASolution = true;
                                     }
                                     // Add its valuation to the current ranking.
-                                    addStateToRanking( (*_currentState).rChildren().back() );
+                                    if( Settings::int_constraints_allowed && Settings::branch_and_bound && _eliminationVar.getType() == carl::VariableType::VT_INT )
+                                    {
+                                        removeStatesFromRanking( *_currentState );
+                                        addStatesToRanking( _currentState );
+                                    }
+                                    else
+                                    {
+                                        addStateToRanking( _currentState->rChildren().back() );
+                                    }
                                     ++numberOfAddedChildren;
                                     #ifdef VS_DEBUG
                                     (*(*_currentState).rChildren().back()).print( "   ", cout );
@@ -1309,9 +1341,8 @@ namespace smtrat
                         delete pCond;
                         pCond = NULL;
                     }
-                    cleanResultsOfThisMethod = true;
                     _currentState->rMarkedAsDeleted() = true;
-                    _currentState->rFather().rToHighDegree() = true;
+                    _currentState->rFather().rCannotBeSolved() = true;
                     addStatesToRanking( _currentState->pFather() );
                     cleanResultsOfThisMethod = true;
                 }
@@ -1529,7 +1560,7 @@ namespace smtrat
     template<class Settings>
     void VSModule<Settings>::insertTooHighDegreeStatesInRanking( State* _state )
     {
-        if( _state->tooHighDegree() )
+        if( _state->cannotBeSolved() )
             addStateToRanking( _state );
         else
             for( auto dt = (*_state).rChildren().begin(); dt != (*_state).children().end(); ++dt )
@@ -1692,8 +1723,15 @@ namespace smtrat
                         Rational nextIntTCinRange;
                         if( currentState->getNextIntTestCandidate( nextIntTCinRange, Settings::int_max_range ) )
                         {
-                            
+                            branchAt( currentState->substitution().variable(), nextIntTCinRange, getReasons( currentState->substitution().originalConditions() ) );
                         }
+                        else
+                        {
+                            removeStatesFromRanking( *currentState );
+                            currentState->rCannotBeSolved() = true;
+                            addStateToRanking( currentState );
+                        }
+                        return false;
                     }
                     else
                     {

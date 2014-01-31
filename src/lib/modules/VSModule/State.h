@@ -89,7 +89,7 @@ namespace vs
         /// virtual substitution for the considered list of conditions of this state is too high.
         /// If this flag is set to true, it the state is delayed until a point where only such state
         /// remain and a backend must be involved.
-        bool				  mToHighDegree;
+        bool				  mCannotBeSolved;
         /// A flag indicating whether the index (the variable to eliminate in this state) should be
         /// reconsidered and maybe changed.
         bool				  mTryToRefreshIndex;
@@ -183,18 +183,18 @@ namespace vs
          * @return A constant reference to the flag indicating whether a condition with too high degree for 
          *          the virtual substitution method must be considered.
          */
-        const bool& tooHighDegree() const
+        const bool& cannotBeSolved() const
         {
-            return mToHighDegree;
+            return mCannotBeSolved;
         }
         
         /**
          * @return A reference to the flag indicating whether a condition with too high degree for 
          *          the virtual substitution method must be considered.
          */
-        bool& rToHighDegree()
+        bool& rCannotBeSolved()
         {
-            return mToHighDegree;
+            return mCannotBeSolved;
         }
 
         /**
@@ -622,6 +622,7 @@ namespace vs
         {
             assert( !isRoot() || substitution().type() == Substitution::MINUS_INFINITY || substitution().type() == Substitution::PLUS_INFINITY );
             mCurrentIntRange = 0;
+            mCannotBeSolved = !mpTooHighDegreeConditions->empty();
         }
         
         /**
