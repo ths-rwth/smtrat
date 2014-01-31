@@ -450,11 +450,11 @@ namespace smtrat
         {   
             if( ass->first.getType() == carl::VariableType::VT_BOOL )
             {
-                rationalAssignment.insert( rationalAssignment.end(), pair<carl::Variable, Rational>( ass->first, (ass->second.booleanValue ? ONE_RATIONAL : ZERO_RATIONAL) ) );
+                rationalAssignment.insert( rationalAssignment.end(), std::make_pair( ass->first, (ass->second.asBool() ? ONE_RATIONAL : ZERO_RATIONAL) ) );
             }
-            else if( ass->second.theoryValue->isConstant() )
+            else if( ass->second.asSqrtEx().isConstant() )
             {
-                Rational value = ass->second.theoryValue->constantPart().constantPart()/ass->second.theoryValue->denominator().constantPart();
+                Rational value = ass->second.asSqrtEx().constantPart().constantPart()/ass->second.asSqrtEx().denominator().constantPart();
                 assert( !(ass->first.getType() == carl::VariableType::VT_INT) || carl::isInteger( value ) );
                 rationalAssignment.insert( rationalAssignment.end(), pair<carl::Variable, Rational>( ass->first, value ) );
             }
@@ -527,18 +527,9 @@ namespace smtrat
             {
                 assert( modelsDisjoint( mModel, (*module)->model() ) );
                 (*module)->updateModel();
-                for( auto ass = (*module)->model().begin(); ass != (*module)->model().end(); ++ass )
+                for (auto ass: (*module)->model())
                 {
-                    Assignment newAss = Assignment();
-                    if( ass->first.getType() == carl::VariableType::VT_BOOL )
-                        newAss.booleanValue = ass->second.booleanValue;
-                    else
-                        newAss.theoryValue = new vs::SqrtEx( *(ass->second.theoryValue) );
-                    if( !mModel.insert( pair< const carl::Variable, Assignment >( ass->first, newAss ) ).second )
-                    {
-                        if( ass->first.getType() != carl::VariableType::VT_BOOL )
-                            delete newAss.theoryValue;
-                    }
+                    mModel.insert(ass);
                 }
                 break;
             }
@@ -1114,23 +1105,14 @@ namespace smtrat
      */
     void Module::printModel( ostream& _out ) const
     {
-        updateModel();
+        this->updateModel();
         if( !model().empty() )
         {
             _out << "(";
-            for( Module::Model::const_iterator ass = model().begin(); ass != model().end(); ++ass )
+            for (Module::Model::const_iterator ass = model().begin(); ass != model().end(); ++ass)
             {
-                if( ass != model().begin() )
-                    _out << " ";
-                if( ass->first.getType() == carl::VariableType::VT_BOOL )
-                {
-                    _out << "(" << ass->first << " " << (ass->second.booleanValue ? "true" : "false") << ")" << endl;
-                }
-                else
-                {
-                    _out << "(" << ass->first << " ";
-                    _out << ass->second.theoryValue->toString( true ) << ")" << endl;
-                }
+                if (ass != model().begin()) _out << " ";
+				_out << "(" << ass->first << " " << ass->second << ")" << endl;
             }
             _out << ")" << endl;
         }
