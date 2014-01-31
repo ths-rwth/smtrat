@@ -31,15 +31,13 @@
 #ifndef SMTRAT_CADMODULE_H
 #define SMTRAT_CADMODULE_H
 
-
-
 #include "config.h"
 #include "../../Module.h"
 #include "../../RuntimeSettings.h"
 
 #include <unordered_map>
-#include <ginac/ginac.h>
-#include <ginacra/ginacra.h>
+
+#include "carl/cad/CAD.h"
 
 #ifdef SMTRAT_CAD_VARIABLEBOUNDS
 #include "../../VariableBounds.h"
@@ -81,32 +79,30 @@ namespace smtrat
         ////////////////
 
         /// representation of the solution space containing all data relevant for CAD computations
-        GiNaCRA::CAD mCAD;
+        
+        carl::CAD<smtrat::Rational> mCAD;
         /// the GiNaCRA constraints
-        vector<GiNaCRA::Constraint> mConstraints;
+        std::vector<carl::cad::Constraint<smtrat::Rational>> mConstraints;
         /// the GiNaCRA constraints' indices assigned to the received constraints
         ConstraintIndexMap mConstraintsMap;
         /// a satisfying assignment of the received constraints if existent; otherwise it is empty
-        GiNaCRA::RealAlgebraicPoint mRealAlgebraicSolution;
+        carl::RealAlgebraicPoint<smtrat::Rational> mRealAlgebraicSolution;
         /// the conflict graph storing for each last component of all sample points which constraints were satisfied by the point
-        GiNaCRA::ConflictGraph mConflictGraph;
+        carl::cad::ConflictGraph mConflictGraph;
         #ifdef SMTRAT_CAD_VARIABLEBOUNDS
         VariableBounds mVariableBounds;
         #endif
 
         public:
 
-            /// Stores the internal (GiNaC) variable names representing the roots of univariate polynomials discovered by any CAD module
-            static std::map<std::string,std::pair<std::string,GiNaC::ex> > mRootVariables;
-
             CADModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             virtual ~CADModule();
 
-            virtual bool assertSubformula( Formula::const_iterator _subformula );
-            virtual void removeSubformula( Formula::const_iterator _subformula );
+            virtual bool assertSubformula(Formula::const_iterator _subformula);
+            virtual void removeSubformula(Formula::const_iterator _subformula);
             virtual Answer isConsistent();
-            void updateModel();
+            void updateModel() const;
 
 
             #ifdef SMTRAT_CAD_VARIABLEBOUNDS
@@ -115,10 +111,10 @@ namespace smtrat
             #endif
 
         private:
-            const GiNaCRA::Constraint convertConstraint( const Constraint& );
-            const Constraint* convertConstraint( const GiNaCRA::Constraint& );
-            vec_set_const_pFormula extractMinimalInfeasibleSubsets_GreedyHeuristics( GiNaCRA::ConflictGraph& conflictGraph );
-            void addDeductions( const list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > >& deductions );
+            const carl::cad::Constraint<smtrat::Rational> convertConstraint( const Constraint& );
+            const Constraint* convertConstraint( const carl::cad::Constraint<smtrat::Rational>& );
+            vec_set_const_pFormula extractMinimalInfeasibleSubsets_GreedyHeuristics( carl::cad::ConflictGraph& conflictGraph );
+            void addDeductions( const std::list<std::pair<std::list<carl::cad::Constraint<smtrat::Rational>>, std::list<carl::cad::Constraint<smtrat::Rational>> > >& deductions );
             const Formula* getConstraintAt( unsigned index );
             void updateConstraintMap( unsigned index, bool decrement = true );
 #ifdef SMTRAT_DEVOPTION_Statistics

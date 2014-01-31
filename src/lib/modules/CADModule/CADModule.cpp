@@ -33,24 +33,16 @@
 #include "../../Manager.h"
 #include "CADModule.h"
 
-#include <ginacra/ginacra.h>
-#include <ginacra/Constraint.h>
+#include <memory>
 #include <iostream>
 
-using GiNaCRA::UnivariatePolynomial;
-using GiNaCRA::EliminationSet;
-using GiNaCRA::Constraint;
-using GiNaCRA::Polynomial;
-using GiNaCRA::CAD;
-using GiNaCRA::RealAlgebraicPoint;
-using GiNaCRA::ConflictGraph;
-
-using GiNaC::sign;
-using GiNaC::ZERO_SIGN;
-using GiNaC::POSITIVE_SIGN;
-using GiNaC::NEGATIVE_SIGN;
-using GiNaC::ex_to;
-using GiNaC::is_exactly_a;
+using carl::UnivariatePolynomial;
+using carl::cad::EliminationSet;
+using carl::cad::Constraint;
+using carl::Polynomial;
+using carl::CAD;
+using carl::RealAlgebraicPoint;
+using carl::cad::ConflictGraph;
 
 using namespace std;
 
@@ -72,7 +64,6 @@ using namespace std;
 
 namespace smtrat
 {
-    map<string,pair<string,ex> > CADModule::mRootVariables = map<string,pair<string,ex> >();
 
     CADModule::CADModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
@@ -91,18 +82,18 @@ namespace smtrat
     {
         mInfeasibleSubsets.clear();    // initially everything is satisfied
         // CAD setting
-        GiNaCRA::CADSettings setting = mCAD.setting();
+        carl::cad::CADSettings setting = mCAD.getSetting();
         // general setting set
         #ifdef SMTRAT_CAD_ALTERNATIVE_SETTING
-            setting = GiNaCRA::CADSettings::getSettings( GiNaCRA::RATIONALSAMPLE_CADSETTING );
+            setting = carl::cad::CADSettings::getSettings( carl::cad::CADSettingsType::RATIONALSAMPLE );
         #else
             #ifdef SMTRAT_CAD_DISABLEEQUATIONDETECT_SETTING
-                setting = GiNaCRA::CADSettings::getSettings( GiNaCRA::GENERIC_CADSETTING );
+                setting = carl::cad::CADSettings::getSettings( carl::cad::CADSettingsType::GENERIC );
             #else
                 #ifdef SMTRAT_CAD_VARIABLEBOUNDS
-                setting = GiNaCRA::CADSettings::getSettings( GiNaCRA::BOUNDED_CADSETTING ); // standard
+                setting = carl::cad::CADSettings::getSettings( carl::cad::CADSettingsType::BOUNDED ); // standard
                 #else
-                setting = GiNaCRA::CADSettings::getSettings( GiNaCRA::EQUATIONDETECT_CADSETTING ); // standard
+                setting = carl::cad::CADSettings::getSettings( carl::cad::CADSettingsType::EQUATIONDETECT ); // standard
                 #endif
                 setting.computeConflictGraph    = true;
                 setting.numberOfDeductions      = 1;
@@ -204,10 +195,10 @@ namespace smtrat
         // add the constraint to the local list of constraints and memorize the index/constraint assignment if the constraint is not present already
         if( mConstraintsMap.find( _subformula ) != mConstraintsMap.end() )
             return true;    // the exact constraint was already considered
-        GiNaCRA::Constraint constraint = convertConstraint( (*_subformula)->constraint() );
+        carl::cad::Constraint<smtrat::Rational> constraint = convertConstraint( (*_subformula)->constraint() );
         mConstraints.push_back( constraint );
         mConstraintsMap[ _subformula ] = mConstraints.size() - 1;
-        mCAD.addPolynomial( constraint.polynomial(), constraint.variables() );
+        mCAD.addPolynomial(Polynomial(constraint.getPolynomial()), constraint.getVariables());
         mConflictGraph.addConstraintVertex(); // increases constraint index internally what corresponds to adding a new constraint node with index mConstraints.size()-1
         return true;
     }
@@ -226,7 +217,7 @@ namespace smtrat
             return foundAnswer( False ); // there was no constraint removed which was in a previously generated infeasible subset
         #ifdef MODULE_VERBOSE
         cout << "Checking constraint set " << endl;
-        for( vector<GiNaCRA::Constraint>::const_iterator k = mConstraints.begin(); k != mConstraints.end(); ++k )
+        for( vector<carl::cad::Constraint<smtrat::Rational>>::const_iterator k = mConstraints.begin(); k != mConstraints.end(); ++k )
             cout << " " << *k << endl;
         #endif
         // perform the scheduled elimination and see if there were new variables added
@@ -234,7 +225,7 @@ namespace smtrat
             mConflictGraph.clearSampleVertices(); // all sample vertices are now invalid, thus remove them
         #ifdef MODULE_VERBOSE
         cout << "over the variables " << endl;
-        vector<symbol> vars = mCAD.variables();
+        vector<symbol> vars = mCAD.getVariables();
         for( vector<GiNaC::symbol>::const_iterator k = vars.begin(); k != vars.end(); ++k )
             cout << " " << *k << endl;
         #endif
@@ -243,16 +234,16 @@ namespace smtrat
         if( variableBounds().isConflicting() )
         {
             mInfeasibleSubsets.push_back( variableBounds().getConflict() );
-            mRealAlgebraicSolution = GiNaCRA::RealAlgebraicPoint();
+            mRealAlgebraicSolution = carl::RealAlgebraicPoint<smtrat::Rational>();
             return foundAnswer( False );
         }
-        GiNaCRA::BoundMap boundMap = GiNaCRA::BoundMap();
-        GiNaCRA::evalintervalmap eiMap = mVariableBounds.getEvalIntervalMap();
-        vector<symbol> variables = mCAD.variables();
-        for( unsigned v = 0; v < variables.size(); ++v )
+		carl::CAD<smtrat::Rational>::BoundMap boundMap;
+        std::map<carl::Variable, carl::ExactInterval<smtrat::Rational>> eiMap = mVariableBounds.getEvalIntervalMap();
+        std::vector<carl::Variable> variables = mCAD.getVariables();
+        for (unsigned v = 0; v < variables.size(); ++v)
         {
-            GiNaCRA::evalintervalmap::const_iterator vPos = eiMap.find( variables[v] );
-            if( vPos != eiMap.end() )
+            auto vPos = eiMap.find( variables[v] );
+            if (vPos != eiMap.end())
                 boundMap[v] = vPos->second;
         }
         #ifdef MODULE_VERBOSE
@@ -270,7 +261,7 @@ namespace smtrat
         }
         #endif
         #endif
-        list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > > deductions;
+        list<pair<list<carl::cad::Constraint<smtrat::Rational>>, list<carl::cad::Constraint<smtrat::Rational>> > > deductions;
         #ifdef SMTRAT_CAD_VARIABLEBOUNDS
         if( !mCAD.check( mConstraints, mRealAlgebraicSolution, mConflictGraph, boundMap, deductions, false, false ) )
         #else
@@ -283,8 +274,8 @@ namespace smtrat
             #define SMTRAT_CAD_DISABLE_THEORYPROPAGATION // no lemmata from staisfying assignments are going to be constracted
             mCAD.clear();
             // replay adding the polynomials as scheduled polynomials
-            for( vector<GiNaCRA::Constraint>::const_iterator constraint = mConstraints.begin(); constraint != mConstraints.end(); ++constraint )
-                mCAD.addPolynomial( constraint->polynomial(), constraint->variables() );
+            for( vector<carl::cad::Constraint<smtrat::Rational>>::const_iterator constraint = mConstraints.begin(); constraint != mConstraints.end(); ++constraint )
+                mCAD.addPolynomial( constraint->getPolynomial(), constraint->getVariables() );
             #endif
             #ifdef SMTRAT_CAD_DISABLE_MIS
             // construct a trivial infeasible subset
@@ -301,7 +292,7 @@ namespace smtrat
             #endif
             #else
             // construct an infeasible subset
-            assert( mCAD.setting().computeConflictGraph );
+            assert( mCAD.getSetting().computeConflictGraph );
             // copy conflict graph for destructive heuristics and invert it
             ConflictGraph g = ConflictGraph( mConflictGraph );
             g.invert();
@@ -349,7 +340,7 @@ namespace smtrat
             cout << "Performance gain: " << (mpReceivedFormula->size() - mInfeasibleSubsets.front().size()) << endl << endl;
 //            mCAD.printSampleTree();
             #endif
-            mRealAlgebraicSolution = GiNaCRA::RealAlgebraicPoint();
+            mRealAlgebraicSolution = carl::RealAlgebraicPoint<smtrat::Rational>();
             return foundAnswer( False );
         }
         #ifdef MODULE_VERBOSE
@@ -377,7 +368,7 @@ namespace smtrat
 
     void CADModule::removeSubformula( Formula::const_iterator _subformula )
     {
-        if( !(*_subformula)->getType() == CONSTRAINT )
+        if ((*_subformula)->getType() != CONSTRAINT)
         { // not our concern
             Module::removeSubformula( _subformula );
             return;
@@ -393,7 +384,7 @@ namespace smtrat
         ConstraintIndexMap::iterator constraintIt = mConstraintsMap.find( _subformula );
         if( constraintIt == mConstraintsMap.end() )
             return; // there is nothing to remove
-        GiNaCRA::Constraint constraint = mConstraints[constraintIt->second];
+        carl::cad::Constraint<smtrat::Rational> constraint = mConstraints[constraintIt->second];
         #ifdef MODULE_VERBOSE
         cout << endl << "---- Constraint removal (before) ----" << endl;
         cout << "Elimination set sizes:";
@@ -416,16 +407,16 @@ namespace smtrat
         mConflictGraph.removeConstraintVertex(constraintIndex);
         // remove the corresponding polynomial from the CAD if it is not occurring in another constraint
         bool doDelete = true;
-        for( vector<GiNaCRA::Constraint>::const_reverse_iterator c = mConstraints.rbegin(); c != mConstraints.rend(); ++c )
+        for( vector<carl::cad::Constraint<smtrat::Rational>>::const_reverse_iterator c = mConstraints.rbegin(); c != mConstraints.rend(); ++c )
         {
-            if( constraint.polynomial() == c->polynomial() )
+            if( constraint.getPolynomial() == c->getPolynomial() )
             {
                 doDelete = false;
                 break;
             }
         }
         if( doDelete ) // no other constraint claims the polynomial, hence remove it from the list and the cad
-            mCAD.removePolynomial( constraint.polynomial() );
+            mCAD.removePolynomial( constraint.getPolynomial() );
         #ifdef MODULE_VERBOSE
         cout << endl << "---- Constraint removal (afterwards) ----" << endl;
         cout << "New constraint set:" << endl;
@@ -444,51 +435,27 @@ namespace smtrat
     /**
      * Updates the model.
      */
-    void CADModule::updateModel()
+    void CADModule::updateModel() const
     {
         clearModel();
-        if( solverState() == True )
-        {
+        if (this->solverState() == True) {
             // bound-independent part of the model
-            vector<symbol> vars = mCAD.variables();
-            for( unsigned varID = 0; varID < vars.size(); ++varID )
-            {
-                Assignment* ass = new Assignment();
-                ass->domain = REAL_DOMAIN;
-                stringstream outA;
-                outA << vars[varID];
-                if( mRealAlgebraicSolution[varID]->isNumeric() )
-                    ass->theoryValue = new ex( mRealAlgebraicSolution[varID]->value() );
-                else
-                {
-                    stringstream outB;
-                    GiNaCRA::RealAlgebraicNumberIRPtr irA = std::static_pointer_cast<GiNaCRA::RealAlgebraicNumberIR>( mRealAlgebraicSolution[varID] );
-                    outB << "zero(" << irA->polynomial() << "," << irA->order() << ")";
-                    auto variable = CADModule::mRootVariables.find( outB.str() );
-                    if( variable == CADModule::mRootVariables.end() )
-                    {
-                        variable = CADModule::mRootVariables.insert( pair<string,pair<string,ex> >( outB.str(), Formula::newAuxiliaryRealVariable( outB.str() ) ) ).first;
-                    }
-                    ass->theoryValue = new ex( variable->second.second );
-                }
-                extendModel( outA.str(), ass );
+            std::vector<carl::Variable> vars(mCAD.getVariables());
+            for (unsigned varID = 0; varID < vars.size(); ++varID) {
+                Assignment ass = mRealAlgebraicSolution[varID];
+				mModel.insert(std::make_pair(vars[varID], ass));
             }
             #ifdef SMTRAT_CAD_VARIABLEBOUNDS
             // bounds for variables which were not handled in the solution point
-            GiNaCRA::evaldoubleintervalmap intervalMap = mVariableBounds.getIntervalMap();
-            for( GiNaCRA::evaldoubleintervalmap::const_iterator b = intervalMap.begin(); b != intervalMap.end(); ++b )
+            for (auto b: mVariableBounds.getIntervalMap())
             { // add an assignment for every bound of a variable not in vars (Caution! Destroys vars!)
-                vector<symbol>::iterator v = std::find( vars.begin(), vars.end(), b->first );
+                std::vector<carl::Variable>::iterator v = std::find(vars.begin(), vars.end(), b.first);
                 if( v != vars.end() )
                     vars.erase( v ); // shall never be found again
                 else
                 { // variable not handled by CAD, use the midpoint of the bounding interval for the assignment
-                    Assignment* ass = new Assignment();
-                    ass->domain = REAL_DOMAIN;
-                    stringstream outA;
-                    outA << b->first;
-                    ass->theoryValue = new ex( numeric( b->second.midpoint() ) );
-                    extendModel( outA.str(), ass );
+                    Assignment ass = b.second.midpoint();
+					mModel.insert(std::make_pair(b.first, ass));
                 }
             }
             #endif
@@ -504,56 +471,44 @@ namespace smtrat
      * @param c constraint of the SMT-RAT
      * @return constraint of GiNaCRA
      */
-    inline const GiNaCRA::Constraint CADModule::convertConstraint( const smtrat::Constraint& c )
+    inline const carl::cad::Constraint<smtrat::Rational> CADModule::convertConstraint( const smtrat::Constraint& c )
     {
         // convert the constraints variable
-        vector<symbol> variables = vector<symbol>();
-        for( GiNaC::symtab::const_iterator i = c.variables().begin(); i != c.variables().end(); ++i )
-        {
-            assert( is_exactly_a<symbol>( i->second ) );
-            variables.push_back( ex_to<symbol>( i->second ) );
+        std::vector<carl::Variable> variables;
+        for (auto i: c.variables()) {
+            variables.push_back(i);
         }
-        sign signForConstraint = ZERO_SIGN;
+        carl::Sign signForConstraint = carl::Sign::ZERO;
         bool cadConstraintNegated = false;
-        switch( c.relation() )
+        switch (c.relation())
         {
-            case CR_EQ:
-            {
-                break;
-            }
-            case CR_LEQ:
-            {
-                signForConstraint    = POSITIVE_SIGN;
+		case Relation::EQ: 
+			break;
+		case Relation::LEQ: {
+                signForConstraint    = carl::Sign::POSITIVE;
                 cadConstraintNegated = true;
                 break;
             }
-            case CR_GEQ:
-            {
-                signForConstraint    = NEGATIVE_SIGN;
+		case Relation::GEQ: {
+                signForConstraint    = carl::Sign::NEGATIVE;
                 cadConstraintNegated = true;
                 break;
             }
-            case CR_LESS:
-            {
-                signForConstraint = NEGATIVE_SIGN;
+		case Relation::LESS: {
+                signForConstraint = carl::Sign::NEGATIVE;
                 break;
             }
-            case CR_GREATER:
-            {
-                signForConstraint = POSITIVE_SIGN;
+		case Relation::GREATER: {
+                signForConstraint = carl::Sign::POSITIVE;
                 break;
             }
-            case CR_NEQ:
-            {
+		case Relation::NEQ: {
                 cadConstraintNegated = true;
                 break;
             }
-            default:
-            {
-                assert( false );
-            }
+        default: assert(false);
         }
-        return GiNaCRA::Constraint( Polynomial( c.lhs() ), signForConstraint, variables, cadConstraintNegated );
+        return carl::cad::Constraint<smtrat::Rational>(c.lhs().toUnivariatePolynomial(variables[0]), signForConstraint, variables, cadConstraintNegated);
     }
 
     /**
@@ -561,48 +516,37 @@ namespace smtrat
      * @param c constraint of the GiNaCRA
      * @return constraint of SMT-RAT
      */
-    inline const Constraint* CADModule::convertConstraint( const GiNaCRA::Constraint& c )
+    inline const Constraint* CADModule::convertConstraint( const carl::cad::Constraint<smtrat::Rational>& c )
     {
-        Constraint_Relation relation = CR_EQ;
-        switch( c.sign() )
-        {
-            case POSITIVE_SIGN:
+        Relation relation = Relation::EQ;
+        switch (c.getSign()) {
+		case carl::Sign::POSITIVE:
             {
-                if( c.negated() )
-                    relation = CR_LEQ;
+                if (c.isNegated())
+                    relation = Relation::LEQ;
                 else
-                    relation = CR_GREATER;
+                    relation = Relation::GREATER;
                 break;
             }
-            case ZERO_SIGN:
+            case carl::Sign::ZERO:
             {
-                if( c.negated() )
-                    relation = CR_NEQ;
+                if (c.isNegated())
+                    relation = Relation::NEQ;
                 else
-                    relation = CR_EQ;
+                    relation = Relation::EQ;
                 break;
             }
-            case NEGATIVE_SIGN:
+            case carl::Sign::NEGATIVE:
             {
-                if( c.negated() )
-                    relation = CR_GEQ;
+                if (c.isNegated())
+                    relation = Relation::GEQ;
                 else
-                    relation = CR_LESS;
+                    relation = Relation::NEQ;
                 break;
             }
-            default:
-            {
-                assert( false );
-            }
+            default: assert(false);
         }
-        GiNaC::symtab variables = GiNaC::symtab();
-        for( auto i = c.variables().begin(); i != c.variables().end(); ++i )
-        {
-            stringstream out;
-            out << *i;
-            variables.insert( pair< string, GiNaC::ex>( out.str(), *i ) );
-        }
-        return Formula::newConstraint( c.polynomial(), relation, variables );
+        return Formula::newConstraint(Polynomial(c.getPolynomial()), relation);
     }
 
     /**
@@ -644,56 +588,56 @@ namespace smtrat
         return mis;
     }
 
-    void CADModule::addDeductions( const list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > >& deductions )
+    void CADModule::addDeductions( const list<pair<list<carl::cad::Constraint<smtrat::Rational>>, list<carl::cad::Constraint<smtrat::Rational>> > >& deductions )
     {
-        for( list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > >::const_iterator implication = deductions.begin(); implication != deductions.end(); ++implication )
+        for (auto implication: deductions)
         {
-            assert( ( !implication->first.empty() && !implication->second.empty() ) || implication->first.size() > 1 || implication->second.size() > 1  );
+            assert( ( !implication.first.empty() && !implication.second.empty() ) || implication.first.size() > 1 || implication.second.size() > 1  );
             Formula* deduction = new Formula( OR );
             // process A in A => B
-            for( list<GiNaCRA::Constraint>::const_iterator constraint = implication->first.begin(); constraint != implication->first.end(); ++constraint )
+            for (auto constraint: implication.first)
             { // negate all constraints in first
                 deduction->addSubformula( new Formula( NOT ) );
                 // check whether the given constraint is one of the input constraints
                 unsigned index = 0;
-                for( ; index < mConstraints.size(); ++index )
-                    if( mConstraints[index] == *constraint )
+                for ( ; index < mConstraints.size(); ++index)
+                    if (mConstraints[index] == constraint)
                         break;
-                if( mConstraints.size() != index )
+                if (mConstraints.size() != index)
                 { // the constraint matches the input constraint at position i
-                    for( ConstraintIndexMap::const_iterator i = mConstraintsMap.begin(); i != mConstraintsMap.end(); ++i )
+                    for (auto i: mConstraintsMap)
                     {
-                        if( i->second == index ) // found the entry in the constraint map
+                        if (i.second == index) // found the entry in the constraint map
                         {
-                            deduction->back()->addSubformula( (*i->first)->pConstraint() );
+                            deduction->back()->addSubformula((*i.first)->pConstraint());
                             break;
                         }
                     }
                 }
                 else // add a new constraint
-                    deduction->back()->addSubformula( convertConstraint( *constraint ) );
+                    deduction->back()->addSubformula( convertConstraint( constraint ) );
             }
             // process B in A => B
-            for( list<GiNaCRA::Constraint>::const_iterator constraint = implication->second.begin(); constraint != implication->second.end(); ++constraint )
+            for(auto constraint: implication.second)
             { // take the constraints in second as they are
                 // check whether the given constraint is one of the input constraints
                 unsigned index = 0;
                 for( ; index < mConstraints.size(); ++index )
-                    if( mConstraints[index] == *constraint )
+                    if (mConstraints[index] == constraint)
                         break;
-                if( mConstraints.size() != index )
+                if (mConstraints.size() != index)
                 { // the constraint matches the input constraint at position i
-                    for( ConstraintIndexMap::const_iterator i = mConstraintsMap.begin(); i != mConstraintsMap.end(); ++i )
+                    for (auto i: mConstraintsMap)
                     {
-                        if( i->second == index ) // found the entry in the constraint map
+                        if (i.second == index) // found the entry in the constraint map
                         {
-                            deduction->addSubformula( (*i->first)->pConstraint() );
+                            deduction->addSubformula((*i.first)->pConstraint());
                             break;
                         }
                     }
                 }
                 else // add a new constraint
-                    deduction->addSubformula( convertConstraint( *constraint ) );
+                    deduction->addSubformula( convertConstraint( constraint ) );
             }
             Module::addDeduction( deduction );
         }
