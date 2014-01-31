@@ -84,9 +84,9 @@ namespace smtrat
             // Members.
             bool                        mConditionsChanged;
             bool                        mInconsistentConstraintAdded;
-            size_t                    mIDCounter;
+            size_t                      mIDCounter;
             #ifdef VS_STATISTICS
-            size_t                    mStepCounter;
+            size_t                      mStepCounter;
             #endif
             vs::State*                  mpStateTree;
             Variables                   mAllVariables;

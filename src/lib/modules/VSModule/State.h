@@ -98,12 +98,12 @@ namespace vs
         /// solve this state's considered conditions.
         size_t              mBackendCallValuation;
         /// A unique id identifying this state.
-        size_t		      mID;
+        size_t              mID;
         /// A heuristically determined value stating the expected difficulty of this state's considered
         /// conditions to be solved by virtual substitution. The higher this value, the easier it should be to
         /// solve this state's considered conditions. Furthermore, this value enforces currently a depth first
         /// search, as a child has always a higher valuation than its father.
-        size_t		      mValuation;
+        size_t              mValuation;
         /// The type of this state, which states whether this state has still a substitution to apply or either
         /// test candidates shall be generated or a new combination of the substitution results must be found
         /// in order to consider it next.
@@ -141,8 +141,15 @@ namespace vs
         VariableBoundsCond*   mpVariableBounds;
         ///
         State*                mpInfinityChild;
+        ///
+        smtrat::Rational      mMinIntTestCanidate;
+        ///
+        smtrat::Rational      mMaxIntTestCanidate;
+        ///
+        size_t                mCurrentIntRange;
+        
     public:
-
+        
         /**
          * Constructs an empty state (no conditions yet) being the root (hence neither a substitution) of the state 
          * tree which is going to be formed when applying the satisfiability check based on virtual substitution.
@@ -601,32 +608,36 @@ namespace vs
         }
         
         /**
-         * Sets the minimal integer test candidate to the given value, if it is less than it.
-         * @param _value The value to update the minimal integer test candidate for.
+         *
          */
-        smtrat::Rational minIntTestCandidate() const
+        size_t currentRangeSize() const
         {
-            bool anyIntegerChildFound = false;
-            smtrat::Rational result = 1;
-            for( auto child = mpChildren->begin(); child != mpChildren->end(); ++child )
-            {
-                if( (*child)->substitution().type() != Substitution::MINUS_INFINITY && (*child)->substitution().term().isInteger() )
-                {
-                    smtrat::Rational termValue = (*child)->substitution().term().constantPart().constantPart();
-                    if( anyIntegerChildFound )
-                    {
-                        if( termValue < result )
-                            result = termValue;
-                    }
-                    else
-                    {
-                        result = termValue;
-                        anyIntegerChildFound = true;
-                    }
-                }
-                        
-            }
-            return result;
+            return mCurrentIntRange;
+        }
+        
+        /**
+         *
+         */
+        void resetCurrentRangeSize()
+        {
+            assert( !isRoot() || substitution().type() == Substitution::MINUS_INFINITY || substitution().type() == Substitution::PLUS_INFINITY );
+            mCurrentIntRange = 0;
+        }
+        
+        /**
+         * 
+         */
+        const smtrat::Rational& minIntTestCandidate() const
+        {
+            return mMinIntTestCanidate;
+        }
+        
+        /**
+         * .
+         */
+        const smtrat::Rational& maxIntTestCandidate() const
+        {
+            return mMaxIntTestCanidate;
         }
         
         bool hasInfinityChild() const
@@ -725,6 +736,10 @@ namespace vs
          * @return The root of the tree, in which this state is located.
          */
         State& root();
+        
+        /**
+         */
+        bool getNextIntTestCandidate( smtrat::Rational& _nextIntTestCandidate, size_t _maxIntRange );
         
         /**
          * Determines (if it exists) a ancestor node, which is unfinished, that is

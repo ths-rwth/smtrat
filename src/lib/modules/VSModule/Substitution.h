@@ -39,7 +39,7 @@ namespace vs
         public:
             // Type and object definitions.
 
-            enum Type { NORMAL, PLUS_EPSILON, MINUS_INFINITY, INVALID };
+            enum Type { NORMAL, PLUS_EPSILON, MINUS_INFINITY, PLUS_INFINITY, INVALID };
         
         private:
             // Members.

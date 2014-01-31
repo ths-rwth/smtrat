@@ -40,7 +40,7 @@
 using namespace std;
 
 namespace vs
-{
+{   
     State::State( bool _withVariableBounds ):
         mConditionsSimplified( false ),
         mHasChildrenToInsert( false ),
@@ -67,7 +67,10 @@ namespace vs
         mpChildren( new std::list< State* >() ),
         mpTooHighDegreeConditions( new set< const Condition* >() ),
         mpVariableBounds( _withVariableBounds ? new VariableBoundsCond() : NULL ),
-        mpInfinityChild( NULL )
+        mpInfinityChild( NULL ),
+        mMinIntTestCanidate( smtrat::ONE_RATIONAL ),
+        mMaxIntTestCanidate( smtrat::MINUS_ONE_RATIONAL ),
+        mCurrentIntRange( 0 )
     {}
 
     State::State( State* const _father, const Substitution& _substitution, bool _withVariableBounds ):
@@ -96,7 +99,10 @@ namespace vs
         mpChildren( new std::list< State* >() ),
         mpTooHighDegreeConditions( new set< const Condition* >() ),
         mpVariableBounds( _withVariableBounds ? new VariableBoundsCond() : NULL ),
-        mpInfinityChild( NULL )
+        mpInfinityChild( NULL ),
+        mMinIntTestCanidate( smtrat::ONE_RATIONAL ),
+        mMaxIntTestCanidate( smtrat::MINUS_ONE_RATIONAL ),
+        mCurrentIntRange( 0 )
     {}
 
     State::~State()
@@ -282,6 +288,28 @@ namespace vs
         while( !(*currentDT).isRoot() )
             currentDT = (*currentDT).pFather();
         return *currentDT;
+    }
+    
+    bool State::getNextIntTestCandidate( smtrat::Rational& _nextIntTestCandidate, size_t _maxIntRange )
+    {
+        assert( _maxIntRange > 0 );
+        assert( father().index().getType() == carl::VariableType::VT_INT );
+        assert( substitution().type() == Substitution::MINUS_INFINITY || substitution().type() == Substitution::PLUS_INFINITY );
+        if( mCurrentIntRange >= _maxIntRange ) return false;
+        smtrat::Rational result;
+        if( substitution().type() == Substitution::MINUS_INFINITY )
+        {
+            result = father().minIntTestCandidate();
+            --result;
+        }
+        else
+        {
+            result = father().maxIntTestCandidate();
+            ++result;
+        }
+        assert( carl::isInteger( result ) );
+        ++mCurrentIntRange;
+        return result;
     }
 
     bool State::unfinishedAncestor( State*& _unfinAnt )
@@ -717,9 +745,26 @@ namespace vs
                     mpInfinityChild = NULL;
                     (**child).rSubstitution().rOriginalConditions().clear();
                 }
-                (**child).rSubstitution().rOriginalConditions().insert( _substitution.originalConditions().begin(),
-                                                                        _substitution.originalConditions().end() );
+                (**child).rSubstitution().rOriginalConditions().insert( _substitution.originalConditions().begin(), _substitution.originalConditions().end() );
                 return true;
+            }
+            else if( index().getType() == carl::VariableType::VT_INT && _substitution.term().isInteger() )
+            {
+                smtrat::Rational intTc = _substitution.term().constantPart().constantPart();
+                if( (**child).substitution().type() == Substitution::MINUS_INFINITY )
+                {
+                    if( intTc < (mMinIntTestCanidate - smtrat::ONE_RATIONAL) )
+                    {
+                        (**child).resetCurrentRangeSize();
+                    }
+                }
+                else if( (**child).substitution().type() == Substitution::PLUS_INFINITY )
+                {
+                    if( intTc > (mMaxIntTestCanidate + smtrat::ONE_RATIONAL) )
+                    {
+                        (**child).resetCurrentRangeSize();
+                    }
+                }
             }
         }
         return false;
@@ -1752,13 +1797,25 @@ namespace vs
 //            {
 //                state = new State( this, _substitution, mpVariableBounds != NULL );
 //            }
+            if( index().getType() == carl::VariableType::VT_INT && _substitution.type() == Substitution::NORMAL && _substitution.term().isInteger() )
+            {
+                smtrat::Rational intTC = _substitution.term().constantPart().constantPart();
+                if( intTC > mMaxIntTestCanidate )
+                {
+                    mMaxIntTestCanidate = intTC;
+                }
+                if( intTC < mMinIntTestCanidate )
+                {
+                    mMinIntTestCanidate = intTC;
+                }
+            }
             State* state = new State( this, _substitution, mpVariableBounds != NULL );
             const smtrat::PointerSet<smtrat::Constraint>& sideConds = _substitution.sideCondition();
             for( auto sideCond = sideConds.begin(); sideCond != sideConds.end(); ++sideCond )
             {
                 if( _substitution.variable().getType() != carl::VariableType::VT_INT || (*sideCond)->relation() != smtrat::Relation::NEQ )
                 {
-                    std::vector<DisjunctionOfConditionConjunctions> subResults = std::vector<DisjunctionOfConditionConjunctions>();
+                    std::vector<DisjunctionOfConditionConjunctions> subResults;
                     subResults.push_back( DisjunctionOfConditionConjunctions() );
                     subResults.back().push_back( ConditionList() );
                     subResults.back().back().push_back( new Condition( *sideCond, state->treeDepth(), false, _substitution.originalConditions(), false ) );
@@ -1770,7 +1827,6 @@ namespace vs
                     const smtrat::Constraint* denomPos = smtrat::Formula::newConstraint( (*sideCond)->lhs(), smtrat::Relation::GREATER );
                     const smtrat::Constraint* denomNeg = smtrat::Formula::newConstraint( (*sideCond)->lhs(), smtrat::Relation::LESS );
                     assert( denomPos != smtrat::Formula::constraintPool().inconsistentConstraint() || denomNeg != smtrat::Formula::constraintPool().inconsistentConstraint() );
-                    state = new State( this, _substitution, mpVariableBounds != NULL );
                     // add (p<0 or p>0) to the substitution results, with the constraint being p!=0
                     if( denomPos != smtrat::Formula::constraintPool().consistentConstraint() && denomNeg != smtrat::Formula::constraintPool().consistentConstraint() )
                     {

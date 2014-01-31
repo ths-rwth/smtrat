@@ -27,14 +27,15 @@
 
 #include <set>
 
+
 #include "State.h"
 #include "VSModule.h"
 
 using namespace std;
 using namespace vs;
 
-//#define VS_DEBUG
-//#define VS_MODULE_VERBOSE_INTEGERS
+#define VS_DEBUG
+#define VS_MODULE_VERBOSE_INTEGERS
 #define VS_TERMINATION_INVARIANCE
 
 namespace smtrat
@@ -221,7 +222,7 @@ namespace smtrat
         }
         if( !mpReceivedFormula->isConstraintConjunction() )
             return foundAnswer( Unknown );
-        if( Settings::int_constraints_allowed && !mpReceivedFormula->isIntegerConstraintConjunction() )
+        if( Settings::int_constraints_allowed && !(mpReceivedFormula->isIntegerConstraintConjunction() || mpReceivedFormula->isRealConstraintConjunction()) )
             return foundAnswer( Unknown );
         assert( mpReceivedFormula->size() == mFormulaConditionMap.size() );
         if( !mConditionsChanged )
@@ -687,9 +688,9 @@ namespace smtrat
                                         }
                                         else
                                         {
-                                            return foundAnswer( Unknown );
-//                                            currentState->rToHighDegree() = true;
-//                                            addStateToRanking( currentState );
+//                                            return foundAnswer( Unknown );
+                                            currentState->rToHighDegree() = true;
+                                            addStateToRanking( currentState );
                                         }
                                     }
                                 }
@@ -1047,7 +1048,7 @@ namespace smtrat
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
         }
         #endif
-        if( !(Settings::int_constraints_allowed && !Settings::branch_and_bound && _eliminationVar.getType() == carl::VariableType::VT_INT) )
+        if( !Settings::int_constraints_allowed || Settings::branch_and_bound || _eliminationVar.getType() != carl::VariableType::VT_INT )
         {
             if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
             {
@@ -1055,6 +1056,26 @@ namespace smtrat
                 {
                     // Create state ( Conditions, [x -> -infinity]):
                     Substitution sub = Substitution( _eliminationVar, Substitution::MINUS_INFINITY, oConditions );
+                    if( _currentState->addChild( sub ) )
+                    {
+                        // Add its valuation to the current ranking.
+                        addStateToRanking( (*_currentState).rChildren().back() );
+                        numberOfAddedChildren++;
+                        #ifdef VS_DEBUG
+                        (*(*_currentState).rChildren().back()).print( "   ", cout );
+                        #endif
+                    }
+                }
+            }
+        }
+        if( Settings::int_constraints_allowed && Settings::branch_and_bound && _eliminationVar.getType() == carl::VariableType::VT_INT )
+        {
+            if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
+            {
+                if( !Settings::use_variable_bounds || _currentState->variableBounds().getDoubleInterval( _eliminationVar ).leftType() == carl::BoundType::INFTY )
+                {
+                    // Create state ( Conditions, [x -> -infinity]):
+                    Substitution sub = Substitution( _eliminationVar, Substitution::PLUS_INFINITY, oConditions );
                     if( _currentState->addChild( sub ) )
                     {
                         // Add its valuation to the current ranking.
@@ -1119,50 +1140,48 @@ namespace smtrat
         vector<DisjunctionOfConditionConjunctions> allSubResults = vector<DisjunctionOfConditionConjunctions>();
         // The substitution to apply.
         assert( !_currentState->isRoot() );
-        if( Settings::int_constraints_allowed && _currentState->father().index().getType() == carl::VariableType::VT_INT && _currentState->substitution().type() == Substitution::MINUS_INFINITY )
-        {
-            Rational newTerm = _currentState->father().minIntTestCandidate();
-            assert( carl::isInteger( newTerm ) );
-            newTerm = newTerm - 1;
-            if( Settings::use_variable_bounds )
-            {
-                Interval indexBounds = _currentState->father().variableBounds().getInterval( _currentState->father().index() );
-                if( indexBounds.rightType() != carl::BoundType::INFTY && indexBounds.right() < newTerm )
-                {
-                    newTerm = indexBounds.right();
-                }
-            }
-            else
-            {
-                smtrat::Rational leastRightBound = 0;
-                bool foundRightBound = false;
-                for( auto cond = _currentState->father().conditions().begin(); cond != _currentState->father().conditions().end(); ++cond )
-                {
-                    if( (**cond).constraint().hasVariable( _currentState->father().index() ) && (**cond).constraint().isUpperBound() )
-                    {
-                        assert( (*cond)->constraint().relation() == Relation::LEQ || (*cond)->constraint().relation() == Relation::GEQ );
-                        smtrat::Rational ubound = cln::floor1( (*cond)->constraint().constantPart()/(*cond)->constraint().lhs().lterm()->coeff() );
-                        if( foundRightBound )
-                        {
-                            if( ubound < leastRightBound )
-                                leastRightBound = ubound;
-                        }
-                        else
-                        {
-                            leastRightBound = ubound;
-                            foundRightBound = true;
-                        }
-                    }
-                }
-                if( foundRightBound && leastRightBound < newTerm )
-                {
-                    newTerm = leastRightBound;
-                }
-            }
-            _currentState->rSubstitution().setTerm( newTerm );
-//            _currentState->father().printAlone();
-//            _currentState->printAlone();
-        }
+//        if( Settings::int_constraints_allowed && _currentState->father().index().getType() == carl::VariableType::VT_INT && _currentState->substitution().type() == Substitution::MINUS_INFINITY )
+//        {
+//            Rational newTerm = _currentState->father().minIntTestCandidate();
+//            assert( carl::isInteger( newTerm ) );
+//            newTerm = newTerm - 1;
+//            if( Settings::use_variable_bounds )
+//            {
+//                Interval indexBounds = _currentState->father().variableBounds().getInterval( _currentState->father().index() );
+//                if( indexBounds.rightType() != carl::BoundType::INFTY && indexBounds.right() < newTerm )
+//                {
+//                    newTerm = indexBounds.right();
+//                }
+//            }
+//            else
+//            {
+//                smtrat::Rational leastRightBound = 0;
+//                bool foundRightBound = false;
+//                for( auto cond = _currentState->father().conditions().begin(); cond != _currentState->father().conditions().end(); ++cond )
+//                {
+//                    if( (**cond).constraint().hasVariable( _currentState->father().index() ) && (**cond).constraint().isUpperBound() )
+//                    {
+//                        assert( (*cond)->constraint().relation() == Relation::LEQ || (*cond)->constraint().relation() == Relation::GEQ );
+//                        smtrat::Rational ubound = cln::floor1( (*cond)->constraint().constantPart()/(*cond)->constraint().lhs().lterm()->coeff() );
+//                        if( foundRightBound )
+//                        {
+//                            if( ubound < leastRightBound )
+//                                leastRightBound = ubound;
+//                        }
+//                        else
+//                        {
+//                            leastRightBound = ubound;
+//                            foundRightBound = true;
+//                        }
+//                    }
+//                }
+//                if( foundRightBound && leastRightBound < newTerm )
+//                {
+//                    newTerm = leastRightBound;
+//                }
+//            }
+//            _currentState->rSubstitution().setTerm( newTerm );
+//        }
         const Substitution& currentSubs = _currentState->substitution();
         // The variable to substitute.
         const carl::Variable& substitutionVariable = currentSubs.variable();
@@ -1675,48 +1694,51 @@ namespace smtrat
             {
                 if( currentState->substitution().variable().getType() == carl::VariableType::VT_INT )
                 {
-                    assert( currentState->substitution().type() != Substitution::MINUS_INFINITY );
-                    assert( currentState->substitution().type() != Substitution::PLUS_EPSILON );
-                    // Insert the (integer!) assignments of the other variables.
-                    EvalRationalMap varSolutions = getIntervalAssignment( currentState );
-                    const SqrtEx& subTerm = currentState->substitution().term();
-                    Rational evaluatedSubTerm;
-                    bool assIsInteger = subTerm.evaluate( evaluatedSubTerm, varSolutions, -1 );
-                    assIsInteger &= carl::isInteger( evaluatedSubTerm );
-                    if( !assIsInteger )
+                    if( Settings::branch_and_bound && (currentState->substitution().type() == Substitution::MINUS_INFINITY || currentState->substitution().type() == Substitution::PLUS_INFINITY ) )
                     {
-                        #ifdef VS_MODULE_VERBOSE_INTEGERS
-//                        this->printAnswer();
-                        #endif
-                        if( Settings::branch_and_bound )
+                        Rational nextIntTCinRange;
+                        if( currentState->getNextIntTestCandidate( nextIntTCinRange, Settings::int_max_range ) )
                         {
-                            branchAt( currentState->substitution().variable(), evaluatedSubTerm, getReasons( currentState->substitution().originalConditions() ) );
+                            
                         }
-                        else
+                    }
+                    else
+                    {
+                        assert( currentState->substitution().type() != Substitution::PLUS_EPSILON );
+                        // Insert the (integer!) assignments of the other variables.
+                        EvalRationalMap varSolutions = getIntervalAssignment( currentState );
+                        const SqrtEx& subTerm = currentState->substitution().term();
+                        Rational evaluatedSubTerm;
+                        bool assIsInteger = subTerm.evaluate( evaluatedSubTerm, varSolutions, -1 );
+                        assIsInteger &= carl::isInteger( evaluatedSubTerm );
+                        if( !assIsInteger )
                         {
-                            // Add test candidate to father, being the next greater integer than the found non-integer assignment of the
-                            // substituted variable of the current state.
-                            State* toRemove = mRanking.begin()->second;
-                            const Substitution& currSub = currentState->substitution();
-                            SqrtEx t = SqrtEx( Polynomial( cln::floor1( evaluatedSubTerm ) + 1 ) );
-                            Substitution newSub = Substitution( currSub.variable(), t, Substitution::Type::NORMAL, currSub.originalConditions() );
-                            if( currentState->rFather().addChild( newSub ) )
+                            if( Settings::branch_and_bound )
                             {
-                                // Add its valuation to the current ranking.
-                                addStateToRanking( currentState->rFather().rChildren().back() );
-                                #ifdef VS_DEBUG
-                                currentState->rFather().rChildren().back()->print( "   ", cout );
-                                #endif
+                                branchAt( currentState->substitution().variable(), evaluatedSubTerm, getReasons( currentState->substitution().originalConditions() ) );
                             }
-//                            currentState->father().print();
-//                            currentState->printAlone();
-//                            mRanking.begin()->second->printAlone();
-//                            assert( false );
-                            removeStatesFromRanking( *toRemove );
-                            toRemove->rFather().rChildren().remove( toRemove );
-                            delete toRemove;
+                            else
+                            {
+                                // Add test candidate to father, being the next greater integer than the found non-integer assignment of the
+                                // substituted variable of the current state.
+                                State* toRemove = mRanking.begin()->second;
+                                const Substitution& currSub = currentState->substitution();
+                                SqrtEx t = SqrtEx( Polynomial( cln::floor1( evaluatedSubTerm ) + 1 ) );
+                                Substitution newSub = Substitution( currSub.variable(), t, Substitution::Type::NORMAL, currSub.originalConditions() );
+                                if( currentState->rFather().addChild( newSub ) )
+                                {
+                                    // Add its valuation to the current ranking.
+                                    addStateToRanking( currentState->rFather().rChildren().back() );
+                                    #ifdef VS_DEBUG
+                                    currentState->rFather().rChildren().back()->print( "   ", cout );
+                                    #endif
+                                }
+                                removeStatesFromRanking( *toRemove );
+                                toRemove->rFather().rChildren().remove( toRemove );
+                                delete toRemove;
+                            }
+                            return false;
                         }
-                        return false;
                     }
                 }
                 currentState = currentState->pFather();

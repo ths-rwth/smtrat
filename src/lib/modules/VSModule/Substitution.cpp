@@ -69,7 +69,7 @@ namespace vs
     {
         if( _preferMinusInf )
         {
-            if( type() == MINUS_INFINITY )
+            if( type() == MINUS_INFINITY || type() == PLUS_INFINITY )
                 return 9;
             else if( type() == NORMAL )
             {
@@ -108,7 +108,7 @@ namespace vs
         }
         else
         {
-            if( type() == MINUS_INFINITY )
+            if( type() == MINUS_INFINITY || type() == PLUS_INFINITY )
                 return 1;
             else if( type() == NORMAL )
             {
@@ -233,6 +233,8 @@ namespace vs
             case PLUS_EPSILON:
                 return result + term().toString( true, _friendlyNames ) + " + epsilon]";
             case MINUS_INFINITY:
+                return result + "-infinity]";
+            case PLUS_INFINITY:
                 return result + "-infinity]";
             case INVALID:
                 return result + "invalid]";

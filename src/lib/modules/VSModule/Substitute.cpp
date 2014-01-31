@@ -64,7 +64,12 @@ namespace vs
             }
             case Substitution::MINUS_INFINITY:
             {
-                substituteMinusInf( _cons, _subs, _result, _conflictingVariables, _solutionSpace );
+                substituteInf( _cons, _subs, _result, _conflictingVariables, _solutionSpace );
+                break;
+            }
+            case Substitution::PLUS_INFINITY:
+            {
+                substituteInf( _cons, _subs, _result, _conflictingVariables, _solutionSpace );
                 break;
             }
             default:
@@ -498,7 +503,7 @@ namespace vs
         return result;
     }
 
-    void substituteMinusInf( const smtrat::Constraint* _cons, const Substitution& _subs, DisjunctionOfConstraintConjunctions& _result, smtrat::Variables& _conflictingVariables, const smtrat::EvalDoubleIntervalMap& _solutionSpace )
+    void substituteInf( const smtrat::Constraint* _cons, const Substitution& _subs, DisjunctionOfConstraintConjunctions& _result, smtrat::Variables& _conflictingVariables, const smtrat::EvalDoubleIntervalMap& _solutionSpace )
     {
         if( !_cons->variables().empty() )
         {
@@ -530,10 +535,22 @@ namespace vs
         // Determine the relation for the coefficients of the odd and even degrees.
         smtrat::Relation oddRelationType  = smtrat::Relation::GREATER;
         smtrat::Relation evenRelationType = smtrat::Relation::LESS;
-        if( _cons->relation() == smtrat::Relation::GREATER || _cons->relation() == smtrat::Relation::GEQ )
+        if( _subs.type() == Substitution::MINUS_INFINITY )
         {
-            oddRelationType  = smtrat::Relation::LESS;
-            evenRelationType = smtrat::Relation::GREATER;
+            if( _cons->relation() == smtrat::Relation::GREATER || _cons->relation() == smtrat::Relation::GEQ )
+            {
+                oddRelationType  = smtrat::Relation::LESS;
+                evenRelationType = smtrat::Relation::GREATER;
+            }
+        }
+        else
+        {
+            assert( _subs.type() == Substitution::PLUS_INFINITY );
+            if( _cons->relation() == smtrat::Relation::LESS || _cons->relation() == smtrat::Relation::LEQ )
+            {
+                oddRelationType  = smtrat::Relation::LESS;
+                evenRelationType = smtrat::Relation::GREATER;
+            }
         }
         // Check all cases according to the substitution rules.
         unsigned varDegree = _cons->maxDegree( _subs.variable() );

@@ -32,6 +32,7 @@ namespace smtrat
         static const bool mixed_int_real_constraints_allowed                    = false;
         static const bool branch_and_bound                                      = false;
         static const bool split_neq_constraints                                 = false;
+        static const size_t int_max_range                                       = 1;
     };
     
     struct VSSettings2 : VSSettings1

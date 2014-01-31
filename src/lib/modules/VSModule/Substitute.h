@@ -179,7 +179,7 @@ namespace vs
      *                               container.
      * @param _solutionSpace The solution space in form of double intervals of the variables occurring in the given constraint.
      */
-    void substituteMinusInf( const smtrat::Constraint* _cons, const Substitution& _subs, DisjunctionOfConstraintConjunctions& _result, smtrat::Variables& _conflictingVariables, const smtrat::EvalDoubleIntervalMap& _solutionSpace );
+    void substituteInf( const smtrat::Constraint* _cons, const Substitution& _subs, DisjunctionOfConstraintConjunctions& _result, smtrat::Variables& _conflictingVariables, const smtrat::EvalDoubleIntervalMap& _solutionSpace );
     
     /**
      * Applies the given substitution to the given constraint, where the substitution
