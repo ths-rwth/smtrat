@@ -364,7 +364,7 @@ namespace smtrat
             Formula::iterator removeSubformulaFromPassedFormula( Formula::iterator );
             vec_set_const_pFormula getInfeasibleSubsets( const Module& ) const;
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
-            void branchAt( const carl::Variable& _var, const Rational& _value, const std::set<const Formula*>& = std::set<const Formula*>(), bool _leftCaseWeak = true );
+            void branchAt( const Polynomial& _polynomial, const Rational& _value, const std::set<const Formula*>& = std::set<const Formula*>(), bool _leftCaseWeak = true );
             void splitUnequalConstraint( const Constraint* );
             static EvalRationalMap modelToERM( const Model& _model );
             unsigned checkModel() const;
