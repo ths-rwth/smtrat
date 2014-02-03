@@ -694,9 +694,9 @@ namespace smtrat
                                         }
                                         else
                                         {
-//                                            return foundAnswer( Unknown );
-                                            currentState->rCannotBeSolved() = true;
-                                            addStateToRanking( currentState );
+                                            return foundAnswer( Unknown );
+//                                            currentState->rCannotBeSolved() = true;
+//                                            addStateToRanking( currentState );
                                         }
                                     }
                                 }
@@ -1722,6 +1722,7 @@ namespace smtrat
         assert( solverState() != False );
         if( !mRanking.empty() )
         {
+            vector<carl::Variable> varOrder;
             State* currentState = mRanking.begin()->second;
             while( !currentState->isRoot() )
             {
@@ -1732,7 +1733,7 @@ namespace smtrat
                         Rational nextIntTCinRange;
                         if( currentState->getNextIntTestCandidate( nextIntTCinRange, Settings::int_max_range ) )
                         {
-                            branchAt( currentState->substitution().variable(), nextIntTCinRange, getReasons( currentState->substitution().originalConditions() ) );
+                            branchAt( Polynomial( currentState->substitution().variable() ), nextIntTCinRange, getReasons( currentState->substitution().originalConditions() ) );
                         }
                         else
                         {
@@ -1745,8 +1746,39 @@ namespace smtrat
                     else
                     {
                         assert( currentState->substitution().type() != Substitution::PLUS_EPSILON );
-                        // Insert the (integer!) assignments of the other variables.
                         EvalRationalMap varSolutions = getIntervalAssignment( currentState );
+                        if( Settings::branch_and_bound )
+                        {
+                            EvalRationalMap partialVarSolutions;
+                            const Polynomial& substitutionPoly = (*currentState->substitution().originalConditions().begin())->constraint().lhs();
+                            for( auto var = varOrder.rbegin(); var != varOrder.rend(); ++var )
+                            {
+                                assert( varSolutions.find( *var ) != varSolutions.end() );
+                                partialVarSolutions[*var] = varSolutions[*var];
+                                Polynomial subPolyPartiallySubstituted = substitutionPoly.substitute( partialVarSolutions );
+                                auto term = subPolyPartiallySubstituted.rbegin();
+                                assert( !(*term)->isConstant() && carl::isInteger( (*term)->coeff() ) );
+                                Rational g = carl::abs( (*term)->coeff() );
+                                ++term;
+                                for( ; term != subPolyPartiallySubstituted.rend(); ++term )
+                                {
+                                    if( !(*term)->isConstant() )
+                                    {
+                                        assert( carl::isInteger( (*term)->coeff() ) );
+                                        g = carl::gcd( carl::getNum( g ), carl::getNum( carl::abs( (*term)->coeff() ) ) );
+                                    }
+                                }
+                                assert( g > ZERO_RATIONAL );
+                                if( carl::mod( carl::getNum( subPolyPartiallySubstituted.constantPart() ), carl::getNum( g ) ) != 0 )
+                                {
+                                    Polynomial branchEx = ((subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * (1 / g));
+                                    Rational branchValue = subPolyPartiallySubstituted.constantPart() * (1 / g);
+                                    branchAt( branchEx, branchValue, getReasons( currentState->substitution().originalConditions() ) );
+                                    return false;
+                                }
+                            }
+                        }
+                        // Insert the (integer!) assignments of the other variables.
                         const SqrtEx& subTerm = currentState->substitution().term();
                         Rational evaluatedSubTerm;
                         bool assIsInteger = subTerm.evaluate( evaluatedSubTerm, varSolutions, -1 );
@@ -1755,7 +1787,7 @@ namespace smtrat
                         {
                             if( Settings::branch_and_bound )
                             {
-                                branchAt( currentState->substitution().variable(), evaluatedSubTerm, getReasons( currentState->substitution().originalConditions() ) );
+                                branchAt( Polynomial( currentState->substitution().variable() ), evaluatedSubTerm, getReasons( currentState->substitution().originalConditions() ) );
                             }
                             else
                             {
@@ -1786,6 +1818,7 @@ namespace smtrat
                         }
                     }
                 }
+                varOrder.push_back( currentState->substitution().variable() );
                 currentState = currentState->pFather();
             }
         }
