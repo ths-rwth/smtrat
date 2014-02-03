@@ -743,6 +743,11 @@ namespace vs
         bool getNextIntTestCandidate( smtrat::Rational& _nextIntTestCandidate, size_t _maxIntRange );
         
         /**
+         * 
+         */
+        bool updateIntTestCandidates();
+        
+        /**
          * Determines (if it exists) a ancestor node, which is unfinished, that is
          * it has still substitution results to consider.
          * @param _unfinAnt The unfinished ancestor node.
@@ -818,10 +823,11 @@ namespace vs
         /**
          * Updates the original conditions of substitutions having the same test candidate as the given.
          * @param _substitution The substitution containing the test candidate to check for.
+         * @param _reactivatedStates
          * @return true, if the test candidate of the given substitution was already generated;
          *          false, otherwise.
          */
-        bool updateOCondsOfSubstitutions( const Substitution& _substitution );
+        bool updateOCondsOfSubstitutions( const Substitution& _substitution, std::vector<State*>& _reactivatedStates );
         
         /**
          * Adds the given substitution results to this state.
@@ -932,7 +938,7 @@ namespace vs
          * @return true, if a state has been added as child to this state;
          *          false, otherwise.
          */
-        bool addChild( const Substitution& _substitution );
+        std::vector<State*> addChild( const Substitution& _substitution );
         
         /**
          * Updates the valuation of this state.

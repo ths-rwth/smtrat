@@ -311,6 +311,49 @@ namespace vs
         ++mCurrentIntRange;
         return true;
     }
+    
+    bool State::updateIntTestCandidates()
+    {
+        State* minusInfChild = NULL;
+        State* plusInfChild = NULL;
+        smtrat::Rational leastIntTc = smtrat::ONE_RATIONAL;
+        smtrat::Rational greatestIntTc = smtrat::MINUS_ONE_RATIONAL;
+        for( auto child : rChildren() )
+        {
+            if( child->substitution().type() == Substitution::MINUS_INFINITY )
+            {
+                assert( minusInfChild == NULL );
+                minusInfChild = child;
+            }
+            else if( child->substitution().type() == Substitution::PLUS_INFINITY )
+            {
+                assert( plusInfChild == NULL );
+                plusInfChild = child;
+            }
+            else if( child->substitution().term().isInteger() )
+            {
+                smtrat::Rational currentTc = child->substitution().term().constantPart().constantPart();
+                if( currentTc < mMinIntTestCanidate ) leastIntTc = currentTc;
+                if( currentTc > mMaxIntTestCanidate ) greatestIntTc = currentTc;
+            }
+        }
+        bool anythingChanged = false;
+        if( leastIntTc != mMinIntTestCanidate )
+        {
+            mMinIntTestCanidate = leastIntTc;
+            if( minusInfChild != NULL )
+                minusInfChild->resetCurrentRangeSize();
+            anythingChanged = true;
+        }
+        if( greatestIntTc != mMaxIntTestCanidate )
+        {
+            mMaxIntTestCanidate = greatestIntTc;
+            if( plusInfChild != NULL )
+                plusInfChild->resetCurrentRangeSize();
+            anythingChanged = true;
+        }
+        return anythingChanged;
+    }
 
     bool State::unfinishedAncestor( State*& _unfinAnt )
     {
@@ -730,7 +773,7 @@ namespace vs
         }
     }
 
-    bool State::updateOCondsOfSubstitutions( const Substitution& _substitution )
+    bool State::updateOCondsOfSubstitutions( const Substitution& _substitution, vector<State*>& _reactivatedStates )
     {
         for( auto child = rChildren().begin(); child != children().end(); ++child )
         {
@@ -756,6 +799,7 @@ namespace vs
                     if( intTc < (mMinIntTestCanidate - smtrat::ONE_RATIONAL) )
                     {
                         (**child).resetCurrentRangeSize();
+                        _reactivatedStates.push_back( *child );
                     }
                 }
                 else if( (**child).substitution().type() == Substitution::PLUS_INFINITY )
@@ -763,6 +807,7 @@ namespace vs
                     if( intTc > (mMaxIntTestCanidate + smtrat::ONE_RATIONAL) )
                     {
                         (**child).resetCurrentRangeSize();
+                        _reactivatedStates.push_back( *child );
                     }
                 }
             }
@@ -1408,6 +1453,7 @@ namespace vs
 
     void State::deleteOriginsFromChildren( set<const Condition*>& _originsToDelete )
     {
+        bool childWithIntTcDeleted = false;
         auto child = rChildren().begin();
         while( child != children().end() )
         {
@@ -1416,6 +1462,11 @@ namespace vs
                 initConditionFlags();
             if( result < 1 )
             {
+                if( index().getType() == carl::VariableType::VT_INT && (*child)->substitution().type() != Substitution::MINUS_INFINITY 
+                    && (*child)->substitution().type() != Substitution::PLUS_INFINITY && (*child)->substitution().term().isInteger() )
+                {
+                    childWithIntTcDeleted = true;
+                }
                 auto conflictSet = rConflictSets().find( (*child)->pSubstitution() );
                 if( conflictSet != conflictSets().end() )
                     rConflictSets().erase( conflictSet );
@@ -1427,6 +1478,8 @@ namespace vs
             else
                 ++child;
         }
+        if( childWithIntTcDeleted )
+            updateIntTestCandidates();
     }
 
     void State::deleteOriginsFromConflictSets( set<const Condition*>& _originsToDelete, bool _originsAreCurrentConditions )
@@ -1658,9 +1711,10 @@ namespace vs
         }
     }
 
-    bool State::addChild( const Substitution& _substitution )
+    vector<State*> State::addChild( const Substitution& _substitution )
     {
-        if( !updateOCondsOfSubstitutions( _substitution ) )
+        vector<State*> result;
+        if( !updateOCondsOfSubstitutions( _substitution, result ) )
         {
 //            State* state;
 //            if( _substitution.variable().getType() == carl::VariableType::VT_INT && !(_substitution.term().denominator() == smtrat::ONE_POLYNOMIAL) )
@@ -1850,9 +1904,9 @@ namespace vs
             }
             state->updateValuation();
             rChildren().push_back( state );
-            return true;
+            result.push_back( state );
         }
-        else return false;
+        return result;
     }
 
     void State::updateValuation()
@@ -1983,9 +2037,10 @@ namespace vs
                 rFather().addConflictSet( NULL, conflictSet );
             else
                 rFather().addConflictSet( pSubstitution(), conflictSet );
-            // Delete all children, the conflict sets and the conditions of this state.
+            // Delete the conflict sets.
             mpConflictSets->clear();
         }
+        // Delete all children, the conflict sets and the conditions of this state.
         while( !children().empty() )
         {
             State* toDelete = rChildren().back();
@@ -2122,7 +2177,7 @@ namespace vs
         mTestCandidateCheckedForBounds = true;
         if( !isRoot() )
         {
-            if( substitution().type() == Substitution::MINUS_INFINITY ) return true;
+            if( substitution().type() == Substitution::MINUS_INFINITY || substitution().type() == Substitution::PLUS_INFINITY ) return true;
             #ifdef VS_DEBUG_VARIABLE_BOUNDS
             cout << ">>> Check test candidate  " << substitution() << "  against:" << endl;
             father().variableBounds().print( cout, ">>>    " );
@@ -2147,6 +2202,17 @@ namespace vs
         if( substitution().type() == Substitution::MINUS_INFINITY )
         {
             if( father().variableBounds().getDoubleInterval( substitution().variable() ).leftType() == carl::BoundType::INFTY )
+                result.push_back( carl::DoubleInterval::unboundedInterval() );
+            else
+            {
+                set< const Condition* > conflictBounds = father().variableBounds().getOriginsOfBounds( substitution().variable() );
+                _conflictReason.insert( conflictBounds.begin(), conflictBounds.end() );
+            }
+            return result;
+        }
+        else if( substitution().type() == Substitution::PLUS_INFINITY )
+        {
+            if( father().variableBounds().getDoubleInterval( substitution().variable() ).rightType() == carl::BoundType::INFTY )
                 result.push_back( carl::DoubleInterval::unboundedInterval() );
             else
             {

@@ -235,7 +235,7 @@ namespace vs
             case MINUS_INFINITY:
                 return result + "-infinity]";
             case PLUS_INFINITY:
-                return result + "-infinity]";
+                return result + "+infinity]";
             case INVALID:
                 return result + "invalid]";
             default:

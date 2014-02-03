@@ -424,18 +424,18 @@ namespace smtrat
                         {
                             case State::SUBSTITUTION_TO_APPLY:
                             {
-                                if( Settings::int_constraints_allowed && currentState->father().index().getType() == carl::VariableType::VT_INT 
-                                    && currentState->substitution().type() == Substitution::MINUS_INFINITY && !currentState->father().tooHighDegreeConditions().empty() )
-                                {
-                                    if( currentState->father().hasNoninvolvedCondition() )
-                                    {
-                                        currentState->father().printAlone();
-                                        currentState->printAlone();
-                                    }
-                                    assert( !currentState->father().hasNoninvolvedCondition() );
-                                    removeStatesFromRanking( *currentState );
-                                    currentState->rMarkedAsDeleted() = true;
-                                }
+//                                if( Settings::int_constraints_allowed && currentState->father().index().getType() == carl::VariableType::VT_INT 
+//                                    && currentState->substitution().type() == Substitution::MINUS_INFINITY && !currentState->father().tooHighDegreeConditions().empty() )
+//                                {
+//                                    if( currentState->father().hasNoninvolvedCondition() )
+//                                    {
+//                                        currentState->father().printAlone();
+//                                        currentState->printAlone();
+//                                    }
+//                                    assert( !currentState->father().hasNoninvolvedCondition() );
+//                                    removeStatesFromRanking( *currentState );
+//                                    currentState->rMarkedAsDeleted() = true;
+//                                }
                                 #ifdef VS_DEBUG
                                 cout << "*** SubstituteAll changes it to:" << endl;
                                 #else
@@ -516,6 +516,7 @@ namespace smtrat
                                             currentState->resetInfinityChild( toDelete );
                                             delete toDelete;
                                         }
+                                        currentState->updateIntTestCandidates();
                                     }
                                 }
                                 // Find the most adequate conditions to continue.
@@ -536,11 +537,16 @@ namespace smtrat
                                                     for( auto cond : currentState->conditions() )
                                                         oConditions.insert( cond );
                                                     Substitution sub = Substitution( currentState->index(), Substitution::MINUS_INFINITY, oConditions );
-                                                    if( currentState->addChild( sub ) )
+                                                    vector<State*> addedChildren = currentState->addChild( sub );
+                                                    if( !addedChildren.empty() )
                                                     {
                                                         // Add its valuation to the current ranking.
                                                         currentState->setInfinityChild( currentState->rChildren().back() );
-                                                        addStateToRanking( currentState->rChildren().back() );
+                                                        while( !addedChildren.empty() )
+                                                        {
+                                                            addStatesToRanking( addedChildren.back() );
+                                                            addedChildren.pop_back();
+                                                        }
                                                         #ifdef VS_DEBUG
                                                         currentState->rChildren().back()->print( "   ", cout );
                                                         #endif
@@ -773,6 +779,7 @@ namespace smtrat
                     ass = SqrtEx( Polynomial( mVariableVector.at( state->treeDepth()-1 ).first ) );
                 else
                 {
+                    assert( sub.type() != Substitution::PLUS_INFINITY );
                     if( state->substitution().variable().getType() == carl::VariableType::VT_INT )
                     {
                         Rational valueRational;
@@ -919,7 +926,8 @@ namespace smtrat
                                 sideCond.insert( cons );
                             SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, coeffs.rbegin()->second, ZERO_POLYNOMIAL );
                             Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
-                            if( _currentState->addChild( sub ) )
+                            vector<State*> addedChildren = _currentState->addChild( sub );
+                            if( !addedChildren.empty() )
                             {
                                 if( relation == Relation::EQ && !_currentState->children().back()->hasSubstitutionResults() )
                                 {
@@ -927,14 +935,10 @@ namespace smtrat
                                     generatedTestCandidateBeingASolution = true;
                                 }
                                 // Add its valuation to the current ranking.
-                                if( Settings::int_constraints_allowed && Settings::branch_and_bound && _eliminationVar.getType() == carl::VariableType::VT_INT )
+                                while( !addedChildren.empty() )
                                 {
-                                    removeStatesFromRanking( *_currentState );
-                                    addStatesToRanking( _currentState );
-                                }
-                                else
-                                {
-                                    addStateToRanking( _currentState->rChildren().back() );
+                                    addStatesToRanking( addedChildren.back() );
+                                    addedChildren.pop_back();
                                 }
                                 ++numberOfAddedChildren;
                                 #ifdef VS_DEBUG
@@ -969,7 +973,8 @@ namespace smtrat
                                     sideCond.insert( cons12 );
                                 SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, linearCoeff, ZERO_POLYNOMIAL );
                                 Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
-                                if( _currentState->addChild( sub ) )
+                                vector<State*> addedChildren = _currentState->addChild( sub );
+                                if( !addedChildren.empty() )
                                 {
                                     if( relation == Relation::EQ && !_currentState->children().back()->hasSubstitutionResults() )
                                     {
@@ -977,14 +982,10 @@ namespace smtrat
                                         generatedTestCandidateBeingASolution = true;
                                     }
                                     // Add its valuation to the current ranking.
-                                    if( Settings::int_constraints_allowed && Settings::branch_and_bound && _eliminationVar.getType() == carl::VariableType::VT_INT )
+                                    while( !addedChildren.empty() )
                                     {
-                                        removeStatesFromRanking( *_currentState );
-                                        addStatesToRanking( _currentState );
-                                    }
-                                    else
-                                    {
-                                        addStateToRanking( _currentState->rChildren().back() );
+                                        addStatesToRanking( addedChildren.back() );
+                                        addedChildren.pop_back();
                                     }
                                     ++numberOfAddedChildren;
                                     #ifdef VS_DEBUG
@@ -1008,7 +1009,8 @@ namespace smtrat
                                 // Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b+sqrt(b^2-4ac))/2a]):
                                 SqrtEx sqExA = SqrtEx( -linearCoeff, ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
                                 Substitution subA = Substitution( _eliminationVar, sqExA, subType, oConditions, sideCond );
-                                if( _currentState->addChild( subA ) )
+                                vector<State*> addedChildrenA = _currentState->addChild( subA );
+                                if( !addedChildrenA.empty() )
                                 {
                                     if( relation == Relation::EQ && !_currentState->children().back()->hasSubstitutionResults() )
                                     {
@@ -1016,14 +1018,10 @@ namespace smtrat
                                         generatedTestCandidateBeingASolution = true;
                                     }
                                     // Add its valuation to the current ranking.
-                                    if( Settings::int_constraints_allowed && Settings::branch_and_bound && _eliminationVar.getType() == carl::VariableType::VT_INT )
+                                    while( !addedChildrenA.empty() )
                                     {
-                                        removeStatesFromRanking( *_currentState );
-                                        addStatesToRanking( _currentState );
-                                    }
-                                    else
-                                    {
-                                        addStateToRanking( _currentState->rChildren().back() );
+                                        addStatesToRanking( addedChildrenA.back() );
+                                        addedChildrenA.pop_back();
                                     }
                                     ++numberOfAddedChildren;
                                     #ifdef VS_DEBUG
@@ -1033,7 +1031,8 @@ namespace smtrat
                                 // Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b-sqrt(b^2-4ac))/2a]):
                                 SqrtEx sqExB = SqrtEx( -linearCoeff, MINUS_ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
                                 Substitution subB = Substitution( _eliminationVar, sqExB, subType, oConditions, sideCond );
-                                if( _currentState->addChild( subB ) )
+                                vector<State*> addedChildrenB = _currentState->addChild( subB );
+                                if( !addedChildrenB.empty() )
                                 {
                                     if( relation == Relation::EQ && !_currentState->children().back()->hasSubstitutionResults() )
                                     {
@@ -1041,14 +1040,10 @@ namespace smtrat
                                         generatedTestCandidateBeingASolution = true;
                                     }
                                     // Add its valuation to the current ranking.
-                                    if( Settings::int_constraints_allowed && Settings::branch_and_bound && _eliminationVar.getType() == carl::VariableType::VT_INT )
+                                    while( !addedChildrenB.empty() )
                                     {
-                                        removeStatesFromRanking( *_currentState );
-                                        addStatesToRanking( _currentState );
-                                    }
-                                    else
-                                    {
-                                        addStateToRanking( _currentState->rChildren().back() );
+                                        addStatesToRanking( addedChildrenB.back() );
+                                        addedChildrenB.pop_back();
                                     }
                                     ++numberOfAddedChildren;
                                     #ifdef VS_DEBUG
@@ -1081,10 +1076,15 @@ namespace smtrat
                 {
                     // Create state ( Conditions, [x -> -infinity]):
                     Substitution sub = Substitution( _eliminationVar, Substitution::MINUS_INFINITY, oConditions );
-                    if( _currentState->addChild( sub ) )
+                    vector<State*> addedChildren = _currentState->addChild( sub );
+                    if( !addedChildren.empty() )
                     {
                         // Add its valuation to the current ranking.
-                        addStateToRanking( (*_currentState).rChildren().back() );
+                        while( !addedChildren.empty() )
+                        {
+                            addStatesToRanking( addedChildren.back() );
+                            addedChildren.pop_back();
+                        }
                         numberOfAddedChildren++;
                         #ifdef VS_DEBUG
                         (*(*_currentState).rChildren().back()).print( "   ", cout );
@@ -1101,10 +1101,15 @@ namespace smtrat
                 {
                     // Create state ( Conditions, [x -> -infinity]):
                     Substitution sub = Substitution( _eliminationVar, Substitution::PLUS_INFINITY, oConditions );
-                    if( _currentState->addChild( sub ) )
+                    vector<State*> addedChildren = _currentState->addChild( sub );
+                    if( !addedChildren.empty() )
                     {
                         // Add its valuation to the current ranking.
-                        addStateToRanking( (*_currentState).rChildren().back() );
+                        while( !addedChildren.empty() )
+                        {
+                            addStatesToRanking( addedChildren.back() );
+                            addedChildren.pop_back();
+                        }
                         numberOfAddedChildren++;
                         #ifdef VS_DEBUG
                         (*(*_currentState).rChildren().back()).print( "   ", cout );
@@ -1128,6 +1133,7 @@ namespace smtrat
                 _currentState->resetInfinityChild( toDelete );
                 delete toDelete;
             }
+            _currentState->updateIntTestCandidates();
             if( numberOfAddedChildren == 0 )
             {
                 ConditionSetSet conflictSet = ConditionSetSet();
@@ -1294,6 +1300,7 @@ namespace smtrat
                 _currentState->resetInfinityChild( toDelete );
                 delete toDelete;
             }
+            _currentState->updateIntTestCandidates();
             while( !_currentState->conditions().empty() )
             {
                 const vs::Condition* pCond = _currentState->rConditions().back();
@@ -1331,6 +1338,7 @@ namespace smtrat
                         _currentState->resetInfinityChild( toDelete );
                         delete toDelete;
                     }
+                    _currentState->updateIntTestCandidates();
                     while( !_currentState->conditions().empty() )
                     {
                         const vs::Condition* pCond = _currentState->rConditions().back();
@@ -1430,6 +1438,7 @@ namespace smtrat
                     _currentState->resetInfinityChild( toDelete );
                     delete toDelete;
                 }
+                _currentState->updateIntTestCandidates();
             }
             else
             {
@@ -1449,7 +1458,7 @@ namespace smtrat
                             auto child = _currentState->rChildren().begin();
                             while( !worseConditionFound && child != _currentState->children().end() )
                             {
-                                if( (**child).substitution().type() != Substitution::MINUS_INFINITY )
+                                if( (**child).substitution().type() != Substitution::MINUS_INFINITY || (**child).substitution().type() != Substitution::PLUS_INFINITY)
                                 {
                                     auto oCond = (**child).rSubstitution().rOriginalConditions().begin();
                                     while( !worseConditionFound && oCond != (**child).substitution().originalConditions().end() )
@@ -1756,10 +1765,15 @@ namespace smtrat
                                 const Substitution& currSub = currentState->substitution();
                                 SqrtEx t = SqrtEx( Polynomial( cln::floor1( evaluatedSubTerm ) + 1 ) );
                                 Substitution newSub = Substitution( currSub.variable(), t, Substitution::Type::NORMAL, currSub.originalConditions() );
-                                if( currentState->rFather().addChild( newSub ) )
+                                vector<State*> addedChildren = currentState->rFather().addChild( newSub );
+                                if( !addedChildren.empty() )
                                 {
                                     // Add its valuation to the current ranking.
-                                    addStateToRanking( currentState->rFather().rChildren().back() );
+                                    while( !addedChildren.empty() )
+                                    {
+                                        addStatesToRanking( addedChildren.back() );
+                                        addedChildren.pop_back();
+                                    }
                                     #ifdef VS_DEBUG
                                     currentState->rFather().rChildren().back()->print( "   ", cout );
                                     #endif
