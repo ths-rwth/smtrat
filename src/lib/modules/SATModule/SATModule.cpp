@@ -61,8 +61,6 @@
 
 //#define SAT_WITH_RESTARTS
 
-const static double FACTOR_OF_SIGN_INFLUENCE_OF_ACTIVITY = 1.02;
-
 using namespace std;
 using namespace Minisat;
 
@@ -2635,8 +2633,8 @@ NextClause:
     void SATModule::collectStats()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
-        mpStatistics->rNrTotalVariables() = nVars();
-        mpStatistics->rNrClauses() = nClauses();
+        mpStatistics->rNrTotalVariables() = (size_t) nVars();
+        mpStatistics->rNrClauses() = (size_t) nClauses();
         #endif
     }
 }    // namespace smtrat

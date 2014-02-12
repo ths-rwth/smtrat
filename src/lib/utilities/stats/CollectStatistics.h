@@ -57,8 +57,8 @@ namespace smtrat {
         static void exportKeyValue(std::string path);
     private:
         static std::vector<Statistics*> stats;
-        static unsigned maxNameLength;
-        static unsigned maxKeyLength;
+        static size_t maxNameLength;
+        static size_t maxKeyLength;
     };
 }
 #endif

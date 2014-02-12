@@ -34,6 +34,9 @@
 #include <vector>
 #include <unordered_map>
 #include <lib/Formula.h>
+CLANG_WARNING_DISABLE("-Wsign-conversion")
+CLANG_WARNING_DISABLE("-Wshorten-64-to-32")
+CLANG_WARNING_DISABLE("-Wconversion")
 
 %}
 
@@ -130,6 +133,7 @@
 
 #include "Driver.h"
 #include "Scanner.h"
+CLANG_WARNING_RESET
 
 #undef yylex
 #define yylex dv.pLexer()->lex

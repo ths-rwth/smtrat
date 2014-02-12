@@ -57,6 +57,9 @@
 #include "../../lib/Common.h"
 #include <string>
 #include <unordered_set>
+CLANG_WARNING_DISABLE("-Wsign-conversion")
+CLANG_WARNING_DISABLE("-Wshorten-64-to-32")
+CLANG_WARNING_DISABLE("-Wconversion")
 #include "Parser.tab.hh"
 
 using namespace std;

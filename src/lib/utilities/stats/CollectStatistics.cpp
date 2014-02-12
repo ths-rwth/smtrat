@@ -62,7 +62,7 @@ void CollectStatistics::print(bool smtlib) {
         if(smtlib)
         {
             for(auto it = stats.begin(); it != stats.end(); ++it)
-                (*it)->print(settings->rOutputChannel(), true, true, maxNameLength, maxKeyLength );
+                (*it)->print(settings->rOutputChannel(), true, maxNameLength, maxKeyLength );
         }
         else
         {
@@ -95,8 +95,8 @@ void CollectStatistics::exportXML() {
 }
 
 std::vector<Statistics*> CollectStatistics::stats = std::vector<Statistics*>();
-unsigned CollectStatistics::maxNameLength = 0;
-unsigned CollectStatistics::maxKeyLength = 0;
+size_t CollectStatistics::maxNameLength = 0;
+size_t CollectStatistics::maxKeyLength = 0;
 
 
 }

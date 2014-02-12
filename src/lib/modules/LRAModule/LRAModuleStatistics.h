@@ -33,16 +33,16 @@ namespace smtrat
     {
     private:
         // Members.
-        unsigned mPivotingSteps;
-        unsigned mTableauxSize;
-        unsigned mTableauEntries;
-        unsigned mRefinements;
-        unsigned mRestarts;
-        unsigned mConflicts;
-        unsigned mAllConflictsSizes;
-        unsigned mDeductions;
-        unsigned mChecks;
-        unsigned mAllChecksSizes;
+        size_t mPivotingSteps;
+        size_t mTableauxSize;
+        size_t mTableauEntries;
+        size_t mRefinements;
+        size_t mRestarts;
+        size_t mConflicts;
+        size_t mAllConflictsSizes;
+        size_t mDeductions;
+        size_t mChecks;
+        size_t mAllChecksSizes;
     public:
         // Override Statistics::collect.
         void collect()
@@ -65,7 +65,7 @@ namespace smtrat
             ++mPivotingSteps;
         }
         
-        void setNumberOfRestarts( unsigned _num )
+        void setNumberOfRestarts( size_t _num )
         {
             mRestarts = _num;
         }
@@ -76,11 +76,11 @@ namespace smtrat
             mAllChecksSizes += _formula.size();
         }
         
-        void add( const Constraint& _constraint )
+        void add( const Constraint& )
         {
         }
         
-        void remove( const Constraint& _constraint )
+        void remove( const Constraint& )
         {
         }
         
@@ -103,12 +103,12 @@ namespace smtrat
             ++mRefinements;
         }
         
-        void setTableauSize( unsigned _size )
+        void setTableauSize( size_t _size )
         {
             mTableauxSize = _size;
         }
         
-        void setNumberOfTableauxEntries( unsigned _num )
+        void setNumberOfTableauxEntries( size_t _num )
         {
             mTableauEntries = _num;
         }

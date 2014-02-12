@@ -18,13 +18,13 @@ namespace smtrat
     {
     private:
         // Members.
-        unsigned mNrTotalVariables;
-        unsigned mNrClauses;
-        unsigned mNrLearnedLemmas;
-        unsigned mVarsWithPolarityTrue;
-        unsigned mPropagations;
-        unsigned mRestarts;
-        unsigned mDecisions;
+        size_t mNrTotalVariables;
+        size_t mNrClauses;
+        size_t mNrLearnedLemmas;
+        size_t mVarsWithPolarityTrue;
+        size_t mPropagations;
+        size_t mRestarts;
+        size_t mDecisions;
 
     public:
         SATModuleStatistics( const std::string& _name ) : 
@@ -76,12 +76,12 @@ namespace smtrat
             ++mRestarts;
         }
         
-        unsigned& rNrClauses()
+        size_t& rNrClauses()
         {
             return mNrClauses;
         }
         
-        unsigned& rNrTotalVariables()
+        size_t& rNrTotalVariables()
         {
             return mNrTotalVariables;
         }

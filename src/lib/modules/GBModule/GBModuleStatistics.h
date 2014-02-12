@@ -82,18 +82,18 @@ class GroebnerModuleStats : public Statistics
      /**
       * Count the kind of constraint which was added 
       */
-     void constraintAdded(Constraint::Relation relation) {
+     void constraintAdded(smtrat::Relation relation) {
          switch(relation) {
-         case Constraint::EQ:
+             case smtrat::Relation::EQ:
              EqualityAdded();
              break;
-         case Constraint::GEQ:
-         case Constraint::LEQ:
+         case smtrat::Relation::GEQ:
+         case smtrat::Relation::LEQ:
              NonStrictInequalityAdded();
              break;
-         case Constraint::NEQ:
-         case Constraint::GREATER:
-         case Constraint::LESS:
+         case smtrat::Relation::NEQ:
+         case smtrat::Relation::GREATER:
+         case smtrat::Relation::LESS:
              StrictInequalityAdded();
              break;
          }
@@ -102,18 +102,18 @@ class GroebnerModuleStats : public Statistics
        /**
       * Count the kind of constraint which was added 
       */
-     void constraintRemoved(Constraint::Relation relation) {
+     void constraintRemoved(smtrat::Relation relation) {
          switch(relation) {
-         case Constraint::EQ:
+         case smtrat::Relation::EQ:
              EqualityRemoved();
              break;
-         case Constraint::GEQ:
-         case Constraint::LEQ:
+         case smtrat::Relation::GEQ:
+         case smtrat::Relation::LEQ:
              NonStrictInequalityRemoved();
              break;
-         case Constraint::NEQ:
-         case Constraint::GREATER:
-         case Constraint::LESS:
+         case smtrat::Relation::NEQ:
+         case smtrat::Relation::GREATER:
+         case smtrat::Relation::LESS:
              StrictInequalityRemoved();
              break;
          }
