@@ -385,7 +385,7 @@ inline Lit Clause::subsumes(const Clause& other) const
 {
     //if (other.size() < size() || (extra.abst & ~other.extra.abst) != 0)
     //if (other.size() < size() || (!learnt() && !other.learnt() && (extra.abst & ~other.extra.abst) != 0))
-    assert(!header.type > NORMAL_CLAUSE);   assert(!other.header.type > NORMAL_CLAUSE);
+    assert(header.type <= NORMAL_CLAUSE);   assert(other.header.type <= NORMAL_CLAUSE);
     assert(header.has_extra); assert(other.header.has_extra);
     if (other.header.size < header.size || (data[header.size].abs & ~other.data[other.header.size].abs) != 0)
         return lit_Error;
