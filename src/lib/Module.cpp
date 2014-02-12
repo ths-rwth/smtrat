@@ -448,16 +448,24 @@ namespace smtrat
         EvalRationalMap rationalAssignment;
         for( auto ass = _model.begin(); ass != _model.end(); ++ass )
         {   
-            if( ass->first.getType() == carl::VariableType::VT_BOOL )
+            if (ass->first.getType() == carl::VariableType::VT_BOOL)
             {
                 rationalAssignment.insert( rationalAssignment.end(), std::make_pair( ass->first, (ass->second.asBool() ? ONE_RATIONAL : ZERO_RATIONAL) ) );
             }
-            else if( ass->second.asSqrtEx().isConstant() )
+            else if (ass->second.isSqrtEx())
             {
-                Rational value = ass->second.asSqrtEx().constantPart().constantPart()/ass->second.asSqrtEx().denominator().constantPart();
-                assert( !(ass->first.getType() == carl::VariableType::VT_INT) || carl::isInteger( value ) );
-                rationalAssignment.insert( rationalAssignment.end(), pair<carl::Variable, Rational>( ass->first, value ) );
+				if (ass->second.asSqrtEx().isConstant()) {
+					Rational value = ass->second.asSqrtEx().constantPart().constantPart()/ass->second.asSqrtEx().denominator().constantPart();
+					assert( !(ass->first.getType() == carl::VariableType::VT_INT) || carl::isInteger( value ) );
+					rationalAssignment.insert( rationalAssignment.end(), std::make_pair(ass->first, value));
+				}
             }
+			else if (ass->second.isRAN())
+			{
+				if (ass->second.asRAN()->isNumeric()) {
+					rationalAssignment.insert(rationalAssignment.end(), std::make_pair(ass->first, ass->second.asRAN()->value()));
+				}
+			}
         }
         return rationalAssignment;
     }
