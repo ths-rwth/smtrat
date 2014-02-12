@@ -46,7 +46,7 @@ namespace smtrat{
     {}
 
 
-    void RuntimeSettings::parseCmdOption(const std::string& keyValueString) {
+    void RuntimeSettings::parseCmdOption(const std::string&) {
         
     }
     
@@ -54,7 +54,7 @@ namespace smtrat{
     * The method which is called to print information upon --help. 
     * @param prefix Every line should begin with this.
     */
-    void RuntimeSettings::printHelp(const std::string& prefix) const {
+    void RuntimeSettings::printHelp(const std::string&) const {
         
     }
     

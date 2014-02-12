@@ -296,18 +296,17 @@ namespace vs
         assert( father().index().getType() == carl::VariableType::VT_INT );
         assert( substitution().type() == Substitution::MINUS_INFINITY || substitution().type() == Substitution::PLUS_INFINITY );
         if( mCurrentIntRange >= _maxIntRange ) return false;
-        smtrat::Rational result;
         if( substitution().type() == Substitution::MINUS_INFINITY )
         {
-            result = father().minIntTestCandidate();
-            --result;
+            _nextIntTestCandidate = father().minIntTestCandidate();
+            --_nextIntTestCandidate;
         }
         else
         {
-            result = father().maxIntTestCandidate();
-            ++result;
+            _nextIntTestCandidate = father().maxIntTestCandidate();
+            ++_nextIntTestCandidate;
         }
-        assert( carl::isInteger( result ) );
+        assert( carl::isInteger( _nextIntTestCandidate ) );
         ++mCurrentIntRange;
         return true;
     }
