@@ -1681,7 +1681,7 @@ Return:
                 #ifdef MODULE_VERBOSE_INTEGERS
                 this->printRationalModel();
                 #endif
-                branchAt( var->first, ass );
+                branchAt( Polynomial( var->first ), ass );
                 return true;
             }
             ++map_iterator;

@@ -335,17 +335,30 @@ namespace smtrat
      *                      false, if the given variable should be less than the given value or
      *                             or greater or equal than the given value.
      */
-    void Module::branchAt( const carl::Variable& _var, const Rational& _value, const set<const Formula*>& _premise, bool _leftCaseWeak )
+    void Module::branchAt( const Polynomial& _polynomial, const Rational& _value, const set<const Formula*>& _premise, bool _leftCaseWeak )
     {
+        assert( !_polynomial.hasConstantTerm() );
         const Constraint* constraintA = NULL;
         const Constraint* constraintB = NULL;
-        if( _var.getType() == carl::VariableType::VT_INT )
+        bool onlyIntegerValuedVariables = true;
+        Variables vars;
+        _polynomial.gatherVariables( vars );
+        for( auto var : vars )
+        {
+            if( var.getType() != carl::VariableType::VT_INT )
+            {
+                assert( var.getType() == carl::VariableType::VT_REAL ); // Other domains not yet supported.
+                onlyIntegerValuedVariables = false;
+                break;
+            }
+        }
+        if( onlyIntegerValuedVariables )
         {
             Rational bound = cln::floor1( _value );
-            Polynomial leqLhs = Polynomial( _var ) - bound;
+            Polynomial leqLhs = _polynomial - bound;
             constraintA = Formula::newConstraint( leqLhs, Relation::LEQ );
             ++bound;
-            Polynomial geqLhs = Polynomial( _var ) - bound;
+            Polynomial geqLhs = _polynomial - bound;
             constraintB = Formula::newConstraint( geqLhs, Relation::GEQ );
             #ifdef MODULE_VERBOSE_INTEGERS
             cout << "[" << moduleName(type()) << "]  branch at  " << *constraintA << "  and  " << *constraintB << endl;
@@ -353,7 +366,7 @@ namespace smtrat
         }
         else
         {   
-            Polynomial constraintLhs = Polynomial( _var ) - _value;
+            Polynomial constraintLhs = _polynomial - _value;
             if( _leftCaseWeak )
             {
                 constraintA = Formula::newConstraint( constraintLhs, Relation::LEQ );
@@ -365,7 +378,7 @@ namespace smtrat
                 constraintB = Formula::newConstraint( constraintLhs, Relation::GEQ );   
             }
         }
-        // (x<=I-1 or x>=I)
+        // (p<=I-1 or p>=I)
         Formula* deductionA = new Formula( OR );
         for( auto pre = _premise.begin(); pre != _premise.end(); ++pre )
         {
