@@ -30,11 +30,16 @@
 
 #include <fstream>
 #include <sstream>
+#include "../utilities/platform.h"
 
+CLANG_WARNING_DISABLE("-Wsign-conversion")
+CLANG_WARNING_DISABLE("-Wshorten-64-to-32")
+CLANG_WARNING_DISABLE("-Wconversion")
 #include "location.hh"
-
 #include "Driver.h"
 #include "Scanner.h"
+CLANG_WARNING_RESET
+        
 #include "lib/Formula.h"
 
 
