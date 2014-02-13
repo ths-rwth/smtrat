@@ -44,7 +44,7 @@ namespace smtrat
          * @param _constraint
          * @return
          */
-        bool isBoundIn( const Polynomial _var, const Constraint* _constraint );
+        bool isBoundIn( const carl::Variable::Arg _var, const Constraint* _constraint );
         
         /**
         * Checks mIntervals if it contains an empty interval.
@@ -53,7 +53,7 @@ namespace smtrat
         bool intervalBoxContainsEmptyInterval(const EvalDoubleIntervalMap& _intervals);
         
         
-        const smtrat::lra::Variable<lra::Numeric>* getOriginalLraVar ( const Polynomial& _var, LRAModule& _lra );
+        const smtrat::lra::Variable<lra::Numeric>* getOriginalLraVar ( const carl::Variable::Arg _var, LRAModule& _lra );
         
     }
 }

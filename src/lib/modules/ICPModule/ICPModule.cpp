@@ -260,7 +260,7 @@ namespace smtrat
                     bool original = !( (*candidateIt)->lhs() == *varIt);
                     icp::IcpVariable* icpVar = NULL;
                     if( original )
-                        icpVar = new icp::IcpVariable(*varIt, original , *candidateIt, icp::getOriginalLraVar(Polynomial(*varIt),mLRA));
+                        icpVar = new icp::IcpVariable(*varIt, original , *candidateIt, icp::getOriginalLraVar(*varIt,mLRA));
                     else
                         icpVar = new icp::IcpVariable(*varIt, original , *candidateIt);
                     std::pair<std::map<const carl::Variable, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(*varIt, icpVar));
@@ -388,7 +388,7 @@ namespace smtrat
                     bool original = (*variableIt != newReal);
                     icp::IcpVariable* icpVar = NULL;
                     if( original )
-                        icpVar = new icp::IcpVariable(*variableIt, original, newCandidate, icp::getOriginalLraVar(Polynomial(*variableIt),mLRA) );
+                        icpVar = new icp::IcpVariable(*variableIt, original, newCandidate, icp::getOriginalLraVar(*variableIt,mLRA) );
                     else
                         icpVar = new icp::IcpVariable(*variableIt, original, newCandidate, slackvariable );
                     std::pair<std::map<const carl::Variable, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(*variableIt, icpVar));
@@ -396,7 +396,7 @@ namespace smtrat
                     {
                         (*added.first).second->addCandidate(newCandidate);
                         if ((*added.first).second->isOriginal())
-                                (*added.first).second->setLraVar(icp::getOriginalLraVar(Polynomial(*variableIt),mLRA));
+                                (*added.first).second->setLraVar(icp::getOriginalLraVar(*variableIt,mLRA));
                             else
                                 (*added.first).second->setLraVar(slackvariable);
                         delete icpVar;
@@ -408,7 +408,7 @@ namespace smtrat
                         original = (*_formula)->pConstraint()->hasVariable(*varIt);
                         icp::IcpVariable* icpVar = NULL;
                         if( original )
-                            icpVar = new icp::IcpVariable(*varIt, original, newCandidate, icp::getOriginalLraVar(Polynomial(*varIt),mLRA) );
+                            icpVar = new icp::IcpVariable(*varIt, original, newCandidate, icp::getOriginalLraVar(*varIt,mLRA) );
                         else
                             icpVar = new icp::IcpVariable(*varIt, original, newCandidate, slackvariable );      
                         std::pair<std::map<const carl::Variable, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(*varIt, icpVar));
@@ -416,7 +416,7 @@ namespace smtrat
                         {
                             (*added.first).second->addCandidate(newCandidate);
                             if ((*added.first).second->isOriginal())
-                                (*added.first).second->setLraVar(icp::getOriginalLraVar(Polynomial(*varIt),mLRA));
+                                (*added.first).second->setLraVar(icp::getOriginalLraVar(*varIt,mLRA));
                             else
                                 (*added.first).second->setLraVar(slackvariable);
                             delete icpVar;
@@ -3021,7 +3021,7 @@ namespace smtrat
 //                    cout << "Addidional variables." << endl;
                     for( auto receivedFormulaIt = mpReceivedFormula->begin(); receivedFormulaIt != mpReceivedFormula->end(); ++receivedFormulaIt )
                     {
-                        if( icp::isBoundIn( Polynomial((*variableIt)->var()), (*receivedFormulaIt)->pConstraint()) )
+                        if( icp::isBoundIn( (*variableIt)->var(), (*receivedFormulaIt)->pConstraint()) )
                         {
                             reasons.insert(*receivedFormulaIt);
 //                            cout << "Also add: " << **receivedFormulaIt << endl;
