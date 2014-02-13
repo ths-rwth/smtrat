@@ -891,6 +891,7 @@ namespace smtrat
                     
                     icp::ContractionCandidate* candidate = chooseContractionCandidate();
                     assert(candidate != NULL);
+                    candidate->print();
                     candidate->calcDerivative();
                     relativeContraction = -1;
                     splitOccurred = contraction( candidate, relativeContraction );
@@ -1969,7 +1970,7 @@ namespace smtrat
 
     std::pair<bool,carl::Variable> ICPModule::checkAndPerformSplit( const double& _targetDiameter )
     {
-        std::pair<bool,carl::Variable> result = std::make_pair(false, carl::Variable(0));
+        std::pair<bool,carl::Variable> result = std::make_pair(false, carl::Variable::NO_VARIABLE);
         bool found = false;
         carl::Variable variable = (*mIntervals.begin()).first; // Initialized to some dummy value
         double maximalImpact = 0;   
