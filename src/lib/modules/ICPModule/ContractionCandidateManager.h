@@ -88,7 +88,7 @@ namespace smtrat
          * @param _candidate 
          * @return id of the candidate
          */
-        const unsigned getId ( const ContractionCandidate* const _candidate ) const;
+        unsigned getId ( const ContractionCandidate* const _candidate ) const;
         
         /**
          * Returns the contraction candidate for the given id

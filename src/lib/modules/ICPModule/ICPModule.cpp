@@ -35,7 +35,7 @@
 using namespace std;
 using namespace carl;
 
-//#define ICPMODULE_DEBUG
+#define ICPMODULE_DEBUG
 //#define ICPMODULE_REDUCED_DEBUG
 
 
@@ -252,7 +252,7 @@ namespace smtrat
                 {
                     #ifdef ICPMODULE_DEBUG
                     #ifndef ICPMODULE_REDUCED_DEBUG
-                    cout << "[ICP] Added to affected canndidates: " << ((*varIt).second) << " -> ";
+                    cout << "[ICP] Added to affected canndidates: " << (*varIt) << " -> ";
                     (*candidateIt)->print();
                     #endif
                     #endif
@@ -290,9 +290,7 @@ namespace smtrat
                 delete icpVar;
                 
             #ifdef ICPMODULE_DEBUG
-            cout << "[mLRA] Assert bound constraint: ";
-            tmpFormula->print();
-            cout << endl;
+            cout << "[mLRA] Assert bound constraint: " << *tmpFormula << endl;
             #endif
             mValidationFormula->getPropositions();
             if ( !mLRA.assertSubformula(mValidationFormula->last()) )
@@ -330,7 +328,7 @@ namespace smtrat
                     slackvariable->print();
                     cout << ", Size Origins: " << (*candidateIt)->origin().size() << endl;
 
-                    (*_formula)->print();
+                    cout << (*_formula) << endl;
                     (*candidateIt)->print();
                     cout << "Adding origin." << endl;
                     #endif
@@ -447,9 +445,7 @@ namespace smtrat
                 return false;
             }
             #ifdef ICPMODULE_DEBUG
-            cout << "[mLRA] Assert ";
-            tmpFormula->print();
-            cout << endl;
+            cout << "[mLRA] Assert " << *tmpFormula << endl;
             #endif
         }
         return true;
@@ -460,9 +456,7 @@ namespace smtrat
     {
         const Constraint* constr = (*_formula)->pConstraint();
         #ifdef ICPMODULE_DEBUG
-        cout << "[ICP] Remove Formula ";
-        constr->print();
-        cout << endl;
+        cout << "[ICP] Remove Formula " << *constr << endl;
         #endif
         // is it nonlinear?
         if (mNonlinearConstraints.find(constr) != mNonlinearConstraints.end())
@@ -637,9 +631,7 @@ namespace smtrat
                         {
                             mLraCleared = true;
                             #ifdef ICPMODULE_DEBUG
-                            cout << "[mLRA] Remove constraint: ";
-                            (*_formula)->constraint().print();
-                            cout << endl;
+                            cout << "[mLRA] Remove constraint: " << (*_formula)->constraint() << endl;
                             #endif
                             mLRA.removeSubformula(formulaIt);
 //                            mReceivedFormulaMapping.erase(*formulaIt);
@@ -690,9 +682,7 @@ namespace smtrat
                     if ( (*validationFormulaIt)->constraint() == *(*replacementIt).first )
                     {
                         #ifdef ICPMODULE_DEBUG
-                        cout << "[mLRA] remove ";
-                        (*validationFormulaIt)->pConstraint()->print();
-                        cout << endl;
+                        cout << "[mLRA] remove " << *(*validationFormulaIt)->pConstraint() << endl;
                         #endif
                         mLRA.removeSubformula(validationFormulaIt);
 //                        mReceivedFormulaMapping.erase(*validationFormulaIt);
@@ -739,9 +729,7 @@ namespace smtrat
         {
             #ifdef ICPMODULE_DEBUG
             #ifndef ICPMODULE_REDUCED_DEBUG
-            cout << "Create deduction for: " << endl;
-            mLRA.deductions().back()->print();
-            cout << endl;
+            cout << "Create deduction for: " << *mLRA.deductions().back() << endl;
             #endif
             #endif
             Formula* deduction = transformDeductions(mLRA.deductions().back());
@@ -749,9 +737,7 @@ namespace smtrat
             addDeduction(deduction);
             #ifdef ICPMODULE_DEBUG
             #ifndef ICPMODULE_REDUCED_DEBUG            
-            cout << "Passed deduction: " << endl;
-            deduction->print();
-            cout << endl;
+            cout << "Passed deduction: " << *deduction << endl;
             #endif
             #endif
         }
@@ -783,8 +769,7 @@ namespace smtrat
             for ( auto constraintIt = tmp.begin(); constraintIt != tmp.end(); ++constraintIt )
             {
                 #ifdef ICPMODULE_DEBUG
-                cout << (*constraintIt).first << ": ";
-                (*constraintIt).second.dbgprint();
+                cout << (*constraintIt).first << ": " << (*constraintIt).second << endl;
                 #endif
                 if (mVariables.find((*constraintIt).first) != mVariables.end())
                 {
@@ -809,9 +794,7 @@ namespace smtrat
                     mIntervals[(*(*linIt).second.begin())->lhs()] = carl::DoubleInterval(tmp.left(), tmp.leftType(), tmp.right(), tmp.rightType());
                     #ifdef ICPMODULE_DEBUG
                     #ifndef ICPMODULE_REDUCED_DEBUG
-                    cout << "Added interval (slackvariables): " << (*(*linIt).second.begin())->lhs() << " ";
-                    tmp.print(std::cout);
-                    cout << endl;
+                    cout << "Added interval (slackvariables): " << (*(*linIt).second.begin())->lhs() << " " << tmp << endl;
                     #endif
                     #endif
                 }
@@ -1460,8 +1443,9 @@ namespace smtrat
                 }
                 else
                 {
-                    assert(mLinearizations.find(constraint->lhs()) != mLinearizations.end());
-                    linearizedConstraint += (*monomialIt)->coeff() * (*mLinearizations.find(constraint->lhs())).second;
+                    //cout << "Searching for: " << constraint->lhs() << " in Linearizations. Having: " << *(*monomialIt)->monomial() << endl;
+                    assert(mLinearizations.find(Polynomial(*(*monomialIt)->monomial())) != mLinearizations.end());
+                    linearizedConstraint += (*monomialIt)->coeff() * (*mLinearizations.find( Polynomial(*(*monomialIt)->monomial() ))).second;
                 }
             }
             
@@ -1924,7 +1908,7 @@ namespace smtrat
     }
     
     
-    const double ICPModule::calculateSplittingImpact ( const carl::Variable& _var, icp::ContractionCandidate& _candidate ) const
+    double ICPModule::calculateSplittingImpact ( const carl::Variable& _var, icp::ContractionCandidate& _candidate ) const
     {
         double impact = 0;
         assert(mIntervals.count(_var) > 0);
@@ -2093,8 +2077,6 @@ namespace smtrat
             const carl::Variable contractedBoxVar = Formula::newAuxiliaryBooleanVariable();
             Formula* contractedBox = new Formula( contractedBoxVar );
             Formula* contractedBoxCopy = new Formula( *contractedBox );
-            Formula* contractedBoxCopy2 = new Formula( *contractedBox );
-            Formula* SplitPremise = new Formula( *contraction );
             
             contraction->addSubformula( contractedBox );
             addDeduction( contraction );
@@ -2270,7 +2252,7 @@ namespace smtrat
 
         #ifdef ICPMODULE_DEBUG
         cout << "[mLRA] receivedFormula: " << endl;
-        mLRA.rReceivedFormula().print();
+        cout << mLRA.rReceivedFormula() << endl;
         #endif
         mValidationFormula->getPropositions();
         Answer centerFeasible = mLRA.isConsistent();
@@ -2469,9 +2451,7 @@ namespace smtrat
                 }
                 #ifdef ICPMODULE_DEBUG
                 #ifndef ICPMODULE_REDUCED_DEBUG
-                cout << "[ICP] Validate: ";
-                linearIt->first->constraint()->print();
-                cout << " -> " << satisfied << " (" << constraint << ") " << endl;
+                cout << "[ICP] Validate: " << *linearIt->first->constraint() << " -> " << satisfied << " (" << constraint << ") " << endl;
                 cout << "Candidate: ";
                 linearIt->first->print();
                 #endif
@@ -3109,9 +3089,7 @@ namespace smtrat
                             addedBoundaries.insert(addedBoundaries.end(), leftBound);
                             #ifdef ICPMODULE_DEBUG
                             #ifndef ICPMODULE_REDUCED_DEBUG
-                            cout << "Created lower boundary constraint: ";
-                            leftBound->print();
-                            cout << endl;
+                            cout << "Created lower boundary constraint: " << *leftBound << endl;
                             #endif
                             #endif
                         }
@@ -3122,9 +3100,7 @@ namespace smtrat
                             addedBoundaries.insert(addedBoundaries.end(), rightBound);
                             #ifdef ICPMODULE_DEBUG
                             #ifndef ICPMODULE_REDUCED_DEBUG
-                            cout << "Created upper boundary constraint: ";
-                            rightBound->print();
-                            cout << endl;
+                            cout << "Created upper boundary constraint: " << *rightBound << endl;
                             #endif
                             #endif
                         }

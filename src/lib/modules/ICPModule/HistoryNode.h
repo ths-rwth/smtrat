@@ -515,7 +515,7 @@ namespace smtrat
                     return (this == mParent->right());
                 }
 
-                const unsigned id() const
+                unsigned id() const
                 {
                     return mId;
                 }
