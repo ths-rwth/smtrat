@@ -705,7 +705,7 @@ namespace smtrat
         mIsBackendCalled = false;
         double relativeContraction = 1;
         bool   splitOccurred = false;
-        std::pair<bool,carl::Variable> didSplit = std::make_pair(false, carl::Variable(0));
+        std::pair<bool,carl::Variable> didSplit = std::make_pair(false, carl::Variable::NO_VARIABLE);
 //        didSplit.first = false;
         vec_set_const_pFormula violatedConstraints = vec_set_const_pFormula();
         double targetDiameter = 1;
