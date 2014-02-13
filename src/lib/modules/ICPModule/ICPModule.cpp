@@ -1443,8 +1443,9 @@ namespace smtrat
                 }
                 else
                 {
-                    assert(mLinearizations.find(constraint->lhs()) != mLinearizations.end());
-                    linearizedConstraint += (*monomialIt)->coeff() * (*mLinearizations.find(constraint->lhs())).second;
+                    //cout << "Searching for: " << constraint->lhs() << " in Linearizations. Having: " << *(*monomialIt)->monomial() << endl;
+                    assert(mLinearizations.find(Polynomial(*(*monomialIt)->monomial())) != mLinearizations.end());
+                    linearizedConstraint += (*monomialIt)->coeff() * (*mLinearizations.find( Polynomial(*(*monomialIt)->monomial() ))).second;
                 }
             }
             
