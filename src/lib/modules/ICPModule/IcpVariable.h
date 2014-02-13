@@ -180,7 +180,7 @@ namespace icp
                 _out << std::endl;
             }
 
-            const bool isActive() const
+            bool isActive() const
             {
                 return mActive;
             }
@@ -305,7 +305,7 @@ namespace icp
                 return mBoundsSet.second;
             }
             
-            const bool isOriginal() const
+            bool isOriginal() const
             {
                 return mOriginal;
             }

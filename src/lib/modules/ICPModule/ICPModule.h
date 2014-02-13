@@ -247,7 +247,7 @@ namespace smtrat
              * @param _targetDiameter
              * @return 
              */
-            const double calculateSplittingImpact ( const carl::Variable& _var, icp::ContractionCandidate& _candidate ) const;
+            double calculateSplittingImpact ( const carl::Variable& _var, icp::ContractionCandidate& _candidate ) const;
             
             Formula* createPremiseDeduction();
             

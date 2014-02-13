@@ -66,7 +66,7 @@ namespace smtrat
         return (*insertionResult.first).second;
     }
     
-    const unsigned ContractionCandidateManager::getId ( const ContractionCandidate* const _candidate ) const
+    unsigned ContractionCandidateManager::getId ( const ContractionCandidate* const _candidate ) const
     {
         for ( auto candidateIt = mCandidates.begin(); candidateIt != mCandidates.end(); ++candidateIt )
         {
