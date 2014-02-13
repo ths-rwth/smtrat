@@ -5,12 +5,12 @@
  * Created on June 19, 2013, 4:06 PM
  */
 
-#ifndef UTILS_H
-#define UTILS_H
+#pragma once
 
 #include "../../Constraint.h"
 #include "../../Formula.h"
 #include "../LRAModule/LRAModule.h"
+#include <carl/numbers/operations.h>
 
 namespace smtrat
 {
@@ -57,5 +57,3 @@ namespace smtrat
         
     }
 }
-
-#endif   /* UTILS_H */

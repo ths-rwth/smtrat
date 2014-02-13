@@ -102,7 +102,6 @@ namespace smtrat
 
             typedef std::set<icp::ContractionCandidate*, icp::contractionCandidateComp>                      ContractionCandidates;
             typedef FastPointerMap<Polynomial*, weights>                             WeightMap;
-            
 
         private:
 
@@ -115,13 +114,13 @@ namespace smtrat
             std::map<const lra::Variable<lra::Numeric>*, ContractionCandidates>                 mLinearConstraints; // all linear candidates
             std::map<const Constraint*, ContractionCandidates>                                  mNonlinearConstraints; // all nonlinear candidates
             
-            std::map<carl::Variable, icp::IcpVariable*>                                         mVariables; // list of occurring variables
+            std::map<const carl::Variable, icp::IcpVariable*>                                         mVariables; // list of occurring variables
             EvalDoubleIntervalMap                                                               mIntervals; // actual intervals relevant for contraction
             std::set<std::pair<double, unsigned>, comp>                                         mIcpRelevantCandidates; // candidates considered for contraction 
             
             std::map<const Constraint*, const Constraint*>                                      mReplacements; // linearized constraint -> original constraint
             FastMap<Polynomial, carl::Variable>                                                 mLinearizations; // monome -> variable
-            FastMap<Polynomial, const Polynomial>                                               mSubstitutions; // variable -> monome/variable
+            FastMap<carl::Variable, const Polynomial>                                               mSubstitutions; // variable -> monome/variable
             FastMap<Polynomial, Contractor<carl::SimpleNewton> >                                mContractors;
             
             icp::HistoryNode*                                                                   mHistoryRoot; // Root-Node of the state-tree
@@ -252,7 +251,7 @@ namespace smtrat
             
             Formula* createPremiseDeduction();
             
-            set<Formula*> createContractionDeduction();
+            std::set<Formula*> createContractionDeduction();
             
             /**
              * Checks if there is a need for a split and manages the splitting and branching in the

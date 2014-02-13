@@ -72,7 +72,7 @@ namespace icp
             
             
 
-            IcpVariable( carl::Variable _var, bool _original, const lra::Variable<lra::Numeric>* _lraVar = NULL ):
+            IcpVariable( carl::Variable::Arg _var, bool _original, const lra::Variable<lra::Numeric>* _lraVar = NULL ):
                 mVar( _var ),
                 mOriginal( _original ),
                 mCandidates(),
@@ -88,7 +88,7 @@ namespace icp
             {
             }
 
-            IcpVariable( carl::Variable _var,
+            IcpVariable( carl::Variable::Arg _var,
                          bool _original,
                          ContractionCandidate* _candidate,
                          const lra::Variable<lra::Numeric>* _lraVar = NULL ):
@@ -121,7 +121,7 @@ namespace icp
              * Getter/Setter
              */
 
-            const carl::Variable var() const
+            const carl::Variable::Arg var() const
             {
                 return mVar;
             }
