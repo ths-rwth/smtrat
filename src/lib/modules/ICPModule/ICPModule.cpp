@@ -1437,7 +1437,7 @@ namespace smtrat
             }
             for( auto monomialIt = constraint->lhs().begin(); monomialIt != constraint->lhs().end(); ++monomialIt)
             {
-                if( (*monomialIt)->monomial()->isAtMostLinear() )
+                if( (*monomialIt)->monomial() == NULL || (*monomialIt)->monomial()->isAtMostLinear() )
                 {
                     linearizedConstraint += **monomialIt;
                 }
