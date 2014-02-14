@@ -272,16 +272,28 @@ namespace smtrat
                 }
             }
         }
-        if ( (*_formula)->constraint().variables().size() == 1 && (*_formula)->constraint().varInfo((*(*_formula)->constraint().variables().begin())).maxDegree() == 1 )
+        const Constraint* replacementPtr = NULL;
+        // lookup corresponding linearization - in case the constraint is already linear, mReplacements holds the constraint as the linearized one
+        for ( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt )
+        {
+            if ( (*replacementIt).second == (*_formula)->pConstraint() )
+            {
+                replacementPtr = (*replacementIt).first;
+                break;
+            }
+        }
+        assert(replacementPtr != NULL);
+        
+        if ( replacementPtr->isBound() )
         {
             // considered constraint is activated but has no slackvariable -> it is a boundary constraint
-            Formula* tmpFormula = new Formula(**_formula);
+            Formula* tmpFormula = new Formula(replacementPtr);
             assert(tmpFormula->getType() == CONSTRAINT);
             mValidationFormula->addSubformula(tmpFormula);
             // update ReceivedFormulaMapping
 //            mReceivedFormulaMapping.insert(std::make_pair(tmpFormula, *_formula));
             // try to insert new icpVariable -> is original!
-            carl::Variable tmpVar = (*(*_formula)->pConstraint()->variables().begin());
+            const carl::Variable::Arg tmpVar = *replacementPtr->variables().begin();
             const lra::Variable<lra::Numeric>* slackvariable = mLRA.getSlackVariable(tmpFormula->pConstraint());
             assert( slackvariable != NULL );
             icp::IcpVariable* icpVar = new icp::IcpVariable(tmpVar, true, slackvariable );
@@ -302,17 +314,6 @@ namespace smtrat
         }
         else //if ( (*_formula)->constraint().variables().size() > 1 )
         {
-            const Constraint* replacementPtr = NULL;
-            // lookup corresponding linearization - in case the constraint is already linear, mReplacements holds the constraint as the linearized one
-            for ( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt )
-            {
-                if ( (*replacementIt).second == (*_formula)->pConstraint() )
-                {
-                    replacementPtr = (*replacementIt).first;
-                    break;
-                }
-            }
-            assert(replacementPtr != NULL);
             const lra::Variable<lra::Numeric>* slackvariable = mLRA.getSlackVariable(replacementPtr);
             assert(slackvariable != NULL);
 
