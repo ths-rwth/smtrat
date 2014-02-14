@@ -35,7 +35,7 @@
 using namespace std;
 using namespace carl;
 
-//#define ICPMODULE_DEBUG
+#define ICPMODULE_DEBUG
 //#define ICPMODULE_REDUCED_DEBUG
 
 
@@ -2288,29 +2288,37 @@ namespace smtrat
                 bool isLeftInfty = false;
                 bool isRightInfty = false;
                 bool satisfied = false;
-
-                constraint.substitute(pointsolution);
+                
+                constraint += (*linearIt).first->lhs();
+                constraint = constraint.substitute(pointsolution);
                 
                 std::map<carl::Variable, Rational> nonlinearValues;
                 
                 for( auto term = constraint.begin(); term != constraint.end(); ++term)
                 {
                     Variables vars;
-                    (*term)->monomial()->gatherVariables(vars);
-                    if( (*term)->coeff() < 0 )
+                    if(!(*term)->monomial())
                     {
-                        for(auto varIt = vars.begin(); varIt != vars.end(); ++varIt)
-                            nonlinearValues.insert(std::make_pair(*varIt, carl::rationalize<Rational>(mIntervals.at(*varIt).left())) );   
+                        continue; // Todo: sure?
                     }
                     else
                     {
-                        for(auto varIt = vars.begin(); varIt != vars.end(); ++varIt)
-                            nonlinearValues.insert(std::make_pair(*varIt, carl::rationalize<Rational>(mIntervals.at(*varIt).right())) );
+                        (*term)->monomial()->gatherVariables(vars);
+                        if( (*term)->coeff() < 0 )
+                        {
+                            for(auto varIt = vars.begin(); varIt != vars.end(); ++varIt)
+                                nonlinearValues.insert(std::make_pair(*varIt, carl::rationalize<Rational>(mIntervals.at(*varIt).left())) );   
+                        }
+                        else
+                        {
+                            for(auto varIt = vars.begin(); varIt != vars.end(); ++varIt)
+                                nonlinearValues.insert(std::make_pair(*varIt, carl::rationalize<Rational>(mIntervals.at(*varIt).right())) );
+                        }
+                        carl::Term<Rational>* tmp = (*term)->monomial()->substitute(nonlinearValues, (*term)->coeff());
+                        assert(tmp->isConstant());
+                        nonlinearParts += tmp->coeff();
+                        nonlinearValues.clear();
                     }
-                    carl::Term<Rational>* tmp = (*term)->monomial()->substitute(nonlinearValues, (*term)->coeff());
-                    assert(tmp->isConstant());
-                    nonlinearParts += tmp->coeff();
-                    nonlinearValues.clear();
                 }
                 assert(nonlinearParts.isConstant());
                 assert(constraint.isConstant());
@@ -3287,7 +3295,7 @@ namespace smtrat
         cout << "************************* Replacements ************************" << endl;
         for ( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt )
         {
-            cout << *(*replacementIt).first << "  \t -> \t" << (*replacementIt).second << endl;
+            cout << *(*replacementIt).first << "  \t -> \t" << *(*replacementIt).second << endl;
         }
         cout <<endl;
         cout << "************************* ICP Variables ***********************" << endl;
