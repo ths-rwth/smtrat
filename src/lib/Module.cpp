@@ -721,6 +721,7 @@ namespace smtrat
                     #endif
                     result = (*module)->isConsistent();
                     assert(result == Unknown || result == False || result == True);
+                    assert( result != False || (*module)->hasValidInfeasibleSubset() );
                     #ifdef SMTRAT_DEVOPTION_MeasureTime
                     (*module)->stopCheckTimer();
                     #endif
@@ -972,6 +973,24 @@ namespace smtrat
             smtlibFile.close();
         }
         #endif
+    }
+    
+    /**
+     * @return true, if the module has at least one valid infeasible subset, that is all its
+     *         elements are sub-formulas of the received formula (pointer must be equal).
+     */
+    bool Module::hasValidInfeasibleSubset() const
+    {
+        if( mInfeasibleSubsets.empty() ) return false;
+        for( auto infSubset : mInfeasibleSubsets )
+        {
+            for( auto subFormula : infSubset )
+            {
+                if( !mpReceivedFormula->contains( subFormula ) )
+                    return false;
+            }
+        }
+        return true;
     }
     
     /**
