@@ -2049,7 +2049,7 @@ namespace smtrat
             // create prequesites: ((B' AND CCs) -> h_b)
             std::set<const Formula*> splitPremise;
             Formula* contraction = new Formula( OR );
-            std::set<const Constraint*> contractions = mHistoryActual->appliedConstraints();
+            std::set<const Formula*> contractions = mHistoryActual->appliedConstraints();
 //            cout << "Size applied constraints: " << contractions.size() << endl;
 //            cout << "Size of Box-Storage: " << mBoxStorage.size() << endl;
             assert( mBoxStorage.size() == 1 );
@@ -2061,8 +2061,8 @@ namespace smtrat
 //                assert(mReplacements.count(*constraintIt) > 0);
                 Formula* negation = new Formula( NOT );
 //                Formula* constraint = new Formula( replacement );
-                Formula* constraint = new Formula( *constraintIt );
-                splitPremise.insert( constraint );
+                Formula* constraint = new Formula( (*constraintIt)->pConstraint() );
+                splitPremise.insert( *constraintIt );
                 negation->addSubformula( constraint );
                 contraction->addSubformula( negation );
             }
@@ -2070,7 +2070,7 @@ namespace smtrat
             {
                 Formula* negation = new Formula( NOT );
                 Formula* constraint = new Formula( **formulaIt );
-                splitPremise.insert( constraint );
+                splitPremise.insert( *formulaIt );
                 negation->addSubformula( constraint );
                 contraction->addSubformula( negation );
             }
