@@ -462,6 +462,7 @@ namespace smtrat
      */
     unsigned Module::checkModel() const
     {
+        this->updateModel();
         return mpReceivedFormula->satisfiedBy( mModel );
     }
 
@@ -789,6 +790,8 @@ namespace smtrat
     Answer Module::foundAnswer( Answer _answer )
     {
         mSolverState = _answer;
+//        if( !(_answer != True || checkModel() != 0 ))
+//            exit( 7771 );
         assert( _answer != True || checkModel() != 0 );
         // If we are in the SMT environment:
         if( mpManager != NULL && _answer != Unknown )
