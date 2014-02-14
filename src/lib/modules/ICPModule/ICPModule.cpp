@@ -35,7 +35,7 @@
 using namespace std;
 using namespace carl;
 
-#define ICPMODULE_DEBUG
+//#define ICPMODULE_DEBUG
 //#define ICPMODULE_REDUCED_DEBUG
 
 
