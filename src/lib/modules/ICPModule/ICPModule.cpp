@@ -44,7 +44,7 @@ namespace smtrat
     /**
      * Constructor
      */
-    ICPModule::ICPModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+    ICPModule::ICPModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* , Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         mActiveNonlinearConstraints(),
         mActiveLinearConstraints(),
@@ -1202,7 +1202,7 @@ namespace smtrat
                                 assert(!mInfeasibleSubsets.empty());
                                 for (auto infSetIt = (*mInfeasibleSubsets.begin()).begin(); infSetIt != (*mInfeasibleSubsets.begin()).end(); ++infSetIt )
                                 {
-                                    if( icp::isBound((*infSetIt)->pConstraint()) )
+                                    if( (*infSetIt)->pConstraint()->isBound() )
                                     {
                                         assert( mVariables.find( *(*infSetIt)->constraint().variables().begin() ) != mVariables.end() );
 //                                        mHistoryActual->addInfeasibleVariable( mVariables.at((*(*infSetIt)->constraint().variables().begin()).first) );
@@ -2675,7 +2675,7 @@ namespace smtrat
             {
                 for ( auto formulaIt = (*infSetIt).begin(); formulaIt != (*infSetIt).end(); ++formulaIt )
                 {
-                    if( !icp::isBound( (*formulaIt)->pConstraint() ) )
+                    if( !(*formulaIt)->pConstraint()->isBound() )
                     {
 //                        assert(mpReceivedFormula->contains(mReceivedFormulaMapping.at(*formulaIt)));
                         mHistoryActual->addInfeasibleConstraint((*formulaIt)->pConstraint());
@@ -3002,7 +3002,7 @@ namespace smtrat
 //                    cout << "Addidional variables." << endl;
                     for( auto receivedFormulaIt = mpReceivedFormula->begin(); receivedFormulaIt != mpReceivedFormula->end(); ++receivedFormulaIt )
                     {
-                        if( icp::isBoundIn( (*variableIt)->var(), (*receivedFormulaIt)->pConstraint()) )
+                        if( (*receivedFormulaIt)->pConstraint()->hasVariable((*variableIt)->var()) && (*receivedFormulaIt)->pConstraint()->isBound() )
                         {
                             reasons.insert(*receivedFormulaIt);
 //                            cout << "Also add: " << **receivedFormulaIt << endl;

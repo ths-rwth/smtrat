@@ -30,21 +30,6 @@ namespace smtrat
         * @return pair <lowerBoundConstraint*, upperBoundConstraint*>
         */
         std::pair<const Constraint*, const Constraint*> intervalToConstraint( const carl::Variable& _var, const carl::DoubleInterval _interval );
-
-        /**
-         * Checks whether the given constraint is a boundary constraint
-         * @param _constraint
-         * @return
-         */
-        bool isBound( const Constraint* _constraint );
-
-        /**
-         * Checks whether the given bound is a bound of the given variable.
-         * @param _var
-         * @param _constraint
-         * @return
-         */
-        bool isBoundIn( const carl::Variable::Arg _var, const Constraint* _constraint );
         
         /**
         * Checks mIntervals if it contains an empty interval.

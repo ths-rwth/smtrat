@@ -73,19 +73,6 @@ namespace smtrat
 
             return std::make_pair( leftTmp, rightTmp );
         }
-
-        bool isBound( const Constraint* _constraint )
-        {
-            assert(_constraint->relation() != Relation::NEQ);
-            return (_constraint->variables().size() == 1 && _constraint->maxDegree() == 1);
-        }
-
-        bool isBoundIn( const carl::Variable::Arg _var, const Constraint* _constraint )
-        {
-            assert(_constraint->relation() != Relation::NEQ);
-            return (_constraint->variables().size() == 1 && _constraint->maxDegree( _var ) == 1);
-        }
-        
         
         bool intervalBoxContainsEmptyInterval(const EvalDoubleIntervalMap& _intervals)
         {
