@@ -120,7 +120,7 @@ namespace smtrat
             
             std::map<const Constraint*, const Constraint*>                                      mReplacements; // linearized constraint -> original constraint
             FastMap<Polynomial, carl::Variable>                                                 mLinearizations; // monome -> variable
-            FastMap<carl::Variable, const Polynomial>                                               mSubstitutions; // variable -> monome/variable
+            std::map<carl::Variable, const Polynomial>                                               mSubstitutions; // variable -> monome/variable
             FastMap<Polynomial, Contractor<carl::SimpleNewton> >                                mContractors;
             
             icp::HistoryNode*                                                                   mHistoryRoot; // Root-Node of the state-tree
