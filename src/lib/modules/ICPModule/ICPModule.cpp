@@ -35,7 +35,7 @@
 using namespace std;
 using namespace carl;
 
-#define ICPMODULE_DEBUG
+//#define ICPMODULE_DEBUG
 //#define ICPMODULE_REDUCED_DEBUG
 
 
@@ -748,15 +748,17 @@ namespace smtrat
         {
             // remap infeasible subsets to original constraints
             remapAndSetLraInfeasibleSubsets();
+            #ifdef ICPMODULE_DEBUG
             cout << "LRA: " << lraAnswer << endl;
+            #endif
             return foundAnswer(lraAnswer);
         }
         else if ( lraAnswer == Unknown)
         {
             #ifdef ICPMODULE_DEBUG
             mLRA.printReceivedFormula();
-            #endif
             cout << "LRA: " << lraAnswer << endl;
+            #endif
             return foundAnswer(lraAnswer);
         }
         else if ( !mActiveNonlinearConstraints.empty() ) // lraAnswer == True
@@ -812,7 +814,9 @@ namespace smtrat
         }
         else if ( mActiveNonlinearConstraints.empty() ) // lraAnswer == True, but no nonlinear constraints -> nothing to do
         {
+#ifdef ICPMODULE_DEBUG
             cout << "LRA: " << lraAnswer << endl;
+#endif
             return foundAnswer(lraAnswer);
         }
             
@@ -825,8 +829,10 @@ namespace smtrat
         writeBox();
         #endif
         
+#ifdef ICPMODULE_DEBUG
         printIntervals(true);
         cout << "---------------------------------------------" << endl;
+#endif
         
         do //while BoxFeasible
         {
@@ -891,7 +897,6 @@ namespace smtrat
                     
                     icp::ContractionCandidate* candidate = chooseContractionCandidate();
                     assert(candidate != NULL);
-                    candidate->print();
                     candidate->calcDerivative();
                     relativeContraction = -1;
                     splitOccurred = contraction( candidate, relativeContraction );
@@ -1053,7 +1058,6 @@ namespace smtrat
                     #ifdef ICPMODULE_DEBUG
                     cout << "Return unknown, raise deductions for split." << endl;
                     #endif
-                    cout << "Return unknown, raise deductions for split." << endl;
                     return foundAnswer(Unknown);
                     #endif
                     invalidBox = false;
@@ -1109,7 +1113,6 @@ namespace smtrat
                         mInfeasibleSubsets.clear();
                         mInfeasibleSubsets.push_back(collectReasons(mHistoryRoot));
 //                        printInfeasibleSubsets();
-                        cout << "False" << endl;
                         return foundAnswer(False);
                     }
                     #else
@@ -1140,8 +1143,7 @@ namespace smtrat
                         icpLog << "backend";
                         writeBox();
                         #endif
-                        cout << "\r";
-                        cout << ++mCountBackendCalls;
+                        ++mCountBackendCalls;
                         Answer a = runBackends();
                         mIsBackendCalled = true;
                         #ifdef ICPMODULE_DEBUG
@@ -1235,7 +1237,6 @@ namespace smtrat
                                     mInfeasibleSubsets.clear();
                                     mInfeasibleSubsets.push_back(collectReasons(mHistoryRoot));
 //                                    printInfeasibleSubsets();
-                                    cout << "False" << endl;
                                     return foundAnswer(False);
                                 }
                                 #else
@@ -1250,7 +1251,6 @@ namespace smtrat
                                 mInfeasibleSubsets.clear();
                                 mInfeasibleSubsets.push_back(collectReasons(mHistoryRoot));
 //                                printInfeasibleSubsets();
-                                cout << "False" << endl;
                                 return foundAnswer(False);
                             }
                         }
@@ -1258,7 +1258,9 @@ namespace smtrat
                         {
                             mHistoryActual->propagateStateInfeasibleConstraints();
                             mHistoryActual->propagateStateInfeasibleVariables();
+#ifdef ICPMODULE_DEBUG
                             cout << "Backend: " << a << endl;
+#endif
                             return foundAnswer(a);
                         }
                     }
@@ -1289,7 +1291,6 @@ namespace smtrat
                             mInfeasibleSubsets.clear();
                             mInfeasibleSubsets.push_back(collectReasons(mHistoryRoot));
 //                            printInfeasibleSubsets();
-                            cout << "False" << endl;
                             return foundAnswer(False);
                         }
                         #else
@@ -1349,7 +1350,6 @@ namespace smtrat
                     mInfeasibleSubsets.clear();
                     mInfeasibleSubsets.push_back(collectReasons(mHistoryRoot));
 //                    printInfeasibleSubsets();
-                    cout << "False" << endl;
                     return foundAnswer(False);
                 }
                 #else
