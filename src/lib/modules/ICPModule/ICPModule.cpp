@@ -693,8 +693,8 @@ namespace smtrat
                 break;
             }
         }
-        if ( (*_formula)->constraint().variables().size() > 1 )
-            Module::removeSubformula( _formula );
+        
+        Module::removeSubformula( _formula );
     }
 
 
