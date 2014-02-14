@@ -37,14 +37,12 @@
 
 
 #include <vector>
-#include <map>
 #include <set>
 #include <algorithm>
 #include <string>
 #include <chrono>
 #include <atomic>
 
-#include "Assignment.h"
 #include "Common.h"
 #include "Formula.h"
 #include "ValidationSettings.h"
@@ -80,8 +78,6 @@ namespace smtrat
         friend class ValidationSettings;
         #endif
         public:
-            /// Data type for a assignment assigning a variable, represented as a string, a real algebraic number, represented as a string.
-            typedef std::map<const carl::Variable, Assignment> Model;
             ///
             typedef std::chrono::high_resolution_clock clock;
             ///
@@ -367,7 +363,6 @@ namespace smtrat
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
             void branchAt( const Polynomial& _polynomial, const Rational& _value, const std::set<const Formula*>& = std::set<const Formula*>(), bool _leftCaseWeak = true );
             void splitUnequalConstraint( const Constraint* );
-            static EvalRationalMap modelToERM( const Model& _model );
             unsigned checkModel() const;
         public:
             // Printing methods.

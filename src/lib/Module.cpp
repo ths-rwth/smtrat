@@ -456,41 +456,13 @@ namespace smtrat
         addDeduction( deductionD );
     }
     
-    EvalRationalMap Module::modelToERM( const Model& _model )
-    {
-        EvalRationalMap rationalAssignment;
-        for( auto ass = _model.begin(); ass != _model.end(); ++ass )
-        {   
-            if (ass->first.getType() == carl::VariableType::VT_BOOL)
-            {
-                rationalAssignment.insert( rationalAssignment.end(), std::make_pair( ass->first, (ass->second.asBool() ? ONE_RATIONAL : ZERO_RATIONAL) ) );
-            }
-            else if (ass->second.isSqrtEx())
-            {
-				if (ass->second.asSqrtEx().isConstant()) {
-					Rational value = ass->second.asSqrtEx().constantPart().constantPart()/ass->second.asSqrtEx().denominator().constantPart();
-					assert( !(ass->first.getType() == carl::VariableType::VT_INT) || carl::isInteger( value ) );
-					rationalAssignment.insert( rationalAssignment.end(), std::make_pair(ass->first, value));
-				}
-            }
-			else if (ass->second.isRAN())
-			{
-				if (ass->second.asRAN()->isNumeric()) {
-					rationalAssignment.insert(rationalAssignment.end(), std::make_pair(ass->first, ass->second.asRAN()->value()));
-				}
-			}
-        }
-        return rationalAssignment;
-    }
-    
     /**
      * @return false, if the current model of this module does not satisfy the current given formula;
      *         true, if it cannot be said whether the model satisfies the given formula.
      */
     unsigned Module::checkModel() const
     {
-        updateModel();
-        return mpReceivedFormula->satisfiedBy( modelToERM( mModel ) );
+        return mpReceivedFormula->satisfiedBy( mModel );
     }
 
     /**
@@ -1149,10 +1121,10 @@ namespace smtrat
         if( !model().empty() )
         {
             _out << "(";
-            for (Module::Model::const_iterator ass = model().begin(); ass != model().end(); ++ass)
+            for( Model::const_iterator ass = model().begin(); ass != model().end(); ++ass )
             {
                 if (ass != model().begin()) _out << " ";
-				_out << "(" << ass->first << " " << ass->second << ")" << endl;
+                    _out << "(" << ass->first << " " << ass->second << ")" << endl;
             }
             _out << ")" << endl;
         }

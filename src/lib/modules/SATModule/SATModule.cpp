@@ -1263,7 +1263,8 @@ SetWatches:
                                 if( (*backend)->solverState() == True )
                                 {
                                     (*backend)->updateModel();
-                                    EvalRationalMap rationalAssignment = modelToERM( (*backend)->model() );
+                                    EvalRationalMap rationalAssignment;
+                                    getRationalAssignmentsFromModel( (*backend)->model(), rationalAssignment );
                                     vec<Var> conflVars;
                                     #ifdef SAT_MODULE_OUTPUT_PROGRESS
                                     mSatisfiedClauses = 0;
