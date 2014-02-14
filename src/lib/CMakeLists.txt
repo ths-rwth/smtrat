@@ -20,19 +20,21 @@ endif()
 # Core library
 # # # # # # # # # # #
 set(lib_core_src
+    Assignment.cpp
     Manager.cpp
     Module.cpp
     Formula.cpp
     StrategyGraph.cpp
     Constraint.cpp
     ConstraintPool.cpp
-	RuntimeSettings.cpp
+    RuntimeSettings.cpp
     ThreadPool.cpp
-	ValidationSettings.cpp
-	CompileInfo.cpp
+    ValidationSettings.cpp
+    CompileInfo.cpp
 )
 
 set(lib_core_headers
+    Assignment.h
     Manager.h
     Module.h
     Condition.h
@@ -43,10 +45,10 @@ set(lib_core_headers
     Common.h
     Constraint.h
     ConstraintPool.h
-	RuntimeSettings.h
+    RuntimeSettings.h
     ThreadPool.h
-	VariableBounds.h
-	ValidationSettings.h
+    VariableBounds.h
+    ValidationSettings.h
     smtrat.h
 )
 
