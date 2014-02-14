@@ -2438,25 +2438,26 @@ namespace smtrat
 //                    }
 //                }
 
+                Rational val = constraint.isZero() ? 0 : constraint.lcoeff();
                 switch ((*linearIt).first->constraint()->relation())
                 {
                     case Relation::EQ: //CR_EQ = 0
-                        satisfied = (constraint.lcoeff() == 0 && !isLeftInfty && !isRightInfty);
+                        satisfied = (val == 0 && !isLeftInfty && !isRightInfty);
                         break;
                     case Relation::NEQ: //CR_NEQ = 1
-                        satisfied = (constraint.lcoeff() != 0 || isLeftInfty || isRightInfty);
+                        satisfied = (val != 0 || isLeftInfty || isRightInfty);
                         break;
                     case Relation::LESS: //CR_LESS = 2
-                        satisfied = (constraint.lcoeff() < 0 || isLeftInfty);
+                        satisfied = (val < 0 || isLeftInfty);
                         break;
                     case Relation::GREATER: //CR_GREATER = 3
-                        satisfied = (constraint.lcoeff() > 0 || isRightInfty);
+                        satisfied = (val > 0 || isRightInfty);
                         break;
                     case Relation::LEQ: //CR_LEQ = 4
-                        satisfied = (constraint.lcoeff() <= 0 || isLeftInfty);
+                        satisfied = (val <= 0 || isLeftInfty);
                         break;
                     case Relation::GEQ: //CR_GEQ = 5
-                        satisfied = (constraint.lcoeff() >= 0 || isRightInfty);
+                        satisfied = (val >= 0 || isRightInfty);
                         break;
                 }
                 #ifdef ICPMODULE_DEBUG
