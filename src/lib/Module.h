@@ -289,6 +289,7 @@ namespace smtrat
             static void addAssumptionToCheck( const std::set<const Formula*>&, bool, const std::string& );
             static void addAssumptionToCheck( const std::set<const Constraint*>&, bool, const std::string& );
             static void storeAssumptionsToCheck( const Manager& );
+            bool hasValidInfeasibleSubset() const;
             void checkInfSubsetForMinimality( vec_set_const_pFormula::const_iterator, const std::string& = "smaller_muses", unsigned = 1 ) const;
 
         protected:
