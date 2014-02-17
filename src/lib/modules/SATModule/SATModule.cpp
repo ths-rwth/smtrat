@@ -1269,16 +1269,16 @@ SetWatches:
                                     #ifdef SAT_MODULE_OUTPUT_PROGRESS
                                     mSatisfiedClauses = 0;
                                     #endif
-                                    bool noconfl = conflictingVars( clauses, rationalAssignment, conflVars, true );
-                                    noconfl &= conflictingVars( learnts, rationalAssignment, conflVars, true );
+//                                    bool noconfl = conflictingVars( clauses, rationalAssignment, conflVars, true );
+//                                    noconfl &= conflictingVars( learnts, rationalAssignment, conflVars, true );
                                     #ifdef SAT_MODULE_OUTPUT_PROGRESS
                                     cout << "\r" << "Satisfied clauses: " << ((mSatisfiedClauses/(clauses.size()+learnts.size()))*100) << "%";
                                     cout.flush();
                                     #endif
-                                    if( noconfl )
-                                    {
-                                        return l_True;
-                                    }
+//                                    if( noconfl )
+//                                    {
+//                                        return l_True;
+//                                    }
 //                                    order_heap.build( conflVars );
                                     break;
                                 }

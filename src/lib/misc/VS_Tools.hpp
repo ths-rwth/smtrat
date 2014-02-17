@@ -32,7 +32,7 @@
 #include "../Formula.h"
 
 const unsigned MAX_PRODUCT_SPLIT_NUMBER = 64;
-const unsigned MAX_NUM_OF_COMBINATION_RESULT = 1000;
+const unsigned MAX_NUM_OF_COMBINATION_RESULT = 1025;
 
 namespace vs
 {

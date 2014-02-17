@@ -523,7 +523,7 @@ namespace smtrat
                                 const vs::Condition* currentCondition;
                                 if( !currentState->bestCondition( currentCondition, mAllVariables.size(), Settings::prefer_equation_over_all ) )
                                 {
-                                    if( currentState->tooHighDegreeConditions().empty() )
+                                    if( !(*currentState).cannotBeSolved() && currentState->tooHighDegreeConditions().empty() )
                                     {
                                         // It is a state, where no more elimination could be applied to the conditions.
                                         if( Settings::int_constraints_allowed && !Settings::branch_and_bound && currentState->index().getType() == carl::VariableType::VT_INT )
@@ -694,9 +694,9 @@ namespace smtrat
                                         }
                                         else
                                         {
-//                                            return foundAnswer( Unknown );
-                                            currentState->rCannotBeSolved() = true;
-                                            addStateToRanking( currentState );
+                                            return foundAnswer( Unknown );
+//                                            currentState->rCannotBeSolved() = true;
+//                                            addStateToRanking( currentState );
                                         }
                                     }
                                 }
