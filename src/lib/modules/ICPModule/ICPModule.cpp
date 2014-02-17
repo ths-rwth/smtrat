@@ -108,7 +108,7 @@ namespace smtrat
         cout << "[ICP] inform: " << (*_constraint) << " (id: " << _constraint->id() << ")" << endl;
         #endif  
         // do not inform about boundary constraints - this leads to confusion
-        if ( _constraint->variables().size() > 1 )
+        if ( !_constraint->isBound() )
             Module::inform(_constraint);
 
         if( _constraint->variables().size() > 0 )
@@ -207,7 +207,8 @@ namespace smtrat
         cout << "[ICP] Assertion: " << *constr << endl;
         #endif
         assert( (*_formula)->getType() == CONSTRAINT );
-        if ( (*_formula)->constraint().variables().size() > 1 || (mNonlinearConstraints.find((*_formula)->pConstraint()) != mNonlinearConstraints.end()) )
+        //if ( (*_formula)->constraint().variables().size() > 1 || (mNonlinearConstraints.find((*_formula)->pConstraint()) != mNonlinearConstraints.end()) )
+        if( !(*_formula)->constraint().isBound() )
         {
             addSubformulaToPassedFormula( new Formula( constr ), *_formula );
             Module::assertSubformula( _formula );
@@ -2173,48 +2174,6 @@ namespace smtrat
         }
         return result;
     }
-    
-
-    void ICPModule::addFormulaFromInterval(const carl::DoubleInterval* _interval, const carl::Variable& _variable)
-    {
-        Polynomial constraint = Polynomial(_variable) - Polynomial(carl::rationalize<Rational>(_interval->left()));
-        #ifdef ICPMODULE_DEBUG
-        #ifndef ICPMODULE_REDUCED_DEBUG
-        cout << "LeftBound Constraint: " << constraint << endl;
-        #endif
-        #endif
-        switch (_interval->leftType())
-        {
-            case (carl::BoundType::WEAK):
-                addSubformulaToPassedFormula( new smtrat::Formula( smtrat::Formula::newConstraint( constraint, Relation::GEQ ) ), vec_set_const_pFormula() );
-                break;
-            case (carl::BoundType::STRICT):
-                addSubformulaToPassedFormula( new smtrat::Formula( smtrat::Formula::newConstraint( constraint, Relation::GREATER ) ), vec_set_const_pFormula() );
-                break;
-            case (carl::BoundType::INFTY):
-                // do nothing
-                break;
-        }
-
-        constraint = Polynomial(_variable) - Polynomial(carl::rationalize<Rational>(_interval->right()));
-        #ifdef ICPMODULE_DEBUG
-        #ifndef ICPMODULE_REDUCED_DEBUG        
-        cout << "RightBound Constraint: " << constraint << endl;
-        #endif
-        #endif
-        switch (_interval->rightType())
-        {
-            case (carl::BoundType::WEAK):
-                addSubformulaToPassedFormula( new smtrat::Formula( smtrat::Formula::newConstraint( constraint, Relation::LEQ ) ), vec_set_const_pFormula() );
-                break;
-            case (carl::BoundType::STRICT):
-                addSubformulaToPassedFormula( new smtrat::Formula( smtrat::Formula::newConstraint( constraint, Relation::LESS ) ), vec_set_const_pFormula() );
-                break;
-            case (carl::BoundType::INFTY):
-                // do nothing
-                break;
-        }
-    }
 
     
     std::pair<bool,bool> ICPModule::validateSolution()
@@ -2932,7 +2891,7 @@ namespace smtrat
 
                         if ( (*icpVar).second->isExternalBoundsSet() )
                             removeSubformulaFromPassedFormula((*icpVar).second->externalLeftBound());
-                        
+                        addConstraintToInform(leftTmp);
                         addSubformulaToPassedFormula( leftBound, origins );
                         (*icpVar).second->setExternalLeftBound(mpPassedFormula->last());
                         newAdded = true;
@@ -2972,6 +2931,7 @@ namespace smtrat
                         if ( (*icpVar).second->isExternalBoundsSet() )
                             removeSubformulaFromPassedFormula((*icpVar).second->externalRightBound());
                         
+                        addConstraintToInform(rightTmp);
                         addSubformulaToPassedFormula( rightBound , origins);
                         (*icpVar).second->setExternalRightBound(mpPassedFormula->last());
                         newAdded = true;
@@ -2992,53 +2952,56 @@ namespace smtrat
         std::set<const Formula*> reasons;
         for( auto variableIt = _reasons.begin(); variableIt != _reasons.end(); ++variableIt )
         {
-            std::set<const Formula*> definingOrigins = (*variableIt)->lraVar()->getDefiningOrigins();
-            for( auto formulaIt = definingOrigins.begin(); formulaIt != definingOrigins.end(); ++formulaIt )
+            if ((*variableIt)->lraVar() != NULL)
             {
-//                cout << "Defining origin: " << **formulaIt << " FOR " << *(*variableIt) << endl;
-                bool hasAdditionalVariables = false;
-                Variables realValuedVars;
-                mpReceivedFormula->realValuedVars(realValuedVars);
-                for( auto varIt = realValuedVars.begin(); varIt != realValuedVars.end(); ++varIt )
+                std::set<const Formula*> definingOrigins = (*variableIt)->lraVar()->getDefiningOrigins();
+                for( auto formulaIt = definingOrigins.begin(); formulaIt != definingOrigins.end(); ++formulaIt )
                 {
-                    if(*varIt != (*variableIt)->var() && (*formulaIt)->constraint().hasVariable(*varIt))
+    //                cout << "Defining origin: " << **formulaIt << " FOR " << *(*variableIt) << endl;
+                    bool hasAdditionalVariables = false;
+                    Variables realValuedVars;
+                    mpReceivedFormula->realValuedVars(realValuedVars);
+                    for( auto varIt = realValuedVars.begin(); varIt != realValuedVars.end(); ++varIt )
                     {
-                        hasAdditionalVariables = true;
-                        break;
-                    }
-                }
-                if( hasAdditionalVariables)
-                {
-//                    cout << "Addidional variables." << endl;
-                    for( auto receivedFormulaIt = mpReceivedFormula->begin(); receivedFormulaIt != mpReceivedFormula->end(); ++receivedFormulaIt )
-                    {
-                        if( (*receivedFormulaIt)->pConstraint()->hasVariable((*variableIt)->var()) && (*receivedFormulaIt)->pConstraint()->isBound() )
+                        if(*varIt != (*variableIt)->var() && (*formulaIt)->constraint().hasVariable(*varIt))
                         {
-                            reasons.insert(*receivedFormulaIt);
-//                            cout << "Also add: " << **receivedFormulaIt << endl;
-                        }
-                    }
-                }
-                else
-                {
-//                    cout << "No additional variables." << endl;
-                    for( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt )
-                    {
-                        if( (*replacementIt).first == (*formulaIt)->pConstraint() )
-                        {
-                            for( auto receivedFormulaIt = mpReceivedFormula->begin(); receivedFormulaIt != mpReceivedFormula->end(); ++receivedFormulaIt )
-                            {
-                                if( (*receivedFormulaIt)->pConstraint() == (*replacementIt).second )
-                                {
-                                    reasons.insert(*receivedFormulaIt);
-                                    break;
-                                }
-                            }
+                            hasAdditionalVariables = true;
                             break;
                         }
                     }
-                } // has no additional variables
-            }// for all definingOrigins
+                    if( hasAdditionalVariables)
+                    {
+    //                    cout << "Addidional variables." << endl;
+                        for( auto receivedFormulaIt = mpReceivedFormula->begin(); receivedFormulaIt != mpReceivedFormula->end(); ++receivedFormulaIt )
+                        {
+                            if( (*receivedFormulaIt)->pConstraint()->hasVariable((*variableIt)->var()) && (*receivedFormulaIt)->pConstraint()->isBound() )
+                            {
+                                reasons.insert(*receivedFormulaIt);
+    //                            cout << "Also add: " << **receivedFormulaIt << endl;
+                            }
+                        }
+                    }
+                    else
+                    {
+    //                    cout << "No additional variables." << endl;
+                        for( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt )
+                        {
+                            if( (*replacementIt).first == (*formulaIt)->pConstraint() )
+                            {
+                                for( auto receivedFormulaIt = mpReceivedFormula->begin(); receivedFormulaIt != mpReceivedFormula->end(); ++receivedFormulaIt )
+                                {
+                                    if( (*receivedFormulaIt)->pConstraint() == (*replacementIt).second )
+                                    {
+                                        reasons.insert(*receivedFormulaIt);
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    } // has no additional variables
+                }// for all definingOrigins
+            }
         }
         return reasons;
     }

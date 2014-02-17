@@ -260,14 +260,6 @@ namespace smtrat
              * @return if a split has happened and in which dimension.
              */
             std::pair<bool,carl::Variable> checkAndPerformSplit( const double& _targetDiameter );
-            
-            /**
-             * Creates constraints from the given interval and adds them to the
-             * passedFormula.
-             * @param _interval given interval
-             * @param _variable variable corresponding to the given interval
-             */
-            void addFormulaFromInterval( const carl::DoubleInterval* _interval, const carl::Variable& _variable );
 
             /**
              * Validates the actual intervals against the linear feasible region returned

@@ -133,8 +133,6 @@ namespace icp
 
             const lra::Variable<lra::Numeric>* lraVar() const
             {
-//                cout << mVar << endl;
-                assert(mLraVar != NULL);
                 return mLraVar;
             }
 
