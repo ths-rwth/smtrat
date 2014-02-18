@@ -35,8 +35,9 @@
 using namespace std;
 using namespace carl;
 
-//#define ICPMODULE_DEBUG
+#define ICPMODULE_DEBUG
 //#define ICPMODULE_REDUCED_DEBUG
+//#define ICP_CONSIDER_WIDTH
 
 
 namespace smtrat
@@ -710,8 +711,8 @@ namespace smtrat
         std::pair<bool,carl::Variable> didSplit = std::make_pair(false, carl::Variable::NO_VARIABLE);
 //        didSplit.first = false;
         vec_set_const_pFormula violatedConstraints = vec_set_const_pFormula();
-        double targetDiameter = 1;
-        double contractionThreshold = 0.01;
+        double targetDiameter = 0.01;
+        double contractionThreshold = 0.001;
 
         // Debug Outputs of linear and nonlinear Tables
         #ifdef ICPMODULE_DEBUG
@@ -952,7 +953,11 @@ namespace smtrat
                         addCandidateToRelevant(candidate);
                     
                     assert(mIntervals.find(candidate->derivationVar()) != mIntervals.end() );
+#ifdef ICP_CONSIDER_WIDTH
                     if ( (relativeContraction < contractionThreshold && !splitOccurred)  || mIntervals.at(candidate->derivationVar()).diameter() <= targetDiameter )
+#else
+                    if ( (relativeContraction < contractionThreshold && !splitOccurred) )
+#endif
                         removeCandidateFromRelevant(candidate);
                     else if ( relativeContraction >= contractionThreshold )
                     {
@@ -971,7 +976,11 @@ namespace smtrat
                                 if ( (*relevantCandidateIt).second == (*candidateIt)->id() )
                                     toAdd = false;
                             }
+#ifdef ICP_CONSIDER_WIDTH
                             if ( toAdd && (*candidateIt)->isActive() && mIntervals.at((*candidateIt)->derivationVar()).diameter() > targetDiameter )
+#else
+                            if( toAdd && (*candidateIt)->isActive() )
+#endif
                                 addCandidateToRelevant(*candidateIt);
                         }
                         #ifdef ICP_BOXLOG
@@ -1564,7 +1573,11 @@ namespace smtrat
             // check that assertions have been processed properly
             assert( (*nonlinearIt).second == (*nonlinearIt).first->origin().size() );
             assert( mIntervals.find((*nonlinearIt).first->derivationVar()) != mIntervals.end() );
+#ifdef ICP_CONSIDER_WIDTH
             if ( mIntervals.at((*nonlinearIt).first->derivationVar()).diameter() > _targetDiameter || mIntervals.at((*nonlinearIt).first->derivationVar()).diameter() == -1 )
+#else
+            if ( mIntervals.at((*nonlinearIt).first->derivationVar()).diameter() > 0 || mIntervals.at((*nonlinearIt).first->derivationVar()).diameter() == -1 )
+#endif
             {
                 // only add if not already existing
                 if ( !findCandidateInRelevant((*nonlinearIt).first) )
@@ -1596,7 +1609,11 @@ namespace smtrat
             assert( (*linearIt).second == (*linearIt).first->origin().size() );
             assert( mIntervals.find((*linearIt).first->derivationVar()) != mIntervals.end() );
             
+#ifdef ICP_CONSIDER_WIDTH
             if ( (*linearIt).first->isActive() && ( mIntervals.at((*linearIt).first->derivationVar()).diameter() > _targetDiameter || mIntervals.at((*linearIt).first->derivationVar()).diameter() == -1 ) )
+#else
+            if ( (*linearIt).first->isActive() && ( mIntervals.at((*linearIt).first->derivationVar()).diameter() > 0 || mIntervals.at((*linearIt).first->derivationVar()).diameter() == -1 ) )
+#endif
             {
                 if( !findCandidateInRelevant((*linearIt).first) )
                 {
