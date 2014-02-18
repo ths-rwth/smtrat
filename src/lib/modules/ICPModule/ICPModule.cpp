@@ -988,6 +988,7 @@ namespace smtrat
                         #endif
                     }
                     
+#ifdef ICP_CONSIDER_WIDTH
                     bool originalAllFinished = true;
                     Variables originalRealVariables;
                     mpReceivedFormula->realValuedVars(originalRealVariables);
@@ -1007,6 +1008,7 @@ namespace smtrat
                         mIcpRelevantCandidates.clear();
                         break;
                     }
+#endif
                 } //while ( !mIcpRelevantCandidates.empty() && !splitOccurred)
                 // do not verify if the box is already invalid
                 if (!invalidBox)
