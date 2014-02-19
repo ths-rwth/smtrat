@@ -35,7 +35,7 @@
 using namespace std;
 using namespace carl;
 
-//#define ICPMODULE_DEBUG
+#define ICPMODULE_DEBUG
 //#define ICPMODULE_REDUCED_DEBUG
 //#define ICP_CONSIDER_WIDTH
 
@@ -67,7 +67,7 @@ namespace smtrat
         mCenterConstraints(),
         mCreatedDeductions(),
         mLastCandidate(NULL),
-        #ifdef RAISESPLITTOSATSOLVER
+        #ifndef BOXMANAGEMENT
         mBoxStorage(),
         #endif
         mIsIcpInitialized(false),
@@ -844,7 +844,7 @@ namespace smtrat
 
             while ( icpFeasible )
             {
-                #ifdef RAISESPLITTOSATSOLVER
+                #ifndef BOXMANAGEMENT
                 while(!mBoxStorage.empty())
                     mBoxStorage.pop();
                 
@@ -1067,7 +1067,7 @@ namespace smtrat
                     cout << "Size subtree: " << mHistoryActual->sizeSubtree() << " \t Size total: " << mHistoryRoot->sizeSubtree() << endl;
                     #endif
                     #endif
-                    #ifdef RAISESPLITTOSATSOLVER
+                    #ifndef BOXMANAGEMENT
                     #ifdef ICPMODULE_DEBUG
                     cout << "Return unknown, raise deductions for split." << endl;
                     #endif
@@ -1129,8 +1129,7 @@ namespace smtrat
                         return foundAnswer(False);
                     }
                     #else
-                    // TODO: Create deductions
-
+                    mInfeasibleSubsets.push_back(createPremiseDeductions());
                     return Unknown;
                     #endif
                 }
@@ -1253,7 +1252,7 @@ namespace smtrat
                                     return foundAnswer(False);
                                 }
                                 #else
-                                // TODO: Create deductions
+                                mInfeasibleSubsets.push_back(createPremiseDeductions());
                                 return foundAnswer(Unknown);
                                 #endif
                             }
@@ -1307,7 +1306,7 @@ namespace smtrat
                             return foundAnswer(False);
                         }
                         #else
-                        // TODO: Create deductions
+                        mInfeasibleSubsets.push_back(createPremiseDeductions());
                         return foundAnswer(Unknown);
                         #endif
                     }
@@ -1366,7 +1365,7 @@ namespace smtrat
                     return foundAnswer(False);
                 }
                 #else
-                // TODO: Create deductions
+                mInfeasibleSubsets.push_back(createPremiseDeductions());
                 return foundAnswer(Unknown);
                 #endif
             }
@@ -1462,55 +1461,6 @@ namespace smtrat
                     linearizedConstraint += (*monomialIt)->coeff() * (*mLinearizations.find( Polynomial(*(*monomialIt)->monomial() ))).second;
                 }
             }
-            
-//            if( is_exactly_a<add>(constraint->lhs()) )
-//            {
-//                for( auto summand = constraint->lhs().begin(); summand != constraint->lhs().end(); ++summand )
-//                {
-//                    if( is_exactly_a<mul>(*summand) )
-//                    {
-//                        numeric coefficient = 1;
-//                        if( is_exactly_a<numeric>( *(--(*summand).end()) ) )
-//                            coefficient = ex_to<numeric>( *(--(*summand).end()) );
-//
-//
-//                        if(mLinearizations.find(*summand) != mLinearizations.end() )
-//                        {
-//                            Polynomial monomialReplacement = (*mLinearizations.find(*summand)).second * coefficient;
-//                            linearizedConstraint += monomialReplacement;
-//                        }
-//                        else
-//                        {
-//                            linearizedConstraint += *summand;
-//                        }
-//                    }
-//                    else if ( is_exactly_a<numeric>(*summand) )
-//                        linearizedConstraint += *summand;
-//                    else
-//                    {
-//                        if(mLinearizations.find(*summand) != mLinearizations.end() )
-//                            linearizedConstraint += (*mLinearizations.find(*summand)).second;
-//                        else
-//                        {
-//                            linearizedConstraint += *summand;
-//                        }
-//                    }
-//                }
-//            }
-//            else if( is_exactly_a<mul>(constraint->lhs()) )
-//            {
-//                linearizedConstraint = 1;
-//                for( auto factor = constraint->lhs().begin(); factor != constraint->lhs().end(); ++factor)
-//                {
-//                    if( is_exactly_a<numeric>(*factor) )
-//                    {
-//                        linearizedConstraint *= *factor;
-//                        break;
-//                    }
-//                }
-//                assert(mLinearizations.find(constraint->lhs()) != mLinearizations.end());
-//                linearizedConstraint *= (*mLinearizations.find(constraint->lhs())).second;
-//            }
         }
         assert(_tempMonomes.empty());
         return linearizedConstraint;
@@ -1989,6 +1939,27 @@ namespace smtrat
     }
     
 
+    std::set<const Formula*> ICPModule::createPremiseDeductions()
+    {
+        std::set<const Formula*> contraction;
+        // collect applied contractions
+        std::set<const Formula*> contractions = mHistoryActual->appliedConstraints();
+        for( auto constraintIt = contractions.begin(); constraintIt != contractions.end(); ++constraintIt )
+        {
+            contraction.insert(contraction.end(), *constraintIt);
+        }
+        // collect original box
+        assert( mBoxStorage.size() == 1 );
+        std::set<const Formula*> box = mBoxStorage.front();
+        for( auto formulaIt = box.begin(); formulaIt != box.end(); ++formulaIt )
+        {
+            contraction.insert(contraction.end(), *formulaIt );
+        }
+        mBoxStorage.pop();
+        return contraction;
+    }
+    
+    
     std::pair<bool,carl::Variable> ICPModule::checkAndPerformSplit( const double& _targetDiameter )
     {
         std::pair<bool,carl::Variable> result = std::make_pair(false, carl::Variable::NO_VARIABLE);
@@ -2066,31 +2037,16 @@ namespace smtrat
         }
         if ( found )
         {
-            #ifdef RAISESPLITTOSATSOLVER
+            #ifndef BOXMANAGEMENT
             // create prequesites: ((oldBox AND CCs) -> newBox) in CNF: (oldBox OR CCs) OR newBox 
-            std::set<const Formula*> splitPremise;
+            std::set<const Formula*> splitPremise = createPremiseDeductions();
             Formula* contraction = new Formula( OR );
-            // collect applied contractions
-            std::set<const Formula*> contractions = mHistoryActual->appliedConstraints();
-            for( auto constraintIt = contractions.begin(); constraintIt != contractions.end(); ++constraintIt )
+            for( auto formulaIt = splitPremise.begin(); formulaIt != splitPremise.end(); ++formulaIt )
             {
                 Formula* negation = new Formula( NOT );
-                Formula* constraint = new Formula( (*constraintIt)->pConstraint() );
-                splitPremise.insert( *constraintIt );
-                negation->addSubformula( constraint );
-                contraction->addSubformula( negation );
-            }
-            // collect original box
-            assert( mBoxStorage.size() == 1 );
-            std::set<const Formula*> box = mBoxStorage.front();
-            mBoxStorage.pop();
-            for( auto formulaIt = box.begin(); formulaIt != box.end(); ++formulaIt )
-            {
-                Formula* negation = new Formula( NOT );
-                Formula* constraint = new Formula( **formulaIt );
-                splitPremise.insert( *formulaIt );
-                negation->addSubformula( constraint );
-                contraction->addSubformula( negation );
+                Formula* deductionCopy = new Formula( **formulaIt );
+                negation->addSubformula(deductionCopy);
+                contraction->addSubformula(negation);
             }
             
             // construct new box
@@ -2131,13 +2087,12 @@ namespace smtrat
             cout << "Size mIntervals: " << mIntervals.size() << endl;
             #endif
             // set intervals and update historytree
-            GiNaCRA::DoubleInterval tmp = mIntervals.at(variable);
-
-            GiNaCRA::DoubleInterval tmpRightInt = tmp;
+            DoubleInterval tmp = mIntervals.at(variable);
+            DoubleInterval tmpRightInt = tmp;
             tmpRightInt.cutUntil(tmp.midpoint());
-            tmpRightInt.setLeftType(GiNaCRA::DoubleInterval::WEAK_BOUND);
+            tmpRightInt.setLeftType(BoundType::WEAK);
             mIntervals[variable] = tmpRightInt;
-            GiNaCRA::evaldoubleintervalmap tmpRight = GiNaCRA::evaldoubleintervalmap();
+            EvalDoubleIntervalMap tmpRight;
 
             for ( auto constraintIt = mIntervals.begin(); constraintIt != mIntervals.end(); ++constraintIt )
                 tmpRight.insert((*constraintIt));
@@ -2148,11 +2103,11 @@ namespace smtrat
             mHistoryActual->addRight(newRightChild);
 
             // left first!
-            GiNaCRA::DoubleInterval tmpLeftInt = tmp;
+            DoubleInterval tmpLeftInt = tmp;
             tmpLeftInt.cutFrom(tmp.midpoint());
-            tmpLeftInt.setRightType(GiNaCRA::DoubleInterval::STRICT_BOUND);
+            tmpLeftInt.setRightType(BoundType::STRICT);
             mIntervals[variable] = tmpLeftInt;
-            GiNaCRA::evaldoubleintervalmap tmpLeft = GiNaCRA::evaldoubleintervalmap();
+            EvalDoubleIntervalMap tmpLeft;
 
             for ( auto constraintIt = mIntervals.begin(); constraintIt != mIntervals.end(); ++constraintIt )
                 tmpLeft.insert((*constraintIt));

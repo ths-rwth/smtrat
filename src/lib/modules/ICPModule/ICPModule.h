@@ -29,8 +29,7 @@
 #pragma once
 
 //#define ICP_BOXLOG
-#define BOXMANAGEMENT
-#define RAISESPLITTOSATSOLVER
+//#define BOXMANAGEMENT
 #ifdef SMTRAT_DEVOPTION_Validation
 #define SMTRAT_DEVOPTION_VALIDATION_ICP
 #endif
@@ -135,7 +134,7 @@ namespace smtrat
             std::set<const Constraint*>                                  mCenterConstraints; // keeps actual centerConstaints for deletion
             std::set<Formula*>                                                                  mCreatedDeductions; // keeps pointers to the created deductions for deletion
             icp::ContractionCandidate*                                                          mLastCandidate; // the last applied candidate
-            #ifdef RAISESPLITTOSATSOLVER
+            #ifndef BOXMANAGEMENT
             std::queue<std::set<const Formula*> >                                               mBoxStorage; // keeps the box before contraction
             #endif
             bool                                                                                mIsIcpInitialized; // initialized ICPModule?
@@ -249,10 +248,8 @@ namespace smtrat
              */
             double calculateSplittingImpact ( const carl::Variable& _var, icp::ContractionCandidate& _candidate ) const;
             
-            Formula* createPremiseDeduction();
-            
-            std::set<Formula*> createContractionDeduction();
-            
+            std::set<const Formula*> createPremiseDeductions();
+                        
             /**
              * Checks if there is a need for a split and manages the splitting and branching in the
              * historyTree.
