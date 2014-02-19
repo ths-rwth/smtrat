@@ -233,6 +233,10 @@ namespace smtrat
              */
             bool contraction( icp::ContractionCandidate* _selection, double& _relativeContraction );
             
+            EvalRationalMap createModel() const;
+            
+            void updateModel() const;
+            
             /**
              * Calls the actual contraction on a separate map to check, whether contraction is possible. Returns the node, where insertion makes sense.
              * @param _selection

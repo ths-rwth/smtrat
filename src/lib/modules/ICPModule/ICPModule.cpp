@@ -1023,6 +1023,15 @@ namespace smtrat
                         icpLog << "invalid Post Contraction; \n";
                     }
                     #endif
+                    // do a quick test with one point.
+                    if( !invalidBox )
+                    {
+                        unsigned result = mpReceivedFormula->satisfiedBy(createModel());
+                        if ( result == 1 )
+                        {
+                            return foundAnswer(True);
+                        }
+                    }
                 }
                 #ifdef ICP_BOXLOG
                 else
@@ -1180,7 +1189,7 @@ namespace smtrat
                                         std::map<const carl::Variable, icp::IcpVariable*>::iterator icpVar = mVariables.begin();
                                         for ( ; icpVar != mVariables.end(); ++icpVar )
                                         {
-                                            if( (*icpVar).second->isOriginal() && (*icpVar).second->isExternalBoundsSet() )
+                                            if( (*icpVar).second->isOriginal() && (*icpVar).second->isExternalBoundsSet() != icp::Updated::NONE )
                                             {
                                                 assert( !(*icpVar).second->isExternalUpdated() );
                                                 if ( (*subformula) == (*(*icpVar).second->externalLeftBound()) || (*subformula) == (*(*icpVar).second->externalRightBound()) )
@@ -1816,6 +1825,72 @@ namespace smtrat
             #endif
         }
         return splitOccurred;
+    }
+    
+    
+    EvalRationalMap ICPModule::createModel() const
+    {
+        EvalRationalMap assignments;
+        for( auto varIt = mVariables.begin(); varIt != mVariables.end(); ++varIt )
+        {
+            if( (*varIt)->isOriginal() )
+            {
+                Rational value;
+                switch( (*varIt)->isInternalBoundsUpdated() )
+                {
+                    case icp::Updated::BOTH:
+                        value = carl::rationalize<Rational>( mIntervals.at((*varIt)->var()).midpoint() );
+                        break;
+                    case icp::Updated::LEFT:
+                        value = carl::rationalize<Rational>( mIntervals.at((*varIt)->var()).right() );
+                        break;
+                    case icp::Updated::RIGHT:
+                        value = carl::rationalize<Rational>( mIntervals.at((*varIt)->var()).left() );
+                        break;
+                    case icp::Updated::NONE:
+                        value = carl::rationalize<Rational>( mIntervals.at((*varIt)->var()).left();
+                        break;
+                    default:
+                        break;
+                }
+                assignments.insert( std::make_pair((*varIt)->var(), value) );
+            }
+        }
+        return assignments;
+    }
+    
+    
+    void ICPModule::updateModel() const
+    {
+        clearModel();
+        if( solverState() == True )
+        {
+            EvalRationalMap rationalAssignment;
+            if( mLRA.solverState() == True )
+            {
+                rationalAssigment = mLRA.getRationalModel();
+                for( auto assignmentIt = rationalAssignment.begin(); assignmentIt != rationalAssignment.end(); ++assignmentIt )
+                {
+                    auto varIt = mVariables.find((*assignmentIt).first);
+                    if(  varIt != mVariables.end() && (*varIt).second->isOriginal() )
+                    {
+                        Polynomial value = Polynomial( assignmentIt->second );
+                        Assignment assignment = vs::SqrtEx(value);
+                        mModel.insert(mModel.end(), std::make_pair(assignmentIt->first, assignment));
+                    }
+                }
+            }
+            else
+            {
+                rationalAssignment = createModel();
+                for( auto ratAss = rationalAssignment.begin(); ratAss != rationalAssignment.end(); ++ratAss )
+                {
+                    Polynomial value = Polynomial( ratAss->second );
+                    Assignment assignment = vs::SqrtEx(value);
+                    mModel.insert(mModel.end(), std::make_pair(ratAss->first, assignment));
+                } 
+            }
+        }
     }
     
     
@@ -2808,90 +2883,86 @@ namespace smtrat
             assert(icpVar != mVariables.end());
             if ( icpVar != mVariables.end() )
             {
-                if( !(*icpVar).second->isExternalBoundsSet() || (*icpVar).second->isExternalUpdated())
+                if( (*icpVar).second->isExternalBoundsSet() == icp::Updated::BOTH || (*icpVar).second->isExternalUpdated() != icp::Updated::NONE )
                 {
                     // generate both bounds, left first
-                    assert( mIntervals.find(tmpSymbol) != mIntervals.end() );
-                    Rational bound = carl::rationalize<Rational>(mIntervals.at(tmpSymbol).left() );
-                    Polynomial leftEx = Polynomial(tmpSymbol) - Polynomial(bound);
+                    if( (*icpVar).second->isExternalBoundsSet() == icp::Updated::NONE || 
+                        (*icpVar).second->isExternalBoundsSet() == icp::Updated::RIGHT ||
+                        (*icpVar).second->isExternalUpdated() == icp::Updated::LEFT ||
+                        (*icpVar).second->isExternalUpdated() == icp::Updated::BOTH )
+                    {
+                        assert( mIntervals.find(tmpSymbol) != mIntervals.end() );
+                        Rational bound = carl::rationalize<Rational>(mIntervals.at(tmpSymbol).left() );
+                        Polynomial leftEx = Polynomial(tmpSymbol) - Polynomial(bound);
 
-//                    Polynomial test = Polynomial( tmpSymbol - (*variablesIt).second ).expand();
-//                    cout << "Test: " << test << endl;
+                        const Constraint* leftTmp;
+                        switch (mIntervals.at(tmpSymbol).leftType())
+                        {
+                            case carl::BoundType::STRICT:
+                                leftTmp = Formula::newConstraint(leftEx, Relation::GREATER);
+                                break;
+                            case carl::BoundType::WEAK:
+                                leftTmp = Formula::newConstraint(leftEx, Relation::GEQ);
+
+                                break;
+                            default:
+                                leftTmp = NULL;
+                        }
+                        if ( leftTmp != NULL )
+                        {
+                            Formula* leftBound = new Formula(leftTmp);
+                            vec_set_const_pFormula origins = vec_set_const_pFormula();
+                            std::set<const Formula*> emptyTmpSet = std::set<const Formula*>();
+                            origins.insert(origins.begin(), emptyTmpSet);
+
+                            if ( (*icpVar).second->isExternalBoundsSet() == icp::Updated::LEFT )
+                                removeSubformulaFromPassedFormula((*icpVar).second->externalLeftBound());
+                            addConstraintToInform(leftTmp);
+                            addSubformulaToPassedFormula( leftBound, origins );
+                            (*icpVar).second->setExternalLeftBound(mpPassedFormula->last());
+                            newAdded = true;
+                        }
+                    }
                     
-                    const Constraint* leftTmp;
-                    switch (mIntervals.at(tmpSymbol).leftType())
+                    if( (*icpVar).second->isExternalBoundsSet() == icp::Updated::NONE || 
+                        (*icpVar).second->isExternalBoundsSet() == icp::Updated::LEFT || 
+                        (*icpVar).second->isExternalUpdated() == icp::Updated::RIGHT ||
+                        (*icpVar).second->isExternalUpdated() == icp::Updated::BOTH )
                     {
-                        case carl::BoundType::STRICT:
-                            leftTmp = Formula::newConstraint(leftEx, Relation::GREATER);
-//                            leftTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_GREATER, bound);
-//                            cout << "IsStrictBound: " << *leftTmp << endl;
-//                            leftTmp->printProperties();
-                            break;
-                        case carl::BoundType::WEAK:
-                            leftTmp = Formula::newConstraint(leftEx, Relation::GEQ);
-//                            leftTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_GEQ, bound);
-//                            cout << "IsWeakBound: " << *leftTmp << endl;
-//                            leftTmp->printProperties();
-                            
-                            break;
-                        default:
-                            leftTmp = NULL;
+                        // right:
+                        Rational bound = carl::rationalize<Rational>(mIntervals.at(tmpSymbol).right());
+                        Polynomial rightEx = Polynomial(tmpSymbol) - Polynomial(bound);
+
+                        const Constraint* rightTmp;
+                        switch (mIntervals.at(tmpSymbol).rightType())
+                        {
+                            case carl::BoundType::STRICT:
+                                rightTmp = Formula::newConstraint(rightEx, Relation::LESS);
+
+                                break;
+                            case carl::BoundType::WEAK:
+                                rightTmp = Formula::newConstraint(rightEx, Relation::LEQ);
+                                break;
+                            default:
+                                rightTmp = NULL;
+                        }
+                        if ( rightTmp != NULL )
+                        {
+
+                            Formula* rightBound = new Formula(rightTmp);
+                            vec_set_const_pFormula origins = vec_set_const_pFormula();
+                            std::set<const Formula*> emptyTmpSet = std::set<const Formula*>();
+                            origins.insert(origins.begin(), emptyTmpSet);
+
+                            if ( (*icpVar).second->isExternalBoundsSet() == icp::Updated::RIGHT )
+                                removeSubformulaFromPassedFormula((*icpVar).second->externalRightBound());
+
+                            addConstraintToInform(rightTmp);
+                            addSubformulaToPassedFormula( rightBound , origins);
+                            (*icpVar).second->setExternalRightBound(mpPassedFormula->last());
+                            newAdded = true;
+                        }
                     }
-                    if ( leftTmp != NULL )
-                    {
-                        Formula* leftBound = new Formula(leftTmp);
-                        vec_set_const_pFormula origins = vec_set_const_pFormula();
-                        std::set<const Formula*> emptyTmpSet = std::set<const Formula*>();
-                        origins.insert(origins.begin(), emptyTmpSet);
-
-                        if ( (*icpVar).second->isExternalBoundsSet() )
-                            removeSubformulaFromPassedFormula((*icpVar).second->externalLeftBound());
-                        addConstraintToInform(leftTmp);
-                        addSubformulaToPassedFormula( leftBound, origins );
-                        (*icpVar).second->setExternalLeftBound(mpPassedFormula->last());
-                        newAdded = true;
-                    }
-
-                    // right:
-                    bound = carl::rationalize<Rational>(mIntervals.at(tmpSymbol).right());
-                    Polynomial rightEx = Polynomial(tmpSymbol) - Polynomial(bound);
-
-                    const Constraint* rightTmp;
-                    switch (mIntervals.at(tmpSymbol).rightType())
-                    {
-                        case carl::BoundType::STRICT:
-                            rightTmp = Formula::newConstraint(rightEx, Relation::LESS);
-//                            rightTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_LESS, bound);
-//                            cout << "IsStrictBound: " << *rightTmp << endl;
-//                            rightTmp->printProperties();
-                            
-                            break;
-                        case carl::BoundType::WEAK:
-                            rightTmp = Formula::newConstraint(rightEx, Relation::LEQ);
-//                            rightTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_LEQ, bound);
-//                            cout << "IsWeakBound: " << *rightTmp << endl;
-//                            rightTmp->printProperties();
-                            break;
-                        default:
-                            rightTmp = NULL;
-                    }
-                    if ( rightTmp != NULL )
-                    {
-
-                        Formula* rightBound = new Formula(rightTmp);
-                        vec_set_const_pFormula origins = vec_set_const_pFormula();
-                        std::set<const Formula*> emptyTmpSet = std::set<const Formula*>();
-                        origins.insert(origins.begin(), emptyTmpSet);
-
-                        if ( (*icpVar).second->isExternalBoundsSet() )
-                            removeSubformulaFromPassedFormula((*icpVar).second->externalRightBound());
-                        
-                        addConstraintToInform(rightTmp);
-                        addSubformulaToPassedFormula( rightBound , origins);
-                        (*icpVar).second->setExternalRightBound(mpPassedFormula->last());
-                        newAdded = true;
-                    }
-                    (*icpVar).second->externalBoundsSet();
                 }
             }
         }
@@ -3008,36 +3079,117 @@ namespace smtrat
                 std::map<const carl::Variable, icp::IcpVariable*>::iterator pos = mVariables.find(tmpSymbol);
                 if ( pos != mVariables.end() )
                 {
-                    if ( !(*pos).second->isInternalBoundsSet() || (*pos).second->isInternalUpdated() )
+                    if ( (*pos).second->isInternalBoundsSet() != icp::Updated::BOTH || (*pos).second->isInternalUpdated() != icp::Updated::NONE )
                     {
                         std::pair<const Constraint*, const Constraint*> boundaries = icp::intervalToConstraint(tmpSymbol, _map.at(tmpSymbol));
-                        if ( boundaries.first != NULL )
+                        switch((*pos).second->isInternalBoundsSet())
                         {
-                            Formula* leftBound = new Formula(boundaries.first);
-                            (*pos).second->setInternalLeftBound(new Formula(boundaries.first));
-                            addedBoundaries.insert(addedBoundaries.end(), leftBound);
-                            #ifdef ICPMODULE_DEBUG
-                            #ifndef ICPMODULE_REDUCED_DEBUG
-                            cout << "Created lower boundary constraint: " << *leftBound << endl;
-                            #endif
-                            #endif
+                            case icp::Updated::LEFT:
+                                if ( boundaries.second != NULL )
+                                {
+                                    Formula* rightBound = new Formula(boundaries.second);
+                                    (*pos).second->setInternalRightBound(new Formula(boundaries.second));
+                                    addedBoundaries.insert(addedBoundaries.end(), rightBound);
+                                    #ifdef ICPMODULE_DEBUG
+                                    #ifndef ICPMODULE_REDUCED_DEBUG
+                                    cout << "Created upper boundary constraint: " << *rightBound << endl;
+                                    #endif
+                                    #endif
+                                }
+                                break;                                  
+                            case icp::Updated::RIGHT:
+                                if ( boundaries.first != NULL)
+                                {
+                                    Formula* leftBound = new Formula(boundaries.first);
+                                    (*pos).second->setInternalLeftBound(new Formula(boundaries.first));
+                                    addedBoundaries.insert(addedBoundaries.end(), leftBound);
+                                    #ifdef ICPMODULE_DEBUG
+                                    #ifndef ICPMODULE_REDUCED_DEBUG
+                                    cout << "Created lower boundary constraint: " << *leftBound << endl;
+                                    #endif
+                                    #endif
+                                }
+                                break;
+                            case icp::Updated::NONE:
+                                if ( boundaries.first != NULL)
+                                {
+                                    Formula* leftBound = new Formula(boundaries.first);
+                                    (*pos).second->setInternalLeftBound(new Formula(boundaries.first));
+                                    addedBoundaries.insert(addedBoundaries.end(), leftBound);
+                                    #ifdef ICPMODULE_DEBUG
+                                    #ifndef ICPMODULE_REDUCED_DEBUG
+                                    cout << "Created lower boundary constraint: " << *leftBound << endl;
+                                    #endif
+                                    #endif
+                                }
+                                if ( boundaries.second != NULL )
+                                {
+                                    Formula* rightBound = new Formula(boundaries.second);
+                                    (*pos).second->setInternalRightBound(new Formula(boundaries.second));
+                                    addedBoundaries.insert(addedBoundaries.end(), rightBound);
+                                    #ifdef ICPMODULE_DEBUG
+                                    #ifndef ICPMODULE_REDUCED_DEBUG
+                                    cout << "Created upper boundary constraint: " << *rightBound << endl;
+                                    #endif
+                                    #endif
+                                }
+                            default: // Both have been set but some have been updated
+                                break;
                         }
-                        if ( boundaries.second != NULL )
+                        // check for updates
+                        switch((*pos).second->isInternalUpdated())
                         {
-                            Formula* rightBound = new Formula(boundaries.second);
-                            (*pos).second->setInternalRightBound(new Formula(boundaries.second));
-                            addedBoundaries.insert(addedBoundaries.end(), rightBound);
-                            #ifdef ICPMODULE_DEBUG
-                            #ifndef ICPMODULE_REDUCED_DEBUG
-                            cout << "Created upper boundary constraint: " << *rightBound << endl;
-                            #endif
-                            #endif
-                        }
-                        if (boundaries.second != NULL && boundaries.first != NULL)
-                        {
-                            std::map<const carl::Variable, icp::IcpVariable*>::iterator icpVar = mVariables.find(tmpSymbol);
-                            assert(icpVar != mVariables.end());
-                            (*icpVar).second->internalBoundsSet();
+                            case icp::Updated::LEFT:
+                                if ( boundaries.first != NULL)
+                                {
+                                    Formula* leftBound = new Formula(boundaries.first);
+                                    (*pos).second->setInternalLeftBound(new Formula(boundaries.first));
+                                    addedBoundaries.insert(addedBoundaries.end(), leftBound);
+                                    #ifdef ICPMODULE_DEBUG
+                                    #ifndef ICPMODULE_REDUCED_DEBUG
+                                    cout << "Created lower boundary constraint: " << *leftBound << endl;
+                                    #endif
+                                    #endif
+                                }
+                                break;                                  
+                            case icp::Updated::RIGHT:
+                                if ( boundaries.second != NULL )
+                                {
+                                    Formula* rightBound = new Formula(boundaries.second);
+                                    (*pos).second->setInternalRightBound(new Formula(boundaries.second));
+                                    addedBoundaries.insert(addedBoundaries.end(), rightBound);
+                                    #ifdef ICPMODULE_DEBUG
+                                    #ifndef ICPMODULE_REDUCED_DEBUG
+                                    cout << "Created upper boundary constraint: " << *rightBound << endl;
+                                    #endif
+                                    #endif
+                                }
+                                break;
+                            case icp::Updated::BOTH:
+                                if ( boundaries.first != NULL)
+                                {
+                                    Formula* leftBound = new Formula(boundaries.first);
+                                    (*pos).second->setInternalLeftBound(new Formula(boundaries.first));
+                                    addedBoundaries.insert(addedBoundaries.end(), leftBound);
+                                    #ifdef ICPMODULE_DEBUG
+                                    #ifndef ICPMODULE_REDUCED_DEBUG
+                                    cout << "Created lower boundary constraint: " << *leftBound << endl;
+                                    #endif
+                                    #endif
+                                }
+                                if ( boundaries.second != NULL )
+                                {
+                                    Formula* rightBound = new Formula(boundaries.second);
+                                    (*pos).second->setInternalRightBound(new Formula(boundaries.second));
+                                    addedBoundaries.insert(addedBoundaries.end(), rightBound);
+                                    #ifdef ICPMODULE_DEBUG
+                                    #ifndef ICPMODULE_REDUCED_DEBUG
+                                    cout << "Created upper boundary constraint: " << *rightBound << endl;
+                                    #endif
+                                    #endif
+                                }
+                            default: // none has been updated
+                                break;
                         }
                     }
                     else
