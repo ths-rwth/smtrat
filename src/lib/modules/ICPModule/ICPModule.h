@@ -188,6 +188,8 @@ namespace smtrat
              */
             void initiateWeights();
             
+            void activateLinearEquations();
+            
             /**
              * Fills the IcpRelevantCandidates with all nonlinear and all active linear ContractionCandidates.
              */

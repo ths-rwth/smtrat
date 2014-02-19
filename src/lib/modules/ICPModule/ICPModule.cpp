@@ -711,7 +711,7 @@ namespace smtrat
         std::pair<bool,carl::Variable> didSplit = std::make_pair(false, carl::Variable::NO_VARIABLE);
 //        didSplit.first = false;
         vec_set_const_pFormula violatedConstraints = vec_set_const_pFormula();
-        double targetDiameter = 0.01;
+        double targetDiameter = 0.1;
         double contractionThreshold = 0.001;
 
         // Debug Outputs of linear and nonlinear Tables
@@ -880,6 +880,7 @@ namespace smtrat
                     negatedContraction->addSubformula(*boundaryConstraint);
                 #endif
                 // prepare IcpRelevantCandidates
+                activateLinearEquations();
                 fillCandidates(targetDiameter);
                 splitOccurred = false;
                 
@@ -1523,6 +1524,22 @@ namespace smtrat
 //                }
 //            }
 //        }
+    }
+    
+    
+    void ICPModule::activateLinearEquations()
+    {
+        for( auto candidatesIt = mLinearConstraints.begin(); candidatesIt != mLinearConstraints.end(); ++candidatesIt )
+        {
+            ContractionCandidates candidates = (*candidatesIt).second;
+            for( auto ccIt = candidates.begin(); ccIt != candidates.end(); ++ccIt )
+            {
+                if( (*ccIt)->constraint()->relation() == Relation::EQ )
+                {
+                    (*ccIt)->activate();
+                }
+            }
+        }
     }
     
 
