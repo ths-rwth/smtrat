@@ -1833,27 +1833,27 @@ namespace smtrat
         EvalRationalMap assignments;
         for( auto varIt = mVariables.begin(); varIt != mVariables.end(); ++varIt )
         {
-            if( (*varIt)->isOriginal() )
+            if( (*varIt).second->isOriginal() )
             {
                 Rational value;
-                switch( (*varIt)->isInternalBoundsUpdated() )
+                switch( (*varIt).second->isInternalUpdated() )
                 {
                     case icp::Updated::BOTH:
-                        value = carl::rationalize<Rational>( mIntervals.at((*varIt)->var()).midpoint() );
+                        value = carl::rationalize<Rational>( mIntervals.at((*varIt).second->var()).midpoint() );
                         break;
                     case icp::Updated::LEFT:
-                        value = carl::rationalize<Rational>( mIntervals.at((*varIt)->var()).right() );
+                        value = carl::rationalize<Rational>( mIntervals.at((*varIt).second->var()).right() );
                         break;
                     case icp::Updated::RIGHT:
-                        value = carl::rationalize<Rational>( mIntervals.at((*varIt)->var()).left() );
+                        value = carl::rationalize<Rational>( mIntervals.at((*varIt).second->var()).left() );
                         break;
                     case icp::Updated::NONE:
-                        value = carl::rationalize<Rational>( mIntervals.at((*varIt)->var()).left();
+                        value = carl::rationalize<Rational>( mIntervals.at((*varIt).second->var()).left() );
                         break;
                     default:
                         break;
                 }
-                assignments.insert( std::make_pair((*varIt)->var(), value) );
+                assignments.insert( std::make_pair((*varIt).second->var(), value) );
             }
         }
         return assignments;
@@ -1868,7 +1868,7 @@ namespace smtrat
             EvalRationalMap rationalAssignment;
             if( mLRA.solverState() == True )
             {
-                rationalAssigment = mLRA.getRationalModel();
+                rationalAssignment = mLRA.getRationalModel();
                 for( auto assignmentIt = rationalAssignment.begin(); assignmentIt != rationalAssignment.end(); ++assignmentIt )
                 {
                     auto varIt = mVariables.find((*assignmentIt).first);
