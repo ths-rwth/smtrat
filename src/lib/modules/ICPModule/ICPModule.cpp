@@ -2067,26 +2067,23 @@ namespace smtrat
         if ( found )
         {
             #ifdef RAISESPLITTOSATSOLVER
-            // create prequesites: ((B' AND CCs) -> h_b)
+            // create prequesites: ((oldBox AND CCs) -> newBox) in CNF: (oldBox OR CCs) OR newBox 
             std::set<const Formula*> splitPremise;
             Formula* contraction = new Formula( OR );
+            // collect applied contractions
             std::set<const Formula*> contractions = mHistoryActual->appliedConstraints();
-//            cout << "Size applied constraints: " << contractions.size() << endl;
-//            cout << "Size of Box-Storage: " << mBoxStorage.size() << endl;
-            assert( mBoxStorage.size() == 1 );
-            std::set<const Formula*> box = mBoxStorage.front();
-            mBoxStorage.pop();
             for( auto constraintIt = contractions.begin(); constraintIt != contractions.end(); ++constraintIt )
             {
-//                const Constraint* replacement = (*(mReplacements.find(*constraintIt))).second;
-//                assert(mReplacements.count(*constraintIt) > 0);
                 Formula* negation = new Formula( NOT );
-//                Formula* constraint = new Formula( replacement );
                 Formula* constraint = new Formula( (*constraintIt)->pConstraint() );
                 splitPremise.insert( *constraintIt );
                 negation->addSubformula( constraint );
                 contraction->addSubformula( negation );
             }
+            // collect original box
+            assert( mBoxStorage.size() == 1 );
+            std::set<const Formula*> box = mBoxStorage.front();
+            mBoxStorage.pop();
             for( auto formulaIt = box.begin(); formulaIt != box.end(); ++formulaIt )
             {
                 Formula* negation = new Formula( NOT );
@@ -2095,18 +2092,9 @@ namespace smtrat
                 negation->addSubformula( constraint );
                 contraction->addSubformula( negation );
             }
-
-            const carl::Variable contractedBoxVar = Formula::newAuxiliaryBooleanVariable();
-            Formula* contractedBox = new Formula( contractedBoxVar );
-            Formula* contractedBoxCopy = new Formula( *contractedBox );
             
-            contraction->addSubformula( contractedBox );
-            addDeduction( contraction );
-
-            // create deductions for all bounds: (h_b -> bound)
-            Formula negContractedBox = Formula( NOT );
-            negContractedBox.addSubformula( contractedBoxCopy );
-
+            // construct new box
+            Formula* newBox = new Formula( AND );
             Variables originalRealVariables;
             mpReceivedFormula->realValuedVars(originalRealVariables);
             for( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
@@ -2116,26 +2104,19 @@ namespace smtrat
                     std::pair<const Constraint*, const Constraint*> boundaries = icp::intervalToConstraint((*intervalIt).first, (*intervalIt).second);
                     if(boundaries.first != NULL)
                     {
-                        Formula* impliedLeftBound = new Formula( OR );
-                        Formula* negContractedBoxCopy = new Formula( negContractedBox );
-                        impliedLeftBound->addSubformula( negContractedBoxCopy );
-                        impliedLeftBound->addSubformula( boundaries.first );
-                        addDeduction( impliedLeftBound );
+                        newBox->addSubformula( boundaries.first );                       
                     }
                     if(boundaries.second != NULL)
                     {
-                        Formula* impliedRightBound = new Formula( OR );
-                        Formula* negContractedBoxCopy2 = new Formula( negContractedBox );
-                        impliedRightBound->addSubformula( negContractedBoxCopy2 );
-                        impliedRightBound->addSubformula( boundaries.second );
-                        addDeduction( impliedRightBound );
+                        newBox->addSubformula( boundaries.second );
                     }
                 }
-//                contractionPremise->addSubformula(newBox);
-//                addDeduction(contractionPremise);
-//                contractionPremise->print();
             }
-
+            contraction->addSubformula(newBox);
+            // push deduction
+            addDeduction( contraction );
+            
+            
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
             Rational bound = carl::rationalize<Rational>( mIntervals.at(variable).midpoint() );
             Module::branchAt( Polynomial( variable ), bound, splitPremise, false );
