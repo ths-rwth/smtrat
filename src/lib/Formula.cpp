@@ -242,7 +242,7 @@ namespace smtrat
         return result;
     }
     
-    unsigned Formula::satisfiedBy( const Model& _assignment ) const
+    unsigned Formula::satisfiedBy( const EvalRationalMap& _assignment ) const
     {
         switch( mType )
         {
@@ -256,18 +256,12 @@ namespace smtrat
             }
             case BOOL:
             {
-                EvalRationalMap rationalAssigns;
-                getRationalAssignmentsFromModel( _assignment, rationalAssigns );
-                auto ass = rationalAssigns.find( mBoolean );
-                return ass == rationalAssigns.end() ? 2 : (ass->second == ONE_RATIONAL ? 1 : 0) ;
+                auto ass = _assignment.find( mBoolean );
+                return ass == _assignment.end() ? 2 : (ass->second == ONE_RATIONAL ? 1 : 0);
             }
             case CONSTRAINT:
             {
-                EvalRationalMap rationalAssigns;
-                if( getRationalAssignmentsFromModel( _assignment, rationalAssigns ) )
-                    return mpConstraint->satisfiedBy( rationalAssigns );
-                else
-                    return 2; // TODO: Check also models having square roots as value.
+                return mpConstraint->satisfiedBy( _assignment );
             }
             case NOT:
             {
@@ -360,6 +354,15 @@ namespace smtrat
                 return 2;
             }
         }
+    }
+    
+    unsigned Formula::satisfiedBy( const Model& _assignment ) const
+    {
+        EvalRationalMap rationalAssigns;
+        if( getRationalAssignmentsFromModel( _assignment, rationalAssigns ) )
+            return satisfiedBy( rationalAssigns );
+        else
+            return 2; // TODO: Check also models having square roots as value.
     }
     
     Condition Formula::getPropositions()
