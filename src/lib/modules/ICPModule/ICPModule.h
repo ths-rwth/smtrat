@@ -188,6 +188,8 @@ namespace smtrat
              */
             void initiateWeights();
             
+            void activateLinearEquations();
+            
             /**
              * Fills the IcpRelevantCandidates with all nonlinear and all active linear ContractionCandidates.
              */
@@ -232,6 +234,10 @@ namespace smtrat
              * @return true if a split has occurred
              */
             bool contraction( icp::ContractionCandidate* _selection, double& _relativeContraction );
+            
+            EvalRationalMap createModel() const;
+            
+            void updateModel() const;
             
             /**
              * Calls the actual contraction on a separate map to check, whether contraction is possible. Returns the node, where insertion makes sense.

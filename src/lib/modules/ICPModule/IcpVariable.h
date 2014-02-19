@@ -39,6 +39,17 @@ namespace smtrat
 {
 namespace icp
 {   
+    enum class Updated{
+        // leftBound was updated
+        LEFT,
+        // rightBound was updated
+        RIGHT,
+        // both Bounds were updated
+        BOTH,
+        // no bound was updated
+        NONE
+    };
+    
     class IcpVariable
     {
         private:
@@ -46,7 +57,7 @@ namespace icp
             /*
              * Members
              */
-            const carl::Variable                        mVar;
+            const carl::Variable                       mVar;
             bool                                       mOriginal;
             std::vector<ContractionCandidate*> mCandidates;
             const lra::Variable<lra::Numeric>*               mLraVar;
@@ -54,8 +65,8 @@ namespace icp
             bool                                       mLinear;
             
             // interval Bound generation
-            std::pair<bool,bool>                       mBoundsSet; // internal, external
-            std::pair<bool,bool>                       mUpdated; // internal, external
+            std::pair<Updated,Updated>                       mBoundsSet; // internal, external
+            std::pair<Updated,Updated>                       mUpdated; // internal, external
             smtrat::Formula*                           mInternalLeftBound;
             smtrat::Formula*                           mInternalRightBound;
             smtrat::Formula::iterator                  mExternalLeftBound;
@@ -79,8 +90,8 @@ namespace icp
                 mLraVar( _lraVar ),
                 mActive( false ),
                 mLinear( true ),
-                mBoundsSet( std::make_pair(false,false) ),
-                mUpdated( std::make_pair(false,false) ),
+                mBoundsSet( std::make_pair(Updated::NONE,Updated::NONE) ),
+                mUpdated( std::make_pair(Updated::NONE,Updated::NONE) ),
                 mInternalLeftBound ( ),
                 mInternalRightBound ( ),
                 mExternalLeftBound ( ),
@@ -98,8 +109,8 @@ namespace icp
                 mLraVar( _lraVar ),
                 mActive( _candidate->isActive() ),
                 mLinear( _candidate->isLinear() ),
-                mBoundsSet (std::make_pair(false,false)),
-                mUpdated( std::make_pair(false,false) ),
+                mBoundsSet (std::make_pair(Updated::NONE,Updated::NONE)),
+                mUpdated( std::make_pair(Updated::NONE,Updated::NONE) ),
                 mInternalLeftBound ( ),
                 mInternalRightBound ( ),
                 mExternalLeftBound ( ),
@@ -110,10 +121,20 @@ namespace icp
             
             ~IcpVariable()
             {
-                if( mBoundsSet.first )
+                switch(mBoundsSet.first)
                 {
-                    delete mInternalLeftBound;
-                    delete mInternalRightBound;
+                    case Updated::LEFT:
+                        delete mInternalLeftBound;
+                        break;
+                    case Updated::RIGHT:
+                        delete mInternalRightBound;
+                        break;
+                    case Updated::BOTH:
+                        delete mInternalLeftBound;
+                        delete mInternalRightBound;
+                        break;
+                    default:
+                        break;
                 }
             }
             
@@ -149,7 +170,7 @@ namespace icp
             void setLraVar( const lra::Variable<lra::Numeric>* _lraVar )
             {
                 mLraVar = _lraVar;
-                mUpdated = std::make_pair(true,true);
+                mUpdated = std::make_pair(Updated::BOTH,Updated::BOTH);
             }
 
             void deleteCandidate( ContractionCandidate* _candidate )
@@ -213,42 +234,42 @@ namespace icp
                 return mLinear;
             }
             
-            void setUpdated(bool _internal=true, bool _external=true)
+            void setUpdated(Updated _internal=Updated::BOTH, Updated _external=Updated::BOTH)
             {
                 mUpdated = std::make_pair(_internal,_external);
             }
             
-            bool isInternalUpdated() const
+            Updated isInternalUpdated() const
             {
                 return mUpdated.first;
             }
             
-            bool isExternalUpdated() const
+            Updated isExternalUpdated() const
             {
                 return mUpdated.second;
             }
             
             smtrat::Formula* internalLeftBound() const
             {
-                assert(mBoundsSet.first);
+                assert(mBoundsSet.first == Updated::LEFT || mBoundsSet.first == Updated::BOTH);
                 return mInternalLeftBound;
             }
             
             smtrat::Formula* internalRightBound() const
             {
-                assert(mBoundsSet.first);
+                assert(mBoundsSet.first == Updated::RIGHT || mBoundsSet.first == Updated::BOTH);
                 return mInternalRightBound;
             }
             
             smtrat::Formula::iterator externalLeftBound() const
             {
-                assert(mBoundsSet.second);
+                assert(mBoundsSet.second == Updated::LEFT || mBoundsSet.second == Updated::BOTH);
                 return mExternalLeftBound;
             }
             
             smtrat::Formula::iterator externalRightBound() const
             {
-                assert(mBoundsSet.second);
+                assert(mBoundsSet.second == Updated::RIGHT || mBoundsSet.second == Updated::BOTH);
                 return mExternalRightBound;
             }
             
@@ -256,6 +277,17 @@ namespace icp
             {
                 smtrat::Formula* toDelete = mInternalLeftBound;
                 mInternalLeftBound = _left;
+                switch(mBoundsSet.first)
+                {
+                    case Updated::RIGHT:
+                        mBoundsSet.first = Updated::BOTH;
+                        break;
+                    case Updated::NONE:
+                        mBoundsSet.first = Updated::LEFT;
+                        break;
+                    default:
+                        break;
+                }
                 delete toDelete;
             }
             
@@ -263,42 +295,75 @@ namespace icp
             {
                 smtrat::Formula* toDelete = mInternalRightBound;
                 mInternalRightBound = _right;
+                switch(mBoundsSet.first)
+                {
+                    case Updated::LEFT:
+                        mBoundsSet.first = Updated::BOTH;
+                        break;
+                    case Updated::NONE:
+                        mBoundsSet.first = Updated::RIGHT;
+                        break;
+                    default:
+                        break;
+                }
                 delete toDelete;
             }
             
             void setExternalLeftBound( smtrat::Formula::iterator _left )
             {
                 mExternalLeftBound = _left;
+                switch(mBoundsSet.second)
+                {
+                    case Updated::RIGHT:
+                        mBoundsSet.second = Updated::BOTH;
+                        break;
+                    case Updated::NONE:
+                        mBoundsSet.second = Updated::LEFT;
+                        break;
+                    default:
+                        break;
+                }
             }
             
             void setExternalRightBound( smtrat::Formula::iterator _right )
             {
                 mExternalRightBound = _right;
+                switch(mBoundsSet.second)
+                {
+                    case Updated::LEFT:
+                        mBoundsSet.second = Updated::BOTH;
+                        break;
+                    case Updated::NONE:
+                        mBoundsSet.second = Updated::RIGHT;
+                        break;
+                    default:
+                        break;
+                }
             }
             
-            void boundsSet(bool _internal=true, bool _external=true)
+            void boundsSet(Updated _internal=Updated::BOTH, Updated _external=Updated::BOTH)
             {
                 mBoundsSet = std::make_pair(_internal,_external);
             }
             
-            void internalBoundsSet(bool _internal=true)
+            void internalBoundsSet(Updated _internal=Updated::BOTH)
             {
                 mBoundsSet = std::make_pair(_internal,mBoundsSet.second);
-                mUpdated = std::pair<bool,bool>(false, mUpdated.second);
+                mUpdated = std::pair<Updated,Updated>(Updated::NONE, mUpdated.second);
             }
             
-            void externalBoundsSet(bool _external=true)
+            void externalBoundsSet(Updated _external=Updated::BOTH)
             {
                 mBoundsSet = std::make_pair(mBoundsSet.first,_external);
-                mUpdated = std::pair<bool,bool>(mUpdated.first, false);
+                mUpdated = std::pair<Updated,Updated>(mUpdated.first, Updated::NONE);
             }
             
-            bool isInternalBoundsSet() const
+            Updated isInternalBoundsSet() const
             {
                 return mBoundsSet.first;
             }
             
-            bool isExternalBoundsSet() const
+            Updated isExternalBoundsSet() const
             {
                 return mBoundsSet.second;
             }
