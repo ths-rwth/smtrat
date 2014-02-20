@@ -707,6 +707,7 @@ namespace smtrat
         mInfeasibleSubsets.clear();
         mIsBackendCalled = false;
         double relativeContraction = 1;
+        double absoluteContraction = 0;
         bool   splitOccurred = false;
         std::pair<bool,carl::Variable> didSplit = std::make_pair(false, carl::Variable::NO_VARIABLE);
 //        didSplit.first = false;
@@ -903,7 +904,8 @@ namespace smtrat
                     assert(candidate != NULL);
                     candidate->calcDerivative();
                     relativeContraction = -1;
-                    splitOccurred = contraction( candidate, relativeContraction );
+                    absoluteContraction = 0;
+                    splitOccurred = contraction( candidate, relativeContraction, absoluteContraction );
                     #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
                     if ( !splitOccurred && relativeContraction != 0 )
                     {
@@ -957,10 +959,14 @@ namespace smtrat
 #ifdef ICP_CONSIDER_WIDTH
                     if ( (relativeContraction < contractionThreshold && !splitOccurred)  || mIntervals.at(candidate->derivationVar()).diameter() <= targetDiameter )
 #else
-                    if ( (relativeContraction < contractionThreshold && !splitOccurred) )
+                    if ( (absoluteContraction < contractionThreshold && !splitOccurred) )
 #endif
                         removeCandidateFromRelevant(candidate);
+#ifdef ICP_CONSIDER_WIDTH
                     else if ( relativeContraction >= contractionThreshold )
+#else
+                    else if ( absoluteContraction >= contractionThreshold )
+#endif
                     {
                         /**
                          * make sure all candidates which contain the variable
@@ -1701,7 +1707,7 @@ namespace smtrat
     }
     
 
-    bool ICPModule::contraction( icp::ContractionCandidate* _selection, double& _relativeContraction )
+    bool ICPModule::contraction( icp::ContractionCandidate* _selection, double& _relativeContraction, double& _absoluteContraction )
     {
         carl::DoubleInterval resultA = carl::DoubleInterval();
         carl::DoubleInterval resultB = carl::DoubleInterval();
@@ -1807,6 +1813,7 @@ namespace smtrat
             mIntervals[variable] = originalInterval.intersect(resultB);
             // TODO: Shouldn't it be the average of both contractions?
             _relativeContraction = (originalDiameter - originalInterval.intersect(resultB).diameter()) / originalInterval.diameter();
+            _absoluteContraction = originalDiameter - resultB.diameter();
         }
         else
         {
@@ -1819,12 +1826,21 @@ namespace smtrat
             if ( mIntervals.at(variable).rightType() != carl::BoundType::INFTY && mIntervals.at(variable).leftType() != carl::BoundType::INFTY && !originalUnbounded )
             {
                 if ( originalDiameter == 0 )
+                {
                     _relativeContraction = 0;
+                    _absoluteContraction = 0;
+                }
                 else
+                {
                     _relativeContraction = 1 - (mIntervals.at(variable).diameter() / originalDiameter);
+                    _absoluteContraction = originalDiameter - mIntervals.at(variable).diameter();
+                }
             }
             else if ( originalUnbounded && mIntervals.at(variable).unbounded() == false ) // if we came from infinity and got a result, we achieve maximal relative contraction
+            {
                 _relativeContraction = 1;
+                _absoluteContraction = std::numeric_limits<double>::infinity();
+            }
             
             if (_relativeContraction > 0)
             {
@@ -1837,6 +1853,7 @@ namespace smtrat
                 }
                 mHistoryActual->addContraction(_selection, variables);
             }
+            
             #ifdef ICPMODULE_DEBUG
             cout << "      Relative contraction: " << _relativeContraction << endl;
             #endif

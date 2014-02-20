@@ -233,7 +233,7 @@ namespace smtrat
              * @param _relativeContraction is only changed if no split has occurred and the intervals are bounded
              * @return true if a split has occurred
              */
-            bool contraction( icp::ContractionCandidate* _selection, double& _relativeContraction );
+            bool contraction( icp::ContractionCandidate* _selection, double& _relativeContraction, double& _absoluteContraction );
             
             EvalRationalMap createModel() const;
             
