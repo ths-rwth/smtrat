@@ -35,9 +35,9 @@
 using namespace std;
 using namespace carl;
 
-//#define ICPMODULE_DEBUG
+#define ICPMODULE_DEBUG
 //#define ICPMODULE_REDUCED_DEBUG
-//#define ICP_CONSIDER_WIDTH
+#define ICP_CONSIDER_WIDTH
 //#define ICP_SIMPLE_VALIDATION
 #define ICP_PROLONG_CONTRACTION
 
@@ -1019,7 +1019,7 @@ namespace smtrat
 #endif
                 } //while ( !mIcpRelevantCandidates.empty() && !splitOccurred)
                 // do not verify if the box is already invalid
-                if (!invalidBox)
+                if (!invalidBox && !splitOccurred)
                 {
                     invalidBox = !checkBoxAgainstLinearFeasibleRegion();
                     #ifdef ICPMODULE_DEBUG
@@ -1074,7 +1074,7 @@ namespace smtrat
                 delete negatedContraction;
                 #endif
                 didSplit.first = false;
-                if(invalidBox || mIcpRelevantCandidates.empty()) // relevantCandidates is not empty, if we got new bounds from LRA during boxCheck
+                if(invalidBox || splitOccurred ||mIcpRelevantCandidates.empty()) // relevantCandidates is not empty, if we got new bounds from LRA during boxCheck
                 {
                     // perform splitting if possible
                     if ( !invalidBox && !splitOccurred )
@@ -1739,7 +1739,6 @@ namespace smtrat
         double                 originalDiameter = mIntervals.at(variable).diameter();
         bool originalUnbounded = ( mIntervals.at(variable).leftType() == carl::BoundType::INFTY || mIntervals.at(variable).rightType() == carl::BoundType::INFTY );
         
-//        splitOccurred    = mIcp.contract<GiNaCRA::SimpleNewton>( mIntervals, constr, derivative, variable, resultA, resultB );
         splitOccurred    = _selection->contract( mIntervals, resultA, resultB );
         if( splitOccurred )
         {
@@ -1761,6 +1760,7 @@ namespace smtrat
             }
             mHistoryActual->addContraction(_selection, variables);
             carl::DoubleInterval originalInterval = mIntervals.at(variable);
+#ifdef BOXMANAGEMENT
             // set intervals and update historytree
             EvalDoubleIntervalMap tmpRight;
             for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
@@ -1826,6 +1826,29 @@ namespace smtrat
             #endif
             // update mIntervals - usually this happens when changing to a different box, but in this case it has to be done manually, otherwise mIntervals is not affected.
             mIntervals[variable] = originalInterval.intersect(resultB);
+#else
+            /// create prequesites: ((oldBox AND CCs) -> newBox) in CNF: (oldBox OR CCs) OR newBox 
+            std::set<const Formula*> splitPremise = createPremiseDeductions();
+            Formula* contraction = new Formula( OR );
+            for( auto formulaIt = splitPremise.begin(); formulaIt != splitPremise.end(); ++formulaIt )
+            {
+                Formula* negation = new Formula( NOT );
+                Formula* deductionCopy = new Formula( **formulaIt );
+                negation->addSubformula(deductionCopy);
+                contraction->addSubformula(negation);
+            }
+            
+            // construct new box
+            Formula* newBox = createBoxFormula();
+            contraction->addSubformula(newBox);
+            // push deduction
+            addDeduction( contraction );
+
+            // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
+            assert(originalInterval.intersect(resultA).rightType() != BoundType::INFTY );
+            Rational bound = carl::rationalize<Rational>( originalInterval.intersect(resultA).right() );
+            Module::branchAt( Polynomial( variable ), bound, splitPremise, true );
+#endif
             // TODO: Shouldn't it be the average of both contractions?
             _relativeContraction = (originalDiameter - originalInterval.intersect(resultB).diameter()) / originalInterval.diameter();
             _absoluteContraction = originalDiameter - resultB.diameter();
@@ -2080,6 +2103,30 @@ namespace smtrat
     }
     
     
+    Formula* ICPModule::createBoxFormula()
+    {
+        Formula* newBox = new Formula( AND );
+        Variables originalRealVariables;
+        mpReceivedFormula->realValuedVars(originalRealVariables);
+        for( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
+        {
+            if( originalRealVariables.find( (*intervalIt).first ) != originalRealVariables.end() )
+            {
+                std::pair<const Constraint*, const Constraint*> boundaries = icp::intervalToConstraint((*intervalIt).first, (*intervalIt).second);
+                if(boundaries.first != NULL)
+                {
+                    newBox->addSubformula( boundaries.first );                       
+                }
+                if(boundaries.second != NULL)
+                {
+                    newBox->addSubformula( boundaries.second );
+                }
+            }
+        }
+        return newBox;
+    }
+    
+    
     std::pair<bool,carl::Variable> ICPModule::checkAndPerformSplit( )
     {
         std::pair<bool,carl::Variable> result = std::make_pair(false, carl::Variable::NO_VARIABLE);
@@ -2170,28 +2217,10 @@ namespace smtrat
             }
             
             // construct new box
-            Formula* newBox = new Formula( AND );
-            Variables originalRealVariables;
-            mpReceivedFormula->realValuedVars(originalRealVariables);
-            for( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
-            {
-                if( originalRealVariables.find( (*intervalIt).first ) != originalRealVariables.end() )
-                {
-                    std::pair<const Constraint*, const Constraint*> boundaries = icp::intervalToConstraint((*intervalIt).first, (*intervalIt).second);
-                    if(boundaries.first != NULL)
-                    {
-                        newBox->addSubformula( boundaries.first );                       
-                    }
-                    if(boundaries.second != NULL)
-                    {
-                        newBox->addSubformula( boundaries.second );
-                    }
-                }
-            }
+            Formula* newBox = createBoxFormula();
             contraction->addSubformula(newBox);
             // push deduction
             addDeduction( contraction );
-            
             
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
             Rational bound = carl::rationalize<Rational>( mIntervals.at(variable).midpoint() );

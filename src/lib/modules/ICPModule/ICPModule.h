@@ -255,6 +255,8 @@ namespace smtrat
             double calculateSplittingImpact ( const carl::Variable& _var, icp::ContractionCandidate& _candidate ) const;
             
             std::set<const Formula*> createPremiseDeductions();
+            
+            Formula* createBoxFormula();
                         
             /**
              * Checks if there is a need for a split and manages the splitting and branching in the
