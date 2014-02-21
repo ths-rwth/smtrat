@@ -35,10 +35,10 @@
 using namespace std;
 using namespace carl;
 
-#define ICPMODULE_DEBUG
+//#define ICPMODULE_DEBUG
 //#define ICPMODULE_REDUCED_DEBUG
 #define ICP_CONSIDER_WIDTH
-//#define ICP_SIMPLE_VALIDATION
+#define ICP_SIMPLE_VALIDATION
 #define ICP_PROLONG_CONTRACTION
 
 
@@ -75,7 +75,7 @@ namespace smtrat
         mIsIcpInitialized(false),
         mCurrentId(1),
         mIsBackendCalled(false),
-        mTargetDiameter(0.1),
+        mTargetDiameter(0.01),
         mCountBackendCalls(0)
     {
         #ifdef ICP_BOXLOG
@@ -1902,6 +1902,7 @@ namespace smtrat
     
     std::map<carl::Variable, double> ICPModule::createModel( bool antipoint ) const
     {
+        // Note that we do not need to consider INFTY bounds in the calculation of the antipoint.
         std::map<carl::Variable, double> assignments;
         for( auto varIt = mVariables.begin(); varIt != mVariables.end(); ++varIt )
         {
@@ -1917,20 +1918,35 @@ namespace smtrat
                 case icp::Updated::LEFT:
                     if(antipoint)
                         value = mIntervals.at((*varIt).second->var()).left();
-                    else
-                        value = mIntervals.at((*varIt).second->var()).right();
+                    else 
+                    {
+                        if (mIntervals.at((*varIt).second->var()).rightType() == BoundType::INFTY)
+                            value = std::ceil(mIntervals.at((*varIt).second->var()).left());
+                        else
+                            value = mIntervals.at((*varIt).second->var()).right();
+                    }
                     break;
                 case icp::Updated::RIGHT:
                     if(antipoint)
                         value = mIntervals.at((*varIt).second->var()).right();
                     else
-                        value = mIntervals.at((*varIt).second->var()).left();
+                    {
+                        if (mIntervals.at((*varIt).second->var()).leftType() == BoundType::INFTY)
+                            value = std::floor(mIntervals.at((*varIt).second->var()).right());
+                        else
+                            value = mIntervals.at((*varIt).second->var()).left();
+                    }
                     break;
                 case icp::Updated::NONE:
                     if(antipoint)
                         value = mIntervals.at((*varIt).second->var()).midpoint();
                     else
-                        value = mIntervals.at((*varIt).second->var()).left();
+                    {
+                        if (mIntervals.at((*varIt).second->var()).leftType() == BoundType::INFTY)
+                            value = std::floor(mIntervals.at((*varIt).second->var()).right());
+                        else
+                            value = mIntervals.at((*varIt).second->var()).left();
+                    }
                     break;
                 default:
                     break;
