@@ -65,8 +65,8 @@ namespace icp
             bool                                       mLinear;
             
             // interval Bound generation
-            std::pair<Updated,Updated>                       mBoundsSet; // internal, external
-            std::pair<Updated,Updated>                       mUpdated; // internal, external
+            std::pair<Updated,Updated>                 mBoundsSet; // internal, external
+            std::pair<Updated,Updated>                 mUpdated; // internal, external
             smtrat::Formula*                           mInternalLeftBound;
             smtrat::Formula*                           mInternalRightBound;
             smtrat::Formula::iterator                  mExternalLeftBound;
