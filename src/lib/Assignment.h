@@ -47,6 +47,41 @@ public:
 	}
 
 	/**
+	 * Check if two Assignments are equal.
+	 * Two Assignments are considered equal, if both are either bool or not bool and their value is the same.
+	 * 
+	 * If both Assignments are not bools, the check may return false although they represent the same value.
+	 * If both are numbers in different representations, this comparison is only done as a "best effort".
+	 * 
+	 * @param a Another Assignment.
+	 * @return *this == a.
+	 */
+	bool operator==(const Assignment& a) {
+		// Handle bools
+		if (this->isBool()) {
+			return (a.isBool()) && (this->asBool() == a.asBool());
+		} else if (a.isBool()) {
+			return false;
+		}
+
+		// Handle numbers
+		if (this->isSqrtEx()) {
+			if (a.isSqrtEx()) {
+				return this->asSqrtEx() == a.asSqrtEx();
+			} else if (a.isRAN()) {
+				return false;
+			}
+		} else if (this->isRAN()) {
+			if (a.isSqrtEx()) {
+				return false;
+			} else if (a.isRAN()) {
+				return carl::Equal<smtrat::Rational>()(this->asRAN(), a.asRAN());
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * Checks if the stored value is a bool.
      * @return 
      */
