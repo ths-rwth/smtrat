@@ -67,6 +67,8 @@
 #include "SATModuleStatistics.h"
 #endif
 
+#define SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN
+
 namespace smtrat
 {
     class SATModule:
@@ -198,6 +200,10 @@ namespace smtrat
             Minisat::vec<Minisat::CRef> clauses;
             // List of learned clauses.
             Minisat::vec<Minisat::CRef> learnts;
+            #ifndef SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN
+            // List of clauses which exclude a call resulted in unknown.
+            Minisat::vec<Minisat::CRef> unknown_excludes;
+            #endif
             // Amount to bump next clause with.
             double cla_inc;
             // A heuristic measurement of the activity of a variable.

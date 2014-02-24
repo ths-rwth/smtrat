@@ -189,7 +189,7 @@ namespace smtrat
                 std::pair<const Bound<T>*, std::pair<const Bound<T>*, const Bound<T>*> > addLowerBound( Value<T>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL, bool = false );
                 std::pair<const Bound<T>*, std::pair<const Bound<T>*, const Bound<T>*> > addEqualBound( Value<T>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL );
                 void deactivateBound( const Bound<T>*, smtrat::Formula::iterator );
-//                carl::Interval getVariableBounds() const;
+                Interval getVariableBounds() const;
                 std::set< const smtrat::Formula* > getDefiningOrigins() const;
 
                 void print( std::ostream& = std::cout ) const;
@@ -428,39 +428,38 @@ namespace smtrat
         }
 
         /**
-         *
          * @return
          */
-//        template<class T>
-//        carl::Interval Variable<T>::getVariableBounds() const
-//        {
-//            carl::Interval::BoundType lowerBoundType;
-//            smtrat::Numeric lowerBoundValue;
-//            carl::Interval::BoundType upperBoundType;
-//            smtrat::Numeric upperBoundValue;
-//            if( infimum().isInfinite() )
-//            {
-//                lowerBoundType = carl::Interval::INFINITY_BOUND;
-//                lowerBoundValue = 0;
-//            }
-//            else
-//            {
-//                lowerBoundType = infimum().isWeak() ? carl::Interval::WEAK_BOUND : carl::Interval::STRICT_BOUND;
-//                lowerBoundValue = infimum().limit().mainPart().content();
-//            }
-//            if( supremum().isInfinite() )
-//            {
-//                upperBoundType = carl::Interval::INFINITY_BOUND;
-//                upperBoundValue = 0;
-//            }
-//            else
-//            {
-//                upperBoundType = supremum().isWeak() ? carl::Interval::WEAK_BOUND : carl::Interval::STRICT_BOUND;
-//                upperBoundValue = supremum().limit().mainPart().content();
-//            }
-//            carl::Interval result = carl::Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
-//            return result;
-//        }
+        template<class T>
+        Interval Variable<T>::getVariableBounds() const
+        {
+            carl::BoundType lowerBoundType;
+            smtrat::Rational lowerBoundValue;
+            carl::BoundType upperBoundType;
+            smtrat::Rational upperBoundValue;
+            if( infimum().isInfinite() )
+            {
+                lowerBoundType = carl::BoundType::INFTY;
+                lowerBoundValue = 0;
+            }
+            else
+            {
+                lowerBoundType = infimum().isWeak() ? carl::BoundType::WEAK : carl::BoundType::STRICT;
+                lowerBoundValue = infimum().limit().mainPart().content();
+            }
+            if( supremum().isInfinite() )
+            {
+                upperBoundType = carl::BoundType::INFTY;
+                upperBoundValue = 0;
+            }
+            else
+            {
+                upperBoundType = supremum().isWeak() ? carl::BoundType::WEAK : carl::BoundType::STRICT;
+                upperBoundValue = supremum().limit().mainPart().content();
+            }
+            Interval result = Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
+            return result;
+        }
 
         /**
          *

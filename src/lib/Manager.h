@@ -223,7 +223,7 @@ namespace smtrat
              * formulas the assignment could contain other variables or freshly introduced
              * variables.
              */
-            const Module::Model model() const
+            const Model model() const
             {
                 mpPrimaryBackend->updateModel();
                 return mpPrimaryBackend->model();

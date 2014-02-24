@@ -93,6 +93,9 @@ namespace smtrat
             }
             else if( formulaToAssert->getType() == FFALSE )
             {
+                set<const Formula* > reason;
+                reason.insert( *receivedSubformula );
+                mInfeasibleSubsets.push_back( reason );
                 return foundAnswer( False );
             }
             else

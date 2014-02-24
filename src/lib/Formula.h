@@ -38,12 +38,13 @@
 #include <set>
 #include "Condition.h"
 #include "modules/ModuleType.h"
+#include "Assignment.h"
 #include "ConstraintPool.h"
 
 namespace smtrat
 {
     enum Type { AND, OR, NOT, IFF, XOR, IMPLIES, BOOL, CONSTRAINT, TTRUE, FFALSE };
-
+    
     class Formula
     {
         public:
@@ -815,6 +816,14 @@ namespace smtrat
              *         2, otherwise.
              */
             unsigned satisfiedBy( const EvalRationalMap& _assignment ) const;
+            
+            /**
+             * @param _assignment The assignment for which to check whether this formula is satisfied by it.
+             * @return 0, if this formula is violated by the given assignment;
+             *         1, if this formula is satisfied by the given assignment;
+             *         2, otherwise.
+             */
+            unsigned satisfiedBy( const Model& _assignment ) const;
 
             /**
              * Gets the propositions of this formula. It updates and stores the propositions

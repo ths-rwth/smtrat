@@ -244,28 +244,28 @@ namespace smtrat
                 mIsLinear = false;
             }
 
-            const bool isLinear() const
+            bool isLinear() const
             {
                 return mIsLinear;
             }
 
-            const double calcRWA()
+            double calcRWA()
             {
                 mRWA = mRWA + mAlpha * (mLastPayoff - mRWA);
                 return mRWA;
             }
 
-            const double RWA() const
+            double RWA() const
             {
                 return mRWA;
             }
 
-            const double lastPayoff() const
+            double lastPayoff() const
             {
                 return mLastPayoff;
             }
 
-            const unsigned id() const
+            unsigned id() const
             {
                 return mId;
             }
@@ -304,12 +304,12 @@ namespace smtrat
                 mActive = false;
             }
 
-            const bool isActive() const
+            bool isActive() const
             {
                 return mActive;
             }
             
-            const bool isDerived() const
+            bool isDerived() const
             {
                 return mDerived;
             }

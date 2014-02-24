@@ -29,8 +29,7 @@
 #pragma once
 
 //#define ICP_BOXLOG
-#define BOXMANAGEMENT
-#define RAISESPLITTOSATSOLVER
+//#define BOXMANAGEMENT
 #ifdef SMTRAT_DEVOPTION_Validation
 #define SMTRAT_DEVOPTION_VALIDATION_ICP
 #endif
@@ -102,7 +101,6 @@ namespace smtrat
 
             typedef std::set<icp::ContractionCandidate*, icp::contractionCandidateComp>                      ContractionCandidates;
             typedef FastPointerMap<Polynomial*, weights>                             WeightMap;
-            
 
         private:
 
@@ -115,13 +113,13 @@ namespace smtrat
             std::map<const lra::Variable<lra::Numeric>*, ContractionCandidates>                 mLinearConstraints; // all linear candidates
             std::map<const Constraint*, ContractionCandidates>                                  mNonlinearConstraints; // all nonlinear candidates
             
-            std::map<carl::Variable, icp::IcpVariable*>                                         mVariables; // list of occurring variables
+            std::map<const carl::Variable, icp::IcpVariable*>                                         mVariables; // list of occurring variables
             EvalDoubleIntervalMap                                                               mIntervals; // actual intervals relevant for contraction
             std::set<std::pair<double, unsigned>, comp>                                         mIcpRelevantCandidates; // candidates considered for contraction 
             
             std::map<const Constraint*, const Constraint*>                                      mReplacements; // linearized constraint -> original constraint
             FastMap<Polynomial, carl::Variable>                                                 mLinearizations; // monome -> variable
-            FastMap<Polynomial, const Polynomial>                                               mSubstitutions; // variable -> monome/variable
+            std::map<carl::Variable, const Polynomial>                                               mSubstitutions; // variable -> monome/variable
             FastMap<Polynomial, Contractor<carl::SimpleNewton> >                                mContractors;
             
             icp::HistoryNode*                                                                   mHistoryRoot; // Root-Node of the state-tree
@@ -136,12 +134,13 @@ namespace smtrat
             std::set<const Constraint*>                                  mCenterConstraints; // keeps actual centerConstaints for deletion
             std::set<Formula*>                                                                  mCreatedDeductions; // keeps pointers to the created deductions for deletion
             icp::ContractionCandidate*                                                          mLastCandidate; // the last applied candidate
-            #ifdef RAISESPLITTOSATSOLVER
+            #ifndef BOXMANAGEMENT
             std::queue<std::set<const Formula*> >                                               mBoxStorage; // keeps the box before contraction
             #endif
             bool                                                                                mIsIcpInitialized; // initialized ICPModule?
             unsigned                                                                            mCurrentId; // keeps the currentId of the state nodes
             bool                                                                                mIsBackendCalled; // has a backend already been called in the actual run?
+            double                                                                              mTargetDiameter;
             
             #ifdef ICP_BOXLOG
             std::fstream                                                                        icpLog;
@@ -173,6 +172,7 @@ namespace smtrat
             bool assertSubformula( Formula::const_iterator );
             void removeSubformula( Formula::const_iterator );
             Answer isConsistent();
+            void updateModel() const;
 
         private:
 
@@ -190,10 +190,12 @@ namespace smtrat
              */
             void initiateWeights();
             
+            void activateLinearEquations();
+            
             /**
              * Fills the IcpRelevantCandidates with all nonlinear and all active linear ContractionCandidates.
              */
-            void fillCandidates( double _targetDiameter = 0 );
+            void fillCandidates();
             
             /**
              * Adds the specific candidate to IcpRelevantCandidates.
@@ -233,7 +235,9 @@ namespace smtrat
              * @param _relativeContraction is only changed if no split has occurred and the intervals are bounded
              * @return true if a split has occurred
              */
-            bool contraction( icp::ContractionCandidate* _selection, double& _relativeContraction );
+            bool contraction( icp::ContractionCandidate* _selection, double& _relativeContraction, double& _absoluteContraction );
+            
+            std::map<carl::Variable, double> createModel( bool antipoint=false ) const;
             
             /**
              * Calls the actual contraction on a separate map to check, whether contraction is possible. Returns the node, where insertion makes sense.
@@ -248,27 +252,19 @@ namespace smtrat
              * @param _targetDiameter
              * @return 
              */
-            const double calculateSplittingImpact ( const carl::Variable& _var, icp::ContractionCandidate& _candidate ) const;
+            double calculateSplittingImpact ( const carl::Variable& _var, icp::ContractionCandidate& _candidate ) const;
             
-            Formula* createPremiseDeduction();
+            std::set<const Formula*> createPremiseDeductions();
             
-            set<Formula*> createContractionDeduction();
-            
+            Formula* createBoxFormula();
+                        
             /**
              * Checks if there is a need for a split and manages the splitting and branching in the
              * historyTree.
              * @param _targetDiameter
              * @return if a split has happened and in which dimension.
              */
-            std::pair<bool,carl::Variable> checkAndPerformSplit( const double& _targetDiameter );
-            
-            /**
-             * Creates constraints from the given interval and adds them to the
-             * passedFormula.
-             * @param _interval given interval
-             * @param _variable variable corresponding to the given interval
-             */
-            void addFormulaFromInterval( const carl::DoubleInterval* _interval, const carl::Variable& _variable );
+            std::pair<bool,carl::Variable> checkAndPerformSplit();
 
             /**
              * Validates the actual intervals against the linear feasible region returned

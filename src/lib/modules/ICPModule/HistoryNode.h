@@ -65,8 +65,8 @@ namespace smtrat
 
                 EvalDoubleIntervalMap                          mIntervals;    // intervals AFTER contraction with Candidates of the incoming edge has been applied
                 const Constraint*                              mSplit;
-                std::map<carl::Variable, std::set<const Constraint*> >  mReasons;
-                std::map<carl::Variable, set_icpVariable>         mVariableReasons;
+                std::map<const carl::Variable, std::set<const Constraint*> >  mReasons;
+                std::map<const carl::Variable, set_icpVariable>         mVariableReasons;
                 HistoryNode*                                   mLeftChild;
                 HistoryNode*                                   mRightChild;
                 HistoryNode*                                   mParent;
@@ -96,7 +96,7 @@ namespace smtrat
                     mId( _id )
                 {}
 
-                HistoryNode( EvalDoubleIntervalMap _intervals, unsigned _id ):
+                HistoryNode( const EvalDoubleIntervalMap& _intervals, unsigned _id ):
                     mIntervals( _intervals ),
                     mSplit( NULL ),
                     mReasons(),
@@ -110,7 +110,7 @@ namespace smtrat
                     mId( _id )
                 {}
 
-                HistoryNode( HistoryNode* _parent, EvalDoubleIntervalMap _intervals, unsigned _id ):
+                HistoryNode( HistoryNode* _parent, const EvalDoubleIntervalMap& _intervals, unsigned _id ):
                     mIntervals( _intervals ),
                     mSplit( NULL ),
                     mReasons(),
@@ -170,7 +170,7 @@ namespace smtrat
                     this->mParent = _parent;
                 }
                 
-                const carl::Variable variable() const
+                const carl::Variable::Arg variable() const
                 {
                     assert( mSplit != NULL );
                     return (*mSplit->variables().begin());
@@ -186,7 +186,7 @@ namespace smtrat
                     return mIntervals;
                 }
 
-                carl::DoubleInterval& getInterval( const carl::Variable _variable )
+                carl::DoubleInterval& getInterval( const carl::Variable::Arg _variable )
                 {
                     assert( mIntervals.find( _variable ) != mIntervals.end() );
                     return mIntervals.at( _variable );
@@ -213,7 +213,7 @@ namespace smtrat
                  * @param _interval
                  * @return true if only an update
                  */
-                bool addInterval( carl::Variable _var, carl::DoubleInterval _interval )
+                bool addInterval( const carl::Variable::Arg _var, carl::DoubleInterval _interval )
                 {
                     if( mIntervals.find( _var ) != mIntervals.end() )
                     {
@@ -248,14 +248,14 @@ namespace smtrat
                     return mAppliedContractions;
                 }
                 
-                std::set<const Constraint*> appliedConstraints()
+                std::set<const Formula*> appliedConstraints()
                 {
-                    std::set<const Constraint*> appliedConstraints;
+                    std::set<const Formula*> appliedConstraints;
                     for( std::set<const ContractionCandidate*>::iterator candidateIt = mAppliedContractions.begin(); candidateIt != mAppliedContractions.end(); ++candidateIt )
                     {
                         for( std::set<const Formula*,ContractionCandidate::originComp>::iterator originIt = (*candidateIt)->origin().begin(); originIt != (*candidateIt)->origin().end(); ++originIt )
                         {
-                            appliedConstraints.insert((*originIt)->pConstraint());
+                            appliedConstraints.insert(*originIt);
                         }
                     }
                     return appliedConstraints;
@@ -353,24 +353,24 @@ namespace smtrat
                     return mSplit;
                 }
 
-                std::map<carl::Variable, std::set<const Constraint*>>& rReasons()
+                std::map<const carl::Variable, std::set<const Constraint*>>& rReasons()
                 {
                     return mReasons;
                 }
 
-                const std::map<carl::Variable, std::set<const Constraint*>>& reasons() const
+                const std::map<const carl::Variable, std::set<const Constraint*>>& reasons() const
                 {
                     return mReasons;
                 }
 
 
-                std::set<const Constraint*>& reasons( const carl::Variable _variable )
+                std::set<const Constraint*>& reasons( const carl::Variable::Arg _variable )
                 {
                     assert( mReasons.find( _variable ) != mReasons.end() );
                     return mReasons.at( _variable );
                 }
 
-                void addReason( carl::Variable _variable, const Constraint* _reason )
+                void addReason( const carl::Variable::Arg _variable, const Constraint* _reason )
                 {
                     if( mReasons.find( _variable ) == mReasons.end() )
                         mReasons[_variable] = std::set<const Constraint*>();
@@ -388,13 +388,13 @@ namespace smtrat
                     assert( mReasons.find( _variable ) != mReasons.end() );
                 }
 
-                void addReasons( carl::Variable _variable, std::set<const Constraint*> _reasons )
+                void addReasons( const carl::Variable::Arg _variable, std::set<const Constraint*> _reasons )
                 {
                     for( std::set<const Constraint*>::iterator reasonsIt = _reasons.begin(); reasonsIt != _reasons.end(); ++reasonsIt )
                         addReason( _variable, (*reasonsIt) );
                 }
 
-                void addReasons( const carl::Variable _variable, std::set<const Formula*, icp::ContractionCandidate::originComp> _origins )
+                void addReasons( const carl::Variable::Arg _variable, std::set<const Formula*, icp::ContractionCandidate::originComp> _origins )
                 {
                     assert( mReasons.find( _variable ) != mReasons.end() );
                     bool                               contained = false;
@@ -413,35 +413,35 @@ namespace smtrat
                         addReason( _variable, (*minimal)->pConstraint() );
                 }
                 
-                void addVariableReason( carl::Variable _variable, const IcpVariable* _reason )
+                void addVariableReason( const carl::Variable::Arg _variable, const IcpVariable* _reason )
                 {
                     mVariableReasons[_variable].insert(_reason);
                 }
                 
-                void addVariableReasons( carl::Variable _variable, set_icpVariable _variables )
+                void addVariableReasons( const carl::Variable::Arg _variable, set_icpVariable _variables )
                 {
                     for( set_icpVariable::iterator variableIt = _variables.begin(); variableIt != _variables.end(); ++variableIt )
                         mVariableReasons[_variable].insert(*variableIt);
                 }
                 
-                const std::map<carl::Variable, set_icpVariable>& variableReasons()
+                const std::map<const carl::Variable, set_icpVariable>& variableReasons()
                 {
                     return mVariableReasons;
                 }
                 
-                std::map<carl::Variable, set_icpVariable>& rVariableReasons()
+                std::map<const carl::Variable, set_icpVariable>& rVariableReasons()
                 {
                     return mVariableReasons;
                 }
                 
-                set_icpVariable variableReasons( carl::Variable _variable )
+                set_icpVariable variableReasons( const carl::Variable::Arg _variable )
                 {
                     assert(mVariableReasons.find(_variable) != mVariableReasons.end());
                     return mVariableReasons.at(_variable);
                 }
                 
                 
-                void variableHull( string _variable, set_icpVariable& _result ) const
+                void variableHull( const carl::Variable::Arg _variable, set_icpVariable& _result ) const
                 {
                     gatherVariables(_variable, _result);
                 }
@@ -465,7 +465,7 @@ namespace smtrat
                         set_icpVariable result;
                         for( set_icpVariable::iterator variableIt = mStateInfeasibleVariables.begin(); variableIt != mStateInfeasibleVariables.end(); ++variableIt )
                         {
-                            gatherVariables((*variableIt)->var().get_name(), result);
+                            gatherVariables((*variableIt)->var(), result);
                             for( set_icpVariable::iterator collectedVarIt = result.begin(); collectedVarIt != result.end(); ++collectedVarIt )
                             {
                                 mParent->addInfeasibleVariable(*collectedVarIt);
@@ -515,7 +515,7 @@ namespace smtrat
                     return (this == mParent->right());
                 }
 
-                const unsigned id() const
+                unsigned id() const
                 {
                     return mId;
                 }
@@ -589,7 +589,7 @@ namespace smtrat
                 void printReasons( std::ostream& _out = std::cout ) const
                 {
                     _out << "Reasons(" << mReasons.size() << ")" << std::endl;
-                    for( std::map<carl::Variable, std::set<const Constraint*> >::const_iterator variablesIt = mReasons.begin();
+                    for( std::map<const carl::Variable, std::set<const Constraint*> >::const_iterator variablesIt = mReasons.begin();
                             variablesIt != mReasons.end(); ++variablesIt )
                     {
                         _out << (*variablesIt).first << ":\t";
@@ -602,10 +602,10 @@ namespace smtrat
                     }
                 }
                 
-                void printVariableReasons( ostream& _out = std::cout ) const
+                void printVariableReasons( std::ostream& _out = std::cout ) const
                 {
-                    _out << "VariableReasons(" << mVariableReasons.size() << ")" << endl;
-                    for( std::map<string, set_icpVariable>::const_iterator variablesIt = mVariableReasons.begin();
+                    _out << "VariableReasons(" << mVariableReasons.size() << ")" << std::endl;
+                    for( std::map<const carl::Variable, set_icpVariable>::const_iterator variablesIt = mVariableReasons.begin();
                             variablesIt != mVariableReasons.end(); ++variablesIt )
                     {
                         _out << (*variablesIt).first << ":\t";
@@ -614,7 +614,7 @@ namespace smtrat
                         {
                             _out << **reasonIt << ", ";
                         }
-                        cout << endl;
+                        std::cout << std::endl;
                     }
                 }
 
@@ -705,7 +705,7 @@ namespace smtrat
                     if( pos != mAppliedContractions.end() )
                     {
 #ifdef HISTORY_DEBUG
-                        cout << "Found candidate" << (*pos)->id() << " in node " << mId << ": ";
+                        std::cout << "Found candidate" << (*pos)->id() << " in node " << mId << ": ";
                         (*pos)->print();
 #endif
                         _result.insert( this );
@@ -719,7 +719,7 @@ namespace smtrat
                     }
                 }
                 
-                void gatherVariables(const string _var, set_icpVariable& _result) const
+                void gatherVariables(const carl::Variable::Arg _var, set_icpVariable& _result) const
                 {
                     if( mVariableReasons.find(_var) != mVariableReasons.end() )
                     {
@@ -729,12 +729,12 @@ namespace smtrat
                         {
                             if( _result.insert( *varIt ).second )
                             {
-//                                cout << "Inserted " << (*varIt)->var().get_name() << endl;
-                                gatherVariables((*varIt)->var().get_name(), _result);
+//                                cout << "Inserted " << (*varIt)->var() << endl;
+                                gatherVariables((*varIt)->var(), _result);
                             }
                             else
                             {
-//                                cout << "Already contained: " << (*varIt)->var().get_name() << endl;
+//                                cout << "Already contained: " << (*varIt)->var() << endl;
                             }
                         }
                     }

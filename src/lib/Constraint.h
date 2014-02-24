@@ -323,10 +323,44 @@ namespace smtrat
                 return false;
             }
             
+            /**
+             * @return true, if this constraint is a bound.
+             */
+            bool isBound() const
+            {
+                return ( mRelation != Relation::NEQ && mVariables.size() == 1 && maxDegree( *mVariables.begin() ) == 1 );
+            }
+            
+            
+            /**
+             * @return true, if this constraint is a lower bound.
+             */
+            bool isLowerBound() const
+            {
+                if( isBound() )
+                {
+                    if( mRelation == Relation::EQ ) return true;
+                    const Rational& coeff = mLhs.lterm()->coeff();
+                    if( coeff < 0 )
+                        return (mRelation == Relation::LEQ || mRelation == Relation::LESS );
+                    else
+                    {
+                        assert( coeff > 0 );
+                        return (mRelation == Relation::GEQ || mRelation == Relation::GREATER );
+                    }
+                }
+                return false;
+            }
+            
+            
+            /**
+             * @return true, if this constraint is an upper bound.
+             */
             bool isUpperBound() const
             {
-                if( mVariables.size() == 1 && maxDegree( *mVariables.begin() ) == 1 )
+                if( isBound() )
                 {
+                    if( mRelation == Relation::EQ ) return true;
                     const Rational& coeff = mLhs.lterm()->coeff();
                     if( coeff > 0 )
                         return (mRelation == Relation::LEQ || mRelation == Relation::LESS );

@@ -490,41 +490,14 @@ namespace smtrat
         addDeduction( deductionD );
     }
     
-    EvalRationalMap Module::modelToERM( const Model& _model )
-    {
-        EvalRationalMap rationalAssignment;
-        for( auto ass = _model.begin(); ass != _model.end(); ++ass )
-        {   
-            if (ass->first.getType() == carl::VariableType::VT_BOOL)
-            {
-                rationalAssignment.insert( rationalAssignment.end(), std::make_pair( ass->first, (ass->second.asBool() ? ONE_RATIONAL : ZERO_RATIONAL) ) );
-            }
-            else if (ass->second.isSqrtEx())
-            {
-				if (ass->second.asSqrtEx().isConstant()) {
-					Rational value = ass->second.asSqrtEx().constantPart().constantPart()/ass->second.asSqrtEx().denominator().constantPart();
-					assert( !(ass->first.getType() == carl::VariableType::VT_INT) || carl::isInteger( value ) );
-					rationalAssignment.insert( rationalAssignment.end(), std::make_pair(ass->first, value));
-				}
-            }
-			else if (ass->second.isRAN())
-			{
-				if (ass->second.asRAN()->isNumeric()) {
-					rationalAssignment.insert(rationalAssignment.end(), std::make_pair(ass->first, ass->second.asRAN()->value()));
-				}
-			}
-        }
-        return rationalAssignment;
-    }
-    
     /**
      * @return false, if the current model of this module does not satisfy the current given formula;
      *         true, if it cannot be said whether the model satisfies the given formula.
      */
     unsigned Module::checkModel() const
     {
-        updateModel();
-        return mpReceivedFormula->satisfiedBy( modelToERM( mModel ) );
+        this->updateModel();
+        return mpReceivedFormula->satisfiedBy( mModel );
     }
 
     /**
@@ -755,6 +728,7 @@ namespace smtrat
                     #endif
                     result = (*module)->isConsistent();
                     assert(result == Unknown || result == False || result == True);
+                    assert( result != False || (*module)->hasValidInfeasibleSubset() );
                     #ifdef SMTRAT_DEVOPTION_MeasureTime
                     (*module)->stopCheckTimer();
                     #endif
@@ -850,6 +824,8 @@ namespace smtrat
     Answer Module::foundAnswer( Answer _answer )
     {
         mSolverState = _answer;
+//        if( !(_answer != True || checkModel() != 0 ))
+//            exit( 7771 );
         assert( _answer != True || checkModel() != 0 );
         // If we are in the SMT environment:
         if( mpManager != NULL && _answer != Unknown )
@@ -1009,6 +985,24 @@ namespace smtrat
     }
     
     /**
+     * @return true, if the module has at least one valid infeasible subset, that is all its
+     *         elements are sub-formulas of the received formula (pointer must be equal).
+     */
+    bool Module::hasValidInfeasibleSubset() const
+    {
+        if( mInfeasibleSubsets.empty() ) return false;
+        for( auto infSubset : mInfeasibleSubsets )
+        {
+            for( auto subFormula : infSubset )
+            {
+                if( !mpReceivedFormula->contains( subFormula ) )
+                    return false;
+            }
+        }
+        return true;
+    }
+    
+    /**
      * Checks the given infeasible subset for minimality by storing all subsets of it, which have a smaller size 
      * which differs from the size of the infeasible subset not more than the given threshold.
      * @param _infsubset The infeasible subset to check for minimality.
@@ -1164,10 +1158,10 @@ namespace smtrat
         if( !model().empty() )
         {
             _out << "(";
-            for (Module::Model::const_iterator ass = model().begin(); ass != model().end(); ++ass)
+            for( Model::const_iterator ass = model().begin(); ass != model().end(); ++ass )
             {
                 if (ass != model().begin()) _out << " ";
-				_out << "(" << ass->first << " " << ass->second << ")" << endl;
+                    _out << "(" << ass->first << " " << ass->second << ")" << endl;
             }
             _out << ")" << endl;
         }

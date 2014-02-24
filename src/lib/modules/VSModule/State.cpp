@@ -2333,10 +2333,11 @@ namespace vs
             if( _useSturmSequence && cons.variables().size() == 1 )
             {
                 carl::UnivariatePolynomial<smtrat::Rational> rup = cons.lhs().toUnivariatePolynomial();
-//                list<carl::UnivariatePolynomial<smtrat::Rational>> seq = carl::UnivariatePolynomial<smtrat::Rational>::standardSturmSequence( rup, rup.diff() );
+                list<carl::UnivariatePolynomial<smtrat::Rational>> seq = rup.standardSturmSequence();
                 smtrat::Rational leftBound = cln::rationalize( cln::cl_F( intervals.begin()->second.left() ) );
                 smtrat::Rational rightBound = cln::rationalize( cln::cl_F( intervals.begin()->second.right() ) );
-                unsigned numberOfRoots = 0;//carl::UnivariatePolynomial<smtrat::Rational>::signVariations( seq, leftBound ) - carl::UnivariatePolynomial<Rational>::signVariations( seq, rightBound );
+                smtrat::Interval interv( leftBound, carl::BoundType::WEAK, rightBound, carl::BoundType::WEAK );
+                int numberOfRoots = carl::UnivariatePolynomial<smtrat::Rational>::countRealRoots( seq, interv );
                 assert( index() != carl::Variable::NO_VARIABLE );
                 smtrat::Rational imageOfLeftBound = rup.evaluate( leftBound );
                 smtrat::Rational imageOfRightBound = rup.evaluate( rightBound );

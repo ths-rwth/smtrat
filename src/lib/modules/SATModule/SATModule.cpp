@@ -232,6 +232,21 @@ namespace smtrat
     {
         if( PROP_IS_IN_CNF <= mpReceivedFormula->proposition() )
         {
+            #ifndef SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN
+            // Remove all clauses which were only introduced in order to exclude this combination 
+            // of constraints, which couldn't be solved by any backend, as a theory call.
+            while( unknown_excludes.size() > 0 )
+            {
+                Clause& c = ca[unknown_excludes.last()];
+                if( value( c[1] ) != l_Undef )
+                {
+                    int lev = level( var( c[1] ) );
+                    cancelUntil( lev );
+                }
+                removeClause( unknown_excludes.last() );
+                unknown_excludes.pop();
+            }
+            #endif
             // TODO: Is this necessary?
             budgetOff();
 
@@ -1263,21 +1278,22 @@ SetWatches:
                                 if( (*backend)->solverState() == True )
                                 {
                                     (*backend)->updateModel();
-                                    EvalRationalMap rationalAssignment = modelToERM( (*backend)->model() );
+                                    EvalRationalMap rationalAssignment;
+                                    getRationalAssignmentsFromModel( (*backend)->model(), rationalAssignment );
                                     vec<Var> conflVars;
                                     #ifdef SAT_MODULE_OUTPUT_PROGRESS
                                     mSatisfiedClauses = 0;
                                     #endif
-                                    bool noconfl = conflictingVars( clauses, rationalAssignment, conflVars, true );
-                                    noconfl &= conflictingVars( learnts, rationalAssignment, conflVars, true );
+//                                    bool noconfl = conflictingVars( clauses, rationalAssignment, conflVars, true );
+//                                    noconfl &= conflictingVars( learnts, rationalAssignment, conflVars, true );
                                     #ifdef SAT_MODULE_OUTPUT_PROGRESS
                                     cout << "\r" << "Satisfied clauses: " << ((mSatisfiedClauses/(clauses.size()+learnts.size()))*100) << "%";
                                     cout.flush();
                                     #endif
-                                    if( noconfl )
-                                    {
-                                        return l_True;
-                                    }
+//                                    if( noconfl )
+//                                    {
+//                                        return l_True;
+//                                    }
 //                                    order_heap.build( conflVars );
                                     break;
                                 }
@@ -1338,8 +1354,35 @@ SetWatches:
             {
                 continue;
             }
+            #ifndef SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN
+            else
+            {
             #endif
-
+            #endif
+                #ifndef SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN
+                if( currentAssignmentConsistent == Unknown )
+                {
+                    vec<Lit> learnt_clause;
+                    if( mpPassedFormula->size() > 1 )
+                    {
+                        for( auto subformula = mpPassedFormula->begin(); subformula != mpPassedFormula->end(); ++subformula )
+                        {
+                            Lit lit = getLiteral( **subformula );
+                            learnt_clause.push( mkLit( var( lit ), !sign( lit ) ) );
+                        }
+                        if( addClause( learnt_clause, DEDUCTED_CLAUSE ) )
+                        {
+                            unknown_excludes.push( learnts.last() );
+                            continue;
+                        }
+                    }
+                }
+                #endif
+            #ifdef SAT_MODULE_THEORY_PROPAGATION
+            #ifndef SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN
+            }
+            #endif
+            #endif
             #ifdef SATMODULE_WITH_CALL_NUMBER
             #ifndef DEBUG_SATMODULE
             #ifdef WITH_PROGRESS_ESTIMATION
@@ -1372,6 +1415,12 @@ SetWatches:
                 conflictC++;
                 if( decisionLevel() == 0 )
                 {
+                    #ifndef SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN
+                    if( unknown_excludes.size() > 0 )
+                    {
+                        return l_Undef;
+                    }
+                    #endif
                     return l_False;
                 }
 

@@ -5,12 +5,12 @@
  * Created on June 19, 2013, 4:06 PM
  */
 
-#ifndef UTILS_H
-#define UTILS_H
+#pragma once
 
 #include "../../Constraint.h"
 #include "../../Formula.h"
 #include "../LRAModule/LRAModule.h"
+#include <carl/numbers/operations.h>
 
 namespace smtrat
 {
@@ -30,21 +30,6 @@ namespace smtrat
         * @return pair <lowerBoundConstraint*, upperBoundConstraint*>
         */
         std::pair<const Constraint*, const Constraint*> intervalToConstraint( const carl::Variable& _var, const carl::DoubleInterval _interval );
-
-        /**
-         * Checks whether the given constraint is a boundary constraint
-         * @param _constraint
-         * @return
-         */
-        bool isBound( const Constraint* _constraint );
-
-        /**
-         * Checks whether the given bound is a bound of the given variable.
-         * @param _var
-         * @param _constraint
-         * @return
-         */
-        bool isBoundIn( const Polynomial _var, const Constraint* _constraint );
         
         /**
         * Checks mIntervals if it contains an empty interval.
@@ -53,9 +38,7 @@ namespace smtrat
         bool intervalBoxContainsEmptyInterval(const EvalDoubleIntervalMap& _intervals);
         
         
-        const smtrat::lra::Variable<lra::Numeric>* getOriginalLraVar ( const Polynomial& _var, LRAModule& _lra );
+        const smtrat::lra::Variable<lra::Numeric>* getOriginalLraVar ( const carl::Variable::Arg _var, LRAModule& _lra );
         
     }
 }
-
-#endif   /* UTILS_H */
