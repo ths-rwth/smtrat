@@ -107,6 +107,7 @@ namespace smtrat
             Answer isConsistent();
             void removeSubformula( Formula::const_iterator );
             void updateModel() const;
+            double rateCall( const std::set<const Formula*>& ) const;
 
             // Printing methods.
             void printAll( const std::string& = "", std::ostream& = std::cout ) const;

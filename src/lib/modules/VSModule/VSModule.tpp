@@ -812,6 +812,12 @@ namespace smtrat
     }
     
     template<class Settings>
+    double VSModule<Settings>::rateCall( const std::set<const Formula*>& _formulas ) const
+    {
+        return 1;
+    }
+    
+    template<class Settings>
     Answer VSModule<Settings>::consistencyTrue()
     {
         #ifdef VS_LOG_INTERMEDIATE_STEPS
