@@ -1208,7 +1208,7 @@ namespace smtrat
                                         {
                                             if( (*icpVar).second->isOriginal() && (*icpVar).second->isExternalBoundsSet() != icp::Updated::NONE )
                                             {
-                                                assert( !(*icpVar).second->isExternalUpdated() );
+                                                assert( (*icpVar).second->isExternalUpdated() != icp::Updated::NONE );
                                                 if ( (*subformula) == (*(*icpVar).second->externalLeftBound()) || (*subformula) == (*(*icpVar).second->externalRightBound()) )
                                                 {
                                                     isBound = true;
