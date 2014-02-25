@@ -269,31 +269,31 @@ namespace smtrat
      * Note that the number of classes may not be minimal, i.e. two classes may actually be equivalent.
      * @return Equivalence classes.
      */
-    std::set<std::set<carl::Variable>> Module::getModelEqualities() const
+    std::list<std::vector<carl::Variable>> Module::getModelEqualities() const
     {
-            std::set<std::set<carl::Variable>> res;
-            for (auto it: this->mModel) {
-                    carl::Variable v = it.first;
-                    smtrat::Assignment a = it.second;
-                    bool added = false;
+		std::list<std::vector<carl::Variable>> res;
+		for (auto it: this->mModel) {
+			carl::Variable v = it.first;
+			smtrat::Assignment a = it.second;
+			bool added = false;
 
-                    for (auto cls: res) {
-                            // There should be no empty classes in the result.
-                            assert(cls.size() > 0);
-                            // Check if the current assignment fits into this class.
-                            if (a == this->mModel[*(cls.begin())]) {
-                                    // insert it and continue with the next assignment.
-                                    cls.insert(v);
-                                    added = true;
-                                    break;
-                            }
-                    }
-                    if (!added) {
-                            // The assignment did not fit in any existing class, hence we create a new one.
-                            res.emplace(std::set<carl::Variable>({v}));
-                    }
-            }
-            return res;
+			for (auto& cls: res) {
+					// There should be no empty classes in the result.
+					assert(cls.size() > 0);
+					// Check if the current assignment fits into this class.
+					if (a == this->mModel[cls.front()]) {
+						// insert it and continue with the next assignment.
+						cls.push_back(v);
+						added = true;
+						break;
+					}
+			}
+			if (!added) {
+					// The assignment did not fit in any existing class, hence we create a new one.
+					res.emplace_back(std::vector<carl::Variable>({v}));
+			}
+		}
+		return res;
     }
 
     /**

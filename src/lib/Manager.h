@@ -213,7 +213,7 @@ namespace smtrat
                 return mpPrimaryBackend->infeasibleSubsets();
             }
 
-			std::set<std::set<carl::Variable>> getModelEqualities() const
+			std::list<std::vector<carl::Variable>> getModelEqualities() const
 			{
 				return mpPrimaryBackend->getModelEqualities();
 			}

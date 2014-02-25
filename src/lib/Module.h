@@ -151,7 +151,7 @@ namespace smtrat
             virtual void removeSubformula( Formula::const_iterator );
             virtual void updateModel() const;
             virtual double rateCall( const std::set<const Formula*>& ) const;
-			virtual std::set<std::set<carl::Variable>> getModelEqualities() const;
+			virtual std::list<std::vector<carl::Variable>> getModelEqualities() const;
 
             // Methods to read and write on the members.
             inline Answer solverState() const
