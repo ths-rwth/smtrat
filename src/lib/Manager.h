@@ -213,6 +213,11 @@ namespace smtrat
                 return mpPrimaryBackend->infeasibleSubsets();
             }
 
+			std::set<std::set<carl::Variable>> getModelEqualities() const
+			{
+				return mpPrimaryBackend->getModelEqualities();
+			}
+
             /**
              * @return An assignment of the variables, which occur in the so far added
              *          formulas, to values of their domains, such that it satisfies the 
