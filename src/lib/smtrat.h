@@ -43,7 +43,7 @@
 #include "Constraint.h"
 #include "ConstraintPool.h"
 #include "Manager.h"
-#include "NRATSolver.h"
+#include "strategies/strategies.h"
 #include "Module.h"
 #include "ModuleFactory.h"
 
