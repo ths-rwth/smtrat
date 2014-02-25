@@ -296,6 +296,40 @@ namespace smtrat
 		return res;
 	}
 
+	/**
+	 * Partition the variables from the current model into equivalence classes according to their assigned value.
+	 * 
+	 * The result is a set of equivalence classes of variables where all variables within one class are assigned the same value.
+	 * Note that the number of classes may not be minimal, i.e. two classes may actually be equivalent.
+	 * @return Equivalence classes.
+	 */
+	std::set<std::set<carl::Variable>> Module::getModelEqualities() const
+	{
+		std::set<std::set<carl::Variable>> res;
+		for (auto it: this->mModel) {
+			carl::Variable v = it.first;
+			smtrat::Assignment a = it.second;
+			bool added = false;
+
+			for (auto cls: res) {
+				// There should be no empty classes in the result.
+				assert(cls.size() > 0);
+				// Check if the current assignment fits into this class.
+				if (a == this->mModel[*(cls.begin())]) {
+					// insert it and continue with the next assignment.
+					cls.insert(v);
+					added = true;
+					break;
+				}
+			}
+			if (!added) {
+				// The assignment did not fit in any existing class, hence we create a new one.
+				res.emplace(std::set<carl::Variable>({v}));
+			}
+		}
+		return res;
+	}
+
     /**
      * Copies the given sub-formula of the received formula to the passed formula. Note, that
      * there is always a link between sub-formulas of the passed formulas to sub-formulas of
