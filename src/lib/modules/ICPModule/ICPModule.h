@@ -140,6 +140,7 @@ namespace smtrat
             bool                                                                                mIsIcpInitialized; // initialized ICPModule?
             unsigned                                                                            mCurrentId; // keeps the currentId of the state nodes
             bool                                                                                mIsBackendCalled; // has a backend already been called in the actual run?
+            double                                                                              mTargetDiameter;
             
             #ifdef ICP_BOXLOG
             std::fstream                                                                        icpLog;
@@ -171,6 +172,7 @@ namespace smtrat
             bool assertSubformula( Formula::const_iterator );
             void removeSubformula( Formula::const_iterator );
             Answer isConsistent();
+            void updateModel() const;
 
         private:
 
@@ -193,7 +195,7 @@ namespace smtrat
             /**
              * Fills the IcpRelevantCandidates with all nonlinear and all active linear ContractionCandidates.
              */
-            void fillCandidates( double _targetDiameter = 0 );
+            void fillCandidates();
             
             /**
              * Adds the specific candidate to IcpRelevantCandidates.
@@ -235,9 +237,7 @@ namespace smtrat
              */
             bool contraction( icp::ContractionCandidate* _selection, double& _relativeContraction, double& _absoluteContraction );
             
-            EvalRationalMap createModel() const;
-            
-            void updateModel() const;
+            std::map<carl::Variable, double> createModel( bool antipoint=false ) const;
             
             /**
              * Calls the actual contraction on a separate map to check, whether contraction is possible. Returns the node, where insertion makes sense.
@@ -255,6 +255,8 @@ namespace smtrat
             double calculateSplittingImpact ( const carl::Variable& _var, icp::ContractionCandidate& _candidate ) const;
             
             std::set<const Formula*> createPremiseDeductions();
+            
+            Formula* createBoxFormula();
                         
             /**
              * Checks if there is a need for a split and manages the splitting and branching in the
@@ -262,7 +264,7 @@ namespace smtrat
              * @param _targetDiameter
              * @return if a split has happened and in which dimension.
              */
-            std::pair<bool,carl::Variable> checkAndPerformSplit( const double& _targetDiameter );
+            std::pair<bool,carl::Variable> checkAndPerformSplit();
 
             /**
              * Validates the actual intervals against the linear feasible region returned
