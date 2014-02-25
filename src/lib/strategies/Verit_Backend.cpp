@@ -31,9 +31,9 @@ namespace smtrat
     Verit_Backend::Verit_Backend():
         Manager()
     {
-        addBackendIntoStrategyGraph( 0, MT_LRAModule, isCondition );
-        addBackendIntoStrategyGraph( 1, MT_VSModule, isCondition );
-        addBackendIntoStrategyGraph( 2, MT_CADModule, isCondition );
+        //addBackendIntoStrategyGraph( 0, MT_LRAModule, isCondition );
+        addBackendIntoStrategyGraph( 0, MT_VSModule, isCondition );
+        addBackendIntoStrategyGraph( 1, MT_CADModule, isCondition );
     }
 
     Verit_Backend::~Verit_Backend(){}
