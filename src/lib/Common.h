@@ -48,7 +48,7 @@ namespace smtrat
     enum class Relation : unsigned { EQ = 0, NEQ = 1, LESS = 2, GREATER = 3, LEQ = 4, GEQ = 5 };
     
     ///An enum with the possible answer a Module can give
-    enum Answer { True, False, Unknown };
+    enum Answer { True = 0, False = 1, Unknown = 2 };
     
     // Structures.
     
