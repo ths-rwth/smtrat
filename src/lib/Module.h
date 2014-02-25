@@ -150,6 +150,7 @@ namespace smtrat
             virtual Answer isConsistent();
             virtual void removeSubformula( Formula::const_iterator );
             virtual void updateModel() const;
+            virtual double rateCall( const std::set<const Formula*>& ) const;
 
             // Methods to read and write on the members.
             inline Answer solverState() const

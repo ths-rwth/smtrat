@@ -246,6 +246,21 @@ namespace smtrat
             getBackendsModel();
         }
     }
+    
+    /**
+     * Rates the given set of formulas according to an estimation of the difficulty
+     * of solving the conjunction of the given formulas by the methods implemented in this module.
+     * This rating should involve the current state of the module being a result from the last consistency
+     * check and consult also the ratings of the module's backends.
+     * @param The set of formulas to rate.
+     * @return A positive number representing the rating of this module for conjunction of the given formulas.
+     *         If this number is 0, it means that this module can solve the given formula with almost
+     *         no effort.
+     */
+    double Module::rateCall( const std::set<const Formula*>& ) const
+    {
+        return 1;
+    }
 
     /**
      * Copies the given sub-formula of the received formula to the passed formula. Note, that
