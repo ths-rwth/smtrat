@@ -1628,8 +1628,7 @@ namespace smtrat
             Formula::const_iterator receivedConstraint = mpReceivedFormula->begin();
             while( receivedConstraint != mpReceivedFormula->end() )
             {
-                assert( (*receivedConstraint)->pConstraint() != NULL );
-                if( (*receivedConstraint)->pConstraint() != Formula::constraintPool().consistentConstraint() )
+                if( (*receivedConstraint)->getType() == CONSTRAINT )
                 {
                     if( (**oCond).constraint() == (*receivedConstraint)->constraint() )
                         break;
