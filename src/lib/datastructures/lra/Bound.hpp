@@ -105,7 +105,7 @@ namespace smtrat
                     return *mLimit;
                 }
 
-                const Value<T>* const pLimit() const
+                const Value<T>* pLimit() const
                 {
                     return mLimit;
                 }
@@ -115,7 +115,7 @@ namespace smtrat
                     return mLimit == NULL;
                 }
 
-                Variable<T>* const pVariable() const
+                Variable<T>* pVariable() const
                 {
                     return mVar;
                 }
@@ -184,7 +184,7 @@ namespace smtrat
                     return !mpOrigins->empty();
                 }
 
-                Info* const pInfo() const
+                Info* pInfo() const
                 {
                     return mpInfo;
                 }

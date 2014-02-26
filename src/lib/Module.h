@@ -463,17 +463,17 @@ namespace smtrat
 
             double getAddTimerMS() const
             {
-                return mTimerAddTotal.count() / 1000;
+                return (double)mTimerAddTotal.count() / 1000;
             }
 
             double getCheckTimerMS() const
             {
-                return mTimerCheckTotal.count() / 1000;
+                return (double)mTimerCheckTotal.count() / 1000;
             }
 
             double getRemoveTimerMS() const
             {
-                return mTimerRemoveTotal.count() / 1000;
+                return (double)mTimerRemoveTotal.count() / 1000;
             }
 
             unsigned getNrConsistencyChecks() const

@@ -60,7 +60,7 @@ namespace vs
         {
             if( iter->empty() )
                 return true;
-            estimatedResultSize *= iter->size();
+            estimatedResultSize *= (unsigned)iter->size();
             if( estimatedResultSize > MAX_NUM_OF_COMBINATION_RESULT )
                 return false;
             else 

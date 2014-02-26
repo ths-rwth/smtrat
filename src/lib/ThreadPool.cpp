@@ -99,11 +99,11 @@ namespace smtrat
      */
     void ThreadPool::checkBackendPriority( Module* _pModule )
     {
-        assert( mNumberOfRunningThreads>=0 && mNumberOfRunningThreads<=mNumberOfCores );
+        assert(mNumberOfRunningThreads <= mNumberOfCores);
         if( mPossibleOversubscription )
         {
             thread_priority threadPriority = _pModule->threadPriority();
-            assert( threadPriority.first>=0 && threadPriority.first<mNumberOfThreads );
+            assert(threadPriority.first < mNumberOfThreads);
             thread_priority nextThreadPriority;
             std::unique_lock<std::mutex> lock( mMutex );
             if( !mThreadPriorityQueue.higherPriority( threadPriority.second ) )
@@ -129,9 +129,9 @@ namespace smtrat
      */
     std::future<Answer> ThreadPool::submitBackend( Module* _pModule )
     {
-        assert( mNumberOfRunningThreads>=0 && mNumberOfRunningThreads<=mNumberOfCores );
+        assert(mNumberOfRunningThreads <= mNumberOfCores);
         thread_priority threadPriority = _pModule->threadPriority();
-        assert( threadPriority.first>=0 && threadPriority.first<(mNumberOfThreads-1) );
+        assert(threadPriority.first < (mNumberOfThreads-1));
         std::packaged_task<Answer()> task( std::bind( &Module::isConsistent, _pModule ) );
         std::future<Answer> result( task.get_future() );
         std::lock_guard<std::mutex> lock( mMutex );
