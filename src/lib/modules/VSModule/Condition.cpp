@@ -72,7 +72,7 @@ namespace vs
         if( _maxNumberOfVars < 4 )
             maximum = 16;
         else
-            maximum = _maxNumberOfVars * _maxNumberOfVars;
+            maximum = (double)_maxNumberOfVars * (double)_maxNumberOfVars;
         // Check the relation symbol.
         double relationSymbolWeight = 0;
         switch( mpConstraint->relation() )
@@ -99,7 +99,7 @@ namespace vs
                 return 0;
         }
         //Check the degree of the variable.
-        double degreeWeight = varInfo.maxDegree();
+        double degreeWeight = (double)varInfo.maxDegree();
         if( maximum <= degreeWeight )
             degreeWeight = maximum - 1;
         //Check the leading coefficient of the  given variable.
@@ -130,9 +130,9 @@ namespace vs
                 lCoeffWeight = 3;
         }
         // Check the number of variables.
-        double numberOfVariableWeight = mpConstraint->variables().size();
+        double numberOfVariableWeight = (double) mpConstraint->variables().size();
         // Check how in how many monomials the variable occurs.
-        double numberOfVariableOccurencesWeight = varInfo.occurence();
+        double numberOfVariableOccurencesWeight = (double)varInfo.occurence();
         if( maximum <= numberOfVariableOccurencesWeight )
             numberOfVariableOccurencesWeight = maximum - 1;
         // If variable occurs only in one monomial, give a bonus if all other monomials are positive.
