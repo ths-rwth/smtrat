@@ -293,7 +293,7 @@ namespace smtrat
                             mEntryID = (*mpEntries)[mEntryID].right();
                         }
 
-                        std::vector<TableauEntry<T> >* const pEntries() const
+                        std::vector<TableauEntry<T> >* pEntries() const
                         {
                             return mpEntries;
                         }

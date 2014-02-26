@@ -153,7 +153,7 @@ namespace smtrat
                 /**
                  * @return A pointer to the variable wrapper considered by this bound.
                  */
-                Variable<T>* const pVariable() const
+                Variable<T>* pVariable() const
                 {
                     return mpVariable;
                 }

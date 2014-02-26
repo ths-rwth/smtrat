@@ -50,7 +50,7 @@ namespace smtrat
            Statistics::addKeyValuePair( "pivots", mPivotingSteps );
            Statistics::addKeyValuePair( "tableau-size", mTableauxSize );
            Statistics::addKeyValuePair( "tableau-entries", mTableauEntries );
-           Statistics::addKeyValuePair( "tableau-coverage", mTableauEntries/(double)mTableauxSize );
+           Statistics::addKeyValuePair( "tableau-coverage", (double)mTableauEntries/(double)mTableauxSize );
            Statistics::addKeyValuePair( "refinements", mRefinements );
            Statistics::addKeyValuePair( "restarts", mRestarts );
            Statistics::addKeyValuePair( "conflicts", mConflicts );
