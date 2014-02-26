@@ -130,7 +130,13 @@ namespace smtrat
             addReceivedSubformulaToPassedFormula( subformula++ );
         }
         // Run the backends on the passed formula and return its answer.
+        #ifdef SMTRAT_DEVOPTION_MeasureTime
+        startCheckTimer();
+        #endif
         Answer a = runBackends();
+        #ifdef SMTRAT_DEVOPTION_MeasureTime
+        stopCheckTimer();
+        #endif
         if( a == False )
         {
             getInfeasibleSubsets();

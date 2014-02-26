@@ -74,7 +74,7 @@ namespace smtrat
      *
      * @param _subformula The position of the constraint within the received constraints.
      * @return false, if a conflict is detected;
-     *          true,  otherwise.
+     *          true, otherwise.
      */
     template<class Settings>
     bool VSModule<Settings>::assertSubformula( Formula::const_iterator _subformula )
@@ -83,7 +83,7 @@ namespace smtrat
         if( (*_subformula)->getType() == CONSTRAINT )
         {
             const Constraint* constraint = (*_subformula)->pConstraint();
-            const vs::Condition* condition  = new vs::Condition( constraint );
+            const vs::Condition* condition = new vs::Condition( constraint );
             mFormulaConditionMap[*_subformula] = condition;
             // Clear the ranking.
             switch( constraint->isConsistent() )
@@ -812,7 +812,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    double VSModule<Settings>::rateCall( const std::set<const Formula*>& _formulas ) const
+    double VSModule<Settings>::rateCall( const std::set<const Formula*>& ) const
     {
         return 1;
     }
@@ -1638,13 +1638,17 @@ namespace smtrat
         // Get the sub-formulas in the received formula corresponding to these original conditions.
         for( auto oCond = conds.begin(); oCond != conds.end(); ++oCond )
         {
+            assert( (*oCond)->pConstraint() != NULL );
             assert( (*oCond)->originalConditions().empty() );
             Formula::const_iterator receivedConstraint = mpReceivedFormula->begin();
             while( receivedConstraint != mpReceivedFormula->end() )
             {
-                bool constraintsAreEqual = (**oCond).constraint() == (*receivedConstraint)->constraint();
-                if( constraintsAreEqual )
-                    break;
+                assert( (*receivedConstraint)->pConstraint() != NULL );
+                if( (*receivedConstraint)->pConstraint() != Formula::constraintPool().consistentConstraint() )
+                {
+                    if( (**oCond).constraint() == (*receivedConstraint)->constraint() )
+                        break;
+                }
                 ++receivedConstraint;
             }
             assert( receivedConstraint != mpReceivedFormula->end() );

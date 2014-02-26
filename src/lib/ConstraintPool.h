@@ -42,6 +42,8 @@ namespace smtrat
 
             /// A flag indicating whether the prefix of the internally created external variable names has already been initialized.
             bool mExternalPrefixInitialized;
+            ///
+            bool mLastConstructedConstraintWasKnown;
             /// id allocator
             unsigned mIdAllocator;
             /// A counter for the auxiliary Boolean valued variables.
@@ -146,6 +148,13 @@ namespace smtrat
                 CONSTRAINT_LOCK_GUARD
                 size_t result = mConstraints.size();
                 return result;
+            }
+            
+            /*
+             */
+            bool lastConstructedConstraintWasKnown() const
+            {
+                return mLastConstructedConstraintWasKnown;
             }
 
             /**

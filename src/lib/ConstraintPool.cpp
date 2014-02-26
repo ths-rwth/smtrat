@@ -35,6 +35,7 @@ namespace smtrat
 {
     ConstraintPool::ConstraintPool( unsigned _capacity ):
         mExternalPrefixInitialized( true ),
+        mLastConstructedConstraintWasKnown( false ),
         mIdAllocator( 1 ),
         mAuxiliaryBoolVarCounter( 0 ),
         mAuxiliaryRealVarCounter( 0 ),
@@ -100,8 +101,13 @@ namespace smtrat
         //       Avoids long waiting for access (mutual exclusion) but increases the allocator to fast.
         Constraint* constraint = createNormalizedBound( _var, _rel, _bound );
         auto iterBoolPair = mConstraints.insert( constraint );
-        if( !iterBoolPair.second )
+        if( iterBoolPair.second )
+            mLastConstructedConstraintWasKnown = false;
+        else
+        {
+            mLastConstructedConstraintWasKnown = true;
             delete constraint;
+        }
         return *iterBoolPair.first;
     }
 
@@ -237,13 +243,17 @@ namespace smtrat
 
     const Constraint* ConstraintPool::addConstraintToPool( Constraint* _constraint )
     {
+        mLastConstructedConstraintWasKnown = false;
         unsigned constraintConsistent = _constraint->isConsistent();
 //        cout << *_constraint << " is consistent: " << constraintConsistent << endl;
         if( constraintConsistent == 2 ) // Constraint contains variables.
         {
             auto iterBoolPair = mConstraints.insert( _constraint );
             if( !iterBoolPair.second ) // Constraint has already been generated.
+            {
+                mLastConstructedConstraintWasKnown = true;
                 delete _constraint;
+            }
             else
             {
                 Constraint* constraint = _constraint->simplify();
@@ -254,7 +264,10 @@ namespace smtrat
                     delete _constraint;
                     auto iterBoolPairB = mConstraints.insert( constraint );
                     if( !iterBoolPairB.second ) // Simplified version already exists
+                    {
+                        mLastConstructedConstraintWasKnown = true;
                         delete constraint;
+                    }
                     else // Simplified version has not been generated before.
                     {
                         constraint->init();
@@ -273,6 +286,7 @@ namespace smtrat
         }
         else // Constraint contains no variables.
         {
+            mLastConstructedConstraintWasKnown = true;
             delete _constraint;
             return (constraintConsistent ? mConsistentConstraint : mInconsistentConstraint );
         }

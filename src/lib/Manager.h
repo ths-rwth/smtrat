@@ -148,9 +148,6 @@ namespace smtrat
                 #ifdef SMTRAT_STRAT_PARALLEL_MODE
                 initialize();
                 #endif
-                #ifdef SMTRAT_DEVOPTION_MeasureTime
-                mpPrimaryBackend->startCheckTimer();
-                #endif
                 *mPrimaryBackendFoundAnswer.back() = false;
                 mpPassedFormula->getPropositions();
                 return mpPrimaryBackend->isConsistent();
