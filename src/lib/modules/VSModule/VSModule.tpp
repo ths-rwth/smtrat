@@ -85,68 +85,52 @@ namespace smtrat
             const Constraint* constraint = (*_subformula)->pConstraint();
             const vs::Condition* condition = new vs::Condition( constraint );
             mFormulaConditionMap[*_subformula] = condition;
-            // Clear the ranking.
-            switch( constraint->isConsistent() )
+            assert( constraint->isConsistent() == 2 );
+            for( auto var = constraint->variables().begin(); var != constraint->variables().end(); ++var )
+                mAllVariables.insert( *var );
+            if( Settings::incremental_solving )
             {
-                case 0:
+                removeStatesFromRanking( *mpStateTree );
+                mIDCounter = 0;
+                vs::Condition::Set oConds = vs::Condition::Set();
+                oConds.insert( condition );
+                vector<DisjunctionOfConditionConjunctions> subResults = vector<DisjunctionOfConditionConjunctions>();
+                DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
+
+                if( Settings::int_constraints_allowed && Settings::split_neq_constraints
+                    && constraint->hasIntegerValuedVariable() && !constraint->hasRealValuedVariable()
+                    && constraint->relation() == Relation::NEQ )
                 {
-                    removeStatesFromRanking( *mpStateTree );
-                    mIDCounter = 0;
-                    mInfeasibleSubsets.clear();
-                    mInfeasibleSubsets.push_back( set<const Formula*>() );
-                    mInfeasibleSubsets.back().insert( *_subformula );
-                    mInconsistentConstraintAdded = true;
-                    foundAnswer( False );
-                    return false;
+                    ConditionList condVectorA = ConditionList();
+                    condVectorA.push_back( new vs::Condition( Formula::newConstraint( constraint->lhs(), Relation::LESS ), 0, false, oConds ) );
+                    subResult.push_back( condVectorA );
+                    ConditionList condVectorB = ConditionList();
+                    condVectorB.push_back( new vs::Condition( Formula::newConstraint( constraint->lhs(), Relation::GREATER ), 0, false, oConds ) );
+                    subResult.push_back( condVectorB );
                 }
-                case 1:
+                else
                 {
-                    return true;
+                    ConditionList condVector = ConditionList();
+                    condVector.push_back( new vs::Condition( constraint, 0, false, oConds ) );
+                    subResult.push_back( condVector );
                 }
-                case 2:
-                {
-                    for( auto var = constraint->variables().begin(); var != constraint->variables().end(); ++var )
-                        mAllVariables.insert( *var );
-                    if( Settings::incremental_solving )
-                    {
-                        removeStatesFromRanking( *mpStateTree );
-                        mIDCounter = 0;
-                        vs::Condition::Set oConds = vs::Condition::Set();
-                        oConds.insert( condition );
-                        vector<DisjunctionOfConditionConjunctions> subResults = vector<DisjunctionOfConditionConjunctions>();
-                        DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
-                        
-                        if( Settings::int_constraints_allowed && Settings::split_neq_constraints
-                            && constraint->hasIntegerValuedVariable() && !constraint->hasRealValuedVariable()
-                            && constraint->relation() == Relation::NEQ )
-                        {
-                            ConditionList condVectorA = ConditionList();
-                            condVectorA.push_back( new vs::Condition( Formula::newConstraint( constraint->lhs(), Relation::LESS ), 0, false, oConds ) );
-                            subResult.push_back( condVectorA );
-                            ConditionList condVectorB = ConditionList();
-                            condVectorB.push_back( new vs::Condition( Formula::newConstraint( constraint->lhs(), Relation::GREATER ), 0, false, oConds ) );
-                            subResult.push_back( condVectorB );
-                        }
-                        else
-                        {
-                            ConditionList condVector = ConditionList();
-                            condVector.push_back( new vs::Condition( constraint, 0, false, oConds ) );
-                            subResult.push_back( condVector );
-                        }
-                        subResults.push_back( subResult );
-                        mpStateTree->addSubstitutionResults( subResults );
-                        addStateToRanking( mpStateTree );
-                        insertTooHighDegreeStatesInRanking( mpStateTree );
-                    }
-                    mConditionsChanged = true;
-                    return true;
-                }
-                default:
-                {
-                    assert( false );
-                    return true;
-                }
+                subResults.push_back( subResult );
+                mpStateTree->addSubstitutionResults( subResults );
+                addStateToRanking( mpStateTree );
+                insertTooHighDegreeStatesInRanking( mpStateTree );
             }
+            mConditionsChanged = true;
+        }
+        else if( (*_subformula)->getType() == FFALSE )
+        {
+            removeStatesFromRanking( *mpStateTree );
+            mIDCounter = 0;
+            mInfeasibleSubsets.clear();
+            mInfeasibleSubsets.push_back( set<const Formula*>() );
+            mInfeasibleSubsets.back().insert( *_subformula );
+            mInconsistentConstraintAdded = true;
+            foundAnswer( False );
+            return false;
         }
         return true;
     }
@@ -224,7 +208,6 @@ namespace smtrat
             return foundAnswer( Unknown );
         if( Settings::int_constraints_allowed && !(mpReceivedFormula->isIntegerConstraintConjunction() || mpReceivedFormula->isRealConstraintConjunction()) )
             return foundAnswer( Unknown );
-        assert( mpReceivedFormula->size() == mFormulaConditionMap.size() );
         if( !mConditionsChanged )
         {
             if( mInfeasibleSubsets.empty() )
@@ -245,7 +228,7 @@ namespace smtrat
                 }
                 else
                 {
-                    return foundAnswer( Unknown );
+                    return (mFormulaConditionMap.empty() ? consistencyTrue() : foundAnswer( Unknown ));
                 }
             }
             else
@@ -757,6 +740,8 @@ namespace smtrat
         clearModel();
         if( solverState() == True )
         {
+            if( mFormulaConditionMap.empty() )
+                return;
             for( size_t i = mVariableVector.size(); i<=mRanking.begin()->second->treeDepth(); ++i )
             {
                 stringstream outA;
