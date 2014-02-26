@@ -699,7 +699,7 @@ namespace smtrat
             }
         }
         assert( _clause.size() != 0 );
-        assert( _type >= 0 && _type <= 2);
+        assert(_type <= 2);
         add_tmp.clear();
         _clause.copyTo( add_tmp );
 

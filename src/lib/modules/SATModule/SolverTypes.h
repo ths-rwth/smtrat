@@ -126,6 +126,11 @@ static const unsigned NORMAL_CLAUSE = 0;
 static const unsigned DEDUCTED_CLAUSE = 1;
 static const unsigned CONFLICT_CLAUSE = 2;
 
+#define BITMASK_MARK 0x03
+#define BITMASK_TYPE 0x03
+#define BITMASK_HASEXTRA 0x01
+#define BITMASK_RELOCED 0x01
+#define BITMASK_SIZE 0x3fff
 class Clause {
     struct {
         unsigned mark      : 2;
@@ -141,10 +146,10 @@ class Clause {
     template<class V>
     Clause(const V& ps, bool use_extra, unsigned _type ) {
         header.mark      = 0;
-        header.type      = _type;
+        header.type      = _type & BITMASK_TYPE;
         header.has_extra = use_extra;
         header.reloced   = 0;
-        header.size      = (unsigned)ps.size();
+        header.size      = (unsigned)ps.size() & BITMASK_SIZE;
 
         for (int i = 0; i < ps.size(); i++)
             data[i].lit = ps[i];
@@ -176,13 +181,13 @@ public:
 
 
     int          size        ()      const   { return header.size; }
-    void         shrink      (int i)         { assert(i <= size()); if (header.has_extra) data[header.size-i] = data[header.size]; header.size -= i; }
+    void         shrink      (int i)         { assert(i <= size()); if (header.has_extra) data[header.size-i] = data[header.size]; header.size = (header.size - i) & BITMASK_SIZE; }
     void         pop         ()              { shrink(1); }
     unsigned     type        ()      const   { return header.type; }
     bool         learnt      ()      const   { return header.type > NORMAL_CLAUSE; }
     bool         has_extra   ()      const   { return header.has_extra; }
     uint32_t     mark        ()      const   { return header.mark; }
-    void         mark        (uint32_t m)    { header.mark = m; }
+    void         mark        (uint32_t m)    { header.mark = m & BITMASK_MARK; }
     const Lit&   last        ()      const   { return data[header.size-1].lit; }
 
     bool         reloced     ()      const   { return header.reloced; }
