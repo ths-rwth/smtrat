@@ -130,13 +130,7 @@ namespace smtrat
             addReceivedSubformulaToPassedFormula( subformula++ );
         }
         // Run the backends on the passed formula and return its answer.
-        #ifdef SMTRAT_DEVOPTION_MeasureTime
-        startCheckTimer();
-        #endif
         Answer a = runBackends();
-        #ifdef SMTRAT_DEVOPTION_MeasureTime
-        stopCheckTimer();
-        #endif
         if( a == False )
         {
             getInfeasibleSubsets();
@@ -650,9 +644,6 @@ namespace smtrat
         if( mpManager == NULL ) return Unknown;
         *mBackendsFoundAnswer = false;
         Answer result = Unknown;
-        #ifdef SMTRAT_DEVOPTION_MeasureTime
-        stopCheckTimer();
-        #endif
         // Get the backends to be considered from the manager.
         mUsedBackends = mpManager->getBackends( mpPassedFormula, this, mBackendsFoundAnswer );
         mAllBackends = mpManager->getAllBackends( this );
@@ -686,9 +677,6 @@ namespace smtrat
                 mConstraintsToInform.clear();
                 if( assertionFailed )
                 {
-                    #ifdef SMTRAT_DEVOPTION_MeasureTime
-                    startCheckTimer();
-                    #endif
                     return False;
                 }
             }
@@ -769,9 +757,6 @@ namespace smtrat
         }
         #ifdef MODULE_VERBOSE
         cout << "Result:   " << ANSWER_TO_STRING( result ) << endl;
-        #endif
-        #ifdef SMTRAT_DEVOPTION_MeasureTime
-        startCheckTimer();
         #endif
         return result;
     }
