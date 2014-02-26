@@ -165,11 +165,6 @@ namespace Minisat
                 return value;
             }
 
-            operator double&( void )
-            {
-                return value;
-            }
-
             DoubleOption& operator = ( double x )
             {
                 value = x;
@@ -213,11 +208,6 @@ namespace Minisat
             {}
 
             operator int32_t( void ) const
-            {
-                return value;
-            }
-
-            operator int32_t&( void )
             {
                 return value;
             }
@@ -270,11 +260,6 @@ namespace Minisat
                 return value;
             }
 
-            operator const char*&( void )
-            {
-                return value;
-            }
-
             StringOption& operator = ( const char* x )
             {
                 value = x;
@@ -307,11 +292,6 @@ namespace Minisat
             {}
 
             operator bool( void ) const
-            {
-                return value;
-            }
-
-            operator bool&( void )
             {
                 return value;
             }
