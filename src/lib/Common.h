@@ -33,7 +33,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include "carl/core/MultivariatePolynomial.h"
-#include "carl/interval/DoubleInterval.h"
+#include "carl/interval/Interval.h"
 #include "carl/interval/IntervalEvaluation.h"
 #include "carl/interval/Contraction.h"
 
@@ -109,11 +109,13 @@ namespace smtrat
     
     typedef std::map<carl::Variable, Rational> EvalRationalMap;
     
-    typedef carl::ExactInterval<Rational> Interval;
+    typedef carl::Interval<Rational> Interval;
     
     typedef std::map<carl::Variable, Interval> EvalIntervalMap;
+
+    typedef carl::Interval<double> DoubleInterval;
     
-    typedef carl::DoubleInterval::evaldoubleintervalmap EvalDoubleIntervalMap;
+    typedef std::map<carl::Variable, DoubleInterval> EvalDoubleIntervalMap;
     
     typedef carl::VariableInformation<true, Polynomial> VarInfo;
     

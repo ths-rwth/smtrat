@@ -449,7 +449,7 @@ namespace smtrat
                  * @param _var The variable to compute the variable bounds as double interval for.
                  * @return The variable bounds as a double interval.
                  */
-                const carl::DoubleInterval& getDoubleInterval( const carl::Variable& _var ) const;
+                const carl::Interval<double>& getDoubleInterval( const carl::Variable& _var ) const;
                 
                 /**
                  * @param _var The variable to get origins of the bounds for.
@@ -1034,7 +1034,7 @@ namespace smtrat
                         upperBoundType = CONVERT_BOUND( var.supremum().type(), carl::BoundType );
                         upperBoundValue = var.supremum().limit();
                     }
-                    mDoubleIntervalMap[varVarPair->first] = carl::DoubleInterval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
+                    mDoubleIntervalMap[varVarPair->first] = carl::Interval<double>( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
                     var.doubleIntervalHasBeenUpdated();
                 }
             }
@@ -1043,7 +1043,7 @@ namespace smtrat
 
 		
         template<typename T>
-        const carl::DoubleInterval& VariableBounds<T>::getDoubleInterval( const carl::Variable& _var ) const
+        const carl::Interval<double>& VariableBounds<T>::getDoubleInterval( const carl::Variable& _var ) const
         {
             assert( mpConflictingVariable == NULL );
             typename VariableMap::iterator varVarPair = mpVariableMap->find( _var );
@@ -1075,7 +1075,7 @@ namespace smtrat
                     upperBoundType = CONVERT_BOUND( var.supremum().type(), carl::BoundType );
                     upperBoundValue = var.supremum().limit();
                 }
-                mDoubleIntervalMap[_var] = carl::DoubleInterval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
+                mDoubleIntervalMap[_var] = carl::Interval<double>( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
                 var.doubleIntervalHasBeenUpdated();
             }
             return mDoubleIntervalMap[_var];
@@ -1186,33 +1186,33 @@ namespace smtrat
                             Rational rb;
                             if( newBoundsA <= newBoundsB )
                             {
-                                lt = newBoundsA.leftType();
-                                rt = newBoundsB.rightType();
-                                if( lt != carl::BoundType::INFTY ) lb = newBoundsA.left();
-                                if( rt != carl::BoundType::INFTY ) rb = newBoundsB.right();
+                                lt = newBoundsA.lowerBoundType();
+                                rt = newBoundsB.upperBoundType();
+                                if( lt != carl::BoundType::INFTY ) lb = newBoundsA.lower();
+                                if( rt != carl::BoundType::INFTY ) rb = newBoundsB.upper();
                             }
                             else
                             {
                                 assert( newBoundsA >= newBoundsB );
-                                lt = newBoundsB.leftType();
-                                rt = newBoundsA.rightType();
-                                if( lt != carl::BoundType::INFTY ) lb = newBoundsB.left();
-                                if( rt != carl::BoundType::INFTY ) rb = newBoundsA.right();
+                                lt = newBoundsB.lowerBoundType();
+                                rt = newBoundsA.upperBoundType();
+                                if( lt != carl::BoundType::INFTY ) lb = newBoundsB.lower();
+                                if( rt != carl::BoundType::INFTY ) rb = newBoundsA.upper();
                             }
                             if( (*cons)->relation() == Relation::EQ )
                             {
-                                if( newBoundsA.leftType() != carl::BoundType::INFTY )
+                                if( newBoundsA.lowerBoundType() != carl::BoundType::INFTY )
                                 {
-                                    Polynomial boundLhs = Polynomial( var ) - newBoundsA.left();
-                                    Relation boundRel = newBoundsA.leftType() == carl::BoundType::STRICT ? Relation::LEQ : Relation::LESS;
+                                    Polynomial boundLhs = Polynomial( var ) - newBoundsA.lower();
+                                    Relation boundRel = newBoundsA.lowerBoundType() == carl::BoundType::STRICT ? Relation::LEQ : Relation::LESS;
                                     const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
 //                                    std::cout << "it follows: " << *newBoundConstraint << std::endl;
                                     result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
                                 }
-                                if( newBoundsB.rightType() != carl::BoundType::INFTY )
+                                if( newBoundsB.upperBoundType() != carl::BoundType::INFTY )
                                 {
-                                    Polynomial boundLhs = Polynomial( var ) - newBoundsB.right();
-                                    Relation boundRel = newBoundsA.rightType() == carl::BoundType::STRICT ? Relation::LEQ : Relation::LESS;
+                                    Polynomial boundLhs = Polynomial( var ) - newBoundsB.upper();
+                                    Relation boundRel = newBoundsA.upperBoundType() == carl::BoundType::STRICT ? Relation::LEQ : Relation::LESS;
                                     const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
 //                                    std::cout << "it follows: " << *newBoundConstraint << std::endl;
                                     result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
@@ -1245,26 +1245,26 @@ namespace smtrat
                                             break;
                                     }
                                 }
-                                if( newBoundsA.leftType() != carl::BoundType::INFTY )
+                                if( newBoundsA.lowerBoundType() != carl::BoundType::INFTY )
                                 {
                                     if( rel == Relation::EQ || rel == Relation::GEQ || rel == Relation::GREATER )
                                     {
-                                        Polynomial boundLhs = Polynomial( var ) - newBoundsA.left();
+                                        Polynomial boundLhs = Polynomial( var ) - newBoundsA.lower();
                                         Relation boundRel = Relation::GEQ;
-                                        if( newBoundsA.leftType() == carl::BoundType::STRICT || rel == Relation::GREATER )
+                                        if( newBoundsA.lowerBoundType() == carl::BoundType::STRICT || rel == Relation::GREATER )
                                             boundRel = Relation::GREATER;
                                         const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
 //                                        std::cout << "it follows: " << *newBoundConstraint << std::endl;
                                         result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
                                     }
                                 }
-                                if( newBoundsA.rightType() != carl::BoundType::INFTY )
+                                if( newBoundsA.upperBoundType() != carl::BoundType::INFTY )
                                 {
                                     if( rel == Relation::EQ || rel == Relation::LEQ || rel == Relation::LESS )
                                     {
-                                        Polynomial boundLhs = Polynomial( var ) - newBoundsA.right();
+                                        Polynomial boundLhs = Polynomial( var ) - newBoundsA.upper();
                                         Relation boundRel = Relation::LEQ;
-                                        if( newBoundsA.rightType() == carl::BoundType::STRICT || rel == Relation::LESS )
+                                        if( newBoundsA.upperBoundType() == carl::BoundType::STRICT || rel == Relation::LESS )
                                             boundRel = Relation::LESS;
                                         const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
 //                                        std::cout << "it follows: " << *newBoundConstraint << std::endl;

@@ -238,7 +238,7 @@ namespace smtrat
             return foundAnswer( False );
         }
 		carl::CAD<smtrat::Rational>::BoundMap boundMap;
-        std::map<carl::Variable, carl::ExactInterval<smtrat::Rational>> eiMap = mVariableBounds.getEvalIntervalMap();
+        std::map<carl::Variable, carl::Interval<smtrat::Rational>> eiMap = mVariableBounds.getEvalIntervalMap();
         std::vector<carl::Variable> variables = mCAD.getVariables();
         for (unsigned v = 0; v < variables.size(); ++v)
         {
@@ -454,7 +454,7 @@ namespace smtrat
                     vars.erase( v ); // shall never be found again
                 else
                 { // variable not handled by CAD, use the midpoint of the bounding interval for the assignment
-                    Assignment ass = b.second.midpoint();
+                    Assignment ass = b.second.center();
 					mModel.insert(std::make_pair(b.first, ass));
                 }
             }

@@ -180,13 +180,13 @@ namespace smtrat
                 return 2;
             }
             DoubleInterval solutionSpace = carl::IntervalEvaluation::evaluate( mLhs, _solutionInterval );
-            if( solutionSpace.empty() )
+            if( solutionSpace.isEmpty() )
                 return 2;
             switch( relation() )
             {
                 case Relation::EQ:
                 {
-                    if( solutionSpace.diameter() == 0 && solutionSpace.left() == 0 )
+                    if( solutionSpace.diameter() == 0 && solutionSpace.lower() == 0 )
                         return 1;
                     else if( !solutionSpace.contains( 0 ) )
                         return 0;
@@ -200,52 +200,52 @@ namespace smtrat
                 }
                 case Relation::LESS:
                 {
-                    if( solutionSpace.rightType() != carl::BoundType::INFTY )
+                    if( solutionSpace.upperBoundType() != carl::BoundType::INFTY )
                     {
-                        if( solutionSpace.right() < 0 )
+                        if( solutionSpace.upper() < 0 )
                             return 1;
-                        else if( solutionSpace.right() == 0 && solutionSpace.rightType() == carl::BoundType::STRICT )
+                        else if( solutionSpace.upper() == 0 && solutionSpace.upperBoundType() == carl::BoundType::STRICT )
                             return 1;
                     }
-                    if( solutionSpace.leftType() != carl::BoundType::INFTY && solutionSpace.left() >= 0 )
+                    if( solutionSpace.lowerBoundType() != carl::BoundType::INFTY && solutionSpace.lower() >= 0 )
                         return 0;
                     break;
                 }
                 case Relation::GREATER:
                 {
-                    if( solutionSpace.leftType() != carl::BoundType::INFTY )
+                    if( solutionSpace.lowerBoundType() != carl::BoundType::INFTY )
                     {
-                        if( solutionSpace.left() > 0 )
+                        if( solutionSpace.lower() > 0 )
                             return 1;
-                        else if( solutionSpace.left() == 0 && solutionSpace.leftType() == carl::BoundType::STRICT )
+                        else if( solutionSpace.lower() == 0 && solutionSpace.lowerBoundType() == carl::BoundType::STRICT )
                             return 1;
                     }
-                    if( solutionSpace.rightType() != carl::BoundType::INFTY && solutionSpace.right() <= 0 )
+                    if( solutionSpace.upperBoundType() != carl::BoundType::INFTY && solutionSpace.upper() <= 0 )
                         return 0;
                     break;
                 }
                 case Relation::LEQ:
                 {
-                    if( solutionSpace.rightType() != carl::BoundType::INFTY && solutionSpace.right() <= 0)
+                    if( solutionSpace.upperBoundType() != carl::BoundType::INFTY && solutionSpace.upper() <= 0)
                         return 1;
-                    if( solutionSpace.leftType() != carl::BoundType::INFTY )
+                    if( solutionSpace.lowerBoundType() != carl::BoundType::INFTY )
                     {
-                        if( solutionSpace.left() > 0 )
+                        if( solutionSpace.lower() > 0 )
                             return 0;
-                        else if( solutionSpace.left() == 0 && solutionSpace.leftType() == carl::BoundType::STRICT )
+                        else if( solutionSpace.lower() == 0 && solutionSpace.lowerBoundType() == carl::BoundType::STRICT )
                             return 0;
                     }
                     break;
                 }
                 case Relation::GEQ:
                 {
-                    if( solutionSpace.leftType() != carl::BoundType::INFTY && solutionSpace.left() >= 0 )
+                    if( solutionSpace.lowerBoundType() != carl::BoundType::INFTY && solutionSpace.lower() >= 0 )
                         return 1;
-                    if( solutionSpace.rightType() != carl::BoundType::INFTY )
+                    if( solutionSpace.upperBoundType() != carl::BoundType::INFTY )
                     {
-                        if( solutionSpace.right() < 0 )
+                        if( solutionSpace.upper() < 0 )
                             return 0;
-                        else if( solutionSpace.right() == 0 && solutionSpace.rightType() == carl::BoundType::STRICT )
+                        else if( solutionSpace.upper() == 0 && solutionSpace.upperBoundType() == carl::BoundType::STRICT )
                             return 0;
                     }
                     break;
