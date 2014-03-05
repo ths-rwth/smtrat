@@ -30,15 +30,15 @@ namespace smtrat
             return isLinear;
         }
         
-        std::pair<const Constraint*, const Constraint*> intervalToConstraint( const carl::Variable::Arg _var, const carl::DoubleInterval _interval )
+        std::pair<const Constraint*, const Constraint*> intervalToConstraint( const carl::Variable::Arg _var, const smtrat::DoubleInterval _interval )
         {
             // left:
-            Rational           bound  = carl::rationalize<Rational>( _interval.left() );
+            Rational           bound  = carl::rationalize<Rational>( _interval.lower() );
             
             Polynomial leftEx = Polynomial(_var) - Polynomial(bound);
             
             const Constraint* leftTmp;
-            switch( _interval.leftType() )
+            switch( _interval.lowerBoundType() )
             {
                 case carl::BoundType::STRICT:
 //                    leftTmp = Formula::newBound(_var, smtrat::Relation::CR_GREATER, bound);
@@ -53,11 +53,11 @@ namespace smtrat
             }
 
             // right:
-            bound = carl::rationalize<Rational>( _interval.right() );
+            bound = carl::rationalize<Rational>( _interval.upper() );
             Polynomial rightEx = Polynomial(_var) - Polynomial(bound);
             
             const Constraint* rightTmp;
-            switch( _interval.rightType() )
+            switch( _interval.upperBoundType() )
             {
                 case carl::BoundType::STRICT:
                     rightTmp = Formula::newConstraint(rightEx, smtrat::Relation::LESS);
@@ -78,7 +78,7 @@ namespace smtrat
         {
             for ( auto intervalIt = _intervals.begin(); intervalIt != _intervals.end(); ++intervalIt )
             {
-                if ( (*intervalIt).second.empty() )
+                if ( (*intervalIt).second.isEmpty() )
                     return true;
             }
             return false;

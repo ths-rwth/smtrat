@@ -29,7 +29,7 @@ namespace smtrat
         * @param _interval
         * @return pair <lowerBoundConstraint*, upperBoundConstraint*>
         */
-        std::pair<const Constraint*, const Constraint*> intervalToConstraint( const carl::Variable& _var, const carl::DoubleInterval _interval );
+        std::pair<const Constraint*, const Constraint*> intervalToConstraint( const carl::Variable& _var, const smtrat::DoubleInterval _interval );
         
         /**
         * Checks mIntervals if it contains an empty interval.

@@ -2182,7 +2182,7 @@ namespace vs
             father().variableBounds().print( cout, ">>>    " );
             #endif
             Condition::Set conflict = Condition::Set();
-            vector< carl::DoubleInterval > solutionSpaces = solutionSpace( conflict );
+            vector< smtrat::DoubleInterval > solutionSpaces = solutionSpace( conflict );
             if( solutionSpaces.empty() )
             {
                 ConditionSetSet conflicts = ConditionSetSet();
@@ -2194,14 +2194,14 @@ namespace vs
         return true;
     }
 
-    vector< carl::DoubleInterval > State::solutionSpace( Condition::Set& _conflictReason ) const
+    vector< smtrat::DoubleInterval > State::solutionSpace( Condition::Set& _conflictReason ) const
     {
-        vector< carl::DoubleInterval > result = vector< carl::DoubleInterval >();
+        vector< smtrat::DoubleInterval > result = vector< smtrat::DoubleInterval >();
         assert( !isRoot() );
         if( substitution().type() == Substitution::MINUS_INFINITY )
         {
-            if( father().variableBounds().getDoubleInterval( substitution().variable() ).leftType() == carl::BoundType::INFTY )
-                result.push_back( carl::DoubleInterval::unboundedInterval() );
+            if( father().variableBounds().getDoubleInterval( substitution().variable() ).lowerBoundType() == carl::BoundType::INFTY )
+                result.push_back( smtrat::DoubleInterval::unboundedInterval() );
             else
             {
                 set< const Condition* > conflictBounds = father().variableBounds().getOriginsOfBounds( substitution().variable() );
@@ -2211,8 +2211,8 @@ namespace vs
         }
         else if( substitution().type() == Substitution::PLUS_INFINITY )
         {
-            if( father().variableBounds().getDoubleInterval( substitution().variable() ).rightType() == carl::BoundType::INFTY )
-                result.push_back( carl::DoubleInterval::unboundedInterval() );
+            if( father().variableBounds().getDoubleInterval( substitution().variable() ).upperBoundType() == carl::BoundType::INFTY )
+                result.push_back( smtrat::DoubleInterval::unboundedInterval() );
             else
             {
                 set< const Condition* > conflictBounds = father().variableBounds().getOriginsOfBounds( substitution().variable() );
@@ -2223,12 +2223,12 @@ namespace vs
         else
         {
             smtrat::EvalDoubleIntervalMap intervals = father().variableBounds().getIntervalMap();
-            carl::DoubleInterval solutionSpaceConst = carl::IntervalEvaluation::evaluate( substitution().term().constantPart(), intervals );
-            carl::DoubleInterval solutionSpaceFactor = carl::IntervalEvaluation::evaluate( substitution().term().factor(), intervals );
-            carl::DoubleInterval solutionSpaceRadicand = carl::IntervalEvaluation::evaluate( substitution().term().radicand(), intervals );
-            carl::DoubleInterval solutionSpaceSqrt = solutionSpaceRadicand.sqrt();
-            carl::DoubleInterval solutionSpaceDenom = carl::IntervalEvaluation::evaluate( substitution().term().denominator(), intervals );
-            carl::DoubleInterval solutionSpace = solutionSpaceFactor * solutionSpaceSqrt;
+            smtrat::DoubleInterval solutionSpaceConst = carl::IntervalEvaluation::evaluate( substitution().term().constantPart(), intervals );
+            smtrat::DoubleInterval solutionSpaceFactor = carl::IntervalEvaluation::evaluate( substitution().term().factor(), intervals );
+            smtrat::DoubleInterval solutionSpaceRadicand = carl::IntervalEvaluation::evaluate( substitution().term().radicand(), intervals );
+            smtrat::DoubleInterval solutionSpaceSqrt = solutionSpaceRadicand.sqrt();
+            smtrat::DoubleInterval solutionSpaceDenom = carl::IntervalEvaluation::evaluate( substitution().term().denominator(), intervals );
+            smtrat::DoubleInterval solutionSpace = solutionSpaceFactor * solutionSpaceSqrt;
             solutionSpace = solutionSpace + solutionSpaceConst;
             #ifdef VS_DEBUG_VARIABLE_BOUNDS
             cout << ">>> Results in:" << endl;
@@ -2239,23 +2239,23 @@ namespace vs
             cout << ">>>    denominator part   : " << solutionSpaceDenom << endl;
             cout << ">>>    numerator part     : " << solutionSpace << endl;
             #endif
-            carl::DoubleInterval resA;
-            carl::DoubleInterval resB;
+            smtrat::DoubleInterval resA;
+            smtrat::DoubleInterval resB;
             bool splitOccurred = solutionSpace.div_ext( resA, resB, solutionSpaceDenom );
-            const carl::DoubleInterval& subVarInterval = intervals[substitution().variable()];
-            if( substitution().type() == Substitution::PLUS_EPSILON && resA.leftType() != carl::BoundType::INFTY )
+            const smtrat::DoubleInterval& subVarInterval = intervals[substitution().variable()];
+            if( substitution().type() == Substitution::PLUS_EPSILON && resA.lowerBoundType() != carl::BoundType::INFTY )
             {
-                if( resA.rightType() == carl::BoundType::INFTY || resA.right() == DBL_MAX )
+                if( resA.upperBoundType() == carl::BoundType::INFTY || resA.upper() == DBL_MAX )
                 {
-                    resA = carl::DoubleInterval( resA.left(), carl::BoundType::STRICT, 0, carl::BoundType::INFTY );
+                    resA = smtrat::DoubleInterval( resA.lower(), carl::BoundType::STRICT, (double)0, carl::BoundType::INFTY );
                     if( splitOccurred )
-                        resB = carl::DoubleInterval( resB.left(), carl::BoundType::STRICT, 0, carl::BoundType::INFTY );
+                        resB = smtrat::DoubleInterval( resB.lower(), carl::BoundType::STRICT, (double)0, carl::BoundType::INFTY );
                 }
                 else
                 {
-                    resA = carl::DoubleInterval( resA.left(), carl::BoundType::STRICT, std::nextafter( resA.right(), INFINITY ), carl::BoundType::WEAK );
+                    resA = smtrat::DoubleInterval( resA.lower(), carl::BoundType::STRICT, std::nextafter( resA.upper(), INFINITY ), carl::BoundType::WEAK );
                     if( splitOccurred )
-                        resB = carl::DoubleInterval( resB.left(), carl::BoundType::STRICT, std::nextafter( resB.right(), INFINITY ), carl::BoundType::WEAK );
+                        resB = smtrat::DoubleInterval( resB.lower(), carl::BoundType::STRICT, std::nextafter( resB.upper(), INFINITY ), carl::BoundType::WEAK );
                 }
             }
             #ifdef VS_DEBUG_VARIABLE_BOUNDS
@@ -2265,7 +2265,7 @@ namespace vs
             #ifdef VS_DEBUG_VARIABLE_BOUNDS
             cout << ">>>    intersection part 1: " << resA << endl;
             #endif
-            if( !resA.empty() )
+            if( !resA.isEmpty() )
                 result.push_back( resA );
             if( splitOccurred )
             {
@@ -2276,7 +2276,7 @@ namespace vs
                 #ifdef VS_DEBUG_VARIABLE_BOUNDS
                 cout << ">>>    intersection part 1: " << resB << endl;
                 #endif
-                if( !resB.empty() )
+                if( !resB.isEmpty() )
                     result.push_back( resB );
             }
             if( result.empty() )
@@ -2301,12 +2301,12 @@ namespace vs
         smtrat::EvalDoubleIntervalMap intervals = smtrat::EvalDoubleIntervalMap();
         if( cons.lhs().isUnivariate() )
         {
-            carl::DoubleInterval varDomain = variableBounds().getDoubleInterval( index() );
+            smtrat::DoubleInterval varDomain = variableBounds().getDoubleInterval( index() );
             smtrat::Rational cb = cons.lhs().toUnivariatePolynomial().cauchyBound();
             #ifdef VS_DEBUG_ROOTS_CHECK
             cout << "Cauchy bound of  " << cons.lhs() << "  is  " << cb << "." << endl;
             #endif
-            carl::DoubleInterval cbInterval = carl::DoubleInterval( -cb, carl::BoundType::STRICT, cb, carl::BoundType::STRICT );
+            smtrat::DoubleInterval cbInterval = smtrat::DoubleInterval( -cb, carl::BoundType::STRICT, cb, carl::BoundType::STRICT );
             varDomain = varDomain.intersect( cbInterval );
             #ifdef VS_DEBUG_ROOTS_CHECK
             cout << varDomain << endl;
@@ -2319,10 +2319,10 @@ namespace vs
         if( rel == smtrat::Relation::GREATER || rel == smtrat::Relation::LESS || rel == smtrat::Relation::NEQ )
         {
             auto indexDomain = intervals.find( index() );
-            if( indexDomain->second.leftType() == carl::BoundType::STRICT )
-                indexDomain->second.setLeftType( carl::BoundType::WEAK );
+            if( indexDomain->second.lowerBoundType() == carl::BoundType::STRICT )
+                indexDomain->second.setLowerBoundType( carl::BoundType::WEAK );
         }
-        carl::DoubleInterval solutionSpace = carl::IntervalEvaluation::evaluate( cons.lhs(), intervals );
+        smtrat::DoubleInterval solutionSpace = carl::IntervalEvaluation::evaluate( cons.lhs(), intervals );
         // TODO: if the condition is an equation and the degree in the index less than 3, 
         // then it is maybe better to consider the according test candidates
         #ifdef VS_DEBUG_ROOTS_CHECK
@@ -2334,8 +2334,8 @@ namespace vs
             {
                 carl::UnivariatePolynomial<smtrat::Rational> rup = cons.lhs().toUnivariatePolynomial();
                 list<carl::UnivariatePolynomial<smtrat::Rational>> seq = rup.standardSturmSequence();
-                smtrat::Rational leftBound = cln::rationalize( cln::cl_F( intervals.begin()->second.left() ) );
-                smtrat::Rational rightBound = cln::rationalize( cln::cl_F( intervals.begin()->second.right() ) );
+                smtrat::Rational leftBound = cln::rationalize( cln::cl_F( intervals.begin()->second.lower() ) );
+                smtrat::Rational rightBound = cln::rationalize( cln::cl_F( intervals.begin()->second.upper() ) );
                 smtrat::Interval interv( leftBound, carl::BoundType::WEAK, rightBound, carl::BoundType::WEAK );
                 int numberOfRoots = carl::UnivariatePolynomial<smtrat::Rational>::countRealRoots( seq, interv );
                 assert( index() != carl::Variable::NO_VARIABLE );
@@ -2345,9 +2345,9 @@ namespace vs
                     ++numberOfRoots;
                 if( imageOfRightBound == smtrat::ZERO_RATIONAL )
                 {
-                    if( intervals.begin()->second.rightType() == carl::BoundType::STRICT && numberOfRoots != 0 )
+                    if( intervals.begin()->second.upperBoundType() == carl::BoundType::STRICT && numberOfRoots != 0 )
                         --numberOfRoots;
-                    if( intervals.begin()->second.rightType() == carl::BoundType::WEAK )
+                    if( intervals.begin()->second.upperBoundType() == carl::BoundType::WEAK )
                         ++numberOfRoots;
                 }
                 #ifdef VS_DEBUG_ROOTS_CHECK
@@ -2406,13 +2406,13 @@ namespace vs
         bool constraintInconsistent = false;
         if( cons.relation() == smtrat::Relation::EQ )
             constraintInconsistent = true;
-        else if( solutionSpace.left() > 0 && cons.relation() == smtrat::Relation::LEQ )
+        else if( solutionSpace.lower() > 0 && cons.relation() == smtrat::Relation::LEQ )
             constraintInconsistent = true;
-        else if( solutionSpace.right() < 0 && cons.relation() == smtrat::Relation::GEQ )
+        else if( solutionSpace.upper() < 0 && cons.relation() == smtrat::Relation::GEQ )
             constraintInconsistent = true;
-        else if( solutionSpace.left() >= 0 && cons.relation() == smtrat::Relation::LESS )
+        else if( solutionSpace.lower() >= 0 && cons.relation() == smtrat::Relation::LESS )
             constraintInconsistent = true;
-        else if( solutionSpace.right() <= 0 && cons.relation() == smtrat::Relation::GREATER )
+        else if( solutionSpace.upper() <= 0 && cons.relation() == smtrat::Relation::GREATER )
             constraintInconsistent = true;
         Condition::Set origins = Condition::Set();
         origins.insert( _condition );
