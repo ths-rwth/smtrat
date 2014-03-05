@@ -574,6 +574,25 @@ namespace smtrat
              * Generates a fresh real variable and returns its identifier.
              * @return The fresh real variable.
              */
+            static carl::Variable newAuxiliaryIntVariable()
+            {
+                return mpConstraintPool->newAuxiliaryIntVariable();
+            }
+
+            /**
+             * Generates a fresh real variable and returns its identifier.
+             * @param _varName The dedicated name of the real variable.
+             * @return The fresh real variable.
+             */
+            static carl::Variable newAuxiliaryIntVariable( const std::string& _varName )
+            {
+                return mpConstraintPool->newAuxiliaryIntVariable( _varName );
+            }
+
+            /**
+             * Generates a fresh real variable and returns its identifier.
+             * @return The fresh real variable.
+             */
             static carl::Variable newAuxiliaryRealVariable()
             {
                 return mpConstraintPool->newAuxiliaryRealVariable();

@@ -38,7 +38,7 @@ using namespace carl;
 //#define ICPMODULE_DEBUG
 //#define ICPMODULE_REDUCED_DEBUG
 #define ICP_CONSIDER_WIDTH
-#define ICP_SIMPLE_VALIDATION
+//#define ICP_SIMPLE_VALIDATION
 #define ICP_PROLONG_CONTRACTION
 
 
@@ -352,11 +352,20 @@ namespace smtrat
             else
             {
                 // if not existent:
-                carl::Variable newReal = Formula::newAuxiliaryRealVariable();
                 Variables variables = replacementPtr->variables();
-                variables.insert(newReal);
+                bool hasRealVar = false;
+                for( auto var : variables )
+                {
+                    if( var.getType() == carl::VariableType::VT_REAL )
+                    {
+                        hasRealVar = true;
+                        break;
+                    }
+                }
+                carl::Variable newVar = hasRealVar ? Formula::newAuxiliaryRealVariable() : Formula::newAuxiliaryIntVariable();
+                variables.insert(newVar);
 
-                const Polynomial rhs = slackvariable->expression()-newReal;
+                const Polynomial rhs = slackvariable->expression()-newVar;
                 const Constraint* tmpConstr = Formula::newConstraint(rhs, Relation::EQ);
                
                 // Create candidates for every possible variable:
@@ -366,7 +375,7 @@ namespace smtrat
                     {
                         mContractors.insert(std::make_pair(rhs, Contractor<carl::SimpleNewton>(rhs)));
                     }
-                    icp::ContractionCandidate* newCandidate = mCandidateManager->getInstance()->createCandidate(newReal, rhs, tmpConstr, *variableIt, mContractors.at(rhs),*_formula);
+                    icp::ContractionCandidate* newCandidate = mCandidateManager->getInstance()->createCandidate(newVar, rhs, tmpConstr, *variableIt, mContractors.at(rhs),*_formula);
 
                     // ensure that the created candidate is set as linear
                     newCandidate->setLinear();
@@ -382,14 +391,14 @@ namespace smtrat
                     mActiveLinearConstraints[newCandidate] = 1;
 
                     // set interval to unbounded if not existing - we need an interval for the icpVariable
-                    if ( mIntervals.find(newReal) == mIntervals.end() )
+                    if ( mIntervals.find(newVar) == mIntervals.end() )
                     {
-                        mIntervals.insert(std::make_pair(newReal, carl::DoubleInterval::unboundedInterval()));
-                        mHistoryRoot->addInterval(newReal, carl::DoubleInterval::unboundedInterval());
+                        mIntervals.insert(std::make_pair(newVar, carl::DoubleInterval::unboundedInterval()));
+                        mHistoryRoot->addInterval(newVar, carl::DoubleInterval::unboundedInterval());
                     }
                    
                     // try to add icpVariable - if already existing, only add the created candidate, else create new icpVariable
-                    bool original = (*variableIt != newReal);
+                    bool original = (*variableIt != newVar);
                     icp::IcpVariable* icpVar = NULL;
                     if( original )
                         icpVar = new icp::IcpVariable(*variableIt, original, newCandidate, icp::getOriginalLraVar(*variableIt,mLRA) );
@@ -1032,20 +1041,20 @@ namespace smtrat
                     }
                     #endif
                     // do a quick test with one point.
-                    if( !invalidBox )
-                    {
-                        EvalRationalMap rationals;
-                        std::map<carl::Variable, double> values = createModel();
-                        for(auto value : values)
-                        {
-                            rationals.insert(std::make_pair(value.first, carl::rationalize<Rational>(value.second)));
-                        }
-                        unsigned result = mpReceivedFormula->satisfiedBy(rationals);
-                        if ( result == 1 )
-                        {
-                            return foundAnswer(True);
-                        }
-                    }
+//                    if( !invalidBox )
+//                    {
+//                        EvalRationalMap rationals;
+//                        std::map<carl::Variable, double> values = createModel();
+//                        for(auto value : values)
+//                        {
+//                            rationals.insert(std::make_pair(value.first, carl::rationalize<Rational>(value.second)));
+//                        }
+//                        unsigned result = mpReceivedFormula->satisfiedBy(rationals);
+//                        if ( result == 1 )
+//                        {
+//                            return foundAnswer(True);
+//                        }
+//                    }
                 }
                 #ifdef ICP_BOXLOG
                 else
@@ -1418,19 +1427,28 @@ namespace smtrat
                 {
                     assert( (*expressionIt).second == constraint );
                     // cCreate mLinearzations entry
-                    carl::Variable newReal = Formula::newAuxiliaryRealVariable();
-                    mLinearizations.insert( std::make_pair((*expressionIt).first, newReal) );
+                    Variables variables;
+                    (*expressionIt).first.gatherVariables(variables);
+                    bool hasRealVar = false;
+                    for( auto var : variables )
+                    {
+                        if( var.getType() == carl::VariableType::VT_REAL )
+                        {
+                            hasRealVar = true;
+                            break;
+                        }
+                    }
+                    carl::Variable newVar = hasRealVar ? Formula::newAuxiliaryRealVariable() : Formula::newAuxiliaryIntVariable();
+                    mLinearizations.insert( std::make_pair((*expressionIt).first, newVar) );
                     //mLinearizations[(*expressionIt).first] = newReal;
                     //mSubstitutions[newReal] = (*expressionIt).first;
-                    mSubstitutions.insert(std::make_pair(newReal, (*expressionIt).first));
+                    mSubstitutions.insert(std::make_pair(newVar, (*expressionIt).first));
                     //substitutions.insert(std::make_pair((*expressionIt).first, newReal));
                     #ifdef ICPMODULE_DEBUG
                     cout << "New replacement: " << (*expressionIt).first << " -> " << mLinearizations.at((*expressionIt).first) << endl;
                     #endif
-                    std::set<carl::Variable> variables;
-                    (*expressionIt).first.gatherVariables(variables);
                    
-                    const Polynomial rhs = (*expressionIt).first-newReal;
+                    const Polynomial rhs = (*expressionIt).first-newVar;
                     for( auto varIndex = variables.begin(); varIndex != variables.end(); ++varIndex )
                     {
                         
@@ -1439,7 +1457,7 @@ namespace smtrat
                             mContractors.insert(std::make_pair(rhs, Contractor<carl::SimpleNewton>(rhs)));
                         }
                         const Constraint* tmp = Formula::newConstraint( rhs, Relation::EQ);
-                        icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate(newReal, rhs, tmp, *varIndex, mContractors.at(rhs));
+                        icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate(newVar, rhs, tmp, *varIndex, mContractors.at(rhs));
                         mNonlinearConstraints[(*expressionIt).second].insert( mNonlinearConstraints[(*expressionIt).second].end(), tmpCandidate );
 
                         mIntervals.insert(std::make_pair(*varIndex, carl::DoubleInterval::unboundedInterval()));
@@ -1447,11 +1465,11 @@ namespace smtrat
                         tmpCandidate->setNonlinear();
                     }
                     // add one candidate for the replacement variable
-                    const Constraint* tmp = Formula::newConstraint( (*expressionIt).first-newReal, Relation::EQ);
-                    icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate(newReal, rhs, tmp, newReal, mContractors.at(rhs) );
+                    const Constraint* tmp = Formula::newConstraint( (*expressionIt).first-newVar, Relation::EQ);
+                    icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate(newVar, rhs, tmp, newVar, mContractors.at(rhs) );
                     mNonlinearConstraints[(*expressionIt).second].insert( mNonlinearConstraints[(*expressionIt).second].end(), tmpCandidate );
 
-                    mIntervals.insert(std::make_pair(newReal, carl::DoubleInterval::unboundedInterval()));
+                    mIntervals.insert(std::make_pair(newVar, carl::DoubleInterval::unboundedInterval()));
                     tmpCandidate->activate();
                     tmpCandidate->setNonlinear();
                 }
