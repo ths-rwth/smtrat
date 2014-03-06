@@ -37,8 +37,10 @@
 #include <sstream>
 #include <assert.h>
 #include <mutex>
+#include "Relation.h"
 #include "Common.h"
 #include "config.h"
+
 
 namespace smtrat
 {
