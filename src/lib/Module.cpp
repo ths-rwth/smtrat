@@ -526,7 +526,7 @@ namespace smtrat
             if( !(*backend)->infeasibleSubsets().empty() )
             {
                 mInfeasibleSubsets = getInfeasibleSubsets( **backend );
-                return;
+                // return;
             }
             ++backend;
         }

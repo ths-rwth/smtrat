@@ -292,6 +292,7 @@ namespace smtrat
             void removeSubformula( Formula::const_iterator );
             void updateModel() const;
             
+            void updateInfeasibleSubset();
             void addBooleanAssignments( EvalRationalMap& _rationalAssignment ) const;
 
             // Printing.

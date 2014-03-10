@@ -253,6 +253,7 @@ namespace smtrat
             assumptions.clear();
             if( !ok )
             {
+                updateInfeasibleSubset();
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
@@ -292,16 +293,7 @@ namespace smtrat
             else if( result == l_False )
             {
                 ok = false;
-                mInfeasibleSubsets.clear();
-                /*
-                * Set the infeasible subset to the set of all clauses.
-                */
-                set<const Formula*> infeasibleSubset = set<const Formula*>();
-                for( Formula::const_iterator subformula = mpReceivedFormula->begin(); subformula != mpReceivedFormula->end(); ++subformula )
-                {
-                    infeasibleSubset.insert( *subformula );
-                }
-                mInfeasibleSubsets.push_back( infeasibleSubset );
+                updateInfeasibleSubset();
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
@@ -336,6 +328,33 @@ namespace smtrat
             }
             Module::getBackendsModel();
         }
+    }
+    
+    /**
+     * 
+     */
+    void SATModule::updateInfeasibleSubset()
+    {
+        assert( !ok );
+        mInfeasibleSubsets.clear();
+        /*
+         * Set the infeasible subset to the set of all clauses.
+         */
+        set<const Formula*> infeasibleSubset = set<const Formula*>();
+        if( mpReceivedFormula->isConstraintConjunction() )
+        { 
+            getInfeasibleSubsets();
+        }
+        else
+        {
+            // Just add all sub formulas.
+            // TODO: compute a better infeasible subset
+            for( Formula::const_iterator subformula = mpReceivedFormula->begin(); subformula != mpReceivedFormula->end(); ++subformula )
+            {
+                infeasibleSubset.insert( *subformula );
+            }
+        }
+        mInfeasibleSubsets.push_back( infeasibleSubset );
     }
     
     void SATModule::addBooleanAssignments( EvalRationalMap& _rationalAssignment ) const
