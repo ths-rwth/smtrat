@@ -42,7 +42,7 @@
 #define LRA_USE_THETA_STRATEGY
 #endif
 #ifdef LRA_REFINEMENT
-//#define LRA_INTRODUCE_NEW_CONSTRAINT
+//#define LRA_INTRODUCE_NEW_CONSTRAINTS
 #endif
 //#define LRA_GOMORY_CUTS
 #ifndef LRA_GOMORY_CUTS
@@ -417,7 +417,6 @@ namespace smtrat
                 void updateUpwards( EntryID, std::vector<Iterator>&, std::vector<Iterator>& );
                 #ifdef LRA_REFINEMENT
                 void rowRefinement( const TableauHead& );
-                void columnRefinement( const TableauHead& );
                 #endif
                 size_t checkCorrectness() const;
                 bool rowCorrect( size_t _rowNumber ) const;
@@ -828,7 +827,11 @@ namespace smtrat
                 while( true )
                 {
                     const Variable<T>& nonBasicVar = *mColumns[(*rowIter).columnNumber()].mName;
-                    if( (*rowIter).content().isNegative())
+                    #ifdef LRA_NO_DIVISION
+                    if( ((*rowIter).content().isNegative() && basicVar.factor().isPositive()) || ((*rowIter).content().isPositive() && basicVar.factor().isNegative()) )
+                    #else
+                    if( (*rowIter).content().isNegative() )
+                    #endif
                     {
                         if( nonBasicVar.supremum() > nonBasicVar.assignment() )
                         {
@@ -836,7 +839,11 @@ namespace smtrat
                             assert( (*rowIter).content() != 0 );
                             if( betterEntry( rowIter.entryID(), bestEntry ) )
                             {
+                                #ifdef LRA_NO_DIVISION
+                                _theta = ((basicVarSupremum.limit() - basicVarAssignment)*basicVar.factor().content())/(*rowIter).content();
+                                #else
                                 _theta = (basicVarSupremum.limit() - basicVarAssignment)/(*rowIter).content();
+                                #endif
                                 bestEntry = rowIter.entryID();
                             }
                         }
@@ -849,7 +856,11 @@ namespace smtrat
                             assert( (*rowIter).content() != 0 );
                             if( betterEntry( rowIter.entryID(), bestEntry ) )
                             {
+                                #ifdef LRA_NO_DIVISION
+                                _theta = ((basicVarSupremum.limit() - basicVarAssignment)*basicVar.factor().content())/(*rowIter).content();
+                                #else
                                 _theta = (basicVarSupremum.limit() - basicVarAssignment)/(*rowIter).content();
+                                #endif
                                 bestEntry = rowIter.entryID();
                             }
                         }
@@ -877,7 +888,11 @@ namespace smtrat
                 while( true )
                 {
                     const Variable<T>& nonBasicVar = *mColumns[(*rowIter).columnNumber()].mName;
-                    if( (*rowIter).content().isPositive())
+                    #ifdef LRA_NO_DIVISION
+                    if( ((*rowIter).content().isPositive() && basicVar.factor().isPositive()) || ((*rowIter).content().isNegative() && basicVar.factor().isNegative()) )
+                    #else
+                    if( (*rowIter).content().isPositive() )
+                    #endif
                     {
                         if( nonBasicVar.supremum() > nonBasicVar.assignment() )
                         {
@@ -885,7 +900,11 @@ namespace smtrat
                             assert( (*rowIter).content() != 0 );
                             if( betterEntry( rowIter.entryID(), bestEntry ) )
                             {
+                                #ifdef LRA_NO_DIVISION
+                                _theta = ((basicVarInfimum.limit() - basicVarAssignment)*basicVar.factor().content())/(*rowIter).content();
+                                #else
                                 _theta = (basicVarInfimum.limit() - basicVarAssignment)/(*rowIter).content();
+                                #endif
                                 bestEntry = rowIter.entryID();
                             }
                         }
@@ -898,7 +917,11 @@ namespace smtrat
                             assert( (*rowIter).content() != 0 );
                             if( betterEntry( rowIter.entryID(), bestEntry ) )
                             {
+                                #ifdef LRA_NO_DIVISION
+                                _theta = ((basicVarInfimum.limit() - basicVarAssignment)*basicVar.factor().content())/(*rowIter).content();
+                                #else
                                 _theta = (basicVarInfimum.limit() - basicVarAssignment)/(*rowIter).content();
+                                #endif
                                 bestEntry = rowIter.entryID();
                             }
                         }
@@ -955,7 +978,11 @@ namespace smtrat
                 Iterator rowIter = Iterator( row.mStartEntry, mpEntries );
                 while( true )
                 {
+                    #ifdef LRA_NO_DIVISION
+                    if( ((*rowIter).content().isNegative() && row.factor().isPositive()) || ((*rowIter).content().isPositive() && row.factor().isNegative()) )
+                    #else
                     if( (*rowIter).content().isNegative() )
+                    #endif
                     {
                         assert( !(mColumns[(*rowIter).columnNumber()].mName->supremum() > mColumns[(*rowIter).columnNumber()].mName->assignment()) );
                         conflict.push_back( mColumns[(*rowIter).columnNumber()].mName->pSupremum() );
@@ -984,7 +1011,11 @@ namespace smtrat
                 Iterator rowIter = Iterator( row.mStartEntry, mpEntries );
                 while( true )
                 {
+                    #ifdef LRA_NO_DIVISION
+                    if( ((*rowIter).content().isPositive() && row.factor().isPositive()) || ((*rowIter).content().isNegative() && row.factor().isNegative()) )
+                    #else
                     if( (*rowIter).content().isPositive() )
+                    #endif
                     {
                         assert( !(mColumns[(*rowIter).columnNumber()].mName->supremum() > mColumns[(*rowIter).columnNumber()].mName->assignment()) );
                         conflict.push_back( mColumns[(*rowIter).columnNumber()].mName->pSupremum() );
@@ -1027,7 +1058,11 @@ namespace smtrat
                     Iterator rowIter = Iterator( mRows[rowNumber].mStartEntry, mpEntries );
                     while( true )
                     {
+                        #ifdef LRA_NO_DIVISION
+                        if( ((*rowIter).content().isNegative() && mRows[rowNumber].mName->factor().isPositive()) || ((*rowIter).content().isPositive() && mRows[rowNumber].mName->factor().isNegative()) )
+                        #else
                         if( (*rowIter).content().isNegative() )
+                        #endif
                         {
                             if( mColumns[(*rowIter).columnNumber()].mName->supremum() > mColumns[(*rowIter).columnNumber()].mName->assignment() )
                             {
@@ -1072,7 +1107,11 @@ namespace smtrat
                     Iterator rowIter = Iterator( mRows[rowNumber].mStartEntry, mpEntries );
                     while( true )
                     {
+                        #ifdef LRA_NO_DIVISION
+                        if( ((*rowIter).content().isPositive() && mRows[rowNumber].mName->factor().isPositive()) || ((*rowIter).content().isNegative() && mRows[rowNumber].mName->factor().isNegative()) )
+                        #else
                         if( (*rowIter).content().isPositive() )
+                        #endif
                         {
                             if( mColumns[(*rowIter).columnNumber()].mName->supremum() > mColumns[(*rowIter).columnNumber()].mName->assignment()  )
                             {
@@ -1126,7 +1165,11 @@ namespace smtrat
                 while( true )
                 {
                     Variable<T>& basic = *mRows[(*columnIter).rowNumber()].mName;
+                    #ifdef LRA_NO_DIVISION
+                    basic.rAssignment() += (_change * (*columnIter).content())/basic.factor().content();
+                    #else
                     basic.rAssignment() += (_change * (*columnIter).content());
+                    #endif
                     if( columnIter.columnBegin() )
                     {
                         break;
@@ -1156,7 +1199,11 @@ namespace smtrat
             while( !iterTemp.rowBegin() )
             {
                 iterTemp.left();
-                (*iterTemp).rContent() /= -pivotContent; // Division
+                #ifdef LRA_NO_DIVISION
+                (*iterTemp).rContent() = -(*iterTemp).content();
+                #else
+                (*iterTemp).rContent() /= -pivotContent;
+                #endif
                 pivotingRowLeftSide.push_back( iterTemp );
             }
             // Then the column with ** right to the pivoting column until the rightmost column with **.
@@ -1165,15 +1212,22 @@ namespace smtrat
             while( !iterTemp.rowEnd() )
             {
                 iterTemp.right();
-                (*iterTemp).rContent() /= -pivotContent; // Division
+                #ifdef LRA_NO_DIVISION
+                (*iterTemp).rContent() = -(*iterTemp).content();
+                #else
+                (*iterTemp).rContent() /= -pivotContent;
+                #endif
                 pivotingRowRightSide.push_back( iterTemp );
             }
-
             TableauHead& rowHead = mRows[pivotEntry.rowNumber()];
             TableauHead& columnHead = mColumns[pivotEntry.columnNumber()];
             Variable<T>* nameTmp = rowHead.mName;
             // Update the assignments of the pivoting variables
+            #ifdef LRA_NO_DIVISION
+            nameTmp->rAssignment() += ((*mpTheta) * pivotContent) / nameTmp->factor();
+            #else
             nameTmp->rAssignment() += (*mpTheta) * pivotContent;
+            #endif
             assert( nameTmp->supremum() > nameTmp->assignment() || nameTmp->supremum() == nameTmp->assignment() );
             assert( nameTmp->infimum() < nameTmp->assignment() || nameTmp->infimum() == nameTmp->assignment() );
             columnHead.mName->rAssignment() += (*mpTheta);
@@ -1198,8 +1252,16 @@ namespace smtrat
             Variable<T>& nonbasicVar = *columnHead.mName;
             nonbasicVar.rPosition() = pivotEntry.columnNumber();
             nonbasicVar.setBasic( false );
+            #ifdef LRA_NO_DIVISION
+            basicVar.rFactor() = pivotContent;
+            #endif
             // Update the content of the pivoting entry
-            pivotContent = T(1)/pivotContent; // Division
+            #ifdef LRA_NO_DIVISION
+            pivotContent = nonbasicVar.factor();
+            nonbasicVar.rFactor() = 1;
+            #else
+            pivotContent = T(1)/pivotContent;
+            #endif
             #ifdef LRA_REFINEMENT
             rowRefinement( rowHead );
             #endif
@@ -1220,6 +1282,7 @@ namespace smtrat
                 updateDownwards( _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
                 updateUpwards( _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
             }
+            assert( checkCorrectness() == mRows.size() );
             ++mPivotingSteps;
         }
 
@@ -1234,6 +1297,9 @@ namespace smtrat
             std::vector<Iterator> leftColumnIters = std::vector<Iterator>( _pivotingRowLeftSide );
             std::vector<Iterator> rightColumnIters = std::vector<Iterator>( _pivotingRowRightSide );
             Iterator pivotingColumnIter = Iterator( _pivotingElement, mpEntries );
+            #ifdef LRA_NO_DIVISION
+            const T& pivotingRowFactor = mRows[(*mpEntries)[_pivotingElement].rowNumber()].mName->factor();
+            #endif
             while( true )
             {
                 // TODO: exclude not activated rows and update them when they get activated
@@ -1246,9 +1312,30 @@ namespace smtrat
                     break;
                 }
                 // Update the assignment of the basic variable corresponding to this row
+                #ifdef LRA_NO_DIVISION
+                mRows[(*pivotingColumnIter).rowNumber()].mName->rAssignment() += ((*mpTheta) * (*pivotingColumnIter).content())/mRows[(*pivotingColumnIter).rowNumber()].mName->factor().content();
+                #else
                 mRows[(*pivotingColumnIter).rowNumber()].mName->rAssignment() += (*mpTheta) * (*pivotingColumnIter).content();
+                #endif
                 // Update the row
                 Iterator currentRowIter = pivotingColumnIter;
+                #ifdef LRA_NO_DIVISION
+                T l = lcm( (*pivotingColumnIter).content(), pivotingRowFactor );
+                assert( l.isPositive() );
+                if( (*pivotingColumnIter).content().isNegative() && pivotingRowFactor.isNegative() )
+                    l *= -1;
+                T ca = l/pivotingRowFactor;
+                T cb = l/(*pivotingColumnIter).content();
+                mRows[(*pivotingColumnIter).rowNumber()].mName->rFactor() *= cb;
+                Iterator rowIter = Iterator( mRows[(*pivotingColumnIter).rowNumber()].mStartEntry, mpEntries );
+                while( true )
+                {
+                    (*rowIter).rContent() *= cb;
+                    if( rowIter.rowEnd() ) break;
+                    rowIter.right();
+                }
+                T g = abs( mRows[(*pivotingColumnIter).rowNumber()].mName->factor() );
+                #endif
                 auto pivotingRowIter = _pivotingRowLeftSide.begin();
                 for( auto currentColumnIter = leftColumnIters.begin(); currentColumnIter != leftColumnIters.end(); ++currentColumnIter )
                 {
@@ -1266,7 +1353,11 @@ namespace smtrat
                     {
                         // Entry already exists, so update it only and maybe remove it.
                         T& currentRowContent = (*currentRowIter).rContent();
+                        #ifdef LRA_NO_DIVISION
+                        currentRowContent += ca * (**pivotingRowIter).content();
+                        #else
                         currentRowContent += (*pivotingColumnIter).content() * (**pivotingRowIter).content();
+                        #endif
                         if( currentRowContent == 0 )
                         {
                             EntryID toRemove = currentRowIter.entryID();
@@ -1277,7 +1368,11 @@ namespace smtrat
                     }
                     else
                     {
+                        #ifdef LRA_NO_DIVISION
+                        EntryID entryID = newTableauEntry( ca * (**pivotingRowIter).content() );
+                        #else
                         EntryID entryID = newTableauEntry( (*pivotingColumnIter).content() * (**pivotingRowIter).content() );
+                        #endif
                         TableauEntry<T>& entry = (*mpEntries)[entryID];
                         // Set the position.
                         entry.setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
@@ -1346,7 +1441,11 @@ namespace smtrat
                     {
                         // Entry already exists, so update it only and maybe remove it.
                         T& currentRowContent = (*currentRowIter).rContent();
+                        #ifdef LRA_NO_DIVISION
+                        currentRowContent += ca * (**pivotingRowIter).content();
+                        #else
                         currentRowContent += (*pivotingColumnIter).content() * (**pivotingRowIter).content();
+                        #endif
                         if( currentRowContent == 0 )
                         {
                             EntryID toRemove = currentRowIter.entryID();
@@ -1357,7 +1456,11 @@ namespace smtrat
                     }
                     else
                     {
+                        #ifdef LRA_NO_DIVISION
+                        EntryID entryID = newTableauEntry( ca * (**pivotingRowIter).content() );
+                        #else
                         EntryID entryID = newTableauEntry( (*pivotingColumnIter).content() * (**pivotingRowIter).content() );
+                        #endif
                         TableauEntry<T>& entry = (*mpEntries)[entryID];
                         // Set the position.
                         entry.setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
@@ -1407,7 +1510,30 @@ namespace smtrat
                     }
                     ++pivotingRowIter;
                 }
+                #ifdef LRA_NO_DIVISION
+                (*pivotingColumnIter).rContent() = ca * (*mpEntries)[_pivotingElement].content();
+                rowIter = Iterator( mRows[(*pivotingColumnIter).rowNumber()].mStartEntry, mpEntries );
+                while( !(g == 1) )
+                {
+                    g = gcd( g, (*rowIter).content() );
+                    if( rowIter.rowEnd() ) break;
+                    rowIter.right();
+                }
+                if( !(g == 1) )
+                {
+                    assert( g.isPositive() );
+                    rowIter = Iterator( mRows[(*pivotingColumnIter).rowNumber()].mStartEntry, mpEntries );
+                    while( true )
+                    {
+                        (*rowIter).rContent() /= g;
+                        if( rowIter.rowEnd() ) break;
+                        else rowIter.right();
+                    }
+                    mRows[(*pivotingColumnIter).rowNumber()].mName->rFactor() /= g;
+                }
+                #else
                 (*pivotingColumnIter).rContent() *= (*mpEntries)[_pivotingElement].content();
+                #endif
                 #ifdef LRA_REFINEMENT
                 rowRefinement( mRows[(*pivotingColumnIter).rowNumber()] );
                 #endif
@@ -1425,6 +1551,9 @@ namespace smtrat
             std::vector<Iterator> leftColumnIters = std::vector<Iterator>( _pivotingRowLeftSide );
             std::vector<Iterator> rightColumnIters = std::vector<Iterator>( _pivotingRowRightSide );
             Iterator pivotingColumnIter = Iterator( _pivotingElement, mpEntries );
+            #ifdef LRA_NO_DIVISION
+            const T& pivotingRowFactor = mRows[(*mpEntries)[_pivotingElement].rowNumber()].mName->factor();
+            #endif
             while( true )
             {
                 // TODO: exclude not activated rows and update them when they get activated
@@ -1437,9 +1566,30 @@ namespace smtrat
                     break;
                 }
                 // Update the assignment of the basic variable corresponding to this row
+                #ifdef LRA_NO_DIVISION
+                mRows[(*pivotingColumnIter).rowNumber()].mName->rAssignment() += ((*mpTheta) * (*pivotingColumnIter).content())/mRows[(*pivotingColumnIter).rowNumber()].mName->factor().content();
+                #else
                 mRows[(*pivotingColumnIter).rowNumber()].mName->rAssignment() += (*mpTheta) * (*pivotingColumnIter).content();
+                #endif
                 // Update the row
                 Iterator currentRowIter = pivotingColumnIter;
+                #ifdef LRA_NO_DIVISION
+                T l = lcm( (*pivotingColumnIter).content(), pivotingRowFactor );
+                assert( l.isPositive() );
+                if( (*pivotingColumnIter).content().isNegative() && pivotingRowFactor.isNegative() )
+                    l *= -1;
+                T ca = l/pivotingRowFactor;
+                T cb = l/(*pivotingColumnIter).content();
+                mRows[(*pivotingColumnIter).rowNumber()].mName->rFactor() *= cb;
+                Iterator rowIter = Iterator( mRows[(*pivotingColumnIter).rowNumber()].mStartEntry, mpEntries );
+                while( true )
+                {
+                    (*rowIter).rContent() *= cb;
+                    if( rowIter.rowEnd() ) break;
+                    rowIter.right();
+                }
+                T g = abs( mRows[(*pivotingColumnIter).rowNumber()].mName->factor() ); 
+                #endif
                 auto pivotingRowIter = _pivotingRowLeftSide.begin();
                 for( auto currentColumnIter = leftColumnIters.begin(); currentColumnIter != leftColumnIters.end(); ++currentColumnIter )
                 {
@@ -1457,7 +1607,11 @@ namespace smtrat
                     {
                         // Entry already exists, so update it only and maybe remove it.
                         T& currentRowContent = (*currentRowIter).rContent();
+                        #ifdef LRA_NO_DIVISION
+                        currentRowContent += ca * (**pivotingRowIter).content();
+                        #else
                         currentRowContent += (*pivotingColumnIter).content() * (**pivotingRowIter).content();
+                        #endif
                         if( currentRowContent == 0 )
                         {
                             EntryID toRemove = currentRowIter.entryID();
@@ -1468,7 +1622,11 @@ namespace smtrat
                     }
                     else
                     {
+                        #ifdef LRA_NO_DIVISION
+                        EntryID entryID = newTableauEntry( ca * (**pivotingRowIter).content() );
+                        #else
                         EntryID entryID = newTableauEntry( (*pivotingColumnIter).content() * (**pivotingRowIter).content() );
+                        #endif
                         TableauEntry<T>& entry = (*mpEntries)[entryID];
                         // Set the position.
                         entry.setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
@@ -1534,7 +1692,11 @@ namespace smtrat
                     {
                         // Entry already exists, so update it only and maybe remove it.
                         T& currentRowContent = (*currentRowIter).rContent();
-                        currentRowContent += (*pivotingColumnIter).content()*(**pivotingRowIter).content();
+                        #ifdef LRA_NO_DIVISION
+                        currentRowContent += ca * (**pivotingRowIter).content();
+                        #else
+                        currentRowContent += (*pivotingColumnIter).content() * (**pivotingRowIter).content();
+                        #endif
                         if( currentRowContent == 0 )
                         {
                             EntryID toRemove = currentRowIter.entryID();
@@ -1545,7 +1707,11 @@ namespace smtrat
                     }
                     else
                     {
-                        EntryID entryID = newTableauEntry( (*pivotingColumnIter).content()*(**pivotingRowIter).content() );
+                        #ifdef LRA_NO_DIVISION
+                        EntryID entryID = newTableauEntry( ca * (**pivotingRowIter).content() );
+                        #else
+                        EntryID entryID = newTableauEntry( (*pivotingColumnIter).content() * (**pivotingRowIter).content() );
+                        #endif
                         TableauEntry<T>& entry = (*mpEntries)[entryID];
                         // Set the position.
                         entry.setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
@@ -1594,7 +1760,30 @@ namespace smtrat
                     }
                     ++pivotingRowIter;
                 }
+                #ifdef LRA_NO_DIVISION
+                (*pivotingColumnIter).rContent() = ca * (*mpEntries)[_pivotingElement].content();
+                rowIter = Iterator( mRows[(*pivotingColumnIter).rowNumber()].mStartEntry, mpEntries );
+                while( !(g == 1) )
+                {
+                    g = gcd( g, (*rowIter).content() );
+                    if( rowIter.rowEnd() ) break;
+                    rowIter.right();
+                }
+                if( !(g == 1) )
+                {
+                    assert( g.isPositive() );
+                    rowIter = Iterator( mRows[(*pivotingColumnIter).rowNumber()].mStartEntry, mpEntries );
+                    while( true )
+                    {
+                        (*rowIter).rContent() /= g;
+                        if( rowIter.rowEnd() ) break;
+                        else rowIter.right();
+                    }
+                    mRows[(*pivotingColumnIter).rowNumber()].mName->rFactor() /= g;
+                }
+                #else
                 (*pivotingColumnIter).rContent() *= (*mpEntries)[_pivotingElement].content();
+                #endif
                 #ifdef LRA_REFINEMENT
                 rowRefinement( mRows[(*pivotingColumnIter).rowNumber()] );
                 #endif
@@ -1611,9 +1800,16 @@ namespace smtrat
             std::vector<const Bound<T>*>* uPremise = new std::vector<const Bound<T>*>();
             std::vector<const Bound<T>*>* lPremise = new std::vector<const Bound<T>*>();
             Iterator rowEntry = Iterator( _row.mStartEntry, mpEntries );
+            #ifdef LRA_NO_DIVISION
+            const T& rowFactor = _row.mName->factor();
+            #endif
             while( true )
             {
+                #ifdef LRA_NO_DIVISION
+                if( ((*rowEntry).content().isPositive() && rowFactor.isPositive()) || ((*rowEntry).content().isNegative() && rowFactor.isNegative()) )
+                #else
                 if( (*rowEntry).content().isPositive() )
+                #endif
                 {
                     if( uPremise != NULL )
                     {
@@ -1701,7 +1897,11 @@ namespace smtrat
                 auto ubound = upperBounds.begin();
                 while( ubound != upperBounds.end() )
                 {
+                    #ifdef LRA_NO_DIVISION
+                    if( **ubound > (*newlimit)/rowFactor && (*ubound)->type() != Bound<T>::EQUAL && !(*ubound)->deduced() )
+                    #else
                     if( **ubound > *newlimit && (*ubound)->type() != Bound<T>::EQUAL && !(*ubound)->deduced() )
+                    #endif
                     {
                         break;
                     }
@@ -1720,10 +1920,18 @@ namespace smtrat
                     learnedBound.nextWeakerBound = *ubound;
                     learnedBound.premise = uPremise;
                     #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
-                    if( newlimit->mainPart() < (*ubound)->limit().mainPart() || (*ubound)->limit().deltaPart() == 0 )
+                    #ifdef LRA_NO_DIVISION
+                    if( newlimit->mainPart() > (*ubound)->limit().mainPart()*rowFactor || (*ubound)->limit().deltaPart() == 0 )
+                    #else
+                    if( newlimit->mainPart() > (*ubound)->limit().mainPart() || (*ubound)->limit().deltaPart() == 0 )
+                    #endif
                     {
-                        smtrat::Polynomial lhs = (*ubound)->variable().expression() - newlimit->mainPart();
-                        smtrat::Constraint::Relation rel = newlimit->deltaPart() != 0 ? smtrat::Constraint::LESS : smtrat::Constraint::LEQ;
+                        #ifdef LRA_NO_DIVISION
+                        smtrat::Polynomial lhs = (*ubound)->variable().expression()*rowFactor.content() - newlimit->mainPart().content();
+                        #else
+                        smtrat::Polynomial lhs = (*ubound)->variable().expression() - newlimit->mainPart().content();
+                        #endif
+                        smtrat::Relation rel = newlimit->deltaPart() != 0 ? smtrat::Relation::LESS : smtrat::Relation::LEQ;
                         const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel );
                         learnedBound.newBound = bvar.addUpperBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                     }
@@ -1781,7 +1989,11 @@ namespace smtrat
                 auto lbound = lowerBounds.rbegin();
                 while( lbound != lowerBounds.rend() )
                 {
-                    if( **lbound < *newlimit && (*lbound)->type() != Bound<T>::EQUAL )
+                    #ifdef LRA_NO_DIVISION
+                    if( **lbound < (*newlimit)/rowFactor && (*lbound)->type() != Bound<T>::EQUAL && !(*lbound)->deduced() )
+                    #else
+                    if( **lbound < *newlimit && (*lbound)->type() != Bound<T>::EQUAL && !(*lbound)->deduced() )
+                    #endif
                     {
                         break;
                     }
@@ -1800,10 +2012,18 @@ namespace smtrat
                     learnedBound.nextWeakerBound = *lbound;
                     learnedBound.premise = lPremise;
                     #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
+                    #ifdef LRA_NO_DIVISION
+                    if( newlimit->mainPart() > (*lbound)->limit().mainPart()*rowFactor || (*lbound)->limit().deltaPart() == 0 )
+                    #else
                     if( newlimit->mainPart() > (*lbound)->limit().mainPart() || (*lbound)->limit().deltaPart() == 0 )
+                    #endif
                     {
-                        smtrat::Polynomial lhs = (*lbound)->variable().expression() - newlimit->mainPart();
-                        smtrat::Constraint::Relation rel = newlimit->deltaPart() != 0 ? smtrat::Constraint::GREATER : smtrat::Constraint::GEQ;
+                        #ifdef LRA_NO_DIVISION
+                        smtrat::Polynomial lhs = (*lbound)->variable().expression()*rowFactor.content() - newlimit->mainPart().content();
+                        #else
+                        smtrat::Polynomial lhs = (*lbound)->variable().expression() - newlimit->mainPart().content();
+                        #endif
+                        smtrat::Relation rel = newlimit->deltaPart() != 0 ? smtrat::Relation::GREATER : smtrat::Relation::GEQ;
                         const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel );
                         learnedBound.newBound = bvar.addLowerBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                     }
@@ -1816,243 +2036,6 @@ namespace smtrat
                     learnedBound.newBound = NULL;
                     #endif
                     std::pair<typename std::map<Variable<T>*, LearnedBound>::iterator, bool> insertionResult = mLearnedLowerBounds.insert( std::pair<Variable<T>*, LearnedBound>( _row.mName, learnedBound ) );
-                    if( !insertionResult.second )
-                    {
-                        if( *learnedBound.nextWeakerBound > *insertionResult.first->second.nextWeakerBound )
-                        {
-                            insertionResult.first->second.nextWeakerBound = learnedBound.nextWeakerBound;
-                            delete insertionResult.first->second.premise;
-                            insertionResult.first->second.premise = learnedBound.premise;
-                            mNewLearnedBounds.push_back( insertionResult.first );
-                        }
-                    }
-                    else
-                    {
-                        mNewLearnedBounds.push_back( insertionResult.first );
-                    }
-                }
-                else
-                {
-                    delete newlimit;
-                    delete lPremise;
-                }
-            }
-        }
-
-        template<typename T>
-        void Tableau<T>::columnRefinement( const TableauHead& _column )
-        {
-            /*
-             * Collect the bounds which form an upper resp. lower refinement.
-             */
-            std::vector<const Bound<T>*>* uPremise = new std::vector<const Bound<T>*>();
-            std::vector<const Bound<T>*>* lPremise = new std::vector<const Bound<T>*>();
-            Iterator columnEntry = Iterator( _column.mStartEntry, mpEntries );
-            while( true )
-            {
-                if( (*columnEntry).content().isPositive() )
-                {
-                    if( uPremise != NULL )
-                    {
-                        const Bound<T>* sup = mColumns[(*columnEntry).columnNumber()].mName->pSupremum();
-                        if( sup->pLimit() != NULL )
-                        {
-                            uPremise->push_back( sup );
-                        }
-                        else
-                        {
-                            delete uPremise;
-                            uPremise = NULL;
-                            if( lPremise == NULL ) return;
-                        }
-                    }
-                    if( lPremise != NULL )
-                    {
-                        const Bound<T>* inf = mColumns[(*columnEntry).columnNumber()].mName->pInfimum();
-                        if( inf->pLimit() != NULL )
-                        {
-                            lPremise->push_back( inf );
-                        }
-                        else
-                        {
-                            delete lPremise;
-                            lPremise = NULL;
-                            if( uPremise == NULL ) return;
-                        }
-                    }
-                }
-                else
-                {
-                    if( uPremise != NULL )
-                    {
-                        const Bound<T>* inf = mColumns[(*columnEntry).columnNumber()].mName->pInfimum();
-                        if( inf->pLimit() != NULL )
-                        {
-                            uPremise->push_back( inf );
-                        }
-                        else
-                        {
-                            delete uPremise;
-                            uPremise = NULL;
-                            if( lPremise == NULL ) return;
-                        }
-                    }
-                    if( lPremise != NULL )
-                    {
-                        const Bound<T>* sup = mColumns[(*columnEntry).columnNumber()].mName->pSupremum();
-                        if( sup->pLimit() != NULL )
-                        {
-                            lPremise->push_back( sup );
-                        }
-                        else
-                        {
-                            delete lPremise;
-                            lPremise = NULL;
-                            if( uPremise == NULL ) return;
-                        }
-                    }
-                }
-                if( columnEntry.columnBegin() ) break;
-                else columnEntry.up();
-            }
-            if( uPremise != NULL )
-            {
-                /*
-                 * Found an upper refinement.
-                 */
-                Value<T>* newlimit = new Value<T>();
-                typename std::vector< const Bound<T>* >::iterator bound = uPremise->begin();
-                Iterator columnEntry = Iterator( _column.mStartEntry, mpEntries );
-                while( true )
-                {
-                    *newlimit += (*bound)->limit() * (*columnEntry).content();
-                    ++bound;
-                    if( !columnEntry.columnBegin() ) columnEntry.up();
-                    else break;
-                }
-                /*
-                 * Learn that the strongest weaker upper bound should be activated.
-                 */
-                Variable<T>& bvar = *_column.mName;
-                const typename Bound<T>::BoundSet& upperBounds = bvar.upperbounds();
-                auto ubound = upperBounds.begin();
-                while( ubound != upperBounds.end() )
-                {
-                    if( **ubound > *newlimit && (*ubound)->type() != Bound<T>::EQUAL && !(*ubound)->deduced() )
-                    {
-                        break;
-                    }
-                    if( *ubound == bvar.pSupremum() )
-                    {
-                        delete newlimit;
-                        delete uPremise;
-                        goto CheckLowerPremise;
-                    }
-                    ++ubound;
-                }
-                if( ubound != --upperBounds.end() )
-                {
-                    assert( (*ubound)->type() != Bound<T>::EQUAL );
-                    LearnedBound learnedBound = LearnedBound();
-                    learnedBound.nextWeakerBound = *ubound;
-                    learnedBound.premise = uPremise;
-                    #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
-                    if( newlimit->mainPart() < (*ubound)->limit().mainPart() || (*ubound)->limit().deltaPart() == 0 )
-                    {
-                        smtrat::Polynomial lhs = (*ubound)->variable().expression() - newlimit->mainPart();
-                        smtrat::Constraint::Relation rel = newlimit->deltaPart() != 0 ? smtrat::Constraint::LESS : smtrat::Constraint::LEQ;
-                        const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel );
-                        learnedBound.newBound = bvar.addUpperBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
-                    }
-                    else
-                    {
-                        learnedBound.newBound = NULL;
-                    }
-                    #else
-                    delete newlimit;
-                    learnedBound.newBound = NULL;
-                    #endif
-                    std::pair<typename std::map<Variable<T>*, LearnedBound>::iterator, bool> insertionResult = mLearnedUpperBounds.insert( std::pair<Variable<T>*, LearnedBound>( _column.mName, learnedBound ) );
-                    if( !insertionResult.second )
-                    {
-                        if( *learnedBound.nextWeakerBound < *insertionResult.first->second.nextWeakerBound )
-                        {
-                            insertionResult.first->second.nextWeakerBound = learnedBound.nextWeakerBound;
-                            delete insertionResult.first->second.premise;
-                            insertionResult.first->second.premise = learnedBound.premise;
-                            mNewLearnedBounds.push_back( insertionResult.first );
-                        }
-                    }
-                    else
-                    {
-                        mNewLearnedBounds.push_back( insertionResult.first );
-                    }
-                }
-                else
-                {
-                    delete newlimit;
-                    delete uPremise;
-                }
-            }
-    CheckLowerPremise:
-            if( lPremise != NULL )
-            {
-                /*
-                 * Found an lower refinement.
-                 */
-                Value<T>* newlimit = new Value<T>();
-                typename std::vector< const Bound<T>* >::iterator bound = lPremise->begin();
-                Iterator columnEntry = Iterator( _column.mStartEntry, mpEntries );
-                while( true )
-                {
-                    *newlimit += (*bound)->limit() * (*columnEntry).content();
-                    ++bound;
-                    if( !columnEntry.columnBegin() ) columnEntry.up();
-                    else break;
-                }
-                /*
-                 * Learn that the strongest weaker lower bound should be activated.
-                 */
-                Variable<T>& bvar = *_column.mName;
-                const typename Bound<T>::BoundSet& lowerBounds = bvar.lowerbounds();
-                auto lbound = lowerBounds.rbegin();
-                while( lbound != lowerBounds.rend() )
-                {
-                    if( **lbound < *newlimit && (*lbound)->type() != Bound<T>::EQUAL )
-                    {
-                        break;
-                    }
-                    if( *lbound == bvar.pInfimum()  )
-                    {
-                        delete newlimit;
-                        delete lPremise;
-                        return;
-                    }
-                    ++lbound;
-                }
-                if( lbound != --lowerBounds.rend() )
-                {
-                    assert( (*lbound)->type() != Bound<T>::EQUAL );
-                    LearnedBound learnedBound = LearnedBound();
-                    learnedBound.nextWeakerBound = *lbound;
-                    learnedBound.premise = lPremise;
-                    #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
-                    if( newlimit->mainPart() > (*lbound)->limit().mainPart() || (*lbound)->limit().deltaPart() == 0 )
-                    {
-                        smtrat::Polynomial lhs = (*lbound)->variable().expression() - newlimit->mainPart();
-                        smtrat::Constraint::Relation rel = newlimit->deltaPart() != 0 ? smtrat::Constraint::GREATER : smtrat::Constraint::GEQ;
-                        const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel );
-                        learnedBound.newBound = bvar.addLowerBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
-                    }
-                    else
-                    {
-                        learnedBound.newBound = NULL;
-                    }
-                    #else
-                    delete newlimit;
-                    learnedBound.newBound = NULL;
-                    #endif
-                    std::pair<typename std::map<Variable<T>*, LearnedBound>::iterator, bool> insertionResult = mLearnedLowerBounds.insert( std::pair<Variable<T>*, LearnedBound>( _column.mName, learnedBound ) );
                     if( !insertionResult.second )
                     {
                         if( *learnedBound.nextWeakerBound > *insertionResult.first->second.nextWeakerBound )
@@ -2099,15 +2082,25 @@ namespace smtrat
         template<typename T>
         bool Tableau<T>::rowCorrect( size_t _rowNumber ) const
         {
-            smtrat::Polynomial sumOfNonbasics = *mRows[_rowNumber].mName->pExpression();
+            smtrat::Polynomial sumOfNonbasics = smtrat::ZERO_POLYNOMIAL;
             Iterator rowEntry = Iterator( mRows[_rowNumber].mStartEntry, mpEntries );
             while( !rowEntry.rowEnd() )
             {
-                sumOfNonbasics -= (*mColumns[(*rowEntry).columnNumber()].mName->pExpression()) * (*rowEntry).content().content();
+                sumOfNonbasics += (*mColumns[(*rowEntry).columnNumber()].mName->pExpression()) * smtrat::Polynomial( (*rowEntry).content().content() );
                 rowEntry.right();
             }
-            sumOfNonbasics -= (*mColumns[(*rowEntry).columnNumber()].mName->pExpression()) * (*rowEntry).content().content();
-            if( sumOfNonbasics != 0 ) return false;
+            sumOfNonbasics += (*mColumns[(*rowEntry).columnNumber()].mName->pExpression()) * smtrat::Polynomial( (*rowEntry).content().content() );
+            #ifdef LRA_NO_DIVISION
+            sumOfNonbasics += (*mRows[_rowNumber].mName->pExpression()) * smtrat::Polynomial( mRows[_rowNumber].mName->factor().content() ) * smtrat::MINUS_ONE_POLYNOMIAL;
+            #else
+            sumOfNonbasics += (*mRows[_rowNumber].mName->pExpression()) * smtrat::MINUS_ONE_POLYNOMIAL;
+            #endif
+//            if( !sumOfNonbasics.isZero() )
+//            {
+//                print();
+//                std::cout << "Row number: " << _rowNumber << std::endl;
+//            }
+            if( !sumOfNonbasics.isZero() ) return false;
             return true;
         }
         
@@ -3206,7 +3199,15 @@ namespace smtrat
             {
                 _out << _init;
                 std::stringstream out;
+                #ifdef LRA_NO_DIVISION
+                if( !(row->mName->factor() == 1) )
+                    out << "(" << row->mName->factor() << ")*(";
+                #endif
                 out << *row->mName->pExpression();
+                #ifdef LRA_NO_DIVISION
+                if( !(row->mName->factor() == 1) )
+                    out << ")";
+                #endif
                 _out << std::setw( _maxEntryLength ) << out.str() + " #";
                 Iterator rowIter = Iterator( row->mStartEntry, mpEntries );
                 size_t currentColumn = 0;

@@ -152,6 +152,7 @@ namespace smtrat
             bool gomory_cut();
             bool cuts_from_proofs();
             bool branch_and_bound();
+            bool assignmentConsistentWithTableau( const EvalRationalMap&, const lra::Numeric& ) const;
             bool assignmentCorrect() const;
     };
 

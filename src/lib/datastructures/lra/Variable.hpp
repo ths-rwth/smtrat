@@ -29,6 +29,8 @@
 #ifndef LRA_VARIABLE_H
 #define LRA_VARIABLE_H
 
+//#define LRA_NO_DIVISION
+
 #include "Bound.hpp"
 #include "../../Common.h"
 #include <sstream>
@@ -46,14 +48,17 @@ namespace smtrat
                 /**
                  * Members.
                  */
-                bool                      mBasic;
-                size_t                  mPosition;
-                typename Bound<T>::BoundSet  mUpperbounds;
-                typename Bound<T>::BoundSet  mLowerbounds;
-                const Bound<T>*           mpSupremum;
-                const Bound<T>*           mpInfimum;
-                const smtrat::Polynomial* mExpression;
-                Value<T>                  mAssignment;
+                bool                        mBasic;
+                size_t                      mPosition;
+                typename Bound<T>::BoundSet mUpperbounds;
+                typename Bound<T>::BoundSet mLowerbounds;
+                const Bound<T>*             mpSupremum;
+                const Bound<T>*             mpInfimum;
+                const smtrat::Polynomial*   mExpression;
+                Value<T>                    mAssignment;
+                #ifdef LRA_NO_DIVISION
+                T                           mFactor;
+                #endif
 
             public:
                 Variable( size_t, bool, const smtrat::Polynomial*, smtrat::Formula::iterator );
@@ -83,14 +88,10 @@ namespace smtrat
                 {
                     assert( _supremum->isActive() );
                     assert( mpSupremum->isActive() );
-
                     if( !mpSupremum->isInfinite() )
-                    {
                         --mpSupremum->pInfo()->updated;
-                    }
                     ++_supremum->pInfo()->updated;
                     mpSupremum = _supremum;
-
                 }
 
                 const Bound<T>* pSupremum() const
@@ -109,11 +110,8 @@ namespace smtrat
                 {
                     assert( _infimum->isActive() );
                     assert( mpInfimum->isActive() );
-
                     if( !mpInfimum->isInfinite() )
-                    {
                         --mpInfimum->pInfo()->updated;
-                    }
                     ++_infimum->pInfo()->updated;
                     mpInfimum = _infimum;
                 }
@@ -184,6 +182,18 @@ namespace smtrat
                 {
                     return *mExpression;
                 }
+                
+                #ifdef LRA_NO_DIVISION
+                const T& factor() const
+                {
+                    return mFactor;
+                }
+                
+                T& rFactor()
+                {
+                    return mFactor;
+                }
+                #endif
 
                 std::pair<const Bound<T>*, std::pair<const Bound<T>*, const Bound<T>*> > addUpperBound( Value<T>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL, bool = false );
                 std::pair<const Bound<T>*, std::pair<const Bound<T>*, const Bound<T>*> > addLowerBound( Value<T>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL, bool = false );
@@ -205,6 +215,10 @@ namespace smtrat
             mLowerbounds(),
             mExpression( _expression),
             mAssignment()
+            #ifdef LRA_NO_DIVISION
+            ,
+            mFactor( 1 )
+            #endif
         {
             mpSupremum = addUpperBound( NULL, _defaultBoundPosition ).first;
             mpInfimum  = addLowerBound( NULL, _defaultBoundPosition ).first;

@@ -602,7 +602,6 @@ Return:
         EvalRationalMap result = EvalRationalMap();
         if( mInfeasibleSubsets.empty() )
         {
-            // Check whether the found satisfying assignment is by coincidence a satisfying assignment of the non linear constraints
             Numeric minDelta = -1;
             Numeric curDelta = 0;
             Variable<Numeric>* variable = NULL;
@@ -670,6 +669,7 @@ Return:
                 Numeric value = var->second->assignment().mainPart() + var->second->assignment().deltaPart() * curDelta;
                 result.insert( pair< const carl::Variable, Rational >( var->first, value.content() ) );
             }
+//            assert( assignmentConsistentWithTableau( result, curDelta ) );
         }
         return result;
     }
@@ -1687,6 +1687,29 @@ Return:
             ++map_iterator;
         }
         return false;
+    }
+    
+    /**
+     * Checks whether the found assignment is consistent with the tableau, hence replacing the original
+     * variables in the expressions represented by the slack variables equals their assignment.
+     * @param _assignment The assignment of the original variables.
+     * @param _delta The calculated delta for the given assignment.
+     * @return true, if the found assignment is consistent with the tableau;
+     *         false, otherwise.
+     */
+    bool LRAModule::assignmentConsistentWithTableau( const EvalRationalMap& _assignment, const Numeric& _delta ) const
+    {
+        for( auto slackVar : mSlackVars )
+        {
+            Polynomial tmp = slackVar.first->substitute( _assignment );
+            assert( tmp.isConstant() );
+            Numeric slackVarAssignment = slackVar.second->assignment().mainPart() + slackVar.second->assignment().deltaPart() * _delta;
+            if( !(tmp == slackVarAssignment.content()) )
+            {
+                return false;
+            }
+        }
+        return true;
     }
     
     /**
