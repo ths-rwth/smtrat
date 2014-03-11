@@ -309,7 +309,7 @@ namespace smtrat
     {
         mLexer->mTheoryVariables.insert( _varName );
         carl::VariableType dom = getDomain( _theory );
-        carl::Variable var( _isBindingVariable ? (dom == carl::VariableType::VT_REAL ? smtrat::Formula::mpConstraintPool->newAuxiliaryRealVariable() : smtrat::Formula::mpConstraintPool->newAuxiliaryIntVariable()) : Formula::newArithmeticVariable( _varName, dom ) );
+        carl::Variable var( _isBindingVariable ? (dom == carl::VariableType::VT_REAL ? smtrat::Formula::newAuxiliaryRealVariable() : smtrat::Formula::newAuxiliaryIntVariable()) : Formula::newArithmeticVariable( _varName, dom ) );
         pair< TheoryVarMap::iterator, bool > res = mTheoryVariables.insert( pair< string, carl::Variable >( _varName.empty() ? smtrat::Formula::mpConstraintPool->getVariableName( var, true ) : _varName, var ) );
         if( !res.second )  error( _loc, "Multiple definition of real variable " + _varName );
         return res.first->second;
@@ -1079,20 +1079,15 @@ namespace smtrat
                 {
                     if( mOptions.print_instruction )
                         mRegularOutputChannel << "> (set-logic " << *_arg.key << ")" << endl;
-                    if( mLogic != Logic::UNDEFINED )
-                        error( "The logic has already been set!", true );
+                    mSentSolverInstruction = true;
+                    if( *_arg.key == "QF_NRA" ) mLogic = Logic::QF_NRA;
+                    else if( *_arg.key == "QF_LRA" ) mLogic = Logic::QF_LRA;
+                    else if( *_arg.key == "QF_NIA" ) mLogic = Logic::QF_NIA;
+                    else if( *_arg.key == "QF_LIA" ) mLogic = Logic::QF_LIA;
                     else
                     {
-                        mSentSolverInstruction = true;
-                        if( *_arg.key == "QF_NRA" ) mLogic = Logic::QF_NRA;
-                        else if( *_arg.key == "QF_LRA" ) mLogic = Logic::QF_LRA;
-                        else if( *_arg.key == "QF_NIA" ) mLogic = Logic::QF_NIA;
-                        else if( *_arg.key == "QF_LIA" ) mLogic = Logic::QF_LIA;
-                        else
-                        {
-                            mSentSolverInstruction = false;
-                            error( *_arg.key + " is not supported!", true );
-                        }
+                        mSentSolverInstruction = false;
+                        error( *_arg.key + " is not supported!", true );
                     }
                     delete _arg.key;
                     break;

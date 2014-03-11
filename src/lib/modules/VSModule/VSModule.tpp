@@ -677,9 +677,9 @@ namespace smtrat
                                         }
                                         else
                                         {
-                                            return foundAnswer( Unknown );
-//                                            currentState->rCannotBeSolved() = true;
-//                                            addStateToRanking( currentState );
+//                                            return foundAnswer( Unknown );
+                                            currentState->rCannotBeSolved() = true;
+                                            addStateToRanking( currentState );
                                         }
                                     }
                                 }

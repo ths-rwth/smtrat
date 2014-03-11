@@ -1177,7 +1177,7 @@ namespace smtrat
                         
                         Interval newBoundsA;
                         Interval newBoundsB;
-                        if( remainderEvaluated.div_ext( newBoundsA, newBoundsB, varCoeffEvaluated ) )
+                        if( remainderEvaluated.div_ext( varCoeffEvaluated, newBoundsA, newBoundsB ) )
                         {
 //                            std::cout << "case a: " << newBoundsA << " and " << newBoundsB << std::endl;
                             carl::BoundType lt = carl::BoundType::INFTY;

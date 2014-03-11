@@ -154,7 +154,7 @@ command:
 	|	OB CHECK_SAT CB                         { dv.check(); }
 	|	OB PUSH NUM CB                          { dv.push( *$3 ); delete $3; }
 	|	OB POP NUM CB                           { dv.pop( *$3 ); delete $3; }
-	| 	OB SET_LOGIC SYM CB                     { dv.setLogic( *$3 ); delete $3; }
+	| 	OB SET_LOGIC SYM CB                     { dv.setLogic( @3, *$3 ); delete $3; }
 	|	OB SET_INFO KEY value CB                { dv.setInfo( *$3, *$4 ); delete $4; delete $3; }
 	|	OB GET_INFO KEY CB                      { dv.getInfo( *$3 ); delete $3; }
 	|	OB SET_OPTION KEY value CB              { dv.setOption( *$3, *$4 ); delete $4; delete $3; }

@@ -87,7 +87,6 @@ namespace vs
                     unsigned conflictingWithSolutionSpace = (*cons)->consistentWith( _solutionSpace );
                     
 //                    cout << "Is  " << (*cons)->toString( 0, true, true ) << endl;
-//                    (*cons)->printProperties( cout, true );
 //                    cout << endl;
 //                    cout << "consistent with  " << endl;
 //                    for( auto iter = _solutionSpace.begin(); iter != _solutionSpace.end(); ++iter )

@@ -2241,7 +2241,7 @@ namespace vs
             #endif
             smtrat::DoubleInterval resA;
             smtrat::DoubleInterval resB;
-            bool splitOccurred = solutionSpace.div_ext( resA, resB, solutionSpaceDenom );
+            bool splitOccurred = solutionSpace.div_ext( solutionSpaceDenom, resA, resB );
             const smtrat::DoubleInterval& subVarInterval = intervals[substitution().variable()];
             if( substitution().type() == Substitution::PLUS_EPSILON && resA.lowerBoundType() != carl::BoundType::INFTY )
             {

@@ -336,11 +336,19 @@ namespace smtrat
                 mInstructionQueue.push( Instruction( SET_OPTION, iv ) );
             }
             
-            void setLogic( const std::string& _value )
+            void setLogic( const class location& _loc, const std::string& _value )
             {
                 InstructionValue iv = InstructionValue();
                 iv.key = new std::string( _value );
                 mInstructionQueue.push( Instruction( SET_LOGIC, iv ) );
+                if( _value == "QF_NRA" ) mLogic = Logic::QF_NRA;
+                else if( _value == "QF_LRA" ) mLogic = Logic::QF_LRA;
+                else if( _value == "QF_NIA" ) mLogic = Logic::QF_NIA;
+                else if( _value == "QF_LIA" ) mLogic = Logic::QF_LIA;
+                else
+                {
+                    error( _loc, _value + " is not supported!" );
+                }
             }
             
             Logic logic() const

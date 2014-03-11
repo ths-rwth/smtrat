@@ -67,7 +67,7 @@
 #include "SATModuleStatistics.h"
 #endif
 
-#define SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN
+#define SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN //Todo: repair this when deactivated (see qf_lra/bugs/bug_sat_dont_stop_by_first_unknown.smt2)
 
 namespace smtrat
 {
