@@ -32,7 +32,6 @@
 
 #include "../../Module.h"
 #include "../../RuntimeSettings.h"
-#include "../../datastructures/lra/Numeric.h"
 #include "../../datastructures/lra/Value.hpp"
 #include "../../datastructures/lra/Variable.hpp"
 #include "../../datastructures/lra/Bound.hpp"
@@ -42,6 +41,13 @@
 
 namespace smtrat
 {
+    typedef Rational                                  LRABoundType;
+    typedef cln::cl_I                                 LRAEntryType;
+    typedef lra::Bound<LRABoundType, LRAEntryType>    LRABound;
+    typedef lra::Variable<LRABoundType, LRAEntryType> LRAVariable;
+    typedef lra::Value<LRABoundType>                  LRAValue;
+    typedef lra::Tableau<LRABoundType, LRAEntryType>  LRATableau;
+    
     class LRAModule:
         public Module
     {
@@ -51,10 +57,10 @@ namespace smtrat
                 const smtrat::Formula* origin;
                 smtrat::Formula::iterator position;
             };
-            typedef std::map< carl::Variable, lra::Variable<lra::Numeric>*>                  VarVariableMap;
-            typedef FastPointerMap<Polynomial,lra::Variable<lra::Numeric>*>                  ExVariableMap;
-            typedef FastPointerMap<Constraint,std::vector<const lra::Bound<lra::Numeric>*>*> ConstraintBoundsMap;
-            typedef FastPointerMap<Constraint,Context>                                       ConstraintContextMap;
+            typedef std::map< carl::Variable, LRAVariable*>                   VarVariableMap;
+            typedef FastPointerMap<Polynomial, LRAVariable*>                  ExVariableMap;
+            typedef FastPointerMap<Constraint, std::vector<const LRABound*>*> ConstraintBoundsMap;
+            typedef FastPointerMap<Constraint, Context>                       ConstraintContextMap;
 
         private:
 
@@ -63,7 +69,7 @@ namespace smtrat
              */
             bool                       mInitialized;
             bool                       mAssignmentFullfilsNonlinearConstraints;
-            lra::Tableau<lra::Numeric> mTableau;
+            LRATableau mTableau;
             PointerSet<Constraint>     mLinearConstraints;
             PointerSet<Constraint>     mNonlinearConstraints;
             ConstraintContextMap       mActiveResolvedNEQConstraints;
@@ -73,7 +79,7 @@ namespace smtrat
             ExVariableMap              mSlackVars;
             ConstraintBoundsMap        mConstraintToBound;
             carl::Variable             mDelta;
-            std::vector<const lra::Bound<lra::Numeric>* >  mBoundCandidatesToPass;
+            std::vector<const LRABound* >  mBoundCandidatesToPass;
             #ifdef SMTRAT_DEVOPTION_Statistics
             ///
             LRAModuleStatistics* mpStatistics;
@@ -129,7 +135,7 @@ namespace smtrat
                 return mSlackVars;
             }
 
-            const lra::Variable<lra::Numeric>* getSlackVariable( const Constraint* _constraint ) const
+            const LRAVariable* getSlackVariable( const Constraint* _constraint ) const
             {
                 ConstraintBoundsMap::const_iterator iter = mConstraintToBound.find( _constraint );
                 assert( iter != mConstraintToBound.end() );
@@ -145,14 +151,14 @@ namespace smtrat
             #endif
             void adaptPassedFormula();
             bool checkAssignmentForNonlinearConstraint();
-            bool activateBound( const lra::Bound<lra::Numeric>*, std::set<const Formula*>& );
-            void setBound( lra::Variable<lra::Numeric>&, bool, const lra::Numeric&, const Constraint* );
-            void findSimpleConflicts( const lra::Bound<lra::Numeric>& );
+            bool activateBound( const LRABound*, std::set<const Formula*>& );
+            void setBound( LRAVariable&, bool, const LRABoundType&, const Constraint* );
+            void findSimpleConflicts( const LRABound& );
             void initialize( const Constraint* const );
             bool gomory_cut();
             bool cuts_from_proofs();
             bool branch_and_bound();
-            bool assignmentConsistentWithTableau( const EvalRationalMap&, const lra::Numeric& ) const;
+            bool assignmentConsistentWithTableau( const EvalRationalMap&, const LRABoundType& ) const;
             bool assignmentCorrect() const;
     };
 

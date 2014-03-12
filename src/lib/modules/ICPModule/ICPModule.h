@@ -71,7 +71,7 @@ namespace smtrat
             
             struct lraVarComp
             {
-                bool operator ()( const lra::Variable<lra::Numeric>* lhs, const lra::Variable<lra::Numeric>* rhs ) const
+                bool operator ()( const LRAVariable* lhs, const LRAVariable* rhs ) const
                 {
                     return (lhs->expression().hash() < rhs->expression().hash());
                 }
@@ -110,7 +110,7 @@ namespace smtrat
             icp::ContractionCandidateManager*                                                   mCandidateManager; // keeps all candidates
             std::map<icp::ContractionCandidate*, unsigned, icp::contractionCandidateComp>       mActiveNonlinearConstraints; // nonlinear candidates considered
             std::map<icp::ContractionCandidate*, unsigned, icp::contractionCandidateComp>       mActiveLinearConstraints; // linear candidates considered
-            std::map<const lra::Variable<lra::Numeric>*, ContractionCandidates>                 mLinearConstraints; // all linear candidates
+            std::map<const LRAVariable*, ContractionCandidates>                 mLinearConstraints; // all linear candidates
             std::map<const Constraint*, ContractionCandidates>                                  mNonlinearConstraints; // all nonlinear candidates
             
             std::map<const carl::Variable, icp::IcpVariable*>                                         mVariables; // list of occurring variables

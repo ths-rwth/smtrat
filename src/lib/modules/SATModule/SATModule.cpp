@@ -1313,7 +1313,7 @@ SetWatches:
 //                                    {
 //                                        return l_True;
 //                                    }
-//                                    order_heap.build( conflVars );
+////                                    order_heap.build( conflVars );
                                     break;
                                 }
                                 ++backend;

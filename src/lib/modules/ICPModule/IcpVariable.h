@@ -57,20 +57,20 @@ namespace icp
             /*
              * Members
              */
-            const carl::Variable                       mVar;
-            bool                                       mOriginal;
+            const carl::Variable               mVar;
+            bool                               mOriginal;
             std::vector<ContractionCandidate*> mCandidates;
-            const lra::Variable<lra::Numeric>*               mLraVar;
-            bool                                       mActive;
-            bool                                       mLinear;
+            const LRAVariable*                 mLraVar;
+            bool                               mActive;
+            bool                               mLinear;
             
             // interval Bound generation
-            std::pair<Updated,Updated>                 mBoundsSet; // internal, external
-            std::pair<Updated,Updated>                 mUpdated; // internal, external
-            smtrat::Formula*                           mInternalLeftBound;
-            smtrat::Formula*                           mInternalRightBound;
-            smtrat::Formula::iterator                  mExternalLeftBound;
-            smtrat::Formula::iterator                  mExternalRightBound;
+            std::pair<Updated,Updated>         mBoundsSet; // internal, external
+            std::pair<Updated,Updated>         mUpdated; // internal, external
+            smtrat::Formula*                   mInternalLeftBound;
+            smtrat::Formula*                   mInternalRightBound;
+            smtrat::Formula::iterator          mExternalLeftBound;
+            smtrat::Formula::iterator          mExternalRightBound;
 
         private:
             IcpVariable();
@@ -83,7 +83,7 @@ namespace icp
             
             
 
-            IcpVariable( const carl::Variable::Arg _var, bool _original, const lra::Variable<lra::Numeric>* _lraVar = NULL ):
+            IcpVariable( const carl::Variable::Arg _var, bool _original, const LRAVariable* _lraVar = NULL ):
                 mVar( _var ),
                 mOriginal( _original ),
                 mCandidates(),
@@ -102,7 +102,7 @@ namespace icp
             IcpVariable( const carl::Variable::Arg _var,
                          bool _original,
                          ContractionCandidate* _candidate,
-                         const lra::Variable<lra::Numeric>* _lraVar = NULL ):
+                         const LRAVariable* _lraVar = NULL ):
                 mVar( _var ),
                 mOriginal ( _original ),
                 mCandidates(),
@@ -152,7 +152,7 @@ namespace icp
                 return mCandidates;
             }
 
-            const lra::Variable<lra::Numeric>* lraVar() const
+            const LRAVariable* lraVar() const
             {
                 return mLraVar;
             }
@@ -167,7 +167,7 @@ namespace icp
                 checkLinear();
             }
 
-            void setLraVar( const lra::Variable<lra::Numeric>* _lraVar )
+            void setLraVar( const LRAVariable* _lraVar )
             {
                 mLraVar = _lraVar;
                 mUpdated = std::make_pair(Updated::BOTH,Updated::BOTH);

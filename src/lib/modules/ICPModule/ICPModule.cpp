@@ -299,7 +299,7 @@ namespace smtrat
 //            mReceivedFormulaMapping.insert(std::make_pair(tmpFormula, *_formula));
             // try to insert new icpVariable -> is original!
             const carl::Variable::Arg tmpVar = *replacementPtr->variables().begin();
-            const lra::Variable<lra::Numeric>* slackvariable = mLRA.getSlackVariable(tmpFormula->pConstraint());
+            const LRAVariable* slackvariable = mLRA.getSlackVariable(tmpFormula->pConstraint());
             assert( slackvariable != NULL );
             icp::IcpVariable* icpVar = new icp::IcpVariable(tmpVar, true, slackvariable );
             std::pair<std::map<const carl::Variable, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(tmpVar, icpVar));
@@ -319,7 +319,7 @@ namespace smtrat
         }
         else //if ( (*_formula)->constraint().variables().size() > 1 )
         {
-            const lra::Variable<lra::Numeric>* slackvariable = mLRA.getSlackVariable(replacementPtr);
+            const LRAVariable* slackvariable = mLRA.getSlackVariable(replacementPtr);
             assert(slackvariable != NULL);
 
             // lookup if contraction candidates already exist - if so, add origins
@@ -800,7 +800,7 @@ namespace smtrat
             const LRAModule::ExVariableMap slackVariables = mLRA.slackVariables();
             for ( auto slackIt = slackVariables.begin(); slackIt != slackVariables.end(); ++slackIt )
             {
-                std::map<const lra::Variable<lra::Numeric>*, ContractionCandidates>::iterator linIt = mLinearConstraints.find((*slackIt).second);
+                std::map<const LRAVariable*, ContractionCandidates>::iterator linIt = mLinearConstraints.find((*slackIt).second);
                 if ( linIt != mLinearConstraints.end() )
                 {
                     // dirty hack: expect lhs to be set and take first item of set of CCs --> Todo: Check if it is really set in the constructors of the CCs during inform and assert
@@ -2775,7 +2775,7 @@ namespace smtrat
             const LRAModule::ExVariableMap slackVariables = mLRA.slackVariables();
             for ( auto slackIt = slackVariables.begin(); slackIt != slackVariables.end(); ++slackIt )
             {
-                std::map<const lra::Variable<lra::Numeric>*, ContractionCandidates>::iterator linIt = mLinearConstraints.find((*slackIt).second);
+                std::map<const LRAVariable*, ContractionCandidates>::iterator linIt = mLinearConstraints.find((*slackIt).second);
                 if ( linIt != mLinearConstraints.end() )
                 {
                     // dirty hack: expect lhs to be set and take first item of set of CCs --> Todo: Check if it is really set in the constructors of the CCs during inform and assert
