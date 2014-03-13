@@ -41,8 +41,8 @@
 
 namespace smtrat
 {
-    typedef Rational                                  LRABoundType;
-    typedef cln::cl_I                                 LRAEntryType;
+    typedef carl::Numeric                             LRABoundType;
+    typedef carl::Numeric                             LRAEntryType;
     typedef lra::Bound<LRABoundType, LRAEntryType>    LRABound;
     typedef lra::Variable<LRABoundType, LRAEntryType> LRAVariable;
     typedef lra::Value<LRABoundType>                  LRAValue;

@@ -1020,7 +1020,7 @@ Return:
             if( _constraint->integerValued() && _constraint->relation() == Relation::NEQ )
             {
                 constraint = Formula::newConstraint( _constraint->lhs(), Relation::LESS );
-                value = new LRAValue( _boundValue - ONE_RATIONAL );
+                value = new LRAValue( _boundValue - 1 );
             }
             else
             {
@@ -1078,7 +1078,7 @@ Return:
             if( _constraint->integerValued() && _constraint->relation() == Relation::NEQ )
             {
                 constraint = Formula::newConstraint( _constraint->lhs(), Relation::GREATER );
-                value = new LRAValue( _boundValue + ONE_RATIONAL );
+                value = new LRAValue( _boundValue + 1 );
             }
             else
             {
@@ -1705,7 +1705,7 @@ Return:
             Polynomial tmp = slackVar.first->substitute( _assignment );
             assert( tmp.isConstant() );
             LRABoundType slackVarAssignment = slackVar.second->assignment().mainPart() + slackVar.second->assignment().deltaPart() * _delta;
-            if( !(tmp == slackVarAssignment) )
+            if( !(tmp == (Rational) slackVarAssignment) )
             {
                 return false;
             }
