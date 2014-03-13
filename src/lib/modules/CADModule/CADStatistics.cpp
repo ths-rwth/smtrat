@@ -47,7 +47,7 @@ void CADStatistics::printAll(std::ostream& os) {
     }
 }
 
-void CADStatistics::print(std::ostream& os) {
+void CADStatistics::print(std::ostream& ) {
    
 }
 
