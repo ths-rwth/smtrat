@@ -12,7 +12,7 @@ namespace smtrat
 class GBRuntimeSettings : public RuntimeSettings 
 {
 public:
-    GBRuntimeSettings(const string& name) : RuntimeSettings(name) {}
+    GBRuntimeSettings(const std::string& name) : RuntimeSettings(name) {}
 };
 }
 

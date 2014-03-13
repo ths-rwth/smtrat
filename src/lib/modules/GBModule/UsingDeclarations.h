@@ -7,8 +7,9 @@
 
 #pragma once
 
-#include <ginacra/mr/MultivariateTerm.h>
+#include "../../Common.h"
+#include "carl/core/Term.h"
 
-typedef GiNaCRA::MultivariateTerm Term;
-typedef GiNaCRA::BitVector BitVector;
+typedef carl::Term<smtrat::Rational> Term;
+typedef carl::BitVector BitVector;
 

@@ -43,7 +43,7 @@ void GBCalculationStats::printAll(std::ostream& os) {
     }
 }
 
-void GBCalculationStats::print(std::ostream& os) {
+void GBCalculationStats::print(std::ostream& ) {
    
 }
 
