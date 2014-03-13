@@ -220,6 +220,7 @@ int main( int argc, char* argv[] )
             }
             case smtrat::SET_LOGIC:
             {
+                if( solver->logic() != smtrat::Logic::UNDEFINED ) parser.error( "The logic has already been set!", true ); 
                 solver->rLogic() = parser.logic();
                 break;
             }

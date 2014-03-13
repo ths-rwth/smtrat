@@ -253,6 +253,7 @@ namespace smtrat
             assumptions.clear();
             if( !ok )
             {
+                updateInfeasibleSubset();
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
@@ -292,16 +293,7 @@ namespace smtrat
             else if( result == l_False )
             {
                 ok = false;
-                mInfeasibleSubsets.clear();
-                /*
-                * Set the infeasible subset to the set of all clauses.
-                */
-                set<const Formula*> infeasibleSubset = set<const Formula*>();
-                for( Formula::const_iterator subformula = mpReceivedFormula->begin(); subformula != mpReceivedFormula->end(); ++subformula )
-                {
-                    infeasibleSubset.insert( *subformula );
-                }
-                mInfeasibleSubsets.push_back( infeasibleSubset );
+                updateInfeasibleSubset();
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
@@ -336,6 +328,33 @@ namespace smtrat
             }
             Module::getBackendsModel();
         }
+    }
+    
+    /**
+     * 
+     */
+    void SATModule::updateInfeasibleSubset()
+    {
+        assert( !ok );
+        mInfeasibleSubsets.clear();
+        /*
+         * Set the infeasible subset to the set of all clauses.
+         */
+        set<const Formula*> infeasibleSubset = set<const Formula*>();
+//        if( mpReceivedFormula->isConstraintConjunction() )
+//        { 
+//            getInfeasibleSubsets();
+//        }
+//        else
+//        {
+            // Just add all sub formulas.
+            // TODO: compute a better infeasible subset
+            for( Formula::const_iterator subformula = mpReceivedFormula->begin(); subformula != mpReceivedFormula->end(); ++subformula )
+            {
+                infeasibleSubset.insert( *subformula );
+            }
+//        }
+        mInfeasibleSubsets.push_back( infeasibleSubset );
     }
     
     void SATModule::addBooleanAssignments( EvalRationalMap& _rationalAssignment ) const
@@ -1175,7 +1194,7 @@ SetWatches:
     lbool SATModule::search()// int nof_conflicts )
     {
         #ifdef DEBUG_SATMODULE
-        cout << "### search( " << nof_conflicts << " )" << endl << "###" << endl;
+        cout << "### search()" << endl << "###" << endl;
         printClauses( clauses, "Clauses", cout, "### " );
         cout << "###" << endl;
         printClauses( learnts, "Learnts", cout, "### " );
@@ -1209,10 +1228,10 @@ SetWatches:
             }
             bool deductionsLearned = false;
             CRef confl = propagate();
+            bool madeTheoryCall = false;
 
             #ifdef DEBUG_SATMODULE
             cout << "### Sat iteration" << endl;
-            bool madeTheoryCall = false;
             #endif
 
             if( confl == CRef_Undef )
@@ -1223,10 +1242,10 @@ SetWatches:
                 adaptPassedFormula();
                 if( mChangedPassedFormula )
                 {
+                    madeTheoryCall = true;
                     #ifdef DEBUG_SATMODULE
                     if( numberOfTheoryCalls >= debugFromCall-1 )
                     {
-                        madeTheoryCall = true;
                         cout << "######################################################################" << endl;
                         cout << "###" << endl;
                         printClauses( clauses, "Clauses", cout, "### " );
@@ -1294,7 +1313,7 @@ SetWatches:
 //                                    {
 //                                        return l_True;
 //                                    }
-//                                    order_heap.build( conflVars );
+////                                    order_heap.build( conflVars );
                                     break;
                                 }
                                 ++backend;
@@ -1360,7 +1379,7 @@ SetWatches:
             #endif
             #endif
                 #ifndef SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN
-                if( currentAssignmentConsistent == Unknown )
+                if( madeTheoryCall && currentAssignmentConsistent == Unknown )
                 {
                     vec<Lit> learnt_clause;
                     if( mpPassedFormula->size() > 1 )
@@ -1418,6 +1437,8 @@ SetWatches:
                     #ifndef SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN
                     if( unknown_excludes.size() > 0 )
                     {
+//                        cout << unknown_excludes.size() << endl;
+//                        printClauses( unknown_excludes, "unknown_excludes" );
                         return l_Undef;
                     }
                     #endif
@@ -1433,10 +1454,6 @@ SetWatches:
                     {
                         cout << "### Conflict clause: ";
                         printClause( confl );
-                    }
-                    else
-                    {
-                        cout << "### SAT conflict!" << endl;
                     }
                     else
                     {

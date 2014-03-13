@@ -985,7 +985,7 @@ namespace vs
          *                         responsible for this conflict are stored in here.
          * @return The disjoint intervals representing the solution space.
          */
-        std::vector< carl::DoubleInterval > solutionSpace( Condition::Set& _conflictReason ) const;
+        std::vector< smtrat::DoubleInterval > solutionSpace( Condition::Set& _conflictReason ) const;
         
         /**
          * Checks whether there are no zeros for the left-hand side of the constraint of the given condition.

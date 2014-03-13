@@ -513,7 +513,7 @@ namespace smtrat
                                         {
                                             if( !currentState->hasInfinityChild() )
                                             {
-                                                if( !Settings::use_variable_bounds || currentState->variableBounds().getDoubleInterval( currentState->index() ).leftType() == carl::BoundType::INFTY )
+                                                if( !Settings::use_variable_bounds || currentState->variableBounds().getDoubleInterval( currentState->index() ).lowerBoundType() == carl::BoundType::INFTY )
                                                 {
                                                     // Create state ( Conditions, [x -> -infinity]):
                                                     vs::Condition::Set oConditions = vs::Condition::Set();
@@ -677,9 +677,9 @@ namespace smtrat
                                         }
                                         else
                                         {
-                                            return foundAnswer( Unknown );
-//                                            currentState->rCannotBeSolved() = true;
-//                                            addStateToRanking( currentState );
+//                                            return foundAnswer( Unknown );
+                                            currentState->rCannotBeSolved() = true;
+                                            addStateToRanking( currentState );
                                         }
                                     }
                                 }
@@ -1063,7 +1063,7 @@ namespace smtrat
         {
             if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
             {
-                if( !Settings::use_variable_bounds || _currentState->variableBounds().getDoubleInterval( _eliminationVar ).leftType() == carl::BoundType::INFTY )
+                if( !Settings::use_variable_bounds || _currentState->variableBounds().getDoubleInterval( _eliminationVar ).lowerBoundType() == carl::BoundType::INFTY )
                 {
                     // Create state ( Conditions, [x -> -infinity]):
                     Substitution sub = Substitution( _eliminationVar, Substitution::MINUS_INFINITY, oConditions );
@@ -1088,7 +1088,7 @@ namespace smtrat
         {
             if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
             {
-                if( !Settings::use_variable_bounds || _currentState->variableBounds().getDoubleInterval( _eliminationVar ).leftType() == carl::BoundType::INFTY )
+                if( !Settings::use_variable_bounds || _currentState->variableBounds().getDoubleInterval( _eliminationVar ).lowerBoundType() == carl::BoundType::INFTY )
                 {
                     // Create state ( Conditions, [x -> -infinity]):
                     Substitution sub = Substitution( _eliminationVar, Substitution::PLUS_INFINITY, oConditions );

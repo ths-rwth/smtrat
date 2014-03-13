@@ -186,7 +186,7 @@ namespace smtrat
             {
                 case Relation::EQ:
                 {
-                    if( solutionSpace.diameter() == 0 && solutionSpace.lower() == 0 )
+                    if( solutionSpace.isZero() )
                         return 1;
                     else if( !solutionSpace.contains( 0 ) )
                         return 0;

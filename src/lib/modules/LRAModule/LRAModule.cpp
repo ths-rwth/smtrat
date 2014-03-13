@@ -37,7 +37,7 @@
 //#define LRA_ONE_REASON
 #ifndef LRA_GOMORY_CUTS
 #ifndef LRA_CUTS_FROM_PROOFS
-#define LRA_BRANCH_AND_BOUND
+//#define LRA_BRANCH_AND_BOUND
 #endif
 #endif
 
@@ -73,7 +73,7 @@ namespace smtrat
     {
         while( !mConstraintToBound.empty() )
         {
-            vector< const Bound<Numeric>* >* toDelete = mConstraintToBound.begin()->second;
+            vector< const LRABound* >* toDelete = mConstraintToBound.begin()->second;
             mConstraintToBound.erase( mConstraintToBound.begin() );
             if( toDelete != NULL ) delete toDelete;
         }
@@ -139,7 +139,7 @@ namespace smtrat
                 {
                     if( (*_subformula)->constraint().relation() != Relation::NEQ )
                     {
-                        vector< const Bound<Numeric>* >* bounds = mConstraintToBound[constraint];
+                        vector< const LRABound* >* bounds = mConstraintToBound[constraint];
                         assert( bounds != NULL );
 
                         set<const Formula*> originSet = set<const Formula*>();
@@ -166,7 +166,7 @@ namespace smtrat
                     }
                     else
                     {
-                        vector< const Bound<Numeric>* >* bounds = mConstraintToBound[constraint];
+                        vector< const LRABound* >* bounds = mConstraintToBound[constraint];
                         assert( bounds != NULL );
                         assert( bounds->size() == 2 );
                         if( (*bounds)[0]->isActive() || (*bounds)[1]->isActive() )
@@ -236,7 +236,7 @@ namespace smtrat
                     if( (*_subformula)->constraint().relation() != Relation::NEQ )
                     {
                         // Deactivate the bounds regarding the given constraint
-                        vector< const Bound<Numeric>* >* bounds = mConstraintToBound[constraint];
+                        vector< const LRABound* >* bounds = mConstraintToBound[constraint];
                         assert( bounds != NULL );
                         auto bound = bounds->begin();
                         while( bound != bounds->end() )
@@ -253,7 +253,7 @@ namespace smtrat
                                 {
                                     if( (*bound)->neqRepresentation() != NULL )
                                     {
-                                        vector< const Bound<Numeric>* >* uebounds = mConstraintToBound[(*bound)->neqRepresentation()];
+                                        vector< const LRABound* >* uebounds = mConstraintToBound[(*bound)->neqRepresentation()];
                                         assert( uebounds != NULL );
                                         assert( uebounds->size() == 2 );
                                         if( !(*uebounds)[0]->isActive() && !(*uebounds)[1]->isActive() )
@@ -333,7 +333,7 @@ namespace smtrat
         cout << "check for consistency" << endl;
         #endif
         Answer result = Unknown;
-        typedef pair<vector<const Variable<lra::Numeric>*>, vector<const Variable<lra::Numeric>*>> TableauConf;
+        typedef pair<vector<const LRAVariable*>, vector<const LRAVariable*>> TableauConf;
         struct compTableaus
         {
             bool operator()( const TableauConf& _tcA, const TableauConf& _tcB ) const
@@ -473,9 +473,9 @@ namespace smtrat
                     while( !mTableau.rNewLearnedBounds().empty() )
                     {
                         set< const Formula*> originSet = set< const Formula*>();
-                        Tableau<Numeric>::LearnedBound& learnedBound = mTableau.rNewLearnedBounds().back()->second;
+                        LRATableau::LearnedBound& learnedBound = mTableau.rNewLearnedBounds().back()->second;
                         mTableau.rNewLearnedBounds().pop_back();
-                        vector<const Bound<Numeric>*>& bounds = *learnedBound.premise;
+                        vector<const LRABound*>& bounds = *learnedBound.premise;
                         for( auto bound = bounds.begin(); bound != bounds.end(); ++bound )
                         {
                             assert( !(*bound)->origins().empty() );
@@ -485,7 +485,7 @@ namespace smtrat
                                 const Constraint* constraint = (*origin)->pConstraint();
                                 if( constraint != NULL )
                                 {
-                                    vector< const Bound<Numeric>* >* constraintToBounds = mConstraintToBound[constraint];
+                                    vector< const LRABound* >* constraintToBounds = mConstraintToBound[constraint];
                                     constraintToBounds->push_back( learnedBound.nextWeakerBound );
                                     #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
                                     if( learnedBound.newBound != NULL ) constraintToBounds->push_back( learnedBound.newBound );
@@ -500,7 +500,7 @@ namespace smtrat
                             const Constraint* newConstraint = learnedBound.newBound->pAsConstraint();
                             addConstraintToInform( newConstraint );
                             mLinearConstraints.insert( newConstraint );
-                            vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
+                            vector< const LRABound* >* boundVector = new vector< const LRABound* >();
                             boundVector->push_back( learnedBound.newBound );
                             mConstraintToBound[newConstraint] = boundVector;
                             activateBound( learnedBound.newBound, originSet );
@@ -522,7 +522,7 @@ namespace smtrat
                 // Create the infeasible subsets.
                 mInfeasibleSubsets.clear();
                 #ifdef LRA_ONE_REASON
-                vector< const Bound<Numeric>* > conflict = mTableau.getConflict( pivotingElement.first );
+                vector< const LRABound* > conflict = mTableau.getConflict( pivotingElement.first );
                 set< const Formula* > infSubSet = set< const Formula* >();
                 for( auto bound = conflict.begin(); bound != conflict.end(); ++bound )
                 {
@@ -531,7 +531,7 @@ namespace smtrat
                 }
                 mInfeasibleSubsets.push_back( infSubSet );
                 #else
-                vector< set< const Bound<Numeric>* > > conflictingBounds = mTableau.getConflictsFrom( pivotingElement.first );
+                vector< set< const LRABound* > > conflictingBounds = mTableau.getConflictsFrom( pivotingElement.first );
                 for( auto conflict = conflictingBounds.begin(); conflict != conflictingBounds.end(); ++conflict )
                 {
                     set< const Formula* > infSubSet = set< const Formula* >();
@@ -602,16 +602,15 @@ Return:
         EvalRationalMap result = EvalRationalMap();
         if( mInfeasibleSubsets.empty() )
         {
-            // Check whether the found satisfying assignment is by coincidence a satisfying assignment of the non linear constraints
-            Numeric minDelta = -1;
-            Numeric curDelta = 0;
-            Variable<Numeric>* variable = NULL;
+            LRABoundType minDelta = -1;
+            LRABoundType curDelta = 0;
+            LRAVariable* variable = NULL;
             // For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
             for( auto originalVar = mOriginalVars.begin(); originalVar != mOriginalVars.end(); ++originalVar )
             {
                 variable = originalVar->second;
-                const Value<Numeric>& assValue = variable->assignment();
-                const Bound<Numeric>& inf = variable->infimum();
+                const LRAValue& assValue = variable->assignment();
+                const LRABound& inf = variable->infimum();
                 if( !inf.isInfinite() )
                 {
                     // .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
@@ -622,7 +621,7 @@ Return:
                             minDelta = curDelta;
                     }
                 }
-                const Bound<Numeric>& sup = variable->supremum();
+                const LRABound& sup = variable->supremum();
                 if( !sup.isInfinite() )
                 {
                     // .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
@@ -638,8 +637,8 @@ Return:
             for( auto slackVar = mSlackVars.begin(); slackVar != mSlackVars.end(); ++slackVar )
             {
                 variable = slackVar->second;
-                const Value<Numeric>& assValue = variable->assignment();
-                const Bound<Numeric>& inf = variable->infimum();
+                const LRAValue& assValue = variable->assignment();
+                const LRABound& inf = variable->infimum();
                 if( !inf.isInfinite() )
                 {
                     // .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
@@ -650,7 +649,7 @@ Return:
                             minDelta = curDelta;
                     }
                 }
-                const Bound<Numeric>& sup = variable->supremum();
+                const LRABound& sup = variable->supremum();
                 if( !sup.isInfinite() )
                 {
                     // .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
@@ -667,9 +666,10 @@ Return:
             // Calculate the rational assignment of all original variables.
             for( auto var = mOriginalVars.begin(); var != mOriginalVars.end(); ++var )
             {
-                Numeric value = var->second->assignment().mainPart() + var->second->assignment().deltaPart() * curDelta;
-                result.insert( pair< const carl::Variable, Rational >( var->first, value.content() ) );
+                LRABoundType value = var->second->assignment().mainPart() + var->second->assignment().deltaPart() * curDelta;
+                result.insert( pair< const carl::Variable, Rational >( var->first, value ) );
             }
+//            assert( assignmentConsistentWithTableau( result, curDelta ) );
         }
         return result;
     }
@@ -684,7 +684,7 @@ Return:
         EvalIntervalMap result = EvalIntervalMap();
         for( auto iter = mOriginalVars.begin(); iter != mOriginalVars.end(); ++iter )
         {
-            const Variable<Numeric>& var = *iter->second;
+            const LRAVariable& var = *iter->second;
             carl::BoundType lowerBoundType;
             Rational lowerBoundValue;
             carl::BoundType upperBoundType;
@@ -697,7 +697,7 @@ Return:
             else
             {
                 lowerBoundType = var.infimum().isWeak() ? carl::BoundType::WEAK : carl::BoundType::STRICT;
-                lowerBoundValue = var.infimum().limit().mainPart().content();
+                lowerBoundValue = var.infimum().limit().mainPart();
             }
             if( var.supremum().isInfinite() )
             {
@@ -707,7 +707,7 @@ Return:
             else
             {
                 upperBoundType = var.supremum().isWeak() ? carl::BoundType::WEAK : carl::BoundType::STRICT;
-                upperBoundValue = var.supremum().limit().mainPart().content();
+                upperBoundValue = var.supremum().limit().mainPart();
             }
             Interval interval = Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
             result.insert( pair< carl::Variable, Interval >( iter->first, interval ) );
@@ -721,7 +721,7 @@ Return:
      */
     void LRAModule::learnRefinements()
     {
-        map<Variable<Numeric>*, typename Tableau<Numeric>::LearnedBound>& llBs = mTableau.rLearnedLowerBounds();
+        map<LRAVariable*, typename LRATableau::LearnedBound>& llBs = mTableau.rLearnedLowerBounds();
         while( !llBs.empty() )
         {
             auto originsIterA = llBs.begin()->second.nextWeakerBound->origins().begin();
@@ -760,11 +760,11 @@ Return:
                 }
                 ++originsIterA;
             }
-            vector<const Bound<Numeric>* >* toDelete = llBs.begin()->second.premise;
+            vector<const LRABound* >* toDelete = llBs.begin()->second.premise;
             llBs.erase( llBs.begin() );
             delete toDelete;
         }
-        map<Variable<Numeric>*, typename Tableau<Numeric>::LearnedBound>& luBs = mTableau.rLearnedUpperBounds();
+        map<LRAVariable*, typename LRATableau::LearnedBound>& luBs = mTableau.rLearnedUpperBounds();
         while( !luBs.empty() )
         {
             auto originsIterA = luBs.begin()->second.nextWeakerBound->origins().begin();
@@ -803,7 +803,7 @@ Return:
                 }
                 ++originsIterA;
             }
-            vector<const Bound<Numeric>* >* toDelete = luBs.begin()->second.premise;
+            vector<const LRABound* >* toDelete = luBs.begin()->second.premise;
             luBs.erase( luBs.begin() );
             delete toDelete;
         }
@@ -818,7 +818,7 @@ Return:
     {
         while( !mBoundCandidatesToPass.empty() )
         {
-            const Bound<Numeric>& bound = *mBoundCandidatesToPass.back();
+            const LRABound& bound = *mBoundCandidatesToPass.back();
             if( bound.pInfo()->updated > 0 )
             {
                 addSubformulaToPassedFormula( new Formula( bound.pAsConstraint() ), bound.origins() );
@@ -873,13 +873,13 @@ Return:
      * @return false, if a conflict occurs;
      *          true, otherwise.
      */
-    bool LRAModule::activateBound( const Bound<Numeric>* _bound, set<const Formula*>& _formulas )
+    bool LRAModule::activateBound( const LRABound* _bound, set<const Formula*>& _formulas )
     {
         bool result = true;
         _bound->pOrigins()->push_back( _formulas );
         if( _bound->pInfo()->position != mpPassedFormula->end() )
             addOrigin( *_bound->pInfo()->position, _formulas );
-        const Variable<Numeric>& var = _bound->variable();
+        const LRAVariable& var = _bound->variable();
         if( (_bound->isUpperBound() && var.pSupremum()->isInfinite()) )
         {
             if( var.isBasic() )
@@ -912,7 +912,7 @@ Return:
                 _bound->pVariable()->setSupremum( _bound );
                 if( result && !var.isBasic() && (*var.pSupremum() < var.assignment()) )
                 {
-                    mTableau.updateBasicAssignments( var.position(), Value<Numeric>( (*var.pSupremum()).limit() - var.assignment() ) );
+                    mTableau.updateBasicAssignments( var.position(), LRAValue( (*var.pSupremum()).limit() - var.assignment() ) );
                     _bound->pVariable()->rAssignment() = (*var.pSupremum()).limit();
                 }
             }
@@ -935,7 +935,7 @@ Return:
                 _bound->pVariable()->setInfimum( _bound );
                 if( result && !var.isBasic() && (*var.pInfimum() > var.assignment()) )
                 {
-                    mTableau.updateBasicAssignments( var.position(), Value<Numeric>( (*var.pInfimum()).limit() - var.assignment() ) );
+                    mTableau.updateBasicAssignments( var.position(), LRAValue( (*var.pInfimum()).limit() - var.assignment() ) );
                     _bound->pVariable()->rAssignment() = (*var.pInfimum()).limit();
                 }
             }
@@ -951,14 +951,14 @@ Return:
      * @param _boundValue The limit of the bound.
      * @param _constraint The constraint corresponding to the bound to create.
      */
-    void LRAModule::setBound( Variable<Numeric>& _var, bool _constraintInverted, const Numeric& _boundValue, const Constraint* _constraint )
+    void LRAModule::setBound( LRAVariable& _var, bool _constraintInverted, const LRABoundType& _boundValue, const Constraint* _constraint )
     {
         if( _constraint->relation() == Relation::EQ )
         {
             // TODO: Take value from an allocator to assure the values are located close to each other in the memory.
-            Value<Numeric>* value  = new Value<Numeric>( _boundValue );
-            pair<const Bound<Numeric>*, pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _var.addEqualBound( value, mpPassedFormula->end(), _constraint );
-            vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
+            LRAValue* value  = new LRAValue( _boundValue );
+            pair<const LRABound*, pair<const LRABound*, const LRABound*> > result = _var.addEqualBound( value, mpPassedFormula->end(), _constraint );
+            vector< const LRABound* >* boundVector = new vector< const LRABound* >();
             result.first->boundExists();
             boundVector->push_back( result.first );
             mConstraintToBound[_constraint] = boundVector;
@@ -1016,25 +1016,25 @@ Return:
         {
             
             const Constraint* constraint;
-            Value<Numeric>* value;
+            LRAValue* value;
             if( _constraint->integerValued() && _constraint->relation() == Relation::NEQ )
             {
                 constraint = Formula::newConstraint( _constraint->lhs(), Relation::LESS );
-                value = new Value<Numeric>( _boundValue - ONE_RATIONAL );
+                value = new LRAValue( _boundValue - ONE_RATIONAL );
             }
             else
             {
                 constraint = _constraint;
-                value = new Value<Numeric>( _boundValue );
+                value = new LRAValue( _boundValue );
             }
-            pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), constraint );
-            vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
+            pair<const LRABound*,pair<const LRABound*, const LRABound*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), constraint );
+            vector< const LRABound* >* boundVector = new vector< const LRABound* >();
             result.first->boundExists();
             boundVector->push_back( result.first );
             mConstraintToBound[constraint] = boundVector;
             if( _constraint->integerValued() && _constraint->relation() == Relation::NEQ )
             {
-                vector< const Bound<Numeric>* >* boundVectorB = new vector< const Bound<Numeric>* >();
+                vector< const LRABound* >* boundVectorB = new vector< const LRABound* >();
                 boundVectorB->push_back( result.first );
                 mConstraintToBound[_constraint] = boundVectorB;
                 result.first->setNeqRepresentation( _constraint );
@@ -1074,19 +1074,19 @@ Return:
         if( _constraint->relation() == Relation::GEQ || ( _constraint->integerValued() && _constraint->relation() == Relation::NEQ ) )
         {
             const Constraint* constraint;
-            Value<Numeric>* value;
+            LRAValue* value;
             if( _constraint->integerValued() && _constraint->relation() == Relation::NEQ )
             {
                 constraint = Formula::newConstraint( _constraint->lhs(), Relation::GREATER );
-                value = new Value<Numeric>( _boundValue + ONE_RATIONAL );
+                value = new LRAValue( _boundValue + ONE_RATIONAL );
             }
             else
             {
                 constraint = _constraint;
-                value = new Value<Numeric>( _boundValue );
+                value = new LRAValue( _boundValue );
             }
-            pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), constraint );
-            vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
+            pair<const LRABound*,pair<const LRABound*, const LRABound*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), constraint );
+            vector< const LRABound* >* boundVector = new vector< const LRABound* >();
             result.first->boundExists();
             boundVector->push_back( result.first );
             mConstraintToBound[constraint] = boundVector;
@@ -1138,14 +1138,14 @@ Return:
             {
                 constraint = Formula::newConstraint( _constraint->lhs(), Relation::LESS );
             }
-            Value<Numeric>* value = new Value<Numeric>( _boundValue, (_constraintInverted ? 1 : -1) );
-            pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), constraint );
-            vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
+            LRAValue* value = new LRAValue( _boundValue, (_constraintInverted ? 1 : -1) );
+            pair<const LRABound*,pair<const LRABound*, const LRABound*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), constraint );
+            vector< const LRABound* >* boundVector = new vector< const LRABound* >();
             boundVector->push_back( result.first );
             mConstraintToBound[constraint] = boundVector;
             if( _constraint->relation() == Relation::NEQ )
             {
-                vector< const Bound<Numeric>* >* boundVectorB = new vector< const Bound<Numeric>* >();
+                vector< const LRABound* >* boundVectorB = new vector< const LRABound* >();
                 boundVectorB->push_back( result.first );
                 mConstraintToBound[_constraint] = boundVectorB;
                 result.first->setNeqRepresentation( _constraint );
@@ -1193,9 +1193,9 @@ Return:
             {
                 constraint = Formula::newConstraint( _constraint->lhs(), Relation::GREATER );
             }
-            Value<Numeric>* value = new Value<Numeric>( _boundValue, (_constraintInverted ? -1 : 1) );
-            pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), constraint );
-            vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
+            LRAValue* value = new LRAValue( _boundValue, (_constraintInverted ? -1 : 1) );
+            pair<const LRABound*,pair<const LRABound*, const LRABound*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), constraint );
+            vector< const LRABound* >* boundVector = new vector< const LRABound* >();
             boundVector->push_back( result.first );
             mConstraintToBound[constraint] = boundVector;
             if( _constraint->relation() == Relation::NEQ )
@@ -1243,20 +1243,20 @@ Return:
      *
      * @param _bound The bound to find conflicts for.
      */
-    void LRAModule::findSimpleConflicts( const Bound<Numeric>& _bound )
+    void LRAModule::findSimpleConflicts( const LRABound& _bound )
     {
         if( _bound.deduced() ) Module::storeAssumptionsToCheck( *mpManager );
         assert( !_bound.deduced() );
         if( _bound.isUpperBound() )
         {
-            const Bound<Numeric>::BoundSet& lbounds = _bound.variable().lowerbounds();
+            const LRABound::BoundSet& lbounds = _bound.variable().lowerbounds();
             for( auto lbound = lbounds.rbegin(); lbound != --lbounds.rend(); ++lbound )
             {
                 if( **lbound > _bound.limit() && (*lbound)->pAsConstraint() != NULL )
                 {
                     if( (*lbound)->neqRepresentation() != NULL )
                     {
-                        if( _bound.type() == Bound<Numeric>::EQUAL && (*lbound)->limit().mainPart() == _bound.limit().mainPart() )
+                        if( _bound.type() == LRABound::EQUAL && (*lbound)->limit().mainPart() == _bound.limit().mainPart() )
                         {
                             Formula* deductionB = new Formula( OR );
                             deductionB->addSubformula( new Formula( NOT ) );
@@ -1271,7 +1271,7 @@ Return:
                     }
                     else if( _bound.neqRepresentation() != NULL )
                     {
-                        if( (*lbound)->type() == Bound<Numeric>::EQUAL && (*lbound)->limit().mainPart() == _bound.limit().mainPart() )
+                        if( (*lbound)->type() == LRABound::EQUAL && (*lbound)->limit().mainPart() == _bound.limit().mainPart() )
                         {
                             Formula* deductionB = new Formula( OR );
                             deductionB->addSubformula( new Formula( NOT ) );
@@ -1305,14 +1305,14 @@ Return:
         }
         if( _bound.isLowerBound() )
         {
-            const Bound<Numeric>::BoundSet& ubounds = _bound.variable().upperbounds();
+            const LRABound::BoundSet& ubounds = _bound.variable().upperbounds();
             for( auto ubound = ubounds.begin(); ubound != --ubounds.end(); ++ubound )
             {
                 if( **ubound < _bound.limit() && (*ubound)->pAsConstraint() != NULL )
                 {
                     if( (*ubound)->neqRepresentation() != NULL )
                     {
-                        if( _bound.type() == Bound<Numeric>::EQUAL && (*ubound)->limit().mainPart() == _bound.limit().mainPart() )
+                        if( _bound.type() == LRABound::EQUAL && (*ubound)->limit().mainPart() == _bound.limit().mainPart() )
                         {
                             Formula* deductionB = new Formula( OR );
                             deductionB->addSubformula( new Formula( NOT ) );
@@ -1327,7 +1327,7 @@ Return:
                     }
                     else if( _bound.neqRepresentation() != NULL )
                     {
-                        if( (*ubound)->type() == Bound<Numeric>::EQUAL && (*ubound)->limit().mainPart() == _bound.limit().mainPart() )
+                        if( (*ubound)->type() == LRABound::EQUAL && (*ubound)->limit().mainPart() == _bound.limit().mainPart() )
                         {
                             Formula* deductionB = new Formula( OR );
                             deductionB->addSubformula( new Formula( NOT ) );
@@ -1381,13 +1381,13 @@ Return:
             if( basicIter == mOriginalVars.end() )
             {
                 Polynomial* varPoly = new Polynomial( var );
-                Variable<Numeric>* nonBasic = mTableau.newNonbasicVariable( varPoly );
-                mOriginalVars.insert( pair<carl::Variable, Variable<Numeric>*>( var, nonBasic ) );
+                LRAVariable* nonBasic = mTableau.newNonbasicVariable( varPoly );
+                mOriginalVars.insert( pair<carl::Variable, LRAVariable*>( var, nonBasic ) );
                 setBound( *nonBasic, negative, constantPart, _pConstraint );
             }
             else
             {
-                Variable<Numeric>* nonBasic = basicIter->second;
+                LRAVariable* nonBasic = basicIter->second;
                 setBound( *nonBasic, negative, constantPart, _pConstraint );
             }
         }
@@ -1403,8 +1403,8 @@ Return:
             ExVariableMap::iterator slackIter = mSlackVars.find( linearPart );
             if( slackIter == mSlackVars.end() )
             {
-                vector< Variable<Numeric>* > nonbasics = vector< Variable<Numeric>* >();
-                vector< Numeric > numCoeffs = vector< Numeric >();
+                vector< LRAVariable* > nonbasics = vector< LRAVariable* >();
+                vector< LRAEntryType > numCoeffs = vector< LRAEntryType >();
                 for( auto term = linearPart->begin(); term != linearPart->end(); ++term )
                 {
                     if( (*term)->isConstant() )
@@ -1418,26 +1418,27 @@ Return:
                     if( mOriginalVars.end() == nonBasicIter )
                     {
                         Polynomial* varPoly = new Polynomial( var );
-                        Variable<Numeric>* nonBasic = mTableau.newNonbasicVariable( varPoly );
-                        mOriginalVars.insert( pair<carl::Variable, Variable<Numeric>*>( var, nonBasic ) );
+                        LRAVariable* nonBasic = mTableau.newNonbasicVariable( varPoly );
+                        mOriginalVars.insert( pair<carl::Variable, LRAVariable*>( var, nonBasic ) );
                         nonbasics.push_back( nonBasic );
                     }
                     else
                     {
                         nonbasics.push_back( nonBasicIter->second );
                     }
-                    numCoeffs.push_back( Numeric( (*term)->coeff() ) );
+                    assert( carl::isInteger( (*term)->coeff() ) );
+                    numCoeffs.push_back( LRAEntryType( carl::getNum( (*term)->coeff() ) ) );
                 }
 
-                Variable<Numeric>* slackVar = mTableau.newBasicVariable( linearPart, nonbasics, numCoeffs );
+                LRAVariable* slackVar = mTableau.newBasicVariable( linearPart, nonbasics, numCoeffs );
 
-                mSlackVars.insert( pair<const Polynomial*, Variable<Numeric>*>( linearPart, slackVar ) );
+                mSlackVars.insert( pair<const Polynomial*, LRAVariable*>( linearPart, slackVar ) );
                 setBound( *slackVar, negative, (negative ? constantPart : -constantPart), _pConstraint );
             }
             else
             {
                 delete linearPart;
-                Variable<Numeric>* slackVar = slackIter->second;
+                LRAVariable* slackVar = slackIter->second;
                 setBound( *slackVar, negative, (negative ? constantPart : -constantPart), _pConstraint );
             }
         }
@@ -1545,7 +1546,7 @@ Return:
         /*
          * Build the new Tableau consisting out of the defining constraints.
          */
-        lra::Tableau<lra::Numeric> dc_Tableau = lra::Tableau<lra::Numeric>( mpPassedFormula->end() );
+        LRATableau dc_Tableau = LRATableau( mpPassedFormula->end() );
         unsigned i=0;
         for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
         {                                
@@ -1555,13 +1556,13 @@ Return:
         unsigned numRows = mTableau.rows().size();
         unsigned dc_count = 0;
         vector<unsigned> dc_positions;
-        vector<lra::Numeric> lcm_rows;
+        vector<LRAEntryType> lcm_rows;
         for( unsigned i = 0; i < numRows; ++i )
         {
             vector<unsigned> non_basic_vars_positions;
-            vector<lra::Numeric> coefficients;
-            lra::Numeric lcmOfCoeffDenoms = 1;
-            lra::Numeric max_value = 0;
+            vector<LRAEntryType> coefficients;
+            LRAEntryType lcmOfCoeffDenoms = 1;
+            LRAEntryType max_value = 0;
             if( mTableau.isDefining( i, non_basic_vars_positions, coefficients, lcmOfCoeffDenoms, max_value ) )
             {
                 dc_count++;
@@ -1569,7 +1570,7 @@ Return:
                 lcm_rows.push_back( lcmOfCoeffDenoms );
                 assert( !non_basic_vars_positions.empty() );
                 Polynomial* help = new Polynomial(mTableau.rows().at(i).mName->expression());
-                vector< lra::Variable<lra::Numeric>* > non_basic_vars;
+                vector< LRAVariable* > non_basic_vars;
                 unsigned j=0;
                 auto pos = non_basic_vars_positions.begin();
                 for( auto column = dc_Tableau.columns().begin(); column != dc_Tableau.columns().end(); ++column )
@@ -1613,10 +1614,10 @@ Return:
             Polynomial cut;
             for( unsigned i = 0; i < dc_positions.size(); ++i )
             {
-                vector<lra::Numeric> coefficients2;
+                vector<LRAEntryType> coefficients2;
                 vector<bool> non_basics_proof;
-                vector< lra::Variable<lra::Numeric>* > non_basic_vars2;
-                Bound<Numeric>* upper_lower_bound;
+                vector< LRAVariable* > non_basic_vars2;
+                LRABound* upper_lower_bound;
                 creatable = dc_Tableau.create_cut_from_proof( dc_Tableau, mTableau, i, lcm_rows.at(i), coefficients2, non_basics_proof, cut, diagonals, dc_positions, upper_lower_bound );
                 Polynomial* pcut = new Polynomial( cut );
 //                #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
@@ -1687,6 +1688,29 @@ Return:
             ++map_iterator;
         }
         return false;
+    }
+    
+    /**
+     * Checks whether the found assignment is consistent with the tableau, hence replacing the original
+     * variables in the expressions represented by the slack variables equals their assignment.
+     * @param _assignment The assignment of the original variables.
+     * @param _delta The calculated delta for the given assignment.
+     * @return true, if the found assignment is consistent with the tableau;
+     *         false, otherwise.
+     */
+    bool LRAModule::assignmentConsistentWithTableau( const EvalRationalMap& _assignment, const LRABoundType& _delta ) const
+    {
+        for( auto slackVar : mSlackVars )
+        {
+            Polynomial tmp = slackVar.first->substitute( _assignment );
+            assert( tmp.isConstant() );
+            LRABoundType slackVarAssignment = slackVar.second->assignment().mainPart() + slackVar.second->assignment().deltaPart() * _delta;
+            if( !(tmp == slackVarAssignment) )
+            {
+                return false;
+            }
+        }
+        return true;
     }
     
     /**

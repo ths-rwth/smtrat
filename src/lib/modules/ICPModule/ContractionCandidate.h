@@ -176,7 +176,7 @@ namespace smtrat
                 return mContractor;
             }
             
-            bool contract(EvalDoubleIntervalMap& _intervals, carl::DoubleInterval& _resA, carl::DoubleInterval& _resB)
+            bool contract(EvalDoubleIntervalMap& _intervals, DoubleInterval& _resA, DoubleInterval& _resB)
             {
                 return mContractor(_intervals, mDerivationVar, _resA, _resB);
             }

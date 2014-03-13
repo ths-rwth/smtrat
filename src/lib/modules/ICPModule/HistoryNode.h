@@ -186,7 +186,7 @@ namespace smtrat
                     return mIntervals;
                 }
 
-                carl::DoubleInterval& getInterval( const carl::Variable::Arg _variable )
+                DoubleInterval& getInterval( const carl::Variable::Arg _variable )
                 {
                     assert( mIntervals.find( _variable ) != mIntervals.end() );
                     return mIntervals.at( _variable );
@@ -213,7 +213,7 @@ namespace smtrat
                  * @param _interval
                  * @return true if only an update
                  */
-                bool addInterval( const carl::Variable::Arg _var, carl::DoubleInterval _interval )
+                bool addInterval( const carl::Variable::Arg _var, const DoubleInterval& _interval )
                 {
                     if( mIntervals.find( _var ) != mIntervals.end() )
                     {
@@ -232,7 +232,7 @@ namespace smtrat
                     for( EvalDoubleIntervalMap::const_iterator intervalIt = mIntervals.begin(); intervalIt != mIntervals.end();
                             ++intervalIt )
                     {
-                        if( (*intervalIt).second.empty() )
+                        if( (*intervalIt).second.isEmpty() )
                             return true;
                     }
                     return false;
@@ -545,8 +545,7 @@ namespace smtrat
                     for( EvalDoubleIntervalMap::const_iterator intervalIt = mIntervals.begin(); intervalIt != mIntervals.end();
                             ++intervalIt )
                     {
-                        _out << (*intervalIt).first << "\t : ";
-                        (*intervalIt).second.dbgprint();
+                        _out << (*intervalIt).first << "\t : " << (*intervalIt).second << std::endl;
                     }
                     _out << "Applied Contractions: ";
                     if( mAppliedContractions.size() > 0 )
