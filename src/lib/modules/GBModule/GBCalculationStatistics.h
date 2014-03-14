@@ -16,8 +16,9 @@
 #include "../../Constraint.h"
 #include "../../utilities/stats/Statistics.h"
 
+#include "carl/groebner/gb-buchberger/BuchbergerStats.h"
 
-#include <ginacra/mr/Buchberger/BuchbergerStats.h>
+
 namespace smtrat {
 class GBCalculationStats : public Statistics
 {
@@ -34,10 +35,10 @@ class GBCalculationStats : public Statistics
      void print(std::ostream& os = std::cout);
      void exportKeyValue(std::ostream& os = std::cout);
    protected:
-    GBCalculationStats() : Statistics("GB Calculation", this), mBuchbergerStats(GiNaCRA::BuchbergerStats::getInstance())
+    GBCalculationStats() : Statistics("GB Calculation", this), mBuchbergerStats(carl::BuchbergerStats::getInstance())
     {}
   
-    GiNaCRA::BuchbergerStats* mBuchbergerStats;
+    carl::BuchbergerStats* mBuchbergerStats;
 
    private:
      static std::map<unsigned,GBCalculationStats*> instances;

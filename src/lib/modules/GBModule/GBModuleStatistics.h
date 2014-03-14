@@ -19,9 +19,7 @@
  *
  */
 
-
-#ifndef GBMODULESTATISTICS_H
-#define	GBMODULESTATISTICS_H
+#pragma once
 
 #include "../../config.h"
 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -153,7 +151,7 @@ class GroebnerModuleStats : public Statistics
       * Record how big the conflict sets are w.r.t the whole set.
       * @param ratio The size of the conflict divided through the number of equalities
       */
-     void EffectivenessOfConflicts(float ratio) { mEffectivenessOfConflicts.push_back(ratio); }
+     void EffectivenessOfConflicts(double ratio) { mEffectivenessOfConflicts.push_back(ratio); }
      
      void FoundEqualities() {
          ++mNrOfFoundEqualities;
@@ -192,7 +190,7 @@ class GroebnerModuleStats : public Statistics
     unsigned mNrOfFoundIdentities;
     
     std::vector<unsigned> mNrOfConflictSets;
-    std::vector<float> mEffectivenessOfConflicts;
+    std::vector<double> mEffectivenessOfConflicts;
     std::vector<unsigned> mPopLevel;
     
    private:
@@ -202,5 +200,3 @@ class GroebnerModuleStats : public Statistics
 }
 
 #endif
-#endif	/* GBMODULESTATISTICS_H */
-

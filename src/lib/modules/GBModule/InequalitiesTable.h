@@ -2,8 +2,8 @@
 
 
 // Datastructures from GiNaCRA
-#include <ginacra/ginacra.h>
-#include <ginacra/mr/Buchberger/Buchberger.h>
+
+#include <carl/groebner/groebner.h>
 
 // Compile time settings structures
 #include "GBSettings.h"
@@ -29,14 +29,14 @@ namespace smtrat
     class InequalitiesTable
     {
     protected:
-        typedef typename Settings::Polynomial Polynomial;
+        typedef typename Settings::PolynomialWithReasons Polynomial;
         typedef typename Settings::MultivariateIdeal Ideal;
     public:
         typedef typename std::pair<unsigned, Polynomial> CellEntry;
-        typedef typename std::tuple<Formula::iterator, Constraint_Relation, std::list<CellEntry> > RowEntry;
+        typedef typename std::tuple<Formula::iterator, smtrat::Relation, std::list<CellEntry> > RowEntry;
         typedef typename std::map<Formula::const_iterator, RowEntry, FormulaConstraintCompare> Rows;
         typedef typename std::pair<Formula::const_iterator, RowEntry> Row;
-        typedef typename std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> > RewriteRules;
+        typedef typename std::map<carl::Variable, std::pair<Term, carl::BitVector> > RewriteRules;
 
 
     protected:

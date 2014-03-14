@@ -36,9 +36,8 @@
 
 #pragma once
 
-// Datastructures from GiNaCRA
-#include <ginacra/ginacra.h>
-#include <ginacra/mr/Buchberger/Buchberger.h>
+// Datastructures from carl
+#include "carl/groebner/groebner.h"
 
 // General Module interface
 #include "../../Module.h"
@@ -47,6 +46,7 @@
 #include "GBSettings.h"
 // Runtime settings class
 #include "GBRuntimeSettings.h"
+#include "RewriteRules.h"
 
 #include "VariableRewriteRule.h"
 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -71,13 +71,11 @@ class GroebnerModule : public Module
     friend class InequalitiesTable<Settings>;
 public:
     typedef typename Settings::Order Order;
-    typedef typename Settings::Polynomial Polynomial;
+    typedef typename Settings::PolynomialWithReasons Polynomial;
     typedef typename Settings::MultivariateIdeal Ideal;
 protected:
     /// The current Groebner basis
-    GiNaCRA::Buchberger<typename Settings::Order> mBasis;
-    /// A list of variables to help define the simplified constraints
-    GiNaC::symtab mListOfVariables;
+    typename Settings::Groebner mBasis;
     /// The inequalities table for handling inequalities
     InequalitiesTable<Settings> mInequalities;
     /// The vector of backtrack points, which has pointers to received constraints.
@@ -91,9 +89,9 @@ protected:
     /// An reference to the RuntimeSettings
     GBRuntimeSettings* mRuntimeSettings;
     /// The rewrite rules for the variables
-    std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> > mRewriteRules;
+    groebner::RewriteRules mRewriteRules;
 
-    std::map<unsigned, unsigned> mAdditionalVarMap;
+    std::map<unsigned, carl::Variable> mAdditionalVarMap;
     
     /** A workaround to associate equalities in the passed formula originating from the gb
      * (in contrast to those which originate from simplified formulae)
@@ -107,20 +105,21 @@ public:
     bool assertSubformula( Formula::const_iterator _formula );
     virtual Answer isConsistent( );
     void removeSubformula( Formula::const_iterator _formula );
+	
 
 protected:
-    bool constraintByGB( Constraint_Relation cr );
+    bool constraintByGB( smtrat::Relation cr );
     
     void pushBacktrackPoint( Formula::const_iterator btpoint );
     void popBacktrackPoint( Formula::const_iterator btpoint );
     bool saveState( );
 
-    std::set<const Formula*> generateReasons( const GiNaCRA::BitVector& reasons );
+    std::set<const Formula*> generateReasons( const carl::BitVector& reasons );
     void passGB( );
     
-    void knownConstraintDeduction( const std::list<std::pair<GiNaCRA::BitVector, GiNaCRA::BitVector> >& deductions );
+    void knownConstraintDeduction( const std::list<std::pair<carl::BitVector, carl::BitVector> >& deductions );
     void newConstraintDeduction( );
-    void factorisedConstraintDeduction( const std::list<Polynomial>& factorisation, const GiNaCRA::BitVector& reasons );
+    void factorisedConstraintDeduction( const std::list<Polynomial>& factorisation, const carl::BitVector& reasons );
     
     Polynomial transformIntoEquality( Formula::const_iterator constraint );
 
@@ -137,6 +136,7 @@ protected:
     void removeReceivedFormulaFromNewInequalities( Formula::const_iterator _formula );
     void removeSubformulaFromPassedFormula( Formula::iterator _formula );
 
+	Polynomial rewriteVariable(const Polynomial&, const carl::Variable&, const Term&, const BitVector&);
     bool validityCheck( );
 public:
     void printStateHistory( );

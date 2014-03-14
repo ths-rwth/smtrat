@@ -25,7 +25,7 @@ namespace smtrat
     template<class Settings>
     typename InequalitiesTable<Settings>::Rows::iterator InequalitiesTable<Settings>::InsertReceivedFormula( Formula::const_iterator received )
     {
-        assert( (*received)->constraint().relation() != CR_EQ );
+        assert( (*received)->constraint().relation() != smtrat::Relation::EQ );
         mModule->addReceivedSubformulaToPassedFormula( received );
         // We assume that the just added formula is the last one.
         const Formula::iterator passedEntry = mModule->mpPassedFormula->last( );
@@ -95,10 +95,9 @@ namespace smtrat
                         if( Settings::passInequalities == FULL_REDUCED || (Settings::passInequalities == FULL_REDUCED_IF && pass) )
                         {
                             std::vector<std::set<const Formula*> > originals;
-                            originals.push_back( mModule->generateReasons( std::get < 2 > (it->second).back( ).second.getOrigins( ).getBitVector( ) ) );
+                            originals.push_back( mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() ));
                             originals.front( ).insert( *(it->first) );
-                            //TODO: replace "Formula::constraintPool().variables()" by a smaller approximations of the variables contained in "std::get < 2 > (it->second).back( ).second.toEx( )"
-                            mModule->addSubformulaToPassedFormula( new Formula( Formula::newConstraint( std::get < 2 > (it->second).back( ).second.toEx( ), std::get < 1 > (it->second), Formula::constraintPool().realVariables() ) ), originals );
+                            mModule->addSubformulaToPassedFormula( new Formula( Formula::newConstraint( smtrat::Polynomial(std::get<2>(it->second).back().second), std::get<1>(it->second) ) ), originals );
 
                         }
                         else
@@ -171,7 +170,7 @@ namespace smtrat
     {
         for( auto it = ineqToBeReduced.begin( ); it != ineqToBeReduced.end( ); ++it )
         {
-            assert( std::get < 1 > ((*it)->second) != CR_EQ );
+            assert( std::get < 1 > ((*it)->second) != smtrat::Relation::EQ );
             if( !reduceWRTGroebnerBasis( *it, gb, rules ) ) {
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 mStats->infeasibleInequality();
@@ -212,7 +211,7 @@ namespace smtrat
     template<class Settings>
     bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterator it, const Ideal& gb, const RewriteRules& rules )
     {
-        assert( std::get < 1 > (it->second) != CR_EQ );
+        assert( std::get < 1 > (it->second) != smtrat::Relation::EQ );
 
         Polynomial& p = std::get<2>(it->second).back( ).second;
         Polynomial reduced;
@@ -223,57 +222,58 @@ namespace smtrat
         {
             if(rules.size() == 0)
             {
-                GiNaCRA::BaseReductor<typename Settings::Order> reductor( gb, p );
+                typename Settings::Reductor reductor( gb, p );
                 reduced = reductor.fullReduce( );
                 reductionOccured = reductor.reductionOccured( );
             }
             else
             {
-                Polynomial ptemp = p.rewriteVariables(rules);
+                Polynomial ptemp = groebner::rewritePolynomial(p, rules);
+				
                 rewriteOccured = (ptemp != p);
                 if( !ptemp.isZero() && !ptemp.isConstant() )
                 {
-                    GiNaCRA::BaseReductor<typename Settings::Order> reductor( gb, ptemp );
+                    typename Settings::Reductor reductor( gb, ptemp );
                     reduced = reductor.fullReduce( );
                     reductionOccured = reductor.reductionOccured( );
                 }
                 else
                 {
                     reduced = ptemp;
-                    reduced.setOrigins(ptemp.getOrigins());
+                    reduced.setReasons(ptemp.getReasons());
                 }
             }
         }
 
-        Constraint_Relation relation = std::get < 1 > (it->second);
+        smtrat::Relation relation = std::get < 1 > (it->second);
         if( rewriteOccured || reductionOccured )
         {
             assert(std::get < 0 > (it->second) != mModule->mpPassedFormula->end());
             if( reduced.isZero( ) || reduced.isConstant( ) )
             {
                 bool satisfied = false;
-                if( reduced.isZero( ) && !constraintRelationIsStrict( relation ) )
+                if( reduced.isZero( ) && !relationIsStrict( relation ) )
                 {
-                    assert( !constraintRelationIsStrict( relation ) );
+                    assert( !relationIsStrict( relation ) );
                     satisfied = true;
                 }
                 else if( !reduced.isZero( ) )
                 { // non zero
-                    assert( reduced.nrOfTerms( ) > 0 );
+                    assert( reduced.nrTerms( ) > 0 );
                     assert( reduced.lcoeff( ) != 0 );
 
-                    const GiNaCRA::RationalNumber reducedConstant = reduced.lcoeff( );
+                    smtrat::Rational reducedConstant = reduced.lcoeff( );
                     assert( reducedConstant != 0 );
                     if( reducedConstant < 0 )
                     {
-                        if( relation == CR_LESS || relation == CR_LEQ || relation == CR_NEQ )
+                        if( relation == smtrat::Relation::LESS || relation == smtrat::Relation::LEQ || relation == smtrat::Relation::NEQ )
                         {
                             satisfied = true;
                         }
                     }
                     else
                     {
-                        if( relation == CR_GREATER || relation == CR_GEQ || relation == CR_NEQ )
+                        if( relation == smtrat::Relation::GREATER || relation == smtrat::Relation::GEQ || relation == smtrat::Relation::NEQ )
                         {
                             satisfied = true;
                         }
@@ -286,7 +286,7 @@ namespace smtrat
                     mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
 
                     std::get < 2 > (it->second).push_back( CellEntry( mBtnumber, reduced ) );
-                    std::set<const Formula*> originals( mModule->generateReasons( reduced.getOrigins( ).getBitVector( ) ) );
+                    std::set<const Formula*> originals( mModule->generateReasons( reduced.getReasons( ) ) );
 
                     std::get < 0 > (it->second) = mModule->mpPassedFormula->end( );
                     if( Settings::addTheoryDeductions != NO_CONSTRAINTS )
@@ -314,7 +314,7 @@ namespace smtrat
                 else // we have a conflict
                 {
 
-                    std::set<const Formula*> infeasibleSubset( mModule->generateReasons( reduced.getOrigins( ).getBitVector( ) ) );
+                    std::set<const Formula*> infeasibleSubset( mModule->generateReasons( reduced.getReasons( ) ) );
                     infeasibleSubset.insert( *(it->first) );
                     #ifdef SMTRAT_DEVOPTION_Statistics
                     mStats->EffectivenessOfConflicts(infeasibleSubset.size()/mModule->mpReceivedFormula->size());
@@ -345,12 +345,12 @@ namespace smtrat
                 {
                     // get the reason set for the reduced polynomial
                     std::vector<std::set<const Formula*> > originals;
-                    originals.push_back( mModule->generateReasons( reduced.getOrigins( ).getBitVector( ) ) );
+                    originals.push_back( mModule->generateReasons( reduced.getReasons( ) ) );
                     originals.front( ).insert( *(it->first) );
 
                     //pass the result
                     //TODO: replace "Formula::constraintPool().variables()" by a smaller approximations of the variables contained in "reduced.toEx( )"
-                    mModule->addSubformulaToPassedFormula( new Formula( Formula::newConstraint( reduced.toEx( ), relation, Formula::constraintPool().realVariables() ) ), originals );
+                    mModule->addSubformulaToPassedFormula( new Formula( Formula::newConstraint( smtrat::Polynomial(reduced), relation ) ), originals );
                     //set the pointer to the passed formula accordingly.
                     std::get < 0 > (it->second) = mModule->mpPassedFormula->last( );
                 }
@@ -389,7 +389,7 @@ namespace smtrat
     {
         for( auto it = mReducedInequalities.begin( ); it != mReducedInequalities.end( ); ++it )
         {
-            assert( std::get < 1 > ((*it)->second) != CR_EQ );
+            assert( std::get < 1 > ((*it)->second) != smtrat::Relation::EQ );
             if( !reduceWRTVariableRewriteRules( *it, rules ) ) {
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 mStats->infeasibleInequality();
@@ -425,7 +425,7 @@ namespace smtrat
     {
         for( auto it = ineqToBeReduced.begin( ); it != ineqToBeReduced.end( ); ++it )
         {
-            assert( std::get < 1 > ((*it)->second) != CR_EQ );
+            assert( std::get < 1 > ((*it)->second) != smtrat::Relation::EQ );
             if( !reduceWRTVariableRewriteRules( *it, rules ) ) {
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 mStats->infeasibleInequality();
@@ -457,8 +457,9 @@ namespace smtrat
     }
 
     template<class Settings>
-    bool InequalitiesTable<Settings>::reduceWRTVariableRewriteRules( typename Rows::iterator it, const RewriteRules& rules )
+    bool InequalitiesTable<Settings>::reduceWRTVariableRewriteRules( typename Rows::iterator , const RewriteRules&  )
     {
+		/// TODO implement or erase
         assert(false);
         return true;
     }
@@ -487,16 +488,16 @@ namespace smtrat
     template<class Settings>
     void InequalitiesTable<Settings>::print( std::ostream& os ) const
     {
-        std::cout << "Bt: " << mBtnumber << std::endl;
+        os << "Bt: " << mBtnumber << std::endl;
         for( auto it = mReducedInequalities.begin( ); it != mReducedInequalities.end( ); ++it )
         {
             typename std::list<CellEntry>::const_iterator listEnd = std::get < 2 > (it->second).end( );
-            std::cout << *(it->first) << " -> " << *(std::get < 0 > (it->second)) << std::endl;
+            os << *(it->first) << " -> " << *(std::get < 0 > (it->second)) << std::endl;
             for(typename std::list<CellEntry>::const_iterator jt = std::get < 2 > (it->second).begin( ); jt != listEnd; ++jt )
             {
-                std::cout << "\t(" << jt->first << ") " << jt->second << " [";
+                os << "\t(" << jt->first << ") " << jt->second << " [";
                 jt->second.getOrigins().print();
-                std::cout << "] " << std::endl;
+                os << "] " << std::endl;
 
             }
         }
