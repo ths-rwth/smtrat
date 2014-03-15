@@ -16,24 +16,24 @@ namespace smtrat
 
         }
 
-        GroebnerModuleState( const GiNaCRA::Buchberger<typename Settings::Order>& basis, const std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> >& rewrites ) :
-        mBasis( basis ), mRewrites(rewrites)
+        GroebnerModuleState( const typename Settings::Groebner& basisCalculation, const std::map<carl::Variable, std::pair<Term, carl::BitVector> >& rewrites ) :
+        mBasis( basisCalculation ), mRewrites(rewrites)
         {
         }
 
-        const GiNaCRA::Buchberger<typename Settings::Order>& getBasis( ) const
+        const typename Settings::Groebner& getBasis( ) const
         {
             return mBasis;
         }
 
-        const std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> >& getRewriteRules() const
+        const std::map<carl::Variable, std::pair<Term, carl::BitVector> >& getRewriteRules() const
         {
             return mRewrites;
         }
 
     protected:
         ///The state of the basis
-        const GiNaCRA::Buchberger<typename Settings::Order> mBasis;
-        const std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> > mRewrites;
+        const typename Settings::Groebner mBasis;
+        const std::map<carl::Variable, std::pair<Term, carl::BitVector> > mRewrites;
     };
 }

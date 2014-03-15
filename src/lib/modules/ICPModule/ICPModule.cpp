@@ -1756,6 +1756,7 @@ namespace smtrat
         assert(mIntervals.find(variable) != mIntervals.end());
         double                 originalDiameter = mIntervals.at(variable).diameter();
         bool originalUnbounded = ( mIntervals.at(variable).lowerBoundType() == carl::BoundType::INFTY || mIntervals.at(variable).upperBoundType() == carl::BoundType::INFTY );
+        smtrat::DoubleInterval originalInterval = mIntervals.at(variable);
         
         splitOccurred    = _selection->contract( mIntervals, resultA, resultB );
         if( splitOccurred )
@@ -1774,14 +1775,13 @@ namespace smtrat
                 variables.insert(mVariables.at(*variableIt));
             }
             mHistoryActual->addContraction(_selection, variables);
-            smtrat::DoubleInterval originalInterval = mIntervals.at(variable);
 #ifdef BOXMANAGEMENT
             // set intervals and update historytree
             EvalDoubleIntervalMap tmpRight;
             for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
             {
                 if ( (*intervalIt).first == variable )
-                    tmpRight.insert(std::pair<const carl::Variable,smtrat::DoubleInterval>(variable, originalInterval.intersect(resultA) ));
+                    tmpRight.insert(std::pair<const carl::Variable,smtrat::DoubleInterval>(variable, resultA ));
                 else
                     tmpRight.insert((*intervalIt));
             }
@@ -1813,7 +1813,7 @@ namespace smtrat
             for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
             {
                 if ( (*intervalIt).first == variable )
-                    tmpLeft.insert(std::pair<const carl::Variable,smtrat::DoubleInterval>(variable, originalInterval.intersect(resultB) ));
+                    tmpLeft.insert(std::pair<const carl::Variable,smtrat::DoubleInterval>(variable, resultB ));
                 else
                     tmpLeft.insert((*intervalIt));
             }
@@ -1840,7 +1840,7 @@ namespace smtrat
             #endif
             #endif
             // update mIntervals - usually this happens when changing to a different box, but in this case it has to be done manually, otherwise mIntervals is not affected.
-            mIntervals[variable] = originalInterval.intersect(resultB);
+            mIntervals[variable] = resultB;
 #else
             /// create prequesites: ((oldBox AND CCs) -> newBox) in CNF: (oldBox OR CCs) OR newBox 
             std::set<const Formula*> splitPremise = createPremiseDeductions();
@@ -1860,18 +1860,18 @@ namespace smtrat
             addDeduction( contraction );
 
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
-            assert(originalInterval.intersect(resultA).upperBoundType() != BoundType::INFTY );
-            Rational bound = carl::rationalize<Rational>( originalInterval.intersect(resultA).upper() );
+            assert(resultA.upperBoundType() != BoundType::INFTY );
+            Rational bound = carl::rationalize<Rational>( resultA.upper() );
             Module::branchAt( Polynomial( variable ), bound, splitPremise, true );
 #endif
             // TODO: Shouldn't it be the average of both contractions?
-            _relativeContraction = (originalDiameter - originalInterval.intersect(resultB).diameter()) / originalInterval.diameter();
+            _relativeContraction = (originalDiameter - resultB.diameter()) / originalInterval.diameter();
             _absoluteContraction = originalDiameter - resultB.diameter();
         }
         else
         {
             // set intervals
-            mIntervals[variable] = mIntervals.at(variable).intersect(resultA);
+            mIntervals[variable] = resultA;
             #ifdef ICPMODULE_DEBUG
             cout << "      New interval: " << variable << " = " << mIntervals.at(variable) << endl;
             #endif
@@ -2020,7 +2020,7 @@ namespace smtrat
             for ( auto intervalIt = _intervals.begin(); intervalIt != _intervals.end(); ++intervalIt )
             {
                 if ( (*intervalIt).first == variable )
-                    tmpRight.insert(std::pair<const carl::Variable,smtrat::DoubleInterval>(variable, originalInterval.intersect(resultA) ));
+                    tmpRight.insert(std::pair<const carl::Variable,smtrat::DoubleInterval>(variable, resultA ));
                 else
                     tmpRight.insert((*intervalIt));
             }
@@ -2030,16 +2030,16 @@ namespace smtrat
             for ( auto intervalIt = _intervals.begin(); intervalIt != _intervals.end(); ++intervalIt )
             {
                 if ( (*intervalIt).first == variable )
-                    tmpLeft.insert(std::pair<const carl::Variable,smtrat::DoubleInterval>(variable, originalInterval.intersect(resultB) ));
+                    tmpLeft.insert(std::pair<const carl::Variable,smtrat::DoubleInterval>(variable, resultB ));
                 else
                     tmpLeft.insert((*intervalIt));
             }
-            _relativeContraction = (originalDiameter - originalInterval.intersect(resultB).diameter()) / originalInterval.diameter();
+            _relativeContraction = (originalDiameter - resultB.diameter()) / originalInterval.diameter();
         }
         else
         {
             // set intervals
-            _intervals[variable] = _intervals.at(variable).intersect(resultA);
+            _intervals[variable] = resultA;
             if ( _intervals.at(variable).upperBoundType() != carl::BoundType::INFTY && _intervals.at(variable).lowerBoundType() != carl::BoundType::INFTY && !originalUnbounded )
             {
                 if ( originalDiameter == 0 )
