@@ -183,7 +183,7 @@ namespace smtrat
         const Constraint*                    constr = (*_formula)->pConstraint();
 
         // create and initialize slackvariables
-        mLRA.initialize();
+        mLRA.init();
         if( !mIsIcpInitialized)
         {
             // catch deductions
@@ -3021,14 +3021,14 @@ namespace smtrat
                         if ( leftTmp != NULL )
                         {
                             Formula* leftBound = new Formula(leftTmp);
-                            vec_set_const_pFormula origins = vec_set_const_pFormula();
+                            vec_set_const_pFormula origins;
                             std::set<const Formula*> emptyTmpSet = std::set<const Formula*>();
                             origins.insert(origins.begin(), emptyTmpSet);
 
                             if ( (*icpVar).second->isExternalBoundsSet() == icp::Updated::LEFT )
                                 removeSubformulaFromPassedFormula((*icpVar).second->externalLeftBound());
                             addConstraintToInform(leftTmp);
-                            addSubformulaToPassedFormula( leftBound, origins );
+                            addSubformulaToPassedFormula( leftBound, move( origins ) );
                             (*icpVar).second->setExternalLeftBound(mpPassedFormula->last());
                             newAdded = true;
                         }
@@ -3060,15 +3060,15 @@ namespace smtrat
                         {
 
                             Formula* rightBound = new Formula(rightTmp);
-                            vec_set_const_pFormula origins = vec_set_const_pFormula();
-                            std::set<const Formula*> emptyTmpSet = std::set<const Formula*>();
+                            vec_set_const_pFormula origins;
+                            std::set<const Formula*> emptyTmpSet;
                             origins.insert(origins.begin(), emptyTmpSet);
 
                             if ( (*icpVar).second->isExternalBoundsSet() == icp::Updated::RIGHT )
                                 removeSubformulaFromPassedFormula((*icpVar).second->externalRightBound());
 
                             addConstraintToInform(rightTmp);
-                            addSubformulaToPassedFormula( rightBound , origins);
+                            addSubformulaToPassedFormula( rightBound, move( origins ) );
                             (*icpVar).second->setExternalRightBound(mpPassedFormula->last());
                             newAdded = true;
                         }

@@ -156,6 +156,18 @@ namespace smtrat
         addConstraintToInform(_constraint);
         return true;
     }
+    
+    /**
+     * This method is called after informing about preferably all constraints.
+     */
+    void Module::init()
+    {
+        vector<Module*>::const_iterator backend = mUsedBackends.begin();
+        while( backend != mUsedBackends.end() )
+        {
+            (*backend)->init();
+        }
+    }
 
     /**
      * The module has to take the given sub-formula of the received formula into account.
@@ -326,6 +338,22 @@ namespace smtrat
     /**
      * Adds the given formula to the passed formula.
      * @param _formula The formula to add to the passed formula.
+     * @param _origins The link of the formula to add to the passed formula to sub-formulas 
+     *         of the received formulas, which are responsible for its occurrence
+     */
+    void Module::addSubformulaToPassedFormula( Formula* _formula, vec_set_const_pFormula&& _origins )
+    {
+        assert( mpReceivedFormula->size() != UINT_MAX );
+        assert( mPassedformulaOrigins.find(_formula) == mPassedformulaOrigins.end());
+        mpPassedFormula->addSubformula( _formula );
+        mPassedformulaOrigins.emplace( _formula, _origins );
+        if( mFirstSubformulaToPass == mpPassedFormula->end() )
+            mFirstSubformulaToPass = mpPassedFormula->last();
+    }
+
+    /**
+     * Adds the given formula to the passed formula.
+     * @param _formula The formula to add to the passed formula.
      * @param _origin The sub-formula of the received formula being responsible for the
      *        occurrence of the formula to add to the passed formula.
      */
@@ -337,7 +365,7 @@ namespace smtrat
         vec_set_const_pFormula originals;
         originals.push_back( set<const Formula*>() );
         originals.front().insert( _origin );
-        mPassedformulaOrigins[_formula] = originals;
+        mPassedformulaOrigins.emplace( _formula, move( originals ) );
         if( mFirstSubformulaToPass == mpPassedFormula->end() )
             mFirstSubformulaToPass = mpPassedFormula->last();
     }

@@ -41,8 +41,8 @@
 
 namespace smtrat
 {
-    typedef carl::Numeric                             LRABoundType;
-    typedef carl::Numeric                             LRAEntryType;
+    typedef carl::Numeric<Rational>                   LRABoundType;
+    typedef carl::Numeric<Rational>                   LRAEntryType;
     typedef lra::Bound<LRABoundType, LRAEntryType>    LRABound;
     typedef lra::Variable<LRABoundType, LRAEntryType> LRAVariable;
     typedef lra::Value<LRABoundType>                  LRAValue;
@@ -103,13 +103,13 @@ namespace smtrat
 
             // Interfaces.
             bool inform( const Constraint* const );
+            void init();
             bool assertSubformula( Formula::const_iterator );
             void removeSubformula( Formula::const_iterator );
             Answer isConsistent();
             void updateModel() const;
             EvalRationalMap getRationalModel() const;
             EvalIntervalMap getVariableBounds() const;
-            void initialize();
 
             void printLinearConstraints ( std::ostream& = std::cout, const std::string = "" ) const;
             void printNonlinearConstraints ( std::ostream& = std::cout, const std::string = "" ) const;

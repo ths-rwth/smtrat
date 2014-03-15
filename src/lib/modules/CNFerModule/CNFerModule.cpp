@@ -73,14 +73,6 @@ namespace smtrat
         while( receivedSubformula != mpReceivedFormula->end() )
         {
             /*
-             * Create the origins containing only the currently considered formula of
-             * the received formula.
-             */
-            vec_set_const_pFormula origins = vec_set_const_pFormula();
-            origins.push_back( set<const Formula*>() );
-            origins.back().insert( *receivedSubformula );
-
-            /*
              * Add the currently considered formula of the received constraint as clauses
              * to the passed formula.
              */
@@ -104,13 +96,13 @@ namespace smtrat
                 {
                     while( !formulaToAssert->empty() )
                     {
-                        addSubformulaToPassedFormula( formulaToAssert->pruneBack(), origins );
+                        addSubformulaToPassedFormula( formulaToAssert->pruneBack(), *receivedSubformula );
                     }
                     delete formulaToAssert;
                 }
                 else
                 {
-                    addSubformulaToPassedFormula( formulaToAssert, origins );
+                    addSubformulaToPassedFormula( formulaToAssert, *receivedSubformula );
                 }
             }
             ++receivedSubformula;

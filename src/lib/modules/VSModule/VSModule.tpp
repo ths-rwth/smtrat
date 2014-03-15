@@ -1980,11 +1980,11 @@ namespace smtrat
         for( auto iter = constraintsToCheck.begin(); iter != constraintsToCheck.end(); ++iter )
         {
             changedPassedFormula           = true;
-            vec_set_const_pFormula origins = vec_set_const_pFormula();
+            vec_set_const_pFormula origins;
             Formula* formula = new smtrat::Formula( iter->first );
             _formulaCondMap[formula] = iter->second;
             addConstraintToInform( iter->first );
-            addSubformulaToPassedFormula( formula, origins );
+            addSubformulaToPassedFormula( formula, move( origins ) );
         }
         return changedPassedFormula;
     }

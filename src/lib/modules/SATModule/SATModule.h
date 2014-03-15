@@ -66,6 +66,7 @@
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "SATModuleStatistics.h"
 #endif
+//#define SAT_WITH_RESTARTS
 
 #define SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN //Todo: repair this when deactivated (see qf_lra/bugs/bug_sat_dont_stop_by_first_unknown.smt2)
 
@@ -258,6 +259,8 @@ namespace smtrat
 
             bool                  mChangedPassedFormula;
             mutable double        mSatisfiedClauses;
+            size_t                mNumberOfFullLazyCalls;
+            int                   mCurr_Restarts;
             BooleanConstraintMap  mBooleanConstraintMap;
             ConstraintLiteralMap  mConstraintLiteralMap;
             BooleanVarMap         mBooleanVarMap;
@@ -265,6 +268,7 @@ namespace smtrat
             /// If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
             ClauseVector          mMaxSatAssigns;
             ClauseSet             mLearntDeductions;
+            std::vector<signed>   mChangedBooleans;
 
             #ifdef SMTRAT_DEVOPTION_Statistics
             SATModuleStatistics* mpStatistics;
@@ -394,7 +398,11 @@ namespace smtrat
             //
             Minisat::CRef learnTheoryConflict();
             // Search for a given number of conflicts.
-            Minisat::lbool search();// int nof_conflicts = 100 );
+            #ifdef SAT_WITH_RESTARTS
+            Minisat::lbool search( int nof_conflicts = 100 );
+            #else
+            Minisat::lbool search();
+            #endif
             // Reduce the set of learned clauses.
             void reduceDB();
             // Shrink 'cs' to contain only non-satisfied clauses.

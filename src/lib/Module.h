@@ -146,6 +146,7 @@ namespace smtrat
 
             // Main interfaces
             virtual bool inform( const Constraint* const );
+			virtual void init();
             virtual bool assertSubformula( Formula::const_iterator );
             virtual Answer isConsistent();
             virtual void removeSubformula( Formula::const_iterator );
@@ -355,6 +356,7 @@ namespace smtrat
             void addConstraintToInform( const Constraint* const _constraint );
             void addReceivedSubformulaToPassedFormula( Formula::const_iterator );
             void addSubformulaToPassedFormula( Formula*, const vec_set_const_pFormula& );
+            void addSubformulaToPassedFormula( Formula*, vec_set_const_pFormula&& );
             void addSubformulaToPassedFormula( Formula*, const Formula* );
             void getInfeasibleSubsets();
             static bool modelsDisjoint( const Model&, const Model& );

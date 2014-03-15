@@ -58,8 +58,9 @@
 //#define SAT_MODULE_OUTPUT_PROGRESS
 #define SAT_MODULE_THEORY_PROPAGATION
 #define SAT_MODULE_DETECT_DEDUCTIONS
+//#define SAT_CHECK_BACKEND_MODEL
+#define SAT_TRY_FULL_LAZY_CALLS_FIRST
 
-//#define SAT_WITH_RESTARTS
 
 using namespace std;
 using namespace Minisat;
@@ -148,11 +149,14 @@ namespace smtrat
         asynch_interrupt( false ),
         mChangedPassedFormula( false ),
         mSatisfiedClauses( 0 ),
+        mNumberOfFullLazyCalls( 0 ),
+        mCurr_Restarts( 0 ),
         mConstraintLiteralMap(),
         mBooleanVarMap(),
         mFormulaClauseMap(),
         mMaxSatAssigns(),
-        mLearntDeductions()
+        mLearntDeductions(),
+        mChangedBooleans()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
         stringstream s;
@@ -222,6 +226,37 @@ namespace smtrat
     }
 
     /**
+     * Finite subsequences of the Luby-sequence:
+     *
+     * 0: 1
+     * 1: 1 1 2
+     * 2: 1 1 2 1 1 2 4
+     * 3: 1 1 2 1 1 2 4 1 1 2 1 1 2 4 8
+     * ...
+     *
+     * @param y
+     * @param x
+     *
+     * @return
+     */
+    static double luby( double y, int x )
+    {
+        // Find the finite subsequence that contains index 'x', and the
+        // size of that subsequence:
+        int size, seq;
+        for( size = 1, seq = 0; size < x + 1; seq++, size = 2 * size + 1 );
+
+        while( size - 1 != x )
+        {
+            size = (size - 1) >> 1;
+            seq--;
+            x = x % size;
+        }
+
+        return pow( y, seq );
+    }
+    
+    /**
      * Checks the so far received constraints for consistency.
      *
      * @return  True,    if the conjunction of received constraints is consistent;
@@ -265,13 +300,19 @@ namespace smtrat
             max_learnts             = nClauses() * learntsize_factor;
             learntsize_adjust_confl = learntsize_adjust_start_confl;
             learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
+            
+            Module::init();
 
 #ifdef SAT_WITH_RESTARTS
+            mCurr_Restarts = 0;
+            int current_restarts = -1;
             lbool result = l_Undef;
-            while ( result == l_Undef )
+            while( current_restarts < mCurr_Restarts )
             {
-                // Notice that we have to handle Unknown backends.
-                result = search();
+                current_restarts = mCurr_Restarts;
+                double rest_base = luby_restart ? luby( restart_inc, mCurr_Restarts ) : pow( restart_inc, mCurr_Restarts );
+                result = search( (int)rest_base * restart_first );
+//                if( !withinBudget() ) break;
             }
 #else
             lbool result = search();
@@ -627,8 +668,7 @@ namespace smtrat
     void SATModule::adaptPassedFormula()
     {
         //TODO: Just run through those from trail of not yet checked decision levels
-        signed posInAssigns = 0;
-        while( posInAssigns < mBooleanConstraintMap.size() )
+        for( signed posInAssigns : mChangedBooleans )
         {
             if( mBooleanConstraintMap[posInAssigns].updateInfo < 0 )
             {
@@ -650,16 +690,16 @@ namespace smtrat
                 }
                 else
                 {
-                    vec_set_const_pFormula emptyOrigins = vec_set_const_pFormula();
-                    addSubformulaToPassedFormula( new Formula( mBooleanConstraintMap[posInAssigns].formula->pConstraint() ), emptyOrigins );
+                    vec_set_const_pFormula emptyOrigins;
+                    addSubformulaToPassedFormula( new Formula( mBooleanConstraintMap[posInAssigns].formula->pConstraint() ), move( emptyOrigins ) );
                     assert( mpPassedFormula->last() != mpPassedFormula->end() );
                     mBooleanConstraintMap[posInAssigns].position = mpPassedFormula->last();
                 }
                 mChangedPassedFormula = true;
             }
             mBooleanConstraintMap[posInAssigns].updateInfo = 0;
-            ++posInAssigns;
         }
+        mChangedBooleans.clear();
     }
 
     //=================================================================================================
@@ -689,7 +729,8 @@ namespace smtrat
         activity.push( _activity == INFINITY ? maxActivity() + 1 : _activity );
         // activity.push( rnd_init_act ? drand( random_seed ) * 0.00001 : 0 );
         seen.push( 0 );
-        polarity.push( sign );
+//        polarity.push( sign );
+        polarity.push( false );
         decision.push();
         trail.capacity( v + 1 );
         setDecisionVar( v, dvar );
@@ -1157,7 +1198,11 @@ SetWatches:
                 Var x       = var( trail[c] );
                 if( !sign( trail[c] ) )
                 {
-                    if( mBooleanConstraintMap[x].position != mpPassedFormula->end() ) --mBooleanConstraintMap[x].updateInfo;
+                    if( mBooleanConstraintMap[x].position != mpPassedFormula->end() )
+                    {
+                        if( --mBooleanConstraintMap[x].updateInfo < 0 )
+                            mChangedBooleans.push_back( x );
+                    }
                     else if( mBooleanConstraintMap[x].formula != NULL ) mBooleanConstraintMap[x].updateInfo = 0;
                 }
                 assigns[x]  = l_Undef;
@@ -1191,7 +1236,11 @@ SetWatches:
      *
      * @return
      */
-    lbool SATModule::search()// int nof_conflicts )
+    #ifdef SAT_WITH_RESTARTS
+    lbool SATModule::search( int nof_conflicts )
+    #else
+    lbool SATModule::search()
+    #endif
     {
         #ifdef DEBUG_SATMODULE
         cout << "### search()" << endl << "###" << endl;
@@ -1228,21 +1277,39 @@ SetWatches:
             }
             bool deductionsLearned = false;
             CRef confl = propagate();
+            #ifdef SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN
+            #ifdef DEBUG_SATMODULE
             bool madeTheoryCall = false;
+            #endif
+            #else
+            bool madeTheoryCall = false;
+            #endif
 
             #ifdef DEBUG_SATMODULE
             cout << "### Sat iteration" << endl;
             #endif
 
+            #ifdef SAT_TRY_FULL_LAZY_CALLS_FIRST
+            if( confl == CRef_Undef && (mNumberOfFullLazyCalls > 0 || trail.size() == assigns.size()) )
+            #else
             if( confl == CRef_Undef )
+            #endif
             {
+                if( trail.size() == assigns.size() )
+                    ++mNumberOfFullLazyCalls;
                 // Check constraints corresponding to the positively assigned Boolean variables for consistency.
                 // TODO: Do not call the theory solver on instances which have already been proved to be consistent.
                 //       (Happens if the Boolean assignment is extended by assignments to false only)
                 adaptPassedFormula();
                 if( mChangedPassedFormula )
                 {
+                    #ifdef SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN
+                    #ifdef DEBUG_SATMODULE
                     madeTheoryCall = true;
+                    #endif
+                    #else
+                    madeTheoryCall = true;
+                    #endif
                     #ifdef DEBUG_SATMODULE
                     if( numberOfTheoryCalls >= debugFromCall-1 )
                     {
@@ -1296,24 +1363,30 @@ SetWatches:
                             {
                                 if( (*backend)->solverState() == True )
                                 {
+                                    #ifdef SAT_CHECK_BACKEND_MODEL
                                     (*backend)->updateModel();
                                     EvalRationalMap rationalAssignment;
                                     getRationalAssignmentsFromModel( (*backend)->model(), rationalAssignment );
                                     vec<Var> conflVars;
+                                    #endif
                                     #ifdef SAT_MODULE_OUTPUT_PROGRESS
                                     mSatisfiedClauses = 0;
                                     #endif
-//                                    bool noconfl = conflictingVars( clauses, rationalAssignment, conflVars, true );
-//                                    noconfl &= conflictingVars( learnts, rationalAssignment, conflVars, true );
+                                    #ifdef SAT_CHECK_BACKEND_MODEL
+                                    bool noconfl = conflictingVars( clauses, rationalAssignment, conflVars, true );
+                                    noconfl &= conflictingVars( learnts, rationalAssignment, conflVars, true );
+                                    #endif
                                     #ifdef SAT_MODULE_OUTPUT_PROGRESS
                                     cout << "\r" << "Satisfied clauses: " << ((mSatisfiedClauses/(clauses.size()+learnts.size()))*100) << "%";
                                     cout.flush();
                                     #endif
-//                                    if( noconfl )
-//                                    {
-//                                        return l_True;
-//                                    }
+                                    #ifdef SAT_CHECK_BACKEND_MODEL
+                                    if( noconfl )
+                                    {
+                                        return l_True;
+                                    }
 ////                                    order_heap.build( conflVars );
+                                    #endif
                                     break;
                                 }
                                 ++backend;
@@ -1534,15 +1607,19 @@ SetWatches:
             {
                 // NO CONFLICT
                 // TODO: Consider cleaning the learned clauses and restarts.
-#ifdef SAT_WITH_RESTARTS
-                if( nof_conflicts >= 0 && (conflictC >= nof_conflicts ||!withinBudget()) )
+                #ifdef SAT_WITH_RESTARTS
+                if( nof_conflicts >= 0 && (conflictC >= nof_conflicts) ) // ||!withinBudget()) )
                 {
                     // Reached bound on number of conflicts:
                     progress_estimate = progressEstimate();
                     cancelUntil( 0 );
+                    ++mCurr_Restarts;
+                    #ifdef SMTRAT_DEVOPTION_Statistics
+                    mpStatistics->restart();
+                    #endif
                     return l_Undef;
                 }
-#endif
+                #endif
 
                 // Simplify the set of problem clauses:
                 if( decisionLevel() == 0 && !simplify() )
@@ -1826,7 +1903,11 @@ SetWatches:
     {
         assert( value( p ) == l_Undef );
         assigns[var( p )] = lbool( !sign( p ) );
-        if( !sign( p ) && mBooleanConstraintMap[var( p )].formula != NULL ) ++mBooleanConstraintMap[var( p )].updateInfo;
+        if( !sign( p ) && mBooleanConstraintMap[var( p )].formula != NULL ) 
+        {
+            if( ++mBooleanConstraintMap[var( p )].updateInfo > 0 )
+                mChangedBooleans.push_back( var( p ) );
+        }
         vardata[var( p )] = mkVarData( from, decisionLevel() );
         trail.push_( p );
         #ifdef SAT_MODULE_THEORY_PROPAGATION
@@ -2265,37 +2346,6 @@ NextClause:
 
         return progress / nVars();
     }
-
-    /**
-     * Finite subsequences of the Luby-sequence:
-     *
-     * 0: 1
-     * 1: 1 1 2
-     * 2: 1 1 2 1 1 2 4
-     * 3: 1 1 2 1 1 2 4 1 1 2 1 1 2 4 8
-     * ...
-     *
-     * @param y
-     * @param x
-     *
-     * @return
-     */
-//    static double luby( double y, int x )
-//    {
-//        // Find the finite subsequence that contains index 'x', and the
-//        // size of that subsequence:
-//        int size, seq;
-//        for( size = 1, seq = 0; size < x + 1; seq++, size = 2 * size + 1 );
-//
-//        while( size - 1 != x )
-//        {
-//            size = (size - 1) >> 1;
-//            seq--;
-//            x = x % size;
-//        }
-//
-//        return pow( y, seq );
-//    }
 
     //=================================================================================================
     // Garbage Collection methods:

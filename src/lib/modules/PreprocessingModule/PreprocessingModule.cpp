@@ -103,11 +103,6 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             Formula::toCNF( *afterProductSplitting, false );
             // Estimate the difficulty bottum up for the formula.
             setDifficulty(afterProductSplitting,false);
-            // Create the origins containing only the currently considered formula of
-            // the received formula.
-            vec_set_const_pFormula origins = vec_set_const_pFormula();
-            origins.push_back( std::set<const Formula*>() );
-            origins.back().insert( *receivedSubformula );
 
             if( afterProductSplitting->getType() == TTRUE )
             {
@@ -124,13 +119,13 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 {
                     while( !afterProductSplitting->empty() )
                     {
-                        addSubformulaToPassedFormula( afterProductSplitting->pruneBack(), origins );
+                        addSubformulaToPassedFormula( afterProductSplitting->pruneBack(), *receivedSubformula );
                     }
                     delete afterProductSplitting;
                 }
                 else
                 {
-                    addSubformulaToPassedFormula( afterProductSplitting, origins );
+                    addSubformulaToPassedFormula( afterProductSplitting, *receivedSubformula );
                 }
             }
             ++receivedSubformula;

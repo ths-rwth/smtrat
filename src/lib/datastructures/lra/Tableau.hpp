@@ -35,7 +35,7 @@
 #include "Variable.hpp"
 
 #define LRA_USE_PIVOTING_STRATEGY
-//#define LRA_REFINEMENT
+#define LRA_REFINEMENT
 //#define LRA_PRINT_STATS
 //#define LRA_USE_OCCURENCE_STRATEGY
 #ifndef LRA_USE_OCCURENCE_STRATEGY
@@ -314,16 +314,18 @@ namespace smtrat
                 Tableau( smtrat::Formula::iterator );
                 ~Tableau();
 
-                void setSize( size_t _expectedHeight, size_t _expectedWidth )
+                void setSize( size_t _expectedHeight, size_t _expectedWidth, size_t _expectedNumberOfBounds )
                 {
                     mRows.reserve( _expectedHeight );
                     mColumns.reserve( _expectedWidth );
                     mpEntries->reserve( _expectedHeight*_expectedWidth+1 );
+                    carl::reserve<T1>( 2*(_expectedNumberOfBounds+1) );
+                    carl::reserve<T2>( _expectedHeight*_expectedWidth+1 );
                 }
                 
                 size_t size() const
                 {
-                    return mpEntries->capacity();
+                    return mpEntries->size();
                 }
 
                 #ifdef LRA_USE_PIVOTING_STRATEGY
@@ -374,6 +376,11 @@ namespace smtrat
                 size_t numberOfPivotingSteps() const
                 {
                     return mPivotingSteps;
+                }
+                
+                void resetNumberOfPivotingSteps() 
+                {
+                    mPivotingSteps = 0;
                 }
                 
                 size_t numberOfRestarts() const
@@ -980,7 +987,7 @@ namespace smtrat
                 while( true )
                 {
                     #ifdef LRA_NO_DIVISION
-                    if( ((*rowIter).content() < 0 && row.factor() > 0) || ((*rowIter).content() > 0 && row.factor() < 0) )
+                    if( ((*rowIter).content() < 0 && row.mName->factor() > 0) || ((*rowIter).content() > 0 && row.mName->factor() < 0) )
                     #else
                     if( (*rowIter).content() < 0 )
                     #endif
@@ -1013,7 +1020,7 @@ namespace smtrat
                 while( true )
                 {
                     #ifdef LRA_NO_DIVISION
-                    if( ((*rowIter).content() > 0 && row.factor() > 0) || ((*rowIter).content() < 0 && row.factor() < 0) )
+                    if( ((*rowIter).content() > 0 && row.mName->factor() > 0) || ((*rowIter).content() < 0 && row.mName->factor() < 0) )
                     #else
                     if( (*rowIter).content() > 0 )
                     #endif
@@ -1516,7 +1523,7 @@ namespace smtrat
                 rowIter = Iterator( mRows[(*pivotingColumnIter).rowNumber()].mStartEntry, mpEntries );
                 while( !(g == 1) )
                 {
-                    g = carl::gcd( g, (*rowIter).content() );
+                    carl::gcd_here( g, (*rowIter).content() );
                     if( rowIter.rowEnd() ) break;
                     rowIter.right();
                 }
@@ -1526,11 +1533,11 @@ namespace smtrat
                     rowIter = Iterator( mRows[(*pivotingColumnIter).rowNumber()].mStartEntry, mpEntries );
                     while( true )
                     {
-                        (*rowIter).rContent() /= g;
+                        carl::div_here( (*rowIter).rContent(), g );
                         if( rowIter.rowEnd() ) break;
                         else rowIter.right();
                     }
-                    mRows[(*pivotingColumnIter).rowNumber()].mName->rFactor() /= g;
+                    carl::div_here( mRows[(*pivotingColumnIter).rowNumber()].mName->rFactor(), g );
                 }
                 #else
                 (*pivotingColumnIter).rContent() *= (*mpEntries)[_pivotingElement].content();
@@ -1766,7 +1773,7 @@ namespace smtrat
                 rowIter = Iterator( mRows[(*pivotingColumnIter).rowNumber()].mStartEntry, mpEntries );
                 while( !(g == 1) )
                 {
-                    g = carl::gcd( g, (*rowIter).content() );
+                    carl::gcd_here( g, (*rowIter).content() );
                     if( rowIter.rowEnd() ) break;
                     rowIter.right();
                 }
@@ -1776,11 +1783,11 @@ namespace smtrat
                     rowIter = Iterator( mRows[(*pivotingColumnIter).rowNumber()].mStartEntry, mpEntries );
                     while( true )
                     {
-                        (*rowIter).rContent() /= g;
+                        carl::div_here( (*rowIter).rContent(), g );
                         if( rowIter.rowEnd() ) break;
                         else rowIter.right();
                     }
-                    mRows[(*pivotingColumnIter).rowNumber()].mName->rFactor() /= g;
+                    carl::div_here( mRows[(*pivotingColumnIter).rowNumber()].mName->rFactor(), g );
                 }
                 #else
                 (*pivotingColumnIter).rContent() *= (*mpEntries)[_pivotingElement].content();
@@ -1798,8 +1805,13 @@ namespace smtrat
             /*
              * Collect the bounds which form an upper resp. lower refinement.
              */
-            std::vector<const Bound<T1, T2>*>* uPremise = new std::vector<const Bound<T1, T2>*>();
-            std::vector<const Bound<T1, T2>*>* lPremise = new std::vector<const Bound<T1, T2>*>();
+            std::vector<const Bound<T1, T2>*>* uPremise = NULL;
+            if( _row.mName->supremum() > _row.mName->assignment() )
+                uPremise = new std::vector<const Bound<T1, T2>*>();
+            std::vector<const Bound<T1, T2>*>* lPremise = NULL;
+            if( _row.mName->infimum() < _row.mName->assignment() )
+                lPremise = new std::vector<const Bound<T1, T2>*>();
+            if( uPremise == NULL && lPremise == NULL ) return;
             Iterator rowEntry = Iterator( _row.mStartEntry, mpEntries );
             #ifdef LRA_NO_DIVISION
             const T2& rowFactor = _row.mName->factor();
@@ -1928,9 +1940,9 @@ namespace smtrat
                     #endif
                     {
                         #ifdef LRA_NO_DIVISION
-                        smtrat::Polynomial lhs = (*ubound)->variable().expression()*rowFactor.content() - newlimit->mainPart().content();
+                        smtrat::Polynomial lhs = (*ubound)->variable().expression()*(Rational)rowFactor - (Rational)newlimit->mainPart();
                         #else
-                        smtrat::Polynomial lhs = (*ubound)->variable().expression() - newlimit->mainPart().content();
+                        smtrat::Polynomial lhs = (*ubound)->variable().expression() - (Rational)newlimit->mainPart();
                         #endif
                         smtrat::Relation rel = newlimit->deltaPart() != 0 ? smtrat::Relation::LESS : smtrat::Relation::LEQ;
                         const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel );
@@ -2020,9 +2032,9 @@ namespace smtrat
                     #endif
                     {
                         #ifdef LRA_NO_DIVISION
-                        smtrat::Polynomial lhs = (*lbound)->variable().expression()*rowFactor.content() - newlimit->mainPart().content();
+                        smtrat::Polynomial lhs = (*lbound)->variable().expression()*(Rational)rowFactor - (Rational)newlimit->mainPart();
                         #else
-                        smtrat::Polynomial lhs = (*lbound)->variable().expression() - newlimit->mainPart().content();
+                        smtrat::Polynomial lhs = (*lbound)->variable().expression() - (Rational)newlimit->mainPart();
                         #endif
                         smtrat::Relation rel = newlimit->deltaPart() != 0 ? smtrat::Relation::GREATER : smtrat::Relation::GEQ;
                         const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel );

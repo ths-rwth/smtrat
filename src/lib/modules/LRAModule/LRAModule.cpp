@@ -126,7 +126,7 @@ namespace smtrat
         Module::assertSubformula( _subformula );
         if( (*_subformula)->getType() == CONSTRAINT )
         {
-            if( !mInitialized ) initialize();
+            if( !mInitialized ) init();
             const Constraint* constraint  = (*_subformula)->pConstraint();
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->add( *constraint );
@@ -387,6 +387,7 @@ namespace smtrat
             }
             goto Return; // Unknown
         }
+//        mTableau.resetNumberOfPivotingSteps();
         for( ; ; )
         {
             // Check whether a module which has been called on the same instance in parallel, has found an answer.
@@ -523,7 +524,7 @@ namespace smtrat
                 mInfeasibleSubsets.clear();
                 #ifdef LRA_ONE_REASON
                 vector< const LRABound* > conflict = mTableau.getConflict( pivotingElement.first );
-                set< const Formula* > infSubSet = set< const Formula* >();
+                set< const Formula* > infSubSet;
                 for( auto bound = conflict.begin(); bound != conflict.end(); ++bound )
                 {
                     assert( (*bound)->isActive() );
@@ -534,7 +535,7 @@ namespace smtrat
                 vector< set< const LRABound* > > conflictingBounds = mTableau.getConflictsFrom( pivotingElement.first );
                 for( auto conflict = conflictingBounds.begin(); conflict != conflictingBounds.end(); ++conflict )
                 {
-                    set< const Formula* > infSubSet = set< const Formula* >();
+                    set< const Formula* > infSubSet;
                     for( auto bound = conflict->begin(); bound != conflict->end(); ++bound )
                     {
                         assert( (*bound)->isActive() );
@@ -1020,7 +1021,7 @@ Return:
             if( _constraint->integerValued() && _constraint->relation() == Relation::NEQ )
             {
                 constraint = Formula::newConstraint( _constraint->lhs(), Relation::LESS );
-                value = new LRAValue( _boundValue - 1 );
+                value = new LRAValue( _boundValue - LRABoundType( 1 ) );
             }
             else
             {
@@ -1078,7 +1079,7 @@ Return:
             if( _constraint->integerValued() && _constraint->relation() == Relation::NEQ )
             {
                 constraint = Formula::newConstraint( _constraint->lhs(), Relation::GREATER );
-                value = new LRAValue( _boundValue + 1 );
+                value = new LRAValue( _boundValue + LRABoundType( 1 ) );
             }
             else
             {
@@ -1447,7 +1448,7 @@ Return:
     /**
      * Initializes the tableau according to all linear constraints, of which this module has been informed.
      */
-    void LRAModule::initialize()
+    void LRAModule::init()
     {
         if( !mInitialized )
         {
@@ -1456,6 +1457,7 @@ Return:
             {
                 initialize( *constraint );
             }
+            mTableau.setSize( mSlackVars.size(), mOriginalVars.size(), mLinearConstraints.size() );
             #ifdef LRA_USE_PIVOTING_STRATEGY
             mTableau.setBlandsRuleStart( (unsigned) mTableau.columns().size() );
             #endif
