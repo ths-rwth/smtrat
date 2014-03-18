@@ -59,7 +59,7 @@
 #define SAT_MODULE_THEORY_PROPAGATION
 #define SAT_MODULE_DETECT_DEDUCTIONS
 //#define SAT_CHECK_BACKEND_MODEL
-#define SAT_TRY_FULL_LAZY_CALLS_FIRST
+//#define SAT_TRY_FULL_LAZY_CALLS_FIRST
 
 
 using namespace std;
@@ -239,6 +239,7 @@ namespace smtrat
      *
      * @return
      */
+    #ifdef SAT_WITH_RESTARTS
     static double luby( double y, int x )
     {
         // Find the finite subsequence that contains index 'x', and the
@@ -255,6 +256,7 @@ namespace smtrat
 
         return pow( y, seq );
     }
+    #endif
     
     /**
      * Checks the so far received constraints for consistency.
@@ -302,6 +304,8 @@ namespace smtrat
             learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
             
             Module::init();
+            processLemmas();
+            simplify();
 
 #ifdef SAT_WITH_RESTARTS
             mCurr_Restarts = 0;
@@ -837,6 +841,7 @@ namespace smtrat
                 }
             }
             attachClause( cr );
+            claBumpActivity( ca[cr] );
             // Clause is unit
             if( _type == DEDUCTED_CLAUSE )
             {
@@ -1287,6 +1292,16 @@ SetWatches:
 
             #ifdef DEBUG_SATMODULE
             cout << "### Sat iteration" << endl;
+                        cout << "######################################################################" << endl;
+                        cout << "###" << endl;
+                        printClauses( clauses, "Clauses", cout, "### " );
+                        cout << "###" << endl;
+                        printClauses( learnts, "Learnts", cout, "### " );
+                        cout << "###" << endl;
+                        printCurrentAssignment( cout, "### " );
+                        cout << "### " << endl;
+                        printDecisions( cout, "### " );
+                        cout << "### " << endl;
             #endif
 
             #ifdef SAT_TRY_FULL_LAZY_CALLS_FIRST
@@ -1313,16 +1328,6 @@ SetWatches:
                     #ifdef DEBUG_SATMODULE
                     if( numberOfTheoryCalls >= debugFromCall-1 )
                     {
-                        cout << "######################################################################" << endl;
-                        cout << "###" << endl;
-                        printClauses( clauses, "Clauses", cout, "### " );
-                        cout << "###" << endl;
-                        printClauses( learnts, "Learnts", cout, "### " );
-                        cout << "###" << endl;
-                        printCurrentAssignment( cout, "### " );
-                        cout << "### " << endl;
-                        printDecisions( cout, "### " );
-                        cout << "### " << endl;
                         cout << "### Check the constraints: ";
                     }
                     ++numberOfTheoryCalls;
@@ -1602,6 +1607,7 @@ SetWatches:
                                 progressEstimate() * 100 );
                 }
                 currentAssignmentConsistent = True;
+                
             }
             else
             {
@@ -2206,7 +2212,7 @@ NextClause:
             return true;
 
         // Remove satisfied clauses:
-        //        removeSatisfied( learnts );
+        removeSatisfied( learnts );
         if( remove_satisfied )    // Can be turned off.
             removeSatisfied( clauses );
         checkGarbage();

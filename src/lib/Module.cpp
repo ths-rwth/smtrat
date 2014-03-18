@@ -162,11 +162,18 @@ namespace smtrat
      */
     void Module::init()
     {
-        vector<Module*>::const_iterator backend = mUsedBackends.begin();
-        while( backend != mUsedBackends.end() )
+        if( mpManager == NULL ) return;
+        // Get the backends to be considered from the manager.
+        mUsedBackends = mpManager->getBackends( mpPassedFormula, this, mBackendsFoundAnswer );
+        mAllBackends = mpManager->getAllBackends( this );
+        for( Module* backend : mAllBackends )
         {
-            (*backend)->init();
+            for( auto iter = mConstraintsToInform.begin(); iter != mConstraintsToInform.end(); ++iter )
+                backend->inform( *iter );
+            backend->init();
         }
+        mInformedConstraints.insert( mConstraintsToInform.begin(), mConstraintsToInform.end() );
+        mConstraintsToInform.clear();
     }
 
     /**
@@ -773,7 +780,7 @@ namespace smtrat
                     #ifdef SMTRAT_DEVOPTION_Validation
                     if( validationSettings->logTCalls() )
                     {
-                        if( result != Unknown )
+                        if( result != Unknown && (*module)->type() == ModuleType::MT_SATModule )
                             addAssumptionToCheck( *mpPassedFormula, result == True, moduleName( (*module)->type() ) );
                     }
                     #endif

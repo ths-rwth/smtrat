@@ -34,7 +34,7 @@
 //#define LRA_TERMINATION_INVARIANCE
 #define LRA_SIMPLE_THEORY_PROPAGATION
 #define LRA_SIMPLE_CONFLICT_SEARCH
-//#define LRA_ONE_REASON
+#define LRA_ONE_REASON
 #ifndef LRA_GOMORY_CUTS
 #ifndef LRA_CUTS_FROM_PROOFS
 //#define LRA_BRANCH_AND_BOUND
@@ -333,6 +333,7 @@ namespace smtrat
         cout << "check for consistency" << endl;
         #endif
         Answer result = Unknown;
+        #ifdef LRA_TERMINATION_INVARIANCE
         typedef pair<vector<const LRAVariable*>, vector<const LRAVariable*>> TableauConf;
         struct compTableaus
         {
@@ -361,7 +362,6 @@ namespace smtrat
                 return false;
             }
         };
-        #ifdef LRA_TERMINATION_INVARIANCE
         set<TableauConf, compTableaus> tcs;
         #endif
         if( !mpReceivedFormula->isConstraintConjunction() )
@@ -387,7 +387,6 @@ namespace smtrat
             }
             goto Return; // Unknown
         }
-//        mTableau.resetNumberOfPivotingSteps();
         for( ; ; )
         {
             // Check whether a module which has been called on the same instance in parallel, has found an answer.
@@ -554,13 +553,20 @@ Return:
         learnRefinements();
         #endif
         #ifdef SMTRAT_DEVOPTION_Statistics
-        mpStatistics->check( *mpReceivedFormula );
-        if( result == False )
-            mpStatistics->addConflict( mInfeasibleSubsets );
-        mpStatistics->setNumberOfTableauxEntries( mTableau.size() );
-        mpStatistics->setTableauSize( mTableau.rows().size()*mTableau.columns().size() );
-        mpStatistics->setNumberOfRestarts( mTableau.numberOfRestarts() );
+        if( result != Unknown )
+        {
+            mpStatistics->check( *mpReceivedFormula );
+            if( result == False )
+                mpStatistics->addConflict( mInfeasibleSubsets );
+            mpStatistics->setNumberOfTableauxEntries( mTableau.size() );
+            mpStatistics->setTableauSize( mTableau.rows().size()*mTableau.columns().size() );
+            mpStatistics->setNumberOfRestarts( mTableau.numberOfRestarts() );
+        }
         #endif
+        if( result != Unknown )
+        {
+            mTableau.resetNumberOfPivotingSteps();
+        }
         #ifdef DEBUG_LRA_MODULE
         cout << ANSWER_TO_STRING( result ) << endl;
         #endif
@@ -958,55 +964,17 @@ Return:
         {
             // TODO: Take value from an allocator to assure the values are located close to each other in the memory.
             LRAValue* value  = new LRAValue( _boundValue );
-            pair<const LRABound*, pair<const LRABound*, const LRABound*> > result = _var.addEqualBound( value, mpPassedFormula->end(), _constraint );
+            pair<const LRABound*, pair<LRABound::BoundSet::const_iterator, LRABound::BoundSet::const_iterator> > result = _var.addEqualBound( value, mpPassedFormula->end(), _constraint );
             vector< const LRABound* >* boundVector = new vector< const LRABound* >();
             result.first->boundExists();
             boundVector->push_back( result.first );
             mConstraintToBound[_constraint] = boundVector;
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
-            if( result.second.first != NULL && !result.second.first->isInfinite() )
+            if( result.second.first != result.first->variable().lowerbounds().end() )
             {
-                Formula* deduction = new Formula( OR );
-                deduction->addSubformula( new Formula( NOT ) );
-                deduction->back()->addSubformula( _constraint );
-                deduction->addSubformula( result.second.first->pAsConstraint() );
-                addDeduction( deduction );
-                #ifdef SMTRAT_DEVOPTION_Statistics
-                mpStatistics->addDeduction();
-                #endif
-            }
-            if( result.second.first != NULL && !result.second.first->isInfinite() )
-            {
-                Formula* deduction = new Formula( OR );
-                deduction->addSubformula( new Formula( NOT ) );
-                deduction->back()->addSubformula( _constraint );
-                deduction->addSubformula( result.second.first->pAsConstraint() );
-                addDeduction( deduction );
-                #ifdef SMTRAT_DEVOPTION_Statistics
-                mpStatistics->addDeduction();
-                #endif
-            }
-            if( result.second.second != NULL && !result.second.second->isInfinite() )
-            {
-                Formula* deduction = new Formula( OR );
-                deduction->addSubformula( new Formula( NOT ) );
-                deduction->back()->addSubformula( _constraint );
-                deduction->addSubformula( result.second.second->pAsConstraint() );
-                addDeduction( deduction );
-                #ifdef SMTRAT_DEVOPTION_Statistics
-                mpStatistics->addDeduction();
-                #endif
-            }
-            if( result.second.second != NULL && !result.second.second->isInfinite() )
-            {
-                Formula* deduction = new Formula( OR );
-                deduction->addSubformula( new Formula( NOT ) );
-                deduction->back()->addSubformula( _constraint );
-                deduction->addSubformula( result.second.second->pAsConstraint() );
-                addDeduction( deduction );
-                #ifdef SMTRAT_DEVOPTION_Statistics
-                mpStatistics->addDeduction();
-                #endif
+                assert( result.second.second != result.first->variable().upperbounds().end() );
+                addSimpleBoundDeduction<false>( result.second.first );
+                addSimpleBoundDeduction<true>( result.second.second );
             }
             #endif
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
@@ -1014,8 +982,7 @@ Return:
             #endif
         }
         if( _constraint->relation() == Relation::LEQ || ( _constraint->integerValued() && _constraint->relation() == Relation::NEQ ) )
-        {
-            
+        {   
             const Constraint* constraint;
             LRAValue* value;
             if( _constraint->integerValued() && _constraint->relation() == Relation::NEQ )
@@ -1028,7 +995,7 @@ Return:
                 constraint = _constraint;
                 value = new LRAValue( _boundValue );
             }
-            pair<const LRABound*,pair<const LRABound*, const LRABound*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), constraint );
+            pair<const LRABound*, LRABound::BoundSet::const_iterator> result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), constraint );
             vector< const LRABound* >* boundVector = new vector< const LRABound* >();
             result.first->boundExists();
             boundVector->push_back( result.first );
@@ -1045,27 +1012,15 @@ Return:
                 result.first->boundExists();
             }
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
-            if( result.second.first != NULL && !result.second.first->isInfinite() )
+            if( _constraintInverted )
             {
-                Formula* deduction = new Formula( OR );
-                deduction->addSubformula( new Formula( NOT ) );
-                deduction->back()->addSubformula( result.second.first->pAsConstraint() );
-                deduction->addSubformula( _constraint );
-                addDeduction( deduction );
-                #ifdef SMTRAT_DEVOPTION_Statistics
-                mpStatistics->addDeduction();
-                #endif
+                if( result.second != result.first->variable().lowerbounds().end() )
+                    addSimpleBoundDeduction<false>( result.second );
             }
-            if( result.second.second != NULL && !result.second.second->isInfinite() && !(_constraint->integerValued() && _constraint->relation() == Relation::NEQ) )
+            else
             {
-                Formula* deduction = new Formula( OR );
-                deduction->addSubformula( new Formula( NOT ) );
-                deduction->back()->addSubformula( _constraint );
-                deduction->addSubformula( result.second.second->pAsConstraint() );
-                addDeduction( deduction );
-                #ifdef SMTRAT_DEVOPTION_Statistics
-                mpStatistics->addDeduction();
-                #endif
+                if( result.second != result.first->variable().upperbounds().end() )
+                    addSimpleBoundDeduction<true>( result.second );
             }
             #endif
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
@@ -1086,7 +1041,7 @@ Return:
                 constraint = _constraint;
                 value = new LRAValue( _boundValue );
             }
-            pair<const LRABound*,pair<const LRABound*, const LRABound*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), constraint );
+            pair<const LRABound*, LRABound::BoundSet::const_iterator> result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), constraint );
             vector< const LRABound* >* boundVector = new vector< const LRABound* >();
             result.first->boundExists();
             boundVector->push_back( result.first );
@@ -1101,27 +1056,15 @@ Return:
                 result.first->boundExists();
             }
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
-            if( result.second.first != NULL && !result.second.first->isInfinite() )
+            if( _constraintInverted )
             {
-                Formula* deduction = new Formula( OR );
-                deduction->addSubformula( new Formula( NOT ) );
-                deduction->back()->addSubformula( result.second.first->pAsConstraint() );
-                deduction->addSubformula( _constraint );
-                addDeduction( deduction );
-                #ifdef SMTRAT_DEVOPTION_Statistics
-                mpStatistics->addDeduction();
-                #endif
+                if( result.second != result.first->variable().upperbounds().end() )
+                    addSimpleBoundDeduction<true>( result.second );
             }
-            if( result.second.second != NULL && !result.second.second->isInfinite() && !(_constraint->integerValued() && _constraint->relation() == Relation::NEQ) )
+            else
             {
-                Formula* deduction = new Formula( OR );
-                deduction->addSubformula( new Formula( NOT ) );
-                deduction->back()->addSubformula( _constraint );
-                deduction->addSubformula( result.second.second->pAsConstraint() );
-                addDeduction( deduction );
-                #ifdef SMTRAT_DEVOPTION_Statistics
-                mpStatistics->addDeduction();
-                #endif
+                if( result.second != result.first->variable().lowerbounds().end() )
+                    addSimpleBoundDeduction<false>( result.second );
             }
             #endif
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
@@ -1140,7 +1083,7 @@ Return:
                 constraint = Formula::newConstraint( _constraint->lhs(), Relation::LESS );
             }
             LRAValue* value = new LRAValue( _boundValue, (_constraintInverted ? 1 : -1) );
-            pair<const LRABound*,pair<const LRABound*, const LRABound*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), constraint );
+            pair<const LRABound*, LRABound::BoundSet::const_iterator> result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), constraint );
             vector< const LRABound* >* boundVector = new vector< const LRABound* >();
             boundVector->push_back( result.first );
             mConstraintToBound[constraint] = boundVector;
@@ -1156,27 +1099,15 @@ Return:
                 result.first->boundExists();
             }
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
-            if( result.second.first != NULL && !result.second.first->isInfinite() )
+            if( _constraintInverted )
             {
-                Formula* deduction = new Formula( OR );
-                deduction->addSubformula( new Formula( NOT ) );
-                deduction->back()->addSubformula( result.second.first->pAsConstraint() );
-                deduction->addSubformula( _constraint );
-                addDeduction( deduction );
-                #ifdef SMTRAT_DEVOPTION_Statistics
-                mpStatistics->addDeduction();
-                #endif
+                if( result.second != result.first->variable().lowerbounds().end() )
+                    addSimpleBoundDeduction<false>( result.second );
             }
-            if( result.second.second != NULL && !result.second.second->isInfinite() && _constraint->relation() != Relation::NEQ )
+            else
             {
-                Formula* deduction = new Formula( OR );
-                deduction->addSubformula( new Formula( NOT ) );
-                deduction->back()->addSubformula( _constraint );
-                deduction->addSubformula( result.second.second->pAsConstraint() );
-                addDeduction( deduction );
-                #ifdef SMTRAT_DEVOPTION_Statistics
-                mpStatistics->addDeduction();
-                #endif
+                if( result.second != result.first->variable().upperbounds().end() )
+                    addSimpleBoundDeduction<true>( result.second );
             }
             #endif
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
@@ -1195,7 +1126,7 @@ Return:
                 constraint = Formula::newConstraint( _constraint->lhs(), Relation::GREATER );
             }
             LRAValue* value = new LRAValue( _boundValue, (_constraintInverted ? -1 : 1) );
-            pair<const LRABound*,pair<const LRABound*, const LRABound*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), constraint );
+            pair<const LRABound*, LRABound::BoundSet::const_iterator> result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), constraint );
             vector< const LRABound* >* boundVector = new vector< const LRABound* >();
             boundVector->push_back( result.first );
             mConstraintToBound[constraint] = boundVector;
@@ -1205,37 +1136,148 @@ Return:
                 result.first->setNeqRepresentation( _constraint );
             }
             else
-            {  
+            {
                 result.first->boundExists();
             }
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
-            if( result.second.first != NULL && !result.second.first->isInfinite() )
+            if( _constraintInverted )
             {
-                Formula* deduction = new Formula( OR );
-                deduction->addSubformula( new Formula( NOT ) );
-                deduction->back()->addSubformula( result.second.first->pAsConstraint() );
-                deduction->addSubformula( _constraint );
-                addDeduction( deduction );
-                #ifdef SMTRAT_DEVOPTION_Statistics
-                mpStatistics->addDeduction();
-                #endif
+                if( result.second != result.first->variable().upperbounds().end() )
+                    addSimpleBoundDeduction<true>( result.second );
             }
-            if( result.second.second != NULL && !result.second.second->isInfinite() && _constraint->relation() != Relation::NEQ )
+            else
             {
-                Formula* deduction = new Formula( OR );
-                deduction->addSubformula( new Formula( NOT ) );
-                deduction->back()->addSubformula( _constraint );
-                deduction->addSubformula( result.second.second->pAsConstraint() );
-                addDeduction( deduction );
-                #ifdef SMTRAT_DEVOPTION_Statistics
-                mpStatistics->addDeduction();
-                #endif
+                if( result.second != result.first->variable().lowerbounds().end() )
+                    addSimpleBoundDeduction<false>( result.second );
             }
             #endif
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *result.first );
             #endif
         }
+    }
+    
+    template<bool is_upper_bound>
+    void LRAModule::addSimpleBoundDeduction( LRABound::BoundSet::const_iterator _boundPos, bool _boundNeq )
+    {
+        const LRAVariable& lraVar = (*_boundPos)->variable();
+        assert( !(*_boundPos)->isUpperBound() || _boundPos != lraVar.upperbounds().end() );
+        assert( !(*_boundPos)->isLowerBound() || _boundPos != lraVar.lowerbounds().end() );
+        if( is_upper_bound )
+        {
+            assert( (*_boundPos)->isUpperBound() );
+            assert( _boundPos != lraVar.upperbounds().end() );
+            LRABound::BoundSet::const_iterator currentBound = lraVar.upperbounds().begin();
+            if( (*_boundPos)->type() == LRABound::Type::EQUAL )
+            {
+                currentBound = _boundPos;
+                ++currentBound;
+            }
+            else
+            {
+                while( currentBound != _boundPos )
+                {
+                    if( (*currentBound)->pInfo()->exists )
+                    {
+                        Formula* deduction = new Formula( OR );
+                        deduction->addSubformula( new Formula( NOT ) );
+                        deduction->back()->addSubformula( (*currentBound)->pAsConstraint() );
+                        deduction->addSubformula( _boundNeq ? (*_boundPos)->neqRepresentation() : (*_boundPos)->pAsConstraint() );
+                        addDeduction( deduction );
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                        mpStatistics->addDeduction();
+                        #endif
+                    }
+                    ++currentBound;
+                }
+                ++currentBound;
+            }
+            if( !_boundNeq )
+            {
+                while( currentBound != lraVar.upperbounds().end() )
+                {
+                    if( (*currentBound)->pInfo()->exists && (*currentBound)->type() != LRABound::Type::EQUAL )
+                    {
+                        Formula* deduction = new Formula( OR );
+                        deduction->addSubformula( new Formula( NOT ) );
+                        deduction->back()->addSubformula( (*_boundPos)->pAsConstraint() );
+                        deduction->addSubformula( (*currentBound)->pAsConstraint() );
+                        addDeduction( deduction );
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                        mpStatistics->addDeduction();
+                        #endif
+                    }
+                    ++currentBound;
+                }
+            }
+        }
+        else
+        {
+            assert( (*_boundPos)->isLowerBound() );
+            assert( _boundPos != lraVar.lowerbounds().end() );
+            LRABound::BoundSet::const_iterator currentBound = lraVar.lowerbounds().begin();
+            if( _boundNeq )
+            {
+                currentBound = _boundPos;
+                ++currentBound;
+            }
+            else
+            {
+                while( currentBound != _boundPos )
+                {
+                    if( (*currentBound)->pInfo()->exists && (*currentBound)->type() != LRABound::Type::EQUAL )
+                    {
+                        Formula* deduction = new Formula( OR );
+                        deduction->addSubformula( new Formula( NOT ) );
+                        deduction->back()->addSubformula( (*_boundPos)->pAsConstraint() );
+                        deduction->addSubformula( (*currentBound)->pAsConstraint() );
+                        addDeduction( deduction );
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                        mpStatistics->addDeduction();
+                        #endif
+                    }
+                    ++currentBound;
+                }
+                ++currentBound;
+            }
+            if( (*_boundPos)->type() != LRABound::Type::EQUAL )
+            {
+                while( currentBound != lraVar.lowerbounds().end() )
+                {
+                    if( (*currentBound)->pInfo()->exists )
+                    {
+                        Formula* deduction = new Formula( OR );
+                        deduction->addSubformula( new Formula( NOT ) );
+                        deduction->back()->addSubformula( (*currentBound)->pAsConstraint() );
+                        deduction->addSubformula( _boundNeq ? (*_boundPos)->neqRepresentation() : (*_boundPos)->pAsConstraint() );
+                        addDeduction( deduction );
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                        mpStatistics->addDeduction();
+                        #endif
+                    }
+                    ++currentBound;
+                }
+            }
+        }
+    }
+    
+    /**
+     * 
+     * @param _premise
+     * @param _conclusion
+     * @param _conlusionNeq
+     */
+    void LRAModule::addSimpleBoundConflict( const LRABound& _caseA, const LRABound& _caseB, bool _caseBneq )
+    {
+        Formula* deduction = new Formula( OR );
+        deduction->addSubformula( new Formula( NOT ) );
+        deduction->back()->addSubformula( _caseA.pAsConstraint() );
+        deduction->addSubformula( new Formula( NOT ) );
+        deduction->back()->addSubformula( _caseBneq ? _caseB.neqRepresentation() : _caseB.pAsConstraint() );
+        addDeduction( deduction );
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        mpStatistics->addDeduction();
+        #endif
     }
 
     /**
@@ -1246,7 +1288,6 @@ Return:
      */
     void LRAModule::findSimpleConflicts( const LRABound& _bound )
     {
-        if( _bound.deduced() ) Module::storeAssumptionsToCheck( *mpManager );
         assert( !_bound.deduced() );
         if( _bound.isUpperBound() )
         {
@@ -1259,43 +1300,19 @@ Return:
                     {
                         if( _bound.type() == LRABound::EQUAL && (*lbound)->limit().mainPart() == _bound.limit().mainPart() )
                         {
-                            Formula* deductionB = new Formula( OR );
-                            deductionB->addSubformula( new Formula( NOT ) );
-                            deductionB->back()->addSubformula( _bound.pAsConstraint() );
-                            deductionB->addSubformula( new Formula( NOT ) );
-                            deductionB->back()->addSubformula( (*lbound)->neqRepresentation() );
-                            addDeduction( deductionB );
-                            #ifdef SMTRAT_DEVOPTION_Statistics
-                            mpStatistics->addDeduction();
-                            #endif
+                            addSimpleBoundConflict( _bound, **lbound, true );
                         }
                     }
                     else if( _bound.neqRepresentation() != NULL )
                     {
                         if( (*lbound)->type() == LRABound::EQUAL && (*lbound)->limit().mainPart() == _bound.limit().mainPart() )
                         {
-                            Formula* deductionB = new Formula( OR );
-                            deductionB->addSubformula( new Formula( NOT ) );
-                            deductionB->back()->addSubformula( _bound.neqRepresentation() );
-                            deductionB->addSubformula( new Formula( NOT ) );
-                            deductionB->back()->addSubformula( (*lbound)->pAsConstraint() );
-                            addDeduction( deductionB );
-                            #ifdef SMTRAT_DEVOPTION_Statistics
-                            mpStatistics->addDeduction();
-                            #endif
+                            addSimpleBoundConflict( **lbound, _bound, true );
                         }
                     }
                     else
                     {
-                        Formula* deduction = new Formula( OR );
-                        deduction->addSubformula( new Formula( NOT ) );
-                        deduction->back()->addSubformula( _bound.pAsConstraint() );
-                        deduction->addSubformula( new Formula( NOT ) );
-                        deduction->back()->addSubformula( (*lbound)->pAsConstraint() );
-                        addDeduction( deduction );
-                        #ifdef SMTRAT_DEVOPTION_Statistics
-                        mpStatistics->addDeduction();
-                        #endif
+                        addSimpleBoundConflict( _bound, **lbound );
                     }
                 }
                 else
@@ -1315,43 +1332,19 @@ Return:
                     {
                         if( _bound.type() == LRABound::EQUAL && (*ubound)->limit().mainPart() == _bound.limit().mainPart() )
                         {
-                            Formula* deductionB = new Formula( OR );
-                            deductionB->addSubformula( new Formula( NOT ) );
-                            deductionB->back()->addSubformula( _bound.pAsConstraint() );
-                            deductionB->addSubformula( new Formula( NOT ) );
-                            deductionB->back()->addSubformula( (*ubound)->neqRepresentation() );
-                            addDeduction( deductionB );
-                            #ifdef SMTRAT_DEVOPTION_Statistics
-                            mpStatistics->addDeduction();
-                            #endif
+                            addSimpleBoundConflict( _bound, **ubound, true );
                         }
                     }
                     else if( _bound.neqRepresentation() != NULL )
                     {
                         if( (*ubound)->type() == LRABound::EQUAL && (*ubound)->limit().mainPart() == _bound.limit().mainPart() )
                         {
-                            Formula* deductionB = new Formula( OR );
-                            deductionB->addSubformula( new Formula( NOT ) );
-                            deductionB->back()->addSubformula( _bound.neqRepresentation() );
-                            deductionB->addSubformula( new Formula( NOT ) );
-                            deductionB->back()->addSubformula( (*ubound)->pAsConstraint() );
-                            addDeduction( deductionB );
-                            #ifdef SMTRAT_DEVOPTION_Statistics
-                            mpStatistics->addDeduction();
-                            #endif
+                            addSimpleBoundConflict( **ubound, _bound, true );
                         }
                     }
                     else
                     {
-                        Formula* deduction = new Formula( OR );
-                        deduction->addSubformula( new Formula( NOT ) );
-                        deduction->back()->addSubformula( _bound.pAsConstraint() );
-                        deduction->addSubformula( new Formula( NOT ) );
-                        deduction->back()->addSubformula( (*ubound)->pAsConstraint() );
-                        addDeduction( deduction );
-                        #ifdef SMTRAT_DEVOPTION_Statistics
-                        mpStatistics->addDeduction();
-                        #endif
+                        addSimpleBoundConflict( _bound, **ubound );
                     }
                 }
                 else
@@ -1459,7 +1452,7 @@ Return:
             }
             mTableau.setSize( mSlackVars.size(), mOriginalVars.size(), mLinearConstraints.size() );
             #ifdef LRA_USE_PIVOTING_STRATEGY
-            mTableau.setBlandsRuleStart( (unsigned) mTableau.columns().size() );
+            mTableau.setBlandsRuleStart( 1000 );//(unsigned) mTableau.columns().size() );
             #endif
         }
     }

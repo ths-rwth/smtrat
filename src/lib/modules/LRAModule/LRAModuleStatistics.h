@@ -34,6 +34,9 @@ namespace smtrat
     private:
         // Members.
         size_t mPivotingSteps;
+        size_t mCurrentPivotingSteps;
+        size_t mMostPivotingStepsInACheck;
+        size_t mCheckWithPivoting;
         size_t mTableauxSize;
         size_t mTableauEntries;
         size_t mRefinements;
@@ -42,27 +45,32 @@ namespace smtrat
         size_t mAllConflictsSizes;
         size_t mDeductions;
         size_t mChecks;
+        size_t mChecksWithPivoting;
         size_t mAllChecksSizes;
     public:
         // Override Statistics::collect.
         void collect()
         {
            Statistics::addKeyValuePair( "pivots", mPivotingSteps );
+           Statistics::addKeyValuePair( "max-pivots", mMostPivotingStepsInACheck );
+           Statistics::addKeyValuePair( "average-num-of_pivots", mCheckWithPivoting == 0 ? 0 : (double)mPivotingSteps/(double)mCheckWithPivoting );
            Statistics::addKeyValuePair( "tableau-size", mTableauxSize );
            Statistics::addKeyValuePair( "tableau-entries", mTableauEntries );
-           Statistics::addKeyValuePair( "tableau-coverage", (double)mTableauEntries/(double)mTableauxSize );
+           Statistics::addKeyValuePair( "tableau-coverage", mTableauxSize == 0 ? 0 : (double)mTableauEntries/(double)mTableauxSize );
            Statistics::addKeyValuePair( "refinements", mRefinements );
            Statistics::addKeyValuePair( "restarts", mRestarts );
            Statistics::addKeyValuePair( "conflicts", mConflicts );
-           Statistics::addKeyValuePair( "average-conflict-size", (double)mAllConflictsSizes/(double)mConflicts );
+           Statistics::addKeyValuePair( "average-conflict-size", mConflicts == 0 ? 0 : (double)mAllConflictsSizes/(double)mConflicts );
            Statistics::addKeyValuePair( "deductions", mDeductions );
            Statistics::addKeyValuePair( "checks", mChecks );
-           Statistics::addKeyValuePair( "average-check-size", (double)mAllChecksSizes/(double)mChecks );
+           Statistics::addKeyValuePair( "checks-with-pivots", mCheckWithPivoting );
+           Statistics::addKeyValuePair( "average-check-size", mChecks == 0 ? 0 : (double)mAllChecksSizes/(double)mChecks );
         }
         
         void pivotStep()
         {
             ++mPivotingSteps;
+            ++mCurrentPivotingSteps;
         }
         
         void setNumberOfRestarts( size_t _num )
@@ -72,6 +80,13 @@ namespace smtrat
         
         void check( const Formula& _formula )
         {
+            if( mCurrentPivotingSteps > 0 )
+            {
+                if( mCurrentPivotingSteps > mMostPivotingStepsInACheck )
+                    mMostPivotingStepsInACheck = mCurrentPivotingSteps;
+                ++mCheckWithPivoting;
+            }
+            mCurrentPivotingSteps = 0;
             ++mChecks;
             mAllChecksSizes += _formula.size();
         }
@@ -116,6 +131,9 @@ namespace smtrat
         LRAModuleStatistics( const std::string& _name ) : 
             Statistics( _name, this ),
             mPivotingSteps( 0 ),
+            mCurrentPivotingSteps( 0 ),
+            mMostPivotingStepsInACheck( 0 ),
+            mCheckWithPivoting( 0 ),
             mTableauxSize( 0 ),
             mTableauEntries( 0 ),
             mRefinements( 0 ),
@@ -124,6 +142,7 @@ namespace smtrat
             mAllConflictsSizes( 0 ),
             mDeductions( 0 ),
             mChecks( 0 ),
+            mChecksWithPivoting( 0 ),
             mAllChecksSizes( 0 )
         {}
     };

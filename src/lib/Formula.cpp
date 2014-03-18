@@ -29,7 +29,7 @@
  */
 
 //#define REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
-//#define REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
+#define REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
 
 #include "Formula.h"
 #include "Module.h"
@@ -926,21 +926,35 @@ namespace smtrat
                 case CONSTRAINT:
                 {
                     #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
-                    const Constraint* constraint = currentFormula->pConstraint();
-                    if( constraint->relation() == Constraint::LEQ )
+                    if( currentFormula->constraint().relation() == Relation::LEQ )
                     {
                         Formula* newFormula = new Formula( OR );
-                        newFormula->addSubformula( Formula::newConstraint( constraint->lhs(), Constraint::LESS ) );
-                        newFormula->addSubformula( Formula::newConstraint( constraint->lhs(), Constraint::EQ ) );
+                        newFormula->addSubformula( Formula::newConstraint( currentFormula->constraint().lhs(), Relation::LESS ) );
+                        newFormula->addSubformula( Formula::newConstraint( currentFormula->constraint().lhs(), Relation::EQ ) );
                         delete currentFormula;
                         subformulasToTransform.push_back( newFormula );
                     }
                     else
                     {
-                        _formula.addSubformula( currentFormula );
+                    #endif
+                    #ifdef REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
+                    if( currentFormula->constraint().relation() == Relation::NEQ )
+                    {
+                        Formula* newFormula = new Formula( OR );
+                        newFormula->addSubformula( Formula::newConstraint( currentFormula->constraint().lhs(), Relation::LESS ) );
+                        newFormula->addSubformula( Formula::newConstraint( -currentFormula->constraint().lhs(), Relation::LESS ) );
+                        delete currentFormula;
+                        subformulasToTransform.push_back( newFormula );
                     }
-                    #else
+                    else
+                    {
+                    #endif
                     _formula.addSubformula( currentFormula );
+                    #ifdef REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
+                    }
+                    #endif
+                    #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
+                    }
                     #endif
                     break;
                 }
@@ -1008,21 +1022,31 @@ namespace smtrat
                             case CONSTRAINT:
                             {
                                 #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
-                                const Constraint* constraint = currentSubformula->pConstraint();
-                                if( constraint->relation() == Constraint::LEQ )
+                                if( currentSubformula->constraint().relation() == Relation::LEQ )
                                 {
-                                    Formula* newFormula = new Formula( OR );
-                                    newFormula->addSubformula( Formula::newConstraint( constraint->lhs(), Constraint::LESS ) );
-                                    newFormula->addSubformula( Formula::newConstraint( constraint->lhs(), Constraint::EQ ) );
+                                    currentFormula->addSubformula( Formula::newConstraint( currentSubformula->constraint().lhs(), Relation::LESS ) );
+                                    currentFormula->addSubformula( Formula::newConstraint( currentSubformula->constraint().lhs(), Relation::EQ ) );
                                     delete currentSubformula;
-                                    phis.push_back( newFormula );
                                 }
                                 else
                                 {
-                                    currentFormula->addSubformula( currentSubformula );
+                                #endif
+                                #ifdef REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
+                                if( currentSubformula->constraint().relation() == Relation::NEQ )
+                                {
+                                    currentFormula->addSubformula( Formula::newConstraint( currentSubformula->constraint().lhs(), Relation::LESS ) );
+                                    currentFormula->addSubformula( Formula::newConstraint( -currentSubformula->constraint().lhs(), Relation::LESS ) );
+                                    delete currentSubformula;
                                 }
-                                #else
+                                else
+                                {
+                                #endif
                                 currentFormula->addSubformula( currentSubformula );
+                                #ifdef REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
+                                }
+                                #endif
+                                #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
+                                }
                                 #endif
                                 break;
                             }

@@ -195,9 +195,10 @@ namespace smtrat
                 }
                 #endif
 
-                std::pair<const Bound<T1, T2>*, std::pair<const Bound<T1, T2>*, const Bound<T1, T2>*> > addUpperBound( Value<T1>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL, bool = false );
-                std::pair<const Bound<T1, T2>*, std::pair<const Bound<T1, T2>*, const Bound<T1, T2>*> > addLowerBound( Value<T1>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL, bool = false );
-                std::pair<const Bound<T1, T2>*, std::pair<const Bound<T1, T2>*, const Bound<T1, T2>*> > addEqualBound( Value<T1>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL );
+                std::pair<const Bound<T1, T2>*, typename Bound<T1, T2>::BoundSet::const_iterator> addUpperBound( Value<T1>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL, bool = false );
+                std::pair<const Bound<T1, T2>*, typename Bound<T1, T2>::BoundSet::const_iterator> addLowerBound( Value<T1>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL, bool = false );
+                std::pair<const Bound<T1, T2>*, std::pair<typename Bound<T1, T2>::BoundSet::const_iterator, typename Bound<T1, T2>::BoundSet::const_iterator> > 
+                    addEqualBound( Value<T1>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL );
                 void deactivateBound( const Bound<T1, T2>*, smtrat::Formula::iterator );
                 Interval getVariableBounds() const;
                 std::set< const smtrat::Formula* > getDefiningOrigins() const;
@@ -247,7 +248,7 @@ namespace smtrat
          * @return
          */
         template<typename T1, typename T2>
-        std::pair<const Bound<T1, T2>*, std::pair<const Bound<T1, T2>*, const Bound<T1, T2>*> > Variable<T1, T2>::addUpperBound( Value<T1>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint, bool _deduced )
+        std::pair<const Bound<T1, T2>*, typename Bound<T1, T2>::BoundSet::const_iterator> Variable<T1, T2>::addUpperBound( Value<T1>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint, bool _deduced )
         {
             struct Bound<T1, T2>::Info* boundInfo = new struct Bound<T1, T2>::Info();
             boundInfo->updated = 0;
@@ -259,36 +260,11 @@ namespace smtrat
             if( !result.second )
             {
                 delete newBound;
-                return std::pair<const Bound<T1, T2>*,std::pair<const Bound<T1, T2>*, const Bound<T1, T2>*> >( *result.first, std::pair<const Bound<T1, T2>*, const Bound<T1, T2>*>( NULL, NULL ) );
+                return std::pair<const Bound<T1, T2>*, typename Bound<T1, T2>::BoundSet::const_iterator>( *result.first, mUpperbounds.end() );
             }
             else
             {
-                const Bound<T1, T2>* nextStrongerBound = NULL;
-                const Bound<T1, T2>* nextWeakerBound = NULL;
-                auto iter = result.first;
-                while( iter != mUpperbounds.begin() )
-                {
-                    --iter;
-                    if( (*iter)->pInfo()->exists )
-                    {
-                        nextStrongerBound = *iter;
-                        break;
-                    }
-                }
-                if( result.first != mUpperbounds.end() )
-                {
-                    ++result.first;
-                    while( result.first != mUpperbounds.end() )
-                    {
-                        if( (*result.first)->pInfo()->exists && (*result.first)->type() != Bound<T1, T2>::EQUAL )
-                        {
-                            nextWeakerBound = *result.first;
-                            break;
-                        }
-                        ++result.first;
-                    }
-                }
-                return std::pair<const Bound<T1, T2>*,std::pair<const Bound<T1, T2>*, const Bound<T1, T2>*> >( newBound, std::pair<const Bound<T1, T2>*, const Bound<T1, T2>*>( nextStrongerBound, nextWeakerBound ) );
+                return std::pair<const Bound<T1, T2>*, typename Bound<T1, T2>::BoundSet::const_iterator>( newBound, result.first );
             }
         }
 
@@ -298,7 +274,7 @@ namespace smtrat
          * @return
          */
         template<typename T1, typename T2>
-        std::pair<const Bound<T1, T2>*,std::pair<const Bound<T1, T2>*, const Bound<T1, T2>*> > Variable<T1, T2>::addLowerBound( Value<T1>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint, bool _deduced )
+        std::pair<const Bound<T1, T2>*, typename Bound<T1, T2>::BoundSet::const_iterator> Variable<T1, T2>::addLowerBound( Value<T1>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint, bool _deduced )
         {
             struct Bound<T1, T2>::Info* boundInfo = new struct Bound<T1, T2>::Info();
             boundInfo->updated = 0;
@@ -309,33 +285,11 @@ namespace smtrat
             if( !result.second )
             {
                 delete newBound;
-                return std::pair<const Bound<T1, T2>*,std::pair<const Bound<T1, T2>*, const Bound<T1, T2>*> >( *result.first, std::pair<const Bound<T1, T2>*, const Bound<T1, T2>*>( NULL, NULL ) );
+                return std::pair<const Bound<T1, T2>*, typename Bound<T1, T2>::BoundSet::const_iterator>( *result.first, mLowerbounds.end() );
             }
             else
             {
-                const Bound<T1, T2>* nextStrongerBound = NULL;
-                const Bound<T1, T2>* nextWeakerBound = NULL;
-                auto iter = result.first;
-                ++iter;
-                while( iter != mLowerbounds.end() )
-                {
-                    if( (*iter)->pInfo()->exists )
-                    {
-                        nextStrongerBound = *iter;
-                        break;
-                    }
-                    ++iter;
-                }
-                while( result.first != mLowerbounds.begin() )
-                {
-                    --result.first;
-                    if( (*result.first)->pInfo()->exists && (*result.first)->type() != Bound<T1, T2>::EQUAL )
-                    {
-                        nextWeakerBound = *result.first;
-                        break;
-                    }
-                }
-                return std::pair<const Bound<T1, T2>*,std::pair<const Bound<T1, T2>*, const Bound<T1, T2>*> >( newBound, std::pair<const Bound<T1, T2>*, const Bound<T1, T2>*>( nextStrongerBound, nextWeakerBound ) );
+                return std::pair<const Bound<T1, T2>*, typename Bound<T1, T2>::BoundSet::const_iterator>( newBound, result.first );
             }
         }
 
@@ -345,7 +299,8 @@ namespace smtrat
          * @return
          */
         template<typename T1, typename T2>
-        std::pair<const Bound<T1, T2>*,std::pair<const Bound<T1, T2>*, const Bound<T1, T2>*> > Variable<T1, T2>::addEqualBound( Value<T1>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint )
+        std::pair<const Bound<T1, T2>*, std::pair<typename Bound<T1, T2>::BoundSet::const_iterator, typename Bound<T1, T2>::BoundSet::const_iterator> > 
+        Variable<T1, T2>::addEqualBound( Value<T1>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint )
         {
             struct Bound<T1, T2>::Info* boundInfo = new struct Bound<T1, T2>::Info();
             boundInfo->updated = 0;
@@ -357,33 +312,21 @@ namespace smtrat
             if( !result.second )
             {
                 delete newBound;
-                return std::pair<const Bound<T1, T2>*,std::pair<const Bound<T1, T2>*, const Bound<T1, T2>*> >( *result.first, std::pair<const Bound<T1, T2>*, const Bound<T1, T2>*>( NULL, NULL ) );
+                return std::pair<const Bound<T1, T2>*, std::pair<typename Bound<T1, T2>::BoundSet::const_iterator, typename Bound<T1, T2>::BoundSet::const_iterator> >
+                        (
+                            *result.first, 
+                            std::pair<typename Bound<T1, T2>::BoundSet::const_iterator, typename Bound<T1, T2>::BoundSet::const_iterator>( mLowerbounds.end(), mUpperbounds.end() ) 
+                        );
             }
             else
             {
-                const Bound<T1, T2>* nextWeakerLowerBound = NULL;
-                while( result.first != mLowerbounds.begin() )
-                {
-                    --result.first;
-                    if( (*result.first)->pInfo()->exists && (*result.first)->type() != Bound<T1, T2>::EQUAL )
-                    {
-                        nextWeakerLowerBound = *result.first;
-                        break;
-                    }
-                }
-                std::pair<typename Bound<T1, T2>::BoundSet::iterator, bool> result = mUpperbounds.insert( newBound );
-                ++result.first;
-                const Bound<T1, T2>* nextWeakerUpperBound = NULL;
-                while( result.first != mUpperbounds.end() )
-                {
-                    if( (*result.first)->pInfo()->exists && (*result.first)->type() != Bound<T1, T2>::EQUAL )
-                    {
-                        nextWeakerUpperBound = *result.first;
-                        break;
-                    }
-                    ++result.first;
-                }
-                return std::pair<const Bound<T1, T2>*,std::pair<const Bound<T1, T2>*, const Bound<T1, T2>*> >( newBound, std::pair<const Bound<T1, T2>*, const Bound<T1, T2>*>( nextWeakerLowerBound, nextWeakerUpperBound ) );
+                std::pair<typename Bound<T1, T2>::BoundSet::iterator, bool> resultB = mUpperbounds.insert( newBound );
+                assert( resultB.second );
+                return std::pair<const Bound<T1, T2>*, std::pair<typename Bound<T1, T2>::BoundSet::const_iterator, typename Bound<T1, T2>::BoundSet::const_iterator> >
+                        (
+                            newBound, 
+                            std::pair<typename Bound<T1, T2>::BoundSet::const_iterator, typename Bound<T1, T2>::BoundSet::const_iterator>( result.first, resultB.first ) 
+                        );
             }
         }
 

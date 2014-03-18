@@ -726,11 +726,12 @@ namespace smtrat
                 for( auto rowNumber = mActiveRows.begin(); rowNumber != mActiveRows.end(); ++rowNumber )
                 {
                     Value<T1> theta = Value<T1>();
+                    // TODO: Check first whether it is conflicting its bounds and set theta accordingly for heuristics
                     std::pair<EntryID,bool> result = isSuitable( *rowNumber, theta );
                     if( !result.second )
                     {
                         // Found a conflicting row.
-                        if( beginOfFirstConflictRow == LAST_ENTRY_ID || theta.mainPart() > conflictTheta.mainPart() )
+                        if( beginOfFirstConflictRow == LAST_ENTRY_ID || theta.mainPart() > conflictTheta.mainPart() ) // TODO_ Why the second condition?
                         {
                             conflictTheta = theta;
                             beginOfFirstConflictRow = result.first;
@@ -813,7 +814,6 @@ namespace smtrat
         }
 
         /**
-         *
          * @param _rowNumber
          * @return
          */
@@ -828,7 +828,7 @@ namespace smtrat
             const Bound<T1, T2>& basicVarInfimum = basicVar.infimum();
             const EntryID& rowStartEntry = _rowHead.mStartEntry;
             // Upper bound is violated
-            if( basicVarSupremum < basicVarAssignment )
+            if( basicVarSupremum < basicVarAssignment ) // TODO: you could know this beforehand, so make two methods for case distinction or add a bool template
             {
                 // Check all entries in the row / nonbasic variables
                 Iterator rowIter = Iterator( rowStartEntry, mpEntries );
@@ -959,8 +959,10 @@ namespace smtrat
             if( _than == LAST_ENTRY_ID ) return true;
             const TableauHead& isBetterColumn = mColumns[(*mpEntries)[_isBetter].columnNumber()];
             const TableauHead& thanColumn = mColumns[(*mpEntries)[_than].columnNumber()];
-            if( isBetterColumn.mActivity < thanColumn.mActivity ) return true;
-            else if( isBetterColumn.mActivity == thanColumn.mActivity )
+            size_t valueA = (2*isBetterColumn.mSize)-isBetterColumn.mActivity;
+            size_t valueB = (2*thanColumn.mSize)-thanColumn.mActivity;
+            if( valueA > valueB ) return true;
+            else if( valueA == valueB )
             {
                 if( isBetterColumn.mSize < thanColumn.mSize ) return true;
             }
@@ -1800,11 +1802,12 @@ namespace smtrat
 
         #ifdef LRA_REFINEMENT
         template<typename T1, typename T2>
-        void Tableau<T1,T2>::rowRefinement( const TableauHead& _row )
+        void Tableau<T1,T2>::rowRefinement( const TableauHead& _row ) // TODO: only apply this until a certain number of entries in the given row.
         {
             /*
              * Collect the bounds which form an upper resp. lower refinement.
              */
+            if( _row.mSize > 128 ) return;
             std::vector<const Bound<T1, T2>*>* uPremise = NULL;
             if( _row.mName->supremum() > _row.mName->assignment() )
                 uPremise = new std::vector<const Bound<T1, T2>*>();

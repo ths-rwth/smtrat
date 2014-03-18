@@ -153,6 +153,9 @@ namespace smtrat
             bool checkAssignmentForNonlinearConstraint();
             bool activateBound( const LRABound*, std::set<const Formula*>& );
             void setBound( LRAVariable&, bool, const LRABoundType&, const Constraint* );
+            template<bool is_upper_bound>
+            void addSimpleBoundDeduction( LRABound::BoundSet::const_iterator, bool = false );
+            void addSimpleBoundConflict( const LRABound&, const LRABound&, bool = false );
             void findSimpleConflicts( const LRABound& );
             void initialize( const Constraint* const );
             bool gomory_cut();
