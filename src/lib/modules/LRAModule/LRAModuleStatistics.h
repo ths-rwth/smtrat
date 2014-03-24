@@ -40,7 +40,6 @@ namespace smtrat
         size_t mTableauxSize;
         size_t mTableauEntries;
         size_t mRefinements;
-        size_t mRestarts;
         size_t mConflicts;
         size_t mAllConflictsSizes;
         size_t mDeductions;
@@ -58,7 +57,6 @@ namespace smtrat
            Statistics::addKeyValuePair( "tableau-entries", mTableauEntries );
            Statistics::addKeyValuePair( "tableau-coverage", mTableauxSize == 0 ? 0 : (double)mTableauEntries/(double)mTableauxSize );
            Statistics::addKeyValuePair( "refinements", mRefinements );
-           Statistics::addKeyValuePair( "restarts", mRestarts );
            Statistics::addKeyValuePair( "conflicts", mConflicts );
            Statistics::addKeyValuePair( "average-conflict-size", mConflicts == 0 ? 0 : (double)mAllConflictsSizes/(double)mConflicts );
            Statistics::addKeyValuePair( "deductions", mDeductions );
@@ -71,11 +69,6 @@ namespace smtrat
         {
             ++mPivotingSteps;
             ++mCurrentPivotingSteps;
-        }
-        
-        void setNumberOfRestarts( size_t _num )
-        {
-            mRestarts = _num;
         }
         
         void check( const Formula& _formula )
@@ -137,7 +130,6 @@ namespace smtrat
             mTableauxSize( 0 ),
             mTableauEntries( 0 ),
             mRefinements( 0 ),
-            mRestarts( 0 ),
             mConflicts( 0 ),
             mAllConflictsSizes( 0 ),
             mDeductions( 0 ),

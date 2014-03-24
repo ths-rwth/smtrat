@@ -277,17 +277,10 @@ namespace smtrat
                                     {
                                         mBoundCandidatesToPass.push_back( (*bound)->pVariable()->pInfimum() );
                                     }
-                                    if( ((*bound)->isUpperBound() && (*bound)->variable().pSupremum()->isInfinite())
-                                        || ((*bound)->isLowerBound() && (*bound)->variable().pInfimum()->isInfinite()) )
+                                    
+                                    if( !(*bound)->variable().isActive() && (*bound)->variable().isBasic() && !(*bound)->variable().isOriginal() )
                                     {
-                                        if( (*bound)->variable().isBasic() )
-                                        {
-                                            mTableau.decrementBasicActivity( (*bound)->variable() );
-                                        }
-                                        else
-                                        {
-                                            mTableau.decrementNonbasicActivity( (*bound)->variable() );
-                                        }
+                                        mTableau.deactivateBasicVar( (*bound)->pVariable() );
                                     }
                                 }
                             }
@@ -387,6 +380,7 @@ namespace smtrat
             }
             goto Return; // Unknown
         }
+        mTableau.compressRows();
         for( ; ; )
         {
             // Check whether a module which has been called on the same instance in parallel, has found an answer.
@@ -447,6 +441,8 @@ namespace smtrat
                             goto Return; // Unknown
                         #endif
                         result = True;
+//                        if( !assignmentCorrect() )
+//                            exit( 778 );
                         assert( assignmentCorrect() );
                         goto Return;
                     }
@@ -508,7 +504,7 @@ namespace smtrat
                         #endif
                     }
                     #endif
-                    // Maybe a easy conflict occurred with the learned bounds.
+                    // Maybe an easy conflict occurred with the learned bounds.
                     if( !mInfeasibleSubsets.empty() )
                     {
                         result = False;
@@ -560,7 +556,6 @@ Return:
                 mpStatistics->addConflict( mInfeasibleSubsets );
             mpStatistics->setNumberOfTableauxEntries( mTableau.size() );
             mpStatistics->setTableauSize( mTableau.rows().size()*mTableau.columns().size() );
-            mpStatistics->setNumberOfRestarts( mTableau.numberOfRestarts() );
         }
         #endif
         if( result != Unknown )
@@ -644,6 +639,7 @@ Return:
             for( auto slackVar = mSlackVars.begin(); slackVar != mSlackVars.end(); ++slackVar )
             {
                 variable = slackVar->second;
+                if( !variable->isActive() ) continue;
                 const LRAValue& assValue = variable->assignment();
                 const LRABound& inf = variable->infimum();
                 if( !inf.isInfinite() )
@@ -887,20 +883,8 @@ Return:
         if( _bound->pInfo()->position != mpPassedFormula->end() )
             addOrigin( *_bound->pInfo()->position, _formulas );
         const LRAVariable& var = _bound->variable();
-        if( (_bound->isUpperBound() && var.pSupremum()->isInfinite()) )
-        {
-            if( var.isBasic() )
-                mTableau.incrementBasicActivity( var );
-            else
-                mTableau.incrementNonbasicActivity( var );
-        }
-        if( (_bound->isLowerBound() && var.pInfimum()->isInfinite()) )
-        {
-            if( var.isBasic() )
-                mTableau.incrementBasicActivity( var );
-            else
-                mTableau.incrementNonbasicActivity( var );
-        }
+        if( !var.isActive() && var.isBasic() && !var.isOriginal() )
+            mTableau.activateBasicVar( _bound->pVariable() );
         if( _bound->isUpperBound() )
         {
             if( *var.pInfimum() > _bound->limit() && !_bound->deduced() )
@@ -1394,37 +1378,14 @@ Return:
                 linearPart = new Polynomial( -_pConstraint->lhs() + constantPart );
             else
                 linearPart = new Polynomial( _pConstraint->lhs() - constantPart );
+            Rational cf = linearPart->coprimeFactor();
+            assert( cf > 0 );
+            constantPart *= cf;
+            (*linearPart) *= cf;
             ExVariableMap::iterator slackIter = mSlackVars.find( linearPart );
             if( slackIter == mSlackVars.end() )
             {
-                vector< LRAVariable* > nonbasics = vector< LRAVariable* >();
-                vector< LRAEntryType > numCoeffs = vector< LRAEntryType >();
-                for( auto term = linearPart->begin(); term != linearPart->end(); ++term )
-                {
-                    if( (*term)->isConstant() )
-                    {
-                        cout << *_pConstraint << endl;
-                        cout << *linearPart << endl;
-                    }
-                    assert( !(*term)->isConstant() );
-                    carl::Variable var = (*(*term)->monomial())[0].var;
-                    VarVariableMap::iterator nonBasicIter = mOriginalVars.find( var );
-                    if( mOriginalVars.end() == nonBasicIter )
-                    {
-                        Polynomial* varPoly = new Polynomial( var );
-                        LRAVariable* nonBasic = mTableau.newNonbasicVariable( varPoly );
-                        mOriginalVars.insert( pair<carl::Variable, LRAVariable*>( var, nonBasic ) );
-                        nonbasics.push_back( nonBasic );
-                    }
-                    else
-                    {
-                        nonbasics.push_back( nonBasicIter->second );
-                    }
-                    assert( carl::isInteger( (*term)->coeff() ) );
-                    numCoeffs.push_back( LRAEntryType( carl::getNum( (*term)->coeff() ) ) );
-                }
-
-                LRAVariable* slackVar = mTableau.newBasicVariable( linearPart, nonbasics, numCoeffs );
+                LRAVariable* slackVar = mTableau.newBasicVariable( linearPart, mOriginalVars );
 
                 mSlackVars.insert( pair<const Polynomial*, LRAVariable*>( linearPart, slackVar ) );
                 setBound( *slackVar, negative, (negative ? constantPart : -constantPart), _pConstraint );
@@ -1446,9 +1407,18 @@ Return:
         if( !mInitialized )
         {
             mInitialized = true;
-            for( auto constraint = mLinearConstraints.begin(); constraint != mLinearConstraints.end(); ++constraint )
+//            map<carl::Variable, PointerSet<Constraint>> linearConstraintSCCs;
+//            for( const Constraint* constraint : mLinearConstraints )
+//            {
+//                const Variables& vars = constraint->variables();
+//                for( carl::Variable var : vars )
+//                {
+//                    linearConstraintSCCs[var].insert( constraint );
+//                }
+//            }
+            for( const Constraint* constraint : mLinearConstraints )
             {
-                initialize( *constraint );
+                initialize( constraint );
             }
             mTableau.setSize( mSlackVars.size(), mOriginalVars.size(), mLinearConstraints.size() );
             #ifdef LRA_USE_PIVOTING_STRATEGY

@@ -59,7 +59,7 @@
 #define SAT_MODULE_THEORY_PROPAGATION
 #define SAT_MODULE_DETECT_DEDUCTIONS
 //#define SAT_CHECK_BACKEND_MODEL
-//#define SAT_TRY_FULL_LAZY_CALLS_FIRST
+#define SAT_TRY_FULL_LAZY_CALLS_FIRST
 
 
 using namespace std;
@@ -288,14 +288,6 @@ namespace smtrat
             budgetOff();
 
             assumptions.clear();
-            if( !ok )
-            {
-                updateInfeasibleSubset();
-                #ifdef SMTRAT_DEVOPTION_Statistics
-                collectStats();
-                #endif
-                return foundAnswer( False );
-            }
 
             // TODO: Is this necessary?
             ++solves;
@@ -306,6 +298,15 @@ namespace smtrat
             Module::init();
             processLemmas();
             simplify();
+            
+            if( !ok )
+            {
+                updateInfeasibleSubset();
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                collectStats();
+                #endif
+                return foundAnswer( False );
+            }
 
 #ifdef SAT_WITH_RESTARTS
             mCurr_Restarts = 0;
@@ -841,7 +842,7 @@ namespace smtrat
                 }
             }
             attachClause( cr );
-            claBumpActivity( ca[cr] );
+//            claBumpActivity( ca[cr] ); // TODO: why does this not work?
             // Clause is unit
             if( _type == DEDUCTED_CLAUSE )
             {

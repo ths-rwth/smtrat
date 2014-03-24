@@ -35,11 +35,15 @@
 #include "../../Common.h"
 #include <sstream>
 #include <iomanip>
+#include <list>
 
 namespace smtrat
 {
     namespace lra
     {
+        typedef size_t EntryID;
+        static EntryID LAST_ENTRY_ID = 0;
+        
         template<typename T1, typename T2>
         class Variable
         {
@@ -49,7 +53,15 @@ namespace smtrat
                  * Members.
                  */
                 bool                             mBasic;
-                size_t                           mPosition;
+                bool                             mOriginal;
+                EntryID                          mStartEntry;
+                size_t                           mSize;
+                double                           mConflictActivity;
+                union
+                {
+                    size_t                       mPosition;
+                    typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator          mPositionInNonActives;
+                };
                 typename Bound<T1, T2>::BoundSet mUpperbounds;
                 typename Bound<T1, T2>::BoundSet mLowerbounds;
                 const Bound<T1, T2>*             mpSupremum;
@@ -61,7 +73,8 @@ namespace smtrat
                 #endif
 
             public:
-                Variable( size_t, bool, const smtrat::Polynomial*, smtrat::Formula::iterator );
+                Variable( size_t, const smtrat::Polynomial*, smtrat::Formula::iterator );
+                Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator, const smtrat::Polynomial*, smtrat::Formula::iterator );
                 virtual ~Variable();
 
                 const Value<T1>& assignment() const
@@ -84,6 +97,36 @@ namespace smtrat
                     return mBasic;
                 }
 
+                bool isOriginal() const
+                {
+                    return mOriginal;
+                }
+                
+                bool isActive() const
+                {
+                    return !(mpInfimum->isInfinite() && mpSupremum->isInfinite());
+                }
+                
+                EntryID startEntry() const
+                {
+                    return mStartEntry;
+                }
+                
+                EntryID& rStartEntry()
+                {
+                    return mStartEntry;
+                }
+                
+                size_t size() const
+                {
+                    return mSize;
+                }
+                
+                size_t& rSize()
+                {
+                    return mSize;
+                }
+                
                 void setSupremum( const Bound<T1, T2>* _supremum )
                 {
                     assert( _supremum->isActive() );
@@ -136,6 +179,16 @@ namespace smtrat
                 void setPosition( size_t _position )
                 {
                     mPosition = _position;
+                }
+
+                typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator positionInNonActives() const
+                {
+                    return mPositionInNonActives;
+                }
+                
+                void setPositionInNonActives( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator _positionInNonActives )
+                {
+                    mPositionInNonActives = _positionInNonActives;
                 }
 
                 size_t rLowerBoundsSize()
@@ -206,12 +259,36 @@ namespace smtrat
                 void print( std::ostream& = std::cout ) const;
                 void printAllBounds( std::ostream& = std::cout, const std::string = "" ) const;
         };
-
 		
         template<typename T1, typename T2>
-        Variable<T1, T2>::Variable( size_t _position, bool _basic, const smtrat::Polynomial* _expression, smtrat::Formula::iterator _defaultBoundPosition ):
-            mBasic( _basic ),
+        Variable<T1, T2>::Variable( size_t _position, const smtrat::Polynomial* _expression, smtrat::Formula::iterator _defaultBoundPosition ):
+            mBasic( false ),
+            mOriginal( true ),
+            mStartEntry( LAST_ENTRY_ID ),
+            mSize( 0 ),
+            mConflictActivity( 0 ),
             mPosition( _position ),
+            mUpperbounds(),
+            mLowerbounds(),
+            mExpression( _expression),
+            mAssignment()
+            #ifdef LRA_NO_DIVISION
+            ,
+            mFactor( 1 )
+            #endif
+        {
+            mpSupremum = addUpperBound( NULL, _defaultBoundPosition ).first;
+            mpInfimum  = addLowerBound( NULL, _defaultBoundPosition ).first;
+        }
+        
+        template<typename T1, typename T2>
+        Variable<T1, T2>::Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator _positionInNonActives, const smtrat::Polynomial* _expression, smtrat::Formula::iterator _defaultBoundPosition ):
+            mBasic( true ),
+            mOriginal( false ),
+            mStartEntry( LAST_ENTRY_ID ),
+            mSize( 0 ),
+            mConflictActivity( 0 ),
+            mPositionInNonActives( _positionInNonActives ),
             mUpperbounds(),
             mLowerbounds(),
             mExpression( _expression),
@@ -353,15 +430,13 @@ namespace smtrat
                         if( (*newBound)->isActive() )
                         {
                             ++(*newBound)->pInfo()->updated;
-                            mpSupremum = *newBound;
-                            goto LowerBounds;
+                            break;
                         }
                         ++newBound;
                     }
                     mpSupremum = *newBound;
                 }
             }
-    LowerBounds:
             if( bound->isLowerBound() )
             {
                 //check if it is the infimum
@@ -374,8 +449,7 @@ namespace smtrat
                         if( (*newBound)->isActive() )
                         {
                             ++(*newBound)->pInfo()->updated;
-                            mpInfimum = *newBound;
-                            return;
+                            break;
                         }
                         ++newBound;
                     }
