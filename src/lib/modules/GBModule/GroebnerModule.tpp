@@ -706,7 +706,7 @@ void GroebnerModule<Settings>::pushBacktrackPoint( Formula::const_iterator btpoi
     if( mStateHistory.empty() )
     {
         // there are no variable rewrite rules, so we can only push our current basis and empty rewrites
-        mStateHistory.push_back( GroebnerModuleState<Settings>( mBasis, std::map<carl::Variable, std::pair<Term, carl::BitVector> >() ) );
+        mStateHistory.emplace_back( mBasis, std::map<carl::Variable, std::pair<Term, carl::BitVector> >() );
     }
     else
     {
