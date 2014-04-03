@@ -187,8 +187,7 @@ namespace smtrat
         assert( (*_subformula)->getType() == CONSTRAINT );
         Module::assertSubformula( _subformula );
         #ifdef SMTRAT_CAD_VARIABLEBOUNDS
-        if( mVariableBounds.addBound( (*_subformula)->pConstraint(), *_subformula ) )
-            return true;
+		mVariableBounds.addBound( (*_subformula)->pConstraint(), *_subformula );
         #endif
         if( solverState() == False )
             return false;
@@ -280,6 +279,7 @@ namespace smtrat
                 g.removeConstraintVertex(g.maxDegreeVertex());
             #else
                 // remove last vertex, assuming it is part of the MIS
+				assert(mConstraints.size() > 0);
                 g.removeConstraintVertex(mConstraints.size()-1);
             #endif
             
@@ -334,11 +334,7 @@ namespace smtrat
             return;
         }
         #ifdef SMTRAT_CAD_VARIABLEBOUNDS
-        if( mVariableBounds.removeBound( (*_subformula)->pConstraint(), *_subformula ) != 0 )
-        { // constraint was added as bound, so there is no respective constraint stored
-            Module::removeSubformula( _subformula );
-            return;
-        }
+		mVariableBounds.removeBound( (*_subformula)->pConstraint(), *_subformula );
         #endif
 
         ConstraintIndexMap::iterator constraintIt = mConstraintsMap.find( _subformula );
