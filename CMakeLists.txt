@@ -94,7 +94,7 @@ if("${STATICLIB_SWITCH}" STREQUAL "ON")
 endif()
 
 if(${SMTRAT_STRAT_PARALLEL_MODE} STREQUAL "ON")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--whole-archive -lpthread -Wl,--no-whole-archive")
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--whole-archive -lpthread -Wl,--no-whole-archive")
 endif()
 
 # path to put in the executables
