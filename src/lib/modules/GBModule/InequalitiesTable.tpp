@@ -496,7 +496,7 @@ namespace smtrat
             for(typename std::list<CellEntry>::const_iterator jt = std::get < 2 > (it->second).begin( ); jt != listEnd; ++jt )
             {
                 os << "\t(" << jt->first << ") " << jt->second << " [";
-                jt->second.getOrigins().print();
+                jt->second.getReasons().print();
                 os << "] " << std::endl;
 
             }
