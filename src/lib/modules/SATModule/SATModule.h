@@ -66,7 +66,7 @@
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "SATModuleStatistics.h"
 #endif
-//#define SAT_WITH_RESTARTS
+#define SAT_WITH_RESTARTS
 
 #define SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN //Todo: repair this when deactivated (see qf_lra/bugs/bug_sat_dont_stop_by_first_unknown.smt2)
 
@@ -89,9 +89,10 @@ namespace smtrat
             struct Abstraction
             {
                 Formula::iterator position;
-                Formula* formula;
+                const Constraint* constraint;
                 const Formula* origin;
                 int updateInfo;
+                bool deducted;
             };
 
             struct Watcher
@@ -141,12 +142,12 @@ namespace smtrat
                 {}
             };
 
-            typedef std::map<const Constraint* const, Minisat::Lit> ConstraintLiteralMap;
-            typedef std::map<const carl::Variable, Minisat::Var>    BooleanVarMap;
-            typedef Minisat::vec< Abstraction >                     BooleanConstraintMap;
-            typedef std::map<const Formula*, Minisat::CRef >        FormulaClauseMap;
-            typedef std::vector< std::vector<Minisat::Lit> >        ClauseVector;
-            typedef std::set<std::vector<int>>                      ClauseSet;
+            typedef std::map<const Constraint*, std::vector<Minisat::Lit>>    ConstraintLiteralsMap;
+            typedef std::map<const carl::Variable, Minisat::Var> BooleanVarMap;
+            typedef Minisat::vec< Abstraction >                  BooleanConstraintMap;
+            typedef std::map<const Formula*, Minisat::CRef >     FormulaClauseMap;
+            typedef std::vector< std::vector<Minisat::Lit> >     ClauseVector;
+            typedef std::set<std::vector<int>>                   ClauseSet;
 
             static inline VarData mkVarData( Minisat::CRef cr, int l )
             {
@@ -261,14 +262,19 @@ namespace smtrat
             mutable double        mSatisfiedClauses;
             size_t                mNumberOfFullLazyCalls;
             int                   mCurr_Restarts;
+            int                   mTrailStart;
             BooleanConstraintMap  mBooleanConstraintMap;
-            ConstraintLiteralMap  mConstraintLiteralMap;
+            ConstraintLiteralsMap  mConstraintLiteralMap;
             BooleanVarMap         mBooleanVarMap;
             FormulaClauseMap      mFormulaClauseMap;
             /// If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
             ClauseVector          mMaxSatAssigns;
             ClauseSet             mLearntDeductions;
             std::vector<signed>   mChangedBooleans;
+            bool                  mAllActivitiesChanged;
+            std::vector<Minisat::CRef>     mChangedActivities;
+            std::map<carl::Variable,std::set<const Constraint*>> mVarOccurrences;
+            std::map<carl::Variable,Polynomial> mVarReplacements;
 
             #ifdef SMTRAT_DEVOPTION_Statistics
             SATModuleStatistics* mpStatistics;
@@ -322,12 +328,14 @@ namespace smtrat
             // Problem specification:
             //
             // Add a new variable with parameters specifying variable mode.
-            Minisat::Var newVar( bool polarity = true, bool dvar = true, double = 0, Formula* = NULL, const Formula* = NULL );
+            Minisat::Var newVar( bool polarity = true, bool dvar = true, double = 0, const Constraint* = NULL, const Formula* = NULL );
 
             // Solving:
             //
             // Removes already satisfied clauses.
             bool simplify();
+            ///
+            bool applyValidSubstitutions( int );
             // Learns a clause.
             bool addClause( Minisat::vec<Minisat::Lit>&, unsigned = 0 );
             // Checks the correctness of the watches in a clause
@@ -550,7 +558,10 @@ namespace smtrat
         {
             // Rescale:
             for( int i = 0; i < learnts.size(); i++ )
+            {
+                mAllActivitiesChanged = true;
                 ca[learnts[i]].activity() *= (float)1e-20;
+            }
             cla_inc *= 1e-20;
         }
     }

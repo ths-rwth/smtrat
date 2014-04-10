@@ -38,7 +38,7 @@ namespace smtrat
             mDecisions( 0 )
         {}
 
-        virtual ~SATModuleStatistics() {}
+        ~SATModuleStatistics() {}
 
         void collect()
         {

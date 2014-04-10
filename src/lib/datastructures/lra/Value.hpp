@@ -62,6 +62,7 @@ namespace smtrat
                 void operator -=( const Value<T>& );
                 Value<T> operator *( const T& ) const;
                 void operator *=( const Value<T>& );
+                void operator *=( const T& );
                 Value<T> operator /( const T& ) const;
                 void operator /=( const T& );
                 bool operator <( const Value<T>& ) const;
@@ -70,6 +71,7 @@ namespace smtrat
                 bool operator ==( const Value<T>& ) const;
 
                 const std::string toString() const;
+                template <typename T1> friend std::ostream& operator<<( std::ostream&, const Value<T1>& );
 
                 const T& mainPart() const
                 {
@@ -199,6 +201,17 @@ namespace smtrat
 
         /**
          *
+         * @param val
+         */
+        template<class T>
+        void Value<T>::operator *=( const T& a )
+        {
+            mMainPart *= a;
+            mDeltaPart *= a;
+        }
+
+        /**
+         *
          * @param a
          * @return
          */
@@ -303,6 +316,13 @@ namespace smtrat
             std::stringstream out;
             out << mMainPart << "+d*" << mDeltaPart;
             return out.str();
+        }
+            
+        template<class T1>
+        std::ostream& operator<<( std::ostream& _out, const Value<T1>& _value )
+        {
+            _out << _value.toString();
+            return _out;
         }
 
         /**

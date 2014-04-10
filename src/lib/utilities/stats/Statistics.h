@@ -28,6 +28,10 @@ public :
     Statistics(std::string name, Statistics* child) : mName(name), mMaxKeyLength(0) {
         CollectStatistics::registerStats(child);
     }
+    
+    virtual ~Statistics()
+    {}
+    
     virtual void collect() {}
     void print( std::ostream& _out = std::cout, bool _smtlib = false, size_t _maxNameLength = 0, size_t _maxKeyLength = 0 )
     {

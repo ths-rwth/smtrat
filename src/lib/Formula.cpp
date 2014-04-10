@@ -375,11 +375,13 @@ namespace smtrat
                 case TTRUE:
                 {
                     mPropositions |= STRONG_CONDITIONS;
+                    addConstraintPropositions( *mpConstraint );
                     break;
                 }
                 case FFALSE:
                 {
                     mPropositions |= STRONG_CONDITIONS;
+                    addConstraintPropositions( *mpConstraint );
                     break;
                 }
                 case BOOL:

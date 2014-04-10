@@ -42,6 +42,16 @@ StatisticSettings* CollectStatistics::settings = new StatisticSettings();
 CollectStatistics::CollectStatistics( )
 {}
 
+CollectStatistics::~CollectStatistics( )
+{
+    while( !stats.empty() )
+    {
+        Statistics* statToDel = stats.back();
+        stats.pop_back();
+        delete statToDel;
+    }
+}
+
 void CollectStatistics::registerStats(Statistics* _stats) {
     stats.push_back(_stats);
 }

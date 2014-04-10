@@ -46,7 +46,7 @@ namespace smtrat {
     {
     public:
         CollectStatistics( );
-        virtual ~CollectStatistics( ) {};
+        ~CollectStatistics();
         
         static StatisticSettings* settings;
         static void registerStats(Statistics* _stats);

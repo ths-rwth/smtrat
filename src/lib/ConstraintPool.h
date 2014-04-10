@@ -341,6 +341,7 @@ namespace smtrat
             carl::Variable newAuxiliaryIntVariable( const std::string& _externalPrefix = "h_i" )
             {
                 std::stringstream out;
+                if( !mExternalPrefixInitialized ) initExternalPrefix();
                 out << mExternalVarNamePrefix << _externalPrefix << mAuxiliaryIntVarCounter++;
                 return newArithmeticVariable( out.str(), carl::VariableType::VT_INT );
             }
@@ -353,6 +354,7 @@ namespace smtrat
             carl::Variable newAuxiliaryRealVariable( const std::string& _externalPrefix = "h_r" )
             {
                 std::stringstream out;
+                if( !mExternalPrefixInitialized ) initExternalPrefix();
                 out << mExternalVarNamePrefix << _externalPrefix << "_" << mAuxiliaryRealVarCounter++;
                 return newArithmeticVariable( out.str(), carl::VariableType::VT_REAL );
             }

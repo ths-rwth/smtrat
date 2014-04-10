@@ -57,9 +57,9 @@
 //#define WITH_PROGRESS_ESTIMATION
 //#define SAT_MODULE_OUTPUT_PROGRESS
 #define SAT_MODULE_THEORY_PROPAGATION
-#define SAT_MODULE_DETECT_DEDUCTIONS
+//#define SAT_MODULE_DETECT_DEDUCTIONS
 //#define SAT_CHECK_BACKEND_MODEL
-#define SAT_TRY_FULL_LAZY_CALLS_FIRST
+//#define SAT_TRY_FULL_LAZY_CALLS_FIRST
 
 
 using namespace std;
@@ -151,12 +151,16 @@ namespace smtrat
         mSatisfiedClauses( 0 ),
         mNumberOfFullLazyCalls( 0 ),
         mCurr_Restarts( 0 ),
+        mTrailStart( 0 ),
         mConstraintLiteralMap(),
         mBooleanVarMap(),
         mFormulaClauseMap(),
         mMaxSatAssigns(),
         mLearntDeductions(),
-        mChangedBooleans()
+        mChangedBooleans(),
+        mAllActivitiesChanged( false ),
+        mChangedActivities(),
+        mVarOccurrences()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
         stringstream s;
@@ -169,13 +173,7 @@ namespace smtrat
      * Destructor:
      */
     SATModule::~SATModule()
-    {
-        for( int k = 0; k < mBooleanConstraintMap.size(); ++k )
-        {
-            if( mBooleanConstraintMap[k].formula != NULL )
-                delete mBooleanConstraintMap[k].formula;
-        }
-    }
+    {}
 
     /**
      * Methods:
@@ -373,6 +371,10 @@ namespace smtrat
                 mModel.insert(std::make_pair(bVar->first, assignment));
             }
             Module::getBackendsModel();
+            for( auto varReplacement = mVarReplacements.begin(); varReplacement != mVarReplacements.end(); ++varReplacement )
+            {
+                mModel[varReplacement->first] = varReplacement->second;
+            }
         }
     }
     
@@ -610,16 +612,31 @@ namespace smtrat
                     return mkLit( booleanVarPair->second, false );
                 else
                 {
-                    Var var = newVar( true, true, _formula.activity() );
+                    Var var = newVar( true, true, 3 ); //_formula.activity() );
                     mBooleanVarMap[_formula.boolean()] = var;
                     return mkLit( var, false );
                 }
             }
             case CONSTRAINT:
             {
-                Lit lit = getLiteral( _formula.pConstraint(), _origin, fabs(_formula.activity()), (_formula.activity()<0) );
+                double activity = _formula.constraint().variables().size() >= 20 ? 1 : ((double)_formula.constraint().variables().size())/20;
+                if( _formula.constraint().relation() != Relation::EQ )
+                {
+                    ++activity;
+                }
+                Lit lit = getLiteral( _formula.pConstraint(), _origin, activity, true );//fabs(_formula.activity()), (_formula.activity()<0) );
                 return lit;
             }
+//            case TTRUE:
+//            {
+//                Lit lit = getLiteral( _formula.pConstraint(), _origin, fabs(_formula.activity()), (_formula.activity()<0) );
+//                return lit;
+//            }
+//            case FFALSE:
+//            {
+//                Lit lit = getLiteral( _formula.pConstraint(), _origin, fabs(_formula.activity()), (_formula.activity()<0) );
+//                return lit;
+//            }
             default:
             {
                 cerr << "Unexpected type of formula!" << endl;
@@ -637,12 +654,12 @@ namespace smtrat
      */
     Lit SATModule::getLiteral( const Constraint* _constraint, const Formula* _origin, double _activity, bool _preferredToTSolver, bool _polarity )
     {
-        ConstraintLiteralMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( _constraint );
+        ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( _constraint );
         if( constraintLiteralPair != mConstraintLiteralMap.end() )
         {
-            if( _activity == INFINITY )
-                activity[var(constraintLiteralPair->second)] = maxActivity() + 1;
-            return constraintLiteralPair->second;
+            if( _activity == numeric_limits<double>::infinity() )
+                activity[var(constraintLiteralPair->second.front())] = maxActivity() + 1;
+            return constraintLiteralPair->second.front();
         }
         else
         {
@@ -652,14 +669,21 @@ namespace smtrat
             if( _preferredToTSolver )
                 mpStatistics->initialTrue();
             #endif
+            Polynomial constraintLhs = _constraint->lhs().substitute( mVarReplacements );
             const Constraint* constraint = NULL;
             if( !_polarity )
-                constraint = Formula::newConstraint( _constraint->lhs(), Constraint::invertRelation( _constraint->relation() ) );
-            else constraint = _constraint;
-            constraintAbstraction = newVar( !_preferredToTSolver, true, _activity, new Formula( _constraint ), _origin );
+                constraint = Formula::newConstraint( constraintLhs, Constraint::invertRelation( _constraint->relation() ) );
+            else constraint = Formula::newConstraint( constraintLhs, _constraint->relation() );
+            constraintAbstraction = newVar( !_preferredToTSolver, true, _activity, constraint, _origin );
             Lit lit                            = mkLit( constraintAbstraction, !_polarity );
-            mConstraintLiteralMap[_constraint] = lit;
+            vector<Lit> lits;
+            lits.push_back( lit );
+            mConstraintLiteralMap.insert( make_pair( constraint, move( lits ) ) );;
             addConstraintToInform(constraint);
+            for( auto var = constraint->variables().begin(); var != constraint->variables().end(); ++var )
+            {
+                mVarOccurrences[*var].insert( constraint );
+            }
             return lit;
         }
     }
@@ -672,39 +696,64 @@ namespace smtrat
      */
     void SATModule::adaptPassedFormula()
     {
-        //TODO: Just run through those from trail of not yet checked decision levels
         for( signed posInAssigns : mChangedBooleans )
         {
-            if( mBooleanConstraintMap[posInAssigns].updateInfo < 0 )
+            Abstraction& abstr = mBooleanConstraintMap[posInAssigns];
+            if( abstr.updateInfo < 0 )
             {
-                assert( mBooleanConstraintMap[posInAssigns].formula != NULL );
-                if( mBooleanConstraintMap[posInAssigns].position != mpPassedFormula->end() )
+                assert( abstr.constraint != NULL );
+                if( abstr.position != mpPassedFormula->end() )
                 {
-                    removeSubformulaFromPassedFormula( mBooleanConstraintMap[posInAssigns].position );
-                    mBooleanConstraintMap[posInAssigns].position = mpPassedFormula->end();
+                    removeSubformulaFromPassedFormula( abstr.position );
+                    abstr.position = mpPassedFormula->end();
                     mChangedPassedFormula = true;
                 }
             }
-            else if( mBooleanConstraintMap[posInAssigns].updateInfo > 0 )
+            else if( abstr.updateInfo > 0 )
             {
-                if( mBooleanConstraintMap[posInAssigns].origin != NULL )
+                Formula* formToAdd = new Formula( abstr.constraint );
+                formToAdd->setDeducted( abstr.deducted );
+                if( abstr.origin == NULL )
                 {
-                    addSubformulaToPassedFormula( new Formula( mBooleanConstraintMap[posInAssigns].formula->pConstraint() ), mBooleanConstraintMap[posInAssigns].origin );
-                    assert( mpPassedFormula->last() != mpPassedFormula->end() );
-                    mBooleanConstraintMap[posInAssigns].position = mpPassedFormula->last();
+                    vec_set_const_pFormula emptyOrigins;
+                    addSubformulaToPassedFormula( formToAdd, move( emptyOrigins ) );
                 }
                 else
                 {
-                    vec_set_const_pFormula emptyOrigins;
-                    addSubformulaToPassedFormula( new Formula( mBooleanConstraintMap[posInAssigns].formula->pConstraint() ), move( emptyOrigins ) );
-                    assert( mpPassedFormula->last() != mpPassedFormula->end() );
-                    mBooleanConstraintMap[posInAssigns].position = mpPassedFormula->last();
+                    addSubformulaToPassedFormula( formToAdd, abstr.origin );
                 }
+                assert( mpPassedFormula->last() != mpPassedFormula->end() );
+                abstr.position = mpPassedFormula->last();
                 mChangedPassedFormula = true;
             }
-            mBooleanConstraintMap[posInAssigns].updateInfo = 0;
+            abstr.updateInfo = 0;
         }
         mChangedBooleans.clear();
+        if( mAllActivitiesChanged )
+        {
+            for( int i = 0; i < mBooleanConstraintMap.size(); ++i )
+            {
+                auto posInPasForm = mBooleanConstraintMap[i].position;
+                if( posInPasForm != mpPassedFormula->end() )
+                    (*posInPasForm)->setActivity(activity[i]);
+            }
+            mAllActivitiesChanged = false;
+        }
+        else
+        {
+            for( CRef cl_r : mChangedActivities )
+            {
+                Clause& cl = ca[cl_r];
+                for( int i = 0; i < cl.size(); ++i )
+                {
+                    int v = var( cl[i] );
+                    auto posInPasForm = mBooleanConstraintMap[v].position;
+                    if( posInPasForm != mpPassedFormula->end() )
+                        (*posInPasForm)->setActivity(activity[v]);
+                }
+            }
+        }
+        mChangedActivities.clear();
     }
 
     //=================================================================================================
@@ -719,23 +768,24 @@ namespace smtrat
      *
      * @return
      */
-    Var SATModule::newVar( bool sign, bool dvar, double _activity, Formula* _abstractedConstraint, const Formula* _origin )
+    Var SATModule::newVar( bool sign, bool dvar, double _activity, const Constraint* _abstractedConstraint, const Formula* _origin )
     {
         int v = nVars();
         watches.init( mkLit( v, false ) );
         watches.init( mkLit( v, true ) );
         assigns.push( l_Undef );
         mBooleanConstraintMap.push( Abstraction() );
-        mBooleanConstraintMap.last().position = mpPassedFormula->end();
-        mBooleanConstraintMap.last().formula = _abstractedConstraint;
-        mBooleanConstraintMap.last().origin = _origin;
-        mBooleanConstraintMap.last().updateInfo = 0;
+        Abstraction& abstr = mBooleanConstraintMap.last();
+        abstr.position = mpPassedFormula->end();
+        abstr.constraint = _abstractedConstraint;
+        abstr.origin = _origin;
+        abstr.updateInfo = 0;
+        abstr.deducted = false;
         vardata.push( mkVarData( CRef_Undef, 0 ) );
-        activity.push( _activity == INFINITY ? maxActivity() + 1 : _activity );
+        activity.push( _activity == numeric_limits<double>::infinity() ? maxActivity() + 1 : _activity );
         // activity.push( rnd_init_act ? drand( random_seed ) * 0.00001 : 0 );
         seen.push( 0 );
-//        polarity.push( sign );
-        polarity.push( false );
+        polarity.push( sign );
         decision.push();
         trail.capacity( v + 1 );
         setDecisionVar( v, dvar );
@@ -842,7 +892,6 @@ namespace smtrat
                 }
             }
             attachClause( cr );
-//            claBumpActivity( ca[cr] ); // TODO: why does this not work?
             // Clause is unit
             if( _type == DEDUCTED_CLAUSE )
             {
@@ -1124,7 +1173,6 @@ SetWatches:
         if( c.learnt() )
         {
             learnts_literals += (uint64_t)c.size();
-            claBumpActivity( c );
         }
         else
             clauses_literals += (uint64_t)c.size();
@@ -1173,6 +1221,8 @@ SetWatches:
             vardata[var( c[0] )].reason = CRef_Undef;
         c.mark( 1 );
         ca.free( cr );
+        mChangedActivities.clear();
+        mAllActivitiesChanged = true;
     }
 
     /**
@@ -1185,8 +1235,19 @@ SetWatches:
     bool SATModule::satisfied( const Clause& c ) const
     {
         for( int i = 0; i < c.size(); i++ )
+        {
             if( value( c[i] ) == l_True )
                 return true;
+            const Constraint* constraint = mBooleanConstraintMap[var(c[i])].constraint;
+            if( constraint != NULL )
+            {
+                unsigned constraintConsistent = constraint->isConsistent();
+                if( (!sign( c[i] ) && constraintConsistent == 1) || (sign( c[i] ) && constraintConsistent == 0) )
+                {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -1204,12 +1265,13 @@ SetWatches:
                 Var x       = var( trail[c] );
                 if( !sign( trail[c] ) )
                 {
-                    if( mBooleanConstraintMap[x].position != mpPassedFormula->end() )
+                    Abstraction& abstr = mBooleanConstraintMap[x];
+                    if( abstr.position != mpPassedFormula->end() )
                     {
-                        if( --mBooleanConstraintMap[x].updateInfo < 0 )
+                        if( --abstr.updateInfo < 0 )
                             mChangedBooleans.push_back( x );
                     }
-                    else if( mBooleanConstraintMap[x].formula != NULL ) mBooleanConstraintMap[x].updateInfo = 0;
+                    else if( abstr.constraint != NULL ) abstr.updateInfo = 0;
                 }
                 assigns[x]  = l_Undef;
                 if( (phase_saving > 1 || (phase_saving == 1)) && c > trail_lim.last() )
@@ -1293,16 +1355,6 @@ SetWatches:
 
             #ifdef DEBUG_SATMODULE
             cout << "### Sat iteration" << endl;
-                        cout << "######################################################################" << endl;
-                        cout << "###" << endl;
-                        printClauses( clauses, "Clauses", cout, "### " );
-                        cout << "###" << endl;
-                        printClauses( learnts, "Learnts", cout, "### " );
-                        cout << "###" << endl;
-                        printCurrentAssignment( cout, "### " );
-                        cout << "### " << endl;
-                        printDecisions( cout, "### " );
-                        cout << "### " << endl;
             #endif
 
             #ifdef SAT_TRY_FULL_LAZY_CALLS_FIRST
@@ -1329,6 +1381,16 @@ SetWatches:
                     #ifdef DEBUG_SATMODULE
                     if( numberOfTheoryCalls >= debugFromCall-1 )
                     {
+                        cout << "######################################################################" << endl;
+                        cout << "###" << endl;
+                        printClauses( clauses, "Clauses", cout, "### " );
+                        cout << "###" << endl;
+                        printClauses( learnts, "Learnts", cout, "### " );
+                        cout << "###" << endl;
+                        printCurrentAssignment( cout, "### " );
+                        cout << "### " << endl;
+                        printDecisions( cout, "### " );
+                        cout << "### " << endl;
                         cout << "### Check the constraints: ";
                     }
                     ++numberOfTheoryCalls;
@@ -1537,6 +1599,7 @@ SetWatches:
                     else
                     {
                         cout << "### SAT conflict!" << endl;
+                        printClause( confl );
                     }
                 }
                 #endif
@@ -1563,6 +1626,11 @@ SetWatches:
                     if( value( learnt_clause[0] ) != l_Undef )
                         Module::storeAssumptionsToCheck( *mpManager );
                     #endif
+//                    if( value( learnt_clause[0] ) != l_Undef )
+//                    {
+//                        std::cout << "(error: " << __func__ << " " << __LINE__ << ")" << std::endl; 
+//                        exit( 7771 );
+//                    }
                     assert( value( learnt_clause[0] ) == l_Undef );
                     uncheckedEnqueue( learnt_clause[0] );
                 }
@@ -1572,6 +1640,7 @@ SetWatches:
                     CRef cr = ca.alloc( learnt_clause, CONFLICT_CLAUSE );
                     learnts.push( cr );
                     attachClause( cr );
+                    mChangedActivities.push_back( cr );
                     claBumpActivity( ca[cr] );
                     #ifdef SMTRAT_DEVOPTION_Validation
                     // this is often an indication that something is wrong with our theory, so we do store our assumptions.
@@ -1763,7 +1832,10 @@ SetWatches:
             Clause& c = ca[confl];
 
             if( c.learnt() )
+            {  
+                mChangedActivities.push_back( confl );
                 claBumpActivity( c );
+            }
 
             for( int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++ )
             {
@@ -1910,9 +1982,10 @@ SetWatches:
     {
         assert( value( p ) == l_Undef );
         assigns[var( p )] = lbool( !sign( p ) );
-        if( !sign( p ) && mBooleanConstraintMap[var( p )].formula != NULL ) 
+        Abstraction& abstr = mBooleanConstraintMap[var( p )];
+        if( !sign( p ) && abstr.constraint != NULL && abstr.constraint->isConsistent() != 1 ) 
         {
-            if( ++mBooleanConstraintMap[var( p )].updateInfo > 0 )
+            if( ++abstr.updateInfo > 0 )
                 mChangedBooleans.push_back( var( p ) );
         }
         vardata[var( p )] = mkVarData( from, decisionLevel() );
@@ -1920,7 +1993,7 @@ SetWatches:
         #ifdef SAT_MODULE_THEORY_PROPAGATION
         // Check whether the lit is a deduction via a learned clause.
         #ifdef SAT_MODULE_DETECT_DEDUCTIONS
-        if( from != CRef_Undef && ca[from].type() == DEDUCTED_CLAUSE && !sign( p ) && mBooleanConstraintMap[var( p )].formula != NULL  )
+        if( from != CRef_Undef && ca[from].type() == DEDUCTED_CLAUSE && !sign( p ) && abstr.constraint != NULL  )
         {
             Clause& c           = ca[from];
             bool    isDeduction = true;
@@ -1934,7 +2007,7 @@ SetWatches:
             }
             if( isDeduction )
             {
-                mBooleanConstraintMap[var( p )].formula->setDeducted( true );
+                abstr.deducted = true;
                 mChangedPassedFormula = true;
             }
         }
@@ -2113,9 +2186,9 @@ NextClause:
         {
             if( assigns[v] == l_Undef )
             {
-                if( mBooleanConstraintMap[v].formula != NULL )
+                if( mBooleanConstraintMap[v].constraint != NULL )
                 {
-                    switch( mBooleanConstraintMap[v].formula->constraint().satisfiedBy( _rationalAssignment ) )
+                    switch( mBooleanConstraintMap[v].constraint->satisfiedBy( _rationalAssignment ) )
                     {
                         case 0:
                             ass[v] = l_False;
@@ -2206,22 +2279,289 @@ NextClause:
     {
         assert( decisionLevel() == 0 );
 
-        if( !ok || propagate() != CRef_Undef )
-            return ok = false;
+        while( mTrailStart < trail.size() )
+        {
+            int trailStartTmp = mTrailStart;
+            mTrailStart = trail.size();
+            if( !ok || propagate() != CRef_Undef )
+                return ok = false;
 
-        if( nAssigns() == simpDB_assigns || (simpDB_props > 0) )
-            return true;
+            if( nAssigns() == simpDB_assigns || (simpDB_props > 0) )
+                return true;
 
-        // Remove satisfied clauses:
-        removeSatisfied( learnts );
-        if( remove_satisfied )    // Can be turned off.
-            removeSatisfied( clauses );
-        checkGarbage();
-        rebuildOrderHeap();
+            // Remove satisfied clauses:
+            removeSatisfied( learnts );
+            if( remove_satisfied )    // Can be turned off.
+                removeSatisfied( clauses );
+            checkGarbage();
+            rebuildOrderHeap();
 
-        simpDB_assigns = nAssigns();
-        simpDB_props   = (int64_t)(clauses_literals + learnts_literals);    // (shouldn't depend on stats really, but it will do for now)
+            simpDB_assigns = nAssigns();
+            simpDB_props   = (int64_t)(clauses_literals + learnts_literals);    // (shouldn't depend on stats really, but it will do for now)
 
+            if( !applyValidSubstitutions( trailStartTmp ) )
+                return ok = false;
+        }
+        return true;
+    }
+    
+//#define SAT_APPLY_VALID_SUBS_DEBUG
+    
+    /**
+     * 
+     */
+    bool SATModule::applyValidSubstitutions( int _trailStart )
+    {
+        assert( decisionLevel() == 0 );
+        #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+        cout << "applyValidSubstitutions" << endl;
+        cout << "Variable Occurrences: " << std::endl;
+        for( auto varOccPair = mVarOccurrences.begin(); varOccPair != mVarOccurrences.end(); ++varOccPair )
+        {
+            cout << varOccPair->first << " in {";
+            for( const Constraint* cons : varOccPair->second )
+                cout << "  " << *cons;
+            cout << "  }" << endl;
+        }
+        printConstraintLiteralMap();
+        printBooleanConstraintMap();
+        printBooleanVarMap();
+        printDecisions();
+        #endif
+        for( int i = _trailStart; i < trail.size(); ++i )
+        {
+            const Constraint* pconstr = mBooleanConstraintMap[var(trail[i])].constraint;
+            if( pconstr != NULL )
+            {
+                const Constraint& constr = *pconstr;
+                switch( constr.isConsistent() )
+                {
+                    case 0:
+                    {
+                        if( assigns[var(trail[i])] == l_True )
+                        {
+                            ok = false;
+                            return false;
+                        }
+                        #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                        else
+                        {
+                            cout << "really?" << endl;
+                        }
+                        #endif
+                        break;
+                    }
+                    case 1:
+                    {
+//                        if( assigns[var(trail[i])] == l_False )
+//                        {
+//                            ok = false;
+//                            return false;
+//                        }
+//                        #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+//                        else
+//                        {
+//                            cout << "really!?" << endl;
+//                        }
+//                        #endif
+                        break;
+                    }
+                    case 2:
+                    {
+                        // If there is an equation being assigned to true in decision level 0
+                        // with a linear variable, replace that variable everywhere by the remaining
+                        // of the equation.
+                        if( assigns[var(trail[i])] == l_True )
+                        {
+                            if( constr.relation() == Relation::EQ )
+                            {
+                                #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                                cout << "literal: " << (sign( trail[i] ) ? "-" : "") << var( trail[i] ) << endl;
+                                cout << "with constraint: " << constr << endl;
+                                #endif
+                                assert( !constr.variables().empty() );
+                                auto elimVar = constr.variables().begin();
+                                auto elimVarOccs = mVarOccurrences.find( *elimVar );
+    //                            if( elimVarOccs == mVarOccurrences.end() )
+    //                                exit( 7773 );
+                                assert( elimVarOccs != mVarOccurrences.end() );
+                                auto tmpvar = elimVar;
+                                ++tmpvar;
+                                while( tmpvar != constr.variables().end() )
+                                {
+                                    auto varOccs = mVarOccurrences.find( *tmpvar );
+                                    assert( varOccs != mVarOccurrences.end() );
+                                    assert( constr.maxDegree( *elimVar ) > 0 );
+                                    assert( constr.maxDegree( *tmpvar ) > 0 );
+                                    if( constr.maxDegree( *elimVar ) > 1 || (constr.maxDegree( *tmpvar ) == 1 && varOccs->second.size() < elimVarOccs->second.size() ) )
+                                    {
+                                        elimVar = tmpvar;
+                                        elimVarOccs = varOccs;
+                                    }
+                                    ++tmpvar;
+                                }
+                                if( constr.maxDegree( *elimVar ) == 1 )
+                                {
+                                    Polynomial subBy = -constr.coefficient( *elimVar, 0 ) * (ONE_RATIONAL/constr.coefficient( *elimVar, 1 ).constantPart());
+                                    assert( mVarReplacements.find(*elimVar ) == mVarReplacements.end() );
+                                    mVarReplacements[*elimVar] = subBy;
+                                    #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                                    cout << "replace " << *elimVar << " by " << subBy << std::endl;
+                                    #endif
+                                    for( const Constraint* cons : elimVarOccs->second )
+                                    {
+    //                                    if( cons == pcons ) continue;
+                                        #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                                        cout << "  replace in " << *cons << std::endl;
+                                        #endif
+                                        auto consLitPair = mConstraintLiteralMap.find( cons );
+                                        assert( consLitPair != mConstraintLiteralMap.end() );
+                                        const Constraint* subResult = Formula::newConstraint( cons->lhs().substitute( *elimVar, subBy ), cons->relation() );
+                                        #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                                        cout << "    results in " << *subResult << endl;
+                                        #endif
+    //                                    cout << "add the unary clause ";
+                                        if( subResult->isConsistent() == 0 )
+                                        {
+                                            if( assigns[ var( consLitPair->second.front() ) ] == l_Undef )
+                                            {
+                                                vec<Lit> clauseLits;
+                                                clauseLits.push( mkLit( var( consLitPair->second.front() ), !sign( consLitPair->second.front() ) ) );
+                                                addClause( clauseLits, DEDUCTED_CLAUSE );
+                                            }
+                                            else if( assigns[ var( consLitPair->second.front() ) ] == l_True )
+                                            {
+                                                ok = false;
+                                                return false;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            auto iter = mConstraintLiteralMap.find( subResult );
+                                            if( iter == mConstraintLiteralMap.end() )
+                                            {
+                                                #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                                                cout << __LINE__ << endl;
+                                                #endif
+                                                mConstraintLiteralMap[subResult] = consLitPair->second;
+
+                                                addConstraintToInform(subResult);
+                                                for( auto var = subResult->variables().begin(); var != subResult->variables().end(); ++var )
+                                                {
+                                                    mVarOccurrences[*var].insert( subResult );
+                                                }
+                                            }
+                                            else
+                                            {   
+                                                #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                                                cout << __LINE__ << endl;
+                                                #endif
+                                                // add clauses to state that the two literals are equivalent
+                                                vec<Lit> clauseLitsA;
+                                                clauseLitsA.push( mkLit( var( consLitPair->second.front() ), !sign( consLitPair->second.front() ) ) );
+                                                clauseLitsA.push( mkLit( var( iter->second.front() ), sign( iter->second.front() ) ) );
+                                                addClause( clauseLitsA, DEDUCTED_CLAUSE );
+                                                vec<Lit> clauseLitsB;
+                                                clauseLitsB.push( mkLit( var( consLitPair->second.front() ), sign( consLitPair->second.front() ) ) );
+                                                clauseLitsB.push( mkLit( var( iter->second.front() ), !sign( iter->second.front() ) ) );
+                                                addClause( clauseLitsB, DEDUCTED_CLAUSE );
+                                                iter->second.insert( iter->second.end(), consLitPair->second.begin(), consLitPair->second.end() );
+                                            }
+                                        }
+                                        for( auto litIter = consLitPair->second.begin(); litIter != consLitPair->second.end(); ++litIter )
+                                        {
+                                            #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                                            cout << "consider the literal: " << (sign( *litIter ) ? "-" : "") << var( *litIter ) << endl;
+                                            #endif
+                                            Abstraction& abstr = mBooleanConstraintMap[var( *litIter )];
+                                            if( abstr.position != mpPassedFormula->end() )
+                                            {
+                                                #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                                                cout << __LINE__ << endl;
+                                                #endif
+                                                removeSubformulaFromPassedFormula( abstr.position );
+                                                if( subResult->isConsistent() == 2 )
+                                                {
+                                                    abstr.constraint = subResult;
+                                                    if( abstr.origin != NULL )
+                                                    {
+                                                        #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                                                        cout << __LINE__ << endl;
+                                                        #endif
+                                                        addSubformulaToPassedFormula( new Formula( subResult ), abstr.origin );
+                                                    }
+                                                    else
+                                                    {
+                                                        #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                                                        cout << __LINE__ << endl;
+                                                        #endif
+                                                        vec_set_const_pFormula emptyOrigins;
+                                                        addSubformulaToPassedFormula( new Formula( subResult ), move( emptyOrigins ) );
+                                                    }
+                                                    assert( mpPassedFormula->last() != mpPassedFormula->end() );
+                                                    abstr.position = mpPassedFormula->last();
+                                                }
+                                                else
+                                                {
+                                                    abstr.constraint = NULL;
+                                                    abstr.position = mpPassedFormula->end();
+                                                }
+                                                abstr.updateInfo = 0;
+                                            }
+                                            else
+                                            {
+                                                #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                                                cout << __LINE__ << endl;
+                                                #endif
+                                                abstr.constraint = subResult;
+                                                if( subResult->isConsistent() != 2 )
+                                                {
+                                                    abstr.updateInfo = 0;
+                                                }
+                                            }
+                                        }
+    //                                    mConstraintLiteralMap.erase( consLitPair );
+                                    }
+                                    for( auto varOccPair = mVarOccurrences.begin(); varOccPair != mVarOccurrences.end(); ++varOccPair )
+                                    {
+                                        if( varOccPair->first != *elimVar )
+                                        {
+                                            for( auto cons = elimVarOccs->second.begin(); cons != elimVarOccs->second.end(); ++cons )
+                                                varOccPair->second.erase( *cons );
+                                        }
+                                    }
+                                    mVarOccurrences.erase( elimVarOccs );
+                                    #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                                    cout << "Variable Occurrences: " << std::endl;
+                                    for( auto varOccPair = mVarOccurrences.begin(); varOccPair != mVarOccurrences.end(); ++varOccPair )
+                                    {
+                                        cout << varOccPair->first << " in {";
+                                        for( const Constraint* cons : varOccPair->second )
+                                            cout << "  " << *cons;
+                                        cout << "  }" << endl;
+                                    }
+                                    printConstraintLiteralMap();
+                                    printBooleanConstraintMap();
+                                    printBooleanVarMap();
+                                    printDecisions();
+                                    #endif
+                                }
+                            }
+//                            else if( constraint.relation() == Relation::LEQ )
+//                            {
+//                                
+//                            }
+                        }
+                        break;
+                    }
+                    default:
+                    {
+                        assert( false );
+                        break;
+                    }
+                }
+            }
+        }
         return true;
     }
 
@@ -2460,14 +2800,19 @@ NextClause:
     void SATModule::printConstraintLiteralMap( ostream& _out, const string _init ) const
     {
         _out << _init << " ConstraintLiteralMap" << endl;
-        for( ConstraintLiteralMap::const_iterator clPair = mConstraintLiteralMap.begin(); clPair != mConstraintLiteralMap.end(); ++clPair )
+        for( ConstraintLiteralsMap::const_iterator clPair = mConstraintLiteralMap.begin(); clPair != mConstraintLiteralMap.end(); ++clPair )
         {
-            _out << _init << "    " << clPair->first->toString() << "  ->  ";
-            if( sign( clPair->second ) )
+            _out << _init << "    " << clPair->first->toString() << "  ->  [";
+            for( auto litIter = clPair->second.begin(); litIter != clPair->second.end(); ++litIter )
             {
-                _out << "-";
+                _out << " ";
+                if( sign( *litIter ) )
+                {
+                    _out << "-";
+                }
+                _out << var( *litIter );
             }
-            _out << var( clPair->second ) << endl;
+            _out << " ]" << endl;
         }
     }
 
@@ -2497,9 +2842,9 @@ NextClause:
         _out << _init << " BooleanConstraintMap" << endl;
         for( int k = 0; k < mBooleanConstraintMap.size(); ++k )
         {
-            if( mBooleanConstraintMap[k].formula != NULL )
+            if( mBooleanConstraintMap[k].constraint != NULL )
             {
-                _out << _init << "   " << k << "  ->  " << *mBooleanConstraintMap[k].formula->pConstraint();
+                _out << _init << "   " << k << "  ->  " << *mBooleanConstraintMap[k].constraint;
                 _out << "  (" << setw( 7 ) << activity[k] << ") [" << mBooleanConstraintMap[k].updateInfo << "]" << endl;
             }
         }
@@ -2692,11 +3037,11 @@ NextClause:
             {
                 _out << "l_True";
                 // if it is not a Boolean variable
-                if( mBooleanConstraintMap[pos].formula != NULL )
+                if( mBooleanConstraintMap[pos].constraint != NULL )
                 {
                     if( assigns[pos] == l_True )
                     {
-                        cout << "   ( " << *mBooleanConstraintMap[pos].formula << " )";
+                        cout << "   ( " << *mBooleanConstraintMap[pos].constraint << " )";
                     }
                 }
                 cout << endl;
@@ -2738,11 +3083,11 @@ NextClause:
             signed tmp = (sign( trail[pos] ) ? -1 : 1) * var( trail[pos] );
             _out << setw( 6 ) << tmp << " @ " << level;
             // if it is not a Boolean variable
-            if( mBooleanConstraintMap[var(trail[pos])].formula != NULL )
+            if( mBooleanConstraintMap[var(trail[pos])].constraint != NULL )
             {
                 if( assigns[var(trail[pos])] == l_True )
                 {
-                    cout << "   ( " << *mBooleanConstraintMap[var(trail[pos])].formula << " )";
+                    cout << "   ( " << *mBooleanConstraintMap[var(trail[pos])].constraint << " )";
                     cout << " [" << mBooleanConstraintMap[var(trail[pos])].updateInfo << "]";
                 }
             }

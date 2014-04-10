@@ -35,14 +35,14 @@
 #include <deque>
 #include "Variable.hpp"
 
+//#define LRA_PRINT_STATS
+
 #define LRA_USE_PIVOTING_STRATEGY
 #define LRA_REFINEMENT
-#define LRA_LOCAL_CONFLICT_DIRECTED
-//#define LRA_PRINT_STATS
-//#define LRA_USE_OCCURENCE_STRATEGY
-#ifndef LRA_USE_OCCURENCE_STRATEGY
+//#define LRA_EQUATION_FIRST
+//#define LRA_LOCAL_CONFLICT_DIRECTED
+//#define LRA_CONFLICT_ACTIVITY_STRATEGY
 #define LRA_USE_THETA_STRATEGY
-#endif
 #ifdef LRA_REFINEMENT
 //#define LRA_INTRODUCE_NEW_CONSTRAINTS
 #endif
@@ -348,18 +348,19 @@ namespace smtrat
                 void activateBound( const Bound<T1, T2>* );
                 void deactivateBound( const Bound<T1, T2>* );
                 std::pair<EntryID, bool> nextPivotingElement();
-                std::pair<EntryID, bool> isSuitable( const Variable<T1, T2>&, Value<T1>& ) const;
+                std::pair<EntryID, bool> isSuitable( const Variable<T1, T2>&, bool ) const;
                 bool betterEntry( EntryID, EntryID ) const;
                 std::vector< const Bound<T1, T2>* > getConflict( EntryID ) const;
                 std::vector< std::set< const Bound<T1, T2>* > > getConflictsFrom( EntryID ) const;
                 void updateBasicAssignments( size_t, const Value<T1>& );
                 void pivot( EntryID );
                 void update( bool downwards, EntryID, std::vector<Iterator>&, std::vector<Iterator>& );
-                void insert( const T2&, Iterator&, bool, Iterator&, bool );
+                void addToEntry( const T2&, Iterator&, bool, Iterator&, bool );
                 #ifdef LRA_REFINEMENT
                 void rowRefinement( Variable<T1, T2>* );
                 #endif
-                size_t unboundedVariables( const Variable<T1,T2>& ) const;
+                size_t boundedVariables( const Variable<T1,T2>&, size_t = 0 ) const;
+                size_t unboundedVariables( const Variable<T1,T2>&, size_t = 0 ) const;
                 size_t checkCorrectness() const;
                 bool rowCorrect( size_t _rowNumber ) const;
                 #ifdef LRA_CUTS_FROM_PROOFS
@@ -384,8 +385,9 @@ namespace smtrat
                 void printVariables( bool = true, std::ostream& = std::cout, const std::string = "" ) const;
                 #ifdef LRA_REFINEMENT
                 void printLearnedBounds( const std::string = "", std::ostream& = std::cout ) const;
+                void printLearnedBound( const Variable<T1,T2>&, const LearnedBound&, const std::string = "", std::ostream& = std::cout ) const;
                 #endif
-                void print( std::ostream& = std::cout, int = 28, const std::string = "" ) const;
+                void print( EntryID = LAST_ENTRY_ID, std::ostream& = std::cout, const std::string = "", bool = true ) const;
 
         };
 
@@ -422,18 +424,6 @@ namespace smtrat
             std::cout << "#Tableus entries: " << mpEntries->size()-1 << std::endl;
             std::cout << "Tableau coverage: " << (double)(mpEntries->size()-1)/(double)(mRows.size()*mColumns.size())*100 << "%" << std::endl;
             #endif
-            while( !mRows.empty() )
-            {
-                Variable<T1,T2>* varToRemove = mRows.back();
-                mRows.pop_back();
-                delete varToRemove;
-            }
-            while( !mColumns.empty() )
-            {
-                Variable<T1,T2>* varToRemove = mColumns.back();
-                mColumns.pop_back();
-                delete varToRemove;
-            }
             delete mpEntries;
             delete mpTheta;
         };
@@ -521,7 +511,6 @@ namespace smtrat
         template<typename T1, typename T2>
         Variable<T1, T2>* Tableau<T1,T2>::newBasicVariable( const smtrat::Polynomial* _poly, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars )
         {
-//            std::cout << "newBasicVariable" << std::endl;
             mNonActiveBasics.emplace_front();
             Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), _poly, mDefaultBoundPosition );
             for( auto term = _poly->begin(); term != _poly->end(); ++term )
@@ -541,10 +530,6 @@ namespace smtrat
                 {
                     nonBasic = nonBasicIter->second;
                 }
-//                std::cout << "non basic variable is:" << std::endl;
-//                nonBasic->print();
-//                std::cout << std::endl;
-//                std::cout << "with coefficient: " << T2( carl::getNum( (*term)->coeff() ) ) << std::endl;
                 mNonActiveBasics.front().emplace_back( nonBasic, T2( carl::getNum( (*term)->coeff() ) ) );
             }
             return var;
@@ -561,12 +546,6 @@ namespace smtrat
             assert( !_var->isOriginal() );
             assert( !_var->isActive() );
             compressRows();
-//            std::cout << "activate " << std::endl;
-//            _var->print();
-//            std::cout << std::endl;
-//            std::cout << "with factor " << _var->factor() << std::endl;
-//            printHeap();
-//            print();
             std::map<size_t,T2> coeffs;
             for( auto lravarCoeffPair = _var->positionInNonActives()->begin(); lravarCoeffPair != _var->positionInNonActives()->end(); ++lravarCoeffPair )
             {
@@ -575,9 +554,6 @@ namespace smtrat
                 {
                     if( !lravar->isActive() && !lravar->isOriginal() )
                     {
-//                        std::cout << "non-active basic variable: " << std::endl;
-//                        lravar->print();
-//                        std::cout << std::endl;
                         #ifdef LRA_NO_DIVISION
                         T2 l = carl::lcm( lravarCoeffPair->second, lravar->factor() );
                         assert( l > 0 );
@@ -585,42 +561,25 @@ namespace smtrat
                             l *= T2( -1 );
                         T2 ca = carl::div( l, lravar->factor() );
                         T2 cb = carl::div( l, lravarCoeffPair->second );
-//                        std::cout << "lravar->factor() = " << lravar->factor() << std::endl;
-//                        std::cout << "lravarCoeffPair->second = " << lravarCoeffPair->second << std::endl;
-//                        std::cout << "ca = " << ca << std::endl;
-//                        std::cout << "cb = " << cb << std::endl;
                         _var->rFactor() *= cb;
                         for( auto iter = coeffs.begin(); iter != coeffs.end(); ++iter )
                         {
-//                            std::cout << "update at row position " << iter->first << " being " << iter->second << " with " << cb << std::endl;
                             iter->second *= cb;
-//                            std::cout << "results in " << iter->second << std::endl;
                         }
                         auto iterB = lravarCoeffPair;
                         ++iterB;
                         for( ; iterB != _var->positionInNonActives()->end(); ++iterB )
                         {
-//                            std::cout << "update coefficient of ";
-//                            iterB->first->print();
-//                            std::cout << " having coefficient " << iterB->second << " with " << cb << std::endl;
                             iterB->second *= cb;
                         }
                         #endif
                         for( auto lravarCoeffPairB = lravar->positionInNonActives()->begin(); lravarCoeffPairB != lravar->positionInNonActives()->end(); ++lravarCoeffPairB )
                         {
-//                            std::cout << "take variable under consideration: " << std::endl;
-//                            lravarCoeffPairB->first->print();
-//                            std::cout << std::endl;
-//                            
-//                            std::cout << "with coefficient: " << ca*lravarCoeffPairB->second << std::endl;
                             _var->positionInNonActives()->emplace_back( lravarCoeffPairB->first, ca*lravarCoeffPairB->second );
                         }
                     }
                     else
                     {
-//                        std::cout << "active basic variable: " << std::endl;
-//                        lravar->print();
-//                        std::cout << std::endl;
                         #ifdef LRA_NO_DIVISION
                         T2 l = carl::lcm( lravarCoeffPair->second, lravar->factor() );
                         assert( l > 0 );
@@ -628,34 +587,21 @@ namespace smtrat
                             l *= T2( -1 );
                         T2 ca = carl::div( l, lravar->factor() );
                         T2 cb = carl::div( l, lravarCoeffPair->second );
-//                        std::cout << "lravar->factor() = " << lravar->factor() << std::endl;
-//                        std::cout << "lravarCoeffPair->second = " << lravarCoeffPair->second << std::endl;
-//                        std::cout << "ca = " << ca << std::endl;
-//                        std::cout << "cb = " << cb << std::endl;
                         _var->rFactor() *= cb;
                         for( auto iter = coeffs.begin(); iter != coeffs.end(); ++iter )
                         {
-//                            std::cout << "update at row position " << iter->first << " being " << iter->second << " with " << cb << std::endl;
                             iter->second *= cb;
-//                            std::cout << "results in " << iter->second << std::endl;
                         }
                         auto iterB = lravarCoeffPair;
                         ++iterB;
                         for( ; iterB != _var->positionInNonActives()->end(); ++iterB )
                         {
-//                            std::cout << "update coefficient of ";
-//                            iterB->first->print();
-//                            std::cout << " having coefficient " << iterB->second << " with " << cb << std::endl;
                             iterB->second *= cb;
                         }
                         #endif
                         Iterator rowIter = Iterator( lravar->startEntry(), mpEntries );
                         while( true )
                         {
-//                            std::cout << "add coefficient: " << ca*(*rowIter).content() << std::endl;
-//                            std::cout << "to variable: " << std::endl;
-//                            (*rowIter).columnVar()->print();
-//                            std::cout << std::endl;
                             coeffs[(*rowIter).columnVar()->position()] += ca*(*rowIter).content();
                             if( rowIter.hEnd( false ) ) break;
                             else rowIter.hMove( false );
@@ -664,10 +610,6 @@ namespace smtrat
                 }
                 else
                 {
-//                    std::cout << "non-basic variable: " << std::endl;
-//                    lravar->print();
-//                    std::cout << std::endl;
-//                    std::cout << "add coefficient: " << lravarCoeffPair->second << std::endl;
                     coeffs[lravar->position()] += lravarCoeffPair->second;
                 }
             }
@@ -734,13 +676,6 @@ namespace smtrat
                 _var->rAssignment() += mColumns[coeff->first]->assignment() * coeff->second;
             }
             _var->rAssignment() /= _var->factor();
-//                printHeap();
-//                print();
-//                printVariables();
-//            if( checkCorrectness() != mRows.size() )
-//            {
-//                exit( 777 );
-//            }
             assert( checkCorrectness() == mRows.size() );
         }
         
@@ -753,11 +688,6 @@ namespace smtrat
         {
             assert( _var->isBasic() );
             assert( !_var->isOriginal() );
-//            std::cout << "deactivate " << std::endl;
-//            _var->print();
-//            printHeap();
-//            print();
-//            std::cout << std::endl;
             #ifdef LRA_LOCAL_CONFLICT_DIRECTED
             auto crIter = mConflictingRows.begin();
             for( ; crIter != mConflictingRows.end(); ++crIter )
@@ -799,8 +729,6 @@ namespace smtrat
             _var->rPosition() = 0;
             _var->setPositionInNonActives( mNonActiveBasics.begin() );
             mRowsCompressed = false;
-//            printHeap();
-//            print();
         }
         
         /**
@@ -811,8 +739,6 @@ namespace smtrat
         void Tableau<T1,T2>::compressRows()
         {
             if( mRowsCompressed ) return;
-//            std::cout << __func__ << std::endl;
-//            print();
             std::deque<size_t> emptyPositions;
             size_t curPos = 0;
             while( curPos < mRows.size() )
@@ -827,14 +753,12 @@ namespace smtrat
                     emptyPositions.pop_front();
                     mRows[emptyPos] = mRows[curPos];
                     mRows[emptyPos]->rPosition() = emptyPos;
-                    //mRows[curPos] = NULL;
                     emptyPositions.push_back( curPos );
                 }
                 ++curPos;
             }
             mRows.resize( mRows.size() - emptyPositions.size() );
             mRowsCompressed = true;
-//            print();
         }
 
         /**
@@ -848,79 +772,127 @@ namespace smtrat
             //  Dynamic strategy for a fixed number of steps
             if( mPivotingSteps < mMaxPivotsWithoutBlandsRule )
             {
-                #ifdef LRA_USE_OCCURENCE_STRATEGY
-                size_t smallestRowSize = mWidth;
-                assert( mRows.size() >= mUnusedRows.size() );
-                size_t smallestColumnSize = mRows.size()-mUnusedRows.size();
-                #endif
-                EntryID beginOfBestRow = LAST_ENTRY_ID;
+#ifdef LRA_LOCAL_CONFLICT_DIRECTED
+FindPivot:
+#endif
+                EntryID bestTableauEntry = LAST_ENTRY_ID;
                 EntryID beginOfFirstConflictRow = LAST_ENTRY_ID;
-                *mpTheta = Value<T1>( 0 );
-                Value<T1> conflictTheta =  Value<T1>( 0 );
+                Value<T1> bestDiff = Value<T1>( 0 );
+                Value<T1> bestThetaB = Value<T1>( 0 );
                 #ifdef LRA_LOCAL_CONFLICT_DIRECTED
-                std::vector<Variable<T1,T2>*>& rowsToConsider = mConflictingRows.empty() ? mRows : mConflictingRows;
-                Variable<T1,T2>* bestVar = NULL;
+                bool initialSearch = mConflictingRows.empty();
+                std::vector<Variable<T1,T2>*>& rowsToConsider = initialSearch ? mRows : mConflictingRows;
                 #else
                 std::vector<Variable<T1,T2>*>& rowsToConsider = mRows;
                 #endif 
-                for( Variable<T1,T2>* basicVar : rowsToConsider )
+                typename std::vector<Variable<T1,T2>*>::iterator bestVar = rowsToConsider.end();
+                for( auto basicVar = rowsToConsider.begin(); basicVar != rowsToConsider.end(); )
                 {
-                    assert( basicVar != NULL );
-                    Value<T1> theta = Value<T1>();
-                    // TODO: Check first whether it is conflicting its bounds and set theta accordingly for heuristics
-                    std::pair<EntryID,bool> result = isSuitable( *basicVar, theta );
-                    if( !result.second )
+                    assert( *basicVar != NULL );
+                    Variable<T1,T2>& bVar = **basicVar;
+                    Value<T1> diff = Value<T1>( 0 );
+                    Value<T1> thetaB = Value<T1>( 0 );
+                    bool upperBoundViolated = false;
+                    bool lowerBoundViolated = false;
+                    if( bVar.supremum() < bVar.assignment() )
                     {
-                        // Found a conflicting row.
-                        if( beginOfFirstConflictRow == LAST_ENTRY_ID )
+                        thetaB = bVar.supremum().limit() - bVar.assignment();
+                        diff = thetaB * T2(-1);
+                        upperBoundViolated = true;
+                    }
+                    else if( bVar.infimum() > bVar.assignment() )
+                    {
+                        thetaB = bVar.infimum().limit() - bVar.assignment();
+                        diff = thetaB;
+                        lowerBoundViolated = true;
+                    }
+                    else
+                    {
+                        #ifdef LRA_LOCAL_CONFLICT_DIRECTED
+                        if( !initialSearch )
                         {
-                            conflictTheta = theta;
-                            beginOfFirstConflictRow = result.first;
-                            #ifdef LRA_LOCAL_CONFLICT_DIRECTED
-                            bestVar = basicVar;
-                            #endif
-                            break;
+                            bool resetBestVarToEnd = bestVar == mConflictingRows.end();
+                            basicVar = mConflictingRows.erase( basicVar );
+                            if( resetBestVarToEnd ) bestVar = mConflictingRows.end();
+                            if( mConflictingRows.empty() )
+                            {
+                                goto FindPivot;
+                            }
+                        }
+                        else
+                        {
+                            ++basicVar;
+                        }
+                        #else
+                        ++basicVar;
+                        #endif
+                        continue;
+                    }
+                    #ifdef LRA_USE_THETA_STRATEGY
+                    if( diff <= bestDiff )
+                    {
+                        ++basicVar;
+                        continue;
+                    }
+                    #endif
+                    if( upperBoundViolated || lowerBoundViolated )
+                    {
+                        std::pair<EntryID,bool> result = isSuitable( bVar, upperBoundViolated );
+                        if( !result.second )
+                        {
+                            bestTableauEntry = LAST_ENTRY_ID;
+                            // Found a conflicting row.
+                            if( beginOfFirstConflictRow == LAST_ENTRY_ID )
+                            {
+                                beginOfFirstConflictRow = result.first;
+                                bestVar = basicVar;
+                                break;
+                            }
+                        }
+                        else if( result.first != LAST_ENTRY_ID )
+                        {
+                            if( bestVar == rowsToConsider.end() )
+                            {
+                                bestTableauEntry = result.first;
+                                bestVar = basicVar;
+                                bestDiff = diff;
+                                bestThetaB = thetaB;
+                            }
+                            else
+                            {
+                                assert( result.first != LAST_ENTRY_ID );
+                                assert( bestVar != rowsToConsider.end() );
+                                assert( bestTableauEntry != LAST_ENTRY_ID );
+                                #ifdef LRA_EQUATION_FIRST
+                                if( !(*bestVar)->involvesEquation() && bVar.involvesEquation() )
+                                {
+                                    bestTableauEntry = result.first;
+                                    bestVar = basicVar;
+                                }
+                                else if( (*bestVar)->involvesEquation() || !bVar.involvesEquation() )
+                                {
+                                #endif
+                                    bestTableauEntry = result.first;
+                                    bestThetaB = thetaB;
+                                    #ifdef LRA_USE_THETA_STRATEGY
+                                    bestDiff = diff;
+                                    #endif
+                                    #ifdef LRA_EQUATION_FIRST
+                                    #ifdef LRA_LOCAL_CONFLICT_DIRECTED
+                                    if( initialSearch && (*bestVar)->involvesEquation() )
+                                        mConflictingRows.push_back( *bestVar );
+                                    #endif
+                                    #endif
+                                    bestVar = basicVar;
+                                #ifdef LRA_EQUATION_FIRST
+                                }
+                                #endif
+                            }
                         }
                     }
-                    else if( result.first != LAST_ENTRY_ID )
-                    {
-                        #ifdef LRA_USE_THETA_STRATEGY
-                        if( beginOfBestRow == LAST_ENTRY_ID || carl::abs( theta.mainPart() ) > carl::abs( mpTheta->mainPart() ) )
-                        {
-                            beginOfBestRow = result.first;
-                            *mpTheta = theta;
-                            #ifdef LRA_LOCAL_CONFLICT_DIRECTED
-                            bestVar = basicVar;
-                            #endif
-                        }
-                        #endif
-                        #ifdef LRA_USE_OCCURENCE_STRATEGY
-                        if( basicVar->size() < smallestRowSize )
-                        {
-                            // Found a better pivoting element.
-                            smallestRowSize = basicVar->size();
-                            smallestColumnSize = mColumns[(*mpEntries)[result.first].columnNumber()].mSize;
-                            beginOfBestRow = result.first;
-                            *mpTheta = theta;
-                            #ifdef LRA_LOCAL_CONFLICT_DIRECTED
-                            bestVar = basicVar;
-                            #endif
-                        }
-                        else if( basicVar->size() == smallestRowSize
-                                 && mColumns[(*mpEntries)[result.first].columnNumber()].mSize < smallestColumnSize )
-                        {
-                            // Found a better pivoting element.
-                            smallestColumnSize = mColumns[(*mpEntries)[result.first].columnNumber()].mSize;
-                            beginOfBestRow = result.first;
-                            *mpTheta = theta;
-                            #ifdef LRA_LOCAL_CONFLICT_DIRECTED
-                            bestVar = basicVar;
-                            #endif
-                        }
-                        #endif
-                    }
+                    ++basicVar;
                 }
-                if( beginOfBestRow == LAST_ENTRY_ID && beginOfFirstConflictRow != LAST_ENTRY_ID )
+                if( bestTableauEntry == LAST_ENTRY_ID && beginOfFirstConflictRow != LAST_ENTRY_ID )
                 {
                     // Found a conflict
                     #ifdef LRA_LOCAL_CONFLICT_DIRECTED
@@ -928,30 +900,27 @@ namespace smtrat
                     #endif
                     return std::pair<EntryID,bool>( beginOfFirstConflictRow, false );
                 }
-                else if( beginOfBestRow != LAST_ENTRY_ID )
+                else if( bestTableauEntry != LAST_ENTRY_ID )
                 {
                     // The best pivoting element found
+                    *mpTheta = bestThetaB;
+                    #ifdef LRA_NO_DIVISION
+                    (*mpTheta) *= (*bestVar)->factor();
+                    #endif 
+                    (*mpTheta) /= (*mpEntries)[bestTableauEntry].content();
                     #ifdef LRA_LOCAL_CONFLICT_DIRECTED
-                    if( !mConflictingRows.empty() )
+                    if( !initialSearch )
                     {
-                        auto iter = mConflictingRows.begin();
-                        for( ; iter != mConflictingRows.end(); ++iter )
-                        {
-                            if( (*iter) == bestVar ) break;
-                        }
-                        mConflictingRows.erase( iter );
+                        assert( bestVar != mConflictingRows.end() );
+                        mConflictingRows.erase( bestVar );
                     }
                     #endif
-                    return std::pair<EntryID,bool>( beginOfBestRow, true );
+                    return std::pair<EntryID,bool>( bestTableauEntry, true );
                 }
                 else
                 {
                     // Found no pivoting element, that is no variable violates its bounds.
-                    if( !mConflictingRows.empty() )
-                    {
-                        mConflictingRows.clear();
-                        return nextPivotingElement();
-                    }
+                    assert( mConflictingRows.empty() );
                     return std::pair<EntryID,bool>( LAST_ENTRY_ID, true );
                 }
             }
@@ -962,16 +931,38 @@ namespace smtrat
                 for( const Variable<T1, T2>* basicVar : mRows )
                 {
                     assert( basicVar != NULL );
-                    std::pair<EntryID,bool> result = isSuitable( *basicVar, *mpTheta );
-                    if( !result.second )
+                    const Variable<T1,T2>& bVar = *basicVar;
+                    Value<T1> thetaB = Value<T1>( 0 );
+                    bool upperBoundViolated = false;
+                    bool lowerBoundViolated = false;
+                    if( bVar.supremum() < bVar.assignment() )
                     {
-                        // Found a conflicting row.
-                        return std::pair<EntryID,bool>( result.first, false );
+                        thetaB = bVar.supremum().limit() - bVar.assignment();
+                        upperBoundViolated = true;
                     }
-                    else if( result.first != LAST_ENTRY_ID )
+                    else if( bVar.infimum() > bVar.assignment() )
                     {
-                        // Found a pivoting element
-                        return std::pair<EntryID,bool>( result.first, true );
+                        thetaB = bVar.infimum().limit() - bVar.assignment();
+                        lowerBoundViolated = true;
+                    }
+                    if( upperBoundViolated || lowerBoundViolated )
+                    {
+                        std::pair<EntryID,bool> result = isSuitable( bVar, upperBoundViolated );
+                        if( !result.second )
+                        {
+                            // Found a conflicting row.
+                            return std::pair<EntryID,bool>( result.first, false );
+                        }
+                        else if( result.first != LAST_ENTRY_ID )
+                        {
+                            // Found a pivoting element
+                            *mpTheta = thetaB;
+                            #ifdef LRA_NO_DIVISION
+                            (*mpTheta) *= bVar.factor();
+                            #endif 
+                            (*mpTheta) /= (*mpEntries)[result.first].content();
+                            return std::pair<EntryID,bool>( result.first, true );
+                        }
                     }
                 }
                 // Found no pivoting element, that is no variable violates its bounds.
@@ -986,7 +977,7 @@ namespace smtrat
          * @return
          */
         template<typename T1, typename T2>
-        std::pair<EntryID,bool> Tableau<T1,T2>::isSuitable( const Variable<T1, T2>& _basicVar, Value<T1>& _theta ) const
+        std::pair<EntryID,bool> Tableau<T1,T2>::isSuitable( const Variable<T1, T2>& _basicVar, bool supremumViolated ) const
         {
             EntryID bestEntry = LAST_ENTRY_ID;
             const Bound<T1, T2>& basicVarSupremum = _basicVar.supremum();
@@ -994,8 +985,9 @@ namespace smtrat
             const Bound<T1, T2>& basicVarInfimum = _basicVar.infimum();
             EntryID rowStartEntry = _basicVar.startEntry();
             // Upper bound is violated
-            if( basicVarSupremum < basicVarAssignment ) // TODO: you could know this beforehand, so make two methods for case distinction or add a bool template
+            if( supremumViolated )
             {
+                assert( basicVarSupremum < basicVarAssignment );
                 // Check all entries in the row / nonbasic variables
                 Iterator rowIter = Iterator( rowStartEntry, mpEntries );
                 while( true )
@@ -1013,11 +1005,6 @@ namespace smtrat
                             assert( (*rowIter).content() != 0 );
                             if( betterEntry( rowIter.entryID(), bestEntry ) )
                             {
-                                #ifdef LRA_NO_DIVISION
-                                _theta = ((basicVarSupremum.limit() - basicVarAssignment)*_basicVar.factor())/(*rowIter).content();
-                                #else
-                                _theta = (basicVarSupremum.limit() - basicVarAssignment)/(*rowIter).content();
-                                #endif
                                 bestEntry = rowIter.entryID();
                             }
                         }
@@ -1030,11 +1017,6 @@ namespace smtrat
                             assert( (*rowIter).content() != 0 );
                             if( betterEntry( rowIter.entryID(), bestEntry ) )
                             {
-                                #ifdef LRA_NO_DIVISION
-                                _theta = ((basicVarSupremum.limit() - basicVarAssignment)*_basicVar.factor())/(*rowIter).content();
-                                #else
-                                _theta = (basicVarSupremum.limit() - basicVarAssignment)/(*rowIter).content();
-                                #endif
                                 bestEntry = rowIter.entryID();
                             }
                         }
@@ -1043,7 +1025,6 @@ namespace smtrat
                     {
                         if( bestEntry == LAST_ENTRY_ID )
                         {
-                            _theta = basicVarAssignment - basicVarSupremum.limit();
                             return std::pair<EntryID,bool>( rowStartEntry, false );
                         }
                         break;
@@ -1055,8 +1036,9 @@ namespace smtrat
                 }
             }
             // Lower bound is violated
-            else if( basicVarInfimum > basicVarAssignment )
+            else
             {
+                assert( basicVarInfimum > basicVarAssignment );
                 // Check all entries in the row / nonbasic variables
                 Iterator rowIter = Iterator( rowStartEntry, mpEntries );
                 while( true )
@@ -1074,11 +1056,6 @@ namespace smtrat
                             assert( (*rowIter).content() != 0 );
                             if( betterEntry( rowIter.entryID(), bestEntry ) )
                             {
-                                #ifdef LRA_NO_DIVISION
-                                _theta = ((basicVarInfimum.limit() - basicVarAssignment)*_basicVar.factor())/(*rowIter).content();
-                                #else
-                                _theta = (basicVarInfimum.limit() - basicVarAssignment)/(*rowIter).content();
-                                #endif
                                 bestEntry = rowIter.entryID();
                             }
                         }
@@ -1091,11 +1068,6 @@ namespace smtrat
                             assert( (*rowIter).content() != 0 );
                             if( betterEntry( rowIter.entryID(), bestEntry ) )
                             {
-                                #ifdef LRA_NO_DIVISION
-                                _theta = ((basicVarInfimum.limit() - basicVarAssignment)*_basicVar.factor())/(*rowIter).content();
-                                #else
-                                _theta = (basicVarInfimum.limit() - basicVarAssignment)/(*rowIter).content();
-                                #endif
                                 bestEntry = rowIter.entryID();
                             }
                         }
@@ -1104,7 +1076,6 @@ namespace smtrat
                     {
                         if( bestEntry == LAST_ENTRY_ID )
                         {
-                            _theta = basicVarInfimum.limit() - basicVarAssignment;
                             return std::pair<EntryID,bool>( rowStartEntry, false );
                         }
                         break;
@@ -1125,9 +1096,9 @@ namespace smtrat
             if( _than == LAST_ENTRY_ID ) return true;
             const Variable<T1,T2>& isBetterNbVar = *((*mpEntries)[_isBetter].columnVar());
             const Variable<T1,T2>& thanColumnNbVar = *((*mpEntries)[_than].columnVar());
-            size_t valueA = unboundedVariables( isBetterNbVar );
-            size_t valueB = unboundedVariables( thanColumnNbVar );
-            if( valueA > valueB ) return true;
+            size_t valueA = boundedVariables( isBetterNbVar );
+            size_t valueB = boundedVariables( thanColumnNbVar, valueA );
+            if( valueA < valueB  ) return true;
             else if( valueA == valueB )
             {
                 if( isBetterNbVar.size() < thanColumnNbVar.size() ) return true;
@@ -1368,11 +1339,6 @@ namespace smtrat
         template<typename T1, typename T2>
         void Tableau<T1,T2>::pivot( EntryID _pivotingElement )
         {
-//            std::cout << "pivot" << std::endl;
-//                printHeap();
-//                print();
-//                printEntry( _pivotingElement );
-//                std::cout << std::endl;
             // Find all columns having "a nonzero entry in the pivoting row"**, update this entry and store it.
             // First the column with ** left to the pivoting column until the leftmost column with **.
             std::vector<Iterator> pivotingRowLeftSide = std::vector<Iterator>();
@@ -1385,19 +1351,14 @@ namespace smtrat
             Iterator colIter = Iterator( columnVar->startEntry(), mpEntries );
             while( true )
             {
-//                printEntry( colIter.entryID() );
-//                std::cout << std::endl;
                 (*colIter).setColumnVar( rowVar );
                 if( colIter.vEnd( false ) )
                     break;
                 colIter.vMove( false );
             }
-//            printHeap();
             while( !iterTemp.hEnd( true ) )
             {
                 iterTemp.hMove( true );
-//                printEntry( iterTemp.entryID() );
-//                std::cout << std::endl;
                 (*iterTemp).setRowVar( columnVar );
                 #ifdef LRA_NO_DIVISION
                 (*iterTemp).rContent() = -(*iterTemp).content();
@@ -1406,16 +1367,12 @@ namespace smtrat
                 #endif
                 pivotingRowLeftSide.push_back( iterTemp );
             }
-//            printHeap();
-//            std::cout << "blaaac" << std::endl;
             // Then the column with ** right to the pivoting column until the rightmost column with **.
             std::vector<Iterator> pivotingRowRightSide = std::vector<Iterator>();
             iterTemp = Iterator( _pivotingElement, mpEntries );
             while( !iterTemp.hEnd( false ) )
             {
                 iterTemp.hMove( false );
-//                printEntry( iterTemp.entryID() );
-//                std::cout << std::endl;
                 (*iterTemp).setRowVar( columnVar );
                 #ifdef LRA_NO_DIVISION
                 (*iterTemp).rContent() = -(*iterTemp).content();
@@ -1424,8 +1381,6 @@ namespace smtrat
                 #endif
                 pivotingRowRightSide.push_back( iterTemp );
             }
-//            printHeap();
-//            std::cout << "blaaaa" << std::endl;
             // Swap the variables
             mRows[rowVar->position()] = columnVar;
             mColumns[columnVar->position()] = rowVar;
@@ -1435,7 +1390,21 @@ namespace smtrat
             #else
             rowVar->rAssignment() += (*mpTheta) * pivotContent;
             #endif
+            if( !( rowVar->supremum() > rowVar->assignment() || rowVar->supremum() == rowVar->assignment() ) ) 
+            {
+                std::cout << "rowVar->assignment() = " << rowVar->assignment() << std::endl;
+                std::cout << "rowVar->supremum() = " << rowVar->supremum() << std::endl; 
+                std::cout << "(error: " << __func__ << " " << __LINE__ << ")" << std::endl; 
+//                exit( 7771 );
+            }
             assert( rowVar->supremum() > rowVar->assignment() || rowVar->supremum() == rowVar->assignment() );
+            if( !( rowVar->infimum() < rowVar->assignment() || rowVar->infimum() == rowVar->assignment() ) ) 
+            {
+                std::cout << "rowVar->assignment() = " << rowVar->assignment() << std::endl;
+                std::cout << "rowVar->infimum() = " << rowVar->infimum() << std::endl;
+                std::cout << "(error: " << __func__ << " " << __LINE__ << ")" << std::endl; 
+//                exit( 7771 );
+            }
             assert( rowVar->infimum() < rowVar->assignment() || rowVar->infimum() == rowVar->assignment() );
             columnVar->rAssignment() += (*mpTheta);
             // Adapt both variables.
@@ -1465,11 +1434,9 @@ namespace smtrat
             #ifdef LRA_REFINEMENT
             if( basicVar.isActive() || basicVar.isOriginal() )
             {
-                rowRefinement( columnVar ); // Note, we have swapped the variables, so the current basic var is now corresponding what we have stored in columnVar.
+                rowRefinement( columnVar ); // Note, we have swapped the variables, so the current basic var is now corresponding to what we have stored in columnVar.
             }
             #endif
-//            printHeap();
-//            print();
             // Let (p_r,p_c,p_e) be the pivoting entry, where p_r is the row number, p_c the column number and p_e the content.
             // For all rows R having a nonzero entry in the pivoting column:
             //    For all columns C having a nonzero entry (r_r,r_c,r_e) in the pivoting row:
@@ -1493,22 +1460,26 @@ namespace smtrat
                 deactivateBasicVar( columnVar );
                 compressRows();
             }
-//            if( checkCorrectness() != mRows.size() )
-//            {
-//                std::cout << "row number: " << checkCorrectness() << std::endl;
-//                printHeap();
-//                print();
-//            }
+            assert( basicVar.supremum() >= basicVar.assignment() || basicVar.infimum() <= basicVar.assignment() );
+            assert( nonbasicVar.supremum() == nonbasicVar.assignment() || nonbasicVar.infimum() == nonbasicVar.assignment() );
             assert( checkCorrectness() == mRows.size() );
         }
 
         /**
-         *
-         * @param _pivotingElement
-         * @param _pivotingRow
+         * Updates the tableau according to the new values in the pivoting row containing the given pivoting element. The updating is
+         * applied from the pivoting row downwards, if the given flag _downwards is true, and upwards, otherwise.
+         * 
+         * @param _downwards The flag indicating whether to update the tableau downwards or upwards starting from the pivoting row.
+         * @param _pivotingElement The id of the current pivoting element.
+         * @param _pivotingRowLeftSide For every element in the pivoting row, which is positioned left of the pivoting element, this 
+         *                              vector contains an iterator. The closer the element is to the pivoting element, the smaller is the 
+         *                              iterator's index in the vector.
+         * @param _pivotingRowRightSide For every element in the pivoting row, which is positioned right of the pivoting element, this 
+         *                              vector contains an iterator. The closer the element is to the pivoting element, the smaller is the 
+         *                              iterator's index in the vector.
          */
         template<typename T1, typename T2>
-        void Tableau<T1,T2>::update( bool downwards, EntryID _pivotingElement, std::vector<Iterator>& _pivotingRowLeftSide, std::vector<Iterator>& _pivotingRowRightSide )
+        void Tableau<T1,T2>::update( bool _downwards, EntryID _pivotingElement, std::vector<Iterator>& _pivotingRowLeftSide, std::vector<Iterator>& _pivotingRowRightSide )
         {
             std::vector<Iterator> leftColumnIters = std::vector<Iterator>( _pivotingRowLeftSide );
             std::vector<Iterator> rightColumnIters = std::vector<Iterator>( _pivotingRowRightSide );
@@ -1518,17 +1489,14 @@ namespace smtrat
             #endif
             while( true )
             {
-                if( !pivotingColumnIter.vEnd( downwards ) )
+                if( !pivotingColumnIter.vEnd( _downwards ) )
                 {
-                    pivotingColumnIter.vMove( downwards );
+                    pivotingColumnIter.vMove( _downwards );
                 }
                 else
                 {
                     break;
                 }
-//                std::cout << "entry in pivoting column: ";
-//                printEntry(pivotingColumnIter.entryID());
-//                std::cout << std::endl;
                 // Update the assignment of the basic variable corresponding to this row
                 Variable<T1,T2>& currBasicVar = *((*pivotingColumnIter).rowVar());
                 #ifdef LRA_NO_DIVISION
@@ -1538,9 +1506,6 @@ namespace smtrat
                 #endif
                 // Update the row
                 Iterator currentRowIter = pivotingColumnIter;
-//                std::cout << "entry in current row: ";
-//                printEntry(currentRowIter.entryID());
-//                std::cout << std::endl;
                 #ifdef LRA_NO_DIVISION
                 T2 l = carl::lcm( (*pivotingColumnIter).content(), pivotingRowFactor );
                 assert( l > 0 );
@@ -1561,29 +1526,20 @@ namespace smtrat
                 auto pivotingRowIter = _pivotingRowLeftSide.begin();
                 for( auto currentColumnIter = leftColumnIters.begin(); currentColumnIter != leftColumnIters.end(); ++currentColumnIter )
                 {
-//                    std::cout << "entry in current column: ";
-//                    printEntry((*currentColumnIter).entryID());
-//                    std::cout << std::endl;
                     assert( pivotingRowIter != _pivotingRowLeftSide.end() );
-                    while( (downwards && !(*currentColumnIter).vEnd( downwards ) && (**currentColumnIter).rowVar()->position() < (*pivotingColumnIter).rowVar()->position()) 
-                           || (!downwards && !(*currentColumnIter).vEnd( downwards ) && (**currentColumnIter).rowVar()->position() > (*pivotingColumnIter).rowVar()->position()) )
+                    while( (_downwards && !(*currentColumnIter).vEnd( _downwards ) && (**currentColumnIter).rowVar()->position() < (*pivotingColumnIter).rowVar()->position()) 
+                           || (!_downwards && !(*currentColumnIter).vEnd( _downwards ) && (**currentColumnIter).rowVar()->position() > (*pivotingColumnIter).rowVar()->position()) )
                     {
-                        (*currentColumnIter).vMove( downwards );
+                        (*currentColumnIter).vMove( _downwards );
                     }
-//                    std::cout << "entry in current row: ";
-//                    printEntry(currentRowIter.entryID());
-//                    std::cout << std::endl;
                     while( !currentRowIter.hEnd( true ) && (*currentRowIter).columnVar()->position() > (**currentColumnIter).columnVar()->position() )
                     {
                         currentRowIter.hMove( true );
                     }
-//                    std::cout << "entry in current row: ";
-//                    printEntry(currentRowIter.entryID());
-//                    std::cout << std::endl;
                     #ifdef LRA_NO_DIVISION
-                    insert( ca * (**pivotingRowIter).content(), currentRowIter, true, *currentColumnIter, downwards );
+                    addToEntry( ca * (**pivotingRowIter).content(), currentRowIter, true, *currentColumnIter, _downwards );
                     #else
-                    insert( (*pivotingColumnIter).content() * (**pivotingRowIter).content(), currentRowIter, true, *currentColumnIter, downwards );
+                    addToEntry( (*pivotingColumnIter).content() * (**pivotingRowIter).content(), currentRowIter, true, *currentColumnIter, _downwards );
                     #endif
                     ++pivotingRowIter;
                 }
@@ -1591,26 +1547,20 @@ namespace smtrat
                 pivotingRowIter = _pivotingRowRightSide.begin();
                 for( auto currentColumnIter = rightColumnIters.begin(); currentColumnIter != rightColumnIters.end(); ++currentColumnIter )
                 {
-//                    std::cout << "entry in current column: ";
-//                    printEntry((*currentColumnIter).entryID());
-//                    std::cout << std::endl;
                     assert( pivotingRowIter != _pivotingRowRightSide.end() );
-                    while( (downwards && !(*currentColumnIter).vEnd( downwards ) && (**currentColumnIter).rowVar()->position() < (*pivotingColumnIter).rowVar()->position())
-                           || (!downwards && !(*currentColumnIter).vEnd( downwards ) && (**currentColumnIter).rowVar()->position() > (*pivotingColumnIter).rowVar()->position()) )
+                    while( (_downwards && !(*currentColumnIter).vEnd( _downwards ) && (**currentColumnIter).rowVar()->position() < (*pivotingColumnIter).rowVar()->position())
+                           || (!_downwards && !(*currentColumnIter).vEnd( _downwards ) && (**currentColumnIter).rowVar()->position() > (*pivotingColumnIter).rowVar()->position()) )
                     {
-                        (*currentColumnIter).vMove( downwards );
+                        (*currentColumnIter).vMove( _downwards );
                     }
                     while( !currentRowIter.hEnd( false ) && (*currentRowIter).columnVar()->position() < (**currentColumnIter).columnVar()->position() )
                     {
                         currentRowIter.hMove( false );
                     }
-//                    std::cout << "entry in current row: ";
-//                    printEntry(currentRowIter.entryID());
-//                    std::cout << std::endl;
                     #ifdef LRA_NO_DIVISION
-                    insert( ca * (**pivotingRowIter).content(), currentRowIter, false, *currentColumnIter, downwards );
+                    addToEntry( ca * (**pivotingRowIter).content(), currentRowIter, false, *currentColumnIter, _downwards );
                     #else
-                    insert( (*pivotingColumnIter).content() * (**pivotingRowIter).content(), currentRowIter, false, *currentColumnIter, downwards );
+                    addToEntry( (*pivotingColumnIter).content() * (**pivotingRowIter).content(), currentRowIter, false, *currentColumnIter, _downwards );
                     #endif
                     ++pivotingRowIter;
                 }
@@ -1650,100 +1600,111 @@ namespace smtrat
             }
         }
         
+        /**
+         * Adds the given value to the entry being at the position (i,j), where i is the vertical position of the given horizontal 
+         * iterator and j is the horizontal position of the given vertical iterator. Note, that the entry might not exist, if its
+         * current value is 0. Then the horizontal iterator is located horizontally before or after the entry to change and the 
+         * vertical iterator is located vertically before or after the entry to add.
+         * 
+         * @param _toAdd The value to add to the content of the entry specified by the given iterators and their relative position
+         *                to each other.
+         * @param _horiIter The iterator moving horizontally and, hence, giving the vertical position of the entry to add the given value to.
+         * @param _horiIterLeftFromVertIter true, if the horizontally moving iterator is left from or equal to the horizontal position of the
+         *                                         iterator moving vertically, and, hence, left from or equal to the position of the entry to add
+         *                                         the given value to;
+         *                                   false, it is right or equal to this position.
+         * @param _vertIter The iterator moving vertically and, hence, giving the horizontal position of the entry to add the given value to.
+         * @param _vertIterBelowHoriIter true, if the vertically moving iterator is below or exactly at the vertical position of the
+         *                                      iterator moving horizontally, and, hence, below or exactly at the position of the entry to add
+         *                                      the given value to;
+         *                                false, it is above or equal to this position.
+         * @sideeffect If the entry existed (!=0) and is removed because of becoming 0, the iterators are set according to the given relative
+         *               positioning.
+         */
         template<typename T1, typename T2>
-        void Tableau<T1,T2>::insert( const T2& _content, Iterator& _horiPos, bool _leftwards, Iterator& _vertPos, bool _downwards )
+        void Tableau<T1,T2>::addToEntry( const T2& _toAdd, Iterator& _horiIter, bool _horiIterLeftFromVertIter, Iterator& _vertIter, bool _vertIterBelowHoriIter )
         {
-//            std::cout << "add " << _content;
-//            std::cout << (_leftwards ? " leftwards" : " rightwards") << " from (" << (*_horiPos).rowVar()->position() << ", " << (*_horiPos).columnVar()->position() << ")";
-//            std::cout << (_downwards ? " downwards" : " upwards") << " from (" << (*_vertPos).rowVar()->position() << ", " << (*_vertPos).columnVar()->position() << ")" << std::endl;
-            
-//            printHeap();
-//            print();
-            if( _horiPos == _vertPos )
+            if( _horiIter == _vertIter )
             {
-//                std::cout << "bla1" << std::endl;
                 // Entry already exists, so update it only and maybe remove it.
-                T2& currentRowContent = (*_horiPos).rContent();
+                T2& currentRowContent = (*_horiIter).rContent();
                 #ifdef LRA_NO_DIVISION
-                currentRowContent += _content;
+                currentRowContent += _toAdd;
                 #else
-                currentRowContent += _content;
+                currentRowContent += _toAdd;
                 #endif
                 if( currentRowContent == 0 )
                 {
-                    EntryID toRemove = _horiPos.entryID();
-                    _vertPos.vMove( !_downwards );
-                    _horiPos.hMove( !_leftwards );
+                    EntryID toRemove = _horiIter.entryID();
+                    _vertIter.vMove( !_vertIterBelowHoriIter );
+                    _horiIter.hMove( !_horiIterLeftFromVertIter );
                     removeEntry( toRemove );
                 }
             }
             else
             {
-//                std::cout << "bla2" << std::endl;
-                EntryID entryID = newTableauEntry( _content );
+                EntryID entryID = newTableauEntry( _toAdd );
                 TableauEntry<T1,T2>& entry = (*mpEntries)[entryID];
                 // Set the position.
-                Variable<T1,T2>* basicVar = (*mpEntries)[_horiPos.entryID()].rowVar();
-                Variable<T1,T2>* nonbasicVar = (*mpEntries)[_vertPos.entryID()].columnVar();
+                Variable<T1,T2>* basicVar = (*mpEntries)[_horiIter.entryID()].rowVar();
+                Variable<T1,T2>* nonbasicVar = (*mpEntries)[_vertIter.entryID()].columnVar();
                 entry.setRowVar( basicVar );
                 entry.setColumnVar( nonbasicVar );
-                if( (_downwards && (*_vertPos).rowVar()->position() > (*_horiPos).rowVar()->position())
-                    || (!_downwards && (*_vertPos).rowVar()->position() < (*_horiPos).rowVar()->position()) )
+                if( (_vertIterBelowHoriIter && (*_vertIter).rowVar()->position() > (*_horiIter).rowVar()->position())
+                    || (!_vertIterBelowHoriIter && (*_vertIter).rowVar()->position() < (*_horiIter).rowVar()->position()) )
                 {
-//                std::cout << "bla3" << std::endl;
                     // Entry vertically between two entries.
-                    EntryID upperEntryID = (*_vertPos).vNext( !_downwards );
+                    EntryID upperEntryID = (*_vertIter).vNext( !_vertIterBelowHoriIter );
                     if( upperEntryID != LAST_ENTRY_ID )
                     {
-                        (*mpEntries)[upperEntryID].setVNext( _downwards, entryID );
+                        (*mpEntries)[upperEntryID].setVNext( _vertIterBelowHoriIter, entryID );
                     }
-                    (*_vertPos).setVNext( !_downwards, entryID );
-                    entry.setVNext( !_downwards, upperEntryID );
-                    entry.setVNext( _downwards, _vertPos.entryID() );
+                    (*_vertIter).setVNext( !_vertIterBelowHoriIter, entryID );
+                    entry.setVNext( !_vertIterBelowHoriIter, upperEntryID );
+                    entry.setVNext( _vertIterBelowHoriIter, _vertIter.entryID() );
                 }
                 else
                 {
-//                std::cout << "bla4" << std::endl;
                     // Entry will be the lowest in this column.
-                    (*_vertPos).setVNext( _downwards, entryID );
-                    entry.setVNext( !_downwards, _vertPos.entryID() );
-                    entry.setVNext( _downwards, LAST_ENTRY_ID );
-                    if( _downwards )
+                    (*_vertIter).setVNext( _vertIterBelowHoriIter, entryID );
+                    entry.setVNext( !_vertIterBelowHoriIter, _vertIter.entryID() );
+                    entry.setVNext( _vertIterBelowHoriIter, LAST_ENTRY_ID );
+                    if( _vertIterBelowHoriIter )
                         nonbasicVar->rStartEntry() = entryID;
                 }
-                if( (_leftwards && (*_horiPos).columnVar()->position() < (*_vertPos).columnVar()->position())
-                    || (!_leftwards && (*_horiPos).columnVar()->position() > (*_vertPos).columnVar()->position()) )
+                if( (_horiIterLeftFromVertIter && (*_horiIter).columnVar()->position() < (*_vertIter).columnVar()->position())
+                    || (!_horiIterLeftFromVertIter && (*_horiIter).columnVar()->position() > (*_vertIter).columnVar()->position()) )
                 {
-//                std::cout << "bla5" << std::endl;
                     // Entry horizontally between two entries.
-                    EntryID rightEntryID = (*_horiPos).hNext( !_leftwards );
+                    EntryID rightEntryID = (*_horiIter).hNext( !_horiIterLeftFromVertIter );
                     if( rightEntryID != LAST_ENTRY_ID )
                     {
-                        (*mpEntries)[rightEntryID].setHNext( _leftwards, entryID );
+                        (*mpEntries)[rightEntryID].setHNext( _horiIterLeftFromVertIter, entryID );
                     }
-                    (*_horiPos).setHNext( !_leftwards, entryID );
-                    entry.setHNext( !_leftwards, rightEntryID );
-                    entry.setHNext( _leftwards, _horiPos.entryID() );
+                    (*_horiIter).setHNext( !_horiIterLeftFromVertIter, entryID );
+                    entry.setHNext( !_horiIterLeftFromVertIter, rightEntryID );
+                    entry.setHNext( _horiIterLeftFromVertIter, _horiIter.entryID() );
                 }
                 else
                 {
-//                std::cout << "bla6" << std::endl;
                     // Entry will be the leftmost in this row.
-                    (*_horiPos).setHNext( _leftwards, entryID );
-                    entry.setHNext( !_leftwards, _horiPos.entryID() );
-                    entry.setHNext( _leftwards, LAST_ENTRY_ID );
-                    if( _leftwards )
+                    (*_horiIter).setHNext( _horiIterLeftFromVertIter, entryID );
+                    entry.setHNext( !_horiIterLeftFromVertIter, _horiIter.entryID() );
+                    entry.setHNext( _horiIterLeftFromVertIter, LAST_ENTRY_ID );
+                    if( _horiIterLeftFromVertIter )
                         basicVar->rStartEntry() = entryID;
                 }
                 // Set the content of the entry.
                 ++(basicVar->rSize());
                 ++(nonbasicVar->rSize());
             }
-//            printHeap();
-//            print();
         }
 
         #ifdef LRA_REFINEMENT
+        /**
+         * Tries to refine the supremum and infimum of the given basic variable. 
+         * @param _basicVar The basic variable for which to refine the supremum and infimum.
+         */
         template<typename T1, typename T2>
         void Tableau<T1,T2>::rowRefinement( Variable<T1,T2>* _basicVar )
         {
@@ -2019,7 +1980,7 @@ namespace smtrat
          * @return 
          */
         template<typename T1, typename T2>
-        size_t Tableau<T1,T2>::unboundedVariables( const Variable<T1,T2>& _var ) const
+        size_t Tableau<T1,T2>::unboundedVariables( const Variable<T1,T2>& _var, size_t _stopCriterium ) const
         {
             if( _var.startEntry() == LAST_ENTRY_ID )
             {
@@ -2034,7 +1995,11 @@ namespace smtrat
                     while( true )
                     {
                         if( (*rowEntry).columnVar()->infimum().isInfinite() || (*rowEntry).columnVar()->supremum().isInfinite() )
+                        {
                             ++unboundedVars;
+                            if( _stopCriterium != 0 && unboundedVars >= _stopCriterium )
+                                return _stopCriterium + 1;
+                        }
                         if( rowEntry.hEnd( false ) )
                             break;
                         rowEntry.hMove( false );
@@ -2046,7 +2011,11 @@ namespace smtrat
                     while( true )
                     {
                         if( (*columnEntry).rowVar()->infimum().isInfinite() || (*columnEntry).rowVar()->supremum().isInfinite() )
+                        {
                             ++unboundedVars;
+                            if( _stopCriterium != 0 && unboundedVars >= _stopCriterium )
+                                return _stopCriterium + 1;
+                        }
                         if( columnEntry.vEnd( false ) )
                             break;
                         columnEntry.vMove( false );
@@ -2054,7 +2023,57 @@ namespace smtrat
                 }
                 return unboundedVars;
             }
-            return true;
+        }
+        
+        /**
+         * 
+         * @param _var
+         * @return 
+         */
+        template<typename T1, typename T2>
+        size_t Tableau<T1,T2>::boundedVariables( const Variable<T1,T2>& _var, size_t _stopCriterium ) const
+        {
+            if( _var.startEntry() == LAST_ENTRY_ID )
+            {
+                return 0;
+            }
+            else
+            {
+                size_t boundedVars = 0;
+                if( _var.isBasic() )
+                {
+                    Iterator rowEntry = Iterator( _var.startEntry(), mpEntries );
+                    while( true )
+                    {
+                        if( !(*rowEntry).columnVar()->infimum().isInfinite() || !(*rowEntry).columnVar()->supremum().isInfinite() )
+                        {
+                            ++boundedVars;
+                            if( _stopCriterium != 0 && boundedVars >= _stopCriterium )
+                                return _stopCriterium+1;
+                        }
+                        if( rowEntry.hEnd( false ) )
+                            break;
+                        rowEntry.hMove( false );
+                    }
+                }
+                else
+                {
+                    Iterator columnEntry = Iterator( _var.startEntry(), mpEntries );
+                    while( true )
+                    {
+                        if( !(*columnEntry).rowVar()->infimum().isInfinite() || !(*columnEntry).rowVar()->supremum().isInfinite() )
+                        {
+                            ++boundedVars;
+                            if( _stopCriterium != 0 && boundedVars >= _stopCriterium )
+                                return _stopCriterium+1;
+                        }
+                        if( columnEntry.vEnd( false ) )
+                            break;
+                        columnEntry.vMove( false );
+                    }
+                }
+                return boundedVars;
+            }
         }
 
         /**
@@ -2081,36 +2100,26 @@ namespace smtrat
         {
             if( mRows[_rowNumber] == NULL ) return false;
             if( _rowNumber != mRows[_rowNumber]->position() ) return false;
-//            std::cout << "bla1" << std::endl;
             size_t numOfRowElements = 0;
             smtrat::Polynomial sumOfNonbasics = smtrat::ZERO_POLYNOMIAL;
-//            std::cout << "sumOfNonbasics = " << sumOfNonbasics << std::endl;
             Iterator rowEntry = Iterator( mRows[_rowNumber]->startEntry(), mpEntries );
             while( !rowEntry.hEnd( false ) )
             {
                 sumOfNonbasics += (*((*rowEntry).columnVar()->pExpression())) * smtrat::Polynomial( (*rowEntry).content() );
-//            std::cout << "sumOfNonbasics += " << ((*((*rowEntry).columnVar()->pExpression())) * smtrat::Polynomial( (*rowEntry).content() )) << std::endl;
-//            std::cout << "sumOfNonbasics = " << sumOfNonbasics << std::endl;
                 ++numOfRowElements;
                 rowEntry.hMove( false );
             }
             ++numOfRowElements;
             if( numOfRowElements != mRows[_rowNumber]->size() )
             {
-//                std::cout << "bla2" << std::endl;
                 return false;
             }
             sumOfNonbasics += (*((*rowEntry).columnVar()->pExpression())) * smtrat::Polynomial( (*rowEntry).content() );
-//            std::cout << "sumOfNonbasics += " << ((*((*rowEntry).columnVar()->pExpression())) * smtrat::Polynomial( (*rowEntry).content() )) << std::endl;
-//            std::cout << "sumOfNonbasics = " << sumOfNonbasics << std::endl;
             #ifdef LRA_NO_DIVISION
             sumOfNonbasics += (*mRows[_rowNumber]->pExpression()) * smtrat::Polynomial( mRows[_rowNumber]->factor() ) * smtrat::MINUS_ONE_POLYNOMIAL;
-//            std::cout << "sumOfNonbasics += " << ((*mRows[_rowNumber]->pExpression()) * smtrat::Polynomial( mRows[_rowNumber]->factor() ) * smtrat::MINUS_ONE_POLYNOMIAL) << std::endl;
-//            std::cout << "sumOfNonbasics = " << sumOfNonbasics << std::endl;
             #else
             sumOfNonbasics += (*mRows[_rowNumber]->pExpression()) * smtrat::MINUS_ONE_POLYNOMIAL;
             #endif
-//            std::cout << "bla3" << std::endl;
             if( !sumOfNonbasics.isZero() ) return false;
             return true;
         }
@@ -3154,119 +3163,247 @@ namespace smtrat
         {
             for( auto learnedBound = mLearnedLowerBounds.begin(); learnedBound != mLearnedLowerBounds.end(); ++learnedBound )
             {
-                for( auto premiseBound = learnedBound->second.premise->begin(); premiseBound != learnedBound->second.premise->end(); ++premiseBound )
-                {
-                    _out << _init;
-                    _out << *(*premiseBound)->variable().pExpression();
-                    (*premiseBound)->print( true, _out, true );
-                    _out << std::endl;
-                }
-                _out << _init << "               | " << std::endl;
-                _out << _init << "               V " << std::endl;
-                _out << _init << *learnedBound->first->pExpression();
-                learnedBound->second.nextWeakerBound->print( true, _out, true );
-                _out << std::endl;
-                #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
-                _out << _init << *learnedBound->first->pExpression();
-                learnedBound->second.newBound->print( true, _out, true );
-                _out << std::endl << std::endl;
-                #endif
+                printLearnedBound( *learnedBound->first, learnedBound->second );
             }
             for( auto learnedBound = mLearnedUpperBounds.begin(); learnedBound != mLearnedUpperBounds.end(); ++learnedBound )
             {
-                for( auto premiseBound = learnedBound->second.premise->begin(); premiseBound != learnedBound->second.premise->end(); ++premiseBound )
-                {
-                    _out << _init;
-                    _out << *(*premiseBound)->variable().pExpression();
-                    (*premiseBound)->print( true, _out, true );
-                    _out << std::endl;
-                }
-                _out << _init << "               | " << std::endl;
-                _out << _init << "               V " << std::endl;
-                _out << _init << *learnedBound->first->pExpression();
-                learnedBound->second.nextWeakerBound->print( true, _out, true );
-                _out << std::endl;
-                #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
-                _out << _init << *learnedBound->first->pExpression();
-                learnedBound->second.newBound->print( true, _out, true );
-                _out << std::endl << std::endl;
-                #endif
+                printLearnedBound( *learnedBound->first, learnedBound->second );
             }
+        }
+        
+        template<typename T1, typename T2>
+        void Tableau<T1,T2>::printLearnedBound( const Variable<T1,T2>& _var, const LearnedBound& _learnedBound, const std::string _init, std::ostream& _out  ) const
+        {
+            for( auto premiseBound = _learnedBound.premise->begin(); premiseBound != _learnedBound.premise->end(); ++premiseBound )
+            {
+                _out << _init;
+                _out << *(*premiseBound)->variable().pExpression();
+                (*premiseBound)->print( true, _out, true );
+                _out << std::endl;
+            }
+            _out << _init << "               | " << std::endl;
+            _out << _init << "               V " << std::endl;
+            _out << _init << *_var.pExpression();
+            _learnedBound.nextWeakerBound->print( true, _out, true );
+            _out << std::endl;
+            _out << std::endl;
+            #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
+            _out << _init << *_var.pExpression();
+            _learnedBound.newBound->print( true, _out, true );
+            _out << std::endl << std::endl;
+            #endif
         }
         #endif
 
         /**
          *
          * @param _out
-         * @param _maxEntryLength
          * @param _init
          */
         template<typename T1, typename T2>
-        void Tableau<T1,T2>::print( std::ostream& _out, int _maxEntryLength, const std::string _init ) const
+        void Tableau<T1,T2>::print( EntryID _pivotingElement, std::ostream& _out, const std::string _init, bool _friendlyNames ) const
         {
-            char     frameSign     = '-';
-            int width = mWidth >= (unsigned) INT_MAX ? INT_MAX - 1 : (int) mWidth; 
-            _out << _init << std::setw( _maxEntryLength * (width + 1) ) << std::setfill( frameSign ) << "" << std::endl;
-            _out << _init << std::setw( _maxEntryLength ) << std::setfill( ' ' ) << "#";
+            char frameSign = '-';
+            char separator = '|';
+            char pivoting_separator = '#';
+            size_t pivotingRow = 0;
+            size_t pivotingColumn = 0;
+            size_t basic_var_assign_width = 1;
+            size_t basic_var_infimum_width = 1;
+            size_t basic_var_supremum_width = 1;
+            size_t basic_var_name_width = 1;
+            std::vector<size_t> columnWidths;
+            // Set the widths.
+            for( Variable<T1,T2>* rowVar : mRows )
+            {
+                if( rowVar != NULL )
+                {
+                    std::stringstream outA;
+                    #ifdef LRA_NO_DIVISION
+                    if( !(rowVar->factor() == 1) )
+                        outA << rowVar->factor();
+                    #endif
+                    outA << rowVar->expression().toString( true, _friendlyNames );
+                    size_t rowVarNameSize = outA.str().size();
+                    #ifdef LRA_NO_DIVISION
+                    if( !(rowVar->factor() == 1) )
+                        rowVarNameSize += 5;
+                    #endif
+                    if( rowVarNameSize > basic_var_name_width )
+                        basic_var_name_width = rowVarNameSize;
+                    if( rowVar->assignment().toString().size() > basic_var_assign_width )
+                        basic_var_assign_width = rowVar->assignment().toString().size();
+                    if( rowVar->infimum().toString().size() > basic_var_infimum_width )
+                        basic_var_infimum_width = rowVar->infimum().toString().size();
+                    if( rowVar->supremum().toString().size() > basic_var_supremum_width )
+                        basic_var_supremum_width = rowVar->supremum().toString().size();
+                }
+            }
+            size_t table_width = basic_var_assign_width + basic_var_infimum_width + basic_var_supremum_width + basic_var_name_width + 8;
             for( Variable<T1,T2>* columnVar : mColumns )
             {
+                size_t column_width = columnVar->expression().toString( true, _friendlyNames ).size();
+                if( columnVar->assignment().toString().size() > column_width )
+                    column_width = columnVar->assignment().toString().size();
+                if( columnVar->infimum().toString().size()+2 > column_width )
+                    column_width = columnVar->infimum().toString().size()+2;
+                if( columnVar->supremum().toString().size()+2 > column_width )
+                    column_width = columnVar->supremum().toString().size()+2;
+                Iterator columnIter = Iterator( columnVar->startEntry(), mpEntries );
+                while( true )
+                {
+                    std::stringstream outA;
+                    outA << (*columnIter).content();
+                    if( outA.str().size() > column_width )
+                        column_width = outA.str().size();
+                    if( columnIter.vEnd( false ) )
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        columnIter.vMove( false );
+                    }
+                }
+                table_width += column_width + 3;
+                columnWidths.push_back( column_width );
+            }
+            // Find the row and column number of the pivoting element.
+            if( _pivotingElement != LAST_ENTRY_ID )
+            {
+                pivotingRow = (*mpEntries)[_pivotingElement].rowVar()->position();
+                pivotingColumn = (*mpEntries)[_pivotingElement].columnVar()->position();
+            }
+            _out << _init << std::setw( table_width ) << std::setfill( frameSign ) << "" << std::endl;
+            _out << _init << std::setw( basic_var_name_width ) << std::setfill( ' ' ) << "";
+            _out << " " << separator;
+            for( Variable<T1,T2>* columnVar : mColumns )
+            {
+                _out << " ";
                 std::stringstream out;
-                out << *columnVar->pExpression();
-                _out << std::setw( _maxEntryLength ) << out.str() + " #";
+                out << columnVar->expression().toString( true, _friendlyNames );
+                _out << std::setw( columnWidths[columnVar->position()] ) << out.str();
+                if(  _pivotingElement != LAST_ENTRY_ID && pivotingColumn == columnVar->position() )
+                    _out << " " << pivoting_separator;
+                else
+                    _out << " " << separator;
             }
             _out << std::endl;
-            _out << _init << std::setw( _maxEntryLength * (width + 1) ) << std::setfill( '#' ) << "" << std::endl;
+            _out << _init << std::setw( table_width ) << std::setfill( '-' ) << "" << std::endl;
             _out << std::setfill( ' ' );
             for( Variable<T1,T2>* rowVar : mRows )
             {
+                size_t columnNumber = 0;
                 _out << _init;
-                if( rowVar == NULL )
-                {
-                    for( size_t i = 0; i <= mWidth; ++i )
-                    {
-                        _out << std::setw( _maxEntryLength ) << "#";
-                    }
-                    _out << std::endl;
-                }
-                else
+                if( rowVar != NULL )
                 {
                     std::stringstream out;
                     #ifdef LRA_NO_DIVISION
                     if( !(rowVar->factor() == 1) )
                         out << "(" << rowVar->factor() << ")*(";
                     #endif
-                    out << *rowVar->pExpression();
+                    out << rowVar->expression().toString( true, _friendlyNames );
                     #ifdef LRA_NO_DIVISION
                     if( !(rowVar->factor() == 1) )
                         out << ")";
                     #endif
-                    _out << std::setw( _maxEntryLength ) << out.str() + " #";
+                    _out << std::setw( basic_var_name_width ) << out.str();
+                    if( _pivotingElement != LAST_ENTRY_ID && pivotingRow == rowVar->position() )
+                        _out << " " << pivoting_separator;
+                    else
+                        _out << " " << separator;
                     Iterator rowIter = Iterator( rowVar->startEntry(), mpEntries );
                     size_t currentColumn = 0;
                     while( true )
                     {
                         for( size_t i = currentColumn; i < (*rowIter).columnVar()->position(); ++i )
                         {
-                            _out << std::setw( _maxEntryLength ) << "0 #";
+                            _out << " ";
+                            _out << std::setw( columnWidths[columnNumber] ) << "0";
+                            if( _pivotingElement != LAST_ENTRY_ID && (pivotingRow == rowVar->position() || pivotingColumn == columnNumber) )
+                                _out << " " << pivoting_separator;
+                            else
+                                _out << " " << separator;
+                            ++columnNumber;
                         }
+                        _out << " ";
                         std::stringstream out;
                         out << (*rowIter).content();
-                        _out << std::setw( _maxEntryLength ) << out.str() + " #";
+                        _out << std::setw( columnWidths[columnNumber] ) << out.str();
+                        if( _pivotingElement != LAST_ENTRY_ID && (pivotingRow == rowVar->position() || pivotingColumn == columnNumber) )
+                            _out << " " << pivoting_separator;
+                        else
+                            _out << " " << separator;
+                        ++columnNumber;
                         currentColumn = (*rowIter).columnVar()->position()+1;
                         if( rowIter.hEnd( false ) )
                         {
                             for( size_t i = currentColumn; i < mWidth; ++i )
                             {
-                                _out << std::setw( _maxEntryLength ) << "0 #";
+                                _out << " ";
+                                _out << std::setw( columnWidths[columnNumber] ) << "0";
+                                if( _pivotingElement != LAST_ENTRY_ID && (pivotingRow == rowVar->position() || pivotingColumn == columnNumber) )
+                                    _out << " " << pivoting_separator;
+                                else
+                                    _out << " " << separator;
+                                ++columnNumber;
                             }
-                            _out << std::endl;
                             break;
                         }
                         rowIter.hMove( false );
                     }
+                    _out << " ";
+                    _out << std::setw( basic_var_assign_width ) << rowVar->assignment().toString();
+                    _out << " [";
+                    _out << std::setw( basic_var_infimum_width ) << rowVar->infimum().toString();
+                    _out << ", ";
+                    _out << std::setw( basic_var_supremum_width ) << rowVar->supremum().toString();
+                    _out << "]";
+                    _out << std::endl;
                 }
             }
-            _out << _init << std::setw( _maxEntryLength * (width + 1) ) << std::setfill( frameSign ) << "" << std::endl;
+            _out << _init << std::setw( table_width ) << std::setfill( frameSign ) << "" << std::endl;
+            _out << _init << std::setw( basic_var_name_width ) << std::setfill( ' ' ) << "";
+            _out << " " << separator;
+            for( Variable<T1,T2>* columnVar : mColumns )
+            {
+                _out << " ";
+                _out << std::setw( columnWidths[columnVar->position()] ) << columnVar->assignment().toString();
+                if( _pivotingElement != LAST_ENTRY_ID && pivotingColumn == columnVar->position() )
+                    _out << " " << pivoting_separator;
+                else
+                    _out << " " << separator;
+            }
+            _out << std::endl;
+            _out << _init << std::setw( basic_var_name_width ) << std::setfill( ' ' ) << "";
+            _out << " " << separator;
+            for( Variable<T1,T2>* columnVar : mColumns )
+            {
+                _out << " ";
+                std::stringstream outB;
+                outB << "[" << columnVar->infimum().toString() << ",";
+                _out << std::left << std::setw( columnWidths[columnVar->position()] ) << outB.str();
+                _out << std::right << "";
+                if( _pivotingElement != LAST_ENTRY_ID && pivotingColumn == columnVar->position() )
+                    _out << " " << pivoting_separator;
+                else
+                    _out << " " << separator;
+            }
+            _out << std::endl;
+            _out << _init << std::setw( basic_var_name_width ) << std::setfill( ' ' ) << "";
+            _out << " " << separator;
+            for( Variable<T1,T2>* columnVar : mColumns )
+            {
+                _out << " ";
+                std::stringstream outB;
+                outB << " " << columnVar->supremum().toString() << "]";
+                _out << std::setw( columnWidths[columnVar->position()] ) << outB.str();
+                if( _pivotingElement != LAST_ENTRY_ID && pivotingColumn == columnVar->position() )
+                    _out << " " << pivoting_separator;
+                else
+                    _out << " " << separator;
+            }
+            _out << std::endl;
             _out << std::setfill( ' ' );
         }
     }    // end namspace lra

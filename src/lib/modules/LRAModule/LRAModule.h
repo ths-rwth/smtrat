@@ -119,12 +119,6 @@ namespace smtrat
             void printBoundCandidatesToPass ( std::ostream& = std::cout, const std::string = "" ) const;
             void printRationalModel ( std::ostream& = std::cout, const std::string = "" ) const;
 
-
-            void printTableau ( std::ostream& _out = std::cout, const std::string _init = "" ) const
-            {
-                mTableau.print( _out, 28, _init );
-            }
-
             const VarVariableMap& originalVariables() const
             {
                 return mOriginalVars;

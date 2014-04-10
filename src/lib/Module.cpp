@@ -96,6 +96,7 @@ namespace smtrat
     
     Module::~Module()
     {
+        clearDeductions();
         clearModel();
         mConstraintsToInform.clear();
         mInformedConstraints.clear();
@@ -129,6 +130,10 @@ namespace smtrat
         {
             addReceivedSubformulaToPassedFormula( subformula++ );
         }
+        #ifdef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
+        addAssumptionToCheck( *mpReceivedFormula, true, moduleName( type() ) );
+        return foundAnswer( True );
+        #else
         // Run the backends on the passed formula and return its answer.
         Answer a = runBackends();
         if( a == False )
@@ -137,6 +142,7 @@ namespace smtrat
         }
         mSolverState = a;
         return foundAnswer( a );
+        #endif
     }
 
     /**
@@ -472,9 +478,9 @@ namespace smtrat
             deductionA->addSubformula( notPre );
         }
         deductionA->addSubformula( constraintA );
-        deductionA->back()->setActivity( INFINITY );
+        deductionA->back()->setActivity( -numeric_limits<double>::infinity() );
         deductionA->addSubformula( constraintB );
-        deductionA->back()->setActivity( INFINITY );
+        deductionA->back()->setActivity( -numeric_limits<double>::infinity() );
         addDeduction( deductionA );
         // (not(x<=I-1) or not(x>=I))
         Formula* deductionB = new Formula( OR );
@@ -560,7 +566,8 @@ namespace smtrat
         {
             if( !(*backend)->infeasibleSubsets().empty() )
             {
-                mInfeasibleSubsets = getInfeasibleSubsets( **backend );
+                vec_set_const_pFormula infsubsets = getInfeasibleSubsets( **backend );
+                mInfeasibleSubsets.insert( mInfeasibleSubsets.end(), infsubsets.begin(), infsubsets.end() );
                 // return;
             }
             ++backend;
@@ -925,12 +932,20 @@ namespace smtrat
     void Module::addAssumptionToCheck( const Formula& _formula, bool _consistent, const string& _moduleName )
     {
         string assumption = "";
+        #ifdef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
+        assumption += "(assert ";
+        #else
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
         assumption += "(assert (and ";
+        #endif
         assumption += _formula.toString( false, 1, "", true, false, true );
+        #ifdef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
+        assumption += ")\n";
+        #else
         assumption += " " + _moduleName;
         assumption += "))\n";
         assumption += "(get-assertions)\n";
+        #endif
         assumption += "(check-sat)\n";
         mAssumptionToCheck.push_back( assumption );
         mVariablesInAssumptionToCheck.insert( _moduleName );
@@ -999,9 +1014,13 @@ namespace smtrat
             for( auto assum = Module::mAssumptionToCheck.begin(); assum != Module::mAssumptionToCheck.end(); ++assum )
             { 
                 // For each assumption add a new solver-call by resetting the search state.
+                #ifndef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
                 smtlibFile << "(reset)\n";
+                #endif
                 smtlibFile << "(set-logic " << _manager.logicToString() << ")\n";
+                #ifndef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
                 smtlibFile << "(set-option :interactive-mode true)\n";
+                #endif
                 smtlibFile << "(set-info :smt-lib-version 2.0)\n";
                 // Add all real-valued variables.
                 Variables allVariables = Formula::constraintPool().arithmeticVariables();
@@ -1014,9 +1033,11 @@ namespace smtrat
                 Variables allBooleans = Formula::constraintPool().booleanVariables();
                 for( auto var = allBooleans.begin(); var != allBooleans.end(); ++var )
                     smtlibFile << "(declare-fun " << *var << " () Bool)\n";
+                #ifndef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
                 // Add module name variables.
                 for( auto invMod = Module::mVariablesInAssumptionToCheck.begin(); invMod != Module::mVariablesInAssumptionToCheck.end(); ++invMod )
                     smtlibFile << "(declare-fun " << *invMod << " () Bool)\n";
+                #endif
                 smtlibFile << *assum;
             }
             smtlibFile << "(exit)";

@@ -288,6 +288,11 @@ namespace smtrat
              */
             const Constraint* pConstraint() const
             {
+                if( !( mType == CONSTRAINT || mType == TTRUE || mType == FFALSE ) )
+                {
+                    std::cout << "(error: " << __func__ << " " << __LINE__ << ")" << std::endl; 
+                    exit( 7773 );
+                }
                 assert( mType == CONSTRAINT || mType == TTRUE || mType == FFALSE );
                 return mpConstraint;
             }
@@ -547,9 +552,9 @@ namespace smtrat
              * @param _domain The domain of the arithmetic variable.
              * @return The constructed arithmetic variable.
              */
-            static carl::Variable newArithmeticVariable( const std::string& _name, carl::VariableType _domain )
+            static carl::Variable newArithmeticVariable( const std::string& _name, carl::VariableType _domain, bool _parsed = false )
             {
-                return mpConstraintPool->newArithmeticVariable( _name, _domain );
+                return mpConstraintPool->newArithmeticVariable( _name, _domain, _parsed );
             }
 
             /**
@@ -557,9 +562,9 @@ namespace smtrat
              * @param _name The intended name of the variable.
              * @return A pointer to the name of the constructed Boolean variable.
              */
-            static const carl::Variable newBooleanVariable( const std::string& _name )
+            static const carl::Variable newBooleanVariable( const std::string& _name, bool _parsed = false )
             {
-                return mpConstraintPool->newBooleanVariable( _name );
+                return mpConstraintPool->newBooleanVariable( _name, _parsed );
             }
 
             /**

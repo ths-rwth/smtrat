@@ -131,6 +131,8 @@ namespace smtrat
             std::stack< std::vector< std::pair< std::string, unsigned > > > mVariableStack;
             ///
             std::unordered_map< carl::Variable, smtrat::Formula* > mInnerConstraintBindings;
+            ///
+            std::map<const Formula*, std::set<carl::Variable>> mFoundBooleanVariables;
 
         public:
             // Constructor and destructor.
@@ -257,12 +259,7 @@ namespace smtrat
                 mInstructionQueue.push( Instruction( CHECK, iv ) );
             }
             
-            void add( class Formula* _formula )
-            {
-                InstructionValue iv = InstructionValue();
-                iv.formula = _formula;
-                mInstructionQueue.push( Instruction( ASSERT, iv ) );
-            }
+            void add( class Formula* _formula );
             
             void push( const std::string& _num )
             {
@@ -397,7 +394,9 @@ namespace smtrat
                 assert( false );
                 return carl::VT_REAL;
             }
-
+            
+            void moveFoundBooleanVars( const Formula*, std::set<carl::Variable>& );
+            bool foundBooleanVarsCorrect( const Formula* );
             bool parse_stream( std::istream&, const std::string& = "stream input" );
             bool parse_string( const std::string&, const std::string& = "string stream" );
             bool parse_file( const std::string& );
@@ -406,9 +405,9 @@ namespace smtrat
             void applySetLogic( const std::string& );
             void addVariable( const class location&, std::string*, std::string* );
             carl::Variable addBooleanVariable( const class location&, const std::string&, bool = false );
-            smtrat::Formula* addTheoryBinding( const class location&, std::string*, smtrat::Polynomial* );
-            smtrat::Formula* booleanBinding( const class location&, std::string*, Formula* );
-            smtrat::Formula* appendBindings( std::vector< smtrat::Formula* >*, smtrat::Formula* );
+            std::pair<carl::Variable, smtrat::Formula*>* addTheoryBinding( const class location&, std::string*, smtrat::Polynomial* );
+            std::pair<carl::Variable, smtrat::Formula*>* booleanBinding( const class location&, std::string*, Formula* );
+            smtrat::Formula* appendBindings( std::vector<std::pair<carl::Variable, smtrat::Formula*>*>*, smtrat::Formula* );
             carl::Variable addTheoryVariable( const class location&, const std::string&, const std::string&, bool = false );
             carl::Variable getBooleanVariable( const class location&, const std::string& );
             void freeBooleanVariableName( const std::string& );
@@ -420,7 +419,7 @@ namespace smtrat
             smtrat::Formula* mkBoolean( const class location&, std::string* );
             smtrat::Formula* mkFormula( unsigned, smtrat::Formula*, smtrat::Formula* );
             smtrat::Formula* mkFormula( unsigned, std::vector< smtrat::Formula* >* );
-            smtrat::Formula* mkIff( smtrat::Formula*, smtrat::Formula*, smtrat::Formula*, smtrat::Formula*, bool ) const;
+            smtrat::Formula* mkIff( smtrat::Formula*, smtrat::Formula*, smtrat::Formula*, smtrat::Formula*, bool );
             smtrat::Formula* mkIteInFormula( smtrat::Formula*, smtrat::Formula*, smtrat::Formula* );
             carl::Variable mkIteInExpr( const class location&, smtrat::Formula*, smtrat::Polynomial*, smtrat::Polynomial* );
             smtrat::Rational getRational( std::string* ) const;

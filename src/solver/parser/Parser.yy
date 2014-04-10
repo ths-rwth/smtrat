@@ -94,14 +94,16 @@ CLANG_WARNING_DISABLE("-Wconversion")
 
 %union
 {
-   bool                                                  bval;
-   unsigned                                              eval;
-   std::string*                                          sval;
-   std::vector< std::string* >*                          vsval;
-   std::vector< std::pair< std::string, std::string > >* vspval;
-   class Formula*                                        fval;
-   std::vector< class Formula* >*                        vfval;
-   Polynomial*                                           pval;
+   bool                                                     bval;
+   unsigned                                                 eval;
+   std::string*                                             sval;
+   std::vector< std::string* >*                             vsval;
+   std::vector< std::pair< std::string, std::string > >*    vspval;
+   class Formula*                                           fval;
+   std::pair<carl::Variable, class Formula*>*               bdval;
+   std::vector<std::pair<carl::Variable, class Formula*>*>* bdlval;
+   std::vector< class Formula* >*                           vfval;
+   Polynomial*                                              pval;
 }
 
 %token END	0	"end of file"
@@ -121,8 +123,10 @@ CLANG_WARNING_DISABLE("-Wconversion")
 
 %type <sval>   value
 %type <pval>   poly polylistPlus polylistMinus polylistTimes polyOp
-%type <fval>   cond form equation bind
-%type <vfval>  formlist bindlist
+%type <fval>   cond form equation
+%type <bdval>  bind
+%type <bdlval> bindlist
+%type <vfval>  formlist
 %type <vsval>  symlist
 %type <vspval> varlist
 %type <eval>   relation
@@ -257,7 +261,7 @@ let:
         LET { dv.pushVariableStack(); dv.setTwoFormulaMode( true ); }
 
 bindlist:
-		bind          { dv.restoreTwoFormulaMode(); $$ = new vector< smtrat::Formula* >(); if( $1 != NULL ) { $$->push_back( $1 ); } }
+		bind          { dv.restoreTwoFormulaMode(); $$ = new vector<pair<carl::Variable, smtrat::Formula*>*>(); if( $1 != NULL ) { $$->push_back( $1 ); } }
 	|	bind bindlist { $$ = $2; if( $1 != NULL ) { $$->push_back( $1 ); } }
 
 bind:

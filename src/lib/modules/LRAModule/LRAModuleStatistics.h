@@ -137,6 +137,8 @@ namespace smtrat
             mChecksWithPivoting( 0 ),
             mAllChecksSizes( 0 )
         {}
+        
+        ~LRAModuleStatistics() {}
     };
 }
 

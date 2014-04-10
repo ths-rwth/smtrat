@@ -107,6 +107,11 @@ namespace smtrat
                     return !(mpInfimum->isInfinite() && mpSupremum->isInfinite());
                 }
                 
+                bool involvesEquation() const
+                {
+                    return !mpInfimum->isInfinite() && mpInfimum->type() == Bound<T1,T2>::EQUAL;
+                }
+                
                 EntryID startEntry() const
                 {
                     return mStartEntry;
@@ -125,6 +130,11 @@ namespace smtrat
                 size_t& rSize()
                 {
                     return mSize;
+                }
+                
+                double conflictActivity() const
+                {
+                    return mConflictActivity;
                 }
                 
                 void setSupremum( const Bound<T1, T2>* _supremum )
@@ -157,6 +167,7 @@ namespace smtrat
                         --mpInfimum->pInfo()->updated;
                     ++_infimum->pInfo()->updated;
                     mpInfimum = _infimum;
+                    updateConflictActivity();
                 }
 
                 const Bound<T1, T2>* pInfimum() const
@@ -248,11 +259,45 @@ namespace smtrat
                 }
                 #endif
 
+                void updateConflictActivity()
+                {
+                    mConflictActivity = 0;
+                    int counter = 0;
+                    if( !mpInfimum->isInfinite() )
+                    {
+                        for( const Formula* form : mpInfimum->pOrigins()->front() )
+                        {
+                            mConflictActivity += form->activity();
+                            ++counter;
+                            if( mConflictActivity > 1e20 )
+                            {
+                                assert( counter > 0 );
+                                mConflictActivity /= counter;
+                                counter = 0;
+                            }
+                        }
+                    }
+                    if( !mpSupremum->isInfinite() )
+                    {
+                        for( const Formula* form : mpSupremum->pOrigins()->front() )
+                        {
+                            mConflictActivity += form->activity();
+                            ++counter;
+                            if( mConflictActivity > 1e20 )
+                            {
+                                assert( counter > 0 );
+                                mConflictActivity /= counter;
+                                counter = 0;
+                            }
+                        }
+                    }
+                }
+
                 std::pair<const Bound<T1, T2>*, typename Bound<T1, T2>::BoundSet::const_iterator> addUpperBound( Value<T1>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL, bool = false );
                 std::pair<const Bound<T1, T2>*, typename Bound<T1, T2>::BoundSet::const_iterator> addLowerBound( Value<T1>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL, bool = false );
                 std::pair<const Bound<T1, T2>*, std::pair<typename Bound<T1, T2>::BoundSet::const_iterator, typename Bound<T1, T2>::BoundSet::const_iterator> > 
                     addEqualBound( Value<T1>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL );
-                void deactivateBound( const Bound<T1, T2>*, smtrat::Formula::iterator );
+                bool deactivateBound( const Bound<T1, T2>*, smtrat::Formula::iterator );
                 Interval getVariableBounds() const;
                 std::set< const smtrat::Formula* > getDefiningOrigins() const;
 
@@ -317,6 +362,7 @@ namespace smtrat
                 mUpperbounds.erase( mUpperbounds.begin() );
                 delete b;
             }
+            delete mExpression;
         }
 
         /**
@@ -408,16 +454,19 @@ namespace smtrat
         }
 
         /**
-         *
+         * 
          * @param bound
+         * @param _position
+         * @return 
          */
         template<typename T1, typename T2>
-        void Variable<T1, T2>::deactivateBound( const Bound<T1, T2>* bound, smtrat::Formula::iterator _position )
+        bool Variable<T1, T2>::deactivateBound( const Bound<T1, T2>* bound, smtrat::Formula::iterator _position )
         {
             assert( !bound->isInfinite() );
             assert( !bound->isActive() );
             bound->pInfo()->updated = 0;
             bound->pInfo()->position = _position;
+            bool variableBoundsChanged = false;
             if( bound->isUpperBound() )
             {
                 //check if it is the supremum
@@ -435,6 +484,7 @@ namespace smtrat
                         ++newBound;
                     }
                     mpSupremum = *newBound;
+                    variableBoundsChanged = true;
                 }
             }
             if( bound->isLowerBound() )
@@ -454,8 +504,10 @@ namespace smtrat
                         ++newBound;
                     }
                     mpInfimum = *newBound;
+                    variableBoundsChanged = true;
                 }
             }
+            return variableBoundsChanged;
         }
 
         /**

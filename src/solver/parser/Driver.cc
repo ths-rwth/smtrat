@@ -73,7 +73,8 @@ namespace smtrat
         mTheoryBindings(),
         mTheoryIteBindings(),
         mVariableStack(),
-        mInnerConstraintBindings()
+        mInnerConstraintBindings(),
+        mFoundBooleanVariables()
     {
         mInfos.userInfos = map< string, string >();
     }
@@ -87,6 +88,63 @@ namespace smtrat
         if( mDiagnosticOutputReadBuffer != NULL )
             delete mDiagnosticOutputReadBuffer;
         delete mStreamname;
+    }
+    
+            
+    void Driver::add( class Formula* _formula )
+    {
+        InstructionValue iv = InstructionValue();
+        iv.formula = _formula;
+//        if( mFoundBooleanVariables.size() > 1 )
+//        {
+//            for( auto iter = mFoundBooleanVariables.begin(); iter != mFoundBooleanVariables.end(); ++iter )
+//                cout << *iter->first << endl;
+//        }
+        assert( mFoundBooleanVariables.size() == 1 );
+        auto iter = mFoundBooleanVariables.find( _formula );
+        assert( iter != mFoundBooleanVariables.end() );
+        mFoundBooleanVariables.erase( iter );
+        mInstructionQueue.push( Instruction( ASSERT, iv ) );
+    }
+            
+    void Driver::moveFoundBooleanVars( const Formula* _fromFormula, std::set<carl::Variable>& _toSet )
+    {
+//        cout << "mFoundBooleanVariables.size() = " << mFoundBooleanVariables.size() << endl;
+//        cout << "boolean vars in " << endl;
+//        cout << *_fromFormula << endl;
+//        cout << "are:";
+        assert( foundBooleanVarsCorrect( _fromFormula ) );
+        auto iterB = mFoundBooleanVariables.find( _fromFormula );
+        if( iterB != mFoundBooleanVariables.end() )
+        {
+//            for( auto var : iterB->second )
+//                cout << " " << var;
+            _toSet.insert( iterB->second.begin(), iterB->second.end() );
+            mFoundBooleanVariables.erase( iterB );
+        }
+//        cout << endl;
+    }
+    
+    bool Driver::foundBooleanVarsCorrect( const Formula* _formula )
+    {
+        set<carl::Variable> bvars;
+        _formula->booleanVars( bvars );
+        auto iter = mFoundBooleanVariables.find( _formula );
+        if( iter != mFoundBooleanVariables.end() )
+        {
+//            auto varA = iter->second.begin();
+//            auto varB = bvars.begin();
+//            while( varA != iter->second.end() && varB != bvars.end() )
+//            {
+//                if( *varA != *varB )
+//                    return false;
+//                ++varA;
+//                ++varB;
+//            }
+            return iter->second == bvars;
+        }
+        else
+            return bvars.empty();
     }
 
     /**
@@ -202,10 +260,7 @@ namespace smtrat
         else
         {
             assert( _varName != "" );
-            string tmpName = _varName;
-            if( tmpName.size() > 3 && tmpName[0] == 'h' && tmpName[1] == '_' && tmpName[2] != '_' )
-                tmpName.insert( 1, "_" );
-            carl::Variable bvar = Formula::newBooleanVariable( tmpName );
+            carl::Variable bvar = Formula::newBooleanVariable( _varName, true );
             if( !mBooleanVariables.insert( pair< string, carl::Variable >( (_varName == "" ? Formula::constraintPool().getVariableName( bvar, true ) : _varName), bvar ) ).second )
                 error( _loc, "Multiple definition of Boolean variable " + _varName );
             return bvar;
@@ -220,7 +275,7 @@ namespace smtrat
      * @param _exVarsPair
      * @return 
      */
-    Formula* Driver::addTheoryBinding( const class location& _loc, string* _varName, Polynomial* _polynomial )
+    pair<carl::Variable, Formula*>* Driver::addTheoryBinding( const class location& _loc, string* _varName, Polynomial* _polynomial )
     {
         assert( mTheoryBindings.find( *_varName ) == mTheoryBindings.end() );
         if( !mTheoryBindings.insert( pair< string, Polynomial* >( *_varName, _polynomial ) ).second )
@@ -232,19 +287,25 @@ namespace smtrat
         {
             if( mInnerConstraintBindings.size() == 1 )
             {
-                Formula* result = mInnerConstraintBindings.begin()->second;
+                Formula* form = mInnerConstraintBindings.begin()->second;
                 mInnerConstraintBindings.erase( mInnerConstraintBindings.begin() );
-                return result;
+                return new pair<carl::Variable, Formula*>( carl::Variable::NO_VARIABLE, form );
             }
             else
             {
-                Formula* result = new Formula( AND );
+                set<carl::Variable> bvars;
+                Formula* form = new Formula( AND );
                 while( !mInnerConstraintBindings.empty() )
                 {
-                    result->addSubformula( mInnerConstraintBindings.begin()->second );
+                    moveFoundBooleanVars( mInnerConstraintBindings.begin()->second, bvars );
+                    form->addSubformula( mInnerConstraintBindings.begin()->second );
                     mInnerConstraintBindings.erase( mInnerConstraintBindings.begin() );
                 }
-                return result;
+                if( !bvars.empty() )
+                {
+                    mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( form, bvars ) );
+                }
+                return new pair<carl::Variable, Formula*>( carl::Variable::NO_VARIABLE, form );
             }
         }
         else
@@ -259,7 +320,7 @@ namespace smtrat
      * @param _formula
      * @return 
      */
-    Formula* Driver::booleanBinding( const class location& _loc, string* _varName, Formula* _formula )
+    pair<carl::Variable, Formula*>* Driver::booleanBinding( const class location& _loc, string* _varName, Formula* _formula )
     {
         assert( _formula->getType() == smtrat::AND && _formula->size() == 2 );
         mVariableStack.top().push_back( pair< string, unsigned >( *_varName, 0 ) );
@@ -268,9 +329,22 @@ namespace smtrat
         notBindingBool->addSubformula( new Formula( bvar ) );
         Formula* posCase = _formula->pruneFront();
         Formula* negCase = _formula->pruneFront();
-        delete _formula;
         delete _varName;
-        return mkIff( posCase, new Formula( bvar ), negCase, notBindingBool, false );
+        Formula* bvarForm = new Formula( bvar );
+        auto iter = mFoundBooleanVariables.find( _formula );
+        if( iter != mFoundBooleanVariables.end() )
+        {
+            mFoundBooleanVariables.insert( pair<Formula*, set<carl::Variable>>( posCase, iter->second ) );
+            mFoundBooleanVariables.insert( pair<Formula*, set<carl::Variable>>( negCase, iter->second ) );
+            mFoundBooleanVariables.erase( iter );
+        }
+        delete _formula;
+        set<carl::Variable> bvars;
+        bvars.insert( bvar );
+        mFoundBooleanVariables.insert( pair<Formula*, set<carl::Variable>>( notBindingBool, bvars ) );
+        mFoundBooleanVariables.insert( pair<Formula*, set<carl::Variable>>( bvarForm, move( bvars ) ) );
+        Formula* form = mkIff( posCase, bvarForm, negCase, notBindingBool, false );
+        return new pair<carl::Variable, Formula*>( bvar, form );
     }
     
     /**
@@ -279,7 +353,7 @@ namespace smtrat
      * @param _formula
      * @return 
      */
-    Formula* Driver::appendBindings( vector< Formula* >* _bindings, Formula* _formula )
+    Formula* Driver::appendBindings( vector< pair<carl::Variable,Formula*>*>* _bindings, Formula* _formula )
     {
         if( _bindings->empty() )
         {
@@ -288,14 +362,56 @@ namespace smtrat
         }
         else
         {
+            set<carl::Variable> bvars;
+            auto iter = mFoundBooleanVariables.find( _formula );
             Formula* result = new Formula( AND );
             while( !_bindings->empty() )
             {
-                result->addSubformula( _bindings->back() );
+                // get binding variable
+                pair<carl::Variable,Formula*>* binding = _bindings->back();
                 _bindings->pop_back();
+                if( binding->first != carl::Variable::NO_VARIABLE )
+                {
+                    if( binding->second->getType() != AND )
+                        cout << *binding->second << endl;
+                    assert( binding->second->getType() == AND );
+                    assert( binding->second->size() == 5 );
+                    Formula* form = *(++(binding->second->begin()));
+                    assert( form->size() == 2 );
+                    assert( form->back()->getType() == BOOL );
+                    if( iter != mFoundBooleanVariables.end() && iter->second.find( form->back()->boolean() ) != iter->second.end() )
+                    {
+                        result->addSubformula( binding->second );
+                        moveFoundBooleanVars( binding->second, bvars );
+                    }
+                    else
+                    {
+                        mFoundBooleanVariables.erase( binding->second );
+                    }
+                }
+                else
+                {
+                    result->addSubformula( binding->second );
+                    mFoundBooleanVariables.erase( binding->second );
+                }
+                delete binding;
             }
-            result->addSubformula( _formula );
             delete _bindings;
+            if( result->empty() )
+            {
+                delete result;
+                return _formula;
+            }   
+            if( iter != mFoundBooleanVariables.end() )
+            {
+                set<carl::Variable> bvarstmp( move( iter->second ) );
+                bvarstmp.insert( bvars.begin(), bvars.end() );
+                mFoundBooleanVariables.erase( iter );
+                mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvarstmp ) ) );
+            }
+            else if( !bvars.empty() )
+                mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvars ) ) );
+            result->addSubformula( _formula );
             return result;
         }
     }
@@ -309,7 +425,7 @@ namespace smtrat
     {
         mLexer->mTheoryVariables.insert( _varName );
         carl::VariableType dom = getDomain( _theory );
-        carl::Variable var( _isBindingVariable ? (dom == carl::VariableType::VT_REAL ? smtrat::Formula::newAuxiliaryRealVariable() : smtrat::Formula::newAuxiliaryIntVariable()) : Formula::newArithmeticVariable( _varName, dom ) );
+        carl::Variable var( _isBindingVariable ? (dom == carl::VariableType::VT_REAL ? smtrat::Formula::newAuxiliaryRealVariable() : smtrat::Formula::newAuxiliaryIntVariable()) : Formula::newArithmeticVariable( _varName, dom, true ) );
         pair< TheoryVarMap::iterator, bool > res = mTheoryVariables.insert( pair< string, carl::Variable >( _varName.empty() ? smtrat::Formula::mpConstraintPool->getVariableName( var, true ) : _varName, var ) );
         if( !res.second )  error( _loc, "Multiple definition of real variable " + _varName );
         return res.first->second;
@@ -324,7 +440,9 @@ namespace smtrat
     {
         auto bvar = mBooleanVariables.find( _varName );
         if( bvar != mBooleanVariables.end() )
+        {
             return bvar->second;
+        }
         else
         {
             error( _loc, "Boolean variable " + _varName + " has not been defined!" );
@@ -412,7 +530,13 @@ namespace smtrat
             {
                 auto bindingVars = mTheoryIteBindings.find( *iter );
                 if( bindingVars != mTheoryIteBindings.end() )
-                    varBindings.push_back( new Formula( bindingVars->second ) );
+                {
+                    Formula* binding = new Formula( bindingVars->second );
+                    set<carl::Variable> bvars;
+                    bvars.insert( bindingVars->second );
+                    mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( binding, bvars ) );
+                    varBindings.push_back( binding );
+                }
                 auto icBind = mInnerConstraintBindings.find( *iter );
                 if( icBind != mInnerConstraintBindings.end() )
                 {
@@ -424,15 +548,21 @@ namespace smtrat
             Formula* resultB;
             if( !varBindings.empty() )
             {
+                set<carl::Variable> bvars;
                 resultA = new Formula( AND );
                 resultB = new Formula( AND );
                 resultA->addSubformula( consA );
                 resultB->addSubformula( consB );
                 while( !varBindings.empty() )
                 {
+                    moveFoundBooleanVars( varBindings.back(), bvars );
                     resultA->addSubformula( new Formula( *varBindings.back() ) );
                     resultB->addSubformula( varBindings.back() );
                     varBindings.pop_back();
+                }
+                if( !bvars.empty() )
+                {
+                    mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvars ) ) );
                 }
             }
             else
@@ -464,7 +594,13 @@ namespace smtrat
             {
                 auto bindingVars = mTheoryIteBindings.find( *iter );
                 if( bindingVars != mTheoryIteBindings.end() )
-                    varBindings.push_back( new Formula( bindingVars->second ) );
+                {
+                    Formula* binding = new Formula( bindingVars->second );
+                    set<carl::Variable> bvars;
+                    bvars.insert( bindingVars->second );
+                    mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( binding, bvars ) );
+                    varBindings.push_back( binding );
+                }
                 auto icBind = mInnerConstraintBindings.find( *iter );
                 if( icBind != mInnerConstraintBindings.end() )
                 {
@@ -474,11 +610,17 @@ namespace smtrat
             }
             if( !varBindings.empty() )
             {
+                set<carl::Variable> bvars;
                 Formula* result = new Formula( AND );
                 while( !varBindings.empty() )
                 {
+                    moveFoundBooleanVars( varBindings.back(), bvars );
                     result->addSubformula( varBindings.back() );
                     varBindings.pop_back();
+                }
+                if( !bvars.empty() )
+                {
+                    mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvars ) ) );
                 }
                 result->addSubformula( cons );
                 return result;
@@ -551,38 +693,41 @@ namespace smtrat
      */
     Formula* Driver::mkBoolean( const class location& _loc, string* _varName )
     {
+        Formula* result;
+        carl::Variable var = carl::Variable::NO_VARIABLE;
         if( mTwoFormulaMode )
         {
-            Formula* result = new Formula( smtrat::AND );
-            carl::Variable varName = getBooleanVariable( _loc, *_varName );
+            result = new Formula( smtrat::AND );
+            var = getBooleanVariable( _loc, *_varName );
             if( mPolarity )
             {
-                result->addSubformula( new Formula( varName ) );
+                result->addSubformula( new Formula( var ) );
                 result->addSubformula( new Formula( smtrat::NOT ) );
-                result->back()->addSubformula( new Formula( varName ) );
+                result->back()->addSubformula( new Formula( var ) );
             }
             else
             {
                 result->addSubformula( new Formula( smtrat::NOT ) );
-                result->back()->addSubformula( new Formula( varName ) );
-                result->addSubformula( new Formula( varName ) );
+                result->back()->addSubformula( new Formula( var ) );
+                result->addSubformula( new Formula( var ) );
             }
-            delete _varName;
-            return result;
         }
         else if( mPolarity )
         {
-            Formula* result = new Formula( getBooleanVariable( _loc, *_varName ) );
-            delete _varName;
-            return result;
+            var = getBooleanVariable( _loc, *_varName );
+            result = new Formula( var );
         }
         else
         {
-            Formula* result = new Formula( smtrat::NOT );
-            result->addSubformula( new Formula( getBooleanVariable( _loc, *_varName ) ) );
-            delete _varName;
-            return result;
+            var = getBooleanVariable( _loc, *_varName );
+            result = new Formula( smtrat::NOT );
+            result->addSubformula( new Formula( var ) );
         }
+        set<carl::Variable> vars;
+        vars.insert( var );
+        mFoundBooleanVariables.insert( pair<Formula*, set<carl::Variable>>( result, move( vars ) ) );
+        delete _varName;
+        return result;
     }
     
     /**
@@ -596,6 +741,7 @@ namespace smtrat
     {
         smtrat::Type type = (smtrat::Type) _type;
         assert( type != smtrat::IMPLIES );
+        set<carl::Variable> bvars;
         if( type == smtrat::IFF || type == smtrat::XOR )
         {
             assert( _subformulaA->getType() == smtrat::AND && _subformulaA->size() == 2 );
@@ -604,13 +750,28 @@ namespace smtrat
             Formula* caseB = (type == smtrat::IFF ? _subformulaB->pruneFront() : _subformulaB->pruneBack());
             Formula* notCaseA = _subformulaA->pruneFront();
             Formula* notCaseB = _subformulaB->pruneFront();
-            Formula* result = mkIff( caseA, caseB, notCaseA, notCaseB, mTwoFormulaMode );
+            auto iter = mFoundBooleanVariables.find( _subformulaA );
+            if( iter != mFoundBooleanVariables.end() )
+            {
+                mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( caseA, iter->second ) );
+                mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( notCaseA, iter->second ) );
+                mFoundBooleanVariables.erase( iter );
+            }
+            iter = mFoundBooleanVariables.find( _subformulaB );
+            if( iter != mFoundBooleanVariables.end() )
+            {
+                mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( caseB, iter->second ) );
+                mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( notCaseB, iter->second ) );
+                mFoundBooleanVariables.erase( iter );
+            }
             delete _subformulaA;
             delete _subformulaB;
-            return result;
+            return mkIff( caseA, caseB, notCaseA, notCaseB, mTwoFormulaMode );
         }
         else if( mTwoFormulaMode )
         {
+            moveFoundBooleanVars( _subformulaA, bvars );
+            moveFoundBooleanVars( _subformulaB, bvars );
             Formula* result = new Formula( smtrat::AND );
             Formula* resultA = new Formula( type );
             assert( _subformulaA->getType() == smtrat::AND && _subformulaA->size() == 2 );
@@ -632,13 +793,23 @@ namespace smtrat
             }
             delete _subformulaA;
             delete _subformulaB;
+            if( !bvars.empty() )
+            {
+                mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvars ) ) );
+            }
             return result;
         }
         else
         {
+            moveFoundBooleanVars( _subformulaA, bvars );
+            moveFoundBooleanVars( _subformulaB, bvars );
             Formula* result = new Formula( type );
             result->addSubformula( _subformulaA );
             result->addSubformula( _subformulaB );
+            if( !bvars.empty() )
+            {
+                mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvars ) ) );
+            }
             return result;
         }
     }
@@ -653,6 +824,7 @@ namespace smtrat
     {
         smtrat::Type type = (smtrat::Type) _type;
         assert( type == smtrat::AND || type == smtrat::OR );
+        set<carl::Variable> bvars;
         if( mTwoFormulaMode )
         {
             Formula* result = new Formula( smtrat::AND );
@@ -661,23 +833,20 @@ namespace smtrat
             while( !_subformulas->empty() )
             {
                 Formula* tmpFormula = _subformulas->front();
+                moveFoundBooleanVars( tmpFormula, bvars );
                 assert( tmpFormula->getType() == smtrat::AND && tmpFormula->size() == 2 );
                 _subformulas->erase( _subformulas->begin() );
                 resultA->addSubformula( tmpFormula->pruneFront() );
                 resultB->addSubformula( tmpFormula->pruneFront() );
                 delete tmpFormula;
             }
-//            if( mPolarity )
-//            {
-                result->addSubformula( resultA );
-                result->addSubformula( resultB );
-//            }
-//            else
-//            {
-//                result->addSubformula( resultB );
-//                result->addSubformula( resultA );
-//            }
+            result->addSubformula( resultA );
+            result->addSubformula( resultB );
             delete _subformulas;
+            if( !bvars.empty() )
+            {
+                mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvars ) ) );
+            }
             return result;
         }
         else
@@ -685,10 +854,15 @@ namespace smtrat
             Formula* result = new Formula( type );
             while( !_subformulas->empty() )
             {
+                moveFoundBooleanVars( _subformulas->back(), bvars );
                 result->addSubformula( _subformulas->back() );
                 _subformulas->pop_back();
             }
             delete _subformulas;
+            if( !bvars.empty() )
+            {
+                mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvars ) ) );
+            }
             return result;
         }
     }
@@ -701,11 +875,20 @@ namespace smtrat
      * @param _notFormulaB
      * @return 
      */
-    Formula* Driver::mkIff( Formula* _formulaA, Formula* _formulaB, Formula* _notFormulaA, Formula* _notFormulaB, bool _withNegation ) const
+    Formula* Driver::mkIff( Formula* _formulaA, Formula* _formulaB, Formula* _notFormulaA, Formula* _notFormulaB, bool _withNegation )
     {
-        Formula* h_i1  = new Formula( Formula::newAuxiliaryBooleanVariable() );
-        Formula* h_i2  = new Formula( Formula::newAuxiliaryBooleanVariable() );
+        carl::Variable bvar_i1 = Formula::newAuxiliaryBooleanVariable();
+        carl::Variable bvar_i2 = Formula::newAuxiliaryBooleanVariable();
+        Formula* h_i1  = new Formula( bvar_i1 );
+        Formula* h_i2  = new Formula( bvar_i2 );
         Formula* result = new Formula( AND );
+        set<carl::Variable> bvars;
+        bvars.insert( bvar_i1 );
+        bvars.insert( bvar_i2 );
+        moveFoundBooleanVars( _formulaA, bvars );
+        moveFoundBooleanVars( _formulaB, bvars );
+        moveFoundBooleanVars( _notFormulaA, bvars );
+        moveFoundBooleanVars( _notFormulaB, bvars );
         // not h_1 or f_1
         Formula* caseA = new Formula( OR );
         caseA->addSubformula( new Formula( NOT ) );
@@ -754,10 +937,16 @@ namespace smtrat
                 results->addSubformula( negatedCases );
                 results->addSubformula( result );
             }
+            set<carl::Variable> bvarstmp;
+            bvarstmp.insert( bvar_i1 );
+            bvarstmp.insert( bvar_i2 );
+            mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( negatedCases, move( bvarstmp ) ) );
+            mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( results, move( bvars ) ) );
             return results;
         }
         else
         {
+            mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvars ) ) );
             return result;
         }
     }
@@ -774,13 +963,31 @@ namespace smtrat
         assert( _condition->getType() == smtrat::AND && _condition->size() == 2 );
         assert( _condition->getType() == smtrat::AND && _condition->size() == 2 );
         Formula* result = new Formula( AND );
+        set<carl::Variable> bvars;
+        moveFoundBooleanVars( _condition, bvars );
+        moveFoundBooleanVars( _then, bvars );
+        moveFoundBooleanVars( _else, bvars );
         carl::Variable auxBool = Formula::newAuxiliaryBooleanVariable();
+        bvars.insert( auxBool );
         // Add: (iff auxBool _condition)
         Formula* notAuxBool = new Formula( NOT );
         notAuxBool->addSubformula( new Formula( auxBool ) );
         Formula* posCase = _condition->pruneFront();
         Formula* negCase = _condition->pruneFront();
-        Formula* formulaIff = mkIff( new Formula( auxBool ), posCase, notAuxBool, negCase, false );
+        Formula* auxBoolForm = new Formula( auxBool );
+        auto iter = mFoundBooleanVariables.find( _condition );
+        if( iter != mFoundBooleanVariables.end() )
+        {
+            mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( posCase, iter->second ) );
+            mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( negCase, iter->second ) );
+            mFoundBooleanVariables.erase( iter );
+        }
+        set<carl::Variable> bvarstmp;
+        bvarstmp.insert( auxBool );
+        mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( auxBoolForm, bvarstmp ) );
+        mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( notAuxBool, move( bvarstmp ) ) );
+        Formula* formulaIff = mkIff( auxBoolForm, posCase, notAuxBool, negCase, false );
+        mFoundBooleanVariables.erase( formulaIff );
         delete _condition;
         result->addSubformula( formulaIff );
         // Add: (or (not auxBool) _then)
@@ -822,10 +1029,14 @@ namespace smtrat
             resultB->addSubformula( formulaOrBC );
             results->addSubformula( result );
             results->addSubformula( resultB );
+            mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( results, move( bvars ) ) );
             return results;
         }
         else
+        {
+            mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvars ) ) );
             return result;
+        }
     }
 
     /**
@@ -839,6 +1050,8 @@ namespace smtrat
     carl::Variable Driver::mkIteInExpr( const class location& _loc, Formula* _condition, Polynomial* _then, Polynomial* _else )
     {
         setTwoFormulaMode( false );
+        set<carl::Variable> bvars;
+        moveFoundBooleanVars( _condition, bvars );
         carl::Variable auxVar( addTheoryVariable( _loc, (mLogic == Logic::QF_NRA || mLogic == Logic::QF_LRA) ? "Real" : "Int", "", true ) );
         carl::Variable conditionBool = addBooleanVariable( _loc, "", true );
         setPolarity( true );
@@ -867,11 +1080,25 @@ namespace smtrat
         Formula* caseB = _condition->pruneFront();
         Formula* caseBNeg = _condition->pruneFront();
         delete _condition;
-        Formula* formulaIff = mkIff( new Formula( conditionBool ), caseB, notAuxBool, caseBNeg, false );
+        Formula* auxBool = new Formula( conditionBool );
+        if( !bvars.empty() )
+        {
+            mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( caseB, bvars ) );
+            mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( caseBNeg, bvars ) );
+        }
+        set<carl::Variable> bvarstmp;
+        bvarstmp.insert( conditionBool );
+        mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( auxBool, bvarstmp ) );
+        mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( notAuxBool, move( bvarstmp ) ) );
+        Formula* formulaIff = mkIff( auxBool, caseB, notAuxBool, caseBNeg, false );
+        mFoundBooleanVariables.erase( formulaIff );
         innerConstraintBinding->addSubformula( formulaIff );
         Formula* result = new Formula( OR );
         result->addSubformula( notTmp );
         result->addSubformula( innerConstraintBinding );
+        bvars.insert( conditionBool );
+        bvars.insert( dependencyBool );
+        mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvars ) ) );
         mInnerConstraintBindings.insert( pair< carl::Variable, Formula* >( auxVar, result ) );
         assert( mTheoryIteBindings.find( auxVar ) == mTheoryIteBindings.end() );
         mTheoryIteBindings.insert( pair< carl::Variable, carl::Variable >( auxVar, dependencyBool ) );

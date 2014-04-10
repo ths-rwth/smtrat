@@ -34,7 +34,7 @@ using namespace std;
 namespace smtrat
 {
     ConstraintPool::ConstraintPool( unsigned _capacity ):
-        mExternalPrefixInitialized( true ),
+        mExternalPrefixInitialized( false ),
         mLastConstructedConstraintWasKnown( false ),
         mIdAllocator( 1 ),
         mAuxiliaryBoolVarCounter( 0 ),
@@ -134,8 +134,11 @@ namespace smtrat
         assert( !_name.empty() );
         assert( _domain == carl::VariableType::VT_REAL || _domain == carl::VariableType::VT_INT );
         // Initialize the prefix for the external representation of internally generated (not parsed) variable names
-        if( _parsed ) mExternalPrefixInitialized = false;
-        else if( !mExternalPrefixInitialized ) initExternalPrefix();
+        if( _parsed )
+        {
+            assert( !mExternalPrefixInitialized );
+            mParsedVarNames.push_back( _name );
+        }
         lock_guard<mutex> lock( mMutexArithmeticVariables );
         // Create the arithmetic variable
         auto iterBoolPair = mExternalNamesToVariables.insert( pair<string,carl::Variable>( _name, carl::VariablePool::getInstance().getFreshVariable( _domain ) ) );
@@ -148,8 +151,11 @@ namespace smtrat
     {
         lock_guard<mutex> lock( mMutexBooleanVariables );
         assert( !booleanExistsAlready( _name ) );
-        if( _parsed ) mExternalPrefixInitialized = false;
-        else if( !mExternalPrefixInitialized ) initExternalPrefix();
+        if( _parsed )
+        {
+            assert( !mExternalPrefixInitialized );
+            mParsedVarNames.push_back( _name );
+        }
         carl::Variable result = carl::VariablePool::getInstance().getFreshVariable( carl::VariableType::VT_BOOL );
         carl::VariablePool::getInstance().setName( result, _name );
         mBooleanVariables.insert( result );
@@ -160,6 +166,7 @@ namespace smtrat
     {
         stringstream out;
         mMutexBooleanVariables.lock();
+        if( !mExternalPrefixInitialized ) initExternalPrefix();
         out << mExternalVarNamePrefix << _externalPrefix << mAuxiliaryBoolVarCounter++;
         mMutexBooleanVariables.unlock();
         return newBooleanVariable( out.str() );;
@@ -175,7 +182,7 @@ namespace smtrat
             {
                 unsigned pos = 0;
                 while( pos < varName->size() && pos < mExternalVarNamePrefix.size() && varName->at( pos ) == mExternalVarNamePrefix.at( pos ) ) ++pos;
-                if( pos == mExternalVarNamePrefix.size() - 1 )
+                if( pos == mExternalVarNamePrefix.size() )
                 {
                     mExternalVarNamePrefix += "_";
                     break;
@@ -184,6 +191,7 @@ namespace smtrat
             }
             if( varName == mParsedVarNames.end() ) foundExternalPrefix = true;
         }
+        mExternalPrefixInitialized = true;
     }
 
     Constraint* ConstraintPool::createNormalizedBound( const carl::Variable& _var, const Relation _rel, const Rational& _bound ) const
@@ -296,6 +304,9 @@ namespace smtrat
     {
         CONSTRAINT_LOCK_GUARD
         _out << "---------------------------------------------------" << endl;
+        _out << "Boolean variables:" << endl;
+        for( auto bvar : mBooleanVariables )
+            _out << "    " << bvar << endl;
         _out << "Constraint pool:" << endl;
         for( auto constraint = mConstraints.begin(); constraint != mConstraints.end(); ++constraint )
             _out << "    " << **constraint << "  [id=" << (*constraint)->id() << ", hash=" << (*constraint)->getHash() << "]" << endl;

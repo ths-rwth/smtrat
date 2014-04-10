@@ -188,6 +188,16 @@ namespace smtrat
                 {
                     return mpInfo;
                 }
+
+                bool operator >=( const Value<T1>& v ) const
+                {
+                    return !((*this) < v);
+                }
+
+                bool operator <=( const Value<T1>& v ) const
+                {
+                    return !((*this) > v);
+                }
         };
 
         template<typename T1, typename T2>
@@ -369,11 +379,11 @@ namespace smtrat
         {
             if( mLimit == NULL && mType == UPPER )
             {
-                return "inf";
+                return "oo";
             }
             else if( mLimit == NULL && mType == LOWER )
             {
-                return "-inf";
+                return "-oo";
             }
             else
             {
