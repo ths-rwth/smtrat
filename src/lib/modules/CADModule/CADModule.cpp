@@ -187,8 +187,7 @@ namespace smtrat
         assert( (*_subformula)->getType() == CONSTRAINT );
         Module::assertSubformula( _subformula );
         #ifdef SMTRAT_CAD_VARIABLEBOUNDS
-        if( mVariableBounds.addBound( (*_subformula)->pConstraint(), *_subformula ) )
-            return true;
+		mVariableBounds.addBound( (*_subformula)->pConstraint(), *_subformula );
         #endif
         if( solverState() == False )
             return false;
@@ -215,20 +214,9 @@ namespace smtrat
             return foundAnswer( Unknown );
         if( !mInfeasibleSubsets.empty() )
             return foundAnswer( False ); // there was no constraint removed which was in a previously generated infeasible subset
-        #ifdef MODULE_VERBOSE
-        cout << "Checking constraint set " << endl;
-        for( vector<carl::cad::Constraint<smtrat::Rational>>::const_iterator k = mConstraints.begin(); k != mConstraints.end(); ++k )
-            cout << " " << *k << endl;
-        #endif
         // perform the scheduled elimination and see if there were new variables added
         if( mCAD.prepareElimination() )
             mConflictGraph.clearSampleVertices(); // all sample vertices are now invalid, thus remove them
-        #ifdef MODULE_VERBOSE
-        cout << "over the variables " << endl;
-        vector<symbol> vars = mCAD.getVariables();
-        for( vector<GiNaC::symbol>::const_iterator k = vars.begin(); k != vars.end(); ++k )
-            cout << " " << *k << endl;
-        #endif
         // check the extended constraints for satisfiability
         #ifdef SMTRAT_CAD_VARIABLEBOUNDS
         if( variableBounds().isConflicting() )
@@ -246,20 +234,6 @@ namespace smtrat
             if (vPos != eiMap.end())
                 boundMap[v] = vPos->second;
         }
-        #ifdef MODULE_VERBOSE
-        cout << "within " << ( boundMap.empty() ? "no bounds." : "the bounds:" ) << endl;
-        if( vars.empty() )
-        {
-            for( GiNaCRA::BoundMap::const_iterator b = boundMap.begin(); b != boundMap.end(); ++b )
-                cout << "  " << b->second << " (no variable assigned)" << endl;
-        }
-        else
-        {
-            for( GiNaCRA::BoundMap::const_iterator b = boundMap.begin(); b != boundMap.end(); ++b )
-                if( vars.size() > b->first )
-                    cout << "  " << b->second << " for " << vars[b->first] << endl;
-        }
-        #endif
         #endif
         list<pair<list<carl::cad::Constraint<smtrat::Rational>>, list<carl::cad::Constraint<smtrat::Rational>> > > deductions;
         #ifdef SMTRAT_CAD_VARIABLEBOUNDS
@@ -305,12 +279,10 @@ namespace smtrat
                 g.removeConstraintVertex(g.maxDegreeVertex());
             #else
                 // remove last vertex, assuming it is part of the MIS
+				assert(mConstraints.size() > 0);
                 g.removeConstraintVertex(mConstraints.size()-1);
             #endif
             
-            #ifdef MODULE_VERBOSE
-            cout << "Constructing a minimal infeasible set from the conflict graph: " << endl << g << endl << endl;
-            #endif
             vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics( g );
 
             #ifdef SMTRAT_CAD_VARIABLEBOUNDS
@@ -327,18 +299,6 @@ namespace smtrat
             #ifdef CHECK_SMALLER_MUSES
             Module::checkInfSubsetForMinimality( mInfeasibleSubsets->begin() );
             #endif
-            #endif
-            #ifdef MODULE_VERBOSE
-            cout << endl << "#Samples: " << mCAD.samples().size() << endl;
-            cout << "Elimination sets:" << endl;
-            vector<EliminationSet> elimSets = mCAD.eliminationSets();
-            for( unsigned i = 0; i != elimSets.size(); ++i )
-                cout << "  Level " << i << " (" << elimSets[i].size() << "): " << elimSets[i] << endl;
-            cout << "Result: false" << endl;
-            cout << "CAD complete: " << mCAD.isComplete() << endl;
-            printInfeasibleSubsets();
-            cout << "Performance gain: " << (mpReceivedFormula->size() - mInfeasibleSubsets.front().size()) << endl << endl;
-//            mCAD.printSampleTree();
             #endif
             mRealAlgebraicSolution = carl::RealAlgebraicPoint<smtrat::Rational>();
             return foundAnswer( False );
@@ -374,11 +334,7 @@ namespace smtrat
             return;
         }
         #ifdef SMTRAT_CAD_VARIABLEBOUNDS
-        if( mVariableBounds.removeBound( (*_subformula)->pConstraint(), *_subformula ) != 0 )
-        { // constraint was added as bound, so there is no respective constraint stored
-            Module::removeSubformula( _subformula );
-            return;
-        }
+		mVariableBounds.removeBound( (*_subformula)->pConstraint(), *_subformula );
         #endif
 
         ConstraintIndexMap::iterator constraintIt = mConstraintsMap.find( _subformula );

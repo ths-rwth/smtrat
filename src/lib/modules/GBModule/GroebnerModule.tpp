@@ -39,7 +39,7 @@
 
 //#define CHECK_SMALLER_MUSES
 //#define SEARCH_FOR_RADICALMEMBERS
-//#define GB_OUTPUT
+#define GB_OUTPUT
 
 using std::set;
 
@@ -251,6 +251,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
         mBasis.calculate( );
 #ifdef GB_OUTPUT
         std::cout << "basis calculated" << std::endl;
+		mBasis.getIdeal().print();
 #endif
         mRecalculateGB = false;
         if( Settings::iterativeVariableRewriting && !mBasis.basisIsConstant( ) )
@@ -269,6 +270,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
         #endif
         if( mBasis.basisIsConstant( ) || (Settings::applyNSS && !witness.isZero( )) )
         {
+			
             if( mBasis.basisIsConstant( ) )
             {
                 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -289,7 +291,9 @@ Answer GroebnerModule<Settings>::isConsistent( )
             mInfeasibleSubsets.push_back( set<const Formula*>() );
             // The equalities we used for the basis-computation are the infeasible subset
 
+			assert(!Settings::getReasonsForInfeasibility || !witness.getReasons().empty());
             carl::BitVector::const_iterator origIt = witness.getReasons().begin( );
+			
             auto it = mBacktrackPoints.begin( );
             for( ++it; it != mBacktrackPoints.end( ); ++it )
             {
@@ -299,6 +303,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
 
                 if( Settings::getReasonsForInfeasibility )
                 {
+					
                     if( origIt.get( ) )
                     {
                         mInfeasibleSubsets.back( ).insert( **it );
@@ -317,6 +322,8 @@ Answer GroebnerModule<Settings>::isConsistent( )
             #ifdef CHECK_SMALLER_MUSES
             Module::checkInfSubsetForMinimality( mInfeasibleSubsets->begin() );
             #endif
+			assert(!mInfeasibleSubsets.empty());
+			assert(!mInfeasibleSubsets.front().empty());
             return foundAnswer( False );
         }
         saveState( );
@@ -374,7 +381,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
     printRewriteRules();
     mInequalities.print();
     std::cout << "Basis" << std::endl;
-    mBasis.getGbIdeal().print();
+    mBasis.getIdeal().print();
     print();
     #endif
 
@@ -422,7 +429,7 @@ bool GroebnerModule<Settings>::iterativeVariableRewriting()
         for(typename std::list<Polynomial>::const_iterator it = polynomials.begin(); it != polynomials.end(); ++it )
         {
             std::cout << *it;
-            it->getOrigins().getBitVector().print();
+            it->getReasons().print();
             std::cout << std::endl;
         }
         std::cout << "----" << std::endl;
@@ -706,7 +713,7 @@ void GroebnerModule<Settings>::pushBacktrackPoint( Formula::const_iterator btpoi
     if( mStateHistory.empty() )
     {
         // there are no variable rewrite rules, so we can only push our current basis and empty rewrites
-        mStateHistory.push_back( GroebnerModuleState<Settings>( mBasis, std::map<carl::Variable, std::pair<Term, carl::BitVector> >() ) );
+        mStateHistory.emplace_back( mBasis, std::map<carl::Variable, std::pair<Term, carl::BitVector> >() );
     }
     else
     {
@@ -783,17 +790,7 @@ void GroebnerModule<Settings>::popBacktrackPoint( Formula::const_iterator btpoin
     //Add all others
     for( auto it = rescheduled.begin(); it != rescheduled.end(); ++it )
     {
-        assert( (**it)->getType( ) ==  smtrat::Type::CONSTRAINT );
-        smtrat::Relation relation = (**it)->constraint( ).relation( );
-        bool isInGb = Settings::transformIntoEqualities == ALL_INEQUALITIES || relation == smtrat::Relation::EQ
-                || (Settings::transformIntoEqualities == ONLY_NONSTRICT && relation != smtrat::Relation::GREATER && relation != smtrat::Relation::LESS);
-        if( isInGb )
-        {
-            pushBacktrackPoint( *it );
-            mBasis.addPolynomial( (relation == smtrat::Relation::EQ ? Polynomial( (**it)->constraint( ).lhs( ) ) : transformIntoEquality( *it )));
-            // and save them
-            saveState( );
-        }
+        processNewConstraint(*it);
     }
     //assert( mBasis.nrOriginalConstraints( ) == mBacktrackPoints.size( ) - 1 );
 }
@@ -928,20 +925,22 @@ void GroebnerModule<Settings>::passGB( )
                 originals.front( ).insert( *it );
             }
         }
+		assert(!originals.front().empty());
     }
 
     // We extract the current polynomials from the Groebner Basis.
-    std::list<Polynomial> simplified = mBasis.listBasisPolynomials();
+    std::vector<Polynomial> simplified = mBasis.getBasisPolynomials();
     // For each polynomial in this Groebner basis, 
-    for( typename std::list<Polynomial>::const_iterator simplIt = simplified.begin( ); simplIt != simplified.end( ); ++simplIt )
+    for( typename std::vector<Polynomial>::const_iterator simplIt = simplified.begin( ); simplIt != simplified.end( ); ++simplIt )
     {
         if( Settings::passWithMinimalReasons )
         {
+			assert(!simplIt->getReasons().empty( ));
             // We calculate the reason set for this polynomial in the GB.
-            originals.front( ) = generateReasons( simplIt->getReasons() );
+            originals.front() = generateReasons( simplIt->getReasons() );
         }
         // The reason set may never be empty.
-        assert( !originals.front( ).empty( ) );
+        assert(!originals.front().empty());
         // We now add polynomial = 0 as a constraint to the passed formula.
         // We use the originals set calculated before as reason set. 
         // TODO: replace "Formula::constraintPool().variables()" by a smaller approximations
@@ -965,6 +964,7 @@ std::set<const Formula*> GroebnerModule<Settings>::generateReasons( const carl::
     }
     
     carl::BitVector::const_iterator origIt = reasons.begin( );
+	origIt++;
     std::set<const Formula*> origins;
 
     auto it = mBacktrackPoints.begin( );
