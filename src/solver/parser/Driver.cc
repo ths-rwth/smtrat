@@ -95,34 +95,24 @@ namespace smtrat
     {
         InstructionValue iv = InstructionValue();
         iv.formula = _formula;
-//        if( mFoundBooleanVariables.size() > 1 )
-//        {
-//            for( auto iter = mFoundBooleanVariables.begin(); iter != mFoundBooleanVariables.end(); ++iter )
-//                cout << *iter->first << endl;
-//        }
-        assert( mFoundBooleanVariables.size() == 1 );
         auto iter = mFoundBooleanVariables.find( _formula );
-        assert( iter != mFoundBooleanVariables.end() );
-        mFoundBooleanVariables.erase( iter );
+        if( iter != mFoundBooleanVariables.end() )
+        {
+            mFoundBooleanVariables.erase( iter );
+            assert( mFoundBooleanVariables.empty() );
+        }
         mInstructionQueue.push( Instruction( ASSERT, iv ) );
     }
             
     void Driver::moveFoundBooleanVars( const Formula* _fromFormula, std::set<carl::Variable>& _toSet )
     {
-//        cout << "mFoundBooleanVariables.size() = " << mFoundBooleanVariables.size() << endl;
-//        cout << "boolean vars in " << endl;
-//        cout << *_fromFormula << endl;
-//        cout << "are:";
         assert( foundBooleanVarsCorrect( _fromFormula ) );
         auto iterB = mFoundBooleanVariables.find( _fromFormula );
         if( iterB != mFoundBooleanVariables.end() )
         {
-//            for( auto var : iterB->second )
-//                cout << " " << var;
             _toSet.insert( iterB->second.begin(), iterB->second.end() );
             mFoundBooleanVariables.erase( iterB );
         }
-//        cout << endl;
     }
     
     bool Driver::foundBooleanVarsCorrect( const Formula* _formula )
@@ -132,15 +122,6 @@ namespace smtrat
         auto iter = mFoundBooleanVariables.find( _formula );
         if( iter != mFoundBooleanVariables.end() )
         {
-//            auto varA = iter->second.begin();
-//            auto varB = bvars.begin();
-//            while( varA != iter->second.end() && varB != bvars.end() )
-//            {
-//                if( *varA != *varB )
-//                    return false;
-//                ++varA;
-//                ++varB;
-//            }
             return iter->second == bvars;
         }
         else
