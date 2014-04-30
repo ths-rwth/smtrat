@@ -402,7 +402,7 @@ namespace smtrat
                 bool create_cut_from_proof( Tableau<T2>&, Tableau<T2>&, size_t&, T2&, std::vector<T2>&, std::vector<bool>&, smtrat::Polynomial&, std::vector<size_t>&, std::vector<size_t>&, Bound<T1, T2>*&);
                 #endif
                 #ifdef LRA_GOMORY_CUTS
-                const smtrat::Constraint* gomoryCut( const T2&, Variable<T1, T2>*, std::vector<const smtrat::Constraint*>&, std::map<carl::Variable, Variable<T1, T2>*>& );
+                const smtrat::Constraint* gomoryCut( const T2&, Variable<T1, T2>*, std::vector<const smtrat::Constraint*>&);
                 #endif
                 void printHeap( std::ostream& = std::cout, int = 30, const std::string = "" ) const;
                 void printEntry( EntryID, std::ostream& = std::cout, int = 20 ) const;
@@ -3226,122 +3226,128 @@ FindPivot:
          *         otherwise the valid constraint is returned.   
          */ 
         template<typename T1, typename T2>
-        const smtrat::Constraint* Tableau<T1,T2>::gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar, std::vector<const smtrat::Constraint*>& _constrVec, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars )
-        {     
-//            Iterator row_iterator = Iterator( _rowVar->startEntry(), mpEntries );
-//            std::vector<GOMORY_SET> splitting = std::vector<GOMORY_SET>();
-//            // Check, whether the conditions of a Gomory Cut are satisfied
-//            while( !row_iterator.horiEnd( false ) )
-//            { 
-//                const Variable<T1, T2>& nonBasicVar = (*row_iterator).columnVar();
-//                if( nonBasicVar.infimum() == nonBasicVar.assignment() || nonBasicVar.supremum() == nonBasicVar.assignment() )
-//                {
-//                    if( nonBasicVar.infimum() == nonBasicVar.assignment() )
-//                    {
-//                        if( (*row_iterator).content() < 0 ) splitting.push_back( J_MINUS );
-//                        else splitting.push_back( J_PLUS );         
-//                    }
-//                    else
-//                    {
-//                        if( (*row_iterator).content() < 0 ) splitting.push_back( K_MINUS );
-//                        else splitting.push_back( K_PLUS );
-//                    }
-//                }                                 
-//                else
-//                {
-//                    return NULL;
-//                }                               
-//                row_iterator.hNext( false );
-//            }
-//            // A Gomory Cut can be constructed              
-//            std::vector<T2> coeffs = std::vector<T2>();
-//            T2 coeff;
-//            T2 f_zero = _ass - carl::floor( _ass );
-//            Polynomial sum = Polynomial();
-//            // Construction of the Gomory Cut 
-//            std::vector<GOMORY_SET>::const_iterator vec_iter = splitting.begin();
-//            row_iterator = Iterator( mRows.at(_rowPosition).mStartEntry, mpEntries );
-//            while( !row_iterator.horiEnd( false ) )
-//            {                 
-//                const Variable<T1, T2>& nonBasicVar = (*row_iterator).columnVar();
-//                if( (*vec_iter) == J_MINUS )
-//                {
-//                    T2 bound = nonBasicVar.infimum().limit().mainPart();
-//                    coeff = -( row_iterator->content() / f_zero);
-//                    _constrVec.push_back( nonBasicVar.infimum().pAsConstraint() );                    
-//                    sum += coeff*( nonBasicVar.expression() - bound );                   
-//                }                 
-//                else if( (*vec_iter) == J_PLUS )
-//                {
-//                    T2 bound = nonBasicVar.infimum().limit().mainPart();
-//                    coeff = row_iterator->content()/( 1 - f_zero );
-//                    _constrVec.push_back( nonBasicVar.infimum().pAsConstraint() );
-//                    sum += coeff*( nonBasicVar.expression() - bound );                   
-//                }
-//                else if( (*vec_iter) == K_MINUS )
-//                {
-//                    T2 bound = nonBasicVar.supremum().limit().mainPart();
-//                    coeff = -( row_iterator->content()/( 1 - f_zero ) );
-//                    _constrVec.push_back( nonBasicVar.supremum().pAsConstraint() );
-//                    sum += coeff * ( bound - nonBasicVar.expression() );                   
-//                }
-//                else if( (*vec_iter) == K_PLUS ) 
-//                {
-//                    T2 bound = nonBasicVar.supremum().limit().mainPart();
-//                    coeff = (*row_iterator).content()/f_zero;
-//                    _constrVec.push_back( nonBasicVar.supremum().pAsConstraint() );
-//                    sum += coeff * ( bound - nonBasicVar.expression() );
-//                }     
-//                coeffs.push_back( coeff );
-//                row_iterator.hNext( false );
-//                ++vec_iter;
-//            } 
-//            const smtrat::Constraint* gomory_constr = smtrat::Formula::newConstraint( sum-1, Relation::GEQ );
-//            Polynomial *psum = new Polynomial( sum - gomory_constr->constantPart() );
-//            Value<T1>* bound = new Value<T1>( gomory_constr->constantPart() );
-//            // TODO: check whether there is already a basic variable with this polynomial (psum, cf. LRAModule::initialize(..)) 
-//            Variable<T1, T2>* var = newBasicVariable( psum, _originalVars );
-//            (*var).addLowerBound( bound, mDefaultBoundPosition, gomory_constr );
-//            typename std::vector<T2>::const_iterator coeffs_iter = coeffs.begin();
-//            row_iterator = Iterator( mRows.at(_rowPosition).mStartEntry, mpEntries );
-//            mRows.push_back( TableauHead() );
-//            EntryID currentStartEntryOfRow = LAST_ENTRY_ID;
-//            EntryID leftID;            
-//            while( coeffs_iter != coeffs.end() )
-//            {
-//                const Variable<T1, T2>& nonBasicVar = *mColumns[row_iterator->columnNumber()].mName;
-//                EntryID entryID = newTableauEntry( *coeffs_iter );
-//                TableauEntry<T1,T2>& entry = (*mpEntries)[entryID];
-//                entry.setColumnNumber( nonBasicVar.position() );
-//                entry.setRowNumber( mHeight - 1 );
-//                TableauHead& columnHead = mColumns[entry.columnNumber()];
-//                EntryID& columnStart = columnHead.mStartEntry;
-//                (*mpEntries)[columnStart].setVertNext( true, entryID );
-//                entry.setVertNext( false, columnStart );                
-//                columnStart = entryID;
-//                ++columnHead.mSize;
-//                if( currentStartEntryOfRow == LAST_ENTRY_ID )
-//                {
-//                    currentStartEntryOfRow = entryID;
-//                    entry.setHoriNext( true, LAST_ENTRY_ID );
-//                    leftID = entryID;
-//                }  
-//                else 
-//                {
-//                    (*mpEntries)[entryID].setHoriNext( true, leftID );
-//                    (*mpEntries)[leftID].setHoriNext( false, entryID ); 
-//                    leftID = entryID;
-//                }
-//                ++coeffs_iter;
-//                row_iterator.hNext( false );
-//            }            
-//            (*mpEntries)[leftID].setHoriNext( false, LAST_ENTRY_ID );
-//            TableauHead& rowHead = mRows[mHeight-1];
-//            rowHead.mStartEntry = currentStartEntryOfRow;
-//            rowHead.mSize = coeffs.size();
-//            rowHead.mName = var; 
-//            return gomory_constr;
-            return NULL;
+        const smtrat::Constraint* Tableau<T1,T2>::gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar, std::vector<const smtrat::Constraint*>& _constrVec) //, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars )
+        { 
+            Iterator row_iterator = Iterator( _rowVar->startEntry(), mpEntries );
+            std::vector<GOMORY_SET> splitting = std::vector<GOMORY_SET>();
+            // Check, whether the conditions of a Gomory Cut are satisfied
+            while( !row_iterator.hEnd( false ) )
+            { 
+                const Variable<T1, T2>& nonBasicVar = *(*row_iterator).columnVar();
+                if( nonBasicVar.infimum() == nonBasicVar.assignment() || nonBasicVar.supremum() == nonBasicVar.assignment() )
+                {
+                    if( nonBasicVar.infimum() == nonBasicVar.assignment() )
+                    {
+                        if( (*row_iterator).content() < 0 ) splitting.push_back( J_MINUS );
+                        else splitting.push_back( J_PLUS );         
+                    }
+                    else
+                    {
+                        if( (*row_iterator).content() < 0 ) splitting.push_back( K_MINUS );
+                        else splitting.push_back( K_PLUS );
+                    }
+                }                                 
+                else
+                {
+                    std::cout << "Not able to construct" << std::endl;
+                    return NULL;
+                }                               
+                row_iterator.hMove( false );
+            }
+            // A Gomory Cut can be constructed              
+            std::vector<T2> coeffs = std::vector<T2>();
+            T2 coeff;
+            T2 f_zero = _ass - T2(carl::floor( (Rational)_ass ));
+            Polynomial sum = Polynomial();
+            // Construction of the Gomory Cut 
+            std::vector<GOMORY_SET>::const_iterator vec_iter = splitting.begin();
+            row_iterator = Iterator( _rowVar->startEntry(), mpEntries );
+            while( !row_iterator.hEnd( false ) )
+            {                 
+                const Variable<T1, T2>& nonBasicVar = *(*row_iterator).columnVar();
+                if( (*vec_iter) == J_MINUS )
+                {
+                    T2 bound = nonBasicVar.infimum().limit().mainPart();
+                    coeff = -( (*row_iterator).content() / f_zero);
+                    _constrVec.push_back( nonBasicVar.infimum().pAsConstraint() );                    
+                    sum += (Rational)coeff*( nonBasicVar.expression() - (Rational)bound );                   
+                }                 
+                else if( (*vec_iter) == J_PLUS )
+                {
+                    T2 bound = nonBasicVar.infimum().limit().mainPart();
+                    coeff = (*row_iterator).content()/( (Rational)1 - f_zero );
+                    _constrVec.push_back( nonBasicVar.infimum().pAsConstraint() );
+                    sum += (Rational)coeff*( nonBasicVar.expression() - (Rational)bound );                   
+                }
+                else if( (*vec_iter) == K_MINUS )
+                {
+                    T2 bound = nonBasicVar.supremum().limit().mainPart();
+                    coeff = -( (*row_iterator).content()/( (Rational)1 - f_zero ) );
+                    _constrVec.push_back( nonBasicVar.supremum().pAsConstraint() );
+                    sum += (Rational)coeff * ( (Rational)bound - nonBasicVar.expression() );                   
+                }
+                else if( (*vec_iter) == K_PLUS ) 
+                {
+                    T2 bound = nonBasicVar.supremum().limit().mainPart();
+                    coeff = (*row_iterator).content()/f_zero;
+                    _constrVec.push_back( nonBasicVar.supremum().pAsConstraint() );
+                    sum += (Rational)coeff * ( (Rational)bound - nonBasicVar.expression() );
+                }     
+                coeffs.push_back( coeff );
+                row_iterator.hMove( false );
+                ++vec_iter;
+            }
+            sum = sum - (Rational)1;
+            const smtrat::Constraint* gomory_constr = Formula::newConstraint( sum , Relation::GEQ );
+            std::cout << *gomory_constr << std::endl;
+            newBound(gomory_constr);
+            //print();
+            // TODO: check whether there is already a basic variable with this polynomial (psum, cf. LRAModule::initialize(..)) 
+            /*
+            Polynomial *psum = new Polynomial( sum - gomory_constr->constantPart() );
+            Value<T1>* bound = new Value<T1>( gomory_constr->constantPart() );
+            Variable<T1, T2>* var = newBasicVariable( psum, mOriginalVars );
+            (*var).addLowerBound( bound, mDefaultBoundPosition, gomory_constr );           
+            typename std::vector<T2>::const_iterator coeffs_iter = coeffs.begin();
+            row_iterator = Iterator( mRows.at(_rowVar->position()).mStartEntry, mpEntries );
+            mRows.push_back( TableauHead() );
+            EntryID currentStartEntryOfRow = LAST_ENTRY_ID;
+            EntryID leftID;            
+            while( coeffs_iter != coeffs.end() )
+            {
+                const Variable<T1, T2>& nonBasicVar = *mColumns[row_iterator->columnNumber()].mName;
+                EntryID entryID = newTableauEntry( *coeffs_iter );
+                TableauEntry<T1,T2>& entry = (*mpEntries)[entryID];
+                entry.setColumnNumber( nonBasicVar.position() );
+                entry.setRowNumber( mHeight - 1 );
+                TableauHead& columnHead = mColumns[entry.columnNumber()];
+                EntryID& columnStart = columnHead.mStartEntry;
+                (*mpEntries)[columnStart].setVertNext( true, entryID );
+                entry.setVertNext( false, columnStart );                
+                columnStart = entryID;
+                ++columnHead.mSize;
+                if( currentStartEntryOfRow == LAST_ENTRY_ID )
+                {
+                    currentStartEntryOfRow = entryID;
+                    entry.setHoriNext( true, LAST_ENTRY_ID );
+                    leftID = entryID;
+                }  
+                else 
+                {
+                    (*mpEntries)[entryID].setHoriNext( true, leftID );
+                    (*mpEntries)[leftID].setHoriNext( false, entryID ); 
+                    leftID = entryID;
+                }
+                ++coeffs_iter;
+                row_iterator.hNext( false );
+            }            
+            (*mpEntries)[leftID].setHoriNext( false, LAST_ENTRY_ID );
+            TableauHead& rowHead = mRows[mHeight-1];
+            rowHead.mStartEntry = currentStartEntryOfRow;
+            rowHead.mSize = coeffs.size();
+            rowHead.mName = var; 
+            */
+            return gomory_constr;
         }
         #endif
 

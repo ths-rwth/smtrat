@@ -1169,9 +1169,9 @@ Return:
         EvalRationalMap rMap_ = getRationalModel();
         vector<const Constraint*> constr_vec = vector<const Constraint*>();
         bool all_int = true;
-        unsigned numRows = mTableau.rows().size();
+        //unsigned numRows = mTableau.rows().size();
         for( LRAVariable* basicVar : mTableau.rows() )
-        { 
+        {            
             if( basicVar->isOriginal() )
             {
                 Variables vars;
@@ -1182,7 +1182,7 @@ Return:
                 if( !carl::isInteger( ass ) )
                 {
                     all_int = false;    
-                    const Constraint* gomory_constr = NULL;// mTableau.gomoryCut(ass, basicVar, constr_vec);
+                    const Constraint* gomory_constr = mTableau.gomoryCut(ass, basicVar, constr_vec);
                     if( gomory_constr != NULL )
                     {
                         Formula* deductionA = new Formula(OR);
@@ -1193,7 +1193,7 @@ Return:
                             notItem->addSubformula(*vec_iter);
                             deductionA->addSubformula(notItem);
                             ++vec_iter; 
-                       }
+                        } 
                         deductionA->addSubformula(gomory_constr);
                         addDeduction(deductionA);   
                     }                                                                
@@ -1373,7 +1373,7 @@ Return:
         {
             assert( var->first == map_iterator->first );
             Rational& ass = map_iterator->second; 
-            if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
+            if( var-> first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
                 #ifdef MODULE_VERBOSE_INTEGERS
                 this->printRationalModel();
