@@ -99,6 +99,16 @@ namespace smtrat
         if( iter != mFoundBooleanVariables.end() )
         {
             mFoundBooleanVariables.erase( iter );
+//            if( !mFoundBooleanVariables.empty() )
+//            {
+//                for( auto iter = mFoundBooleanVariables.begin(); iter != mFoundBooleanVariables.end(); ++iter )
+//                {
+//                    cout << (iter->first) << ": " << *(iter->first) << "  has" << endl;
+//                    for( auto var : iter->second )
+//                        cout << " " << var;
+//                    cout << endl;
+//                }
+//            }
             assert( mFoundBooleanVariables.empty() );
         }
         mInstructionQueue.push( Instruction( ASSERT, iv ) );
@@ -106,6 +116,24 @@ namespace smtrat
             
     void Driver::moveFoundBooleanVars( const Formula* _fromFormula, std::set<carl::Variable>& _toSet )
     {
+//        if( !foundBooleanVarsCorrect( _fromFormula ) )
+//        {
+//            cout << *_fromFormula << endl;
+//            set<carl::Variable> bvars;
+//            _fromFormula->booleanVars( bvars );
+//            cout << "boolean vars 1:";
+//            for( auto var : bvars )
+//                cout << " " << var;
+//            cout << endl;
+//            auto iter = mFoundBooleanVariables.find( _fromFormula );
+//            cout << "boolean vars 2:";
+//            if( iter != mFoundBooleanVariables.end() )
+//            {
+//                for( auto var : iter->second )
+//                    cout << " " << var;
+//            }
+//            cout << endl;
+//        }
         assert( foundBooleanVarsCorrect( _fromFormula ) );
         auto iterB = mFoundBooleanVariables.find( _fromFormula );
         if( iterB != mFoundBooleanVariables.end() )
@@ -1079,6 +1107,8 @@ namespace smtrat
         result->addSubformula( innerConstraintBinding );
         bvars.insert( conditionBool );
         bvars.insert( dependencyBool );
+        moveFoundBooleanVars( constraintA, bvars );
+        moveFoundBooleanVars( constraintB, bvars );
         mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvars ) ) );
         mInnerConstraintBindings.insert( pair< carl::Variable, Formula* >( auxVar, result ) );
         assert( mTheoryIteBindings.find( auxVar ) == mTheoryIteBindings.end() );

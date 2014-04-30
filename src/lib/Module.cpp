@@ -164,11 +164,12 @@ namespace smtrat
     }
     
     /**
-     * This method is called after informing about preferably all constraints.
+     * Informs all backends about the so far encountered constraints, which have not yet been communicated.
+     * This method must not be called twice and only before the first runBackends call.
      */
     void Module::init()
     {
-        if( mpManager == NULL ) return;
+        if( mpManager == NULL || mConstraintsToInform.empty() ) return;
         // Get the backends to be considered from the manager.
         mUsedBackends = mpManager->getBackends( mpPassedFormula, this, mBackendsFoundAnswer );
         mAllBackends = mpManager->getAllBackends( this );
@@ -444,7 +445,7 @@ namespace smtrat
         }
         if( onlyIntegerValuedVariables )
         {
-            Rational bound = cln::floor1( _value );
+            Rational bound = carl::floor( _value );
             Polynomial leqLhs = _polynomial - bound;
             constraintA = Formula::newConstraint( leqLhs, Relation::LEQ );
             ++bound;

@@ -60,6 +60,7 @@
 //#define SAT_MODULE_DETECT_DEDUCTIONS
 //#define SAT_CHECK_BACKEND_MODEL
 //#define SAT_TRY_FULL_LAZY_CALLS_FIRST
+//#define SAT_APPLY_VALID_SUBSTITUTIONS
 
 
 using namespace std;
@@ -151,7 +152,6 @@ namespace smtrat
         mSatisfiedClauses( 0 ),
         mNumberOfFullLazyCalls( 0 ),
         mCurr_Restarts( 0 ),
-        mTrailStart( 0 ),
         mConstraintLiteralMap(),
         mBooleanVarMap(),
         mFormulaClauseMap(),
@@ -295,7 +295,7 @@ namespace smtrat
             
             Module::init();
             processLemmas();
-            simplify();
+//            simplify();
             
             if( !ok )
             {
@@ -619,11 +619,12 @@ namespace smtrat
             }
             case CONSTRAINT:
             {
-                double activity = _formula.constraint().variables().size() >= 20 ? 1 : ((double)_formula.constraint().variables().size())/20;
-                if( _formula.constraint().relation() != Relation::EQ )
-                {
-                    ++activity;
-                }
+                double activity = 0;
+//                double activity = _formula.constraint().variables().size() >= 20 ? 1 : ((double)_formula.constraint().variables().size())/20;
+//                if( _formula.constraint().relation() != Relation::EQ )
+//                {
+//                    ++activity;
+//                }
                 Lit lit = getLiteral( _formula.pConstraint(), _origin, activity, true );//fabs(_formula.activity()), (_formula.activity()<0) );
                 return lit;
             }
@@ -823,7 +824,7 @@ namespace smtrat
         #endif
         // Check if clause is satisfied and remove false/duplicate literals:
         sort( add_tmp );
-        if( _type == NORMAL_CLAUSE )
+        if( _type == NORMAL_CLAUSE ) // TODO: instead if( _type != CONFLICT_CLAUSE ), which for some reason does not yet work 
         {
             Lit p;
             int i, j;
@@ -1344,7 +1345,16 @@ SetWatches:
                 return l_Undef;
             }
             bool deductionsLearned = false;
-            CRef confl = propagate();
+            CRef confl = CRef_Undef;
+            // Simplify the set of problem clauses:
+            if( decisionLevel() == 0 && !simplify() )
+            {
+                return l_False;
+            }
+            else
+            {
+                confl = propagate();
+            }
             #ifdef SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN
             #ifdef DEBUG_SATMODULE
             bool madeTheoryCall = false;
@@ -1682,7 +1692,6 @@ SetWatches:
             else
             {
                 // NO CONFLICT
-                // TODO: Consider cleaning the learned clauses and restarts.
                 #ifdef SAT_WITH_RESTARTS
                 if( nof_conflicts >= 0 && (conflictC >= nof_conflicts) ) // ||!withinBudget()) )
                 {
@@ -1697,16 +1706,10 @@ SetWatches:
                 }
                 #endif
 
-                // Simplify the set of problem clauses:
-                if( decisionLevel() == 0 && !simplify() )
-                {
-                    return l_False;
-                }
-
 //                if( learnts.size() - nAssigns() >= max_learnts )
 //                    // Reduce the set of learned clauses:
 //                    reduceDB();
-
+                
                 Lit next = lit_Undef;
                 while( decisionLevel() < assumptions.size() )
                 {
@@ -2029,6 +2032,8 @@ SetWatches:
      */
     CRef SATModule::propagate()
     {
+        
+//        cout << __func__ << endl;
         CRef confl = CRef_Undef;
         int num_props = 0;
         watches.cleanAll();
@@ -2103,7 +2108,7 @@ NextClause:
             ws.shrink( (int) (i - j) );
         }
         propagations += (uint64_t)num_props;
-        simpDB_props -= (uint64_t)num_props;
+//        simpDB_props -= (uint64_t)num_props;
 
         return confl;
     }
@@ -2164,6 +2169,114 @@ NextClause:
                 cs[j++] = cs[i];
         }
         cs.shrink( i - j );
+    }
+    
+    void SATModule::replaceVariable( vec<CRef>& cs, Var _var, Var _by )
+    {
+//        cout << __func__ << endl;
+//        cout << "replace " << _var << " by " << _by << endl;
+        assert( decisionLevel() == 0 );
+        assert( _var != _by );
+        int k = 0;
+        int i = 0;
+        for( ; i < cs.size(); ++i )
+        {
+            Clause& c = ca[cs[i]];
+//            printClause( cs[i] );
+            bool keepClause = true;
+            Lit firstLit = lit_Undef;
+            Lit secondLit = lit_Undef;
+            for( int j = 0; j < c.size(); ++j )
+            {
+                if( _var < var( c[j] ) )
+                {
+                    break;
+                }
+                else if( var( c[j] ) == _var )
+                {
+                    if( assigns[_var] == l_True )
+                    {
+                        removeClause( cs[i] );
+                        keepClause = false;
+                        break;
+                    }
+                    firstLit = c[0];
+                    secondLit = c[1];
+                    c[j] = mkLit( _by, sign( c[j] ) );
+                    assert( c.size() > 1 );
+                    if( var( c[j] ) < _by )
+                    {
+                        for( ; j < c.size() - 1; ++j )
+                        {
+                            if( c[j+1] < c[j] )
+                            {
+                                Lit tmp = c[j];
+                                c[j] = c[j+1];
+                                c[j+1] = tmp;
+                            }
+                            else if( c[j+1] == c[j] )
+                            {
+                                if( sign( c[j+1] ) != sign( c[j] ) )
+                                {
+                                    removeClause( cs[i] );
+                                    keepClause = false;
+                                    break;
+                                }
+                                ++j;
+                                for( ; j < c.size() - 1; ++j )
+                                    c[j] = c[j+1];
+                                c.shrink( 1 );
+                            }
+                        }
+                    }
+                    else // c[j] > _by
+                    {
+                        for( ; j > 0; --j )
+                        {
+                            if( c[j] < c[j-1] )
+                            {
+                                Lit tmp = c[j];
+                                c[j] = c[j-1];
+                                c[j-1] = tmp;
+                            }
+                            else if( c[j-1] == c[j] )
+                            {
+                                if( sign( c[j-1] ) != sign( c[j] ) )
+                                {
+                                    removeClause( cs[i] );
+                                    keepClause = false;
+                                    break;
+                                }
+                                --j;
+                                for( ; j > 0; --j )
+                                    c[j] = c[j-1];
+                                c.shrink( 1 );
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+            if( keepClause )
+            {
+                if( firstLit != lit_Undef )
+                {
+                    remove( watches[~firstLit], Watcher( cs[i], secondLit ) );
+                    remove( watches[~secondLit], Watcher( cs[i], firstLit ) );
+                    arrangeForWatches( cs[i] );
+                    watches[~c[0]].push( Watcher( cs[i], c[1] ) );
+                    watches[~c[1]].push( Watcher( cs[i], c[0] ) );
+                }
+//                cout << " -> ";
+//                printClause( cs[i] );
+                cs[k++] = cs[i];
+            }
+//            else
+//            {
+//                cout << " -> remove it!" << endl; 
+//            }
+        }
+        cs.shrink( i - k );
     }
 
     /**
@@ -2279,15 +2392,43 @@ NextClause:
     {
         assert( decisionLevel() == 0 );
 
-        while( mTrailStart < trail.size() )
+//        cout << __func__ << endl;
+//        cout << "simpDB_assigns = " << simpDB_assigns << endl;
+//        cout << "nAssigns() = " << nAssigns() << endl;
+        
+        while( true )
         {
-            int trailStartTmp = mTrailStart;
-            mTrailStart = trail.size();
+            assert( ok );
+            
+//            cout << __func__ << ":loop" << endl;
+//            printClauses( clauses, "Clauses", cout, "### " );
+//            cout << "###" << endl;
+//            printClauses( learnts, "Learnts", cout, "### " );
+////            cout << "Variable Occurrences: " << std::endl;
+////            for( auto varOccPair = mVarOccurrences.begin(); varOccPair != mVarOccurrences.end(); ++varOccPair )
+////            {
+////                cout << varOccPair->first << " in {";
+////                for( const Constraint* cons : varOccPair->second )
+////                    cout << "  " << *cons;
+////                cout << "  }" << endl;
+////            }
+////            printConstraintLiteralMap();
+//            printBooleanConstraintMap();
+////            printBooleanVarMap();
+//            printDecisions();
+            
             if( !ok || propagate() != CRef_Undef )
-                return ok = false;
+            {
+//                cout << __func__ << ":" << __LINE__ << endl;
+                ok = false;
+                return false;
+            }
 
-            if( nAssigns() == simpDB_assigns || (simpDB_props > 0) )
+            if( nAssigns() == simpDB_assigns )// || (simpDB_props > 0) )
+            {
+//                cout << __func__ << ":" << __LINE__ << endl;
                 return true;
+            }
 
             // Remove satisfied clauses:
             removeSatisfied( learnts );
@@ -2295,12 +2436,26 @@ NextClause:
                 removeSatisfied( clauses );
             checkGarbage();
             rebuildOrderHeap();
-
+            #ifdef SAT_APPLY_VALID_SUBSTITUTIONS
+            int trailStartTmp = simpDB_assigns;
+            #endif
             simpDB_assigns = nAssigns();
-            simpDB_props   = (int64_t)(clauses_literals + learnts_literals);    // (shouldn't depend on stats really, but it will do for now)
-
+//            simpDB_props   = (int64_t)(clauses_literals + learnts_literals);    // (shouldn't depend on stats really, but it will do for now)
+            #ifdef SAT_APPLY_VALID_SUBSTITUTIONS
             if( !applyValidSubstitutions( trailStartTmp ) )
-                return ok = false;
+            {
+//                cout << "simpDB_assigns = " << simpDB_assigns << endl;
+//                cout << "nAssigns() = " << nAssigns() << endl;
+//                cout << __func__ << ":" << __LINE__ << endl;
+                ok = false;
+                return false;
+            }
+            #endif
+            processLemmas();
+            
+//            cout << "simpDB_assigns = " << simpDB_assigns << endl;
+//            cout << "nAssigns() = " << nAssigns() << endl;
+
         }
         return true;
     }
@@ -2314,21 +2469,10 @@ NextClause:
     {
         assert( decisionLevel() == 0 );
         #ifdef SAT_APPLY_VALID_SUBS_DEBUG
-        cout << "applyValidSubstitutions" << endl;
-        cout << "Variable Occurrences: " << std::endl;
-        for( auto varOccPair = mVarOccurrences.begin(); varOccPair != mVarOccurrences.end(); ++varOccPair )
-        {
-            cout << varOccPair->first << " in {";
-            for( const Constraint* cons : varOccPair->second )
-                cout << "  " << *cons;
-            cout << "  }" << endl;
-        }
-        printConstraintLiteralMap();
-        printBooleanConstraintMap();
-        printBooleanVarMap();
-        printDecisions();
+        cout << "applyValidSubstitutions from " << _trailStart << " to " << trail.size() << endl;
         #endif
-        for( int i = _trailStart; i < trail.size(); ++i )
+        int i = (_trailStart > 0 ? _trailStart : 0); 
+        for( ; i < trail.size(); ++i )
         {
             const Constraint* pconstr = mBooleanConstraintMap[var(trail[i])].constraint;
             if( pconstr != NULL )
@@ -2353,17 +2497,17 @@ NextClause:
                     }
                     case 1:
                     {
-//                        if( assigns[var(trail[i])] == l_False )
-//                        {
-//                            ok = false;
-//                            return false;
-//                        }
-//                        #ifdef SAT_APPLY_VALID_SUBS_DEBUG
-//                        else
-//                        {
-//                            cout << "really!?" << endl;
-//                        }
-//                        #endif
+                        if( assigns[var(trail[i])] == l_False )
+                        {
+                            ok = false;
+                            return false;
+                        }
+                        #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                        else
+                        {
+                            cout << "really!?" << endl;
+                        }
+                        #endif
                         break;
                     }
                     case 2:
@@ -2445,7 +2589,8 @@ NextClause:
                                                 #endif
                                                 mConstraintLiteralMap[subResult] = consLitPair->second;
 
-                                                addConstraintToInform(subResult);
+                                                informBackends( subResult );
+                                                //addConstraintToInform(subResult);
                                                 for( auto var = subResult->variables().begin(); var != subResult->variables().end(); ++var )
                                                 {
                                                     mVarOccurrences[*var].insert( subResult );
@@ -2456,18 +2601,39 @@ NextClause:
                                                 #ifdef SAT_APPLY_VALID_SUBS_DEBUG
                                                 cout << __LINE__ << endl;
                                                 #endif
-                                                // add clauses to state that the two literals are equivalent
-                                                vec<Lit> clauseLitsA;
-                                                clauseLitsA.push( mkLit( var( consLitPair->second.front() ), !sign( consLitPair->second.front() ) ) );
-                                                clauseLitsA.push( mkLit( var( iter->second.front() ), sign( iter->second.front() ) ) );
-                                                addClause( clauseLitsA, DEDUCTED_CLAUSE );
-                                                vec<Lit> clauseLitsB;
-                                                clauseLitsB.push( mkLit( var( consLitPair->second.front() ), sign( consLitPair->second.front() ) ) );
-                                                clauseLitsB.push( mkLit( var( iter->second.front() ), !sign( iter->second.front() ) ) );
-                                                addClause( clauseLitsB, DEDUCTED_CLAUSE );
-                                                iter->second.insert( iter->second.end(), consLitPair->second.begin(), consLitPair->second.end() );
+//                                                // add clauses to state that the two literals are equivalent
+//                                                vec<Lit> clauseLitsA;
+//                                                clauseLitsA.push( mkLit( var( consLitPair->second.front() ), !sign( consLitPair->second.front() ) ) );
+//                                                clauseLitsA.push( mkLit( var( iter->second.front() ), sign( iter->second.front() ) ) );
+//                                                addClause( clauseLitsA, DEDUCTED_CLAUSE );
+//                                                vec<Lit> clauseLitsB;
+//                                                clauseLitsB.push( mkLit( var( consLitPair->second.front() ), sign( consLitPair->second.front() ) ) );
+//                                                clauseLitsB.push( mkLit( var( iter->second.front() ), !sign( iter->second.front() ) ) );
+//                                                addClause( clauseLitsB, DEDUCTED_CLAUSE );
+//                                                iter->second.insert( iter->second.end(), consLitPair->second.begin(), consLitPair->second.end() );
+                                                assert( consLitPair->second.size() == 1 );
+                                                assert( iter->second.size() == 1 );
+                                                replaceVariable( clauses, var( consLitPair->second.front() ), var( iter->second.front() ) );
+                                                replaceVariable( learnts, var( consLitPair->second.front() ), var( iter->second.front() ) );
+                                                if( assigns[var(consLitPair->second.front())] != l_Undef && assigns[var(iter->second.front())] == l_Undef )
+                                                {
+                                                    vec<Lit> clauseLits;
+                                                    clauseLits.push( mkLit( var(iter->second.front()), !sign( consLitPair->second.front() ) ) );
+                                                    addClause( clauseLits, DEDUCTED_CLAUSE );
+                                                }
+                                                else if( assigns[var(iter->second.front())] != l_Undef && assigns[var(consLitPair->second.front())] == l_Undef )
+                                                {
+                                                    vec<Lit> clauseLits;
+                                                    clauseLits.push( mkLit( var(consLitPair->second.front()), !sign( iter->second.front() ) ) );
+                                                    addClause( clauseLits, DEDUCTED_CLAUSE );
+                                                }
+                                                else if( assigns[var(consLitPair->second.front())] != assigns[var(iter->second.front())] )
+                                                {
+                                                    return false;
+                                                }
                                             }
                                         }
+                                        assert( consLitPair->second.size() == 1 );
                                         for( auto litIter = consLitPair->second.begin(); litIter != consLitPair->second.end(); ++litIter )
                                         {
                                             #ifdef SAT_APPLY_VALID_SUBS_DEBUG

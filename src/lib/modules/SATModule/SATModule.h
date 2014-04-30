@@ -262,7 +262,6 @@ namespace smtrat
             mutable double        mSatisfiedClauses;
             size_t                mNumberOfFullLazyCalls;
             int                   mCurr_Restarts;
-            int                   mTrailStart;
             BooleanConstraintMap  mBooleanConstraintMap;
             ConstraintLiteralsMap  mConstraintLiteralMap;
             BooleanVarMap         mBooleanVarMap;
@@ -420,6 +419,7 @@ namespace smtrat
             void reduceDB();
             // Shrink 'cs' to contain only non-satisfied clauses.
             void removeSatisfied( Minisat::vec<Minisat::CRef>& cs );
+            void replaceVariable( Minisat::vec<Minisat::CRef>&, Minisat::Var, Minisat::Var );
             void rebuildOrderHeap();
             bool conflictingVars( const Minisat::vec<Minisat::CRef>& _clauses, const EvalRationalMap& _rationalAssignment, Minisat::vec<Minisat::Var>& _result, bool _includeConflicting = true ) const;
 

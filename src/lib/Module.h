@@ -358,6 +358,14 @@ namespace smtrat
                 _origins = origins->second;
             }
             
+            void informBackends( const Constraint* _constraint )
+            {
+                for( Module* module : mAllBackends )
+                {
+                    module->inform( _constraint );
+                }
+            }
+            
             Answer foundAnswer( Answer );
             void addConstraintToInform( const Constraint* const _constraint );
             void addReceivedSubformulaToPassedFormula( Formula::const_iterator );

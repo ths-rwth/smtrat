@@ -8,4 +8,4 @@
 
 #pragma once
 
-#define SMTRAT_VS_VARIABLEBOUNDS
+/* #undef SMTRAT_VS_VARIABLEBOUNDS */

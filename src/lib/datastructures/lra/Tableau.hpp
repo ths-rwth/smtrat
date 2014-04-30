@@ -41,7 +41,7 @@
 #define LRA_REFINEMENT
 //#define LRA_EQUATION_FIRST
 //#define LRA_LOCAL_CONFLICT_DIRECTED
-//#define LRA_CONFLICT_ACTIVITY_STRATEGY
+//#define LRA_USE_ACTIVITY_STRATEGY
 #define LRA_USE_THETA_STRATEGY
 #ifdef LRA_REFINEMENT
 //#define LRA_INTRODUCE_NEW_CONSTRAINTS
@@ -191,7 +191,7 @@ namespace smtrat
                 #ifdef LRA_USE_PIVOTING_STRATEGY
                 size_t                          mMaxPivotsWithoutBlandsRule;
                 #endif
-                smtrat::Formula::iterator       mDefaultBoundPosition;
+                Formula::iterator               mDefaultBoundPosition;
                 std::stack<EntryID>             mUnusedIDs;
                 std::vector<Variable<T1,T2>*>   mRows;       // First element is the head of the row and the second the length of the row.
                 std::vector<Variable<T1,T2>*>   mColumns;    // First element is the end of the column and the second the length of the column.
@@ -199,6 +199,9 @@ namespace smtrat
                 std::vector<TableauEntry<T1,T2> >* mpEntries;
                 std::vector<Variable<T1,T2>*>   mConflictingRows;
                 Value<T1>*                      mpTheta;
+                std::map< carl::Variable, Variable<T1,T2>*>  mOriginalVars;
+                FastPointerMap<Polynomial, Variable<T1,T2>*> mSlackVars;
+                FastPointerMap<Constraint, std::vector<const Bound<T1, T2>*>*> mConstraintToBound;
                 #ifdef LRA_REFINEMENT
                 std::map<Variable<T1,T2>*, LearnedBound> mLearnedLowerBounds;
                 std::map<Variable<T1,T2>*, LearnedBound> mLearnedUpperBounds;
@@ -208,7 +211,7 @@ namespace smtrat
                 class Iterator
                 {
                     private:
-                        EntryID                   mEntryID;
+                        EntryID                            mEntryID;
                         std::vector<TableauEntry<T1,T2> >* mpEntries;
 
                     public:
@@ -305,6 +308,26 @@ namespace smtrat
                 {
                     return mColumns;
                 }
+                
+                const std::map< carl::Variable, Variable<T1,T2>*>& originalVars() const
+                {
+                    return mOriginalVars;
+                }
+                
+                const FastPointerMap<Polynomial, Variable<T1,T2>*>& slackVars() const 
+                {
+                    return mSlackVars;
+                }
+                
+                const FastPointerMap<Constraint, std::vector<const Bound<T1, T2>*>*>& constraintToBound() const
+                {
+                    return mConstraintToBound;
+                }
+                
+                FastPointerMap<Constraint, std::vector<const Bound<T1, T2>*>*>& rConstraintToBound()
+                {
+                    return mConstraintToBound;
+                }
 
                 size_t numberOfPivotingSteps() const
                 {
@@ -340,6 +363,7 @@ namespace smtrat
 
                 EntryID newTableauEntry( const T2& );
                 void removeEntry( EntryID );
+                std::pair<const Bound<T1,T2>*, bool> newBound( const smtrat::Constraint* );
                 Variable<T1, T2>* newNonbasicVariable( const smtrat::Polynomial* );
                 Variable<T1, T2>* newBasicVariable( const smtrat::Polynomial*, std::map<carl::Variable, Variable<T1, T2>*>& );
                 void activateBasicVar( Variable<T1, T2>* );
@@ -378,7 +402,7 @@ namespace smtrat
                 bool create_cut_from_proof( Tableau<T2>&, Tableau<T2>&, size_t&, T2&, std::vector<T2>&, std::vector<bool>&, smtrat::Polynomial&, std::vector<size_t>&, std::vector<size_t>&, Bound<T1, T2>*&);
                 #endif
                 #ifdef LRA_GOMORY_CUTS
-                const smtrat::Constraint* gomoryCut( const T2&, size_t, std::vector<const smtrat::Constraint*>& );
+                const smtrat::Constraint* gomoryCut( const T2&, Variable<T1, T2>*, std::vector<const smtrat::Constraint*>&, std::map<carl::Variable, Variable<T1, T2>*>& );
                 #endif
                 void printHeap( std::ostream& = std::cout, int = 30, const std::string = "" ) const;
                 void printEntry( EntryID, std::ostream& = std::cout, int = 20 ) const;
@@ -403,7 +427,10 @@ namespace smtrat
             mRows(),
             mColumns(),
             mNonActiveBasics(),
-            mConflictingRows()
+            mConflictingRows(),
+            mOriginalVars(),
+            mSlackVars(),
+            mConstraintToBound()
             #ifdef LRA_REFINEMENT
             ,
             mLearnedLowerBounds(),
@@ -424,6 +451,24 @@ namespace smtrat
             std::cout << "#Tableus entries: " << mpEntries->size()-1 << std::endl;
             std::cout << "Tableau coverage: " << (double)(mpEntries->size()-1)/(double)(mRows.size()*mColumns.size())*100 << "%" << std::endl;
             #endif
+            while( !mConstraintToBound.empty() )
+            {
+                std::vector< const Bound<T1,T2>* >* toDelete = mConstraintToBound.begin()->second;
+                mConstraintToBound.erase( mConstraintToBound.begin() );
+                if( toDelete != NULL ) delete toDelete;
+            }
+            while( !mOriginalVars.empty() )
+            {
+                Variable<T1,T2>* varToDelete = mOriginalVars.begin()->second;
+                mOriginalVars.erase( mOriginalVars.begin() );
+                delete varToDelete;
+            }
+            while( !mSlackVars.empty() )
+            {
+                Variable<T1,T2>* varToDelete = mSlackVars.begin()->second;
+                mSlackVars.erase( mSlackVars.begin() );
+                delete varToDelete;
+            }
             delete mpEntries;
             delete mpTheta;
         };
@@ -489,7 +534,217 @@ namespace smtrat
             --(entry.columnVar()->rSize());
             mUnusedIDs.push( _entryID );
         }
-
+        
+        template<typename T1, typename T2>
+        std::pair<const Bound<T1,T2>*, bool> Tableau<T1,T2>::newBound( const smtrat::Constraint* _constraint )
+        {
+            assert( _constraint->isConsistent() == 2 );
+            T1 boundValue = T1( 0 );
+            bool negative = false;
+            Variable<T1, T2>* newVar;
+            if( _constraint->lhs().nrTerms() == 1 || ( _constraint->lhs().nrTerms() == 2 && _constraint->lhs().hasConstantTerm() ) )
+            {
+                auto term = _constraint->lhs().begin();
+                for( ; term != _constraint->lhs().end(); ++term )
+                    if( !(*term)->isConstant() ) break;
+                carl::Variable var = (*(*term)->monomial())[0].var;
+                T1 primCoeff = T1( (*term)->coeff() );
+                negative = (primCoeff < T1( 0 ));
+                boundValue = T1( -_constraint->constantPart() )/primCoeff;
+                typename std::map<carl::Variable, Variable<T1, T2>*>::iterator basicIter = mOriginalVars.find( var );
+                // constraint not found, add new nonbasic variable
+                if( basicIter == mOriginalVars.end() )
+                {
+                    Polynomial* varPoly = new Polynomial( var );
+                    newVar = newNonbasicVariable( varPoly );
+                    mOriginalVars.insert( std::pair<carl::Variable, Variable<T1, T2>*>( var, newVar ) );
+                }
+                else
+                {
+                    newVar = basicIter->second;
+                }
+            }
+            else
+            {
+                T1 constantPart = T1( _constraint->constantPart() );
+                negative = (_constraint->lhs().lterm()->coeff() < T1( 0 ));
+                Polynomial* linearPart;
+                if( negative )
+                    linearPart = new Polynomial( -_constraint->lhs() + (Rational)constantPart );
+                else
+                    linearPart = new Polynomial( _constraint->lhs() - (Rational)constantPart );
+                T1 cf = T1( linearPart->coprimeFactor() );
+                assert( cf > 0 );
+                constantPart *= cf;
+                (*linearPart) *= cf;
+                boundValue = (negative ? constantPart : -constantPart);
+                typename FastPointerMap<Polynomial, Variable<T1, T2>*>::iterator slackIter = mSlackVars.find( linearPart );
+                if( slackIter == mSlackVars.end() )
+                {
+                    newVar = newBasicVariable( linearPart, mOriginalVars );
+                    mSlackVars.insert( std::pair<const Polynomial*, Variable<T1, T2>*>( linearPart, newVar ) );
+                }
+                else
+                {
+                    delete linearPart;
+                    newVar = slackIter->second;
+                }
+            }
+            std::pair<const Bound<T1,T2>*, bool> result;
+            if( _constraint->relation() == Relation::EQ )
+            {
+                // TODO: Take value from an allocator to assure the values are located close to each other in the memory.
+                Value<T1>* value  = new Value<T1>( boundValue );
+                result = newVar->addEqualBound( value, mDefaultBoundPosition, _constraint );
+                std::vector< const Bound<T1,T2>* >* boundVector = new std::vector< const Bound<T1,T2>* >();
+                result.first->boundExists();
+                boundVector->push_back( result.first );
+                mConstraintToBound[_constraint] = boundVector;
+            }
+            if( _constraint->relation() == Relation::LEQ || ( _constraint->integerValued() && _constraint->relation() == Relation::NEQ ) )
+            {   
+                const Constraint* constraint;
+                Value<T1>* value;
+                if( _constraint->integerValued() && _constraint->relation() == Relation::NEQ )
+                {
+                    constraint = Formula::newConstraint( _constraint->lhs(), Relation::LESS );
+                    value = new Value<T1>( boundValue - T1( 1 ) );
+                }
+                else
+                {
+                    constraint = _constraint;
+                    value = new Value<T1>( boundValue );
+                }
+                if( negative )
+                {
+                    result = newVar->addLowerBound( value, mDefaultBoundPosition, constraint );
+                }
+                else
+                {
+                    result = newVar->addUpperBound( value, mDefaultBoundPosition, constraint );
+                }
+                std::vector< const Bound<T1,T2>* >* boundVector = new std::vector< const Bound<T1,T2>* >();
+                result.first->boundExists();
+                boundVector->push_back( result.first );
+                mConstraintToBound[constraint] = boundVector;
+                if( _constraint->integerValued() && _constraint->relation() == Relation::NEQ )
+                {
+                    std::vector< const Bound<T1,T2>* >* boundVectorB = new std::vector< const Bound<T1,T2>* >();
+                    boundVectorB->push_back( result.first );
+                    mConstraintToBound[_constraint] = boundVectorB;
+                    result.first->setNeqRepresentation( _constraint );
+                }
+                else
+                {  
+                    result.first->boundExists();
+                }
+            }
+            if( _constraint->relation() == Relation::GEQ || ( _constraint->integerValued() && _constraint->relation() == Relation::NEQ ) )
+            {
+                const Constraint* constraint;
+                Value<T1>* value;
+                if( _constraint->integerValued() && _constraint->relation() == Relation::NEQ )
+                {
+                    constraint = Formula::newConstraint( _constraint->lhs(), Relation::GREATER );
+                    value = new Value<T1>( boundValue + T1( 1 ) );
+                }
+                else
+                {
+                    constraint = _constraint;
+                    value = new Value<T1>( boundValue );
+                }
+                if( negative )
+                {
+                    result = newVar->addUpperBound( value, mDefaultBoundPosition, constraint );
+                }
+                else
+                {
+                    result = newVar->addLowerBound( value, mDefaultBoundPosition, constraint );
+                }
+                std::vector< const Bound<T1,T2>* >* boundVector = new std::vector< const Bound<T1,T2>* >();
+                boundVector->push_back( result.first );
+                mConstraintToBound[constraint] = boundVector;
+                if( _constraint->integerValued() && _constraint->relation() == Relation::NEQ )
+                {
+                    mConstraintToBound[_constraint]->push_back( result.first );
+                    result.first->setNeqRepresentation( _constraint );
+                }
+                else
+                {  
+                    result.first->boundExists();
+                }
+            }
+            if( _constraint->relation() == Relation::LESS || _constraint->relation() == Relation::NEQ )
+            {
+                const Constraint* constraint;
+                if( _constraint->relation() != Relation::NEQ )
+                {
+                    constraint = _constraint;
+                }
+                else
+                {
+                    constraint = Formula::newConstraint( _constraint->lhs(), Relation::LESS );
+                }
+                Value<T1>* value = new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
+                if( negative )
+                {
+                    result = newVar->addLowerBound( value, mDefaultBoundPosition, constraint );
+                }
+                else
+                {
+                    result = newVar->addUpperBound( value, mDefaultBoundPosition, constraint );
+                }
+                std::vector< const Bound<T1,T2>* >* boundVector = new std::vector< const Bound<T1,T2>* >();
+                boundVector->push_back( result.first );
+                mConstraintToBound[constraint] = boundVector;
+                if( _constraint->relation() == Relation::NEQ )
+                {
+                    std::vector< const Bound<T1,T2>* >* boundVectorB = new std::vector< const Bound<T1,T2>* >();
+                    boundVectorB->push_back( result.first );
+                    mConstraintToBound[_constraint] = boundVectorB;
+                    result.first->setNeqRepresentation( _constraint );
+                }
+                else
+                {  
+                    result.first->boundExists();
+                }
+            }
+            if( _constraint->relation() == Relation::GREATER || _constraint->relation() == Relation::NEQ )
+            {
+                const Constraint* constraint;
+                if( _constraint->relation() != Relation::NEQ )
+                {
+                    constraint = _constraint;
+                }
+                else
+                {
+                    constraint = Formula::newConstraint( _constraint->lhs(), Relation::GREATER );
+                }
+                Value<T1>* value = new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
+                if( negative )
+                {
+                    result = newVar->addUpperBound( value, mDefaultBoundPosition, constraint );
+                }
+                else
+                {
+                    result = newVar->addLowerBound( value, mDefaultBoundPosition, constraint );
+                }
+                std::vector< const Bound<T1,T2>* >* boundVector = new std::vector< const Bound<T1,T2>* >();
+                boundVector->push_back( result.first );
+                mConstraintToBound[constraint] = boundVector;
+                if( _constraint->relation() == Relation::NEQ )
+                {
+                    mConstraintToBound[_constraint]->push_back( result.first );
+                    result.first->setNeqRepresentation( _constraint );
+                }
+                else
+                {
+                    result.first->boundExists();
+                }
+            }
+            return result;
+        }
+        
         /**
          *
          * @param _ex
@@ -777,7 +1032,9 @@ FindPivot:
 #endif
                 EntryID bestTableauEntry = LAST_ENTRY_ID;
                 EntryID beginOfFirstConflictRow = LAST_ENTRY_ID;
+                #ifdef LRA_USE_THETA_STRATEGY
                 Value<T1> bestDiff = Value<T1>( 0 );
+                #endif
                 Value<T1> bestThetaB = Value<T1>( 0 );
                 #ifdef LRA_LOCAL_CONFLICT_DIRECTED
                 bool initialSearch = mConflictingRows.empty();
@@ -790,20 +1047,26 @@ FindPivot:
                 {
                     assert( *basicVar != NULL );
                     Variable<T1,T2>& bVar = **basicVar;
+                    #ifdef LRA_USE_THETA_STRATEGY
                     Value<T1> diff = Value<T1>( 0 );
+                    #endif
                     Value<T1> thetaB = Value<T1>( 0 );
                     bool upperBoundViolated = false;
                     bool lowerBoundViolated = false;
                     if( bVar.supremum() < bVar.assignment() )
                     {
                         thetaB = bVar.supremum().limit() - bVar.assignment();
+                        #ifdef LRA_USE_THETA_STRATEGY
                         diff = thetaB * T2(-1);
+                        #endif
                         upperBoundViolated = true;
                     }
                     else if( bVar.infimum() > bVar.assignment() )
                     {
                         thetaB = bVar.infimum().limit() - bVar.assignment();
+                        #ifdef LRA_USE_THETA_STRATEGY
                         diff = thetaB;
+                        #endif
                         lowerBoundViolated = true;
                     }
                     else
@@ -835,6 +1098,13 @@ FindPivot:
                         continue;
                     }
                     #endif
+                    #ifdef LRA_USE_ACTIVITY_STRATEGY
+                    if( (*basicVar)->conflictActivity() <= (*bestVar)->conflictActivity() )
+                    {
+                        ++basicVar;
+                        continue;
+                    }
+                    #endif
                     if( upperBoundViolated || lowerBoundViolated )
                     {
                         std::pair<EntryID,bool> result = isSuitable( bVar, upperBoundViolated );
@@ -855,7 +1125,9 @@ FindPivot:
                             {
                                 bestTableauEntry = result.first;
                                 bestVar = basicVar;
+                                #ifdef LRA_USE_THETA_STRATEGY
                                 bestDiff = diff;
+                                #endif
                                 bestThetaB = thetaB;
                             }
                             else
@@ -1194,8 +1466,12 @@ FindPivot:
         std::vector< std::set< const Bound<T1, T2>* > > Tableau<T1,T2>::getConflictsFrom( EntryID _rowEntry ) const
         {
             std::vector< std::set< const Bound<T1, T2>* > > conflicts = std::vector< std::set< const Bound<T1, T2>* > >();
+            const Variable<T1,T2>* firstConflictingVar = (*mpEntries)[_rowEntry].rowVar();
+            bool posOfFirstConflictFound = false;
             for( Variable<T1,T2>* rowElement : mRows )
             {
+                if( !posOfFirstConflictFound && rowElement != firstConflictingVar )
+                    continue;
                 assert( rowElement != NULL );
                 // Upper bound is violated
                 const Variable<T1,T2>& basicVar = *rowElement;
@@ -2950,120 +3226,122 @@ FindPivot:
          *         otherwise the valid constraint is returned.   
          */ 
         template<typename T1, typename T2>
-        const smtrat::Constraint* Tableau<T1,T2>::gomoryCut( const T2& _ass, size_t _rowPosition, vector<const smtrat::Constraint*>& _constrVec )
+        const smtrat::Constraint* Tableau<T1,T2>::gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar, std::vector<const smtrat::Constraint*>& _constrVec, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars )
         {     
-            Iterator row_iterator = Iterator( mRows.at(_rowPosition).mStartEntry, mpEntries );
-            std::vector<GOMORY_SET> splitting = std::vector<GOMORY_SET>();
-            // Check, whether the conditions of a Gomory Cut are satisfied
-            while( !row_iterator.horiEnd( false ) )
-            { 
-                const Variable<T1, T2>& nonBasicVar = *mColumns[row_iterator->columnNumber()].mName;
-                if( nonBasicVar.infimum() == nonBasicVar.assignment() || nonBasicVar.supremum() == nonBasicVar.assignment() )
-                {
-                    if( nonBasicVar.infimum() == nonBasicVar.assignment() )
-                    {
-                        if( (*row_iterator).content() < 0 ) splitting.push_back( J_MINUS );
-                        else splitting.push_back( J_PLUS );         
-                    }
-                    else
-                    {
-                        if( (*row_iterator).content() < 0 ) splitting.push_back( K_MINUS );
-                        else splitting.push_back( K_PLUS );
-                    }
-                }                                 
-                else
-                {
-                    return NULL;
-                }                               
-                row_iterator.hNext( false );
-            }
-            // A Gomory Cut can be constructed              
-            std::vector<T2> coeffs = std::vector<T2>();
-            T2 coeff;
-            T2 f_zero = _ass - T2( cln::floor1( cln::the<cln::cl_RA>( _ass.toCLN() ) ) );
-            ex sum = ex();
-            // Construction of the Gomory Cut 
-            std::vector<GOMORY_SET>::const_iterator vec_iter = splitting.begin();
-            row_iterator = Iterator( mRows.at(_rowPosition).mStartEntry, mpEntries );
-            while( !row_iterator.horiEnd( false ) )
-            {                 
-                const Variable<T1, T2>& nonBasicVar = *mColumns[row_iterator->columnNumber()].mName;
-                if( (*vec_iter) == J_MINUS )
-                {
-                    T2 bound = nonBasicVar.infimum().limit().mainPart();
-                    coeff = -( row_iterator->content() / f_zero);
-                    _constrVec.push_back( nonBasicVar.infimum().pAsConstraint() );                    
-                    sum += coeff*( nonBasicVar.expression() - bound );                   
-                }                 
-                else if( (*vec_iter) == J_PLUS )
-                {
-                    T2 bound = nonBasicVar.infimum().limit().mainPart();
-                    coeff = row_iterator->content()/( 1 - f_zero );
-                    _constrVec.push_back( nonBasicVar.infimum().pAsConstraint() );
-                    sum += coeff*( nonBasicVar.expression() - bound );                   
-                }
-                else if( (*vec_iter) == K_MINUS )
-                {
-                    T2 bound = nonBasicVar.supremum().limit().mainPart();
-                    coeff = -( row_iterator->content()/( 1 - f_zero ) );
-                    _constrVec.push_back( nonBasicVar.supremum().pAsConstraint() );
-                    sum += coeff * ( bound - nonBasicVar.expression() );                   
-                }
-                else if( (*vec_iter) == K_PLUS ) 
-                {
-                    T2 bound = nonBasicVar.supremum().limit().mainPart();
-                    coeff = (*row_iterator).content()/f_zero;
-                    _constrVec.push_back( nonBasicVar.supremum().pAsConstraint() );
-                    sum += coeff * ( bound - nonBasicVar.expression() );
-                }     
-                coeffs.push_back( coeff );
-                row_iterator.hNext( false );
-                ++vec_iter;
-            }            
-            const smtrat::Constraint* gomory_constr = smtrat::Formula::newConstraint( sum-1, smtrat::CR_GEQ, smtrat::Formula::constraintPool().realVariables() );
-            ex *psum = new ex( sum - gomory_constr->constantPart() );
-            Value<T1>* bound = new Value<T1>( gomory_constr->constantPart() );
-            Variable<T1, T2>* var = new Variable<T1, T2>( mHeight++, true, false, psum, mDefaultBoundPosition );
-            (*var).addLowerBound( bound, mDefaultBoundPosition, gomory_constr );
-            typename std::vector<T2>::const_iterator coeffs_iter = coeffs.begin();
-            row_iterator = Iterator( mRows.at(_rowPosition).mStartEntry, mpEntries );
-            mRows.push_back( TableauHead() );
-            EntryID currentStartEntryOfRow = LAST_ENTRY_ID;
-            EntryID leftID;            
-            while( coeffs_iter != coeffs.end() )
-            {
-                const Variable<T1, T2>& nonBasicVar = *mColumns[row_iterator->columnNumber()].mName;
-                EntryID entryID = newTableauEntry( *coeffs_iter );
-                TableauEntry<T1,T2>& entry = (*mpEntries)[entryID];
-                entry.setColumnNumber( nonBasicVar.position() );
-                entry.setRowNumber( mHeight - 1 );
-                TableauHead& columnHead = mColumns[entry.columnNumber()];
-                EntryID& columnStart = columnHead.mStartEntry;
-                (*mpEntries)[columnStart].setVertNext( true, entryID );
-                entry.setVertNext( false, columnStart );                
-                columnStart = entryID;
-                ++columnHead.mSize;
-                if( currentStartEntryOfRow == LAST_ENTRY_ID )
-                {
-                    currentStartEntryOfRow = entryID;
-                    entry.setHoriNext( true, LAST_ENTRY_ID );
-                    leftID = entryID;
-                }  
-                else 
-                {
-                    (*mpEntries)[entryID].setHoriNext( true, leftID );
-                    (*mpEntries)[leftID].setHoriNext( false, entryID ); 
-                    leftID = entryID;
-                }
-                ++coeffs_iter;
-                row_iterator.hNext( false );
-            }            
-            (*mpEntries)[leftID].setHoriNext( false, LAST_ENTRY_ID );
-            TableauHead& rowHead = mRows[mHeight-1];
-            rowHead.mStartEntry = currentStartEntryOfRow;
-            rowHead.mSize = coeffs.size();
-            rowHead.mName = var; 
-            return gomory_constr;     
+//            Iterator row_iterator = Iterator( _rowVar->startEntry(), mpEntries );
+//            std::vector<GOMORY_SET> splitting = std::vector<GOMORY_SET>();
+//            // Check, whether the conditions of a Gomory Cut are satisfied
+//            while( !row_iterator.horiEnd( false ) )
+//            { 
+//                const Variable<T1, T2>& nonBasicVar = (*row_iterator).columnVar();
+//                if( nonBasicVar.infimum() == nonBasicVar.assignment() || nonBasicVar.supremum() == nonBasicVar.assignment() )
+//                {
+//                    if( nonBasicVar.infimum() == nonBasicVar.assignment() )
+//                    {
+//                        if( (*row_iterator).content() < 0 ) splitting.push_back( J_MINUS );
+//                        else splitting.push_back( J_PLUS );         
+//                    }
+//                    else
+//                    {
+//                        if( (*row_iterator).content() < 0 ) splitting.push_back( K_MINUS );
+//                        else splitting.push_back( K_PLUS );
+//                    }
+//                }                                 
+//                else
+//                {
+//                    return NULL;
+//                }                               
+//                row_iterator.hNext( false );
+//            }
+//            // A Gomory Cut can be constructed              
+//            std::vector<T2> coeffs = std::vector<T2>();
+//            T2 coeff;
+//            T2 f_zero = _ass - carl::floor( _ass );
+//            Polynomial sum = Polynomial();
+//            // Construction of the Gomory Cut 
+//            std::vector<GOMORY_SET>::const_iterator vec_iter = splitting.begin();
+//            row_iterator = Iterator( mRows.at(_rowPosition).mStartEntry, mpEntries );
+//            while( !row_iterator.horiEnd( false ) )
+//            {                 
+//                const Variable<T1, T2>& nonBasicVar = (*row_iterator).columnVar();
+//                if( (*vec_iter) == J_MINUS )
+//                {
+//                    T2 bound = nonBasicVar.infimum().limit().mainPart();
+//                    coeff = -( row_iterator->content() / f_zero);
+//                    _constrVec.push_back( nonBasicVar.infimum().pAsConstraint() );                    
+//                    sum += coeff*( nonBasicVar.expression() - bound );                   
+//                }                 
+//                else if( (*vec_iter) == J_PLUS )
+//                {
+//                    T2 bound = nonBasicVar.infimum().limit().mainPart();
+//                    coeff = row_iterator->content()/( 1 - f_zero );
+//                    _constrVec.push_back( nonBasicVar.infimum().pAsConstraint() );
+//                    sum += coeff*( nonBasicVar.expression() - bound );                   
+//                }
+//                else if( (*vec_iter) == K_MINUS )
+//                {
+//                    T2 bound = nonBasicVar.supremum().limit().mainPart();
+//                    coeff = -( row_iterator->content()/( 1 - f_zero ) );
+//                    _constrVec.push_back( nonBasicVar.supremum().pAsConstraint() );
+//                    sum += coeff * ( bound - nonBasicVar.expression() );                   
+//                }
+//                else if( (*vec_iter) == K_PLUS ) 
+//                {
+//                    T2 bound = nonBasicVar.supremum().limit().mainPart();
+//                    coeff = (*row_iterator).content()/f_zero;
+//                    _constrVec.push_back( nonBasicVar.supremum().pAsConstraint() );
+//                    sum += coeff * ( bound - nonBasicVar.expression() );
+//                }     
+//                coeffs.push_back( coeff );
+//                row_iterator.hNext( false );
+//                ++vec_iter;
+//            } 
+//            const smtrat::Constraint* gomory_constr = smtrat::Formula::newConstraint( sum-1, Relation::GEQ );
+//            Polynomial *psum = new Polynomial( sum - gomory_constr->constantPart() );
+//            Value<T1>* bound = new Value<T1>( gomory_constr->constantPart() );
+//            // TODO: check whether there is already a basic variable with this polynomial (psum, cf. LRAModule::initialize(..)) 
+//            Variable<T1, T2>* var = newBasicVariable( psum, _originalVars );
+//            (*var).addLowerBound( bound, mDefaultBoundPosition, gomory_constr );
+//            typename std::vector<T2>::const_iterator coeffs_iter = coeffs.begin();
+//            row_iterator = Iterator( mRows.at(_rowPosition).mStartEntry, mpEntries );
+//            mRows.push_back( TableauHead() );
+//            EntryID currentStartEntryOfRow = LAST_ENTRY_ID;
+//            EntryID leftID;            
+//            while( coeffs_iter != coeffs.end() )
+//            {
+//                const Variable<T1, T2>& nonBasicVar = *mColumns[row_iterator->columnNumber()].mName;
+//                EntryID entryID = newTableauEntry( *coeffs_iter );
+//                TableauEntry<T1,T2>& entry = (*mpEntries)[entryID];
+//                entry.setColumnNumber( nonBasicVar.position() );
+//                entry.setRowNumber( mHeight - 1 );
+//                TableauHead& columnHead = mColumns[entry.columnNumber()];
+//                EntryID& columnStart = columnHead.mStartEntry;
+//                (*mpEntries)[columnStart].setVertNext( true, entryID );
+//                entry.setVertNext( false, columnStart );                
+//                columnStart = entryID;
+//                ++columnHead.mSize;
+//                if( currentStartEntryOfRow == LAST_ENTRY_ID )
+//                {
+//                    currentStartEntryOfRow = entryID;
+//                    entry.setHoriNext( true, LAST_ENTRY_ID );
+//                    leftID = entryID;
+//                }  
+//                else 
+//                {
+//                    (*mpEntries)[entryID].setHoriNext( true, leftID );
+//                    (*mpEntries)[leftID].setHoriNext( false, entryID ); 
+//                    leftID = entryID;
+//                }
+//                ++coeffs_iter;
+//                row_iterator.hNext( false );
+//            }            
+//            (*mpEntries)[leftID].setHoriNext( false, LAST_ENTRY_ID );
+//            TableauHead& rowHead = mRows[mHeight-1];
+//            rowHead.mStartEntry = currentStartEntryOfRow;
+//            rowHead.mSize = coeffs.size();
+//            rowHead.mName = var; 
+//            return gomory_constr;
+            return NULL;
         }
         #endif
 
@@ -3163,11 +3441,11 @@ FindPivot:
         {
             for( auto learnedBound = mLearnedLowerBounds.begin(); learnedBound != mLearnedLowerBounds.end(); ++learnedBound )
             {
-                printLearnedBound( *learnedBound->first, learnedBound->second );
+                printLearnedBound( *learnedBound->first, learnedBound->second, _init, _out );
             }
             for( auto learnedBound = mLearnedUpperBounds.begin(); learnedBound != mLearnedUpperBounds.end(); ++learnedBound )
             {
-                printLearnedBound( *learnedBound->first, learnedBound->second );
+                printLearnedBound( *learnedBound->first, learnedBound->second, _init, _out );
             }
         }
         
@@ -3242,6 +3520,11 @@ FindPivot:
             size_t table_width = basic_var_assign_width + basic_var_infimum_width + basic_var_supremum_width + basic_var_name_width + 8;
             for( Variable<T1,T2>* columnVar : mColumns )
             {
+                if( columnVar->size() == 0 )
+                {
+                    columnWidths.push_back( 0 );
+                    continue;
+                }
                 size_t column_width = columnVar->expression().toString( true, _friendlyNames ).size();
                 if( columnVar->assignment().toString().size() > column_width )
                     column_width = columnVar->assignment().toString().size();
@@ -3274,22 +3557,24 @@ FindPivot:
                 pivotingRow = (*mpEntries)[_pivotingElement].rowVar()->position();
                 pivotingColumn = (*mpEntries)[_pivotingElement].columnVar()->position();
             }
-            _out << _init << std::setw( table_width ) << std::setfill( frameSign ) << "" << std::endl;
-            _out << _init << std::setw( basic_var_name_width ) << std::setfill( ' ' ) << "";
+            _out << _init << std::setw( (int) table_width ) << std::setfill( frameSign ) << "" << std::endl;
+            _out << _init << std::setw( (int) basic_var_name_width ) << std::setfill( ' ' ) << "";
             _out << " " << separator;
             for( Variable<T1,T2>* columnVar : mColumns )
             {
+                if( columnVar->size() == 0 )
+                    continue;
                 _out << " ";
                 std::stringstream out;
                 out << columnVar->expression().toString( true, _friendlyNames );
-                _out << std::setw( columnWidths[columnVar->position()] ) << out.str();
+                _out << std::setw( (int) columnWidths[columnVar->position()] ) << out.str();
                 if(  _pivotingElement != LAST_ENTRY_ID && pivotingColumn == columnVar->position() )
                     _out << " " << pivoting_separator;
                 else
                     _out << " " << separator;
             }
             _out << std::endl;
-            _out << _init << std::setw( table_width ) << std::setfill( '-' ) << "" << std::endl;
+            _out << _init << std::setw( (int) table_width ) << std::setfill( '-' ) << "" << std::endl;
             _out << std::setfill( ' ' );
             for( Variable<T1,T2>* rowVar : mRows )
             {
@@ -3307,7 +3592,7 @@ FindPivot:
                     if( !(rowVar->factor() == 1) )
                         out << ")";
                     #endif
-                    _out << std::setw( basic_var_name_width ) << out.str();
+                    _out << std::setw( (int) basic_var_name_width ) << out.str();
                     if( _pivotingElement != LAST_ENTRY_ID && pivotingRow == rowVar->position() )
                         _out << " " << pivoting_separator;
                     else
@@ -3318,18 +3603,21 @@ FindPivot:
                     {
                         for( size_t i = currentColumn; i < (*rowIter).columnVar()->position(); ++i )
                         {
-                            _out << " ";
-                            _out << std::setw( columnWidths[columnNumber] ) << "0";
-                            if( _pivotingElement != LAST_ENTRY_ID && (pivotingRow == rowVar->position() || pivotingColumn == columnNumber) )
-                                _out << " " << pivoting_separator;
-                            else
-                                _out << " " << separator;
+                            if( mColumns[columnNumber]->size() != 0 )
+                            {
+                                _out << " ";
+                                _out << std::setw( (int) columnWidths[columnNumber] ) << "0";
+                                if( _pivotingElement != LAST_ENTRY_ID && (pivotingRow == rowVar->position() || pivotingColumn == columnNumber) )
+                                    _out << " " << pivoting_separator;
+                                else
+                                    _out << " " << separator;
+                            }
                             ++columnNumber;
                         }
                         _out << " ";
                         std::stringstream out;
                         out << (*rowIter).content();
-                        _out << std::setw( columnWidths[columnNumber] ) << out.str();
+                        _out << std::setw( (int) columnWidths[columnNumber] ) << out.str();
                         if( _pivotingElement != LAST_ENTRY_ID && (pivotingRow == rowVar->position() || pivotingColumn == columnNumber) )
                             _out << " " << pivoting_separator;
                         else
@@ -3340,12 +3628,15 @@ FindPivot:
                         {
                             for( size_t i = currentColumn; i < mWidth; ++i )
                             {
-                                _out << " ";
-                                _out << std::setw( columnWidths[columnNumber] ) << "0";
-                                if( _pivotingElement != LAST_ENTRY_ID && (pivotingRow == rowVar->position() || pivotingColumn == columnNumber) )
-                                    _out << " " << pivoting_separator;
-                                else
-                                    _out << " " << separator;
+                                if( mColumns[columnNumber]->size() != 0 )
+                                {
+                                    _out << " ";
+                                    _out << std::setw( (int) columnWidths[columnNumber] ) << "0";
+                                    if( _pivotingElement != LAST_ENTRY_ID && (pivotingRow == rowVar->position() || pivotingColumn == columnNumber) )
+                                        _out << " " << pivoting_separator;
+                                    else
+                                        _out << " " << separator;
+                                }
                                 ++columnNumber;
                             }
                             break;
@@ -3353,36 +3644,40 @@ FindPivot:
                         rowIter.hMove( false );
                     }
                     _out << " ";
-                    _out << std::setw( basic_var_assign_width ) << rowVar->assignment().toString();
+                    _out << std::setw( (int) basic_var_assign_width ) << rowVar->assignment().toString();
                     _out << " [";
-                    _out << std::setw( basic_var_infimum_width ) << rowVar->infimum().toString();
+                    _out << std::setw( (int) basic_var_infimum_width ) << rowVar->infimum().toString();
                     _out << ", ";
-                    _out << std::setw( basic_var_supremum_width ) << rowVar->supremum().toString();
+                    _out << std::setw( (int) basic_var_supremum_width ) << rowVar->supremum().toString();
                     _out << "]";
                     _out << std::endl;
                 }
             }
-            _out << _init << std::setw( table_width ) << std::setfill( frameSign ) << "" << std::endl;
-            _out << _init << std::setw( basic_var_name_width ) << std::setfill( ' ' ) << "";
+            _out << _init << std::setw( (int) table_width ) << std::setfill( frameSign ) << "" << std::endl;
+            _out << _init << std::setw( (int) basic_var_name_width ) << std::setfill( ' ' ) << "";
             _out << " " << separator;
             for( Variable<T1,T2>* columnVar : mColumns )
             {
+                if( columnVar->size() == 0 )
+                    continue;
                 _out << " ";
-                _out << std::setw( columnWidths[columnVar->position()] ) << columnVar->assignment().toString();
+                _out << std::setw( (int) columnWidths[columnVar->position()] ) << columnVar->assignment().toString();
                 if( _pivotingElement != LAST_ENTRY_ID && pivotingColumn == columnVar->position() )
                     _out << " " << pivoting_separator;
                 else
                     _out << " " << separator;
             }
             _out << std::endl;
-            _out << _init << std::setw( basic_var_name_width ) << std::setfill( ' ' ) << "";
+            _out << _init << std::setw( (int) basic_var_name_width ) << std::setfill( ' ' ) << "";
             _out << " " << separator;
             for( Variable<T1,T2>* columnVar : mColumns )
             {
+                if( columnVar->size() == 0 )
+                    continue;
                 _out << " ";
                 std::stringstream outB;
                 outB << "[" << columnVar->infimum().toString() << ",";
-                _out << std::left << std::setw( columnWidths[columnVar->position()] ) << outB.str();
+                _out << std::left << std::setw( (int) columnWidths[columnVar->position()] ) << outB.str();
                 _out << std::right << "";
                 if( _pivotingElement != LAST_ENTRY_ID && pivotingColumn == columnVar->position() )
                     _out << " " << pivoting_separator;
@@ -3390,14 +3685,16 @@ FindPivot:
                     _out << " " << separator;
             }
             _out << std::endl;
-            _out << _init << std::setw( basic_var_name_width ) << std::setfill( ' ' ) << "";
+            _out << _init << std::setw( (int) basic_var_name_width ) << std::setfill( ' ' ) << "";
             _out << " " << separator;
             for( Variable<T1,T2>* columnVar : mColumns )
             {
+                if( columnVar->size() == 0 )
+                    continue;
                 _out << " ";
                 std::stringstream outB;
                 outB << " " << columnVar->supremum().toString() << "]";
-                _out << std::setw( columnWidths[columnVar->position()] ) << outB.str();
+                _out << std::setw( (int) columnWidths[columnVar->position()] ) << outB.str();
                 if( _pivotingElement != LAST_ENTRY_ID && pivotingColumn == columnVar->position() )
                     _out << " " << pivoting_separator;
                 else

@@ -293,10 +293,9 @@ namespace smtrat
                     }
                 }
 
-                std::pair<const Bound<T1, T2>*, typename Bound<T1, T2>::BoundSet::const_iterator> addUpperBound( Value<T1>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL, bool = false );
-                std::pair<const Bound<T1, T2>*, typename Bound<T1, T2>::BoundSet::const_iterator> addLowerBound( Value<T1>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL, bool = false );
-                std::pair<const Bound<T1, T2>*, std::pair<typename Bound<T1, T2>::BoundSet::const_iterator, typename Bound<T1, T2>::BoundSet::const_iterator> > 
-                    addEqualBound( Value<T1>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL );
+                std::pair<const Bound<T1, T2>*, bool> addUpperBound( Value<T1>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL, bool = false );
+                std::pair<const Bound<T1, T2>*, bool> addLowerBound( Value<T1>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL, bool = false );
+                std::pair<const Bound<T1, T2>*, bool> addEqualBound( Value<T1>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL );
                 bool deactivateBound( const Bound<T1, T2>*, smtrat::Formula::iterator );
                 Interval getVariableBounds() const;
                 std::set< const smtrat::Formula* > getDefiningOrigins() const;
@@ -371,7 +370,7 @@ namespace smtrat
          * @return
          */
         template<typename T1, typename T2>
-        std::pair<const Bound<T1, T2>*, typename Bound<T1, T2>::BoundSet::const_iterator> Variable<T1, T2>::addUpperBound( Value<T1>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint, bool _deduced )
+        std::pair<const Bound<T1, T2>*, bool> Variable<T1, T2>::addUpperBound( Value<T1>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint, bool _deduced )
         {
             struct Bound<T1, T2>::Info* boundInfo = new struct Bound<T1, T2>::Info();
             boundInfo->updated = 0;
@@ -383,12 +382,8 @@ namespace smtrat
             if( !result.second )
             {
                 delete newBound;
-                return std::pair<const Bound<T1, T2>*, typename Bound<T1, T2>::BoundSet::const_iterator>( *result.first, mUpperbounds.end() );
             }
-            else
-            {
-                return std::pair<const Bound<T1, T2>*, typename Bound<T1, T2>::BoundSet::const_iterator>( newBound, result.first );
-            }
+            return std::pair<const Bound<T1, T2>*, bool>( *result.first, result.second );
         }
 
         /**
@@ -397,7 +392,7 @@ namespace smtrat
          * @return
          */
         template<typename T1, typename T2>
-        std::pair<const Bound<T1, T2>*, typename Bound<T1, T2>::BoundSet::const_iterator> Variable<T1, T2>::addLowerBound( Value<T1>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint, bool _deduced )
+        std::pair<const Bound<T1, T2>*, bool> Variable<T1, T2>::addLowerBound( Value<T1>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint, bool _deduced )
         {
             struct Bound<T1, T2>::Info* boundInfo = new struct Bound<T1, T2>::Info();
             boundInfo->updated = 0;
@@ -408,12 +403,8 @@ namespace smtrat
             if( !result.second )
             {
                 delete newBound;
-                return std::pair<const Bound<T1, T2>*, typename Bound<T1, T2>::BoundSet::const_iterator>( *result.first, mLowerbounds.end() );
             }
-            else
-            {
-                return std::pair<const Bound<T1, T2>*, typename Bound<T1, T2>::BoundSet::const_iterator>( newBound, result.first );
-            }
+            return std::pair<const Bound<T1, T2>*, bool>( *result.first, result.second );
         }
 
         /**
@@ -422,8 +413,7 @@ namespace smtrat
          * @return
          */
         template<typename T1, typename T2>
-        std::pair<const Bound<T1, T2>*, std::pair<typename Bound<T1, T2>::BoundSet::const_iterator, typename Bound<T1, T2>::BoundSet::const_iterator> > 
-        Variable<T1, T2>::addEqualBound( Value<T1>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint )
+        std::pair<const Bound<T1, T2>*, bool> Variable<T1, T2>::addEqualBound( Value<T1>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint )
         {
             struct Bound<T1, T2>::Info* boundInfo = new struct Bound<T1, T2>::Info();
             boundInfo->updated = 0;
@@ -435,21 +425,13 @@ namespace smtrat
             if( !result.second )
             {
                 delete newBound;
-                return std::pair<const Bound<T1, T2>*, std::pair<typename Bound<T1, T2>::BoundSet::const_iterator, typename Bound<T1, T2>::BoundSet::const_iterator> >
-                        (
-                            *result.first, 
-                            std::pair<typename Bound<T1, T2>::BoundSet::const_iterator, typename Bound<T1, T2>::BoundSet::const_iterator>( mLowerbounds.end(), mUpperbounds.end() ) 
-                        );
+                return std::pair<const Bound<T1, T2>*, bool>( *result.first, false );
             }
             else
             {
                 std::pair<typename Bound<T1, T2>::BoundSet::iterator, bool> resultB = mUpperbounds.insert( newBound );
                 assert( resultB.second );
-                return std::pair<const Bound<T1, T2>*, std::pair<typename Bound<T1, T2>::BoundSet::const_iterator, typename Bound<T1, T2>::BoundSet::const_iterator> >
-                        (
-                            newBound, 
-                            std::pair<typename Bound<T1, T2>::BoundSet::const_iterator, typename Bound<T1, T2>::BoundSet::const_iterator>( result.first, resultB.first ) 
-                        );
+                return std::pair<const Bound<T1, T2>*, bool>( *result.first, true );
             }
         }
 

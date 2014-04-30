@@ -75,8 +75,6 @@ namespace smtrat
             ConstraintContextMap       mActiveResolvedNEQConstraints;
             ConstraintContextMap       mActiveUnresolvedNEQConstraints;
             PointerSet<Constraint>     mResolvedNEQConstraints;
-            VarVariableMap             mOriginalVars;
-            ExVariableMap              mSlackVars;
             ConstraintBoundsMap        mConstraintToBound;
             carl::Variable             mDelta;
             std::vector<const LRABound* >  mBoundCandidatesToPass;
@@ -113,20 +111,18 @@ namespace smtrat
 
             void printLinearConstraints ( std::ostream& = std::cout, const std::string = "" ) const;
             void printNonlinearConstraints ( std::ostream& = std::cout, const std::string = "" ) const;
-            void printOriginalVars ( std::ostream& = std::cout, const std::string = "" ) const;
-            void printSlackVars ( std::ostream& = std::cout, const std::string = "" ) const;
             void printConstraintToBound ( std::ostream& = std::cout, const std::string = "" ) const;
             void printBoundCandidatesToPass ( std::ostream& = std::cout, const std::string = "" ) const;
             void printRationalModel ( std::ostream& = std::cout, const std::string = "" ) const;
 
             const VarVariableMap& originalVariables() const
             {
-                return mOriginalVars;
+                return mTableau.originalVars();
             }
             
             const ExVariableMap& slackVariables() const
             {
-                return mSlackVars;
+                return mTableau.slackVars();
             }
 
             const LRAVariable* getSlackVariable( const Constraint* _constraint ) const
@@ -146,12 +142,10 @@ namespace smtrat
             void adaptPassedFormula();
             bool checkAssignmentForNonlinearConstraint();
             bool activateBound( const LRABound*, std::set<const Formula*>& );
-            void setBound( LRAVariable&, bool, const LRABoundType&, const Constraint* );
-            template<bool is_upper_bound>
-            void addSimpleBoundDeduction( LRABound::BoundSet::const_iterator, bool = false );
+            void setBound( const Constraint* );
+            void addSimpleBoundDeduction( const LRABound*, bool = false );
             void addSimpleBoundConflict( const LRABound&, const LRABound&, bool = false );
             void findSimpleConflicts( const LRABound& );
-            void initialize( const Constraint* const );
             bool gomory_cut();
             bool cuts_from_proofs();
             bool branch_and_bound();
