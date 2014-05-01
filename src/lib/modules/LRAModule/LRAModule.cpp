@@ -1169,7 +1169,6 @@ Return:
         EvalRationalMap rMap_ = getRationalModel();
         vector<const Constraint*> constr_vec = vector<const Constraint*>();
         bool all_int = true;
-        //unsigned numRows = mTableau.rows().size();
         for( LRAVariable* basicVar : mTableau.rows() )
         {            
             if( basicVar->isOriginal() )

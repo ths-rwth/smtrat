@@ -3226,11 +3226,11 @@ FindPivot:
          *         otherwise the valid constraint is returned.   
          */ 
         template<typename T1, typename T2>
-        const smtrat::Constraint* Tableau<T1,T2>::gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar, std::vector<const smtrat::Constraint*>& _constrVec) //, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars )
+        const smtrat::Constraint* Tableau<T1,T2>::gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar, std::vector<const smtrat::Constraint*>& _constrVec )
         { 
             Iterator row_iterator = Iterator( _rowVar->startEntry(), mpEntries );
             std::vector<GOMORY_SET> splitting = std::vector<GOMORY_SET>();
-            // Check, whether the conditions of a Gomory Cut are satisfied
+            // Check, whether the premises for a Gomory Cut are satisfied
             while( !row_iterator.hEnd( false ) )
             { 
                 const Variable<T1, T2>& nonBasicVar = *(*row_iterator).columnVar();
@@ -3238,13 +3238,25 @@ FindPivot:
                 {
                     if( nonBasicVar.infimum() == nonBasicVar.assignment() )
                     {
-                        if( (*row_iterator).content() < 0 ) splitting.push_back( J_MINUS );
-                        else splitting.push_back( J_PLUS );         
+                        if( (*row_iterator).content() < 0 ) 
+                        {
+                            splitting.push_back( J_MINUS );
+                        }    
+                        else 
+                        {
+                            splitting.push_back( J_PLUS );    
+                        }
                     }
                     else
                     {
-                        if( (*row_iterator).content() < 0 ) splitting.push_back( K_MINUS );
-                        else splitting.push_back( K_PLUS );
+                        if( (*row_iterator).content() < 0 ) 
+                        {
+                            splitting.push_back( K_MINUS );
+                        }    
+                        else 
+                        {
+                            splitting.push_back( K_PLUS );
+                        }
                     }
                 }                                 
                 else
@@ -3255,7 +3267,6 @@ FindPivot:
                 row_iterator.hMove( false );
             }
             // A Gomory Cut can be constructed              
-            std::vector<T2> coeffs = std::vector<T2>();
             T2 coeff;
             T2 f_zero = _ass - T2(carl::floor( (Rational)_ass ));
             Polynomial sum = Polynomial();
@@ -3269,7 +3280,7 @@ FindPivot:
                 {
                     T2 bound = nonBasicVar.infimum().limit().mainPart();
                     coeff = -( (*row_iterator).content() / f_zero);
-                    _constrVec.push_back( nonBasicVar.infimum().pAsConstraint() );                    
+                    _constrVec.push_back( nonBasicVar.infimum().pAsConstraint() );
                     sum += (Rational)coeff*( nonBasicVar.expression() - (Rational)bound );                   
                 }                 
                 else if( (*vec_iter) == J_PLUS )
@@ -3293,7 +3304,6 @@ FindPivot:
                     _constrVec.push_back( nonBasicVar.supremum().pAsConstraint() );
                     sum += (Rational)coeff * ( (Rational)bound - nonBasicVar.expression() );
                 }     
-                coeffs.push_back( coeff );
                 row_iterator.hMove( false );
                 ++vec_iter;
             }
@@ -3303,50 +3313,6 @@ FindPivot:
             newBound(gomory_constr);
             //print();
             // TODO: check whether there is already a basic variable with this polynomial (psum, cf. LRAModule::initialize(..)) 
-            /*
-            Polynomial *psum = new Polynomial( sum - gomory_constr->constantPart() );
-            Value<T1>* bound = new Value<T1>( gomory_constr->constantPart() );
-            Variable<T1, T2>* var = newBasicVariable( psum, mOriginalVars );
-            (*var).addLowerBound( bound, mDefaultBoundPosition, gomory_constr );           
-            typename std::vector<T2>::const_iterator coeffs_iter = coeffs.begin();
-            row_iterator = Iterator( mRows.at(_rowVar->position()).mStartEntry, mpEntries );
-            mRows.push_back( TableauHead() );
-            EntryID currentStartEntryOfRow = LAST_ENTRY_ID;
-            EntryID leftID;            
-            while( coeffs_iter != coeffs.end() )
-            {
-                const Variable<T1, T2>& nonBasicVar = *mColumns[row_iterator->columnNumber()].mName;
-                EntryID entryID = newTableauEntry( *coeffs_iter );
-                TableauEntry<T1,T2>& entry = (*mpEntries)[entryID];
-                entry.setColumnNumber( nonBasicVar.position() );
-                entry.setRowNumber( mHeight - 1 );
-                TableauHead& columnHead = mColumns[entry.columnNumber()];
-                EntryID& columnStart = columnHead.mStartEntry;
-                (*mpEntries)[columnStart].setVertNext( true, entryID );
-                entry.setVertNext( false, columnStart );                
-                columnStart = entryID;
-                ++columnHead.mSize;
-                if( currentStartEntryOfRow == LAST_ENTRY_ID )
-                {
-                    currentStartEntryOfRow = entryID;
-                    entry.setHoriNext( true, LAST_ENTRY_ID );
-                    leftID = entryID;
-                }  
-                else 
-                {
-                    (*mpEntries)[entryID].setHoriNext( true, leftID );
-                    (*mpEntries)[leftID].setHoriNext( false, entryID ); 
-                    leftID = entryID;
-                }
-                ++coeffs_iter;
-                row_iterator.hNext( false );
-            }            
-            (*mpEntries)[leftID].setHoriNext( false, LAST_ENTRY_ID );
-            TableauHead& rowHead = mRows[mHeight-1];
-            rowHead.mStartEntry = currentStartEntryOfRow;
-            rowHead.mSize = coeffs.size();
-            rowHead.mName = var; 
-            */
             return gomory_constr;
         }
         #endif
