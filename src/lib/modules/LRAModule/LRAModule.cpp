@@ -1243,48 +1243,61 @@ Return:
          */
         LRATableau dc_Tableau = LRATableau( mpPassedFormula->end() );
         unsigned i=0;
+        /*
         for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
-        {                                
-            dc_Tableau.newNonbasicVariable( new Polynomial( mTableau.columns().at(i).mName->expression() ) );
-            ++i;
-        }                            
-        unsigned numRows = mTableau.rows().size();
-        unsigned dc_count = 0;
-        vector<unsigned> dc_positions;
-        vector<LRAEntryType> lcm_rows;
-        for( unsigned i = 0; i < numRows; ++i )
         {
-            vector<unsigned> non_basic_vars_positions;
+            dc_Tableau.newNonbasicVariable( new Polynomial( (*mTableau.columns().at(i)).expression() ) );
+            //dc_Tableau.newNonbasicVariable( new Polynomial( mTableau.columns().at(i)->mName->expression() ) );
+            ++i;
+        }  
+        */                         
+        size_t numRows = mTableau.rows().size();
+        size_t dc_count = 0;
+        vector<size_t> dc_positions;
+        vector<LRAEntryType> lcm_rows;
+        for( size_t i = 0; i < numRows; ++i )
+        {
+            vector<size_t> non_basic_vars_positions;
             vector<LRAEntryType> coefficients;
             LRAEntryType lcmOfCoeffDenoms = 1;
             LRAEntryType max_value = 0;
-            if( mTableau.isDefining( i, non_basic_vars_positions, coefficients, lcmOfCoeffDenoms, max_value ) )
+            const Constraint* dc_constraint = mTableau.isDefining( i, non_basic_vars_positions, coefficients, lcmOfCoeffDenoms, max_value );
+            if( dc_constraint != NULL  )
             {
+                cout << "Found defining constraint!" << endl;
                 dc_count++;
                 dc_positions.push_back(i);
                 lcm_rows.push_back( lcmOfCoeffDenoms );
                 assert( !non_basic_vars_positions.empty() );
-                Polynomial* help = new Polynomial(mTableau.rows().at(i).mName->expression());
                 vector< LRAVariable* > non_basic_vars;
-                unsigned j=0;
+                size_t j=0;
                 auto pos = non_basic_vars_positions.begin();
+                /*
                 for( auto column = dc_Tableau.columns().begin(); column != dc_Tableau.columns().end(); ++column )
                 {
-                    if( dc_Tableau.columns().at(j).mName->position() == *pos )
+                    LRAVariable* nonbasicVar = mTableau.columns().at(j);
+                    if( nonbasicVar->position() == *pos )
                     {                                                                                    
-                        //assert( pos != non_basic_vars_positions.end() );
-                        non_basic_vars.push_back( dc_Tableau.columns().at(j).mName );
+                        assert( pos != non_basic_vars_positions.end() );
+                        non_basic_vars.push_back( nonbasicVar );
                         ++pos;                                            
                     }
-                    j++;    
-                } 
-                dc_Tableau.newBasicVariable( help, non_basic_vars, coefficients );
+                    ++j;    
+                }      
+                */          
+                //dc_Tableau.newBasicVariable( help, non_basic_vars, coefficients );
+                cout << "Inserted it!" << endl;
+                dc_Tableau.newBound(dc_constraint);
+                dc_Tableau.print();
+                /*
                 if( lcmOfCoeffDenoms != 1 )
                 {
                     dc_Tableau.multiplyRow( dc_count-1, lcmOfCoeffDenoms ); 
-                }    
+                } 
+                */   
             }   
         }
+        dc_Tableau.print();
         if( dc_Tableau.rows().size() > 0 )
         {
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
@@ -1293,8 +1306,8 @@ Return:
             #endif
 
             // At least one DC exists -> Construct and embed it.
-            vector<unsigned> diagonals;    
-            vector<unsigned>& diagonals_ref = diagonals;                            
+            vector<size_t> diagonals;    
+            vector<size_t>& diagonals_ref = diagonals;                            
             dc_Tableau.calculate_hermite_normalform( diagonals_ref );
             
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
@@ -1307,7 +1320,7 @@ Return:
             dc_Tableau.invert_HNF_Matrix( diagonals );
             bool creatable = false;
             Polynomial cut;
-            for( unsigned i = 0; i < dc_positions.size(); ++i )
+            for( size_t i = 0; i < dc_positions.size(); ++i )
             {
                 vector<LRAEntryType> coefficients2;
                 vector<bool> non_basics_proof;
@@ -1325,19 +1338,19 @@ Return:
                 {
                     if( *vector_iterator )
                     {
-                        non_basic_vars2.push_back( dc_Tableau.columns().at(diagonals.at(j)).mName );
+                        non_basic_vars2.push_back( dc_Tableau.columns().at(diagonals.at(j)) );
                     }
                     ++j;
                 }
                 if( creatable )
                 {
                     #ifndef LRA_DEBUG_CUTS_FROM_PROOFS
-                    mTableau.newBasicVariable( pcut, non_basic_vars2, coefficients2 );
+                    //mTableau.newBasicVariable( pcut, non_basic_vars2, coefficients2 );
                     #else
-                    auto var2 = mTableau.newBasicVariable( pcut, non_basic_vars2, coefficients2 );
+                    //auto var2 = mTableau.newBasicVariable( pcut, non_basic_vars2, coefficients2 );
                     cout << "After adding proof of unsatisfiability:" << endl;
-                    var2->print();
-                    var2->printAllBounds();
+                    //var2->print();
+                    //var2->printAllBounds();
                     mTableau.print();
                     cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
                     #endif
@@ -1355,7 +1368,7 @@ Return:
             cout << "No defining constraint!" << endl;
         cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
         #endif
-        branchAt( var->first, map_iterator->second );
+        branchAt( Polynomial( var->first ), map_iterator->second );
         return true;
     }
     #endif
