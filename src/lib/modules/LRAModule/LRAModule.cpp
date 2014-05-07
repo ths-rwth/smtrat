@@ -855,15 +855,14 @@ Return:
      * @return false, if a conflict occurs;
      *          true, otherwise.
      */
-    bool LRAModule::activateBound( const LRABound* _bound, set<const Formula*>& _formulas )
+    bool LRAModule::activateBound( const LRABound* _bound, const set<const Formula*>& _formulas )
     {
         bool result = true;
-        _bound->pOrigins()->push_back( _formulas );
+        // If the bounds constraint has already been passed to the backend, add the given formulas to it's origins
         if( _bound->pInfo()->position != mpPassedFormula->end() )
             addOrigin( *_bound->pInfo()->position, _formulas );
+        mTableau.activateBound( _bound, _formulas );
         const LRAVariable& var = _bound->variable();
-        if( !var.isActive() && var.isBasic() && !var.isOriginal() )
-            mTableau.activateBasicVar( _bound->pVariable() );
         if( _bound->isUpperBound() )
         {
             if( *var.pInfimum() > _bound->limit() && !_bound->deduced() )
@@ -879,12 +878,6 @@ Return:
                 if( !var.pSupremum()->isInfinite() )
                     mBoundCandidatesToPass.push_back( var.pSupremum() );
                 mBoundCandidatesToPass.push_back( _bound );
-                _bound->pVariable()->setSupremum( _bound );
-                if( result && !var.isBasic() && (*var.pSupremum() < var.assignment()) )
-                {
-                    mTableau.updateBasicAssignments( var.position(), LRAValue( (*var.pSupremum()).limit() - var.assignment() ) );
-                    _bound->pVariable()->rAssignment() = (*var.pSupremum()).limit();
-                }
             }
         }
         if( _bound->isLowerBound() )
@@ -902,12 +895,6 @@ Return:
                 if( !var.pInfimum()->isInfinite() )
                     mBoundCandidatesToPass.push_back( var.pInfimum() );
                 mBoundCandidatesToPass.push_back( _bound );
-                _bound->pVariable()->setInfimum( _bound );
-                if( result && !var.isBasic() && (*var.pInfimum() > var.assignment()) )
-                {
-                    mTableau.updateBasicAssignments( var.position(), LRAValue( (*var.pInfimum()).limit() - var.assignment() ) );
-                    _bound->pVariable()->rAssignment() = (*var.pInfimum()).limit();
-                }
             }
         }
         return result;

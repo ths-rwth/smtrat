@@ -116,24 +116,24 @@ namespace smtrat
             
     void Driver::moveFoundBooleanVars( const Formula* _fromFormula, std::set<carl::Variable>& _toSet )
     {
-//        if( !foundBooleanVarsCorrect( _fromFormula ) )
-//        {
-//            cout << *_fromFormula << endl;
-//            set<carl::Variable> bvars;
-//            _fromFormula->booleanVars( bvars );
-//            cout << "boolean vars 1:";
-//            for( auto var : bvars )
-//                cout << " " << var;
-//            cout << endl;
-//            auto iter = mFoundBooleanVariables.find( _fromFormula );
-//            cout << "boolean vars 2:";
-//            if( iter != mFoundBooleanVariables.end() )
-//            {
-//                for( auto var : iter->second )
-//                    cout << " " << var;
-//            }
-//            cout << endl;
-//        }
+        if( !foundBooleanVarsCorrect( _fromFormula ) )
+        {
+            cout << *_fromFormula << endl;
+            set<carl::Variable> bvars;
+            _fromFormula->booleanVars( bvars );
+            cout << "boolean vars 1:";
+            for( auto var : bvars )
+                cout << " " << var;
+            cout << endl;
+            auto iter = mFoundBooleanVariables.find( _fromFormula );
+            cout << "boolean vars 2:";
+            if( iter != mFoundBooleanVariables.end() )
+            {
+                for( auto var : iter->second )
+                    cout << " " << var;
+            }
+            cout << endl;
+        }
         assert( foundBooleanVarsCorrect( _fromFormula ) );
         auto iterB = mFoundBooleanVariables.find( _fromFormula );
         if( iterB != mFoundBooleanVariables.end() )
