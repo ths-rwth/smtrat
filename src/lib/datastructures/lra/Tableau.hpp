@@ -364,7 +364,7 @@ namespace smtrat
                 EntryID newTableauEntry( const T2& );
                 void removeEntry( EntryID );
                 std::pair<const Bound<T1,T2>*, bool> newBound( const smtrat::Constraint* );
-                void activateBound( const Bound<T1,T2>*, const std::set<const smtrat::Formula*>& = std::set<const smtrat::Formula*>() );
+                void activateBound( const Bound<T1,T2>*, const std::set<const smtrat::Formula*>& );
                 Variable<T1, T2>* newNonbasicVariable( const smtrat::Polynomial* );
                 Variable<T1, T2>* newBasicVariable( const smtrat::Polynomial*, std::map<carl::Variable, Variable<T1, T2>*>& );
                 void activateBasicVar( Variable<T1, T2>* );

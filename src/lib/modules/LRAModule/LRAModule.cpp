@@ -1229,6 +1229,7 @@ Return:
          * Build the new Tableau consisting out of the defining constraints.
          */
         LRATableau dc_Tableau = LRATableau( mpPassedFormula->end() );
+        /*
         size_t i=0;
         for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
         {
@@ -1236,7 +1237,7 @@ Return:
             //dc_Tableau.newNonbasicVariable( new Polynomial( mTableau.columns().at(i)->mName->expression() ) );
             ++i;
         }  
-        dc_Tableau.print();
+        */
         size_t numRows = mTableau.rows().size();
         size_t dc_count = 0;
         vector<size_t> dc_positions;
@@ -1271,7 +1272,10 @@ Return:
                 }               
                 //dc_Tableau.newBasicVariable( help, non_basic_vars, coefficients );
                 cout << "Inserted it!" << endl;
-                dc_Tableau.newBound(dc_constraint);
+                //auto result = dc_Tableau.newBound(dc_constraint);
+                pair< const LRABound*, bool> result = dc_Tableau.newBound(dc_constraint);
+                set<const Formula*> formulas;
+                dc_Tableau.activateBound(result.first, formulas);
                 dc_Tableau.print();
                 if( lcmOfCoeffDenoms != 1 )
                 {
@@ -1289,8 +1293,10 @@ Return:
 
             // At least one DC exists -> Construct and embed it.
             vector<size_t> diagonals;    
-            vector<size_t>& diagonals_ref = diagonals;                            
-            dc_Tableau.calculate_hermite_normalform( diagonals_ref );
+            vector<size_t>& diagonals_ref = diagonals;    
+            dc_Tableau.addColumns(2,0,1);
+            dc_Tableau.print();
+            //dc_Tableau.calculate_hermite_normalform( diagonals_ref );
             
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
             cout << "HNF of defining constraints:" << endl;
@@ -1299,7 +1305,7 @@ Return:
             for( auto iter = diagonals.begin(); iter != diagonals.end(); ++iter ) printf( "%u", *iter );
             #endif
 
-            dc_Tableau.invert_HNF_Matrix( diagonals );
+            //dc_Tableau.invert_HNF_Matrix( diagonals );
             bool creatable = false;
             Polynomial cut;
             for( size_t i = 0; i < dc_positions.size(); ++i )
