@@ -364,6 +364,7 @@ namespace smtrat
                 EntryID newTableauEntry( const T2& );
                 void removeEntry( EntryID );
                 std::pair<const Bound<T1,T2>*, bool> newBound( const smtrat::Constraint* );
+                void activateBound( const Bound<T1,T2>*, const std::set<const smtrat::Formula*>& = std::set<const smtrat::Formula*>() );
                 Variable<T1, T2>* newNonbasicVariable( const smtrat::Polynomial* );
                 Variable<T1, T2>* newBasicVariable( const smtrat::Polynomial*, std::map<carl::Variable, Variable<T1, T2>*>& );
                 void activateBasicVar( Variable<T1, T2>* );
@@ -533,6 +534,39 @@ namespace smtrat
             --(entry.rowVar()->rSize());
             --(entry.columnVar()->rSize());
             mUnusedIDs.push( _entryID );
+        }
+        
+        template<typename T1, typename T2>
+        void Tableau<T1,T2>::activateBound( const Bound<T1,T2>* _bound, const std::set<const Formula*>& _formulas )
+        {
+            _bound->pOrigins()->push_back( _formulas );
+            const Variable<T1,T2>& var = _bound->variable();
+            if( !var.isActive() && var.isBasic() && !var.isOriginal() )
+                activateBasicVar( _bound->pVariable() );
+            if( _bound->isUpperBound() )
+            {
+                if( *var.pSupremum() > *_bound )
+                {
+                    _bound->pVariable()->setSupremum( _bound );
+                    if( !(*var.pInfimum() > _bound->limit() && !_bound->deduced()) && !var.isBasic() && (*var.pSupremum() < var.assignment()) )
+                    {
+                        updateBasicAssignments( var.position(), Value<T1>( (*var.pSupremum()).limit() - var.assignment() ) );
+                        _bound->pVariable()->rAssignment() = (*var.pSupremum()).limit();
+                    }
+                }
+            }
+            if( _bound->isLowerBound() )
+            {
+                if( *var.pInfimum() < *_bound )
+                {
+                    _bound->pVariable()->setInfimum( _bound );
+                    if( !(*var.pSupremum() < _bound->limit() && !_bound->deduced()) && !var.isBasic() && (*var.pInfimum() > var.assignment()) )
+                    {
+                        updateBasicAssignments( var.position(), Value<T1>( (*var.pInfimum()).limit() - var.assignment() ) );
+                        _bound->pVariable()->rAssignment() = (*var.pInfimum()).limit();
+                    }
+                }
+            }
         }
         
         template<typename T1, typename T2>

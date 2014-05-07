@@ -330,7 +330,7 @@ namespace smtrat
                 mPassedformulaOrigins[_formula] = _origins;
             }
 
-            void addOrigin( const Formula* const _formula, std::set< const Formula* >& _origin )
+            void addOrigin( const Formula* const _formula, const std::set< const Formula* >& _origin )
             {
                 assert( mPassedformulaOrigins.find( _formula ) != mPassedformulaOrigins.end() );
                 mPassedformulaOrigins[_formula].push_back( _origin );
