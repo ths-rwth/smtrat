@@ -1242,15 +1242,14 @@ Return:
          * Build the new Tableau consisting out of the defining constraints.
          */
         LRATableau dc_Tableau = LRATableau( mpPassedFormula->end() );
-        unsigned i=0;
-        /*
+        size_t i=0;
         for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
         {
             dc_Tableau.newNonbasicVariable( new Polynomial( (*mTableau.columns().at(i)).expression() ) );
             //dc_Tableau.newNonbasicVariable( new Polynomial( mTableau.columns().at(i)->mName->expression() ) );
             ++i;
         }  
-        */                         
+        dc_Tableau.print();
         size_t numRows = mTableau.rows().size();
         size_t dc_count = 0;
         vector<size_t> dc_positions;
@@ -1272,7 +1271,6 @@ Return:
                 vector< LRAVariable* > non_basic_vars;
                 size_t j=0;
                 auto pos = non_basic_vars_positions.begin();
-                /*
                 for( auto column = dc_Tableau.columns().begin(); column != dc_Tableau.columns().end(); ++column )
                 {
                     LRAVariable* nonbasicVar = mTableau.columns().at(j);
@@ -1283,18 +1281,15 @@ Return:
                         ++pos;                                            
                     }
                     ++j;    
-                }      
-                */          
+                }               
                 //dc_Tableau.newBasicVariable( help, non_basic_vars, coefficients );
                 cout << "Inserted it!" << endl;
                 dc_Tableau.newBound(dc_constraint);
                 dc_Tableau.print();
-                /*
                 if( lcmOfCoeffDenoms != 1 )
                 {
                     dc_Tableau.multiplyRow( dc_count-1, lcmOfCoeffDenoms ); 
                 } 
-                */   
             }   
         }
         dc_Tableau.print();

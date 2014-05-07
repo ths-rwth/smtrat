@@ -2437,17 +2437,18 @@ FindPivot:
                         break;
                     }
                 }
-                Polynomial* dc_poly = new Polynomial();
-                *dc_poly = basic_var.expression();
+                Polynomial dc_poly = Polynomial();
+                dc_poly = basic_var.expression();
                 if( upper_bound_hit )
                 {
-                    *dc_poly = *dc_poly -  (Rational)(basic_var.supremum().limit().mainPart());
+                    dc_poly = dc_poly -  (Rational)(basic_var.supremum().limit().mainPart());
                 }
                 else
                 {
-                    *dc_poly = *dc_poly - (Rational)(basic_var.infimum().limit().mainPart());
+                    dc_poly = dc_poly - (Rational)(basic_var.infimum().limit().mainPart());
                 }
-                const smtrat::Constraint* dc_constraint = Formula::newConstraint( *dc_poly, Relation::EQ );
+                std::cout << dc_poly << std::endl;
+                const smtrat::Constraint* dc_constraint = Formula::newConstraint( dc_poly, Relation::EQ );
                 std::cout << *dc_constraint << std::endl;
                 return dc_constraint;
             }
