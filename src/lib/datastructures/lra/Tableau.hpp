@@ -412,7 +412,7 @@ namespace smtrat
                 void printLearnedBounds( const std::string = "", std::ostream& = std::cout ) const;
                 void printLearnedBound( const Variable<T1,T2>&, const LearnedBound&, const std::string = "", std::ostream& = std::cout ) const;
                 #endif
-                void print( EntryID = LAST_ENTRY_ID, std::ostream& = std::cout, const std::string = "", bool = true ) const;
+                void print( EntryID = LAST_ENTRY_ID, std::ostream& = std::cout, const std::string = "", bool = true, bool = false ) const;
 
         };
 
@@ -2447,7 +2447,7 @@ FindPivot:
             const Variable<T1, T2>& basic_var = *mRows.at(row_index);
             basic_var.expression();
             bool upper_bound_hit = false;
-            Iterator row_iterator = Iterator( basic_var.position() , mpEntries );
+            Iterator row_iterator = Iterator( basic_var.startEntry() , mpEntries );
             if( basic_var.infimum() == basic_var.assignment() || basic_var.supremum() == basic_var.assignment() )
             {
                 if( basic_var.supremum() == basic_var.assignment() ) 
@@ -2459,8 +2459,10 @@ FindPivot:
                  */
                 while( true )
                 {
+                    /*
                     _variables.push_back( (*row_iterator).rowVar()->position() );
                     _coefficients.push_back( (*row_iterator).content() );
+                    */ 
                     _lcmOfCoeffDenoms = carl::lcm( _lcmOfCoeffDenoms, carl::getDenom((*row_iterator).content()) );
                     if( !row_iterator.hEnd( false ) )
                     {
@@ -2673,6 +2675,8 @@ FindPivot:
                   entry.setVNext( false,columnA_iterator.entryID());
                   entry_down.setVNext( false,entryID);
                   (*columnA_iterator).setVNext( true, entryID);
+                  Variable<T1, T2>& nonBasicVar = *mColumns[(*entry.columnVar()).position()];
+                  ++nonBasicVar.rSize();
                   //TableauHead& columnHead = mColumns[entry.columnNumber()];
                   //++columnHead.mSize;
                   Iterator row_iterator = Iterator(columnB_iterator.entryID(), mpEntries);
@@ -2694,6 +2698,7 @@ FindPivot:
                           (*mpEntries)[entryID].setHNext( true,LAST_ENTRY_ID);  
                           (*mpEntries)[entryID].setHNext( false,ID2_to_be_Fixed);
                           (*mpEntries)[ID2_to_be_Fixed].setHNext( true,entryID);
+                          mRows[(*(*columnB_iterator).rowVar()).position()]->rStartEntry() = entryID;
                           //TableauHead& rowHead = mRows[(*columnB_iterator).rowNumber()];
                           //rowHead.mStartEntry = entryID;
                       }                     
@@ -2730,15 +2735,17 @@ FindPivot:
                           (*mpEntries)[entryID].setHNext( false,ID2_to_be_Fixed); 
                           (*mpEntries)[entryID].setHNext( true,ID1_to_be_Fixed);
                       }
-                  } 
+                  }
+                  ++(mRows[(*entry.rowVar()).position()]->rSize());
                   //TableauHead& rowHead = mRows[entry.rowNumber()];
                   //++rowHead.mSize;                      
-                  /*
-                   * if(columnHead.mStartEntry == columnA_iterator.entryID())
+                  //if(columnHead.mStartEntry == columnA_iterator.entryID())
+                  if( nonBasicVar.startEntry() == columnA_iterator.entryID() )    
                   {
-                      columnHead.mStartEntry = entryID;
+                      nonBasicVar.rStartEntry() = entryID;
+                      //columnHead.mStartEntry = entryID;
                   }  
-                   */                 
+                                   
               }
               else
               {
@@ -2753,6 +2760,8 @@ FindPivot:
                   entry.setVNext( true,columnA_iterator.entryID());
                   entry.setVNext( false,LAST_ENTRY_ID);
                   (*columnA_iterator).setVNext( false,entryID);
+                  Variable<T1, T2>& nonBasicVar = *mColumns[(*entry.columnVar()).position()];
+                  ++nonBasicVar.rSize();                  
                   //TableauHead& columnHead = mColumns[entry.columnNumber()];
                   //++columnHead.mSize;
                   Iterator row_iterator = Iterator(columnB_iterator.entryID(), mpEntries);
@@ -2774,6 +2783,7 @@ FindPivot:
                           (*mpEntries)[entryID].setHNext( true,LAST_ENTRY_ID);
                           (*mpEntries)[entryID].setHNext( false,ID2_to_be_Fixed);
                           (*mpEntries)[ID2_to_be_Fixed].setHNext( true,entryID);
+                          mRows[(*(*columnB_iterator).rowVar()).position()]->rStartEntry() = entryID;
                           //TableauHead& rowHead = mRows[(*columnB_iterator).rowNumber()];
                           //rowHead.mStartEntry = entryID;                          
                       }                     
@@ -2810,7 +2820,8 @@ FindPivot:
                           (*mpEntries)[entryID].setHNext( false,ID2_to_be_Fixed); 
                           (*mpEntries)[entryID].setHNext( true,ID1_to_be_Fixed);
                       }                      
-                  }   
+                  }
+               ++mRows[(*(entry.rowVar())).position()]->rSize();   
                //TableauHead& rowHead = mRows[entry.rowNumber()];
                //++rowHead.mSize;                  
                }
@@ -2903,25 +2914,25 @@ FindPivot:
          */        
         template<typename T1, typename T2> 
         void Tableau<T1,T2>::calculate_hermite_normalform(std::vector<size_t>& diagonals)
-        { 
+        {
             for(size_t i=0;i<mColumns.size();i++)
             {
                 diagonals.push_back(mColumns.size());
             }  
-            Iterator row_iterator = Iterator( (*mRows.at(0)).position(), mpEntries);
+            Iterator row_iterator = Iterator( (*mRows.at(0)).startEntry(), mpEntries);          
             bool first_free;
             bool first_loop;
             bool just_deleted; 
             /*
              * Iterate through all rows in order to construct the HNF.
              */
-            for(size_t i=0;i<mRows.size();i++)
+            for(size_t i=0;i<mRows.size();++i)
             {
                 size_t elim_pos=mColumns.size(),added_pos=mColumns.size();
                 EntryID added_entry,elim_entry;
                 T2 elim_content, added_content;     
-                row_iterator = Iterator( (*mRows.at(i)).position(), mpEntries);
-                size_t number_of_entries = 10; //mRows.at(i).mSize;
+                row_iterator = Iterator( (*mRows.at(i)).startEntry(), mpEntries);
+                size_t number_of_entries = (*mRows.at(i)).size();
                 first_loop = true;
                 first_free = true;
                 just_deleted = false;
@@ -2932,21 +2943,21 @@ FindPivot:
                 size_t diag_zero_entries=0;
                 for(size_t j=0;j<i;j++)
                 {
-                    Iterator diagonal_iterator = Iterator( (*mColumns.at(diagonals.at(j))).position(), mpEntries);
+                    Iterator diagonal_iterator = Iterator( (*mColumns.at(diagonals.at(j))).startEntry(), mpEntries);
                     while( (*diagonal_iterator).columnVar()->position() > i && !diagonal_iterator.vEnd( false ) )
                     {
                         diagonal_iterator.vMove( false );
                     }
-                    if( (*diagonal_iterator).columnVar()->position() != i )
+                    if( (*diagonal_iterator).rowVar()->position() != i )
                     {
                         diag_zero_entries++;
                     }
-                }
+                }             
                 /*
                  * Eliminate as many entries as necessary.
                  */
                 while(number_of_entries + diag_zero_entries > i + 1)
-                {    
+                {
                     if(just_deleted)
                     {
                         /*
@@ -2991,7 +3002,7 @@ FindPivot:
                     }
                     
                     while(elim_pos == added_pos)
-                    { 
+                    {
                         T2 content = (*mpEntries)[row_iterator.entryID()].content();
                         size_t column = (*(*mpEntries)[row_iterator.entryID()].columnVar()).position();   
                         if(!isDiagonal(column,diagonals))
@@ -3037,9 +3048,12 @@ FindPivot:
                     addColumns(elim_pos,added_pos,T2((-1)*floor_value.content()));
                     #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                     std::cout << "Add " << (added_pos+1) << ". column to " << (elim_pos+1) << ". column:" << std::endl;
-                    print();
+                    print( LAST_ENTRY_ID, std::cout, "", true, true );
                     #endif
-                    number_of_entries = (*(mRows.at(i))).size(); 
+                    number_of_entries = (*mRows.at(i)).size(); 
+                    #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+                    std::cout << "Number of entries " << number_of_entries << std::endl;
+                    #endif
                     first_loop = false;
                     if(mod( (Rational)elim_content, (Rational)added_content ) == 0)
                     {
@@ -3508,7 +3522,7 @@ FindPivot:
          * @param _init
          */
         template<typename T1, typename T2>
-        void Tableau<T1,T2>::print( EntryID _pivotingElement, std::ostream& _out, const std::string _init, bool _friendlyNames ) const
+        void Tableau<T1,T2>::print( EntryID _pivotingElement, std::ostream& _out, const std::string _init, bool _friendlyNames, bool _withZeroColumns ) const
         {
             char frameSign = '-';
             char separator = '|';
@@ -3549,7 +3563,7 @@ FindPivot:
             size_t table_width = basic_var_assign_width + basic_var_infimum_width + basic_var_supremum_width + basic_var_name_width + 8;
             for( Variable<T1,T2>* columnVar : mColumns )
             {
-                if( columnVar->size() == 0 )
+                if( columnVar->size() == 0  )
                 {
                     columnWidths.push_back( 0 );
                     continue;
@@ -3591,7 +3605,7 @@ FindPivot:
             _out << " " << separator;
             for( Variable<T1,T2>* columnVar : mColumns )
             {
-                if( columnVar->size() == 0 )
+                if( columnVar->size() == 0 && !_withZeroColumns )
                     continue;
                 _out << " ";
                 std::stringstream out;
@@ -3687,7 +3701,7 @@ FindPivot:
             _out << " " << separator;
             for( Variable<T1,T2>* columnVar : mColumns )
             {
-                if( columnVar->size() == 0 )
+                if( columnVar->size() == 0 && !_withZeroColumns )
                     continue;
                 _out << " ";
                 _out << std::setw( (int) columnWidths[columnVar->position()] ) << columnVar->assignment().toString();
@@ -3701,7 +3715,7 @@ FindPivot:
             _out << " " << separator;
             for( Variable<T1,T2>* columnVar : mColumns )
             {
-                if( columnVar->size() == 0 )
+                if( columnVar->size() == 0 && !_withZeroColumns )
                     continue;
                 _out << " ";
                 std::stringstream outB;
@@ -3718,7 +3732,7 @@ FindPivot:
             _out << " " << separator;
             for( Variable<T1,T2>* columnVar : mColumns )
             {
-                if( columnVar->size() == 0 )
+                if( columnVar->size() == 0 && !_withZeroColumns )
                     continue;
                 _out << " ";
                 std::stringstream outB;

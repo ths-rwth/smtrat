@@ -1236,8 +1236,8 @@ Return:
             dc_Tableau.newNonbasicVariable( new Polynomial( (*mTableau.columns().at(i)).expression() ) );
             //dc_Tableau.newNonbasicVariable( new Polynomial( mTableau.columns().at(i)->mName->expression() ) );
             ++i;
-        }  
-        */
+        }
+        */   
         size_t numRows = mTableau.rows().size();
         size_t dc_count = 0;
         vector<size_t> dc_positions;
@@ -1255,7 +1255,8 @@ Return:
                 dc_count++;
                 dc_positions.push_back(i);
                 lcm_rows.push_back( lcmOfCoeffDenoms );
-                assert( !non_basic_vars_positions.empty() );
+                //assert( !non_basic_vars_positions.empty() );
+                /*
                 vector< LRAVariable* > non_basic_vars;
                 size_t j=0;
                 auto pos = non_basic_vars_positions.begin();
@@ -1269,7 +1270,8 @@ Return:
                         ++pos;                                            
                     }
                     ++j;    
-                }               
+                }
+                */               
                 //dc_Tableau.newBasicVariable( help, non_basic_vars, coefficients );
                 cout << "Inserted it!" << endl;
                 //auto result = dc_Tableau.newBound(dc_constraint);
@@ -1277,10 +1279,12 @@ Return:
                 set<const Formula*> formulas;
                 dc_Tableau.activateBound(result.first, formulas);
                 dc_Tableau.print();
+                /*
                 if( lcmOfCoeffDenoms != 1 )
                 {
                     dc_Tableau.multiplyRow( dc_count-1, lcmOfCoeffDenoms ); 
-                } 
+                }
+                */ 
             }   
         }
         dc_Tableau.print();
@@ -1293,18 +1297,20 @@ Return:
 
             // At least one DC exists -> Construct and embed it.
             vector<size_t> diagonals;    
-            vector<size_t>& diagonals_ref = diagonals;    
-            dc_Tableau.addColumns(2,0,1);
-            dc_Tableau.print();
-            //dc_Tableau.calculate_hermite_normalform( diagonals_ref );
-            
+            vector<size_t>& diagonals_ref = diagonals;               
+            dc_Tableau.print( );
+            //dc_Tableau.invertColumn(0);
+            //dc_Tableau.print();
+            dc_Tableau.calculate_hermite_normalform( diagonals_ref );
+            dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
             cout << "HNF of defining constraints:" << endl;
-            dc_Tableau.print();
+            dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
             cout << "Actual order of columns:" << endl;
-            for( auto iter = diagonals.begin(); iter != diagonals.end(); ++iter ) printf( "%u", *iter );
+            for( auto iter = diagonals.begin(); iter != diagonals.end(); ++iter ) 
+                printf( "%u", *iter );
             #endif
-
+            /*
             //dc_Tableau.invert_HNF_Matrix( diagonals );
             bool creatable = false;
             Polynomial cut;
@@ -1347,6 +1353,7 @@ Return:
                     return true;
                 }
             }
+            */
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
             cout << "Found no proof of unsatisfiability!" << endl;
             #endif
@@ -1356,7 +1363,7 @@ Return:
             cout << "No defining constraint!" << endl;
         cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
         #endif
-        branchAt( Polynomial( var->first ), map_iterator->second );
+        branchAt( Polynomial( var->first ), (Rational)map_iterator->second );
         return true;
     }
     #endif
@@ -1373,7 +1380,7 @@ Return:
         {
             assert( var->first == map_iterator->first );
             Rational& ass = map_iterator->second; 
-            if( var-> first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
+            if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
                 #ifdef MODULE_VERBOSE_INTEGERS
                 this->printRationalModel();
