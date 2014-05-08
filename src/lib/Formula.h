@@ -40,6 +40,7 @@
 #include "modules/ModuleType.h"
 #include "Assignment.h"
 #include "ConstraintPool.h"
+#include "../solver/newparser/Common.h"
 
 namespace smtrat
 {
@@ -377,6 +378,10 @@ namespace smtrat
                 else
                     return mpSubformulas->empty();
             }
+			
+			void annotate(const std::vector<parser::Attribute>& attributes) {
+				
+			}
 
             /**
              * @return An iterator to the beginning of the list of sub-formulas of this formula.
