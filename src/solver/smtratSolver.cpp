@@ -32,7 +32,7 @@
 #include "../lib/config.h"
 
 #include "config.h"
-#include "parser/Driver.h"
+#include "newparser/Driver.h"
 #include CMakeStrategyHeader
 #include "parser/ParserSettings.h"
 #include "RuntimeSettingsManager.h"
@@ -41,7 +41,107 @@
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "../lib/utilities/stats/CollectStatistics.h"
 #include "lib/utilities/stats/StatisticSettings.h"
+#include "newparser/Parser.h"
 #endif //SMTRAT_DEVOPTION_Statistics
+
+
+class Executor : public smtrat::parser::SMTLIBParser::InstructionHandler {
+	CMakeStrategySolver* solver;
+	smtrat::Answer lastAnswer;
+	unsigned exitCode;
+public:
+	Executor(CMakeStrategySolver* solver) : smtrat::parser::SMTLIBParser::InstructionHandler(), solver(solver) {}
+	void add(smtrat::Formula* f) {
+		std::cout << "adding " << *f << std::endl;
+		this->solver->add(f);
+	}
+	void check() {
+		this->lastAnswer = this->solver->check();
+		switch (this->lastAnswer) {
+			case smtrat::Answer::True: {
+				if (this->infos.has<std::string>("status") && this->infos.get<std::string>("status") == "sat") {
+					print() << "sat";
+					this->exitCode = SMTRAT_EXIT_SAT;
+				} else {
+					print() << "expected unsat, but returned sat";
+					this->exitCode = SMTRAT_EXIT_WRONG_ANSWER;
+				}
+				//if (settingsManager.printModel()) this->solver->printAssignment(std::cout);
+				break;
+			}
+			case smtrat::Answer::False: {
+				if (this->infos.has<std::string>("status") && this->infos.get<std::string>("status") == "unsat") {
+					print() << "unsat";
+					this->exitCode = SMTRAT_EXIT_UNSAT;
+				} else {
+					print() << "expected sat, but returned unsat";
+					this->exitCode = SMTRAT_EXIT_WRONG_ANSWER;
+				}
+				break;
+			}
+			case smtrat::Answer::Unknown: {
+				print() << "unknown";
+				this->exitCode = SMTRAT_EXIT_UNKNOWN;
+				break;
+			}
+			default: {
+				print() << "unexpected output!";
+				this->exitCode = SMTRAT_EXIT_UNEXPECTED_ANSWER;
+				break;
+			}
+		}
+	}
+	void declareConst(const std::string&, const std::string&) {
+		error() << "(declare-const <name> <sort>) is not implemented.";
+	}
+	void declareFun(const std::string&, const std::vector<std::string>&, const std::string&) {
+		///@todo do we need declareFun()?
+		//error() << "(declare-fun <name> <symbols> <sort> <term>) is not implemented.";
+	}
+	void declareSort(const std::string&, const unsigned&) {
+		error() << "(declare-sort <name> <arity>) is not implemented.";
+	}
+	void defineFun(const std::string&, const std::vector<std::string>&, const std::string&, const smtrat::Formula*) {
+		error() << "(define-fun <name> (<variables>) <sort> <term>) is not implemented.";
+	}
+	void defineSort(const std::string&, const std::vector<std::string>&, const std::string&) {
+		error() << "(define-sort <name> <sort>) is not implemented.";
+	}
+	void exit() {
+		///@todo silently ignores exit, but parser should actually be stopped
+		//std::exit(this->exitCode);
+	}
+	void getAssertions() {
+		this->solver->printAssertions(std::cout);
+	}
+	void getAssignment() {
+		if (this->lastAnswer == smtrat::True) {
+			this->solver->printAssignment(std::cout);
+		}
+	}
+	void getProof() {
+		error() << "(get-proof) is not implemented.";
+	}
+	void getUnsatCore() {
+		this->solver->printInfeasibleSubset(std::cout);
+	}
+	void getValue(const std::vector<std::string>&) {
+		error() << "(get-value <variables>) is not implemented.";
+	}
+	void pop(const unsigned& n) {
+		for (unsigned i = 0; i < n; i++) this->solver->pop();
+	}
+	void push(const unsigned& n) {
+		for (unsigned i = 0; i < n; i++) this->solver->push();
+	}
+	void setLogic(const smtrat::Logic& logic) {
+		if (this->solver->logic() != smtrat::Logic::UNDEFINED) {
+			error() << "The logic has already been set!";
+		} else {
+			this->solver->rLogic() = logic;
+		}
+	}
+};
 
 /**
  * Parse the file and save it in formula.
@@ -49,7 +149,7 @@
  * @param formula A pointer to the formula object which holds the parsed input afterwards.
  * @param options Save options from the smt2 file here.
  */
-void parseInput( const std::string& pathToInputFile, smtrat::Driver& _parser, smtrat::ParserSettings* settings )
+void parseInput( const std::string& pathToInputFile, smtrat::parser::Driver& _parser, smtrat::ParserSettings* settings, CMakeStrategySolver* solver )
 {
     settings->setOptionsToParser( _parser );
     std::fstream infile( pathToInputFile.c_str() );
@@ -58,7 +158,10 @@ void parseInput( const std::string& pathToInputFile, smtrat::Driver& _parser, sm
         std::cerr << "Could not open file: " << pathToInputFile << std::endl;
         exit(SMTRAT_EXIT_NOSUCHFILE);
     }
-    bool parsingSuccessful = _parser.parse_stream( infile, pathToInputFile.c_str() );
+	Executor* e = new Executor(solver);
+	smtrat::parser::SMTLIBParser parser(e);
+    bool parsingSuccessful = parser.parse( infile, pathToInputFile.c_str() );
+	delete e;
     if(!parsingSuccessful)
     {
         std::cerr << "Parse error" << std::endl;
@@ -110,12 +213,10 @@ int main( int argc, char* argv[] )
     smtrat::CollectStatistics::settings->setPrintStats( settingsManager.printStatistics() );
     #endif
 
-    // Parse input.
-    smtrat::Driver parser;
-    parseInput( pathToInputFile, parser, parserSettings );
-    
     // Construct solver.
+    smtrat::parser::Driver parser;
     CMakeStrategySolver* solver = new CMakeStrategySolver();
+	
     solver->rDebugOutputChannel().rdbuf( parser.rDiagnosticOutputChannel().rdbuf() );
     std::list<std::pair<std::string, smtrat::RuntimeSettings*> > settingsObjects = smtrat::addModules( solver );
     
@@ -125,119 +226,9 @@ int main( int argc, char* argv[] )
     
     // Introduce the settingsObjects from the modules to the manager.
     settingsManager.addSettingsObject( settingsObjects );
-
-    // Apply parsed instruction.
-    int returnValue = 0;
-    smtrat::Answer lastAnswer = smtrat::Unknown;
-    smtrat::InstructionKey currentInstructionKey;
-    smtrat::InstructionValue currentInstructionValue;
-    while( parser.getInstruction( currentInstructionKey, currentInstructionValue ) )
-    {
-        switch( currentInstructionKey )
-        {
-            case smtrat::PUSHBT:
-            {
-                for( int i = 0; i<currentInstructionValue.num; ++i )
-                    solver->push();
-                break;
-            }
-            case smtrat::POPBT:
-            {
-                for( int i = 0; i<currentInstructionValue.num; ++i )
-                    if( !solver->pop() )
-                        parser.error( "Cannot pop an empty stack of backtrack points!", true );
-                break;
-            }
-            case smtrat::ASSERT:
-            {
-                solver->add( currentInstructionValue.formula );
-                break;
-            }
-            case smtrat::CHECK:
-            {
-                lastAnswer = solver->check();
-                switch( lastAnswer )
-                {
-                    case smtrat::True:
-                    {
-                        if( parser.status() == 0 )
-                        {
-                            parser.error( "expected unsat, but returned sat", true );
-                            returnValue = SMTRAT_EXIT_WRONG_ANSWER;
-                        }
-                        else
-                        {
-                            parser.rRegularOutputChannel() << "sat" << std::endl;
-                            returnValue = SMTRAT_EXIT_SAT;
-                        }
-                        break;
-                    }
-                    case smtrat::False:
-                    {
-                        if( parser.status() == 1 )
-                        {
-                            parser.error( "error, expected sat, but returned unsat", true );
-                            returnValue = SMTRAT_EXIT_WRONG_ANSWER;
-                        }
-                        else
-                        {
-                            parser.rRegularOutputChannel() << "unsat" << std::endl;
-                            returnValue = SMTRAT_EXIT_UNSAT;
-                        }
-                        break;
-                    }
-                    case smtrat::Unknown:
-                    {
-                        parser.rRegularOutputChannel() << "unknown" << std::endl;
-                        returnValue = SMTRAT_EXIT_UNKNOWN;
-                        break;
-                    }
-                    default:
-                    {
-                        parser.error( "Unexpected output!", true );
-                        returnValue = SMTRAT_EXIT_UNEXPECTED_ANSWER;
-                    }
-                }
-                break;
-            }
-            case smtrat::GET_ASSIGNMENT:
-            {
-                if( lastAnswer == smtrat::True )
-                {
-                    solver->printAssignment( parser.rRegularOutputChannel() );
-                }
-                break;
-            }
-            case smtrat::GET_ASSERTS:
-            {
-                solver->printAssertions( parser.rRegularOutputChannel() );
-                break;
-            }
-            case smtrat::GET_UNSAT_CORE:
-            {
-                solver->printInfeasibleSubset( parser.rRegularOutputChannel() );
-                break;
-            }
-            case smtrat::SET_LOGIC:
-            {
-                if( solver->logic() != smtrat::Logic::UNDEFINED ) parser.error( "The logic has already been set!", true ); 
-                solver->rLogic() = parser.logic();
-                break;
-            }
-            default:
-            {
-                parser.error( "Unknown order!" );
-                assert( false );
-            }
-        }
-    }
-    
-    // Print assignment if provoked by system call.
-    if( settingsManager.printModel() && lastAnswer == smtrat::True )
-    {
-        std::cout << std::endl;
-        solver->printAssignment( std::cout );
-    }
+	
+	// Parse input.
+    parseInput( pathToInputFile, parser, parserSettings, solver );
 
     if( settingsManager.doPrintTimings() )
     {
@@ -259,5 +250,5 @@ int main( int argc, char* argv[] )
     #endif
     
 
-    return returnValue;
+    //return returnValue;
 }

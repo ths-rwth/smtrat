@@ -30,7 +30,7 @@
 #pragma once
 
 #include "../../lib/RuntimeSettings.h"
-#include "Driver.h"
+#include "../newparser/Driver.h"
 
 namespace smtrat {
     class ParserSettings : public RuntimeSettings
@@ -67,7 +67,7 @@ namespace smtrat {
          * A function which sets some flags in a passed parser.
          * @param parser The parser in which the flags will be set.
          */
-        void setOptionsToParser(smtrat::Driver& parser) const
+        void setOptionsToParser(smtrat::parser::Driver& parser) const
         {
             parser.rTraceParsing() = traceParsing;
             parser.rTraceScanning() = traceScanning;
