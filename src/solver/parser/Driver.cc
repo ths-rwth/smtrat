@@ -11,12 +11,12 @@
  *
  * SMT-RAT is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY aor FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
- *
+ *make
  */
 
 
@@ -522,7 +522,7 @@ namespace smtrat
      * @param _rel
      * @return 
      */
-    Formula* Driver::mkConstraint( const Polynomial* _lhs, const Polynomial* _rhs, unsigned _rel )
+    Formula* Driver::mkConstraint( const Polynomial* _lhs, const Polynomial* _rhs, Relation _rel )
     {
         if( mTwoFormulaMode )
         {
@@ -1064,8 +1064,8 @@ namespace smtrat
         carl::Variable auxVar( addTheoryVariable( _loc, (mLogic == Logic::QF_NRA || mLogic == Logic::QF_LRA) ? "Real" : "Int", "", true ) );
         carl::Variable conditionBool = addBooleanVariable( _loc, "", true );
         setPolarity( true );
-        Formula* constraintA = mkConstraint( new Polynomial( auxVar ), _then, (unsigned) Relation::EQ );
-        Formula* constraintB = mkConstraint( new Polynomial( auxVar ), _else, (unsigned) Relation::EQ );
+        Formula* constraintA = mkConstraint( new Polynomial( auxVar ), _then, Relation::EQ );
+        Formula* constraintB = mkConstraint( new Polynomial( auxVar ), _else, Relation::EQ );
         restorePolarity();
         Formula* notTmp = new Formula( NOT );
         carl::Variable dependencyBool = addBooleanVariable( _loc, "", true ); 

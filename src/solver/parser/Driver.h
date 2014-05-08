@@ -39,6 +39,7 @@
 #include <assert.h>
 #include <fstream>
 #include "../../lib/Constraint.h"
+#include "../../lib/Formula.h"
 
 namespace smtrat
 {
@@ -413,7 +414,10 @@ namespace smtrat
             void freeBooleanVariableName( const std::string& );
             void freeTheoryVariableName( const std::string& );
             smtrat::Polynomial* mkPolynomial( const class location&, std::string* );
-            smtrat::Formula* mkConstraint( const smtrat::Polynomial*, const smtrat::Polynomial*, unsigned );
+            smtrat::Formula* mkConstraint( const smtrat::Polynomial*, const smtrat::Polynomial*, Relation );
+			smtrat::Formula* mkConstraint( const smtrat::Polynomial* p, const smtrat::Polynomial* q, unsigned r ) {
+				return this->mkConstraint(p, q, Relation(r));
+			}
             smtrat::Formula* mkTrue();
             smtrat::Formula* mkFalse();
             smtrat::Formula* mkBoolean( const class location&, std::string* );
