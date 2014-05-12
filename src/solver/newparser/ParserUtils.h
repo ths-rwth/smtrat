@@ -64,7 +64,8 @@ struct SymbolParser : public qi::grammar<Iterator, std::string(), Skipper> {
 		main.name("symbol");
 		quoted = "|" > qi::ascii::print > "|";
 		quoted.name("quoted symbol");
-		simple = qi::as_string[qi::raw[qi::lexeme[ (qi::alpha | qi::char_("~!@$%^&*_\\-+=<>.?/")) > *(qi::alnum | qi::char_("~!@$%^&*_\\-+=<>.?/")) ]]];
+		// Attention: "-" must be the first or last character!
+		simple = qi::as_string[qi::raw[qi::lexeme[ (qi::alpha | qi::char_("~!@$%^&*_+=<>.?/-")) > *(qi::alnum | qi::char_("~!@$%^&*_+=<>.?/-")) ]]];
 		simple.name("simple symbol");
 	}
 	qi::rule<Iterator, std::string(), Skipper> main;
