@@ -58,7 +58,7 @@ namespace parser {
 
     class Driver
     {
-        private:
+        public:
             /// enable debug output in the flex scanner
             bool mTraceScanning;
             /// enable debug output in the bison parser
@@ -328,21 +328,6 @@ namespace parser {
                 InstructionValue iv = InstructionValue();
                 iv.keyValuePair = new std::pair< std::string, std::string >( _key, _value );
                 mInstructionQueue.push( Instruction( SET_OPTION, iv ) );
-            }
-            
-            void setLogic( const std::string& _value )
-            {
-                InstructionValue iv = InstructionValue();
-                iv.key = new std::string( _value );
-                mInstructionQueue.push( Instruction( SET_LOGIC, iv ) );
-                if( _value == "QF_NRA" ) mLogic = Logic::QF_NRA;
-                else if( _value == "QF_LRA" ) mLogic = Logic::QF_LRA;
-                else if( _value == "QF_NIA" ) mLogic = Logic::QF_NIA;
-                else if( _value == "QF_LIA" ) mLogic = Logic::QF_LIA;
-                else
-                {
-                    error( _value + " is not supported!" );
-                }
             }
             
             Logic logic() const

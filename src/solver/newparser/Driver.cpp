@@ -63,7 +63,6 @@ namespace parser {
         mNumOfChecks( 0 ),
         mInfos(),
         mOptions(),
-        mLogic( Logic::UNDEFINED ),
         mInstructionQueue(),
         mRegularOutputChannel( std::cout.rdbuf() ),
         mDiagnosticOutputChannel( std::cerr.rdbuf() ),
