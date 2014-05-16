@@ -97,17 +97,17 @@ namespace smtrat
         public:
 
             // Constructors.
-            VSModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            VSModule( ModuleType _type, const Input*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             // Destructor.
             ~VSModule();
             
             // Interfaces.
-            bool assertSubformula( Formula::const_iterator );
+            bool assertSubformula( Input::const_iterator );
             Answer isConsistent();
-            void removeSubformula( Formula::const_iterator );
+            void removeSubformula( Input::const_iterator );
             void updateModel() const;
-            double rateCall( const std::set<const Formula*>& ) const;
+            double rateCall( const PointerSet<Formula>& ) const;
 
             // Printing methods.
             void printAll( const std::string& = "", std::ostream& = std::cout ) const;
@@ -138,7 +138,7 @@ namespace smtrat
             void insertTooHighDegreeStatesInRanking( vs::State* );
             bool removeStateFromRanking( vs::State& );
             void removeStatesFromRanking( vs::State& );
-            std::set<const Formula*> getReasons( const vs::Condition::Set& _conditions ) const;
+            PointerSet<Formula> getReasons( const PointerSet<vs::Condition>& _conditions ) const;
             void updateInfeasibleSubset( bool = false );
             EvalRationalMap getIntervalAssignment( const vs::State* _state ) const;
             bool solutionInDomain();

@@ -191,7 +191,7 @@ namespace smtrat
                 #ifdef LRA_USE_PIVOTING_STRATEGY
                 size_t                          mMaxPivotsWithoutBlandsRule;
                 #endif
-                Formula::iterator               mDefaultBoundPosition;
+                std::list<const smtrat::Formula*>::iterator mDefaultBoundPosition;
                 std::stack<EntryID>             mUnusedIDs;
                 std::vector<Variable<T1,T2>*>   mRows;       // First element is the head of the row and the second the length of the row.
                 std::vector<Variable<T1,T2>*>   mColumns;    // First element is the end of the column and the second the length of the column.
@@ -275,7 +275,7 @@ namespace smtrat
                 };    /* class Tableau<T1,T2>::Iterator */
 
             public:
-                Tableau( smtrat::Formula::iterator );
+                Tableau( std::list<const smtrat::Formula*>::iterator );
                 ~Tableau();
 
                 void setSize( size_t _expectedHeight, size_t _expectedWidth, size_t _expectedNumberOfBounds )
@@ -364,7 +364,7 @@ namespace smtrat
                 EntryID newTableauEntry( const T2& );
                 void removeEntry( EntryID );
                 std::pair<const Bound<T1,T2>*, bool> newBound( const smtrat::Constraint* );
-                void activateBound( const Bound<T1,T2>*, const std::set<const smtrat::Formula*>& );
+                void activateBound( const Bound<T1,T2>*, const PointerSet<Formula>& );
                 Variable<T1, T2>* newNonbasicVariable( const smtrat::Polynomial* );
                 Variable<T1, T2>* newBasicVariable( const smtrat::Polynomial*, std::map<carl::Variable, Variable<T1, T2>*>& );
                 void activateBasicVar( Variable<T1, T2>* );
@@ -417,7 +417,7 @@ namespace smtrat
         };
 
         template<typename T1, typename T2>
-        Tableau<T1,T2>::Tableau( smtrat::Formula::iterator _defaultBoundPosition ):
+        Tableau<T1,T2>::Tableau( std::list<const smtrat::Formula*>::iterator _defaultBoundPosition ):
             mWidth( 0 ),
             mPivotingSteps( 0 ),
             #ifdef LRA_USE_PIVOTING_STRATEGY
@@ -537,7 +537,7 @@ namespace smtrat
         }
         
         template<typename T1, typename T2>
-        void Tableau<T1,T2>::activateBound( const Bound<T1,T2>* _bound, const std::set<const Formula*>& _formulas )
+        void Tableau<T1,T2>::activateBound( const Bound<T1,T2>* _bound, const PointerSet<Formula>& _formulas )
         {
             _bound->pOrigins()->push_back( _formulas );
             const Variable<T1,T2>& var = _bound->variable();
@@ -641,7 +641,7 @@ namespace smtrat
                 Value<T1>* value;
                 if( _constraint->integerValued() && _constraint->relation() == Relation::NEQ )
                 {
-                    constraint = Formula::newConstraint( _constraint->lhs(), Relation::LESS );
+                    constraint = newConstraint( _constraint->lhs(), Relation::LESS );
                     value = new Value<T1>( boundValue - T1( 1 ) );
                 }
                 else
@@ -679,7 +679,7 @@ namespace smtrat
                 Value<T1>* value;
                 if( _constraint->integerValued() && _constraint->relation() == Relation::NEQ )
                 {
-                    constraint = Formula::newConstraint( _constraint->lhs(), Relation::GREATER );
+                    constraint = newConstraint( _constraint->lhs(), Relation::GREATER );
                     value = new Value<T1>( boundValue + T1( 1 ) );
                 }
                 else
@@ -717,7 +717,7 @@ namespace smtrat
                 }
                 else
                 {
-                    constraint = Formula::newConstraint( _constraint->lhs(), Relation::LESS );
+                    constraint = newConstraint( _constraint->lhs(), Relation::LESS );
                 }
                 Value<T1>* value = new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
                 if( negative )
@@ -752,7 +752,7 @@ namespace smtrat
                 }
                 else
                 {
-                    constraint = Formula::newConstraint( _constraint->lhs(), Relation::GREATER );
+                    constraint = newConstraint( _constraint->lhs(), Relation::GREATER );
                 }
                 Value<T1>* value = new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
                 if( negative )
@@ -2157,7 +2157,7 @@ FindPivot:
                         smtrat::Polynomial lhs = (*ubound)->variable().expression() - (Rational)newlimit->mainPart();
                         #endif
                         smtrat::Relation rel = newlimit->deltaPart() != 0 ? smtrat::Relation::LESS : smtrat::Relation::LEQ;
-                        const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel );
+                        const smtrat::Constraint* constraint = smtrat::newConstraint( lhs, rel );
                         learnedBound.newBound = basicVar.addUpperBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                     }
                     else
@@ -2248,7 +2248,7 @@ FindPivot:
                         smtrat::Polynomial lhs = (*lbound)->variable().expression() - (Rational)newlimit->mainPart();
                         #endif
                         smtrat::Relation rel = newlimit->deltaPart() != 0 ? smtrat::Relation::GREATER : smtrat::Relation::GEQ;
-                        const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel );
+                        const smtrat::Constraint* constraint = smtrat::newConstraint( lhs, rel );
                         learnedBound.newBound = basicVar.addLowerBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                     }
                     else
@@ -2482,7 +2482,7 @@ FindPivot:
                     dc_poly = dc_poly - (Rational)(basic_var.infimum().limit().mainPart());
                 }
                 std::cout << dc_poly << std::endl;
-                const smtrat::Constraint* dc_constraint = Formula::newConstraint( dc_poly, Relation::EQ );
+                const smtrat::Constraint* dc_constraint = newConstraint( dc_poly, Relation::EQ );
                 std::cout << *dc_constraint << std::endl;
                 return dc_constraint;
             }
@@ -3365,7 +3365,7 @@ FindPivot:
                 ++vec_iter;
             }
             sum = sum - (Rational)1;
-            const smtrat::Constraint* gomory_constr = Formula::newConstraint( sum , Relation::GEQ );
+            const smtrat::Constraint* gomory_constr = newConstraint( sum , Relation::GEQ );
             std::cout << *gomory_constr << std::endl;
             newBound(gomory_constr);
             //print();

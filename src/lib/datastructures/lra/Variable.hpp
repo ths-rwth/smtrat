@@ -73,8 +73,8 @@ namespace smtrat
                 #endif
 
             public:
-                Variable( size_t, const smtrat::Polynomial*, smtrat::Formula::iterator );
-                Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator, const smtrat::Polynomial*, smtrat::Formula::iterator );
+                Variable( size_t, const smtrat::Polynomial*, std::list<const smtrat::Formula*>::iterator );
+                Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator, const smtrat::Polynomial*, std::list<const smtrat::Formula*>::iterator );
                 virtual ~Variable();
 
                 const Value<T1>& assignment() const
@@ -293,10 +293,10 @@ namespace smtrat
                     }
                 }
 
-                std::pair<const Bound<T1, T2>*, bool> addUpperBound( Value<T1>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL, bool = false );
-                std::pair<const Bound<T1, T2>*, bool> addLowerBound( Value<T1>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL, bool = false );
-                std::pair<const Bound<T1, T2>*, bool> addEqualBound( Value<T1>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL );
-                bool deactivateBound( const Bound<T1, T2>*, smtrat::Formula::iterator );
+                std::pair<const Bound<T1, T2>*, bool> addUpperBound( Value<T1>* const, std::list<const smtrat::Formula*>::iterator, const smtrat::Constraint* = NULL, bool = false );
+                std::pair<const Bound<T1, T2>*, bool> addLowerBound( Value<T1>* const, std::list<const smtrat::Formula*>::iterator, const smtrat::Constraint* = NULL, bool = false );
+                std::pair<const Bound<T1, T2>*, bool> addEqualBound( Value<T1>* const, std::list<const smtrat::Formula*>::iterator, const smtrat::Constraint* = NULL );
+                bool deactivateBound( const Bound<T1, T2>*, std::list<const smtrat::Formula*>::iterator );
                 Interval getVariableBounds() const;
                 std::set< const smtrat::Formula* > getDefiningOrigins() const;
 
@@ -305,7 +305,7 @@ namespace smtrat
         };
 		
         template<typename T1, typename T2>
-        Variable<T1, T2>::Variable( size_t _position, const smtrat::Polynomial* _expression, smtrat::Formula::iterator _defaultBoundPosition ):
+        Variable<T1, T2>::Variable( size_t _position, const smtrat::Polynomial* _expression, std::list<const smtrat::Formula*>::iterator _defaultBoundPosition ):
             mBasic( false ),
             mOriginal( true ),
             mStartEntry( LAST_ENTRY_ID ),
@@ -326,7 +326,7 @@ namespace smtrat
         }
         
         template<typename T1, typename T2>
-        Variable<T1, T2>::Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator _positionInNonActives, const smtrat::Polynomial* _expression, smtrat::Formula::iterator _defaultBoundPosition ):
+        Variable<T1, T2>::Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator _positionInNonActives, const smtrat::Polynomial* _expression, std::list<const smtrat::Formula*>::iterator _defaultBoundPosition ):
             mBasic( true ),
             mOriginal( false ),
             mStartEntry( LAST_ENTRY_ID ),
@@ -370,7 +370,7 @@ namespace smtrat
          * @return
          */
         template<typename T1, typename T2>
-        std::pair<const Bound<T1, T2>*, bool> Variable<T1, T2>::addUpperBound( Value<T1>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint, bool _deduced )
+        std::pair<const Bound<T1, T2>*, bool> Variable<T1, T2>::addUpperBound( Value<T1>* const _val, std::list<const smtrat::Formula*>::iterator _position, const smtrat::Constraint* _constraint, bool _deduced )
         {
             struct Bound<T1, T2>::Info* boundInfo = new struct Bound<T1, T2>::Info();
             boundInfo->updated = 0;
@@ -392,7 +392,7 @@ namespace smtrat
          * @return
          */
         template<typename T1, typename T2>
-        std::pair<const Bound<T1, T2>*, bool> Variable<T1, T2>::addLowerBound( Value<T1>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint, bool _deduced )
+        std::pair<const Bound<T1, T2>*, bool> Variable<T1, T2>::addLowerBound( Value<T1>* const _val, std::list<const smtrat::Formula*>::iterator _position, const smtrat::Constraint* _constraint, bool _deduced )
         {
             struct Bound<T1, T2>::Info* boundInfo = new struct Bound<T1, T2>::Info();
             boundInfo->updated = 0;
@@ -413,7 +413,7 @@ namespace smtrat
          * @return
          */
         template<typename T1, typename T2>
-        std::pair<const Bound<T1, T2>*, bool> Variable<T1, T2>::addEqualBound( Value<T1>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint )
+        std::pair<const Bound<T1, T2>*, bool> Variable<T1, T2>::addEqualBound( Value<T1>* const _val, std::list<const smtrat::Formula*>::iterator _position, const smtrat::Constraint* _constraint )
         {
             struct Bound<T1, T2>::Info* boundInfo = new struct Bound<T1, T2>::Info();
             boundInfo->updated = 0;
@@ -442,7 +442,7 @@ namespace smtrat
          * @return 
          */
         template<typename T1, typename T2>
-        bool Variable<T1, T2>::deactivateBound( const Bound<T1, T2>* bound, smtrat::Formula::iterator _position )
+        bool Variable<T1, T2>::deactivateBound( const Bound<T1, T2>* bound, std::list<const smtrat::Formula*>::iterator _position )
         {
             assert( !bound->isInfinite() );
             assert( !bound->isActive() );

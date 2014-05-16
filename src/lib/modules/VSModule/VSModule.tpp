@@ -26,8 +26,6 @@
  */
 
 #include <set>
-
-
 #include "State.h"
 #include "VSModule.h"
 
@@ -41,7 +39,7 @@ using namespace vs;
 namespace smtrat
 {
     template<class Settings>
-    VSModule<Settings>::VSModule( ModuleType _type, const Formula* const _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
+    VSModule<Settings>::VSModule( ModuleType _type, const Input* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         mConditionsChanged( false ),
         mInconsistentConstraintAdded( false ),
@@ -77,7 +75,7 @@ namespace smtrat
      *          true, otherwise.
      */
     template<class Settings>
-    bool VSModule<Settings>::assertSubformula( Formula::const_iterator _subformula )
+    bool VSModule<Settings>::assertSubformula( Input::const_iterator _subformula )
     {
         Module::assertSubformula( _subformula );
         if( (*_subformula)->getType() == CONSTRAINT )
@@ -92,7 +90,7 @@ namespace smtrat
             {
                 removeStatesFromRanking( *mpStateTree );
                 mIDCounter = 0;
-                vs::Condition::Set oConds = vs::Condition::Set();
+                PointerSet<vs::Condition> oConds;
                 oConds.insert( condition );
                 vector<DisjunctionOfConditionConjunctions> subResults = vector<DisjunctionOfConditionConjunctions>();
                 DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
@@ -102,10 +100,10 @@ namespace smtrat
                     && constraint->relation() == Relation::NEQ )
                 {
                     ConditionList condVectorA = ConditionList();
-                    condVectorA.push_back( new vs::Condition( Formula::newConstraint( constraint->lhs(), Relation::LESS ), 0, false, oConds ) );
+                    condVectorA.push_back( new vs::Condition( newConstraint( constraint->lhs(), Relation::LESS ), 0, false, oConds ) );
                     subResult.push_back( condVectorA );
                     ConditionList condVectorB = ConditionList();
-                    condVectorB.push_back( new vs::Condition( Formula::newConstraint( constraint->lhs(), Relation::GREATER ), 0, false, oConds ) );
+                    condVectorB.push_back( new vs::Condition( newConstraint( constraint->lhs(), Relation::GREATER ), 0, false, oConds ) );
                     subResult.push_back( condVectorB );
                 }
                 else
@@ -126,7 +124,7 @@ namespace smtrat
             removeStatesFromRanking( *mpStateTree );
             mIDCounter = 0;
             mInfeasibleSubsets.clear();
-            mInfeasibleSubsets.push_back( set<const Formula*>() );
+            mInfeasibleSubsets.push_back( PointerSet<Formula>() );
             mInfeasibleSubsets.back().insert( *_subformula );
             mInconsistentConstraintAdded = true;
             foundAnswer( False );
@@ -141,7 +139,7 @@ namespace smtrat
      * @param _subformula The position of the constraint within the received constraints.
      */
     template<class Settings>
-    void VSModule<Settings>::removeSubformula( Formula::const_iterator _subformula )
+    void VSModule<Settings>::removeSubformula( Input::const_iterator _subformula )
     {
         if( (*_subformula)->getType() == CONSTRAINT )
         {
@@ -153,7 +151,7 @@ namespace smtrat
             {
                 removeStatesFromRanking( *mpStateTree );
                 mpStateTree->rSubResultsSimplified() = false;
-                set<const vs::Condition*> condsToDelete = set<const vs::Condition*>();
+                PointerSet<vs::Condition> condsToDelete;
                 condsToDelete.insert( condToDelete );
                 mpStateTree->deleteOrigins( condsToDelete );
                 mpStateTree->rType() = State::COMBINE_SUBRESULTS;
@@ -192,7 +190,7 @@ namespace smtrat
             mpStateTree = new State( Settings::use_variable_bounds );
             for( auto iter = mFormulaConditionMap.begin(); iter != mFormulaConditionMap.end(); ++iter )
             {
-                vs::Condition::Set oConds = vs::Condition::Set();
+                PointerSet<vs::Condition> oConds = PointerSet<vs::Condition>();
                 oConds.insert( iter->second );
                 vector<DisjunctionOfConditionConjunctions> subResults = vector<DisjunctionOfConditionConjunctions>();
                 DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
@@ -260,16 +258,14 @@ namespace smtrat
             vector<pair<vector<const Constraint*>, const Constraint*>> bDeds = mpStateTree->variableBounds().getBoundDeductions();
             for( auto bDed = bDeds.begin(); bDed != bDeds.end(); ++bDed )
             {
-                Formula* deduction = new Formula( OR );
+                PointerSet<Formula> subformulas;
                 for( auto cons = bDed->first.begin(); cons != bDed->first.end(); ++cons )
                 {
-                    Formula* notCons = new Formula( NOT );
-                    notCons->addSubformula( *cons );
-                    deduction->addSubformula( notCons );
+                    subformulas.insert( newNegation( newFormula( *cons ) ) );
                 }
-                deduction->addSubformula( bDed->second );
+                subformulas.insert( newFormula( bDed->second ) );
 //                cout << "learn: " << deduction->toString( true, true ) << endl;
-                addDeduction( deduction );
+                addDeduction( newFormula( OR, std::move( subformulas ) ) );
             }
         }
         #ifdef VS_TERMINATION_INVARIANCE
@@ -516,7 +512,7 @@ namespace smtrat
                                                 if( !Settings::use_variable_bounds || currentState->variableBounds().getDoubleInterval( currentState->index() ).lowerBoundType() == carl::BoundType::INFTY )
                                                 {
                                                     // Create state ( Conditions, [x -> -infinity]):
-                                                    vs::Condition::Set oConditions = vs::Condition::Set();
+                                                    PointerSet<vs::Condition> oConditions = PointerSet<vs::Condition>();
                                                     for( auto cond : currentState->conditions() )
                                                         oConditions.insert( cond );
                                                     Substitution sub = Substitution( currentState->index(), Substitution::MINUS_INFINITY, oConditions );
@@ -746,10 +742,10 @@ namespace smtrat
             {
                 stringstream outA;
                 outA << "m_inf_" << id() << "_" << i;
-                carl::Variable minfVar( Formula::newAuxiliaryRealVariable( outA.str() ) );
+                carl::Variable minfVar( newAuxiliaryRealVariable( outA.str() ) );
                 stringstream outB;
                 outB << "eps_" << id() << "_" << i;
-                carl::Variable epsVar( Formula::newAuxiliaryRealVariable( outB.str() ) );
+                carl::Variable epsVar( newAuxiliaryRealVariable( outB.str() ) );
                 mVariableVector.push_back( pair<carl::Variable,carl::Variable>( minfVar, epsVar ) );
             }
             assert( !mRanking.empty() );
@@ -797,7 +793,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    double VSModule<Settings>::rateCall( const std::set<const Formula*>& ) const
+    double VSModule<Settings>::rateCall( const PointerSet<Formula>& ) const
     {
         return 1;
     }
@@ -839,7 +835,7 @@ namespace smtrat
         assert( _condition->constraint().hasVariable( _eliminationVar ) );
         bool generatedTestCandidateBeingASolution = false;
         unsigned numberOfAddedChildren = 0;
-        vs::Condition::Set oConditions = vs::Condition::Set();
+        PointerSet<vs::Condition> oConditions = PointerSet<vs::Condition>();
         oConditions.insert( _condition );
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
         if( !Settings::use_variable_bounds || _currentState->hasRootsInVariableBounds( _condition, Settings::sturm_sequence_for_root_check ) )
@@ -870,10 +866,10 @@ namespace smtrat
                         factors.push_back( iter->first );
                     else
                     {
-                        const smtrat::Constraint* cons = smtrat::Formula::newConstraint( iter->first, Relation::NEQ );
-                        if( cons != Formula::constraintPool().consistentConstraint() )
+                        const smtrat::Constraint* cons = smtrat::newConstraint( iter->first, Relation::NEQ );
+                        if( cons != constraintPool().consistentConstraint() )
                         {
-                            assert( cons != Formula::constraintPool().inconsistentConstraint() );
+                            assert( cons != constraintPool().inconsistentConstraint() );
                             sideConditions.insert( cons );
                         }
                     }
@@ -904,8 +900,8 @@ namespace smtrat
                         auto iter = coeffs.find( 0 );
                         if( iter != coeffs.end() ) constantCoeff = iter->second;
                         // Create state ({b!=0} + oldConditions, [x -> -c/b]):
-                        const smtrat::Constraint* cons = smtrat::Formula::newConstraint( coeffs.rbegin()->second, Relation::NEQ );
-                        if( cons == Formula::constraintPool().inconsistentConstraint() )
+                        const smtrat::Constraint* cons = smtrat::newConstraint( coeffs.rbegin()->second, Relation::NEQ );
+                        if( cons == constraintPool().inconsistentConstraint() )
                         {
                             if( relation == Relation::EQ )
                                 generatedTestCandidateBeingASolution = sideConditions.empty();
@@ -913,7 +909,7 @@ namespace smtrat
                         else
                         {
                             PointerSet<Constraint> sideCond = sideConditions;
-                            if( cons != Formula::constraintPool().consistentConstraint() )
+                            if( cons != constraintPool().consistentConstraint() )
                                 sideCond.insert( cons );
                             SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, coeffs.rbegin()->second, ZERO_POLYNOMIAL );
                             Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
@@ -950,17 +946,17 @@ namespace smtrat
                         if( iter != coeffs.end() ) linearCoeff = iter->second;
                         Polynomial radicand = linearCoeff.pow( 2 ) - Rational( 4 ) * coeffs.rbegin()->second * constantCoeff;
                         bool constraintHasZeros = false;
-                        const smtrat::Constraint* cons11 = smtrat::Formula::newConstraint( coeffs.rbegin()->second, Relation::EQ );
-                        if( cons11 != Formula::constraintPool().inconsistentConstraint() )
+                        const smtrat::Constraint* cons11 = smtrat::newConstraint( coeffs.rbegin()->second, Relation::EQ );
+                        if( cons11 != constraintPool().inconsistentConstraint() )
                         {
                             // Create state ({a==0, b!=0} + oldConditions, [x -> -c/b]):
-                            const smtrat::Constraint* cons12 = smtrat::Formula::newConstraint( linearCoeff, Relation::NEQ );
-                            if( cons12 != Formula::constraintPool().inconsistentConstraint() )
+                            const smtrat::Constraint* cons12 = smtrat::newConstraint( linearCoeff, Relation::NEQ );
+                            if( cons12 != constraintPool().inconsistentConstraint() )
                             {
                                 PointerSet<Constraint> sideCond = sideConditions;
-                                if( cons11 != Formula::constraintPool().consistentConstraint() )
+                                if( cons11 != constraintPool().consistentConstraint() )
                                     sideCond.insert( cons11 );
-                                if( cons12 != Formula::constraintPool().consistentConstraint() )
+                                if( cons12 != constraintPool().consistentConstraint() )
                                     sideCond.insert( cons12 );
                                 SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, linearCoeff, ZERO_POLYNOMIAL );
                                 Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
@@ -986,16 +982,16 @@ namespace smtrat
                                 constraintHasZeros = true;
                             }
                         }
-                        const smtrat::Constraint* cons21 = smtrat::Formula::newConstraint( radicand, Relation::GEQ );
-                        if( cons21 != Formula::constraintPool().inconsistentConstraint() )
+                        const smtrat::Constraint* cons21 = smtrat::newConstraint( radicand, Relation::GEQ );
+                        if( cons21 != constraintPool().inconsistentConstraint() )
                         {
-                            const smtrat::Constraint* cons22 = smtrat::Formula::newConstraint( coeffs.rbegin()->second, Relation::NEQ );
-                            if( cons22 != Formula::constraintPool().inconsistentConstraint() )
+                            const smtrat::Constraint* cons22 = smtrat::newConstraint( coeffs.rbegin()->second, Relation::NEQ );
+                            if( cons22 != constraintPool().inconsistentConstraint() )
                             {
                                 PointerSet<Constraint> sideCond = sideConditions;
-                                if( cons21 != Formula::constraintPool().consistentConstraint() )
+                                if( cons21 != constraintPool().consistentConstraint() )
                                     sideCond.insert( cons21 );
-                                if( cons22 != Formula::constraintPool().consistentConstraint() )
+                                if( cons22 != constraintPool().consistentConstraint() )
                                     sideCond.insert( cons22 );
                                 // Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b+sqrt(b^2-4ac))/2a]):
                                 SqrtEx sqExA = SqrtEx( -linearCoeff, ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
@@ -1128,7 +1124,7 @@ namespace smtrat
             if( numberOfAddedChildren == 0 )
             {
                 ConditionSetSet conflictSet = ConditionSetSet();
-                vs::Condition::Set condSet  = vs::Condition::Set();
+                PointerSet<vs::Condition> condSet  = PointerSet<vs::Condition>();
                 condSet.insert( _condition );
                 conflictSet.insert( condSet );
                 _currentState->addConflicts( NULL, conflictSet );
@@ -1248,12 +1244,12 @@ namespace smtrat
                 if( subResult.empty() )
                 {
                     anySubstitutionFailed = true;
-                    vs::Condition::Set condSet  = vs::Condition::Set();
+                    PointerSet<vs::Condition> condSet  = PointerSet<vs::Condition>();
                     condSet.insert( *cond );
                     if( _currentState->pOriginalCondition() != NULL )
                         condSet.insert( _currentState->pOriginalCondition() );
                     #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                    set< const vs::Condition* > conflictingBounds = _currentState->father().variableBounds().getOriginsOfBounds( conflVars );
+                    PointerSet<vs::Condition> conflictingBounds = _currentState->father().variableBounds().getOriginsOfBounds( conflVars );
                     condSet.insert( conflictingBounds.begin(), conflictingBounds.end() );
                     #endif
                     conflictSet.insert( condSet );
@@ -1603,13 +1599,13 @@ namespace smtrat
     }
 
     template<class Settings>
-    set<const Formula*> VSModule<Settings>::getReasons( const vs::Condition::Set& _conditions ) const
+    PointerSet<Formula> VSModule<Settings>::getReasons( const PointerSet<vs::Condition>& _conditions ) const
     {
-        set<const Formula*> result;
+        PointerSet<Formula> result;
         if( _conditions.empty() ) return result;
         // Get the original conditions of the root of the root state leading to the given set of conditions.
-        vs::Condition::Set conds = _conditions;
-        vs::Condition::Set oConds;
+        PointerSet<vs::Condition> conds = _conditions;
+        PointerSet<vs::Condition> oConds;
         while( !(*conds.begin())->originalConditions().empty() )
         {
             for( auto cond = conds.begin(); cond != conds.end(); ++cond )
@@ -1625,7 +1621,7 @@ namespace smtrat
         {
             assert( (*oCond)->pConstraint() != NULL );
             assert( (*oCond)->originalConditions().empty() );
-            Formula::const_iterator receivedConstraint = mpReceivedFormula->begin();
+            std::list<const Formula*>::const_iterator receivedConstraint = mpReceivedFormula->begin();
             while( receivedConstraint != mpReceivedFormula->end() )
             {
                 if( (*receivedConstraint)->getType() == CONSTRAINT )
@@ -1650,7 +1646,7 @@ namespace smtrat
         if( !Settings::infeasible_subset_generation )
         {
             // Set the infeasible subset to the set of all received constraints.
-            mInfeasibleSubsets.push_back( set<const Formula*>() );
+            mInfeasibleSubsets.push_back( PointerSet<Formula>() );
             for( auto cons = mpReceivedFormula->begin(); cons != mpReceivedFormula->end(); ++cons )
                 mInfeasibleSubsets.back().insert( *cons );
             return;
@@ -1851,7 +1847,7 @@ namespace smtrat
             while( !lastCombinationReached )
             {
                 // Create a new combination of vectors.
-                vs::Condition::Set coveringSet = vs::Condition::Set();
+                PointerSet<vs::Condition> coveringSet = PointerSet<vs::Condition>();
                 bool previousIteratorIncreased = false;
                 // For each set of sets in the vector of sets of sets, choose a set in it. We combine
                 // these sets by forming their union and store it as a covering set.
@@ -1935,13 +1931,13 @@ namespace smtrat
                 {
                     case Relation::GEQ:
                     {
-                        const Constraint* strictVersion = Formula::newConstraint( constraint->lhs(), Relation::GREATER );
+                        const Constraint* strictVersion = newConstraint( constraint->lhs(), Relation::GREATER );
                         constraintsToCheck.insert( pair< const Constraint*, const vs::Condition*>( strictVersion, *cond ) );
                         break;
                     }
                     case Relation::LEQ:
                     {
-                        const Constraint* strictVersion = Formula::newConstraint( constraint->lhs(), Relation::LESS );
+                        const Constraint* strictVersion = newConstraint( constraint->lhs(), Relation::LESS );
                         constraintsToCheck.insert( pair< const Constraint*, const vs::Condition*>( strictVersion, *cond ) );
                         break;
                     }
@@ -1960,7 +1956,7 @@ namespace smtrat
          * and remove the sub formulas (constraints) in the passed formula, which do not occur in the
          * constraints to add.
          */
-        Formula::iterator subformula = mpPassedFormula->begin();
+        std::list<const Formula*>::iterator subformula = mpPassedFormula->begin();
         while( subformula != mpPassedFormula->end() )
         {
             auto iter = constraintsToCheck.find( (*subformula)->pConstraint() );
@@ -1972,16 +1968,16 @@ namespace smtrat
             }
             else
             {
-                subformula           = removeSubformulaFromPassedFormula( subformula );
+                subformula = removeSubformulaFromPassedFormula( subformula );
                 changedPassedFormula = true;
             }
         }
         // Add the the remaining constraints to add to the passed formula.
         for( auto iter = constraintsToCheck.begin(); iter != constraintsToCheck.end(); ++iter )
         {
-            changedPassedFormula           = true;
+            changedPassedFormula = true;
             vec_set_const_pFormula origins;
-            Formula* formula = new smtrat::Formula( iter->first );
+            const Formula* formula = newFormula( iter->first );
             _formulaCondMap[formula] = iter->second;
             addConstraintToInform( iter->first );
             addSubformulaToPassedFormula( formula, move( origins ) );
@@ -1994,9 +1990,9 @@ namespace smtrat
      *
      * @param _state    The state to check the conditions of.
      *
-     * @return  TS_True,    if the conditions are consistent and there is no unfinished ancestor;
-     *          TS_False,   if the conditions are inconsistent;
-     *          TS_Unknown, if the theory solver cannot give an answer for these conditons.
+     * @return  True,    if the conditions are consistent and there is no unfinished ancestor;
+     *          False,   if the conditions are inconsistent;
+     *          Unknown, if the theory solver cannot give an answer for these conditons.
      */
     template<class Settings>
     Answer VSModule<Settings>::runBackendSolvers( State* _state )
@@ -2030,7 +2026,7 @@ namespace smtrat
                     {
                         for( auto infsubset = (*backend)->infeasibleSubsets().begin(); infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
                         {
-                            vs::Condition::Set conflict = vs::Condition::Set();
+                            PointerSet<vs::Condition> conflict = PointerSet<vs::Condition>();
                             #ifdef VS_DEBUG
                             cout << "Infeasible Subset: {";
                             #endif

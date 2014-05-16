@@ -943,9 +943,9 @@ void GroebnerModule<Settings>::passGB( )
         assert(!originals.front().empty());
         // We now add polynomial = 0 as a constraint to the passed formula.
         // We use the originals set calculated before as reason set. 
-        // TODO: replace "Formula::constraintPool().variables()" by a smaller approximations
+        // TODO: replace "constraintPool().variables()" by a smaller approximations
         // of the variables contained in "simplIt->toEx( )"
-        addSubformulaToPassedFormula( new Formula( Formula::newConstraint( smtrat::Polynomial(*simplIt), smtrat::Relation::EQ ) ), originals );
+        addSubformulaToPassedFormula( new Formula( newConstraint( smtrat::Polynomial(*simplIt), smtrat::Relation::EQ ) ), originals );
         mGbEqualities.insert(mpPassedFormula->back());
     }
 }

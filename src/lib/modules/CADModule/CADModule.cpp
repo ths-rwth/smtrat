@@ -65,7 +65,7 @@ using namespace std;
 namespace smtrat
 {
 
-    CADModule::CADModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+    CADModule::CADModule( ModuleType _type, const Input* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         mCAD( _conditionals ),
         mConstraints(),
@@ -182,12 +182,12 @@ namespace smtrat
      * @param _subformula
      * @return returns false if the current list of constraints was already found to be unsatisfiable (in this case, nothing is done), returns true previous result if the constraint was already checked for consistency before, otherwise true
      */
-    bool CADModule::assertSubformula( Formula::const_iterator _subformula )
+    bool CADModule::assertSubformula( Input::const_iterator _subformula )
     {
         assert( (*_subformula)->getType() == CONSTRAINT );
         Module::assertSubformula( _subformula );
         #ifdef SMTRAT_CAD_VARIABLEBOUNDS
-		mVariableBounds.addBound( (*_subformula)->pConstraint(), *_subformula );
+        mVariableBounds.addBound( (*_subformula)->pConstraint(), *_subformula );
         #endif
         if( solverState() == False )
             return false;
@@ -254,9 +254,9 @@ namespace smtrat
             #ifdef SMTRAT_CAD_DISABLE_MIS
             // construct a trivial infeasible subset
             #ifdef SMTRAT_CAD_VARIABLEBOUNDS
-            set<const Formula*> boundConstraints = mVariableBounds.getOriginsOfBounds();
+            PointerSet<Formula> boundConstraints = mVariableBounds.getOriginsOfBounds();
             #endif
-            mInfeasibleSubsets.push_back( set<const Formula*>() );
+            mInfeasibleSubsets.push_back( PointerSet<Formula>() );
             for( ConstraintIndexMap::const_iterator i = mConstraintsMap.begin(); i != mConstraintsMap.end(); ++i )
             {
                 mInfeasibleSubsets.back().insert( *i->first );
@@ -286,7 +286,7 @@ namespace smtrat
             vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics( g );
 
             #ifdef SMTRAT_CAD_VARIABLEBOUNDS
-            set<const Formula*> boundConstraints = mVariableBounds.getOriginsOfBounds();
+            PointerSet<Formula> boundConstraints = mVariableBounds.getOriginsOfBounds();
             #endif
             for( vec_set_const_pFormula::const_iterator i = infeasibleSubsets.begin(); i != infeasibleSubsets.end(); ++i )
             {
@@ -326,7 +326,7 @@ namespace smtrat
         return foundAnswer( anAnswerFound() ? Unknown : True );
     }
 
-    void CADModule::removeSubformula( Formula::const_iterator _subformula )
+    void CADModule::removeSubformula( Input::const_iterator _subformula )
     {
         if ((*_subformula)->getType() != CONSTRAINT)
         { // not our concern
@@ -502,7 +502,7 @@ namespace smtrat
             }
             default: assert(false);
         }
-        return Formula::newConstraint(Polynomial(c.getPolynomial()), relation);
+        return newConstraint(Polynomial(c.getPolynomial()), relation);
     }
 
     /**
@@ -519,7 +519,7 @@ namespace smtrat
     inline vec_set_const_pFormula CADModule::extractMinimalInfeasibleSubsets_GreedyHeuristics( ConflictGraph& conflictGraph )
     {
         // initialize MIS with the last constraint
-        vec_set_const_pFormula mis = vec_set_const_pFormula( 1, std::set<const Formula*>() );
+        vec_set_const_pFormula mis = vec_set_const_pFormula( 1, PointerSet<Formula>() );
         mis.front().insert( getConstraintAt( mConstraints.size() - 1 ) );    // the last constraint is assumed to be always in the MIS
         if( mConstraints.size() > 1 )
         { // construct set cover by greedy heuristic
@@ -549,11 +549,10 @@ namespace smtrat
         for (auto implication: deductions)
         {
             assert( ( !implication.first.empty() && !implication.second.empty() ) || implication.first.size() > 1 || implication.second.size() > 1  );
-            Formula* deduction = new Formula( OR );
+            PointerSet<Formula> subformulas;
             // process A in A => B
             for (auto constraint: implication.first)
-            { // negate all constraints in first
-                deduction->addSubformula( new Formula( NOT ) );
+            {
                 // check whether the given constraint is one of the input constraints
                 unsigned index = 0;
                 for ( ; index < mConstraints.size(); ++index)
@@ -565,13 +564,13 @@ namespace smtrat
                     {
                         if (i.second == index) // found the entry in the constraint map
                         {
-                            deduction->back()->addSubformula((*i.first)->pConstraint());
+                            subformulas.insert(newNegation(newFormula((*i.first)->pConstraint())));
                             break;
                         }
                     }
                 }
                 else // add a new constraint
-                    deduction->back()->addSubformula( convertConstraint( constraint ) );
+                    subformulas.insert(newFormula(convertConstraint(constraint)));
             }
             // process B in A => B
             for(auto constraint: implication.second)
@@ -587,15 +586,15 @@ namespace smtrat
                     {
                         if (i.second == index) // found the entry in the constraint map
                         {
-                            deduction->addSubformula((*i.first)->pConstraint());
+                            subformulas.insert(newFormula((*i.first)->pConstraint()));
                             break;
                         }
                     }
                 }
                 else // add a new constraint
-                    deduction->addSubformula( convertConstraint( constraint ) );
+                    subformulas.insert(newFormula(convertConstraint(constraint)));
             }
-            Module::addDeduction( deduction );
+            Module::addDeduction(newFormula(OR, subformulas));
         }
     }
 

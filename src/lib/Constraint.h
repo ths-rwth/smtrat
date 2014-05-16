@@ -36,7 +36,6 @@
 #include <cstring>
 #include <sstream>
 #include <assert.h>
-#include <mutex>
 #include "Relation.h"
 #include "Common.h"
 #include "config.h"
@@ -110,8 +109,6 @@ namespace smtrat
             ~Constraint();
             
         public:
-
-            static std::recursive_mutex mMutex;
 
             /**
              * @return The considered polynomial being the left-hand side of this constraint.
@@ -549,16 +546,5 @@ namespace std
         }
     };
 } // namespace std
-
-
-#ifdef SMTRAT_STRAT_PARALLEL_MODE
-#define CONSTRAINT_LOCK_GUARD std::lock_guard<std::recursive_mutex> lock( smtrat::Constraint::mMutex );
-#define CONSTRAINT_LOCK smtrat::Constraint::mMutex.lock();
-#define CONSTRAINT_UNLOCK smtrat::Constraint::mMutex.unlock();
-#else
-#define CONSTRAINT_LOCK_GUARD
-#define CONSTRAINT_LOCK
-#define CONSTRAINT_UNLOCK
-#endif
 
 #endif

@@ -27,6 +27,7 @@ set(lib_core_src
     StrategyGraph.cpp
     Constraint.cpp
     ConstraintPool.cpp
+    FormulaPool.cpp
     RuntimeSettings.cpp
     ThreadPool.cpp
     ValidationSettings.cpp
@@ -45,6 +46,7 @@ set(lib_core_headers
     Common.h
     Constraint.h
     ConstraintPool.h
+    FormulaPool.h
     RuntimeSettings.h
     ThreadPool.h
     VariableBounds.h

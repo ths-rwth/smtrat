@@ -40,34 +40,23 @@ namespace vs
      */
 
     class Condition
-    {
-        public:
-            struct condPointerLess
-            {
-                bool operator ()( const Condition* pCondA, const Condition* pCondB ) const
-                {
-                    return (*pCondA).constraint() < (*pCondB).constraint();
-                }
-            };
-            typedef std::set<const Condition*, condPointerLess> Set;
-            
+    {       
             // Members:
-            
             static const double INFINITLY_MANY_SOLUTIONS_WEIGHT;
 
         private:
 
-            mutable bool              mFlag;
-            mutable bool              mRecentlyAdded;
-            mutable size_t          mValuation;
-            const smtrat::Constraint* mpConstraint;
-            Set*                      mpOriginalConditions;
+            mutable bool                   mFlag;
+            mutable bool                   mRecentlyAdded;
+            mutable size_t                 mValuation;
+            const smtrat::Constraint*      mpConstraint;
+            smtrat::PointerSet<Condition>* mpOriginalConditions;
             
 
         public:
 
             // Constructors:
-            Condition( const smtrat::Constraint*, size_t = 0, bool = false, const Set& = Set(), bool = false );
+            Condition( const smtrat::Constraint*, size_t = 0, bool = false, const smtrat::PointerSet<Condition>& = smtrat::PointerSet<Condition>(), bool = false );
             Condition( const Condition& );
 
             // Destructor:
@@ -114,19 +103,19 @@ namespace vs
                 return mpConstraint;
             }
 
-            Set* pOriginalConditions() const
+            smtrat::PointerSet<Condition>* pOriginalConditions() const
             {
                 return mpOriginalConditions;
             }
 
-            const Set& originalConditions() const
+            const smtrat::PointerSet<Condition>& originalConditions() const
             {
                 return *mpOriginalConditions;
             }
 
             double valuate( const carl::Variable&, size_t, bool ) const;
-            bool operator ==( const Condition& ) const;
-            bool operator <( const Condition& ) const;
+            bool operator==( const Condition& ) const;
+            bool operator<( const Condition& ) const;
             void print( std::ostream& = std::cout ) const;
     };
 

@@ -159,7 +159,7 @@ namespace smtrat
                 
                 if( informLRA )
                 {
-                    linearFormula = Formula( Formula::newConstraint(lhs,_constraint->relation()) );
+                    linearFormula = Formula( newConstraint(lhs,_constraint->relation()) );
                 }
             }
             if( informLRA )
@@ -362,11 +362,11 @@ namespace smtrat
                         break;
                     }
                 }
-                carl::Variable newVar = hasRealVar ? Formula::newAuxiliaryRealVariable() : Formula::newAuxiliaryIntVariable();
+                carl::Variable newVar = hasRealVar ? newAuxiliaryRealVariable() : Formula::newAuxiliaryIntVariable();
                 variables.insert(newVar);
 
                 const Polynomial rhs = slackvariable->expression()-newVar;
-                const Constraint* tmpConstr = Formula::newConstraint(rhs, Relation::EQ);
+                const Constraint* tmpConstr = newConstraint(rhs, Relation::EQ);
                
                 // Create candidates for every possible variable:
                 for (auto variableIt = variables.begin(); variableIt != variables.end(); ++variableIt )
@@ -1438,7 +1438,7 @@ namespace smtrat
                             break;
                         }
                     }
-                    carl::Variable newVar = hasRealVar ? Formula::newAuxiliaryRealVariable() : Formula::newAuxiliaryIntVariable();
+                    carl::Variable newVar = hasRealVar ? newAuxiliaryRealVariable() : Formula::newAuxiliaryIntVariable();
                     mLinearizations.insert( std::make_pair((*expressionIt).first, newVar) );
                     //mLinearizations[(*expressionIt).first] = newReal;
                     //mSubstitutions[newReal] = (*expressionIt).first;
@@ -1456,7 +1456,7 @@ namespace smtrat
                         {
                             mContractors.insert(std::make_pair(rhs, Contractor<carl::SimpleNewton>(rhs)));
                         }
-                        const Constraint* tmp = Formula::newConstraint( rhs, Relation::EQ);
+                        const Constraint* tmp = newConstraint( rhs, Relation::EQ);
                         icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate(newVar, rhs, tmp, *varIndex, mContractors.at(rhs));
                         mNonlinearConstraints[(*expressionIt).second].insert( mNonlinearConstraints[(*expressionIt).second].end(), tmpCandidate );
 
@@ -1465,7 +1465,7 @@ namespace smtrat
                         tmpCandidate->setNonlinear();
                     }
                     // add one candidate for the replacement variable
-                    const Constraint* tmp = Formula::newConstraint( (*expressionIt).first-newVar, Relation::EQ);
+                    const Constraint* tmp = newConstraint( (*expressionIt).first-newVar, Relation::EQ);
                     icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate(newVar, rhs, tmp, newVar, mContractors.at(rhs) );
                     mNonlinearConstraints[(*expressionIt).second].insert( mNonlinearConstraints[(*expressionIt).second].end(), tmpCandidate );
 
@@ -2332,7 +2332,7 @@ namespace smtrat
 
                 smtrat::DoubleInterval center = smtrat::DoubleInterval(interval.sample());
                 Polynomial constraint = Polynomial(variable) - Polynomial(carl::rationalize<Rational>(center.sample()));
-                Formula centerTmpFormula = smtrat::Formula( smtrat::Formula::newConstraint( constraint, Relation::EQ ) );
+                Formula centerTmpFormula = smtrat::Formula( smtrat::newConstraint( constraint, Relation::EQ ) );
                 Formula* validationTmpFormula = new smtrat::Formula( centerTmpFormula.pConstraint() );
                 mLRA.inform(validationTmpFormula->pConstraint());
                 mCenterConstraints.insert(centerTmpFormula.pConstraint());
@@ -3009,10 +3009,10 @@ namespace smtrat
                         switch (mIntervals.at(tmpSymbol).lowerBoundType())
                         {
                             case carl::BoundType::STRICT:
-                                leftTmp = Formula::newConstraint(leftEx, Relation::GREATER);
+                                leftTmp = newConstraint(leftEx, Relation::GREATER);
                                 break;
                             case carl::BoundType::WEAK:
-                                leftTmp = Formula::newConstraint(leftEx, Relation::GEQ);
+                                leftTmp = newConstraint(leftEx, Relation::GEQ);
 
                                 break;
                             default:
@@ -3047,11 +3047,11 @@ namespace smtrat
                         switch (mIntervals.at(tmpSymbol).upperBoundType())
                         {
                             case carl::BoundType::STRICT:
-                                rightTmp = Formula::newConstraint(rightEx, Relation::LESS);
+                                rightTmp = newConstraint(rightEx, Relation::LESS);
 
                                 break;
                             case carl::BoundType::WEAK:
-                                rightTmp = Formula::newConstraint(rightEx, Relation::LEQ);
+                                rightTmp = newConstraint(rightEx, Relation::LEQ);
                                 break;
                             default:
                                 rightTmp = NULL;
@@ -3322,7 +3322,7 @@ namespace smtrat
             std::map<Variable, Polynomial> tmpSubstitutions;
             tmpSubstitutions.insert(mSubstitutions.begin(), mSubstitutions.end());
             lhs = lhs.substitute(tmpSubstitutions);
-            const Constraint* constraint = Formula::newConstraint(lhs, _deduction->constraint().relation());
+            const Constraint* constraint = newConstraint(lhs, _deduction->constraint().relation());
             // TODO
             Formula* newRealDeduction = new Formula(constraint);
             mCreatedDeductions.insert(newRealDeduction);

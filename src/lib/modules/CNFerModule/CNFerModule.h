@@ -49,7 +49,7 @@ namespace smtrat
             /**
              * Constructor and destructor.
              */
-            CNFerModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            CNFerModule( ModuleType _type, const Input*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             ~CNFerModule();
 
@@ -58,9 +58,9 @@ namespace smtrat
              */
 
             // Interfaces.
-            bool assertSubformula( Formula::const_iterator );
+            bool assertSubformula( Input::const_iterator );
             Answer isConsistent();
-            void removeSubformula( Formula::const_iterator );
+            void removeSubformula( Input::const_iterator );
     };
 
 }    // namespace smtrat

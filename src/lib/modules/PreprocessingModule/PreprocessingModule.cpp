@@ -256,29 +256,29 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                         case CR_EQ:
                         {
                             formula->copyAndDelete( new Formula( OR ));
-                            formula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
-                            formula->addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
+                            formula->addSubformula( new Formula( newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
+                            formula->addSubformula( new Formula( newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
                             return;
                         }
                         case CR_LEQ:
                         {
-                            formula->copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
+                            formula->copyAndDelete( new Formula( newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
                             return;
                         }
                         case CR_LESS:
                         {
                             #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
                             formula->copyAndDelete( new Formula( OR ));
-                            formula->addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
-                            formula->addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_EQ, constraint->variables() )));
+                            formula->addSubformula( new Formula( newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
+                            formula->addSubformula( new Formula( newConstraint( -constraint->lhs(), CR_EQ, constraint->variables() )));
                             #else
-                            formula->copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LEQ, constraint->variables() )));
+                            formula->copyAndDelete( new Formula( newConstraint( -constraint->lhs(), CR_LEQ, constraint->variables() )));
                             #endif
                             return;
                         }
                         case CR_NEQ:
                         {
-                            formula->copyAndDelete( new Formula( Formula::newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
+                            formula->copyAndDelete( new Formula( newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
                             return;
                         }
                         default:
@@ -300,8 +300,8 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                         case CR_LEQ:
                         {
                             subformula->copyAndDelete( new Formula( OR ));
-                            subformula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
-                            subformula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
+                            subformula->addSubformula( new Formula( newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
+                            subformula->addSubformula( new Formula( newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
                             return;
                         }
                         case CR_LESS:
@@ -312,8 +312,8 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                         case CR_NEQ:
                         {
                             subformula->copyAndDelete( new Formula( OR ));
-                            subformula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
-                            subformula->addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
+                            subformula->addSubformula( new Formula( newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
+                            subformula->addSubformula( new Formula( newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
                             return;
                         }
                         default:
@@ -348,8 +348,8 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 case CR_LEQ:
                 {
                     Formula* phi = new Formula(OR );
-                    phi->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
-                    phi->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
+                    phi->addSubformula( new Formula( newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
+                    phi->addSubformula( new Formula( newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
                     formula->pFather()->addSubformula(phi);
                     formula->father().print();
                     formula->pFather()->erase(formula);
@@ -362,8 +362,8 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 case CR_NEQ:
                 {
                     formula->copyAndDelete( new Formula( OR ));
-                    formula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
-                    formula->addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
+                    formula->addSubformula( new Formula( newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
+                    formula->addSubformula( new Formula( newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
                     return;
                 }
                 default:
@@ -637,7 +637,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
            GiNaC::ex lhs(it->second - boundary);
            GiNaC::symtab sym;
            sym.insert(*it);
-           const Constraint* constraint = Formula::newConstraint( lhs, (strict ? CR_LESS : CR_LEQ), sym );
+           const Constraint* constraint = newConstraint( lhs, (strict ? CR_LESS : CR_LEQ), sym );
            formula->addSubformula(constraint);
         }
     }

@@ -88,8 +88,8 @@ namespace smtrat
 
             struct Abstraction
             {
-                Formula::iterator position;
-                const Constraint* constraint;
+                std::list<const Formula*>::iterator position;
+                const Formula* constraint;
                 const Formula* origin;
                 int updateInfo;
                 bool deducted;
@@ -284,7 +284,7 @@ namespace smtrat
             /**
              * Constructors:
              */
-            SATModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            SATModule( ModuleType _type, const Input*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             /**
              * Destructor:
@@ -301,9 +301,9 @@ namespace smtrat
                 return true;
             }
             
-            bool assertSubformula( Formula::const_iterator );
+            bool assertSubformula( Input::const_iterator );
             Answer isConsistent();
-            void removeSubformula( Formula::const_iterator );
+            void removeSubformula( Input::const_iterator );
             void updateModel() const;
             
             void updateInfeasibleSubset();
@@ -484,7 +484,7 @@ namespace smtrat
                 return (int)(drand( seed ) * size);
             }
 
-            Minisat::CRef addFormula( Formula*, unsigned );
+            Minisat::CRef addFormula( const Formula*, unsigned );
             Minisat::CRef addClause( const Formula*, unsigned = 0 );
             Minisat::Lit getLiteral( const Formula&, const Formula* = NULL );
             //Deprecated method

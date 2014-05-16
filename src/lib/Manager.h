@@ -47,6 +47,7 @@ namespace smtrat
 {
     // Forward declaration to speed up compile-time.
     class Constraint;
+    
     // Base class for solvers. This is the interface to the user.
     class Manager
     {
@@ -56,9 +57,11 @@ namespace smtrat
             /// a vector of flags, which indicate that an answer has been found of an antecessor module of the primary module
             std::vector< std::atomic_bool* > mPrimaryBackendFoundAnswer;
             /// the constraints so far passed to the primary backend
-            Formula* mpPassedFormula;
+            Input* mpPassedFormula;
+            /// The propositions of the passed formula.
+            Condition mPropositions;
             /// the backtrack points
-            std::vector< Formula::iterator > mBacktrackPoints;
+            std::vector< std::list<const Formula*>::iterator > mBacktrackPoints;
             /// all generated instances of modules
             std::vector<Module*> mGeneratedModules;
             /// a mapping of each module to its backends
@@ -121,10 +124,10 @@ namespace smtrat
              * @return false, if it is easy to decide whether adding this formula creates a conflict;
              *          true, otherwise.
              */
-            bool add( Formula* _subformula )
+            bool add( const Formula* _subformula )
             {
-                mpPassedFormula->addSubformula( _subformula );
-                auto pos = mpPassedFormula->last();
+                mpPassedFormula->push_back( _subformula );
+                auto pos = --(mpPassedFormula->end());
                 auto btp = mBacktrackPoints.end();
                 while( btp != mBacktrackPoints.begin() )
                 {
@@ -149,7 +152,7 @@ namespace smtrat
                 initialize();
                 #endif
                 *mPrimaryBackendFoundAnswer.back() = false;
-                mpPassedFormula->getPropositions();
+                mpPassedFormula->updatePropositions();
                 return mpPrimaryBackend->isConsistent();
             }
 
@@ -162,7 +165,7 @@ namespace smtrat
              *          end of the conjunction of formulas, which will be considered for the 
              *          next satisfiability check is returned.
              */
-            Formula::iterator remove( Formula::iterator _subformula )
+            std::list<const Formula*>::iterator remove( std::list<const Formula*>::iterator _subformula )
             {
                 assert( _subformula != mpPassedFormula->end() );
                 mpPrimaryBackend->removeSubformula( _subformula );
@@ -234,7 +237,7 @@ namespace smtrat
             /**
              * @return The conjunction of so far added formulas.
              */
-            const Formula& formula() const
+            const std::list<const Formula*>& formula() const
             {
                 return *mpPassedFormula;
             }
@@ -332,7 +335,7 @@ namespace smtrat
             }
             #endif
 
-            std::vector<Module*> getBackends( Formula*, Module*, std::atomic_bool* );
+            std::vector<Module*> getBackends( Module*, std::atomic_bool* );
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
             std::future<Answer> submitBackend( Module* );
             void checkBackendPriority( Module* );

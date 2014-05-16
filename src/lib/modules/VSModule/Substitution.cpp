@@ -30,21 +30,21 @@ using namespace std;
 
 namespace vs
 {
-    Substitution::Substitution( const carl::Variable& _variable, const Type& _type, const Condition::Set& _oConditions, const smtrat::PointerSet<smtrat::Constraint>& _sideCondition ):
+    Substitution::Substitution( const carl::Variable& _variable, const Type& _type, const smtrat::PointerSet<Condition>& _oConditions, const smtrat::PointerSet<smtrat::Constraint>& _sideCondition ):
         mVariable( _variable ),
         mpTerm( new SqrtEx() ),
         mType( _type ),
         mpTermVariables( NULL ),
-        mpOriginalConditions( new Condition::Set( _oConditions ) ),
+        mpOriginalConditions( new smtrat::PointerSet<Condition>( _oConditions ) ),
         mSideCondition( _sideCondition )
     {}
 
-    Substitution::Substitution( const carl::Variable& _variable, const SqrtEx& _term, const Type& _type, const Condition::Set& _oConditions, const smtrat::PointerSet<smtrat::Constraint>& _sideCondition ):
+    Substitution::Substitution( const carl::Variable& _variable, const SqrtEx& _term, const Type& _type, const smtrat::PointerSet<Condition>& _oConditions, const smtrat::PointerSet<smtrat::Constraint>& _sideCondition ):
         mVariable( _variable ),
         mpTerm( new SqrtEx( _term ) ),
         mType( _type ),
         mpTermVariables( NULL ),
-        mpOriginalConditions( new Condition::Set( _oConditions ) ),
+        mpOriginalConditions( new smtrat::PointerSet<Condition>( _oConditions ) ),
         mSideCondition( _sideCondition )
     {}
 
@@ -53,7 +53,7 @@ namespace vs
         mpTerm( new SqrtEx( _sub.term() ) ),
         mType( _sub.type() ),
         mpTermVariables( _sub.mpTermVariables == NULL ? NULL : new smtrat::Variables( *_sub.mpTermVariables ) ),
-        mpOriginalConditions( new Condition::Set( _sub.originalConditions() ) ),
+        mpOriginalConditions( new smtrat::PointerSet<Condition>( _sub.originalConditions() ) ),
         mSideCondition( _sub.sideCondition() )
     {}
 
