@@ -96,12 +96,12 @@ struct TheoryOpParser : public qi::symbols<char, TheoryOperation> {
 	}
 };
 
-struct BooleanOpParser : public qi::symbols<char, BooleanOperation> {
+struct BooleanOpParser : public qi::symbols<char, smtrat::Type> {
 	BooleanOpParser() {
-		add("and", BooleanOperation::AND);
-		add("or", BooleanOperation::OR);
-		add("xor", BooleanOperation::XOR);
-		add("iff", BooleanOperation::IFF);
+		add("and", smtrat::AND);
+		add("or", smtrat::OR);
+		add("xor", smtrat::XOR);
+		add("iff", smtrat::IFF);
 	}
 };
 
