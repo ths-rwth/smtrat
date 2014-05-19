@@ -41,8 +41,10 @@ CLANG_WARNING_DISABLE("-Wconversion")
 CLANG_WARNING_RESET
         
 #include "lib/Formula.h"
+#include "lib/FormulaPool.h"
 
 #include "../newparser/Parser.h"
+#include "lib/ConstraintPool.h"
 
 using namespace std;
 
@@ -207,16 +209,16 @@ namespace parser {
         //    mLexer->mBooleanVariables.insert( _varName );
         if( _isBindingVariable )
         {
-            carl::Variable bvar = Formula::newAuxiliaryBooleanVariable();
-            if( !mBooleanVariables.insert( pair< string, carl::Variable >( (_varName == "" ? Formula::constraintPool().getVariableName( bvar, true ) : _varName), bvar ) ).second )
+            carl::Variable bvar = newAuxiliaryBooleanVariable();
+            if( !mBooleanVariables.insert( pair< string, carl::Variable >( (_varName == "" ? constraintPool().getVariableName( bvar, true ) : _varName), bvar ) ).second )
                 error( "Multiple definition of Boolean variable " + _varName );
             return bvar;
         }
         else
         {
             assert( _varName != "" );
-            carl::Variable bvar = Formula::newBooleanVariable( _varName, true );
-            if( !mBooleanVariables.insert( pair< string, carl::Variable >( (_varName == "" ? Formula::constraintPool().getVariableName( bvar, true ) : _varName), bvar ) ).second )
+            carl::Variable bvar = newBooleanVariable( _varName, true );
+            if( !mBooleanVariables.insert( pair< string, carl::Variable >( (_varName == "" ? constraintPool().getVariableName( bvar, true ) : _varName), bvar ) ).second )
                 error( "Multiple definition of Boolean variable " + _varName );
             return bvar;
         }
@@ -230,36 +232,30 @@ namespace parser {
      * @param _exVarsPair
      * @return 
      */
-    pair<carl::Variable, Formula*>* Driver::addTheoryBinding(string& _varName, Polynomial* _polynomial )
+    pair<carl::Variable, const Formula*>* Driver::addTheoryBinding( string& _varName, Polynomial* _polynomial )
     {
         assert( mTheoryBindings.find( _varName ) == mTheoryBindings.end() );
         if( !mTheoryBindings.insert( pair< string, Polynomial* >( _varName, _polynomial ) ).second )
             error( "Multiple definition of real variable " + (_varName) );
         mVariableStack.top().push_back( pair< string, unsigned >( _varName, 1 ) );
-        //pLexer()->mTheoryVariables.insert( _varName );
+        //pLexer()->mTheoryVariables.insert( *_varName );
         if( !mInnerConstraintBindings.empty() )
         {
             if( mInnerConstraintBindings.size() == 1 )
             {
-                Formula* form = mInnerConstraintBindings.begin()->second;
+                const Formula* form = mInnerConstraintBindings.begin()->second;
                 mInnerConstraintBindings.erase( mInnerConstraintBindings.begin() );
-                return new pair<carl::Variable, Formula*>( carl::Variable::NO_VARIABLE, form );
+                return new pair<carl::Variable, const Formula*>( carl::Variable::NO_VARIABLE, form );
             }
             else
             {
-                set<carl::Variable> bvars;
-                Formula* form = new Formula( smtrat::AND );
+                PointerSet<Formula> subformulas;
                 while( !mInnerConstraintBindings.empty() )
                 {
-                    moveFoundBooleanVars( mInnerConstraintBindings.begin()->second, bvars );
-                    form->addSubformula( mInnerConstraintBindings.begin()->second );
+                    subformulas.insert( mInnerConstraintBindings.begin()->second );
                     mInnerConstraintBindings.erase( mInnerConstraintBindings.begin() );
                 }
-                if( !bvars.empty() )
-                {
-                    mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( form, bvars ) );
-                }
-                return new pair<carl::Variable, Formula*>( carl::Variable::NO_VARIABLE, form );
+                return new pair<carl::Variable, const Formula*>( carl::Variable::NO_VARIABLE, newFormula( smtrat::AND, move( subformulas ) ) );
             }
         }
         else
@@ -274,30 +270,11 @@ namespace parser {
      * @param _formula
      * @return 
      */
-    pair<carl::Variable, Formula*>* Driver::booleanBinding( string& _varName, Formula* _formula )
+    pair<carl::Variable, const Formula*>* Driver::booleanBinding( string& _varName, const Formula* _formula )
     {
-        assert( _formula->getType() == smtrat::AND && _formula->size() == 2 );
-        mVariableStack.top().push_back( pair< string, unsigned >( _varName, 0 ) );
-        carl::Variable bvar = addBooleanVariable( _varName, true );
-        Formula* notBindingBool = new Formula( NOT );
-        notBindingBool->addSubformula( new Formula( bvar ) );
-        Formula* posCase = _formula->pruneFront();
-        Formula* negCase = _formula->pruneFront();
-        Formula* bvarForm = new Formula( bvar );
-        auto iter = mFoundBooleanVariables.find( _formula );
-        if( iter != mFoundBooleanVariables.end() )
-        {
-            mFoundBooleanVariables.insert( pair<Formula*, set<carl::Variable>>( posCase, iter->second ) );
-            mFoundBooleanVariables.insert( pair<Formula*, set<carl::Variable>>( negCase, iter->second ) );
-            mFoundBooleanVariables.erase( iter );
-        }
-        delete _formula;
-        set<carl::Variable> bvars;
-        bvars.insert( bvar );
-        mFoundBooleanVariables.insert( pair<Formula*, set<carl::Variable>>( notBindingBool, bvars ) );
-        mFoundBooleanVariables.insert( pair<Formula*, set<carl::Variable>>( bvarForm, move( bvars ) ) );
-        Formula* form = mkIff( posCase, bvarForm, negCase, notBindingBool, false );
-        return new pair<carl::Variable, Formula*>( bvar, form );
+        mVariableStack.top().push_back( pair<string, unsigned>( _varName, 0 ) );
+        carl::Variable bvar = addBooleanVariable(_varName, true);
+        return new pair<carl::Variable, const Formula*>( bvar, newFormula( smtrat::IFF, newFormula( bvar ), _formula ) );
     }
     
     /**
@@ -306,7 +283,7 @@ namespace parser {
      * @param _formula
      * @return 
      */
-    Formula* Driver::appendBindings( vector< pair<carl::Variable,Formula*>*>* _bindings, Formula* _formula )
+    const Formula* Driver::appendBindings( vector<pair<carl::Variable, const Formula*>*>* _bindings, const Formula* _formula )
     {
         if( _bindings->empty() )
         {
@@ -315,57 +292,34 @@ namespace parser {
         }
         else
         {
-            set<carl::Variable> bvars;
-            auto iter = mFoundBooleanVariables.find( _formula );
-            Formula* result = new Formula( smtrat::AND );
+            Variables boolVars;
+            _formula->booleanVars( boolVars );
+            PointerSet<Formula> subformulas;
             while( !_bindings->empty() )
             {
                 // get binding variable
-                pair<carl::Variable,Formula*>* binding = _bindings->back();
+                pair<carl::Variable, const Formula*>* binding = _bindings->back();
                 _bindings->pop_back();
                 if( binding->first != carl::Variable::NO_VARIABLE )
                 {
-                    if( binding->second->getType() != smtrat::AND )
-                        cout << *binding->second << endl;
-                    assert( binding->second->getType() == smtrat::AND );
-                    assert( binding->second->size() == 5 );
-                    Formula* form = *(++(binding->second->begin()));
-                    assert( form->size() == 2 );
-                    assert( form->back()->getType() == BOOL );
-                    if( iter != mFoundBooleanVariables.end() && iter->second.find( form->back()->boolean() ) != iter->second.end() )
+                    if( boolVars.find( binding->first ) != boolVars.end() )
                     {
-                        result->addSubformula( binding->second );
-                        moveFoundBooleanVars( binding->second, bvars );
-                    }
-                    else
-                    {
-                        mFoundBooleanVariables.erase( binding->second );
+                        subformulas.insert( binding->second );
                     }
                 }
                 else
                 {
-                    result->addSubformula( binding->second );
-                    mFoundBooleanVariables.erase( binding->second );
+                    subformulas.insert( binding->second );
                 }
                 delete binding;
             }
             delete _bindings;
-            if( result->empty() )
+            if( subformulas.empty() )
             {
-                delete result;
                 return _formula;
-            }   
-            if( iter != mFoundBooleanVariables.end() )
-            {
-                set<carl::Variable> bvarstmp( move( iter->second ) );
-                bvarstmp.insert( bvars.begin(), bvars.end() );
-                mFoundBooleanVariables.erase( iter );
-                mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvarstmp ) ) );
             }
-            else if( !bvars.empty() )
-                mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvars ) ) );
-            result->addSubformula( _formula );
-            return result;
+            subformulas.insert( _formula );
+            return newFormula( smtrat::AND, move( subformulas ) );
         }
     }
     
@@ -378,8 +332,8 @@ namespace parser {
     {
         //mLexer->mTheoryVariables.insert( _varName );
         carl::VariableType dom = getDomain( _theory );
-        carl::Variable var( _isBindingVariable ? (dom == carl::VariableType::VT_REAL ? smtrat::Formula::newAuxiliaryRealVariable() : smtrat::Formula::newAuxiliaryIntVariable()) : Formula::newArithmeticVariable( _varName, dom, true ) );
-        pair< TheoryVarMap::iterator, bool > res = mTheoryVariables.insert( pair< string, carl::Variable >( _varName.empty() ? smtrat::Formula::mpConstraintPool->getVariableName( var, true ) : _varName, var ) );
+        carl::Variable var( _isBindingVariable ? (dom == carl::VariableType::VT_REAL ? newAuxiliaryRealVariable() : newAuxiliaryIntVariable()) : newArithmeticVariable( _varName, dom, true ) );
+        pair< TheoryVarMap::iterator, bool > res = mTheoryVariables.insert( pair< string, carl::Variable >( _varName.empty() ? constraintPool().getVariableName( var, true ) : _varName, var ) );
         if( !res.second )  error( "Multiple definition of real variable " + _varName );
         return res.first->second;
     }
@@ -465,123 +419,36 @@ namespace parser {
      * @param _rel
      * @return 
      */
-    Formula* Driver::mkConstraint( const Polynomial* _lhs, const Polynomial* _rhs, Relation _rel )
+    const Formula* Driver::mkConstraint( const Polynomial* _lhs, const Polynomial* _rhs, Relation _rel )
     {
-		std::cout << "building " << *_lhs << " " << _rel << " " << *_rhs << std::endl;
-        if( mTwoFormulaMode )
+        Relation rel = (Relation) _rel;
+        const Constraint* cons = newConstraint( (*_lhs)-(*_rhs), rel );
+        delete _lhs;
+        delete _rhs;
+        const Variables& vars = cons->variables();
+        PointerSet<Formula> varBindings;
+        for( auto iter = vars.begin(); iter != vars.end(); ++iter )
         {
-            Formula* result = new Formula( smtrat::AND );
-            Relation relA = (Relation) _rel;
-            Relation relB = Constraint::invertRelation( relA );
-            const Constraint* consA = Formula::newConstraint( (*_lhs)-(*_rhs), relA );
-            const Constraint* consB = Formula::newConstraint( (*_lhs)-(*_rhs), relB );
-            delete _lhs;
-            delete _rhs;
-            const Variables& vars = consA->variables();
-            vector< Formula* > varBindings = vector< Formula* >();
-            for( auto iter = vars.begin(); iter != vars.end(); ++iter )
+            auto bindingVars = mTheoryIteBindings.find( *iter );
+            if( bindingVars != mTheoryIteBindings.end() )
             {
-                auto bindingVars = mTheoryIteBindings.find( *iter );
-                if( bindingVars != mTheoryIteBindings.end() )
-                {
-                    Formula* binding = new Formula( bindingVars->second );
-                    set<carl::Variable> bvars;
-                    bvars.insert( bindingVars->second );
-                    mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( binding, bvars ) );
-                    varBindings.push_back( binding );
-                }
-                auto icBind = mInnerConstraintBindings.find( *iter );
-                if( icBind != mInnerConstraintBindings.end() )
-                {
-                    varBindings.push_back( icBind->second );
-                    mInnerConstraintBindings.erase( icBind );
-                }
+                varBindings.insert( bindingVars->second );
             }
-            Formula* resultA;
-            Formula* resultB;
-            if( !varBindings.empty() )
+            auto icBind = mInnerConstraintBindings.find( *iter );
+            if( icBind != mInnerConstraintBindings.end() )
             {
-                set<carl::Variable> bvars;
-                resultA = new Formula( smtrat::AND );
-                resultB = new Formula( smtrat::AND );
-                resultA->addSubformula( consA );
-                resultB->addSubformula( consB );
-                while( !varBindings.empty() )
-                {
-                    moveFoundBooleanVars( varBindings.back(), bvars );
-                    resultA->addSubformula( new Formula( *varBindings.back() ) );
-                    resultB->addSubformula( varBindings.back() );
-                    varBindings.pop_back();
-                }
-                if( !bvars.empty() )
-                {
-                    mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvars ) ) );
-                }
+                varBindings.insert( icBind->second );
+                mInnerConstraintBindings.erase( icBind );
             }
-            else
-            {
-                resultA = new Formula( consA );
-                resultB = new Formula( consB );
-            }
-            if( mPolarity )
-            {
-                result->addSubformula( resultA );
-                result->addSubformula( resultB );
-            }
-            else
-            {
-                result->addSubformula( resultB );
-                result->addSubformula( resultA );
-            }
-            return result;
         }
-        else 
+        if( !varBindings.empty() )
         {
-            Relation rel = (Relation) _rel;
-            const Constraint* cons = Formula::newConstraint( (*_lhs)-(*_rhs), (mPolarity ? rel : Constraint::invertRelation( rel ) ) );
-            delete _lhs;
-            delete _rhs;
-            const Variables& vars = cons->variables();
-            std::vector< Formula* > varBindings = std::vector< Formula* >();
-            for( auto iter = vars.begin(); iter != vars.end(); ++iter )
-            {
-                auto bindingVars = mTheoryIteBindings.find( *iter );
-                if( bindingVars != mTheoryIteBindings.end() )
-                {
-                    Formula* binding = new Formula( bindingVars->second );
-                    set<carl::Variable> bvars;
-                    bvars.insert( bindingVars->second );
-                    mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( binding, bvars ) );
-                    varBindings.push_back( binding );
-                }
-                auto icBind = mInnerConstraintBindings.find( *iter );
-                if( icBind != mInnerConstraintBindings.end() )
-                {
-                    varBindings.push_back( icBind->second );
-                    mInnerConstraintBindings.erase( icBind );
-                }
-            }
-            if( !varBindings.empty() )
-            {
-                set<carl::Variable> bvars;
-                Formula* result = new Formula( smtrat::AND );
-                while( !varBindings.empty() )
-                {
-                    moveFoundBooleanVars( varBindings.back(), bvars );
-                    result->addSubformula( varBindings.back() );
-                    varBindings.pop_back();
-                }
-                if( !bvars.empty() )
-                {
-                    mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvars ) ) );
-                }
-                result->addSubformula( cons );
-                return result;
-            }
-            else
-            {
-                return new Formula( cons );
-            }
+            varBindings.insert( newFormula( cons ) );
+            return newFormula( smtrat::AND, move( varBindings ) );
+        }
+        else
+        {
+            return newFormula( cons );
         }
     }
 
@@ -589,54 +456,18 @@ namespace parser {
      * 
      * @return 
      */
-    Formula* Driver::mkTrue()
+     const Formula* Driver::mkTrue()
     {
-        if( mTwoFormulaMode )
-        {
-            Formula* result = new Formula( smtrat::AND );
-            if( mPolarity )
-            {
-                result->addSubformula( new Formula( smtrat::TTRUE ) );
-                result->addSubformula( new Formula( smtrat::FFALSE ) );
-            }
-            else
-            {
-                result->addSubformula( new Formula( smtrat::FFALSE ) );
-                result->addSubformula( new Formula( smtrat::TTRUE ) );
-            }
-            return result;
-        }
-        else if( mPolarity )
-            return new Formula( smtrat::TTRUE );
-        else
-            return new Formula( smtrat::FFALSE );
+        return trueFormula();
     }
     
     /**
      * 
      * @return 
      */
-    Formula* Driver::mkFalse()
+    const Formula* Driver::mkFalse()
     {
-        if( mTwoFormulaMode )
-        {
-            Formula* result = new Formula( smtrat::AND );
-            if( mPolarity )
-            {
-                result->addSubformula( new Formula( smtrat::FFALSE ) );
-                result->addSubformula( new Formula( smtrat::TTRUE ) );
-            }
-            else
-            {
-                result->addSubformula( new Formula( smtrat::TTRUE ) );
-                result->addSubformula( new Formula( smtrat::FFALSE ) );
-            }
-            return result;
-        }
-        else if( mPolarity )
-            return new Formula( smtrat::FFALSE );
-        else
-            return new Formula( smtrat::TTRUE );
+        return falseFormula();
     }
     
     /**
@@ -644,126 +475,10 @@ namespace parser {
      * @param _varName
      * @return 
      */
-    Formula* Driver::mkBoolean( string& _varName )
+    const Formula* Driver::mkBoolean( string& _varName )
     {
-        Formula* result;
-        carl::Variable var = carl::Variable::NO_VARIABLE;
-        if( mTwoFormulaMode )
-        {
-            result = new Formula( smtrat::AND );
-            var = getBooleanVariable( _varName );
-            if( mPolarity )
-            {
-                result->addSubformula( new Formula( var ) );
-                result->addSubformula( new Formula( smtrat::NOT ) );
-                result->back()->addSubformula( new Formula( var ) );
-            }
-            else
-            {
-                result->addSubformula( new Formula( smtrat::NOT ) );
-                result->back()->addSubformula( new Formula( var ) );
-                result->addSubformula( new Formula( var ) );
-            }
-        }
-        else if( mPolarity )
-        {
-            var = getBooleanVariable( _varName );
-            result = new Formula( var );
-        }
-        else
-        {
-            var = getBooleanVariable( _varName );
-            result = new Formula( smtrat::NOT );
-            result->addSubformula( new Formula( var ) );
-        }
-        set<carl::Variable> vars;
-        vars.insert( var );
-        mFoundBooleanVariables.insert( pair<Formula*, set<carl::Variable>>( result, move( vars ) ) );
-        return result;
-    }
-    
-    /**
-     * 
-     * @param _type
-     * @param _subformulaA
-     * @param _subformulaB
-     * @return 
-     */
-    Formula* Driver::mkFormula( unsigned _type, Formula* _subformulaA, Formula* _subformulaB )
-    {
-        smtrat::Type type = (smtrat::Type) _type;
-        assert( type != smtrat::IMPLIES );
-        set<carl::Variable> bvars;
-        if( type == smtrat::IFF || type == smtrat::XOR )
-        {
-            assert( _subformulaA->getType() == smtrat::AND && _subformulaA->size() == 2 );
-            assert( _subformulaB->getType() == smtrat::AND && _subformulaB->size() == 2 );
-            Formula* caseA = _subformulaA->pruneFront();
-            Formula* caseB = (type == smtrat::IFF ? _subformulaB->pruneFront() : _subformulaB->pruneBack());
-            Formula* notCaseA = _subformulaA->pruneFront();
-            Formula* notCaseB = _subformulaB->pruneFront();
-            auto iter = mFoundBooleanVariables.find( _subformulaA );
-            if( iter != mFoundBooleanVariables.end() )
-            {
-                mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( caseA, iter->second ) );
-                mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( notCaseA, iter->second ) );
-                mFoundBooleanVariables.erase( iter );
-            }
-            iter = mFoundBooleanVariables.find( _subformulaB );
-            if( iter != mFoundBooleanVariables.end() )
-            {
-                mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( caseB, iter->second ) );
-                mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( notCaseB, iter->second ) );
-                mFoundBooleanVariables.erase( iter );
-            }
-            delete _subformulaA;
-            delete _subformulaB;
-            return mkIff( caseA, caseB, notCaseA, notCaseB, mTwoFormulaMode );
-        }
-        else if( mTwoFormulaMode )
-        {
-            moveFoundBooleanVars( _subformulaA, bvars );
-            moveFoundBooleanVars( _subformulaB, bvars );
-            Formula* result = new Formula( smtrat::AND );
-            Formula* resultA = new Formula( type );
-            assert( _subformulaA->getType() == smtrat::AND && _subformulaA->size() == 2 );
-            assert( _subformulaB->getType() == smtrat::AND && _subformulaB->size() == 2 );
-            resultA->addSubformula( _subformulaA->pruneFront() );
-            resultA->addSubformula( _subformulaB->pruneFront() );
-            Formula* resultB = new Formula( type == smtrat::AND ? smtrat::OR : smtrat::AND );
-            resultB->addSubformula( _subformulaA->pruneFront() );
-            resultB->addSubformula( _subformulaB->pruneFront() );
-            if( mPolarity )
-            {
-                result->addSubformula( resultA );
-                result->addSubformula( resultB );
-            }
-            else
-            {
-                result->addSubformula( resultB );
-                result->addSubformula( resultA );
-            }
-            delete _subformulaA;
-            delete _subformulaB;
-            if( !bvars.empty() )
-            {
-                mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvars ) ) );
-            }
-            return result;
-        }
-        else
-        {
-            moveFoundBooleanVars( _subformulaA, bvars );
-            moveFoundBooleanVars( _subformulaB, bvars );
-            Formula* result = new Formula( type );
-            result->addSubformula( _subformulaA );
-            result->addSubformula( _subformulaB );
-            if( !bvars.empty() )
-            {
-                mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvars ) ) );
-            }
-            return result;
-        }
+        carl::Variable var = getBooleanVariable( _varName );
+        return newFormula( var );
     }
 
     /**
@@ -772,133 +487,11 @@ namespace parser {
      * @param _subformulas
      * @return 
      */
-    Formula* Driver::mkFormula( unsigned _type, vector< Formula* >& _subformulas )
+    const Formula* Driver::mkFormula( unsigned _type, PointerSet<Formula>* _subformulas )
     {
         smtrat::Type type = (smtrat::Type) _type;
-        assert( type == smtrat::AND || type == smtrat::OR );
-        set<carl::Variable> bvars;
-        if( mTwoFormulaMode )
-        {
-            Formula* result = new Formula( smtrat::AND );
-            Formula* resultA = new Formula( type );
-            Formula* resultB = new Formula( type == smtrat::AND ? smtrat::OR : smtrat::AND );
-            while( !_subformulas.empty() )
-            {
-                Formula* tmpFormula = _subformulas.front();
-                moveFoundBooleanVars( tmpFormula, bvars );
-                assert( tmpFormula->getType() == smtrat::AND && tmpFormula->size() == 2 );
-                _subformulas.erase( _subformulas.begin() );
-                resultA->addSubformula( tmpFormula->pruneFront() );
-                resultB->addSubformula( tmpFormula->pruneFront() );
-                delete tmpFormula;
-            }
-            result->addSubformula( resultA );
-            result->addSubformula( resultB );
-            if( !bvars.empty() )
-            {
-                mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvars ) ) );
-            }
-            return result;
-        }
-        else
-        {
-            Formula* result = new Formula( type );
-            while( !_subformulas.empty() )
-            {
-                moveFoundBooleanVars( _subformulas.back(), bvars );
-                result->addSubformula( _subformulas.back() );
-                _subformulas.pop_back();
-            }
-            if( !bvars.empty() )
-            {
-                mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvars ) ) );
-            }
-            return result;
-        }
-    }
-    
-    /**
-     * 
-     * @param _formulaA
-     * @param _formulaB
-     * @param _notFormulaA
-     * @param _notFormulaB
-     * @return 
-     */
-    Formula* Driver::mkIff( Formula* _formulaA, Formula* _formulaB, Formula* _notFormulaA, Formula* _notFormulaB, bool _withNegation )
-    {
-        carl::Variable bvar_i1 = Formula::newAuxiliaryBooleanVariable();
-        carl::Variable bvar_i2 = Formula::newAuxiliaryBooleanVariable();
-        Formula* h_i1  = new Formula( bvar_i1 );
-        Formula* h_i2  = new Formula( bvar_i2 );
-        Formula* result = new Formula( smtrat::AND );
-        set<carl::Variable> bvars;
-        bvars.insert( bvar_i1 );
-        bvars.insert( bvar_i2 );
-        moveFoundBooleanVars( _formulaA, bvars );
-        moveFoundBooleanVars( _formulaB, bvars );
-        moveFoundBooleanVars( _notFormulaA, bvars );
-        moveFoundBooleanVars( _notFormulaB, bvars );
-        // not h_1 or f_1
-        Formula* caseA = new Formula( smtrat::OR );
-        caseA->addSubformula( new Formula( NOT ) );
-        caseA->back()->addSubformula( new Formula( *h_i1 ) );
-        caseA->addSubformula( _formulaA );
-        result->addSubformula( caseA );
-        // not h_1 or f_2
-        Formula* caseB = new Formula( smtrat::OR );
-        caseB->addSubformula( new Formula( NOT ) );
-        caseB->back()->addSubformula( new Formula( *h_i1 ) );
-        caseB->addSubformula( _formulaB );
-        result->addSubformula( caseB );
-        // not h_2 or not f_1
-        Formula* caseC = new Formula( smtrat::OR );
-        caseC->addSubformula( new Formula( NOT ) );
-        caseC->back()->addSubformula( new Formula( *h_i2 ) );
-        caseC->addSubformula( _notFormulaA );
-        result->addSubformula( caseC );
-        // not h_2 or not f_2
-        Formula* caseD = new Formula( smtrat::OR );
-        caseD->addSubformula( new Formula( NOT ) );
-        caseD->back()->addSubformula( new Formula( *h_i2 ) );
-        caseD->addSubformula( _notFormulaB );
-        result->addSubformula( caseD );
-        // h_1 or h_2
-        Formula* cases = new Formula( smtrat::OR );
-        cases->addSubformula( h_i1 );
-        cases->addSubformula( h_i2 );
-        result->addSubformula( cases );    
-        if( _withNegation )
-        {
-            Formula* results = new Formula( smtrat::AND );
-            // not h_1 and not h_2
-            Formula* negatedCases = new Formula( smtrat::AND );
-            negatedCases->addSubformula( new Formula( smtrat::NOT ) );
-            negatedCases->back()->addSubformula( new Formula( *h_i1 ) );
-            negatedCases->addSubformula( new Formula( smtrat::NOT ) );
-            negatedCases->back()->addSubformula( new Formula( *h_i2 ) );
-            if( mPolarity )
-            {
-                results->addSubformula( result );
-                results->addSubformula( negatedCases );
-            }
-            else
-            {
-                results->addSubformula( negatedCases );
-                results->addSubformula( result );
-            }
-            set<carl::Variable> bvarstmp;
-            bvarstmp.insert( bvar_i1 );
-            bvarstmp.insert( bvar_i2 );
-            mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( negatedCases, move( bvarstmp ) ) );
-            mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( results, move( bvars ) ) );
-            return results;
-        }
-        else
-        {
-            mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvars ) ) );
-            return result;
-        }
+        assert( type == smtrat::AND || type == smtrat::OR || type == smtrat::XOR || type == smtrat::IFF );
+        return newFormula( type, move(*_subformulas) );
     }
     
     /**
@@ -908,85 +501,17 @@ namespace parser {
      * @param _else
      * @return
      */
-    Formula* Driver::mkIteInFormula( Formula* _condition, Formula* _then, Formula* _else )
+	const Formula* Driver::mkIteInFormula( const Formula* _condition, const Formula* _then, const Formula* _else )
     {
-        assert( _condition->getType() == smtrat::AND && _condition->size() == 2 );
-        assert( _condition->getType() == smtrat::AND && _condition->size() == 2 );
-        Formula* result = new Formula( smtrat::AND );
-        set<carl::Variable> bvars;
-        moveFoundBooleanVars( _condition, bvars );
-        moveFoundBooleanVars( _then, bvars );
-        moveFoundBooleanVars( _else, bvars );
-        carl::Variable auxBool = Formula::newAuxiliaryBooleanVariable();
-        bvars.insert( auxBool );
+        const Formula* auxBool = newFormula( newAuxiliaryBooleanVariable() );
+        PointerSet<Formula> subformulas;
         // Add: (iff auxBool _condition)
-        Formula* notAuxBool = new Formula( smtrat::NOT );
-        notAuxBool->addSubformula( new Formula( auxBool ) );
-        Formula* posCase = _condition->pruneFront();
-        Formula* negCase = _condition->pruneFront();
-        Formula* auxBoolForm = new Formula( auxBool );
-        auto iter = mFoundBooleanVariables.find( _condition );
-        if( iter != mFoundBooleanVariables.end() )
-        {
-            mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( posCase, iter->second ) );
-            mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( negCase, iter->second ) );
-            mFoundBooleanVariables.erase( iter );
-        }
-        set<carl::Variable> bvarstmp;
-        bvarstmp.insert( auxBool );
-        mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( auxBoolForm, bvarstmp ) );
-        mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( notAuxBool, move( bvarstmp ) ) );
-        Formula* formulaIff = mkIff( auxBoolForm, posCase, notAuxBool, negCase, false );
-        mFoundBooleanVariables.erase( formulaIff );
-        delete _condition;
-        result->addSubformula( formulaIff );
+        subformulas.insert( newFormula( smtrat::IFF, auxBool, _condition ) );
         // Add: (or (not auxBool) _then)
-        Formula* formulaNotB = new Formula( smtrat::NOT );
-        formulaNotB->addSubformula( new Formula( auxBool ) );
-        Formula* formulaOrB = new Formula( smtrat::OR );
-        formulaOrB->addSubformula( formulaNotB );
-        if( mTwoFormulaMode )
-            formulaOrB->addSubformula( _then->pruneFront() );
-        else
-            formulaOrB->addSubformula( _then );
-        result->addSubformula( formulaOrB );
+        subformulas.insert( newFormula( smtrat::OR, newNegation( auxBool ), _then ) );
         // Add: (or auxBool _else)
-        Formula* formulaOrC = new Formula( smtrat::OR );
-        formulaOrC->addSubformula( new Formula( auxBool ) );
-        if( mTwoFormulaMode )
-            formulaOrC->addSubformula( _else->pruneFront() );
-        else
-            formulaOrC->addSubformula( _else );
-        result->addSubformula( formulaOrC );
-        if( mTwoFormulaMode )
-        {
-            Formula* results = new Formula( smtrat::AND );
-            Formula* resultB = new Formula( smtrat::AND );
-            resultB->addSubformula( new Formula( *formulaIff ) );
-            // Add: (or (not auxBool) (not _then))
-            Formula* formulaNotBB = new Formula( smtrat::NOT );
-            formulaNotBB->addSubformula( new Formula( auxBool ) );
-            Formula* formulaOrBB = new Formula( smtrat::OR );
-            formulaOrBB->addSubformula( formulaNotBB );
-            formulaOrBB->addSubformula( _then->pruneFront() );
-            delete _then;
-            resultB->addSubformula( formulaOrBB );
-            // Add: (or auxBool (not _else))
-            Formula* formulaOrBC = new Formula( smtrat::OR );
-            formulaOrBC->addSubformula( new Formula( auxBool ) );
-            formulaOrBC->addSubformula( _else->pruneFront() );
-            delete _else;
-            resultB->addSubformula( formulaOrBC );
-            results->addSubformula( result );
-            results->addSubformula( resultB );
-            mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( results, move( bvars ) ) );
-            return results;
-        }
-        else
-        {
-            mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvars ) ) );
-            return result;
-        }
+        subformulas.insert( newFormula( smtrat::OR, auxBool, _else ) );
+        return newFormula( smtrat::AND, move( subformulas ) );
     }
 
     /**
@@ -997,62 +522,27 @@ namespace parser {
      * @param _else
      * @return
      */
-    carl::Variable Driver::mkIteInExpr( Formula* _condition, Polynomial* _then, Polynomial* _else )
+    carl::Variable Driver::mkIteInExpr(const Formula* _condition, Polynomial* _then, Polynomial* _else )
     {
-        setTwoFormulaMode( false );
-        set<carl::Variable> bvars;
-        moveFoundBooleanVars( _condition, bvars );
         carl::Variable auxVar( addTheoryVariable( (mLogic == Logic::QF_NRA || mLogic == Logic::QF_LRA) ? "Real" : "Int", "", true ) );
-        carl::Variable conditionBool = addBooleanVariable( "", true );
-        setPolarity( true );
-        Formula* constraintA = mkConstraint( new Polynomial( auxVar ), _then, Relation::EQ );
-        Formula* constraintB = mkConstraint( new Polynomial( auxVar ), _else, Relation::EQ );
-        restorePolarity();
-        Formula* notTmp = new Formula( NOT );
+        const Formula* conditionBool = newFormula( addBooleanVariable( "", true ) );
+        const Formula* constraintA = mkConstraint( new Polynomial( auxVar ), _then, Relation::EQ );
+        const Formula* constraintB = mkConstraint( new Polynomial( auxVar ), _else, Relation::EQ );
         carl::Variable dependencyBool = addBooleanVariable( "", true ); 
-        notTmp->addSubformula( new Formula( dependencyBool ) );
-        Formula* innerConstraintBinding = new Formula( smtrat::AND );
-        // Add to inner constraint bindings:  (or (not conditionBool) (= auxRealVar $4))
-        Formula* formulaNot = new Formula( smtrat::NOT );
-        formulaNot->addSubformula( new Formula( conditionBool ) );
-        Formula* formulaOrA = new Formula( smtrat::OR );
-        formulaOrA->addSubformula( formulaNot );
-        formulaOrA->addSubformula( constraintA );
-        innerConstraintBinding->addSubformula( formulaOrA );
-        // Add to inner constraint bindings:  (or conditionBool (= auxRealVar $5))
-        Formula* formulaOrB = new Formula( smtrat::OR );
-        formulaOrB->addSubformula( new Formula( conditionBool ) );
-        formulaOrB->addSubformula( constraintB );
-        innerConstraintBinding->addSubformula( formulaOrB );
-        // Add to inner constraint bindings:  (iff conditionBool $3)
-        Formula* notAuxBool = new Formula( smtrat::NOT );
-        notAuxBool->addSubformula( new Formula( conditionBool ) );
-        Formula* caseB = _condition->pruneFront();
-        Formula* caseBNeg = _condition->pruneFront();
-        delete _condition;
-        Formula* auxBool = new Formula( conditionBool );
-        if( !bvars.empty() )
-        {
-            mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( caseB, bvars ) );
-            mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( caseBNeg, bvars ) );
-        }
-        set<carl::Variable> bvarstmp;
-        bvarstmp.insert( conditionBool );
-        mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( auxBool, bvarstmp ) );
-        mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( notAuxBool, move( bvarstmp ) ) );
-        Formula* formulaIff = mkIff( auxBool, caseB, notAuxBool, caseBNeg, false );
-        mFoundBooleanVariables.erase( formulaIff );
-        innerConstraintBinding->addSubformula( formulaIff );
-        Formula* result = new Formula( smtrat::OR );
-        result->addSubformula( notTmp );
-        result->addSubformula( innerConstraintBinding );
-        bvars.insert( conditionBool );
-        bvars.insert( dependencyBool );
-        mFoundBooleanVariables.insert( pair<Formula*,set<carl::Variable>>( result, move( bvars ) ) );
-        mInnerConstraintBindings.insert( pair< carl::Variable, Formula* >( auxVar, result ) );
+        
+        PointerSet<Formula> subformulas;
+        // Add to inner constraint bindings:  (or (not conditionBool) (= auxRealVar _then))
+        subformulas.insert( newFormula( smtrat::OR, conditionBool, constraintA ) );
+        // Add to inner constraint bindings:  (or conditionBool (= auxRealVar _else))
+        subformulas.insert( newFormula( smtrat::OR, conditionBool, constraintB ) );
+        // Add to inner constraint bindings:  (iff conditionBool _condition)
+        subformulas.insert( newFormula( smtrat::IFF, conditionBool, _condition ) );
+        
+        const Formula* dependecyBoolFormula = newFormula( dependencyBool );
+        const Formula* result = newFormula( smtrat::OR, newNegation( dependecyBoolFormula ), newFormula( smtrat::AND, move( subformulas ) ) );
+        mInnerConstraintBindings.insert( pair<carl::Variable, const Formula*>( auxVar, result ) );
         assert( mTheoryIteBindings.find( auxVar ) == mTheoryIteBindings.end() );
-        mTheoryIteBindings.insert( pair< carl::Variable, carl::Variable >( auxVar, dependencyBool ) );
-        restoreTwoFormulaMode();
+        mTheoryIteBindings.insert( pair<carl::Variable, const Formula*>( auxVar, dependecyBoolFormula ) );
         return auxVar;
     }
 

@@ -126,11 +126,11 @@ namespace parser {
             ///
             std::unordered_map< std::string, smtrat::Polynomial* > mTheoryBindings;
             ///
-            std::unordered_map< carl::Variable, carl::Variable > mTheoryIteBindings;
+            std::unordered_map<carl::Variable, const Formula*> mTheoryIteBindings;
             ///
             std::stack< std::vector< std::pair< std::string, unsigned > > > mVariableStack;
             ///
-            std::unordered_map< carl::Variable, smtrat::Formula* > mInnerConstraintBindings;
+			std::unordered_map<carl::Variable, const Formula*> mInnerConstraintBindings;
             ///
             std::map<const Formula*, std::set<carl::Variable>> mFoundBooleanVariables;
 
@@ -386,23 +386,21 @@ namespace parser {
             void error( const std::string&, bool );
             void applySetLogic( const std::string& );
             carl::Variable addBooleanVariable(const std::string&, bool = false );
-            std::pair<carl::Variable, smtrat::Formula*>* addTheoryBinding(std::string&, smtrat::Polynomial* );
-            std::pair<carl::Variable, smtrat::Formula*>* booleanBinding( std::string&, Formula* );
-            smtrat::Formula* appendBindings( std::vector<std::pair<carl::Variable, smtrat::Formula*>*>*, smtrat::Formula* );
+			std::pair<carl::Variable, const Formula*>* addTheoryBinding( std::string& _varName, Polynomial* _polynomial );
+            std::pair<carl::Variable, const Formula*>* booleanBinding( std::string&, const Formula* );
+            const smtrat::Formula* appendBindings( std::vector<std::pair<carl::Variable, const smtrat::Formula*>*>*, const smtrat::Formula* );
             carl::Variable addTheoryVariable( const std::string&, const std::string&, bool = false );
             carl::Variable getBooleanVariable( const std::string& );
             void freeBooleanVariableName( const std::string& );
             void freeTheoryVariableName( const std::string& );
             smtrat::Polynomial* mkPolynomial( const std::string& );
-            smtrat::Formula* mkConstraint( const smtrat::Polynomial*, const smtrat::Polynomial*, Relation );
-            smtrat::Formula* mkTrue();
-            smtrat::Formula* mkFalse();
-            smtrat::Formula* mkBoolean( std::string& );
-            smtrat::Formula* mkFormula( unsigned, smtrat::Formula*, smtrat::Formula* );
-            smtrat::Formula* mkFormula( unsigned, std::vector< smtrat::Formula* >& );
-            smtrat::Formula* mkIff( smtrat::Formula*, smtrat::Formula*, smtrat::Formula*, smtrat::Formula*, bool );
-            smtrat::Formula* mkIteInFormula( smtrat::Formula*, smtrat::Formula*, smtrat::Formula* );
-            carl::Variable mkIteInExpr( smtrat::Formula*, smtrat::Polynomial*, smtrat::Polynomial* );
+            const smtrat::Formula* mkConstraint( const smtrat::Polynomial*, const smtrat::Polynomial*, Relation );
+            const smtrat::Formula* mkTrue();
+            const smtrat::Formula* mkFalse();
+            const smtrat::Formula* mkBoolean( std::string& );
+			const smtrat::Formula* mkFormula( unsigned _type, PointerSet<Formula>* _subformulas );
+			const smtrat::Formula* mkIteInFormula( const Formula* _condition, const Formula* _then, const Formula* _else );
+            carl::Variable mkIteInExpr(const Formula* _condition, Polynomial* _then, Polynomial* _else );
             smtrat::Rational getRational( std::string& ) const;
             bool getInstruction( InstructionKey&, InstructionValue& );
             void applySetInfo( const std::string&, const std::string& );
