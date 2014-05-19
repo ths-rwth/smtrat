@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
+#include <set>
 #include <unordered_map>
 #include <lib/Formula.h>
 CLANG_WARNING_DISABLE("-Wsign-conversion")
@@ -94,16 +95,15 @@ CLANG_WARNING_DISABLE("-Wconversion")
 
 %union
 {
-   bool                                                     bval;
-   unsigned                                                 eval;
-   std::string*                                             sval;
-   std::vector< std::string* >*                             vsval;
-   std::vector< std::pair< std::string, std::string > >*    vspval;
-   class Formula*                                           fval;
-   std::pair<carl::Variable, class Formula*>*               bdval;
-   std::vector<std::pair<carl::Variable, class Formula*>*>* bdlval;
-   std::vector< class Formula* >*                           vfval;
-   Polynomial*                                              pval;
+   unsigned                                                       eval;
+   std::string*                                                   sval;
+   std::vector<std::string*>*                                     vsval;
+   std::vector<std::pair<std::string, std::string>>*              vspval;
+   const class Formula*                                           fval;
+   std::pair<carl::Variable, const class Formula*>*               bdval;
+   std::vector<std::pair<carl::Variable, const class Formula*>*>* bdlval;
+   smtrat::PointerSet<class Formula>*                             sfval;
+   Polynomial*                                                    pval;
 }
 
 %token END	0	"end of file"
@@ -123,15 +123,13 @@ CLANG_WARNING_DISABLE("-Wconversion")
 
 %type <sval>   value
 %type <pval>   poly polylistPlus polylistMinus polylistTimes polyOp
-%type <fval>   cond form equation
+%type <fval>   form equation
 %type <bdval>  bind
 %type <bdlval> bindlist
-%type <vfval>  formlist
+%type <sfval>  formlist
 %type <vsval>  symlist
 %type <vspval> varlist
-%type <eval>   relation
-%type <eval>   negation impliesOp naryOp
-%type <bval>   iteOp eqOp iffOp xorOp
+%type <eval>   relation naryOp
 
 %{
 
@@ -189,12 +187,12 @@ symlist:
     |   symlist SYM { $1->push_back( $2 ); $$ = $1; }
     
 varlist:
-        THEORY_VAR          { vector< pair< string, string > >* vars = new vector< pair< string, string > >();
-                              vars->push_back( pair< string, string >( *$1, "Theory" ) ); delete $1; $$ = vars; }
-    |   BOOLEAN_VAR         { vector< pair< string, string > >* vars = new vector< pair< string, string > >();
-                              vars->push_back( pair< string, string >( *$1, "Boolean" ) ); delete $1; $$ = vars; }
-    |   varlist THEORY_VAR  { $1->push_back( pair< string, string >( *$2, "Theory" )  ); delete $2; $$ = $1; }
-    |   varlist BOOLEAN_VAR { $1->push_back( pair< string, string >( *$2, "Boolean" )  ); delete $2; $$ = $1; }
+        THEORY_VAR          { vector<pair<string, string>>* vars = new vector<pair<string, string>>();
+                              vars->push_back( pair<string, string>( *$1, "Theory" ) ); delete $1; $$ = vars; }
+    |   BOOLEAN_VAR         { vector< pair<string, string>>* vars = new vector<pair<string, string>>();
+                              vars->push_back( pair<string, string>( *$1, "Boolean" ) ); delete $1; $$ = vars; }
+    |   varlist THEORY_VAR  { $1->push_back( pair<string, string>( *$2, "Theory" ) ); delete $2; $$ = $1; }
+    |   varlist BOOLEAN_VAR { $1->push_back( pair<string, string>( *$2, "Boolean" ) ); delete $2; $$ = $1; }
 
 value:
         SYM   { $$ = $1; }
@@ -210,29 +208,20 @@ form:
     |   equation                      { $$ = $1; }
     |   OB relation poly poly CB      { $$ = dv.mkConstraint( $3, $4, $2 ); }
     |   OB AS SYM SYM CB              { error( @0, "\"as\" is not allowed in supported logics!" ); }
-	|	OB negation form CB           { $$ = $3; dv.changePolarity(); }
-	|	OB impliesOp form             { dv.changePolarity(); } 
-                          form CB     { $$ = dv.mkFormula( $2, $3, $5 ); }
-	|	OB iffOp form form CB         { dv.restoreTwoFormulaMode(); $$ = dv.mkFormula( smtrat::IFF, $3, $4 ); }
-	|	OB xorOp form form CB         { dv.restoreTwoFormulaMode(); $$ = dv.mkFormula( smtrat::XOR, $3, $4 ); }
+	|	OB NOT form CB                { $$ = dv.mkNegation( $3 ); }
+	|	OB IMPLIES form form CB       { $$ = dv.mkImplication( $3, $4 ); }
 	|	OB naryOp formlist CB         { $$ = dv.mkFormula( $2, $3 ); }
     |   OB let OB bindlist CB form CB { $$ = dv.appendBindings( $4, $6 ); dv.popVariableStack(); }
-    |   OB iteOp cond form form CB    { $$ = dv.mkIteInFormula( $3, $4, $5 ); }
-
-cond:
-        form { $$ = $1; dv.restoreTwoFormulaMode(); dv.restorePolarity(); }
+    |   OB ITE form form form CB      { $$ = dv.mkIteInFormula( $3, $4, $5 ); }
 
 formlist:
-		form          { $$ = new vector< Formula* >( 1, $1 ); }
-    |	formlist form { $1->push_back( $2 ); $$ = $1; }
+		form          { $$ = new PointerSet<Formula>(); $$->insert( $1 ); }
+    |	formlist form { $1->insert( $2 ); $$ = $1; }
 
 equation:
-       OB eqOp form form CB { dv.restoreTwoFormulaMode(); $$ = dv.mkFormula( (dv.polarity() ? smtrat::IFF : smtrat::XOR), $3, $4 ); }
+       OB EQ form form CB { PointerSet<Formula>* fs = new PointerSet<Formula>(); fs->insert( $3 ); fs->insert( $4 ); $$ = dv.mkFormula( smtrat::IFF, fs ); }
+    |  OB EQ poly poly CB { $$ = dv.mkConstraint( $3, $4, (unsigned) Relation::EQ ); }
 
-    |  OB eqOp poly poly CB { dv.restoreTwoFormulaMode(); $$ = dv.mkConstraint( $3, $4, (unsigned) Relation::EQ ); }
-
-eqOp:
-        EQ { dv.setTwoFormulaMode( true ); }
 
 relation:
 		LEQ     { $$ = (unsigned) Relation::LEQ; }
@@ -241,27 +230,17 @@ relation:
     |	GREATER { $$ = (unsigned) Relation::GREATER; }
     |	NEQ     { $$ = (unsigned) Relation::NEQ; }
 
-negation:
-		NOT { dv.changePolarity(); $$ = smtrat::NOT; }
-
-impliesOp:
-		IMPLIES { $$ = (dv.polarity() ? smtrat::OR : smtrat::AND); dv.changePolarity(); }
-
-iffOp:
-    	IFF     { dv.setTwoFormulaMode( true ); }
-
-xorOp:
-    	XOR     { dv.setTwoFormulaMode( true ); }
-
 naryOp:
-		AND { $$ = (dv.polarity() ? smtrat::AND : smtrat::OR); }
-    |	OR  { $$ = (dv.polarity() ? smtrat::OR : smtrat::AND); }
+		AND { $$ = smtrat::AND; }
+    |	OR  { $$ = smtrat::OR; }
+    |	IFF { $$ = smtrat::IFF; }
+    |	XOR { $$ = smtrat::XOR; }
 
 let:
-        LET { dv.pushVariableStack(); dv.setTwoFormulaMode( true ); }
+        LET { dv.pushVariableStack(); }
 
 bindlist:
-		bind          { dv.restoreTwoFormulaMode(); $$ = new vector<pair<carl::Variable, smtrat::Formula*>*>(); if( $1 != NULL ) { $$->push_back( $1 ); } }
+		bind          { $$ = new vector<pair<carl::Variable, const smtrat::Formula*>*>(); if( $1 != NULL ) { $$->push_back( $1 ); } }
 	|	bind bindlist { $$ = $2; if( $1 != NULL ) { $$->push_back( $1 ); } }
 
 bind:
@@ -273,10 +252,7 @@ poly:
     |   DEC                        { $$ = new smtrat::Polynomial( dv.getRational( $1 ) ); }
     | 	NUM                        { $$ = new smtrat::Polynomial( smtrat::Rational( $1->c_str() ) ); delete $1; }
     |  	polyOp                     { $$ = $1; }
-    |   OB iteOp cond poly poly CB { $$ = new smtrat::Polynomial( dv.mkIteInExpr( @3, $3, $4, $5 ) ); }
-    
-iteOp:
-		ITE { dv.setPolarity( true ); dv.setTwoFormulaMode( true ); }
+    |   OB ITE form poly poly CB   { $$ = new smtrat::Polynomial( dv.mkIteInExpr( @3, $3, $4, $5 ) ); }
 
 polyOp:
 		OB DIV poly poly CB       { assert( $4->isConstant() ); (*$3) *= smtrat::Polynomial( Rational( 1 ) / $4->trailingTerm()->coeff() ); $$ = $3; delete $4; }

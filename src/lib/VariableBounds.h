@@ -54,7 +54,7 @@ namespace smtrat
                 /// The variable for which the bound is declared.
                 Variable<T>* const          mpVariable;
                 /// A set of origins of the bound, e.g., x-3<0 is the origin of the bound <3.
-                std::set< const T* >* const mpOrigins;
+                PointerSet<T>* const mpOrigins;
                 
             public:
                 
@@ -204,7 +204,7 @@ namespace smtrat
                 /**
                  * @return A constant reference to the set of origins of this bound.
                  */
-                const std::set< const T* >& origins() const
+                const PointerSet<T>& origins() const
                 {
                     return *mpOrigins;
                 }
@@ -455,19 +455,19 @@ namespace smtrat
                  * @param _var The variable to get origins of the bounds for.
                  * @return The origin constraints of the supremum and infimum of the given variable.
                  */
-                std::set< const T* > getOriginsOfBounds( const carl::Variable& _var ) const;
+                PointerSet<T> getOriginsOfBounds( const carl::Variable& _var ) const;
                 
                 /**
                  * @param _variables The variables to get origins of the bounds for.
                  * @return The origin constraints of the supremum and infimum of the given variables.
                  */
-                std::set< const T* > getOriginsOfBounds( const Variables& _variables ) const;
+                PointerSet<T> getOriginsOfBounds( const Variables& _variables ) const;
                 
                 /**
                  * Collect the origins to the supremums and infimums of all variables.
                  * @return A set of origins corresponding to the supremums and infimums of all variables.
                  */
-                std::set< const T* > getOriginsOfBounds() const;
+                PointerSet<T> getOriginsOfBounds() const;
                 
                 std::vector<std::pair<std::vector< const Constraint* >, const Constraint* >> getBoundDeductions() const;
                 
@@ -491,11 +491,11 @@ namespace smtrat
                 /**
                  * @return The origins which cause the conflict. This method can only be called, if there is a conflict.
                  */
-                std::set< const T* > getConflict() const
+                PointerSet<T> getConflict() const
                 {
                     assert( isConflicting() );
                     assert( !mpConflictingVariable->infimum().isInfinite() && !mpConflictingVariable->supremum().isInfinite() );
-                    std::set< const T* > conflict = std::set< const T* >();
+                    PointerSet<T> conflict;
                     conflict.insert( *mpConflictingVariable->infimum().origins().begin() );
                     conflict.insert( *mpConflictingVariable->supremum().origins().begin() );
                     return conflict;
@@ -507,7 +507,7 @@ namespace smtrat
             mType( _type ),
             mpLimit( _limit ),
             mpVariable( _variable ),
-            mpOrigins( new std::set< const T* >() )
+            mpOrigins( new PointerSet<T>() )
         {
             if( _limit == NULL )
                 mpOrigins->insert( NULL );
@@ -1083,9 +1083,9 @@ namespace smtrat
 
 		
         template<typename T>
-        std::set< const T* > VariableBounds<T>::getOriginsOfBounds( const carl::Variable& _var ) const
+        PointerSet<T> VariableBounds<T>::getOriginsOfBounds( const carl::Variable& _var ) const
         {
-            std::set< const T* > originsOfBounds = std::set< const T* >();
+            PointerSet<T> originsOfBounds;
             auto varVarPair = mpVariableMap->find( _var );
             assert( varVarPair != mpVariableMap->end() );
             if( !varVarPair->second->infimum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->infimum().origins().begin() );
@@ -1094,9 +1094,9 @@ namespace smtrat
         }
 
         template<typename T>
-        std::set< const T* > VariableBounds<T>::getOriginsOfBounds( const Variables& _variables ) const
+        PointerSet<T> VariableBounds<T>::getOriginsOfBounds( const Variables& _variables ) const
         {
-            std::set< const T* > originsOfBounds = std::set< const T* >();
+            PointerSet<T> originsOfBounds;
             for( auto var = _variables.begin(); var != _variables.end(); ++var )
             {
                 auto varVarPair = mpVariableMap->find( *var );
@@ -1109,9 +1109,9 @@ namespace smtrat
 
 		
         template<typename T>
-        std::set< const T* > VariableBounds<T>::getOriginsOfBounds() const
+        PointerSet<T> VariableBounds<T>::getOriginsOfBounds() const
         {
-            std::set< const T* > originsOfBounds = std::set< const T* >();
+            PointerSet<T> originsOfBounds;
             for( auto varVarPair = mpVariableMap->begin(); varVarPair != mpVariableMap->end(); ++varVarPair )
             {
                 const Variable<T>& var = *varVarPair->second;
@@ -1205,7 +1205,7 @@ namespace smtrat
                                 {
                                     Polynomial boundLhs = Polynomial( var ) - newBoundsA.lower();
                                     Relation boundRel = newBoundsA.lowerBoundType() == carl::BoundType::STRICT ? Relation::LEQ : Relation::LESS;
-                                    const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
+                                    const Constraint* newBoundConstraint = newConstraint( boundLhs, boundRel );
 //                                    std::cout << "it follows: " << *newBoundConstraint << std::endl;
                                     result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
                                 }
@@ -1213,7 +1213,7 @@ namespace smtrat
                                 {
                                     Polynomial boundLhs = Polynomial( var ) - newBoundsB.upper();
                                     Relation boundRel = newBoundsA.upperBoundType() == carl::BoundType::STRICT ? Relation::LEQ : Relation::LESS;
-                                    const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
+                                    const Constraint* newBoundConstraint = newConstraint( boundLhs, boundRel );
 //                                    std::cout << "it follows: " << *newBoundConstraint << std::endl;
                                     result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
                                 }
@@ -1253,7 +1253,7 @@ namespace smtrat
                                         Relation boundRel = Relation::GEQ;
                                         if( newBoundsA.lowerBoundType() == carl::BoundType::STRICT || rel == Relation::GREATER )
                                             boundRel = Relation::GREATER;
-                                        const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
+                                        const Constraint* newBoundConstraint = newConstraint( boundLhs, boundRel );
 //                                        std::cout << "it follows: " << *newBoundConstraint << std::endl;
                                         result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
                                     }
@@ -1266,7 +1266,7 @@ namespace smtrat
                                         Relation boundRel = Relation::LEQ;
                                         if( newBoundsA.upperBoundType() == carl::BoundType::STRICT || rel == Relation::LESS )
                                             boundRel = Relation::LESS;
-                                        const Constraint* newBoundConstraint = Formula::newConstraint( boundLhs, boundRel );
+                                        const Constraint* newBoundConstraint = newConstraint( boundLhs, boundRel );
 //                                        std::cout << "it follows: " << *newBoundConstraint << std::endl;
                                         result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
                                     }

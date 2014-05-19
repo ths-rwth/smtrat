@@ -62,10 +62,10 @@ namespace smtrat
 
             struct Info
             {
-                int                       updated;
-                smtrat::Formula::iterator position;
-                const smtrat::Constraint* neqRepresentation;
-                bool                      exists;
+                int                                         updated;
+                std::list<const smtrat::Formula*>::iterator position;
+                const smtrat::Constraint*                   neqRepresentation;
+                bool                                        exists;
             };
 
             private:
@@ -73,13 +73,13 @@ namespace smtrat
                 /**
                  * Members.
                  */
-                bool                                                mDeduced;
-                Type                                                mType;
-                const Value<T1>*                                    mLimit;
-                Variable<T1, T2>* const                             mVar;
-                const smtrat::Constraint*                           mpAsConstraint;
-                std::vector<std::set< const smtrat::Formula* > >*   mpOrigins;
-                Info*                                               mpInfo;
+                bool                               mDeduced;
+                Type                               mType;
+                const Value<T1>*                   mLimit;
+                Variable<T1, T2>* const            mVar;
+                const smtrat::Constraint*          mpAsConstraint; // TODO: make this a formula pointer
+                std::vector<PointerSet<Formula> >* mpOrigins;
+                Info*                              mpInfo;
 
             public:
                 Bound();
@@ -169,12 +169,12 @@ namespace smtrat
                     mpInfo->exists = true;
                 }
 
-                std::vector<std::set< const smtrat::Formula* > >* pOrigins() const
+                std::vector<PointerSet<Formula> >* pOrigins() const
                 {
                     return mpOrigins;
                 }
 
-                const std::vector<std::set< const smtrat::Formula* > >& origins() const
+                const std::vector<PointerSet<Formula> >& origins() const
                 {
                     return *mpOrigins;
                 }
@@ -209,8 +209,8 @@ namespace smtrat
             mpAsConstraint( NULL ),
             mpInfo( NULL )
         {
-            mpOrigins = new std::vector<std::set< const smtrat::Formula* > >();
-            std::set< const smtrat::Formula* > originSet = std::set< const smtrat::Formula* >();
+            mpOrigins = new std::vector<PointerSet<Formula> >();
+            PointerSet<Formula> originSet = PointerSet<Formula>();
             originSet.insert( NULL );
             mpOrigins->push_back( originSet );
         }
@@ -224,10 +224,10 @@ namespace smtrat
             mpAsConstraint( _constraint ),
             mpInfo( _boundInfo )
         {
-            mpOrigins = new std::vector<std::set< const smtrat::Formula* > >();
+            mpOrigins = new std::vector<PointerSet<Formula> >();
             if( _limit == NULL )
             {
-                std::set< const smtrat::Formula* > originSet = std::set< const smtrat::Formula* >();
+                PointerSet<Formula> originSet = PointerSet<Formula>();
                 originSet.insert( NULL );
                 mpOrigins->push_back( originSet );
             }

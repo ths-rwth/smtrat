@@ -34,6 +34,7 @@ using namespace std;
 namespace smtrat
 {
     ConstraintPool::ConstraintPool( unsigned _capacity ):
+        Singleton(),
         mExternalPrefixInitialized( false ),
         mLastConstructedConstraintWasKnown( false ),
         mIdAllocator( 1 ),
@@ -72,10 +73,9 @@ namespace smtrat
 
     void ConstraintPool::clear()
     {
-        lock_guard<mutex> lock1( mMutexArithmeticVariables );
-        lock_guard<mutex> lock2( mMutexBooleanVariables );
-        lock_guard<mutex> lock3( mMutexDomain );
-        CONSTRAINT_LOCK_GUARD
+        CONSTRAINT_POOL_LOCK_GUARD
+        ARITHMETIC_VAR_LOCK_GUARD
+        BOOLEAN_VAR_LOCK_GUARD
         mConstraints.erase( mConsistentConstraint );
         mConstraints.erase( mInconsistentConstraint );
         while( !mConstraints.empty() )
@@ -96,7 +96,7 @@ namespace smtrat
     
     const Constraint* ConstraintPool::newBound( const carl::Variable& _var, const Relation _rel, const Rational& _bound )
     {
-        CONSTRAINT_LOCK_GUARD
+        CONSTRAINT_POOL_LOCK_GUARD
         // TODO: Maybe it's better to increment the allocator even if the constraint already exists.
         //       Avoids long waiting for access (mutual exclusion) but increases the allocator to fast.
         Constraint* constraint = createNormalizedBound( _var, _rel, _bound );
@@ -113,7 +113,7 @@ namespace smtrat
 
     const Constraint* ConstraintPool::newConstraint( const Polynomial& _lhs, const Relation _rel )
     {
-        CONSTRAINT_LOCK_GUARD
+        CONSTRAINT_POOL_LOCK_GUARD
         // TODO: Maybe it's better to increment the allocator even if the constraint already exists.
         //       Avoids long waiting for access (mutual exclusion) but increases the allocator to fast.
 //        cout << "create polynomial  " << _lhs << " " << Constraint::relationToString( _rel ) << "0" << endl;
@@ -139,7 +139,7 @@ namespace smtrat
             assert( !mExternalPrefixInitialized );
             mParsedVarNames.push_back( _name );
         }
-        lock_guard<mutex> lock( mMutexArithmeticVariables );
+        ARITHMETIC_VAR_LOCK_GUARD
         // Create the arithmetic variable
         auto iterBoolPair = mExternalNamesToVariables.insert( pair<string,carl::Variable>( _name, carl::VariablePool::getInstance().getFreshVariable( _domain ) ) );
         assert( iterBoolPair.second );
@@ -149,7 +149,7 @@ namespace smtrat
     
     const carl::Variable ConstraintPool::newBooleanVariable( const string& _name, bool _parsed )
     {
-        lock_guard<mutex> lock( mMutexBooleanVariables );
+        BOOLEAN_VAR_LOCK_GUARD
         assert( !booleanExistsAlready( _name ) );
         if( _parsed )
         {
@@ -165,10 +165,10 @@ namespace smtrat
     const carl::Variable ConstraintPool::newAuxiliaryBooleanVariable( const std::string& _externalPrefix )
     {
         stringstream out;
-        mMutexBooleanVariables.lock();
+        BOOLEAN_VAR_LOCK
         if( !mExternalPrefixInitialized ) initExternalPrefix();
         out << mExternalVarNamePrefix << _externalPrefix << mAuxiliaryBoolVarCounter++;
-        mMutexBooleanVariables.unlock();
+        BOOLEAN_VAR_UNLOCK
         return newBooleanVariable( out.str() );;
     }
     
@@ -302,7 +302,7 @@ namespace smtrat
 
     void ConstraintPool::print( ostream& _out ) const
     {
-        CONSTRAINT_LOCK_GUARD
+        CONSTRAINT_POOL_LOCK_GUARD
         _out << "---------------------------------------------------" << endl;
         _out << "Boolean variables:" << endl;
         for( auto bvar : mBooleanVariables )
@@ -311,6 +311,61 @@ namespace smtrat
         for( auto constraint = mConstraints.begin(); constraint != mConstraints.end(); ++constraint )
             _out << "    " << **constraint << "  [id=" << (*constraint)->id() << ", hash=" << (*constraint)->getHash() << "]" << endl;
         _out << "---------------------------------------------------" << endl;
+    }
+    
+    const Constraint* newBound( const carl::Variable& _var, const Relation _rel, const Rational& _bound )
+    {
+        return ConstraintPool::getInstance().newBound( _var, _rel, _bound );
+    }
+
+    const Constraint* newConstraint( const Polynomial& _lhs, const Relation _rel )
+    {
+        return ConstraintPool::getInstance().newConstraint( _lhs, _rel );
+    }
+
+    carl::Variable newRealVariable( const std::string& _name )
+    {
+        return ConstraintPool::getInstance().newArithmeticVariable( _name, carl::VariableType::VT_REAL );
+    }
+
+    carl::Variable newArithmeticVariable( const std::string& _name, carl::VariableType _domain, bool _parsed )
+    {
+        return ConstraintPool::getInstance().newArithmeticVariable( _name, _domain, _parsed );
+    }
+
+    const carl::Variable newBooleanVariable( const std::string& _name, bool _parsed )
+    {
+        return ConstraintPool::getInstance().newBooleanVariable( _name, _parsed );
+    }
+
+    const ConstraintPool& constraintPool()
+    {
+        return ConstraintPool::getInstance();
+    }
+
+    carl::Variable newAuxiliaryIntVariable()
+    {
+        return ConstraintPool::getInstance().newAuxiliaryIntVariable();
+    }
+
+    carl::Variable newAuxiliaryIntVariable( const std::string& _varName )
+    {
+        return ConstraintPool::getInstance().newAuxiliaryIntVariable( _varName );
+    }
+
+    carl::Variable newAuxiliaryRealVariable()
+    {
+        return ConstraintPool::getInstance().newAuxiliaryRealVariable();
+    }
+
+    carl::Variable newAuxiliaryRealVariable( const std::string& _varName )
+    {
+        return ConstraintPool::getInstance().newAuxiliaryRealVariable( _varName );
+    }
+
+    const carl::Variable newAuxiliaryBooleanVariable()
+    {
+        return ConstraintPool::getInstance().newAuxiliaryBooleanVariable();
     }
 
 }    // namespace smtrat

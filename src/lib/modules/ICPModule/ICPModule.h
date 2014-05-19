@@ -117,25 +117,25 @@ namespace smtrat
             EvalDoubleIntervalMap                                                               mIntervals; // actual intervals relevant for contraction
             std::set<std::pair<double, unsigned>, comp>                                         mIcpRelevantCandidates; // candidates considered for contraction 
             
-            std::map<const Constraint*, const Constraint*>                                      mReplacements; // linearized constraint -> original constraint
+            std::map<const Formula*, const Formula*>                                            mReplacements; // linearized constraint -> original constraint
             FastMap<Polynomial, carl::Variable>                                                 mLinearizations; // monome -> variable
-            std::map<carl::Variable, const Polynomial>                                               mSubstitutions; // variable -> monome/variable
+            std::map<carl::Variable, const Polynomial>                                          mSubstitutions; // variable -> monome/variable
             FastMap<Polynomial, Contractor<carl::SimpleNewton> >                                mContractors;
             
             icp::HistoryNode*                                                                   mHistoryRoot; // Root-Node of the state-tree
             icp::HistoryNode*                                                                   mHistoryActual; // Actual node of the state-tree
             
-            Formula*                                                                            mValidationFormula; // ReceivedFormula of the internal LRA Module
+            ModuleInput*                                                                        mValidationFormula; // ReceivedFormula of the internal LRA Module
 //            std::map<const Formula*, const Formula*, formulaPtrComp>                            mReceivedFormulaMapping; // LraReceived -> IcpReceived
             std::vector< std::atomic_bool* >                                                    mLRAFoundAnswer;
             RuntimeSettings*                                                                    mLraRuntimeSettings;
             LRAModule                                                                           mLRA; // internal LRA module
             
-            std::set<const Constraint*>                                  mCenterConstraints; // keeps actual centerConstaints for deletion
-            std::set<Formula*>                                                                  mCreatedDeductions; // keeps pointers to the created deductions for deletion
+            std::set<const Constraint*>                                                         mCenterConstraints; // keeps actual centerConstaints for deletion
+            PointerSet<Formula>                                                                 mCreatedDeductions; // keeps pointers to the created deductions for deletion
             icp::ContractionCandidate*                                                          mLastCandidate; // the last applied candidate
             #ifndef BOXMANAGEMENT
-            std::queue<std::set<const Formula*> >                                               mBoxStorage; // keeps the box before contraction
+            std::queue<PointerSet<Formula> >                                                    mBoxStorage; // keeps the box before contraction
             #endif
             bool                                                                                mIsIcpInitialized; // initialized ICPModule?
             unsigned                                                                            mCurrentId; // keeps the currentId of the state nodes
@@ -146,7 +146,7 @@ namespace smtrat
             std::fstream                                                                        icpLog;
             #endif
             #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
-            Formula*                                                                            mCheckContraction;
+            const Formula*                                                                      mCheckContraction;
             #endif
             int                                                                                 mCountBackendCalls;
 
@@ -160,7 +160,7 @@ namespace smtrat
             /**
              * Constructors:
              */
-            ICPModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            ICPModule( ModuleType _type, const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             /**
             * Destructor:
@@ -169,8 +169,8 @@ namespace smtrat
 
             // Interfaces.
             bool inform( const Constraint* const );
-            bool assertSubformula( Formula::const_iterator );
-            void removeSubformula( Formula::const_iterator );
+            bool assertSubformula( ModuleInput::const_iterator );
+            void removeSubformula( ModuleInput::const_iterator );
             Answer isConsistent();
             void updateModel() const;
 
@@ -254,9 +254,9 @@ namespace smtrat
              */
             double calculateSplittingImpact ( const carl::Variable& _var, icp::ContractionCandidate& _candidate ) const;
             
-            std::set<const Formula*> createPremiseDeductions();
+            PointerSet<Formula> createPremiseDeductions();
             
-            Formula* createBoxFormula();
+            const Formula* createBoxFormula();
                         
             /**
              * Checks if there is a need for a split and manages the splitting and branching in the
@@ -322,56 +322,30 @@ namespace smtrat
              * @param _reasons
              * @return 
              */
-            std::set<const Formula*> variableReasonHull( icp::set_icpVariable& _reasons );
+            PointerSet<Formula> variableReasonHull( icp::set_icpVariable& _reasons );
             
             /**
              * Compute hull of defining origins for set of constraints.
              * @param _map
              * @return 
              */
-            std::set<const Formula*> constraintReasonHull( std::set<const Constraint*>& _reasons );
+            PointerSet<Formula> constraintReasonHull( std::set<const Constraint*>& _reasons );
             
             /**
              * generates and sets the infeasible subset
              */
-            std::set<const Formula*> collectReasons( icp::HistoryNode* _node );
+            PointerSet<Formula> collectReasons( icp::HistoryNode* _node );
             
             /**
              * creates constraints for the actual bounds of the original variables.
              * @return 
              */
-            std::vector<Formula*> createConstraintsFromBounds( const EvalDoubleIntervalMap& _map );
-            
-            void replaceConstraints( Formula*& _formula ) const
-            {
-                if( _formula->getType() == CONSTRAINT )
-                {
-                    auto iter = mReplacements.find( _formula->pConstraint() );
-                    assert( iter != mReplacements.end() );
-                    delete _formula;
-                    _formula = new Formula( iter->second ); 
-                }
-                else if( _formula->isBooleanCombination() )
-                {
-                    for( auto subformula = _formula->begin(); subformula != _formula->end(); ++subformula )
-                    {
-                        if( (*subformula)->getType() == CONSTRAINT )
-                        {
-                            auto iter = mReplacements.find( (*subformula)->pConstraint() );
-                            assert( iter != mReplacements.end() );
-                            Formula* constraintFormula = new Formula( iter->second ); 
-                            subformula = _formula->replace( subformula, constraintFormula );
-                        }
-                        else if( (*subformula)->isBooleanCombination() )
-                            replaceConstraints( *subformula );
-                    }
-                }
-            }
+            std::vector<const Formula*> createConstraintsFromBounds( const EvalDoubleIntervalMap& _map );
             
             /**
              * Parses obtained deductions from the LRA module and maps them to original constraints or introduces new ones.
              */
-            Formula* transformDeductions( Formula* _deduction );
+            const Formula* transformDeductions( const Formula* _deduction );
             
             /**
              * Sets the own infeasible subset according to the infeasible subset of the internal lra module.

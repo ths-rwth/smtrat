@@ -41,11 +41,12 @@ using namespace std;
 
 namespace smtrat
 {
+    
     // Constructor.
     
     Manager::Manager():
         mPrimaryBackendFoundAnswer( vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
-        mpPassedFormula( new Formula( AND ) ),
+        mpPassedFormula( new ModuleInput() ),
         mBacktrackPoints(),
         mGeneratedModules( vector<Module*>( 1, new Module( MT_Module, mpPassedFormula, mPrimaryBackendFoundAnswer, this ) ) ),
         mBackendsOfModules(),
@@ -67,7 +68,7 @@ namespace smtrat
     {
         mpModuleFactories = new map<const ModuleType, ModuleFactory*>();
         // inform it about all constraints
-        for( auto constraint = Formula::constraintPool().begin(); constraint != Formula::constraintPool().end(); ++constraint )
+        for( auto constraint = constraintPool().begin(); constraint != constraintPool().end(); ++constraint )
             mpPrimaryBackend->inform( (*constraint) );
     }
 
@@ -156,7 +157,7 @@ namespace smtrat
         _out << "(";
         if( !mpPrimaryBackend->infeasibleSubsets().empty() )
         {
-            set< const Formula* > infSubSet = *mpPrimaryBackend->infeasibleSubsets().begin();
+            const PointerSet<Formula>& infSubSet = *mpPrimaryBackend->infeasibleSubsets().begin();
             if( infSubSet.size() == 1 )
             {
                 _out << **infSubSet.begin();
@@ -182,7 +183,7 @@ namespace smtrat
      * @return  A vector of modules, which the module defined by _requiredBy calls in parallel to achieve
      *           an answer to the given instance.
      */
-    vector<Module*> Manager::getBackends( Formula* _formula, Module* _requiredBy, atomic_bool* _foundAnswer )
+    vector<Module*> Manager::getBackends( Module* _requiredBy, atomic_bool* _foundAnswer )
     {
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         std::lock_guard<std::mutex> lock( mBackendsMutex );
@@ -192,7 +193,7 @@ namespace smtrat
         /*
          * Get the types of the modules, which the given module needs to call to solve its passedFormula.
          */
-        vector< pair< thread_priority, ModuleType > > backendValues = mStrategyGraph.getNextModuleTypes( _requiredBy->threadPriority().second, _formula->getPropositions() );
+        vector< pair< thread_priority, ModuleType > > backendValues = mStrategyGraph.getNextModuleTypes( _requiredBy->threadPriority().second, _requiredBy->pPassedFormula()->properties() );
         for( auto iter = backendValues.begin(); iter != backendValues.end(); ++iter )
         {
             assert( iter->second != _requiredBy->type() );

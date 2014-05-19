@@ -33,213 +33,165 @@
 
 #include "Formula.h"
 #include "Module.h"
+#include "FormulaPool.h"
 
 using namespace std;
 
 namespace smtrat
 {
-    unique_ptr<ConstraintPool> Formula::mpConstraintPool = unique_ptr<ConstraintPool>(new ConstraintPool());
-
-    Formula::Formula():
+    Formula::Formula( bool _true, size_t _id ):
         mDeducted( false ),
-        mPropositionsUptodate( false ),
-        mActivity( 0 ),
-        mDifficulty(0),
-        mType( TTRUE ),
-        mpConstraint( mpConstraintPool->consistentConstraint() ),
-        mpFather( NULL ),
-        mPropositions()
-    {}
-
-    Formula::Formula( const Type _type ):
-        mDeducted( false ),
-        mPropositionsUptodate( false ),
+        mHash( ((size_t)(_true ? constraintPool().consistentConstraint()->id() : constraintPool().inconsistentConstraint()->id())) << (sizeof(size_t)*4) ),
+        mId( _id ),
         mActivity( 0 ),
         mDifficulty( 0 ),
-        mType( _type ),
-        mpFather( NULL ),
-        mPropositions()
-    {
-        assert( _type != CONSTRAINT && _type != BOOL );
-        switch( _type )
-        {
-            case TTRUE:
-                mpConstraint = mpConstraintPool->consistentConstraint();
-                break;
-            case FFALSE:
-                mpConstraint = mpConstraintPool->inconsistentConstraint();
-                break;
-            default:
-                mpSubformulas = new list<Formula*>();
-        }
-    }
-
+        mType( _true ? TTRUE : FFALSE ),
+        mpConstraint( _true ? constraintPool().consistentConstraint() : constraintPool().inconsistentConstraint() ),
+        mProperties(),
+        mBooleanVariables()
+    {}
+    
     Formula::Formula( const carl::Variable::Arg _boolean ):
         mDeducted( false ),
-        mPropositionsUptodate( false ),
+        mHash( (size_t)_boolean.getId() ), // TODO: subtract the id of the boolean variable with the smallest id
+        mId( 0 ),
         mActivity( 0 ),
         mDifficulty( 0 ),
         mType( BOOL ),
         mBoolean( _boolean ),
-        mpFather( NULL ),
-        mPropositions()
+        mProperties(),
+        mBooleanVariables()
     {
         assert( _boolean.getType() == carl::VariableType::VT_BOOL );
+        mBooleanVariables.resize( mBoolean.getId()+1 );
+        mBooleanVariables[mBoolean.getId()] = true;
     }
 
     Formula::Formula( const Constraint* _constraint ):
         mDeducted( false ),
-        mPropositionsUptodate( false ),
+        mHash( ((size_t) _constraint->id()) << (sizeof(size_t)*4) ),
+        mId( 0 ),
         mActivity( 0 ),
         mDifficulty( 0 ),
-        mpFather( NULL ),
-        mPropositions()
+        mType( CONSTRAINT ),
+        mpConstraint( _constraint ),
+        mProperties(),
+        mBooleanVariables()
     {
-        switch(_constraint->isConsistent())
+        switch( _constraint->isConsistent() )
         {
             case 0: 
+                assert( mpConstraint == constraintPool().inconsistentConstraint() );
                 mType = FFALSE;
-                mpConstraint = mpConstraintPool->inconsistentConstraint();
                 break;
             case 1: 
+                assert( mpConstraint == constraintPool().consistentConstraint() );
                 mType = TTRUE;
-                mpConstraint = mpConstraintPool->consistentConstraint();
-                break;
-            case 2: 
-                mType = CONSTRAINT;
-                mpConstraint = _constraint;
                 break;
             default:
-                assert(false);
+            {}
         }
     }
-
-    Formula::Formula( const Formula& _formula ):
+         
+    Formula::Formula( const Formula* _subformula ):
         mDeducted( false ),
-        mPropositionsUptodate( _formula.mPropositionsUptodate ),
-        mActivity( _formula.mActivity ),
-        mDifficulty( _formula.mDifficulty ),
-        mType( _formula.getType() ),
-        mpFather( NULL ),
-        mPropositions(_formula.mPropositionsUptodate ? _formula.proposition(): Condition())
+        mHash( ((size_t)NOT << 5) ^ _subformula->getHash() ),
+        mId( 0 ),
+        mActivity( 0 ),
+        mDifficulty( 0 ),
+        mType( NOT ),
+        mProperties(),
+        mBooleanVariables( _subformula->mBooleanVariables )
     {
-        assert( &_formula != this );
+        mpSubformula = _subformula;
+    }
 
-        if( _formula.getType() == CONSTRAINT )
-            mpConstraint = _formula.pConstraint();
-        else if( isBooleanCombination() )
+    Formula::Formula( const Formula* _subformulaA, const Formula* _subformulaB ):
+        mDeducted( false ),
+        mHash( CIRCULAR_SHIFT(size_t, (((size_t)IMPLIES << 5) ^ _subformulaA->getHash()), 5) ^ _subformulaB->getHash() ),
+        mId( 0 ),
+        mActivity( 0 ),
+        mDifficulty( 0 ),
+        mType( IMPLIES ),
+        mProperties(),
+        mBooleanVariables()
+    {
+        mpSubformulaPair = new pair<const Formula*,const Formula*>( _subformulaA, _subformulaB );
+    }
+    
+    Formula::Formula( Type _type, PointerSet<Formula>&& _subformulas ):
+        mDeducted( false ),
+        mHash( (size_t)_type ),
+        mId( 0 ),
+        mActivity( 0 ),
+        mDifficulty( 0 ),
+        mType( _type ),
+        mProperties(),
+        mBooleanVariables()
+    {
+        assert( _subformulas.size() > 1 );
+        assert( mType == AND || mType == OR || mType == IFF || mType == XOR );
+        mpSubformulas = new PointerSet<Formula>( _subformulas );
+        for( const Formula* subformula : *mpSubformulas )
         {
-            mpSubformulas = new list<Formula*>();
-            for( const_iterator subFormula = _formula.subformulas().begin(); subFormula != _formula.subformulas().end(); ++subFormula )
-                addSubformula( new Formula( **subFormula ));
+            mHash = CIRCULAR_SHIFT(size_t, mHash, 5);
+            mHash ^= subformula->getHash();
         }
-        else if( _formula.getType() == BOOL )
-            mBoolean = _formula.mBoolean;
     }
 
     Formula::~Formula()
     {
-        if( mType != BOOL && mType != CONSTRAINT && mType != TTRUE && mType != FFALSE )
+//        cout << __func__ << endl;
+//        cout << this << endl;
+//        cout << mType << endl;
+//        if( mId == 0 ) cout << *this << endl;
+//        else assert( false );
+//        cout << mBooleanVariables << endl;
+        if( isNary() )
         {
-            while( !mpSubformulas->empty() )
-            {
-                Formula* pSubForm = mpSubformulas->back();
-                mpSubformulas->pop_back();
-                delete pSubForm;
-            }
+            mpSubformulas->clear();
             delete mpSubformulas;
         }
+        else if( mType == CONSTRAINT )
+        {
+            mpConstraint = NULL;
+        }
+        else if( mType == NOT )
+        {
+            mpSubformula = NULL;
+        }
+        else if( mType == IMPLIES )
+        {
+            delete mpSubformulaPair;
+        }
     }
-
-    void Formula::copyAndDelete( Formula* _formula )
+    
+    bool Formula::operator==( const Formula& _formula ) const
     {
-        assert( _formula != this );
-        mType = _formula->getType();
-        mDifficulty = _formula->difficulty();
-        if( _formula->getType() == BOOL )
+        if( mId == 0 || _formula.getId() == 0 )
         {
-            if( isBooleanCombination() )
-                delete mpSubformulas;
-            mBoolean = _formula->mBoolean;
-        }
-        else if( _formula->getType() == CONSTRAINT )
-        {
-            if( isBooleanCombination() )
-                delete mpSubformulas;
-            mpConstraint = _formula->pConstraint();
-        }
-        else if( _formula->getType() == TTRUE || _formula->getType() == FFALSE )
-        {
-            if( isBooleanCombination() )
-                delete mpSubformulas;
-            mpSubformulas = NULL;
+            if( mType != _formula.getType() )
+                return false;
+            switch( mType )
+            {
+                case BOOL:
+                    return mBoolean == _formula.boolean();
+                case TTRUE:
+                    return true;
+                case FFALSE:
+                    return true;
+                case CONSTRAINT:
+                    return (*mpConstraint) == _formula.constraint();
+                case NOT:
+                    return (*mpSubformula) == _formula.subformula();
+                case IMPLIES:
+                    return (*mpSubformulaPair->first) == _formula.premise() && (*mpSubformulaPair->second) == _formula.conclusion();
+                default:
+                    return (*mpSubformulas) == _formula.subformulas();
+            }
         }
         else
-        {
-            if( !isBooleanCombination() )
-                mpSubformulas = new list<Formula*>();
-            while( !_formula->empty() )
-                addSubformula( _formula->pruneFront() );
-        }
-        delete _formula;
-    }
-
-    void Formula::addSubformula( Formula* _formula )
-    {
-        assert( isBooleanCombination() );
-        assert( mType != NOT || mpSubformulas->empty() );
-        _formula->setFather( this );
-        // Add the formula.
-        mpSubformulas->push_back( _formula );
-        // Adapt the conditions, if they are up to date. (In this case very cheap)
-        if( mPropositionsUptodate )
-        {
-            Condition condOfSubformula = _formula->getPropositions();
-            if( mType == AND )
-            {
-                if( !(PROP_IS_A_LITERAL<=condOfSubformula) )
-                    mPropositions &= ~PROP_IS_PURE_CONJUNCTION;
-                else if( !(PROP_IS_A_CLAUSE<=condOfSubformula) )
-                {
-                    mPropositions &= ~PROP_IS_PURE_CONJUNCTION;
-                    mPropositions &= ~PROP_IS_IN_CNF;
-                }
-            }
-            else if( mType == OR )
-            {
-                if( !(PROP_IS_A_LITERAL<=condOfSubformula) )
-                    mPropositions &= ~PROP_IS_A_CLAUSE;
-            }
-            if( !(PROP_IS_IN_NNF<=condOfSubformula) )
-                mPropositions &= ~PROP_IS_IN_NNF;
-            if( !(PROP_VARIABLE_DEGREE_LESS_THAN_FIVE<=condOfSubformula) )
-            {
-                mPropositions &= ~PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
-                mPropositions &= ~PROP_VARIABLE_DEGREE_LESS_THAN_FOUR;
-                mPropositions &= ~PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
-            }
-            else if( !(PROP_VARIABLE_DEGREE_LESS_THAN_FOUR<=condOfSubformula) )
-            {
-                mPropositions &= ~PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
-                mPropositions &= ~PROP_VARIABLE_DEGREE_LESS_THAN_FOUR;
-            }
-            else if( !(PROP_VARIABLE_DEGREE_LESS_THAN_THREE<=condOfSubformula) )
-                mPropositions &= ~PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
-            mPropositions |= (condOfSubformula & WEAK_CONDITIONS);
-        }
-    }
-
-    Formula::iterator Formula::replace( Formula::iterator _toReplace, Formula* _replacement )
-    {
-        assert( isBooleanCombination() );
-        assert( _toReplace != mpSubformulas->end() );
-        Formula* pSubFormula = *_toReplace;
-        Formula::iterator result = mpSubformulas->erase( _toReplace );
-        delete pSubFormula;
-        _replacement->setFather( this );
-        result = mpSubformulas->insert( result, _replacement );
-        mPropositionsUptodate = false;
-        return result;
+            return mId == _formula.getId();
     }
     
     unsigned Formula::satisfiedBy( const EvalRationalMap& _assignment ) const
@@ -265,7 +217,7 @@ namespace smtrat
             }
             case NOT:
             {
-                switch( mpSubformulas->front()->satisfiedBy( _assignment ) )
+                switch( mpSubformula->satisfiedBy( _assignment ) )
                 {
                     case 0:
                         return 1;
@@ -311,11 +263,9 @@ namespace smtrat
             }
             case IMPLIES:
             {
-                auto subFormula = mpSubformulas->begin();
-                unsigned result = (*subFormula)->satisfiedBy( _assignment );
+                unsigned result = premise().satisfiedBy( _assignment );
                 if( result == 0 ) return 1;
-                ++subFormula;
-                switch( (*subFormula)->satisfiedBy( _assignment ) )
+                switch( conclusion().satisfiedBy( _assignment ) )
                 {
                     case 0:
                         return result == 1 ? 0 : 2;
@@ -327,30 +277,38 @@ namespace smtrat
             }
             case IFF:
             {
-                auto subFormulaA = mpSubformulas->begin();
-                unsigned resultA = (*subFormulaA)->satisfiedBy( _assignment );
-                if( resultA == 2 ) return 2;
-                auto subFormulaB = mpSubformulas->begin();
-                unsigned resultB = (*subFormulaB)->satisfiedBy( _assignment );
-                if( resultB == 2 ) return 2;
-                return resultA == resultB ? 1 : 0;
+                auto subFormula = mpSubformulas->begin();
+                unsigned result = (*subFormula)->satisfiedBy( _assignment );
+                if( result == 2 ) return 2;
+                ++subFormula;
+                while( subFormula != mpSubformulas->end() )
+                {
+                    unsigned resultTmp = (*subFormula)->satisfiedBy( _assignment );
+                    if( resultTmp == 2 ) return 2;
+                    result = resultTmp == result;
+                    ++subFormula;
+                }
+                return result;
             }
             case XOR:
             {
-                auto subFormulaA = mpSubformulas->begin();
-                unsigned resultA = (*subFormulaA)->satisfiedBy( _assignment );
-                if( resultA == 2 ) return 2;
-                auto subFormulaB = mpSubformulas->begin();
-                unsigned resultB = (*subFormulaB)->satisfiedBy( _assignment );
-                if( resultB == 2 ) return 2;
-                return resultA == resultB ? 0 : 1;
+                auto subFormula = mpSubformulas->begin();
+                unsigned result = (*subFormula)->satisfiedBy( _assignment );
+                if( result == 2 ) return 2;
+                ++subFormula;
+                while( subFormula != mpSubformulas->end() )
+                {
+                    unsigned resultTmp = (*subFormula)->satisfiedBy( _assignment );
+                    if( resultTmp == 2 ) return 2;
+                    result = resultTmp != result;
+                    ++subFormula;
+                }
+                return result;
             }
             default:
             {
-                cerr << "Undefined operator!" << endl;
-                cerr << mType << endl;
-                cerr << *this << endl;
                 assert( false );
+                cerr << "Undefined operator!" << endl;
                 return 2;
             }
         }
@@ -365,161 +323,155 @@ namespace smtrat
             return 2; // TODO: Check also models having square roots as value.
     }
     
-    Condition Formula::getPropositions()
+    void Formula::initProperties()
     {
-        if( !mPropositionsUptodate )
+        mProperties = Condition();
+        switch( mType )
         {
-            mPropositions = Condition();
-            switch( mType )
+            case TTRUE:
             {
-                case TTRUE:
-                {
-                    mPropositions |= STRONG_CONDITIONS;
-                    addConstraintPropositions( *mpConstraint );
-                    break;
-                }
-                case FFALSE:
-                {
-                    mPropositions |= STRONG_CONDITIONS;
-                    addConstraintPropositions( *mpConstraint );
-                    break;
-                }
-                case BOOL:
-                {
-                    mPropositions |= STRONG_CONDITIONS | PROP_CONTAINS_BOOLEAN;
-                    break;
-                }
-                case CONSTRAINT:
-                {
-                    mPropositions |= STRONG_CONDITIONS;
-                    addConstraintPropositions( *mpConstraint );
-                    break;
-                }
-                case NOT:
-                {
-                    Condition subFormulaConds = (*mpSubformulas->begin())->getPropositions();
-                    if( PROP_IS_AN_ATOM <= subFormulaConds )
-                        mPropositions |= PROP_IS_A_CLAUSE | PROP_IS_A_LITERAL | PROP_IS_IN_CNF | PROP_IS_PURE_CONJUNCTION;
-                    mPropositions |= (subFormulaConds & PROP_VARIABLE_DEGREE_LESS_THAN_THREE);
-                    mPropositions |= (subFormulaConds & PROP_VARIABLE_DEGREE_LESS_THAN_FOUR);
-                    mPropositions |= (subFormulaConds & PROP_VARIABLE_DEGREE_LESS_THAN_FIVE);
-                    mPropositions |= (subFormulaConds & WEAK_CONDITIONS);
-                    break;
-                }
-                case OR:
-                {
-                    mPropositions |= PROP_IS_A_CLAUSE | PROP_IS_IN_CNF | PROP_IS_IN_NNF;
-                    mPropositions |= PROP_VARIABLE_DEGREE_LESS_THAN_THREE | PROP_VARIABLE_DEGREE_LESS_THAN_FOUR | PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
-                    for( iterator subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
-                    {
-                        Condition subFormulaConds = (*subFormula)->getPropositions();
-                        if( !(PROP_IS_A_LITERAL<=subFormulaConds) )
-                        {
-                            mPropositions &= ~PROP_IS_A_CLAUSE;
-                            mPropositions &= ~PROP_IS_IN_CNF;
-                        }
-                        if( !(PROP_IS_IN_NNF<=subFormulaConds) )
-                            mPropositions &= ~PROP_IS_IN_NNF;
-                        mPropositions |= (subFormulaConds & WEAK_CONDITIONS);
-                    }
-                    break;
-                }
-                case AND:
-                {
-                    mPropositions |= PROP_IS_PURE_CONJUNCTION | PROP_IS_IN_CNF | PROP_IS_IN_NNF;
-                    mPropositions |= PROP_VARIABLE_DEGREE_LESS_THAN_THREE | PROP_VARIABLE_DEGREE_LESS_THAN_FOUR | PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
-                    for( iterator subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
-                    {
-                        Condition subFormulaConds = (*subFormula)->getPropositions();
-                        if( !(PROP_IS_A_CLAUSE<=subFormulaConds) )
-                        {
-                            mPropositions &= ~PROP_IS_PURE_CONJUNCTION;
-                            mPropositions &= ~PROP_IS_IN_CNF;
-                        }
-                        else if( !(PROP_IS_A_LITERAL<=subFormulaConds) )
-                            mPropositions &= ~PROP_IS_PURE_CONJUNCTION;
-                        if( !(PROP_IS_IN_NNF<=subFormulaConds) )
-                            mPropositions &= ~PROP_IS_IN_NNF;
-                        mPropositions |= (subFormulaConds & WEAK_CONDITIONS);
-                    }
-                    break;
-                }
-                case IMPLIES:
-                {
-                    mPropositions |= PROP_IS_IN_NNF;
-                    mPropositions |= PROP_VARIABLE_DEGREE_LESS_THAN_THREE | PROP_VARIABLE_DEGREE_LESS_THAN_FOUR | PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
-                    for( iterator subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
-                    {
-                        Condition subFormulaConds = (*subFormula)->getPropositions();
-                        if( !(PROP_IS_IN_NNF<=subFormulaConds) )
-                            mPropositions &= ~PROP_IS_IN_NNF;
-                        mPropositions |= (subFormulaConds & WEAK_CONDITIONS);
-                    }
-                    break;
-                }
-                case IFF:
-                {
-                    mPropositions |= PROP_IS_IN_NNF;
-                    mPropositions |= PROP_VARIABLE_DEGREE_LESS_THAN_THREE | PROP_VARIABLE_DEGREE_LESS_THAN_FOUR | PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
-                    for( iterator subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
-                    {
-                        Condition subFormulaConds = (*subFormula)->getPropositions();
-                        if( !(PROP_IS_IN_NNF<=subFormulaConds) )
-                            mPropositions &= ~PROP_IS_IN_NNF;
-                        mPropositions |= (subFormulaConds & WEAK_CONDITIONS);
-                    }
-                    break;
-                }
-                case XOR:
-                {
-                    mPropositions |= PROP_IS_IN_NNF;
-                    mPropositions |= PROP_VARIABLE_DEGREE_LESS_THAN_THREE | PROP_VARIABLE_DEGREE_LESS_THAN_FOUR | PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
-                    for( iterator subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
-                    {
-                        Condition subFormulaConds = (*subFormula)->getPropositions();
-                        if( !(PROP_IS_IN_NNF<=subFormulaConds) )
-                            mPropositions &= ~PROP_IS_IN_NNF;
-                        mPropositions |= (subFormulaConds & WEAK_CONDITIONS);
-                    }
-                    break;
-                }
-                default:
-                {
-                    cerr << "Undefined operator!" << endl;
-                    cerr << mType << endl;
-                    cerr << *this << endl;
-                    assert( false );
-                }
+                mProperties |= STRONG_CONDITIONS;
+                addConstraintProperties( *mpConstraint );
+                break;
             }
-            mPropositionsUptodate = true;
+            case FFALSE:
+            {
+                mProperties |= STRONG_CONDITIONS;
+                addConstraintProperties( *mpConstraint );
+                break;
+            }
+            case BOOL:
+            {
+                mProperties |= STRONG_CONDITIONS | PROP_CONTAINS_BOOLEAN;
+                break;
+            }
+            case CONSTRAINT:
+            {
+                mProperties |= STRONG_CONDITIONS;
+                addConstraintProperties( *mpConstraint );
+                break;
+            }
+            case NOT:
+            {
+                Condition subFormulaConds = mpSubformula->properties();
+                if( PROP_IS_AN_ATOM <= subFormulaConds )
+                    mProperties |= PROP_IS_A_CLAUSE | PROP_IS_A_LITERAL | PROP_IS_IN_CNF | PROP_IS_PURE_CONJUNCTION;
+                mProperties |= (subFormulaConds & PROP_VARIABLE_DEGREE_LESS_THAN_THREE);
+                mProperties |= (subFormulaConds & PROP_VARIABLE_DEGREE_LESS_THAN_FOUR);
+                mProperties |= (subFormulaConds & PROP_VARIABLE_DEGREE_LESS_THAN_FIVE);
+                mProperties |= (subFormulaConds & WEAK_CONDITIONS);
+                break;
+            }
+            case OR:
+            {
+                mProperties |= PROP_IS_A_CLAUSE | PROP_IS_IN_CNF | PROP_IS_IN_NNF;
+                mProperties |= PROP_VARIABLE_DEGREE_LESS_THAN_THREE | PROP_VARIABLE_DEGREE_LESS_THAN_FOUR | PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
+                for( auto subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
+                {
+                    Condition subFormulaConds = (*subFormula)->properties();
+                    if( !(PROP_IS_A_LITERAL<=subFormulaConds) )
+                    {
+                        mProperties &= ~PROP_IS_A_CLAUSE;
+                        mProperties &= ~PROP_IS_IN_CNF;
+                    }
+                    if( !(PROP_IS_IN_NNF<=subFormulaConds) )
+                        mProperties &= ~PROP_IS_IN_NNF;
+                    mProperties |= (subFormulaConds & WEAK_CONDITIONS);
+                }
+                break;
+            }
+            case AND:
+            {
+                mProperties |= PROP_IS_PURE_CONJUNCTION | PROP_IS_IN_CNF | PROP_IS_IN_NNF;
+                mProperties |= PROP_VARIABLE_DEGREE_LESS_THAN_THREE | PROP_VARIABLE_DEGREE_LESS_THAN_FOUR | PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
+                for( auto subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
+                {
+                    Condition subFormulaConds = (*subFormula)->properties();
+                    if( !(PROP_IS_A_CLAUSE<=subFormulaConds) )
+                    {
+                        mProperties &= ~PROP_IS_PURE_CONJUNCTION;
+                        mProperties &= ~PROP_IS_IN_CNF;
+                    }
+                    else if( !(PROP_IS_A_LITERAL<=subFormulaConds) )
+                        mProperties &= ~PROP_IS_PURE_CONJUNCTION;
+                    if( !(PROP_IS_IN_NNF<=subFormulaConds) )
+                        mProperties &= ~PROP_IS_IN_NNF;
+                    mProperties |= (subFormulaConds & WEAK_CONDITIONS);
+                }
+                break;
+            }
+            case IMPLIES:
+            {
+                mProperties |= PROP_IS_IN_NNF;
+                mProperties |= PROP_VARIABLE_DEGREE_LESS_THAN_THREE | PROP_VARIABLE_DEGREE_LESS_THAN_FOUR | PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
+                Condition subFormulaCondsA = premise().properties();
+                if( !(PROP_IS_IN_NNF<=subFormulaCondsA) )
+                    mProperties &= ~PROP_IS_IN_NNF;
+                mProperties |= (subFormulaCondsA & WEAK_CONDITIONS);
+                Condition subFormulaCondsB = premise().properties();
+                if( !(PROP_IS_IN_NNF<=subFormulaCondsB) )
+                    mProperties &= ~PROP_IS_IN_NNF;
+                mProperties |= (subFormulaCondsB & WEAK_CONDITIONS);
+                break;
+            }
+            case IFF:
+            {
+                mProperties |= PROP_IS_IN_NNF;
+                mProperties |= PROP_VARIABLE_DEGREE_LESS_THAN_THREE | PROP_VARIABLE_DEGREE_LESS_THAN_FOUR | PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
+                for( auto subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
+                {
+                    Condition subFormulaConds = (*subFormula)->properties();
+                    if( !(PROP_IS_IN_NNF<=subFormulaConds) )
+                        mProperties &= ~PROP_IS_IN_NNF;
+                    mProperties |= (subFormulaConds & WEAK_CONDITIONS);
+                }
+                break;
+            }
+            case XOR:
+            {
+                mProperties |= PROP_IS_IN_NNF;
+                mProperties |= PROP_VARIABLE_DEGREE_LESS_THAN_THREE | PROP_VARIABLE_DEGREE_LESS_THAN_FOUR | PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
+                for( auto subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
+                {
+                    Condition subFormulaConds = (*subFormula)->properties();
+                    if( !(PROP_IS_IN_NNF<=subFormulaConds) )
+                        mProperties &= ~PROP_IS_IN_NNF;
+                    mProperties |= (subFormulaConds & WEAK_CONDITIONS);
+                }
+                break;
+            }
+            default:
+            {
+                assert( false );
+                cerr << "Undefined operator!" << endl;
+            }
         }
-        return mPropositions;
     }
-
-    void Formula::addConstraintPropositions( const Constraint& _constraint )
+    
+    void Formula::addConstraintProperties( const Constraint& _constraint )
     {
         switch( _constraint.lhs().totalDegree() )
         {
             case 0:
-                mPropositions |= PROP_CONTAINS_LINEAR_POLYNOMIAL;
+                mProperties |= PROP_CONTAINS_LINEAR_POLYNOMIAL;
                 break;
             case 1:
-                mPropositions |= PROP_CONTAINS_LINEAR_POLYNOMIAL;
+                mProperties |= PROP_CONTAINS_LINEAR_POLYNOMIAL;
                 break;
             case 2:
-                mPropositions |= PROP_CONTAINS_NONLINEAR_POLYNOMIAL;
+                mProperties |= PROP_CONTAINS_NONLINEAR_POLYNOMIAL;
                 break;
             case 3:
-                mPropositions |= PROP_CONTAINS_NONLINEAR_POLYNOMIAL;
-                mPropositions &= ~PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
+                mProperties |= PROP_CONTAINS_NONLINEAR_POLYNOMIAL;
+                mProperties &= ~PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
                 break;
             case 4:
-                mPropositions |= PROP_CONTAINS_NONLINEAR_POLYNOMIAL;
-                mPropositions &= ~PROP_VARIABLE_DEGREE_LESS_THAN_FOUR;
+                mProperties |= PROP_CONTAINS_NONLINEAR_POLYNOMIAL;
+                mProperties &= ~PROP_VARIABLE_DEGREE_LESS_THAN_FOUR;
                 break;
             case 5:
-                mPropositions |= PROP_CONTAINS_NONLINEAR_POLYNOMIAL;
-                mPropositions &= ~PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
+                mProperties |= PROP_CONTAINS_NONLINEAR_POLYNOMIAL;
+                mProperties &= ~PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
                 break;
             default:
             {
@@ -528,31 +480,78 @@ namespace smtrat
         switch( _constraint.relation() )
         {
             case Relation::EQ:
-                mPropositions |= PROP_CONTAINS_EQUATION;
+                mProperties |= PROP_CONTAINS_EQUATION;
                 break;
             case Relation::NEQ:
-                mPropositions |= PROP_CONTAINS_STRICT_INEQUALITY;
+                mProperties |= PROP_CONTAINS_STRICT_INEQUALITY;
                 break;
             case Relation::LEQ:
-                mPropositions |= PROP_CONTAINS_INEQUALITY;
+                mProperties |= PROP_CONTAINS_INEQUALITY;
                 break;
             case Relation::GEQ:
-                mPropositions |= PROP_CONTAINS_INEQUALITY;
+                mProperties |= PROP_CONTAINS_INEQUALITY;
                 break;
             case Relation::LESS:
-                mPropositions |= PROP_CONTAINS_STRICT_INEQUALITY;
+                mProperties |= PROP_CONTAINS_STRICT_INEQUALITY;
                 break;
             case Relation::GREATER:
-                mPropositions |= PROP_CONTAINS_STRICT_INEQUALITY;
+                mProperties |= PROP_CONTAINS_STRICT_INEQUALITY;
                 break;
             default:
             {
             }
         }
         if( _constraint.hasIntegerValuedVariable() )
-            mPropositions |= PROP_CONTAINS_INTEGER_VALUED_VARS;
+            mProperties |= PROP_CONTAINS_INTEGER_VALUED_VARS;
         if( _constraint.hasRealValuedVariable() )
-            mPropositions |= PROP_CONTAINS_REAL_VALUED_VARS;
+            mProperties |= PROP_CONTAINS_REAL_VALUED_VARS;
+    }
+    
+    void Formula::initBooleans()
+    {
+        if( mType == IMPLIES )
+        {
+            const boost::dynamic_bitset<>& bVarsA = premise().mBooleanVariables;
+            const boost::dynamic_bitset<>& bVarsB = conclusion().mBooleanVariables;
+            if( bVarsA.size() > bVarsB.size() )
+            {
+                mBooleanVariables = bVarsB;
+                mBooleanVariables.resize( bVarsA.size() );
+                mBooleanVariables |= bVarsA;
+            }
+            else if( bVarsA.size() < bVarsB.size() )
+            {
+                mBooleanVariables = bVarsA;
+                mBooleanVariables.resize( bVarsB.size() );
+                mBooleanVariables |= bVarsB;
+            }
+            else
+                mBooleanVariables = (bVarsA | bVarsB);
+        }
+        else if( mType == AND || mType == OR || mType == IFF || mType == XOR )
+        {
+            auto subformula = mpSubformulas->begin();
+            boost::dynamic_bitset<> bVarsTmp;
+            mBooleanVariables = (*subformula)->mBooleanVariables;
+            ++subformula;
+            for( ; subformula != mpSubformulas->end(); ++subformula )
+            {
+                const boost::dynamic_bitset<>& bVars = (*subformula)->mBooleanVariables;
+                if( bVars.size() > mBooleanVariables.size() )
+                {
+                    mBooleanVariables.resize( bVars.size() );
+                    mBooleanVariables |= bVars;
+                }
+                else if( bVars.size() < mBooleanVariables.size() )
+                {
+                    bVarsTmp = bVars; 
+                    bVarsTmp.resize( mBooleanVariables.size() );
+                    mBooleanVariables |= bVarsTmp;
+                }
+                else
+                    mBooleanVariables |= bVars;
+            }
+        }
     }
 
     string Formula::toString( bool _withActivity, unsigned _resolveUnequal, const string _init, bool _oneline, bool _infix, bool _friendlyNames ) const
@@ -585,11 +584,39 @@ namespace smtrat
                 result += "(not";
                 result += (_oneline ? " " : "\n");
             }
-            result += (*mpSubformulas->begin())->toString( _withActivity, _resolveUnequal, _oneline ? "" : (_init + "   "), _oneline, _infix, _friendlyNames );
+            result += mpSubformula->toString( _withActivity, _resolveUnequal, _oneline ? "" : (_init + "   "), _oneline, _infix, _friendlyNames );
             result += (_oneline ? "" : "\n") + _init + ")";
             return result;
         }
-        assert( isBooleanCombination() );
+        else if( mType == IMPLIES )
+        {
+            string result = _init + "(";
+            if( _infix )
+            {
+                for( auto subformula = mpSubformulas->begin(); subformula != mpSubformulas->end(); ++subformula )
+                {
+                    if( !_oneline ) 
+                        result += "\n";
+                    result += premise().toString( _withActivity, _resolveUnequal, _oneline ? "" : (_init + "   "), _oneline, true, _friendlyNames );
+                    result += " " + FormulaTypeToString( IMPLIES ) + " ";
+                    if( !_oneline ) 
+                        result += "\n";
+                    result += conclusion().toString( _withActivity, _resolveUnequal, _oneline ? "" : (_init + "   "), _oneline, true, _friendlyNames );
+                }
+            }
+            else
+            {
+                result += FormulaTypeToString( IMPLIES );
+                result += (_oneline ? " " : "\n");
+                result += premise().toString( _withActivity, _resolveUnequal, _oneline ? "" : (_init + "   "), _oneline, false, _friendlyNames );
+                result += (_oneline ? " " : "\n");
+                result += conclusion().toString( _withActivity, _resolveUnequal, _oneline ? "" : (_init + "   "), _oneline, false, _friendlyNames );
+            }
+            result += ")";
+            if( _withActivity )
+                result += activity;
+        }
+        assert( mType == AND || mType == OR || mType == IFF || mType == XOR );
         string stringOfType = FormulaTypeToString( mType );
         string result = _init + "(";
         if( _infix )
@@ -626,11 +653,11 @@ namespace smtrat
     void Formula::printProposition( ostream& _out, const string _init ) const
     {
         _out << _init;
-        for( unsigned i = 0; i < proposition().size(); ++i )
+        for( unsigned i = 0; i < properties().size(); ++i )
         {
             if( fmod( i, 10.0 ) == 0.0 ) 
                 _out << " ";
-            _out << proposition()[i];
+            _out << properties()[i];
         }
         _out << endl;
     }
@@ -649,13 +676,16 @@ namespace smtrat
                 result += " " + oper + " ";
                 break;
             case NOT:
-                result += " " + oper + "( " + (*mpSubformulas->begin())->toRedlogFormat( _withVariables ) + " )";
+                result += " " + oper + "( " + mpSubformula->toRedlogFormat( _withVariables ) + " )";
                 break;
             case CONSTRAINT:
                 result += constraint().toString( 1 );
                 break;
             case BOOL:
                 result += constraintPool().getVariableName( mBoolean, true ) + " = 1";
+                break;
+            case IMPLIES:
+                result += "( " + premise().toRedlogFormat( _withVariables ) + " " + oper + " " + premise().toRedlogFormat( _withVariables ) + " )";
                 break;
             default:
             {
@@ -676,7 +706,7 @@ namespace smtrat
                 }
                 else
                     result += "( ";
-                std::list<Formula*>::const_iterator it = mpSubformulas->begin();
+                PointerSet<Formula>::const_iterator it = mpSubformulas->begin();
                 // do not quantify variables again.
                 result += (*it)->toRedlogFormat( false );
                 for( ++it; it != mpSubformulas->end(); ++it ) // do not quantify variables again.
@@ -752,177 +782,159 @@ namespace smtrat
         }
     }
 
-    bool Formula::resolveNegation( Formula& _formula, bool _keepConstraint )
+    const Formula* Formula::resolveNegation( bool _keepConstraint ) const
     {
-        assert( _formula.getType() == NOT );
-        Formula* subformula = _formula.back();
-        switch( subformula->getType() )
+        if( mType != NOT ) return this;
+        Type newType = mType;
+        switch( mpSubformula->getType() )
         {
             case BOOL:
-                return false;
+                return this;
             case CONSTRAINT:
             {
                 if( _keepConstraint )
-                    return false;
+                    return this;
                 else
                 {
-                    const Constraint* constraint = subformula->pConstraint();
-                    _formula.pop_back();
+                    const Constraint* constraint = mpSubformula->pConstraint();
                     switch( constraint->relation() )
                     {
                         case Relation::EQ:
+                        {
                             #ifdef REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
-                            _formula.copyAndDelete( new Formula( OR ));
-                            _formula.addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), Relation::LESS )));
-                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), Relation::LESS )));
+                            PointerSet<Formula> subformulas;
+                            subformulas.insert( newFormula( newConstraint( constraint->lhs(), Relation::LESS ) ) );
+                            subformulas.insert( newFormula( newConstraint( -constraint->lhs(), Relation::LESS ) ) );
+                            return newFormula( OR, std::move( subformulas ) );
                             #else
-                            _formula.copyAndDelete( new Formula( Formula::newConstraint( constraint->lhs(), Relation::NEQ )));
+                            return newFormula( newConstraint( constraint->lhs(), Relation::NEQ ) );
                             #endif
-                            return true;
+                        }
                         case Relation::LEQ:
-                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), Relation::LESS )));
-                            return false;
+                        {
+                            return newFormula( newConstraint( -constraint->lhs(), Relation::LESS ) );
+                        }
                         case Relation::LESS:
+                        {
                             #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
-                            _formula.copyAndDelete( new Formula( OR ));
-                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), Relation::LESS )));
-                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), Relation::EQ )));
-                            return true;
+                            PointerSet<Formula> subformulas;
+                            subformulas.insert( newFormula( newConstraint( -constraint->lhs(), Relation::LESS ) ) );
+                            subformulas.insert( newFormula( newConstraint( -constraint->lhs(), Relation::EQ ) ) );
+                            return newFormula( OR, std::move( subformulas ) );
                             #else
-                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), Relation::LEQ )));
-                            return false;
+                            return newFormula( newConstraint( -constraint->lhs(), Relation::LEQ ) );
                             #endif
+                        }
+                        case Relation::GEQ:
+                        {
+                            return newFormula( newConstraint( constraint->lhs(), Relation::LESS ) );
+                        }
+                        case Relation::GREATER:
+                        {
+                            #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
+                            PointerSet<Formula> subformulas;
+                            subformulas.insert( newFormula( newConstraint( constraint->lhs(), Relation::LESS ) ) );
+                            subformulas.insert( newFormula( newConstraint( constraint->lhs(), Relation::EQ ) ) );
+                            return newFormula( OR, std::move( subformulas ) );
+                            #else
+                            return newFormula( newConstraint( constraint->lhs(), Relation::LEQ ) );
+                            #endif
+                        }
                         case Relation::NEQ:
-                            _formula.copyAndDelete( new Formula( Formula::newConstraint( constraint->lhs(), Relation::EQ )));
-                            return false;
+                        {
+                            return newFormula( newConstraint( constraint->lhs(), Relation::EQ ) );
+                        }
                         default:
-                            cerr << "Unexpected relation symbol!" << endl;
+                        {
                             assert( false );
-                            return false;
+                            cerr << "Unexpected relation symbol!" << endl;
+                            return this;
+                        }
                     }
                 }
             }
             case TTRUE: // (not true)  ->  false
-                _formula.pop_back();
-                _formula.copyAndDelete( new Formula( FFALSE ) );
-                return true;
+                return falseFormula();
             case FFALSE: // (not false)  ->  true
-                _formula.pop_back();
-                _formula.copyAndDelete( new Formula( TTRUE ) );
-                return true;
+                return trueFormula();
             case NOT: // (not (not phi))  ->  phi
-            {
-                Formula* subsubformula = subformula->pruneBack();
-                _formula.pop_back();
-                _formula.copyAndDelete( subsubformula );
-                return true;
-            }
-            case AND:
-            {
-                // (not (and phi_1 .. phi_n))  ->  (or (not phi_1) .. (not phi_n))
-                vector<Formula*> subsubformulas = vector<Formula*>();
-                while( !subformula->empty() )
-                    subsubformulas.push_back( subformula->pruneBack() );
-                _formula.pop_back();
-                _formula.copyAndDelete( new Formula( OR ));
-                while( !subsubformulas.empty() )
-                {
-                    _formula.addSubformula( new Formula( NOT ));
-                    _formula.back()->addSubformula( subsubformulas.back() );
-                    subsubformulas.pop_back();
-                }
-                return true;
-            }
-            case OR:
-            {
-                // (not (or phi_1 .. phi_n))  ->  (and (not phi_1) .. (not phi_n))
-                vector<Formula*> subsubformulas = vector<Formula*>();
-                while( !subformula->empty() )
-                    subsubformulas.push_back( subformula->pruneBack() );
-                _formula.pop_back();
-                _formula.copyAndDelete( new Formula( AND ));
-                while( !subsubformulas.empty() )
-                {
-                    Formula* notFormula = new Formula( NOT );
-                    notFormula->addSubformula( subsubformulas.back() );
-                    subsubformulas.pop_back();
-                    _formula.addSubformula( notFormula );
-                }
-                return true;
-            }
+                return mpSubformula->pSubformula();
             case IMPLIES:
             {
-                assert( subformula->size() == 2 );
+                assert( mpSubformula->size() == 2 );
                 // (not (implies lhs rhs))  ->  (and lhs (not rhs))
-                Formula* rhsOfSubformula = subformula->pruneBack();
-                Formula* lhsOfSubformula = subformula->pruneBack();
-                _formula.pop_back();
-                _formula.copyAndDelete( new Formula( AND ));
-                _formula.addSubformula( lhsOfSubformula );
-                _formula.addSubformula( new Formula( NOT ));
-                _formula.back()->addSubformula( rhsOfSubformula );
-                return true;
+                PointerSet<Formula> subformulas;
+                subformulas.insert( mpSubformula->pPremise() );
+                subformulas.insert( newNegation( mpSubformula->pConclusion() ) );
+                return newFormula( AND, std::move( subformulas ) );
             }
-            case IFF:
-            {
-                assert( subformula->size() == 2 );
-                // (not (iff lhs rhs))  ->  (xor lhs rhs)
-                Formula* rhsOfSubformula = subformula->pruneBack();
-                Formula* lhsOfSubformula = subformula->pruneBack();
-                _formula.pop_back();
-                _formula.copyAndDelete( new Formula( XOR ));
-                _formula.addSubformula( lhsOfSubformula );
-                _formula.addSubformula( rhsOfSubformula );
-                return true;
-            }
-            case XOR:
-            {
-                assert( subformula->size() == 2 );
-                // (not (xor lhs rhs))  ->  (iff lhs rhs)
-                Formula* rhsOfSubformula = subformula->pruneBack();
-                Formula* lhsOfSubformula = subformula->pruneBack();
-                _formula.pop_back();
-                _formula.copyAndDelete( new Formula( IFF ));
-                _formula.addSubformula( lhsOfSubformula );
-                _formula.addSubformula( rhsOfSubformula );
-                return true;
-            }
+            case AND: // (not (and phi_1 .. phi_n))  ->  (or (not phi_1) .. (not phi_n))
+                newType = OR;
+                break;
+            case OR: // (not (or phi_1 .. phi_n))  ->  (and (not phi_1) .. (not phi_n))
+                newType = AND;
+                break;
+            case IFF: // (not (iff lhs rhs))  ->  (xor lhs rhs)
+                newType = XOR;
+                break;
+            case XOR: // (not (xor lhs rhs))  ->  (iff lhs rhs)
+                newType = AND;
+                break;
             default:
-            {
-                cerr << "Unexpected type of formula!" << endl;
                 assert( false );
-                return false;
-            }
+                cerr << "Unexpected type of formula!" << endl;
+                return this;
         }
-        _formula.getPropositions();
+        assert( newType != mType );
+        PointerSet<Formula> subformulas;
+        for( const Formula* subsubformula : mpSubformula->subformulas() )
+            subformulas.insert( newNegation( subsubformula ) );
+        return newFormula( newType, std::move( subformulas ) );
     }
     
-    void Formula::toCNF( Formula& _formula, bool _keepConstraints )
+    const Formula* Formula::connectRemainingSubformulas() const
     {
-        if( _keepConstraints && (_formula.getPropositions() | ~PROP_IS_IN_CNF) == ~PROP_TRUE )
-            return;
-        else if( _formula.getType() == NOT && (_formula.getPropositions() | ~PROP_IS_IN_CNF) == ~PROP_TRUE )
+        assert( isNary() );
+        if( mpSubformulas->size() > 2 )
         {
-            resolveNegation( _formula, _keepConstraints );
-            return;
+            PointerSet<Formula> tmpSubformulas;
+            for( const Formula* subformula : *mpSubformulas )
+                tmpSubformulas.insert( subformula );
+            return newFormula( IFF, tmpSubformulas );
         }
-        else if( _formula.isAtom() )
-            return;
-        Formula* copy = new Formula( _formula.getType() );
-        while( !_formula.empty() )
-            copy->addSubformula( _formula.pruneFront() );
-        _formula.copyAndDelete( new Formula( AND ));
-        vector<Formula*> subformulasToTransform = vector<Formula*>();
-        subformulasToTransform.push_back( copy );
+        else
+        {
+            assert( mpSubformulas->size() == 2 );
+            return *(--mpSubformulas->end());
+        }
+    }
+    
+    const Formula* Formula::toCNF( bool _keepConstraints ) const
+    {
+        if( propertyHolds( PROP_IS_IN_CNF ) )
+        {
+            if( _keepConstraints )
+                return this;
+            else if( mType == NOT )
+            {
+                assert( propertyHolds( PROP_IS_A_LITERAL ) );
+                return resolveNegation( _keepConstraints );
+            }
+        }
+        else if( isAtom() )
+            return this;
+        PointerSet<Formula> subformulas;
+        vector<const Formula*> subformulasToTransform;
+        subformulasToTransform.push_back( this );
         while( !subformulasToTransform.empty() )
         {
-            Formula* currentFormula = subformulasToTransform.back();
+            const Formula* currentFormula = subformulasToTransform.back();
             subformulasToTransform.pop_back();
             switch( currentFormula->getType() )
             {
                 case BOOL:
                 {
-                    _formula.addSubformula( currentFormula );
+                    subformulas.insert( currentFormula );
                     break;
                 }
                 case CONSTRAINT:
@@ -930,11 +942,9 @@ namespace smtrat
                     #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
                     if( currentFormula->constraint().relation() == Relation::LEQ )
                     {
-                        Formula* newFormula = new Formula( OR );
-                        newFormula->addSubformula( Formula::newConstraint( currentFormula->constraint().lhs(), Relation::LESS ) );
-                        newFormula->addSubformula( Formula::newConstraint( currentFormula->constraint().lhs(), Relation::EQ ) );
-                        delete currentFormula;
-                        subformulasToTransform.push_back( newFormula );
+                        const Constraint* c1 = newConstraint( currentFormula->constraint().lhs(), Relation::LESS );
+                        const Constraint* c2 = newConstraint( currentFormula->constraint().lhs(), Relation::EQ );
+                        subformulasToTransform.push_back( newFormula( OR, newFormula( c1 ), newFormula( c2 ) ) );
                     }
                     else
                     {
@@ -942,16 +952,14 @@ namespace smtrat
                     #ifdef REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
                     if( currentFormula->constraint().relation() == Relation::NEQ )
                     {
-                        Formula* newFormula = new Formula( OR );
-                        newFormula->addSubformula( Formula::newConstraint( currentFormula->constraint().lhs(), Relation::LESS ) );
-                        newFormula->addSubformula( Formula::newConstraint( -currentFormula->constraint().lhs(), Relation::LESS ) );
-                        delete currentFormula;
-                        subformulasToTransform.push_back( newFormula );
+                        const Constraint* c1 =  newConstraint( currentFormula->constraint().lhs(), Relation::LESS );
+                        const Constraint* c2 =  newConstraint( -currentFormula->constraint().lhs(), Relation::LESS );
+                        subformulasToTransform.push_back( newFormula( OR, newFormula( c1 ), newFormula( c2 ) ) );
                     }
                     else
                     {
                     #endif
-                    _formula.addSubformula( currentFormula );
+                    subformulas.insert( currentFormula );
                     #ifdef REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
                     }
                     #endif
@@ -960,75 +968,127 @@ namespace smtrat
                     #endif
                     break;
                 }
-                case TTRUE:
-                {
-                    // Remove it.
-                    delete currentFormula;
+                case TTRUE: // Remove it.
                     break;
-                }
-                case FFALSE:
+                case FFALSE: // Return false.
+                    return falseFormula();
+                case NOT: // Try to resolve this negation.
                 {
-                    // Makes everything false.
-                    while( !_formula.empty() )
-                    {
-                        Formula* formulaToDelete = _formula.pruneBack();
-                        delete formulaToDelete;
-                    }
-                    while( !subformulasToTransform.empty() )
-                    {
-                        Formula* formulaToDelete = subformulasToTransform.back();
-                        subformulasToTransform.pop_back();
-                        delete formulaToDelete;
-                    }
-                    _formula.copyAndDelete( currentFormula );
-                    return;
-                }
-                case NOT:
-                {
-                    // Try to resolve this negation.
-                    if( !Formula::resolveNegation( *currentFormula, _keepConstraints )) // It is a literal.
-                        _formula.addSubformula( currentFormula );
+                    const Formula* resolvedFormula = currentFormula->resolveNegation( _keepConstraints );
+                    if( resolvedFormula == currentFormula ) // It is a literal.
+                        subformulas.insert( currentFormula );
                     else
-                        subformulasToTransform.push_back( currentFormula );
+                        subformulasToTransform.push_back( resolvedFormula );
                     break;
                 }
-                case AND:
+                case AND: // (and phi_1 .. phi_n) -> psi_1 .. psi_m
                 {
-                    // (and phi_1 .. phi_n) -> psi_1 .. psi_m
-                    while( !currentFormula->empty() )
-                        subformulasToTransform.push_back( currentFormula->pruneBack() );
-                    delete currentFormula;
+                    for( const Formula* subformula : currentFormula->subformulas() )
+                        subformulasToTransform.push_back( subformula );
+                    break;
+                }
+                case IMPLIES: // (-> lhs rhs)  ->  (or (not lhs) rhs)
+                {
+                    PointerSet<Formula> tmpSubformulas;
+                    tmpSubformulas.insert( newNegation( currentFormula->pPremise() ) );
+                    tmpSubformulas.insert( currentFormula->pConclusion() );
+                    subformulasToTransform.push_back( newFormula( OR, tmpSubformulas ) );
+                    break;
+                }
+                case IFF: // (iff lhs rhs)  ->  (or h1 h2) (or (not h1) lhs) (or (not h1) rhs) (or (not h2) (not lhs)) (or (not h2) (not rhs))
+                {
+                    // Get lhs and rhs.
+                    const Formula* lhs = *currentFormula->subformulas().begin();
+                    const Formula* rhs = currentFormula->connectRemainingSubformulas();
+                    // Create the formulas of the fresh Boolean variables h1 and h2 and their negations.
+                    const Formula* h1 = newFormula( newAuxiliaryBooleanVariable() );
+                    const Formula* h2 = newFormula( newAuxiliaryBooleanVariable() );
+                    const Formula* noth1 = newNegation( h1 );
+                    const Formula* noth2 = newNegation( h2 );
+                    // Create (or h1 h2)
+                    subformulas.insert( newFormula( OR, h1, h2 ) );
+                    // Append (or (not h1) lhs), (or (not h1) rhs), (or (not h2) (not lhs)) and (or (not h2) (not rhs)) to _formulasToAssert.
+                    subformulasToTransform.push_back( newFormula( OR, noth1, lhs ) );
+                    subformulasToTransform.push_back( newFormula( OR, noth1, rhs ) );
+                    subformulasToTransform.push_back( newFormula( OR, noth2, newNegation( lhs ) ) );
+                    subformulasToTransform.push_back( newFormula( OR, noth2, newNegation( rhs ) ) );
+                    break;
+                }
+                case XOR: // (xor lhs rhs)  ->  (or h1 h2) (or (not h1) (not lhs)) (or (not h1) rhs) (or (not h2) lhs) (or (not h2) (not rhs))
+                {
+                    // Get lhs and rhs.
+                    const Formula* lhs = *currentFormula->subformulas().begin();
+                    const Formula* rhs = currentFormula->connectRemainingSubformulas();
+                    // Create the formulas of the fresh Boolean variables h1 and h2 and their negations.
+                    const Formula* h1 = newFormula( newAuxiliaryBooleanVariable() );
+                    const Formula* h2 = newFormula( newAuxiliaryBooleanVariable() );
+                    const Formula* noth1 = newNegation( h1 );
+                    const Formula* noth2 = newNegation( h2 );
+                    // Append (or (not h1) (not lhs)), (or (not h1) rhs), (or (not h2) lhs) and (or (not h2) (not rhs)) to _formulasToAssert.
+                    subformulasToTransform.push_back( newFormula( OR, noth1, newNegation( lhs ) ) );
+                    subformulasToTransform.push_back( newFormula( OR, noth1, rhs ) );
+                    subformulasToTransform.push_back( newFormula( OR, noth2, lhs ) );
+                    subformulasToTransform.push_back( newFormula( OR, noth2, newNegation( rhs ) ) );
                     break;
                 }
                 // Note, that the following case could be implemented using less code, but it would clearly
                 // lead to a worse performance as we would then not benefit from the properties of a disjunction.
-                case OR:
+                case OR: // (or phi_1 .. phi_n) -> (or psi_1 .. psi_m),  where phi_i is transformed as follows:
                 {
-                    // (or phi_1 .. phi_n) -> (or psi_1 .. psi_m),  where phi_i is transformed as follows:
-                    vector<Formula*> phis = vector<Formula*>();
-                    while( !currentFormula->empty() )
-                        phis.push_back( currentFormula->pruneBack() );
-                    while( !phis.empty() )
+                    bool currentFormulaValid = false;
+                    PointerSet<Formula> subsubformulas;
+                    vector<const Formula*> phis;
+                    for( const Formula* subformula : currentFormula->subformulas() )
+                        phis.push_back( subformula );
+                    vector<const Formula*> subformulasToTransformTmp;
+                    while( !currentFormulaValid && !phis.empty() )
                     {
-                        Formula* currentSubformula = phis.back();
+                        const Formula* currentSubformula = phis.back();
                         phis.pop_back();
                         switch( currentSubformula->getType() )
                         {
-                            // B -> B
-                            case BOOL:
+                            case BOOL: // B -> B
+                                subsubformulas.insert( currentSubformula );
+                                break;
+                            case TTRUE: // remove the entire considered disjunction and everything which has been created by considering it
+                                currentFormulaValid = true;
+                                break;
+                            case FFALSE: // remove it
+                                break;
+                            case OR: // (or phi_i1 .. phi_ik) -> phi_i1 .. phi_ik
+                                for( const Formula* subsubformula : currentSubformula->subformulas() )
+                                    phis.push_back( subsubformula );
+                                break;
+                            case IMPLIES: // (-> lhs_i rhs_i) -> (not lhs_i) rhs_i
+                                phis.push_back( newNegation( currentSubformula->pPremise() ) );
+                                phis.push_back( currentSubformula->pConclusion() );
+                                break;
+                            case NOT: // resolve the negation
                             {
-                                currentFormula->addSubformula( currentSubformula );
+                                const Formula* resolvedFormula = currentSubformula->resolveNegation( _keepConstraints );
+                                if( resolvedFormula == currentSubformula ) // It is a literal.
+                                    subsubformulas.insert( currentSubformula );
+                                else
+                                    phis.push_back( resolvedFormula );
                                 break;
                             }
-                            // p~0 -> p~0
-                            case CONSTRAINT:
+                            case AND: // (and phi_i1 .. phi_ik) -> h_i, where (or (not h_i) phi_i1) .. (or (not h_i) phi_ik) is added to the queue
+                            {
+                                const Formula* hi = newFormula( newAuxiliaryBooleanVariable() );
+                                hi->setDifficulty( currentSubformula->difficulty() ); // TODO: do something alike everywhere where a sub-formula is replaced by a fresh variable
+                                const Formula* nothi = newNegation( hi );
+                                for( const Formula* subsubformula : currentSubformula->subformulas() )
+                                    subformulasToTransformTmp.push_back( newFormula( OR, nothi, subsubformula ) );
+                                subsubformulas.insert( hi );
+                                break;
+                            }
+                            case CONSTRAINT: // p~0 -> p~0
                             {
                                 #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
                                 if( currentSubformula->constraint().relation() == Relation::LEQ )
                                 {
-                                    currentFormula->addSubformula( Formula::newConstraint( currentSubformula->constraint().lhs(), Relation::LESS ) );
-                                    currentFormula->addSubformula( Formula::newConstraint( currentSubformula->constraint().lhs(), Relation::EQ ) );
-                                    delete currentSubformula;
+                                    subsubformulas.insert( newFormula( newConstraint( currentSubformula->constraint().lhs(), Relation::LESS ) ) );
+                                    subsubformulas.insert( newFormula( newConstraint( currentSubformula->constraint().lhs(), Relation::EQ ) ) );
                                 }
                                 else
                                 {
@@ -1036,14 +1096,13 @@ namespace smtrat
                                 #ifdef REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
                                 if( currentSubformula->constraint().relation() == Relation::NEQ )
                                 {
-                                    currentFormula->addSubformula( Formula::newConstraint( currentSubformula->constraint().lhs(), Relation::LESS ) );
-                                    currentFormula->addSubformula( Formula::newConstraint( -currentSubformula->constraint().lhs(), Relation::LESS ) );
-                                    delete currentSubformula;
+                                    subsubformulas.insert( newFormula( newConstraint( currentSubformula->constraint().lhs(), Relation::LESS ) ) );
+                                    subsubformulas.insert( newFormula( newConstraint( -currentSubformula->constraint().lhs(), Relation::LESS ) ) );
                                 }
                                 else
                                 {
                                 #endif
-                                currentFormula->addSubformula( currentSubformula );
+                                subsubformulas.insert( currentSubformula );
                                 #ifdef REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
                                 }
                                 #endif
@@ -1052,268 +1111,80 @@ namespace smtrat
                                 #endif
                                 break;
                             }
-                            // remove the entire considered disjunction and everything which has been created by considering it
-                            case TTRUE:
+                            case IFF: // (iff lhs rhs) -> h1 h2, where (or (not h1) lhs) (or (not h1) rhs) (or (not h2) (not lhs)) (or (not h2) (not rhs)) is added to the queue
                             {
-                                while( !currentFormula->empty() )
-                                {
-                                    Formula* formulaToDelete = currentFormula->pruneBack();
-                                    delete formulaToDelete;
-                                }
-                                while( !phis.empty() )
-                                {
-                                    Formula* formulaToDelete = phis.back();
-                                    phis.pop_back();
-                                    delete formulaToDelete;
-                                }
-                                delete currentSubformula;
+                                // Get lhs and rhs.
+                                const Formula* lhs = *currentSubformula->subformulas().begin();
+                                const Formula* rhs = currentSubformula->connectRemainingSubformulas();
+                                // Create the formulas of the fresh Boolean variables hi1 and hi2 and their negations.
+                                const Formula* h1 = newFormula( newAuxiliaryBooleanVariable() );
+                                const Formula* h2 = newFormula( newAuxiliaryBooleanVariable() );
+                                const Formula* noth1 = newNegation( h1 );
+                                const Formula* noth2 = newNegation( h2 );
+                                subformulasToTransformTmp.push_back( newFormula( OR, noth1, lhs ) );
+                                subformulasToTransformTmp.push_back( newFormula( OR, noth1, rhs ) );
+                                subformulasToTransformTmp.push_back( newFormula( OR, noth2, newNegation( lhs ) ) );
+                                subformulasToTransformTmp.push_back( newFormula( OR, noth2, newNegation( rhs ) ) );
+                                subsubformulas.insert( h1 );
+                                subsubformulas.insert( h2 );
                                 break;
                             }
-                            // remove it
-                            case FFALSE:
+                            case XOR: // (xor lhs rhs) -> h1 h2, where (or (not h1) (not lhs)) (or (not h1) rhs) (or (not h2) lhs) (or (not h2) (not rhs)) is added to the queue
                             {
-                                delete currentSubformula;
-                                break;
-                            }
-                            // resolve the negation
-                            case NOT:
-                            {
-                                // Try to resolve this negation.
-                                if( Formula::resolveNegation( *currentSubformula, _keepConstraints ))
-                                    phis.push_back( currentSubformula );
-                                else // It is a literal.
-                                    currentFormula->addSubformula( currentSubformula );
-                                break;
-                            }
-                            // (and phi_i1 .. phi_ik) -> h_i, where (or (not h_i) phi_i1) .. (or (not h_i) phi_ik) is added to the queue
-                            case AND:
-                            {
-                                Formula* hi = new Formula( Formula::newAuxiliaryBooleanVariable() );
-                                hi->setDifficulty(currentSubformula->difficulty());
-                                while( !currentSubformula->empty() )
-                                {
-                                    Formula* formulaToAssert = new Formula( OR );
-                                    formulaToAssert->addSubformula( new Formula( NOT ));
-                                    formulaToAssert->back()->addSubformula( new Formula( *hi ));
-                                    formulaToAssert->addSubformula( currentSubformula->pruneBack() );
-                                    subformulasToTransform.push_back( formulaToAssert );
-                                }
-                                delete currentSubformula;
-                                currentFormula->addSubformula( hi );
-                                break;
-                            }
-                            // (or phi_i1 .. phi_ik) -> phi_i1 .. phi_ik
-                            case OR:
-                            {
-                                while( !currentSubformula->empty() )
-                                    phis.push_back( currentSubformula->pruneBack() );
-                                delete currentSubformula;
-                                break;
-                            }
-                            // (-> lhs_i rhs_i) -> (not lhs_i) rhs_i
-                            case IMPLIES:
-                            {
-                                assert( currentSubformula->size() == 2 );
-                                Formula* rhs = currentSubformula->pruneBack();
-                                Formula* lhs = currentSubformula->pruneBack();
-                                delete currentSubformula;
-                                phis.push_back( new Formula( NOT ));
-                                phis.back()->addSubformula( lhs );
-                                phis.push_back( rhs );
-                                break;
-                            }
-                            // (iff lhs_i rhs_i) -> h_i1 h_i2, where (or (not h_i1) lhs_i) (or (not h_i1) rhs_i)
-                            //                                       (or (not h_i2) (not lhs_i)) (or (not h_i2) (not rhs_i))  is added to the queue
-                            case IFF:
-                            {
-                                assert( currentSubformula->size() == 2 );
-                                Formula* h_i1  = new Formula( Formula::newAuxiliaryBooleanVariable() );
-                                Formula* h_i2  = new Formula( Formula::newAuxiliaryBooleanVariable() );
-                                Formula* rhs_i = currentSubformula->pruneBack();
-                                Formula* lhs_i = currentSubformula->pruneBack();
-                                delete currentSubformula;
-                                subformulasToTransform.push_back( new Formula( OR ));
-                                subformulasToTransform.back()->addSubformula( new Formula( NOT ));
-                                subformulasToTransform.back()->back()->addSubformula( new Formula( *h_i1 ));
-                                subformulasToTransform.back()->addSubformula( lhs_i );
-                                subformulasToTransform.push_back( new Formula( OR ));
-                                subformulasToTransform.back()->addSubformula( new Formula( NOT ));
-                                subformulasToTransform.back()->back()->addSubformula( new Formula( *h_i1 ));
-                                subformulasToTransform.back()->addSubformula( rhs_i );
-                                subformulasToTransform.push_back( new Formula( OR ));
-                                subformulasToTransform.back()->addSubformula( new Formula( NOT ));
-                                subformulasToTransform.back()->back()->addSubformula( new Formula( *h_i2 ));
-                                subformulasToTransform.back()->addSubformula( new Formula( NOT ));
-                                subformulasToTransform.back()->back()->addSubformula( new Formula( *lhs_i ));
-                                subformulasToTransform.push_back( new Formula( OR ));
-                                subformulasToTransform.back()->addSubformula( new Formula( NOT ));
-                                subformulasToTransform.back()->back()->addSubformula( new Formula( *h_i2 ));
-                                subformulasToTransform.back()->addSubformula( new Formula( NOT ));
-                                subformulasToTransform.back()->back()->addSubformula( new Formula( *rhs_i ));
-                                currentFormula->addSubformula( h_i1 );
-                                currentFormula->addSubformula( h_i2 );
-                                break;
-                            }
-                            // (xor lhs_i rhs_i) -> h_i1 h_i2, where (or (not h_i1) (not lhs_i)) (or (not h_i1) rhs_i)
-                            //                                       (or (not h_i2) lhs_i) (or (not h_i2) (not rhs_i))  is added to the queue
-                            case XOR:
-                            {
-                                assert( currentSubformula->size() == 2 );
-                                Formula* h_i1  = new Formula( Formula::newAuxiliaryBooleanVariable() );
-                                Formula* h_i2  = new Formula( Formula::newAuxiliaryBooleanVariable() );
-                                Formula* rhs_i = currentSubformula->pruneBack();
-                                Formula* lhs_i = currentSubformula->pruneBack();
-                                delete currentSubformula;
-                                subformulasToTransform.push_back( new Formula( OR ));
-                                subformulasToTransform.back()->addSubformula( new Formula( NOT ));
-                                subformulasToTransform.back()->back()->addSubformula( new Formula( *h_i1 ));
-                                subformulasToTransform.back()->addSubformula( new Formula( NOT ));
-                                subformulasToTransform.back()->back()->addSubformula( lhs_i );
-                                subformulasToTransform.push_back( new Formula( OR ));
-                                subformulasToTransform.back()->addSubformula( new Formula( NOT ));
-                                subformulasToTransform.back()->back()->addSubformula( new Formula( *h_i1 ));
-                                subformulasToTransform.back()->addSubformula( rhs_i );
-                                subformulasToTransform.push_back( new Formula( OR ));
-                                subformulasToTransform.back()->addSubformula( new Formula( NOT ));
-                                subformulasToTransform.back()->back()->addSubformula( new Formula( *h_i2 ));
-                                subformulasToTransform.back()->addSubformula( new Formula( *lhs_i ));
-                                subformulasToTransform.push_back( new Formula( OR ));
-                                subformulasToTransform.back()->addSubformula( new Formula( NOT ));
-                                subformulasToTransform.back()->back()->addSubformula( new Formula( *h_i2 ));
-                                subformulasToTransform.back()->addSubformula( new Formula( NOT ));
-                                subformulasToTransform.back()->back()->addSubformula( new Formula( *rhs_i ));
-                                currentFormula->addSubformula( h_i1 );
-                                currentFormula->addSubformula( h_i2 );
+                                // Get lhsi and rhsi.
+                                const Formula* lhs = *currentSubformula->subformulas().begin();
+                                const Formula* rhs = currentSubformula->connectRemainingSubformulas();
+                                // Create the formulas of the fresh Boolean variables hi1 and hi2 and their negations.
+                                const Formula* h1 = newFormula( newAuxiliaryBooleanVariable() );
+                                const Formula* h2 = newFormula( newAuxiliaryBooleanVariable() );
+                                const Formula* noth1 = newNegation( h1 );
+                                const Formula* noth2 = newNegation( h2 );
+                                subformulasToTransformTmp.push_back( newFormula( OR, noth1, newNegation( lhs ) ) );
+                                subformulasToTransformTmp.push_back( newFormula( OR, noth1, rhs ) );
+                                subformulasToTransformTmp.push_back( newFormula( OR, noth2, lhs ) );
+                                subformulasToTransformTmp.push_back( newFormula( OR, noth2, newNegation( rhs ) ) );
+                                subsubformulas.insert( h1 );
+                                subsubformulas.insert( h2 );
                                 break;
                             }
                             default:
                             {
-                                cerr << "Unexpected type of formula!" << endl;
                                 assert( false );
+                                cerr << "Unexpected type of formula!" << endl;
                             }
                         }
                     }
-                    if( currentFormula->isBooleanCombination() && currentFormula->size() == 1 )
+                    if( !currentFormulaValid )
                     {
-                        _formula.addSubformula( currentFormula->pruneBack() );
-                        delete currentFormula;
+                        subformulasToTransform.insert( subformulasToTransform.end(), subformulasToTransformTmp.begin(), subformulasToTransformTmp.end() );
+                        if( subsubformulas.empty() ) // Empty clause = false, which, added to a conjunction, leads to false.
+                        {
+                            return falseFormula();
+                        }
+                        else if( subsubformulas.size() == 1 )
+                        {
+                            subformulas.insert( *subsubformulas.begin() );
+                        }
+                        else
+                        {
+                            subformulas.insert( newFormula( OR, move( subsubformulas ) ) );
+                        }
                     }
-                    else if( !currentFormula->empty() )
-                        _formula.addSubformula( currentFormula );
-                    else
-                        delete currentFormula;
-                    break;
-                }
-                case IMPLIES:
-                {
-                    // (-> lhs rhs)  ->  (or (not lhs) rhs)
-                    assert( currentFormula->size() == 2 );
-                    Formula* rhs = currentFormula->pruneBack();
-                    Formula* lhs = currentFormula->pruneBack();
-                    assert( currentFormula->cpFather() == NULL );
-                    delete currentFormula;
-                    Formula* newFormula = new Formula( OR );
-                    newFormula->addSubformula( new Formula( NOT ));
-                    newFormula->back()->addSubformula( lhs );
-                    newFormula->addSubformula( rhs );
-                    subformulasToTransform.push_back( newFormula );
-                    break;
-                }
-                case IFF:
-                {
-                    // (iff lhs rhs)  ->  (or h1 h2) (or (not h1) lhs) (or (not h1) rhs) (or (not h2) (not lhs)) (or (not h2) (not rhs))
-                    assert( currentFormula->size() == 2 );
-                    // Get lhs and rhs and delete currentFormula.
-                    Formula* rhs = currentFormula->pruneBack();
-                    Formula* lhs = currentFormula->pruneBack();
-                    delete currentFormula;
-                    // Add (or h1 h2) to the passed formula, where h1 and h2 are fresh Boolean variables.
-                    Formula* h1     = new Formula( Formula::newAuxiliaryBooleanVariable() );
-                    Formula* h2     = new Formula( Formula::newAuxiliaryBooleanVariable() );
-                    Formula* clause = new Formula( OR );
-                    clause->addSubformula( h1 );
-                    clause->addSubformula( h2 );
-                    _formula.addSubformula( clause );
-                    // Append (or (not h1) lhs), (or (not h1) rhs), (or (not h2) (not lhs)) and (or (not h2) (not rhs)) to _formulasToAssert.
-                    Formula* formulaToAssertA = new Formula( OR );
-                    formulaToAssertA->addSubformula( new Formula( NOT ));
-                    formulaToAssertA->back()->addSubformula( new Formula( *h1 ));
-                    formulaToAssertA->addSubformula( lhs );    // Once it can be used, otherwise copy it,
-                    subformulasToTransform.push_back( formulaToAssertA );
-                    Formula* formulaToAssertB = new Formula( OR );
-                    formulaToAssertB->addSubformula( new Formula( NOT ));
-                    formulaToAssertB->back()->addSubformula( new Formula( *h1 ));
-                    formulaToAssertB->addSubformula( rhs );    // Once it can be used, otherwise copy it,
-                    subformulasToTransform.push_back( formulaToAssertB );
-                    Formula* formulaToAssertC = new Formula( OR );
-                    formulaToAssertC->addSubformula( new Formula( NOT ));
-                    formulaToAssertC->back()->addSubformula( new Formula( *h2 ));
-                    formulaToAssertC->addSubformula( new Formula( NOT ));
-                    formulaToAssertC->back()->addSubformula( new Formula( *lhs ));
-                    subformulasToTransform.push_back( formulaToAssertC );
-                    Formula* formulaToAssertD = new Formula( OR );
-                    formulaToAssertD->addSubformula( new Formula( NOT ));
-                    formulaToAssertD->back()->addSubformula( new Formula( *h2 ));
-                    formulaToAssertD->addSubformula( new Formula( NOT ));
-                    formulaToAssertD->back()->addSubformula( new Formula( *rhs ));
-                    subformulasToTransform.push_back( formulaToAssertD );
-                    break;
-                }
-                case XOR:
-                {
-                    // (xor lhs rhs)  ->  (or h1 h2) (or (not h1) (not lhs)) (or (not h1) rhs) (or (not h2) lhs) (or (not h2) (not rhs))
-                    assert( currentFormula->size() == 2 );
-                    // Get lhs and rhs and delete currentFormula.
-                    Formula* rhs = currentFormula->pruneBack();
-                    Formula* lhs = currentFormula->pruneBack();
-                    delete currentFormula;
-                    // Add (or h1 h2) to the passed formula, where h1 and h2 are fresh Boolean variables.
-                    Formula* h1     = new Formula( Formula::newAuxiliaryBooleanVariable() );
-                    Formula* h2     = new Formula( Formula::newAuxiliaryBooleanVariable() );
-                    Formula* clause = new Formula( OR );
-                    clause->addSubformula( h1 );
-                    clause->addSubformula( h2 );
-                    _formula.addSubformula( clause );
-                    // Append (or (not h1) (not lhs)), (or (not h1) rhs), (or (not h2) lhs) and (or (not h2) (not rhs)) to _formulasToAssert.
-                    Formula* formulaToAssertA = new Formula( OR );
-                    formulaToAssertA->addSubformula( new Formula( NOT ));
-                    formulaToAssertA->back()->addSubformula( new Formula( *h1 ));
-                    formulaToAssertA->addSubformula( new Formula( NOT ));
-                    formulaToAssertA->back()->addSubformula( lhs );    // Once it can be used, otherwise copy it,
-                    subformulasToTransform.push_back( formulaToAssertA );
-                    Formula* formulaToAssertB = new Formula( OR );
-                    formulaToAssertB->addSubformula( new Formula( NOT ));
-                    formulaToAssertB->back()->addSubformula( new Formula( *h1 ));
-                    formulaToAssertB->addSubformula( rhs );    // Once it can be used, otherwise copy it,
-                    subformulasToTransform.push_back( formulaToAssertB );
-                    Formula* formulaToAssertC = new Formula( OR );
-                    formulaToAssertC->addSubformula( new Formula( NOT ));
-                    formulaToAssertC->back()->addSubformula( new Formula( *h2 ));
-                    formulaToAssertC->addSubformula( new Formula( *lhs ));
-                    subformulasToTransform.push_back( formulaToAssertC );
-                    Formula* formulaToAssertD = new Formula( OR );
-                    formulaToAssertD->addSubformula( new Formula( NOT ));
-                    formulaToAssertD->back()->addSubformula( new Formula( *h2 ));
-                    formulaToAssertD->addSubformula( new Formula( NOT ));
-                    formulaToAssertD->back()->addSubformula( new Formula( *rhs ));
-                    subformulasToTransform.push_back( formulaToAssertD );
                     break;
                 }
                 default:
                 {
-                    cerr << "Unexpected type of formula!" << endl;
                     assert( false );
+                    cerr << "Unexpected type of formula!" << endl;
                 }
             }
         }
-        if( _formula.empty() )
-            _formula.copyAndDelete( new Formula( TTRUE ));
-        else if( _formula.isBooleanCombination() && _formula.size() == 1 )
-        {
-            Formula* subFormula = _formula.pruneBack();
-            _formula.copyAndDelete( subFormula );
-        }
-        _formula.getPropositions();
+        if( subformulas.empty() )
+            return trueFormula();
+        else if( subformulas.size() == 1 )
+            return *subformulas.begin();
+        else
+            return newFormula( AND, move( subformulas ) );
     }
 }    // namespace smtrat
 

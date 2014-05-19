@@ -44,13 +44,10 @@
 
 #include <vector>
 #include <set>
-#include <algorithm>
 #include <string>
 #include <chrono>
 #include <atomic>
-
-#include "Common.h"
-#include "Formula.h"
+#include "ModuleInput.h"
 #include "ValidationSettings.h"
 #include "ThreadPool.h"
 #include "config.h"
@@ -61,20 +58,19 @@ namespace smtrat
 {
     class Manager;
 
-    typedef std::vector<std::set<const Formula*> >           vec_set_const_pFormula;
-    typedef std::map<const Formula*, vec_set_const_pFormula> FormulaOrigins;
-    typedef std::vector< std::atomic_bool* >                 Conditionals;
+    typedef std::vector<PointerSet<Formula>>           vec_set_const_pFormula;
+    typedef std::map<const Formula*,vec_set_const_pFormula> FormulaOrigins;
+    typedef std::vector<std::atomic_bool*>                  Conditionals;
 
-    struct dereference_compare {
+    struct dereference_compare
+    {
         template <class I>
-        bool operator()(const I& a, const I& b) {
+        bool operator()(const I& a, const I& b)
+        {
             return *a < *b;
         }
     };
-
-
-
-
+    
     /**
      * A base class for all kind of theory solving methods.
      */
@@ -103,9 +99,11 @@ namespace smtrat
             /// A reference to the manager.
             Manager* const mpManager;
             /// The formula passed to this module.
-            const Formula* mpReceivedFormula;
+            const ModuleInput* mpReceivedFormula;
             /// The formula passed to the backends of this module.
-            Formula* mpPassedFormula;
+            ModuleInput* mpPassedFormula;
+            /// The propositions of the passed formula.
+            Condition mPropositions;
             /// Stores the assignment of the current satisfiable result, if existent.
             mutable Model mModel;
 
@@ -123,24 +121,24 @@ namespace smtrat
             /// For each passed formula index its original sub formulas in the received formula.
             FormulaOrigins mPassedformulaOrigins;
             /// Stores the deductions this module or its backends made.
-            std::vector<Formula*> mDeductions;
+            std::vector<const Formula*> mDeductions;
             /// Stores the position of the first sub-formula in the passed formula, which has not yet been considered for a consistency check of the backends.
-            Formula::iterator mFirstSubformulaToPass;
+            ModuleInput::iterator mFirstSubformulaToPass;
             /// Stores the constraints which the backends must be informed about.
-            std::set<const Constraint* > mConstraintsToInform;
+            std::set<const Constraint*> mConstraintsToInform;
             /// Stores the position of the first constraint of which no backend has been informed about.
-            std::set<const Constraint* > mInformedConstraints;
+            std::set<const Constraint*> mInformedConstraints;
             /// Stores the position of the first (by this module) unchecked sub-formula of the received formula.
-            Formula::const_iterator mFirstUncheckedReceivedSubformula;
+            ModuleInput::const_iterator mFirstUncheckedReceivedSubformula;
             /// Counter used for the generation of the smt2 files to check for smaller muses.
             mutable unsigned mSmallerMusesCheckCounter;
 
         public:
-            std::set<Formula::iterator, FormulaIteratorConstraintIdCompare> mScheduledForRemoval;
+            std::set<ModuleInput::iterator,FormulaIteratorConstraintIdCompare> mScheduledForRemoval;
             //DEPRECATED
-            std::set<Formula::iterator, FormulaIteratorConstraintIdCompare> mScheduledForAdding;
+            std::set<ModuleInput::iterator,FormulaIteratorConstraintIdCompare> mScheduledForAdding;
 
-            Module( ModuleType type, const Formula* const, Conditionals&, Manager* const = NULL );
+            Module( ModuleType type, const ModuleInput*, Conditionals&, Manager* const = NULL );
             virtual ~Module();
 
             static std::vector<std::string> mAssumptionToCheck;
@@ -153,11 +151,11 @@ namespace smtrat
             // Main interfaces
             virtual bool inform( const Constraint* const );
 			virtual void init();
-            virtual bool assertSubformula( Formula::const_iterator );
+            virtual bool assertSubformula( ModuleInput::const_iterator );
             virtual Answer isConsistent();
-            virtual void removeSubformula( Formula::const_iterator );
+            virtual void removeSubformula( ModuleInput::const_iterator );
             virtual void updateModel() const;
-            virtual double rateCall( const std::set<const Formula*>& ) const;
+            virtual double rateCall( const PointerSet<Formula>& ) const;
 			virtual std::list<std::vector<carl::Variable>> getModelEqualities() const;
 
             // Methods to read and write on the members.
@@ -187,22 +185,22 @@ namespace smtrat
                 mThreadPriority = _threadPriority;
             }
 
-            inline const Formula* pReceivedFormula() const
+            inline const ModuleInput* pReceivedFormula() const
             {
                 return mpReceivedFormula;
             }
 
-            inline const Formula& rReceivedFormula() const
+            inline const ModuleInput& rReceivedFormula() const
             {
                 return *mpReceivedFormula;
             }
 
-            inline const Formula* pPassedFormula() const
+            inline const ModuleInput* pPassedFormula() const
             {
                 return mpPassedFormula;
             }
 
-            inline const Formula& rPassedFormula() const
+            inline const ModuleInput& rPassedFormula() const
             {
                 return *mpPassedFormula;
             }
@@ -237,37 +235,32 @@ namespace smtrat
                 return mInformedConstraints;
             }
 
-            void addDeduction( Formula* _deduction )
+            void addDeduction( const Formula* _deduction )
             {
                 mDeductions.push_back( _deduction );
             }
 
             void clearDeductions()
             {
-                while( !mDeductions.empty() )
-                {
-                    Formula* toDelete = mDeductions.back();
-                    mDeductions.pop_back();
-                    delete toDelete;
-                }
+                mDeductions.clear();
             }
 
-            const std::vector<Formula*>& deductions() const
+            const std::vector<const Formula*>& deductions() const
             {
                 return mDeductions;
             }
 
-            std::vector<Formula*>& rDeductions()
+            std::vector<const Formula*>& rDeductions()
             {
                 return mDeductions;
             }
 
-            Formula::const_iterator firstUncheckedReceivedSubformula() const
+            ModuleInput::const_iterator firstUncheckedReceivedSubformula() const
             {
                 return mFirstUncheckedReceivedSubformula;
             }
 
-            Formula::const_iterator firstSubformulaToPass() const
+            ModuleInput::const_iterator firstSubformulaToPass() const
             {
                 return mFirstSubformulaToPass;
             }
@@ -290,8 +283,9 @@ namespace smtrat
             void updateDeductions();
 
             // Methods for debugging purposes.
-            static void addAssumptionToCheck( const Formula&, bool, const std::string& );
-            static void addAssumptionToCheck( const std::set<const Formula*>&, bool, const std::string& );
+            static void addAssumptionToCheck( const Formula*, bool, const std::string& );
+            static void addAssumptionToCheck( const ModuleInput&, bool, const std::string& );
+            static void addAssumptionToCheck( const PointerSet<Formula>&, bool, const std::string& );
             static void addAssumptionToCheck( const std::set<const Constraint*>&, bool, const std::string& );
             static void storeAssumptionsToCheck( const Manager& );
             bool hasValidInfeasibleSubset() const;
@@ -330,7 +324,7 @@ namespace smtrat
                 mPassedformulaOrigins[_formula] = _origins;
             }
 
-            void addOrigin( const Formula* const _formula, const std::set< const Formula* >& _origin )
+            void addOrigin( const Formula* const _formula, const PointerSet<Formula>& _origin )
             {
                 assert( mPassedformulaOrigins.find( _formula ) != mPassedformulaOrigins.end() );
                 mPassedformulaOrigins[_formula].push_back( _origin );
@@ -343,7 +337,7 @@ namespace smtrat
                 formulaOrigins.insert( formulaOrigins.end(), _origins.begin(), _origins.end() );
             }
             
-            const std::set<const Formula*>& getOrigins( Formula::const_iterator _subformula ) const
+            const PointerSet<Formula>& getOrigins( Formula::const_iterator _subformula ) const
             {
                 FormulaOrigins::const_iterator origins = mPassedformulaOrigins.find( *_subformula );
                 assert( origins != mPassedformulaOrigins.end() );
@@ -368,18 +362,18 @@ namespace smtrat
             
             Answer foundAnswer( Answer );
             void addConstraintToInform( const Constraint* const _constraint );
-            void addReceivedSubformulaToPassedFormula( Formula::const_iterator );
-            void addSubformulaToPassedFormula( Formula*, const vec_set_const_pFormula& );
-            void addSubformulaToPassedFormula( Formula*, vec_set_const_pFormula&& );
-            void addSubformulaToPassedFormula( Formula*, const Formula* );
+            void addReceivedSubformulaToPassedFormula( ModuleInput::const_iterator );
+            void addSubformulaToPassedFormula( const Formula*, const vec_set_const_pFormula& );
+            void addSubformulaToPassedFormula( const Formula*, vec_set_const_pFormula&& );
+            void addSubformulaToPassedFormula( const Formula*, const Formula* );
             void getInfeasibleSubsets();
             static bool modelsDisjoint( const Model&, const Model& );
             void getBackendsModel() const;
             Answer runBackends();
-            Formula::iterator removeSubformulaFromPassedFormula( Formula::iterator );
+            ModuleInput::iterator removeSubformulaFromPassedFormula( ModuleInput::iterator );
             vec_set_const_pFormula getInfeasibleSubsets( const Module& ) const;
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
-            void branchAt( const Polynomial& _polynomial, const Rational& _value, const std::set<const Formula*>& = std::set<const Formula*>(), bool _leftCaseWeak = true );
+            void branchAt( const Polynomial& _polynomial, const Rational& _value, const PointerSet<Formula>& = PointerSet<Formula>(), bool _leftCaseWeak = true );
             void splitUnequalConstraint( const Constraint* );
             unsigned checkModel() const;
         public:

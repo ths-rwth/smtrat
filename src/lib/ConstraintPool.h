@@ -35,8 +35,9 @@
 
 namespace smtrat
 {
-    class ConstraintPool
+    class ConstraintPool : public carl::Singleton<ConstraintPool>
     {
+        friend carl::Singleton<ConstraintPool>;
         private:
             // Members:
 
@@ -60,18 +61,40 @@ namespace smtrat
             mutable std::mutex mMutexArithmeticVariables;
             /// Mutex to avoid multiple access to the set of Boolean variables
             mutable std::mutex mMutexBooleanVariables;
-            /// Mutex to avoid multiple access to the variable domain map
-            mutable std::mutex mMutexDomain;
+            /// Mutex to avoid multiple access to the pool
+            mutable std::mutex mMutexPool;
             /// The external prefix for a variable.
             std::string mExternalVarNamePrefix;
             /// The map of external variable names to internal variable names.
-            std::map< std::string, carl::Variable > mExternalNamesToVariables;
+            std::map<std::string,carl::Variable> mExternalNamesToVariables;
             /// The collection of Boolean variables in use.
             Variables mBooleanVariables;
             /// The constraint pool.
             FastPointerSet<Constraint> mConstraints;
             /// All external variable names which have been created during parsing.
-            std::vector< std::string > mParsedVarNames;
+            std::vector<std::string> mParsedVarNames;
+            
+            #ifdef SMTRAT_STRAT_PARALLEL_MODE
+            #define CONSTRAINT_POOL_LOCK_GUARD std::lock_guard<std::mutex> lock1( mMutexPool );
+            #define CONSTRAINT_POOL_LOCK mMutexPool.lock();
+            #define CONSTRAINT_POOL_UNLOCK mMutexPool.unlock();
+            #define ARITHMETIC_VAR_LOCK_GUARD std::lock_guard<std::mutex> lock2( mMutexArithmeticVariables );
+            #define ARITHMETIC_VAR_LOCK mMutexArithmeticVariables.lock();
+            #define ARITHMETIC_VAR_UNLOCK mMutexArithmeticVariables.unlock();
+            #define BOOLEAN_VAR_LOCK_GUARD std::lock_guard<std::mutex> lock3( mMutexBooleanVariables );
+            #define BOOLEAN_VAR_LOCK mMutexBooleanVariables.lock();
+            #define BOOLEAN_VAR_UNLOCK mMutexBooleanVariables.unlock();
+            #else
+            #define CONSTRAINT_POOL_LOCK_GUARD
+            #define CONSTRAINT_POOL_LOCK
+            #define CONSTRAINT_POOL_UNLOCK
+            #define ARITHMETIC_VAR_LOCK_GUARD
+            #define ARITHMETIC_VAR_LOCK
+            #define ARITHMETIC_VAR_UNLOCK
+            #define BOOLEAN_VAR_LOCK_GUARD
+            #define BOOLEAN_VAR_LOCK
+            #define BOOLEAN_VAR_UNLOCK
+            #endif
             
             /**
              * Creates a normalized constraint, which has the same solutions as the constraint consisting of the given
@@ -105,7 +128,7 @@ namespace smtrat
              */
             const Constraint* addConstraintToPool( Constraint* _constraint );
 
-        public:
+        protected:
             
             /**
              * Constructor of the constraint pool.
@@ -113,10 +136,12 @@ namespace smtrat
              */
             ConstraintPool( unsigned _capacity = 10000 );
 
+        public:
+
             /**
              * Destructor.
              */
-            virtual ~ConstraintPool();
+            ~ConstraintPool();
 
             /**
              * @return An iterator to the first constraint in this pool.
@@ -124,7 +149,7 @@ namespace smtrat
             FastPointerSet<Constraint>::const_iterator begin() const
             {
                 // TODO: Will begin() be valid if we insert elements?
-                CONSTRAINT_LOCK_GUARD
+                CONSTRAINT_POOL_LOCK_GUARD
                 auto result = mConstraints.begin();
                 return result;
             }
@@ -135,7 +160,7 @@ namespace smtrat
             FastPointerSet<Constraint>::const_iterator end() const
             {
                 // TODO: Will end() be changed if we insert elements?
-                CONSTRAINT_LOCK_GUARD
+                CONSTRAINT_POOL_LOCK_GUARD
                 auto result = mConstraints.end();
                 return result;
             }
@@ -145,7 +170,7 @@ namespace smtrat
              */
             size_t size() const
             {
-                CONSTRAINT_LOCK_GUARD
+                CONSTRAINT_POOL_LOCK_GUARD
                 size_t result = mConstraints.size();
                 return result;
             }
@@ -263,7 +288,7 @@ namespace smtrat
             carl::exponent maxDegree() const
             {
                 carl::exponent result = 0;
-                CONSTRAINT_LOCK_GUARD
+                CONSTRAINT_POOL_LOCK_GUARD
                 for( auto constraint = mConstraints.begin(); constraint != mConstraints.end(); ++constraint )
                 {
                     carl::exponent maxdeg = (*constraint)->lhs().totalDegree();
@@ -280,7 +305,7 @@ namespace smtrat
             unsigned nrNonLinearConstraints() const
             {
                 unsigned nonlinear = 0;
-                CONSTRAINT_LOCK_GUARD
+                CONSTRAINT_POOL_LOCK_GUARD
                 for( auto constraint = mConstraints.begin(); constraint != mConstraints.end(); ++constraint )
                 {
                     if( !(*constraint)->lhs().isLinear() ) 
@@ -428,6 +453,94 @@ namespace smtrat
              */
             void print( std::ostream& _out = std::cout ) const;
     };
+    
+    /**
+      * Constructs a new constraint and adds it to the shared constraint pool, if it is not yet a member. If it is a
+      * member, this will be returned instead of a new constraint.
+      * Note, that the left-hand side of the constraint is simplified and normalized, hence it is
+      * not necessarily equal to the given left-hand side. The same holds for the relation symbol.
+      * However, it is assured that the returned constraint has the same solutions as
+      * the expected one.
+      * @param _lhs The left-hand side of the constraint.
+      * @param _rel The relation symbol of the constraint.
+      * @param _variables An over-approximation of the variables which occur on the left-hand side.
+      * @return The constructed constraint.
+      */
+     const Constraint* newBound( const carl::Variable& _var, const Relation _rel, const Rational& _bound );
+
+     /**
+      * Constructs a new constraint and adds it to the shared constraint pool, if it is not yet a member. If it is a
+      * member, this will be returned instead of a new constraint.
+      * Note, that the left-hand side of the constraint is simplified and normalized, hence it is
+      * not necessarily equal to the given left-hand side. The same holds for the relation symbol.
+      * However, it is assured that the returned constraint has the same solutions as
+      * the expected one.
+      * @param _lhs The left-hand side of the constraint.
+      * @param _rel The relation symbol of the constraint.
+      * @param _variables An over-approximation of the variables which occur on the left-hand side.
+      * @return The constructed constraint.
+      */
+     const Constraint* newConstraint( const Polynomial& _lhs, const Relation _rel );
+
+     /**
+      * Constructs a new real variable.
+      * @param _name The intended name of the real variable.
+      * @return The constructed real variable.
+      */
+     carl::Variable newRealVariable( const std::string& _name );
+
+     /**
+      * Constructs a new arithmetic variable of the given domain.
+      * @param _name The intended name of the arithmetic variable.
+      * @param _domain The domain of the arithmetic variable.
+      * @return The constructed arithmetic variable.
+      */
+     carl::Variable newArithmeticVariable( const std::string& _name, carl::VariableType _domain, bool _parsed = false );
+
+     /**
+      * Constructs a new Boolean variable.
+      * @param _name The intended name of the variable.
+      * @return A pointer to the name of the constructed Boolean variable.
+      */
+     const carl::Variable newBooleanVariable( const std::string& _name, bool _parsed = false );
+
+     /**
+      * @return A constant reference to the shared constraint pool.
+      */
+     const ConstraintPool& constraintPool();
+
+     /**
+      * Generates a fresh real variable and returns its identifier.
+      * @return The fresh real variable.
+      */
+     carl::Variable newAuxiliaryIntVariable();
+
+     /**
+      * Generates a fresh real variable and returns its identifier.
+      * @param _varName The dedicated name of the real variable.
+      * @return The fresh real variable.
+      */
+     carl::Variable newAuxiliaryIntVariable( const std::string& _varName );
+
+     /**
+      * Generates a fresh real variable and returns its identifier.
+      * @return The fresh real variable.
+      */
+     carl::Variable newAuxiliaryRealVariable();
+
+     /**
+      * Generates a fresh real variable and returns its identifier.
+      * @param _varName The dedicated name of the real variable.
+      * @return The fresh real variable.
+      */
+     carl::Variable newAuxiliaryRealVariable( const std::string& _varName );
+
+     /**
+      * Generates a fresh Boolean variable and returns its identifier.
+      * @return The identifier of a fresh Boolean variable.
+      */
+     const carl::Variable newAuxiliaryBooleanVariable();
+    
 }    // namespace smtrat
 
 #endif   /* CONSTRAINTPOOL_H */

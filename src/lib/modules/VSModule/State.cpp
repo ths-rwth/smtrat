@@ -65,7 +65,7 @@ namespace vs
         mpConditions( new ConditionList() ),
         mpConflictSets( new ConflictSets() ),
         mpChildren( new std::list< State* >() ),
-        mpTooHighDegreeConditions( new set< const Condition* >() ),
+        mpTooHighDegreeConditions( new smtrat::PointerSet<Condition>() ),
         mpVariableBounds( _withVariableBounds ? new VariableBoundsCond() : NULL ),
         mpInfinityChild( NULL ),
         mMinIntTestCanidate( smtrat::ONE_RATIONAL ),
@@ -97,7 +97,7 @@ namespace vs
         mpConditions( new ConditionList() ),
         mpConflictSets( new ConflictSets() ),
         mpChildren( new std::list< State* >() ),
-        mpTooHighDegreeConditions( new set< const Condition* >() ),
+        mpTooHighDegreeConditions( new smtrat::PointerSet<Condition>() ),
         mpVariableBounds( _withVariableBounds ? new VariableBoundsCond() : NULL ),
         mpInfinityChild( NULL ),
         mMinIntTestCanidate( smtrat::ONE_RATIONAL ),
@@ -561,7 +561,7 @@ namespace vs
     {
         if( _conditionVectorToSimplify.size() > 1 )
         {
-            set<const Condition*> redundantConditionSet = set<const Condition*>();
+            smtrat::PointerSet<Condition> redundantConditionSet;
             auto iterA = _conditionVectorToSimplify.begin();
             // Check all condition combinations.
             while( iterA != _conditionVectorToSimplify.end() )
@@ -584,7 +584,7 @@ namespace vs
                             // If we have to choose which original conditions to take, choose those, which have been created earlier.
                             if( condB->valuation() < condA->valuation() )
                             {
-                                *condA->pOriginalConditions() = Condition::Set( condB->originalConditions() );
+                                *condA->pOriginalConditions() = smtrat::PointerSet<Condition>( condB->originalConditions() );
                                 condA->rValuation()          = condB->valuation();
                             }
                         }
@@ -608,31 +608,31 @@ namespace vs
                                 || (constraintA.relation() == smtrat::Relation::LEQ && constraintB.relation() == smtrat::Relation::GEQ)
                                 || (constraintA.relation() == smtrat::Relation::LEQ && constraintB.relation() == smtrat::Relation::LEQ) )
                         {
-                            nConstraint = smtrat::Formula::newConstraint( constraintB.lhs(), smtrat::Relation::EQ );
+                            nConstraint = smtrat::newConstraint( constraintB.lhs(), smtrat::Relation::EQ );
                             nValuation = condB->valuation();
                             nFlag = condB->flag();
                         }
                         else if( (constraintA.relation() == smtrat::Relation::NEQ && constraintB.relation() == smtrat::Relation::GEQ) )
                         {
-                            nConstraint = smtrat::Formula::newConstraint( constraintB.lhs(), smtrat::Relation::GREATER );
+                            nConstraint = smtrat::newConstraint( constraintB.lhs(), smtrat::Relation::GREATER );
                             nValuation = condB->valuation();
                             nFlag = condB->flag();
                         }
                         else if( (constraintA.relation() == smtrat::Relation::GEQ && constraintB.relation() == smtrat::Relation::NEQ) )
                         {
-                            nConstraint = smtrat::Formula::newConstraint( constraintA.lhs(), smtrat::Relation::GREATER );
+                            nConstraint = smtrat::newConstraint( constraintA.lhs(), smtrat::Relation::GREATER );
                             nValuation = condA->valuation();
                             nFlag = condA->flag();
                         }
                         else if( (constraintA.relation() == smtrat::Relation::NEQ && constraintB.relation() == smtrat::Relation::LEQ) )
                         {
-                            nConstraint = smtrat::Formula::newConstraint( constraintB.lhs(), smtrat::Relation::LESS );
+                            nConstraint = smtrat::newConstraint( constraintB.lhs(), smtrat::Relation::LESS );
                             nValuation = condB->valuation();
                             nFlag = condB->flag();
                         }
                         else if( (constraintA.relation() == smtrat::Relation::LEQ && constraintB.relation() == smtrat::Relation::NEQ) )
                         {
-                            nConstraint = smtrat::Formula::newConstraint( constraintA.lhs(), smtrat::Relation::LESS );
+                            nConstraint = smtrat::newConstraint( constraintA.lhs(), smtrat::Relation::LESS );
                             nValuation = condA->valuation();
                             nFlag = condA->flag();
                         }
@@ -643,7 +643,7 @@ namespace vs
                         {
                             if( _stateConditions )
                             {
-                                Condition::Set oConds = condB->originalConditions();
+                                smtrat::PointerSet<Condition> oConds = condB->originalConditions();
                                 oConds.insert( condA->originalConditions().begin(), condA->originalConditions().end() );
                                 addCondition( nConstraint, oConds, nValuation, true );
                             }
@@ -658,7 +658,7 @@ namespace vs
                         }
                         else if( nConstraint->isConsistent() == 0 )
                         {
-                            Condition::Set condSet = Condition::Set();
+                            smtrat::PointerSet<Condition> condSet;
                             condSet.insert( condA );
                             condSet.insert( condB );
                             _conflictSet.insert( condSet );
@@ -670,7 +670,7 @@ namespace vs
                     // If it is easy to decide that cond1 and cond2 are conflicting.
                     else if( strongProp == -2 || strongProp == -4 )
                     {
-                        Condition::Set condSet = Condition::Set();
+                        smtrat::PointerSet<Condition> condSet;
                         condSet.insert( condA );
                         condSet.insert( condB );
                         _conflictSet.insert( condSet );
@@ -981,7 +981,7 @@ namespace vs
             if( !simplify( newCombination, conflictingConditionPairs ) )
                 rInconsistent() = true;
             // Delete the conditions of this combination, which do already occur in the considered conditions of this state.
-            set<const Condition*> condsToDelete = set<const Condition*>();
+            smtrat::PointerSet<Condition> condsToDelete;
             auto cond = rConditions().begin();
             while( cond != conditions().end() )
             {
@@ -999,7 +999,7 @@ namespace vs
                             // If we have to choose which original conditions to take, choose those, which have been created earlier.
                             if( (**newCond).valuation() < (**cond).valuation() )
                             {
-                                *(**cond).pOriginalConditions() = Condition::Set( (**newCond).originalConditions() );
+                                *(**cond).pOriginalConditions() = smtrat::PointerSet<Condition>( (**newCond).originalConditions() );
                                 (**cond).rValuation()          = (**newCond).valuation();
                             }
                         }
@@ -1163,7 +1163,7 @@ namespace vs
         return false;
     }
 
-    void State::addCondition( const smtrat::Constraint* _constraint, const Condition::Set& _originalConditions, size_t _valutation, bool _recentlyAdded )
+    void State::addCondition( const smtrat::Constraint* _constraint, const smtrat::PointerSet<Condition>& _originalConditions, size_t _valutation, bool _recentlyAdded )
     {
         // Check if the constraint is variable-free and consistent. If so, discard it.
         unsigned constraintConsistency = _constraint->isConsistent();
@@ -1268,7 +1268,7 @@ namespace vs
         return true;
     }
 
-    int State::deleteOrigins( set<const Condition*>& _originsToDelete )
+    int State::deleteOrigins( smtrat::PointerSet<Condition>& _originsToDelete )
     {
         if( _originsToDelete.empty() ) return 1;
         if( !isRoot() )
@@ -1297,8 +1297,8 @@ namespace vs
         // Remove conditions from the currently considered condition vector, which are originated by any of the given origins.
         bool conditionDeleted = false;
         bool recentlyAddedConditionLeft = false;
-        set<const Condition*> deletedConditions = set<const Condition*>();
-        set<const Condition*> originsToRemove = set<const Condition*>();
+        smtrat::PointerSet<Condition> deletedConditions;
+        smtrat::PointerSet<Condition> originsToRemove;
         for( auto originToDelete = _originsToDelete.begin(); originToDelete != _originsToDelete.end(); ++originToDelete )
         {
             auto condition = rConditions().begin();
@@ -1372,7 +1372,7 @@ namespace vs
         return 1;
     }
 
-    void State::deleteConditions( set<const Condition*>& _conditionsToDelete )
+    void State::deleteConditions( smtrat::PointerSet<Condition>& _conditionsToDelete )
     {
         if( _conditionsToDelete.empty() ) return;
         // Delete the conditions to delete from the set of conditions with too high degree to
@@ -1385,7 +1385,7 @@ namespace vs
         bool conditionDeleted = false;
         bool recentlyAddedConditionLeft = false;
         vector<const Condition* > condsToDelete;
-        set<const Condition*> originsToRemove = set<const Condition*>();
+        smtrat::PointerSet<Condition> originsToRemove;
         for( auto cond = rConditions().begin(); cond != conditions().end(); )
         {
             // Delete the condition from the vector this state considers.
@@ -1450,7 +1450,7 @@ namespace vs
         mTryToRefreshIndex = true;
     }
 
-    void State::deleteOriginsFromChildren( set<const Condition*>& _originsToDelete )
+    void State::deleteOriginsFromChildren( smtrat::PointerSet<Condition>& _originsToDelete )
     {
         bool childWithIntTcDeleted = false;
         auto child = rChildren().begin();
@@ -1481,7 +1481,7 @@ namespace vs
             updateIntTestCandidates();
     }
 
-    void State::deleteOriginsFromConflictSets( set<const Condition*>& _originsToDelete, bool _originsAreCurrentConditions )
+    void State::deleteOriginsFromConflictSets( smtrat::PointerSet<Condition>& _originsToDelete, bool _originsAreCurrentConditions )
     {
         auto conflictSet = mpConflictSets->begin();
         while( conflictSet != mpConflictSets->end() )
@@ -1495,7 +1495,7 @@ namespace vs
                 auto condSet = condSetSet->begin();
                 while( condSet != condSetSet->end() )
                 {
-                    Condition::Set updatedCondSet = Condition::Set();
+                    smtrat::PointerSet<Condition> updatedCondSet;
                     auto cond = condSet->begin();
                     bool condToDelOccured = false;
                     while( cond != condSet->end() )
@@ -1608,7 +1608,7 @@ namespace vs
         }
     }
 
-    void State::deleteOriginsFromSubstitutionResults( set<const Condition*>& _originsToDelete )
+    void State::deleteOriginsFromSubstitutionResults( smtrat::PointerSet<Condition>& _originsToDelete )
     {
         if( hasSubstitutionResults() )
         {
@@ -1641,7 +1641,7 @@ namespace vs
                             oCond = (**cond).pOriginalConditions()->begin();
                             while( oCond != (**cond).originalConditions().end() )
                             {
-                                Condition::Set oConds = Condition::Set();
+                                smtrat::PointerSet<Condition> oConds;
                                 oConds.insert( *oCond );
                                 conditionsToAdd.push_back( new Condition( (**oCond).pConstraint(), (**cond).valuation(), false, oConds ) );
                                 ++oCond;
@@ -1718,22 +1718,22 @@ namespace vs
 //            State* state;
 //            if( _substitution.variable().getType() == carl::VariableType::VT_INT && !(_substitution.term().denominator() == smtrat::ONE_POLYNOMIAL) )
 //            {
-//                const smtrat::Constraint* denomPos = smtrat::Formula::newConstraint( _substitution.term().denominator(), smtrat::Relation::GREATER );
-//                const smtrat::Constraint* denomNeg = smtrat::Formula::newConstraint( _substitution.term().denominator(), smtrat::Relation::LESS );
-//                assert( denomPos != smtrat::Formula::constraintPool().inconsistentConstraint() || denomNeg != smtrat::Formula::constraintPool().inconsistentConstraint() );
+//                const smtrat::Constraint* denomPos = smtrat::newConstraint( _substitution.term().denominator(), smtrat::Relation::GREATER );
+//                const smtrat::Constraint* denomNeg = smtrat::newConstraint( _substitution.term().denominator(), smtrat::Relation::LESS );
+//                assert( denomPos != smtrat::constraintPool().inconsistentConstraint() || denomNeg != smtrat::constraintPool().inconsistentConstraint() );
 //                if( _substitution.term().hasSqrt() )
 //                {
 //                    state = new State( this, _substitution, mpVariableBounds != NULL );
                     // add (s<0 or s>0) to the substitution results, with the substitutions test candidate being (q+r*sqrt(t))/s
-//                    if( denomPos != smtrat::Formula::constraintPool().consistentConstraint() && denomNeg != smtrat::Formula::constraintPool().consistentConstraint() )
+//                    if( denomPos != smtrat::constraintPool().consistentConstraint() && denomNeg != smtrat::constraintPool().consistentConstraint() )
 //                    {
 //                        DisjunctionOfConditionConjunctions cases;
-//                        if( denomPos != smtrat::Formula::constraintPool().inconsistentConstraint() )
+//                        if( denomPos != smtrat::constraintPool().inconsistentConstraint() )
 //                        {
 //                            cases.push_back( ConditionList() );
 //                            cases.back().push_back( new vs::Condition( denomPos, state->treeDepth(), false, _substitution.originalConditions(), false ) );
 //                        }
-//                        if( denomNeg != smtrat::Formula::constraintPool().inconsistentConstraint() )
+//                        if( denomNeg != smtrat::constraintPool().inconsistentConstraint() )
 //                        {
 //                            cases.push_back( ConditionList() );
 //                            cases.back().push_back( new vs::Condition( denomNeg, state->treeDepth(), false, _substitution.originalConditions(), false ) );
@@ -1747,29 +1747,29 @@ namespace vs
 //                else
 //                {
 //                    // the substitutions test candidate is q/s
-//                    const smtrat::Constraint* numNotNeg = smtrat::Formula::newConstraint( _substitution.term().constantPart(), smtrat::Relation::GEQ );
-//                    const smtrat::Constraint* numNotPos = smtrat::Formula::newConstraint( _substitution.term().constantPart(), smtrat::Relation::LEQ );
-//                    const smtrat::Constraint* sideConsA = smtrat::Formula::newConstraint( _substitution.term().denominator() - _substitution.term().constantPart(), smtrat::Relation::LEQ );
-//                    const smtrat::Constraint* sideConsB = smtrat::Formula::newConstraint( _substitution.term().denominator() + _substitution.term().constantPart(), smtrat::Relation::LEQ );
-//                    const smtrat::Constraint* sideConsC = smtrat::Formula::newConstraint( _substitution.term().denominator() + _substitution.term().constantPart(), smtrat::Relation::GEQ );
-//                    const smtrat::Constraint* sideConsD = smtrat::Formula::newConstraint( _substitution.term().denominator() - _substitution.term().constantPart(), smtrat::Relation::GEQ );
+//                    const smtrat::Constraint* numNotNeg = smtrat::newConstraint( _substitution.term().constantPart(), smtrat::Relation::GEQ );
+//                    const smtrat::Constraint* numNotPos = smtrat::newConstraint( _substitution.term().constantPart(), smtrat::Relation::LEQ );
+//                    const smtrat::Constraint* sideConsA = smtrat::newConstraint( _substitution.term().denominator() - _substitution.term().constantPart(), smtrat::Relation::LEQ );
+//                    const smtrat::Constraint* sideConsB = smtrat::newConstraint( _substitution.term().denominator() + _substitution.term().constantPart(), smtrat::Relation::LEQ );
+//                    const smtrat::Constraint* sideConsC = smtrat::newConstraint( _substitution.term().denominator() + _substitution.term().constantPart(), smtrat::Relation::GEQ );
+//                    const smtrat::Constraint* sideConsD = smtrat::newConstraint( _substitution.term().denominator() - _substitution.term().constantPart(), smtrat::Relation::GEQ );
 //                    state = new State( this, _substitution, mpVariableBounds != NULL );
 //                    DisjunctionOfConditionConjunctions cases;
-//                    if( denomPos != smtrat::Formula::constraintPool().inconsistentConstraint() )
+//                    if( denomPos != smtrat::constraintPool().inconsistentConstraint() )
 //                    {
 //                        // add the case (s>0 and q>=0 and s<=q)
-//                        if( numNotNeg != smtrat::Formula::constraintPool().inconsistentConstraint() && sideConsA != smtrat::Formula::constraintPool().inconsistentConstraint() )
+//                        if( numNotNeg != smtrat::constraintPool().inconsistentConstraint() && sideConsA != smtrat::constraintPool().inconsistentConstraint() )
 //                        {
 //                            ConditionList c;
-//                            if( denomPos != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            if( denomPos != smtrat::constraintPool().consistentConstraint() )
 //                            {
 //                                c.push_back( new vs::Condition( denomPos, state->treeDepth(), false, _substitution.originalConditions(), false ) );
 //                            }
-//                            if( numNotNeg != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            if( numNotNeg != smtrat::constraintPool().consistentConstraint() )
 //                            {
 //                                c.push_back( new vs::Condition( numNotNeg, state->treeDepth(), false, _substitution.originalConditions(), false ) );
 //                            }
-//                            if( sideConsA != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            if( sideConsA != smtrat::constraintPool().consistentConstraint() )
 //                            {
 //                                c.push_back( new vs::Condition( sideConsA, state->treeDepth(), false, _substitution.originalConditions(), false ) );
 //                            }
@@ -1777,18 +1777,18 @@ namespace vs
 //                                cases.push_back( c );
 //                        }
 //                        // add the case (s>0 and q<=0 and s<=-q)
-//                        if( numNotPos != smtrat::Formula::constraintPool().inconsistentConstraint() && sideConsB != smtrat::Formula::constraintPool().inconsistentConstraint() )
+//                        if( numNotPos != smtrat::constraintPool().inconsistentConstraint() && sideConsB != smtrat::constraintPool().inconsistentConstraint() )
 //                        {
 //                            ConditionList c;
-//                            if( denomPos != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            if( denomPos != smtrat::constraintPool().consistentConstraint() )
 //                            {
 //                                c.push_back( new vs::Condition( denomPos, state->treeDepth(), false, _substitution.originalConditions(), false ) );
 //                            }
-//                            if( numNotPos != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            if( numNotPos != smtrat::constraintPool().consistentConstraint() )
 //                            {
 //                                c.push_back( new vs::Condition( numNotPos, state->treeDepth(), false, _substitution.originalConditions(), false ) );
 //                            }
-//                            if( sideConsB != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            if( sideConsB != smtrat::constraintPool().consistentConstraint() )
 //                            {
 //                                c.push_back( new vs::Condition( sideConsB, state->treeDepth(), false, _substitution.originalConditions(), false ) );
 //                            }
@@ -1796,21 +1796,21 @@ namespace vs
 //                                cases.push_back( c );
 //                        }
 //                    }
-//                    if( denomNeg != smtrat::Formula::constraintPool().inconsistentConstraint() )
+//                    if( denomNeg != smtrat::constraintPool().inconsistentConstraint() )
 //                    {
 //                        // add the case (s<0 and q>=0 and -q<=s)
-//                        if( numNotNeg != smtrat::Formula::constraintPool().inconsistentConstraint() && sideConsC != smtrat::Formula::constraintPool().inconsistentConstraint() )
+//                        if( numNotNeg != smtrat::constraintPool().inconsistentConstraint() && sideConsC != smtrat::constraintPool().inconsistentConstraint() )
 //                        {
 //                            ConditionList c;
-//                            if( denomNeg != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            if( denomNeg != smtrat::constraintPool().consistentConstraint() )
 //                            {
 //                                c.push_back( new vs::Condition( denomNeg, state->treeDepth(), false, _substitution.originalConditions(), false ) );
 //                            }
-//                            if( numNotNeg != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            if( numNotNeg != smtrat::constraintPool().consistentConstraint() )
 //                            {
 //                                c.push_back( new vs::Condition( numNotNeg, state->treeDepth(), false, _substitution.originalConditions(), false ) );
 //                            }
-//                            if( sideConsC != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            if( sideConsC != smtrat::constraintPool().consistentConstraint() )
 //                            {
 //                                c.push_back( new vs::Condition( sideConsC, state->treeDepth(), false, _substitution.originalConditions(), false ) );
 //                            }
@@ -1818,18 +1818,18 @@ namespace vs
 //                                cases.push_back( c );
 //                        }
 //                        // add the case (s<0 and q<=0 and s<=q)
-//                        if( numNotPos != smtrat::Formula::constraintPool().inconsistentConstraint() && sideConsD != smtrat::Formula::constraintPool().inconsistentConstraint() )
+//                        if( numNotPos != smtrat::constraintPool().inconsistentConstraint() && sideConsD != smtrat::constraintPool().inconsistentConstraint() )
 //                        {
 //                            ConditionList c;
-//                            if( denomNeg != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            if( denomNeg != smtrat::constraintPool().consistentConstraint() )
 //                            {
 //                                c.push_back( new vs::Condition( denomNeg, state->treeDepth(), false, _substitution.originalConditions(), false ) );
 //                            }
-//                            if( numNotPos != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            if( numNotPos != smtrat::constraintPool().consistentConstraint() )
 //                            {
 //                                c.push_back( new vs::Condition( numNotPos, state->treeDepth(), false, _substitution.originalConditions(), false ) );
 //                            }
-//                            if( sideConsD != smtrat::Formula::constraintPool().consistentConstraint() )
+//                            if( sideConsD != smtrat::constraintPool().consistentConstraint() )
 //                            {
 //                                c.push_back( new vs::Condition( sideConsD, state->treeDepth(), false, _substitution.originalConditions(), false ) );
 //                            }
@@ -1877,19 +1877,19 @@ namespace vs
                 }
                 else
                 {
-                    const smtrat::Constraint* denomPos = smtrat::Formula::newConstraint( (*sideCond)->lhs(), smtrat::Relation::GREATER );
-                    const smtrat::Constraint* denomNeg = smtrat::Formula::newConstraint( (*sideCond)->lhs(), smtrat::Relation::LESS );
-                    assert( denomPos != smtrat::Formula::constraintPool().inconsistentConstraint() || denomNeg != smtrat::Formula::constraintPool().inconsistentConstraint() );
+                    const smtrat::Constraint* denomPos = smtrat::newConstraint( (*sideCond)->lhs(), smtrat::Relation::GREATER );
+                    const smtrat::Constraint* denomNeg = smtrat::newConstraint( (*sideCond)->lhs(), smtrat::Relation::LESS );
+                    assert( denomPos != smtrat::constraintPool().inconsistentConstraint() || denomNeg != smtrat::constraintPool().inconsistentConstraint() );
                     // add (p<0 or p>0) to the substitution results, with the constraint being p!=0
-                    if( denomPos != smtrat::Formula::constraintPool().consistentConstraint() && denomNeg != smtrat::Formula::constraintPool().consistentConstraint() )
+                    if( denomPos != smtrat::constraintPool().consistentConstraint() && denomNeg != smtrat::constraintPool().consistentConstraint() )
                     {
                         DisjunctionOfConditionConjunctions cases;
-                        if( denomPos != smtrat::Formula::constraintPool().inconsistentConstraint() )
+                        if( denomPos != smtrat::constraintPool().inconsistentConstraint() )
                         {
                             cases.push_back( ConditionList() );
                             cases.back().push_back( new vs::Condition( denomPos, state->treeDepth(), false, _substitution.originalConditions(), false ) );
                         }
-                        if( denomNeg != smtrat::Formula::constraintPool().inconsistentConstraint() )
+                        if( denomNeg != smtrat::constraintPool().inconsistentConstraint() )
                         {
                             cases.push_back( ConditionList() );
                             cases.back().push_back( new vs::Condition( denomNeg, state->treeDepth(), false, _substitution.originalConditions(), false ) );
@@ -1972,7 +1972,7 @@ namespace vs
         if( index().getType() != carl::VariableType::VT_INT || !mpConflictSets->empty() )
         {
             // Determine a covering set of the conflict sets.
-            Condition::Set covSet         = Condition::Set();
+            smtrat::PointerSet<Condition> covSet;
             ConditionSetSetSet confSets = ConditionSetSetSet();
             auto nullConfSet = rConflictSets().find( NULL );
             if( nullConfSet != conflictSets().end() && !_includeInconsistentTestCandidates )
@@ -1990,7 +1990,7 @@ namespace vs
             smtrat::Module::addAssumptionToCheck( constraints, false, "VSModule_IS_1" );
             #endif
             // Get the original conditions to the covering set.
-            Condition::Set coverSetOConds = Condition::Set();
+            smtrat::PointerSet<Condition> coverSetOConds;
             bool sideConditionIsPartOfConflict = !_checkConflictForSideCondition || (pOriginalCondition() == NULL || originalCondition().constraint().relation() != smtrat::Relation::EQ);
             const smtrat::PointerSet<smtrat::Constraint>& subsSideConds = substitution().sideCondition();
             for( auto cond = covSet.begin(); cond != covSet.end(); ++cond )
@@ -2085,7 +2085,7 @@ namespace vs
         #endif
         // Construct the local conflict consisting of all of the currently considered conditions,
         // which have been considered for test candidate construction.
-        Condition::Set localConflictSet = Condition::Set();
+        smtrat::PointerSet<Condition> localConflictSet;
         for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
         {
             if( (*cond)->flag() ) localConflictSet.insert( *cond );
@@ -2098,7 +2098,7 @@ namespace vs
             cout << (*iter)->constraint() << " ";
         cout << "}" << endl;
         #endif
-        Condition::Set infSubset = Condition::Set();
+        smtrat::PointerSet<Condition> infSubset;
         bool containsConflictToCover = false;
         for( auto conflict = conflictSets().begin(); conflict != conflictSets().end(); ++conflict )
         {
@@ -2119,9 +2119,9 @@ namespace vs
                     #endif
                     while( condA != condSet->end() &&  condB != localConflictSet.end() )
                     {
-                        if( Condition::condPointerLess()( *condB, *condA ) )
+                        if( (*condB) < (*condA) )
                             ++condB;
-                        else if( Condition::condPointerLess()( *condA, *condB ) )
+                        else if( (*condA) < (*condB) )
                             break;
                         else
                         {
@@ -2181,7 +2181,7 @@ namespace vs
             cout << ">>> Check test candidate  " << substitution() << "  against:" << endl;
             father().variableBounds().print( cout, ">>>    " );
             #endif
-            Condition::Set conflict = Condition::Set();
+            smtrat::PointerSet<Condition> conflict;
             vector< smtrat::DoubleInterval > solutionSpaces = solutionSpace( conflict );
             if( solutionSpaces.empty() )
             {
@@ -2194,7 +2194,7 @@ namespace vs
         return true;
     }
 
-    vector< smtrat::DoubleInterval > State::solutionSpace( Condition::Set& _conflictReason ) const
+    vector< smtrat::DoubleInterval > State::solutionSpace( smtrat::PointerSet<Condition>& _conflictReason ) const
     {
         vector< smtrat::DoubleInterval > result = vector< smtrat::DoubleInterval >();
         assert( !isRoot() );
@@ -2204,7 +2204,7 @@ namespace vs
                 result.push_back( smtrat::DoubleInterval::unboundedInterval() );
             else
             {
-                set< const Condition* > conflictBounds = father().variableBounds().getOriginsOfBounds( substitution().variable() );
+                smtrat::PointerSet<Condition> conflictBounds = father().variableBounds().getOriginsOfBounds( substitution().variable() );
                 _conflictReason.insert( conflictBounds.begin(), conflictBounds.end() );
             }
             return result;
@@ -2215,7 +2215,7 @@ namespace vs
                 result.push_back( smtrat::DoubleInterval::unboundedInterval() );
             else
             {
-                set< const Condition* > conflictBounds = father().variableBounds().getOriginsOfBounds( substitution().variable() );
+                smtrat::PointerSet<Condition> conflictBounds = father().variableBounds().getOriginsOfBounds( substitution().variable() );
                 _conflictReason.insert( conflictBounds.begin(), conflictBounds.end() );
             }
             return result;
@@ -2283,7 +2283,7 @@ namespace vs
             {
                 smtrat::Variables conflictVars = substitution().termVariables();
                 conflictVars.insert( substitution().variable() );
-                set< const Condition* > conflictBounds = father().variableBounds().getOriginsOfBounds( conflictVars );
+                smtrat::PointerSet<Condition> conflictBounds = father().variableBounds().getOriginsOfBounds( conflictVars );
                 _conflictReason.insert( conflictBounds.begin(), conflictBounds.end() );
                 _conflictReason.insert( substitution().originalConditions().begin(), substitution().originalConditions().end() );
             }
@@ -2374,9 +2374,9 @@ namespace vs
                 }
                 if( constraintInconsistent )
                 {
-                    Condition::Set origins = Condition::Set();
+                    smtrat::PointerSet<Condition> origins;
                     origins.insert( _condition );
-                    set< const Condition* > conflictingBounds = variableBounds().getOriginsOfBounds( index() );
+                    smtrat::PointerSet<Condition> conflictingBounds = variableBounds().getOriginsOfBounds( index() );
                     origins.insert( conflictingBounds.begin(), conflictingBounds.end() );
                     ConditionSetSet conflicts = ConditionSetSet();
                     conflicts.insert( origins );
@@ -2414,9 +2414,9 @@ namespace vs
             constraintInconsistent = true;
         else if( solutionSpace.upper() <= 0 && cons.relation() == smtrat::Relation::GREATER )
             constraintInconsistent = true;
-        Condition::Set origins = Condition::Set();
+        smtrat::PointerSet<Condition> origins;
         origins.insert( _condition );
-        set< const Condition* > conflictingBounds = variableBounds().getOriginsOfBounds( cons.variables() );
+        smtrat::PointerSet<Condition> conflictingBounds = variableBounds().getOriginsOfBounds( cons.variables() );
         origins.insert( conflictingBounds.begin(), conflictingBounds.end() );
         ConditionSetSet conflicts = ConditionSetSet();
         conflicts.insert( origins );
@@ -2425,7 +2425,7 @@ namespace vs
         {
             smtrat::PointerSet<smtrat::Constraint> constraints = smtrat::PointerSet<smtrat::Constraint>();
             constraints.insert( _condition->pConstraint() );
-            Condition::Set subsOrigins = Condition::Set();
+            smtrat::PointerSet<Condition> subsOrigins;
             subsOrigins.insert( _condition );
             sub = new Substitution( index(), Substitution::INVALID, subsOrigins, constraints );
         }
@@ -2508,7 +2508,7 @@ namespace vs
         {
             _out << _initiation << "                           infinity child: " << mpInfinityChild << endl;
         }
-        _out << _initiation << "                                    index: " << index() << " " << smtrat::Formula::constraintPool().toString(index().getType()) << "  )" << endl;
+        _out << _initiation << "                                    index: " << index() << " " << smtrat::constraintPool().toString(index().getType()) << "  )" << endl;
         printConditions( _initiation + "   ", _out );
         if( !isRoot() )
         {
@@ -2681,7 +2681,7 @@ namespace vs
         }
     }
 
-    size_t State::coveringSet( const ConditionSetSetSet& _conflictSets, Condition::Set& _coveringSet, unsigned _currentTreeDepth )
+    size_t State::coveringSet( const ConditionSetSetSet& _conflictSets, smtrat::PointerSet<Condition>& _coveringSet, unsigned _currentTreeDepth )
     {
         // Greatest tree depth of the original conditions of the conditions in the covering set.
         size_t greatestTreeDepth = 0;

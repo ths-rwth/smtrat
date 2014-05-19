@@ -38,24 +38,22 @@
 #include <unordered_map>
 #include <assert.h>
 #include <fstream>
-#include "../../lib/Constraint.h"
-#include "../../lib/Formula.h"
+#include "../../lib/ConstraintPool.h"
+#include "../../lib/FormulaPool.h"
 
 namespace smtrat
 {
-    class Formula;
-
-    typedef std::unordered_map< std::string, carl::Variable > TheoryVarMap;
+    typedef std::unordered_map<std::string, carl::Variable> TheoryVarMap;
     enum InstructionKey { ASSERT, PUSHBT, POPBT, CHECK, GET_VALUE, GET_ASSIGNMENT, GET_ASSERTS, GET_UNSAT_CORE, GET_PROOF, GET_INFO, SET_INFO, GET_OPTION, SET_OPTION, SET_LOGIC };
     union InstructionValue
     {
-        class Formula* formula;
-        std::vector< std::pair< std::string, std::string > >* varNames;
+        const Formula* formula;
+        std::vector<std::pair<std::string, std::string>>* varNames;
         std::string* key;
-        std::pair< std::string, std::string >* keyValuePair;
+        std::pair<std::string, std::string>* keyValuePair;
         int num;
     };
-    typedef std::pair< InstructionKey, InstructionValue > Instruction;
+    typedef std::pair<InstructionKey, InstructionValue> Instruction;
 
     class Driver
     {
@@ -72,14 +70,6 @@ namespace smtrat
             bool mSentSolverInstruction;
             /// Indicates whether the last instruction could not be successfully applied.
             bool mLastInstructionFailed;
-            ///
-            bool mPolarity;
-            ///
-            bool mTwoFormulaMode;
-            ///
-            std::stack<bool> mPolarityHist;
-            ///
-            std::stack<bool> mTwoFormulaModeHist;
             /// Number of checks (only one check permitted if the status flag is set to true or false)
             unsigned mNumOfChecks;
             /// Supported info flags according to SMT-lib 2.0.
@@ -107,7 +97,7 @@ namespace smtrat
             } mOptions;
             Logic mLogic;
             /// Reference to the calculator context filled during parsing of the expressions.
-            std::queue< Instruction > mInstructionQueue;
+            std::queue<Instruction> mInstructionQueue;
             /// 
             std::ostream mRegularOutputChannel;
             /// 
@@ -121,19 +111,17 @@ namespace smtrat
             /// stream name (file or input stream) used for error messages.
             std::string* mStreamname;
             ///
-            std::unordered_map< std::string, carl::Variable > mBooleanVariables;
+            std::unordered_map<std::string, carl::Variable> mBooleanVariables;
             ///
             TheoryVarMap mTheoryVariables;
             ///
-            std::unordered_map< std::string, smtrat::Polynomial* > mTheoryBindings;
+            std::unordered_map<std::string, Polynomial*> mTheoryBindings;
             ///
-            std::unordered_map< carl::Variable, carl::Variable > mTheoryIteBindings;
+            std::unordered_map<carl::Variable, const Formula*> mTheoryIteBindings;
             ///
-            std::stack< std::vector< std::pair< std::string, unsigned > > > mVariableStack;
+            std::stack<std::vector<std::pair<std::string, unsigned>>> mVariableStack;
             ///
-            std::unordered_map< carl::Variable, smtrat::Formula* > mInnerConstraintBindings;
-            ///
-            std::map<const Formula*, std::set<carl::Variable>> mFoundBooleanVariables;
+            std::unordered_map<carl::Variable, const Formula*> mInnerConstraintBindings;
 
         public:
             // Constructor and destructor.
@@ -182,13 +170,13 @@ namespace smtrat
                 return mStreamname;
             }
 
-            class Formula& currentFormula()
+            const Formula& currentFormula()
             {
                 assert( mInstructionQueue.back().first == ASSERT );
                 return *mInstructionQueue.back().second.formula;
             }
 
-            class Formula* pCurrentFormula()
+            const Formula* pCurrentFormula()
             {
                 assert( mInstructionQueue.back().first == ASSERT );
                 return mInstructionQueue.back().second.formula;
@@ -214,45 +202,6 @@ namespace smtrat
                 return mTheoryVariables;
             }
             
-            bool polarity() const
-            {
-                return mPolarity;
-            }
-            
-            void changePolarity()
-            {
-                mPolarity = !mPolarity;
-            }
-            
-            bool twoFormulaMode() const
-            {
-                return mTwoFormulaMode;
-            }
-            
-            void setTwoFormulaMode( bool _newMode )
-            {
-                mTwoFormulaModeHist.push( mTwoFormulaMode );
-                mTwoFormulaMode = _newMode;
-            }
-            
-            void restoreTwoFormulaMode()
-            {
-                mTwoFormulaMode = mTwoFormulaModeHist.top();
-                mTwoFormulaModeHist.pop();
-            }
-            
-            void setPolarity( bool _pol )
-            {
-                mPolarityHist.push( mPolarity );
-                mPolarity = _pol;
-            }
-            
-            void restorePolarity()
-            {
-                mPolarity = mPolarityHist.top();
-                mPolarityHist.pop();
-            }
-            
             void check()
             {
                 InstructionValue iv = InstructionValue();
@@ -260,7 +209,7 @@ namespace smtrat
                 mInstructionQueue.push( Instruction( CHECK, iv ) );
             }
             
-            void add( class Formula* _formula );
+            void add( const Formula* _formula );
             
             void push( const std::string& _num )
             {
@@ -396,8 +345,6 @@ namespace smtrat
                 return carl::VT_REAL;
             }
             
-            void moveFoundBooleanVars( const Formula*, std::set<carl::Variable>& );
-            bool foundBooleanVarsCorrect( const Formula* );
             bool parse_stream( std::istream&, const std::string& = "stream input" );
             bool parse_string( const std::string&, const std::string& = "string stream" );
             bool parse_file( const std::string& );
@@ -406,9 +353,9 @@ namespace smtrat
             void applySetLogic( const std::string& );
             void addVariable( const class location&, std::string*, std::string* );
             carl::Variable addBooleanVariable( const class location&, const std::string&, bool = false );
-            std::pair<carl::Variable, smtrat::Formula*>* addTheoryBinding( const class location&, std::string*, smtrat::Polynomial* );
-            std::pair<carl::Variable, smtrat::Formula*>* booleanBinding( const class location&, std::string*, Formula* );
-            smtrat::Formula* appendBindings( std::vector<std::pair<carl::Variable, smtrat::Formula*>*>*, smtrat::Formula* );
+            std::pair<carl::Variable, const Formula*>* addTheoryBinding( const class location&, std::string*, Polynomial* );
+            std::pair<carl::Variable, const Formula*>* booleanBinding( const class location&, std::string*, const Formula* );
+            const Formula* appendBindings( std::vector<std::pair<carl::Variable, const Formula*>*>*, const Formula* );
             carl::Variable addTheoryVariable( const class location&, const std::string&, const std::string&, bool = false );
             carl::Variable getBooleanVariable( const class location&, const std::string& );
             void freeBooleanVariableName( const std::string& );
