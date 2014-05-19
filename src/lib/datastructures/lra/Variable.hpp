@@ -298,7 +298,7 @@ namespace smtrat
                 std::pair<const Bound<T1, T2>*, bool> addEqualBound( Value<T1>* const, std::list<const smtrat::Formula*>::iterator, const smtrat::Constraint* = NULL );
                 bool deactivateBound( const Bound<T1, T2>*, std::list<const smtrat::Formula*>::iterator );
                 Interval getVariableBounds() const;
-                std::set< const smtrat::Formula* > getDefiningOrigins() const;
+                PointerSet<smtrat::Formula> getDefiningOrigins() const;
 
                 void print( std::ostream& = std::cout ) const;
                 void printAllBounds( std::ostream& = std::cout, const std::string = "" ) const;
@@ -531,9 +531,9 @@ namespace smtrat
          * @return
          */
         template<typename T1, typename T2>
-        std::set< const smtrat::Formula* > Variable<T1, T2>::getDefiningOrigins() const
+        PointerSet<smtrat::Formula> Variable<T1, T2>::getDefiningOrigins() const
         {
-            std::set< const smtrat::Formula* > result = std::set< const smtrat::Formula* >();
+            PointerSet<smtrat::Formula> result;
             if( !infimum().isInfinite() )
             {
                 result.insert( infimum().origins().front().begin(), infimum().origins().front().end() );

@@ -88,7 +88,7 @@ namespace smtrat
             /**
              * Constructors:
              */
-            LRAModule( ModuleType _type, const Input*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            LRAModule( ModuleType _type, const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             /**
              * Destructor:
@@ -102,8 +102,8 @@ namespace smtrat
             // Interfaces.
             bool inform( const Constraint* const );
             void init();
-            bool assertSubformula( Input::const_iterator );
-            void removeSubformula( Input::const_iterator );
+            bool assertSubformula( ModuleInput::const_iterator );
+            void removeSubformula( ModuleInput::const_iterator );
             Answer isConsistent();
             void updateModel() const;
             EvalRationalMap getRationalModel() const;

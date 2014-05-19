@@ -97,15 +97,15 @@ namespace smtrat
         public:
 
             // Constructors.
-            VSModule( ModuleType _type, const Input*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            VSModule( ModuleType _type, const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             // Destructor.
             ~VSModule();
             
             // Interfaces.
-            bool assertSubformula( Input::const_iterator );
+            bool assertSubformula( ModuleInput::const_iterator );
             Answer isConsistent();
-            void removeSubformula( Input::const_iterator );
+            void removeSubformula( ModuleInput::const_iterator );
             void updateModel() const;
             double rateCall( const PointerSet<Formula>& ) const;
 

@@ -57,7 +57,7 @@ namespace smtrat
             /// a vector of flags, which indicate that an answer has been found of an antecessor module of the primary module
             std::vector< std::atomic_bool* > mPrimaryBackendFoundAnswer;
             /// the constraints so far passed to the primary backend
-            Input* mpPassedFormula;
+            ModuleInput* mpPassedFormula;
             /// The propositions of the passed formula.
             Condition mPropositions;
             /// the backtrack points
@@ -152,7 +152,7 @@ namespace smtrat
                 initialize();
                 #endif
                 *mPrimaryBackendFoundAnswer.back() = false;
-                mpPassedFormula->updatePropositions();
+                mpPassedFormula->updateProperties();
                 return mpPrimaryBackend->isConsistent();
             }
 

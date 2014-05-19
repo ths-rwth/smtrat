@@ -59,14 +59,14 @@ namespace smtrat
 
     // Constructor.
     
-    Module::Module( ModuleType type, const Input* _formula, Conditionals& _foundAnswer, Manager* const _tsManager ):
+    Module::Module( ModuleType type, const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* const _tsManager ):
         mId( 0 ),
         mThreadPriority( thread_priority( 0 , 0 ) ),
         mModuleType( type ),
         mInfeasibleSubsets(),
         mpManager( _tsManager ),
         mpReceivedFormula( _formula ),
-        mpPassedFormula( new Input() ),
+        mpPassedFormula( new ModuleInput() ),
         mModel(),
         mSolverState( Unknown ),
         mBackendsFoundAnswer( new std::atomic_bool( false ) ),
@@ -191,7 +191,7 @@ namespace smtrat
      *          the already considered sub-formulas;
      *          true, otherwise.
      */
-    bool Module::assertSubformula( Input::const_iterator _receivedSubformula )
+    bool Module::assertSubformula( ModuleInput::const_iterator _receivedSubformula )
     {
         #ifdef MODULE_VERBOSE
         cout << __func__ << " in " << this << " with name " << moduleName( mModuleType ) << ":" << endl << endl;
@@ -211,7 +211,7 @@ namespace smtrat
      *
      * @param _subformula The sub formula of the received formula to remove.
      */
-    void Module::removeSubformula( Input::const_iterator _receivedSubformula )
+    void Module::removeSubformula( ModuleInput::const_iterator _receivedSubformula )
     {
         #ifdef MODULE_VERBOSE
         cout << __func__ << " in " << this << " with name " << moduleName( mModuleType ) << ":" << endl << endl;
@@ -330,7 +330,7 @@ namespace smtrat
      * the received formulas, which are responsible for its occurrence.
      * @param _subformula The sub-formula of the received formula to copy.
      */
-    void Module::addReceivedSubformulaToPassedFormula( Input::const_iterator _subformula )
+    void Module::addReceivedSubformulaToPassedFormula( ModuleInput::const_iterator _subformula )
     {
         addSubformulaToPassedFormula( *_subformula, *_subformula );
     }
@@ -677,7 +677,7 @@ namespace smtrat
             if( mFirstSubformulaToPass != mpPassedFormula->end() )
             {
                 // Update the propositions of the passed formula
-                mpPassedFormula->updatePropositions();
+                mpPassedFormula->updateProperties();
                 bool assertionFailed = false;
                 for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
                 {
@@ -790,7 +790,7 @@ namespace smtrat
      * @param _subformula The sub-formula to remove from the passed formula.
      * @return 
      */
-    Input::iterator Module::removeSubformulaFromPassedFormula( Input::iterator _subformula )
+    ModuleInput::iterator Module::removeSubformulaFromPassedFormula( ModuleInput::iterator _subformula )
     {
         assert( _subformula != mpPassedFormula->end() );
         #ifdef SMTRAT_DEVOPTION_MeasureTime
@@ -907,7 +907,7 @@ namespace smtrat
      *         consistent or inconsistent.
      * @see Module::storeAssumptionsToCheck
      */
-    void Module::addAssumptionToCheck( const Formula& _formula, bool _consistent, const string& _moduleName )
+    void Module::addAssumptionToCheck( const Formula* _formula, bool _consistent, const string& _moduleName )
     {
         string assumption = "";
         #ifdef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
@@ -916,7 +916,7 @@ namespace smtrat
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
         assumption += "(assert (and ";
         #endif
-        assumption += _formula.toString( false, 1, "", true, false, true );
+        assumption += _formula->toString( false, 1, "", true, false, true );
         #ifdef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
         assumption += ")\n";
         #else
@@ -936,7 +936,7 @@ namespace smtrat
      *         consistent or inconsistent.
      * @see Module::storeAssumptionsToCheck
      */
-    void Module::addAssumptionToCheck( const Input& _subformulas, bool _consistent, const std::string& _moduleName )
+    void Module::addAssumptionToCheck( const ModuleInput& _subformulas, bool _consistent, const std::string& _moduleName )
     {
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
@@ -1117,54 +1117,6 @@ namespace smtrat
         }
         smtlibFile << "(exit)";
         smtlibFile.close();
-    }
-    
-    unsigned Input::satisfiedBy( const EvalRationalMap& _assignment ) const
-    {
-        unsigned result = 1;
-//        std::cout << __func__ << std::endl;
-//        std::cout << "check against " << std::endl; 
-//        for( auto iter = _assignment.begin(); iter != _assignment.end(); ++iter )
-//            std::cout << iter->first << " -> " << iter->second << std::endl;
-        for( auto subFormula = begin(); subFormula != end(); ++subFormula )
-        {
-//            std::cout << **subFormula << std::endl;
-            switch( (*subFormula)->satisfiedBy( _assignment ) )
-            {
-                case 0:
-//                    std::cout << " = false" << std::endl;
-                    return 0;
-                case 1:
-//                    std::cout << " = true" << std::endl;
-                    break;
-                default:
-//                    std::cout << " = unknown" << std::endl;
-                    if( result != 2 ) result = 2;
-            }
-        }
-//        std::cout << std::endl << "makes " << result << std::endl << std::endl;
-        return result;
-    }
-    
-    void Input::updatePropositions()
-    {
-        mProperties = Condition();
-        mProperties |= PROP_IS_PURE_CONJUNCTION | PROP_IS_IN_CNF | PROP_IS_IN_NNF;
-        mProperties |= PROP_VARIABLE_DEGREE_LESS_THAN_THREE | PROP_VARIABLE_DEGREE_LESS_THAN_FOUR | PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
-        for( auto subFormula = begin(); subFormula != end(); ++subFormula )
-        {
-            Condition subFormulaConds = (*subFormula)->properties();
-            if( !(PROP_IS_A_CLAUSE<=subFormulaConds) )
-            {
-                mProperties &= ~PROP_IS_PURE_CONJUNCTION;
-                mProperties &= ~PROP_IS_IN_CNF;
-            }
-            else if( !(PROP_IS_A_LITERAL<=subFormulaConds) )
-                mProperties &= ~PROP_IS_PURE_CONJUNCTION;
-            if( !(PROP_IS_IN_NNF<=subFormulaConds) )
-                mProperties &= ~PROP_IS_IN_NNF;
-            mProperties |= (subFormulaConds & WEAK_CONDITIONS);
-        }
     }
 
     /**

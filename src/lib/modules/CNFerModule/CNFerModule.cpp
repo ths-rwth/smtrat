@@ -34,7 +34,7 @@ using namespace std;
 
 namespace smtrat
 {
-    CNFerModule::CNFerModule( ModuleType _type, const Input* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
+    CNFerModule::CNFerModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         mFirstNotCheckedFormula()
     {
@@ -54,7 +54,7 @@ namespace smtrat
      * @return  true,   if the constraint and all previously added constraints are consistent;
      *          false,  if the added constraint or one of the previously added ones is inconsistent.
      */
-    bool CNFerModule::assertSubformula( Input::const_iterator _subformula )
+    bool CNFerModule::assertSubformula( ModuleInput::const_iterator _subformula )
     {
         Module::assertSubformula( _subformula );
         return true;
@@ -118,7 +118,7 @@ namespace smtrat
      *
      * @param _subformula The sub formula of the received formula to remove.
      */
-    void CNFerModule::removeSubformula( Input::const_iterator _subformula )
+    void CNFerModule::removeSubformula( ModuleInput::const_iterator _subformula )
     {
         Module::removeSubformula( _subformula );
     }

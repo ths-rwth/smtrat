@@ -39,7 +39,7 @@ using namespace vs;
 namespace smtrat
 {
     template<class Settings>
-    VSModule<Settings>::VSModule( ModuleType _type, const Input* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
+    VSModule<Settings>::VSModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         mConditionsChanged( false ),
         mInconsistentConstraintAdded( false ),
@@ -75,7 +75,7 @@ namespace smtrat
      *          true, otherwise.
      */
     template<class Settings>
-    bool VSModule<Settings>::assertSubformula( Input::const_iterator _subformula )
+    bool VSModule<Settings>::assertSubformula( ModuleInput::const_iterator _subformula )
     {
         Module::assertSubformula( _subformula );
         if( (*_subformula)->getType() == CONSTRAINT )
@@ -139,7 +139,7 @@ namespace smtrat
      * @param _subformula The position of the constraint within the received constraints.
      */
     template<class Settings>
-    void VSModule<Settings>::removeSubformula( Input::const_iterator _subformula )
+    void VSModule<Settings>::removeSubformula( ModuleInput::const_iterator _subformula )
     {
         if( (*_subformula)->getType() == CONSTRAINT )
         {

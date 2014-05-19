@@ -65,7 +65,7 @@ using namespace std;
 namespace smtrat
 {
 
-    CADModule::CADModule( ModuleType _type, const Input* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
+    CADModule::CADModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         mCAD( _conditionals ),
         mConstraints(),
@@ -182,7 +182,7 @@ namespace smtrat
      * @param _subformula
      * @return returns false if the current list of constraints was already found to be unsatisfiable (in this case, nothing is done), returns true previous result if the constraint was already checked for consistency before, otherwise true
      */
-    bool CADModule::assertSubformula( Input::const_iterator _subformula )
+    bool CADModule::assertSubformula( ModuleInput::const_iterator _subformula )
     {
         assert( (*_subformula)->getType() == CONSTRAINT );
         Module::assertSubformula( _subformula );
@@ -326,7 +326,7 @@ namespace smtrat
         return foundAnswer( anAnswerFound() ? Unknown : True );
     }
 
-    void CADModule::removeSubformula( Input::const_iterator _subformula )
+    void CADModule::removeSubformula( ModuleInput::const_iterator _subformula )
     {
         if ((*_subformula)->getType() != CONSTRAINT)
         { // not our concern

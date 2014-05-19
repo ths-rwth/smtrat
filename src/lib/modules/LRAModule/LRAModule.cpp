@@ -46,7 +46,7 @@ using namespace smtrat::lra;
 
 namespace smtrat
 {
-    LRAModule::LRAModule( ModuleType _type, const Input* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
+    LRAModule::LRAModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         mInitialized( false ),
         mAssignmentFullfilsNonlinearConstraints( false ),
@@ -210,7 +210,7 @@ namespace smtrat
      *
      * @param _subformula The position of the constraint within the received constraints.
      */
-    void LRAModule::removeSubformula( Input::const_iterator _subformula )
+    void LRAModule::removeSubformula( ModuleInput::const_iterator _subformula )
     {
         #ifdef DEBUG_LRA_MODULE
         cout << "remove " << **_subformula << "(" << *_subformula << ")" << endl;

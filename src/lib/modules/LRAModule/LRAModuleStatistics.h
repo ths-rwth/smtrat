@@ -70,7 +70,7 @@ namespace smtrat
             ++mCurrentPivotingSteps;
         }
         
-        void check( const Formula& _formula )
+        void check( const ModuleInput& _formula )
         {
             if( mCurrentPivotingSteps > 0 )
             {

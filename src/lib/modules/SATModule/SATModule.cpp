@@ -91,7 +91,7 @@ namespace smtrat
     /**
      * Constructor
      */
-    SATModule::SATModule( ModuleType _type, const Input* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
+    SATModule::SATModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         // Parameters (user settable):
         //
@@ -187,7 +187,7 @@ namespace smtrat
      * @return  true,   if the constraint and all previously added constraints are consistent;
      *          false,  if the added constraint or one of the previously added ones is inconsistent.
      */
-    bool SATModule::assertSubformula( Input::const_iterator _subformula )
+    bool SATModule::assertSubformula( ModuleInput::const_iterator _subformula )
     {
         Module::assertSubformula( _subformula );
         if( PROP_IS_A_CLAUSE <= (*_subformula)->properties() )
@@ -203,7 +203,7 @@ namespace smtrat
      *
      * @param _subformula The sub formula of the received formula to remove.
      */
-    void SATModule::removeSubformula( Input::const_iterator _subformula )
+    void SATModule::removeSubformula( ModuleInput::const_iterator _subformula )
     {
         FormulaClauseMap::iterator iter = mFormulaClauseMap.find( *_subformula );
         if( iter != mFormulaClauseMap.end() )

@@ -47,7 +47,7 @@ namespace smtrat
     /**
      * Constructor
      */
-    ICPModule::ICPModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* , Conditionals& _conditionals, Manager* const _manager ):
+    ICPModule::ICPModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* , Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         mActiveNonlinearConstraints(),
         mActiveLinearConstraints(),
@@ -61,7 +61,7 @@ namespace smtrat
         mSubstitutions(),
         mHistoryRoot(new icp::HistoryNode(mIntervals,1)),
         mHistoryActual(NULL),
-        mValidationFormula(new Formula(AND)),
+        mValidationFormula(new ModuleInput()),
 //        mReceivedFormulaMapping(),
         mLRAFoundAnswer( vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
         mLraRuntimeSettings(new RuntimeSettings),
@@ -131,11 +131,11 @@ namespace smtrat
             // actual preprocessing
             FastMap<Polynomial, const Constraint*> temporaryMonomes;
             linear = icp::isLinear( _constraint, constr, temporaryMonomes );
-            Formula linearFormula;
+            const Formula* linearFormula;
             bool informLRA = true;
             
             if ( linear )
-                linearFormula = Formula( _constraint );
+                linearFormula = newFormula( _constraint );
             else
             {
                 Polynomial lhs;
@@ -145,9 +145,9 @@ namespace smtrat
                 {
                     for( auto replacementsIt = mReplacements.begin(); replacementsIt != mReplacements.end(); ++replacementsIt )
                     {
-                        if ( (*replacementsIt).second == _constraint )
+                        if ( (*replacementsIt).second->pConstraint() == _constraint )
                         {
-                            lhs = (*replacementsIt).first->lhs();
+                            lhs = (*replacementsIt).first->constraint().lhs();
                             break;
                         }
                     }
@@ -159,28 +159,28 @@ namespace smtrat
                 
                 if( informLRA )
                 {
-                    linearFormula = Formula( newConstraint(lhs,_constraint->relation()) );
+                    linearFormula = newFormula( newConstraint( lhs, _constraint->relation() ) );
                 }
             }
             if( informLRA )
             {
                 // store replacement for later comparison when asserting
-                mReplacements[linearFormula.pConstraint()] = _constraint;
+                mReplacements[linearFormula] = newFormula( _constraint );
                 // inform internal LRAmodule of the linearized constraint
-                mLRA.inform(linearFormula.pConstraint());
+                mLRA.inform(linearFormula->pConstraint());
                 #ifdef ICPMODULE_DEBUG
-                cout << "[mLRA] inform: " << linearFormula.constraint() << endl;
+                cout << "[mLRA] inform: " << linearFormula->constraint() << endl;
                 #endif
-                assert( linearFormula.constraint().lhs().isLinear() );
+                assert( linearFormula->constraint().lhs().isLinear() );
             }
         }
         return (_constraint->isConsistent() != 0);
     }
 
 
-    bool ICPModule::assertSubformula( Formula::const_iterator _formula )
+    bool ICPModule::assertSubformula( ModuleInput::const_iterator _formula )
     {
-        const Constraint*                    constr = (*_formula)->pConstraint();
+        const Constraint* constr = (*_formula)->pConstraint();
 
         // create and initialize slackvariables
         mLRA.init();
@@ -195,7 +195,7 @@ namespace smtrat
                 cout << "Create deduction for: " << mLRA.deductions().back()->toString(false,0,"",true,true,true ) << endl;
                 #endif
                 #endif
-                Formula* deduction = transformDeductions(mLRA.deductions().back());
+                const Formula* deduction = transformDeductions( mLRA.deductions().back() );
                 mCreatedDeductions.insert(deduction);
                 mLRA.rDeductions().pop_back();
                 addDeduction(deduction);
@@ -214,7 +214,7 @@ namespace smtrat
         //if ( (*_formula)->constraint().variables().size() > 1 || (mNonlinearConstraints.find((*_formula)->pConstraint()) != mNonlinearConstraints.end()) )
         if( !(*_formula)->constraint().isBound() )
         {
-            addSubformulaToPassedFormula( new Formula( constr ), *_formula );
+            addSubformulaToPassedFormula( *_formula, *_formula );
             Module::assertSubformula( _formula );
         }
         
@@ -277,11 +277,11 @@ namespace smtrat
                 }
             }
         }
-        const Constraint* replacementPtr = NULL;
+        const Formula* replacementPtr = NULL;
         // lookup corresponding linearization - in case the constraint is already linear, mReplacements holds the constraint as the linearized one
         for ( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt )
         {
-            if ( (*replacementIt).second == (*_formula)->pConstraint() )
+            if ( *(*replacementIt).second == (**_formula) )
             {
                 replacementPtr = (*replacementIt).first;
                 break;
@@ -289,17 +289,16 @@ namespace smtrat
         }
         assert(replacementPtr != NULL);
         
-        if ( replacementPtr->isBound() )
+        if ( replacementPtr->constraint().isBound() )
         {
             // considered constraint is activated but has no slackvariable -> it is a boundary constraint
-            Formula* tmpFormula = new Formula(replacementPtr);
-            assert(tmpFormula->getType() == CONSTRAINT);
-            mValidationFormula->addSubformula(tmpFormula);
+            assert(replacementPtr->getType() == CONSTRAINT);
+            mValidationFormula->push_back(replacementPtr);
             // update ReceivedFormulaMapping
-//            mReceivedFormulaMapping.insert(std::make_pair(tmpFormula, *_formula));
+//            mReceivedFormulaMapping.insert(std::make_pair(replacementPtr, *_formula));
             // try to insert new icpVariable -> is original!
-            const carl::Variable::Arg tmpVar = *replacementPtr->variables().begin();
-            const LRAVariable* slackvariable = mLRA.getSlackVariable(tmpFormula->pConstraint());
+            const carl::Variable::Arg tmpVar = *replacementPtr->constraint().variables().begin();
+            const LRAVariable* slackvariable = mLRA.getSlackVariable(replacementPtr->pConstraint());
             assert( slackvariable != NULL );
             icp::IcpVariable* icpVar = new icp::IcpVariable(tmpVar, true, slackvariable );
             std::pair<std::map<const carl::Variable, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(tmpVar, icpVar));
@@ -307,10 +306,9 @@ namespace smtrat
                 delete icpVar;
                 
             #ifdef ICPMODULE_DEBUG
-            cout << "[mLRA] Assert bound constraint: " << *tmpFormula << endl;
+            cout << "[mLRA] Assert bound constraint: " << *replacementPtr << endl;
             #endif
-            mValidationFormula->getPropositions();
-            if ( !mLRA.assertSubformula(mValidationFormula->last()) )
+            if ( !mLRA.assertSubformula(--mValidationFormula->end()) )
             {
                 remapAndSetLraInfeasibleSubsets();
                 assert(!mInfeasibleSubsets.empty());
@@ -319,7 +317,7 @@ namespace smtrat
         }
         else //if ( (*_formula)->constraint().variables().size() > 1 )
         {
-            const LRAVariable* slackvariable = mLRA.getSlackVariable(replacementPtr);
+            const LRAVariable* slackvariable = mLRA.getSlackVariable(replacementPtr->pConstraint());
             assert(slackvariable != NULL);
 
             // lookup if contraction candidates already exist - if so, add origins
@@ -352,7 +350,7 @@ namespace smtrat
             else
             {
                 // if not existent:
-                Variables variables = replacementPtr->variables();
+                Variables variables = replacementPtr->constraint().variables();
                 bool hasRealVar = false;
                 for( auto var : variables )
                 {
@@ -362,7 +360,7 @@ namespace smtrat
                         break;
                     }
                 }
-                carl::Variable newVar = hasRealVar ? newAuxiliaryRealVariable() : Formula::newAuxiliaryIntVariable();
+                carl::Variable newVar = hasRealVar ? newAuxiliaryRealVariable() : newAuxiliaryIntVariable();
                 variables.insert(newVar);
 
                 const Polynomial rhs = slackvariable->expression()-newVar;
@@ -446,28 +444,26 @@ namespace smtrat
 
             // assert in mLRA
             assert(replacementPtr != NULL);
-            Formula* tmpFormula = new Formula(replacementPtr);
-            assert(tmpFormula->getType() == CONSTRAINT);
-            mValidationFormula->addSubformula(tmpFormula);
-            mValidationFormula->getPropositions();
+            assert(replacementPtr->getType() == CONSTRAINT);
+            mValidationFormula->push_back(replacementPtr);
 
             // update ReceivedFormulaMapping
-//            mReceivedFormulaMapping.insert(std::make_pair(tmpFormula, *_formula));
+//            mReceivedFormulaMapping.insert(std::make_pair(replacementPtr, *_formula));
             
-            if( !mLRA.assertSubformula(mValidationFormula->last()) )
+            if( !mLRA.assertSubformula(--mValidationFormula->end()) )
             {
                 remapAndSetLraInfeasibleSubsets();
                 return false;
             }
             #ifdef ICPMODULE_DEBUG
-            cout << "[mLRA] Assert " << *tmpFormula << endl;
+            cout << "[mLRA] Assert " << *replacementPtr << endl;
             #endif
         }
         return true;
     }
 
 
-    void ICPModule::removeSubformula( Formula::const_iterator _formula )
+    void ICPModule::removeSubformula( ModuleInput::const_iterator _formula )
     {
         const Constraint* constr = (*_formula)->pConstraint();
         #ifdef ICPMODULE_DEBUG
@@ -690,11 +686,11 @@ namespace smtrat
         // remove constraint from mLRA module -> is identified by replacements-map Todo: IMPROVE, maybe we can avoid replacements mapping
         for ( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt )
         {
-            if ( (*_formula)->constraint() == *(*replacementIt).second)
+            if ( (**_formula) == *(*replacementIt).second)
             {
                 for ( auto validationFormulaIt = mValidationFormula->begin(); validationFormulaIt != mValidationFormula->end(); ++validationFormulaIt )
                 {
-                    if ( (*validationFormulaIt)->constraint() == *(*replacementIt).first )
+                    if ( (**validationFormulaIt) == *(*replacementIt).first )
                     {
                         #ifdef ICPMODULE_DEBUG
                         cout << "[mLRA] remove " << *(*validationFormulaIt)->pConstraint() << endl;
@@ -733,7 +729,6 @@ namespace smtrat
         cout << "Id selected box: " << mHistoryRoot->id() << " Size subtree: " << mHistoryRoot->sizeSubtree() << endl;
         #endif
         // call mLRA to check linear feasibility
-        mValidationFormula->getPropositions();
         mLRA.clearDeductions();
         Answer lraAnswer = mLRA.isConsistent();
         
@@ -746,7 +741,7 @@ namespace smtrat
             cout << "Create deduction for: " << *mLRA.deductions().back() << endl;
             #endif
             #endif
-            Formula* deduction = transformDeductions(mLRA.deductions().back());
+            const Formula* deduction = transformDeductions(mLRA.deductions().back());
             mLRA.rDeductions().pop_back();
             addDeduction(deduction);
             #ifdef ICPMODULE_DEBUG
@@ -867,7 +862,7 @@ namespace smtrat
                     assert(mVariables.count(*variablesIt) > 0);
                     icpVariables.insert( (*(mVariables.find(*variablesIt))).second );
                 }
-                std::set<const Formula*> box = variableReasonHull(icpVariables);
+                PointerSet<Formula> box = variableReasonHull(icpVariables);
                 mBoxStorage.push(box);
 //                cout << "ADD TO BOX!" << endl;
                 #endif
@@ -1209,7 +1204,7 @@ namespace smtrat
                                 for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->infeasibleSubsets().begin();
                                         infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
                                 {
-                                    for( set<const Formula*>::const_iterator subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
+                                    for( auto subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                                     {
                                         isBound = false;
                                         std::map<const carl::Variable, icp::IcpVariable*>::iterator icpVar = mVariables.begin();
@@ -1232,7 +1227,7 @@ namespace smtrat
                                         {
                                             if (mInfeasibleSubsets.empty())
                                             {
-                                                set<const Formula*> infeasibleSubset = set<const Formula*>();
+                                                PointerSet<Formula> infeasibleSubset;
                                                 infeasibleSubset.insert(*subformula);
                                                 mInfeasibleSubsets.insert(mInfeasibleSubsets.begin(), infeasibleSubset);
                                             }
@@ -1438,7 +1433,7 @@ namespace smtrat
                             break;
                         }
                     }
-                    carl::Variable newVar = hasRealVar ? newAuxiliaryRealVariable() : Formula::newAuxiliaryIntVariable();
+                    carl::Variable newVar = hasRealVar ? newAuxiliaryRealVariable() : newAuxiliaryIntVariable();
                     mLinearizations.insert( std::make_pair((*expressionIt).first, newVar) );
                     //mLinearizations[(*expressionIt).first] = newReal;
                     //mSubstitutions[newReal] = (*expressionIt).first;
@@ -1843,21 +1838,14 @@ namespace smtrat
             mIntervals[variable] = resultB;
 #else
             /// create prequesites: ((oldBox AND CCs) -> newBox) in CNF: (oldBox OR CCs) OR newBox 
-            std::set<const Formula*> splitPremise = createPremiseDeductions();
-            Formula* contraction = new Formula( OR );
-            for( auto formulaIt = splitPremise.begin(); formulaIt != splitPremise.end(); ++formulaIt )
-            {
-                Formula* negation = new Formula( NOT );
-                Formula* deductionCopy = new Formula( **formulaIt );
-                negation->addSubformula(deductionCopy);
-                contraction->addSubformula(negation);
-            }
-            
+            PointerSet<Formula> subformulas;
+            PointerSet<Formula> splitPremise = createPremiseDeductions();
+            for( const Formula* subformula : splitPremise )
+                subformulas.insert( newNegation( subformula ) );
             // construct new box
-            Formula* newBox = createBoxFormula();
-            contraction->addSubformula(newBox);
+            subformulas.insert( createBoxFormula() );
             // push deduction
-            addDeduction( contraction );
+            addDeduction( newFormula( OR, subformulas ) );
 
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
             assert(resultA.upperBoundType() != BoundType::INFTY );
@@ -2112,32 +2100,24 @@ namespace smtrat
     }
     
 
-    std::set<const Formula*> ICPModule::createPremiseDeductions()
+    PointerSet<Formula> ICPModule::createPremiseDeductions()
     {
-        std::set<const Formula*> contraction;
         // collect applied contractions
-        std::set<const Formula*> contractions = mHistoryActual->appliedConstraints();
-        for( auto constraintIt = contractions.begin(); constraintIt != contractions.end(); ++constraintIt )
-        {
-            contraction.insert(contraction.end(), *constraintIt);
-        }
+        PointerSet<Formula> contractions = mHistoryActual->appliedConstraints();
         // collect original box
-        assert( mBoxStorage.size() == 1 );
-        std::set<const Formula*> box = mBoxStorage.front();
-        for( auto formulaIt = box.begin(); formulaIt != box.end(); ++formulaIt )
-        {
-            contraction.insert(contraction.end(), *formulaIt );
-        }
+//        assert( mBoxStorage.size() == 1 );
+        PointerSet<Formula> box = mBoxStorage.front();
+        contractions.insert( box.begin(), box.end() );
         mBoxStorage.pop();
-        return contraction;
+        return contractions;
     }
     
     
-    Formula* ICPModule::createBoxFormula()
+    const Formula* ICPModule::createBoxFormula()
     {
-        Formula* newBox = new Formula( AND );
         Variables originalRealVariables;
         mpReceivedFormula->realValuedVars(originalRealVariables);
+        PointerSet<Formula> subformulas;
         for( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
         {
             if( originalRealVariables.find( (*intervalIt).first ) != originalRealVariables.end() )
@@ -2145,15 +2125,15 @@ namespace smtrat
                 std::pair<const Constraint*, const Constraint*> boundaries = icp::intervalToConstraint((*intervalIt).first, (*intervalIt).second);
                 if(boundaries.first != NULL)
                 {
-                    newBox->addSubformula( boundaries.first );                       
+                    subformulas.insert( newFormula( boundaries.first ) );                       
                 }
                 if(boundaries.second != NULL)
                 {
-                    newBox->addSubformula( boundaries.second );
+                    subformulas.insert( newFormula( boundaries.second ) );
                 }
             }
         }
-        return newBox;
+        return newFormula( AND, subformulas );
     }
     
     
@@ -2236,21 +2216,14 @@ namespace smtrat
         {
             #ifndef BOXMANAGEMENT
             // create prequesites: ((oldBox AND CCs) -> newBox) in CNF: (oldBox OR CCs) OR newBox 
-            std::set<const Formula*> splitPremise = createPremiseDeductions();
-            Formula* contraction = new Formula( OR );
+            PointerSet<Formula> splitPremise = createPremiseDeductions();
+            PointerSet<Formula> subformulas;
             for( auto formulaIt = splitPremise.begin(); formulaIt != splitPremise.end(); ++formulaIt )
-            {
-                Formula* negation = new Formula( NOT );
-                Formula* deductionCopy = new Formula( **formulaIt );
-                negation->addSubformula(deductionCopy);
-                contraction->addSubformula(negation);
-            }
-            
+                subformulas.insert( newNegation( *formulaIt ) );
             // construct new box
-            Formula* newBox = createBoxFormula();
-            contraction->addSubformula(newBox);
+            subformulas.insert( createBoxFormula() );
             // push deduction
-            addDeduction( contraction );
+            addDeduction( newFormula( OR, subformulas ) );
             
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
             Rational bound = carl::rationalize<Rational>( mIntervals.at(variable).sample() );
@@ -2314,7 +2287,7 @@ namespace smtrat
     {
         // call mLRA module
         vec_set_const_pFormula failedConstraints = vec_set_const_pFormula();
-        std::set<const Formula*> currentInfSet = std::set<const Formula*>();
+        PointerSet<Formula> currentInfSet;
         bool newConstraintAdded = false;
         bool boxCheck = false;
         #ifdef ICPMODULE_DEBUG
@@ -2332,11 +2305,10 @@ namespace smtrat
 
                 smtrat::DoubleInterval center = smtrat::DoubleInterval(interval.sample());
                 Polynomial constraint = Polynomial(variable) - Polynomial(carl::rationalize<Rational>(center.sample()));
-                Formula centerTmpFormula = smtrat::Formula( smtrat::newConstraint( constraint, Relation::EQ ) );
-                Formula* validationTmpFormula = new smtrat::Formula( centerTmpFormula.pConstraint() );
-                mLRA.inform(validationTmpFormula->pConstraint());
-                mCenterConstraints.insert(centerTmpFormula.pConstraint());
-                mValidationFormula->addSubformula( validationTmpFormula );
+                const Formula* centerTmpFormula = newFormula( newConstraint( constraint, Relation::EQ ) );
+                mLRA.inform(centerTmpFormula->pConstraint());
+                mCenterConstraints.insert(centerTmpFormula->pConstraint());
+                mValidationFormula->push_back( centerTmpFormula );
             }
         }
         
@@ -2349,7 +2321,6 @@ namespace smtrat
         cout << "[mLRA] receivedFormula: " << endl;
         cout << mLRA.rReceivedFormula() << endl;
         #endif
-        mValidationFormula->getPropositions();
         Answer centerFeasible = mLRA.isConsistent();
         mLRA.clearDeductions();
         
@@ -2496,14 +2467,15 @@ namespace smtrat
                         // if the failed constraint is not a centerConstraint - Ignore centerConstraints
                         if ( mCenterConstraints.find((*infSetIt)->pConstraint()) == mCenterConstraints.end() )
                         {
+                            auto iterB = mReplacements.find( *infSetIt );
                             // add candidates for all variables to icpRelevantConstraints                               
-                            if ( mReplacements.find((*infSetIt)->pConstraint()) != mReplacements.end() )
+                            if ( iterB != mReplacements.end() )
                             {
                                 // search for the candidates and add them as icpRelevant
                                 for ( auto actCandidateIt = mActiveLinearConstraints.begin(); actCandidateIt != mActiveLinearConstraints.end(); ++actCandidateIt )
                                 {
 
-                                    if ( (*actCandidateIt).first->hasOrigin( mReplacements[(*infSetIt)->pConstraint()] ) )
+                                    if ( (*actCandidateIt).first->hasOrigin( iterB->second ) )
                                     {
                                         #ifdef ICPMODULE_DEBUG
                                         #ifndef ICPMODULE_REDUCED_DEBUG
@@ -2570,14 +2542,15 @@ namespace smtrat
                         // if the failed constraint is not a centerConstraint - Ignore centerConstraints
                         if ( mCenterConstraints.find((*infSetIt)->pConstraint()) == mCenterConstraints.end() )
                         {
-                            // add candidates for all variables to icpRelevantConstraints                               
-                            if ( mReplacements.find((*infSetIt)->pConstraint()) != mReplacements.end() )
+                            // add candidates for all variables to icpRelevantConstraints  
+                            auto iterB = mReplacements.find( *infSetIt );
+                            if ( iterB != mReplacements.end() )
                             {
                                 // search for the candidates and add them as icpRelevant
                                 for ( auto actCandidateIt = mActiveLinearConstraints.begin(); actCandidateIt != mActiveLinearConstraints.end(); ++actCandidateIt )
                                 {
 
-                                    if ( (*actCandidateIt).first->hasOrigin( mReplacements[(*infSetIt)->pConstraint()] ) )
+                                    if ( (*actCandidateIt).first->hasOrigin( iterB->second ) )
                                     {
                                         #ifdef ICPMODULE_DEBUG
                                         #ifndef ICPMODULE_REDUCED_DEBUG                                        
@@ -2700,14 +2673,13 @@ namespace smtrat
 
     bool ICPModule::checkBoxAgainstLinearFeasibleRegion()
     {
-        std::vector<Formula*> addedBoundaries = createConstraintsFromBounds(mIntervals);
+        std::vector<const Formula*> addedBoundaries = createConstraintsFromBounds(mIntervals);
         for( auto formulaIt = addedBoundaries.begin(); formulaIt != addedBoundaries.end(); ++formulaIt )
         {
             mLRA.inform((*formulaIt)->pConstraint());
-            mValidationFormula->addSubformula((*formulaIt));
-            mLRA.assertSubformula(mValidationFormula->last());
+            mValidationFormula->push_back( *formulaIt );
+            mLRA.assertSubformula( --mValidationFormula->end() );
         }
-        mValidationFormula->getPropositions();
         Answer boxCheck = mLRA.isConsistent();
         #ifdef ICPMODULE_DEBUG
         cout << "Boxcheck: " << boxCheck << endl;
@@ -3020,16 +2992,16 @@ namespace smtrat
                         }
                         if ( leftTmp != NULL )
                         {
-                            Formula* leftBound = new Formula(leftTmp);
+                            const Formula* leftBound = newFormula(leftTmp);
                             vec_set_const_pFormula origins;
-                            std::set<const Formula*> emptyTmpSet = std::set<const Formula*>();
+                            PointerSet<Formula> emptyTmpSet;
                             origins.insert(origins.begin(), emptyTmpSet);
 
                             if ( (*icpVar).second->isExternalBoundsSet() == icp::Updated::LEFT )
                                 removeSubformulaFromPassedFormula((*icpVar).second->externalLeftBound());
                             addConstraintToInform(leftTmp);
                             addSubformulaToPassedFormula( leftBound, move( origins ) );
-                            (*icpVar).second->setExternalLeftBound(mpPassedFormula->last());
+                            (*icpVar).second->setExternalLeftBound(--mpPassedFormula->end());
                             newAdded = true;
                         }
                     }
@@ -3059,9 +3031,9 @@ namespace smtrat
                         if ( rightTmp != NULL )
                         {
 
-                            Formula* rightBound = new Formula(rightTmp);
+                            const Formula* rightBound = newFormula(rightTmp);
                             vec_set_const_pFormula origins;
-                            std::set<const Formula*> emptyTmpSet;
+                            PointerSet<Formula> emptyTmpSet;
                             origins.insert(origins.begin(), emptyTmpSet);
 
                             if ( (*icpVar).second->isExternalBoundsSet() == icp::Updated::RIGHT )
@@ -3069,7 +3041,7 @@ namespace smtrat
 
                             addConstraintToInform(rightTmp);
                             addSubformulaToPassedFormula( rightBound, move( origins ) );
-                            (*icpVar).second->setExternalRightBound(mpPassedFormula->last());
+                            (*icpVar).second->setExternalRightBound(--mpPassedFormula->end());
                             newAdded = true;
                         }
                     }
@@ -3083,14 +3055,14 @@ namespace smtrat
     }
     
     
-    std::set<const Formula*> ICPModule::variableReasonHull( icp::set_icpVariable& _reasons )
+    PointerSet<Formula> ICPModule::variableReasonHull( icp::set_icpVariable& _reasons )
     {
-        std::set<const Formula*> reasons;
+        PointerSet<Formula> reasons;
         for( auto variableIt = _reasons.begin(); variableIt != _reasons.end(); ++variableIt )
         {
             if ((*variableIt)->lraVar() != NULL)
             {
-                std::set<const Formula*> definingOrigins = (*variableIt)->lraVar()->getDefiningOrigins();
+                PointerSet<Formula> definingOrigins = (*variableIt)->lraVar()->getDefiningOrigins();
                 for( auto formulaIt = definingOrigins.begin(); formulaIt != definingOrigins.end(); ++formulaIt )
                 {
     //                cout << "Defining origin: " << **formulaIt << " FOR " << *(*variableIt) << endl;
@@ -3122,11 +3094,11 @@ namespace smtrat
     //                    cout << "No additional variables." << endl;
                         for( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt )
                         {
-                            if( (*replacementIt).first == (*formulaIt)->pConstraint() )
+                            if( *(*replacementIt).first == (**formulaIt) )
                             {
                                 for( auto receivedFormulaIt = mpReceivedFormula->begin(); receivedFormulaIt != mpReceivedFormula->end(); ++receivedFormulaIt )
                                 {
-                                    if( (*receivedFormulaIt)->pConstraint() == (*replacementIt).second )
+                                    if( (**receivedFormulaIt) == *(*replacementIt).second )
                                     {
                                         reasons.insert(*receivedFormulaIt);
                                         break;
@@ -3143,9 +3115,9 @@ namespace smtrat
     }
     
     
-    std::set<const Formula*> ICPModule::constraintReasonHull( std::set<const Constraint*>& _reasons )
+    PointerSet<Formula> ICPModule::constraintReasonHull( std::set<const Constraint*>& _reasons )
     {
-        std::set<const Formula*> reasons;
+        PointerSet<Formula> reasons;
         for ( auto constraintIt = _reasons.begin(); constraintIt != _reasons.end(); ++constraintIt )
         {
             for ( auto formulaIt = mpReceivedFormula->begin(); formulaIt != mpReceivedFormula->end(); ++formulaIt )
@@ -3161,7 +3133,7 @@ namespace smtrat
     }
     
     
-    std::set<const Formula*> ICPModule::collectReasons( icp::HistoryNode* _node )
+    PointerSet<Formula> ICPModule::collectReasons( icp::HistoryNode* _node )
     {
         icp::set_icpVariable variables = _node->rStateInfeasibleVariables();
         for( auto varIt = variables.begin(); varIt != variables.end(); ++varIt )
@@ -3169,16 +3141,16 @@ namespace smtrat
 //            cout << "Collect Hull for " << (*varIt)->var().get_name() << endl;
             _node->variableHull((*varIt)->var(), variables);
         }
-        std::set<const Formula*> reasons = variableReasonHull(variables);
-        std::set<const Formula*> constraintReasons = constraintReasonHull(_node->rStateInfeasibleConstraints());
+        PointerSet<Formula> reasons = variableReasonHull(variables);
+        PointerSet<Formula> constraintReasons = constraintReasonHull(_node->rStateInfeasibleConstraints());
         reasons.insert(constraintReasons.begin(), constraintReasons.end());
         return reasons;
     }
     
     
-    std::vector<Formula*> ICPModule::createConstraintsFromBounds( const EvalDoubleIntervalMap& _map )
+    std::vector<const Formula*> ICPModule::createConstraintsFromBounds( const EvalDoubleIntervalMap& _map )
     {
-        std::vector<Formula*> addedBoundaries;
+        std::vector<const Formula*> addedBoundaries;
         Variables originalRealVariables;
         mpReceivedFormula->realValuedVars(originalRealVariables);
         for ( auto variablesIt = originalRealVariables.begin(); variablesIt != originalRealVariables.end(); ++variablesIt )
@@ -3197,8 +3169,8 @@ namespace smtrat
                             case icp::Updated::LEFT:
                                 if ( boundaries.second != NULL )
                                 {
-                                    Formula* rightBound = new Formula(boundaries.second);
-                                    (*pos).second->setInternalRightBound(new Formula(boundaries.second));
+                                    const Formula* rightBound = newFormula(boundaries.second);
+                                    (*pos).second->setInternalRightBound(rightBound);
                                     addedBoundaries.insert(addedBoundaries.end(), rightBound);
                                     #ifdef ICPMODULE_DEBUG
                                     #ifndef ICPMODULE_REDUCED_DEBUG
@@ -3210,8 +3182,8 @@ namespace smtrat
                             case icp::Updated::RIGHT:
                                 if ( boundaries.first != NULL)
                                 {
-                                    Formula* leftBound = new Formula(boundaries.first);
-                                    (*pos).second->setInternalLeftBound(new Formula(boundaries.first));
+                                    const Formula* leftBound = newFormula(boundaries.first);
+                                    (*pos).second->setInternalLeftBound(leftBound);
                                     addedBoundaries.insert(addedBoundaries.end(), leftBound);
                                     #ifdef ICPMODULE_DEBUG
                                     #ifndef ICPMODULE_REDUCED_DEBUG
@@ -3223,8 +3195,8 @@ namespace smtrat
                             case icp::Updated::NONE:
                                 if ( boundaries.first != NULL)
                                 {
-                                    Formula* leftBound = new Formula(boundaries.first);
-                                    (*pos).second->setInternalLeftBound(new Formula(boundaries.first));
+                                    const Formula* leftBound = newFormula(boundaries.first);
+                                    (*pos).second->setInternalLeftBound(leftBound);
                                     addedBoundaries.insert(addedBoundaries.end(), leftBound);
                                     #ifdef ICPMODULE_DEBUG
                                     #ifndef ICPMODULE_REDUCED_DEBUG
@@ -3234,8 +3206,8 @@ namespace smtrat
                                 }
                                 if ( boundaries.second != NULL )
                                 {
-                                    Formula* rightBound = new Formula(boundaries.second);
-                                    (*pos).second->setInternalRightBound(new Formula(boundaries.second));
+                                    const Formula* rightBound = newFormula(boundaries.second);
+                                    (*pos).second->setInternalRightBound(rightBound);
                                     addedBoundaries.insert(addedBoundaries.end(), rightBound);
                                     #ifdef ICPMODULE_DEBUG
                                     #ifndef ICPMODULE_REDUCED_DEBUG
@@ -3252,8 +3224,8 @@ namespace smtrat
                             case icp::Updated::LEFT:
                                 if ( boundaries.first != NULL)
                                 {
-                                    Formula* leftBound = new Formula(boundaries.first);
-                                    (*pos).second->setInternalLeftBound(new Formula(boundaries.first));
+                                    const Formula* leftBound = newFormula(boundaries.first);
+                                    (*pos).second->setInternalLeftBound(leftBound);
                                     addedBoundaries.insert(addedBoundaries.end(), leftBound);
                                     #ifdef ICPMODULE_DEBUG
                                     #ifndef ICPMODULE_REDUCED_DEBUG
@@ -3265,8 +3237,8 @@ namespace smtrat
                             case icp::Updated::RIGHT:
                                 if ( boundaries.second != NULL )
                                 {
-                                    Formula* rightBound = new Formula(boundaries.second);
-                                    (*pos).second->setInternalRightBound(new Formula(boundaries.second));
+                                    const Formula* rightBound = newFormula(boundaries.second);
+                                    (*pos).second->setInternalRightBound(rightBound);
                                     addedBoundaries.insert(addedBoundaries.end(), rightBound);
                                     #ifdef ICPMODULE_DEBUG
                                     #ifndef ICPMODULE_REDUCED_DEBUG
@@ -3278,8 +3250,8 @@ namespace smtrat
                             case icp::Updated::BOTH:
                                 if ( boundaries.first != NULL)
                                 {
-                                    Formula* leftBound = new Formula(boundaries.first);
-                                    (*pos).second->setInternalLeftBound(new Formula(boundaries.first));
+                                    const Formula* leftBound = newFormula(boundaries.first);
+                                    (*pos).second->setInternalLeftBound(leftBound);
                                     addedBoundaries.insert(addedBoundaries.end(), leftBound);
                                     #ifdef ICPMODULE_DEBUG
                                     #ifndef ICPMODULE_REDUCED_DEBUG
@@ -3289,8 +3261,8 @@ namespace smtrat
                                 }
                                 if ( boundaries.second != NULL )
                                 {
-                                    Formula* rightBound = new Formula(boundaries.second);
-                                    (*pos).second->setInternalRightBound(new Formula(boundaries.second));
+                                    const Formula* rightBound = newFormula(boundaries.second);
+                                    (*pos).second->setInternalRightBound(rightBound);
                                     addedBoundaries.insert(addedBoundaries.end(), rightBound);
                                     #ifdef ICPMODULE_DEBUG
                                     #ifndef ICPMODULE_REDUCED_DEBUG
@@ -3304,8 +3276,8 @@ namespace smtrat
                     }
                     else
                     {
-                        addedBoundaries.insert(addedBoundaries.end(), new Formula((*pos).second->internalLeftBound()->pConstraint()));
-                        addedBoundaries.insert(addedBoundaries.end(), new Formula((*pos).second->internalRightBound()->pConstraint()));
+                        addedBoundaries.insert(addedBoundaries.end(), (*pos).second->internalLeftBound());
+                        addedBoundaries.insert(addedBoundaries.end(), (*pos).second->internalRightBound());
                     }
                 }
             }
@@ -3314,7 +3286,7 @@ namespace smtrat
     }
     
     
-    Formula* ICPModule::transformDeductions( Formula* _deduction )
+    const Formula* ICPModule::transformDeductions( const Formula* _deduction )
     {
         if( _deduction->getType() == CONSTRAINT )
         {
@@ -3324,18 +3296,14 @@ namespace smtrat
             lhs = lhs.substitute(tmpSubstitutions);
             const Constraint* constraint = newConstraint(lhs, _deduction->constraint().relation());
             // TODO
-            Formula* newRealDeduction = new Formula(constraint);
+            const Formula* newRealDeduction = newFormula( constraint );
             mCreatedDeductions.insert(newRealDeduction);
             return newRealDeduction;
         }
         else if( _deduction->isBooleanCombination() )
         {
-            Formula* newDeduction = new Formula(_deduction->getType());
-            for ( auto formulaIt = _deduction->begin(); formulaIt != _deduction->end(); ++formulaIt )
-                newDeduction->addSubformula(transformDeductions(*formulaIt));
-            
-            mCreatedDeductions.insert(newDeduction);
-            return newDeduction;
+            mCreatedDeductions.insert(_deduction);
+            return _deduction;
         }
         else
         {
@@ -3351,16 +3319,16 @@ namespace smtrat
         vec_set_const_pFormula tmpSet = mLRA.infeasibleSubsets();
         for ( auto infSetIt = tmpSet.begin(); infSetIt != tmpSet.end(); ++infSetIt )
         {
-            std::set<const Formula*> newSet = std::set<const Formula*>();
+            PointerSet<Formula> newSet;
             for ( auto formulaIt = (*infSetIt).begin(); formulaIt != (*infSetIt).end(); ++formulaIt )
             {
                 for ( auto replacementsIt = mReplacements.begin(); replacementsIt != mReplacements.end(); ++replacementsIt )
                 {
-                    if( (*formulaIt)->pConstraint() == (*replacementsIt).first )
+                    if( (**formulaIt) == *(*replacementsIt).first )
                     {
                         for( auto receivedFormulaIt = mpReceivedFormula->begin(); receivedFormulaIt != mpReceivedFormula->end(); ++receivedFormulaIt )
                         {
-                            if( (*replacementsIt).second == (*receivedFormulaIt)->pConstraint() )
+                            if( *(*replacementsIt).second == (**receivedFormulaIt) )
                             {
                                 newSet.insert(*receivedFormulaIt);
                                 break;
@@ -3483,7 +3451,7 @@ namespace smtrat
         
         cout << endl;
         cout << "*********************** ValidationFormula *********************" << endl;
-        cout << *mValidationFormula << endl;
+        cout << mValidationFormula->toString() << endl;
         cout << "***************************************************************" << endl;
         
         cout << "************************* Substitution ************************" << endl;

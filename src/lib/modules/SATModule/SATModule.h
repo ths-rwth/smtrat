@@ -284,7 +284,7 @@ namespace smtrat
             /**
              * Constructors:
              */
-            SATModule( ModuleType _type, const Input*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            SATModule( ModuleType _type, const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             /**
              * Destructor:
@@ -301,9 +301,9 @@ namespace smtrat
                 return true;
             }
             
-            bool assertSubformula( Input::const_iterator );
+            bool assertSubformula( ModuleInput::const_iterator );
             Answer isConsistent();
-            void removeSubformula( Input::const_iterator );
+            void removeSubformula( ModuleInput::const_iterator );
             void updateModel() const;
             
             void updateInfeasibleSubset();

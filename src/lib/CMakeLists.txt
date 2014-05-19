@@ -23,6 +23,7 @@ set(lib_core_src
     Assignment.cpp
     Manager.cpp
     Module.cpp
+    ModuleInput.cpp
     Formula.cpp
     StrategyGraph.cpp
     Constraint.cpp
@@ -38,6 +39,7 @@ set(lib_core_headers
     Assignment.h
     Manager.h
     Module.h
+    ModuleInput.h
     Condition.h
     Formula.h
     StrategyGraph.h

@@ -44,12 +44,10 @@
 
 #include <vector>
 #include <set>
-#include <algorithm>
 #include <string>
 #include <chrono>
 #include <atomic>
-#include "ConstraintPool.h"
-#include "FormulaPool.h"
+#include "ModuleInput.h"
 #include "ValidationSettings.h"
 #include "ThreadPool.h"
 #include "config.h"
@@ -73,106 +71,6 @@ namespace smtrat
         }
     };
     
-    ///
-    class Input : public std::list<const Formula*>
-    {
-        // Member.
-        /// Store some properties about the conjunction of the stored formulas.
-        Condition mProperties;
-        
-        public:
-            
-        Input(): 
-            std::list<const Formula*>(),
-            mProperties()
-        {}
-        
-        // Methods.
-        
-        const Condition& properties() const
-        {
-            return mProperties;
-        }
-        
-        Condition& rProperties()
-        {
-            return mProperties;
-        }
-        
-        /**
-         * @return true, if this formula is a conjunction of constraints;
-         *          false, otherwise.
-         */
-        bool isConstraintConjunction() const
-        {
-            if( PROP_IS_PURE_CONJUNCTION <= mProperties )
-                return !(PROP_CONTAINS_BOOLEAN <= mProperties);
-            else
-                return false;
-        }
-
-        /**
-         * @return true, if this formula is a conjunction of real constraints;
-         *          false, otherwise.
-         */
-        bool isRealConstraintConjunction() const
-        {
-            if( PROP_IS_PURE_CONJUNCTION <= mProperties )
-                return (!(PROP_CONTAINS_INTEGER_VALUED_VARS <= mProperties) && !(PROP_CONTAINS_BOOLEAN <= mProperties));
-            else
-                return false;
-        }
-
-        /**
-         * @return true, if this formula is a conjunction of integer constraints;
-         *         false, otherwise.
-         */
-        bool isIntegerConstraintConjunction() const
-        {
-            if( PROP_IS_PURE_CONJUNCTION <= mProperties )
-                return (!(PROP_CONTAINS_REAL_VALUED_VARS <= mProperties) && !(PROP_CONTAINS_BOOLEAN <= mProperties));
-            else
-                return false;
-        }
-        
-        /**
-         * @param _assignment The model to check conjunction of the stored formulas against.
-         * @return 1, if the conjunction of the stored formulas is satisfied by the given model;
-         *         0, if the given model conflicts the conjunction of the stored formulas;
-         *         2, if it cannot be determined cheaply, whether the given model conflicts or satisfies 
-         *            the conjunction of the stored formulas.
-         */
-        unsigned satisfiedBy( const Model& _assignment ) const
-        {
-            EvalRationalMap rationalAssigns;
-            if( getRationalAssignmentsFromModel( _assignment, rationalAssigns ) )
-                return satisfiedBy( rationalAssigns );
-            else
-                return 2; // TODO: Check also models having square roots as value.
-        }
-        
-        /**
-         * @param _assignment The assignment to check conjunction of the stored formulas against.
-         * @return 1, if the conjunction of the stored formulas is satisfied by the given assignment;
-         *         0, if the given assignment conflicts the conjunction of the stored formulas;
-         *         2, if it cannot be determined cheaply, whether the given assignment conflicts or satisfies 
-         *            the conjunction of the stored formulas.
-         */
-        unsigned satisfiedBy( const EvalRationalMap& _assignment ) const;
-        
-        /**
-         * @param _subformula The formula for which to check whether it is one of the stored formulas.
-         * @return true, if the given formula is one of the stored formulas;
-         *         false, otherwise.
-         */
-        bool contains( const Formula* _subformula ) const
-        {
-            return std::find( begin(), end(), _subformula ) != end();
-        }
-        
-        void updatePropositions();
-    };
-
     /**
      * A base class for all kind of theory solving methods.
      */
@@ -201,9 +99,9 @@ namespace smtrat
             /// A reference to the manager.
             Manager* const mpManager;
             /// The formula passed to this module.
-            const Input* mpReceivedFormula;
+            const ModuleInput* mpReceivedFormula;
             /// The formula passed to the backends of this module.
-            Input* mpPassedFormula;
+            ModuleInput* mpPassedFormula;
             /// The propositions of the passed formula.
             Condition mPropositions;
             /// Stores the assignment of the current satisfiable result, if existent.
@@ -225,22 +123,22 @@ namespace smtrat
             /// Stores the deductions this module or its backends made.
             std::vector<const Formula*> mDeductions;
             /// Stores the position of the first sub-formula in the passed formula, which has not yet been considered for a consistency check of the backends.
-            Input::iterator mFirstSubformulaToPass;
+            ModuleInput::iterator mFirstSubformulaToPass;
             /// Stores the constraints which the backends must be informed about.
             std::set<const Constraint*> mConstraintsToInform;
             /// Stores the position of the first constraint of which no backend has been informed about.
             std::set<const Constraint*> mInformedConstraints;
             /// Stores the position of the first (by this module) unchecked sub-formula of the received formula.
-            Input::const_iterator mFirstUncheckedReceivedSubformula;
+            ModuleInput::const_iterator mFirstUncheckedReceivedSubformula;
             /// Counter used for the generation of the smt2 files to check for smaller muses.
             mutable unsigned mSmallerMusesCheckCounter;
 
         public:
-            std::set<Input::iterator,FormulaIteratorConstraintIdCompare> mScheduledForRemoval;
+            std::set<ModuleInput::iterator,FormulaIteratorConstraintIdCompare> mScheduledForRemoval;
             //DEPRECATED
-            std::set<Input::iterator,FormulaIteratorConstraintIdCompare> mScheduledForAdding;
+            std::set<ModuleInput::iterator,FormulaIteratorConstraintIdCompare> mScheduledForAdding;
 
-            Module( ModuleType type, const Input*, Conditionals&, Manager* const = NULL );
+            Module( ModuleType type, const ModuleInput*, Conditionals&, Manager* const = NULL );
             virtual ~Module();
 
             static std::vector<std::string> mAssumptionToCheck;
@@ -253,9 +151,9 @@ namespace smtrat
             // Main interfaces
             virtual bool inform( const Constraint* const );
 			virtual void init();
-            virtual bool assertSubformula( Input::const_iterator );
+            virtual bool assertSubformula( ModuleInput::const_iterator );
             virtual Answer isConsistent();
-            virtual void removeSubformula( Input::const_iterator );
+            virtual void removeSubformula( ModuleInput::const_iterator );
             virtual void updateModel() const;
             virtual double rateCall( const PointerSet<Formula>& ) const;
 			virtual std::list<std::vector<carl::Variable>> getModelEqualities() const;
@@ -287,22 +185,22 @@ namespace smtrat
                 mThreadPriority = _threadPriority;
             }
 
-            inline const Input* pReceivedFormula() const
+            inline const ModuleInput* pReceivedFormula() const
             {
                 return mpReceivedFormula;
             }
 
-            inline const Input& rReceivedFormula() const
+            inline const ModuleInput& rReceivedFormula() const
             {
                 return *mpReceivedFormula;
             }
 
-            inline const Input* pPassedFormula() const
+            inline const ModuleInput* pPassedFormula() const
             {
                 return mpPassedFormula;
             }
 
-            inline const Input& rPassedFormula() const
+            inline const ModuleInput& rPassedFormula() const
             {
                 return *mpPassedFormula;
             }
@@ -357,12 +255,12 @@ namespace smtrat
                 return mDeductions;
             }
 
-            Input::const_iterator firstUncheckedReceivedSubformula() const
+            ModuleInput::const_iterator firstUncheckedReceivedSubformula() const
             {
                 return mFirstUncheckedReceivedSubformula;
             }
 
-            Input::const_iterator firstSubformulaToPass() const
+            ModuleInput::const_iterator firstSubformulaToPass() const
             {
                 return mFirstSubformulaToPass;
             }
@@ -385,8 +283,8 @@ namespace smtrat
             void updateDeductions();
 
             // Methods for debugging purposes.
-            static void addAssumptionToCheck( const Formula&, bool, const std::string& );
-            static void addAssumptionToCheck( const Input&, bool, const std::string& );
+            static void addAssumptionToCheck( const Formula*, bool, const std::string& );
+            static void addAssumptionToCheck( const ModuleInput&, bool, const std::string& );
             static void addAssumptionToCheck( const PointerSet<Formula>&, bool, const std::string& );
             static void addAssumptionToCheck( const std::set<const Constraint*>&, bool, const std::string& );
             static void storeAssumptionsToCheck( const Manager& );
@@ -464,7 +362,7 @@ namespace smtrat
             
             Answer foundAnswer( Answer );
             void addConstraintToInform( const Constraint* const _constraint );
-            void addReceivedSubformulaToPassedFormula( Input::const_iterator );
+            void addReceivedSubformulaToPassedFormula( ModuleInput::const_iterator );
             void addSubformulaToPassedFormula( const Formula*, const vec_set_const_pFormula& );
             void addSubformulaToPassedFormula( const Formula*, vec_set_const_pFormula&& );
             void addSubformulaToPassedFormula( const Formula*, const Formula* );
@@ -472,7 +370,7 @@ namespace smtrat
             static bool modelsDisjoint( const Model&, const Model& );
             void getBackendsModel() const;
             Answer runBackends();
-            Input::iterator removeSubformulaFromPassedFormula( Input::iterator );
+            ModuleInput::iterator removeSubformulaFromPassedFormula( ModuleInput::iterator );
             vec_set_const_pFormula getInfeasibleSubsets( const Module& ) const;
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
             void branchAt( const Polynomial& _polynomial, const Rational& _value, const PointerSet<Formula>& = PointerSet<Formula>(), bool _leftCaseWeak = true );

@@ -46,7 +46,7 @@ namespace smtrat
     
     Manager::Manager():
         mPrimaryBackendFoundAnswer( vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
-        mpPassedFormula( new Input() ),
+        mpPassedFormula( new ModuleInput() ),
         mBacktrackPoints(),
         mGeneratedModules( vector<Module*>( 1, new Module( MT_Module, mpPassedFormula, mPrimaryBackendFoundAnswer, this ) ) ),
         mBackendsOfModules(),
