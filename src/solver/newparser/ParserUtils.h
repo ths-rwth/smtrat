@@ -120,7 +120,8 @@ struct LogicParser : public qi::symbols<char, smtrat::Logic> {
 
 namespace boost { namespace spirit { namespace traits { 
 	template<> inline void scale(int exp, smtrat::Rational& r) {
-		r = carl::pow(r, exp);
+		assert(exp >= 0);
+		r = carl::pow(r, (unsigned)exp);
 	}
 	template<> inline bool is_equal_to_one(const smtrat::Rational& value) {
         return value == 1;
