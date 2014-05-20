@@ -79,7 +79,7 @@ protected:
     /// The inequalities table for handling inequalities
     InequalitiesTable<Settings> mInequalities;
     /// The vector of backtrack points, which has pointers to received constraints.
-    std::vector<Formula::const_iterator> mBacktrackPoints;
+    std::vector<ModuleInput::const_iterator> mBacktrackPoints;
     /// Saves the relevant history to support backtracking
     std::list<GroebnerModuleState<Settings> > mStateHistory;
     /// After popping in the history, it might be necessary to recalculate. This flag indicates this
@@ -96,45 +96,45 @@ protected:
     /** A workaround to associate equalities in the passed formula originating from the gb
      * (in contrast to those which originate from simplified formulae)
      */
-    std::set<Formula*> mGbEqualities;
+    PointerSet<Formula> mGbEqualities;
 
 public:
-    GroebnerModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+    GroebnerModule( ModuleType _type, const ModuleInput* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
     virtual ~GroebnerModule( );
 
-    bool assertSubformula( Formula::const_iterator _formula );
+    bool assertSubformula( ModuleInput::const_iterator _formula );
     virtual Answer isConsistent( );
-    void removeSubformula( Formula::const_iterator _formula );
+    void removeSubformula( ModuleInput::const_iterator _formula );
 	
 
 protected:
     bool constraintByGB( smtrat::Relation cr );
     
-    void pushBacktrackPoint( Formula::const_iterator btpoint );
-    void popBacktrackPoint( Formula::const_iterator btpoint );
+    void pushBacktrackPoint( ModuleInput::const_iterator btpoint );
+    void popBacktrackPoint( ModuleInput::const_iterator btpoint );
     bool saveState( );
 
-    std::set<const Formula*> generateReasons( const carl::BitVector& reasons );
+    PointerSet<Formula> generateReasons( const carl::BitVector& reasons );
     void passGB( );
     
     void knownConstraintDeduction( const std::list<std::pair<carl::BitVector, carl::BitVector> >& deductions );
     void newConstraintDeduction( );
     void factorisedConstraintDeduction( const std::list<Polynomial>& factorisation, const carl::BitVector& reasons );
     
-    Polynomial transformIntoEquality( Formula::const_iterator constraint );
+    Polynomial transformIntoEquality( ModuleInput::const_iterator constraint );
 
     Polynomial callGroebnerToSDP( const Ideal& gb);
     
     bool iterativeVariableRewriting();
     bool findTrivialFactorisations();
     
-    void processNewConstraint( Formula::const_iterator _formula );
-    void handleConstraintToGBQueue( Formula::const_iterator _formula );
-    void handleConstraintNotToGB( Formula::const_iterator _formula );
+    void processNewConstraint( ModuleInput::const_iterator _formula );
+    void handleConstraintToGBQueue( ModuleInput::const_iterator _formula );
+    void handleConstraintNotToGB( ModuleInput::const_iterator _formula );
     
     
-    void removeReceivedFormulaFromNewInequalities( Formula::const_iterator _formula );
-    void removeSubformulaFromPassedFormula( Formula::iterator _formula );
+    void removeReceivedFormulaFromNewInequalities( ModuleInput::const_iterator _formula );
+    void removeSubformulaFromPassedFormula( ModuleInput::iterator _formula );
 
 	Polynomial rewriteVariable(const Polynomial&, const carl::Variable&, const Term&, const BitVector&);
     bool validityCheck( );

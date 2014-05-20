@@ -173,6 +173,14 @@ namespace smtrat
                 subformula->booleanVars( _booleanVars );
         }
         
+        struct IteratorCompare
+        {
+            bool operator() ( const_iterator i1, const_iterator i2 ) const
+            {
+                return (**i1) < (**i2);
+            }
+        };
+        
         std::string toString() const
         {
             std::string result = "(and";

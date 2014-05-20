@@ -134,9 +134,9 @@ namespace smtrat
             mutable unsigned mSmallerMusesCheckCounter;
 
         public:
-            std::set<ModuleInput::iterator,FormulaIteratorConstraintIdCompare> mScheduledForRemoval;
+            std::set<ModuleInput::iterator,Formula::IteratorCompare> mScheduledForRemoval;
             //DEPRECATED
-            std::set<ModuleInput::iterator,FormulaIteratorConstraintIdCompare> mScheduledForAdding;
+            std::set<ModuleInput::iterator,Formula::IteratorCompare> mScheduledForAdding;
 
             Module( ModuleType type, const ModuleInput*, Conditionals&, Manager* const = NULL );
             virtual ~Module();

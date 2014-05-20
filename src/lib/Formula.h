@@ -669,25 +669,17 @@ namespace smtrat
              *                          front of constraints, e.g., (not p<0) gets p>=0.
              */
             const Formula* toCNF( bool _keepConstraints = true ) const;
+            
+            struct IteratorCompare
+            {
+                bool operator() ( const_iterator i1, const_iterator i2 ) const
+                {
+                    return (**i1) < (**i2);
+                }
+            };
     };
     
     std::ostream& operator<<( std::ostream& _out, const Formula& _formula );
-
-    struct FormulaIteratorConstraintIdCompare
-    {
-        bool operator() ( Formula::const_iterator i1, Formula::const_iterator i2 ) const
-        {
-            return (*i1)->pConstraint()->id() < (*i2)->pConstraint()->id();
-        }
-    };
-    
-    struct FormulaConstraintCompare
-    {
-        bool operator( ) (const Formula::const_iterator& c1, const Formula::const_iterator & c2 ) const
-        {
-            return (( *c1 )->constraint( ) < ( *c2 )->constraint( ) );
-        }
-    };
 }    // namespace smtrat
 
 namespace std
