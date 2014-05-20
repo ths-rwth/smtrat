@@ -34,7 +34,7 @@ using namespace std;
 
 namespace smtrat
 {
-    CNFerModule::CNFerModule( ModuleType _type, const Formula* const _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
+    CNFerModule::CNFerModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         mFirstNotCheckedFormula()
     {
@@ -54,7 +54,7 @@ namespace smtrat
      * @return  true,   if the constraint and all previously added constraints are consistent;
      *          false,  if the added constraint or one of the previously added ones is inconsistent.
      */
-    bool CNFerModule::assertSubformula( Formula::const_iterator _subformula )
+    bool CNFerModule::assertSubformula( ModuleInput::const_iterator _subformula )
     {
         Module::assertSubformula( _subformula );
         return true;
@@ -69,40 +69,37 @@ namespace smtrat
      */
     Answer CNFerModule::isConsistent()
     {
-        Formula::const_iterator receivedSubformula = firstUncheckedReceivedSubformula();
+        auto receivedSubformula = firstUncheckedReceivedSubformula();
         while( receivedSubformula != mpReceivedFormula->end() )
         {
             /*
              * Add the currently considered formula of the received constraint as clauses
              * to the passed formula.
              */
-            vector<Formula*> formulasToAssert = vector<Formula*>();
-            Formula* formulaToAssert = new Formula( **receivedSubformula );
-            Formula::toCNF( *formulaToAssert, false );
-            if( formulaToAssert->getType() == TTRUE )
+            const Formula* formulaToAssertInCnf = (*receivedSubformula)->toCNF( false );
+            if( formulaToAssertInCnf->getType() == TTRUE )
             {
                 // No need to add it.
             }
-            else if( formulaToAssert->getType() == FFALSE )
+            else if( formulaToAssertInCnf->getType() == FFALSE )
             {
-                set<const Formula* > reason;
+                PointerSet<Formula> reason;
                 reason.insert( *receivedSubformula );
                 mInfeasibleSubsets.push_back( reason );
                 return foundAnswer( False );
             }
             else
             {
-                if( formulaToAssert->getType() == AND )
+                if( formulaToAssertInCnf->getType() == AND )
                 {
-                    while( !formulaToAssert->empty() )
+                    for( const Formula* subFormula : formulaToAssertInCnf->subformulas()  )
                     {
-                        addSubformulaToPassedFormula( formulaToAssert->pruneBack(), *receivedSubformula );
+                        addSubformulaToPassedFormula( subFormula, *receivedSubformula );
                     }
-                    delete formulaToAssert;
                 }
                 else
                 {
-                    addSubformulaToPassedFormula( formulaToAssert, *receivedSubformula );
+                    addSubformulaToPassedFormula( formulaToAssertInCnf, *receivedSubformula );
                 }
             }
             ++receivedSubformula;
@@ -121,7 +118,7 @@ namespace smtrat
      *
      * @param _subformula The sub formula of the received formula to remove.
      */
-    void CNFerModule::removeSubformula( Formula::const_iterator _subformula )
+    void CNFerModule::removeSubformula( ModuleInput::const_iterator _subformula )
     {
         Module::removeSubformula( _subformula );
     }

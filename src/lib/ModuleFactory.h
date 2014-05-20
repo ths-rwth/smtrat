@@ -40,6 +40,7 @@ namespace smtrat
     // Forward declarations to speed up compile time.
     class Manager;
     class Module;
+    class ModuleInput;
     class Formula;
 
     typedef std::vector< std::atomic_bool* >                 Conditionals;
@@ -63,7 +64,7 @@ namespace smtrat
             {}
             virtual ~ModuleFactory(){}
 
-            virtual Module* create( ModuleType, const Formula* const, Conditionals&, Manager* const ) = 0;
+            virtual Module* create( ModuleType, const ModuleInput*, Conditionals&, Manager* const ) = 0;
 
             const ModuleType& type() const
             {

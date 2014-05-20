@@ -42,11 +42,11 @@ namespace smtrat
             {
                 case carl::BoundType::STRICT:
 //                    leftTmp = Formula::newBound(_var, smtrat::Relation::CR_GREATER, bound);
-                    leftTmp = Formula::newConstraint(leftEx, smtrat::Relation::GREATER);
+                    leftTmp = newConstraint(leftEx, Relation::GREATER);
                     break;
                 case carl::BoundType::WEAK:
 //                    leftTmp = Formula::newBound(_var, smtrat::Relation::CR_GEQ, bound);
-                    leftTmp = Formula::newConstraint(leftEx, smtrat::Relation::GEQ);
+                    leftTmp = newConstraint(leftEx, Relation::GEQ);
                     break;
                 default:
                     leftTmp = NULL;
@@ -60,11 +60,11 @@ namespace smtrat
             switch( _interval.upperBoundType() )
             {
                 case carl::BoundType::STRICT:
-                    rightTmp = Formula::newConstraint(rightEx, smtrat::Relation::LESS);
+                    rightTmp = newConstraint(rightEx, Relation::LESS);
 //                    rightTmp = Formula::newBound( _var, smtrat::Relation::CR_LESS, bound );
                     break;
                 case carl::BoundType::WEAK:
-                    rightTmp = Formula::newConstraint(rightEx, smtrat::Relation::LEQ);
+                    rightTmp = newConstraint(rightEx, Relation::LEQ);
 //                    rightTmp = Formula::newBound( _var, smtrat::Relation::CR_LEQ, bound );
                     break;
                 default:

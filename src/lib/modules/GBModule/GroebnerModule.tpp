@@ -49,7 +49,7 @@ namespace smtrat
 {
 
 template<class Settings>
-GroebnerModule<Settings>::GroebnerModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+GroebnerModule<Settings>::GroebnerModule( ModuleType _type, const ModuleInput* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
     mBasis( ),
     mInequalities( this ),
@@ -78,7 +78,7 @@ GroebnerModule<Settings>::~GroebnerModule( )
  * @return true
  */
 template<class Settings>
-bool GroebnerModule<Settings>::assertSubformula( Formula::const_iterator _formula )
+bool GroebnerModule<Settings>::assertSubformula( ModuleInput::const_iterator _formula )
 {
     Module::assertSubformula( _formula );
     if( (*_formula)->getType() != smtrat::Type::CONSTRAINT )
@@ -112,7 +112,7 @@ bool GroebnerModule<Settings>::constraintByGB(smtrat::Relation cr)
  * @param _formula
  */
 template<class Settings>
-void GroebnerModule<Settings>::processNewConstraint(Formula::const_iterator _formula)
+void GroebnerModule<Settings>::processNewConstraint(ModuleInput::const_iterator _formula)
 {
     const Constraint& constraint = (*_formula)->constraint( );
     bool toGb = constraintByGB(constraint.relation());
@@ -132,7 +132,7 @@ void GroebnerModule<Settings>::processNewConstraint(Formula::const_iterator _for
  * @param _formula
  */
 template<class Settings>
-void GroebnerModule<Settings>::handleConstraintToGBQueue(Formula::const_iterator _formula)
+void GroebnerModule<Settings>::handleConstraintToGBQueue(ModuleInput::const_iterator _formula)
 {
     pushBacktrackPoint( _formula );
     // Equalities do not need to be transformed, so we add them directly.
@@ -162,7 +162,7 @@ void GroebnerModule<Settings>::handleConstraintToGBQueue(Formula::const_iterator
  * @param _formula
  */
 template<class Settings>
-void GroebnerModule<Settings>::handleConstraintNotToGB(Formula::const_iterator _formula)
+void GroebnerModule<Settings>::handleConstraintNotToGB(ModuleInput::const_iterator _formula)
 {
     if( Settings::checkInequalities == NEVER )
     {
@@ -288,7 +288,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
                 assert( witness.isZero( ) );
             }
             #endif
-            mInfeasibleSubsets.push_back( set<const Formula*>() );
+            mInfeasibleSubsets.push_back( PointerSet<Formula>() );
             // The equalities we used for the basis-computation are the infeasible subset
 
 			assert(!Settings::getReasonsForInfeasibility || !witness.getReasons().empty());
@@ -345,7 +345,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
         // When passing a gb, first remove last and then pass current gb.
         if( Settings::passGB )
         {
-            for( Formula::iterator i = mpPassedFormula->begin( ); i != mpPassedFormula->end( ); )
+            for( ModuleInput::iterator i = mpPassedFormula->begin( ); i != mpPassedFormula->end( ); )
             {
                 assert( (*i)->getType( ) == smtrat::Type::CONSTRAINT );
                 if( mGbEqualities.count(*i) == 1 )
@@ -606,28 +606,27 @@ void GroebnerModule<Settings>::knownConstraintDeduction(const std::list<std::pai
         // if the bitvector is not empty, there is a theory deduction
         if( Settings::addTheoryDeductions == ALL_CONSTRAINTS && !it->second.empty() )
         {
-            Formula* deduction = new Formula(OR);
-            std::set<const Formula*> deduced( generateReasons( it->first ));
+            PointerSet<Formula> subformulas;
+            PointerSet<Formula> deduced( generateReasons( it->first ));
             // When this kind of deduction is greater than one, we would have to determine wich of them is really the deduced one.
             if( deduced.size() > 1 ) continue;
-            std::set<const Formula*> originals( generateReasons( it->second ));
-            std::set<const Formula*> originalsWithoutDeduced;
+            PointerSet<Formula> originals( generateReasons( it->second ));
+            PointerSet<Formula> originalsWithoutDeduced;
 
             std::set_difference(originals.begin(), originals.end(), deduced.begin(), deduced.end(), std::inserter(originalsWithoutDeduced, originalsWithoutDeduced.end()));
 
 
             for( auto jt =  originalsWithoutDeduced.begin(); jt != originalsWithoutDeduced.end(); ++jt )
             {
-                deduction->addSubformula( new Formula( NOT ) );
-                deduction->back()->addSubformula( (*jt)->pConstraint() );
+                subformulas.insert( newNegation( *jt ) );
             }
 
             for( auto jt =  deduced.begin(); jt != deduced.end(); ++jt )
             {
-                deduction->addSubformula( (*jt)->pConstraint() );
+                subformulas.insert( *jt );
             }
 
-            addDeduction(deduction);
+            addDeduction( newFormula( OR, subformulas ) );
             //deduction->print();
             #ifdef SMTRAT_DEVOPTION_Statistics
             mStats->DeducedEquality();
@@ -650,7 +649,7 @@ void GroebnerModule<Settings>::newConstraintDeduction( )
  * @param _formula the constraint which should be removed.
  */
 template<class Settings>
-void GroebnerModule<Settings>::removeSubformula( Formula::const_iterator _formula )
+void GroebnerModule<Settings>::removeSubformula( ModuleInput::const_iterator _formula )
 {
     if((*_formula)->getType() !=  smtrat::Type::CONSTRAINT) {
         super::removeSubformula( _formula );
@@ -682,7 +681,7 @@ void GroebnerModule<Settings>::removeSubformula( Formula::const_iterator _formul
  * @param _formula
  */
 template<class Settings>
-void GroebnerModule<Settings>::removeReceivedFormulaFromNewInequalities( Formula::const_iterator _formula )
+void GroebnerModule<Settings>::removeReceivedFormulaFromNewInequalities( ModuleInput::const_iterator _formula )
 {
     for(auto it = mNewInequalities.begin(); it != mNewInequalities.end(); ++it )
     {
@@ -699,7 +698,7 @@ void GroebnerModule<Settings>::removeReceivedFormulaFromNewInequalities( Formula
  * @param btpoint The equality we have removed
  */
 template<class Settings>
-void GroebnerModule<Settings>::pushBacktrackPoint( Formula::const_iterator btpoint )
+void GroebnerModule<Settings>::pushBacktrackPoint( ModuleInput::const_iterator btpoint )
 {
     assert( mBacktrackPoints.empty( ) || (*btpoint)->getType( ) ==  smtrat::Type::CONSTRAINT );
     assert( mBacktrackPoints.size( ) == mStateHistory.size( ) );
@@ -738,7 +737,7 @@ void GroebnerModule<Settings>::pushBacktrackPoint( Formula::const_iterator btpoi
  * @param a pointer in the received formula to the constraint which will be removed.
  */
 template<class Settings>
-void GroebnerModule<Settings>::popBacktrackPoint( Formula::const_iterator btpoint )
+void GroebnerModule<Settings>::popBacktrackPoint( ModuleInput::const_iterator btpoint )
 {
     //assert( validityCheck( ) );
     assert( mBacktrackPoints.size( ) == mStateHistory.size( ) );
@@ -747,7 +746,7 @@ void GroebnerModule<Settings>::popBacktrackPoint( Formula::const_iterator btpoin
     //We first count how far we have to backtrack.
     //Because the polynomials have to be added again afterwards, we save them in a list.
     unsigned nrOfBacktracks = 1;
-    std::list<Formula::const_iterator> rescheduled;
+    std::list<ModuleInput::const_iterator> rescheduled;
     
     while( !mBacktrackPoints.empty( ) )
     {
@@ -837,7 +836,7 @@ typename Settings::Polynomial GroebnerModule<Settings>::callGroebnerToSDP( const
  * @return The polynomial which represents the equality.
  */
 template<class Settings>
-typename GroebnerModule<Settings>::Polynomial GroebnerModule<Settings>::transformIntoEquality( Formula::const_iterator constraint )
+typename GroebnerModule<Settings>::Polynomial GroebnerModule<Settings>::transformIntoEquality( ModuleInput::const_iterator constraint )
 {
     Polynomial result( (*constraint)->constraint( ).lhs( ) );
     unsigned constrId = (*constraint)->constraint( ).id( );
@@ -911,13 +910,13 @@ void GroebnerModule<Settings>::passGB( )
     // Declare a set of reason sets.
     vec_set_const_pFormula originals;
     // And a reason set in it.
-    originals.push_back( set<const Formula*>() );
+    originals.push_back( PointerSet<Formula>() );
     
     if( !Settings::passWithMinimalReasons )
     {
         // In the case we do not want to pass the GB with a minimal reason set,
         // we calculate the reason set here for all polynomials.
-        for( Formula::const_iterator it = mpReceivedFormula->begin( ); it != mpReceivedFormula->end( ); ++it )
+        for( ModuleInput::const_iterator it = mpReceivedFormula->begin( ); it != mpReceivedFormula->end( ); ++it )
         {
             // Add the constraint if it is of a type that it was handled by the gb.
             if( constraintByGB((*it)->constraint( ).relation( )) )
@@ -943,9 +942,9 @@ void GroebnerModule<Settings>::passGB( )
         assert(!originals.front().empty());
         // We now add polynomial = 0 as a constraint to the passed formula.
         // We use the originals set calculated before as reason set. 
-        // TODO: replace "Formula::constraintPool().variables()" by a smaller approximations
+        // TODO: replace "constraintPool().variables()" by a smaller approximations
         // of the variables contained in "simplIt->toEx( )"
-        addSubformulaToPassedFormula( new Formula( Formula::newConstraint( smtrat::Polynomial(*simplIt), smtrat::Relation::EQ ) ), originals );
+        addSubformulaToPassedFormula( newFormula( newConstraint( smtrat::Polynomial(*simplIt), smtrat::Relation::EQ ) ), originals );
         mGbEqualities.insert(mpPassedFormula->back());
     }
 }
@@ -956,16 +955,16 @@ void GroebnerModule<Settings>::passGB( )
  * @return The reason set.
  */
 template<class Settings>
-std::set<const Formula*> GroebnerModule<Settings>::generateReasons( const carl::BitVector& reasons )
+PointerSet<Formula> GroebnerModule<Settings>::generateReasons( const carl::BitVector& reasons )
 {
     if(reasons.empty())
     {
-        return std::set<const Formula*>();
+        return PointerSet<Formula>();
     }
     
     carl::BitVector::const_iterator origIt = reasons.begin( );
 	origIt++;
-    std::set<const Formula*> origins;
+    PointerSet<Formula> origins;
 
     auto it = mBacktrackPoints.begin( );
     for( ++it; it != mBacktrackPoints.end( ); ++it )
@@ -1019,7 +1018,7 @@ bool GroebnerModule<Settings>::validityCheck( )
  * @param _formula
  */
 template<class Settings>
-void GroebnerModule<Settings>::removeSubformulaFromPassedFormula( Formula::iterator _formula )
+void GroebnerModule<Settings>::removeSubformulaFromPassedFormula( ModuleInput::iterator _formula )
 {
     super::removeSubformulaFromPassedFormula( _formula );
 }

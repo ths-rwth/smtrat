@@ -91,7 +91,7 @@ namespace smtrat
     /**
      * Constructor
      */
-    SATModule::SATModule( ModuleType _type, const Formula* const _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
+    SATModule::SATModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         // Parameters (user settable):
         //
@@ -187,10 +187,10 @@ namespace smtrat
      * @return  true,   if the constraint and all previously added constraints are consistent;
      *          false,  if the added constraint or one of the previously added ones is inconsistent.
      */
-    bool SATModule::assertSubformula( Formula::const_iterator _subformula )
+    bool SATModule::assertSubformula( ModuleInput::const_iterator _subformula )
     {
         Module::assertSubformula( _subformula );
-        if( PROP_IS_A_CLAUSE <= (*_subformula)->proposition() )
+        if( PROP_IS_A_CLAUSE <= (*_subformula)->properties() )
         {
             assert( mFormulaClauseMap.find( *_subformula ) == mFormulaClauseMap.end() );
             mFormulaClauseMap[*_subformula] = addClause( *_subformula, false );
@@ -203,7 +203,7 @@ namespace smtrat
      *
      * @param _subformula The sub formula of the received formula to remove.
      */
-    void SATModule::removeSubformula( Formula::const_iterator _subformula )
+    void SATModule::removeSubformula( ModuleInput::const_iterator _subformula )
     {
         FormulaClauseMap::iterator iter = mFormulaClauseMap.find( *_subformula );
         if( iter != mFormulaClauseMap.end() )
@@ -265,7 +265,7 @@ namespace smtrat
      */
     Answer SATModule::isConsistent()
     {
-        if( PROP_IS_IN_CNF <= mpReceivedFormula->proposition() )
+        if( PROP_IS_IN_CNF <= mpReceivedFormula->properties() )
         {
             #ifndef SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN
             // Remove all clauses which were only introduced in order to exclude this combination 
@@ -388,7 +388,7 @@ namespace smtrat
         /*
          * Set the infeasible subset to the set of all clauses.
          */
-        set<const Formula*> infeasibleSubset = set<const Formula*>();
+        PointerSet<Formula> infeasibleSubset;
 //        if( mpReceivedFormula->isConstraintConjunction() )
 //        { 
 //            getInfeasibleSubsets();
@@ -397,9 +397,9 @@ namespace smtrat
 //        {
             // Just add all sub formulas.
             // TODO: compute a better infeasible subset
-            for( Formula::const_iterator subformula = mpReceivedFormula->begin(); subformula != mpReceivedFormula->end(); ++subformula )
+            for( const Formula* subformula : *mpReceivedFormula )
             {
-                infeasibleSubset.insert( *subformula );
+                infeasibleSubset.insert( subformula );
             }
 //        }
         mInfeasibleSubsets.push_back( infeasibleSubset );
@@ -427,14 +427,14 @@ namespace smtrat
      * @param _formula
      * @return The reference to the first clause which has been added.
      */
-    CRef SATModule::addFormula( Formula* _formula, unsigned _type )
+    CRef SATModule::addFormula( const Formula* _formula, unsigned _type )
     {
         assert( _type < 2 );
-        Formula::toCNF( *_formula, true );
-        if( _formula->getType() == AND )
+        const Formula* formulaInCnf = _formula->toCNF( true );
+        if( formulaInCnf->getType() == AND )
         {
             CRef c = CRef_Undef;
-            for( Formula::const_iterator clause = _formula->begin(); clause != _formula->end(); ++clause )
+            for( Formula::const_iterator clause = formulaInCnf->begin(); clause != formulaInCnf->end(); ++clause )
             {
                 CRef ct = addClause( *clause, _type );
                 if( c == CRef_Undef && ct != CRef_Undef ) c = ct;
@@ -443,8 +443,8 @@ namespace smtrat
         }
         else
         {
-            assert( _formula->getType() == OR );
-            return addClause( _formula, _type );
+            assert( formulaInCnf->getType() == OR );
+            return addClause( formulaInCnf, _type );
         }
     }
 
@@ -458,7 +458,7 @@ namespace smtrat
      */
     CRef SATModule::addClause( const Formula* _formula, unsigned _type )
     {
-        assert( (_formula->proposition() | ~PROP_IS_A_CLAUSE) == ~PROP_TRUE );
+        assert( (_formula->properties() | ~PROP_IS_A_CLAUSE) == ~PROP_TRUE );
         switch( _formula->getType() )
         {
             case OR:
@@ -673,8 +673,8 @@ namespace smtrat
             Polynomial constraintLhs = _constraint->lhs().substitute( mVarReplacements );
             const Constraint* constraint = NULL;
             if( !_polarity )
-                constraint = Formula::newConstraint( constraintLhs, Constraint::invertRelation( _constraint->relation() ) );
-            else constraint = Formula::newConstraint( constraintLhs, _constraint->relation() );
+                constraint = newConstraint( constraintLhs, Constraint::invertRelation( _constraint->relation() ) );
+            else constraint = newConstraint( constraintLhs, _constraint->relation() );
             constraintAbstraction = newVar( !_preferredToTSolver, true, _activity, constraint, _origin );
             Lit lit                            = mkLit( constraintAbstraction, !_polarity );
             vector<Lit> lits;
@@ -712,7 +712,7 @@ namespace smtrat
             }
             else if( abstr.updateInfo > 0 )
             {
-                Formula* formToAdd = new Formula( abstr.constraint );
+                const Formula* formToAdd = abstr.constraint; // TODO: this is not necessary, maybe store the formula once and use it now again
                 formToAdd->setDeducted( abstr.deducted );
                 if( abstr.origin == NULL )
                 {
@@ -723,8 +723,7 @@ namespace smtrat
                 {
                     addSubformulaToPassedFormula( formToAdd, abstr.origin );
                 }
-                assert( mpPassedFormula->last() != mpPassedFormula->end() );
-                abstr.position = mpPassedFormula->last();
+                abstr.position = --mpPassedFormula->end();
                 mChangedPassedFormula = true;
             }
             abstr.updateInfo = 0;
@@ -778,7 +777,7 @@ namespace smtrat
         mBooleanConstraintMap.push( Abstraction() );
         Abstraction& abstr = mBooleanConstraintMap.last();
         abstr.position = mpPassedFormula->end();
-        abstr.constraint = _abstractedConstraint;
+        abstr.constraint = _abstractedConstraint != NULL ? newFormula( _abstractedConstraint ) : NULL;
         abstr.origin = _origin;
         abstr.updateInfo = 0;
         abstr.deducted = false;
@@ -1239,10 +1238,10 @@ SetWatches:
         {
             if( value( c[i] ) == l_True )
                 return true;
-            const Constraint* constraint = mBooleanConstraintMap[var(c[i])].constraint;
+            const Formula* constraint = mBooleanConstraintMap[var(c[i])].constraint;
             if( constraint != NULL )
             {
-                unsigned constraintConsistent = constraint->isConsistent();
+                unsigned constraintConsistent = constraint->constraint().isConsistent();
                 if( (!sign( c[i] ) && constraintConsistent == 1) || (sign( c[i] ) && constraintConsistent == 0) )
                 {
                     return true;
@@ -1339,7 +1338,6 @@ SetWatches:
         Answer currentAssignmentConsistent = True;
         for( ; ; )
         {
-            CONSTRAINT_LOCK
             if( anAnswerFound() )
             {
                 return l_Undef;
@@ -1986,7 +1984,7 @@ SetWatches:
         assert( value( p ) == l_Undef );
         assigns[var( p )] = lbool( !sign( p ) );
         Abstraction& abstr = mBooleanConstraintMap[var( p )];
-        if( !sign( p ) && abstr.constraint != NULL && abstr.constraint->isConsistent() != 1 ) 
+        if( !sign( p ) && abstr.constraint != NULL && abstr.constraint->constraint().isConsistent() != 1 ) 
         {
             if( ++abstr.updateInfo > 0 )
                 mChangedBooleans.push_back( var( p ) );
@@ -2474,10 +2472,10 @@ NextClause:
         int i = (_trailStart > 0 ? _trailStart : 0); 
         for( ; i < trail.size(); ++i )
         {
-            const Constraint* pconstr = mBooleanConstraintMap[var(trail[i])].constraint;
+            const Formula* pconstr = mBooleanConstraintMap[var(trail[i])].constraint;
             if( pconstr != NULL )
             {
-                const Constraint& constr = *pconstr;
+                const Constraint& constr = pconstr->constraint();
                 switch( constr.isConsistent() )
                 {
                     case 0:
@@ -2560,7 +2558,7 @@ NextClause:
                                         #endif
                                         auto consLitPair = mConstraintLiteralMap.find( cons );
                                         assert( consLitPair != mConstraintLiteralMap.end() );
-                                        const Constraint* subResult = Formula::newConstraint( cons->lhs().substitute( *elimVar, subBy ), cons->relation() );
+                                        const Constraint* subResult = newConstraint( cons->lhs().substitute( *elimVar, subBy ), cons->relation() );
                                         #ifdef SAT_APPLY_VALID_SUBS_DEBUG
                                         cout << "    results in " << *subResult << endl;
                                         #endif
@@ -2648,13 +2646,13 @@ NextClause:
                                                 removeSubformulaFromPassedFormula( abstr.position );
                                                 if( subResult->isConsistent() == 2 )
                                                 {
-                                                    abstr.constraint = subResult;
+                                                    abstr.constraint = newFormula( subResult );
                                                     if( abstr.origin != NULL )
                                                     {
                                                         #ifdef SAT_APPLY_VALID_SUBS_DEBUG
                                                         cout << __LINE__ << endl;
                                                         #endif
-                                                        addSubformulaToPassedFormula( new Formula( subResult ), abstr.origin );
+                                                        addSubformulaToPassedFormula( abstr.constraint, abstr.origin );
                                                     }
                                                     else
                                                     {
@@ -2662,10 +2660,9 @@ NextClause:
                                                         cout << __LINE__ << endl;
                                                         #endif
                                                         vec_set_const_pFormula emptyOrigins;
-                                                        addSubformulaToPassedFormula( new Formula( subResult ), move( emptyOrigins ) );
+                                                        addSubformulaToPassedFormula( abstr.constraint, move( emptyOrigins ) );
                                                     }
-                                                    assert( mpPassedFormula->last() != mpPassedFormula->end() );
-                                                    abstr.position = mpPassedFormula->last();
+                                                    abstr.position = --mpPassedFormula->end();
                                                 }
                                                 else
                                                 {
@@ -2679,7 +2676,7 @@ NextClause:
                                                 #ifdef SAT_APPLY_VALID_SUBS_DEBUG
                                                 cout << __LINE__ << endl;
                                                 #endif
-                                                abstr.constraint = subResult;
+                                                abstr.constraint = newFormula( subResult );
                                                 if( subResult->isConsistent() != 2 )
                                                 {
                                                     abstr.updateInfo = 0;
@@ -2742,23 +2739,20 @@ NextClause:
         {
             // Learn the deductions.
             (*backend)->updateDeductions();
-            for( vector<Formula*>::const_iterator deduction = (*backend)->deductions().begin();
-                    deduction != (*backend)->deductions().end(); ++deduction )
+            for( const Formula* deduction : (*backend)->deductions() )
             {
                 deductionsLearned = true;
                 #ifdef SMTRAT_DEVOPTION_Validation
                 if( validationSettings->logLemmata() )
                 {
-                    Formula notLemma = Formula( NOT );
-                    notLemma.addSubformula( new Formula( **deduction ) );
-                    addAssumptionToCheck( notLemma, false, moduleName( (*backend)->type() ) + "_lemma" );
+                    addAssumptionToCheck( newNegation( deduction ), false, moduleName( (*backend)->type() ) + "_lemma" );
                 }
                 #endif
                 #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
                 cout << "Learned a theory deduction from a backend module!" << endl;
-                cout << (*deduction)->toString( false, 0, "", true, true, true ) << endl;
+                cout << deduction->toString( false, 0, "", true, true, true ) << endl;
                 #endif
-                addFormula( *deduction, DEDUCTED_CLAUSE );
+                addFormula( deduction, DEDUCTED_CLAUSE );
             }
             (*backend)->clearDeductions();
             ++backend;

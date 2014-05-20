@@ -54,8 +54,8 @@ namespace smtrat
         public:
             struct Context
             {
-                const smtrat::Formula* origin;
-                smtrat::Formula::iterator position;
+                const Formula*                      origin;
+                std::list<const Formula*>::iterator position;
             };
             typedef std::map< carl::Variable, LRAVariable*>                   VarVariableMap;
             typedef FastPointerMap<Polynomial, LRAVariable*>                  ExVariableMap;
@@ -88,7 +88,7 @@ namespace smtrat
             /**
              * Constructors:
              */
-            LRAModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            LRAModule( ModuleType _type, const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             /**
              * Destructor:
@@ -102,8 +102,8 @@ namespace smtrat
             // Interfaces.
             bool inform( const Constraint* const );
             void init();
-            bool assertSubformula( Formula::const_iterator );
-            void removeSubformula( Formula::const_iterator );
+            bool assertSubformula( ModuleInput::const_iterator );
+            void removeSubformula( ModuleInput::const_iterator );
             Answer isConsistent();
             void updateModel() const;
             EvalRationalMap getRationalModel() const;
@@ -141,7 +141,7 @@ namespace smtrat
             #endif
             void adaptPassedFormula();
             bool checkAssignmentForNonlinearConstraint();
-            bool activateBound( const LRABound*, const std::set<const Formula*>& );
+            bool activateBound( const LRABound*, const PointerSet<Formula>& );
             void setBound( const Constraint* );
             void addSimpleBoundDeduction( const LRABound*, bool = false );
             void addSimpleBoundConflict( const LRABound&, const LRABound&, bool = false );

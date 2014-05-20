@@ -48,10 +48,10 @@
 
 namespace smtrat
 {
-    /// Hash function for use of Formula::const_iterator in unordered data structures
+    /// Hash function for use of Input::const_iterator in unordered data structures
     struct FormulaIteratorHasher
     {
-        size_t operator ()( Formula::const_iterator i ) const
+        size_t operator ()( ModuleInput::const_iterator i ) const
         {
             return (*i)->pConstraint()->id();
         }
@@ -69,7 +69,7 @@ namespace smtrat
     class CADModule:
         public Module
     {
-        typedef std::unordered_map<Formula::const_iterator, unsigned, FormulaIteratorHasher> ConstraintIndexMap;
+        typedef std::unordered_map<ModuleInput::const_iterator, unsigned, FormulaIteratorHasher> ConstraintIndexMap;
         #ifdef SMTRAT_CAD_VARIABLEBOUNDS
         typedef smtrat::vb::VariableBounds< Formula > VariableBounds;
         #endif
@@ -95,12 +95,12 @@ namespace smtrat
 
         public:
 
-            CADModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            CADModule( ModuleType _type, const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             virtual ~CADModule();
 
-            virtual bool assertSubformula(Formula::const_iterator _subformula);
-            virtual void removeSubformula(Formula::const_iterator _subformula);
+            virtual bool assertSubformula(ModuleInput::const_iterator _subformula);
+            virtual void removeSubformula(ModuleInput::const_iterator _subformula);
             virtual Answer isConsistent();
             void updateModel() const;
 

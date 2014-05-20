@@ -29,7 +29,8 @@
 #define	VS_TOOLS_HPP
 
 #include <bitset>
-#include "../Formula.h"
+#include "../ConstraintPool.h"
+#include "../FormulaPool.h"
 
 const unsigned MAX_PRODUCT_SPLIT_NUMBER = 64;
 const unsigned MAX_NUM_OF_COMBINATION_RESULT = 1025;

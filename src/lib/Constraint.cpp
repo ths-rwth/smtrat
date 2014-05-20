@@ -29,8 +29,6 @@
  */
 
 #include "Constraint.h"
-#include "ConstraintPool.h"
-#include "Formula.h"
 #ifdef USE_GINAC
 #include "carl/converter/GinacConverter.h"
 #endif
@@ -40,9 +38,6 @@ using namespace carl;
 
 namespace smtrat
 {
-
-    recursive_mutex Constraint::mMutex;
-
     Constraint::Constraint():
         mID( 0 ),
         mHash( CONSTRAINT_HASH( ZERO_POLYNOMIAL, Relation::EQ ) ), 

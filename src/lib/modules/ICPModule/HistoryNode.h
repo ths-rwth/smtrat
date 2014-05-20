@@ -248,9 +248,9 @@ namespace smtrat
                     return mAppliedContractions;
                 }
                 
-                std::set<const Formula*> appliedConstraints()
+                PointerSet<Formula> appliedConstraints()
                 {
-                    std::set<const Formula*> appliedConstraints;
+                    PointerSet<Formula> appliedConstraints;
                     for( std::set<const ContractionCandidate*>::iterator candidateIt = mAppliedContractions.begin(); candidateIt != mAppliedContractions.end(); ++candidateIt )
                     {
                         for( std::set<const Formula*,ContractionCandidate::originComp>::iterator originIt = (*candidateIt)->origin().begin(); originIt != (*candidateIt)->origin().end(); ++originIt )

@@ -41,12 +41,12 @@ namespace vs
             auto cons = (*conj).begin();
             while( cons != (*conj).end() )
             {
-                if( *cons == smtrat::Formula::constraintPool().inconsistentConstraint() )
+                if( *cons == smtrat::constraintPool().inconsistentConstraint() )
                 {
                     conjInconsistent = true;
                     break;
                 }
-                else if( *cons == smtrat::Formula::constraintPool().consistentConstraint() )
+                else if( *cons == smtrat::constraintPool().consistentConstraint() )
                     cons = (*conj).erase( cons );
                 else
                     cons++;
@@ -75,12 +75,12 @@ namespace vs
             auto cons = (*conj).begin();
             while( cons != (*conj).end() )
             {
-                if( *cons == smtrat::Formula::constraintPool().inconsistentConstraint() )
+                if( *cons == smtrat::constraintPool().inconsistentConstraint() )
                 {
                     conjInconsistent = true;
                     break;
                 }
-                else if( *cons == smtrat::Formula::constraintPool().consistentConstraint() )
+                else if( *cons == smtrat::constraintPool().consistentConstraint() )
                     cons = (*conj).erase( cons );
                 else
                 {
@@ -158,7 +158,7 @@ namespace vs
                             for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
                             {
                                 toCombine.back().push_back( ConstraintVector() );
-                                toCombine.back().back().push_back( smtrat::Formula::newConstraint( factor->first, smtrat::Relation::EQ ) );
+                                toCombine.back().back().push_back( smtrat::newConstraint( factor->first, smtrat::Relation::EQ ) );
                             }
                             simplify( toCombine.back() );
                         }
@@ -176,7 +176,7 @@ namespace vs
                         toCombine.back().push_back( ConstraintVector() );
                         const smtrat::Factorization& factorization = (*constraint)->factorization();
                         for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
-                            toCombine.back().back().push_back( smtrat::Formula::newConstraint( factor->first, smtrat::Relation::NEQ ) );
+                            toCombine.back().back().push_back( smtrat::newConstraint( factor->first, smtrat::Relation::NEQ ) );
                         simplify( toCombine.back() );
                         break;
                     }
@@ -225,7 +225,7 @@ namespace vs
                         for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
                         {
                             result.push_back( ConstraintVector() );
-                            result.back().push_back( smtrat::Formula::newConstraint( factor->first, smtrat::Relation::EQ ) );
+                            result.back().push_back( smtrat::newConstraint( factor->first, smtrat::Relation::EQ ) );
                         }
                     }
                     else
@@ -241,7 +241,7 @@ namespace vs
                     result.push_back( ConstraintVector() );
                     const smtrat::Factorization& factorization = _constraint->factorization();
                     for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
-                        result.back().push_back( smtrat::Formula::newConstraint( factor->first, smtrat::Relation::NEQ ) );
+                        result.back().push_back( smtrat::newConstraint( factor->first, smtrat::Relation::NEQ ) );
                     simplify( result );
                     break;
                 }
@@ -297,11 +297,11 @@ namespace vs
             const smtrat::Factorization& product = _constraint->factorization();
             for( auto factor = product.begin(); factor != product.end(); ++factor )
             {
-                const smtrat::Constraint* consPos = smtrat::Formula::newConstraint( factor->first, relPos );
+                const smtrat::Constraint* consPos = smtrat::newConstraint( factor->first, relPos );
                 unsigned posConsistent = consPos->isConsistent();
                 if( posConsistent != 0 )
                     positives.push_back( consPos );
-                const smtrat::Constraint* consNeg = smtrat::Formula::newConstraint( factor->first, relNeg );
+                const smtrat::Constraint* consNeg = smtrat::newConstraint( factor->first, relNeg );
                 unsigned negConsistent = consNeg->isConsistent();
                 if( negConsistent == 0 )
                 {

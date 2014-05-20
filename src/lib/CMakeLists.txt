@@ -23,10 +23,12 @@ set(lib_core_src
     Assignment.cpp
     Manager.cpp
     Module.cpp
+    ModuleInput.cpp
     Formula.cpp
     StrategyGraph.cpp
     Constraint.cpp
     ConstraintPool.cpp
+    FormulaPool.cpp
     RuntimeSettings.cpp
     ThreadPool.cpp
     ValidationSettings.cpp
@@ -37,6 +39,7 @@ set(lib_core_headers
     Assignment.h
     Manager.h
     Module.h
+    ModuleInput.h
     Condition.h
     Formula.h
     StrategyGraph.h
@@ -45,6 +48,7 @@ set(lib_core_headers
     Common.h
     Constraint.h
     ConstraintPool.h
+    FormulaPool.h
     RuntimeSettings.h
     ThreadPool.h
     VariableBounds.h

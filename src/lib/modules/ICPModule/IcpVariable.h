@@ -67,10 +67,10 @@ namespace icp
             // interval Bound generation
             std::pair<Updated,Updated>         mBoundsSet; // internal, external
             std::pair<Updated,Updated>         mUpdated; // internal, external
-            smtrat::Formula*                   mInternalLeftBound;
-            smtrat::Formula*                   mInternalRightBound;
-            smtrat::Formula::iterator          mExternalLeftBound;
-            smtrat::Formula::iterator          mExternalRightBound;
+            const smtrat::Formula*             mInternalLeftBound;
+            const smtrat::Formula*             mInternalRightBound;
+            ModuleInput::iterator          mExternalLeftBound;
+            ModuleInput::iterator          mExternalRightBound;
 
         private:
             IcpVariable();
@@ -249,33 +249,33 @@ namespace icp
                 return mUpdated.second;
             }
             
-            smtrat::Formula* internalLeftBound() const
+            const smtrat::Formula* internalLeftBound() const
             {
                 assert(mBoundsSet.first == Updated::LEFT || mBoundsSet.first == Updated::BOTH);
                 return mInternalLeftBound;
             }
             
-            smtrat::Formula* internalRightBound() const
+            const smtrat::Formula* internalRightBound() const
             {
                 assert(mBoundsSet.first == Updated::RIGHT || mBoundsSet.first == Updated::BOTH);
                 return mInternalRightBound;
             }
             
-            smtrat::Formula::iterator externalLeftBound() const
+            ModuleInput::iterator externalLeftBound() const
             {
                 assert(mBoundsSet.second == Updated::LEFT || mBoundsSet.second == Updated::BOTH);
                 return mExternalLeftBound;
             }
             
-            smtrat::Formula::iterator externalRightBound() const
+            ModuleInput::iterator externalRightBound() const
             {
                 assert(mBoundsSet.second == Updated::RIGHT || mBoundsSet.second == Updated::BOTH);
                 return mExternalRightBound;
             }
             
-            void setInternalLeftBound( smtrat::Formula* _left )
+            void setInternalLeftBound( const smtrat::Formula* _left )
             {
-                smtrat::Formula* toDelete = mInternalLeftBound;
+                const smtrat::Formula* toDelete = mInternalLeftBound;
                 mInternalLeftBound = _left;
                 switch(mBoundsSet.first)
                 {
@@ -291,9 +291,9 @@ namespace icp
                 delete toDelete;
             }
             
-            void setInternalRightBound( smtrat::Formula* _right )
+            void setInternalRightBound( const smtrat::Formula* _right )
             {
-                smtrat::Formula* toDelete = mInternalRightBound;
+                const smtrat::Formula* toDelete = mInternalRightBound;
                 mInternalRightBound = _right;
                 switch(mBoundsSet.first)
                 {
@@ -309,7 +309,7 @@ namespace icp
                 delete toDelete;
             }
             
-            void setExternalLeftBound( smtrat::Formula::iterator _left )
+            void setExternalLeftBound( ModuleInput::iterator _left )
             {
                 mExternalLeftBound = _left;
                 switch(mBoundsSet.second)
@@ -325,7 +325,7 @@ namespace icp
                 }
             }
             
-            void setExternalRightBound( smtrat::Formula::iterator _right )
+            void setExternalRightBound( ModuleInput::iterator _right )
             {
                 mExternalRightBound = _right;
                 switch(mBoundsSet.second)

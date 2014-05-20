@@ -41,7 +41,7 @@ namespace vs
 {
     
     // Type and object definitions.
-    typedef std::set< Condition::Set > ConditionSetSet;
+    typedef std::set< smtrat::PointerSet<Condition> > ConditionSetSet;
     typedef std::set< ConditionSetSet > ConditionSetSetSet;
     typedef std::list< const Condition* > ConditionList;
     typedef std::vector< ConditionList >  DisjunctionOfConditionConjunctions;
@@ -134,7 +134,7 @@ namespace vs
         /// considers such a child is created.
         std::list< State* >*  mpChildren;
         /// The conditions of this state, which cannot be solved by the virtual substitution.
-        std::set<const Condition*>* mpTooHighDegreeConditions;
+        smtrat::PointerSet<Condition>* mpTooHighDegreeConditions;
         /// A pointer to an object which manages and stores the bounds on the variables occurring in this state.
         /// These bounds are filtered from the conditions this state considers. Note that if we do not use 
         /// optimizations based on variable bounds.
@@ -564,7 +564,7 @@ namespace vs
          * @return A constant reference to the conditions of those this state currently considers, which have a 
          *          too high degree to be tackled of the virtual substitution method.
          */
-        const std::set<const Condition*>& tooHighDegreeConditions() const
+        const smtrat::PointerSet<Condition>& tooHighDegreeConditions() const
         {
             return *mpTooHighDegreeConditions;
         }
@@ -573,7 +573,7 @@ namespace vs
          * @return A reference to the conditions of those this state currently considers, which have a 
          *          too high degree to be tackled of the virtual substitution method.
          */
-        std::set<const Condition*>& rTooHighDegreeConditions()
+        smtrat::PointerSet<Condition>& rTooHighDegreeConditions()
         {
             return *mpTooHighDegreeConditions;
         }
@@ -885,7 +885,7 @@ namespace vs
          * @param _recentlyAdded Is the condition a recently added one.
          * @sideeffect The state can obtain a new condition.
          */
-        void addCondition( const smtrat::Constraint* _constraint, const Condition::Set& _originalConditions, size_t _valutation, bool _recentlyAdded );
+        void addCondition( const smtrat::Constraint* _constraint, const smtrat::PointerSet<Condition>& _originalConditions, size_t _valutation, bool _recentlyAdded );
             
         /**
          * Checks whether no condition in this state points to a deleted condition.
@@ -903,13 +903,13 @@ namespace vs
          *              and made other states unnecessary to consider;
          *          1, otherwise.
          */
-        int deleteOrigins( std::set<const Condition*>& _originsToDelete );
+        int deleteOrigins( smtrat::PointerSet<Condition>& _originsToDelete );
             
         /**
          * Deletes everything originated by the given conditions in the children of this state.
          * @param _originsToDelete The condition for which to delete everything originated by them.
          */
-        void deleteOriginsFromChildren( std::set<const Condition*>& _originsToDelete );
+        void deleteOriginsFromChildren( smtrat::PointerSet<Condition>& _originsToDelete );
             
         /**
          * Deletes everything originated by the given conditions in the conflict sets of this state.
@@ -918,19 +918,19 @@ namespace vs
          *                          conditions of the currently considered condition vector of the father 
          *                          of this state and not, e.g., from somewhere in its substitution results.
          */
-        void deleteOriginsFromConflictSets( std::set<const Condition*>& _originsToDelete, bool _originsAreCurrentConditions );
+        void deleteOriginsFromConflictSets( smtrat::PointerSet<Condition>& _originsToDelete, bool _originsAreCurrentConditions );
             
         /**
          * Deletes everything originated by the given conditions in the substitution results of this state.
          * @param _originsToDelete The conditions for which to delete everything originated by them.
          */
-        void deleteOriginsFromSubstitutionResults( std::set<const Condition*>& _originsToDelete );
+        void deleteOriginsFromSubstitutionResults( smtrat::PointerSet<Condition>& _originsToDelete );
         
         /**
          * Delete everything originated by the given conditions from the entire subtree with this state as root.
          * @param _conditionsToDelete The conditions to delete.
          */
-        void deleteConditions( std::set<const Condition*>& _conditionsToDelete );
+        void deleteConditions( smtrat::PointerSet<Condition>& _conditionsToDelete );
         
         /**
          * Adds a state as child to this state with the given substitution.
@@ -985,7 +985,7 @@ namespace vs
          *                         responsible for this conflict are stored in here.
          * @return The disjoint intervals representing the solution space.
          */
-        std::vector< smtrat::DoubleInterval > solutionSpace( Condition::Set& _conflictReason ) const;
+        std::vector< smtrat::DoubleInterval > solutionSpace( smtrat::PointerSet<Condition>& _conflictReason ) const;
         
         /**
          * Checks whether there are no zeros for the left-hand side of the constraint of the given condition.
@@ -1054,7 +1054,7 @@ namespace vs
          * @param _currentTreeDepth The tree depth of the state from which this method is invoked.
          * @return The greatest level, where a condition of the covering set has been created.
          */
-        static size_t coveringSet( const ConditionSetSetSet& _conflictSets, Condition::Set& _minCovSet, unsigned _currentTreeDepth );
+        static size_t coveringSet( const ConditionSetSetSet& _conflictSets, smtrat::PointerSet<Condition>& _minCovSet, unsigned _currentTreeDepth );
     };
 } // end namspace vs
 #endif
