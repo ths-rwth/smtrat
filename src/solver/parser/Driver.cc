@@ -505,7 +505,9 @@ namespace smtrat
     {
         smtrat::Type type = (smtrat::Type) _type;
         assert( type == smtrat::AND || type == smtrat::OR || type == smtrat::XOR || type == smtrat::IFF );
-        return newFormula( type, move(*_subformulas) );
+        const Formula* result = newFormula( type, move(*_subformulas) );
+        delete _subformulas;
+        return result;
     }
     
     /**

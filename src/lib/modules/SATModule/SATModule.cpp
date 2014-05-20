@@ -173,7 +173,11 @@ namespace smtrat
      * Destructor:
      */
     SATModule::~SATModule()
-    {}
+    {
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        delete mpStatistics;
+        #endif
+    }
 
     /**
      * Methods:

@@ -67,7 +67,11 @@ namespace smtrat
     }
 
     LRAModule::~LRAModule()
-    {}
+    {
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        delete mpStatistics;
+        #endif
+    }
 
     /**
      * Informs this module about the existence of the given constraint, which means
@@ -484,7 +488,7 @@ namespace smtrat
                         PointerSet<Formula> originSet;
                         LRATableau::LearnedBound& learnedBound = mTableau.rNewLearnedBounds().back()->second;
                         mTableau.rNewLearnedBounds().pop_back();
-                        vector<const LRABound*>& bounds = *learnedBound.premise;
+                        vector<const LRABound*>& bounds = learnedBound.premise;
                         for( auto bound = bounds.begin(); bound != bounds.end(); ++bound )
                         {
                             assert( !(*bound)->origins().empty() );
@@ -741,11 +745,10 @@ Return:
      */
     void LRAModule::learnRefinements()
     {
-        map<LRAVariable*, typename LRATableau::LearnedBound>& llBs = mTableau.rLearnedLowerBounds();
-        while( !llBs.empty() )
+        for( auto iter = mTableau.rLearnedLowerBounds().begin(); iter != mTableau.rLearnedLowerBounds().end(); ++iter )
         {
             PointerSet<Formula> subformulas;
-            for( auto bound = llBs.begin()->second.premise->begin(); bound != llBs.begin()->second.premise->end(); ++bound )
+            for( auto bound = iter->second.premise.begin(); bound != iter->second.premise.end(); ++bound )
             {
                 auto originIterB = (*bound)->origins().begin()->begin();
                 while( originIterB != (*bound)->origins().begin()->end() )
@@ -754,21 +757,18 @@ Return:
                     ++originIterB;
                 }
             }
-            subformulas.insert( newFormula( llBs.begin()->second.nextWeakerBound->pAsConstraint() ) );
+            subformulas.insert( newFormula( iter->second.nextWeakerBound->pAsConstraint() ) );
             addDeduction( newFormula( OR, subformulas ) );
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->addRefinement();
             mpStatistics->addDeduction();
             #endif
-            vector<const LRABound* >* toDelete = llBs.begin()->second.premise;
-            llBs.erase( llBs.begin() );
-            delete toDelete;
         }
-        map<LRAVariable*, typename LRATableau::LearnedBound>& luBs = mTableau.rLearnedUpperBounds();
-        while( !luBs.empty() )
+        mTableau.rLearnedLowerBounds().clear();
+        for( auto iter = mTableau.rLearnedUpperBounds().begin(); iter != mTableau.rLearnedUpperBounds().end(); ++iter )
         {
             PointerSet<Formula> subformulas;
-            for( auto bound = luBs.begin()->second.premise->begin(); bound != luBs.begin()->second.premise->end(); ++bound )
+            for( auto bound = iter->second.premise.begin(); bound != iter->second.premise.end(); ++bound )
             {
                 auto originIterB = (*bound)->origins().begin()->begin();
                 while( originIterB != (*bound)->origins().begin()->end() )
@@ -777,16 +777,14 @@ Return:
                     ++originIterB;
                 }
             }
-            subformulas.insert( newFormula( luBs.begin()->second.nextWeakerBound->pAsConstraint() ) );
+            subformulas.insert( newFormula( iter->second.nextWeakerBound->pAsConstraint() ) );
             addDeduction( newFormula( OR, subformulas ) );
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->addRefinement();
             mpStatistics->addDeduction();
             #endif
-            vector<const LRABound* >* toDelete = luBs.begin()->second.premise;
-            luBs.erase( luBs.begin() );
-            delete toDelete;
         }
+        mTableau.rLearnedUpperBounds().clear();
     }
     #endif
 
