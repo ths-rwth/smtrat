@@ -67,7 +67,11 @@ namespace smtrat
     }
 
     LRAModule::~LRAModule()
-    {}
+    {
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        delete mpStatistics;
+        #endif
+    }
 
     /**
      * Informs this module about the existence of the given constraint, which means
@@ -193,7 +197,7 @@ namespace smtrat
                     }
                     else
                     {
-                        addSubformulaToPassedFormula( newFormula( constraint ), *_subformula );
+                        addSubformulaToPassedFormula( *_subformula, *_subformula );
                         mNonlinearConstraints.insert( constraint );
                         return true;
                     }
@@ -484,7 +488,7 @@ namespace smtrat
                         PointerSet<Formula> originSet;
                         LRATableau::LearnedBound& learnedBound = mTableau.rNewLearnedBounds().back()->second;
                         mTableau.rNewLearnedBounds().pop_back();
-                        vector<const LRABound*>& bounds = *learnedBound.premise;
+                        vector<const LRABound*>& bounds = learnedBound.premise;
                         for( auto bound = bounds.begin(); bound != bounds.end(); ++bound )
                         {
                             assert( !(*bound)->origins().empty() );
@@ -741,11 +745,10 @@ Return:
      */
     void LRAModule::learnRefinements()
     {
-        map<LRAVariable*, typename LRATableau::LearnedBound>& llBs = mTableau.rLearnedLowerBounds();
-        while( !llBs.empty() )
+        for( auto iter = mTableau.rLearnedLowerBounds().begin(); iter != mTableau.rLearnedLowerBounds().end(); ++iter )
         {
             PointerSet<Formula> subformulas;
-            for( auto bound = llBs.begin()->second.premise->begin(); bound != llBs.begin()->second.premise->end(); ++bound )
+            for( auto bound = iter->second.premise.begin(); bound != iter->second.premise.end(); ++bound )
             {
                 auto originIterB = (*bound)->origins().begin()->begin();
                 while( originIterB != (*bound)->origins().begin()->end() )
@@ -754,21 +757,18 @@ Return:
                     ++originIterB;
                 }
             }
-            subformulas.insert( newFormula( llBs.begin()->second.nextWeakerBound->pAsConstraint() ) );
+            subformulas.insert( newFormula( iter->second.nextWeakerBound->pAsConstraint() ) );
             addDeduction( newFormula( OR, subformulas ) );
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->addRefinement();
             mpStatistics->addDeduction();
             #endif
-            vector<const LRABound* >* toDelete = llBs.begin()->second.premise;
-            llBs.erase( llBs.begin() );
-            delete toDelete;
         }
-        map<LRAVariable*, typename LRATableau::LearnedBound>& luBs = mTableau.rLearnedUpperBounds();
-        while( !luBs.empty() )
+        mTableau.rLearnedLowerBounds().clear();
+        for( auto iter = mTableau.rLearnedUpperBounds().begin(); iter != mTableau.rLearnedUpperBounds().end(); ++iter )
         {
             PointerSet<Formula> subformulas;
-            for( auto bound = luBs.begin()->second.premise->begin(); bound != luBs.begin()->second.premise->end(); ++bound )
+            for( auto bound = iter->second.premise.begin(); bound != iter->second.premise.end(); ++bound )
             {
                 auto originIterB = (*bound)->origins().begin()->begin();
                 while( originIterB != (*bound)->origins().begin()->end() )
@@ -777,16 +777,14 @@ Return:
                     ++originIterB;
                 }
             }
-            subformulas.insert( newFormula( luBs.begin()->second.nextWeakerBound->pAsConstraint() ) );
+            subformulas.insert( newFormula( iter->second.nextWeakerBound->pAsConstraint() ) );
             addDeduction( newFormula( OR, subformulas ) );
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->addRefinement();
             mpStatistics->addDeduction();
             #endif
-            vector<const LRABound* >* toDelete = luBs.begin()->second.premise;
-            luBs.erase( luBs.begin() );
-            delete toDelete;
         }
+        mTableau.rLearnedUpperBounds().clear();
     }
     #endif
 
@@ -859,39 +857,44 @@ Return:
         // If the bounds constraint has already been passed to the backend, add the given formulas to it's origins
         if( _bound->pInfo()->position != mpPassedFormula->end() )
             addOrigin( *_bound->pInfo()->position, _formulas );
-        mTableau.activateBound( _bound, _formulas );
         const LRAVariable& var = _bound->variable();
-        if( _bound->isUpperBound() )
+        const LRABound* psup = var.pSupremum();
+        const LRABound& sup = *psup;
+        const LRABound* pinf = var.pInfimum();
+        const LRABound& inf = *pinf;
+        const LRABound& bound = *_bound;
+        mTableau.activateBound( _bound, _formulas );
+        if( bound.isUpperBound() )
         {
-            if( *var.pInfimum() > _bound->limit() && !_bound->deduced() )
+            if( inf > bound.limit() && !bound.deduced() )
             {
                 PointerSet<Formula> infsubset;
-                infsubset.insert( _bound->pOrigins()->begin()->begin(), _bound->pOrigins()->begin()->end() );
-                infsubset.insert( var.pInfimum()->pOrigins()->back().begin(), var.pInfimum()->pOrigins()->back().end() );
+                infsubset.insert( bound.pOrigins()->begin()->begin(), bound.pOrigins()->begin()->end() );
+                infsubset.insert( inf.pOrigins()->back().begin(), inf.pOrigins()->back().end() );
                 mInfeasibleSubsets.push_back( infsubset );
                 result = false;
             }
-            if( *var.pSupremum() > *_bound )
+            if( sup > bound )
             {
-                if( !var.pSupremum()->isInfinite() )
-                    mBoundCandidatesToPass.push_back( var.pSupremum() );
+                if( !sup.isInfinite() )
+                    mBoundCandidatesToPass.push_back( psup );
                 mBoundCandidatesToPass.push_back( _bound );
             }
         }
-        if( _bound->isLowerBound() )
+        if( bound.isLowerBound() )
         {
-            if( *var.pSupremum() < _bound->limit() && !_bound->deduced() )
+            if( sup < bound.limit() && !bound.deduced() )
             {
                 PointerSet<Formula> infsubset;
-                infsubset.insert( _bound->pOrigins()->begin()->begin(), _bound->pOrigins()->begin()->end() );
-                infsubset.insert( var.pSupremum()->pOrigins()->back().begin(), var.pSupremum()->pOrigins()->back().end() );
+                infsubset.insert( bound.pOrigins()->begin()->begin(), bound.pOrigins()->begin()->end() );
+                infsubset.insert( sup.pOrigins()->back().begin(), sup.pOrigins()->back().end() );
                 mInfeasibleSubsets.push_back( infsubset );
                 result = false;
             }
-            if( *var.pInfimum() < *_bound )
+            if( inf < bound )
             {
-                if( !var.pInfimum()->isInfinite() )
-                    mBoundCandidatesToPass.push_back( var.pInfimum() );
+                if( !inf.isInfinite() )
+                    mBoundCandidatesToPass.push_back( pinf );
                 mBoundCandidatesToPass.push_back( _bound );
             }
         }

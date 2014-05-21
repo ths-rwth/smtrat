@@ -93,7 +93,7 @@ namespace smtrat
                 bool operator >( const Bound& ) const;
                 const std::string toString() const;
                 template <typename T3, typename T4> friend std::ostream& operator <<( std::ostream&, const Bound<T3, T4>& );
-                void print( bool = false, std::ostream& = std::cout, bool = false ) const;
+                void print( bool _withOrigins = false,  std::ostream& _out = std::cout, bool _printTypebool = false ) const;
 
                 bool deduced() const
                 {

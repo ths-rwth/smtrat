@@ -60,6 +60,7 @@ namespace smtrat
                 public:
                     Edge( size_t _to, ConditionEvaluation _conditionEvaluation ):
                         mSuccessorVertex( _to ),
+                        mThreadId( 0 ),
                         mPriority( mPriorityAllocator++ ),
                         mpConditionEvaluation( _conditionEvaluation )
                     {}

@@ -180,9 +180,9 @@ namespace smtrat
             public:
                 struct LearnedBound
                 {
-                    const Bound<T1, T2>*                newBound;
-                    const Bound<T1, T2>*                nextWeakerBound;
-                    std::vector< const Bound<T1, T2>*>* premise;
+                    const Bound<T1, T2>*               newBound;
+                    const Bound<T1, T2>*               nextWeakerBound;
+                    std::vector< const Bound<T1, T2>*> premise;
                 };
             private:
                 bool                            mRowsCompressed;
@@ -418,6 +418,7 @@ namespace smtrat
 
         template<typename T1, typename T2>
         Tableau<T1,T2>::Tableau( std::list<const smtrat::Formula*>::iterator _defaultBoundPosition ):
+            mRowsCompressed( true ),
             mWidth( 0 ),
             mPivotingSteps( 0 ),
             #ifdef LRA_USE_PIVOTING_STRATEGY
@@ -2143,7 +2144,8 @@ FindPivot:
                     assert( ((*ubound)->type() != Bound<T1, T2>::EQUAL) );
                     LearnedBound learnedBound = LearnedBound();
                     learnedBound.nextWeakerBound = *ubound;
-                    learnedBound.premise = uPremise;
+                    learnedBound.premise = std::vector<const Bound<T1, T2>*>( std::move( *uPremise ) );
+                    delete uPremise;
                     #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
                     #ifdef LRA_NO_DIVISION
                     if( newlimit->mainPart() > (*ubound)->limit().mainPart()*rowFactor || (*ubound)->limit().deltaPart() == 0 )
@@ -2174,7 +2176,6 @@ FindPivot:
                         if( *learnedBound.nextWeakerBound < *insertionResult.first->second.nextWeakerBound )
                         {
                             insertionResult.first->second.nextWeakerBound = learnedBound.nextWeakerBound;
-                            delete insertionResult.first->second.premise;
                             insertionResult.first->second.premise = learnedBound.premise;
                             mNewLearnedBounds.push_back( insertionResult.first );
                         }
@@ -2234,7 +2235,8 @@ FindPivot:
                     assert( ((*lbound)->type() != Bound<T1, T2>::EQUAL) );
                     LearnedBound learnedBound = LearnedBound();
                     learnedBound.nextWeakerBound = *lbound;
-                    learnedBound.premise = lPremise;
+                    learnedBound.premise = std::vector<const Bound<T1, T2>*>( std::move( *lPremise ) );
+                    delete lPremise;
                     #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
                     #ifdef LRA_NO_DIVISION
                     if( newlimit->mainPart() > (*lbound)->limit().mainPart()*rowFactor || (*lbound)->limit().deltaPart() == 0 )
@@ -2265,7 +2267,6 @@ FindPivot:
                         if( *learnedBound.nextWeakerBound > *insertionResult.first->second.nextWeakerBound )
                         {
                             insertionResult.first->second.nextWeakerBound = learnedBound.nextWeakerBound;
-                            delete insertionResult.first->second.premise;
                             insertionResult.first->second.premise = learnedBound.premise;
                             mNewLearnedBounds.push_back( insertionResult.first );
                         }

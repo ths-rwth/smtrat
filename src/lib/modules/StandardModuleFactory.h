@@ -49,7 +49,10 @@ namespace smtrat
             {}
 
 
-            ~StandardModuleFactory(){}
+            ~StandardModuleFactory()
+            {
+                if( mSettings != NULL ) delete mSettings;
+            }
 
             Module* create( ModuleType _type, const ModuleInput* const _formula, Conditionals& _conditionals, Manager* const _manager )
             {
