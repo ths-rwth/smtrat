@@ -1158,29 +1158,34 @@ Return:
                 Variables vars;
                 basicVar->expression().gatherVariables( vars );
                 assert( vars.size() == 1 );
-                auto found_ex = rMap_.find(*vars.begin());                                
+                auto found_ex = rMap_.find(*vars.begin()); 
                 Rational& ass = found_ex->second;
                 if( !carl::isInteger( ass ) )
                 {
-                    all_int = false;    
+                    all_int = false;
                     const Constraint* gomory_constr = mTableau.gomoryCut(ass, basicVar, constr_vec);
                     if( gomory_constr != NULL )
-                    {
-                        Formula* deductionA = new Formula(OR);
+                    { 
+                        PointerSet<Formula> subformulas;
                         auto vec_iter = constr_vec.begin();
-                        while(vec_iter != constr_vec.end())
+                        while( vec_iter != constr_vec.end() )
                         {
-                            Formula* notItem = new Formula(NOT);
-                            notItem->addSubformula(*vec_iter);
-                            deductionA->addSubformula(notItem);
+                            subformulas.insert( newNegation( newFormula( *vec_iter ) ) );
                             ++vec_iter; 
                         } 
-                        deductionA->addSubformula(gomory_constr);
-                        addDeduction(deductionA);   
-                    }                                                                
+                        const Formula* gomory_formula = newFormula( gomory_constr );
+                        subformulas.insert( gomory_formula );
+                        addDeduction( newFormula( OR, std::move( subformulas ) ) );   
+                    }
+                    /*
+                    else
+                    {
+                        branchAt( Polynomial( found_ex->first ), found_ex->second );
+                    }
+                    */
                 }
             }    
-        }                            
+        }          
         return !all_int;
     }
     #endif
@@ -1207,6 +1212,7 @@ Return:
             Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
+                cout << "Fix: " << var->first << endl;
                 break;
             }
             ++map_iterator;
@@ -1254,7 +1260,6 @@ Return:
             vector<size_t> diagonals;    
             vector<size_t>& diagonals_ref = diagonals;               
             dc_Tableau.print( );
-            /*
             dc_Tableau.addColumns(0,2,2);
             dc_Tableau.addColumns(1,2,4);
             dc_Tableau.addColumns(2,2,2);
@@ -1262,7 +1267,6 @@ Return:
             dc_Tableau.addColumns(5,4,1);
             dc_Tableau.addColumns(4,4,-1);
             dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
-            */
             cout << "HNF matrix:" << endl;
             dc_Tableau.calculate_hermite_normalform( diagonals_ref );
             dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
@@ -1282,11 +1286,11 @@ Return:
                 LRAEntryType upper_lower_bound;
                 cut_from_proof = dc_Tableau.create_cut_from_proof( dc_Tableau, mTableau, i, diagonals, dc_positions, upper_lower_bound, max_value );
                 mTableau.print();
-//                #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+                #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                 #ifdef MODULE_VERBOSE_INTEGERS
                 cout << "Proof of unsatisfiability:  " << *pcut << " = 0" << endl;
                 #endif
-//                #endif
+                #endif
                 if( cut_from_proof != NULL )
                 {
                     LRAEntryType bound_add = 1;
@@ -1295,8 +1299,8 @@ Return:
                     {
                         bound_add = 0;
                     }
-                    const smtrat::Constraint* cut_constraint = Formula::newConstraint( *cut_from_proof - (Rational)carl::floor((Rational)upper_lower_bound) , Relation::LEQ );
-                    const smtrat::Constraint* cut_constraint2 = Formula::newConstraint( *cut_from_proof - ((Rational)carl::floor((Rational)upper_lower_bound)+bound_add) , Relation::GEQ );
+                    const smtrat::Constraint* cut_constraint = newConstraint( *cut_from_proof - (Rational)carl::floor((Rational)upper_lower_bound) , Relation::LEQ );
+                    const smtrat::Constraint* cut_constraint2 = newConstraint( *cut_from_proof - ((Rational)carl::floor((Rational)upper_lower_bound)+bound_add) , Relation::GEQ );
                     cout << "Constraint1: " << *cut_constraint << endl;
                     cout << "Constraint2: " << *cut_constraint2 << endl;
                     cout << "Cut: " << *cut_from_proof << endl;
@@ -1308,14 +1312,14 @@ Return:
                     //set<const Formula*> formulas2;
                     //mTableau.activateBound(result2.first, formulas2);
                     // Construct and add deductionA
-                    Formula* deductionA = new Formula( OR );
-                    deductionA->addSubformula( cut_constraint );
-                    deductionA->back()->setActivity( -numeric_limits<double>::infinity() );
-                    deductionA->addSubformula( cut_constraint2 );
-                    deductionA->back()->setActivity( -numeric_limits<double>::infinity() );
-                    addDeduction( deductionA );
-                    // Construct and add deductionB
-                    cout << "Deduction: " << *deductionA << endl;
+                    const Formula* cons1 = newFormula( cut_constraint );
+                    cons1->setActivity( -numeric_limits<double>::infinity() );
+                    const Formula* cons2 = newFormula( cut_constraint2 );
+                    cons2->setActivity( -numeric_limits<double>::infinity() );
+                    PointerSet<Formula> subformulas;
+                    subformulas.insert( cons1 );
+                    subformulas.insert( cons2 );
+                    addDeduction( newFormula( OR, std::move( subformulas ) ) );
                     cout << "After adding proof of unsatisfiability:" << endl;
                     mTableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
                     cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
@@ -1331,6 +1335,7 @@ Return:
             cout << "No defining constraint!" << endl;
         cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
         #endif
+        cout << "Branch at: " << var->first << endl;
         branchAt( Polynomial( var->first ), (Rational)map_iterator->second );
         return true;
     }
