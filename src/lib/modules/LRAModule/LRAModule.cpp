@@ -197,7 +197,7 @@ namespace smtrat
                     }
                     else
                     {
-                        addSubformulaToPassedFormula( newFormula( constraint ), *_subformula );
+                        addSubformulaToPassedFormula( *_subformula, *_subformula );
                         mNonlinearConstraints.insert( constraint );
                         return true;
                     }
@@ -857,39 +857,44 @@ Return:
         // If the bounds constraint has already been passed to the backend, add the given formulas to it's origins
         if( _bound->pInfo()->position != mpPassedFormula->end() )
             addOrigin( *_bound->pInfo()->position, _formulas );
-        mTableau.activateBound( _bound, _formulas );
         const LRAVariable& var = _bound->variable();
-        if( _bound->isUpperBound() )
+        const LRABound* psup = var.pSupremum();
+        const LRABound& sup = *psup;
+        const LRABound* pinf = var.pInfimum();
+        const LRABound& inf = *pinf;
+        const LRABound& bound = *_bound;
+        mTableau.activateBound( _bound, _formulas );
+        if( bound.isUpperBound() )
         {
-            if( *var.pInfimum() > _bound->limit() && !_bound->deduced() )
+            if( inf > bound.limit() && !bound.deduced() )
             {
                 PointerSet<Formula> infsubset;
-                infsubset.insert( _bound->pOrigins()->begin()->begin(), _bound->pOrigins()->begin()->end() );
-                infsubset.insert( var.pInfimum()->pOrigins()->back().begin(), var.pInfimum()->pOrigins()->back().end() );
+                infsubset.insert( bound.pOrigins()->begin()->begin(), bound.pOrigins()->begin()->end() );
+                infsubset.insert( inf.pOrigins()->back().begin(), inf.pOrigins()->back().end() );
                 mInfeasibleSubsets.push_back( infsubset );
                 result = false;
             }
-            if( *var.pSupremum() > *_bound )
+            if( sup > bound )
             {
-                if( !var.pSupremum()->isInfinite() )
-                    mBoundCandidatesToPass.push_back( var.pSupremum() );
+                if( !sup.isInfinite() )
+                    mBoundCandidatesToPass.push_back( psup );
                 mBoundCandidatesToPass.push_back( _bound );
             }
         }
-        if( _bound->isLowerBound() )
+        if( bound.isLowerBound() )
         {
-            if( *var.pSupremum() < _bound->limit() && !_bound->deduced() )
+            if( sup < bound.limit() && !bound.deduced() )
             {
                 PointerSet<Formula> infsubset;
-                infsubset.insert( _bound->pOrigins()->begin()->begin(), _bound->pOrigins()->begin()->end() );
-                infsubset.insert( var.pSupremum()->pOrigins()->back().begin(), var.pSupremum()->pOrigins()->back().end() );
+                infsubset.insert( bound.pOrigins()->begin()->begin(), bound.pOrigins()->begin()->end() );
+                infsubset.insert( sup.pOrigins()->back().begin(), sup.pOrigins()->back().end() );
                 mInfeasibleSubsets.push_back( infsubset );
                 result = false;
             }
-            if( *var.pInfimum() < *_bound )
+            if( inf < bound )
             {
-                if( !var.pInfimum()->isInfinite() )
-                    mBoundCandidatesToPass.push_back( var.pInfimum() );
+                if( !inf.isInfinite() )
+                    mBoundCandidatesToPass.push_back( pinf );
                 mBoundCandidatesToPass.push_back( _bound );
             }
         }

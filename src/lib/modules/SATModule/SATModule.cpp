@@ -1421,7 +1421,7 @@ SetWatches:
                     if( numberOfTheoryCalls >= debugFromCall )
                     {
                         cout << "{ ";
-                        for( Formula::const_iterator subformula = mpPassedFormula->begin(); subformula != mpPassedFormula->end(); ++subformula )
+                        for( ModuleInput::const_iterator subformula = mpPassedFormula->begin(); subformula != mpPassedFormula->end(); ++subformula )
                         {
                             cout << (*subformula)->constraint().toString() << " ";
                         }

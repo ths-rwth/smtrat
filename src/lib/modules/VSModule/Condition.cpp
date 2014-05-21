@@ -31,12 +31,12 @@ using namespace std;
 
 namespace vs
 {
-    Condition::Condition( const smtrat::Constraint* _cons, size_t _val, bool _flag, const smtrat::PointerSet<Condition>& _oConds, bool _rAdded ):
+    Condition::Condition( const smtrat::Constraint* _cons, size_t _val, bool _flag, const set<const Condition*>& _oConds, bool _rAdded ):
         mFlag( _flag ),
         mRecentlyAdded( _rAdded ),
         mValuation( _val ),
         mpConstraint( _cons ),
-        mpOriginalConditions( new smtrat::PointerSet<Condition>( _oConds ) )
+        mpOriginalConditions( new set<const Condition*>( _oConds ) )
     {}
 
     Condition::Condition( const Condition& _cond ):
@@ -44,7 +44,7 @@ namespace vs
         mRecentlyAdded( false ),
         mValuation( _cond.valuation() ),
         mpConstraint( _cond.pConstraint() ),
-        mpOriginalConditions( new smtrat::PointerSet<Condition>( _cond.originalConditions() ) )
+        mpOriginalConditions( new set<const Condition*>( _cond.originalConditions() ) )
     {}
 
     Condition::~Condition()

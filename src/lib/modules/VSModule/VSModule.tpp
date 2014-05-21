@@ -90,25 +90,25 @@ namespace smtrat
             {
                 removeStatesFromRanking( *mpStateTree );
                 mIDCounter = 0;
-                PointerSet<vs::Condition> oConds;
+                std::set<const vs::Condition*> oConds;
                 oConds.insert( condition );
-                vector<DisjunctionOfConditionConjunctions> subResults = vector<DisjunctionOfConditionConjunctions>();
-                DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
+                vector<DisjunctionOfConditionConjunctions> subResults;
+                DisjunctionOfConditionConjunctions subResult;
 
                 if( Settings::int_constraints_allowed && Settings::split_neq_constraints
                     && constraint->hasIntegerValuedVariable() && !constraint->hasRealValuedVariable()
                     && constraint->relation() == Relation::NEQ )
                 {
-                    ConditionList condVectorA = ConditionList();
+                    ConditionList condVectorA;
                     condVectorA.push_back( new vs::Condition( newConstraint( constraint->lhs(), Relation::LESS ), 0, false, oConds ) );
                     subResult.push_back( condVectorA );
-                    ConditionList condVectorB = ConditionList();
+                    ConditionList condVectorB;
                     condVectorB.push_back( new vs::Condition( newConstraint( constraint->lhs(), Relation::GREATER ), 0, false, oConds ) );
                     subResult.push_back( condVectorB );
                 }
                 else
                 {
-                    ConditionList condVector = ConditionList();
+                    ConditionList condVector;
                     condVector.push_back( new vs::Condition( constraint, 0, false, oConds ) );
                     subResult.push_back( condVector );
                 }
@@ -151,7 +151,7 @@ namespace smtrat
             {
                 removeStatesFromRanking( *mpStateTree );
                 mpStateTree->rSubResultsSimplified() = false;
-                PointerSet<vs::Condition> condsToDelete;
+                std::set<const vs::Condition*> condsToDelete;
                 condsToDelete.insert( condToDelete );
                 mpStateTree->deleteOrigins( condsToDelete );
                 mpStateTree->rType() = State::COMBINE_SUBRESULTS;
@@ -190,11 +190,11 @@ namespace smtrat
             mpStateTree = new State( Settings::use_variable_bounds );
             for( auto iter = mFormulaConditionMap.begin(); iter != mFormulaConditionMap.end(); ++iter )
             {
-                PointerSet<vs::Condition> oConds = PointerSet<vs::Condition>();
+                std::set<const vs::Condition*> oConds = std::set<const vs::Condition*>();
                 oConds.insert( iter->second );
                 vector<DisjunctionOfConditionConjunctions> subResults = vector<DisjunctionOfConditionConjunctions>();
                 DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
-                ConditionList condVector = ConditionList();
+                ConditionList condVector;
                 condVector.push_back( new vs::Condition( iter->first->pConstraint(), 0, false, oConds ) );
                 subResult.push_back( condVector );
                 subResults.push_back( subResult );
@@ -512,7 +512,7 @@ namespace smtrat
                                                 if( !Settings::use_variable_bounds || currentState->variableBounds().getDoubleInterval( currentState->index() ).lowerBoundType() == carl::BoundType::INFTY )
                                                 {
                                                     // Create state ( Conditions, [x -> -infinity]):
-                                                    PointerSet<vs::Condition> oConditions = PointerSet<vs::Condition>();
+                                                    std::set<const vs::Condition*> oConditions = std::set<const vs::Condition*>();
                                                     for( auto cond : currentState->conditions() )
                                                         oConditions.insert( cond );
                                                     Substitution sub = Substitution( currentState->index(), Substitution::MINUS_INFINITY, oConditions );
@@ -835,7 +835,7 @@ namespace smtrat
         assert( _condition->constraint().hasVariable( _eliminationVar ) );
         bool generatedTestCandidateBeingASolution = false;
         unsigned numberOfAddedChildren = 0;
-        PointerSet<vs::Condition> oConditions = PointerSet<vs::Condition>();
+        std::set<const vs::Condition*> oConditions = std::set<const vs::Condition*>();
         oConditions.insert( _condition );
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
         if( !Settings::use_variable_bounds || _currentState->hasRootsInVariableBounds( _condition, Settings::sturm_sequence_for_root_check ) )
@@ -1124,7 +1124,7 @@ namespace smtrat
             if( numberOfAddedChildren == 0 )
             {
                 ConditionSetSet conflictSet = ConditionSetSet();
-                PointerSet<vs::Condition> condSet  = PointerSet<vs::Condition>();
+                std::set<const vs::Condition*> condSet  = std::set<const vs::Condition*>();
                 condSet.insert( _condition );
                 conflictSet.insert( condSet );
                 _currentState->addConflicts( NULL, conflictSet );
@@ -1204,7 +1204,7 @@ namespace smtrat
         // The variable to substitute.
         const carl::Variable& substitutionVariable = currentSubs.variable();
         // The conditions of the currently considered state, without the one getting just eliminated.
-        ConditionList oldConditions = ConditionList();
+        ConditionList oldConditions;
         bool anySubstitutionFailed = false;
         bool allSubstitutionsApplied = true;
         ConditionSetSet conflictSet = ConditionSetSet();
@@ -1244,12 +1244,12 @@ namespace smtrat
                 if( subResult.empty() )
                 {
                     anySubstitutionFailed = true;
-                    PointerSet<vs::Condition> condSet  = PointerSet<vs::Condition>();
+                    std::set<const vs::Condition*> condSet;
                     condSet.insert( *cond );
                     if( _currentState->pOriginalCondition() != NULL )
                         condSet.insert( _currentState->pOriginalCondition() );
                     #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                    PointerSet<vs::Condition> conflictingBounds = _currentState->father().variableBounds().getOriginsOfBounds( conflVars );
+                    std::set<const vs::Condition*> conflictingBounds = _currentState->father().variableBounds().getOriginsOfBoundsWithMultiples( conflVars );
                     condSet.insert( conflictingBounds.begin(), conflictingBounds.end() );
                     #endif
                     conflictSet.insert( condSet );
@@ -1393,7 +1393,7 @@ namespace smtrat
         _currentState->rHasRecentlyAddedConditions() = false;
         // Collect the recently added conditions and mark them as not recently added.
         bool deleteExistingTestCandidates = false;
-        ConditionList recentlyAddedConditions = ConditionList();
+        ConditionList recentlyAddedConditions;
         for( auto cond = _currentState->rConditions().begin(); cond != _currentState->conditions().end(); ++cond )
         {
             if( (**cond).recentlyAdded() )
@@ -1599,13 +1599,13 @@ namespace smtrat
     }
 
     template<class Settings>
-    PointerSet<Formula> VSModule<Settings>::getReasons( const PointerSet<vs::Condition>& _conditions ) const
+    PointerSet<Formula> VSModule<Settings>::getReasons( const std::set<const vs::Condition*>& _conditions ) const
     {
         PointerSet<Formula> result;
         if( _conditions.empty() ) return result;
         // Get the original conditions of the root of the root state leading to the given set of conditions.
-        PointerSet<vs::Condition> conds = _conditions;
-        PointerSet<vs::Condition> oConds;
+        std::set<const vs::Condition*> conds = _conditions;
+        std::set<const vs::Condition*> oConds;
         while( !(*conds.begin())->originalConditions().empty() )
         {
             for( auto cond = conds.begin(); cond != conds.end(); ++cond )
@@ -1847,7 +1847,7 @@ namespace smtrat
             while( !lastCombinationReached )
             {
                 // Create a new combination of vectors.
-                PointerSet<vs::Condition> coveringSet = PointerSet<vs::Condition>();
+                std::set<const vs::Condition*> coveringSet = std::set<const vs::Condition*>();
                 bool previousIteratorIncreased = false;
                 // For each set of sets in the vector of sets of sets, choose a set in it. We combine
                 // these sets by forming their union and store it as a covering set.
@@ -2003,7 +2003,7 @@ namespace smtrat
         Answer result = runBackends();
         #ifdef VS_DEBUG
         cout << "Ask backend      : ";
-        cout << mpPassedFormula->toString( false, 0, "", true, true, true );
+        cout << mpPassedFormula->toString();
         cout << endl;
         cout << "Answer           : " << ( result == True ? "True" : ( result == False ? "False" : "Unknown" ) ) << endl;
         #endif
@@ -2026,7 +2026,7 @@ namespace smtrat
                     {
                         for( auto infsubset = (*backend)->infeasibleSubsets().begin(); infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
                         {
-                            PointerSet<vs::Condition> conflict = PointerSet<vs::Condition>();
+                            std::set<const vs::Condition*> conflict = std::set<const vs::Condition*>();
                             #ifdef VS_DEBUG
                             cout << "Infeasible Subset: {";
                             #endif
