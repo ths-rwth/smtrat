@@ -1163,9 +1163,10 @@ Return:
                 if( !carl::isInteger( ass ) )
                 {
                     all_int = false;
-                    const Constraint* gomory_constr = mTableau.gomoryCut(ass, basicVar, constr_vec);
+                    const Constraint* gomory_constr = mTableau.gomoryCut(ass, basicVar, constr_vec);                
                     if( gomory_constr != NULL )
                     { 
+                        assert( !gomory_constr->satisfiedBy( rMap_ ) );
                         PointerSet<Formula> subformulas;
                         auto vec_iter = constr_vec.begin();
                         while( vec_iter != constr_vec.end() )
@@ -1260,6 +1261,7 @@ Return:
             vector<size_t> diagonals;    
             vector<size_t>& diagonals_ref = diagonals;               
             dc_Tableau.print( );
+            /*
             dc_Tableau.addColumns(0,2,2);
             dc_Tableau.addColumns(1,2,4);
             dc_Tableau.addColumns(2,2,2);
@@ -1267,6 +1269,7 @@ Return:
             dc_Tableau.addColumns(5,4,1);
             dc_Tableau.addColumns(4,4,-1);
             dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
+            */
             cout << "HNF matrix:" << endl;
             dc_Tableau.calculate_hermite_normalform( diagonals_ref );
             dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );

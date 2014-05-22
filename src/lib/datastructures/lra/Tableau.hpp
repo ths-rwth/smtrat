@@ -3393,7 +3393,7 @@ FindPivot:
                 {
                     std::cout << "Not able to construct" << std::endl;
                     return NULL;
-                }                               
+                }      
                 row_iterator.hMove( false );
             }
             // A Gomory Cut can be constructed              
@@ -3405,9 +3405,10 @@ FindPivot:
             row_iterator = Iterator( _rowVar->startEntry(), mpEntries );
             while( !row_iterator.hEnd( false ) )
             {                 
-                const Variable<T1, T2>& nonBasicVar = *(*row_iterator).columnVar();
+                const Variable<T1, T2>& nonBasicVar = *(*row_iterator).columnVar();  
                 if( (*vec_iter) == J_MINUS )
                 {
+                    assert( nonBasicVar.infimum() == nonBasicVar.assignment() && (*row_iterator).content() < 0 );
                     T2 bound = nonBasicVar.infimum().limit().mainPart();
                     coeff = -( (*row_iterator).content() / f_zero);
                     _constrVec.push_back( nonBasicVar.infimum().pAsConstraint() );
@@ -3415,6 +3416,7 @@ FindPivot:
                 }                 
                 else if( (*vec_iter) == J_PLUS )
                 {
+                    assert( nonBasicVar.infimum() == nonBasicVar.assignment() && (*row_iterator).content() >= 0 );
                     T2 bound = nonBasicVar.infimum().limit().mainPart();
                     coeff = (*row_iterator).content()/( (Rational)1 - f_zero );
                     _constrVec.push_back( nonBasicVar.infimum().pAsConstraint() );
@@ -3422,6 +3424,7 @@ FindPivot:
                 }
                 else if( (*vec_iter) == K_MINUS )
                 {
+                    assert( nonBasicVar.supremum() == nonBasicVar.assignment() && (*row_iterator).content() < 0 );
                     T2 bound = nonBasicVar.supremum().limit().mainPart();
                     coeff = -( (*row_iterator).content()/( (Rational)1 - f_zero ) );
                     _constrVec.push_back( nonBasicVar.supremum().pAsConstraint() );
@@ -3429,11 +3432,12 @@ FindPivot:
                 }
                 else if( (*vec_iter) == K_PLUS ) 
                 {
+                    assert( nonBasicVar.supremum() == nonBasicVar.assignment() && (*row_iterator).content() >= 0 );
                     T2 bound = nonBasicVar.supremum().limit().mainPart();
                     coeff = (*row_iterator).content()/f_zero;
                     _constrVec.push_back( nonBasicVar.supremum().pAsConstraint() );
                     sum += (Rational)coeff * ( (Rational)bound - nonBasicVar.expression() );
-                }     
+                }
                 row_iterator.hMove( false );
                 ++vec_iter;
             }
