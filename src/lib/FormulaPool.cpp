@@ -71,7 +71,6 @@ namespace smtrat
         {
 //            cout << "The formula already exists:" << endl;
 //            cout << (**iterBoolPair.first) << endl;
-            assert( (**iterBoolPair.first).toString() == _formula->toString() );
             delete _formula;
         }
         else
@@ -125,7 +124,7 @@ namespace smtrat
                 // itself and assign the next id to it.
                 if( iter != _subformulas.end() && (*iter)->getType() == NOT && (*iter)->subformula() == (**iterB) )
                 {
-                    switch( (*iterB)->getType() )
+                    switch( _type )
                     {
                         case AND:
                         {

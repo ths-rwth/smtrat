@@ -548,7 +548,7 @@ namespace smtrat
         
         PointerSet<Formula> subformulas;
         // Add to inner constraint bindings:  (or (not conditionBool) (= auxRealVar _then))
-        subformulas.insert( newFormula( OR, conditionBool, constraintA ) );
+        subformulas.insert( newFormula( OR, newNegation( conditionBool ), constraintA ) );
         // Add to inner constraint bindings:  (or conditionBool (= auxRealVar _else))
         subformulas.insert( newFormula( OR, conditionBool, constraintB ) );
         // Add to inner constraint bindings:  (iff conditionBool _condition)
