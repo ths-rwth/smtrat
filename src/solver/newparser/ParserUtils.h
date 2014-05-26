@@ -110,7 +110,7 @@ struct RelationParser : public qi::symbols<char, Relation> {
 	RelationParser() {
 		add("=", Relation::EQ);
 		add("<=", Relation::LEQ);
-		add("=>", Relation::GEQ);
+		add(">=", Relation::GEQ);
 		add("<", Relation::LESS);
 		add(">", Relation::GREATER);
 		add("<>", Relation::NEQ);
