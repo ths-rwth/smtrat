@@ -878,7 +878,7 @@ namespace smtrat
                 newType = XOR;
                 break;
             case XOR: // (not (xor lhs rhs))  ->  (iff lhs rhs)
-                newType = AND;
+                newType = IFF;
                 break;
             default:
                 assert( false );
