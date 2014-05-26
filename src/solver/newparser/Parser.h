@@ -290,26 +290,13 @@ protected:
 	void setLogic(const smtrat::Logic&);
 	void setOption(const std::string& key, const Value& val);
 	
-	static smtrat::Polynomial* mkPolynomial(const TheoryOperation& op, std::vector<Polynomial*>& v);
-	
-	static Rational getDecimalPlaces(const std::string& s) {
-		return Rational(s.c_str()) / carl::pow(Rational("10"), s.size());
-	}
-	
-	void declareFun(const std::string& name, const std::vector<std::string>& args, const std::string& sort) {
-		if (sort == "Int" || sort == "Real") {
-			this->var_theory.add(name, name);
-			d.addTheoryVariable(sort, name);
-		} else if (sort == "Bool") {
-			d.addBooleanVariable(name);
+	template<typename Function, typename... Args>
+	void callHandler(const Function& f, const Args&... args) {
+		if (this->queueInstructions) {
+			this->handler->addInstruction(std::bind(f, this->handler, args...));
 		} else {
-			handler->error() << "Only variables of type \"Bool\", \"Int\" or \"Real\" are allowed!";
+			(this->handler->*f)(args...);
 		}
-		this->handler->declareFun(name, args, sort);
-	};
-	void add(Formula* f) {
-		this->d.add(f);
-		this->handler->add(f);
 	}
 	void check() {
 		this->d.check();
