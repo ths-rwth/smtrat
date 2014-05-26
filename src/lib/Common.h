@@ -45,6 +45,16 @@ namespace smtrat
     enum class Variable_Domain: unsigned { BOOLEAN = 0, REAL = 1, INTEGER = 2 };
     
     enum class Logic : unsigned { UNDEFINED, QF_NRA, QF_LRA, QF_NIA, QF_LIA };
+	inline std::ostream& operator<<(std::ostream& os, const Logic& l) {
+	switch (l) {
+		case Logic::UNDEFINED:	os << "undefined"; break;
+		case Logic::QF_NRA:		os << "QF_NRA"; break;
+		case Logic::QF_LRA:		os << "QF_LRA"; break;
+		case Logic::QF_NIA:		os << "QF_NRI"; break;
+		case Logic::QF_LIA:		os << "QF_LRI"; break;
+	}
+	return os;
+}
     
     
     ///An enum with the possible answer a Module can give
@@ -153,7 +163,7 @@ namespace smtrat
     using Contractor = carl::Contraction<Operator, Polynomial>;
     
     // Constants.
-    
+    ///@todo move static variables to own cpp
     static const Rational ZERO_RATIONAL = Rational( 0 );
     
     static const Rational ONE_RATIONAL = Rational( 1 );
