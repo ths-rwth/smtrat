@@ -120,12 +120,20 @@ struct RelationParser : public qi::symbols<char, Relation> {
 enum TheoryOperation : unsigned { ADD, SUB, MUL, DIV };
 enum BooleanOperation : unsigned { AND, OR, XOR, IFF };
 
-struct TheoryOpParser : public qi::symbols<char, TheoryOperation> {
+struct TheoryOpParser : public qi::symbols<char, Polynomial::ConstructorOperation> {
 	TheoryOpParser() {
-		add("+", TheoryOperation::ADD);
-		add("-", TheoryOperation::SUB);
-		add("*", TheoryOperation::MUL);
-		add("/", TheoryOperation::DIV);
+		add("+", Polynomial::ConstructorOperation::ADD);
+		add("-", Polynomial::ConstructorOperation::SUB);
+		add("*", Polynomial::ConstructorOperation::MUL);
+		add("/", Polynomial::ConstructorOperation::DIV);
+	}
+};
+
+struct DomainParser : public qi::symbols<char, carl::VariableType> {
+	DomainParser() {
+		add("Bool", carl::VariableType::VT_BOOL);
+		add("Int", carl::VariableType::VT_INT);
+		add("Real", carl::VariableType::VT_REAL);
 	}
 };
 
