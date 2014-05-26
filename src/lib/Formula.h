@@ -392,27 +392,9 @@ namespace smtrat
                     return mpSubformulas->empty();
             }
 			
-			void annotate(const std::vector<parser::Attribute>& attributes) {
+			void annotate(const std::vector<parser::Attribute>&) {
 				
 			}
-
-            /**
-             * @return An iterator to the beginning of the list of sub-formulas of this formula.
-             */
-            iterator begin()
-            {
-                assert( isBooleanCombination() );
-                return mpSubformulas->begin();
-            }
-
-            /**
-             * @return An iterator to the end of the list of sub-formulas of this formula.
-             */
-            iterator end()
-            {
-                assert( isBooleanCombination() );
-                return mpSubformulas->end();
-            }
 
             /**
              * @return A constant iterator to the beginning of the list of sub-formulas of this formula.
