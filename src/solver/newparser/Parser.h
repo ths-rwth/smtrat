@@ -5,8 +5,9 @@
 
 #pragma once
 
-#include <iterator>
 #include <cassert>
+#include <iterator>
+#include <list>
 
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 
@@ -23,7 +24,7 @@
 
 #include "../../lib/Common.h"
 #include "../../lib/Formula.h"
-#include "Driver.h"
+#include "../../lib/FormulaPool.h"
 #include "ParserUtils.h"
 #include "Common.h"
 
