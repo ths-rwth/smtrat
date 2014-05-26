@@ -129,24 +129,9 @@ bool SMTLIBParser::parse(std::istream& in, const std::string& filename) {
 	Iterator end;
 	Skipper skipper;
 	try {
-		bool result = qi::phrase_parse(begin, end, main, skipper);
-		std::cout << "Result: " << result << std::endl;
-		return result;
-	} catch (const qi::expectation_failure<PositionIteratorType>& e) {
-		// If the parser expected content different than the one provided, display information about the location of the error.
-		std::size_t lineNumber = boost::spirit::get_line(e.first);
-
-		// Now propagate exception.
-		std::cerr << "Catched an expectation failure" << std::endl;
-		std::cerr << "Parsing error in line " << lineNumber << std::endl;
-		std::cerr << "expected " << e.what_ << std::endl;
-		std::cerr << "but got '" << std::string(e.first, e.last) << "'" << std::endl;
-		return false;
-	} catch (const std::runtime_error& e) {
-		std::cerr << "error: " << e.what() << std::endl;
-		return false;
+		return qi::phrase_parse(begin, end, main, skipper);
 	} catch (...) {
-		std::cerr << "catched something" << std::endl;
+		std::cerr << "Unknown error during parser." << std::endl;
 		return false;
 	}
 }
