@@ -227,11 +227,14 @@ public:
 	RelationParser relation;
 	BooleanOpParser op_bool;
 	TheoryOpParser op_theory;
+	DomainParser domain;
 	LogicParser logic;
 	
+	rule<> boundary;
+	
 	// Numbers
-	rule<unsigned> integral;
-	qi::real_parser<Rational, RationalPolicies> decimal;
+	IntegralParser<Iterator, Skipper> integral;
+	DecimalParser decimal;
 	
 	// Variables
 	rule<std::string> var;
