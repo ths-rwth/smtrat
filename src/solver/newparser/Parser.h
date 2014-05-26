@@ -210,6 +210,7 @@ public:
 private:
 	InstructionHandler* handler;
 	px::function<SuccessHandler> successHandler;
+	px::function<SuccessHandlerPtr> successHandlerPtr;
 	px::function<ErrorHandler> errorHandler;
 		
 public:
