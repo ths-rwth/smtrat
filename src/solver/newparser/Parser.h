@@ -256,8 +256,9 @@ public:
 	rule<const Formula*> formula_op;
 	
 	// Polynomial
-	rule<Polynomial*> polynomial;
-	
+	rule<Polynomial> polynomial;
+	rule<std::pair<Polynomial::ConstructorOperation, std::vector<Polynomial>>> polynomial_op;
+	rule<Polynomial> polynomial_ite;
 	// Main rule
 	rule<> main;
 	
