@@ -17,6 +17,13 @@ namespace smtrat {
 namespace parser {
 
 typedef boost::variant<bool, std::string, Rational, unsigned, boost::spirit::qi::unused_type> Value;
+inline std::ostream& operator<<(std::ostream& os, const Value& value) {
+	if (value.which() == 0) {
+		return os << std::boolalpha << boost::get<bool>(value);
+	} else {
+		return boost::operator<<(os, value);
+	}
+}
 typedef std::pair<std::string, Value> Attribute;
 
 template<typename Key, typename Value>
