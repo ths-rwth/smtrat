@@ -95,10 +95,10 @@ struct SymbolParser : public qi::grammar<Iterator, std::string(), Skipper> {
 	SymbolParser() : SymbolParser::base_type(main, "symbol") {
 		main = quoted | simple;
 		main.name("symbol");
-		quoted = "|" > qi::ascii::print > "|";
+		quoted = qi::omit[qi::char_("|\"")] > +(~qi::char_("|\"")) > qi::omit[qi::char_("|\"")];
 		quoted.name("quoted symbol");
 		// Attention: "-" must be the first or last character!
-		simple = qi::as_string[qi::raw[qi::lexeme[ (qi::alpha | qi::char_("~!@$%^&*_+=<>.?/-")) > *(qi::alnum | qi::char_("~!@$%^&*_+=<>.?/-")) ]]];
+		simple = qi::as_string[qi::raw[qi::lexeme[ (qi::alpha | qi::char_("~!@$%^&*_+=<>.?/-")) > *(qi::alnum | qi::char_("~!@$%^&*_+=<>.?/-"))]]];
 		simple.name("simple symbol");
 	}
 	qi::rule<Iterator, std::string(), Skipper> main;
