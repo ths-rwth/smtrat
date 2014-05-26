@@ -41,14 +41,26 @@ public:
 	}
 };
 
-struct SuccessHandler {	
-	template<typename Parser, typename Rule, typename Entity>
-	void operator()(Parser& p, const Rule& rule, const Entity& entity) const {
+struct SuccessHandler {
+	template<typename Parser, typename Rule, typename Entity, typename Begin, typename End>
+	void operator()(Parser& p, const Rule& rule, const Entity& entity, Begin b, End e) const {
 		p.lastrule.str("");
 		p.lastrule << rule.name();
 		p.lastentity.str("");
 		p.lastentity << entity;
-		//std::cout << "rule " << p.lastrule.str() << " : " << p.lastentity.str() << std::endl;
+		auto line_end = std::find(b, e, '\n');
+		std::cout << p.lastrule.str() << ": " << p.lastentity.str() << "\n\t" << std::string(b, line_end) << std::endl;
+	}
+};
+struct SuccessHandlerPtr {
+	template<typename Parser, typename Rule, typename Entity, typename Begin, typename End>
+	void operator()(Parser& p, const Rule& rule, const Entity& entity, Begin b, End e) const {
+		p.lastrule.str("");
+		p.lastrule << rule.name();
+		p.lastentity.str("");
+		p.lastentity << *entity;
+		auto line_end = std::find(b, e, '\n');
+		std::cout << p.lastrule.str() << ": " << p.lastentity.str() << "\n\t" << std::string(b, line_end) << std::endl;
 	}
 };
 
