@@ -267,6 +267,28 @@ public:
 	SMTLIBParser(InstructionHandler* ih, bool queueInstructions);
 
 	bool parse(std::istream& in, const std::string& filename);
+
+protected:
+	void add(const Formula* f);
+	void check();
+	void declareConst(const std::string&, const carl::VariableType&);
+	void declareFun(const std::string& name, const std::vector<std::string>& args, const carl::VariableType& sort);
+	void declareSort(const std::string&, const Rational&);
+	void defineFun(const std::string&, const std::vector<std::string>&, const carl::VariableType&, const Formula*);
+	void defineSort(const std::string&, const std::vector<std::string>&, const std::string&);
+	void exit();
+	void getAssertions();
+	void getAssignment();
+	void getInfo(const std::string& key);
+	void getOption(const std::string& key);
+	void getProof();
+	void getUnsatCore();
+	void getValue(const std::vector<VariableWrapper>&);
+	void pop(const Rational&);
+	void push(const Rational&);
+	void setInfo(const std::string& key, const Value& val);
+	void setLogic(const smtrat::Logic&);
+	void setOption(const std::string& key, const Value& val);
 	
 	static smtrat::Polynomial* mkPolynomial(const TheoryOperation& op, std::vector<Polynomial*>& v);
 	
