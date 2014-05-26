@@ -54,6 +54,7 @@ class SMTLIBParser :
 	
 public:
 	class InstructionHandler {
+		friend SMTLIBParser;
 	public:
 		typedef smtrat::parser::Value Value;
 		
@@ -76,12 +77,12 @@ public:
 				return *this;
 			}
 		};
-		
 	private:
 		std::queue<std::function<void()>> instructionQueue;
 		void addInstruction(std::function<void()> bind) {
 			this->instructionQueue.push(bind);
 		}
+	public:
 		void runInstructions() {
 			while (!this->instructionQueue.empty()) {
 				this->instructionQueue.front()();
@@ -92,52 +93,118 @@ public:
 		VariantMap<std::string, Value> infos;
 		VariantMap<std::string, Value> options;
 	public:
-		OutputWrapper print() {
-			return OutputWrapper(std::cout, "", "\n");
+		template<typename T>
+		T option(const std::string& key) const {
+			return this->options.get<T>(key);
+		}
+		bool printInstruction() const {
+			if (!this->options.has<bool>("print-instruction")) return false;
+			return this->options.get<bool>("print-instruction");
+		}
+	protected:
+		std::ostream mRegular;
+		std::ostream mDiagnostic;
+		std::map<std::string, std::ofstream> streams;
+		
+		void setStream(const std::string& s, std::ostream& os) {
+			if (s == "stdout") os.rdbuf(std::cout.rdbuf());
+			else if (s == "stderr") os.rdbuf(std::cerr.rdbuf());
+			else if (s == "stdlog") os.rdbuf(std::clog.rdbuf());
+			else {
+				if (this->streams.count(s) == 0) {
+					this->streams[s].open(s);
+				}
+				os.rdbuf(this->streams[s].rdbuf());
+			}
+		}
+	public:
+		InstructionHandler(): mRegular(std::cout.rdbuf()), mDiagnostic(std::cerr.rdbuf()) {}
+		virtual ~InstructionHandler() {
+			for (auto& it: this->streams) it.second.close();
+		}
+		
+		std::ostream& diagnostic() {
+			return this->mDiagnostic;
+		}
+		void diagnostic(const std::string& s) {
+			this->setStream(s, this->mDiagnostic);
+		}
+		std::ostream& regular() {
+			return this->mRegular;
+		}
+		void regular(const std::string& s) {
+			this->setStream(s, this->mRegular);
 		}
 		OutputWrapper error() {
-			return OutputWrapper(std::cerr, "(error \"", "\")\n");
+			return OutputWrapper(mDiagnostic, "(error \"", "\")\n");
 		}
 		OutputWrapper warn() {
-			return OutputWrapper(std::cerr, "(warn \"", "\")\n");
+			return OutputWrapper(mDiagnostic, "(warn \"", "\")\n");
 		}
 		OutputWrapper info() {
-			return OutputWrapper(std::cout, "(info \"", "\")\n");
+			return OutputWrapper(mRegular, "(info \"", "\")\n");
 		}
-		virtual void add(Formula* f) = 0;
+		virtual void add(const Formula* f) = 0;
 		virtual void check() = 0;
-		virtual void declareConst(const std::string&, const std::string&) = 0;
-		virtual void declareFun(const std::string&, const std::vector<std::string>&, const std::string&) = 0;
+		virtual void declareConst(const std::string&, const carl::VariableType&) = 0;
+		virtual void declareFun(const std::string&, const std::vector<std::string>&, const carl::VariableType&) = 0;
 		virtual void declareSort(const std::string&, const unsigned&) = 0;
-		virtual void defineFun(const std::string&, const std::vector<std::string>&, const std::string&, const Formula*) = 0;
+		virtual void defineFun(const std::string&, const std::vector<std::string>&, const carl::VariableType&, const Formula*) = 0;
 		virtual void defineSort(const std::string&, const std::vector<std::string>&, const std::string&) = 0;
 		virtual void exit() = 0;
 		virtual void getAssertions() = 0;
 		virtual void getAssignment() = 0;
 		void getInfo(const std::string& key) {
-			if (this->infos.count(key) > 0) info() << ":" << key << " = " << this->infos[key];
-			else warn() << "no info set for :" << key;
+			if (this->infos.count(key) > 0) regular() << "(:" << key << " " << this->infos[key] << ")" << std::endl;
+			else error() << "no info set for :" << key;
 		}
 		void getOption(const std::string& key) {
-			if (this->options.count(key) > 0) info() << ":" << key << " = " << this->options[key];
-			else warn() << "no option set for :" << key;
+			if (this->options.count(key) > 0) regular() << "(:" << key << " " << this->options[key] << ")" << std::endl;
+			else error() << "no option set for :" << key;
 		}
 		virtual void getProof() = 0;
 		virtual void getUnsatCore() = 0;
-		virtual void getValue(const std::vector<std::string>&) = 0;
+		virtual void getValue(const std::vector<carl::Variable>&) = 0;
 		virtual void pop(const unsigned&) = 0;
 		virtual void push(const unsigned&) = 0;
 		void setInfo(const std::string& key, const Value& val) {
 			if (this->infos.count(key) > 0) warn() << "overwriting info for :" << key;
-			this->infos[key] = val;
+			if (key == "name" || key == "authors" || key == "version") error() << "The info :" << key << " is read-only.";
+			else this->infos[key] = val;
 		}
 		virtual void setLogic(const smtrat::Logic&) = 0;
 		void setOption(const std::string& key, const Value& val)  {
 			if (this->options.count(key) > 0) warn() << "overwriting option for :" << key;
 			this->options[key] = val;
+			if (key == "diagnostic-output-channel") this->diagnostic(this->options.get<std::string>(key));
+			else if (key == "expand-definitions") this->error() << "The option :expand-definitions is not supported.";
+			else if (key == "interactive-mode") {
+				this->options.assertType<bool>("interactive-mode", std::bind(&InstructionHandler::error, this));
+			}
+			else if (key == "print-success") {
+				this->options.assertType<bool>("print-success", std::bind(&InstructionHandler::error, this));
+			}
+			else if (key == "produce-assignments") {
+				this->options.assertType<bool>("produce-assignments", std::bind(&InstructionHandler::error, this));
+			}
+			else if (key == "produce-models") {
+				this->options.assertType<bool>("produce-models", std::bind(&InstructionHandler::error, this));
+			}
+			else if (key == "produce-proofs") {
+				this->error() << "The option :produce-proofs is not supported.";
+			}
+			else if (key == "produce-unsat-cores") {
+				this->options.assertType<bool>("produce-unsat-cores", std::bind(&InstructionHandler::error, this));
+			}
+			else if (key == "random-seed") {
+				this->error() << "The option :random-seed is not supported.";
+			}
+			else if (key == "regular-output-channel") this->regular(this->options.get<std::string>(key));
+			else if (key == "verbosity") {
+				std::cout << "key is verbosity" << std::endl;
+				this->options.assertType<Rational>("verbosity", std::bind(&InstructionHandler::error, this));
+			}
 		}
-		
-		virtual ~InstructionHandler() {}
 	};
 	
 	Driver d;
