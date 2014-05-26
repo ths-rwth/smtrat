@@ -47,7 +47,6 @@ configure_file( ${CMAKE_SOURCE_DIR}/src/solver/config.h.in ${CMAKE_SOURCE_DIR}/s
 
 add_executable( smtratSolver
 	${CMAKE_SOURCE_DIR}/src/solver/parser/Driver.cc
-        ${CMAKE_SOURCE_DIR}/src/solver/newparser/Driver.cpp
         ${CMAKE_SOURCE_DIR}/src/solver/newparser/Parser.cpp
 	smtratSolver.cpp
 	${CMAKE_BINARY_DIR}/src/solver/Parser.tab.cc
