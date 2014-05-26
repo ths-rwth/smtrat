@@ -313,8 +313,32 @@ private:
 		else return true;
 		return false;
 	}
+			
+	const Formula* mkBoolean(const VariableWrapper& var) {
+        return newFormula(var);
+    }
+	const smtrat::Formula* mkConstraint(const smtrat::Polynomial&, const smtrat::Polynomial&, Relation);
+	carl::Variable mkIteInExpr(const Formula* _condition, Polynomial& _then, Polynomial& _else );
+	const smtrat::Formula* mkFormula( smtrat::Type _type, std::vector<const Formula*>& _subformulas ) const;
+	const smtrat::Formula* mkIteInFormula( const Formula* _condition, const Formula* _then, const Formula* _else ) const;
 	
+	void pushVariableStack() {
+		mVariableStack.emplace();
+	}
+	void popVariableStack()
+	{
+		while (!mVariableStack.top().empty()) {
+			if (mVariableStack.top().back().second == carl::VariableType::VT_BOOL) this->bind_bool.remove(mVariableStack.top().back().first);
+			else this->bind_theory.remove(mVariableStack.top().back().first);
+			mVariableStack.top().pop_back();
+		}
+		mVariableStack.pop();
+	}
 	
+	void addTheoryBinding( std::string& _varName, Polynomial& _polynomial );
+	void addBooleanBinding( std::string&, const Formula* );
+		
+public:
 	std::stringstream lastrule;
 	std::stringstream lastentity;
 	template<typename Rule, typename Entity>
