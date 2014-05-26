@@ -5,7 +5,10 @@
 
 #pragma once
 
+#include <cxxabi.h>
+#include <iostream>
 #include <map>
+#include <typeinfo>
 
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 #include <boost/variant.hpp>
@@ -28,15 +31,33 @@ typedef std::pair<std::string, Value> Attribute;
 
 template<typename Key, typename Value>
 class VariantMap : public std::map<Key, Value> {
+private:
+	std::string demangle(const char* t) const {
+		int status;
+		char* res = abi::__cxa_demangle(t, 0, 0, &status);
+		std::string type(res);
+		std::free(res);
+		return type;
+	}
 public:
+	template<typename T, typename Output>
+	void assertType(const Key& key, Output out) const {
+		auto it = this->find(key);
+		if (it == this->end()) {
+			out() << "No value was set for " << key << ".";
+		} else if (boost::get<T>(&(it->second)) == nullptr) {
+			out() << "The type of " << key << " should be \"" << demangle(typeid(T).name()) << "\" but is \"" << demangle(it->second.type().name()) << "\".";
+		}
+	}
+	
 	template<typename T>
-	bool has(const Key& key) {
+	bool has(const Key& key) const {
 		auto it = this->find(key);
 		if (it == this->end()) return false;
 		return boost::get<T>(&(it->second)) != nullptr;
 	}
 	template<typename T>
-	T& get(const Key& key) {
+	const T& get(const Key& key) const {
 		auto it = this->find(key);
 		return boost::get<T>(it->second);
 	}
