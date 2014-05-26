@@ -216,8 +216,11 @@ private:
 public:
 	bool queueInstructions;
 	
-	qi::symbols<char, std::string> var_bool;
-	qi::symbols<char, std::string> var_theory;
+	qi::symbols<char, VariableWrapper> var_bool;
+	qi::symbols<char, VariableWrapper> var_theory;
+	
+	qi::symbols<char, Polynomial> bind_theory;
+	qi::symbols<char, const Formula*> bind_bool;
 	
 	// Basic rules
 	SymbolParser<Iterator, Skipper> symbol;
