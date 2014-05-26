@@ -214,6 +214,7 @@ private:
 	px::function<ErrorHandler> errorHandler;
 		
 public:
+	bool queueInstructions;
 	
 	qi::symbols<char, std::string> var_bool;
 	qi::symbols<char, std::string> var_theory;
@@ -256,7 +257,7 @@ public:
 	
 public:
 	
-	SMTLIBParser(InstructionHandler* ih);
+	SMTLIBParser(InstructionHandler* ih, bool queueInstructions);
 
 	bool parse(std::istream& in, const std::string& filename);
 	
