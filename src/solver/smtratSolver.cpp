@@ -32,7 +32,6 @@
 #include "../lib/config.h"
 
 #include "config.h"
-#include "newparser/Driver.h"
 #include CMakeStrategyHeader
 #include "parser/ParserSettings.h"
 #include "RuntimeSettingsManager.h"
@@ -59,33 +58,33 @@ public:
 		this->lastAnswer = this->solver->check();
 		switch (this->lastAnswer) {
 			case smtrat::Answer::True: {
-				if (this->infos.has<std::string>("status") && this->infos.get<std::string>("status") == "sat") {
-					print() << "sat";
-					this->exitCode = SMTRAT_EXIT_SAT;
-				} else {
-					print() << "expected unsat, but returned sat";
+				if (this->infos.has<std::string>("status") && this->infos.get<std::string>("status") == "unsat") {
+					regular() << "expected unsat, but returned sat" << std::endl;
 					this->exitCode = SMTRAT_EXIT_WRONG_ANSWER;
+				} else {
+					regular() << "sat" << std::endl;
+					this->exitCode = SMTRAT_EXIT_SAT;
 				}
 				//if (settingsManager.printModel()) this->solver->printAssignment(std::cout);
 				break;
 			}
 			case smtrat::Answer::False: {
-				if (this->infos.has<std::string>("status") && this->infos.get<std::string>("status") == "unsat") {
-					print() << "unsat";
-					this->exitCode = SMTRAT_EXIT_UNSAT;
-				} else {
-					print() << "expected sat, but returned unsat";
+				if (this->infos.has<std::string>("status") && this->infos.get<std::string>("status") == "sat") {
+					regular() << "expected sat, but returned unsat" << std::endl;
 					this->exitCode = SMTRAT_EXIT_WRONG_ANSWER;
+				} else {
+					regular() << "unsat" << std::endl;
+					this->exitCode = SMTRAT_EXIT_UNSAT;
 				}
 				break;
 			}
 			case smtrat::Answer::Unknown: {
-				print() << "unknown";
+				regular() << "unknown" << std::endl;
 				this->exitCode = SMTRAT_EXIT_UNKNOWN;
 				break;
 			}
 			default: {
-				print() << "unexpected output!";
+				regular() << "unexpected output!" << std::endl;
 				this->exitCode = SMTRAT_EXIT_UNEXPECTED_ANSWER;
 				break;
 			}
