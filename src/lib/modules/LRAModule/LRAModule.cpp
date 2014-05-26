@@ -1314,15 +1314,20 @@ Return:
                     //pair< const LRABound*, bool> result2 = mTableau.newBound(cut_constraint2);
                     //set<const Formula*> formulas2;
                     //mTableau.activateBound(result2.first, formulas2);
-                    // Construct and add deductionA
+                    // Construct and add (p<=I-1 or p>=I))
                     const Formula* cons1 = newFormula( cut_constraint );
                     cons1->setActivity( -numeric_limits<double>::infinity() );
                     const Formula* cons2 = newFormula( cut_constraint2 );
                     cons2->setActivity( -numeric_limits<double>::infinity() );
-                    PointerSet<Formula> subformulas;
-                    subformulas.insert( cons1 );
-                    subformulas.insert( cons2 );
-                    addDeduction( newFormula( OR, std::move( subformulas ) ) );
+                    PointerSet<Formula> subformulasA;
+                    subformulasA.insert( cons1 );
+                    subformulasA.insert( cons2 );
+                    addDeduction( newFormula( OR, std::move( subformulasA ) ) );   
+                    // (not(p<=I-1) or not(p>=I))
+                    PointerSet<Formula> subformulasB;
+                    subformulasB.insert( newNegation( cons1 ) );
+                    subformulasB.insert( newNegation( cons2 ) );
+                    addDeduction( newFormula( OR, std::move( subformulasB ) ) );
                     cout << "After adding proof of unsatisfiability:" << endl;
                     mTableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
                     cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
