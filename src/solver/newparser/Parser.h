@@ -298,9 +298,20 @@ protected:
 			(this->handler->*f)(args...);
 		}
 	}
-	void check() {
-		this->d.check();
-		this->handler->check();
+	
+private:
+	smtrat::Logic mLogic;
+	std::unordered_map<carl::Variable, const Formula*> mTheoryIteBindings;
+	std::stack<std::list<std::pair<std::string, carl::VariableType>>> mVariableStack;
+	
+	bool isSymbolFree(const std::string& name) {
+		if (name == "true" || name == "false") this->handler->error() << "\"" << name << "\" is a reserved keyword.";
+		else if (this->var_bool.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a boolean variable.";
+		else if (this->var_theory.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a theory variable.";
+		else if (this->bind_bool.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a boolean binding.";
+		else if (this->bind_theory.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a theory binding.";
+		else return true;
+		return false;
 	}
 	
 	
