@@ -143,6 +143,7 @@ struct BooleanOpParser : public qi::symbols<char, smtrat::Type> {
 		add("or", smtrat::OR);
 		add("xor", smtrat::XOR);
 		add("iff", smtrat::IFF);
+		add("=", smtrat::IFF);
 	}
 };
 
