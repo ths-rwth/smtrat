@@ -11,12 +11,12 @@
  *
  * SMT-RAT is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY aor FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
- *make
+ *
  */
 
 
@@ -411,7 +411,7 @@ namespace smtrat
      * @param _rel
      * @return 
      */
-    Formula* Driver::mkConstraint( const Polynomial* _lhs, const Polynomial* _rhs, Relation _rel )
+    const Formula* Driver::mkConstraint( const Polynomial* _lhs, const Polynomial* _rhs, unsigned _rel )
     {
         Relation rel = (Relation) _rel;
         const Constraint* cons = newConstraint( (*_lhs)-(*_rhs), rel );
@@ -505,9 +505,7 @@ namespace smtrat
     {
         smtrat::Type type = (smtrat::Type) _type;
         assert( type == smtrat::AND || type == smtrat::OR || type == smtrat::XOR || type == smtrat::IFF );
-        const Formula* result = newFormula( type, move(*_subformulas) );
-        delete _subformulas;
-        return result;
+        return newFormula( type, move(*_subformulas) );
     }
     
     /**
@@ -548,7 +546,7 @@ namespace smtrat
         
         PointerSet<Formula> subformulas;
         // Add to inner constraint bindings:  (or (not conditionBool) (= auxRealVar _then))
-        subformulas.insert( newFormula( OR, newNegation( conditionBool ), constraintA ) );
+        subformulas.insert( newFormula( OR, conditionBool, constraintA ) );
         // Add to inner constraint bindings:  (or conditionBool (= auxRealVar _else))
         subformulas.insert( newFormula( OR, conditionBool, constraintB ) );
         // Add to inner constraint bindings:  (iff conditionBool _condition)

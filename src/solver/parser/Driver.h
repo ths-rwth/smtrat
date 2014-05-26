@@ -360,20 +360,18 @@ namespace smtrat
             carl::Variable getBooleanVariable( const class location&, const std::string& );
             void freeBooleanVariableName( const std::string& );
             void freeTheoryVariableName( const std::string& );
-            smtrat::Polynomial* mkPolynomial( const class location&, std::string* );
-            smtrat::Formula* mkConstraint( const smtrat::Polynomial*, const smtrat::Polynomial*, Relation );
-			smtrat::Formula* mkConstraint( const smtrat::Polynomial* p, const smtrat::Polynomial* q, unsigned r ) {
-				return this->mkConstraint(p, q, Relation(r));
-			}
-            smtrat::Formula* mkTrue();
-            smtrat::Formula* mkFalse();
-            smtrat::Formula* mkBoolean( const class location&, std::string* );
-            smtrat::Formula* mkFormula( unsigned, smtrat::Formula*, smtrat::Formula* );
-            smtrat::Formula* mkFormula( unsigned, std::vector< smtrat::Formula* >* );
-            smtrat::Formula* mkIff( smtrat::Formula*, smtrat::Formula*, smtrat::Formula*, smtrat::Formula*, bool );
-            smtrat::Formula* mkIteInFormula( smtrat::Formula*, smtrat::Formula*, smtrat::Formula* );
-            carl::Variable mkIteInExpr( const class location&, smtrat::Formula*, smtrat::Polynomial*, smtrat::Polynomial* );
-            smtrat::Rational getRational( std::string* ) const;
+            Polynomial* mkPolynomial( const class location&, std::string* );
+            const Formula* mkConstraint( const Polynomial*, const Polynomial*, unsigned );
+            const Formula* mkTrue();
+            const Formula* mkFalse();
+            const Formula* mkBoolean( const class location&, std::string* );
+            const Formula* mkNegation( const Formula* );
+            const Formula* mkImplication( const Formula*, const Formula* );
+            const Formula* mkFormula( unsigned, PointerSet<Formula>* );
+            const Formula* mkIff( const Formula*, const Formula*, const Formula*, const Formula* );
+            const Formula* mkIteInFormula( const Formula*, const Formula*, const Formula* );
+            carl::Variable mkIteInExpr( const class location&, const Formula*, Polynomial*, Polynomial* );
+            Rational getRational( std::string* ) const;
             bool getInstruction( InstructionKey&, InstructionValue& );
             void applySetInfo( const std::string&, const std::string& );
             void applyGetInfo( const std::string& );
