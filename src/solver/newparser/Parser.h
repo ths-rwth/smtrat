@@ -207,8 +207,6 @@ public:
 		}
 	};
 	
-	Driver d;
-	
 private:
 	InstructionHandler* handler;
 	px::function<SuccessHandler> successHandler;
