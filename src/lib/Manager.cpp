@@ -48,9 +48,9 @@ namespace smtrat
         mPrimaryBackendFoundAnswer( vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
         mpPassedFormula( new ModuleInput() ),
         mBacktrackPoints(),
-        mGeneratedModules( vector<Module*>( 1, new Module( MT_Module, mpPassedFormula, mPrimaryBackendFoundAnswer, this ) ) ),
+        mGeneratedModules(),
         mBackendsOfModules(),
-        mpPrimaryBackend( mGeneratedModules.back() ),
+        mpPrimaryBackend( new Module( MT_Module, mpPassedFormula, mPrimaryBackendFoundAnswer, this ) ),
         mStrategyGraph(),
         mDebugOutputChannel( cout.rdbuf() ),
         mLogic( Logic::UNDEFINED )
@@ -66,6 +66,7 @@ namespace smtrat
         mRunsParallel( false )
         #endif
     {
+        mGeneratedModules.push_back( mpPrimaryBackend );
         mpModuleFactories = new map<const ModuleType, ModuleFactory*>();
         // inform it about all constraints
         for( auto constraint = constraintPool().begin(); constraint != constraintPool().end(); ++constraint )
@@ -77,6 +78,9 @@ namespace smtrat
     Manager::~Manager()
     {
         Module::storeAssumptionsToCheck( *this );
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        delete mpStatistics;
+        #endif
         while( !mGeneratedModules.empty() )
         {
             Module* ptsmodule = mGeneratedModules.back();
@@ -188,7 +192,7 @@ namespace smtrat
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         std::lock_guard<std::mutex> lock( mBackendsMutex );
         #endif
-        vector<Module*>  backends    = vector<Module*>();
+        vector<Module*>  backends;
         vector<Module*>& allBackends = mBackendsOfModules[_requiredBy];
         /*
          * Get the types of the modules, which the given module needs to call to solve its passedFormula.

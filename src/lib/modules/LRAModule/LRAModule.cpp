@@ -37,7 +37,7 @@
 #define LRA_ONE_REASON
 #ifndef LRA_GOMORY_CUTS
 #ifndef LRA_CUTS_FROM_PROOFS
-#define LRA_BRANCH_AND_BOUND
+//#define LRA_BRANCH_AND_BOUND
 #endif
 #endif
 
@@ -67,7 +67,11 @@ namespace smtrat
     }
 
     LRAModule::~LRAModule()
-    {}
+    {
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        delete mpStatistics;
+        #endif
+    }
 
     /**
      * Informs this module about the existence of the given constraint, which means
@@ -193,7 +197,7 @@ namespace smtrat
                     }
                     else
                     {
-                        addSubformulaToPassedFormula( newFormula( constraint ), *_subformula );
+                        addSubformulaToPassedFormula( *_subformula, *_subformula );
                         mNonlinearConstraints.insert( constraint );
                         return true;
                     }
@@ -484,7 +488,7 @@ namespace smtrat
                         PointerSet<Formula> originSet;
                         LRATableau::LearnedBound& learnedBound = mTableau.rNewLearnedBounds().back()->second;
                         mTableau.rNewLearnedBounds().pop_back();
-                        vector<const LRABound*>& bounds = *learnedBound.premise;
+                        vector<const LRABound*>& bounds = learnedBound.premise;
                         for( auto bound = bounds.begin(); bound != bounds.end(); ++bound )
                         {
                             assert( !(*bound)->origins().empty() );
@@ -741,11 +745,10 @@ Return:
      */
     void LRAModule::learnRefinements()
     {
-        map<LRAVariable*, typename LRATableau::LearnedBound>& llBs = mTableau.rLearnedLowerBounds();
-        while( !llBs.empty() )
+        for( auto iter = mTableau.rLearnedLowerBounds().begin(); iter != mTableau.rLearnedLowerBounds().end(); ++iter )
         {
             PointerSet<Formula> subformulas;
-            for( auto bound = llBs.begin()->second.premise->begin(); bound != llBs.begin()->second.premise->end(); ++bound )
+            for( auto bound = iter->second.premise.begin(); bound != iter->second.premise.end(); ++bound )
             {
                 auto originIterB = (*bound)->origins().begin()->begin();
                 while( originIterB != (*bound)->origins().begin()->end() )
@@ -754,21 +757,18 @@ Return:
                     ++originIterB;
                 }
             }
-            subformulas.insert( newFormula( llBs.begin()->second.nextWeakerBound->pAsConstraint() ) );
+            subformulas.insert( newFormula( iter->second.nextWeakerBound->pAsConstraint() ) );
             addDeduction( newFormula( OR, subformulas ) );
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->addRefinement();
             mpStatistics->addDeduction();
             #endif
-            vector<const LRABound* >* toDelete = llBs.begin()->second.premise;
-            llBs.erase( llBs.begin() );
-            delete toDelete;
         }
-        map<LRAVariable*, typename LRATableau::LearnedBound>& luBs = mTableau.rLearnedUpperBounds();
-        while( !luBs.empty() )
+        mTableau.rLearnedLowerBounds().clear();
+        for( auto iter = mTableau.rLearnedUpperBounds().begin(); iter != mTableau.rLearnedUpperBounds().end(); ++iter )
         {
             PointerSet<Formula> subformulas;
-            for( auto bound = luBs.begin()->second.premise->begin(); bound != luBs.begin()->second.premise->end(); ++bound )
+            for( auto bound = iter->second.premise.begin(); bound != iter->second.premise.end(); ++bound )
             {
                 auto originIterB = (*bound)->origins().begin()->begin();
                 while( originIterB != (*bound)->origins().begin()->end() )
@@ -777,16 +777,14 @@ Return:
                     ++originIterB;
                 }
             }
-            subformulas.insert( newFormula( luBs.begin()->second.nextWeakerBound->pAsConstraint() ) );
+            subformulas.insert( newFormula( iter->second.nextWeakerBound->pAsConstraint() ) );
             addDeduction( newFormula( OR, subformulas ) );
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->addRefinement();
             mpStatistics->addDeduction();
             #endif
-            vector<const LRABound* >* toDelete = luBs.begin()->second.premise;
-            luBs.erase( luBs.begin() );
-            delete toDelete;
         }
+        mTableau.rLearnedUpperBounds().clear();
     }
     #endif
 
@@ -859,39 +857,44 @@ Return:
         // If the bounds constraint has already been passed to the backend, add the given formulas to it's origins
         if( _bound->pInfo()->position != mpPassedFormula->end() )
             addOrigin( *_bound->pInfo()->position, _formulas );
-        mTableau.activateBound( _bound, _formulas );
         const LRAVariable& var = _bound->variable();
-        if( _bound->isUpperBound() )
+        const LRABound* psup = var.pSupremum();
+        const LRABound& sup = *psup;
+        const LRABound* pinf = var.pInfimum();
+        const LRABound& inf = *pinf;
+        const LRABound& bound = *_bound;
+        mTableau.activateBound( _bound, _formulas );
+        if( bound.isUpperBound() )
         {
-            if( *var.pInfimum() > _bound->limit() && !_bound->deduced() )
+            if( inf > bound.limit() && !bound.deduced() )
             {
                 PointerSet<Formula> infsubset;
-                infsubset.insert( _bound->pOrigins()->begin()->begin(), _bound->pOrigins()->begin()->end() );
-                infsubset.insert( var.pInfimum()->pOrigins()->back().begin(), var.pInfimum()->pOrigins()->back().end() );
+                infsubset.insert( bound.pOrigins()->begin()->begin(), bound.pOrigins()->begin()->end() );
+                infsubset.insert( inf.pOrigins()->back().begin(), inf.pOrigins()->back().end() );
                 mInfeasibleSubsets.push_back( infsubset );
                 result = false;
             }
-            if( *var.pSupremum() > *_bound )
+            if( sup > bound )
             {
-                if( !var.pSupremum()->isInfinite() )
-                    mBoundCandidatesToPass.push_back( var.pSupremum() );
+                if( !sup.isInfinite() )
+                    mBoundCandidatesToPass.push_back( psup );
                 mBoundCandidatesToPass.push_back( _bound );
             }
         }
-        if( _bound->isLowerBound() )
+        if( bound.isLowerBound() )
         {
-            if( *var.pSupremum() < _bound->limit() && !_bound->deduced() )
+            if( sup < bound.limit() && !bound.deduced() )
             {
                 PointerSet<Formula> infsubset;
-                infsubset.insert( _bound->pOrigins()->begin()->begin(), _bound->pOrigins()->begin()->end() );
-                infsubset.insert( var.pSupremum()->pOrigins()->back().begin(), var.pSupremum()->pOrigins()->back().end() );
+                infsubset.insert( bound.pOrigins()->begin()->begin(), bound.pOrigins()->begin()->end() );
+                infsubset.insert( sup.pOrigins()->back().begin(), sup.pOrigins()->back().end() );
                 mInfeasibleSubsets.push_back( infsubset );
                 result = false;
             }
-            if( *var.pInfimum() < *_bound )
+            if( inf < bound )
             {
-                if( !var.pInfimum()->isInfinite() )
-                    mBoundCandidatesToPass.push_back( var.pInfimum() );
+                if( !inf.isInfinite() )
+                    mBoundCandidatesToPass.push_back( pinf );
                 mBoundCandidatesToPass.push_back( _bound );
             }
         }
@@ -1155,29 +1158,35 @@ Return:
                 Variables vars;
                 basicVar->expression().gatherVariables( vars );
                 assert( vars.size() == 1 );
-                auto found_ex = rMap_.find(*vars.begin());                                
+                auto found_ex = rMap_.find(*vars.begin()); 
                 Rational& ass = found_ex->second;
                 if( !carl::isInteger( ass ) )
                 {
-                    all_int = false;    
-                    const Constraint* gomory_constr = mTableau.gomoryCut(ass, basicVar, constr_vec);
+                    all_int = false;
+                    const Constraint* gomory_constr = mTableau.gomoryCut(ass, basicVar, constr_vec);                
                     if( gomory_constr != NULL )
-                    {
-                        Formula* deductionA = new Formula(OR);
+                    { 
+                        assert( !gomory_constr->satisfiedBy( rMap_ ) );
+                        PointerSet<Formula> subformulas;
                         auto vec_iter = constr_vec.begin();
-                        while(vec_iter != constr_vec.end())
+                        while( vec_iter != constr_vec.end() )
                         {
-                            Formula* notItem = new Formula(NOT);
-                            notItem->addSubformula(*vec_iter);
-                            deductionA->addSubformula(notItem);
+                            subformulas.insert( newNegation( newFormula( *vec_iter ) ) );
                             ++vec_iter; 
                         } 
-                        deductionA->addSubformula(gomory_constr);
-                        addDeduction(deductionA);   
-                    }                                                                
+                        const Formula* gomory_formula = newFormula( gomory_constr );
+                        subformulas.insert( gomory_formula );
+                        addDeduction( newFormula( OR, std::move( subformulas ) ) );   
+                    }
+                    /*
+                    else
+                    {
+                        branchAt( Polynomial( found_ex->first ), found_ex->second );
+                    }
+                    */
                 }
             }    
-        }                            
+        }          
         return !all_int;
     }
     #endif
@@ -1204,6 +1213,7 @@ Return:
             Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
+                cout << "Fix: " << var->first << endl;
                 break;
             }
             ++map_iterator;
@@ -1220,53 +1230,23 @@ Return:
         /*
          * Build the new Tableau consisting out of the defining constraints.
          */
-        LRATableau dc_Tableau = LRATableau( mpPassedFormula->end() );
-        /*
-        size_t i=0;
-        for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
-        {
-            dc_Tableau.newNonbasicVariable( new Polynomial( (*mTableau.columns().at(i)).expression() ) );
-            //dc_Tableau.newNonbasicVariable( new Polynomial( mTableau.columns().at(i)->mName->expression() ) );
-            ++i;
-        }
-        */   
+        LRATableau dc_Tableau = LRATableau( mpPassedFormula->end() );  
         size_t numRows = mTableau.rows().size();
         size_t dc_count = 0;
+        LRAEntryType max_value = 0;
         vector<size_t> dc_positions;
         for( size_t i = 0; i < numRows; ++i )
         {
             LRAEntryType lcmOfCoeffDenoms = 1;
-            LRAEntryType max_value = 0;
             const Constraint* dc_constraint = mTableau.isDefining( i, max_value );
             if( dc_constraint != NULL  )
             {
                 cout << "Found defining constraint!" << endl;
                 dc_count++;
-                dc_positions.push_back(i);
-                //assert( !non_basic_vars_positions.empty() );
-                /*
-                vector< LRAVariable* > non_basic_vars;
-                size_t j=0;
-                auto pos = non_basic_vars_positions.begin();
-                for( auto column = dc_Tableau.columns().begin(); column != dc_Tableau.columns().end(); ++column )
-                {
-                    LRAVariable* nonbasicVar = mTableau.columns().at(j);
-                    if( nonbasicVar->position() == *pos )
-                    {                                                                                    
-                        assert( pos != non_basic_vars_positions.end() );
-                        non_basic_vars.push_back( nonbasicVar );
-                        ++pos;                                            
-                    }
-                    ++j;    
-                }
-                */               
-                //dc_Tableau.newBasicVariable( help, non_basic_vars, coefficients );
-                cout << "Inserted it!" << endl;
-                //auto result = dc_Tableau.newBound(dc_constraint);
+                dc_positions.push_back(i);             
                 pair< const LRABound*, bool> result = dc_Tableau.newBound(dc_constraint);
                 PointerSet<Formula> formulas;
                 dc_Tableau.activateBound(result.first, formulas);
-                dc_Tableau.print(); 
             }   
         }
         dc_Tableau.print();
@@ -1281,8 +1261,7 @@ Return:
             vector<size_t> diagonals;    
             vector<size_t>& diagonals_ref = diagonals;               
             dc_Tableau.print( );
-            //dc_Tableau.invertColumn(0);
-            //dc_Tableau.print();
+            /*
             dc_Tableau.addColumns(0,2,2);
             dc_Tableau.addColumns(1,2,4);
             dc_Tableau.addColumns(2,2,2);
@@ -1290,6 +1269,8 @@ Return:
             dc_Tableau.addColumns(5,4,1);
             dc_Tableau.addColumns(4,4,-1);
             dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
+            */
+            cout << "HNF matrix:" << endl;
             dc_Tableau.calculate_hermite_normalform( diagonals_ref );
             dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
@@ -1303,38 +1284,48 @@ Return:
             dc_Tableau.invert_HNF_Matrix( diagonals );
             dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
             Polynomial* cut_from_proof = new Polynomial();
-            Polynomial cut;
             for( size_t i = 0; i < dc_positions.size(); ++i )
             {
                 LRAEntryType upper_lower_bound;
-                cut_from_proof = dc_Tableau.create_cut_from_proof( dc_Tableau, mTableau, i, diagonals, dc_positions, upper_lower_bound );
-//                #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+                cut_from_proof = dc_Tableau.create_cut_from_proof( dc_Tableau, mTableau, i, diagonals, dc_positions, upper_lower_bound, max_value );
+                mTableau.print();
+                #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                 #ifdef MODULE_VERBOSE_INTEGERS
                 cout << "Proof of unsatisfiability:  " << *pcut << " = 0" << endl;
                 #endif
-//                #endif
+                #endif
                 if( cut_from_proof != NULL )
                 {
-                    const smtrat::Constraint* cut_constraint = Formula::newConstraint( *cut_from_proof - (Rational)carl::floor((Rational)upper_lower_bound) , Relation::LEQ );
-                    const smtrat::Constraint* cut_constraint2 = Formula::newConstraint( *cut_from_proof - (Rational)carl::floor((Rational)upper_lower_bound) , Relation::GEQ );
-                    cout << "Constraint: " << *cut_constraint << endl;
+                    LRAEntryType bound_add = 1;
+                    LRAEntryType bound = upper_lower_bound;
+                    if( carl::isInteger( upper_lower_bound ) )
+                    {
+                        bound_add = 0;
+                    }
+                    const smtrat::Constraint* cut_constraint = newConstraint( *cut_from_proof - (Rational)carl::floor((Rational)upper_lower_bound) , Relation::LEQ );
+                    const smtrat::Constraint* cut_constraint2 = newConstraint( *cut_from_proof - ((Rational)carl::floor((Rational)upper_lower_bound)+bound_add) , Relation::GEQ );
+                    cout << "Constraint1: " << *cut_constraint << endl;
+                    cout << "Constraint2: " << *cut_constraint2 << endl;
                     cout << "Cut: " << *cut_from_proof << endl;
-                    //mTableau.newBasicVariable( pcut, non_basic_vars2, coefficients2 );
-                    //auto var2 = mTableau.newBasicVariable( pcut, non_basic_vars2, coefficients2 );
-                    pair< const LRABound*, bool> result = mTableau.newBound(cut_constraint);
-                    set<const Formula*> formulas;
-                    mTableau.activateBound(result.first, formulas);
-                    pair< const LRABound*, bool> result2 = mTableau.newBound(cut_constraint2);
-                    set<const Formula*> formulas2;
-                    mTableau.activateBound(result2.first, formulas2);
-                    //(*mTableau.rows().at(0)).setSupremum()
+                    cout << "max_value: " << max_value << endl;
+                    //pair< const LRABound*, bool> result = mTableau.newBound(cut_constraint);
+                    //set<const Formula*> formulas;
+                    //mTableau.activateBound(result.first, formulas);
+                    //pair< const LRABound*, bool> result2 = mTableau.newBound(cut_constraint2);
+                    //set<const Formula*> formulas2;
+                    //mTableau.activateBound(result2.first, formulas2);
+                    // Construct and add deductionA
+                    const Formula* cons1 = newFormula( cut_constraint );
+                    cons1->setActivity( -numeric_limits<double>::infinity() );
+                    const Formula* cons2 = newFormula( cut_constraint2 );
+                    cons2->setActivity( -numeric_limits<double>::infinity() );
+                    PointerSet<Formula> subformulas;
+                    subformulas.insert( cons1 );
+                    subformulas.insert( cons2 );
+                    addDeduction( newFormula( OR, std::move( subformulas ) ) );
                     cout << "After adding proof of unsatisfiability:" << endl;
-                    //var2->print();
-                    //var2->printAllBounds();
                     mTableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
                     cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
-                    //mTableau.rows().at(mTableau.rows().size()-1).mName->setSupremum(upper_bound);
-                    //mTableau.rows().at(mTableau.rows().size()-1).mName->setSupremum(lower_bound);
                     return true;
                 }
             }
@@ -1347,6 +1338,7 @@ Return:
             cout << "No defining constraint!" << endl;
         cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
         #endif
+        cout << "Branch at: " << var->first << endl;
         branchAt( Polynomial( var->first ), (Rational)map_iterator->second );
         return true;
     }

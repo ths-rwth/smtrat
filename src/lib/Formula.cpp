@@ -898,8 +898,10 @@ namespace smtrat
         if( mpSubformulas->size() > 2 )
         {
             PointerSet<Formula> tmpSubformulas;
-            for( const Formula* subformula : *mpSubformulas )
-                tmpSubformulas.insert( subformula );
+            auto iter = mpSubformulas->begin();
+            ++iter;
+            for( ; iter != mpSubformulas->end(); ++iter )
+                tmpSubformulas.insert( *iter );
             return newFormula( IFF, tmpSubformulas );
         }
         else
@@ -923,12 +925,21 @@ namespace smtrat
         }
         else if( isAtom() )
             return this;
+        PointerMap<Formula,pair<const Formula*,const Formula*>*> tseitinVars;
         PointerSet<Formula> subformulas;
         vector<const Formula*> subformulasToTransform;
         subformulasToTransform.push_back( this );
         while( !subformulasToTransform.empty() )
         {
             const Formula* currentFormula = subformulasToTransform.back();
+//            cout << "To add:" << endl;
+//            for( auto f : subformulasToTransform )
+//                cout << "   " << *f << endl;
+//            cout << endl;
+//            cout << "Conjunction:" << endl;
+//            for( auto f : subformulas )
+//                cout << "   " << *f << endl;
+//            cout << endl;
             subformulasToTransform.pop_back();
             switch( currentFormula->getType() )
             {
@@ -971,7 +982,7 @@ namespace smtrat
                 case TTRUE: // Remove it.
                     break;
                 case FFALSE: // Return false.
-                    return falseFormula();
+                    goto ReturnFalse;
                 case NOT: // Try to resolve this negation.
                 {
                     const Formula* resolvedFormula = currentFormula->resolveNegation( _keepConstraints );
@@ -995,40 +1006,26 @@ namespace smtrat
                     subformulasToTransform.push_back( newFormula( OR, tmpSubformulas ) );
                     break;
                 }
-                case IFF: // (iff lhs rhs)  ->  (or h1 h2) (or (not h1) lhs) (or (not h1) rhs) (or (not h2) (not lhs)) (or (not h2) (not rhs))
+                case IFF: // (iff lhs rhs) -> (or lhs (not rhs)) and (or (not lhs) rhs) are added to the queue
                 {
                     // Get lhs and rhs.
                     const Formula* lhs = *currentFormula->subformulas().begin();
                     const Formula* rhs = currentFormula->connectRemainingSubformulas();
-                    // Create the formulas of the fresh Boolean variables h1 and h2 and their negations.
-                    const Formula* h1 = newFormula( newAuxiliaryBooleanVariable() );
-                    const Formula* h2 = newFormula( newAuxiliaryBooleanVariable() );
-                    const Formula* noth1 = newNegation( h1 );
-                    const Formula* noth2 = newNegation( h2 );
-                    // Create (or h1 h2)
-                    subformulas.insert( newFormula( OR, h1, h2 ) );
-                    // Append (or (not h1) lhs), (or (not h1) rhs), (or (not h2) (not lhs)) and (or (not h2) (not rhs)) to _formulasToAssert.
-                    subformulasToTransform.push_back( newFormula( OR, noth1, lhs ) );
-                    subformulasToTransform.push_back( newFormula( OR, noth1, rhs ) );
-                    subformulasToTransform.push_back( newFormula( OR, noth2, newNegation( lhs ) ) );
-                    subformulasToTransform.push_back( newFormula( OR, noth2, newNegation( rhs ) ) );
+                    // add (or lhs (not rhs)) to the queue
+                    subformulasToTransform.push_back( newFormula( OR, lhs, newNegation( rhs ) ) );
+                    // add (or (not lhs) rhs) to the queue
+                    subformulasToTransform.push_back( newFormula( OR, newNegation( lhs ), rhs ) );
                     break;
                 }
-                case XOR: // (xor lhs rhs)  ->  (or h1 h2) (or (not h1) (not lhs)) (or (not h1) rhs) (or (not h2) lhs) (or (not h2) (not rhs))
+                case XOR: // (xor lhs rhs) -> (or lhs rhs) and (or (not lhs) (not rhs)) are added to the queue
                 {
                     // Get lhs and rhs.
                     const Formula* lhs = *currentFormula->subformulas().begin();
                     const Formula* rhs = currentFormula->connectRemainingSubformulas();
-                    // Create the formulas of the fresh Boolean variables h1 and h2 and their negations.
-                    const Formula* h1 = newFormula( newAuxiliaryBooleanVariable() );
-                    const Formula* h2 = newFormula( newAuxiliaryBooleanVariable() );
-                    const Formula* noth1 = newNegation( h1 );
-                    const Formula* noth2 = newNegation( h2 );
-                    // Append (or (not h1) (not lhs)), (or (not h1) rhs), (or (not h2) lhs) and (or (not h2) (not rhs)) to _formulasToAssert.
-                    subformulasToTransform.push_back( newFormula( OR, noth1, newNegation( lhs ) ) );
-                    subformulasToTransform.push_back( newFormula( OR, noth1, rhs ) );
-                    subformulasToTransform.push_back( newFormula( OR, noth2, lhs ) );
-                    subformulasToTransform.push_back( newFormula( OR, noth2, newNegation( rhs ) ) );
+                    // add (or lhs rhs) to the queue
+                    subformulasToTransform.push_back( newFormula( OR, lhs, rhs) );
+                    // add (or (not lhs) (not rhs)) to the queue
+                    subformulasToTransform.push_back( newFormula( OR, newNegation( lhs ), newNegation( rhs ) ) );
                     break;
                 }
                 // Note, that the following case could be implemented using less code, but it would clearly
@@ -1044,6 +1041,14 @@ namespace smtrat
                     while( !currentFormulaValid && !phis.empty() )
                     {
                         const Formula* currentSubformula = phis.back();
+//                        cout << "    To add:" << endl;
+//                        for( auto f : phis )
+//                            cout << "       " << *f << endl;
+//                        cout << endl;
+//                        cout << "    Disjunction:" << endl;
+//                        for( auto f : subsubformulas )
+//                            cout << "       " << *f << endl;
+//                        cout << endl;
                         phis.pop_back();
                         switch( currentSubformula->getType() )
                         {
@@ -1074,12 +1079,17 @@ namespace smtrat
                             }
                             case AND: // (and phi_i1 .. phi_ik) -> h_i, where (or (not h_i) phi_i1) .. (or (not h_i) phi_ik) is added to the queue
                             {
-                                const Formula* hi = newFormula( newAuxiliaryBooleanVariable() );
-                                hi->setDifficulty( currentSubformula->difficulty() ); // TODO: do something alike everywhere where a sub-formula is replaced by a fresh variable
-                                const Formula* nothi = newNegation( hi );
+                                auto iter = tseitinVars.insert( pair<const Formula*,pair<const Formula*,const Formula*>*>( currentSubformula, NULL ) );
+                                if( iter.second )
+                                {
+                                    carl::Variable auxVar = newAuxiliaryBooleanVariable();
+                                    const Formula* hi = newFormula( auxVar );
+                                    hi->setDifficulty( currentSubformula->difficulty() );
+                                    iter.first->second = new pair<const Formula*,const Formula*>( hi, newNegation( hi ) );
+                                }
                                 for( const Formula* subsubformula : currentSubformula->subformulas() )
-                                    subformulasToTransformTmp.push_back( newFormula( OR, nothi, subsubformula ) );
-                                subsubformulas.insert( hi );
+                                    subformulasToTransformTmp.push_back( newFormula( OR, iter.first->second->second, subsubformula ) );
+                                subsubformulas.insert( iter.first->second->first );
                                 break;
                             }
                             case CONSTRAINT: // p~0 -> p~0
@@ -1111,40 +1121,26 @@ namespace smtrat
                                 #endif
                                 break;
                             }
-                            case IFF: // (iff lhs rhs) -> h1 h2, where (or (not h1) lhs) (or (not h1) rhs) (or (not h2) (not lhs)) (or (not h2) (not rhs)) is added to the queue
+                            case IFF: // (iff lhs rhs) -> (and lhs rhs) and (and (not lhs) (not rhs)) are added to the queue
                             {
                                 // Get lhs and rhs.
                                 const Formula* lhs = *currentSubformula->subformulas().begin();
                                 const Formula* rhs = currentSubformula->connectRemainingSubformulas();
-                                // Create the formulas of the fresh Boolean variables hi1 and hi2 and their negations.
-                                const Formula* h1 = newFormula( newAuxiliaryBooleanVariable() );
-                                const Formula* h2 = newFormula( newAuxiliaryBooleanVariable() );
-                                const Formula* noth1 = newNegation( h1 );
-                                const Formula* noth2 = newNegation( h2 );
-                                subformulasToTransformTmp.push_back( newFormula( OR, noth1, lhs ) );
-                                subformulasToTransformTmp.push_back( newFormula( OR, noth1, rhs ) );
-                                subformulasToTransformTmp.push_back( newFormula( OR, noth2, newNegation( lhs ) ) );
-                                subformulasToTransformTmp.push_back( newFormula( OR, noth2, newNegation( rhs ) ) );
-                                subsubformulas.insert( h1 );
-                                subsubformulas.insert( h2 );
+                                // add (and lhs rhs) to the queue
+                                phis.push_back( newFormula( AND, lhs, rhs ) );
+                                // add (and (not lhs) (not rhs)) to the queue
+                                phis.push_back( newFormula( AND, newNegation( lhs ), newNegation( rhs ) ) );
                                 break;
                             }
-                            case XOR: // (xor lhs rhs) -> h1 h2, where (or (not h1) (not lhs)) (or (not h1) rhs) (or (not h2) lhs) (or (not h2) (not rhs)) is added to the queue
+                            case XOR: // (xor lhs rhs) -> (and lhs (not rhs)) and (and (not lhs) rhs) are added to the queue
                             {
-                                // Get lhsi and rhsi.
+                                // Get lhs and rhs.
                                 const Formula* lhs = *currentSubformula->subformulas().begin();
                                 const Formula* rhs = currentSubformula->connectRemainingSubformulas();
-                                // Create the formulas of the fresh Boolean variables hi1 and hi2 and their negations.
-                                const Formula* h1 = newFormula( newAuxiliaryBooleanVariable() );
-                                const Formula* h2 = newFormula( newAuxiliaryBooleanVariable() );
-                                const Formula* noth1 = newNegation( h1 );
-                                const Formula* noth2 = newNegation( h2 );
-                                subformulasToTransformTmp.push_back( newFormula( OR, noth1, newNegation( lhs ) ) );
-                                subformulasToTransformTmp.push_back( newFormula( OR, noth1, rhs ) );
-                                subformulasToTransformTmp.push_back( newFormula( OR, noth2, lhs ) );
-                                subformulasToTransformTmp.push_back( newFormula( OR, noth2, newNegation( rhs ) ) );
-                                subsubformulas.insert( h1 );
-                                subsubformulas.insert( h2 );
+                                // add (and lhs (not rhs)) to the queue
+                                phis.push_back( newFormula( AND, lhs, newNegation( rhs )) );
+                                // add (and (not lhs) rhs) to the queue
+                                phis.push_back( newFormula( AND, newNegation( lhs ), rhs ) );
                                 break;
                             }
                             default:
@@ -1159,7 +1155,7 @@ namespace smtrat
                         subformulasToTransform.insert( subformulasToTransform.end(), subformulasToTransformTmp.begin(), subformulasToTransformTmp.end() );
                         if( subsubformulas.empty() ) // Empty clause = false, which, added to a conjunction, leads to false.
                         {
-                            return falseFormula();
+                            goto ReturnFalse;
                         }
                         else if( subsubformulas.size() == 1 )
                         {
@@ -1185,6 +1181,14 @@ namespace smtrat
             return *subformulas.begin();
         else
             return newFormula( AND, move( subformulas ) );
+        ReturnFalse:
+            while( !tseitinVars.empty() )
+            {
+                auto toDel = tseitinVars.begin()->second;
+                tseitinVars.erase( tseitinVars.begin() );
+                delete toDel;
+            }
+            return falseFormula();
     }
 }    // namespace smtrat
 

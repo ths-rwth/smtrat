@@ -505,7 +505,9 @@ namespace smtrat
     {
         smtrat::Type type = (smtrat::Type) _type;
         assert( type == smtrat::AND || type == smtrat::OR || type == smtrat::XOR || type == smtrat::IFF );
-        return newFormula( type, move(*_subformulas) );
+        const Formula* result = newFormula( type, move(*_subformulas) );
+        delete _subformulas;
+        return result;
     }
     
     /**
@@ -546,7 +548,7 @@ namespace smtrat
         
         PointerSet<Formula> subformulas;
         // Add to inner constraint bindings:  (or (not conditionBool) (= auxRealVar _then))
-        subformulas.insert( newFormula( OR, conditionBool, constraintA ) );
+        subformulas.insert( newFormula( OR, newNegation( conditionBool ), constraintA ) );
         // Add to inner constraint bindings:  (or conditionBool (= auxRealVar _else))
         subformulas.insert( newFormula( OR, conditionBool, constraintB ) );
         // Add to inner constraint bindings:  (iff conditionBool _condition)

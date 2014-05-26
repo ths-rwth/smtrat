@@ -33,9 +33,9 @@ namespace smtrat
         typedef typename Settings::MultivariateIdeal Ideal;
     public:
         typedef typename std::pair<unsigned, Polynomial> CellEntry;
-        typedef typename std::tuple<Formula::iterator, smtrat::Relation, std::list<CellEntry> > RowEntry;
-        typedef typename std::map<Formula::const_iterator, RowEntry, FormulaConstraintCompare> Rows;
-        typedef typename std::pair<Formula::const_iterator, RowEntry> Row;
+        typedef typename std::tuple<ModuleInput::iterator, smtrat::Relation, std::list<CellEntry> > RowEntry;
+        typedef typename std::map<ModuleInput::const_iterator, RowEntry, ModuleInput::IteratorCompare> Rows;
+        typedef typename std::pair<ModuleInput::const_iterator, RowEntry> Row;
         typedef typename std::map<carl::Variable, std::pair<Term, carl::BitVector> > RewriteRules;
 
 
@@ -55,7 +55,7 @@ namespace smtrat
     public:
         InequalitiesTable( GroebnerModule<Settings>* module );
 
-        typename Rows::iterator InsertReceivedFormula( Formula::const_iterator received );
+        typename Rows::iterator InsertReceivedFormula( ModuleInput::const_iterator received );
 
         void pushBacktrackPoint( );
 
@@ -70,7 +70,7 @@ namespace smtrat
         Answer reduceWRTVariableRewriteRules( const  std::list< typename Rows::iterator>& ineqToBeReduced, const RewriteRules& rules );
 
 
-        void removeInequality( Formula::const_iterator _formula );
+        void removeInequality( ModuleInput::const_iterator _formula );
 
         void print( std::ostream& os = std::cout ) const;
 

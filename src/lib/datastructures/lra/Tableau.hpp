@@ -50,7 +50,7 @@
 #ifndef LRA_GOMORY_CUTS
 //#define LRA_CUTS_FROM_PROOFS
 #ifdef LRA_CUTS_FROM_PROOFS
-#define LRA_DEBUG_CUTS_FROM_PROOFS
+//#define LRA_DEBUG_CUTS_FROM_PROOFS
 #endif
 #endif
 
@@ -180,9 +180,9 @@ namespace smtrat
             public:
                 struct LearnedBound
                 {
-                    const Bound<T1, T2>*                newBound;
-                    const Bound<T1, T2>*                nextWeakerBound;
-                    std::vector< const Bound<T1, T2>*>* premise;
+                    const Bound<T1, T2>*               newBound;
+                    const Bound<T1, T2>*               nextWeakerBound;
+                    std::vector< const Bound<T1, T2>*> premise;
                 };
             private:
                 bool                            mRowsCompressed;
@@ -400,7 +400,7 @@ namespace smtrat
                 std::pair< const Variable<T1,T2>*, T2 > Scalar_Product( Tableau<T1,T2>&, Tableau<T1,T2>&, size_t, size_t, std::vector<size_t>&, std::vector<size_t>&);
                 void calculate_hermite_normalform( std::vector<size_t>& );
                 void invert_HNF_Matrix( std::vector<size_t>& );
-                smtrat::Polynomial* create_cut_from_proof( Tableau<T1,T2>&, Tableau<T1,T2>&, size_t, std::vector<size_t>&, std::vector<size_t>&, T2&);
+                smtrat::Polynomial* create_cut_from_proof( Tableau<T1,T2>&, Tableau<T1,T2>&, size_t, std::vector<size_t>&, std::vector<size_t>&, T2&, T2&);
                 #endif
                 #ifdef LRA_GOMORY_CUTS
                 const smtrat::Constraint* gomoryCut( const T2&, Variable<T1, T2>*, std::vector<const smtrat::Constraint*>&);
@@ -418,6 +418,7 @@ namespace smtrat
 
         template<typename T1, typename T2>
         Tableau<T1,T2>::Tableau( std::list<const smtrat::Formula*>::iterator _defaultBoundPosition ):
+            mRowsCompressed( true ),
             mWidth( 0 ),
             mPivotingSteps( 0 ),
             #ifdef LRA_USE_PIVOTING_STRATEGY
@@ -2143,7 +2144,8 @@ FindPivot:
                     assert( ((*ubound)->type() != Bound<T1, T2>::EQUAL) );
                     LearnedBound learnedBound = LearnedBound();
                     learnedBound.nextWeakerBound = *ubound;
-                    learnedBound.premise = uPremise;
+                    learnedBound.premise = std::vector<const Bound<T1, T2>*>( std::move( *uPremise ) );
+                    delete uPremise;
                     #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
                     #ifdef LRA_NO_DIVISION
                     if( newlimit->mainPart() > (*ubound)->limit().mainPart()*rowFactor || (*ubound)->limit().deltaPart() == 0 )
@@ -2174,7 +2176,6 @@ FindPivot:
                         if( *learnedBound.nextWeakerBound < *insertionResult.first->second.nextWeakerBound )
                         {
                             insertionResult.first->second.nextWeakerBound = learnedBound.nextWeakerBound;
-                            delete insertionResult.first->second.premise;
                             insertionResult.first->second.premise = learnedBound.premise;
                             mNewLearnedBounds.push_back( insertionResult.first );
                         }
@@ -2234,7 +2235,8 @@ FindPivot:
                     assert( ((*lbound)->type() != Bound<T1, T2>::EQUAL) );
                     LearnedBound learnedBound = LearnedBound();
                     learnedBound.nextWeakerBound = *lbound;
-                    learnedBound.premise = lPremise;
+                    learnedBound.premise = std::vector<const Bound<T1, T2>*>( std::move( *lPremise ) );
+                    delete lPremise;
                     #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
                     #ifdef LRA_NO_DIVISION
                     if( newlimit->mainPart() > (*lbound)->limit().mainPart()*rowFactor || (*lbound)->limit().deltaPart() == 0 )
@@ -2265,7 +2267,6 @@ FindPivot:
                         if( *learnedBound.nextWeakerBound > *insertionResult.first->second.nextWeakerBound )
                         {
                             insertionResult.first->second.nextWeakerBound = learnedBound.nextWeakerBound;
-                            delete insertionResult.first->second.premise;
                             insertionResult.first->second.premise = learnedBound.premise;
                             mNewLearnedBounds.push_back( insertionResult.first );
                         }
@@ -2854,26 +2855,21 @@ FindPivot:
         template<typename T1, typename T2> 
         std::pair< const Variable<T1,T2>*, T2 > Tableau<T1,T2>::Scalar_Product(Tableau<T1,T2>& A, Tableau<T1,T2>& B,size_t rowA, size_t columnB,std::vector<size_t>& diagonals,std::vector<size_t>& dc_positions) 
         {
-            A.print( LAST_ENTRY_ID, std::cout, "", true, true );
-            B.print( LAST_ENTRY_ID, std::cout, "", true, true );
-            for( auto iter = diagonals.begin(); iter != diagonals.end(); ++iter ) 
-                printf( "%u", *iter ); 
+            //A.print( LAST_ENTRY_ID, std::cout, "", true, true );
+            //B.print( LAST_ENTRY_ID, std::cout, "", true, true );
+            //for( auto iter = diagonals.begin(); iter != diagonals.end(); ++iter ) 
+                //printf( "%u", *iter ); 
             Iterator rowA_iterator = Iterator((*A.mRows.at(rowA)).startEntry(),A.mpEntries);
-            std::cout << "row_con: " << (*rowA_iterator).content() << std::endl;
             Iterator columnB_iterator = Iterator( (*B.mColumns.at(columnB)).startEntry(),B.mpEntries );
             T2 sum = T2(0);
             while(true)
             {
                 columnB_iterator = Iterator( (*B.mColumns.at(columnB)).startEntry(),B.mpEntries );
                 size_t actual_column = revert_diagonals( (*(*rowA_iterator).columnVar()).position(),diagonals ); 
-                std::cout << "revert: " << revert_diagonals( (*(*rowA_iterator).columnVar()).position(),diagonals ) << std::endl;
                 while(true)
                 {
-                    std::cout << "position_DC: " << position_DC( (*(*columnB_iterator).rowVar()).position(),dc_positions) << std::endl;
                     if( actual_column == position_DC( (*(*columnB_iterator).rowVar()).position(),dc_positions) )
                     {
-                        std::cout << "row_con: " << (*rowA_iterator).content() << std::endl;
-                        std::cout << "col_con: " << (*columnB_iterator).content() << std::endl;
                         sum += (*rowA_iterator).content()*(*columnB_iterator).content();
                         break;
                     }
@@ -2939,7 +2935,7 @@ FindPivot:
                 for(size_t j=0;j<i;j++)
                 {
                     Iterator diagonal_iterator = Iterator( (*mColumns.at(diagonals.at(j))).startEntry(), mpEntries);
-                    while( (*diagonal_iterator).columnVar()->position() > i && !diagonal_iterator.vEnd( false ) )
+                    while( (*diagonal_iterator).rowVar()->position() > i && !diagonal_iterator.vEnd( false ) )
                     {
                         diagonal_iterator.vMove( false );
                     }
@@ -3047,7 +3043,9 @@ FindPivot:
                     #endif
                     number_of_entries = (*mRows.at(i)).size(); 
                     #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-                    std::cout << "Number of entries " << number_of_entries << std::endl;
+                    std::cout << "Number of entries: " << number_of_entries << std::endl;
+                    std::cout << "Zero entries: " << diag_zero_entries << std::endl;
+                    std::cout << "i: " << i << std::endl;
                     #endif
                     first_loop = false;
                     if(mod( (Rational)elim_content, (Rational)added_content ) == 0)
@@ -3085,6 +3083,10 @@ FindPivot:
                     while(isDiagonal((*(*row_iterator).columnVar()).position(),diagonals))
                     {
                         row_iterator.hMove( false );                        
+                    }
+                    if( (*row_iterator).content() < 0 )
+                    {
+                        invertColumn( (*(*row_iterator).columnVar()).position() );
                     }
                     added_content = (*row_iterator).content();
                     added_pos = (*(*row_iterator).columnVar()).position();
@@ -3162,13 +3164,17 @@ FindPivot:
                 {
                     column_iterator.vMove( false );                  
                 } 
-                changed_values[std::pair<size_t, size_t >((*column_iterator).rowVar()->position(),(*column_iterator).columnVar()->position())] = (*column_iterator).content();
+                changed_values[std::pair<size_t, size_t >((*column_iterator).rowVar()->position(), (*column_iterator).rowVar()->position()  )] = (*column_iterator).content();
                 (*column_iterator).rContent() = 1/(*column_iterator).content();
                 /*
                  * Now change the other entries in the current column if necessary.
                  */
                 if(column_iterator.vEnd( true ))
                 {
+                    if(i == 0)
+                    {
+                        return;
+                    }
                     --i;
                     continue;
                 }
@@ -3176,45 +3182,39 @@ FindPivot:
                 Iterator row_iterator = Iterator( (*column_iterator).rowVar()->startEntry(), mpEntries );
                 while( true )
                 {
-                    while( (*(*row_iterator).columnVar()).position() < (*(*column_iterator).rowVar()).position() && !row_iterator.hEnd( false ) )
+                    size_t res = revert_diagonals( (*(*row_iterator).columnVar()).position(), diagonals );
+                    while( res < (*(*column_iterator).rowVar()).position() && !row_iterator.hEnd( false ) )
                     {
                         row_iterator.hMove( false );
-                    }                   
-                    if( (*(*row_iterator).columnVar()).position() == (*(*column_iterator).rowVar()).position() )
+                        res = revert_diagonals( (*(*row_iterator).columnVar()).position(), diagonals );
+                    }
+                    if( res == (*(*column_iterator).rowVar()).position() )
                     {
-                        changed_values[std::pair<size_t, size_t >((*column_iterator).rowVar()->position(),(*column_iterator).columnVar()->position())] = (*column_iterator).content();
+                        changed_values[std::pair<size_t, size_t >((*column_iterator).rowVar()->position(), revert_diagonals( (*column_iterator).columnVar()->position(), diagonals ) )] = (*column_iterator).content();
                         T2& value_to_be_changed = (*column_iterator).rContent();
-                        T2 divisor = changed_values.at(std::pair<size_t, size_t >((*row_iterator).rowVar()->position(),(*row_iterator).columnVar()->position()));  
-                        T2 sum = 0;
-                        bool further_step = true;
-                        if(row_iterator.hEnd( true ) )
+                        T2 divisor = changed_values.at(std::pair<size_t, size_t >((*row_iterator).rowVar()->position(), res ));  
+                        T2 sum = 0; 
+                        Iterator column_iterator2 = Iterator( column_iterator.entryID(), mpEntries );
+                        row_iterator = Iterator( (*column_iterator2).rowVar()->startEntry(), mpEntries );
+                        column_iterator2.vMove( false );
+                        while( true )
                         {
-                            further_step = false;
-                        }
-                        else
-                        {
-                            row_iterator.hMove( true );                            
-                        }
-                        if( further_step )
-                        {
-                            while( true )
+                            res = revert_diagonals( (*(*row_iterator).columnVar()).position(), diagonals );
+                            while( res != (*(*column_iterator2).rowVar()).position() && !row_iterator.hEnd( false ) )
                             {
-                                Iterator column_iterator2 = Iterator( column_iterator.entryID(), mpEntries );
-                                while( (*(*row_iterator).columnVar()).position() < (*(*column_iterator2).rowVar()).position() && !column_iterator2.vEnd( false ) )
-                                {
-                                    column_iterator2.vMove( false );
-                                }
-                                if( (*(*row_iterator).columnVar()).position() == (*(*column_iterator2).rowVar()).position() )
-                                {
-                                    sum = sum-(*column_iterator2).content()*changed_values.at(std::pair<size_t, size_t >((*row_iterator).rowVar()->position(),(*row_iterator).columnVar()->position()));
-                                }                             
-                                if( row_iterator.hEnd( true ) )
-                                {
-                                    break;
-                                }
-                                row_iterator.hMove( true );
+                                row_iterator.hMove( false );
+                                res = revert_diagonals( (*(*row_iterator).columnVar()).position(), diagonals );
                             }
-                        }
+                            if( res == (*(*column_iterator2).rowVar()).position() )
+                            {
+                                sum = sum-(*row_iterator).content()*(*column_iterator2).content();
+                            }                             
+                            if( column_iterator2.vEnd( false ) )
+                            {
+                                break;
+                            }
+                            column_iterator2.vMove( false );
+                        }   
                         value_to_be_changed = sum / divisor;
                     }  
                     if(!column_iterator.vEnd( true ))
@@ -3238,11 +3238,11 @@ FindPivot:
          * Checks whether a cut from proof can be constructed with the row with index row_index
          * in the DC_Tableau. 
          * 
-         * @return true,    if the proof can be constructed.
-         *         false,   otherwise   
+         * @return the valid proof,    if the proof can be constructed.
+         *         NULL,               otherwise.   
          */
         template<typename T1, typename T2>
-        smtrat::Polynomial* Tableau<T1,T2>::create_cut_from_proof(Tableau<T1,T2>& Inverted_Tableau, Tableau<T1,T2>& DC_Tableau, size_t row_index, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions, T2& lower)
+        smtrat::Polynomial* Tableau<T1,T2>::create_cut_from_proof(Tableau<T1,T2>& Inverted_Tableau, Tableau<T1,T2>& DC_Tableau, size_t row_index, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions, T2& lower, T2& max_value)
         {
             Value<T1> result = T2(0);
             Iterator row_iterator = Iterator( (*mRows.at(row_index)).startEntry(),mpEntries); 
@@ -3265,8 +3265,10 @@ FindPivot:
                     row_iterator.hMove( false );
                 }                
             }
+            std::cout << "Result: " << result.mainPart() << std::endl;
             if( !carl::isInteger( (Rational)result.mainPart() ) )
             {
+                std::cout << "Fractional result: " << result.mainPart() << std::endl;
                 // Construct the Cut
                 std::pair< const Variable<T1,T2>*, T2 > product;
                 size_t i=0;
@@ -3300,16 +3302,26 @@ FindPivot:
                     }
                     if(product.second != 0)
                     {
+                        std::cout << "Coefficient: " << product.second << std::endl;
                         T2 temp = (Rational)(carl::getDenom((Rational)result.mainPart()))*(Rational)product.second;
+                        std::cout << "Coefficient*Denom: " << temp << std::endl;
                         gcd_row  = carl::gcd( gcd_row , temp );
                         *sum += (*product.first).expression()*(Rational)temp;
                     }
                     ++i;
                 }
-                // Divide the coefficients of the sum by gcd_row
+                /* Check whether the proof of unsatisfiability contains a coefficient which is greater 
+                 * than max_value*gcd_row and also divide the coefficients of the sum by gcd_row 
+                 * according to the algorithm.
+                 */ 
+                std::cout << "Cut: " << *sum << std::endl;
                 auto iter = (*sum).begin();
                 while( iter != (*sum).end() )
                 {
+                    if( (*(*iter)).coeff() > max_value*gcd_row )
+                    {
+                        return NULL;                        
+                    }
                     (*(*iter)).divideBy((Rational)gcd_row);
                     ++iter;
                 }
@@ -3318,6 +3330,7 @@ FindPivot:
                 std::cout << "Denominator: " << carl::getDenom((Rational)result.mainPart()) << std::endl;
                 std::cout << "gcd: " << gcd_row << std::endl;
                 std::cout << "lower: " << lower << std::endl;
+                std::cout << "Cut: " << *sum << std::endl;
                 return sum; 
             }
             else
@@ -3380,7 +3393,7 @@ FindPivot:
                 {
                     std::cout << "Not able to construct" << std::endl;
                     return NULL;
-                }                               
+                }      
                 row_iterator.hMove( false );
             }
             // A Gomory Cut can be constructed              
@@ -3392,9 +3405,10 @@ FindPivot:
             row_iterator = Iterator( _rowVar->startEntry(), mpEntries );
             while( !row_iterator.hEnd( false ) )
             {                 
-                const Variable<T1, T2>& nonBasicVar = *(*row_iterator).columnVar();
+                const Variable<T1, T2>& nonBasicVar = *(*row_iterator).columnVar();  
                 if( (*vec_iter) == J_MINUS )
                 {
+                    assert( nonBasicVar.infimum() == nonBasicVar.assignment() && (*row_iterator).content() < 0 );
                     T2 bound = nonBasicVar.infimum().limit().mainPart();
                     coeff = -( (*row_iterator).content() / f_zero);
                     _constrVec.push_back( nonBasicVar.infimum().pAsConstraint() );
@@ -3402,6 +3416,7 @@ FindPivot:
                 }                 
                 else if( (*vec_iter) == J_PLUS )
                 {
+                    assert( nonBasicVar.infimum() == nonBasicVar.assignment() && (*row_iterator).content() >= 0 );
                     T2 bound = nonBasicVar.infimum().limit().mainPart();
                     coeff = (*row_iterator).content()/( (Rational)1 - f_zero );
                     _constrVec.push_back( nonBasicVar.infimum().pAsConstraint() );
@@ -3409,6 +3424,7 @@ FindPivot:
                 }
                 else if( (*vec_iter) == K_MINUS )
                 {
+                    assert( nonBasicVar.supremum() == nonBasicVar.assignment() && (*row_iterator).content() < 0 );
                     T2 bound = nonBasicVar.supremum().limit().mainPart();
                     coeff = -( (*row_iterator).content()/( (Rational)1 - f_zero ) );
                     _constrVec.push_back( nonBasicVar.supremum().pAsConstraint() );
@@ -3416,11 +3432,12 @@ FindPivot:
                 }
                 else if( (*vec_iter) == K_PLUS ) 
                 {
+                    assert( nonBasicVar.supremum() == nonBasicVar.assignment() && (*row_iterator).content() >= 0 );
                     T2 bound = nonBasicVar.supremum().limit().mainPart();
                     coeff = (*row_iterator).content()/f_zero;
                     _constrVec.push_back( nonBasicVar.supremum().pAsConstraint() );
                     sum += (Rational)coeff * ( (Rational)bound - nonBasicVar.expression() );
-                }     
+                }
                 row_iterator.hMove( false );
                 ++vec_iter;
             }

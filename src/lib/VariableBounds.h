@@ -54,7 +54,8 @@ namespace smtrat
                 /// The variable for which the bound is declared.
                 Variable<T>* const          mpVariable;
                 /// A set of origins of the bound, e.g., x-3<0 is the origin of the bound <3.
-                PointerSet<T>* const mpOrigins;
+                std::set<const T*>* const    mpOrigins; // Here, we cannot use the PointerSet, which falls back on the comparison operator
+                                                        // of T, as we must ensure to store for every pointer to T one origin.
                 
             public:
                 
@@ -204,7 +205,7 @@ namespace smtrat
                 /**
                  * @return A constant reference to the set of origins of this bound.
                  */
-                const PointerSet<T>& origins() const
+                const std::set<const T*>& origins() const
                 {
                     return *mpOrigins;
                 }
@@ -469,6 +470,24 @@ namespace smtrat
                  */
                 PointerSet<T> getOriginsOfBounds() const;
                 
+                /**
+                 * @param _var The variable to get origins of the bounds for.
+                 * @return The origin constraints of the supremum and infimum of the given variable.
+                 */
+                std::set<const T*> getOriginsOfBoundsWithMultiples( const carl::Variable& _var ) const;
+                
+                /**
+                 * @param _variables The variables to get origins of the bounds for.
+                 * @return The origin constraints of the supremum and infimum of the given variables.
+                 */
+                std::set<const T*> getOriginsOfBoundsWithMultiples( const Variables& _variables ) const;
+                
+                /**
+                 * Collect the origins to the supremums and infimums of all variables.
+                 * @return A set of origins corresponding to the supremums and infimums of all variables.
+                 */
+                std::set<const T*> getOriginsOfBoundsWithMultiples() const;
+                
                 std::vector<std::pair<std::vector< const Constraint* >, const Constraint* >> getBoundDeductions() const;
                 
                 /**
@@ -507,7 +526,7 @@ namespace smtrat
             mType( _type ),
             mpLimit( _limit ),
             mpVariable( _variable ),
-            mpOrigins( new PointerSet<T>() )
+            mpOrigins( new std::set<const T*>() )
         {
             if( _limit == NULL )
                 mpOrigins->insert( NULL );
@@ -1081,7 +1100,6 @@ namespace smtrat
             return mDoubleIntervalMap[_var];
         }
 
-		
         template<typename T>
         PointerSet<T> VariableBounds<T>::getOriginsOfBounds( const carl::Variable& _var ) const
         {
@@ -1106,12 +1124,49 @@ namespace smtrat
             }
             return originsOfBounds;
         }
-
 		
         template<typename T>
         PointerSet<T> VariableBounds<T>::getOriginsOfBounds() const
         {
             PointerSet<T> originsOfBounds;
+            for( auto varVarPair = mpVariableMap->begin(); varVarPair != mpVariableMap->end(); ++varVarPair )
+            {
+                const Variable<T>& var = *varVarPair->second;
+                if( !var.infimum().isInfinite() ) originsOfBounds.insert( *var.infimum().origins().begin() );
+                if( !var.supremum().isInfinite() ) originsOfBounds.insert( *var.supremum().origins().begin() );
+            }
+            return originsOfBounds;
+        }
+
+        template<typename T>
+        std::set<const T*> VariableBounds<T>::getOriginsOfBoundsWithMultiples( const carl::Variable& _var ) const
+        {
+            std::set<const T*> originsOfBounds;
+            auto varVarPair = mpVariableMap->find( _var );
+            assert( varVarPair != mpVariableMap->end() );
+            if( !varVarPair->second->infimum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->infimum().origins().begin() );
+            if( !varVarPair->second->supremum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->supremum().origins().begin() );
+            return originsOfBounds;
+        }
+
+        template<typename T>
+        std::set<const T*> VariableBounds<T>::getOriginsOfBoundsWithMultiples( const Variables& _variables ) const
+        {
+            std::set<const T*> originsOfBounds;
+            for( auto var = _variables.begin(); var != _variables.end(); ++var )
+            {
+                auto varVarPair = mpVariableMap->find( *var );
+                assert( varVarPair != mpVariableMap->end() );
+                if( !varVarPair->second->infimum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->infimum().origins().begin() );
+                if( !varVarPair->second->supremum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->supremum().origins().begin() );
+            }
+            return originsOfBounds;
+        }
+		
+        template<typename T>
+        std::set<const T*> VariableBounds<T>::getOriginsOfBoundsWithMultiples() const
+        {
+            std::set<const T*> originsOfBounds;
             for( auto varVarPair = mpVariableMap->begin(); varVarPair != mpVariableMap->end(); ++varVarPair )
             {
                 const Variable<T>& var = *varVarPair->second;

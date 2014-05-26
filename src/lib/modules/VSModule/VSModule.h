@@ -138,7 +138,7 @@ namespace smtrat
             void insertTooHighDegreeStatesInRanking( vs::State* );
             bool removeStateFromRanking( vs::State& );
             void removeStatesFromRanking( vs::State& );
-            PointerSet<Formula> getReasons( const PointerSet<vs::Condition>& _conditions ) const;
+            PointerSet<Formula> getReasons( const std::set<const vs::Condition*>& _conditions ) const;
             void updateInfeasibleSubset( bool = false );
             EvalRationalMap getIntervalAssignment( const vs::State* _state ) const;
             bool solutionInDomain();

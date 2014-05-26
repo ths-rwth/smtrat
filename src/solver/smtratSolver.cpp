@@ -239,16 +239,16 @@ int main( int argc, char* argv[] )
     smtrat::CollectStatistics::collect();
     smtrat::CollectStatistics::print( true );
     #endif
-    
-    // Delete the solver and the formula.
-    delete solver;
-    delete parserSettings;
         
     #ifdef SMTRAT_DEVOPTION_Statistics
     // Export statistics.
     smtrat::CollectStatistics::exportXML();
     #endif
     
+    
+    // Delete the solver and the formula.
+    delete solver;
+    delete parserSettings;
 
     //return returnValue;
 }
