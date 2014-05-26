@@ -123,11 +123,11 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions):
 
 bool SMTLIBParser::parse(std::istream& in, const std::string& filename) {
 	in.unsetf(std::ios::skipws);
+	mInputStream = &in;
 	BaseIteratorType basebegin(in);
 	Iterator begin(basebegin);
 	Iterator end;
 	Skipper skipper;
-	//std::cerr << "Parsing: " << in.rdbuf() << std::endl;
 	try {
 		bool result = qi::phrase_parse(begin, end, main, skipper);
 		std::cout << "Result: " << result << std::endl;
