@@ -1,14 +1,24 @@
 #include "Parser.h"
 
+#include <cassert>
+#include <iostream>
+#include <limits>
+
+#include "../../lib/ConstraintPool.h"
+#include "../../lib/Formula.h"
+#include "lib/FormulaPool.h"
+
 namespace smtrat {
 namespace parser {
 
-SMTLIBParser::SMTLIBParser(InstructionHandler* ih) : SMTLIBParser::base_type(main), handler(ih) {
+SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions):
+	SMTLIBParser::base_type(main),
+	handler(ih),
+	queueInstructions(queueInstructions)
+{
+	boundary = &qi::no_skip[(qi::space | qi::char_(")"))];
 
-	integral = ("#b" > qi::bin) | qi::uint_ | ("#x" > qi::hex);
-	integral.name("integral number");
-
-	var %= var_bool | var_theory;
+	var = var_bool | var_theory;
 	var.name("variable");
 
 	key = ":" > symbol;
@@ -27,83 +37,72 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih) : SMTLIBParser::base_type(mai
 	bindlist = +(lit("(") > binding > lit(")"));
 	bindlist.name("binding list");
 	binding = symbol[qi::_a = qi::_1] > (
-			polynomial[_val = px::bind(&Driver::addTheoryBinding, px::ref(d), qi::_a, qi::_1)]
-		|	formula[_val = px::bind(&Driver::booleanBinding, px::ref(d), qi::_a, qi::_1)]
-	)[_val = qi::_1];
+			polynomial[px::bind(&SMTLIBParser::addTheoryBinding, px::ref(*this), qi::_a, qi::_1)]
+		|	formula[px::bind(&SMTLIBParser::addBooleanBinding, px::ref(*this), qi::_a, qi::_1)]
+	);
 	binding.name("binding");
 	
 	cmd = "(" > (
-			(lit("assert") > formula[px::bind(&SMTLIBParser::add, px::ref(*this), qi::_1)])
-		|	(lit("check-sat")[px::bind(&SMTLIBParser::check, px::ref(*this))])
-		|	(lit("declare-const") > (symbol > symbol)[px::bind(&InstructionHandler::declareConst, handler, qi::_1, qi::_2)])
-		|	(lit("declare-fun") > (symbol > "(" > symlist > ")" > symbol)[px::bind(&SMTLIBParser::declareFun, px::ref(*this), qi::_1, qi::_2, qi::_3)])
-		|	(lit("declare-sort") > (symbol > integral)[px::bind(&InstructionHandler::declareSort, handler, qi::_1, qi::_2)])
-		|	(lit("define-fun") > (symbol > "(" > symlist > ")" > symbol > formula)[px::bind(&InstructionHandler::defineFun, handler, qi::_1, qi::_2, qi::_3, qi::_4)])
-		|	(lit("define-sort") > (symbol > "(" > symlist > ")" > symbol)[px::bind(&InstructionHandler::defineSort, handler, qi::_1, qi::_2, qi::_3)])
-		|	(lit("exit")[px::bind(&InstructionHandler::exit, px::ref(handler))])
-		|	(lit("get-assertions")[px::bind(&InstructionHandler::getAssertions, handler)])
-		|	(lit("get-assignment")[px::bind(&InstructionHandler::getAssignment, handler)])
-		|	(lit("get-info") > key[px::bind(&InstructionHandler::getInfo, handler, qi::_1)])
-		|	(lit("get-option") > key[px::bind(&InstructionHandler::getOption, handler, qi::_1)])
-		|	(lit("get-proof")[px::bind(&InstructionHandler::getProof, handler)])
-		|	(lit("get-unsat-core")[px::bind(&InstructionHandler::getUnsatCore, handler)])
-		|	(lit("get-value") > varlist[px::bind(&InstructionHandler::getValue, handler, qi::_1)])
-		|	(lit("pop") > integral[px::bind(&InstructionHandler::pop, handler, qi::_1)])
-		|	(lit("push") > integral[px::bind(&InstructionHandler::push, handler, qi::_1)])
-		|	(lit("set-info") > (key > value)[px::bind(&InstructionHandler::setInfo, handler, qi::_1, qi::_2)])
-		|	(lit("set-logic") > logic[px::bind(&InstructionHandler::setLogic, handler, qi::_1)])
-		|	(lit("set-option") > (key > value)[px::bind(&InstructionHandler::setOption, handler, qi::_1, qi::_2)])
-	) > ")";
+			(lit("assert") > formula > ")")[px::bind(&SMTLIBParser::add, px::ref(*this), qi::_1)]
+		|	(lit("check-sat") > ")")[px::bind(&SMTLIBParser::check, px::ref(*this))]
+		|	(lit("declare-const") > symbol > domain > ")")[px::bind(&SMTLIBParser::declareConst, px::ref(*this), qi::_1, qi::_2)]
+		|	(lit("declare-fun") > symbol > "(" > symlist > ")" > domain > ")")[px::bind(&SMTLIBParser::declareFun, px::ref(*this), qi::_1, qi::_2, qi::_3)]
+		|	(lit("declare-sort") > symbol > integral > ")")[px::bind(&SMTLIBParser::declareSort, px::ref(*this), qi::_1, qi::_2)]
+		|	(lit("define-fun") > symbol > "(" > symlist > ")" > domain > formula > ")")[px::bind(&SMTLIBParser::defineFun, px::ref(*this), qi::_1, qi::_2, qi::_3, qi::_4)]
+		|	(lit("define-sort") > symbol > "(" > symlist > ")" > symbol > ")")[px::bind(&SMTLIBParser::defineSort, px::ref(*this), qi::_1, qi::_2, qi::_3)]
+		|	(lit("exit") > ")")[px::bind(&SMTLIBParser::exit, px::ref(*this))]
+		|	(lit("get-assertions") > ")")[px::bind(&SMTLIBParser::getAssertions, px::ref(*this))]
+		|	(lit("get-assignment") > ")")[px::bind(&SMTLIBParser::getAssignment, px::ref(*this))]
+		|	(lit("get-info") > key > ")")[px::bind(&SMTLIBParser::getInfo, px::ref(*this), qi::_1)]
+		|	(lit("get-option") > key > ")")[px::bind(&SMTLIBParser::getOption, px::ref(*this), qi::_1)]
+		|	(lit("get-proof") > ")")[px::bind(&SMTLIBParser::getProof, px::ref(*this))]
+		|	(lit("get-unsat-core") > ")")[px::bind(&SMTLIBParser::getUnsatCore, px::ref(*this))]
+		|	(lit("get-value") > varlist > ")")[px::bind(&SMTLIBParser::getValue, px::ref(*this), qi::_1)]
+		|	(lit("pop") > integral > ")")[px::bind(&SMTLIBParser::pop, px::ref(*this), qi::_1)]
+		|	(lit("push") > integral > ")")[px::bind(&SMTLIBParser::push, px::ref(*this), qi::_1)]
+		|	(lit("set-info") > key > value > ")")[px::bind(&SMTLIBParser::setInfo, px::ref(*this), qi::_1, qi::_2)]
+		|	(lit("set-logic") > logic > ")")[px::bind(&SMTLIBParser::setLogic, px::ref(*this), qi::_1)]
+		|	(lit("set-option") > key > value > ")")[px::bind(&SMTLIBParser::setOption, px::ref(*this), qi::_1, qi::_2)]
+	);
 	cmd.name("command");
 
 	formula = 
-			var_bool[_val = px::bind(&Driver::mkBoolean, px::ref(d), qi::_1)]
-		|	lit("true")[_val = px::bind(&Driver::mkTrue, px::ref(d))]
-		|	lit("false")[_val = px::bind(&Driver::mkFalse, px::ref(d))]
-		|	("(" > formula_op[_val = qi::_1] > ")")
+			(bind_bool >> boundary)[_val = qi::_1]
+		|	(var_bool >> boundary)[_val = px::bind(&SMTLIBParser::mkBoolean, px::ref(*this), qi::_1)]
+		|	lit("true")[_val = px::bind(&trueFormula)]
+		|	lit("false")[_val = px::bind(&falseFormula)]
+		|	("(" >> formula_op >> ")")[_val = qi::_1]
 	;
 	formula.name("formula");
 	
 	formula_op =
-				(lit("=") >> (formula > formula)[px::bind(&Driver::restoreTwoFormulaMode, px::ref(d)), _val = px::bind(&Driver::mkFormula, px::ref(d), px::if_else(px::bind(&Driver::polarity, px::ref(d)),IFF,XOR), qi::_1, qi::_2)])
-			|	(relation > polynomial > polynomial)[_val = px::bind(&Driver::mkConstraint, px::ref(d), qi::_2, qi::_3, qi::_1)]
+				((op_bool >> +formula)[_val = px::bind(&SMTLIBParser::mkFormula, px::ref(*this), qi::_1, qi::_2)])
+			|	(relation >> polynomial >> polynomial)[_val = px::bind(&SMTLIBParser::mkConstraint, px::ref(*this), qi::_2, qi::_3, qi::_1)]
 			|	(lit("as")[qi::_pass = false] > symbol > symbol)
-			|	(lit("not")[px::bind(&Driver::changePolarity, px::ref(d))] > formula[px::bind(&Driver::changePolarity, px::ref(d)), _val = qi::_1])
-			|	formula_implication
-
-			/// @todo make nary
-			|	(lit("iff")[px::bind(&Driver::setTwoFormulaMode, px::ref(d), true)] 
-				> (formula > formula)[px::bind(&Driver::restoreTwoFormulaMode, px::ref(d)), _val = px::bind(&Driver::mkFormula, px::ref(d), IFF, qi::_1, qi::_2)])
-			/// @todo make nary
-			|	(lit("xor")[px::bind(&Driver::setTwoFormulaMode, px::ref(d), true)]
-				> (formula > formula)[px::bind(&Driver::restoreTwoFormulaMode, px::ref(d)), _val = px::bind(&Driver::mkFormula, px::ref(d), XOR, qi::_1, qi::_2)])
-			|	((op_bool > +formula)[_val = px::bind(&Driver::mkFormula, px::ref(d), qi::_1, qi::_2)])
-			|	(lit("let")[px::bind(&Driver::pushVariableStack, px::ref(d)), px::bind(&Driver::setTwoFormulaMode, px::ref(d), true)]
-				> (bindlist > formula)[_val = px::bind(&Driver::appendBindings, px::ref(d), qi::_1, qi::_2), px::bind(&Driver::popVariableStack, px::ref(d))])
+			|	(lit("not") > formula[_val = px::bind(&newNegation, qi::_1)])
+			|	((lit("implies") | "=>") >> formula >> formula)[_val = px::bind(newImplication, qi::_1, qi::_2)]
+			|	(lit("let")[px::bind(&SMTLIBParser::pushVariableStack, px::ref(*this))]
+				> ("(" > bindlist > ")" > formula)[px::bind(&SMTLIBParser::popVariableStack, px::ref(*this)), _val = qi::_1])
 			|	("exists" > bindlist > formula)
 			|	("forall" > bindlist > formula)
-			|	("ite" > (formula > formula > formula)[_val = px::bind(&Driver::mkIteInFormula, px::ref(d), qi::_1, qi::_2, qi::_3)])
+			|	("ite" > (formula > formula > formula)[_val = px::bind(&SMTLIBParser::mkIteInFormula, px::ref(*this), qi::_1, qi::_2, qi::_3)])
 			|	(("!" > formula > *attribute)[px::bind(&Formula::annotate, qi::_1, qi::_2), _val = qi::_1])
 	;
 	formula_op.name("formula operation");
 
-	formula_implication = (
-		(lit("implies") | "=>")[qi::_a = px::if_else(px::bind(&Driver::polarity, px::ref(d)),OR,AND), px::bind(&Driver::changePolarity, px::ref(d))]
-		> formula[px::bind(&Driver::changePolarity, px::ref(d))] 
-		> formula
-		)[_val = px::bind(&Driver::mkFormula, px::ref(d), qi::_a, qi::_1, qi::_2)]
-	;	
-	formula_implication.name("implication");
-
+	polynomial_op = op_theory >> +polynomial;
+	polynomial_op.name("polynomial operation");
+	polynomial_ite = lit("ite") > (formula > polynomial > polynomial)[_val = px::construct<Polynomial>(px::bind(&SMTLIBParser::mkIteInExpr, px::ref(*this), qi::_1, qi::_2, qi::_3))];
+	polynomial_ite.name("polynomial if-then-else");
 	polynomial =
-			var_theory[_val = px::bind(&Driver::mkPolynomial, px::ref(d), qi::_1)]
-		|	decimal[_val = px::new_<Polynomial>(qi::_1)]
-		|	integral[_val = px::new_<Polynomial>(px::construct<Rational>(qi::_1))]
-		|	("(" > (
-				(lit("ite")[px::bind(&Driver::setPolarity, px::ref(d), true), px::bind(&Driver::setTwoFormulaMode, px::ref(d), true)]
-					> (formula > polynomial > polynomial)[_val = px::new_<Polynomial>(px::bind(&Driver::mkIteInExpr, px::ref(d), qi::_1, qi::_2, qi::_3))])
-			|	(op_theory > +polynomial)[_val = px::bind(&mkPolynomial, qi::_1, qi::_2)]
-		) > ")")
+			(bind_theory >> boundary)
+		|	(var_theory >> boundary)
+		|	decimal
+		|	integral
+		|	("(" >> (
+				polynomial_ite
+			|	polynomial_op
+		) >> ")")
 	;
 	polynomial.name("polynomial");
 
@@ -111,11 +110,15 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih) : SMTLIBParser::base_type(mai
 	main.name("SMTLib File");
 
 	qi::on_error<qi::fail>(main, errorHandler(px::ref(*this), qi::_1, qi::_2, qi::_3, qi::_4));
-
-	qi::on_success(polynomial, successHandler(px::ref(*this), px::ref(polynomial), qi::_val));
-	qi::on_success(formula, successHandler(px::ref(*this), px::ref(formula), qi::_val));
-	qi::on_success(formula_op, successHandler(px::ref(*this), px::ref(formula_op), qi::_val));
-	qi::on_success(cmd, successHandler(px::ref(*this), px::ref(cmd), qi::_val));
+/*
+	qi::on_success(bindlist, successHandler(px::ref(*this), px::ref(bindlist), qi::_val, qi::_1, qi::_2));
+	qi::on_success(polynomial, successHandler(px::ref(*this), px::ref(polynomial), qi::_val, qi::_1, qi::_2));
+	qi::on_success(polynomial_op, successHandler(px::ref(*this), px::ref(polynomial_op), qi::_val, qi::_1, qi::_2));
+	qi::on_success(formula, successHandlerPtr(px::ref(*this), px::ref(formula), qi::_val, qi::_1, qi::_2));
+	qi::on_success(formula_op, successHandlerPtr(px::ref(*this), px::ref(formula_op), qi::_val, qi::_1, qi::_2));
+	qi::on_success(cmd, successHandler(px::ref(*this), px::ref(cmd), qi::_val, qi::_1, qi::_2));
+	qi::on_success(main, successHandler(px::ref(*this), px::ref(main), qi::_val, qi::_1, qi::_2));
+*/
 }
 
 bool SMTLIBParser::parse(std::istream& in, const std::string& filename) {
