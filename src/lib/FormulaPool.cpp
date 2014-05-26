@@ -100,6 +100,9 @@ namespace smtrat
     
     const Formula* FormulaPool::newFormula( Type _type, PointerSet<Formula>&& _subformulas )
     {
+//        cout << "create new formula with type " << Formula::FormulaTypeToString( _type ) << endl;
+//        for( auto f : _subformulas )
+//            cout << *f << endl;
         for( auto iter = _subformulas.begin(); iter != _subformulas.end(); )
         {
             if( (*iter)->getType() == _type )

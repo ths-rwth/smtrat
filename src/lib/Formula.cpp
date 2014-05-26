@@ -932,6 +932,14 @@ namespace smtrat
         while( !subformulasToTransform.empty() )
         {
             const Formula* currentFormula = subformulasToTransform.back();
+//            cout << "To add:" << endl;
+//            for( auto f : subformulasToTransform )
+//                cout << "   " << *f << endl;
+//            cout << endl;
+//            cout << "Conjunction:" << endl;
+//            for( auto f : subformulas )
+//                cout << "   " << *f << endl;
+//            cout << endl;
             subformulasToTransform.pop_back();
             switch( currentFormula->getType() )
             {
@@ -1033,6 +1041,14 @@ namespace smtrat
                     while( !currentFormulaValid && !phis.empty() )
                     {
                         const Formula* currentSubformula = phis.back();
+//                        cout << "    To add:" << endl;
+//                        for( auto f : phis )
+//                            cout << "       " << *f << endl;
+//                        cout << endl;
+//                        cout << "    Disjunction:" << endl;
+//                        for( auto f : subsubformulas )
+//                            cout << "       " << *f << endl;
+//                        cout << endl;
                         phis.pop_back();
                         switch( currentSubformula->getType() )
                         {
@@ -1111,9 +1127,9 @@ namespace smtrat
                                 const Formula* lhs = *currentSubformula->subformulas().begin();
                                 const Formula* rhs = currentSubformula->connectRemainingSubformulas();
                                 // add (and lhs rhs) to the queue
-                                subformulasToTransformTmp.push_back( newFormula( AND, lhs, rhs ) );
+                                phis.push_back( newFormula( AND, lhs, rhs ) );
                                 // add (and (not lhs) (not rhs)) to the queue
-                                subformulasToTransformTmp.push_back( newFormula( AND, newNegation( lhs ), newNegation( rhs ) ) );
+                                phis.push_back( newFormula( AND, newNegation( lhs ), newNegation( rhs ) ) );
                                 break;
                             }
                             case XOR: // (xor lhs rhs) -> (and lhs (not rhs)) and (and (not lhs) rhs) are added to the queue
@@ -1122,9 +1138,9 @@ namespace smtrat
                                 const Formula* lhs = *currentSubformula->subformulas().begin();
                                 const Formula* rhs = currentSubformula->connectRemainingSubformulas();
                                 // add (and lhs (not rhs)) to the queue
-                                subformulasToTransformTmp.push_back( newFormula( AND, lhs, newNegation( rhs )) );
+                                phis.push_back( newFormula( AND, lhs, newNegation( rhs )) );
                                 // add (and (not lhs) rhs) to the queue
-                                subformulasToTransformTmp.push_back( newFormula( AND, newNegation( lhs ), rhs ) );
+                                phis.push_back( newFormula( AND, newNegation( lhs ), rhs ) );
                                 break;
                             }
                             default:
