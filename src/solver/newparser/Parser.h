@@ -212,6 +212,7 @@ private:
 	px::function<SuccessHandler> successHandler;
 	px::function<SuccessHandlerPtr> successHandlerPtr;
 	px::function<ErrorHandler> errorHandler;
+	std::istream* mInputStream;
 		
 public:
 	bool queueInstructions;
@@ -237,23 +238,22 @@ public:
 	DecimalParser decimal;
 	
 	// Variables
-	rule<std::string> var;
+	rule<VariableWrapper> var;
 	rule<std::string> key;
 	rule<std::pair<std::string, Value>> attribute;
 	
 	rule<Value> value;
 	rule<std::vector<std::string>> symlist;
-	rule<std::vector<std::string>> varlist;
-	rule<std::vector<std::pair<carl::Variable*,Formula*>>> bindlist;
-	qi::rule<Iterator, std::pair<carl::Variable*,Formula*>, Skipper, qi::locals<std::string>> binding;
+	rule<std::vector<VariableWrapper>> varlist;
+	rule<> bindlist;
+	qi::rule<Iterator, qi::unused_type, Skipper, qi::locals<std::string>> binding;
 	
 	// Commands	
 	rule<> cmd;
 	
 	// Formula
-	rule<Formula*> formula;
-	rule<Formula*> formula_op;
-	qi::rule<Iterator, Formula*(), Skipper, qi::locals<BooleanOperation>> formula_implication;
+	rule<const Formula*> formula;
+	rule<const Formula*> formula_op;
 	
 	// Polynomial
 	rule<Polynomial*> polynomial;
