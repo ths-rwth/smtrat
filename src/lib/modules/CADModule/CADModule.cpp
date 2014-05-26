@@ -464,7 +464,7 @@ namespace smtrat
             }
         default: assert(false);
         }
-        return carl::cad::Constraint<smtrat::Rational>(c.lhs().toUnivariatePolynomial(variables[0]), signForConstraint, variables, cadConstraintNegated);
+        return carl::cad::Constraint<smtrat::Rational>(c.lhs(), signForConstraint, variables, cadConstraintNegated);
     }
 
     /**
