@@ -156,6 +156,19 @@ struct LogicParser : public qi::symbols<char, smtrat::Logic> {
 	}
 };
 
+template<typename Iterator, typename Skipper>
+struct IntegralParser : public qi::grammar<Iterator, Rational(), Skipper> {
+	IntegralParser() : IntegralParser::base_type(integral, "integral") {
+		integral = ("#b" > integralBin) | integralDec | ("#x" > integralHex);
+		integral.name("integral number");
+	}
+	qi::rule<Iterator, Rational(), Skipper> integral;
+	qi::uint_parser<Rational,2,1,-1> integralBin;
+	qi::uint_parser<Rational,10,1,-1> integralDec;
+	qi::uint_parser<Rational,16,1,-1> integralHex;
+};
+
+struct DecimalParser : qi::real_parser<Rational, RationalPolicies> {};
 
 }
 }
