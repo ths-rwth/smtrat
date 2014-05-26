@@ -756,7 +756,10 @@ namespace smtrat
                     ++((*module)->mNrConsistencyChecks);
                     #endif
                     #ifdef DEBUG_MODULE_CALLS_IN_SMTLIB
-                    cout << "(assert " << mpPassedFormula->toString( false, true ) << ")\n";
+                    cout << "(assert";
+                    for( auto subformula : *mpPassedFormula )
+                        cout << " " << subformula->toString( false, true );
+                    cout << ")\n";
                     #endif
                     result = (*module)->isConsistent();
                     assert(result == Unknown || result == False || result == True);
