@@ -175,8 +175,7 @@ struct DecimalParser : qi::real_parser<Rational, RationalPolicies> {};
 
 namespace boost { namespace spirit { namespace traits { 
 	template<> inline void scale(int exp, smtrat::Rational& r) {
-		assert(exp >= 0);
-		r = carl::pow(r, (unsigned)exp);
+		r /= carl::pow(smtrat::Rational(10), -exp);
 	}
 	template<> inline bool is_equal_to_one(const smtrat::Rational& value) {
         return value == 1;
