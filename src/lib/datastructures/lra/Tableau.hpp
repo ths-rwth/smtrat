@@ -3253,8 +3253,8 @@ FindPivot:
             while(true)
             {
                 i = revert_diagonals((*(*row_iterator).columnVar()).position(),diagonals);
-                // ?
-                const Variable<T1, T2>& basic_var = (*(DC_Tableau.mRows)[dc_positions.at(i)]);
+                assert( i < mColumns.size() );
+                const Variable<T1, T2>& basic_var = *(DC_Tableau.mRows).at(dc_positions.at(i));
                 result += basic_var.assignment() * (*row_iterator).content();                    
                 if(row_iterator.hEnd( false ))
                 {
