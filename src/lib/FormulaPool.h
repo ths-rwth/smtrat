@@ -226,10 +226,14 @@ namespace smtrat
              * @param _type The type of the n-ary operator (n>1) of the formula to create.
              * @param _subformulas The sub-formulas of the formula to create.
              * @return A formula with the given operator and sub-formulas.
+             * Note, that if you use this method to create a formula with the operator XOR
+             * and you have collected the sub-formulas in a set, multiple occurrences of a
+             * sub-formula are condensed. You should only use it, if you can exlcude this 
+             * possibility. Otherwise use the method newExclusiveDisjunction.
              */
             const Formula* newFormula( Type _type, PointerSet<Formula>&& _subformulas )
             {
-                assert( _type == AND || _type == OR || _type == IFF );
+                assert( _type == AND || _type == OR || _type == IFF || _type == XOR  );
                 return createFormula( _type, std::move( _subformulas ) );
             }
             

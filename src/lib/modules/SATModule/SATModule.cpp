@@ -445,7 +445,7 @@ namespace smtrat
             }
             return c;
         }
-        else
+        else if( formulaInCnf->getType() != TTRUE )
         {
             assert( formulaInCnf->getType() == OR );
             return addClause( formulaInCnf, _type );
