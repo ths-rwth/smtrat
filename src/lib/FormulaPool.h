@@ -132,15 +132,32 @@ namespace smtrat
              * @param _subformulaB
              * @return 
              */
-            const Formula* newImplication( const Formula* _subformulaA, const Formula* _subformulaB )
+            const Formula* newImplication( const Formula* _premise, const Formula* _conclusion )
             {
                 #ifdef SIMPLIFY_FORMULAS
-                if( _subformulaA == mpFalse )
+                if( _premise == mpFalse )
                     return mpTrue;
-                if( _subformulaB == mpTrue )
+                if( _conclusion == mpTrue )
                     return mpTrue;
                 #endif
-                return addFormulaToPool( new Formula( _subformulaA, _subformulaB ) );
+                return addFormulaToPool( new Formula( _premise, _conclusion ) );
+            }
+    
+            /**
+             * 
+             * @param _subformulaA
+             * @param _subformulaB
+             * @return 
+             */
+            const Formula* newIte( const Formula* _condition, const Formula* _then, const Formula* _else )
+            {
+                #ifdef SIMPLIFY_FORMULAS
+                if( _condition == mpFalse )
+                    return _else;
+                if( _condition == mpTrue )
+                    return _then;
+                #endif
+                return addFormulaToPool( new Formula( _condition, _then, _else ) );
             }
             
             /**
@@ -162,9 +179,37 @@ namespace smtrat
              * @param _subformulas The sub-formulas of the formula to create.
              * @return A formula with the given operator and sub-formulas.
              */
-            const Formula* newFormula( Type _type, const PointerSet<Formula>& _subformulas )
+            const Formula* newExclusiveDisjunction( const PointerMultiSet<Formula>& _subformulas )
             {
-                return newFormula( _type, std::move( PointerSet<Formula>( _subformulas ) ) );
+                if( _subformulas.empty() ) return mpFalse;
+                if( _subformulas.size() == 1 ) return *_subformulas.begin();
+                PointerSet<Formula> subformulas;
+                auto lastSubFormula = _subformulas.begin();
+                auto subFormula = lastSubFormula;
+                ++subFormula;
+                int counter = 1;
+                while( subFormula != _subformulas.end() )
+                {
+                    if( **lastSubFormula == **subFormula )
+                    {
+                        ++counter;
+                    }
+                    else
+                    {
+                        if( counter % 2 == 1 )
+                        {
+                            subformulas.insert( subformulas.end(), *lastSubFormula ); // set has same order as the multiset
+                        }
+                        lastSubFormula = subFormula;
+                        counter = 1;
+                    }
+                    ++subFormula;
+                }
+                if( counter % 2 == 1 )
+                {
+                    subformulas.insert( subformulas.end(), *lastSubFormula );
+                }
+                return createFormula( XOR, std::move( subformulas ) );
             }
             
             /**
@@ -172,9 +217,25 @@ namespace smtrat
              * @param _subformulas The sub-formulas of the formula to create.
              * @return A formula with the given operator and sub-formulas.
              */
-            const Formula* newFormula( Type _type, PointerSet<Formula>&& _subformulas );
+            const Formula* newFormula( Type _type, const PointerSet<Formula>& _subformulas )
+            {
+                return createFormula( _type, std::move( PointerSet<Formula>( _subformulas ) ) );
+            }
+            
+            /**
+             * @param _type The type of the n-ary operator (n>1) of the formula to create.
+             * @param _subformulas The sub-formulas of the formula to create.
+             * @return A formula with the given operator and sub-formulas.
+             */
+            const Formula* newFormula( Type _type, PointerSet<Formula>&& _subformulas )
+            {
+                assert( _type == AND || _type == OR || _type == IFF );
+                return createFormula( _type, std::move( _subformulas ) );
+            }
             
     private:
+        
+            const Formula* createFormula( Type _type, PointerSet<Formula>&& _subformulas );
         
             /**
              * Creates a formula of the given type but with only one sub-formula.
@@ -220,9 +281,13 @@ namespace smtrat
     
     const Formula* newNegation( const Formula* _subformula );
     
-    const Formula* newImplication( const Formula* _subformulaA, const Formula* _subformulaB );
+    const Formula* newImplication( const Formula* _premise, const Formula* _conclusion );
+    
+    const Formula* newIte( const Formula* _condition, const Formula* _else, const Formula* _then );
     
     const Formula* newFormula( Type _type, const Formula* _subformulaA, const Formula* _subformulaB );
+    
+    const Formula* newExclusiveDisjunction( const PointerMultiSet<Formula>& _subformulas );
     
     const Formula* newFormula( Type _type, const PointerSet<Formula>& _subformulas );
     

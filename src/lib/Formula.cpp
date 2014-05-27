@@ -106,9 +106,9 @@ namespace smtrat
         mpSubformula = _subformula;
     }
 
-    Formula::Formula( const Formula* _subformulaA, const Formula* _subformulaB ):
+    Formula::Formula( const Formula* _premise, const Formula* _conclusion ):
         mDeducted( false ),
-        mHash( CIRCULAR_SHIFT(size_t, (((size_t)IMPLIES << 5) ^ _subformulaA->getHash()), 5) ^ _subformulaB->getHash() ),
+        mHash( CIRCULAR_SHIFT(size_t, (((size_t)IMPLIES << 5) ^ _premise->getHash()), 5) ^ _conclusion->getHash() ),
         mId( 0 ),
         mActivity( 0 ),
         mDifficulty( 0 ),
@@ -116,7 +116,20 @@ namespace smtrat
         mProperties(),
         mBooleanVariables()
     {
-        mpSubformulaPair = new pair<const Formula*,const Formula*>( _subformulaA, _subformulaB );
+        mpImpliesContent = new IMPLIESContent( _premise, _conclusion );
+    }
+
+    Formula::Formula( const Formula* _conditon, const Formula* _then, const Formula* _else ):
+        mDeducted( false ),
+        mHash( CIRCULAR_SHIFT(size_t, (CIRCULAR_SHIFT(size_t, (((size_t)ITE << 5) ^ _conditon->getHash()), 5) ^ _then->getHash()), 5) ^ _else->getHash() ),
+        mId( 0 ),
+        mActivity( 0 ),
+        mDifficulty( 0 ),
+        mType( ITE ),
+        mProperties(),
+        mBooleanVariables()
+    {
+        mpIteContent = new ITEContent( _conditon, _then, _else );
     }
     
     Formula::Formula( Type _type, PointerSet<Formula>&& _subformulas ):
@@ -162,7 +175,11 @@ namespace smtrat
         }
         else if( mType == IMPLIES )
         {
-            delete mpSubformulaPair;
+            delete mpImpliesContent;
+        }
+        else if( mType == ITE )
+        {
+            delete mpIteContent;
         }
     }
     
@@ -185,7 +202,11 @@ namespace smtrat
                 case NOT:
                     return (*mpSubformula) == _formula.subformula();
                 case IMPLIES:
-                    return (*mpSubformulaPair->first) == _formula.premise() && (*mpSubformulaPair->second) == _formula.conclusion();
+                    return (*mpImpliesContent->mpPremise) == _formula.premise() && (*mpImpliesContent->mpConlusion) == _formula.conclusion();
+                case ITE:
+                    return (*mpIteContent->mpCondition) == _formula.condition()
+                            && (*mpIteContent->mpThen) == _formula.firstCase()
+                            && (*mpIteContent->mpElse) == _formula.secondCase();
                 default:
                     return (*mpSubformulas) == _formula.subformulas();
             }
@@ -275,20 +296,44 @@ namespace smtrat
                         return 2;
                 }
             }
+            case ITE:
+            {
+                unsigned result = condition().satisfiedBy( _assignment );
+                switch( result )
+                {
+                    case 0:
+                        return secondCase().satisfiedBy( _assignment );
+                    case 1:
+                        return firstCase().satisfiedBy( _assignment );
+                    default:
+                        return 2;
+                }
+            }
             case IFF:
             {
                 auto subFormula = mpSubformulas->begin();
                 unsigned result = (*subFormula)->satisfiedBy( _assignment );
-                if( result == 2 ) return 2;
+                bool containsTrue = (result == 1 ? true : false);
+                bool containsFalse = (result == 0 ? true : false);
                 ++subFormula;
                 while( subFormula != mpSubformulas->end() )
                 {
                     unsigned resultTmp = (*subFormula)->satisfiedBy( _assignment );
-                    if( resultTmp == 2 ) return 2;
-                    result = resultTmp == result;
+                    switch( resultTmp )
+                    {
+                        case 0:
+                            containsFalse = true;
+                            break;
+                        case 1:
+                            containsTrue = true;
+                        default:
+                            result = 2;
+                    }
+                    if( containsFalse && containsTrue )
+                        return 0;
                     ++subFormula;
                 }
-                return result;
+                return (result == 2 ? 2 : 1);
             }
             case XOR:
             {
@@ -408,10 +453,18 @@ namespace smtrat
                 if( !(PROP_IS_IN_NNF<=subFormulaCondsA) )
                     mProperties &= ~PROP_IS_IN_NNF;
                 mProperties |= (subFormulaCondsA & WEAK_CONDITIONS);
-                Condition subFormulaCondsB = premise().properties();
+                Condition subFormulaCondsB = conclusion().properties();
                 if( !(PROP_IS_IN_NNF<=subFormulaCondsB) )
                     mProperties &= ~PROP_IS_IN_NNF;
                 mProperties |= (subFormulaCondsB & WEAK_CONDITIONS);
+                break;
+            }
+            case ITE:
+            {
+                mProperties |= PROP_VARIABLE_DEGREE_LESS_THAN_THREE | PROP_VARIABLE_DEGREE_LESS_THAN_FOUR | PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
+                mProperties |= (condition().properties() & WEAK_CONDITIONS);
+                mProperties |= (firstCase().properties() & WEAK_CONDITIONS);
+                mProperties |= (secondCase().properties() & WEAK_CONDITIONS);
                 break;
             }
             case IFF:
@@ -528,6 +581,41 @@ namespace smtrat
             else
                 mBooleanVariables = (bVarsA | bVarsB);
         }
+        else if( mType == ITE )
+        {
+            const boost::dynamic_bitset<>& bVarsA = firstCase().mBooleanVariables;
+            const boost::dynamic_bitset<>& bVarsB = secondCase().mBooleanVariables;
+            boost::dynamic_bitset<> bVars;
+            if( bVarsA.size() > bVarsB.size() )
+            {
+                bVars = bVarsB;
+                bVars.resize( bVarsA.size() );
+                bVars |= bVarsA;
+            }
+            else if( bVarsA.size() < bVarsB.size() )
+            {
+                bVars = bVarsA;
+                bVars.resize( bVarsB.size() );
+                bVars |= bVarsB;
+            }
+            else
+                bVars = (bVarsA | bVarsB);
+            const boost::dynamic_bitset<>& bVarsC = condition().mBooleanVariables;
+            if( bVars.size() > bVarsC.size() )
+            {
+                mBooleanVariables = bVarsC;
+                mBooleanVariables.resize( bVars.size() );
+                mBooleanVariables |= bVars;
+            }
+            else if( bVars.size() < bVarsC.size() )
+            {
+                mBooleanVariables = bVars;
+                mBooleanVariables.resize( bVarsC.size() );
+                mBooleanVariables |= bVarsC;
+            }
+            else
+                mBooleanVariables = (bVars | bVarsC);
+        }
         else if( mType == AND || mType == OR || mType == IFF || mType == XOR )
         {
             auto subformula = mpSubformulas->begin();
@@ -593,16 +681,13 @@ namespace smtrat
             string result = _init + "(";
             if( _infix )
             {
-                for( auto subformula = mpSubformulas->begin(); subformula != mpSubformulas->end(); ++subformula )
-                {
-                    if( !_oneline ) 
-                        result += "\n";
-                    result += premise().toString( _withActivity, _resolveUnequal, _oneline ? "" : (_init + "   "), _oneline, true, _friendlyNames );
-                    result += " " + FormulaTypeToString( IMPLIES ) + " ";
-                    if( !_oneline ) 
-                        result += "\n";
-                    result += conclusion().toString( _withActivity, _resolveUnequal, _oneline ? "" : (_init + "   "), _oneline, true, _friendlyNames );
-                }
+                if( !_oneline ) 
+                    result += "\n";
+                result += premise().toString( _withActivity, _resolveUnequal, _oneline ? "" : (_init + "   "), _oneline, true, _friendlyNames );
+                result += " " + FormulaTypeToString( IMPLIES ) + " ";
+                if( !_oneline ) 
+                    result += "\n";
+                result += conclusion().toString( _withActivity, _resolveUnequal, _oneline ? "" : (_init + "   "), _oneline, true, _friendlyNames );
             }
             else
             {
@@ -615,6 +700,38 @@ namespace smtrat
             result += ")";
             if( _withActivity )
                 result += activity;
+            return result;
+        }
+        else if( mType == ITE )
+        {
+            string result = _init + "(";
+            if( _infix )
+            {
+                if( !_oneline ) 
+                    result += "\n";
+                result += condition().toString( _withActivity, _resolveUnequal, _oneline ? "" : (_init + "   "), _oneline, true, _friendlyNames );
+                result += " " + FormulaTypeToString( ITE ) + " ";
+                if( !_oneline ) 
+                    result += "\n";
+                result += firstCase().toString( _withActivity, _resolveUnequal, _oneline ? "" : (_init + "   "), _oneline, true, _friendlyNames );
+                if( !_oneline ) 
+                    result += "\n";
+                result += secondCase().toString( _withActivity, _resolveUnequal, _oneline ? "" : (_init + "   "), _oneline, true, _friendlyNames );
+            }
+            else
+            {
+                result += FormulaTypeToString( ITE );
+                result += (_oneline ? " " : "\n");
+                result += condition().toString( _withActivity, _resolveUnequal, _oneline ? "" : (_init + "   "), _oneline, false, _friendlyNames );
+                result += (_oneline ? " " : "\n");
+                result += firstCase().toString( _withActivity, _resolveUnequal, _oneline ? "" : (_init + "   "), _oneline, false, _friendlyNames );
+                result += (_oneline ? " " : "\n");
+                result += secondCase().toString( _withActivity, _resolveUnequal, _oneline ? "" : (_init + "   "), _oneline, false, _friendlyNames );
+            }
+            result += ")";
+            if( _withActivity )
+                result += activity;
+            return result;
         }
         assert( mType == AND || mType == OR || mType == IFF || mType == XOR );
         string stringOfType = FormulaTypeToString( mType );
@@ -773,6 +890,8 @@ namespace smtrat
                 return "xor";
             case IMPLIES:
                 return "=>";
+            case ITE:
+                return "ite";
             case TTRUE:
                 return "true";
             case FFALSE:
@@ -868,46 +987,65 @@ namespace smtrat
                 subformulas.insert( newNegation( mpSubformula->pConclusion() ) );
                 return newFormula( AND, std::move( subformulas ) );
             }
+            case ITE: // (not (ite cond then else))  ->  (ite cond (not then) (not else))
+            {
+                return newIte( mpSubformula->pCondition(), newNegation( mpSubformula->pFirstCase() ), newNegation( mpSubformula->pSecondCase() ) );
+            }
+            case IFF: // (not (iff phi_1 .. phi_n))  ->  (and (or phi_1 .. phi_n) (or (not phi_1) .. (not phi_n)))
+            {
+                PointerSet<Formula> subformulasA;
+                PointerSet<Formula> subformulasB;
+                for( auto subformula : mpSubformula->subformulas() )
+                {
+                    subformulasA.insert( subformula );
+                    subformulasB.insert( newNegation( subformula ) );
+                }
+                return newFormula( AND, newFormula( OR, move( subformulasA ) ), newFormula( OR, move( subformulasB ) ) );
+            }
+            case XOR: // (not (xor phi_1 .. phi_n))  ->  (xor (not phi_1) phi_2 .. phi_n)
+            {
+                auto subformula = mpSubformula->subformulas().begin();
+                PointerSet<Formula> subformulas;
+                subformulas.insert( newNegation( *subformula ) );
+                for( ; subformula != mpSubformula->subformulas().end(); ++subformula )
+                    subformulas.insert( *subformula );
+                return newFormula( XOR, move( subformulas ) );
+            }
             case AND: // (not (and phi_1 .. phi_n))  ->  (or (not phi_1) .. (not phi_n))
                 newType = OR;
                 break;
             case OR: // (not (or phi_1 .. phi_n))  ->  (and (not phi_1) .. (not phi_n))
                 newType = AND;
                 break;
-            case IFF: // (not (iff lhs rhs))  ->  (xor lhs rhs)
-                newType = XOR;
-                break;
-            case XOR: // (not (xor lhs rhs))  ->  (iff lhs rhs)
-                newType = IFF;
-                break;
             default:
                 assert( false );
                 cerr << "Unexpected type of formula!" << endl;
                 return this;
         }
-        assert( newType != mType );
+        assert( newType != mpSubformula->getType() );
+        assert( mpSubformula->getType() == AND || mpSubformula->getType() == OR );
         PointerSet<Formula> subformulas;
         for( const Formula* subsubformula : mpSubformula->subformulas() )
             subformulas.insert( newNegation( subsubformula ) );
         return newFormula( newType, std::move( subformulas ) );
     }
     
-    const Formula* Formula::connectRemainingSubformulas() const
+    const Formula* Formula::connectPrecedingSubformulas() const
     {
         assert( isNary() );
         if( mpSubformulas->size() > 2 )
         {
             PointerSet<Formula> tmpSubformulas;
-            auto iter = mpSubformulas->begin();
+            auto iter = mpSubformulas->rbegin();
             ++iter;
-            for( ; iter != mpSubformulas->end(); ++iter )
+            for( ; iter != mpSubformulas->rend(); ++iter )
                 tmpSubformulas.insert( *iter );
-            return newFormula( IFF, tmpSubformulas );
+            return newFormula( mType, tmpSubformulas );
         }
         else
         {
             assert( mpSubformulas->size() == 2 );
-            return *(--mpSubformulas->end());
+            return *(mpSubformulas->begin());
         }
     }
     
@@ -1006,22 +1144,50 @@ namespace smtrat
                     subformulasToTransform.push_back( newFormula( OR, tmpSubformulas ) );
                     break;
                 }
-                case IFF: // (iff lhs rhs) -> (or lhs (not rhs)) and (or (not lhs) rhs) are added to the queue
+                case ITE: // (ite cond then else)  ->  auxBool, where (or (not cond) (= auxBool then)) and (or cond (= auxBool else)) are added to the queue
                 {
-                    // Get lhs and rhs.
-                    const Formula* lhs = *currentFormula->subformulas().begin();
-                    const Formula* rhs = currentFormula->connectRemainingSubformulas();
-                    // add (or lhs (not rhs)) to the queue
-                    subformulasToTransform.push_back( newFormula( OR, lhs, newNegation( rhs ) ) );
-                    // add (or (not lhs) rhs) to the queue
-                    subformulasToTransform.push_back( newFormula( OR, newNegation( lhs ), rhs ) );
+                    const Formula* auxBool = newFormula( newAuxiliaryBooleanVariable() );
+                    // Add: (or (not cond) (= auxBool then))
+                    subformulasToTransform.push_back( newFormula( OR, newNegation( currentFormula->pCondition() ), newFormula( IFF, auxBool, currentFormula->pFirstCase() ) ) );
+                    // Add: (or cond (= auxBool else))
+                    subformulasToTransform.push_back( newFormula( OR, currentFormula->pCondition(), newFormula( IFF, auxBool, currentFormula->pSecondCase() ) ) );
+                    // Add: auxBool
+                    subformulas.insert( auxBool );
+                    break;
+                }
+                case IFF: 
+                {
+                    if( currentFormula->subformulas().size() > 2 )
+                    {
+                        // (iff phi_1 .. phi_n) -> (or (and phi_1 .. phi_n) (and (not phi_1) .. (not phi_n))) is added to the queue
+                        PointerSet<Formula> subformulasA;
+                        PointerSet<Formula> subformulasB;
+                        for( auto subformula : currentFormula->subformulas() )
+                        {
+                            subformulasA.insert( subformula );
+                            subformulasB.insert( newNegation( subformula ) );
+                        }
+                        subformulasToTransform.push_back( newFormula( OR, newFormula( AND, move( subformulasA ) ), newFormula( AND, move( subformulasB ) ) ) );
+                    }
+                    else
+                    {
+                        // (iff lhs rhs) -> (or lhs (not rhs)) and (or (not lhs) rhs) are added to the queue
+                        assert( currentFormula->subformulas().size() == 2 );
+                        // Get lhs and rhs.
+                        const Formula* lhs = *currentFormula->subformulas().begin();
+                        const Formula* rhs = currentFormula->back();
+                        // add (or lhs (not rhs)) to the queue
+                        subformulasToTransform.push_back( newFormula( OR, lhs, newNegation( rhs ) ) );
+                        // add (or (not lhs) rhs) to the queue
+                        subformulasToTransform.push_back( newFormula( OR, newNegation( lhs ), rhs ) );
+                    }
                     break;
                 }
                 case XOR: // (xor lhs rhs) -> (or lhs rhs) and (or (not lhs) (not rhs)) are added to the queue
                 {
                     // Get lhs and rhs.
-                    const Formula* lhs = *currentFormula->subformulas().begin();
-                    const Formula* rhs = currentFormula->connectRemainingSubformulas();
+                    const Formula* lhs = currentFormula->connectPrecedingSubformulas();
+                    const Formula* rhs = currentFormula->back();
                     // add (or lhs rhs) to the queue
                     subformulasToTransform.push_back( newFormula( OR, lhs, rhs) );
                     // add (or (not lhs) (not rhs)) to the queue
@@ -1068,6 +1234,19 @@ namespace smtrat
                                 phis.push_back( newNegation( currentSubformula->pPremise() ) );
                                 phis.push_back( currentSubformula->pConclusion() );
                                 break;
+                            case ITE: // (ite cond then else)  ->  (and (or (not cond) (= auxBool then)) (or cond (= auxBool else) auxBool)
+                            {   
+                                const Formula* auxBool = newFormula( newAuxiliaryBooleanVariable() );
+                                PointerSet<Formula> tmpSubformulas;
+                                // Add: (or (not cond) (= auxBool then))
+                                tmpSubformulas.insert( newFormula( OR, newNegation( currentSubformula->pCondition() ), newFormula( IFF, auxBool, currentSubformula->pFirstCase() ) ) );
+                                // Add: (or cond (= auxBool else))
+                                tmpSubformulas.insert( newFormula( OR, currentSubformula->pCondition(), newFormula( IFF, auxBool, currentSubformula->pSecondCase() ) ) );
+                                // Add: auxBool
+                                tmpSubformulas.insert( auxBool );
+                                phis.push_back( newFormula( AND, tmpSubformulas ) );
+                                break;
+                            }
                             case NOT: // resolve the negation
                             {
                                 const Formula* resolvedFormula = currentSubformula->resolveNegation( _keepConstraints );
@@ -1121,22 +1300,24 @@ namespace smtrat
                                 #endif
                                 break;
                             }
-                            case IFF: // (iff lhs rhs) -> (and lhs rhs) and (and (not lhs) (not rhs)) are added to the queue
+                            case IFF: // (iff phi_1 .. phi_n) -> (and phi_1 .. phi_n) and (and (not phi_1) .. (not phi_n)) are added to the queue
                             {
-                                // Get lhs and rhs.
-                                const Formula* lhs = *currentSubformula->subformulas().begin();
-                                const Formula* rhs = currentSubformula->connectRemainingSubformulas();
-                                // add (and lhs rhs) to the queue
-                                phis.push_back( newFormula( AND, lhs, rhs ) );
-                                // add (and (not lhs) (not rhs)) to the queue
-                                phis.push_back( newFormula( AND, newNegation( lhs ), newNegation( rhs ) ) );
+                                PointerSet<Formula> subformulasA;
+                                PointerSet<Formula> subformulasB;
+                                for( auto subformula : currentSubformula->subformulas() )
+                                {
+                                    subformulasA.insert( subformula );
+                                    subformulasB.insert( newNegation( subformula ) );
+                                }
+                                phis.push_back( newFormula( AND, move( subformulasA ) ) );
+                                phis.push_back( newFormula( AND, move( subformulasB ) ) );
                                 break;
                             }
                             case XOR: // (xor lhs rhs) -> (and lhs (not rhs)) and (and (not lhs) rhs) are added to the queue
                             {
                                 // Get lhs and rhs.
-                                const Formula* lhs = *currentSubformula->subformulas().begin();
-                                const Formula* rhs = currentSubformula->connectRemainingSubformulas();
+                                const Formula* lhs = currentSubformula->connectPrecedingSubformulas();
+                                const Formula* rhs = currentSubformula->back();
                                 // add (and lhs (not rhs)) to the queue
                                 phis.push_back( newFormula( AND, lhs, newNegation( rhs )) );
                                 // add (and (not lhs) rhs) to the queue

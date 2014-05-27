@@ -98,14 +98,15 @@ namespace smtrat
         return *iterBoolPair.first;   
     }
     
-    const Formula* FormulaPool::newFormula( Type _type, PointerSet<Formula>&& _subformulas )
+    const Formula* FormulaPool::createFormula( Type _type, PointerSet<Formula>&& _subformulas )
     {
+        assert( _type == AND || _type == OR || _type == XOR || _type == IFF );
 //        cout << "create new formula with type " << Formula::FormulaTypeToString( _type ) << endl;
 //        for( auto f : _subformulas )
 //            cout << *f << endl;
         for( auto iter = _subformulas.begin(); iter != _subformulas.end(); )
         {
-            if( (*iter)->getType() == _type )
+            if( (*iter)->getType() == _type && (_type == AND || _type == OR) )
             {
                 // We have (op .. (op a1 .. an) b ..), so create (op .. a1 .. an b ..) instead.
                 // Note, that a1 to an are definitely created before b, as they were sub-formulas
@@ -139,9 +140,7 @@ namespace smtrat
                         }
                         case IFF:
                         {
-                            _subformulas.erase( iterB );
-                            iter = _subformulas.erase( iter );
-                            _subformulas.insert( mpFalse );
+                            return mpFalse;
                         }
                         case XOR:
                         {
@@ -163,7 +162,7 @@ namespace smtrat
         else
         {
             #ifdef SIMPLIFY_FORMULAS
-            if( _type == AND ||  _type == OR )
+            if( _type == AND ||  _type == OR || _type == IFF )
             {
                 PointerSet<Formula>::iterator iterToTrue = _subformulas.begin();
                 PointerSet<Formula>::iterator iterToFalse = _subformulas.begin();
@@ -185,11 +184,18 @@ namespace smtrat
                     if( iterToFalse != _subformulas.end() ) return mpFalse;
                     else if( _subformulas.empty() ) return mpTrue;
                 }
-                else // _type == OR
+                else if( _type == OR )
                 {
                     if( iterToFalse != _subformulas.end() ) _subformulas.erase( iterToFalse );
                     if( iterToTrue != _subformulas.end() ) return mpTrue;
                     else if( _subformulas.empty() ) return mpFalse;
+                }
+                else // _type == IFF
+                {
+                    if( iterToFalse != _subformulas.end() && iterToTrue != _subformulas.end() )
+                    {
+                        return mpFalse;
+                    }
                 }
             }
             #endif
@@ -224,14 +230,24 @@ namespace smtrat
         return FormulaPool::getInstance().newNegation( _subformula );
     }
     
-    const Formula* newImplication( const Formula* _subformulaA, const Formula* _subformulaB )
+    const Formula* newImplication( const Formula* _premise, const Formula* _conclusion )
     {
-        return FormulaPool::getInstance().newImplication( _subformulaA, _subformulaB );
+        return FormulaPool::getInstance().newImplication( _premise, _conclusion );
+    }
+    
+    const Formula* newIte( const Formula* _condition, const Formula* _else, const Formula* _then )
+    {
+        return FormulaPool::getInstance().newIte( _condition, _else, _then );
     }
     
     const Formula* newFormula( Type _type, const Formula* _subformulaA, const Formula* _subformulaB )
     {
         return FormulaPool::getInstance().newFormula( _type, _subformulaA, _subformulaB );
+    }
+    
+    const Formula* newExclusiveDisjunction( const PointerMultiSet<Formula>& _subformulas )
+    {
+        return FormulaPool::getInstance().newExclusiveDisjunction( _subformulas );
     }
     
     const Formula* newFormula( Type _type, const PointerSet<Formula>& _subformulas )

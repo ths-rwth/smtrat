@@ -44,7 +44,7 @@
 
 namespace smtrat
 {
-    enum Type { AND, OR, NOT, IFF, XOR, IMPLIES, BOOL, CONSTRAINT, TTRUE, FFALSE };
+    enum Type { AND, OR, NOT, IFF, XOR, IMPLIES, ITE, BOOL, CONSTRAINT, TTRUE, FFALSE };
     
     class Formula
     {
@@ -55,6 +55,25 @@ namespace smtrat
             typedef PointerSet<Formula>::const_reverse_iterator const_reverse_iterator;
             
         private:
+            
+            struct IMPLIESContent
+            {
+                const Formula* mpPremise;
+                const Formula* mpConlusion;
+                
+                IMPLIESContent( const Formula* _premise, const Formula* _conclusion): 
+                    mpPremise( _premise ), mpConlusion( _conclusion ) {}
+            };
+            
+            struct ITEContent
+            {
+                const Formula* mpCondition;
+                const Formula* mpThen;
+                const Formula* mpElse;
+                
+                ITEContent( const Formula* _condition, const Formula* _then, const Formula* _else ): 
+                    mpCondition( _condition ), mpThen( _then ), mpElse( _else ) {}
+            };
 
             // Members.
 
@@ -74,11 +93,12 @@ namespace smtrat
             /// The content of this formula.
             union
             {
-                const Formula*                            mpSubformula;
-                std::pair<const Formula*,const Formula*>* mpSubformulaPair;
-                PointerSet<Formula>*                      mpSubformulas;
-                const Constraint*                         mpConstraint;
-                carl::Variable                            mBoolean;
+                const Formula*       mpSubformula;
+                IMPLIESContent*      mpImpliesContent;
+                ITEContent*          mpIteContent;
+                PointerSet<Formula>* mpSubformulas;
+                const Constraint*    mpConstraint;
+                carl::Variable       mBoolean;
             };
             /// The propositions of this formula.
             Condition mProperties;
@@ -113,15 +133,21 @@ namespace smtrat
             
             /**
              * Constructs an implication from the first argument to the second: (=> _subformulaA _subformulaB)
-             * @param _subformulaA The premise of the formula to create.
-             * @param _subformulaB The conclusion of the formula to create.
+             * @param _premise The premise of the formula to create.
+             * @param _conclusion The conclusion of the formula to create.
              */
-            Formula( const Formula* _subformulaA, const Formula* _subformulaB );
+            Formula( const Formula* _premise, const Formula* _conclusion );
             
             /**
-             * Constructs the formula of the given type. It is either one of the atoms (true) and (false)
-             * or it is a formula (boolean_op arglist), where arglist is still empty. The arguments can/have
-             * to be added belatedly with, e.g., addSubformula( .. ).
+             * Constructs an if-then-else (ITE) expression: (ite _condition _then _else)
+             * @param _condition The condition of the ITE expression to create.
+             * @param _then The first case of the ITE expression to create.
+             * @param _else The second case of the ITE expression to create.
+             */
+            Formula( const Formula* _condition, const Formula* _then, const Formula* _else );
+            
+            /**
+             * Constructs the formula of the given type. 
              * @param _type The type of the formula to construct.
              * @param _subformulas The sub-formulas of the formula to construct.
              */
@@ -305,25 +331,61 @@ namespace smtrat
             const Formula* pPremise() const
             {
                 assert( mType == IMPLIES );
-                return mpSubformulaPair->first;
+                return mpImpliesContent->mpPremise;
             }
             
-            const Formula premise() const
+            const Formula& premise() const
             {
                 assert( mType == IMPLIES );
-                return mpSubformulaPair->first;
+                return *mpImpliesContent->mpPremise;
             }
             
             const Formula* pConclusion() const
             {
                 assert( mType == IMPLIES );
-                return mpSubformulaPair->second;
+                return mpImpliesContent->mpConlusion;
             }
             
-            const Formula conclusion() const
+            const Formula& conclusion() const
             {
                 assert( mType == IMPLIES );
-                return mpSubformulaPair->second;
+                return *mpImpliesContent->mpConlusion;
+            }
+            
+            const Formula* pCondition() const
+            {
+                assert( mType == ITE );
+                return mpIteContent->mpCondition;
+            }
+            
+            const Formula& condition() const
+            {
+                assert( mType == ITE );
+                return *mpIteContent->mpCondition;
+            }
+            
+            const Formula* pFirstCase() const
+            {
+                assert( mType == ITE );
+                return mpIteContent->mpThen;
+            }
+            
+            const Formula& firstCase() const
+            {
+                assert( mType == ITE );
+                return *mpIteContent->mpThen;
+            }
+            
+            const Formula* pSecondCase() const
+            {
+                assert( mType == ITE );
+                return mpIteContent->mpElse;
+            }
+            
+            const Formula& secondCase() const
+            {
+                assert( mType == ITE );
+                return *mpIteContent->mpElse;
             }
 
             /**
@@ -424,9 +486,11 @@ namespace smtrat
                 if( mType == NOT )
                     return mpSubformula;
                 else if( mType == IMPLIES )
-                    return mpSubformulaPair->second;
+                    return mpImpliesContent->mpConlusion;
+                else if( mType == ITE )
+                    return mpIteContent->mpElse;
                 else
-                    return *(mpSubformulas->end());
+                    return *(--mpSubformulas->end());
             }
 
             /**
@@ -438,7 +502,9 @@ namespace smtrat
                 if( mType == NOT )
                     return *mpSubformula;
                 else if( mType == IMPLIES )
-                    return *(mpSubformulaPair->second);
+                    return *mpImpliesContent->mpConlusion;
+                else if( mType == ITE )
+                    return *mpIteContent->mpElse;
                 else
                     return **(mpSubformulas->end());
             }
@@ -522,7 +588,9 @@ namespace smtrat
                 if( mType == NOT )
                     return mpSubformula == _formula;
                 else if( mType == IMPLIES )
-                    return (mpSubformulaPair->first == _formula || mpSubformulaPair->second == _formula);
+                    return (mpImpliesContent->mpPremise == _formula || mpImpliesContent->mpConlusion == _formula);
+                else if( mType == ITE )
+                    return (mpIteContent->mpCondition == _formula || mpIteContent->mpThen == _formula || mpIteContent->mpElse == _formula);
                 else
                     return mpSubformulas->find( _formula ) != mpSubformulas->end();
             }
@@ -655,12 +723,12 @@ namespace smtrat
             
             /**
              * [Auxiliary method]
-             * @return The formula combining the second to the last sub-formula of this formula by the 
+             * @return The formula combining the first to the second last sub-formula of this formula by the 
              *         same operator as the one of this formula.
-             *         Example: this = (op a1 a2 .. an) -> return = (op a2 .. an)
-             *                  If n = 2, return = a2
+             *         Example: this = (op a1 a2 .. an) -> return = (op a1 .. an-1)
+             *                  If n = 2, return = a1
              */
-            const Formula* connectRemainingSubformulas() const;
+            const Formula* connectPrecedingSubformulas() const;
             
             /**
              * Transforms this formula to conjunctive normal form (CNF).
