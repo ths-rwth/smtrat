@@ -44,6 +44,7 @@ namespace smtrat
         mConsistentConstraint( new Constraint( ZERO_POLYNOMIAL, Relation::EQ, 1 ) ),
         mInconsistentConstraint( new Constraint( ZERO_POLYNOMIAL, Relation::LESS, 2 ) ),
         mExternalVarNamePrefix( "_" ),
+        mConverterStream(),
         mExternalNamesToVariables(),
         mBooleanVariables(),
         mConstraints()
@@ -164,12 +165,12 @@ namespace smtrat
 
     const carl::Variable ConstraintPool::newAuxiliaryBooleanVariable( const std::string& _externalPrefix )
     {
-        stringstream out;
+        mConverterStream.clear();
         BOOLEAN_VAR_LOCK
         if( !mExternalPrefixInitialized ) initExternalPrefix();
-        out << mExternalVarNamePrefix << _externalPrefix << mAuxiliaryBoolVarCounter++;
+        mConverterStream << mExternalVarNamePrefix << _externalPrefix << mAuxiliaryBoolVarCounter++;
         BOOLEAN_VAR_UNLOCK
-        return newBooleanVariable( out.str() );;
+        return newBooleanVariable( mConverterStream.str() );;
     }
     
     void ConstraintPool::initExternalPrefix()

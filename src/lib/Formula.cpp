@@ -144,7 +144,7 @@ namespace smtrat
     {
         assert( _subformulas.size() > 1 );
         assert( mType == AND || mType == OR || mType == IFF || mType == XOR );
-        mpSubformulas = new PointerSet<Formula>( _subformulas );
+        mpSubformulas = new PointerSet<Formula>( move( _subformulas ) );
         for( const Formula* subformula : *mpSubformulas )
         {
             mHash = CIRCULAR_SHIFT(size_t, mHash, 5);
