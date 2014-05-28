@@ -447,10 +447,6 @@ namespace smtrat
         }
         else
         {
-            if( formulaInCnf->getType() != OR )
-            {
-                exit( 7771 );
-            }
             assert( formulaInCnf->getType() == OR );
             return addClause( formulaInCnf, _type );
         }
@@ -2749,18 +2745,21 @@ NextClause:
             (*backend)->updateDeductions();
             for( const Formula* deduction : (*backend)->deductions() )
             {
-                deductionsLearned = true;
-                #ifdef SMTRAT_DEVOPTION_Validation
-                if( validationSettings->logLemmata() )
+                if( deduction->getType() != TTRUE )
                 {
-                    addAssumptionToCheck( newNegation( deduction ), false, moduleName( (*backend)->type() ) + "_lemma" );
+                    deductionsLearned = true;
+                    #ifdef SMTRAT_DEVOPTION_Validation
+                    if( validationSettings->logLemmata() )
+                    {
+                        addAssumptionToCheck( newNegation( deduction ), false, moduleName( (*backend)->type() ) + "_lemma" );
+                    }
+                    #endif
+                    #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
+                    cout << "Learned a theory deduction from a backend module!" << endl;
+                    cout << deduction->toString( false, 0, "", true, true, true ) << endl;
+                    #endif
+                    addFormula( deduction, DEDUCTED_CLAUSE );
                 }
-                #endif
-                #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
-                cout << "Learned a theory deduction from a backend module!" << endl;
-                cout << deduction->toString( false, 0, "", true, true, true ) << endl;
-                #endif
-                addFormula( deduction, DEDUCTED_CLAUSE );
             }
             (*backend)->clearDeductions();
             ++backend;
