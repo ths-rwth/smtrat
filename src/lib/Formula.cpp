@@ -47,8 +47,7 @@ namespace smtrat
         mDifficulty( 0 ),
         mType( _true ? TTRUE : FFALSE ),
         mpConstraint( _true ? constraintPool().consistentConstraint() : constraintPool().inconsistentConstraint() ),
-        mProperties(),
-        mBooleanVariables()
+        mProperties()
     {}
     
     Formula::Formula( const carl::Variable::Arg _boolean ):
@@ -59,12 +58,9 @@ namespace smtrat
         mDifficulty( 0 ),
         mType( BOOL ),
         mBoolean( _boolean ),
-        mProperties(),
-        mBooleanVariables()
+        mProperties()
     {
         assert( _boolean.getType() == carl::VariableType::VT_BOOL );
-        mBooleanVariables.resize( mBoolean.getId()+1 );
-        mBooleanVariables[mBoolean.getId()] = true;
     }
 
     Formula::Formula( const Constraint* _constraint ):
@@ -75,8 +71,7 @@ namespace smtrat
         mDifficulty( 0 ),
         mType( CONSTRAINT ),
         mpConstraint( _constraint ),
-        mProperties(),
-        mBooleanVariables()
+        mProperties()
     {
         switch( _constraint->isConsistent() )
         {
@@ -100,8 +95,7 @@ namespace smtrat
         mActivity( 0 ),
         mDifficulty( 0 ),
         mType( NOT ),
-        mProperties(),
-        mBooleanVariables( _subformula->mBooleanVariables )
+        mProperties()
     {
         mpSubformula = _subformula;
     }
@@ -113,8 +107,7 @@ namespace smtrat
         mActivity( 0 ),
         mDifficulty( 0 ),
         mType( IMPLIES ),
-        mProperties(),
-        mBooleanVariables()
+        mProperties()
     {
         mpImpliesContent = new IMPLIESContent( _premise, _conclusion );
     }
@@ -126,8 +119,7 @@ namespace smtrat
         mActivity( 0 ),
         mDifficulty( 0 ),
         mType( ITE ),
-        mProperties(),
-        mBooleanVariables()
+        mProperties()
     {
         mpIteContent = new ITEContent( _conditon, _then, _else );
     }
@@ -139,8 +131,7 @@ namespace smtrat
         mActivity( 0 ),
         mDifficulty( 0 ),
         mType( _type ),
-        mProperties(),
-        mBooleanVariables()
+        mProperties()
     {
         assert( _subformulas.size() > 1 );
         assert( mType == AND || mType == OR || mType == IFF || mType == XOR );
@@ -154,12 +145,6 @@ namespace smtrat
 
     Formula::~Formula()
     {
-//        cout << __func__ << endl;
-//        cout << this << endl;
-//        cout << mType << endl;
-//        if( mId == 0 ) cout << *this << endl;
-//        else assert( false );
-//        cout << mBooleanVariables << endl;
         if( isNary() )
         {
             mpSubformulas->clear();
@@ -180,6 +165,52 @@ namespace smtrat
         else if( mType == ITE )
         {
             delete mpIteContent;
+        }
+    }
+    
+    void Formula::collectVariables( Variables& _vars, carl::VariableType _type, bool _ofThisType ) const
+    {
+        switch( mType )
+        {
+            case BOOL:
+                if( _ofThisType == (_type == carl::VariableType::VT_BOOL) )
+                {
+                    _vars.insert( mBoolean );
+                }
+                break;
+            case TTRUE:
+                break;
+            case FFALSE:
+                break;
+            case CONSTRAINT:
+                if( !(_ofThisType && _type == carl::VariableType::VT_BOOL) ) // NOTE: THIS ASSUMES THAT THE VARIABLES IN THE CONSTRAINT HAVE INFINTE DOMAINS
+                {
+                    for( auto var : mpConstraint->variables() )
+                    {
+                        if( _ofThisType == (var.getType() == carl::VariableType::VT_INT) )
+                            _vars.insert( var );
+                        if( _ofThisType == (var.getType() == carl::VariableType::VT_REAL) )
+                            _vars.insert( var );
+                    }
+                }
+                break;
+            case NOT:
+                mpSubformula->collectVariables( _vars, _type, _ofThisType );
+                break;
+            case IMPLIES:
+                premise().collectVariables( _vars, _type, _ofThisType );
+                conclusion().collectVariables( _vars, _type, _ofThisType );
+                break;
+            case ITE:
+                condition().collectVariables( _vars, _type, _ofThisType );
+                firstCase().collectVariables( _vars, _type, _ofThisType );
+                secondCase().collectVariables( _vars, _type, _ofThisType );
+                break;
+            default:
+            {
+                for( const Formula* subform : *mpSubformulas )
+                    subform->collectVariables( _vars, _type, _ofThisType );
+            }
         }
     }
     
@@ -559,88 +590,6 @@ namespace smtrat
         if( _constraint.hasRealValuedVariable() )
             mProperties |= PROP_CONTAINS_REAL_VALUED_VARS;
     }
-    
-    void Formula::initBooleans()
-    {
-        if( mType == IMPLIES )
-        {
-            const boost::dynamic_bitset<>& bVarsA = premise().mBooleanVariables;
-            const boost::dynamic_bitset<>& bVarsB = conclusion().mBooleanVariables;
-            if( bVarsA.size() > bVarsB.size() )
-            {
-                mBooleanVariables = bVarsB;
-                mBooleanVariables.resize( bVarsA.size() );
-                mBooleanVariables |= bVarsA;
-            }
-            else if( bVarsA.size() < bVarsB.size() )
-            {
-                mBooleanVariables = bVarsA;
-                mBooleanVariables.resize( bVarsB.size() );
-                mBooleanVariables |= bVarsB;
-            }
-            else
-                mBooleanVariables = (bVarsA | bVarsB);
-        }
-        else if( mType == ITE )
-        {
-            const boost::dynamic_bitset<>& bVarsA = firstCase().mBooleanVariables;
-            const boost::dynamic_bitset<>& bVarsB = secondCase().mBooleanVariables;
-            boost::dynamic_bitset<> bVars;
-            if( bVarsA.size() > bVarsB.size() )
-            {
-                bVars = bVarsB;
-                bVars.resize( bVarsA.size() );
-                bVars |= bVarsA;
-            }
-            else if( bVarsA.size() < bVarsB.size() )
-            {
-                bVars = bVarsA;
-                bVars.resize( bVarsB.size() );
-                bVars |= bVarsB;
-            }
-            else
-                bVars = (bVarsA | bVarsB);
-            const boost::dynamic_bitset<>& bVarsC = condition().mBooleanVariables;
-            if( bVars.size() > bVarsC.size() )
-            {
-                mBooleanVariables = bVarsC;
-                mBooleanVariables.resize( bVars.size() );
-                mBooleanVariables |= bVars;
-            }
-            else if( bVars.size() < bVarsC.size() )
-            {
-                mBooleanVariables = bVars;
-                mBooleanVariables.resize( bVarsC.size() );
-                mBooleanVariables |= bVarsC;
-            }
-            else
-                mBooleanVariables = (bVars | bVarsC);
-        }
-        else if( mType == AND || mType == OR || mType == IFF || mType == XOR )
-        {
-            auto subformula = mpSubformulas->begin();
-            boost::dynamic_bitset<> bVarsTmp;
-            mBooleanVariables = (*subformula)->mBooleanVariables;
-            ++subformula;
-            for( ; subformula != mpSubformulas->end(); ++subformula )
-            {
-                const boost::dynamic_bitset<>& bVars = (*subformula)->mBooleanVariables;
-                if( bVars.size() > mBooleanVariables.size() )
-                {
-                    mBooleanVariables.resize( bVars.size() );
-                    mBooleanVariables |= bVars;
-                }
-                else if( bVars.size() < mBooleanVariables.size() )
-                {
-                    bVarsTmp = bVars; 
-                    bVarsTmp.resize( mBooleanVariables.size() );
-                    mBooleanVariables |= bVarsTmp;
-                }
-                else
-                    mBooleanVariables |= bVars;
-            }
-        }
-    }
 
     string Formula::toString( bool _withActivity, unsigned _resolveUnequal, const string _init, bool _oneline, bool _infix, bool _friendlyNames ) const
     {
@@ -762,7 +711,7 @@ namespace smtrat
         return result;
     }
     
-    std::ostream& operator<<( std::ostream& _ostream, const Formula& _formula )
+    ostream& operator<<( ostream& _ostream, const Formula& _formula )
     {
         return (_ostream << _formula.toString( false, 0, "", true, false, true ));
     }
@@ -779,7 +728,7 @@ namespace smtrat
         _out << endl;
     }
     
-    std::string Formula::toRedlogFormat( bool _withVariables ) const
+    string Formula::toRedlogFormat( bool _withVariables ) const
     {
         string result = "";
         string oper = Formula::FormulaTypeToString( mType );
@@ -836,7 +785,7 @@ namespace smtrat
         return result;
     }
 
-    std::string Formula::variableListToString( std::string _separator, const unordered_map<string, string>& _variableIds ) const
+    string Formula::variableListToString( string _separator, const unordered_map<string, string>& _variableIds ) const
     {
         Variables realVars = Variables();
         realValuedVars( realVars );
@@ -847,7 +796,7 @@ namespace smtrat
         string result = "";
         if( i != realVars.end() )
         {
-            std::stringstream sstream;
+            stringstream sstream;
             sstream << *i;
             unordered_map<string, string>::const_iterator vId = _variableIds.find( sstream.str() );
             result += vId == _variableIds.end() ? sstream.str() : vId->second;
@@ -874,7 +823,7 @@ namespace smtrat
         return result;
     }
 
-    std::string Formula::FormulaTypeToString( Type _type )
+    string Formula::FormulaTypeToString( Type _type )
     {
         switch( _type )
         {
@@ -924,7 +873,7 @@ namespace smtrat
                             PointerSet<Formula> subformulas;
                             subformulas.insert( newFormula( newConstraint( constraint->lhs(), Relation::LESS ) ) );
                             subformulas.insert( newFormula( newConstraint( -constraint->lhs(), Relation::LESS ) ) );
-                            return newFormula( OR, std::move( subformulas ) );
+                            return newFormula( OR, move( subformulas ) );
                             #else
                             return newFormula( newConstraint( constraint->lhs(), Relation::NEQ ) );
                             #endif
@@ -939,7 +888,7 @@ namespace smtrat
                             PointerSet<Formula> subformulas;
                             subformulas.insert( newFormula( newConstraint( -constraint->lhs(), Relation::LESS ) ) );
                             subformulas.insert( newFormula( newConstraint( -constraint->lhs(), Relation::EQ ) ) );
-                            return newFormula( OR, std::move( subformulas ) );
+                            return newFormula( OR, move( subformulas ) );
                             #else
                             return newFormula( newConstraint( -constraint->lhs(), Relation::LEQ ) );
                             #endif
@@ -954,7 +903,7 @@ namespace smtrat
                             PointerSet<Formula> subformulas;
                             subformulas.insert( newFormula( newConstraint( constraint->lhs(), Relation::LESS ) ) );
                             subformulas.insert( newFormula( newConstraint( constraint->lhs(), Relation::EQ ) ) );
-                            return newFormula( OR, std::move( subformulas ) );
+                            return newFormula( OR, move( subformulas ) );
                             #else
                             return newFormula( newConstraint( constraint->lhs(), Relation::LEQ ) );
                             #endif
@@ -985,7 +934,7 @@ namespace smtrat
                 PointerSet<Formula> subformulas;
                 subformulas.insert( mpSubformula->pPremise() );
                 subformulas.insert( newNegation( mpSubformula->pConclusion() ) );
-                return newFormula( AND, std::move( subformulas ) );
+                return newFormula( AND, move( subformulas ) );
             }
             case ITE: // (not (ite cond then else))  ->  (ite cond (not then) (not else))
             {
@@ -1027,7 +976,7 @@ namespace smtrat
         PointerSet<Formula> subformulas;
         for( const Formula* subsubformula : mpSubformula->subformulas() )
             subformulas.insert( newNegation( subsubformula ) );
-        return newFormula( newType, std::move( subformulas ) );
+        return newFormula( newType, move( subformulas ) );
     }
     
     const Formula* Formula::connectPrecedingSubformulas() const

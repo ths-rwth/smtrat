@@ -102,8 +102,6 @@ namespace smtrat
             };
             /// The propositions of this formula.
             Condition mProperties;
-            /// A bit set indicating which Boolean Variables occur in this formula.
-            boost::dynamic_bitset<> mBooleanVariables;
             
             /**
              * Constructs the formula (true), if the given bool is true and the formula (false) otherwise.
@@ -255,17 +253,7 @@ namespace smtrat
              */
             void realValuedVars( Variables& _realVars ) const
             {
-                if( mType == CONSTRAINT )
-                {
-                    for( auto var = mpConstraint->variables().begin(); var != mpConstraint->variables().end(); ++var )
-                        if( var->getType() == carl::VariableType::VT_REAL )
-                            _realVars.insert( *var );
-                }
-                else if( isBooleanCombination() )
-                {
-                    for( auto subformula = mpSubformulas->begin(); subformula != mpSubformulas->end(); ++subformula )
-                        (*subformula)->realValuedVars( _realVars );
-                }
+                collectVariables( _realVars, carl::VariableType::VT_REAL );
             }
             
             /**
@@ -274,17 +262,7 @@ namespace smtrat
              */
             void integerValuedVars( Variables& _intVars ) const
             {
-                if( mType == CONSTRAINT )
-                {
-                    for( auto var = mpConstraint->variables().begin(); var != mpConstraint->variables().end(); ++var )
-                        if( var->getType() == carl::VariableType::VT_INT )
-                            _intVars.insert( *var );
-                }
-                else if( isBooleanCombination() )
-                {
-                    for( auto subformula = mpSubformulas->begin(); subformula != mpSubformulas->end(); ++subformula )
-                        (*subformula)->integerValuedVars( _intVars );
-                }
+                collectVariables( _intVars, carl::VariableType::VT_INT );
             }
             
             /**
@@ -293,27 +271,16 @@ namespace smtrat
              */
             void arithmeticVars( Variables& _arithmeticVars ) const
             {
-                if( mType == CONSTRAINT )
-                    _arithmeticVars.insert( mpConstraint->variables().begin(), mpConstraint->variables().end() );
-                else if( isBooleanCombination() )
-                {
-                    for( auto subformula = mpSubformulas->begin(); subformula != mpSubformulas->end(); ++subformula )
-                        (*subformula)->arithmeticVars( _arithmeticVars );
-                }
+                collectVariables( _arithmeticVars, carl::VariableType::VT_BOOL, false );
             }
-
+            
             /**
-             * Collects all Boolean variables occurring in this formula.
-             * @param _booleanVars The container to collect the Boolean variables in.
+             * Collects all arithmetic variables occurring in this formula.
+             * @param _arithmeticVars The container to collect the arithmetic variables in.
              */
-            void booleanVars( std::set<carl::Variable>& _booleanVars ) const
+            void booleanVars( Variables& _booleanVars ) const
             {
-                boost::dynamic_bitset<>::size_type pos = mBooleanVariables.find_first();
-                while( pos != boost::dynamic_bitset<>::npos )
-                {
-                    _booleanVars.insert( carl::Variable( (unsigned) pos, carl::VT_BOOL ) );
-                    pos = mBooleanVariables.find_next( pos );
-                }
+                collectVariables( _booleanVars, carl::VariableType::VT_BOOL );
             }
             
             const Formula* pSubformula() const
@@ -607,6 +574,12 @@ namespace smtrat
                     for( const_iterator subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
                         (*subFormula)->getConstraints( _constraints );
             }
+
+            /**
+             * Collects all Boolean variables occurring in this formula.
+             * @param _booleanVars The container to collect the Boolean variables in.
+             */
+            void collectVariables( Variables& _vars, carl::VariableType _type, bool _ofThisType = true ) const;
             
             /**
              * @param _formula The formula to compare with.

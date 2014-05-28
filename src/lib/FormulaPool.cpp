@@ -63,24 +63,15 @@ namespace smtrat
     const Formula* FormulaPool::addFormulaToPool( Formula* _formula )
     {
         FORMULA_POOL_LOCK_GUARD
-//        cout << endl << __func__ << endl;
-//        cout << _formula << endl;
-//        cout << *_formula << endl;
         auto iterBoolPair = mFormulas.insert( _formula );
         if( !iterBoolPair.second ) // Formula has already been generated.
         {
-//            cout << "The formula already exists:" << endl;
-//            cout << (**iterBoolPair.first) << endl;
             delete _formula;
         }
         else
         {
             _formula->mId = mIdAllocator; // id should be set here to avoid conflicts when multi-threading
             _formula->initProperties();
-            _formula->initBooleans();
-//            cout << "add " << _formula << " to the pool with hash = " << _formula->getHash() << " being" << endl;
-//            cout << *_formula << endl;
-//            cout << _formula->mBooleanVariables << endl;
             ++mIdAllocator;
             // Add also the negation of the formula to the pool in order to ensure that it
             // has the next id and hence would occur next to the formula in a set of sub-formula,
@@ -90,9 +81,6 @@ namespace smtrat
             mFormulas.insert( formulaNegated );
             formulaNegated->mId = mIdAllocator; 
             formulaNegated->initProperties();
-            formulaNegated->initBooleans();
-//            cout << "add " << formulaNegated << " to the pool with hash = " << _formula->getHash() << " being" << endl;
-//            cout << *formulaNegated << endl;
             ++mIdAllocator;
         }
         return *iterBoolPair.first;   
