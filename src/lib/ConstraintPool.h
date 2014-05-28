@@ -65,9 +65,6 @@ namespace smtrat
             mutable std::mutex mMutexPool;
             /// The external prefix for a variable.
             std::string mExternalVarNamePrefix;
-            /// Stream for conversion of integer to string. There is this one central instance as otherwise every time you create it
-            /// locally an initialization is applied.
-            std::stringstream mConverterStream;
             /// The map of external variable names to internal variable names.
             std::map<std::string,carl::Variable> mExternalNamesToVariables;
             /// The collection of Boolean variables in use.
@@ -368,10 +365,10 @@ namespace smtrat
              */
             carl::Variable newAuxiliaryIntVariable( const std::string& _externalPrefix = "h_i" )
             {
-                mConverterStream.clear();
+                std::stringstream out;
                 if( !mExternalPrefixInitialized ) initExternalPrefix();
-                mConverterStream << mExternalVarNamePrefix << _externalPrefix << mAuxiliaryIntVarCounter++;
-                return newArithmeticVariable( mConverterStream.str(), carl::VariableType::VT_INT );
+                out << mExternalVarNamePrefix << _externalPrefix << mAuxiliaryIntVarCounter++;
+                return newArithmeticVariable( out.str(), carl::VariableType::VT_INT );
             }
             
             /**
@@ -381,10 +378,10 @@ namespace smtrat
              */
             carl::Variable newAuxiliaryRealVariable( const std::string& _externalPrefix = "h_r" )
             {
-                mConverterStream.clear();
+                std::stringstream out;
                 if( !mExternalPrefixInitialized ) initExternalPrefix();
-                mConverterStream << mExternalVarNamePrefix << _externalPrefix << "_" << mAuxiliaryRealVarCounter++;
-                return newArithmeticVariable( mConverterStream.str(), carl::VariableType::VT_REAL );
+                out << mExternalVarNamePrefix << _externalPrefix << "_" << mAuxiliaryRealVarCounter++;
+                return newArithmeticVariable( out.str(), carl::VariableType::VT_REAL );
             }
             
             /**
