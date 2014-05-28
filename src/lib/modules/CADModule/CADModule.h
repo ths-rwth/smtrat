@@ -69,7 +69,7 @@ namespace smtrat
     class CADModule:
         public Module
     {
-        typedef std::unordered_map<ModuleInput::const_iterator, unsigned, FormulaIteratorHasher> ConstraintIndexMap;
+        typedef std::unordered_map<const Formula*, unsigned> ConstraintIndexMap;
         #ifdef SMTRAT_CAD_VARIABLEBOUNDS
         typedef smtrat::vb::VariableBounds< Formula > VariableBounds;
         #endif
@@ -83,6 +83,15 @@ namespace smtrat
         carl::CAD<smtrat::Rational> mCAD;
         /// the GiNaCRA constraints
         std::vector<carl::cad::Constraint<smtrat::Rational>> mConstraints;
+		/**
+		 * Indicates if false has been asserted.
+		 */
+		bool hasFalse;
+		/**
+		 * If false has been asserted, new formulas are stored in this list until false is removed.
+		 * This prevents unnecessary add() and remove() operation on the CAD object.
+		 */
+		std::set<const Formula*> subformulaQueue;
         /// the GiNaCRA constraints' indices assigned to the received constraints
         ConstraintIndexMap mConstraintsMap;
         /// a satisfying assignment of the received constraints if existent; otherwise it is empty
@@ -111,6 +120,7 @@ namespace smtrat
             #endif
 
         private:
+			bool addConstraintFormula(const Formula* f);
             const carl::cad::Constraint<smtrat::Rational> convertConstraint( const Constraint& );
             const Constraint* convertConstraint( const carl::cad::Constraint<smtrat::Rational>& );
             vec_set_const_pFormula extractMinimalInfeasibleSubsets_GreedyHeuristics( carl::cad::ConflictGraph& conflictGraph );
