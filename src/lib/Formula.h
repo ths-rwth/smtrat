@@ -391,10 +391,6 @@ namespace smtrat
                 else
                     return mpSubformulas->empty();
             }
-			
-			void annotate(const std::vector<parser::Attribute>&) {
-				
-			}
 
             /**
              * @return A constant iterator to the beginning of the list of sub-formulas of this formula.

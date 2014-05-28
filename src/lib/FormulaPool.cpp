@@ -43,6 +43,8 @@ namespace smtrat
         mFormulas.reserve( _capacity );
         mFormulas.insert( mpTrue );
         mFormulas.insert( mpFalse );
+		mpTrue->initProperties();
+		mpFalse->initProperties();
     }
 
     FormulaPool::~FormulaPool()
@@ -243,4 +245,8 @@ namespace smtrat
     {
         return FormulaPool::getInstance().newFormula( _type, move(_subformulas) );
     }
+
+	void annotateFormula( const Formula* formula, const std::vector<parser::Attribute>& attributes )
+	{
+	}
 }    // namespace smtrat

@@ -43,9 +43,9 @@ namespace smtrat
             /// id allocator
             unsigned mIdAllocator;
             /// The unique formula representing true.
-            const Formula* mpTrue;
+            Formula* mpTrue;
             /// The unique formula representing false.
-            const Formula* mpFalse;
+            Formula* mpFalse;
             /// The formula pool.
             FastPointerSet<Formula> mFormulas;
             /// Mutex to avoid multiple access to the pool
@@ -227,6 +227,8 @@ namespace smtrat
     const Formula* newFormula( Type _type, const PointerSet<Formula>& _subformulas );
     
     const Formula* newFormula( Type _type, PointerSet<Formula>&& _subformulas );
+
+	void annotateFormula( const Formula* formula, const std::vector<parser::Attribute>& attributes );
 }    // namespace smtrat
 
 #endif   /* FORMULAPOOL_H */
