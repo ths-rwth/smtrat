@@ -21,6 +21,7 @@
 #include <boost/spirit/include/phoenix_bind.hpp>
 #include <boost/spirit/include/phoenix_stl.hpp>
 #include <boost/spirit/include/phoenix_object.hpp>
+#include <boost/spirit/include/phoenix_statement.hpp>
 
 #include "../../lib/Common.h"
 #include "../../lib/Formula.h"
@@ -254,6 +255,7 @@ public:
 	// Formula
 	rule<const Formula*> formula;
 	rule<const Formula*> formula_op;
+	rule<PointerSet<Formula>> formula_list;
 	
 	// Polynomial
 	rule<Polynomial> polynomial;
@@ -319,7 +321,7 @@ private:
     }
 	const smtrat::Formula* mkConstraint(const smtrat::Polynomial&, const smtrat::Polynomial&, Relation);
 	carl::Variable mkIteInExpr(const Formula* _condition, Polynomial& _then, Polynomial& _else );
-	const smtrat::Formula* mkFormula( smtrat::Type _type, std::vector<const Formula*>& _subformulas ) const;
+	const smtrat::Formula* mkFormula( smtrat::Type _type, PointerSet<Formula>& _subformulas );
 	const smtrat::Formula* mkIteInFormula( const Formula* _condition, const Formula* _then, const Formula* _else ) const;
 	
 	void pushVariableStack() {

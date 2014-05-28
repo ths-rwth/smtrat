@@ -75,8 +75,10 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions):
 	;
 	formula.name("formula");
 	
+	formula_list = +formula;
+	formula_list.name("formula list");
 	formula_op =
-				((op_bool >> +formula)[_val = px::bind(&SMTLIBParser::mkFormula, px::ref(*this), qi::_1, qi::_2)])
+				((op_bool >> formula_list)[_val = px::bind(&SMTLIBParser::mkFormula, px::ref(*this), qi::_1, qi::_2)])
 			|	(relation >> polynomial >> polynomial)[_val = px::bind(&SMTLIBParser::mkConstraint, px::ref(*this), qi::_2, qi::_3, qi::_1)]
 			|	(lit("as")[qi::_pass = false] > symbol > symbol)
 			|	(lit("not") > formula[_val = px::bind(&newNegation, qi::_1)])
@@ -86,7 +88,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions):
 			|	("exists" > bindlist > formula)
 			|	("forall" > bindlist > formula)
 			|	("ite" > (formula > formula > formula)[_val = px::bind(&SMTLIBParser::mkIteInFormula, px::ref(*this), qi::_1, qi::_2, qi::_3)])
-			|	(("!" > formula > *attribute)[px::bind(&Formula::annotate, qi::_1, qi::_2), _val = qi::_1])
+			|	(("!" > formula > *attribute)[px::bind(&annotateFormula, qi::_1, qi::_2), _val = qi::_1])
 	;
 	formula_op.name("formula operation");
 
@@ -284,10 +286,10 @@ const Formula* SMTLIBParser::mkConstraint(const Polynomial& lhs, const Polynomia
 	}
 }
 
-const smtrat::Formula* SMTLIBParser::mkFormula( smtrat::Type type, std::vector<const Formula*>& _subformulas ) const
+const smtrat::Formula* SMTLIBParser::mkFormula( smtrat::Type type, PointerSet<Formula>& _subformulas )
 {
 	assert(type == smtrat::AND || type == smtrat::OR || type == smtrat::XOR || type == smtrat::IFF);
-	auto f =  newFormula(type, PointerSet<Formula>(_subformulas.begin(), _subformulas.end()));
+	auto f =  newFormula(type, _subformulas);
 	return f;
 }
 
