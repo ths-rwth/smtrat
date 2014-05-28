@@ -136,6 +136,9 @@ namespace smtrat
     template<typename T> 
     using PointerSet = std::set<const T*, pointerLess<T>>;
     
+    template<typename T> 
+    using PointerMultiSet = std::multiset<const T*, pointerLess<T>>;
+    
     template<typename T1,typename T2> 
     using PointerMap = std::map<const T1*, T2, pointerLess<T1>>;
     

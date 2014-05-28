@@ -100,9 +100,8 @@ CLANG_WARNING_DISABLE("-Wconversion")
    std::vector<std::string*>*                                     vsval;
    std::vector<std::pair<std::string, std::string>>*              vspval;
    const class Formula*                                           fval;
-   std::pair<carl::Variable, const class Formula*>*               bdval;
-   std::vector<std::pair<carl::Variable, const class Formula*>*>* bdlval;
    smtrat::PointerSet<class Formula>*                             sfval;
+   smtrat::PointerMultiSet<class Formula>*                        msfval;
    Polynomial*                                                    pval;
 }
 
@@ -124,9 +123,8 @@ CLANG_WARNING_DISABLE("-Wconversion")
 %type <sval>   value
 %type <pval>   poly polylistPlus polylistMinus polylistTimes polyOp
 %type <fval>   form equation
-%type <bdval>  bind
-%type <bdlval> bindlist
 %type <sfval>  formlist
+%type <msfval> formmlist
 %type <vsval>  symlist
 %type <vspval> varlist
 %type <eval>   relation naryOp
@@ -210,13 +208,18 @@ form:
     |   OB AS SYM SYM CB              { error( @0, "\"as\" is not allowed in supported logics!" ); }
 	|	OB NOT form CB                { $$ = dv.mkNegation( $3 ); }
 	|	OB IMPLIES form form CB       { $$ = dv.mkImplication( $3, $4 ); }
+    |   OB XOR formmlist CB           { $$ = dv.mkXor( $3 ); }
 	|	OB naryOp formlist CB         { $$ = dv.mkFormula( $2, $3 ); }
-    |   OB let OB bindlist CB form CB { $$ = dv.appendBindings( $4, $6 ); dv.popVariableStack(); }
+    |   OB let OB bindlist CB form CB { $$ = $6; dv.popVariableStack(); }
     |   OB ITE form form form CB      { $$ = dv.mkIteInFormula( $3, $4, $5 ); }
 
 formlist:
 		form          { $$ = new PointerSet<Formula>(); $$->insert( $1 ); }
     |	formlist form { $1->insert( $2 ); $$ = $1; }
+    
+formmlist:
+		form           { $$ = new PointerMultiSet<Formula>(); $$->insert( $1 ); }
+    |	formmlist form { $1->insert( $2 ); $$ = $1; }
 
 equation:
        OB EQ form form CB { PointerSet<Formula>* fs = new PointerSet<Formula>(); fs->insert( $3 ); fs->insert( $4 ); $$ = dv.mkFormula( smtrat::IFF, fs ); }
@@ -234,25 +237,24 @@ naryOp:
 		AND { $$ = smtrat::AND; }
     |	OR  { $$ = smtrat::OR; }
     |	IFF { $$ = smtrat::IFF; }
-    |	XOR { $$ = smtrat::XOR; }
 
 let:
         LET { dv.pushVariableStack(); }
 
 bindlist:
-		bind          { $$ = new vector<pair<carl::Variable, const smtrat::Formula*>*>(); if( $1 != NULL ) { $$->push_back( $1 ); } }
-	|	bind bindlist { $$ = $2; if( $1 != NULL ) { $$->push_back( $1 ); } }
+		bind          { }
+	|	bind bindlist { }
 
 bind:
-        OB SYM poly CB { $$ = dv.addTheoryBinding( @2, $2, $3 ); }
-	|	OB SYM form CB { $$ = dv.booleanBinding( @2, $2, $3 ); }
+        OB SYM poly CB { dv.addTheoryBinding( @2, $2, $3 ); }
+	|	OB SYM form CB { dv.booleanBinding( @2, $2, $3 ); }
 
 poly:
         THEORY_VAR                 { $$ = dv.mkPolynomial( @1, $1 ); }
     |   DEC                        { $$ = new smtrat::Polynomial( dv.getRational( $1 ) ); }
     | 	NUM                        { $$ = new smtrat::Polynomial( smtrat::Rational( $1->c_str() ) ); delete $1; }
     |  	polyOp                     { $$ = $1; }
-    |   OB ITE form poly poly CB   { $$ = new smtrat::Polynomial( dv.mkIteInExpr( @3, $3, $4, $5 ) ); }
+    |   OB ITE form poly poly CB   { $$ = dv.mkIteInExpr( @3, $3, $4, $5 ); }
 
 polyOp:
 		OB DIV poly poly CB       { assert( $4->isConstant() ); (*$3) *= smtrat::Polynomial( Rational( 1 ) / $4->trailingTerm()->coeff() ); $$ = $3; delete $4; }

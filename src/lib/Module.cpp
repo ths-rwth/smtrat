@@ -756,7 +756,10 @@ namespace smtrat
                     ++((*module)->mNrConsistencyChecks);
                     #endif
                     #ifdef DEBUG_MODULE_CALLS_IN_SMTLIB
-                    cout << "(assert " << mpPassedFormula->toString( false, true ) << ")\n";
+                    cout << "(assert (and";
+                    for( auto subformula : *mpPassedFormula )
+                        cout << " " << subformula->toString( false, true );
+                    cout << "))\n";
                     #endif
                     result = (*module)->isConsistent();
                     assert(result == Unknown || result == False || result == True);
@@ -768,7 +771,7 @@ namespace smtrat
                     #ifdef SMTRAT_DEVOPTION_Validation
                     if( validationSettings->logTCalls() )
                     {
-                        if( result != Unknown && (*module)->type() == ModuleType::MT_SATModule )
+                        if( result != Unknown )
                             addAssumptionToCheck( *mpPassedFormula, result == True, moduleName( (*module)->type() ) );
                     }
                     #endif

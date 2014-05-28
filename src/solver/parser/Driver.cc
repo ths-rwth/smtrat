@@ -67,9 +67,9 @@ namespace smtrat
         mBooleanVariables(),
         mTheoryVariables(),
         mTheoryBindings(),
-        mTheoryIteBindings(),
         mVariableStack(),
-        mInnerConstraintBindings()
+        mTermItes(),
+        mBooleanBindings()
     {
         mInfos.userInfos = map< string, string >();
     }
@@ -77,7 +77,6 @@ namespace smtrat
     Driver::~Driver()
     {
         assert( mInstructionQueue.empty() );
-        assert( mInnerConstraintBindings.empty() );
         if( mRegularOutputReadBuffer != NULL )
             delete mRegularOutputReadBuffer;
         if( mDiagnosticOutputReadBuffer != NULL )
@@ -89,7 +88,21 @@ namespace smtrat
     void Driver::add( const Formula* _formula )
     {
         InstructionValue iv = InstructionValue();
-        iv.formula = _formula;
+        if( !mTermItes.empty() )
+        {
+            PointerSet<Formula> subformulas;
+            while( !mTermItes.empty() )
+            {
+                subformulas.insert( mTermItes.back() );
+                mTermItes.pop_back();
+            }
+            subformulas.insert( _formula );
+            iv.formula = newFormula( AND, std::move( subformulas ) );
+        }
+        else
+        {    
+            iv.formula = _formula;
+        }
         mInstructionQueue.push( Instruction( ASSERT, iv ) );
     }
 
@@ -221,7 +234,7 @@ namespace smtrat
      * @param _exVarsPair
      * @return 
      */
-    pair<carl::Variable, const Formula*>* Driver::addTheoryBinding( const class location& _loc, string* _varName, Polynomial* _polynomial )
+    void Driver::addTheoryBinding( const class location& _loc, string* _varName, Polynomial* _polynomial )
     {
         assert( mTheoryBindings.find( *_varName ) == mTheoryBindings.end() );
         if( !mTheoryBindings.insert( pair< string, Polynomial* >( *_varName, _polynomial ) ).second )
@@ -229,29 +242,6 @@ namespace smtrat
         mVariableStack.top().push_back( pair< string, unsigned >( *_varName, 1 ) );
         pLexer()->mTheoryVariables.insert( *_varName );
         delete _varName;
-        if( !mInnerConstraintBindings.empty() )
-        {
-            if( mInnerConstraintBindings.size() == 1 )
-            {
-                const Formula* form = mInnerConstraintBindings.begin()->second;
-                mInnerConstraintBindings.erase( mInnerConstraintBindings.begin() );
-                return new pair<carl::Variable, const Formula*>( carl::Variable::NO_VARIABLE, form );
-            }
-            else
-            {
-                PointerSet<Formula> subformulas;
-                while( !mInnerConstraintBindings.empty() )
-                {
-                    subformulas.insert( mInnerConstraintBindings.begin()->second );
-                    mInnerConstraintBindings.erase( mInnerConstraintBindings.begin() );
-                }
-                return new pair<carl::Variable, const Formula*>( carl::Variable::NO_VARIABLE, newFormula( AND, move( subformulas ) ) );
-            }
-        }
-        else
-        {
-            return NULL;
-        }
     }
     
     /**
@@ -260,58 +250,13 @@ namespace smtrat
      * @param _formula
      * @return 
      */
-    pair<carl::Variable, const Formula*>* Driver::booleanBinding( const class location& _loc, string* _varName, const Formula* _formula )
+    void Driver::booleanBinding( const class location& _loc, string* _varName, const Formula* _formula )
     {
         mVariableStack.top().push_back( pair<string, unsigned>( *_varName, 0 ) );
-        carl::Variable bvar = addBooleanVariable( _loc, *_varName, true );
+        mLexer->mBooleanVariables.insert( *_varName );
+        assert( mBooleanBindings.find( *_varName ) == mBooleanBindings.end() );
+        mBooleanBindings[*_varName] = _formula;
         delete _varName;
-        return new pair<carl::Variable, const Formula*>( bvar, newFormula( IFF, newFormula( bvar ), _formula ) );
-    }
-    
-    /**
-     * 
-     * @param _bindings
-     * @param _formula
-     * @return 
-     */
-    const Formula* Driver::appendBindings( vector<pair<carl::Variable, const Formula*>*>* _bindings, const Formula* _formula )
-    {
-        if( _bindings->empty() )
-        {
-            delete _bindings;
-            return _formula;
-        }
-        else
-        {
-            Variables boolVars;
-            _formula->booleanVars( boolVars );
-            PointerSet<Formula> subformulas;
-            while( !_bindings->empty() )
-            {
-                // get binding variable
-                pair<carl::Variable, const Formula*>* binding = _bindings->back();
-                _bindings->pop_back();
-                if( binding->first != carl::Variable::NO_VARIABLE )
-                {
-                    if( boolVars.find( binding->first ) != boolVars.end() )
-                    {
-                        subformulas.insert( binding->second );
-                    }
-                }
-                else
-                {
-                    subformulas.insert( binding->second );
-                }
-                delete binding;
-            }
-            delete _bindings;
-            if( subformulas.empty() )
-            {
-                return _formula;
-            }
-            subformulas.insert( _formula );
-            return newFormula( AND, move( subformulas ) );
-        }
     }
     
     /**
@@ -376,11 +321,6 @@ namespace smtrat
             mTheoryBindings.erase( tb );
             delete toDelete;
         }
-        auto var = mTheoryVariables.find( _varName );
-        if( var != mTheoryVariables.end() )
-        {
-            mTheoryIteBindings.erase( var->second );
-        }
     }
 
     /**
@@ -417,31 +357,7 @@ namespace smtrat
         const Constraint* cons = newConstraint( (*_lhs)-(*_rhs), rel );
         delete _lhs;
         delete _rhs;
-        const Variables& vars = cons->variables();
-        PointerSet<Formula> varBindings;
-        for( auto iter = vars.begin(); iter != vars.end(); ++iter )
-        {
-            auto bindingVars = mTheoryIteBindings.find( *iter );
-            if( bindingVars != mTheoryIteBindings.end() )
-            {
-                varBindings.insert( bindingVars->second );
-            }
-            auto icBind = mInnerConstraintBindings.find( *iter );
-            if( icBind != mInnerConstraintBindings.end() )
-            {
-                varBindings.insert( icBind->second );
-                mInnerConstraintBindings.erase( icBind );
-            }
-        }
-        if( !varBindings.empty() )
-        {
-            varBindings.insert( newFormula( cons ) );
-            return newFormula( AND, move( varBindings ) );
-        }
-        else
-        {
-            return newFormula( cons );
-        }
+        return newFormula( cons );
     }
 
     /**
@@ -469,6 +385,12 @@ namespace smtrat
      */
     const Formula* Driver::mkBoolean( const class location& _loc, string* _varName )
     {
+        auto iter = mBooleanBindings.find( *_varName );
+        if( iter != mBooleanBindings.end() )
+        {
+            delete _varName;
+            return iter->second;
+        }
         carl::Variable var = getBooleanVariable( _loc, *_varName );
         delete _varName;
         return newFormula( var );
@@ -501,6 +423,19 @@ namespace smtrat
      * @param _subformulas
      * @return 
      */
+    const Formula* Driver::mkXor( PointerMultiSet<Formula>* _subformulas )
+    {
+        const Formula* result = newExclusiveDisjunction( move(*_subformulas) );
+        delete _subformulas;
+        return result;
+    }
+
+    /**
+     * 
+     * @param _type
+     * @param _subformulas
+     * @return 
+     */
     const Formula* Driver::mkFormula( unsigned _type, PointerSet<Formula>* _subformulas )
     {
         smtrat::Type type = (smtrat::Type) _type;
@@ -517,15 +452,7 @@ namespace smtrat
      */
     const Formula* Driver::mkIteInFormula( const Formula* _condition, const Formula* _then, const Formula* _else )
     {
-        const Formula* auxBool = newFormula( newAuxiliaryBooleanVariable() );
-        PointerSet<Formula> subformulas;
-        // Add: (iff auxBool _condition)
-        subformulas.insert( newFormula( IFF, auxBool, _condition ) );
-        // Add: (or (not auxBool) _then)
-        subformulas.insert( newFormula( OR, newNegation( auxBool ), _then ) );
-        // Add: (or auxBool _else)
-        subformulas.insert( newFormula( OR, auxBool, _else ) );
-        return newFormula( AND, move( subformulas ) );
+        return newIte( _condition, _then, _else );
     }
 
     /**
@@ -536,28 +463,22 @@ namespace smtrat
      * @param _else
      * @return
      */
-    carl::Variable Driver::mkIteInExpr( const class location& _loc, const Formula* _condition, Polynomial* _then, Polynomial* _else )
+    Polynomial* Driver::mkIteInExpr( const class location& _loc, const Formula* _condition, Polynomial* _then, Polynomial* _else )
     {
+        if( _condition == trueFormula() )
+        {
+            return _then;
+        }
+        else if( _condition == falseFormula() )
+        {
+            return _else;
+        }
         carl::Variable auxVar( addTheoryVariable( _loc, (mLogic == Logic::QF_NRA || mLogic == Logic::QF_LRA) ? "Real" : "Int", "", true ) );
-        const Formula* conditionBool = newFormula( addBooleanVariable( _loc, "", true ) );
         const Formula* constraintA = mkConstraint( new Polynomial( auxVar ), _then, (unsigned) Relation::EQ );
         const Formula* constraintB = mkConstraint( new Polynomial( auxVar ), _else, (unsigned) Relation::EQ );
-        carl::Variable dependencyBool = addBooleanVariable( _loc, "", true ); 
         
-        PointerSet<Formula> subformulas;
-        // Add to inner constraint bindings:  (or (not conditionBool) (= auxRealVar _then))
-        subformulas.insert( newFormula( OR, conditionBool, constraintA ) );
-        // Add to inner constraint bindings:  (or conditionBool (= auxRealVar _else))
-        subformulas.insert( newFormula( OR, conditionBool, constraintB ) );
-        // Add to inner constraint bindings:  (iff conditionBool _condition)
-        subformulas.insert( newFormula( IFF, conditionBool, _condition ) );
-        
-        const Formula* dependecyBoolFormula = newFormula( dependencyBool );
-        const Formula* result = newFormula( OR, newNegation( dependecyBoolFormula ), newFormula( AND, move( subformulas ) ) );
-        mInnerConstraintBindings.insert( pair<carl::Variable, const Formula*>( auxVar, result ) );
-        assert( mTheoryIteBindings.find( auxVar ) == mTheoryIteBindings.end() );
-        mTheoryIteBindings.insert( pair<carl::Variable, const Formula*>( auxVar, dependecyBoolFormula ) );
-        return auxVar;
+        mTermItes.push_back( newIte( _condition, constraintA, constraintB ) );
+        return new Polynomial( auxVar );
     }
 
     /**
