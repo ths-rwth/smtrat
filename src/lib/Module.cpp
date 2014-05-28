@@ -667,6 +667,8 @@ namespace smtrat
         if( mpManager == NULL ) return Unknown;
         *mBackendsFoundAnswer = false;
         Answer result = Unknown;
+		// Update the propositions of the passed formula
+		mpPassedFormula->updateProperties();
         // Get the backends to be considered from the manager.
         mUsedBackends = mpManager->getBackends( this, mBackendsFoundAnswer );
         mAllBackends = mpManager->getAllBackends( this );
@@ -676,8 +678,6 @@ namespace smtrat
             // Update the backends.
             if( mFirstSubformulaToPass != mpPassedFormula->end() )
             {
-                // Update the propositions of the passed formula
-                mpPassedFormula->updateProperties();
                 bool assertionFailed = false;
                 for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
                 {
