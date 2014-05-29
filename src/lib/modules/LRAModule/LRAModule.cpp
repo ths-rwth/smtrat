@@ -1144,7 +1144,7 @@ Return:
     /**
      * 
      * @return True, if a branching occurred.
-     *          False, otherwise.
+     *         False, otherwise.
      */
     bool LRAModule::gomory_cut()
     {
@@ -1234,7 +1234,7 @@ Return:
         size_t numRows = mTableau.rows().size();
         size_t dc_count = 0;
         LRAEntryType max_value = 0;
-        vector<size_t> dc_positions;
+        vector<size_t> dc_positions = vector<size_t>();
         for( size_t i = 0; i < numRows; ++i )
         {
             LRAEntryType lcmOfCoeffDenoms = 1;
@@ -1242,11 +1242,15 @@ Return:
             if( dc_constraint != NULL  )
             {
                 cout << "Found defining constraint!" << endl;
-                dc_count++;
-                dc_positions.push_back(i);             
+                size_t row_count_before = dc_Tableau.rows().size();
                 pair< const LRABound*, bool> result = dc_Tableau.newBound(dc_constraint);
                 PointerSet<Formula> formulas;
                 dc_Tableau.activateBound(result.first, formulas);
+                if( row_count_before < dc_Tableau.rows().size() )
+                {
+                    dc_count++;
+                    dc_positions.push_back(i);                    
+                }
             }   
         }
         dc_Tableau.print();
@@ -1258,7 +1262,7 @@ Return:
             #endif
 
             // At least one DC exists -> Construct and embed it.
-            vector<size_t> diagonals;    
+            vector<size_t> diagonals = vector<size_t>();    
             vector<size_t>& diagonals_ref = diagonals;               
             dc_Tableau.print( );
             /*
@@ -1348,6 +1352,14 @@ Return:
         return true;
     }
     #endif
+
+    enum BRANCH_STRATEGY
+    {
+        MIN_PIVOT,
+        MOST_FEASIBLE,
+        MOST_INFEASIBLE,
+        NATIVE
+    };
     
     /**
      * @return true, if a branching occurred.
@@ -1355,22 +1367,174 @@ Return:
      */
     bool LRAModule::branch_and_bound()
     {
+        BRANCH_STRATEGY strat = MOST_FEASIBLE;
+        bool result;
+        if( strat == MIN_PIVOT )
+        {
+            result = minimal_row_var();            
+        }
+        else if( strat == MOST_FEASIBLE )
+        {
+            result = most_feasible_var();
+        }
+        else if( strat == MOST_INFEASIBLE )
+        {
+            result = most_infeasible_var();
+        }
+        else if( strat == NATIVE )
+        {
+            result = first_var();
+        }  
+        return result;
+    }
+    
+     /**
+      * @return true,  if a branching occured with an original variable that has to be fixed 
+      *                which has the lowest count of entries in its row.
+      *         false, if no branching occured.
+      */    
+    bool LRAModule::minimal_row_var()
+    {
         EvalRationalMap _rMap = getRationalModel();
         auto map_iterator = _rMap.begin();
+        auto branch_var = mTableau.originalVars().begin();
+        Rational ass_;
+        Rational row_count_min = mTableau.columns().size()+1;
+        bool result = false;
         for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
         {
             assert( var->first == map_iterator->first );
             Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
-                #ifdef MODULE_VERBOSE_INTEGERS
-                this->printRationalModel();
-                #endif
-                branchAt( Polynomial( var->first ), ass );
-                return true;
+                result = true;
+                size_t row_count_new = mTableau.getNumberOfEntries( var->second );
+                if( row_count_new < row_count_min )
+                {
+                    row_count_min = row_count_new; 
+                    branch_var = var;
+                    ass_ = ass; 
+                }
             }
             ++map_iterator;
         }
+        if( result )
+        {
+            branchAt( Polynomial( branch_var->first ), ass_ );
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    
+     /**
+      * @return true,  if a branching occured with an original variable that has to be fixed 
+      *                which is most feasible.
+      *         false, if no branching occured.
+      */    
+    bool LRAModule::most_feasible_var()
+    {
+        EvalRationalMap _rMap = getRationalModel();
+        auto map_iterator = _rMap.begin();
+        auto branch_var = mTableau.originalVars().begin();
+        Rational ass_;
+        Rational diff = 0;
+        bool result = false;
+        for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
+        {
+            assert( var->first == map_iterator->first );
+            Rational& ass = map_iterator->second; 
+            if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
+            {
+                result = true;
+                Rational curr_diff = ass - carl::floor(ass);
+                if( carl::abs( curr_diff -  (Rational)1/2 ) > diff )
+                {
+                    diff = curr_diff; 
+                    branch_var = var;
+                    ass_ = ass; 
+                }
+            }
+            ++map_iterator;
+        }
+        if( result )
+        {
+            branchAt( Polynomial( branch_var->first ), ass_ );
+            return true;
+        }
+        else
+        {
+            return false;
+        }        
+    }
+    
+     /**
+      * @return true,  if a branching occured with an original variable that has to be fixed 
+      *                which is most infeasible.
+      *         false, if no branching occured.
+      */   
+    bool LRAModule::most_infeasible_var() 
+    {
+        EvalRationalMap _rMap = getRationalModel();
+        auto map_iterator = _rMap.begin();
+        auto branch_var = mTableau.originalVars().begin();
+        Rational ass_;
+        bool result = false;
+        Rational diff = 1;
+        for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
+        {
+            assert( var->first == map_iterator->first );
+            Rational& ass = map_iterator->second; 
+            if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
+            {
+                result = true;
+                Rational curr_diff = ass - carl::floor(ass);
+                if( carl::abs( curr_diff -  (Rational)1/2 ) < diff )
+                {
+                    diff = curr_diff; 
+                    branch_var = var;
+                    ass_ = ass;                   
+                    if( diff == 0 )
+                    {
+                        break;
+                    }
+                }
+            }
+            ++map_iterator;
+        }
+        if( result )
+        {
+            branchAt( Polynomial( branch_var->first ), ass_ );
+            return true;
+        }
+        else
+        {
+            return false;
+        } 
+    }
+    
+     /**
+      * @return true,  if a branching occured with the first original variable that has to be fixed.
+      *         false, if no branching occured.
+      */    
+    bool LRAModule::first_var()
+    {
+        EvalRationalMap _rMap = getRationalModel();
+        auto map_iterator = _rMap.begin();
+        Rational ass_;
+        for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
+        {
+            assert( var->first == map_iterator->first );
+            Rational& ass = map_iterator->second; 
+            if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
+            {
+                branchAt( Polynomial( var->first ), ass ); 
+                return true;                
+            }
+            ++map_iterator;
+        } 
         return false;
     }
     
