@@ -147,6 +147,10 @@ namespace smtrat
             void addSimpleBoundConflict( const LRABound&, const LRABound&, bool = false );
             void findSimpleConflicts( const LRABound& );
             bool gomory_cut();
+            bool minimal_row_var();
+            bool most_feasible_var();
+            bool most_infeasible_var();
+            bool first_var();
             bool cuts_from_proofs();
             bool branch_and_bound();
             bool assignmentConsistentWithTableau( const EvalRationalMap&, const LRABoundType& ) const;

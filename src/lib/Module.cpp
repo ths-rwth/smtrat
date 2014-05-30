@@ -52,6 +52,8 @@ namespace smtrat
 {
     vector<string> Module::mAssumptionToCheck = vector<string>();
     set<string> Module::mVariablesInAssumptionToCheck = set<string>();
+    Polynomial Module::mLastBranchPolynomial = smtrat::ZERO_POLYNOMIAL;
+    int Module::mNumberOfRepeatedEqualBranches = 0;
 
     #ifdef SMTRAT_DEVOPTION_Validation
     ValidationSettings* Module::validationSettings = new ValidationSettings();
@@ -414,6 +416,20 @@ namespace smtrat
         return result;
     }
     
+    bool Module::probablyLooping( const Polynomial& _polynomial )
+    {
+        if( mLastBranchPolynomial == _polynomial )
+        {
+            ++mNumberOfRepeatedEqualBranches;
+        }
+        else
+        {
+            mLastBranchPolynomial = _polynomial;
+        }
+        return mNumberOfRepeatedEqualBranches > 100;
+            
+    }
+    
     /**
      * Adds a deductions which provoke a branching for the given variable at the given value,
      * if this module returns Unknown and there exists a preceding SATModule. Note that the 
@@ -430,6 +446,7 @@ namespace smtrat
      */
     void Module::branchAt( const Polynomial& _polynomial, const Rational& _value, const PointerSet<Formula>& _premise, bool _leftCaseWeak )
     {
+        assert( !probablyLooping( _polynomial ) );
         assert( !_polynomial.hasConstantTerm() );
         const Constraint* constraintA = NULL;
         const Constraint* constraintB = NULL;

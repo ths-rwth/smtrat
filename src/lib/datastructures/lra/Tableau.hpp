@@ -405,6 +405,7 @@ namespace smtrat
                 #ifdef LRA_GOMORY_CUTS
                 const smtrat::Constraint* gomoryCut( const T2&, Variable<T1, T2>*, std::vector<const smtrat::Constraint*>&);
                 #endif
+                size_t getNumberOfEntries( Variable<T1,T2>* );
                 void printHeap( std::ostream& = std::cout, int = 30, const std::string = "" ) const;
                 void printEntry( EntryID, std::ostream& = std::cout, int = 20 ) const;
                 void printVariables( bool = true, std::ostream& = std::cout, const std::string = "" ) const;
@@ -3245,6 +3246,7 @@ FindPivot:
         smtrat::Polynomial* Tableau<T1,T2>::create_cut_from_proof(Tableau<T1,T2>& Inverted_Tableau, Tableau<T1,T2>& DC_Tableau, size_t row_index, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions, T2& lower, T2& max_value)
         {
             Value<T1> result = T2(0);
+            assert( mRows.size() > row_index );
             Iterator row_iterator = Iterator( (*mRows.at(row_index)).startEntry(),mpEntries); 
             /*
              * Calculate H^(-1)*b 
@@ -3450,6 +3452,28 @@ FindPivot:
             return gomory_constr;
         }
         #endif
+
+        /**
+         * @return number of entries in the row belonging to _rowVar  
+         */ 
+        template<typename T1, typename T2>
+        size_t Tableau<T1,T2>::getNumberOfEntries(Variable<T1,T2>* _rowVar)
+        {
+            size_t result = 0;
+            Iterator row_iterator = Iterator( _rowVar->startEntry(), mpEntries );
+            while( true )
+            {
+                ++result;
+                if( row_iterator.hEnd( false ) )
+                {
+                    row_iterator.hMove( false );
+                }
+                else
+                {
+                    return result;
+                }
+            }
+        }
 
         /**
          *
