@@ -1491,13 +1491,7 @@ SetWatches:
                                 cout << "### Result: False!" << endl;
                             }
                             #endif
-//                            confl = learnTheoryConflict();
-//                            if( confl == CRef_Undef )
-//                            {
-//                                if( !ok ) return l_False;
-//                                processLemmas();
-//                                continue;
-//                            }
+                            #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
                             int dl = decisionLevel();
                             learnTheoryConflict(); 
                             processLemmas();
@@ -1507,6 +1501,15 @@ SetWatches:
                                 return l_False;
                             }
                             currentAssignmentConsistent = True;
+                            #else
+                            confl = learnTheoryConflict();
+                            if( confl == CRef_Undef )
+                            {
+                                if( !ok ) return l_False;
+                                processLemmas();
+                                continue;
+                            }
+                            #endif
                             break;
                         }
                         case Unknown:
@@ -2835,7 +2838,11 @@ NextClause:
                         betterConflict = true;
                     }
                 }
+                #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
                 if( addClause( learnt_clause, DEDUCTED_CLAUSE ) && betterConflict )
+                #else
+                if( addClause( learnt_clause, CONFLICT_CLAUSE ) && betterConflict )
+                #endif
                 {
                     conflictClause = learnts.last();
                 }
@@ -2848,8 +2855,12 @@ NextClause:
         }
         if( conflictClause != CRef_Undef && lowestLevel >= decisionLevel()+1 )
             Module::storeAssumptionsToCheck( *mpManager );
-//        assert( conflictClause == CRef_Undef || lowestLevel < decisionLevel()+1 );
+        #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
         cancelUntil(lowestLevel == 0 ? 0 : lowestLevel-1);
+        assert( conflictClause == CRef_Undef || lowestLevel < decisionLevel()+1 );
+        #else
+        cancelUntil(lowestLevel);
+        #endif
         return conflictClause;
     }
 

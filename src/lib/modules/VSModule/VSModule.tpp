@@ -34,7 +34,7 @@ using namespace vs;
 
 //#define VS_DEBUG
 //#define VS_MODULE_VERBOSE_INTEGERS
-#define VS_TERMINATION_INVARIANCE
+//#define VS_TERMINATION_INVARIANCE
 
 namespace smtrat
 {
