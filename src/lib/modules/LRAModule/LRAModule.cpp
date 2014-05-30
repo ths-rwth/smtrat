@@ -1163,21 +1163,34 @@ Return:
                 if( !carl::isInteger( ass ) )
                 {
                     all_int = false;
-                    const Constraint* gomory_constr = mTableau.gomoryCut(ass, basicVar, constr_vec);                
+                    const Constraint* gomory_constr = mTableau.gomoryCut(ass, basicVar, constr_vec);
                     if( gomory_constr != NULL )
                     { 
-                        assert( !gomory_constr->satisfiedBy( rMap_ ) );
+                        assert( !gomory_constr->satisfiedBy( rMap_ ) );      
                         PointerSet<Formula> subformulas;
-                        auto vec_iter = constr_vec.begin();
+                        /*                         
+                        auto vec_iter = constr_vec.begin();                       
                         while( vec_iter != constr_vec.end() )
                         {
+                            std::cout << "Cut implied by: " << (*vec_iter)->lhs() << std::endl;
                             subformulas.insert( newNegation( newFormula( *vec_iter ) ) );
                             ++vec_iter; 
-                        } 
+                        }
+                        */ 
+                        auto vec_iter = mpReceivedFormula->begin();
+                        while( vec_iter != mpReceivedFormula->end() )
+                        {
+                            if ( (*(*vec_iter)->pConstraint()).lhs().evaluate( rMap_ ) == 0 )
+                            {
+                                std::cout << "Cut implied by: " << (*(*vec_iter)->pConstraint()) << std::endl;
+                                subformulas.insert( newNegation( newFormula( (*vec_iter)->pConstraint() ) ) );
+                            }
+                            ++vec_iter;
+                        }
                         const Formula* gomory_formula = newFormula( gomory_constr );
                         subformulas.insert( gomory_formula );
                         addDeduction( newFormula( OR, std::move( subformulas ) ) );   
-                    }
+                    } 
                     /*
                     else
                     {
@@ -1367,7 +1380,7 @@ Return:
      */
     bool LRAModule::branch_and_bound()
     {
-        BRANCH_STRATEGY strat = MOST_FEASIBLE;
+        BRANCH_STRATEGY strat = MOST_INFEASIBLE;
         bool result;
         if( strat == MIN_PIVOT )
         {
@@ -1407,10 +1420,10 @@ Return:
             Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
-                result = true;
                 size_t row_count_new = mTableau.getNumberOfEntries( var->second );
                 if( row_count_new < row_count_min )
                 {
+                    result = true;
                     row_count_min = row_count_new; 
                     branch_var = var;
                     ass_ = ass; 
@@ -1448,11 +1461,11 @@ Return:
             Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
-                result = true;
                 Rational curr_diff = ass - carl::floor(ass);
                 if( carl::abs( curr_diff -  (Rational)1/2 ) > diff )
                 {
-                    diff = curr_diff; 
+                    result = true;
+                    diff = carl::abs( curr_diff -  (Rational)1/2 ); 
                     branch_var = var;
                     ass_ = ass; 
                 }
@@ -1489,17 +1502,13 @@ Return:
             Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
-                result = true;
                 Rational curr_diff = ass - carl::floor(ass);
                 if( carl::abs( curr_diff -  (Rational)1/2 ) < diff )
                 {
-                    diff = curr_diff; 
+                    result = true;
+                    diff = carl::abs( curr_diff -  (Rational)1/2 ); 
                     branch_var = var;
                     ass_ = ass;                   
-                    if( diff == 0 )
-                    {
-                        break;
-                    }
                 }
             }
             ++map_iterator;
