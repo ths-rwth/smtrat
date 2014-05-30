@@ -425,7 +425,7 @@ namespace smtrat
         else
         {
             mLastBranchPolynomial = _polynomial;
-            mLastBranchPolynomial = 0;
+            mNumberOfRepeatedEqualBranches = 0;
         }
         return mNumberOfRepeatedEqualBranches > 100;
             
