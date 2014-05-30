@@ -61,6 +61,7 @@
 //#define SAT_CHECK_BACKEND_MODEL
 //#define SAT_TRY_FULL_LAZY_CALLS_FIRST
 //#define SAT_APPLY_VALID_SUBSTITUTIONS
+//#define SAT_THEORY_CONFLICT_AS_LEMMA
 
 
 using namespace std;
@@ -808,6 +809,8 @@ namespace smtrat
     {
         if( _type == DEDUCTED_CLAUSE )
         {
+            // Do not add multiple deductions
+            // TODO: maybe remove this
             vector<int> clause;
             clause.reserve( (size_t)_clause.size() );
             for( int i = 0; i < _clause.size(); ++i )
@@ -850,9 +853,9 @@ namespace smtrat
                 return false;
             }
         }
-        // Do not store the clause as it is of size one and implies a assignment directly
         if( add_tmp.size() == 1 )
         {
+            // Do not store the clause as it is of size one and implies a assignment directly
             cancelUntil( 0 );
             if( value( add_tmp[0] ) == l_Undef )
             {
@@ -864,9 +867,9 @@ namespace smtrat
             }
             return false;
         }
-        // Store the clause
         else
         {
+            // Store the clause
             CRef cr;
             if( _type != NORMAL_CLAUSE )
             {
@@ -1367,6 +1370,16 @@ SetWatches:
 
             #ifdef DEBUG_SATMODULE
             cout << "### Sat iteration" << endl;
+                        cout << "######################################################################" << endl;
+                        cout << "###" << endl;
+                        printClauses( clauses, "Clauses", cout, "### " );
+                        cout << "###" << endl;
+                        printClauses( learnts, "Learnts", cout, "### " );
+                        cout << "###" << endl;
+                        printCurrentAssignment( cout, "### " );
+                        cout << "### " << endl;
+                        printDecisions( cout, "### " );
+                        cout << "### " << endl;
             #endif
 
             #ifdef SAT_TRY_FULL_LAZY_CALLS_FIRST
@@ -1393,16 +1406,6 @@ SetWatches:
                     #ifdef DEBUG_SATMODULE
                     if( numberOfTheoryCalls >= debugFromCall-1 )
                     {
-                        cout << "######################################################################" << endl;
-                        cout << "###" << endl;
-                        printClauses( clauses, "Clauses", cout, "### " );
-                        cout << "###" << endl;
-                        printClauses( learnts, "Learnts", cout, "### " );
-                        cout << "###" << endl;
-                        printCurrentAssignment( cout, "### " );
-                        cout << "### " << endl;
-                        printDecisions( cout, "### " );
-                        cout << "### " << endl;
                         cout << "### Check the constraints: ";
                     }
                     ++numberOfTheoryCalls;
@@ -1489,6 +1492,17 @@ SetWatches:
                                 cout << "### Result: False!" << endl;
                             }
                             #endif
+                            #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
+                            int dl = decisionLevel();
+                            learnTheoryConflict(); 
+                            processLemmas();
+                            deductionsLearned = true;
+                            if( dl == 0 )
+                            {
+                                return l_False;
+                            }
+                            currentAssignmentConsistent = True;
+                            #else
                             confl = learnTheoryConflict();
                             if( confl == CRef_Undef )
                             {
@@ -1496,6 +1510,7 @@ SetWatches:
                                 processLemmas();
                                 continue;
                             }
+                            #endif
                             break;
                         }
                         case Unknown:
@@ -2824,7 +2839,11 @@ NextClause:
                         betterConflict = true;
                     }
                 }
+                #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
+                if( addClause( learnt_clause, DEDUCTED_CLAUSE ) && betterConflict )
+                #else
                 if( addClause( learnt_clause, CONFLICT_CLAUSE ) && betterConflict )
+                #endif
                 {
                     conflictClause = learnts.last();
                 }
@@ -2837,8 +2856,12 @@ NextClause:
         }
         if( conflictClause != CRef_Undef && lowestLevel >= decisionLevel()+1 )
             Module::storeAssumptionsToCheck( *mpManager );
+        #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
+        cancelUntil(lowestLevel == 0 ? 0 : lowestLevel-1);
+        #else
         assert( conflictClause == CRef_Undef || lowestLevel < decisionLevel()+1 );
         cancelUntil(lowestLevel);
+        #endif
         return conflictClause;
     }
 

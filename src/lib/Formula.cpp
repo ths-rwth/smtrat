@@ -956,6 +956,7 @@ namespace smtrat
                 auto subformula = mpSubformula->subformulas().begin();
                 PointerSet<Formula> subformulas;
                 subformulas.insert( newNegation( *subformula ) );
+                ++subformula;
                 for( ; subformula != mpSubformula->subformulas().end(); ++subformula )
                     subformulas.insert( *subformula );
                 return newFormula( XOR, move( subformulas ) );

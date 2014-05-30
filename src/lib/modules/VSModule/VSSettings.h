@@ -54,16 +54,18 @@ namespace smtrat
     struct VSSettings2346 : VSSettings234
     {
         static const bool int_constraints_allowed                               = true;
-    };
-    
-    struct VSSettings23467 : VSSettings2346
-    {
         static const bool branch_and_bound                                      = true;
     };
     
     struct VSSettings2345 : VSSettings234
     {
         static const bool sturm_sequence_for_root_check                         = use_variable_bounds && true;
+    };
+    
+    struct VSSettings23456 : VSSettings2345
+    {
+        static const bool int_constraints_allowed                               = true;
+        static const bool branch_and_bound                                      = true;
     };
     
     struct VSSettings235 : VSSettings23
