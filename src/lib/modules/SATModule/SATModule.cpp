@@ -61,6 +61,7 @@
 //#define SAT_CHECK_BACKEND_MODEL
 //#define SAT_TRY_FULL_LAZY_CALLS_FIRST
 //#define SAT_APPLY_VALID_SUBSTITUTIONS
+//#define SAT_THEORY_CONFLICT_AS_LEMMA
 
 
 using namespace std;
@@ -2857,8 +2858,8 @@ NextClause:
             Module::storeAssumptionsToCheck( *mpManager );
         #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
         cancelUntil(lowestLevel == 0 ? 0 : lowestLevel-1);
-        assert( conflictClause == CRef_Undef || lowestLevel < decisionLevel()+1 );
         #else
+        assert( conflictClause == CRef_Undef || lowestLevel < decisionLevel()+1 );
         cancelUntil(lowestLevel);
         #endif
         return conflictClause;
