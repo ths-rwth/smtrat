@@ -50,10 +50,12 @@ using namespace std;
 // Main smtrat namespace.
 namespace smtrat
 {
+    
     vector<string> Module::mAssumptionToCheck = vector<string>();
     set<string> Module::mVariablesInAssumptionToCheck = set<string>();
-    Polynomial Module::mLastBranchPolynomial = smtrat::ZERO_POLYNOMIAL;
-    int Module::mNumberOfRepeatedEqualBranches = 0;
+    int Module::mNumOfBranchesToStore = 10;
+    vector<int> Module::mLastBranches = vector<int>( mNumOfBranchesToStore, 0 );
+    int Module::mFirstPosInLastBranches = 0;
 
     #ifdef SMTRAT_DEVOPTION_Validation
     ValidationSettings* Module::validationSettings = new ValidationSettings();
@@ -416,18 +418,23 @@ namespace smtrat
         return result;
     }
     
-    bool Module::probablyLooping( const Polynomial& _polynomial )
+    bool Module::probablyLooping( const Formula& _formula )
     {
-        if( mLastBranchPolynomial == _polynomial )
-        {
-            ++mNumberOfRepeatedEqualBranches;
-        }
-        else
-        {
-            mLastBranchPolynomial = _polynomial;
-            mNumberOfRepeatedEqualBranches = 0;
-        }
-        return mNumberOfRepeatedEqualBranches > 100;
+//        mLastBranches[mFirstPosInLastBranches] = _formula.getId();
+//        ++mFirstPosInLastBranches;
+//        if( mFirstPosInLastBranches > mNumOfBranchesToStore )
+//        {
+//            mFirstPosInLastBranches = 0;
+//        }
+//        for( int i = mFirstPosInLastBranches; i < mLastBranches.size(); ++i )
+//        {
+//            
+//        }
+//        for( int i = 0; i < mFirstPosInLastBranches; ++i )
+//        {
+//            
+//        }
+        return false;
             
     }
     
@@ -447,7 +454,6 @@ namespace smtrat
      */
     void Module::branchAt( const Polynomial& _polynomial, const Rational& _value, const PointerSet<Formula>& _premise, bool _leftCaseWeak )
     {
-        assert( !probablyLooping( _polynomial ) );
         assert( !_polynomial.hasConstantTerm() );
         const Constraint* constraintA = NULL;
         const Constraint* constraintB = NULL;
@@ -512,7 +518,9 @@ namespace smtrat
         }
         subformulasB.insert( newNegation( consA ) );
         subformulasB.insert( newNegation( consB ) );
-        addDeduction( newFormula( OR, std::move( subformulasB ) ) );
+        const Formula* deduction = newFormula( OR, std::move( subformulasB ) );
+        assert( !probablyLooping( *deduction ) );
+        addDeduction( deduction );
     }
     
     /**

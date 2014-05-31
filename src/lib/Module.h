@@ -143,8 +143,9 @@ namespace smtrat
 
             static std::vector<std::string> mAssumptionToCheck;
             static std::set<std::string> mVariablesInAssumptionToCheck;
-            static Polynomial mLastBranchPolynomial;
-            static int mNumberOfRepeatedEqualBranches;
+            static int mNumOfBranchesToStore;
+            static std::vector<int> mLastBranches;
+            static int mFirstPosInLastBranches;
 
             #ifdef SMTRAT_DEVOPTION_Validation
             static ValidationSettings* validationSettings;
@@ -375,7 +376,7 @@ namespace smtrat
             ModuleInput::iterator removeSubformulaFromPassedFormula( ModuleInput::iterator );
             vec_set_const_pFormula getInfeasibleSubsets( const Module& ) const;
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
-            static bool probablyLooping( const Polynomial& _polynomial );
+            static bool probablyLooping( const Formula& _formula );
             void branchAt( const Polynomial& _polynomial, const Rational& _value, const PointerSet<Formula>& = PointerSet<Formula>(), bool _leftCaseWeak = true );
             void splitUnequalConstraint( const Constraint* );
             unsigned checkModel() const;
