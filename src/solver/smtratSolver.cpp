@@ -355,21 +355,19 @@ int main( int argc, char* argv[] )
     #endif
 
     // Construct solver.
-    smtrat::parser::Driver parser;
     CMakeStrategySolver* solver = new CMakeStrategySolver();
 	
-    solver->rDebugOutputChannel().rdbuf( parser.rDiagnosticOutputChannel().rdbuf() );
     std::list<std::pair<std::string, smtrat::RuntimeSettings*> > settingsObjects = smtrat::addModules( solver );
     
     #ifdef SMTRAT_DEVOPTION_Statistics
-    smtrat::CollectStatistics::settings->rOutputChannel().rdbuf( parser.rDiagnosticOutputChannel().rdbuf() );
+    //smtrat::CollectStatistics::settings->rOutputChannel().rdbuf( parser.rDiagnosticOutputChannel().rdbuf() );
     #endif
     
     // Introduce the settingsObjects from the modules to the manager.
     settingsManager.addSettingsObject( settingsObjects );
 	
 	// Parse input.
-    parseInput( pathToInputFile, parser, parserSettings, solver );
+    unsigned exitCode = executeFile(pathToInputFile, parserSettings, solver, settingsManager);
 
     if( settingsManager.doPrintTimings() )
     {
@@ -391,5 +389,5 @@ int main( int argc, char* argv[] )
     delete solver;
     delete parserSettings;
 
-    //return returnValue;
+	return exitCode;
 }
