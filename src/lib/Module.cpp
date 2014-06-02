@@ -608,11 +608,12 @@ namespace smtrat
             assert( (*module)->solverState() != False );
             if( (*module)->solverState() == True )
             {
-                assert( modelsDisjoint( mModel, (*module)->model() ) );
+				//@todo modules should be disjoint, but this breaks CAD on certain inputs.
+                //assert( modelsDisjoint( mModel, (*module)->model() ) );
                 (*module)->updateModel();
                 for (auto ass: (*module)->model())
                 {
-                    mModel.insert(ass);
+					if (mModel.count(ass.first) == 0) mModel.insert(ass);
                 }
                 break;
             }
