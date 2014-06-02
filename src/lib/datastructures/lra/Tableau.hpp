@@ -3398,7 +3398,8 @@ FindPivot:
                 }      
                 row_iterator.hMove( false );
             }
-            // A Gomory Cut can be constructed              
+            // A Gomory Cut can be constructed
+            std::cout << "Create Cut for: " << _rowVar->expression() << std::endl;
             T2 coeff;
             T2 f_zero = _ass - T2(carl::floor( (Rational)_ass ));
             Polynomial sum = Polynomial();
@@ -3447,7 +3448,6 @@ FindPivot:
             const smtrat::Constraint* gomory_constr = newConstraint( sum , Relation::GEQ );
             std::cout << *gomory_constr << std::endl;
             newBound(gomory_constr);
-            //print();
             // TODO: check whether there is already a basic variable with this polynomial (psum, cf. LRAModule::initialize(..)) 
             return gomory_constr;
         }

@@ -358,7 +358,7 @@ namespace smtrat
             void addVariable( const class location&, std::string*, std::string* );
             carl::Variable addBooleanVariable( const class location&, const std::string&, bool = false );
             void addTheoryBinding( const class location&, std::string*, Polynomial* );
-            void booleanBinding( const class location&, std::string*, const Formula* );
+            void booleanBinding( std::string*, const Formula* );
             carl::Variable addTheoryVariable( const class location&, const std::string&, const std::string&, bool = false );
             carl::Variable getBooleanVariable( const class location&, const std::string& );
             void freeBooleanVariableName( const std::string& );

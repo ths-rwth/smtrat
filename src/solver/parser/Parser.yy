@@ -247,7 +247,7 @@ bindlist:
 
 bind:
         OB SYM poly CB { dv.addTheoryBinding( @2, $2, $3 ); }
-	|	OB SYM form CB { dv.booleanBinding( @2, $2, $3 ); }
+	|	OB SYM form CB { dv.booleanBinding( $2, $3 ); }
 
 poly:
         THEORY_VAR                 { $$ = dv.mkPolynomial( @1, $1 ); }
