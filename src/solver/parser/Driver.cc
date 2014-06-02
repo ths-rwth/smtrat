@@ -250,7 +250,7 @@ namespace smtrat
      * @param _formula
      * @return 
      */
-    void Driver::booleanBinding( const class location& _loc, string* _varName, const Formula* _formula )
+    void Driver::booleanBinding( string* _varName, const Formula* _formula )
     {
         mVariableStack.top().push_back( pair<string, unsigned>( *_varName, 0 ) );
         mLexer->mBooleanVariables.insert( *_varName );

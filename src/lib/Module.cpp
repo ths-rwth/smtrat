@@ -53,9 +53,9 @@ namespace smtrat
     
     vector<string> Module::mAssumptionToCheck = vector<string>();
     set<string> Module::mVariablesInAssumptionToCheck = set<string>();
-    int Module::mNumOfBranchesToStore = 10;
-    vector<int> Module::mLastBranches = vector<int>( mNumOfBranchesToStore, 0 );
-    int Module::mFirstPosInLastBranches = 0;
+    size_t Module::mNumOfBranchVarsToStore = 3;
+    vector<Branching> Module::mLastBranches = vector<Branching>( mNumOfBranchVarsToStore, Branching(ZERO_POLYNOMIAL, ZERO_RATIONAL) );
+    size_t Module::mFirstPosInLastBranches = 0;
 
     #ifdef SMTRAT_DEVOPTION_Validation
     ValidationSettings* Module::validationSettings = new ValidationSettings();
@@ -380,7 +380,6 @@ namespace smtrat
     void Module::addSubformulaToPassedFormula( const Formula* _formula, const Formula* _origin )
     {
         assert( mpReceivedFormula->size() != UINT_MAX );
-        assert( mPassedformulaOrigins.find(_formula) == mPassedformulaOrigins.end());
         mpPassedFormula->push_back( _formula );
         vec_set_const_pFormula originals;
         originals.push_back( PointerSet<Formula>() );
@@ -418,24 +417,54 @@ namespace smtrat
         return result;
     }
     
-    bool Module::probablyLooping( const Formula& _formula )
+    bool Module::probablyLooping( const Polynomial& _branchingPolynomial, const Rational& _branchingValue )
     {
-//        mLastBranches[mFirstPosInLastBranches] = _formula.getId();
-//        ++mFirstPosInLastBranches;
-//        if( mFirstPosInLastBranches > mNumOfBranchesToStore )
-//        {
-//            mFirstPosInLastBranches = 0;
-//        }
-//        for( int i = mFirstPosInLastBranches; i < mLastBranches.size(); ++i )
-//        {
-//            
-//        }
-//        for( int i = 0; i < mFirstPosInLastBranches; ++i )
-//        {
-//            
-//        }
+        assert( _branchingPolynomial.constantPart() == 0 );
+        auto iter = mLastBranches.begin();
+        for( ; iter != mLastBranches.end(); ++iter )
+        {
+            if( iter->mPolynomial == _branchingPolynomial )
+            {
+                if( iter->mIncreasing > 0 )
+                {
+                    if( _branchingValue >= iter->mValue )
+                    {
+                        ++(iter->mRepetitions);
+                    }
+                    else
+                    {
+                        iter->mIncreasing = -1;
+                        iter->mRepetitions = 1;
+                    }
+                }
+                else if( iter->mIncreasing < 0 )
+                {
+                    if( _branchingValue <= iter->mValue )
+                    {
+                        ++(iter->mRepetitions);
+                    }
+                    else
+                    {
+                        iter->mIncreasing = 1;
+                        iter->mRepetitions = 1;
+                    }
+                }
+                else
+                {
+                    ++(iter->mRepetitions);
+                    iter->mIncreasing = _branchingValue >= iter->mValue ?  1 : -1;
+                }
+                iter->mValue = _branchingValue;
+                if( iter->mRepetitions > 50 ) return true;
+                break;
+            }
+        }
+        if( iter == mLastBranches.end() )
+        {
+            mLastBranches[mFirstPosInLastBranches] = Branching( _branchingPolynomial, _branchingValue );
+            if( ++mFirstPosInLastBranches == mNumOfBranchVarsToStore ) mFirstPosInLastBranches = 0;
+        }
         return false;
-            
     }
     
     /**
@@ -454,6 +483,10 @@ namespace smtrat
      */
     void Module::branchAt( const Polynomial& _polynomial, const Rational& _value, const PointerSet<Formula>& _premise, bool _leftCaseWeak )
     {
+//        if( probablyLooping( _polynomial, _value ) )
+//        {
+//            exit( 7771 );
+//        }
         assert( !_polynomial.hasConstantTerm() );
         const Constraint* constraintA = NULL;
         const Constraint* constraintB = NULL;
@@ -519,7 +552,6 @@ namespace smtrat
         subformulasB.insert( newNegation( consA ) );
         subformulasB.insert( newNegation( consB ) );
         const Formula* deduction = newFormula( OR, std::move( subformulasB ) );
-        assert( !probablyLooping( *deduction ) );
         addDeduction( deduction );
     }
     
