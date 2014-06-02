@@ -46,9 +46,9 @@
 
 class Executor : public smtrat::parser::SMTLIBParser::InstructionHandler {
 	CMakeStrategySolver* solver;
-	smtrat::Answer lastAnswer;
 	unsigned exitCode;
 public:
+	smtrat::Answer lastAnswer;
 	Executor(CMakeStrategySolver* solver) : smtrat::parser::SMTLIBParser::InstructionHandler(), solver(solver) {}
 	void add(smtrat::Formula* f) {
 		std::cout << "adding " << *f << std::endl;
