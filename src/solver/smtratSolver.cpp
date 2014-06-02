@@ -50,8 +50,7 @@ class Executor : public smtrat::parser::SMTLIBParser::InstructionHandler {
 public:
 	smtrat::Answer lastAnswer;
 	Executor(CMakeStrategySolver* solver) : smtrat::parser::SMTLIBParser::InstructionHandler(), solver(solver) {}
-	void add(smtrat::Formula* f) {
-		std::cout << "adding " << *f << std::endl;
+	void add(const smtrat::Formula* f) {
 		this->solver->add(f);
 	}
 	void check() {
@@ -90,25 +89,23 @@ public:
 			}
 		}
 	}
-	void declareConst(const std::string&, const std::string&) {
-		error() << "(declare-const <name> <sort>) is not implemented.";
+	void declareConst(const std::string&, const carl::VariableType&) {
+		//error() << "(declare-const <name> <sort>) is not implemented.";
 	}
-	void declareFun(const std::string&, const std::vector<std::string>&, const std::string&) {
+	void declareFun(const std::string&, const std::vector<std::string>&, const carl::VariableType&) {
 		///@todo do we need declareFun()?
 		//error() << "(declare-fun <name> <symbols> <sort> <term>) is not implemented.";
 	}
 	void declareSort(const std::string&, const unsigned&) {
 		error() << "(declare-sort <name> <arity>) is not implemented.";
 	}
-	void defineFun(const std::string&, const std::vector<std::string>&, const std::string&, const smtrat::Formula*) {
+	void defineFun(const std::string&, const std::vector<std::string>&, const carl::VariableType&, const smtrat::Formula*) {
 		error() << "(define-fun <name> (<variables>) <sort> <term>) is not implemented.";
 	}
 	void defineSort(const std::string&, const std::vector<std::string>&, const std::string&) {
 		error() << "(define-sort <name> <sort>) is not implemented.";
 	}
 	void exit() {
-		///@todo silently ignores exit, but parser should actually be stopped
-		//std::exit(this->exitCode);
 	}
 	void getAssertions() {
 		this->solver->printAssertions(std::cout);
@@ -124,7 +121,7 @@ public:
 	void getUnsatCore() {
 		this->solver->printInfeasibleSubset(std::cout);
 	}
-	void getValue(const std::vector<std::string>&) {
+	void getValue(const std::vector<carl::Variable>&) {
 		error() << "(get-value <variables>) is not implemented.";
 	}
 	void pop(const unsigned& n) {
@@ -139,6 +136,9 @@ public:
 		} else {
 			this->solver->rLogic() = logic;
 		}
+	}
+	unsigned getExitCode() const {
+		return this->exitCode;
 	}
 };
 
