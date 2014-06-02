@@ -40,9 +40,13 @@
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "../lib/utilities/stats/CollectStatistics.h"
 #include "lib/utilities/stats/StatisticSettings.h"
-#include "newparser/Parser.h"
 #endif //SMTRAT_DEVOPTION_Statistics
 
+//#define NEWPARSER
+
+#ifdef NEWPARSER
+
+#include "newparser/Parser.h"
 
 class Executor : public smtrat::parser::SMTLIBParser::InstructionHandler {
 	CMakeStrategySolver* solver;
@@ -171,12 +175,140 @@ unsigned executeFile(const std::string& pathToInputFile, smtrat::ParserSettings*
         solver->printAssignment( std::cout );
     }
 	delete e;
+	return exitCode;
+}
+
+#else
+
+unsigned executeFile(const std::string& pathToInputFile, smtrat::ParserSettings* settings, CMakeStrategySolver* nratSolver, const smtrat::RuntimeSettingsManager& settingsManager) {
+	smtrat::Driver parser;
+	settings->setOptionsToParser( parser );
+    std::fstream infile( pathToInputFile.c_str() );
+    if( !infile.good() )
+    {
+        std::cerr << "Could not open file: " << pathToInputFile << std::endl;
+        return SMTRAT_EXIT_NOSUCHFILE;
+    }
+    bool parsingSuccessful = parser.parse_stream( infile, pathToInputFile.c_str() );
     if(!parsingSuccessful)
     {
         std::cerr << "Parse error" << std::endl;
-        exit(SMTRAT_EXIT_PARSERFAILURE);
+        return SMTRAT_EXIT_PARSERFAILURE;
     }
+	
+	nratSolver->rDebugOutputChannel().rdbuf( parser.rDiagnosticOutputChannel().rdbuf() );
+	
+	unsigned returnValue = 0;
+	smtrat::Answer lastAnswer = smtrat::Unknown;
+    smtrat::InstructionKey currentInstructionKey;
+    smtrat::InstructionValue currentInstructionValue;
+    while( parser.getInstruction( currentInstructionKey, currentInstructionValue ) )
+    {
+		std::cout << currentInstructionKey << std::endl;
+        switch( currentInstructionKey )
+        {
+            case smtrat::PUSHBT:
+            {
+                for( int i = 0; i<currentInstructionValue.num; ++i )
+                    nratSolver->push();
+                break;
+            }
+            case smtrat::POPBT:
+            {
+                for( int i = 0; i<currentInstructionValue.num; ++i )
+                    if( !nratSolver->pop() )
+                        parser.error( "Cannot pop an empty stack of backtrack points!", true );
+                break;
+            }
+            case smtrat::ASSERT:
+            {
+                nratSolver->add( currentInstructionValue.formula );
+                break;
+            }
+            case smtrat::CHECK:
+            {
+                lastAnswer = nratSolver->check();
+                switch( lastAnswer )
+                {
+                    case smtrat::True:
+                    {
+                        if( parser.status() == 0 )
+                        {
+                            parser.error( "expected unsat, but returned sat", true );
+                            returnValue = SMTRAT_EXIT_WRONG_ANSWER;
+                        }
+                        else
+                        {
+                            parser.rRegularOutputChannel() << "sat" << std::endl;
+                            returnValue = SMTRAT_EXIT_SAT;
+                        }
+                        break;
+                    }
+                    case smtrat::False:
+                    {
+                        if( parser.status() == 1 )
+                        {
+                            parser.error( "error, expected sat, but returned unsat", true );
+                            returnValue = SMTRAT_EXIT_WRONG_ANSWER;
+                        }
+                        else
+                        {
+                            parser.rRegularOutputChannel() << "unsat" << std::endl;
+                            returnValue = SMTRAT_EXIT_UNSAT;
+                        }
+                        break;
+                    }
+                    case smtrat::Unknown:
+                    {
+                        parser.rRegularOutputChannel() << "unknown" << std::endl;
+                        returnValue = SMTRAT_EXIT_UNKNOWN;
+                        break;
+                    }
+                    default:
+                    {
+                        parser.error( "Unexpected output!", true );
+                        returnValue = SMTRAT_EXIT_UNEXPECTED_ANSWER;
+                    }
+                }
+                break;
+            }
+            case smtrat::GET_ASSIGNMENT:
+            {
+                if( lastAnswer == smtrat::True )
+                {
+                    nratSolver->printAssignment( parser.rRegularOutputChannel() );
+                }
+                break;
+            }
+            case smtrat::GET_ASSERTS:
+            {
+                nratSolver->printAssertions( parser.rRegularOutputChannel() );
+                break;
+            }
+            case smtrat::GET_UNSAT_CORE:
+            {
+                nratSolver->printInfeasibleSubset( parser.rRegularOutputChannel() );
+                break;
+            }
+            default:
+            {
+                parser.error( "Unknown order!" );
+                assert( false );
+            }
+        }
+    }
+	
+	// Print assignment if provoked by system call.
+    if( settingsManager.printModel() && lastAnswer == smtrat::True )
+    {
+        std::cout << std::endl;
+        nratSolver->printAssignment( std::cout );
+    }
+	
+	return returnValue;
 }
+
+#endif
 
 void printTimings(smtrat::Manager* solver)
 {
