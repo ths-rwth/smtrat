@@ -148,18 +148,28 @@ public:
  * @param formula A pointer to the formula object which holds the parsed input afterwards.
  * @param options Save options from the smt2 file here.
  */
-void parseInput( const std::string& pathToInputFile, smtrat::parser::Driver& _parser, smtrat::ParserSettings* settings, CMakeStrategySolver* solver )
-{
-    settings->setOptionsToParser( _parser );
-    std::fstream infile( pathToInputFile.c_str() );
-    if( !infile.good() )
-    {
+unsigned executeFile(const std::string& pathToInputFile, smtrat::ParserSettings* settings, CMakeStrategySolver* solver, const smtrat::RuntimeSettingsManager& settingsManager) {
+    std::ifstream infile(pathToInputFile);
+    if (!infile.good()) {
         std::cerr << "Could not open file: " << pathToInputFile << std::endl;
         exit(SMTRAT_EXIT_NOSUCHFILE);
     }
 	Executor* e = new Executor(solver);
-	smtrat::parser::SMTLIBParser parser(e);
-    bool parsingSuccessful = parser.parse( infile, pathToInputFile.c_str() );
+	smtrat::parser::SMTLIBParser parser(e, false);
+    settings->setOptionsToParser(parser);
+    bool parsingSuccessful = parser.parse(infile, pathToInputFile);
+	if (parser.queueInstructions) e->runInstructions();
+	unsigned exitCode = e->getExitCode();
+    if (!parsingSuccessful) {
+        std::cerr << "Parse error" << std::endl;
+		delete e;
+        exit(SMTRAT_EXIT_PARSERFAILURE);
+    }
+    if( settingsManager.printModel() && e->lastAnswer == smtrat::True )
+    {
+        std::cout << std::endl;
+        solver->printAssignment( std::cout );
+    }
 	delete e;
     if(!parsingSuccessful)
     {
