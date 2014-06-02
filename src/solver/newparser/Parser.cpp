@@ -130,12 +130,7 @@ bool SMTLIBParser::parse(std::istream& in, const std::string& filename) {
 	Iterator begin(basebegin);
 	Iterator end;
 	Skipper skipper;
-	try {
-		return qi::phrase_parse(begin, end, main, skipper);
-	} catch (...) {
-		std::cerr << "Unknown error during parser." << std::endl;
-		return false;
-	}
+	return qi::phrase_parse(begin, end, main, skipper);
 }
 
 void SMTLIBParser::add(const Formula* f) {
