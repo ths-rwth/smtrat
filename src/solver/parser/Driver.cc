@@ -521,7 +521,6 @@ namespace smtrat
             if( mInstructionQueue.empty() ) return false;
             _instruction = mInstructionQueue.front().first;
             _arg = mInstructionQueue.front().second;
-            mInstructionQueue.pop();
             switch( _instruction )
             {
                 case ASSERT:
@@ -603,9 +602,7 @@ namespace smtrat
                     if( mOptions.print_instruction )
                         mRegularOutputChannel << "> (get-assignment)" << endl;
                     if( !mOptions.produce_assignments )
-                    {
-//                        error( "The assignment production must be activated to retrieve them!", true );
-                    }
+                        error( "The assignment production must be activated to retrieve them!", true );
                     else if( !mCheckResultActive )
                         error( "There must be a check provoked before an assignment can be found!", true );
                     else
@@ -681,14 +678,12 @@ namespace smtrat
                 {
                     if( mOptions.print_instruction )
                         mRegularOutputChannel << "> (set-logic " << *_arg.key << ")" << endl;
-                    mSentSolverInstruction = true;
                     if( *_arg.key == "QF_NRA" ) mLogic = Logic::QF_NRA;
                     else if( *_arg.key == "QF_LRA" ) mLogic = Logic::QF_LRA;
                     else if( *_arg.key == "QF_NIA" ) mLogic = Logic::QF_NIA;
                     else if( *_arg.key == "QF_LIA" ) mLogic = Logic::QF_LIA;
                     else
                     {
-                        mSentSolverInstruction = false;
                         error( *_arg.key + " is not supported!", true );
                     }
                     delete _arg.key;
@@ -703,6 +698,7 @@ namespace smtrat
             }
             if( mOptions.print_success && !mLastInstructionFailed && !mSentSolverInstruction )
                 mRegularOutputChannel << "(success)" << endl;
+            mInstructionQueue.pop();
         }
         return true;
     }
