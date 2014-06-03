@@ -1248,6 +1248,7 @@ Return:
         size_t dc_count = 0;
         LRAEntryType max_value = 0;
         vector<size_t> dc_positions = vector<size_t>();
+        std::vector< const Constraint* > DC_Matrix = std::vector< const Constraint* >();
         for( size_t i = 0; i < numRows; ++i )
         {
             LRAEntryType lcmOfCoeffDenoms = 1;
@@ -1262,12 +1263,18 @@ Return:
                 if( row_count_before < dc_Tableau.rows().size() )
                 {
                     dc_count++;
-                    dc_positions.push_back(i);                    
+                    dc_positions.push_back(i);  
+                    DC_Matrix.push_back( dc_constraint );
                 }
             }   
         }
+        auto pos = mProcessedDCMatrices.find( DC_Matrix );
+        if( pos == mProcessedDCMatrices.end() )
+        {
+            mProcessedDCMatrices.insert( DC_Matrix );
+        }
         dc_Tableau.print();
-        if( dc_Tableau.rows().size() > 0 )
+        if( dc_Tableau.rows().size() > 0 && pos == mProcessedDCMatrices.end() )
         {
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
             cout << "Defining constraint:" << endl;

@@ -3476,6 +3476,10 @@ FindPivot:
             }
         }
         
+        
+        /**
+         * Collects the premises for branch and bound and stores them in premises.  
+         */ 
         template<typename T1, typename T2>
         void Tableau<T1,T2>::collect_premises(Variable<T1,T2>* _rowVar, PointerSet<Formula>& premises)
         {
