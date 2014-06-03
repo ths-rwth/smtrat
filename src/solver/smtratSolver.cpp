@@ -62,7 +62,7 @@ public:
 		switch (this->lastAnswer) {
 			case smtrat::Answer::True: {
 				if (this->infos.has<std::string>("status") && this->infos.get<std::string>("status") == "unsat") {
-					regular() << "expected unsat, but returned sat" << std::endl;
+					error() << "expected unsat, but returned sat";
 					this->exitCode = SMTRAT_EXIT_WRONG_ANSWER;
 				} else {
 					regular() << "sat" << std::endl;
@@ -73,7 +73,7 @@ public:
 			}
 			case smtrat::Answer::False: {
 				if (this->infos.has<std::string>("status") && this->infos.get<std::string>("status") == "sat") {
-					regular() << "expected sat, but returned unsat" << std::endl;
+					error() << "expected sat, but returned unsat";
 					this->exitCode = SMTRAT_EXIT_WRONG_ANSWER;
 				} else {
 					regular() << "unsat" << std::endl;
@@ -82,12 +82,12 @@ public:
 				break;
 			}
 			case smtrat::Answer::Unknown: {
-				regular() << "unknown" << std::endl;
+				warn() << "unknown";
 				this->exitCode = SMTRAT_EXIT_UNKNOWN;
 				break;
 			}
 			default: {
-				regular() << "unexpected output!" << std::endl;
+				error() << "unexpected output!";
 				this->exitCode = SMTRAT_EXIT_UNEXPECTED_ANSWER;
 				break;
 			}
@@ -389,5 +389,5 @@ int main( int argc, char* argv[] )
     delete solver;
     delete parserSettings;
 
-	return exitCode;
+	return (int)exitCode;
 }
