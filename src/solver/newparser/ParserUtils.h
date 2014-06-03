@@ -65,6 +65,7 @@ struct SuccessHandlerPtr {
 };
 
 struct ErrorHandler {
+	template<typename> struct result { typedef qi::error_handler_result type; };
 	template<typename Parser, typename T1, typename T2, typename T3, typename T4>
 	qi::error_handler_result operator()(const Parser& p, T1 b, T2 e, T3 where, T4 const& what) const {
 		auto line_start = spirit::get_line_start(b, where);
