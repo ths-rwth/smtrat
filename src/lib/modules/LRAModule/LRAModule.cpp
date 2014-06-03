@@ -1380,7 +1380,7 @@ Return:
      */
     bool LRAModule::branch_and_bound()
     {
-        BRANCH_STRATEGY strat = MOST_INFEASIBLE;
+        BRANCH_STRATEGY strat = MIN_PIVOT;
         bool result;
         if( strat == MIN_PIVOT )
         {
@@ -1434,15 +1434,7 @@ Return:
         if( result )
         {
             PointerSet<Formula> premises;
-            auto vec_iter = mpReceivedFormula->begin();
-            while( vec_iter != mpReceivedFormula->end() )
-            {
-                if ( (*(*vec_iter)->pConstraint()).lhs().evaluate( _rMap ) == 0 )
-                {
-                    premises.insert( newFormula( (*vec_iter)->pConstraint() ) );
-                }
-                ++vec_iter;
-            }
+            mTableau.collect_premises( branch_var->second , premises  );
             branchAt( Polynomial( branch_var->first ), ass_, premises );
             return true;
         }
@@ -1485,15 +1477,7 @@ Return:
         if( result )
         {
             PointerSet<Formula> premises;
-            auto vec_iter = mpReceivedFormula->begin();
-            while( vec_iter != mpReceivedFormula->end() )
-            {
-                if ( (*(*vec_iter)->pConstraint()).lhs().evaluate( _rMap ) == 0 )
-                {
-                    premises.insert( newFormula( (*vec_iter)->pConstraint() ) );
-                }
-                ++vec_iter;
-            }
+            mTableau.collect_premises( branch_var->second , premises  );
             branchAt( Polynomial( branch_var->first ), ass_, premises );
             return true;
         }
@@ -1536,15 +1520,7 @@ Return:
         if( result )
         {
             PointerSet<Formula> premises;
-            auto vec_iter = mpReceivedFormula->begin();
-            while( vec_iter != mpReceivedFormula->end() )
-            {
-                if ( (*(*vec_iter)->pConstraint()).lhs().evaluate( _rMap ) == 0 )
-                {
-                    premises.insert( newFormula( (*vec_iter)->pConstraint() ) );
-                }
-                ++vec_iter;
-            }
+            mTableau.collect_premises( branch_var->second , premises  );
             branchAt( Polynomial( branch_var->first ), ass_, premises );
             return true;
         }
@@ -1570,15 +1546,7 @@ Return:
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
                 PointerSet<Formula> premises;
-                auto vec_iter = mpReceivedFormula->begin();
-                while( vec_iter != mpReceivedFormula->end() )
-                {
-                    if ( (*(*vec_iter)->pConstraint()).lhs().evaluate( _rMap ) == 0 )
-                    {
-                        premises.insert( newFormula( (*vec_iter)->pConstraint() ) );
-                    }
-                    ++vec_iter;
-                }            
+                mTableau.collect_premises( var->second , premises  );         
                 branchAt( Polynomial( var->first ), ass, premises ); 
                 return true;                
             }

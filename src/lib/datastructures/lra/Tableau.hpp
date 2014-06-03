@@ -406,6 +406,7 @@ namespace smtrat
                 const smtrat::Constraint* gomoryCut( const T2&, Variable<T1, T2>*, std::vector<const smtrat::Constraint*>&);
                 #endif
                 size_t getNumberOfEntries( Variable<T1,T2>* );
+                void collect_premises( Variable<T1,T2>*, PointerSet<Formula>&  );
                 void printHeap( std::ostream& = std::cout, int = 30, const std::string = "" ) const;
                 void printEntry( EntryID, std::ostream& = std::cout, int = 20 ) const;
                 void printVariables( bool = true, std::ostream& = std::cout, const std::string = "" ) const;
@@ -3473,6 +3474,35 @@ FindPivot:
                     return result;
                 }
             }
+        }
+        
+        template<typename T1, typename T2>
+        void Tableau<T1,T2>::collect_premises(Variable<T1,T2>* _rowVar, PointerSet<Formula>& premises)
+        {
+            Iterator row_iterator = Iterator( _rowVar->startEntry(), mpEntries );  
+            while( true )
+            {
+                const Variable<T1, T2>& nonBasicVar = *(*row_iterator).columnVar();
+                if( nonBasicVar.infimum() == nonBasicVar.assignment() || nonBasicVar.supremum() == nonBasicVar.assignment() )
+                {
+                    if( nonBasicVar.infimum() == nonBasicVar.assignment() )
+                    {
+                        premises.insert( newFormula( (*(*row_iterator).columnVar()).infimum().pAsConstraint() ) );                        
+                    }
+                    else
+                    {
+                        premises.insert( newFormula( (*(*row_iterator).columnVar()).supremum().pAsConstraint() ) );                        
+                    }
+                }
+                if( row_iterator.hEnd( false ) )
+                {
+                    row_iterator.hMove( false );
+                }
+                else
+                {
+                    return;
+                }              
+            }            
         }
 
         /**
