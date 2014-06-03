@@ -472,7 +472,7 @@ namespace smtrat
 		carl::cad::Constraint<smtrat::Rational> constraint = convertConstraint( f->constraint() );
 		//std::cout << "asserting\t" << constraint << std::endl;
 		mConstraints.push_back( constraint );
-		mConstraintsMap[ f ] = mConstraints.size() - 1;
+		mConstraintsMap[ f ] = (unsigned)(mConstraints.size() - 1);
 		mCAD.addPolynomial(Polynomial(constraint.getPolynomial()), constraint.getVariables());
 		mConflictGraph.addConstraintVertex(); // increases constraint index internally what corresponds to adding a new constraint node with index mConstraints.size()-1
 		if( solverState() == False ) {
@@ -580,7 +580,7 @@ namespace smtrat
     {
         // initialize MIS with the last constraint
         vec_set_const_pFormula mis = vec_set_const_pFormula( 1, PointerSet<Formula>() );
-        mis.front().insert( getConstraintAt( mConstraints.size() - 1 ) );    // the last constraint is assumed to be always in the MIS
+        mis.front().insert( getConstraintAt( (unsigned)(mConstraints.size() - 1) ) );    // the last constraint is assumed to be always in the MIS
         if( mConstraints.size() > 1 )
         { // construct set cover by greedy heuristic
             list<ConflictGraph::Vertex> setCover = list<ConflictGraph::Vertex>();
@@ -599,7 +599,7 @@ namespace smtrat
             }
             // collect constraints according to the vertex cover
             for( list<ConflictGraph::Vertex>::const_iterator v = setCover.begin(); v != setCover.end(); ++v )
-                mis.front().insert( getConstraintAt( *v ) );
+                mis.front().insert( getConstraintAt( (unsigned)(*v) ) );
         }
         return mis;
     }
