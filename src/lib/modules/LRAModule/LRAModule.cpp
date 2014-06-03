@@ -37,7 +37,7 @@
 #define LRA_ONE_REASON
 #ifndef LRA_GOMORY_CUTS
 #ifndef LRA_CUTS_FROM_PROOFS
-#define LRA_BRANCH_AND_BOUND
+//#define LRA_BRANCH_AND_BOUND
 #endif
 #endif
 
@@ -1433,7 +1433,17 @@ Return:
         }
         if( result )
         {
-            branchAt( Polynomial( branch_var->first ), ass_ );
+            PointerSet<Formula> premises;
+            auto vec_iter = mpReceivedFormula->begin();
+            while( vec_iter != mpReceivedFormula->end() )
+            {
+                if ( (*(*vec_iter)->pConstraint()).lhs().evaluate( _rMap ) == 0 )
+                {
+                    premises.insert( newFormula( (*vec_iter)->pConstraint() ) );
+                }
+                ++vec_iter;
+            }
+            branchAt( Polynomial( branch_var->first ), ass_, premises );
             return true;
         }
         else
@@ -1453,8 +1463,8 @@ Return:
         auto map_iterator = _rMap.begin();
         auto branch_var = mTableau.originalVars().begin();
         Rational ass_;
-        Rational diff = 0;
         bool result = false;
+        Rational diff = -1;
         for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
         {
             assert( var->first == map_iterator->first );
@@ -1467,20 +1477,30 @@ Return:
                     result = true;
                     diff = carl::abs( curr_diff -  (Rational)1/2 ); 
                     branch_var = var;
-                    ass_ = ass; 
+                    ass_ = ass;                   
                 }
             }
             ++map_iterator;
         }
         if( result )
         {
-            branchAt( Polynomial( branch_var->first ), ass_ );
+            PointerSet<Formula> premises;
+            auto vec_iter = mpReceivedFormula->begin();
+            while( vec_iter != mpReceivedFormula->end() )
+            {
+                if ( (*(*vec_iter)->pConstraint()).lhs().evaluate( _rMap ) == 0 )
+                {
+                    premises.insert( newFormula( (*vec_iter)->pConstraint() ) );
+                }
+                ++vec_iter;
+            }
+            branchAt( Polynomial( branch_var->first ), ass_, premises );
             return true;
         }
         else
         {
             return false;
-        }        
+        } 
     }
     
      /**
@@ -1515,7 +1535,17 @@ Return:
         }
         if( result )
         {
-            branchAt( Polynomial( branch_var->first ), ass_ );
+            PointerSet<Formula> premises;
+            auto vec_iter = mpReceivedFormula->begin();
+            while( vec_iter != mpReceivedFormula->end() )
+            {
+                if ( (*(*vec_iter)->pConstraint()).lhs().evaluate( _rMap ) == 0 )
+                {
+                    premises.insert( newFormula( (*vec_iter)->pConstraint() ) );
+                }
+                ++vec_iter;
+            }
+            branchAt( Polynomial( branch_var->first ), ass_, premises );
             return true;
         }
         else
@@ -1539,7 +1569,17 @@ Return:
             Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
-                branchAt( Polynomial( var->first ), ass ); 
+                PointerSet<Formula> premises;
+                auto vec_iter = mpReceivedFormula->begin();
+                while( vec_iter != mpReceivedFormula->end() )
+                {
+                    if ( (*(*vec_iter)->pConstraint()).lhs().evaluate( _rMap ) == 0 )
+                    {
+                        premises.insert( newFormula( (*vec_iter)->pConstraint() ) );
+                    }
+                    ++vec_iter;
+                }            
+                branchAt( Polynomial( var->first ), ass, premises ); 
                 return true;                
             }
             ++map_iterator;
