@@ -1492,17 +1492,17 @@ SetWatches:
                                 cout << "### Result: False!" << endl;
                             }
                             #endif
-                            #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
-                            int dl = decisionLevel();
-                            learnTheoryConflict(); 
-                            processLemmas();
-                            deductionsLearned = true;
-                            if( dl == 0 )
-                            {
-                                return l_False;
-                            }
-                            currentAssignmentConsistent = True;
-                            #else
+//                            #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
+//                            int dl = decisionLevel();
+//                            confl = learnTheoryConflict(); 
+//                            processLemmas();
+//                            deductionsLearned = true;
+//                            if( dl == 0 )
+//                            {
+//                                return l_False;
+//                            }
+//                            currentAssignmentConsistent = True;
+//                            #else
                             confl = learnTheoryConflict();
                             if( confl == CRef_Undef )
                             {
@@ -1510,7 +1510,7 @@ SetWatches:
                                 processLemmas();
                                 continue;
                             }
-                            #endif
+//                            #endif
                             break;
                         }
                         case Unknown:
@@ -2791,6 +2791,9 @@ NextClause:
     {
         CRef conflictClause = CRef_Undef;
         int lowestLevel = decisionLevel()+1;
+        #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
+        int numOfLowLevelLiterals = 0;
+        #endif
         vector<Module*>::const_iterator backend = usedBackends().begin();
         while( backend != usedBackends().end() )
         {
@@ -2817,6 +2820,9 @@ NextClause:
                     if( level( var( lit ) ) <= lowestLevel )
                     {
                         lowestLevel = level( var( lit ) );
+                        #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
+                        numOfLowLevelLiterals = 1;
+                        #endif
                         betterConflict = true;
                     }
                     learnt_clause.push( mkLit( var( lit ), !sign( lit ) ) );
@@ -2824,23 +2830,46 @@ NextClause:
                 else
                 {
                     int clauseLevel = 0;
+                    #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
+                    int numOfLowestLevelLiteralsInClause = 0;
+                    #endif
                     for( auto subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                     {
                         Lit lit = getLiteral( **subformula );
-                        if( level( var( lit ) ) > clauseLevel )
+                        int litLevel = level( var( lit ) ) ;
+                        if( litLevel > clauseLevel )
                         {
                             clauseLevel = level( var( lit ) );
+                            #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
+                            numOfLowestLevelLiteralsInClause = 1;
+                            #endif
                         }
+                        #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
+                        else if( litLevel == clauseLevel )
+                        {
+                            ++numOfLowestLevelLiteralsInClause;
+                        }
+                        #endif
                         learnt_clause.push( mkLit( var( lit ), !sign( lit ) ) );
                     }
                     if( clauseLevel < lowestLevel )
                     {
                         lowestLevel = clauseLevel;
+                        #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
+                        numOfLowLevelLiterals = numOfLowestLevelLiteralsInClause;
+                        #endif
                         betterConflict = true;
                     }
+                    #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
+                    else if( clauseLevel == lowestLevel && numOfLowLevelLiterals < numOfLowestLevelLiteralsInClause )
+                    {
+                        numOfLowLevelLiterals = numOfLowestLevelLiteralsInClause;
+                        betterConflict = true;
+                    }
+                    #endif
                 }
                 #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
-                if( addClause( learnt_clause, DEDUCTED_CLAUSE ) && betterConflict )
+                if( addClause( learnt_clause, CONFLICT_CLAUSE ) && betterConflict )
                 #else
                 if( addClause( learnt_clause, CONFLICT_CLAUSE ) && betterConflict )
                 #endif
@@ -2857,7 +2886,11 @@ NextClause:
         if( conflictClause != CRef_Undef && lowestLevel >= decisionLevel()+1 )
             Module::storeAssumptionsToCheck( *mpManager );
         #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
-        cancelUntil(lowestLevel == 0 ? 0 : lowestLevel-1);
+        if( numOfLowLevelLiterals == 1 )
+        {
+            cancelUntil(lowestLevel == 0 ? 0 : lowestLevel-1);
+            return CRef_Undef;
+        }
         #else
         assert( conflictClause == CRef_Undef || lowestLevel < decisionLevel()+1 );
         cancelUntil(lowestLevel);
