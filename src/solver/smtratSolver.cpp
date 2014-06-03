@@ -159,7 +159,7 @@ unsigned executeFile(const std::string& pathToInputFile, smtrat::ParserSettings*
         exit(SMTRAT_EXIT_NOSUCHFILE);
     }
 	Executor* e = new Executor(solver);
-	smtrat::parser::SMTLIBParser parser(e, false);
+	smtrat::parser::SMTLIBParser parser(e, true);
     settings->setOptionsToParser(parser);
     bool parsingSuccessful = parser.parse(infile, pathToInputFile);
 	if (parser.queueInstructions) e->runInstructions();
