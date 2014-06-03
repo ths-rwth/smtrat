@@ -228,9 +228,7 @@ namespace smtrat
 		//std::cout << "CAD has:" << std::endl;
 		//for (auto c: this->mConstraints) std::cout << "\t\t" << c << std::endl;
 		//this->printReceivedFormula();
-        if( !mpReceivedFormula->isRealConstraintConjunction() ) {
-			std::cout << mpReceivedFormula->toString() << std::endl;
-			std::cout << mpReceivedFormula->properties() << std::endl;
+        if( !mpReceivedFormula->isRealConstraintConjunction() && !mpReceivedFormula->isIntegerConstraintConjunction() ) {
             return foundAnswer( Unknown );
 		}
         if( !mInfeasibleSubsets.empty() )
@@ -344,7 +342,18 @@ namespace smtrat
         #endif
         this->addDeductions( deductions );
         #endif
-        return foundAnswer( anAnswerFound() ? Unknown : True );
+        if( mpReceivedFormula->isIntegerConstraintConjunction() )
+        {
+            // Check whether the found assignment is integer.
+            
+            //if( IS NOT INTEGER ASSIGNMENT )
+            //{
+            ////Branch for the variable which is not assigned to an integer value
+            //branchAt( Polynomial( THE_VARIABLE ), THE_RATIONAL_NOT_BEING_INTEGER );
+            //return foundAnswer( Unknown );
+            //}
+        }
+        return foundAnswer( True );
     }
 
     void CADModule::removeSubformula( ModuleInput::const_iterator _subformula )

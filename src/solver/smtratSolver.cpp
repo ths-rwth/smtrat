@@ -204,7 +204,6 @@ unsigned executeFile(const std::string& pathToInputFile, smtrat::ParserSettings*
     smtrat::InstructionValue currentInstructionValue;
     while( parser.getInstruction( currentInstructionKey, currentInstructionValue ) )
     {
-		std::cout << currentInstructionKey << std::endl;
         switch( currentInstructionKey )
         {
             case smtrat::PUSHBT:
