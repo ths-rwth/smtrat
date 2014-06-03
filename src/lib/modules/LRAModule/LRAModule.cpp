@@ -37,7 +37,7 @@
 #define LRA_ONE_REASON
 #ifndef LRA_GOMORY_CUTS
 #ifndef LRA_CUTS_FROM_PROOFS
-#define LRA_BRANCH_AND_BOUND
+//#define LRA_BRANCH_AND_BOUND
 #endif
 #endif
 
@@ -1248,6 +1248,7 @@ Return:
         size_t dc_count = 0;
         LRAEntryType max_value = 0;
         vector<size_t> dc_positions = vector<size_t>();
+        std::vector< const Constraint* > DC_Matrix = std::vector< const Constraint* >();
         for( size_t i = 0; i < numRows; ++i )
         {
             LRAEntryType lcmOfCoeffDenoms = 1;
@@ -1262,12 +1263,18 @@ Return:
                 if( row_count_before < dc_Tableau.rows().size() )
                 {
                     dc_count++;
-                    dc_positions.push_back(i);                    
+                    dc_positions.push_back(i);  
+                    DC_Matrix.push_back( dc_constraint );
                 }
             }   
         }
+        auto pos = mProcessedDCMatrices.find( DC_Matrix );
+        if( pos == mProcessedDCMatrices.end() )
+        {
+            mProcessedDCMatrices.insert( DC_Matrix );
+        }
         dc_Tableau.print();
-        if( dc_Tableau.rows().size() > 0 )
+        if( dc_Tableau.rows().size() > 0 && pos == mProcessedDCMatrices.end() )
         {
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
             cout << "Defining constraint:" << endl;
@@ -1380,7 +1387,7 @@ Return:
      */
     bool LRAModule::branch_and_bound()
     {
-        BRANCH_STRATEGY strat = MOST_INFEASIBLE;
+        BRANCH_STRATEGY strat = MIN_PIVOT;
         bool result;
         if( strat == MIN_PIVOT )
         {
@@ -1433,7 +1440,9 @@ Return:
         }
         if( result )
         {
-            branchAt( Polynomial( branch_var->first ), ass_ );
+            PointerSet<Formula> premises;
+            mTableau.collect_premises( branch_var->second , premises  );
+            branchAt( Polynomial( branch_var->first ), ass_, premises );
             return true;
         }
         else
@@ -1453,8 +1462,8 @@ Return:
         auto map_iterator = _rMap.begin();
         auto branch_var = mTableau.originalVars().begin();
         Rational ass_;
-        Rational diff = 0;
         bool result = false;
+        Rational diff = -1;
         for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
         {
             assert( var->first == map_iterator->first );
@@ -1467,20 +1476,22 @@ Return:
                     result = true;
                     diff = carl::abs( curr_diff -  (Rational)1/2 ); 
                     branch_var = var;
-                    ass_ = ass; 
+                    ass_ = ass;                   
                 }
             }
             ++map_iterator;
         }
         if( result )
         {
-            branchAt( Polynomial( branch_var->first ), ass_ );
+            PointerSet<Formula> premises;
+            mTableau.collect_premises( branch_var->second , premises  );
+            branchAt( Polynomial( branch_var->first ), ass_, premises );
             return true;
         }
         else
         {
             return false;
-        }        
+        } 
     }
     
      /**
@@ -1515,7 +1526,9 @@ Return:
         }
         if( result )
         {
-            branchAt( Polynomial( branch_var->first ), ass_ );
+            PointerSet<Formula> premises;
+            mTableau.collect_premises( branch_var->second , premises  );
+            branchAt( Polynomial( branch_var->first ), ass_, premises );
             return true;
         }
         else
@@ -1539,7 +1552,9 @@ Return:
             Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
-                branchAt( Polynomial( var->first ), ass ); 
+                PointerSet<Formula> premises;
+                mTableau.collect_premises( var->second , premises  );         
+                branchAt( Polynomial( var->first ), ass, premises ); 
                 return true;                
             }
             ++map_iterator;

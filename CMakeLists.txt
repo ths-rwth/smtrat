@@ -121,6 +121,7 @@ endif()
 # GiNaC and GiNaCRA are necessary
 # TODO: add support for version number
 find_package( carl )
+message("-- Using CArL from ${carl_INCLUDE_DIR}")
 set( libraries ${libraries} )
 
 #notice that GiNacra might use log4cplus, but we cannot currently support that as Ginacra does not export this knowledge.

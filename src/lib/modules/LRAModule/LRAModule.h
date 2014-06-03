@@ -78,6 +78,9 @@ namespace smtrat
             ConstraintBoundsMap        mConstraintToBound;
             carl::Variable             mDelta;
             std::vector<const LRABound* >  mBoundCandidatesToPass;
+            #ifdef LRA_CUTS_FROM_PROOFS
+            std::set< std::vector< const Constraint* > > mProcessedDCMatrices;
+            #endif
             #ifdef SMTRAT_DEVOPTION_Statistics
             ///
             LRAModuleStatistics* mpStatistics;
