@@ -572,9 +572,7 @@ namespace vs
                 {
                     const Condition* condA = *iterA;
                     const Condition* condB = *iterB;
-//                    cout << "compare(  " << condA->constraint() << " , " << condB->constraint() << " )" << endl;
                     signed strongProp = smtrat::Constraint::compare( condA->pConstraint(), condB->pConstraint() );
-//                    cout << "  =  " << strongProp << endl;
                     // If the two conditions have the same solution space.
                     if( strongProp == 2 )
                     {
@@ -751,7 +749,6 @@ namespace vs
                 newCondSetSetSet.insert( newCondSetSet );
             }
             iter->second = newCondSetSetSet;
-//            printConflictSets();
         }
         else
         {
@@ -1121,10 +1118,6 @@ namespace vs
                         bestVar = var;
                     }
                 }
-//                else if( !(*bestVar->second.begin() < Condition::INFINITLY_MANY_SOLUTIONS_WEIGHT) && var->second.size() == 1 ) 
-//                {
-//                    bestVar = var;
-//                }
                 else
                 {
                     auto varInConsVal     = var->second.begin();
@@ -1343,11 +1336,6 @@ namespace vs
         }
         if( conditionDeleted )
         {
-//            if( !isRoot() )
-//            {
-//                mTakeSubResultCombAgain = true;
-//                mType = COMBINE_SUBRESULTS;
-//            }
             mInconsistent = false;
             mHasRecentlyAddedConditions = recentlyAddedConditionLeft;
         }
@@ -1423,11 +1411,6 @@ namespace vs
         }
         if( conditionDeleted )
         {
-//            if( !isRoot() )
-//            {
-//                mTakeSubResultCombAgain = true;
-//                mType = COMBINE_SUBRESULTS;
-//            }
             mInconsistent = false;
             mHasRecentlyAddedConditions = recentlyAddedConditionLeft;
         }
@@ -1715,141 +1698,6 @@ namespace vs
         vector<State*> result;
         if( !updateOCondsOfSubstitutions( _substitution, result ) )
         {
-//            State* state;
-//            if( _substitution.variable().getType() == carl::VariableType::VT_INT && !(_substitution.term().denominator() == smtrat::ONE_POLYNOMIAL) )
-//            {
-//                const smtrat::Constraint* denomPos = smtrat::newConstraint( _substitution.term().denominator(), smtrat::Relation::GREATER );
-//                const smtrat::Constraint* denomNeg = smtrat::newConstraint( _substitution.term().denominator(), smtrat::Relation::LESS );
-//                assert( denomPos != smtrat::constraintPool().inconsistentConstraint() || denomNeg != smtrat::constraintPool().inconsistentConstraint() );
-//                if( _substitution.term().hasSqrt() )
-//                {
-//                    state = new State( this, _substitution, mpVariableBounds != NULL );
-                    // add (s<0 or s>0) to the substitution results, with the substitutions test candidate being (q+r*sqrt(t))/s
-//                    if( denomPos != smtrat::constraintPool().consistentConstraint() && denomNeg != smtrat::constraintPool().consistentConstraint() )
-//                    {
-//                        DisjunctionOfConditionConjunctions cases;
-//                        if( denomPos != smtrat::constraintPool().inconsistentConstraint() )
-//                        {
-//                            cases.push_back( ConditionList() );
-//                            cases.back().push_back( new vs::Condition( denomPos, state->treeDepth(), false, _substitution.originalConditions(), false ) );
-//                        }
-//                        if( denomNeg != smtrat::constraintPool().inconsistentConstraint() )
-//                        {
-//                            cases.push_back( ConditionList() );
-//                            cases.back().push_back( new vs::Condition( denomNeg, state->treeDepth(), false, _substitution.originalConditions(), false ) );
-//                        }
-//                        std::vector<DisjunctionOfConditionConjunctions> subResults;
-//                        subResults.push_back( cases );
-//                        state->addSubstitutionResults( subResults );
-//                        state->rType() = SUBSTITUTION_TO_APPLY;
-//                    }
-//                }
-//                else
-//                {
-//                    // the substitutions test candidate is q/s
-//                    const smtrat::Constraint* numNotNeg = smtrat::newConstraint( _substitution.term().constantPart(), smtrat::Relation::GEQ );
-//                    const smtrat::Constraint* numNotPos = smtrat::newConstraint( _substitution.term().constantPart(), smtrat::Relation::LEQ );
-//                    const smtrat::Constraint* sideConsA = smtrat::newConstraint( _substitution.term().denominator() - _substitution.term().constantPart(), smtrat::Relation::LEQ );
-//                    const smtrat::Constraint* sideConsB = smtrat::newConstraint( _substitution.term().denominator() + _substitution.term().constantPart(), smtrat::Relation::LEQ );
-//                    const smtrat::Constraint* sideConsC = smtrat::newConstraint( _substitution.term().denominator() + _substitution.term().constantPart(), smtrat::Relation::GEQ );
-//                    const smtrat::Constraint* sideConsD = smtrat::newConstraint( _substitution.term().denominator() - _substitution.term().constantPart(), smtrat::Relation::GEQ );
-//                    state = new State( this, _substitution, mpVariableBounds != NULL );
-//                    DisjunctionOfConditionConjunctions cases;
-//                    if( denomPos != smtrat::constraintPool().inconsistentConstraint() )
-//                    {
-//                        // add the case (s>0 and q>=0 and s<=q)
-//                        if( numNotNeg != smtrat::constraintPool().inconsistentConstraint() && sideConsA != smtrat::constraintPool().inconsistentConstraint() )
-//                        {
-//                            ConditionList c;
-//                            if( denomPos != smtrat::constraintPool().consistentConstraint() )
-//                            {
-//                                c.push_back( new vs::Condition( denomPos, state->treeDepth(), false, _substitution.originalConditions(), false ) );
-//                            }
-//                            if( numNotNeg != smtrat::constraintPool().consistentConstraint() )
-//                            {
-//                                c.push_back( new vs::Condition( numNotNeg, state->treeDepth(), false, _substitution.originalConditions(), false ) );
-//                            }
-//                            if( sideConsA != smtrat::constraintPool().consistentConstraint() )
-//                            {
-//                                c.push_back( new vs::Condition( sideConsA, state->treeDepth(), false, _substitution.originalConditions(), false ) );
-//                            }
-//                            if( !c.empty() )
-//                                cases.push_back( c );
-//                        }
-//                        // add the case (s>0 and q<=0 and s<=-q)
-//                        if( numNotPos != smtrat::constraintPool().inconsistentConstraint() && sideConsB != smtrat::constraintPool().inconsistentConstraint() )
-//                        {
-//                            ConditionList c;
-//                            if( denomPos != smtrat::constraintPool().consistentConstraint() )
-//                            {
-//                                c.push_back( new vs::Condition( denomPos, state->treeDepth(), false, _substitution.originalConditions(), false ) );
-//                            }
-//                            if( numNotPos != smtrat::constraintPool().consistentConstraint() )
-//                            {
-//                                c.push_back( new vs::Condition( numNotPos, state->treeDepth(), false, _substitution.originalConditions(), false ) );
-//                            }
-//                            if( sideConsB != smtrat::constraintPool().consistentConstraint() )
-//                            {
-//                                c.push_back( new vs::Condition( sideConsB, state->treeDepth(), false, _substitution.originalConditions(), false ) );
-//                            }
-//                            if( !c.empty() )
-//                                cases.push_back( c );
-//                        }
-//                    }
-//                    if( denomNeg != smtrat::constraintPool().inconsistentConstraint() )
-//                    {
-//                        // add the case (s<0 and q>=0 and -q<=s)
-//                        if( numNotNeg != smtrat::constraintPool().inconsistentConstraint() && sideConsC != smtrat::constraintPool().inconsistentConstraint() )
-//                        {
-//                            ConditionList c;
-//                            if( denomNeg != smtrat::constraintPool().consistentConstraint() )
-//                            {
-//                                c.push_back( new vs::Condition( denomNeg, state->treeDepth(), false, _substitution.originalConditions(), false ) );
-//                            }
-//                            if( numNotNeg != smtrat::constraintPool().consistentConstraint() )
-//                            {
-//                                c.push_back( new vs::Condition( numNotNeg, state->treeDepth(), false, _substitution.originalConditions(), false ) );
-//                            }
-//                            if( sideConsC != smtrat::constraintPool().consistentConstraint() )
-//                            {
-//                                c.push_back( new vs::Condition( sideConsC, state->treeDepth(), false, _substitution.originalConditions(), false ) );
-//                            }
-//                            if( !c.empty() )
-//                                cases.push_back( c );
-//                        }
-//                        // add the case (s<0 and q<=0 and s<=q)
-//                        if( numNotPos != smtrat::constraintPool().inconsistentConstraint() && sideConsD != smtrat::constraintPool().inconsistentConstraint() )
-//                        {
-//                            ConditionList c;
-//                            if( denomNeg != smtrat::constraintPool().consistentConstraint() )
-//                            {
-//                                c.push_back( new vs::Condition( denomNeg, state->treeDepth(), false, _substitution.originalConditions(), false ) );
-//                            }
-//                            if( numNotPos != smtrat::constraintPool().consistentConstraint() )
-//                            {
-//                                c.push_back( new vs::Condition( numNotPos, state->treeDepth(), false, _substitution.originalConditions(), false ) );
-//                            }
-//                            if( sideConsD != smtrat::constraintPool().consistentConstraint() )
-//                            {
-//                                c.push_back( new vs::Condition( sideConsD, state->treeDepth(), false, _substitution.originalConditions(), false ) );
-//                            }
-//                            if( !c.empty() )
-//                                cases.push_back( c );
-//                        }
-//                    }
-//                    if( !cases.empty() )
-//                    {
-//                        std::vector<DisjunctionOfConditionConjunctions> subResults;
-//                        subResults.push_back( cases );
-//                        state->addSubstitutionResults( subResults );
-//                        state->rType() = SUBSTITUTION_TO_APPLY;
-//                    }
-//                }
-//            }
-//            else
-//            {
-//                state = new State( this, _substitution, mpVariableBounds != NULL );
-//            }
             if( index().getType() == carl::VariableType::VT_INT && _substitution.type() == Substitution::NORMAL && _substitution.term().isInteger() )
             {
                 smtrat::Rational intTC = _substitution.term().constantPart().constantPart();
@@ -2330,7 +2178,7 @@ namespace vs
         #endif
         if( solutionSpace.contains( 0 ) )
         {
-            if( _useSturmSequence && cons.variables().size() == 1 )
+            if( _useSturmSequence && cons.variables().size() == 1 ) // TODO: fails when having a multiple root at the boundary of the given interval for ss-computation
             {
                 carl::UnivariatePolynomial<smtrat::Rational> rup = cons.lhs().toUnivariatePolynomial();
                 list<carl::UnivariatePolynomial<smtrat::Rational>> seq = rup.standardSturmSequence();
