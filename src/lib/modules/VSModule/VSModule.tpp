@@ -403,18 +403,6 @@ namespace smtrat
                         {
                             case State::SUBSTITUTION_TO_APPLY:
                             {
-//                                if( Settings::int_constraints_allowed && currentState->father().index().getType() == carl::VariableType::VT_INT 
-//                                    && currentState->substitution().type() == Substitution::MINUS_INFINITY && !currentState->father().tooHighDegreeConditions().empty() )
-//                                {
-//                                    if( currentState->father().hasNoninvolvedCondition() )
-//                                    {
-//                                        currentState->father().printAlone();
-//                                        currentState->printAlone();
-//                                    }
-//                                    assert( !currentState->father().hasNoninvolvedCondition() );
-//                                    removeStatesFromRanking( *currentState );
-//                                    currentState->rMarkedAsDeleted() = true;
-//                                }
                                 #ifdef VS_DEBUG
                                 cout << "*** SubstituteAll changes it to:" << endl;
                                 #else
@@ -1158,48 +1146,6 @@ namespace smtrat
         vector<DisjunctionOfConditionConjunctions> allSubResults = vector<DisjunctionOfConditionConjunctions>();
         // The substitution to apply.
         assert( !_currentState->isRoot() );
-//        if( Settings::int_constraints_allowed && _currentState->father().index().getType() == carl::VariableType::VT_INT && _currentState->substitution().type() == Substitution::MINUS_INFINITY )
-//        {
-//            Rational newTerm = _currentState->father().minIntTestCandidate();
-//            assert( carl::isInteger( newTerm ) );
-//            newTerm = newTerm - 1;
-//            if( Settings::use_variable_bounds )
-//            {
-//                Interval indexBounds = _currentState->father().variableBounds().getInterval( _currentState->father().index() );
-//                if( indexBounds.rightType() != carl::BoundType::INFTY && indexBounds.right() < newTerm )
-//                {
-//                    newTerm = indexBounds.right();
-//                }
-//            }
-//            else
-//            {
-//                smtrat::Rational leastRightBound = 0;
-//                bool foundRightBound = false;
-//                for( auto cond = _currentState->father().conditions().begin(); cond != _currentState->father().conditions().end(); ++cond )
-//                {
-//                    if( (**cond).constraint().hasVariable( _currentState->father().index() ) && (**cond).constraint().isUpperBound() )
-//                    {
-//                        assert( (*cond)->constraint().relation() == Relation::LEQ || (*cond)->constraint().relation() == Relation::GEQ );
-//                        smtrat::Rational ubound = cln::floor1( (*cond)->constraint().constantPart()/(*cond)->constraint().lhs().lterm()->coeff() );
-//                        if( foundRightBound )
-//                        {
-//                            if( ubound < leastRightBound )
-//                                leastRightBound = ubound;
-//                        }
-//                        else
-//                        {
-//                            leastRightBound = ubound;
-//                            foundRightBound = true;
-//                        }
-//                    }
-//                }
-//                if( foundRightBound && leastRightBound < newTerm )
-//                {
-//                    newTerm = leastRightBound;
-//                }
-//            }
-//            _currentState->rSubstitution().setTerm( newTerm );
-//        }
         const Substitution& currentSubs = _currentState->substitution();
         // The variable to substitute.
         const carl::Variable& substitutionVariable = currentSubs.variable();
@@ -1371,13 +1317,6 @@ namespace smtrat
                 allSubResults.pop_back();
             }
         }
-//        if( _currentState->hasSubstitutionResults() )
-//        {
-//            unsigned numOfCombs = 1;
-//            for( auto iter = _currentState->substitutionResults().begin(); iter != _currentState->substitutionResults().end(); ++iter )
-//                numOfCombs *= iter->size();
-//            cout << numOfCombs << endl;
-//        }
         return !anySubstitutionFailed;
     }
 
@@ -1389,8 +1328,8 @@ namespace smtrat
     template<class Settings>
     void VSModule<Settings>::propagateNewConditions( State* _currentState )
     {
+        
         removeStatesFromRanking( *_currentState );
-        _currentState->rHasRecentlyAddedConditions() = false;
         // Collect the recently added conditions and mark them as not recently added.
         bool deleteExistingTestCandidates = false;
         ConditionList recentlyAddedConditions;
@@ -1483,7 +1422,6 @@ namespace smtrat
                         substituteAll( *child, recentlyAddedConditions );
                         if( (**child).isInconsistent() &&!(**child).subResultsSimplified() )
                         {
-                            (**child).simplify();
                             if( !(**child).conflictSets().empty() )
                                 addStateToRanking( *child );
                         }
@@ -1492,7 +1430,6 @@ namespace smtrat
                     {
                         if( newTestCandidatesGenerated )
                         {
-                            addStateToRanking( *child );
                             if( !(**child).children().empty() )
                                 (**child).rHasChildrenToInsert() = true;
                         }
@@ -1502,6 +1439,7 @@ namespace smtrat
                 }
             }
         }
+        _currentState->rHasRecentlyAddedConditions() = false;
     }
     
     /**
