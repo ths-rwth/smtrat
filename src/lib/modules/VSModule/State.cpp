@@ -2356,7 +2356,7 @@ namespace vs
         {
             _out << _initiation << "                           infinity child: " << mpInfinityChild << endl;
         }
-        _out << _initiation << "                                    index: " << index() << " " << smtrat::constraintPool().toString(index().getType()) << "  )" << endl;
+        _out << _initiation << "                                    index: " << index() << " " << index().getType() << "  )" << endl;
         printConditions( _initiation + "   ", _out );
         if( !isRoot() )
         {
