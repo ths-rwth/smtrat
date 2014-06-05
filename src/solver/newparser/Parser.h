@@ -180,6 +180,9 @@ public:
 			else if (key == "interactive-mode") {
 				this->options.assertType<bool>("interactive-mode", std::bind(&InstructionHandler::error, this));
 			}
+			else if (key == "print-instruction") {
+				this->options.assertType<bool>("print-instruction", std::bind(&InstructionHandler::error, this));
+			}
 			else if (key == "print-success") {
 				this->options.assertType<bool>("print-success", std::bind(&InstructionHandler::error, this));
 			}
