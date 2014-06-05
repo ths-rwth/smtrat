@@ -247,6 +247,17 @@ public:
 	rule<> bindlist;
 	qi::rule<Iterator, qi::unused_type, Skipper, qi::locals<std::string>> binding;
 	
+	// Custom functions
+	typedef std::tuple<std::string, std::vector<carl::Variable>, const Formula*> BooleanFunction;
+	typedef std::tuple<std::string, std::vector<carl::Variable>, Polynomial> TheoryFunction;
+	qi::symbols<char, BooleanFunction> funmap_bool;
+	qi::symbols<char, TheoryFunction> funmap_theory;
+	qi::rule<Iterator, Skipper, qi::locals<std::string, std::vector<carl::Variable>>> fun_definition;
+
+	typedef boost::variant<const Formula*, Polynomial> Argument;
+	typedef std::vector<Argument> Arguments;
+	rule<Arguments> fun_arguments;
+
 	// Commands	
 	rule<> cmd;
 	
@@ -259,6 +270,7 @@ public:
 	rule<Polynomial> polynomial;
 	rule<std::pair<Polynomial::ConstructorOperation, std::vector<Polynomial>>> polynomial_op;
 	rule<Polynomial> polynomial_ite;
+	rule<Polynomial> polynomial_fun;
 	// Main rule
 	rule<> main;
 	
@@ -272,9 +284,9 @@ protected:
 	void add(const Formula* f);
 	void check();
 	void declareConst(const std::string&, const carl::VariableType&);
-	void declareFun(const std::string& name, const std::vector<std::string>& args, const carl::VariableType& sort);
+	void declareFun(const std::string& name, const std::vector<carl::VariableType>& args, const carl::VariableType& sort);
 	void declareSort(const std::string&, const Rational&);
-	void defineFun(const std::string&, const std::vector<std::string>&, const carl::VariableType&, const Formula*);
+	void defineFun(const std::string&, const std::vector<carl::Variable>&, const carl::VariableType&, const boost::variant<const Formula*, Polynomial>&);
 	void defineSort(const std::string&, const std::vector<std::string>&, const std::string&);
 	void exit();
 	void getAssertions();
@@ -318,9 +330,12 @@ private:
         return newFormula(var);
     }
 	const smtrat::Formula* mkConstraint(const smtrat::Polynomial&, const smtrat::Polynomial&, Relation);
-	carl::Variable mkIteInExpr(const Formula* _condition, Polynomial& _then, Polynomial& _else );
-	const smtrat::Formula* mkFormula( smtrat::Type _type, PointerSet<Formula>& _subformulas );
-	const smtrat::Formula* mkIteInFormula( const Formula* _condition, const Formula* _then, const Formula* _else ) const;
+	carl::Variable mkIteInExpr(const Formula* _condition, Polynomial& _then, Polynomial& _else);
+	const smtrat::Formula* mkFormula(smtrat::Type _type, PointerSet<Formula>& _subformulas);
+	const smtrat::Formula* mkIteInFormula(const Formula* _condition, const Formula* _then, const Formula* _else) const;
+	bool checkArguments(const std::string&, const std::vector<carl::Variable>&, const Arguments& args, std::map<carl::Variable, const Formula*>&, std::map<carl::Variable, Polynomial>&) const;
+	const smtrat::Formula* applyBooleanFunction(const BooleanFunction& f, const Arguments& args) const;
+	Polynomial applyTheoryFunction(const TheoryFunction& f, const Arguments& args) const;
 	
 	void pushVariableStack() {
 		mVariableStack.emplace();
@@ -335,8 +350,9 @@ private:
 		mVariableStack.pop();
 	}
 	
-	void addTheoryBinding( std::string& _varName, Polynomial& _polynomial );
-	void addBooleanBinding( std::string&, const Formula* );
+	carl::Variable addVariableBinding(const std::pair<std::string, carl::VariableType>&);
+	void addTheoryBinding(std::string& _varName, Polynomial& _polynomial);
+	void addBooleanBinding(std::string&, const Formula*);
 		
 public:
 	std::stringstream lastrule;
