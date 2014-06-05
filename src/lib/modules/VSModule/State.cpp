@@ -109,6 +109,15 @@ namespace vs
     {
         mpTooHighDegreeConditions->clear();
         delete mpTooHighDegreeConditions;
+        while( !mpConflictSets->empty() )
+        {
+            const Substitution* sub = mpConflictSets->begin()->first;
+            mpConflictSets->erase( mpConflictSets->begin() );
+            if( sub != NULL && sub->type() == Substitution::Type::INVALID )
+            {
+                delete sub;
+            }
+        }
         delete mpConflictSets;
         while( !children().empty() )
         {
@@ -724,7 +733,13 @@ namespace vs
     {
         auto iter = mpConflictSets->find( _substitution );
         if( iter != mpConflictSets->end() )
+        {
             iter->second.insert( _condSetSet );
+            if( _substitution != NULL && _substitution->type() == Substitution::Type::INVALID )
+            {
+                delete _substitution;
+            }
+        }
         else
         {
             ConditionSetSetSet condSetSetSet = ConditionSetSetSet();
