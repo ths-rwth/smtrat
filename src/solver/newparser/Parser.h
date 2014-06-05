@@ -237,6 +237,7 @@ public:
 	
 	// Variables
 	rule<VariableWrapper> var;
+	rule<std::pair<std::string, carl::VariableType>> sortedVar;
 	rule<std::string> key;
 	rule<std::pair<std::string, Value>> attribute;
 	

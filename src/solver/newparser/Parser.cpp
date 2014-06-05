@@ -21,6 +21,9 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions):
 	var = var_bool | var_theory;
 	var.name("variable");
 
+	sortedVar = symbol >> domain;
+	sortedVar.name("sorted variable");
+
 	key = ":" > symbol;
 	key.name("key");
 	value = qi::bool_ | symbol | decimal | integral;
