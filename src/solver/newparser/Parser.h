@@ -147,10 +147,7 @@ public:
 		}
 		virtual void add(const Formula* f) = 0;
 		virtual void check() = 0;
-		virtual void declareConst(const std::string&, const carl::VariableType&) = 0;
-		virtual void declareFun(const std::string&, const std::vector<std::string>&, const carl::VariableType&) = 0;
 		virtual void declareSort(const std::string&, const unsigned&) = 0;
-		virtual void defineFun(const std::string&, const std::vector<std::string>&, const carl::VariableType&, const Formula*) = 0;
 		virtual void defineSort(const std::string&, const std::vector<std::string>&, const std::string&) = 0;
 		virtual void exit() = 0;
 		virtual void getAssertions() = 0;

@@ -93,18 +93,8 @@ public:
 			}
 		}
 	}
-	void declareConst(const std::string&, const carl::VariableType&) {
-		//error() << "(declare-const <name> <sort>) is not implemented.";
-	}
-	void declareFun(const std::string&, const std::vector<std::string>&, const carl::VariableType&) {
-		///@todo do we need declareFun()?
-		//error() << "(declare-fun <name> <symbols> <sort> <term>) is not implemented.";
-	}
 	void declareSort(const std::string&, const unsigned&) {
 		error() << "(declare-sort <name> <arity>) is not implemented.";
-	}
-	void defineFun(const std::string&, const std::vector<std::string>&, const carl::VariableType&, const smtrat::Formula*) {
-		error() << "(define-fun <name> (<variables>) <sort> <term>) is not implemented.";
 	}
 	void defineSort(const std::string&, const std::vector<std::string>&, const std::string&) {
 		error() << "(define-sort <name> <sort>) is not implemented.";
