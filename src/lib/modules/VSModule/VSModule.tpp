@@ -1047,24 +1047,21 @@ namespace smtrat
         {
             if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
             {
-                if( !Settings::use_variable_bounds || _currentState->variableBounds().getDoubleInterval( _eliminationVar ).lowerBoundType() == carl::BoundType::INFTY )
+                // Create state ( Conditions, [x -> -infinity]):
+                Substitution sub = Substitution( _eliminationVar, Substitution::MINUS_INFINITY, oConditions );
+                vector<State*> addedChildren = _currentState->addChild( sub );
+                if( !addedChildren.empty() )
                 {
-                    // Create state ( Conditions, [x -> -infinity]):
-                    Substitution sub = Substitution( _eliminationVar, Substitution::MINUS_INFINITY, oConditions );
-                    vector<State*> addedChildren = _currentState->addChild( sub );
-                    if( !addedChildren.empty() )
+                    // Add its valuation to the current ranking.
+                    while( !addedChildren.empty() )
                     {
-                        // Add its valuation to the current ranking.
-                        while( !addedChildren.empty() )
-                        {
-                            addStatesToRanking( addedChildren.back() );
-                            addedChildren.pop_back();
-                        }
-                        numberOfAddedChildren++;
-                        #ifdef VS_DEBUG
-                        (*(*_currentState).rChildren().back()).print( "   ", cout );
-                        #endif
+                        addStatesToRanking( addedChildren.back() );
+                        addedChildren.pop_back();
                     }
+                    numberOfAddedChildren++;
+                    #ifdef VS_DEBUG
+                    (*(*_currentState).rChildren().back()).print( "   ", cout );
+                    #endif
                 }
             }
         }
@@ -1072,24 +1069,21 @@ namespace smtrat
         {
             if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
             {
-                if( !Settings::use_variable_bounds || _currentState->variableBounds().getDoubleInterval( _eliminationVar ).lowerBoundType() == carl::BoundType::INFTY )
+                // Create state ( Conditions, [x -> -infinity]):
+                Substitution sub = Substitution( _eliminationVar, Substitution::PLUS_INFINITY, oConditions );
+                vector<State*> addedChildren = _currentState->addChild( sub );
+                if( !addedChildren.empty() )
                 {
-                    // Create state ( Conditions, [x -> -infinity]):
-                    Substitution sub = Substitution( _eliminationVar, Substitution::PLUS_INFINITY, oConditions );
-                    vector<State*> addedChildren = _currentState->addChild( sub );
-                    if( !addedChildren.empty() )
+                    // Add its valuation to the current ranking.
+                    while( !addedChildren.empty() )
                     {
-                        // Add its valuation to the current ranking.
-                        while( !addedChildren.empty() )
-                        {
-                            addStatesToRanking( addedChildren.back() );
-                            addedChildren.pop_back();
-                        }
-                        numberOfAddedChildren++;
-                        #ifdef VS_DEBUG
-                        (*(*_currentState).rChildren().back()).print( "   ", cout );
-                        #endif
+                        addStatesToRanking( addedChildren.back() );
+                        addedChildren.pop_back();
                     }
+                    numberOfAddedChildren++;
+                    #ifdef VS_DEBUG
+                    (*(*_currentState).rChildren().back()).print( "   ", cout );
+                    #endif
                 }
             }
         }
