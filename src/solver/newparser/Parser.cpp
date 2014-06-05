@@ -190,7 +190,6 @@ void SMTLIBParser::declareFun(const std::string& name, const std::vector<carl::V
 			if (this->var_bool.find(name) != nullptr) handler->warn() << "a boolean variable with name '" << name << "' has already been defined.";
 			carl::Variable var = newBooleanVariable(name, true);
 			this->var_bool.add(name, var);
-			std::cout << "Declared boolean variable " << var << std::endl;
 			break;
 		}
 		break;
@@ -199,7 +198,6 @@ void SMTLIBParser::declareFun(const std::string& name, const std::vector<carl::V
 			if (this->var_theory.find(name) != nullptr) handler->warn() << "a theory variable with name '" << name << "' has already been defined.";
 			carl::Variable var = newArithmeticVariable(name, sort, true);
 			this->var_theory.add(name, var);
-			std::cout << "Declared theory variable " << var << std::endl;
 			break;
 		}
 	default:
