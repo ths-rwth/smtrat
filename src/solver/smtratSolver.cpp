@@ -42,7 +42,7 @@
 #include "lib/utilities/stats/StatisticSettings.h"
 #endif //SMTRAT_DEVOPTION_Statistics
 
-//#define NEWPARSER
+#define NEWPARSER
 
 #ifdef NEWPARSER
 
