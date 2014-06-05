@@ -26,7 +26,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions):
 
 	key = ":" > symbol;
 	key.name("key");
-	value = qi::bool_ | symbol | decimal | integral;
+	value = qi::bool_ | symbol | string | decimal | integral;
 	value.name("value");
 	attribute = key > -value;
 	attribute.name("attribute");

@@ -98,7 +98,7 @@ struct SymbolParser : public qi::grammar<Iterator, std::string(), Skipper> {
 	SymbolParser() : SymbolParser::base_type(main, "symbol") {
 		main = quoted | simple;
 		main.name("symbol");
-		quoted = qi::char_("|") > +(~qi::char_("|")) > qi::char_("|");
+		quoted = qi::no_skip[qi::char_("|") > +(~qi::char_("|")) > qi::char_("|")];
 		quoted.name("quoted symbol");
 		// Attention: "-" must be the first or last character!
 		simple = qi::as_string[qi::raw[qi::lexeme[ (qi::alpha | qi::char_("~!@$%^&*_+=<>.?/-")) > *(qi::alnum | qi::char_("~!@$%^&*_+=<>.?/-"))]]];
@@ -107,6 +107,19 @@ struct SymbolParser : public qi::grammar<Iterator, std::string(), Skipper> {
 	qi::rule<Iterator, std::string(), Skipper> main;
 	qi::rule<Iterator, std::string(), Skipper> quoted;
 	qi::rule<Iterator, std::string(), Skipper> simple;
+};
+
+template<typename Iterator, typename Skipper>
+struct StringParser : public qi::grammar<Iterator, std::string(), Skipper> {
+	StringParser() : StringParser::base_type(main, "string") {
+		main = qi::no_skip[qi::char_('"') > +(escapes | ~qi::char_('"')) > qi::char_('"')];
+		main.name("string");
+		escapes.add("\\\\", '\\');
+		escapes.add("\\\"", '"');
+		escapes.name("escape sequences");
+	}
+	qi::symbols<char, char> escapes;
+	qi::rule<Iterator, std::string(), Skipper> main;
 };
 
 struct RelationParser : public qi::symbols<char, Relation> {

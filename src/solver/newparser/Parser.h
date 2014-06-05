@@ -227,6 +227,7 @@ public:
 	
 	// Basic rules
 	SymbolParser<Iterator, Skipper> symbol;
+	StringParser<Iterator, Skipper> string;
 	RelationParser relation;
 	BooleanOpParser op_bool;
 	TheoryOpParser op_theory;
