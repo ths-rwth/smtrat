@@ -1089,7 +1089,7 @@ namespace smtrat
                 for( auto var = allVariables.begin(); var != allVariables.end(); ++var )
                 {
                     if( !(_manager.logic() == Logic::QF_NIA || _manager.logic() == Logic::QF_LIA) || var->getType() == carl::VariableType::VT_INT)
-                        smtlibFile << "(declare-fun " << *var << " () " << constraintPool().toString( var->getType() ) << ")\n";
+                        smtlibFile << "(declare-fun " << *var << " () " << var->getType() << ")\n";
                 }
                 // Add all Boolean variables.
                 Variables allBooleans = constraintPool().booleanVariables();

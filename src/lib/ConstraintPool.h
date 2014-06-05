@@ -229,23 +229,6 @@ namespace smtrat
             }
             
             /**
-             * @param _varDom The domain to represent by a string.
-             * @return Gives the string representation of the given variable domain.
-             */
-            std::string toString( carl::VariableType _varDom ) const
-            {
-                switch( _varDom )
-                {
-                    case carl::VT_REAL:
-                        return "Real";
-                    case carl::VT_INT:
-                        return "Int";
-                    default:
-                        return "Undefined";
-                }
-            }
-            
-            /**
              * @return The string being the prefix of the external name of any internally declared (not parsed) variable.
              */
             std::string externalVarNamePrefix() const
@@ -330,7 +313,7 @@ namespace smtrat
             {
                 unsigned result = 0;
                 for( auto var = mExternalNamesToVariables.begin(); var != mExternalNamesToVariables.end(); ++var )
-                    if( var->second.getType() == carl::VT_REAL )
+                    if( var->second.getType() == carl::VariableType::VT_REAL )
                         ++result;
                 return result;
             }
@@ -342,7 +325,7 @@ namespace smtrat
             {
                 unsigned result = 0;
                 for( auto var = mExternalNamesToVariables.begin(); var != mExternalNamesToVariables.end(); ++var )
-                    if( var->second.getType() == carl::VT_INT )
+                    if( var->second.getType() == carl::VariableType::VT_INT )
                         ++result;
                 return result;
             }

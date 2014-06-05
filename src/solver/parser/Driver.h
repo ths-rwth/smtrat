@@ -343,10 +343,10 @@ namespace smtrat
 
             static carl::VariableType getDomain( const std::string& _type )
             {
-                if( _type == "Real" ) return carl::VT_REAL;
-                if( _type == "Int" ) return carl::VT_INT;
+                if( _type == "Real" ) return carl::VariableType::VT_REAL;
+                if( _type == "Int" ) return carl::VariableType::VT_INT;
                 assert( false );
-                return carl::VT_REAL;
+                return carl::VariableType::VT_REAL;
             }
             
             bool parse_stream( std::istream&, const std::string& = "stream input" );

@@ -250,7 +250,7 @@ namespace smtrat
         return FormulaPool::getInstance().newFormula( _type, move(_subformulas) );
     }
 
-	void annotateFormula( const Formula* formula, const std::vector<parser::Attribute>& attributes )
+	void annotateFormula( const Formula*, const std::vector<parser::Attribute>&)
 	{
 	}
 }    // namespace smtrat
