@@ -22,27 +22,6 @@ namespace parser {
 
 enum ExpressionType { BOOLEAN, THEORY };
 
-class VariableWrapper {
-private:
-	carl::Variable* var;
-public:
-	VariableWrapper() : var(nullptr) {
-		//std::cout << this << " wrapping nullptr" << std::endl;
-	}
-	VariableWrapper(const VariableWrapper& v) : var(nullptr) {
-		if (v.var != nullptr) this->var = new carl::Variable(*(v.var));
-		//std::cout << this << " copying " << &v << std::endl;
-	}
-	VariableWrapper(const carl::Variable& v) : var(new carl::Variable(v)) {
-		//std::cout << this << " wrapping " << v << std::endl;
-	}
-	~VariableWrapper() { delete var; }
-	operator carl::Variable() const {
-		//std::cout << this << " extracting " << *var << std::endl;
-		return carl::Variable(*var);
-	}
-};
-
 struct SuccessHandler {
 	template<typename Parser, typename Rule, typename Entity, typename Begin, typename End>
 	void operator()(Parser& p, const Rule& rule, const Entity& entity, Begin b, End e) const {

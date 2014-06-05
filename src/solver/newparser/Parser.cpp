@@ -279,7 +279,7 @@ void SMTLIBParser::getUnsatCore() {
 	if (this->handler->printInstruction()) handler->regular() << "(get-unsat-core)" << std::endl;
 	callHandler(&InstructionHandler::getUnsatCore);
 }
-void SMTLIBParser::getValue(const std::vector<VariableWrapper>& vars) {
+void SMTLIBParser::getValue(const std::vector<carl::Variable>& vars) {
 	std::vector<carl::Variable> carlVars;
 	carlVars.reserve(vars.size());
 	for (auto v: vars) carlVars.push_back(v);

@@ -219,8 +219,8 @@ private:
 public:
 	bool queueInstructions;
 	
-	qi::symbols<char, VariableWrapper> var_bool;
-	qi::symbols<char, VariableWrapper> var_theory;
+	qi::symbols<char, carl::Variable> var_bool;
+	qi::symbols<char, carl::Variable> var_theory;
 	
 	qi::symbols<char, Polynomial> bind_theory;
 	qi::symbols<char, const Formula*> bind_bool;
@@ -241,14 +241,14 @@ public:
 	DecimalParser decimal;
 	
 	// Variables
-	rule<VariableWrapper> var;
+	rule<carl::Variable> var;
 	rule<std::pair<std::string, carl::VariableType>> sortedVar;
 	rule<std::string> key;
 	rule<std::pair<std::string, Value>> attribute;
 	
 	rule<Value> value;
 	rule<std::vector<std::string>> symlist;
-	rule<std::vector<VariableWrapper>> varlist;
+	rule<std::vector<carl::Variable>> varlist;
 	rule<> bindlist;
 	qi::rule<Iterator, qi::unused_type, Skipper, qi::locals<std::string>> binding;
 	
@@ -300,7 +300,7 @@ protected:
 	void getOption(const std::string& key);
 	void getProof();
 	void getUnsatCore();
-	void getValue(const std::vector<VariableWrapper>&);
+	void getValue(const std::vector<carl::Variable>&);
 	void pop(const Rational&);
 	void push(const Rational&);
 	void setInfo(const std::string& key, const Value& val);
@@ -331,7 +331,7 @@ private:
 		return false;
 	}
 			
-	const Formula* mkBoolean(const VariableWrapper& var) {
+	const Formula* mkBoolean(const carl::Variable& var) {
         return newFormula(var);
     }
 	const smtrat::Formula* mkConstraint(const smtrat::Polynomial&, const smtrat::Polynomial&, Relation);
