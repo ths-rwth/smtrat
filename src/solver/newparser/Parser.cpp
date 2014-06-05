@@ -144,7 +144,7 @@ bool SMTLIBParser::parse(std::istream& in, const std::string& filename) {
 	BaseIteratorType basebegin(in);
 	Iterator begin(basebegin);
 	Iterator end;
-	Skipper skipper;
+	Skipper skipper = SKIPPER;
 	return qi::phrase_parse(begin, end, main, skipper);
 }
 
@@ -217,7 +217,11 @@ void SMTLIBParser::defineFun(const std::string& name, const std::vector<carl::Va
 			this->handler->error() << "The return type of \"" << name << "\" was given as Bool, but the parsed expression is a polynomial.";
 			return;
 		}
-		this->funmap_bool.add(name, std::make_tuple(name, args, boost::get<const Formula*>(term)));
+		if (args.size() == 0) {
+			this->bind_bool.add(name, boost::get<const Formula*>(term));
+		} else {
+			this->funmap_bool.add(name, std::make_tuple(name, args, boost::get<const Formula*>(term)));
+		}
 		break;
 	case carl::VariableType::VT_INT:
 	case carl::VariableType::VT_REAL:
@@ -231,7 +235,11 @@ void SMTLIBParser::defineFun(const std::string& name, const std::vector<carl::Va
 				return;
 			}
 		}
-		this->funmap_theory.add(name, std::make_tuple(name, args, boost::get<Polynomial>(term)));
+		if (args.size() == 0) {
+			this->bind_theory.add(name, boost::get<Polynomial>(term));
+		} else {
+			this->funmap_theory.add(name, std::make_tuple(name, args, boost::get<Polynomial>(term)));
+		}
 		break;
 	default:
 		handler->error() << "Unsupported function return type.";

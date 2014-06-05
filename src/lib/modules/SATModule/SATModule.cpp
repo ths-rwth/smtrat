@@ -197,8 +197,10 @@ namespace smtrat
         Module::assertSubformula( _subformula );
         if( PROP_IS_A_CLAUSE <= (*_subformula)->properties() )
         {
-            assert( mFormulaClauseMap.find( *_subformula ) == mFormulaClauseMap.end() );
-            mFormulaClauseMap[*_subformula] = addClause( *_subformula, false );
+			if (mFormulaClauseMap.find( *_subformula ) == mFormulaClauseMap.end())
+			{
+				mFormulaClauseMap[*_subformula] = addClause( *_subformula, false );
+			}
         }
         return true;
     }
