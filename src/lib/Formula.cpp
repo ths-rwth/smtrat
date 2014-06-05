@@ -1321,5 +1321,59 @@ namespace smtrat
             }
             return falseFormula();
     }
+            
+    const Formula* Formula::substitute( const map<carl::Variable, const Formula*>& _booleanSubstitutions, const map<carl::Variable, Polynomial>& _arithmeticSubstitutions ) const
+    {
+        switch( mType )
+        {
+            case TTRUE:
+            {
+                return this;
+            }
+            case FFALSE:
+            {
+                return this;
+            }
+            case BOOL:
+            {
+                auto iter = _booleanSubstitutions.find( mBoolean );
+                if( iter != _booleanSubstitutions.end() )
+                {
+                    return iter->second;
+                }
+                return this;
+            }
+            case CONSTRAINT:
+            {
+                Polynomial lhsSubstituted = mpConstraint->lhs().substitute( _arithmeticSubstitutions );
+                return newFormula( newConstraint( lhsSubstituted, mpConstraint->relation() ) );
+            }
+            case NOT:
+            {
+                return newNegation( mpSubformula->substitute( _booleanSubstitutions, _arithmeticSubstitutions ) );
+            }
+            case IMPLIES:
+            {
+                const Formula* premiseSubstituted = premise().substitute( _booleanSubstitutions, _arithmeticSubstitutions );
+                const Formula* conclusionSubstituted = conclusion().substitute( _booleanSubstitutions, _arithmeticSubstitutions );
+                return newImplication( premiseSubstituted, conclusionSubstituted );
+            }
+            case ITE:
+            {
+                const Formula* conditionSubstituted = condition().substitute( _booleanSubstitutions, _arithmeticSubstitutions );
+                const Formula* thenSubstituted = firstCase().substitute( _booleanSubstitutions, _arithmeticSubstitutions );
+                const Formula* elseSubstituted = secondCase().substitute( _booleanSubstitutions, _arithmeticSubstitutions );
+                return newIte( conditionSubstituted, thenSubstituted, elseSubstituted );
+            }
+            default:
+            {
+                assert( isNary() );
+                PointerSet<Formula> subformulasSubstituted;
+                for( const Formula* subformula : subformulas() )
+                    subformulasSubstituted.insert( subformula->substitute( _booleanSubstitutions, _arithmeticSubstitutions ) );
+                return newFormula( mType, subformulasSubstituted );
+            }
+        }
+    }
 }    // namespace smtrat
 

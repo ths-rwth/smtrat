@@ -1388,7 +1388,7 @@ Return:
     bool LRAModule::branch_and_bound()
     {
         BRANCH_STRATEGY strat = MOST_INFEASIBLE;
-        bool result;
+        bool result = false;
         if( strat == MIN_PIVOT )
         {
             result = minimal_row_var();            

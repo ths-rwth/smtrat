@@ -724,6 +724,20 @@ namespace smtrat
              */
             const Formula* toCNF( bool _keepConstraints = true ) const;
             
+            const Formula* substitute( const std::map<carl::Variable, Polynomial>& _arithmeticSubstitutions ) const
+            {
+                std::map<carl::Variable, const Formula*> booleanSubstitutions;
+                return substitute( booleanSubstitutions, _arithmeticSubstitutions );
+            }
+            
+            const Formula* substitute( const std::map<carl::Variable, const Formula*>& _booleanSubstitutions ) const
+            {
+                std::map<carl::Variable, Polynomial> arithmeticSubstitutions;
+                return substitute( _booleanSubstitutions, arithmeticSubstitutions );
+            }
+            
+            const Formula* substitute( const std::map<carl::Variable, const Formula*>& _booleanSubstitutions, const std::map<carl::Variable,Polynomial>& _arithmeticSubstitutions ) const;
+            
             struct IteratorCompare
             {
                 bool operator() ( const_iterator i1, const_iterator i2 ) const
