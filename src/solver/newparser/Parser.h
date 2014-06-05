@@ -44,7 +44,8 @@ using qi::lit;
 typedef boost::spirit::istream_iterator BaseIteratorType;
 typedef boost::spirit::line_pos_iterator<BaseIteratorType> PositionIteratorType;
 typedef PositionIteratorType Iterator;
-typedef qi::space_type Skipper;
+#define SKIPPER (qi::space | qi::lit(";") >> *(qi::char_ - qi::eol) >> qi::eol)
+typedef BOOST_TYPEOF(SKIPPER) Skipper;
 
 template <typename... T>
 using rule = qi::rule<Iterator, T()..., Skipper>;

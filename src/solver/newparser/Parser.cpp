@@ -144,7 +144,7 @@ bool SMTLIBParser::parse(std::istream& in, const std::string& filename) {
 	BaseIteratorType basebegin(in);
 	Iterator begin(basebegin);
 	Iterator end;
-	Skipper skipper;
+	Skipper skipper = SKIPPER;
 	return qi::phrase_parse(begin, end, main, skipper);
 }
 
