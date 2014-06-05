@@ -20,6 +20,8 @@ namespace px = boost::phoenix;
 namespace smtrat {
 namespace parser {
 
+enum ExpressionType { BOOLEAN, THEORY };
+
 class VariableWrapper {
 private:
 	carl::Variable* var;
@@ -170,6 +172,29 @@ struct IntegralParser : public qi::grammar<Iterator, Rational(), Skipper> {
 };
 
 struct DecimalParser : qi::real_parser<Rational, RationalPolicies> {};
+
+struct TypeOfTerm : public boost::static_visitor<ExpressionType> {
+	ExpressionType operator()(const Formula*) const { return BOOLEAN; }
+	ExpressionType operator()(const Polynomial&) const { return THEORY; }
+	ExpressionType operator()(const carl::Variable& v) const { return (*this)(v.getType()); }
+	ExpressionType operator()(const carl::VariableType& v) const {
+		switch (v) {
+			case carl::VariableType::VT_BOOL: return BOOLEAN;
+			case carl::VariableType::VT_INT:
+			case carl::VariableType::VT_REAL: return THEORY;
+			default:
+				return THEORY;
+		}
+	}
+	template<typename T>
+	static ExpressionType get(const T& t) {
+		return TypeOfTerm()(t);
+	}
+	template<typename... T>
+	static ExpressionType get(const boost::variant<T...>& var) {
+		return boost::apply_visitor(TypeOfTerm(), var);
+	}
+};
 
 }
 }
