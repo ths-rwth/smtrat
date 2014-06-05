@@ -78,8 +78,8 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions):
 	cmd.name("command");
 
 	formula = 
-			(-lit("|") >> bind_bool >> -lit("|") >> boundary)[_val = qi::_1]
-		|	(-lit("|") >> var_bool >> -lit("|") >> boundary)[_val = px::bind(&SMTLIBParser::mkBoolean, px::ref(*this), qi::_1)]
+			(bind_bool >> boundary)[_val = qi::_1]
+		|	(var_bool >> boundary)[_val = px::bind(&SMTLIBParser::mkBoolean, px::ref(*this), qi::_1)]
 		|	lit("true")[_val = px::bind(&trueFormula)]
 		|	lit("false")[_val = px::bind(&falseFormula)]
 		|	("(" >> formula_op >> ")")[_val = qi::_1]
@@ -100,7 +100,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions):
 			|	("forall" > bindlist > formula)
 			|	("ite" > (formula > formula > formula)[_val = px::bind(&SMTLIBParser::mkIteInFormula, px::ref(*this), qi::_1, qi::_2, qi::_3)])
 			|	(("!" > formula > *attribute)[px::bind(&annotateFormula, qi::_1, qi::_2), _val = qi::_1])
-			|	((-lit("|") >> funmap_bool >> -lit("|") >> fun_arguments)[qi::_val = px::bind(&SMTLIBParser::applyBooleanFunction, px::ref(*this), qi::_1, qi::_2)])
+			|	((funmap_bool >> fun_arguments)[qi::_val = px::bind(&SMTLIBParser::applyBooleanFunction, px::ref(*this), qi::_1, qi::_2)])
 	;
 	formula_op.name("formula operation");
 
@@ -108,11 +108,11 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions):
 	polynomial_op.name("polynomial operation");
 	polynomial_ite = lit("ite") > (formula > polynomial > polynomial)[_val = px::construct<Polynomial>(px::bind(&SMTLIBParser::mkIteInExpr, px::ref(*this), qi::_1, qi::_2, qi::_3))];
 	polynomial_ite.name("polynomial if-then-else");
-	polynomial_fun = (-lit("|") >> funmap_theory >> -lit("|") >> fun_arguments)[qi::_val = px::bind(&SMTLIBParser::applyTheoryFunction, px::ref(*this), qi::_1, qi::_2)];
+	polynomial_fun = (funmap_theory >> fun_arguments)[qi::_val = px::bind(&SMTLIBParser::applyTheoryFunction, px::ref(*this), qi::_1, qi::_2)];
 	polynomial_fun.name("theory function");
 	polynomial =
-			(-lit("|") >> bind_theory >> -lit("|") >> boundary)
-		|	(-lit("|") >> var_theory >> -lit("|") >> boundary)
+			(bind_theory >> boundary)
+		|	(var_theory >> boundary)
 		|	decimal
 		|	integral
 		|	("(" >> (
@@ -264,7 +264,7 @@ void SMTLIBParser::getAssignment() {
 	callHandler(&InstructionHandler::getAssignment);
 }
 void SMTLIBParser::getInfo(const std::string& key) {
-	if (this->handler->printInstruction()) handler->regular() << "(get-info " << key << ")" << std::endl;
+	if (this->handler->printInstruction()) handler->regular() << "(get-info :" << key << ")" << std::endl;
 	callHandler(&InstructionHandler::getInfo, key);
 }
 void SMTLIBParser::getOption(const std::string& key) {
@@ -295,7 +295,7 @@ void SMTLIBParser::push(const Rational& n) {
 	callHandler(&InstructionHandler::push, carl::toInt<unsigned>(n));
 }
 void SMTLIBParser::setInfo(const std::string& key, const Value& val) {
-	if (this->handler->printInstruction()) handler->regular() << "(set-info " << key << " " << val << ")" << std::endl;
+	if (this->handler->printInstruction()) handler->regular() << "(set-info :" << key << " " << val << ")" << std::endl;
 	callHandler(&InstructionHandler::setInfo, key, val);
 }
 void SMTLIBParser::setLogic(const smtrat::Logic& l) {
