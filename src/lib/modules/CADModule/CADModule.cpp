@@ -345,13 +345,14 @@ namespace smtrat
         if( mpReceivedFormula->isIntegerConstraintConjunction() )
         {
             // Check whether the found assignment is integer.
-            
-            //if( IS NOT INTEGER ASSIGNMENT )
-            //{
-            ////Branch for the variable which is not assigned to an integer value
-            //branchAt( Polynomial( THE_VARIABLE ), THE_RATIONAL_NOT_BEING_INTEGER );
-            //return foundAnswer( Unknown );
-            //}
+			std::vector<carl::Variable> vars(mCAD.getVariables());
+			for (unsigned d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
+				smtrat::Rational r = this->mRealAlgebraicSolution[d];
+				if (!carl::isInteger(r)) {
+					branchAt(Polynomial(vars[d]), r);
+					return foundAnswer(Unknown);
+				}
+			}
         }
         return foundAnswer( True );
     }
