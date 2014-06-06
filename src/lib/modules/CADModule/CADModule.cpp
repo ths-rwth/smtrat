@@ -347,7 +347,7 @@ namespace smtrat
             // Check whether the found assignment is integer.
 			std::vector<carl::Variable> vars(mCAD.getVariables());
 			for (unsigned d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
-				smtrat::Rational r = this->mRealAlgebraicSolution[d];
+				auto r = this->mRealAlgebraicSolution[d]->branchingPoint();
 				if (!carl::isInteger(r)) {
 					branchAt(Polynomial(vars[d]), r);
 					return foundAnswer(Unknown);
