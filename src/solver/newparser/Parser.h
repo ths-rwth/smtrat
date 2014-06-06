@@ -120,7 +120,9 @@ public:
 			}
 		}
 	public:
-		InstructionHandler(): mRegular(std::cout.rdbuf()), mDiagnostic(std::cerr.rdbuf()) {}
+		InstructionHandler(): mRegular(std::cout.rdbuf()), mDiagnostic(std::cerr.rdbuf()) {
+			this->setOption("print-instruction", false);
+		}
 		virtual ~InstructionHandler() {
 			for (auto& it: this->streams) it.second.close();
 		}
@@ -281,7 +283,7 @@ public:
 	
 public:
 	
-	SMTLIBParser(InstructionHandler* ih, bool queueInstructions);
+	SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool debug = false);
 
 	bool parse(std::istream& in, const std::string& filename);
 

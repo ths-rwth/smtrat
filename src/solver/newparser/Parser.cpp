@@ -11,7 +11,7 @@
 namespace smtrat {
 namespace parser {
 
-SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions):
+SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool debug):
 	SMTLIBParser::base_type(main),
 	handler(ih),
 	queueInstructions(queueInstructions)
@@ -98,7 +98,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions):
 				> ("(" > bindlist > ")" > formula)[px::bind(&SMTLIBParser::popVariableStack, px::ref(*this)), _val = qi::_1])
 			|	("exists" > bindlist > formula)
 			|	("forall" > bindlist > formula)
-			|	("ite" > (formula > formula > formula)[_val = px::bind(&SMTLIBParser::mkIteInFormula, px::ref(*this), qi::_1, qi::_2, qi::_3)])
+			|	("ite" >> (formula >> formula >> formula)[_val = px::bind(&SMTLIBParser::mkIteInFormula, px::ref(*this), qi::_1, qi::_2, qi::_3)])
 			|	(("!" > formula > *attribute)[px::bind(&annotateFormula, qi::_1, qi::_2), _val = qi::_1])
 			|	((funmap_bool >> fun_arguments)[qi::_val = px::bind(&SMTLIBParser::applyBooleanFunction, px::ref(*this), qi::_1, qi::_2)])
 	;
@@ -106,7 +106,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions):
 
 	polynomial_op = op_theory >> +polynomial;
 	polynomial_op.name("polynomial operation");
-	polynomial_ite = lit("ite") > (formula > polynomial > polynomial)[_val = px::construct<Polynomial>(px::bind(&SMTLIBParser::mkIteInExpr, px::ref(*this), qi::_1, qi::_2, qi::_3))];
+	polynomial_ite = lit("ite") >> (formula >> polynomial >> polynomial)[_val = px::construct<Polynomial>(px::bind(&SMTLIBParser::mkIteInExpr, px::ref(*this), qi::_1, qi::_2, qi::_3))];
 	polynomial_ite.name("polynomial if-then-else");
 	polynomial_fun = (funmap_theory >> fun_arguments)[qi::_val = px::bind(&SMTLIBParser::applyTheoryFunction, px::ref(*this), qi::_1, qi::_2)];
 	polynomial_fun.name("theory function");
@@ -127,15 +127,16 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions):
 	main.name("SMTLib File");
 
 	qi::on_error<qi::fail>(main, errorHandler(px::ref(*this), qi::_1, qi::_2, qi::_3, qi::_4));
-/*
-	qi::on_success(bindlist, successHandler(px::ref(*this), px::ref(bindlist), qi::_val, qi::_1, qi::_2));
-	qi::on_success(polynomial, successHandler(px::ref(*this), px::ref(polynomial), qi::_val, qi::_1, qi::_2));
-	qi::on_success(polynomial_op, successHandler(px::ref(*this), px::ref(polynomial_op), qi::_val, qi::_1, qi::_2));
-	qi::on_success(formula, successHandlerPtr(px::ref(*this), px::ref(formula), qi::_val, qi::_1, qi::_2));
-	qi::on_success(formula_op, successHandlerPtr(px::ref(*this), px::ref(formula_op), qi::_val, qi::_1, qi::_2));
-	qi::on_success(cmd, successHandler(px::ref(*this), px::ref(cmd), qi::_val, qi::_1, qi::_2));
-	qi::on_success(main, successHandler(px::ref(*this), px::ref(main), qi::_val, qi::_1, qi::_2));
-*/
+
+	if (debug) {
+		qi::on_success(bindlist, successHandler(px::ref(*this), px::ref(bindlist), qi::_val, qi::_1, qi::_2));
+		qi::on_success(polynomial, successHandler(px::ref(*this), px::ref(polynomial), qi::_val, qi::_1, qi::_2));
+		qi::on_success(polynomial_op, successHandler(px::ref(*this), px::ref(polynomial_op), qi::_val, qi::_1, qi::_2));
+		qi::on_success(formula, successHandlerPtr(px::ref(*this), px::ref(formula), qi::_val, qi::_1, qi::_2));
+		qi::on_success(formula_op, successHandlerPtr(px::ref(*this), px::ref(formula_op), qi::_val, qi::_1, qi::_2));
+		qi::on_success(cmd, successHandler(px::ref(*this), px::ref(cmd), qi::_val, qi::_1, qi::_2));
+		qi::on_success(main, successHandler(px::ref(*this), px::ref(main), qi::_val, qi::_1, qi::_2));
+	}
 }
 
 bool SMTLIBParser::parse(std::istream& in, const std::string& filename) {
