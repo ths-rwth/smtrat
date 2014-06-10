@@ -402,9 +402,7 @@ namespace smtrat
                 void invert_HNF_Matrix( std::vector<size_t>& );
                 smtrat::Polynomial* create_cut_from_proof( Tableau<T1,T2>&, Tableau<T1,T2>&, size_t, std::vector<size_t>&, std::vector<size_t>&, T2&, T2&);
                 #endif
-                #ifdef LRA_GOMORY_CUTS
                 const smtrat::Constraint* gomoryCut( const T2&, Variable<T1, T2>*, std::vector<const smtrat::Constraint*>&);
-                #endif
                 size_t getNumberOfEntries( Variable<T1,T2>* );
                 void collect_premises( Variable<T1,T2>*, PointerSet<Formula>&  );
                 void printHeap( std::ostream& = std::cout, int = 30, const std::string = "" ) const;
@@ -3343,7 +3341,6 @@ FindPivot:
         }
         #endif
         
-        #ifdef LRA_GOMORY_CUTS
         enum GOMORY_SET
         {
             J_PLUS,
@@ -3394,13 +3391,12 @@ FindPivot:
                 }                                 
                 else
                 {
-                    std::cout << "Not able to construct" << std::endl;
                     return NULL;
                 }      
                 row_iterator.hMove( false );
             }
             // A Gomory Cut can be constructed
-            std::cout << "Create Cut for: " << _rowVar->expression() << std::endl;
+            //std::cout << "Create Cut for: " << _rowVar->expression() << std::endl;
             T2 coeff;
             T2 f_zero = _ass - T2(carl::floor( (Rational)_ass ));
             Polynomial sum = Polynomial();
@@ -3452,7 +3448,6 @@ FindPivot:
             // TODO: check whether there is already a basic variable with this polynomial (psum, cf. LRAModule::initialize(..)) 
             return gomory_constr;
         }
-        #endif
 
         /**
          * @return number of entries in the row belonging to _rowVar  
