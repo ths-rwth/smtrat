@@ -1366,8 +1366,8 @@ Return:
      */
     bool LRAModule::branch_and_bound()
     {
-        BRANCH_STRATEGY strat = NATIVE;
-        bool gc_support = false;
+        BRANCH_STRATEGY strat = MOST_INFEASIBLE;
+        bool gc_support = true;
         bool result = true;
         if( strat == MIN_PIVOT )
         {
