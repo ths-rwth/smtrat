@@ -70,7 +70,7 @@ namespace smtrat
             bool                       mInitialized;
             bool                       mAssignmentFullfilsNonlinearConstraints;
             LRATableau mTableau;
-            PointerSet<Constraint>     mLinearConstraints;
+            FastPointerSet<Constraint> mLinearConstraints;
             PointerSet<Constraint>     mNonlinearConstraints;
             ConstraintContextMap       mActiveResolvedNEQConstraints;
             ConstraintContextMap       mActiveUnresolvedNEQConstraints;
