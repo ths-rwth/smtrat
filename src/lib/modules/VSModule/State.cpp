@@ -1904,12 +1904,14 @@ namespace vs
                 // This original condition of course contains the index of the father, as it served as test candidate provider.
                 coverSetOCondsContainIndexOfFather = true;
             }
-            ConditionSetSet conflictSet = ConditionSetSet();
+            ConditionSetSet conflictSet;
             conflictSet.insert( coverSetOConds );
-    //        if( coverSetOConds.empty() )
-    //        {
-    //            exit( 7771 );
-    //        }
+            if( coverSetOConds.empty() )
+            {
+                root().print();
+                print();
+                exit( 7772 );
+            }
             assert( !coverSetOConds.empty() );
             // Add the original conditions of the covering set as a conflict set to the father.
             if( !coverSetOCondsContainIndexOfFather )
@@ -2076,7 +2078,7 @@ namespace vs
 
     vector< smtrat::DoubleInterval > State::solutionSpace( set<const Condition*>& _conflictReason ) const
     {
-        vector< smtrat::DoubleInterval > result = vector< smtrat::DoubleInterval >();
+        vector< smtrat::DoubleInterval > result;
         assert( !isRoot() );
         if( substitution().type() == Substitution::MINUS_INFINITY )
         {
@@ -2096,6 +2098,7 @@ namespace vs
             else
             {
                 set<const Condition*> conflictBounds = father().variableBounds().getOriginsOfBoundsWithMultiples( substitution().variable() );
+                assert( !conflictBounds.empty() );
                 _conflictReason.insert( conflictBounds.begin(), conflictBounds.end() );
             }
             return result;

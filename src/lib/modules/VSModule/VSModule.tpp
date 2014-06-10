@@ -425,7 +425,7 @@ namespace smtrat
                                 if( !substituteAll( currentState, currentState->rFather().rConditions() ) )
                                 {
                                     // Delete the currently considered state.
-                                    currentState->rInconsistent() = true;
+                                    assert( currentState->rInconsistent() );
                                     removeStateFromRanking( *currentState );
                                 }
                                 #ifndef VS_DEBUG
@@ -539,6 +539,10 @@ namespace smtrat
                                             {
                                                 // Go back to this ancestor and refine.
                                                 removeStatesFromRanking( *unfinishedAncestor );
+                                                if( !unfinishedAncestor->subResultsSimplified() )
+                                                {
+                                                    unfinishedAncestor->print();
+                                                }
                                                 unfinishedAncestor->extendSubResultCombination();
                                                 unfinishedAncestor->rType() = State::COMBINE_SUBRESULTS;
                                                 if( unfinishedAncestor->refreshConditions( mRanking ) ) 
@@ -1144,7 +1148,7 @@ namespace smtrat
          * the results of a single substitution. These results can be considered as a disjunction of
          * conjunctions of constraints.
          */
-        vector<DisjunctionOfConditionConjunctions> allSubResults = vector<DisjunctionOfConditionConjunctions>();
+        vector<DisjunctionOfConditionConjunctions> allSubResults;
         // The substitution to apply.
         assert( !_currentState->isRoot() );
         const Substitution& currentSubs = _currentState->substitution();
@@ -1154,7 +1158,7 @@ namespace smtrat
         ConditionList oldConditions;
         bool anySubstitutionFailed = false;
         bool allSubstitutionsApplied = true;
-        ConditionSetSet conflictSet = ConditionSetSet();
+        ConditionSetSet conflictSet;
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
         if( _currentState->father().variableBounds().isConflicting() )
         {
@@ -1183,8 +1187,8 @@ namespace smtrat
             }
             else
             {
-                DisjunctionOfConstraintConjunctions subResult = DisjunctionOfConstraintConjunctions();
-                Variables conflVars = Variables();
+                DisjunctionOfConstraintConjunctions subResult;
+                Variables conflVars;
                 if( !substitute( currentConstraint, currentSubs, subResult, Settings::virtual_substitution_according_paper, conflVars, solBox ) )
                     allSubstitutionsApplied = false;
                 // Create the the conditions according to the just created constraint prototypes.
@@ -1253,13 +1257,14 @@ namespace smtrat
             {
                 if( allSubstitutionsApplied )
                 {
+                    removeStatesFromRanking( *_currentState );
                     allSubResults.push_back( DisjunctionOfConditionConjunctions() );
                     allSubResults.back().push_back( oldConditions );
                     _currentState->addSubstitutionResults( allSubResults );
                     #ifdef VS_MODULE_VERBOSE_INTEGERS
                     _currentState->printSubstitutionResults( string( _currentState->treeDepth()*3, ' '), cout );
                     #endif
-                    addStateToRanking( _currentState );
+                    addStatesToRanking( _currentState );
                 }
                 else
                 {
@@ -1420,11 +1425,16 @@ namespace smtrat
                     if( (**child).type() != State::SUBSTITUTION_TO_APPLY || (**child).isInconsistent() )
                     {
                         // Apply substitution to new conditions and add the result to the substitution result vector.
-                        substituteAll( *child, recentlyAddedConditions );
-                        if( (**child).isInconsistent() &&!(**child).subResultsSimplified() )
+                        if( !substituteAll( *child, recentlyAddedConditions ) )
                         {
-                            if( !(**child).conflictSets().empty() )
-                                addStateToRanking( *child );
+                            // Delete the currently considered state.
+                            assert( (*child)->rInconsistent() );
+                            assert( (**child).conflictSets().empty() );
+                            removeStateFromRanking( **child );
+                        }
+                        else if( (**child).isInconsistent() && !(**child).subResultsSimplified() && !(**child).conflictSets().empty() )
+                        {
+                            addStateToRanking( *child );
                         }
                     }
                     else
@@ -1432,10 +1442,14 @@ namespace smtrat
                         if( newTestCandidatesGenerated )
                         {
                             if( !(**child).children().empty() )
+                            {
                                 (**child).rHasChildrenToInsert() = true;
+                            }
                         }
                         else
+                        {
                             addStatesToRanking( *child );
+                        }
                     }
                 }
             }
