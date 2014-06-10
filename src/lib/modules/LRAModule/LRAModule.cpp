@@ -1133,7 +1133,7 @@ Return:
             {
                 setBound( constraint );
             }
-            mTableau.setSize( mTableau.slackVars().size(), mTableau.originalVars().size(), mLinearConstraints.size() );
+//            mTableau.setSize( mTableau.slackVars().size(), mTableau.originalVars().size(), mLinearConstraints.size() );
             #ifdef LRA_USE_PIVOTING_STRATEGY
             mTableau.setBlandsRuleStart( 1000 );//(unsigned) mTableau.columns().size() );
             #endif

@@ -128,8 +128,10 @@ namespace smtrat
             mInfeasibleSubsets.back().insert( *_subformula );
             mInconsistentConstraintAdded = true;
             foundAnswer( False );
+            assert( checkRanking() );
             return false;
         }
+        assert( checkRanking() );
         return true;
     }
 
@@ -153,7 +155,7 @@ namespace smtrat
                 mpStateTree->rSubResultsSimplified() = false;
                 std::set<const vs::Condition*> condsToDelete;
                 condsToDelete.insert( condToDelete );
-                mpStateTree->deleteOrigins( condsToDelete );
+                mpStateTree->deleteOrigins( condsToDelete, mRanking );
                 mpStateTree->rType() = State::COMBINE_SUBRESULTS;
                 mpStateTree->rTakeSubResultCombAgain() = true;
                 addStateToRanking( mpStateTree );
@@ -165,6 +167,7 @@ namespace smtrat
             mConditionsChanged = true;
         }
         Module::removeSubformula( _subformula );
+        assert( checkRanking() );
     }
 
     /**
@@ -278,6 +281,7 @@ namespace smtrat
         #endif
         while( !mRanking.empty() )
         {
+            assert( checkRanking() );
 //                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             if( anAnswerFound() )
                 return foundAnswer( Unknown );
@@ -322,7 +326,7 @@ namespace smtrat
             cout << "*** Considered state:" << endl;
             currentState->printAlone( "*** ", cout );
             #endif
-            currentState->simplify();
+            currentState->simplify( mRanking );
             #ifdef VS_DEBUG
             cout << "Simplifing results in " << endl;
             currentState->printAlone( "*** ", cout );
@@ -371,7 +375,10 @@ namespace smtrat
                     #ifdef VS_DEBUG
                     cout << "*** Refresh conditons:" << endl;
                     #endif
-                    currentState->refreshConditions();
+                    if( currentState->refreshConditions( mRanking ) )
+                        addStateToRanking( currentState );
+                    else 
+                        addStatesToRanking( currentState );
                     currentState->rTakeSubResultCombAgain() = false;
                     #ifdef VS_DEBUG
                     currentState->printAlone( "   ", cout );
@@ -442,7 +449,7 @@ namespace smtrat
                                 #endif
                                 if( currentState->nextSubResultCombination() )
                                 {
-                                    if( currentState->refreshConditions() )
+                                    if( currentState->refreshConditions( mRanking ) )
                                         addStateToRanking( currentState );
                                     else 
                                         addStatesToRanking( currentState );
@@ -481,7 +488,7 @@ namespace smtrat
                                             removeStatesFromRanking( *toDelete );
                                             currentState->rChildren().pop_back();
                                             currentState->resetInfinityChild( toDelete );
-                                            delete toDelete;
+                                            delete toDelete;  // DELETE STATE
                                         }
                                         currentState->updateIntTestCandidates();
                                     }
@@ -534,7 +541,7 @@ namespace smtrat
                                                 removeStatesFromRanking( *unfinishedAncestor );
                                                 unfinishedAncestor->extendSubResultCombination();
                                                 unfinishedAncestor->rType() = State::COMBINE_SUBRESULTS;
-                                                if( unfinishedAncestor->refreshConditions() ) 
+                                                if( unfinishedAncestor->refreshConditions( mRanking ) ) 
                                                     addStateToRanking( unfinishedAncestor );
                                                 else 
                                                     addStatesToRanking( unfinishedAncestor );
@@ -623,7 +630,7 @@ namespace smtrat
                                                         removeStatesFromRanking( *unfinishedAncestor );
                                                         unfinishedAncestor->extendSubResultCombination();
                                                         unfinishedAncestor->rType() = State::COMBINE_SUBRESULTS;
-                                                        if( unfinishedAncestor->refreshConditions() )
+                                                        if( unfinishedAncestor->refreshConditions( mRanking ) )
                                                             addStateToRanking( unfinishedAncestor );
                                                         else
                                                             addStatesToRanking( unfinishedAncestor );
@@ -1100,7 +1107,7 @@ namespace smtrat
                 _currentState->resetConflictSets();
                 _currentState->rChildren().erase( _currentState->rChildren().begin() );
                 _currentState->resetInfinityChild( toDelete );
-                delete toDelete;
+                delete toDelete;  // DELETE STATE
             }
             _currentState->updateIntTestCandidates();
             if( numberOfAddedChildren == 0 )
@@ -1225,7 +1232,7 @@ namespace smtrat
                 State* toDelete = _currentState->rChildren().back();
                 _currentState->rChildren().pop_back();
                 _currentState->resetInfinityChild( toDelete );
-                delete toDelete;
+                delete toDelete;  // DELETE STATE
             }
             _currentState->updateIntTestCandidates();
             while( !_currentState->conditions().empty() )
@@ -1263,7 +1270,7 @@ namespace smtrat
                         State* toDelete = _currentState->rChildren().back();
                         _currentState->rChildren().pop_back();
                         _currentState->resetInfinityChild( toDelete );
-                        delete toDelete;
+                        delete toDelete;  // DELETE STATE
                     }
                     _currentState->updateIntTestCandidates();
                     while( !_currentState->conditions().empty() )
@@ -1356,7 +1363,7 @@ namespace smtrat
                     State* toDelete = _currentState->rChildren().back();
                     _currentState->rChildren().pop_back();
                     _currentState->resetInfinityChild( toDelete );
-                    delete toDelete;
+                    delete toDelete;  // DELETE STATE
                 }
                 _currentState->updateIntTestCandidates();
             }
@@ -1528,6 +1535,17 @@ namespace smtrat
         removeStateFromRanking( _state );
         for( auto dt = _state.rChildren().begin(); dt != _state.children().end(); ++dt )
             removeStatesFromRanking( **dt );
+    }
+    
+    template<class Settings>
+    bool VSModule<Settings>::checkRanking() const
+    {
+        for( auto valDTPair = mRanking.begin(); valDTPair != mRanking.end(); ++valDTPair )
+        {
+            if( !mpStateTree->containsState( valDTPair->second ) )
+                return false;
+        }
+        return true;
     }
 
     template<class Settings>
@@ -1734,7 +1752,7 @@ namespace smtrat
                                 }
                                 removeStatesFromRanking( *toRemove );
                                 toRemove->rFather().rChildren().remove( toRemove );
-                                delete toRemove;
+                                delete toRemove;  // DELETE STATE
                             }
                             return false;
                         }

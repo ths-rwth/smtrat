@@ -82,7 +82,7 @@ public:
 				break;
 			}
 			case smtrat::Answer::Unknown: {
-				warn() << "unknown";
+				regular() << "unknown";
 				this->exitCode = SMTRAT_EXIT_UNKNOWN;
 				break;
 			}

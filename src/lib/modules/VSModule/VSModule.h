@@ -49,35 +49,6 @@ namespace smtrat
         private:
 
             // Type and object definitions.
-            
-            typedef std::pair<size_t, std::pair<size_t, size_t> > UnsignedTriple;
-            
-            struct unsignedTripleCmp
-            {
-                bool operator ()( UnsignedTriple n1, UnsignedTriple n2 ) const
-                {
-                    if( n1.first > n2.first )
-                        return true;
-                    else if( n1.first == n2.first )
-                    {
-                        if( n1.first != 1 )
-                            return n1.second.first > n2.second.first;
-                        else
-                        {
-                            if( n1.second.second < n2.second.second )
-                                return true;
-                            else if( n1.second.second == n2.second.second )
-                                return n1.second.first > n2.second.first;
-                            return false;
-                        }
-                    }
-                    else
-                        return false;
-                }
-            };
-            
-            typedef std::pair<UnsignedTriple, vs::State*>                   ValStatePair;
-            typedef std::map<UnsignedTriple, vs::State*, unsignedTripleCmp> ValuationMap;
             typedef std::map<const Formula* const, const vs::Condition*>    FormulaConditionMap;
             typedef std::vector<std::pair<carl::Variable,carl::Variable>>   VarNamePairVector;
 
@@ -91,7 +62,7 @@ namespace smtrat
             vs::State*                  mpStateTree;
             Variables                   mAllVariables;
             FormulaConditionMap         mFormulaConditionMap;
-            ValuationMap                mRanking;
+            vs::ValuationMap            mRanking;
             mutable VarNamePairVector   mVariableVector;
 
         public:
@@ -138,6 +109,7 @@ namespace smtrat
             void insertTooHighDegreeStatesInRanking( vs::State* );
             bool removeStateFromRanking( vs::State& );
             void removeStatesFromRanking( vs::State& );
+            bool checkRanking() const;
             PointerSet<Formula> getReasons( const std::set<const vs::Condition*>& _conditions ) const;
             void updateInfeasibleSubset( bool = false );
             EvalRationalMap getIntervalAssignment( const vs::State* _state ) const;

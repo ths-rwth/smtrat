@@ -162,6 +162,14 @@ namespace vs
             delete mpSubResultCombination;
         }
     }
+    
+    void State::removeStatesFromRanking( const State& toRemove, ValuationMap& _ranking )
+    {
+        UnsignedTriple key = UnsignedTriple( toRemove.valuation(), std::pair<unsigned, unsigned>( toRemove.id(), toRemove.backendCallValuation() ) );
+        _ranking.erase( key );
+        for( const State* child : toRemove.children() )
+            removeStatesFromRanking( *child, _ranking );
+    }
 
     unsigned State::treeDepth() const
     {
@@ -218,6 +226,15 @@ namespace vs
             else
                 return true;
         }
+        return false;
+    }
+    
+    bool State::containsState( const State* _state ) const
+    {
+        if( this == _state ) return true;
+        for( const State* child : children() )
+            if( child->containsState( _state ) )
+                return true;
         return false;
     }
 
@@ -420,7 +437,7 @@ namespace vs
         return rConditions().end();
     }
 
-    void State::simplify()
+    void State::simplify( ValuationMap& _ranking )
     {
         if( !subResultsSimplified() )
         {
@@ -439,7 +456,7 @@ namespace vs
                     while( condConjunction != subResult->end() && subResult->size() > 1 )
                     {
                         ConditionSetSet conflictingConditionPairs = ConditionSetSet();
-                        if( !simplify( condConjunction->first, conflictingConditionPairs ) )
+                        if( !simplify( condConjunction->first, conflictingConditionPairs, _ranking ) )
                         {
                             while( !condConjunction->first.empty() )
                             {
@@ -547,7 +564,7 @@ namespace vs
                 if( isInconsistent() && fixedConditions != mpSubstitutionResults->end() )
                 {
                     ConditionSetSet conflictingConditionPairs = ConditionSetSet();
-                    if( !simplify( fixedConditions->back().first, conflictingConditionPairs ) )
+                    if( !simplify( fixedConditions->back().first, conflictingConditionPairs, _ranking ) )
                         addConflicts( NULL, conflictingConditionPairs );
                 }
             }
@@ -557,7 +574,7 @@ namespace vs
         if( !conditionsSimplified() )
         {
             ConditionSetSet conflictingConditionPairs = ConditionSetSet();
-            if( !simplify( rConditions(), conflictingConditionPairs, true ) )
+            if( !simplify( rConditions(), conflictingConditionPairs, _ranking, true ) )
             {
                 addConflictSet( NULL, conflictingConditionPairs );
                 rInconsistent() = true;
@@ -566,7 +583,7 @@ namespace vs
         }
     }
 
-    bool State::simplify( ConditionList& _conditionVectorToSimplify, ConditionSetSet& _conflictSet, bool _stateConditions )
+    bool State::simplify( ConditionList& _conditionVectorToSimplify, ConditionSetSet& _conflictSet, ValuationMap& _ranking, bool _stateConditions )
     {
         if( _conditionVectorToSimplify.size() > 1 )
         {
@@ -652,7 +669,7 @@ namespace vs
                             {
                                 set<const Condition*> oConds = condB->originalConditions();
                                 oConds.insert( condA->originalConditions().begin(), condA->originalConditions().end() );
-                                addCondition( nConstraint, oConds, nValuation, true );
+                                addCondition( nConstraint, oConds, nValuation, true, _ranking );
                             }
                             else
                             {
@@ -699,7 +716,7 @@ namespace vs
                 ++condSet;
             }
             if( _stateConditions )
-                deleteConditions( redundantConditionSet );
+                deleteConditions( redundantConditionSet, _ranking );
             else
             {
                 // Delete the redundant conditions of the vector of conditions to simplify.
@@ -979,7 +996,7 @@ namespace vs
         return currentSubresultCombination;
     }
 
-    bool State::refreshConditions()
+    bool State::refreshConditions( ValuationMap& _ranking )
     {
         assert( type() == COMBINE_SUBRESULTS );
         bool conditionsChanged = false;
@@ -990,7 +1007,7 @@ namespace vs
             // Simplify the conditions already here, to avoid unnecessarily adding and deleting conditions.
             ConditionList redundantConditions       = ConditionList();
             ConditionSetSet conflictingConditionPairs = ConditionSetSet();
-            if( !simplify( newCombination, conflictingConditionPairs ) )
+            if( !simplify( newCombination, conflictingConditionPairs, _ranking ) )
                 rInconsistent() = true;
             // Delete the conditions of this combination, which do already occur in the considered conditions of this state.
             set<const Condition*> condsToDelete;
@@ -1031,7 +1048,6 @@ namespace vs
                 if( !condOccursInNewConds )
                 {
                     condsToDelete.insert( *cond );
-                    conditionsChanged = true;
                 }
                 ++cond;
             }
@@ -1040,11 +1056,12 @@ namespace vs
             // Delete the conditions, which do not occur in the current combination.
             if( !condsToDelete.empty() )
             {
-                deleteConditions( condsToDelete );
+                conditionsChanged = true;
+                deleteConditions( condsToDelete, _ranking );
             }
             // Add the remaining conditions of the current combination to the conditions this state considers.
             for( auto newCond = newCombination.begin(); newCond != newCombination.end(); ++newCond )
-                addCondition( (**newCond).pConstraint(), (**newCond).originalConditions(), (**newCond).valuation(), true );
+                addCondition( (**newCond).pConstraint(), (**newCond).originalConditions(), (**newCond).valuation(), true, _ranking );
             while( !newCombination.empty() )
             {
                 const Condition* rpCond = newCombination.back();
@@ -1171,7 +1188,7 @@ namespace vs
         return false;
     }
 
-    void State::addCondition( const smtrat::Constraint* _constraint, const set<const Condition*>& _originalConditions, size_t _valutation, bool _recentlyAdded )
+    void State::addCondition( const smtrat::Constraint* _constraint, const set<const Condition*>& _originalConditions, size_t _valutation, bool _recentlyAdded, ValuationMap& _ranking )
     {
         // Check if the constraint is variable-free and consistent. If so, discard it.
         unsigned constraintConsistency = _constraint->isConsistent();
@@ -1206,9 +1223,10 @@ namespace vs
                 {
                     if( mpInfinityChild != NULL )
                     {
+                        removeStatesFromRanking( *mpInfinityChild, _ranking );
                         mpConflictSets->erase( mpInfinityChild->pSubstitution() );
                         mpChildren->remove( mpInfinityChild );
-                        delete mpInfinityChild;
+                        delete mpInfinityChild; // DELETE STATE
                         mpInfinityChild = NULL;
                     }
                     rConditions().push_back( new Condition( _constraint, _valutation, false, _originalConditions, _recentlyAdded ) );
@@ -1276,7 +1294,7 @@ namespace vs
         return true;
     }
 
-    int State::deleteOrigins( set<const Condition*>& _originsToDelete )
+    int State::deleteOrigins( set<const Condition*>& _originsToDelete, ValuationMap& _ranking )
     {
         if( _originsToDelete.empty() ) return 1;
         if( !isRoot() )
@@ -1358,7 +1376,7 @@ namespace vs
         mMarkedAsDeleted   = false;
         mTryToRefreshIndex = true;
         // Delete everything originated by it in all children of this state.
-        deleteOriginsFromChildren( originsToRemove );
+        deleteOriginsFromChildren( originsToRemove, _ranking );
         // Delete the conditions in the conflict sets which are originated by any of the given origins.
         deleteOriginsFromConflictSets( _originsToDelete, false );     
         // Delete the conditions.
@@ -1375,7 +1393,7 @@ namespace vs
         return 1;
     }
 
-    void State::deleteConditions( set<const Condition*>& _conditionsToDelete )
+    void State::deleteConditions( set<const Condition*>& _conditionsToDelete, ValuationMap& _ranking )
     {
         if( _conditionsToDelete.empty() ) return;
         // Delete the conditions to delete from the set of conditions with too high degree to
@@ -1431,11 +1449,9 @@ namespace vs
         }
         originsToRemove.insert( _conditionsToDelete.begin(), _conditionsToDelete.end() );
         // Delete everything originated by the given conditions in all children of this state.
-        deleteOriginsFromChildren( originsToRemove );
+        deleteOriginsFromChildren( originsToRemove, _ranking );
         // Delete the conditions from the conflict sets.
         deleteOriginsFromConflictSets( originsToRemove, true );
-        // Delete everything originated by the conditions to delete in the state's children.
-        deleteOriginsFromChildren( originsToRemove );
         while( !condsToDelete.empty() )
         {
             const Condition* condToDel = condsToDelete.back();
@@ -1448,13 +1464,13 @@ namespace vs
         mTryToRefreshIndex = true;
     }
 
-    void State::deleteOriginsFromChildren( set<const Condition*>& _originsToDelete )
+    void State::deleteOriginsFromChildren( set<const Condition*>& _originsToDelete, ValuationMap& _ranking )
     {
         bool childWithIntTcDeleted = false;
         auto child = rChildren().begin();
         while( child != children().end() )
         {
-            int result = (*child)->deleteOrigins( _originsToDelete );
+            int result = (*child)->deleteOrigins( _originsToDelete, _ranking );
             if( result < 0 )
                 initConditionFlags();
             if( result < 1 )
@@ -1468,9 +1484,10 @@ namespace vs
                 if( conflictSet != conflictSets().end() )
                     rConflictSets().erase( conflictSet );
                 State* toDelete = *child;
+                removeStatesFromRanking( *toDelete, _ranking );
                 child = rChildren().erase( child );
                 if( toDelete == mpInfinityChild ) mpInfinityChild = NULL;
-                delete toDelete;
+                delete toDelete;  // DELETE STATE
             }
             else
                 ++child;
@@ -1908,7 +1925,7 @@ namespace vs
             State* toDelete = rChildren().back();
             rChildren().pop_back();
             if( toDelete == mpInfinityChild ) mpInfinityChild = NULL;
-            delete toDelete;
+            delete toDelete; // DELETE STATE
         }
         mpTooHighDegreeConditions->clear();
         while( !conditions().empty() )
