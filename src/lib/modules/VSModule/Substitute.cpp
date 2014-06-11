@@ -29,6 +29,7 @@
 #include <cmath>
 
 //#define VS_DEBUG_SUBSTITUTION
+const unsigned MAX_NUM_OF_TERMS = 512;
 
 using namespace std;
 
@@ -50,15 +51,12 @@ namespace vs
         {
             case Substitution::NORMAL:
             {
-                substituteNormal( _cons, _subs, _result, _accordingPaper, _conflictingVariables, _solutionSpace );
+                result = substituteNormal( _cons, _subs, _result, _accordingPaper, _conflictingVariables, _solutionSpace );
                 break;
             }
             case Substitution::PLUS_EPSILON:
             {
-                if( !substitutePlusEps( _cons, _subs, _result, _accordingPaper, _conflictingVariables, _solutionSpace ) )
-                {
-                    result = false;
-                }
+                result = substitutePlusEps( _cons, _subs, _result, _accordingPaper, _conflictingVariables, _solutionSpace );
                 break;
             }
             case Substitution::MINUS_INFINITY:
@@ -89,13 +87,15 @@ namespace vs
         return result;
     }
 
-    void substituteNormal( const smtrat::Constraint* _cons,
+    bool substituteNormal( const smtrat::Constraint* _cons,
                            const Substitution& _subs,
                            DisjunctionOfConstraintConjunctions& _result,
                            bool _accordingPaper,
                            smtrat::Variables& _conflictingVariables,
                            const smtrat::EvalDoubleIntervalMap& _solutionSpace )
     {
+        
+        bool result = true;
         if( _cons->hasVariable( _subs.variable() ) )
         {
             // Collect all necessary left hand sides to create the new conditions of all cases referring to the virtual substitution.
@@ -163,32 +163,32 @@ namespace vs
                 {
                     case smtrat::Relation::EQ:
                     {
-                        substituteNormalSqrtEq( sub.radicand(), sub.constantPart(), sub.factor(), _result, _accordingPaper );
+                        result = substituteNormalSqrtEq( sub.radicand(), sub.constantPart(), sub.factor(), _result, _accordingPaper );
                         break;
                     }
                     case smtrat::Relation::NEQ:
                     {
-                        substituteNormalSqrtNeq( sub.radicand(), sub.constantPart(), sub.factor(), _result, _accordingPaper );
+                        result = substituteNormalSqrtNeq( sub.radicand(), sub.constantPart(), sub.factor(), _result, _accordingPaper );
                         break;
                     }
                     case smtrat::Relation::LESS:
                     {
-                        substituteNormalSqrtLess( sub.radicand(), sub.constantPart(), sub.factor(), s, _result, _accordingPaper );
+                        result = substituteNormalSqrtLess( sub.radicand(), sub.constantPart(), sub.factor(), s, _result, _accordingPaper );
                         break;
                     }
                     case smtrat::Relation::GREATER:
                     {
-                        substituteNormalSqrtLess( sub.radicand(), sub.constantPart(), sub.factor(), -s, _result, _accordingPaper );
+                        result = substituteNormalSqrtLess( sub.radicand(), sub.constantPart(), sub.factor(), -s, _result, _accordingPaper );
                         break;
                     }
                     case smtrat::Relation::LEQ:
                     {
-                        substituteNormalSqrtLeq( sub.radicand(), sub.constantPart(), sub.factor(), s, _result, _accordingPaper );
+                        result = substituteNormalSqrtLeq( sub.radicand(), sub.constantPart(), sub.factor(), s, _result, _accordingPaper );
                         break;
                     }
                     case smtrat::Relation::GEQ:
                     {
-                        substituteNormalSqrtLeq( sub.radicand(), sub.constantPart(), sub.factor(), -s, _result, _accordingPaper );
+                        result = substituteNormalSqrtLeq( sub.radicand(), sub.constantPart(), sub.factor(), -s, _result, _accordingPaper );
                         break;
                     }
                     default:
@@ -203,14 +203,17 @@ namespace vs
             _result.back().push_back( _cons );
         }
         simplify( _result, _conflictingVariables, _solutionSpace );
+        return result;
     }
 
-    void substituteNormalSqrtEq( const smtrat::Polynomial& _radicand,
+    bool substituteNormalSqrtEq( const smtrat::Polynomial& _radicand,
                                  const smtrat::Polynomial& _q,
                                  const smtrat::Polynomial& _r,
                                  DisjunctionOfConstraintConjunctions& _result,
                                  bool _accordingPaper )
     {
+        if( _q.nrTerms() > MAX_NUM_OF_TERMS || _r.nrTerms() > MAX_NUM_OF_TERMS )
+            return false;
         smtrat::Polynomial lhs = _q.pow( 2 ) - _r.pow( 2 ) * _radicand;
         if( _accordingPaper )
         {
@@ -241,14 +244,17 @@ namespace vs
             _result.back().push_back( smtrat::newConstraint( _r, smtrat::Relation::LESS ) );
             _result.back().push_back( smtrat::newConstraint( lhs, smtrat::Relation::EQ ) );
         }
+        return true;
     }
 
-    void substituteNormalSqrtNeq( const smtrat::Polynomial& _radicand,
+    bool substituteNormalSqrtNeq( const smtrat::Polynomial& _radicand,
                                   const smtrat::Polynomial& _q,
                                   const smtrat::Polynomial& _r,
                                   DisjunctionOfConstraintConjunctions& _result,
                                   bool _accordingPaper )
     {
+        if( _q.nrTerms() > MAX_NUM_OF_TERMS || _r.nrTerms() > MAX_NUM_OF_TERMS )
+            return false;
         smtrat::Polynomial lhs = _q.pow( 2 ) - _r.pow( 2 ) * _radicand;
         if( _accordingPaper )
         {
@@ -272,15 +278,18 @@ namespace vs
             _result.push_back( ConstraintVector() );
             _result.back().push_back( smtrat::newConstraint( lhs, smtrat::Relation::NEQ ) );
         }
+        return true;
     }
 
-    void substituteNormalSqrtLess( const smtrat::Polynomial& _radicand,
+    bool substituteNormalSqrtLess( const smtrat::Polynomial& _radicand,
                                    const smtrat::Polynomial& _q,
                                    const smtrat::Polynomial& _r,
                                    const smtrat::Polynomial& _s,
                                    DisjunctionOfConstraintConjunctions& _result,
                                    bool _accordingPaper )
     {
+        if( _q.nrTerms() > MAX_NUM_OF_TERMS || _r.nrTerms() > MAX_NUM_OF_TERMS )
+            return false;
         smtrat::Polynomial lhs = _q.pow( 2 ) - _r.pow( 2 ) * _radicand;
         if( _accordingPaper )
         {
@@ -332,15 +341,18 @@ namespace vs
             _result.back().push_back( smtrat::newConstraint( _q, smtrat::Relation::LESS ) );
             _result.back().push_back( smtrat::newConstraint( _s, smtrat::Relation::GREATER ) );
         }
+        return true;
     }
 
-    void substituteNormalSqrtLeq( const smtrat::Polynomial& _radicand,
+    bool substituteNormalSqrtLeq( const smtrat::Polynomial& _radicand,
                                   const smtrat::Polynomial& _q,
                                   const smtrat::Polynomial& _r,
                                   const smtrat::Polynomial& _s,
                                   DisjunctionOfConstraintConjunctions& _result,
                                   bool _accordingPaper )
     {
+        if( _q.nrTerms() > MAX_NUM_OF_TERMS || _r.nrTerms() > MAX_NUM_OF_TERMS )
+            return false;
         smtrat::Polynomial lhs = _q.pow( 2 ) - _r.pow( 2 ) * _radicand;
         if( _accordingPaper )
         {
@@ -386,6 +398,7 @@ namespace vs
             _result.back().push_back( smtrat::newConstraint( _radicand, smtrat::Relation::EQ ) );
             _result.back().push_back( smtrat::newConstraint( _q, smtrat::Relation::EQ ) );
         }
+        return true;
     }
 
     bool substitutePlusEps( const smtrat::Constraint* _cons,
@@ -462,12 +475,12 @@ namespace vs
                                  const smtrat::EvalDoubleIntervalMap& _solutionSpace )
     {
         assert( _cons->hasVariable( _subs.variable() ) );
-        bool result = true;
         // Create a substitution formed by the given one without an addition of epsilon.
         Substitution substitution = Substitution( _subs.variable(), _subs.term(), Substitution::NORMAL, _subs.originalConditions() );
         // Call the method substituteNormal with the constraint f(x)~0 and the substitution [x -> t],  where the parameter relation is ~.
         const smtrat::Constraint* firstCaseInequality = smtrat::newConstraint( _cons->lhs(), _relation );
-        substituteNormal( firstCaseInequality, substitution, _result, _accordingPaper, _conflictingVariables, _solutionSpace );
+        if( !substituteNormal( firstCaseInequality, substitution, _result, _accordingPaper, _conflictingVariables, _solutionSpace ) )
+            return false;
         // Create a vector to store the results of each single substitution.
         vector<DisjunctionOfConstraintConjunctions> substitutionResultsVector;
         substitutionResultsVector = vector<DisjunctionOfConstraintConjunctions>();
@@ -490,16 +503,18 @@ namespace vs
             const smtrat::Constraint* inequality = smtrat::newConstraint( deriv, _relation );
             // Apply the substitution (without epsilon) to the new constraints.
             substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-            substituteNormal( equation, substitution, substitutionResultsVector.back(), _accordingPaper, _conflictingVariables, _solutionSpace );
+            if( !substituteNormal( equation, substitution, substitutionResultsVector.back(), _accordingPaper, _conflictingVariables, _solutionSpace ) )
+                return false;
             substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-            substituteNormal( inequality, substitution, substitutionResultsVector.back(), _accordingPaper, _conflictingVariables, _solutionSpace );
+            if( !substituteNormal( inequality, substitution, substitutionResultsVector.back(), _accordingPaper, _conflictingVariables, _solutionSpace ) )
+                return false;
             if( !combine( substitutionResultsVector, _result ) )
-                result = false;
+                return false;
             simplify( _result, _conflictingVariables, _solutionSpace );
             // Remove the last substitution result.
             substitutionResultsVector.pop_back();
         }
-        return result;
+        return true;
     }
 
     void substituteInf( const smtrat::Constraint* _cons, const Substitution& _subs, DisjunctionOfConstraintConjunctions& _result, smtrat::Variables& _conflictingVariables, const smtrat::EvalDoubleIntervalMap& _solutionSpace )

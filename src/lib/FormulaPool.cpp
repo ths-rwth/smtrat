@@ -55,7 +55,6 @@ namespace smtrat
         delete mpFalse;
         while( !mFormulas.empty() )
         {
-            // TODO: delete nodes with no parents recursively
             const Formula* pFormula = (*mFormulas.begin());
             mFormulas.erase( mFormulas.begin() );
             delete pFormula;

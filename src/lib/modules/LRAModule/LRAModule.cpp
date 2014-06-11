@@ -37,7 +37,6 @@
 #define LRA_ONE_REASON
 #ifndef LRA_GOMORY_CUTS
 #ifndef LRA_CUTS_FROM_PROOFS
-#define LRA_BRANCH_AND_BOUND
 #endif
 #endif
 
@@ -453,10 +452,8 @@ namespace smtrat
                         if( cuts_from_proofs() )
                             goto Return; // Unknown
                         #endif
-                        #ifdef LRA_BRANCH_AND_BOUND
                         if( branch_and_bound() )
                             goto Return; // Unknown
-                        #endif
                         result = True;
 //                        if( !assignmentCorrect() )
 //                            exit( 7771 );
@@ -1133,14 +1130,13 @@ Return:
             {
                 setBound( constraint );
             }
-            mTableau.setSize( mTableau.slackVars().size(), mTableau.originalVars().size(), mLinearConstraints.size() );
+//            mTableau.setSize( mTableau.slackVars().size(), mTableau.originalVars().size(), mLinearConstraints.size() );
             #ifdef LRA_USE_PIVOTING_STRATEGY
             mTableau.setBlandsRuleStart( 1000 );//(unsigned) mTableau.columns().size() );
             #endif
         }
     }
     
-    #ifdef LRA_GOMORY_CUTS
     /**
      * 
      * @return True, if a branching occurred.
@@ -1167,22 +1163,12 @@ Return:
                     if( gomory_constr != NULL )
                     { 
                         assert( !gomory_constr->satisfiedBy( rMap_ ) );      
-                        PointerSet<Formula> subformulas;
-                        /*                         
-                        auto vec_iter = constr_vec.begin();                       
-                        while( vec_iter != constr_vec.end() )
-                        {
-                            std::cout << "Cut implied by: " << (*vec_iter)->lhs() << std::endl;
-                            subformulas.insert( newNegation( newFormula( *vec_iter ) ) );
-                            ++vec_iter; 
-                        }
-                        */ 
+                        PointerSet<Formula> subformulas; 
                         auto vec_iter = mpReceivedFormula->begin();
                         while( vec_iter != mpReceivedFormula->end() )
                         {
                             if ( (*(*vec_iter)->pConstraint()).lhs().evaluate( rMap_ ) == 0 )
                             {
-                                std::cout << "Cut implied by: " << (*(*vec_iter)->pConstraint()) << std::endl;
                                 subformulas.insert( newNegation( newFormula( (*vec_iter)->pConstraint() ) ) );
                             }
                             ++vec_iter;
@@ -1191,18 +1177,11 @@ Return:
                         subformulas.insert( gomory_formula );
                         addDeduction( newFormula( OR, std::move( subformulas ) ) );   
                     } 
-                    /*
-                    else
-                    {
-                        branchAt( Polynomial( found_ex->first ), found_ex->second );
-                    }
-                    */
                 }
             }    
         }          
         return !all_int;
     }
-    #endif
     
     #ifdef LRA_CUTS_FROM_PROOFS
     /**
@@ -1388,22 +1367,23 @@ Return:
     bool LRAModule::branch_and_bound()
     {
         BRANCH_STRATEGY strat = MOST_INFEASIBLE;
-        bool result = false;
+        bool gc_support = true;
+        bool result = true;
         if( strat == MIN_PIVOT )
         {
-            result = minimal_row_var();            
+            result = minimal_row_var( gc_support );            
         }
         else if( strat == MOST_FEASIBLE )
         {
-            result = most_feasible_var();
+            result = most_feasible_var( gc_support );
         }
         else if( strat == MOST_INFEASIBLE )
         {
-            result = most_infeasible_var();
+            result = most_infeasible_var( gc_support );
         }
         else if( strat == NATIVE )
         {
-            result = first_var();
+            result = first_var( gc_support );
         }  
         return result;
     }
@@ -1413,7 +1393,7 @@ Return:
       *                which has the lowest count of entries in its row.
       *         false, if no branching occured.
       */    
-    bool LRAModule::minimal_row_var()
+    bool LRAModule::minimal_row_var( bool& gc_support )
     {
         EvalRationalMap _rMap = getRationalModel();
         auto map_iterator = _rMap.begin();
@@ -1440,10 +1420,17 @@ Return:
         }
         if( result )
         {
-            PointerSet<Formula> premises;
-            mTableau.collect_premises( branch_var->second , premises  );
-            branchAt( Polynomial( branch_var->first ), ass_, premises );
-            return true;
+            if( gc_support && probablyLooping( Polynomial( branch_var->first ), ass_ ) )
+            {
+                return gomory_cut();
+            }
+            else
+            {
+                PointerSet<Formula> premises;
+                mTableau.collect_premises( branch_var->second , premises  );                
+                branchAt( Polynomial( branch_var->first ), ass_, premises );
+                return true;
+            }    
         }
         else
         {
@@ -1456,7 +1443,7 @@ Return:
       *                which is most feasible.
       *         false, if no branching occured.
       */    
-    bool LRAModule::most_feasible_var()
+    bool LRAModule::most_feasible_var( bool& gc_support )
     {
         EvalRationalMap _rMap = getRationalModel();
         auto map_iterator = _rMap.begin();
@@ -1483,10 +1470,17 @@ Return:
         }
         if( result )
         {
-            PointerSet<Formula> premises;
-            mTableau.collect_premises( branch_var->second , premises  );
-            branchAt( Polynomial( branch_var->first ), ass_, premises );
-            return true;
+            if( gc_support && probablyLooping( Polynomial( branch_var->first ), ass_ ) )
+            {
+                return gomory_cut();
+            }
+            else
+            {
+                PointerSet<Formula> premises;
+                mTableau.collect_premises( branch_var->second , premises  );                
+                branchAt( Polynomial( branch_var->first ), ass_, premises );
+                return true;
+            }             
         }
         else
         {
@@ -1499,7 +1493,7 @@ Return:
       *                which is most infeasible.
       *         false, if no branching occured.
       */   
-    bool LRAModule::most_infeasible_var() 
+    bool LRAModule::most_infeasible_var( bool& gc_support ) 
     {
         EvalRationalMap _rMap = getRationalModel();
         auto map_iterator = _rMap.begin();
@@ -1526,10 +1520,17 @@ Return:
         }
         if( result )
         {
-            PointerSet<Formula> premises;
-            mTableau.collect_premises( branch_var->second , premises  );
-            branchAt( Polynomial( branch_var->first ), ass_, premises );
-            return true;
+            if( gc_support && probablyLooping( Polynomial( branch_var->first ), ass_ ) )
+            {
+                return gomory_cut();
+            }
+            else
+            {
+                PointerSet<Formula> premises;
+                mTableau.collect_premises( branch_var->second , premises  );                
+                branchAt( Polynomial( branch_var->first ), ass_, premises );
+                return true;
+            }             
         }
         else
         {
@@ -1541,7 +1542,7 @@ Return:
       * @return true,  if a branching occured with the first original variable that has to be fixed.
       *         false, if no branching occured.
       */    
-    bool LRAModule::first_var()
+    bool LRAModule::first_var( bool& gc_support )
     {
         EvalRationalMap _rMap = getRationalModel();
         auto map_iterator = _rMap.begin();
@@ -1552,10 +1553,17 @@ Return:
             Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
-                PointerSet<Formula> premises;
-                mTableau.collect_premises( var->second , premises  );         
-                branchAt( Polynomial( var->first ), ass, premises ); 
-                return true;                
+                if( gc_support && probablyLooping( Polynomial( var->first ), ass ) )
+                {
+                    return gomory_cut();
+                }
+                else
+                {
+                    PointerSet<Formula> premises;
+                    mTableau.collect_premises( var->second , premises  );                
+                    branchAt( Polynomial( var->first ), ass, premises );
+                    return true;
+                }                                
             }
             ++map_iterator;
         } 

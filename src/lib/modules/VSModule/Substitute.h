@@ -56,7 +56,7 @@ namespace vs
      *                               container.
      * @param _solutionSpace The solution space in form of double intervals of the variables occurring in the given constraint.
      */
-    void substituteNormal( const smtrat::Constraint* _cons, const Substitution& _subs, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper, smtrat::Variables& _conflictingVariables, const smtrat::EvalDoubleIntervalMap& _solutionSpace );
+    bool substituteNormal( const smtrat::Constraint* _cons, const Substitution& _subs, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper, smtrat::Variables& _conflictingVariables, const smtrat::EvalDoubleIntervalMap& _solutionSpace );
     
     /**
      * Sub-method of substituteNormalSqrt, where applying the substitution led to a term
@@ -74,7 +74,7 @@ namespace vs
      *                        for real algebra - the quadratic case and beyond." by Volker Weispfenning (true) or in an adapted way which omits a higher
      *                        degree in the result by splitting the result in more cases (false).
      */
-    void substituteNormalSqrtEq( const smtrat::Polynomial& _radicand, const smtrat::Polynomial& _q, const smtrat::Polynomial& _r, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
+    bool substituteNormalSqrtEq( const smtrat::Polynomial& _radicand, const smtrat::Polynomial& _q, const smtrat::Polynomial& _r, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
     
     /**
      * Sub-method of substituteNormalSqrt, where applying the substitution led to a term
@@ -92,7 +92,7 @@ namespace vs
      *                        for real algebra - the quadratic case and beyond." by Volker Weispfenning (true) or in an adapted way which omits a higher
      *                        degree in the result by splitting the result in more cases (false).
      */
-    void substituteNormalSqrtNeq( const smtrat::Polynomial& _radicand, const smtrat::Polynomial& _q, const smtrat::Polynomial& _r, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
+    bool substituteNormalSqrtNeq( const smtrat::Polynomial& _radicand, const smtrat::Polynomial& _q, const smtrat::Polynomial& _r, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
     
     /**
      * Sub-method of substituteNormalSqrt, where applying the substitution led to a term
@@ -111,7 +111,7 @@ namespace vs
      *                        for real algebra - the quadratic case and beyond." by Volker Weispfenning (true) or in an adapted way which omits a higher
      *                        degree in the result by splitting the result in more cases (false).
      */
-    void substituteNormalSqrtLess( const smtrat::Polynomial& _radicand, const smtrat::Polynomial& _q, const smtrat::Polynomial& _r, const smtrat::Polynomial& _s, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
+    bool substituteNormalSqrtLess( const smtrat::Polynomial& _radicand, const smtrat::Polynomial& _q, const smtrat::Polynomial& _r, const smtrat::Polynomial& _s, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
     
     /**
      * Sub-method of substituteNormalSqrt, where applying the substitution led to a term
@@ -130,7 +130,7 @@ namespace vs
      *                        for real algebra - the quadratic case and beyond." by Volker Weispfenning (true) or in an adapted way which omits a higher
      *                        degree in the result by splitting the result in more cases (false).
      */
-    void substituteNormalSqrtLeq( const smtrat::Polynomial& _radicand, const smtrat::Polynomial& _q, const smtrat::Polynomial& _r, const smtrat::Polynomial& _s, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
+    bool substituteNormalSqrtLeq( const smtrat::Polynomial& _radicand, const smtrat::Polynomial& _q, const smtrat::Polynomial& _r, const smtrat::Polynomial& _s, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
     
     /**
      * Applies the given substitution to the given constraint, where the substitution

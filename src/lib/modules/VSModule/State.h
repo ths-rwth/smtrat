@@ -45,6 +45,37 @@ namespace vs
     typedef std::set< ConditionSetSet > ConditionSetSetSet;
     typedef std::list< const Condition* > ConditionList;
     typedef std::vector< ConditionList >  DisjunctionOfConditionConjunctions;
+    
+    typedef std::pair<size_t, std::pair<size_t, size_t> > UnsignedTriple;
+
+    // Forward declaration.
+    class State;
+    
+    struct unsignedTripleCmp
+    {
+        bool operator ()( UnsignedTriple n1, UnsignedTriple n2 ) const
+        {
+            if( n1.first > n2.first )
+                return true;
+            else if( n1.first == n2.first )
+            {
+                if( n1.first != 1 )
+                    return n1.second.first > n2.second.first;
+                else
+                {
+                    if( n1.second.second < n2.second.second )
+                        return true;
+                    else if( n1.second.second == n2.second.second )
+                        return n1.second.first > n2.second.first;
+                    return false;
+                }
+            }
+            else
+                return false;
+        }
+    };
+    typedef std::pair<UnsignedTriple, vs::State*>                   ValStatePair;
+    typedef std::map<UnsignedTriple, vs::State*, unsignedTripleCmp> ValuationMap;
 
     class State
     {
@@ -657,6 +688,8 @@ namespace vs
             assert( mpInfinityChild == NULL );
             mpInfinityChild = _state;
         }
+        
+        static void removeStatesFromRanking( const State& toRemove, ValuationMap& _ranking );
 
         /**
          * @return The depth of the subtree with this state as root node.
@@ -691,6 +724,12 @@ namespace vs
          *          false, otherwise.
          */
         bool hasChildWithID() const;
+        
+        /**
+         * @return true, if the given state is a node in the state tree starting at this node;
+         *          false, otherwise.
+         */
+        bool containsState( const State* _state ) const;
             
         /**
          * Checks whether a child exists, which is not yet marked as inconsistent.
@@ -779,7 +818,7 @@ namespace vs
         /**
          * Cleans up all conditions in this state according to comparison between the corresponding constraints.
          */
-        void simplify();
+        void simplify( ValuationMap& _ranking );
         
         /**
          * Simplifies the given conditions according to comparison between the corresponding constraints.
@@ -791,7 +830,7 @@ namespace vs
          * @return true, if the conditions are not obviously conflicting;
          *          false, otherwise.
          */
-        bool simplify( ConditionList& _conditionVectorToSimplify, ConditionSetSet& _conflictSet, bool _stateConditions = false );
+        bool simplify( ConditionList& _conditionVectorToSimplify, ConditionSetSet& _conflictSet, ValuationMap& _ranking, bool _stateConditions = false );
         
         /**
          * Sets the index of this state.
@@ -862,7 +901,7 @@ namespace vs
          * @return true, if there has been a change in the currently considered condition vector.
          *          false, otherwise.
          */
-        bool refreshConditions();
+        bool refreshConditions( ValuationMap& _ranking );
          
         /**
          * Sets all flags of the conditions to true, if it contains the variable given by the states index.
@@ -885,7 +924,7 @@ namespace vs
          * @param _recentlyAdded Is the condition a recently added one.
          * @sideeffect The state can obtain a new condition.
          */
-        void addCondition( const smtrat::Constraint* _constraint, const std::set<const Condition*>& _originalConditions, size_t _valutation, bool _recentlyAdded );
+        void addCondition( const smtrat::Constraint* _constraint, const std::set<const Condition*>& _originalConditions, size_t _valutation, bool _recentlyAdded, ValuationMap& _ranking );
             
         /**
          * Checks whether no condition in this state points to a deleted condition.
@@ -903,13 +942,13 @@ namespace vs
          *              and made other states unnecessary to consider;
          *          1, otherwise.
          */
-        int deleteOrigins( std::set<const Condition*>& _originsToDelete );
+        int deleteOrigins( std::set<const Condition*>& _originsToDelete, ValuationMap& _ranking );
             
         /**
          * Deletes everything originated by the given conditions in the children of this state.
          * @param _originsToDelete The condition for which to delete everything originated by them.
          */
-        void deleteOriginsFromChildren( std::set<const Condition*>& _originsToDelete );
+        void deleteOriginsFromChildren( std::set<const Condition*>& _originsToDelete, ValuationMap& _ranking );
             
         /**
          * Deletes everything originated by the given conditions in the conflict sets of this state.
@@ -930,7 +969,7 @@ namespace vs
          * Delete everything originated by the given conditions from the entire subtree with this state as root.
          * @param _conditionsToDelete The conditions to delete.
          */
-        void deleteConditions( std::set<const Condition*>& _conditionsToDelete );
+        void deleteConditions( std::set<const Condition*>& _conditionsToDelete, ValuationMap& _ranking );
         
         /**
          * Adds a state as child to this state with the given substitution.

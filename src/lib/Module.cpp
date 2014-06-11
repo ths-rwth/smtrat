@@ -483,10 +483,6 @@ namespace smtrat
      */
     void Module::branchAt( const Polynomial& _polynomial, const Rational& _value, const PointerSet<Formula>& _premise, bool _leftCaseWeak )
     {
-//        if( probablyLooping( _polynomial, _value ) )
-//        {
-//            exit( 7771 );
-//        }
         assert( !_polynomial.hasConstantTerm() );
         const Constraint* constraintA = NULL;
         const Constraint* constraintB = NULL;
