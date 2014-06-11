@@ -619,7 +619,7 @@ namespace smtrat
                     return mkLit( booleanVarPair->second, false );
                 else
                 {
-                    Var var = newVar( true, true, 3 ); //_formula.activity() );
+                    Var var = newVar( true, true, _formula.activity() );
                     mBooleanVarMap[_formula.boolean()] = var;
                     return mkLit( var, false );
                 }

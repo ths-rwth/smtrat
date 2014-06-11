@@ -269,12 +269,6 @@ namespace smtrat
                         {
                             mConflictActivity += form->activity();
                             ++counter;
-                            if( mConflictActivity > 1e20 )
-                            {
-                                assert( counter > 0 );
-                                mConflictActivity /= counter;
-                                counter = 0;
-                            }
                         }
                     }
                     if( !mpSupremum->isInfinite() )
@@ -283,14 +277,9 @@ namespace smtrat
                         {
                             mConflictActivity += form->activity();
                             ++counter;
-                            if( mConflictActivity > 1e20 )
-                            {
-                                assert( counter > 0 );
-                                mConflictActivity /= counter;
-                                counter = 0;
-                            }
                         }
                     }
+                    if( counter != 0 ) mConflictActivity /= counter;
                 }
 
                 std::pair<const Bound<T1, T2>*, bool> addUpperBound( Value<T1>* const, std::list<const smtrat::Formula*>::iterator, const smtrat::Constraint* = NULL, bool = false );

@@ -1209,7 +1209,8 @@ namespace smtrat
         for( auto form = mpReceivedFormula->begin(); form != mpReceivedFormula->end(); ++form )
         {
             _out << _initiation << "  ";
-            _out << setw( 30 ) << (*form)->toString( true );
+            // bool _withActivity, unsigned _resolveUnequal, const string _init, bool _oneline, bool _infix, bool _friendlyNames
+            _out << setw( 30 ) << (*form)->toString( false, 0, "", true, true, true );
             stringstream out;
             out << "  [" << *form << "]";
             _out << setw( 15 ) << out.str();

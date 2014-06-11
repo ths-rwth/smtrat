@@ -41,8 +41,8 @@
 #define LRA_REFINEMENT
 //#define LRA_EQUATION_FIRST
 //#define LRA_LOCAL_CONFLICT_DIRECTED
-//#define LRA_USE_ACTIVITY_STRATEGY
-#define LRA_USE_THETA_STRATEGY
+#define LRA_USE_ACTIVITY_STRATEGY
+//#define LRA_USE_THETA_STRATEGY
 #ifdef LRA_REFINEMENT
 //#define LRA_INTRODUCE_NEW_CONSTRAINTS
 #endif
@@ -1067,9 +1067,7 @@ FindPivot:
 #endif
                 EntryID bestTableauEntry = LAST_ENTRY_ID;
                 EntryID beginOfFirstConflictRow = LAST_ENTRY_ID;
-                #ifdef LRA_USE_THETA_STRATEGY
                 Value<T1> bestDiff = Value<T1>( 0 );
-                #endif
                 Value<T1> bestThetaB = Value<T1>( 0 );
                 #ifdef LRA_LOCAL_CONFLICT_DIRECTED
                 bool initialSearch = mConflictingRows.empty();
@@ -1082,26 +1080,20 @@ FindPivot:
                 {
                     assert( *basicVar != NULL );
                     Variable<T1,T2>& bVar = **basicVar;
-                    #ifdef LRA_USE_THETA_STRATEGY
                     Value<T1> diff = Value<T1>( 0 );
-                    #endif
                     Value<T1> thetaB = Value<T1>( 0 );
                     bool upperBoundViolated = false;
                     bool lowerBoundViolated = false;
                     if( bVar.supremum() < bVar.assignment() )
                     {
                         thetaB = bVar.supremum().limit() - bVar.assignment();
-                        #ifdef LRA_USE_THETA_STRATEGY
                         diff = thetaB * T2(-1);
-                        #endif
                         upperBoundViolated = true;
                     }
                     else if( bVar.infimum() > bVar.assignment() )
                     {
                         thetaB = bVar.infimum().limit() - bVar.assignment();
-                        #ifdef LRA_USE_THETA_STRATEGY
                         diff = thetaB;
-                        #endif
                         lowerBoundViolated = true;
                     }
                     else
@@ -1132,13 +1124,18 @@ FindPivot:
                         ++basicVar;
                         continue;
                     }
-                    #endif
+                    #else
                     #ifdef LRA_USE_ACTIVITY_STRATEGY
-                    if( (*basicVar)->conflictActivity() <= (*bestVar)->conflictActivity() )
+                    if( bestVar != rowsToConsider.end() )
                     {
-                        ++basicVar;
-                        continue;
+                        if( (*basicVar)->conflictActivity() < (*bestVar)->conflictActivity() 
+                            || ((*basicVar)->conflictActivity() == (*bestVar)->conflictActivity() && diff <= bestDiff) )
+                        {
+                            ++basicVar;
+                            continue;
+                        }
                     }
+                    #endif
                     #endif
                     if( upperBoundViolated || lowerBoundViolated )
                     {
@@ -1160,9 +1157,7 @@ FindPivot:
                             {
                                 bestTableauEntry = result.first;
                                 bestVar = basicVar;
-                                #ifdef LRA_USE_THETA_STRATEGY
                                 bestDiff = diff;
-                                #endif
                                 bestThetaB = thetaB;
                             }
                             else
@@ -1181,9 +1176,7 @@ FindPivot:
                                 #endif
                                     bestTableauEntry = result.first;
                                     bestThetaB = thetaB;
-                                    #ifdef LRA_USE_THETA_STRATEGY
                                     bestDiff = diff;
-                                    #endif
                                     #ifdef LRA_EQUATION_FIRST
                                     #ifdef LRA_LOCAL_CONFLICT_DIRECTED
                                     if( initialSearch && (*bestVar)->involvesEquation() )
