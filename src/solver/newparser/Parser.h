@@ -205,7 +205,6 @@ public:
 			}
 			else if (key == "regular-output-channel") this->regular(this->options.get<std::string>(key));
 			else if (key == "verbosity") {
-				std::cout << "key is verbosity" << std::endl;
 				this->options.assertType<Rational>("verbosity", std::bind(&InstructionHandler::error, this));
 			}
 		}
