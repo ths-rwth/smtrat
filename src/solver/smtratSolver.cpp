@@ -28,6 +28,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <sys/resource.h>
 #include "ExitCodes.h"
 #include "../lib/config.h"
 
@@ -143,6 +144,13 @@ public:
  * @param options Save options from the smt2 file here.
  */
 unsigned executeFile(const std::string& pathToInputFile, smtrat::ParserSettings* settings, CMakeStrategySolver* solver, const smtrat::RuntimeSettingsManager& settingsManager) {
+
+	// Increase stack size to the maximum.
+	rlimit rl;
+	getrlimit(RLIMIT_STACK, &rl);
+	rl.rlim_cur = rl.rlim_max;
+	setrlimit(RLIMIT_STACK, &rl);
+
     std::ifstream infile(pathToInputFile);
     if (!infile.good()) {
         std::cerr << "Could not open file: " << pathToInputFile << std::endl;
