@@ -174,7 +174,6 @@ void SMTLIBParser::declareConst(const std::string& name, const carl::VariableTyp
 			if (this->var_bool.sym.find(name) != nullptr) handler->warn() << "a boolean variable with name '" << name << "' has already been defined.";
 			carl::Variable var = newBooleanVariable(name, true);
 			this->var_bool.sym.add(name, var);
-			std::cout << "Declared boolean variable " << var << std::endl;
 			break;
 		}
 		break;
@@ -183,7 +182,6 @@ void SMTLIBParser::declareConst(const std::string& name, const carl::VariableTyp
 			if (this->var_theory.sym.find(name) != nullptr) handler->warn() << "a theory variable with name '" << name << "' has already been defined.";
 			carl::Variable var = newArithmeticVariable(name, sort, true);
 			this->var_theory.sym.add(name, var);
-			std::cout << "Declared theory variable " << var << std::endl;
 			break;
 		}
 	default:
@@ -199,9 +197,7 @@ void SMTLIBParser::declareFun(const std::string& name, const std::vector<carl::V
 	case BOOLEAN: {
 			if (this->var_bool.sym.find(name) != nullptr) handler->warn() << "a boolean variable with name '" << name << "' has already been defined.";
 			carl::Variable var = newBooleanVariable(name, true);
-			std::cout << "Adding boolean variable " << var << std::endl;
 			this->var_bool.sym.add(name, var);
-			std::cout << "Declared boolean variable " << var << std::endl;
 			break;
 		}
 		break;
@@ -209,7 +205,6 @@ void SMTLIBParser::declareFun(const std::string& name, const std::vector<carl::V
 			if (this->var_theory.sym.find(name) != nullptr) handler->warn() << "a theory variable with name '" << name << "' has already been defined.";
 			carl::Variable var = newArithmeticVariable(name, sort, true);
 			this->var_theory.sym.add(name, var);
-			std::cout << "Declared theory variable " << var << std::endl;
 			break;
 		}
 	default:
