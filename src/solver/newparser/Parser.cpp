@@ -16,6 +16,11 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 	handler(ih),
 	queueInstructions(queueInstructions)
 {
+	var_bool.sym.name("declared boolean variable");
+	var_theory.sym.name("declared theory variable");
+	bind_bool.sym.name("bound boolean variable");
+	bind_theory.sym.name("bound theory variable");
+
 	boundary = &qi::no_skip[(qi::space | qi::char_(")"))];
 
 	var = var_bool | var_theory;

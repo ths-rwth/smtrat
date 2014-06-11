@@ -56,7 +56,9 @@ struct ErrorHandler {
 		
 		std::cerr << std::endl;
 		std::cerr << "Parsing error at " << spirit::get_line(where) << ":" << spirit::get_column(line_start, where) << std::endl;
-		std::cerr << "after parsing rule " << p.lastrule.str() << ": " << p.lastentity.str() << std::endl;
+		if (p.lastrule.str().size() > 0) {
+			std::cerr << "after parsing rule " << p.lastrule.str() << ": " << p.lastentity.str() << std::endl;
+		}
 		std::cerr << "expected" << std::endl << "\t" << what.tag << ": " << what << std::endl;
 		std::cerr << "but got" << std::endl << "\t" << input << std::endl;
 		std::cerr << "in line " << spirit::get_line(where) << std::endl << "\t" << line << std::endl;
@@ -77,7 +79,7 @@ struct SymbolParser : public qi::grammar<Iterator, std::string(), Skipper> {
 	SymbolParser() : SymbolParser::base_type(main, "symbol") {
 		main = quoted | simple;
 		main.name("symbol");
-		quoted = qi::no_skip[qi::char_("|") > +(~qi::char_("|")) > qi::char_("|")];
+		quoted = qi::lit('|') > qi::no_skip[+(~qi::char_("|")) > qi::lit('|')];
 		quoted.name("quoted symbol");
 		// Attention: "-" must be the first or last character!
 		simple = qi::as_string[qi::raw[qi::lexeme[ (qi::alpha | qi::char_("~!@$%^&*_+=<>.?/-")) > *(qi::alnum | qi::char_("~!@$%^&*_+=<>.?/-"))]]];
@@ -91,7 +93,7 @@ struct SymbolParser : public qi::grammar<Iterator, std::string(), Skipper> {
 template<typename Iterator, typename Skipper, typename T>
 struct DeclaredSymbolParser : public qi::grammar<Iterator, T(), Skipper> {
 	DeclaredSymbolParser() : DeclaredSymbolParser::base_type(main, "declared symbol") {
-		main = ("|" > sym > "|") | sym;
+		main = (qi::lit('|') >> sym >> qi::lit('|')) | sym;
 		main.name("declared symbol");
 	}
 	qi::rule<Iterator, T(), Skipper> main;
