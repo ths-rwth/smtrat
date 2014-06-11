@@ -3436,7 +3436,6 @@ FindPivot:
             }
             sum = sum - (Rational)1;
             const smtrat::Constraint* gomory_constr = newConstraint( sum , Relation::GEQ );
-            std::cout << *gomory_constr << std::endl;
             newBound(gomory_constr);
             // TODO: check whether there is already a basic variable with this polynomial (psum, cf. LRAModule::initialize(..)) 
             return gomory_constr;

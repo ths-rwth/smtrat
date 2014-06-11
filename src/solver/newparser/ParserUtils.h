@@ -88,6 +88,16 @@ struct SymbolParser : public qi::grammar<Iterator, std::string(), Skipper> {
 	qi::rule<Iterator, std::string(), Skipper> simple;
 };
 
+template<typename Iterator, typename Skipper, typename T>
+struct DeclaredSymbolParser : public qi::grammar<Iterator, T(), Skipper> {
+	DeclaredSymbolParser() : DeclaredSymbolParser::base_type(main, "declared symbol") {
+		main = ("|" > sym > "|") | sym;
+		main.name("declared symbol");
+	}
+	qi::rule<Iterator, T(), Skipper> main;
+	qi::symbols<char, T> sym;
+};
+
 template<typename Iterator, typename Skipper>
 struct StringParser : public qi::grammar<Iterator, std::string(), Skipper> {
 	StringParser() : StringParser::base_type(main, "string") {
