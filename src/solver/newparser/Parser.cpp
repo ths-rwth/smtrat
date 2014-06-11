@@ -98,7 +98,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 				> ("(" > bindlist > ")" > formula)[px::bind(&SMTLIBParser::popVariableStack, px::ref(*this)), _val = qi::_1])
 			|	("exists" > bindlist > formula)
 			|	("forall" > bindlist > formula)
-			|	("ite" >> (formula >> formula >> formula)[_val = px::bind(&SMTLIBParser::mkIteInFormula, px::ref(*this), qi::_1, qi::_2, qi::_3)])
+			|	("ite" >> (formula >> formula >> formula)[_val = px::bind(&newIte, qi::_1, qi::_2, qi::_3)])
 			|	(("!" > formula > *attribute)[px::bind(&annotateFormula, qi::_1, qi::_2), _val = qi::_1])
 			|	((funmap_bool >> fun_arguments)[qi::_val = px::bind(&SMTLIBParser::applyBooleanFunction, px::ref(*this), qi::_1, qi::_2)])
 	;
@@ -106,7 +106,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 
 	polynomial_op = op_theory >> +polynomial;
 	polynomial_op.name("polynomial operation");
-	polynomial_ite = lit("ite") >> (formula >> polynomial >> polynomial)[_val = px::construct<Polynomial>(px::bind(&SMTLIBParser::mkIteInExpr, px::ref(*this), qi::_1, qi::_2, qi::_3))];
+	polynomial_ite = lit("ite") >> (formula >> polynomial >> polynomial)[_val = px::bind(&SMTLIBParser::mkIteInExpr, px::ref(*this), qi::_1, qi::_2, qi::_3)];
 	polynomial_ite.name("polynomial if-then-else");
 	polynomial_fun = (funmap_theory >> fun_arguments)[qi::_val = px::bind(&SMTLIBParser::applyTheoryFunction, px::ref(*this), qi::_1, qi::_2)];
 	polynomial_fun.name("theory function");
@@ -151,6 +151,15 @@ bool SMTLIBParser::parse(std::istream& in, const std::string& filename) {
 
 void SMTLIBParser::add(const Formula* f) {
 	assert(f != nullptr);
+	
+	if (!mTheoryIteBindings.empty()) {
+		// There have been theory ite expressions within this formula.
+		// We add the formulas from mTheoryIteBindings to the formula.
+		mTheoryIteBindings.insert(f);
+		f = newFormula(smtrat::AND, std::move(mTheoryIteBindings));
+		mTheoryIteBindings.clear();
+	}
+	
 	if (this->handler->printInstruction()) handler->regular() << "(assert " << *f << ")" << std::endl;
 	callHandler(&InstructionHandler::add, f);
 }
@@ -314,22 +323,7 @@ void SMTLIBParser::setOption(const std::string& key, const Value& val) {
 
 const Formula* SMTLIBParser::mkConstraint(const Polynomial& lhs, const Polynomial& rhs, Relation rel) {
 	const Constraint* cons = newConstraint(lhs-rhs, rel);
-	// Check if there have been ite expressions within this polynomial.
-	// if so, collect ite formulas from mTheoryIteBindings and add them to the constraint
-	PointerSet<Formula> varBindings;
-	for (auto v: cons->variables()) {
-		auto bindingVars = mTheoryIteBindings.find(v);
-		if (bindingVars != mTheoryIteBindings.end()) {
-			varBindings.insert(bindingVars->second);
-			mTheoryIteBindings.erase(bindingVars);
-		}
-	}
-	if (!varBindings.empty()) {
-		varBindings.insert(newFormula(cons));
-		return newFormula(smtrat::AND, std::move(varBindings));
-	} else {
-		return newFormula(cons);
-	}
+	return newFormula(cons);
 }
 
 const smtrat::Formula* SMTLIBParser::mkFormula( smtrat::Type type, PointerSet<Formula>& _subformulas )
@@ -339,23 +333,20 @@ const smtrat::Formula* SMTLIBParser::mkFormula( smtrat::Type type, PointerSet<Fo
 	return f;
 }
 
-carl::Variable SMTLIBParser::mkIteInExpr(const Formula* _condition, Polynomial& _then, Polynomial& _else) {
+Polynomial SMTLIBParser::mkIteInExpr(const Formula* _condition, Polynomial& _then, Polynomial& _else) {
+	
+	if (_then == _else) return _then;
+	if (_condition == falseFormula()) return _else;
+	if (_condition == trueFormula()) return _then;
+	
 	carl::Variable auxVar = (mLogic == Logic::QF_LIA || mLogic == Logic::QF_NIA) ? newAuxiliaryIntVariable() : newAuxiliaryRealVariable();
 
 	const Formula* consThen = mkConstraint(Polynomial(auxVar), _then, Relation::EQ);
 	const Formula* consElse = mkConstraint(Polynomial(auxVar), _else, Relation::EQ);
 
-	assert(mTheoryIteBindings.find(auxVar) == mTheoryIteBindings.end());
-	mTheoryIteBindings.emplace(auxVar, newFormula(smtrat::AND, newImplication(_condition, consThen), newImplication(newNegation(_condition), consElse)));
-	return auxVar;
-}
-
-const Formula* SMTLIBParser::mkIteInFormula(const Formula* _condition, const Formula* _then, const Formula* _else) const {
-	return newFormula(
-			smtrat::AND,
-			newImplication(_condition, _then),
-			newImplication(newNegation(_condition), _else)
-		);
+	mTheoryIteBindings.emplace(newImplication(_condition, consThen));
+	mTheoryIteBindings.emplace(newImplication(newNegation(_condition), consElse));
+	return Polynomial(auxVar);
 }
 
 bool SMTLIBParser::checkArguments(const std::string& name, const std::vector<carl::Variable>& types, const Arguments& args, std::map<carl::Variable, const Formula*>& boolAssignments, std::map<carl::Variable, Polynomial>& theoryAssignments) const {

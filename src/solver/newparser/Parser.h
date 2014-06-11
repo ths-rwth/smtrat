@@ -320,7 +320,7 @@ protected:
 	
 private:
 	smtrat::Logic mLogic;
-	std::unordered_map<carl::Variable, const Formula*> mTheoryIteBindings;
+	PointerSet<Formula> mTheoryIteBindings;
 	std::stack<std::list<std::pair<std::string, carl::VariableType>>> mVariableStack;
 	
 	bool isSymbolFree(const std::string& name) {
@@ -337,9 +337,8 @@ private:
         return newFormula(var);
     }
 	const smtrat::Formula* mkConstraint(const smtrat::Polynomial&, const smtrat::Polynomial&, Relation);
-	carl::Variable mkIteInExpr(const Formula* _condition, Polynomial& _then, Polynomial& _else);
+	Polynomial mkIteInExpr(const Formula* _condition, Polynomial& _then, Polynomial& _else);
 	const smtrat::Formula* mkFormula(smtrat::Type _type, PointerSet<Formula>& _subformulas);
-	const smtrat::Formula* mkIteInFormula(const Formula* _condition, const Formula* _then, const Formula* _else) const;
 	bool checkArguments(const std::string&, const std::vector<carl::Variable>&, const Arguments& args, std::map<carl::Variable, const Formula*>&, std::map<carl::Variable, Polynomial>&) const;
 	const smtrat::Formula* applyBooleanFunction(const BooleanFunction& f, const Arguments& args) const;
 	Polynomial applyTheoryFunction(const TheoryFunction& f, const Arguments& args) const;
