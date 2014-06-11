@@ -221,11 +221,11 @@ private:
 public:
 	bool queueInstructions;
 	
-	qi::symbols<char, carl::Variable> var_bool;
-	qi::symbols<char, carl::Variable> var_theory;
+	DeclaredSymbolParser<Iterator, Skipper, carl::Variable> var_bool;
+	DeclaredSymbolParser<Iterator, Skipper, carl::Variable> var_theory;
 	
-	qi::symbols<char, Polynomial> bind_theory;
-	qi::symbols<char, const Formula*> bind_bool;
+	DeclaredSymbolParser<Iterator, Skipper, const Formula*> bind_bool;
+	DeclaredSymbolParser<Iterator, Skipper, Polynomial> bind_theory;
 	
 	// Basic rules
 	SymbolParser<Iterator, Skipper> symbol;
@@ -325,10 +325,10 @@ private:
 	
 	bool isSymbolFree(const std::string& name) {
 		if (name == "true" || name == "false") this->handler->error() << "\"" << name << "\" is a reserved keyword.";
-		else if (this->var_bool.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a boolean variable.";
-		else if (this->var_theory.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a theory variable.";
-		else if (this->bind_bool.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a boolean binding.";
-		else if (this->bind_theory.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a theory binding.";
+		else if (this->var_bool.sym.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a boolean variable.";
+		else if (this->var_theory.sym.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a theory variable.";
+		else if (this->bind_bool.sym.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a boolean binding.";
+		else if (this->bind_theory.sym.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a theory binding.";
 		else return true;
 		return false;
 	}
@@ -350,8 +350,8 @@ private:
 	void popVariableStack()
 	{
 		while (!mVariableStack.top().empty()) {
-			if (mVariableStack.top().back().second == carl::VariableType::VT_BOOL) this->bind_bool.remove(mVariableStack.top().back().first);
-			else this->bind_theory.remove(mVariableStack.top().back().first);
+			if (mVariableStack.top().back().second == carl::VariableType::VT_BOOL) this->bind_bool.sym.remove(mVariableStack.top().back().first);
+			else this->bind_theory.sym.remove(mVariableStack.top().back().first);
 			mVariableStack.top().pop_back();
 		}
 		mVariableStack.pop();
