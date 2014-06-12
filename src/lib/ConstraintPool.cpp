@@ -254,6 +254,7 @@ namespace smtrat
         mLastConstructedConstraintWasKnown = false;
         unsigned constraintConsistent = _constraint->isConsistent();
 //        cout << *_constraint << " is consistent: " << constraintConsistent << endl;
+		///@todo Use appropriate constant instead of 2.
         if( constraintConsistent == 2 ) // Constraint contains variables.
         {
             auto iterBoolPair = mConstraints.insert( _constraint );
