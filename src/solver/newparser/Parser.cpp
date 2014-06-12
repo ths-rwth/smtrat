@@ -64,7 +64,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 		|	(lit("declare-const") > symbol > domain > ")")[px::bind(&SMTLIBParser::declareConst, px::ref(*this), qi::_1, qi::_2)]
 		|	(lit("declare-fun") > symbol > "(" > *domain > ")" > domain > ")")[px::bind(&SMTLIBParser::declareFun, px::ref(*this), qi::_1, qi::_2, qi::_3)]
 		|	(lit("declare-sort") > symbol > integral > ")")[px::bind(&SMTLIBParser::declareSort, px::ref(*this), qi::_1, qi::_2)]
-		|	(lit("define-fun") > fun_definition > ")")//[px::bind(&SMTLIBParser::defineFun, px::ref(*this), qi::_1, qi::_2, qi::_3, qi::_4)]
+		|	(lit("define-fun") > fun_definition > ")")
 		|	(lit("define-sort") > symbol > "(" > symlist > ")" > symbol > ")")[px::bind(&SMTLIBParser::defineSort, px::ref(*this), qi::_1, qi::_2, qi::_3)]
 		|	(lit("exit") > ")")[px::bind(&SMTLIBParser::exit, px::ref(*this))]
 		|	(lit("get-assertions") > ")")[px::bind(&SMTLIBParser::getAssertions, px::ref(*this))]
@@ -265,6 +265,7 @@ void SMTLIBParser::defineSort(const std::string& name, const std::vector<std::st
 	callHandler(&InstructionHandler::defineSort, name, args, theory);
 }
 void SMTLIBParser::exit() {
+	this->mInputStream->setstate(std::ios::eofbit);
 	if (this->handler->printInstruction()) handler->regular() << "(exit)" << std::endl;
 	callHandler(&InstructionHandler::exit);
 }
