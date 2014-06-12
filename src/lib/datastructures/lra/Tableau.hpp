@@ -3481,18 +3481,17 @@ FindPivot:
             while( true )
             {
                 const Variable<T1, T2>& nonBasicVar = *(*row_iterator).columnVar();
-                if( nonBasicVar.infimum() == nonBasicVar.assignment() || nonBasicVar.supremum() == nonBasicVar.assignment() )
+                if( nonBasicVar.infimum() == nonBasicVar.assignment() )
                 {
-                    if( nonBasicVar.infimum() == nonBasicVar.assignment() )
-                    {
-                        premises.insert( newFormula( (*(*row_iterator).columnVar()).infimum().pAsConstraint() ) );                        
-                    }
-                    else
-                    {
-                        premises.insert( newFormula( (*(*row_iterator).columnVar()).supremum().pAsConstraint() ) );                        
-                    }
+                    const PointerSet<Formula>& origs = (*row_iterator).columnVar()->infimum().origins().front();
+                    premises.insert( origs.begin(), origs.end() );                        
                 }
-                if( row_iterator.hEnd( false ) )
+                else if( nonBasicVar.supremum() == nonBasicVar.assignment() )
+                {
+                    const PointerSet<Formula>& origs = (*row_iterator).columnVar()->supremum().origins().front();
+                    premises.insert( origs.begin(), origs.end() );                                               
+                }
+                if( !row_iterator.hEnd( false ) )
                 {
                     row_iterator.hMove( false );
                 }
