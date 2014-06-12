@@ -23,6 +23,7 @@ namespace parser {
 enum ExpressionType { BOOLEAN, THEORY };
 
 struct SuccessHandler {
+	template<typename> struct result { typedef void type; };
 	template<typename Parser, typename Rule, typename Entity, typename Begin, typename End>
 	void operator()(Parser& p, const Rule& rule, const Entity& entity, Begin b, End e) const {
 		p.lastrule.str("");
@@ -34,6 +35,7 @@ struct SuccessHandler {
 	}
 };
 struct SuccessHandlerPtr {
+	template<typename> struct result { typedef void type; };
 	template<typename Parser, typename Rule, typename Entity, typename Begin, typename End>
 	void operator()(Parser& p, const Rule& rule, const Entity& entity, Begin b, End e) const {
 		p.lastrule.str("");
