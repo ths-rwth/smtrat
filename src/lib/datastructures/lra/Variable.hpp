@@ -54,6 +54,7 @@ namespace smtrat
                  */
                 bool                             mBasic;
                 bool                             mOriginal;
+                bool                             mInteger;
                 EntryID                          mStartEntry;
                 size_t                           mSize;
                 double                           mConflictActivity;
@@ -73,8 +74,8 @@ namespace smtrat
                 #endif
 
             public:
-                Variable( size_t, const smtrat::Polynomial*, std::list<const smtrat::Formula*>::iterator );
-                Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator, const smtrat::Polynomial*, std::list<const smtrat::Formula*>::iterator );
+                Variable( size_t, const smtrat::Polynomial*, std::list<const smtrat::Formula*>::iterator, bool );
+                Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator, const smtrat::Polynomial*, std::list<const smtrat::Formula*>::iterator, bool );
                 virtual ~Variable();
 
                 const Value<T1>& assignment() const
@@ -100,6 +101,11 @@ namespace smtrat
                 bool isOriginal() const
                 {
                     return mOriginal;
+                }
+
+                bool isInteger() const
+                {
+                    return mInteger;
                 }
                 
                 bool isActive() const
@@ -305,9 +311,10 @@ namespace smtrat
         };
 		
         template<typename T1, typename T2>
-        Variable<T1, T2>::Variable( size_t _position, const smtrat::Polynomial* _expression, std::list<const smtrat::Formula*>::iterator _defaultBoundPosition ):
+        Variable<T1, T2>::Variable( size_t _position, const smtrat::Polynomial* _expression, std::list<const smtrat::Formula*>::iterator _defaultBoundPosition, bool _isInteger ):
             mBasic( false ),
             mOriginal( true ),
+            mInteger( _isInteger ),
             mStartEntry( LAST_ENTRY_ID ),
             mSize( 0 ),
             mConflictActivity( 0 ),
@@ -326,9 +333,10 @@ namespace smtrat
         }
         
         template<typename T1, typename T2>
-        Variable<T1, T2>::Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator _positionInNonActives, const smtrat::Polynomial* _expression, std::list<const smtrat::Formula*>::iterator _defaultBoundPosition ):
+        Variable<T1, T2>::Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator _positionInNonActives, const smtrat::Polynomial* _expression, std::list<const smtrat::Formula*>::iterator _defaultBoundPosition, bool _isInteger ):
             mBasic( true ),
             mOriginal( false ),
+            mInteger( _isInteger ),
             mStartEntry( LAST_ENTRY_ID ),
             mSize( 0 ),
             mConflictActivity( 0 ),
