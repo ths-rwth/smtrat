@@ -69,7 +69,8 @@ namespace smtrat
              */
             bool                       mInitialized;
             bool                       mAssignmentFullfilsNonlinearConstraints;
-            LRATableau mTableau;
+            unsigned                   mProbableLoopCounter;
+            LRATableau                 mTableau;
             PointerSet<Constraint>     mLinearConstraints;
             PointerSet<Constraint>     mNonlinearConstraints;
             ConstraintContextMap       mActiveResolvedNEQConstraints;
@@ -150,6 +151,7 @@ namespace smtrat
             void addSimpleBoundConflict( const LRABound&, const LRABound&, bool = false );
             void findSimpleConflicts( const LRABound& );
             bool gomory_cut();
+            bool maybeGomoryCut( const LRAVariable* _lraVar, const Rational& _branchingValue );
             bool minimal_row_var( bool& );
             bool most_feasible_var( bool& );
             bool most_infeasible_var( bool& );

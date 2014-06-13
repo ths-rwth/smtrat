@@ -38,7 +38,7 @@
 //#define LRA_PRINT_STATS
 
 #define LRA_USE_PIVOTING_STRATEGY
-//#define LRA_REFINEMENT
+#define LRA_REFINEMENT
 //#define LRA_EQUATION_FIRST
 //#define LRA_LOCAL_CONFLICT_DIRECTED
 //#define LRA_USE_ACTIVITY_STRATEGY
@@ -378,7 +378,7 @@ namespace smtrat
                 std::vector< const Bound<T1, T2>* > getConflict( EntryID ) const;
                 std::vector< std::set< const Bound<T1, T2>* > > getConflictsFrom( EntryID ) const;
                 void updateBasicAssignments( size_t, const Value<T1>& );
-                void pivot( EntryID );
+                Variable<T1, T2>* pivot( EntryID );
                 void update( bool downwards, EntryID, std::vector<Iterator>&, std::vector<Iterator>& );
                 void addToEntry( const T2&, Iterator&, bool, Iterator&, bool );
                 #ifdef LRA_REFINEMENT
@@ -404,7 +404,7 @@ namespace smtrat
                 #endif
                 const smtrat::Constraint* gomoryCut( const T2&, Variable<T1, T2>*, std::vector<const smtrat::Constraint*>&);
                 size_t getNumberOfEntries( Variable<T1,T2>* );
-                void collect_premises( Variable<T1,T2>*, PointerSet<Formula>&  );
+                void collect_premises( const Variable<T1,T2>*, PointerSet<Formula>&  );
                 void printHeap( std::ostream& = std::cout, int = 30, const std::string = "" ) const;
                 void printEntry( EntryID, std::ostream& = std::cout, int = 20 ) const;
                 void printVariables( bool = true, std::ostream& = std::cout, const std::string = "" ) const;
@@ -1648,7 +1648,7 @@ FindPivot:
          * @param _pivotingElement
          */
         template<typename T1, typename T2>
-        void Tableau<T1,T2>::pivot( EntryID _pivotingElement )
+        Variable<T1, T2>* Tableau<T1,T2>::pivot( EntryID _pivotingElement )
         {
             // Find all columns having "a nonzero entry in the pivoting row"**, update this entry and store it.
             // First the column with ** left to the pivoting column until the leftmost column with **.
@@ -1774,6 +1774,7 @@ FindPivot:
             assert( basicVar.supremum() >= basicVar.assignment() || basicVar.infimum() <= basicVar.assignment() );
             assert( nonbasicVar.supremum() == nonbasicVar.assignment() || nonbasicVar.infimum() == nonbasicVar.assignment() );
             assert( checkCorrectness() == mRows.size() );
+            return columnVar;
         }
 
         /**
@@ -2023,7 +2024,7 @@ FindPivot:
              * Collect the bounds which form an upper resp. lower refinement.
              */
             const Variable<T1,T2>& basicVar = *_basicVar; 
-            if( basicVar.isInteger() || basicVar.size() > 128 ) return; // Not for integer as there seems to be a bug otherwise (e.g. convert/convert-jpg2gif-query-1147.smt2)
+            if( basicVar.size() > 128 ) return;
             std::vector<const Bound<T1, T2>*>* uPremise = new std::vector<const Bound<T1, T2>*>();
             std::vector<const Bound<T1, T2>*>* lPremise = new std::vector<const Bound<T1, T2>*>();
             Iterator rowEntry = Iterator( basicVar.startEntry(), mpEntries );
@@ -3475,7 +3476,7 @@ FindPivot:
          * Collects the premises for branch and bound and stores them in premises.  
          */ 
         template<typename T1, typename T2>
-        void Tableau<T1,T2>::collect_premises(Variable<T1,T2>* _rowVar, PointerSet<Formula>& premises)
+        void Tableau<T1,T2>::collect_premises( const Variable<T1,T2>* _rowVar, PointerSet<Formula>& premises)
         {
             Iterator row_iterator = Iterator( _rowVar->startEntry(), mpEntries );  
             while( true )
