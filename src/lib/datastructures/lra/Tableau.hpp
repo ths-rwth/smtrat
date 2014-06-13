@@ -1071,7 +1071,7 @@ FindPivot:
                 Value<T1> bestThetaB = Value<T1>( 0 );
                 #ifdef LRA_LOCAL_CONFLICT_DIRECTED
                 bool initialSearch = mConflictingRows.empty();
-                std::vector<Variable<T1,T2>*>& rowsToConsider = initialSearch ? mRows : mConflictingRows;
+                std::vector<Variable<T1,T2>*>& rowsToConsider = initialSearch ? mRows : mConflictingRows; // TODO: instead of running through all rows, just go through those which got conflicting
                 #else
                 std::vector<Variable<T1,T2>*>& rowsToConsider = mRows;
                 #endif 
@@ -1396,12 +1396,17 @@ FindPivot:
             if( _than == LAST_ENTRY_ID ) return true;
             const Variable<T1,T2>& isBetterNbVar = *((*mpEntries)[_isBetter].columnVar());
             const Variable<T1,T2>& thanColumnNbVar = *((*mpEntries)[_than].columnVar());
-            size_t valueA = boundedVariables( isBetterNbVar );
-            size_t valueB = boundedVariables( thanColumnNbVar, valueA );
-            if( valueA < valueB  ) return true;
-            else if( valueA == valueB )
+            if( isBetterNbVar.conflictActivity() < thanColumnNbVar.conflictActivity() )
+                return true;
+            else if( isBetterNbVar.conflictActivity() == thanColumnNbVar.conflictActivity() )
             {
-                if( isBetterNbVar.size() < thanColumnNbVar.size() ) return true;
+                size_t valueA = boundedVariables( isBetterNbVar );
+                size_t valueB = boundedVariables( thanColumnNbVar, valueA );
+                if( valueA < valueB  ) return true;
+                else if( valueA == valueB )
+                {
+                    if( isBetterNbVar.size() < thanColumnNbVar.size() ) return true;
+                }
             }
             return false;
         }
