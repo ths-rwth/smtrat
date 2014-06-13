@@ -13,11 +13,22 @@
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 #include <boost/variant.hpp>
 #include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/support_line_pos_iterator.hpp>
 
 #include "../../lib/Common.h"
 
 namespace smtrat {
 namespace parser {
+	
+namespace spirit = boost::spirit;
+namespace qi = boost::spirit::qi;
+namespace px = boost::phoenix;
+
+typedef boost::spirit::istream_iterator BaseIteratorType;
+typedef boost::spirit::line_pos_iterator<BaseIteratorType> PositionIteratorType;
+typedef PositionIteratorType Iterator;
+#define SKIPPER (qi::space | qi::lit(";") >> *(qi::char_ - qi::eol) >> qi::eol)
+typedef BOOST_TYPEOF(SKIPPER) Skipper;
 
 typedef boost::variant<bool, std::string, Rational, unsigned, boost::spirit::qi::unused_type> Value;
 inline std::ostream& operator<<(std::ostream& os, const Value& value) {

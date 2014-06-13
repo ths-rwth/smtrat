@@ -12,10 +12,7 @@
 
 #include "../../lib/Common.h"
 #include "Driver.h"
-
-namespace spirit = boost::spirit;
-namespace qi = boost::spirit::qi;
-namespace px = boost::phoenix;
+#include "Common.h"
 
 namespace smtrat {
 namespace parser {
@@ -76,25 +73,16 @@ struct RationalPolicies : qi::ureal_policies<smtrat::Rational> {
 	static bool parse_inf(It&, It const&, Attr&) { return false; }
 };
 
-template<typename Iterator, typename Skipper>
 struct SymbolParser : public qi::grammar<Iterator, std::string(), Skipper> {
-	SymbolParser() : SymbolParser::base_type(main, "symbol") {
-		main = quoted | simple;
-		main.name("symbol");
-		quoted = qi::lit('|') > qi::no_skip[+(~qi::char_("|")) > qi::lit('|')];
-		quoted.name("quoted symbol");
-		// Attention: "-" must be the first or last character!
-		simple = qi::as_string[qi::raw[qi::lexeme[ (qi::alpha | qi::char_("~!@$%^&*_+=<>.?/-")) > *(qi::alnum | qi::char_("~!@$%^&*_+=<>.?/-"))]]];
-		simple.name("simple symbol");
-	}
+	SymbolParser();
 	qi::rule<Iterator, std::string(), Skipper> main;
 	qi::rule<Iterator, std::string(), Skipper> quoted;
 	qi::rule<Iterator, std::string(), Skipper> simple;
 };
 
-template<typename Iterator, typename Skipper, typename T>
+template<typename T>
 struct DeclaredSymbolParser : public qi::grammar<Iterator, T(), Skipper> {
-	DeclaredSymbolParser() : DeclaredSymbolParser::base_type(main, "declared symbol") {
+	DeclaredSymbolParser(): DeclaredSymbolParser::base_type(main, "declared symbol") {
 		main = (qi::lit('|') >> sym >> qi::lit('|')) | sym;
 		main.name("declared symbol");
 	}
@@ -102,70 +90,35 @@ struct DeclaredSymbolParser : public qi::grammar<Iterator, T(), Skipper> {
 	qi::symbols<char, T> sym;
 };
 
-template<typename Iterator, typename Skipper>
 struct StringParser : public qi::grammar<Iterator, std::string(), Skipper> {
-	StringParser() : StringParser::base_type(main, "string") {
-		main = qi::no_skip[qi::char_('"') > +(escapes | ~qi::char_('"')) > qi::char_('"')];
-		main.name("string");
-		escapes.add("\\\\", '\\');
-		escapes.add("\\\"", '"');
-		escapes.name("escape sequences");
-	}
+	StringParser();
 	qi::symbols<char, char> escapes;
 	qi::rule<Iterator, std::string(), Skipper> main;
 };
 
 struct RelationParser : public qi::symbols<char, Relation> {
-	RelationParser() {
-		add("=", Relation::EQ);
-		add("<=", Relation::LEQ);
-		add(">=", Relation::GEQ);
-		add("<", Relation::LESS);
-		add(">", Relation::GREATER);
-		add("<>", Relation::NEQ);
-	}
+	RelationParser();
 };
 
 enum TheoryOperation : unsigned { ADD, SUB, MUL, DIV };
 enum BooleanOperation : unsigned { AND, OR, XOR, IFF };
 
 struct TheoryOpParser : public qi::symbols<char, Polynomial::ConstructorOperation> {
-	TheoryOpParser() {
-		add("+", Polynomial::ConstructorOperation::ADD);
-		add("-", Polynomial::ConstructorOperation::SUB);
-		add("*", Polynomial::ConstructorOperation::MUL);
-		add("/", Polynomial::ConstructorOperation::DIV);
-	}
+	TheoryOpParser();
 };
 
 struct DomainParser : public qi::symbols<char, carl::VariableType> {
-	DomainParser() {
-		add("Bool", carl::VariableType::VT_BOOL);
-		add("Int", carl::VariableType::VT_INT);
-		add("Real", carl::VariableType::VT_REAL);
-	}
+	DomainParser();
 };
 
 struct BooleanOpParser : public qi::symbols<char, smtrat::Type> {
-	BooleanOpParser() {
-		add("and", smtrat::AND);
-		add("or", smtrat::OR);
-		add("xor", smtrat::XOR);
-		add("iff", smtrat::IFF);
-		add("=", smtrat::IFF);
-	}
+	BooleanOpParser();
 };
 
 struct LogicParser : public qi::symbols<char, smtrat::Logic> {
-	LogicParser() {
-		add("QF_LIA", smtrat::Logic::QF_LIA);
-		add("QF_LRA", smtrat::Logic::QF_LRA);
-		add("QF_NIA", smtrat::Logic::QF_NIA);
-		add("QF_NRA", smtrat::Logic::QF_NRA);
-	}
+	LogicParser();
 };
 
-template<typename Iterator, typename Skipper>
 struct IntegralParser : public qi::grammar<Iterator, Rational(), Skipper> {
 	IntegralParser() : IntegralParser::base_type(integral, "integral") {
 		integral = ("#b" > integralBin) | integralDec | ("#x" > integralHex);
