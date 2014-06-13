@@ -309,6 +309,7 @@ protected:
 private:
 	smtrat::Logic mLogic;
 	PointerSet<Formula> mTheoryIteBindings;
+	std::map<carl::Variable, std::tuple<const Formula*, Polynomial, Polynomial>> mTheoryItes;
 	std::stack<std::list<std::pair<std::string, carl::VariableType>>> mVariableStack;
 	
 	bool isSymbolFree(const std::string& name) {
