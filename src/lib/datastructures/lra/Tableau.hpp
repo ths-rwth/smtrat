@@ -38,7 +38,7 @@
 //#define LRA_PRINT_STATS
 
 #define LRA_USE_PIVOTING_STRATEGY
-#define LRA_REFINEMENT
+//#define LRA_REFINEMENT
 //#define LRA_EQUATION_FIRST
 //#define LRA_LOCAL_CONFLICT_DIRECTED
 #define LRA_USE_ACTIVITY_STRATEGY
@@ -365,8 +365,8 @@ namespace smtrat
                 void removeEntry( EntryID );
                 std::pair<const Bound<T1,T2>*, bool> newBound( const smtrat::Constraint* );
                 void activateBound( const Bound<T1,T2>*, const PointerSet<Formula>& );
-                Variable<T1, T2>* newNonbasicVariable( const smtrat::Polynomial* );
-                Variable<T1, T2>* newBasicVariable( const smtrat::Polynomial*, std::map<carl::Variable, Variable<T1, T2>*>& );
+                Variable<T1, T2>* newNonbasicVariable( const smtrat::Polynomial*, bool );
+                Variable<T1, T2>* newBasicVariable( const smtrat::Polynomial*, std::map<carl::Variable, Variable<T1, T2>*>&, bool );
                 void activateBasicVar( Variable<T1, T2>* );
                 void deactivateBasicVar( Variable<T1, T2>* );
                 void compressRows();
@@ -591,7 +591,7 @@ namespace smtrat
                 if( basicIter == mOriginalVars.end() )
                 {
                     Polynomial* varPoly = new Polynomial( var );
-                    newVar = newNonbasicVariable( varPoly );
+                    newVar = newNonbasicVariable( varPoly, var.getType() == carl::VariableType::VT_INT );
                     mOriginalVars.insert( std::pair<carl::Variable, Variable<T1, T2>*>( var, newVar ) );
                 }
                 else
@@ -616,7 +616,7 @@ namespace smtrat
                 typename FastPointerMap<Polynomial, Variable<T1, T2>*>::iterator slackIter = mSlackVars.find( linearPart );
                 if( slackIter == mSlackVars.end() )
                 {
-                    newVar = newBasicVariable( linearPart, mOriginalVars );
+                    newVar = newBasicVariable( linearPart, mOriginalVars, _constraint->integerValued() );
                     mSlackVars.insert( std::pair<const Polynomial*, Variable<T1, T2>*>( linearPart, newVar ) );
                 }
                 else
@@ -786,9 +786,9 @@ namespace smtrat
          * @return
          */
         template<typename T1, typename T2>
-        Variable<T1, T2>* Tableau<T1,T2>::newNonbasicVariable( const smtrat::Polynomial* _poly )
+        Variable<T1, T2>* Tableau<T1,T2>::newNonbasicVariable( const smtrat::Polynomial* _poly, bool _isInteger )
         {
-            Variable<T1, T2>* var = new Variable<T1, T2>( mWidth++, _poly, mDefaultBoundPosition );
+            Variable<T1, T2>* var = new Variable<T1, T2>( mWidth++, _poly, mDefaultBoundPosition,_isInteger );
             mColumns.push_back( var );
             return var;
         }
@@ -799,10 +799,10 @@ namespace smtrat
          * @return
          */
         template<typename T1, typename T2>
-        Variable<T1, T2>* Tableau<T1,T2>::newBasicVariable( const smtrat::Polynomial* _poly, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars )
+        Variable<T1, T2>* Tableau<T1,T2>::newBasicVariable( const smtrat::Polynomial* _poly, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars, bool _isInteger )
         {
             mNonActiveBasics.emplace_front();
-            Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), _poly, mDefaultBoundPosition );
+            Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), _poly, mDefaultBoundPosition, _isInteger );
             for( auto term = _poly->begin(); term != _poly->end(); ++term )
             {
                 assert( !(*term)->isConstant() );
@@ -813,7 +813,7 @@ namespace smtrat
                 if( _originalVars.end() == nonBasicIter )
                 {
                     Polynomial* varPoly = new Polynomial( var );
-                    nonBasic = newNonbasicVariable( varPoly );
+                    nonBasic = newNonbasicVariable( varPoly, var.getType() == carl::VariableType::VT_INT );
                     _originalVars.insert( std::pair<carl::Variable, Variable<T1, T2>*>( var, nonBasic ) );
                 }
                 else
@@ -2021,7 +2021,7 @@ FindPivot:
              * Collect the bounds which form an upper resp. lower refinement.
              */
             const Variable<T1,T2>& basicVar = *_basicVar; 
-            if( basicVar.size() > 128 ) return;
+            if( basicVar.isInteger() || basicVar.size() > 128 ) return; // Not for integer as there seems to be a bug otherwise (e.g. convert/convert-jpg2gif-query-1147.smt2)
             std::vector<const Bound<T1, T2>*>* uPremise = new std::vector<const Bound<T1, T2>*>();
             std::vector<const Bound<T1, T2>*>* lPremise = new std::vector<const Bound<T1, T2>*>();
             Iterator rowEntry = Iterator( basicVar.startEntry(), mpEntries );
@@ -3479,18 +3479,17 @@ FindPivot:
             while( true )
             {
                 const Variable<T1, T2>& nonBasicVar = *(*row_iterator).columnVar();
-                if( nonBasicVar.infimum() == nonBasicVar.assignment() || nonBasicVar.supremum() == nonBasicVar.assignment() )
+                if( nonBasicVar.infimum() == nonBasicVar.assignment() )
                 {
-                    if( nonBasicVar.infimum() == nonBasicVar.assignment() )
-                    {
-                        premises.insert( newFormula( (*(*row_iterator).columnVar()).infimum().pAsConstraint() ) );                        
-                    }
-                    else
-                    {
-                        premises.insert( newFormula( (*(*row_iterator).columnVar()).supremum().pAsConstraint() ) );                        
-                    }
+                    const PointerSet<Formula>& origs = (*row_iterator).columnVar()->infimum().origins().front();
+                    premises.insert( origs.begin(), origs.end() );                        
                 }
-                if( row_iterator.hEnd( false ) )
+                else if( nonBasicVar.supremum() == nonBasicVar.assignment() )
+                {
+                    const PointerSet<Formula>& origs = (*row_iterator).columnVar()->supremum().origins().front();
+                    premises.insert( origs.begin(), origs.end() );                                               
+                }
+                if( !row_iterator.hEnd( false ) )
                 {
                     row_iterator.hMove( false );
                 }

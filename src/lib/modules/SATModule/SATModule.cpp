@@ -2504,6 +2504,7 @@ NextClause:
             if( pconstr != NULL )
             {
                 const Constraint& constr = pconstr->constraint();
+				///@todo Use meaningful constants instead of magic numbers.
                 switch( constr.isConsistent() )
                 {
                     case 0:
