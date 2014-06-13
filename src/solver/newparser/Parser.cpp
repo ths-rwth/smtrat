@@ -7,12 +7,12 @@
 #include "../../lib/ConstraintPool.h"
 #include "../../lib/Formula.h"
 #include "lib/FormulaPool.h"
+#include "carl/util/debug.h"
 
 namespace smtrat {
 namespace parser {
 
 SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool debug):
-	SMTLIBParser::base_type(main),
 	handler(ih),
 	queueInstructions(queueInstructions)
 {

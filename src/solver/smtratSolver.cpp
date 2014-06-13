@@ -49,12 +49,12 @@
 
 #include "newparser/Parser.h"
 
-class Executor : public smtrat::parser::SMTLIBParser::InstructionHandler {
+class Executor : public smtrat::parser::InstructionHandler {
 	CMakeStrategySolver* solver;
 	unsigned exitCode;
 public:
 	smtrat::Answer lastAnswer;
-	Executor(CMakeStrategySolver* solver) : smtrat::parser::SMTLIBParser::InstructionHandler(), solver(solver) {}
+	Executor(CMakeStrategySolver* solver) : smtrat::parser::InstructionHandler(), solver(solver) {}
 	void add(const smtrat::Formula* f) {
 		this->solver->add(f);
 	}
