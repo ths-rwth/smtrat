@@ -91,7 +91,7 @@ namespace smtrat
         if( !_constraint->lhs().isConstant() && _constraint->lhs().isLinear() )
         {
             bool elementInserted = mLinearConstraints.insert( _constraint ).second;
-            if( elementInserted && mInitialized )
+            if( elementInserted )
             {
                 setBound( _constraint );
             }
@@ -132,7 +132,6 @@ namespace smtrat
             }
             case CONSTRAINT:
             {
-                if( !mInitialized ) init();
                 const Constraint* constraint  = (*_subformula)->pConstraint();
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 mpStatistics->add( *constraint );
@@ -143,12 +142,24 @@ namespace smtrat
                     mAssignmentFullfilsNonlinearConstraints = false;
                     if( constraint->lhs().isLinear() )
                     {
-                        if( (*_subformula)->constraint().relation() != Relation::NEQ )
+//                        bool elementInserted = mLinearConstraints.insert( constraint ).second;
+//                        if( elementInserted && mInitialized )
+//                        {
+//                            mTableau.newBound( constraint );
+//                        }
+                        if( constraint->relation() != Relation::NEQ )
                         {
                             auto constrBoundIter = mTableau.constraintToBound().find( constraint );
                             assert( constrBoundIter != mTableau.constraintToBound().end() );
                             const vector< const LRABound* >* bounds = constrBoundIter->second;
                             assert( bounds != NULL );
+                            
+                            #ifdef LRA_SIMPLE_THEORY_PROPAGATION
+                            addSimpleBoundDeduction( *bounds->begin(), false );
+                            #endif
+//                            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
+//                            findSimpleConflicts( **bounds->begin() );
+//                            #endif
 
                             PointerSet<Formula> originSet;
                             originSet.insert( *_subformula );
@@ -929,9 +940,9 @@ Return:
         pair<const LRABound*, bool> retValue = mTableau.newBound( _constraint );
         if( retValue.second )
         {
-            #ifdef LRA_SIMPLE_THEORY_PROPAGATION
-            addSimpleBoundDeduction( retValue.first, _constraint->relation() == Relation::NEQ );
-            #endif
+//            #ifdef LRA_SIMPLE_THEORY_PROPAGATION
+//            addSimpleBoundDeduction( retValue.first, _constraint->relation() == Relation::NEQ );
+//            #endif
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *retValue.first );
             #endif
@@ -955,16 +966,16 @@ Return:
             {
                 while( currentBound != boundPos )
                 {
-                    if( (*currentBound)->pInfo()->exists )
-                    {
-                        PointerSet<Formula> subformulas;
-                        subformulas.insert( newNegation( newFormula( (*currentBound)->pAsConstraint() ) ) );
-                        subformulas.insert( newFormula( _boundNeq ? _bound->neqRepresentation() : _bound->pAsConstraint() ) );
-                        addDeduction( newFormula( OR, subformulas ) );
-                        #ifdef SMTRAT_DEVOPTION_Statistics
-                        mpStatistics->addDeduction();
-                        #endif
-                    }
+//                    if( (*currentBound)->pInfo()->exists )
+//                    {
+//                        PointerSet<Formula> subformulas;
+//                        subformulas.insert( newNegation( newFormula( (*currentBound)->pAsConstraint() ) ) );
+//                        subformulas.insert( newFormula( _boundNeq ? _bound->neqRepresentation() : _bound->pAsConstraint() ) );
+//                        addDeduction( newFormula( OR, subformulas ) );
+//                        #ifdef SMTRAT_DEVOPTION_Statistics
+//                        mpStatistics->addDeduction();
+//                        #endif
+//                    }
                     ++currentBound;
                 }
                 ++currentBound;
@@ -1013,25 +1024,25 @@ Return:
                     }
                     ++currentBound;
                 }
-                ++currentBound;
+//                ++currentBound;
             }
-            if( _bound->type() != LRABound::Type::EQUAL )
-            {
-                while( currentBound != lraVar.lowerbounds().end() )
-                {
-                    if( (*currentBound)->pInfo()->exists )
-                    {
-                        PointerSet<Formula> subformulas;
-                        subformulas.insert( newNegation( newFormula( (*currentBound)->pAsConstraint() ) ) );
-                        subformulas.insert( newFormula( _boundNeq ? _bound->neqRepresentation() : _bound->pAsConstraint() ) );
-                        addDeduction( newFormula( OR, subformulas ) );
-                        #ifdef SMTRAT_DEVOPTION_Statistics
-                        mpStatistics->addDeduction();
-                        #endif
-                    }
-                    ++currentBound;
-                }
-            }
+//            if( _bound->type() != LRABound::Type::EQUAL )
+//            {
+//                while( currentBound != lraVar.lowerbounds().end() )
+//                {
+//                    if( (*currentBound)->pInfo()->exists )
+//                    {
+//                        PointerSet<Formula> subformulas;
+//                        subformulas.insert( newNegation( newFormula( (*currentBound)->pAsConstraint() ) ) );
+//                        subformulas.insert( newFormula( _boundNeq ? _bound->neqRepresentation() : _bound->pAsConstraint() ) );
+//                        addDeduction( newFormula( OR, subformulas ) );
+//                        #ifdef SMTRAT_DEVOPTION_Statistics
+//                        mpStatistics->addDeduction();
+//                        #endif
+//                    }
+//                    ++currentBound;
+//                }
+//            }
         }
     }
     

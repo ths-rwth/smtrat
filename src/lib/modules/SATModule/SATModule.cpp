@@ -61,7 +61,7 @@
 //#define SAT_CHECK_BACKEND_MODEL
 //#define SAT_TRY_FULL_LAZY_CALLS_FIRST
 //#define SAT_APPLY_VALID_SUBSTITUTIONS
-//#define SAT_THEORY_CONFLICT_AS_LEMMA
+#define SAT_THEORY_CONFLICT_AS_LEMMA
 
 
 using namespace std;
@@ -153,6 +153,7 @@ namespace smtrat
         mSatisfiedClauses( 0 ),
         mNumberOfFullLazyCalls( 0 ),
         mCurr_Restarts( 0 ),
+        mNumOfTheoryClauses( 0 ),
         mConstraintLiteralMap(),
         mBooleanVarMap(),
         mFormulaClauseMap(),
@@ -619,7 +620,7 @@ namespace smtrat
                     return mkLit( booleanVarPair->second, false );
                 else
                 {
-                    Var var = newVar( true, true, 3 ); //_formula.activity() );
+                    Var var = newVar( true, true, _formula.activity() );
                     mBooleanVarMap[_formula.boolean()] = var;
                     return mkLit( var, false );
                 }
@@ -878,6 +879,7 @@ namespace smtrat
                 // Store it as learned clause
                 cr = ca.alloc( add_tmp, _type );
                 learnts.push( cr );
+                ++mNumOfTheoryClauses;
             }
             else
             {
@@ -1725,9 +1727,11 @@ SetWatches:
                 }
                 #endif
 
-//                if( learnts.size() - nAssigns() >= max_learnts )
-//                    // Reduce the set of learned clauses:
-//                    reduceDB();
+                if( learnts.size() - mNumOfTheoryClauses - nAssigns() >= max_learnts )
+                {
+                    // Reduce the set of learned clauses:
+                    reduceDB();
+                }
                 
                 Lit next = lit_Undef;
                 while( decisionLevel() < assumptions.size() )
@@ -2163,8 +2167,11 @@ NextClause:
         for( i = j = 0; i < learnts.size(); i++ )
         {
             Clause& c = ca[learnts[i]];
-            if( c.size() > 2 &&!locked( c ) && (i < learnts.size() / 2 || c.activity() < extra_lim) )
+            if( c.type() != CONFLICT_CLAUSE && c.size() > 2 && !locked( c ) && (i < learnts.size() / 2 || c.activity() < extra_lim) )
+            {
+                mNumOfTheoryClauses -= (c.type() == DEDUCTED_CLAUSE ? 1 : 0);
                 removeClause( learnts[i] );
+            }
             else
                 learnts[j++] = learnts[i];
         }

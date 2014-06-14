@@ -137,8 +137,12 @@ namespace smtrat
                 #ifdef SIMPLIFY_FORMULAS
                 if( _premise == mpFalse )
                     return mpTrue;
+                if( _premise == mpTrue )
+                    return _conclusion;
                 if( _conclusion == mpTrue )
                     return mpTrue;
+                if( _conclusion == mpFalse )
+                    return newNegation( _premise );
                 #endif
                 return addFormulaToPool( new Formula( _premise, _conclusion ) );
             }
@@ -152,7 +156,7 @@ namespace smtrat
             const Formula* newIte( const Formula* _condition, const Formula* _then, const Formula* _else )
             {
                 #ifdef SIMPLIFY_FORMULAS
-                if( _condition == mpFalse )
+                if( _condition == mpFalse || *_then == *_else )
                     return _else;
                 if( _condition == mpTrue )
                     return _then;

@@ -1234,6 +1234,7 @@ namespace smtrat
             while( !_currentState->children().empty() )
             {
                 State* toDelete = _currentState->rChildren().back();
+                removeStatesFromRanking( *toDelete );
                 _currentState->rChildren().pop_back();
                 _currentState->resetInfinityChild( toDelete );
                 delete toDelete;  // DELETE STATE
