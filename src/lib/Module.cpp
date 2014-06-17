@@ -53,7 +53,7 @@ namespace smtrat
     
     vector<string> Module::mAssumptionToCheck = vector<string>();
     set<string> Module::mVariablesInAssumptionToCheck = set<string>();
-    size_t Module::mNumOfBranchVarsToStore = 3;
+    size_t Module::mNumOfBranchVarsToStore = 10;
     vector<Branching> Module::mLastBranches = vector<Branching>( mNumOfBranchVarsToStore, Branching(ZERO_POLYNOMIAL, ZERO_RATIONAL) );
     size_t Module::mFirstPosInLastBranches = 0;
 
@@ -348,7 +348,7 @@ namespace smtrat
     void Module::addSubformulaToPassedFormula( const Formula* _formula, const vec_set_const_pFormula& _origins )
     {
         assert( mpReceivedFormula->size() != UINT_MAX );
-        assert( mPassedformulaOrigins.find(_formula) == mPassedformulaOrigins.end());
+//        assert( mPassedformulaOrigins.find(_formula) == mPassedformulaOrigins.end());
         mpPassedFormula->push_back( _formula );
         mPassedformulaOrigins[_formula] = _origins;
         if( mFirstSubformulaToPass == mpPassedFormula->end() )

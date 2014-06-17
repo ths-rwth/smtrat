@@ -233,11 +233,9 @@ namespace smtrat
                 case NOT:
                     return (*mpSubformula) == _formula.subformula();
                 case IMPLIES:
-                    return (*mpImpliesContent->mpPremise) == _formula.premise() && (*mpImpliesContent->mpConlusion) == _formula.conclusion();
+                    return premise() == _formula.premise() && conclusion() == _formula.conclusion();
                 case ITE:
-                    return (*mpIteContent->mpCondition) == _formula.condition()
-                            && (*mpIteContent->mpThen) == _formula.firstCase()
-                            && (*mpIteContent->mpElse) == _formula.secondCase();
+                    return condition() == _formula.condition() && firstCase() == _formula.firstCase() && secondCase() == _formula.secondCase();
                 default:
                     return (*mpSubformulas) == _formula.subformulas();
             }
@@ -1094,15 +1092,12 @@ namespace smtrat
                     subformulasToTransform.push_back( newFormula( OR, tmpSubformulas ) );
                     break;
                 }
-                case ITE: // (ite cond then else)  ->  auxBool, where (or (not cond) (= auxBool then)) and (or cond (= auxBool else)) are added to the queue
+                case ITE: // (ite cond then else)  ->  auxBool, where (or (not cond) then) and (or cond else) are added to the queue
                 {
-                    const Formula* auxBool = newFormula( newAuxiliaryBooleanVariable() );
-                    // Add: (or (not cond) (= auxBool then))
-                    subformulasToTransform.push_back( newFormula( OR, newNegation( currentFormula->pCondition() ), newFormula( IFF, auxBool, currentFormula->pFirstCase() ) ) );
-                    // Add: (or cond (= auxBool else))
-                    subformulasToTransform.push_back( newFormula( OR, currentFormula->pCondition(), newFormula( IFF, auxBool, currentFormula->pSecondCase() ) ) );
-                    // Add: auxBool
-                    subformulas.insert( auxBool );
+                    // Add: (or (not cond) then)
+                    subformulasToTransform.push_back( newFormula( OR, newNegation( currentFormula->pCondition() ), currentFormula->pFirstCase() ) );
+                    // Add: (or cond else)
+                    subformulasToTransform.push_back( newFormula( OR, currentFormula->pCondition(), currentFormula->pSecondCase() ) );
                     break;
                 }
                 case IFF: 
@@ -1184,16 +1179,13 @@ namespace smtrat
                                 phis.push_back( newNegation( currentSubformula->pPremise() ) );
                                 phis.push_back( currentSubformula->pConclusion() );
                                 break;
-                            case ITE: // (ite cond then else)  ->  (and (or (not cond) (= auxBool then)) (or cond (= auxBool else) auxBool)
+                            case ITE: // (ite cond then else)  ->  (and (or (not cond) then) (or cond else))
                             {   
-                                const Formula* auxBool = newFormula( newAuxiliaryBooleanVariable() );
                                 PointerSet<Formula> tmpSubformulas;
-                                // Add: (or (not cond) (= auxBool then))
-                                tmpSubformulas.insert( newFormula( OR, newNegation( currentSubformula->pCondition() ), newFormula( IFF, auxBool, currentSubformula->pFirstCase() ) ) );
-                                // Add: (or cond (= auxBool else))
-                                tmpSubformulas.insert( newFormula( OR, currentSubformula->pCondition(), newFormula( IFF, auxBool, currentSubformula->pSecondCase() ) ) );
-                                // Add: auxBool
-                                tmpSubformulas.insert( auxBool );
+                                // Add: (or (not cond) then)
+                                tmpSubformulas.insert( newFormula( OR, newNegation( currentSubformula->pCondition() ), currentSubformula->pFirstCase() ) );
+                                // Add: (or cond else)
+                                tmpSubformulas.insert( newFormula( OR, currentSubformula->pCondition(), currentSubformula->pSecondCase() ) );
                                 phis.push_back( newFormula( AND, tmpSubformulas ) );
                                 break;
                             }

@@ -41,7 +41,7 @@
 #define LRA_REFINEMENT
 //#define LRA_EQUATION_FIRST
 //#define LRA_LOCAL_CONFLICT_DIRECTED
-#define LRA_USE_ACTIVITY_STRATEGY
+//#define LRA_USE_ACTIVITY_STRATEGY
 //#define LRA_USE_THETA_STRATEGY
 #ifdef LRA_REFINEMENT
 //#define LRA_INTRODUCE_NEW_CONSTRAINTS
@@ -402,7 +402,7 @@ namespace smtrat
                 void invert_HNF_Matrix( std::vector<size_t>& );
                 smtrat::Polynomial* create_cut_from_proof( Tableau<T1,T2>&, Tableau<T1,T2>&, size_t, std::vector<size_t>&, std::vector<size_t>&, T2&, T2&);
                 #endif
-                const smtrat::Constraint* gomoryCut( const T2&, Variable<T1, T2>*, std::vector<const smtrat::Constraint*>&);
+                const smtrat::Constraint* gomoryCut( const T2&, Variable<T1, T2>* );
                 size_t getNumberOfEntries( Variable<T1,T2>* );
                 void collect_premises( const Variable<T1,T2>*, PointerSet<Formula>&  );
                 void printHeap( std::ostream& = std::cout, int = 30, const std::string = "" ) const;
@@ -1396,18 +1396,27 @@ FindPivot:
             if( _than == LAST_ENTRY_ID ) return true;
             const Variable<T1,T2>& isBetterNbVar = *((*mpEntries)[_isBetter].columnVar());
             const Variable<T1,T2>& thanColumnNbVar = *((*mpEntries)[_than].columnVar());
+            #ifdef LRA_USE_ACTIVITY_STRATEGYZ
             if( isBetterNbVar.conflictActivity() < thanColumnNbVar.conflictActivity() )
                 return true;
             else if( isBetterNbVar.conflictActivity() == thanColumnNbVar.conflictActivity() )
             {
+            #endif
                 size_t valueA = boundedVariables( isBetterNbVar );
                 size_t valueB = boundedVariables( thanColumnNbVar, valueA );
                 if( valueA < valueB  ) return true;
                 else if( valueA == valueB )
                 {
+                    #ifdef LRA_USE_ACTIVITY_STRATEGY
+                    if( isBetterNbVar.conflictActivity() < thanColumnNbVar.conflictActivity() ) return true;
+                    else if( isBetterNbVar.conflictActivity() == thanColumnNbVar.conflictActivity() && isBetterNbVar.size() < thanColumnNbVar.size() ) return true;
+                    #else
                     if( isBetterNbVar.size() < thanColumnNbVar.size() ) return true;
+                    #endif
                 }
+            #ifdef LRA_USE_ACTIVITY_STRATEGYZ
             }
+            #endif
             return false;
         }
 
@@ -3355,92 +3364,146 @@ FindPivot:
          *         otherwise the valid constraint is returned.   
          */ 
         template<typename T1, typename T2>
-        const smtrat::Constraint* Tableau<T1,T2>::gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar, std::vector<const smtrat::Constraint*>& _constrVec )
+        const smtrat::Constraint* Tableau<T1,T2>::gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar )
         { 
             Iterator row_iterator = Iterator( _rowVar->startEntry(), mpEntries );
-            std::vector<GOMORY_SET> splitting = std::vector<GOMORY_SET>();
+            std::vector<GOMORY_SET> splitting;
             // Check, whether the premises for a Gomory Cut are satisfied
-            while( !row_iterator.hEnd( false ) )
+            while( true )
             { 
                 const Variable<T1, T2>& nonBasicVar = *(*row_iterator).columnVar();
-                if( nonBasicVar.infimum() == nonBasicVar.assignment() || nonBasicVar.supremum() == nonBasicVar.assignment() )
+                if( !nonBasicVar.infimum().isInfinite() && nonBasicVar.infimum() == nonBasicVar.assignment() )
                 {
-                    if( nonBasicVar.infimum() == nonBasicVar.assignment() )
+                    if( ((*row_iterator).content() < 0 && _rowVar->factor() > 0) || ((*row_iterator).content() > 0 && _rowVar->factor() < 0) ) 
                     {
-                        if( (*row_iterator).content() < 0 ) 
-                        {
-                            splitting.push_back( J_MINUS );
-                        }    
-                        else 
-                        {
-                            splitting.push_back( J_PLUS );    
-                        }
-                    }
-                    else
+                        splitting.push_back( J_MINUS );
+                    }    
+                    else 
                     {
-                        if( (*row_iterator).content() < 0 ) 
-                        {
-                            splitting.push_back( K_MINUS );
-                        }    
-                        else 
-                        {
-                            splitting.push_back( K_PLUS );
-                        }
+                        splitting.push_back( J_PLUS );    
                     }
-                }                                 
+                }
+                else if( !nonBasicVar.supremum().isInfinite() && nonBasicVar.supremum() == nonBasicVar.assignment() )
+                {
+                    if( ((*row_iterator).content() < 0 && _rowVar->factor() > 0) || ((*row_iterator).content() > 0 && _rowVar->factor() < 0) ) 
+                    {
+                        splitting.push_back( K_MINUS );
+                    }    
+                    else 
+                    {
+                        splitting.push_back( K_PLUS );
+                    }
+                }                               
                 else
                 {
                     return NULL;
-                }      
+                }     
+                if( row_iterator.hEnd( false ) )
+                {
+                    break;
+                }
                 row_iterator.hMove( false );
             }
             // A Gomory Cut can be constructed
-            //std::cout << "Create Cut for: " << _rowVar->expression() << std::endl;
             T2 coeff;
+            #ifdef LRA_DEBUG_GOMORY_CUT
+            std::cout << "Create Cut for: " << _rowVar->expression() << std::endl;
+            std::cout << "_ass = " << _ass << std::endl;
+            #endif
             T2 f_zero = _ass - T2(carl::floor( (Rational)_ass ));
-            Polynomial sum = Polynomial();
+            #ifdef LRA_DEBUG_GOMORY_CUT
+            std::cout << "f_zero = " << f_zero << std::endl;
+            #endif
+            Polynomial sum = ZERO_POLYNOMIAL;
             // Construction of the Gomory Cut 
             std::vector<GOMORY_SET>::const_iterator vec_iter = splitting.begin();
             row_iterator = Iterator( _rowVar->startEntry(), mpEntries );
-            while( !row_iterator.hEnd( false ) )
+            while( true )
             {                 
                 const Variable<T1, T2>& nonBasicVar = *(*row_iterator).columnVar();  
                 if( (*vec_iter) == J_MINUS )
                 {
-                    assert( nonBasicVar.infimum() == nonBasicVar.assignment() && (*row_iterator).content() < 0 );
-                    T2 bound = nonBasicVar.infimum().limit().mainPart();
-                    coeff = -( (*row_iterator).content() / f_zero);
-                    _constrVec.push_back( nonBasicVar.infimum().pAsConstraint() );
-                    sum += (Rational)coeff*( nonBasicVar.expression() - (Rational)bound );                   
+                    #ifdef LRA_DEBUG_GOMORY_CUT
+                    std::cout << "nonBasicVar.expression() = " << nonBasicVar.expression() << std::endl;
+                    std::cout << "(*row_iterator).content() = " << (*row_iterator).content() << std::endl;
+                    std::cout << "_rowVar->factor() = " << _rowVar->factor() << std::endl;
+                    std::cout << "f_zero = " << f_zero << std::endl;
+                    std::cout << "(_rowVar->factor() * f_zero) = " << (_rowVar->factor() * f_zero) << std::endl;
+                    #endif
+                    coeff = -((*row_iterator).content() / (_rowVar->factor() * f_zero));
+                    #ifdef LRA_DEBUG_GOMORY_CUT
+                    std::cout << "A: coeff = " << coeff << std::endl;
+                    #endif
+                    sum += (Rational)coeff*( nonBasicVar.expression() - (Rational)nonBasicVar.infimum().limit().mainPart() );     
+                    #ifdef LRA_DEBUG_GOMORY_CUT              
+                    std::cout << "(Rational)coeff*( nonBasicVar.expression() - (Rational)nonBasicVar.infimum().limit().mainPart() ) = " << ((Rational)coeff*( nonBasicVar.expression() - (Rational)nonBasicVar.infimum().limit().mainPart() )) << std::endl;
+                    #endif
                 }                 
                 else if( (*vec_iter) == J_PLUS )
                 {
-                    assert( nonBasicVar.infimum() == nonBasicVar.assignment() && (*row_iterator).content() >= 0 );
-                    T2 bound = nonBasicVar.infimum().limit().mainPart();
-                    coeff = (*row_iterator).content()/( (Rational)1 - f_zero );
-                    _constrVec.push_back( nonBasicVar.infimum().pAsConstraint() );
-                    sum += (Rational)coeff*( nonBasicVar.expression() - (Rational)bound );                   
+                    #ifdef LRA_DEBUG_GOMORY_CUT
+                    std::cout << "nonBasicVar.expression() = " << nonBasicVar.expression() << std::endl;
+                    std::cout << "(*row_iterator).content() = " << (*row_iterator).content() << std::endl;
+                    std::cout << "_rowVar->factor() = " << _rowVar->factor() << std::endl;
+                    std::cout << "f_zero = " << f_zero << std::endl;
+                    std::cout << "(_rowVar->factor() * ( (Rational)1 - f_zero )) = " << (_rowVar->factor() * ( (Rational)1 - f_zero )) << std::endl;
+                    #endif
+                    coeff = (*row_iterator).content()/(_rowVar->factor() * ( (Rational)1 - f_zero ));
+                    #ifdef LRA_DEBUG_GOMORY_CUT
+                    std::cout << "B: coeff = " << coeff << std::endl;
+                    #endif
+                    sum += (Rational)coeff*( nonBasicVar.expression() - (Rational)nonBasicVar.infimum().limit().mainPart() );
+                    #ifdef LRA_DEBUG_GOMORY_CUT
+                    std::cout << "(Rational)coeff*( nonBasicVar.expression() - (Rational)nonBasicVar.infimum().limit().mainPart() ) = " << ((Rational)coeff*( nonBasicVar.expression() - (Rational)nonBasicVar.infimum().limit().mainPart() )) << std::endl;                
+                    #endif
                 }
                 else if( (*vec_iter) == K_MINUS )
                 {
-                    assert( nonBasicVar.supremum() == nonBasicVar.assignment() && (*row_iterator).content() < 0 );
-                    T2 bound = nonBasicVar.supremum().limit().mainPart();
-                    coeff = -( (*row_iterator).content()/( (Rational)1 - f_zero ) );
-                    _constrVec.push_back( nonBasicVar.supremum().pAsConstraint() );
-                    sum += (Rational)coeff * ( (Rational)bound - nonBasicVar.expression() );                   
+                    #ifdef LRA_DEBUG_GOMORY_CUT
+                    std::cout << "nonBasicVar.expression() = " << nonBasicVar.expression() << std::endl;
+                    std::cout << "(*row_iterator).content() = " << (*row_iterator).content() << std::endl;
+                    std::cout << "_rowVar->factor() = " << _rowVar->factor() << std::endl;
+                    std::cout << "f_zero = " << f_zero << std::endl;
+                    std::cout << "(_rowVar->factor() * ( (Rational)1 - f_zero )) = " << (_rowVar->factor() * ( (Rational)1 - f_zero )) << std::endl;
+                    #endif
+                    coeff = -((*row_iterator).content()/(_rowVar->factor() * ( (Rational)1 - f_zero )));
+                    #ifdef LRA_DEBUG_GOMORY_CUT
+                    std::cout << "C: coeff = " << coeff << std::endl;
+                    #endif
+                    sum += ((Rational)-coeff) * ( nonBasicVar.expression() - (Rational)nonBasicVar.supremum().limit().mainPart() );
+                    #ifdef LRA_DEBUG_GOMORY_CUT
+                    std::cout << "(Rational)coeff * ( (Rational)nonBasicVar.supremum().limit().mainPart() - nonBasicVar.expression() ) = " << ((Rational)coeff * ( (Rational)nonBasicVar.supremum().limit().mainPart() - nonBasicVar.expression() )) << std::endl;        
+                    #endif
                 }
-                else if( (*vec_iter) == K_PLUS ) 
+                else// if( (*vec_iter) == K_PLUS ) 
                 {
-                    assert( nonBasicVar.supremum() == nonBasicVar.assignment() && (*row_iterator).content() >= 0 );
-                    T2 bound = nonBasicVar.supremum().limit().mainPart();
-                    coeff = (*row_iterator).content()/f_zero;
-                    _constrVec.push_back( nonBasicVar.supremum().pAsConstraint() );
-                    sum += (Rational)coeff * ( (Rational)bound - nonBasicVar.expression() );
+                    #ifdef LRA_DEBUG_GOMORY_CUT
+                    std::cout << "nonBasicVar.expression() = " << nonBasicVar.expression() << std::endl;
+                    std::cout << "(*row_iterator).content() = " << (*row_iterator).content() << std::endl;
+                    std::cout << "_rowVar->factor() = " << _rowVar->factor() << std::endl;
+                    std::cout << "f_zero = " << f_zero << std::endl;
+                    std::cout << "(_rowVar->factor() * f_zero) = " << (_rowVar->factor() * f_zero) << std::endl;
+                    #endif
+                    coeff = (*row_iterator).content()/(_rowVar->factor() * f_zero);
+                    #ifdef LRA_DEBUG_GOMORY_CUT
+                    std::cout << "D: coeff = " << coeff << std::endl;
+                    #endif
+                    sum += ((Rational)-coeff) * (nonBasicVar.expression() - (Rational)nonBasicVar.supremum().limit().mainPart());
+                    #ifdef LRA_DEBUG_GOMORY_CUT
+                    std::cout << "(Rational)coeff * ( (Rational)nonBasicVar.supremum().limit().mainPart() - nonBasicVar.expression() ) = " << ((Rational)coeff * ( (Rational)nonBasicVar.supremum().limit().mainPart() - nonBasicVar.expression() )) << std::endl;
+                    #endif
+                }
+                if( row_iterator.hEnd( false ) )
+                {
+                    break;
                 }
                 row_iterator.hMove( false );
                 ++vec_iter;
             }
-            sum = sum - (Rational)1;
+            sum -= (Rational)1;
+            #ifdef LRA_DEBUG_GOMORY_CUT
+            std::cout << "sum = " << sum << std::endl;
+            #endif
             const smtrat::Constraint* gomory_constr = newConstraint( sum , Relation::GEQ );
             newBound(gomory_constr);
             // TODO: check whether there is already a basic variable with this polynomial (psum, cf. LRAModule::initialize(..)) 

@@ -34,7 +34,7 @@
 //#define LRA_TERMINATION_INVARIANCE
 #define LRA_SIMPLE_THEORY_PROPAGATION
 #define LRA_SIMPLE_CONFLICT_SEARCH
-#define LRA_ONE_REASON
+//#define LRA_ONE_REASON
 //#define LRA_EARLY_BRANCHING
 #ifndef LRA_GOMORY_CUTS
 #ifndef LRA_CUTS_FROM_PROOFS
@@ -412,6 +412,9 @@ namespace smtrat
             }
             goto Return; // Unknown
         }
+        #ifdef LRA_USE_PIVOTING_STRATEGY
+        mTableau.setBlandsRuleStart( 1000 );//(unsigned) mTableau.columns().size() );
+        #endif
         mTableau.compressRows();
         for( ; ; )
         {
@@ -1174,7 +1177,6 @@ Return:
     bool LRAModule::gomory_cut()
     {
         EvalRationalMap rMap_ = getRationalModel();
-        vector<const Constraint*> constr_vec = vector<const Constraint*>();
         bool all_int = true;
         for( LRAVariable* basicVar : mTableau.rows() )
         {            
@@ -1188,20 +1190,11 @@ Return:
                 if( !carl::isInteger( ass ) )
                 {
                     all_int = false;
-                    const Constraint* gomory_constr = mTableau.gomoryCut(ass, basicVar, constr_vec);
+                    const Constraint* gomory_constr = mTableau.gomoryCut(ass, basicVar);
                     if( gomory_constr != NULL )
                     { 
                         assert( !gomory_constr->satisfiedBy( rMap_ ) );
                         PointerSet<Formula> subformulas; 
-//                        auto vec_iter = mpReceivedFormula->begin();
-//                        while( vec_iter != mpReceivedFormula->end() )
-//                        {
-//                            if ( (*(*vec_iter)->pConstraint()).lhs().evaluate( rMap_ ) == 0 )
-//                            {
-//                                subformulas.insert( newNegation( newFormula( (*vec_iter)->pConstraint() ) ) );
-//                            }
-//                            ++vec_iter;
-//                        }
                         mTableau.collect_premises( basicVar, subformulas );
                         PointerSet<Formula> premise;
                         for( const Formula* pre : subformulas )
@@ -1210,7 +1203,7 @@ Return:
                         }
                         const Formula* gomory_formula = newFormula( gomory_constr );
                         premise.insert( gomory_formula );
-                        addDeduction( newFormula( OR, std::move( subformulas ) ) );   
+                        addDeduction( newFormula( OR, std::move( premise ) ) );
                     } 
                 }
             }    

@@ -2142,11 +2142,12 @@ namespace vs
                 }
             }
             #ifdef VS_DEBUG_VARIABLE_BOUNDS
-            cout << ">>>    division part 1    : " << resA << endl;
+            cout << ">>>    division part 1    : " << std::setprecision(100) << resA << endl;
+            cout << ">>>    subVarInterval     : " << std::setprecision(100) << subVarInterval << endl;
             #endif
             resA = resA.intersect( subVarInterval );
             #ifdef VS_DEBUG_VARIABLE_BOUNDS
-            cout << ">>>    intersection part 1: " << resA << endl;
+            cout << ">>>    intersection part 1: " << std::setprecision(100) << resA << endl;
             #endif
             if( !resA.isEmpty() )
                 result.push_back( resA );
