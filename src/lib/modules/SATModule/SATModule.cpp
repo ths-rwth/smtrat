@@ -2803,6 +2803,7 @@ NextClause:
         int lowestLevel = decisionLevel()+1;
         #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
         int numOfLowLevelLiterals = 0;
+        int learntsSizeBefore = learnts.size();
         #endif
         vector<Module*>::const_iterator backend = usedBackends().begin();
         while( backend != usedBackends().end() )
@@ -2879,12 +2880,15 @@ NextClause:
                     #endif
                 }
                 #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
-                if( addClause( learnt_clause, CONFLICT_CLAUSE ) && betterConflict )
+                if( addClause( learnt_clause, CONFLICT_CLAUSE ) )
                 #else
                 if( addClause( learnt_clause, CONFLICT_CLAUSE ) && betterConflict )
                 #endif
                 {
-                    conflictClause = learnts.last();
+                    if( betterConflict )
+                        conflictClause = learnts.last();
+//                    cout << "Add conflict clause:" << endl;
+//                    printClause( learnts.last(), true );
                 }
                 else if( betterConflict )
                 {
@@ -2899,8 +2903,21 @@ NextClause:
         if( numOfLowLevelLiterals == 1 )
         {
             cancelUntil(lowestLevel == 0 ? 0 : lowestLevel-1);
+//            cout << "cancel until " << (lowestLevel == 0 ? 0 : lowestLevel-1) << endl;
+//            cout << endl;
+//            printClauses( learnts, "Learnts", cout, "", learntsSizeBefore - 1, true );
+//            cout << endl;
             return CRef_Undef;
         }
+        else
+        {
+            cancelUntil(lowestLevel);
+//            cout << "cancel until " << lowestLevel << endl;
+        }
+        
+//        cout << endl;
+//        printClauses( learnts, "Learnts", cout, "", learntsSizeBefore - 1, true );
+//        cout << endl;
         #else
         assert( conflictClause == CRef_Undef || lowestLevel < decisionLevel()+1 );
         cancelUntil(lowestLevel);
@@ -3128,17 +3145,22 @@ NextClause:
      * @param c     The clause to print.
      * @param map
      */
-    void SATModule::printClauses( ostream& _out, Clause& c )
+    void SATModule::printClauses( ostream& _out, Clause& c, bool _withAssignment )
     {
         for( int i = 0; i < c.size(); i++ )
         {
             stringstream s;
-            s << var( c[i] );
-            string result = (sign( c[i] ) ? "-" : "") + s.str();
-            _out << setw( 6 ) << result;
+            s << (sign( c[i] ) ? " -" : " ") << var( c[i] );
+            if( _withAssignment )
+            {
+                s << "(" << (value( c[i] ) == l_True ? "true" : (value( c[i] ) == l_False ? "false" : "undef")) << "@" << level( var( c[i] ) ) << ")";
+                _out << setw( 10 ) << s.str();
+            }
+            else
+                _out << setw( 6 ) << s.str();
         }
 
-        if( satisfied( c ) )
+        if( satisfied( c ) && !_withAssignment )
             _out << "      ok";
     }
 
@@ -3196,7 +3218,7 @@ NextClause:
      * @param _out  The output stream where the answer should be printed.
      * @param _init The line initiation.
      */
-    void SATModule::printClauses( const vec<CRef>& _clauses, const string _name, ostream& _out, const string _init )
+    void SATModule::printClauses( const vec<CRef>& _clauses, const string _name, ostream& _out, const string _init, int _from, bool _withAssignment )
     {
         _out << _init << " " << _name << ":" << endl;
         // Handle case when solver is in contradictory state:
@@ -3214,11 +3236,11 @@ NextClause:
         // Cannot use removeClauses here because it is not safe
         // to deallocate them at this point. Could be improved.
         int cnt = 0;
-        for( int i = 0; i < _clauses.size(); i++ )
+        for( int i = _from; i < _clauses.size(); i++ )
             if( !satisfied( ca[_clauses[i]] ) )
                 cnt++;
 
-        for( int i = 0; i < _clauses.size(); i++ )
+        for( int i = _from; i < _clauses.size(); i++ )
             if( !satisfied( ca[_clauses[i]] ) )
             {
                 Clause& c = ca[_clauses[i]];
@@ -3238,10 +3260,10 @@ NextClause:
             _out << _init << "  " << (sign( assumptions[i] ) ? "-" : "") << (mapVar( var( assumptions[i] ), map, max )) << endl;
         }
 
-        for( int i = 0; i < _clauses.size(); i++ )
+        for( int i = _from; i < _clauses.size(); i++ )
         {
             _out << _init << " ";
-            printClauses( _out, ca[_clauses[i]] );
+            printClauses( _out, ca[_clauses[i]], _withAssignment );
             _out << endl;
         }
 

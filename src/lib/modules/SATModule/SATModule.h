@@ -318,8 +318,8 @@ namespace smtrat
             void printClause( std::ostream&, Minisat::Clause& );
             void printClause( Minisat::CRef, bool = false, std::ostream& = std::cout, const std::string& = "" ) const;
             void printClause( const Minisat::vec<Minisat::Lit>&, bool = false, std::ostream& = std::cout, const std::string& = "" ) const;
-            void printClauses( std::ostream&, Minisat::Clause& );
-            void printClauses( const Minisat::vec<Minisat::CRef>&, const std::string, std::ostream& = std::cout, const std::string = "***" );
+            void printClauses( std::ostream&, Minisat::Clause&, bool = false );
+            void printClauses( const Minisat::vec<Minisat::CRef>&, const std::string, std::ostream& = std::cout, const std::string = "***", int = 0, bool = false );
             void printDecisions( std::ostream& = std::cout, std::string = "***" ) const;
 
             void collectStats();
