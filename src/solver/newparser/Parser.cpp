@@ -423,44 +423,6 @@ const smtrat::Formula* SMTLIBParser::mkFormula( smtrat::Type type, PointerSet<Fo
 	return f;
 }
 
-bool SMTLIBParser::checkArguments(const std::string& name, const std::vector<carl::Variable>& types, const Arguments& args, std::map<carl::Variable, const Formula*>& boolAssignments, std::map<carl::Variable, Polynomial>& theoryAssignments) const {
-	if (types.size() != args.size()) {
-		this->handler->error() << "The number of arguments for \"" << name << "\" does not match its declaration.";
-		return false;
-	}
-	for (unsigned id = 0; id < types.size(); id++) {
-		ExpressionType type = TypeOfTerm::get(types[id]);
-		if (type != TypeOfTerm::get(args[id])) {
-			this->handler->error() << "The type of argument " << (id+1) << " for \"" << name << "\" did not match the declaration.";
-			return false;
-		}
-		if (type == BOOLEAN) {
-			boolAssignments[types[id]] = boost::get<const Formula*>(args[id]);
-		} else {
-			theoryAssignments[types[id]] = boost::get<Polynomial>(args[id]);
-		}
-	}
-	return true;
-}
-
-
-const smtrat::Formula* SMTLIBParser::applyBooleanFunction(const BooleanFunction& f, const Arguments& args) const {
-	std::map<carl::Variable, const Formula*> boolAssignments;
-	std::map<carl::Variable, Polynomial> theoryAssignments;
-	if (!checkArguments(std::get<0>(f), std::get<1>(f), args, boolAssignments, theoryAssignments, std::bind(&InstructionHandler::error, this->handler))) {
-		return nullptr;
-	}
-	return std::get<2>(f)->substitute(boolAssignments, theoryAssignments);
-}
-Polynomial SMTLIBParser::applyTheoryFunction(const TheoryFunction& f, const Arguments& args) const {
-	std::map<carl::Variable, const Formula*> boolAssignments;
-	std::map<carl::Variable, Polynomial> theoryAssignments;
-	if (!this->checkArguments(std::get<0>(f), std::get<1>(f), args, boolAssignments, theoryAssignments)) {
-		return smtrat::Polynomial();
-	}
-	return std::get<2>(f).substitute(theoryAssignments);
-}
-
 carl::Variable SMTLIBParser::addVariableBinding(const std::pair<std::string, carl::VariableType>& b) {
 	assert(this->isSymbolFree(b.first));
 	mVariableStack.top().emplace_back(b.first, b.second);
