@@ -1,6 +1,6 @@
 #include "ParserUtils.h"
 
-#include "Common.h"
+#include "ParserTypes.h"
 
 namespace smtrat {
 namespace parser {

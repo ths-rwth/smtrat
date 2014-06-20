@@ -27,14 +27,14 @@
 #include "../../lib/Formula.h"
 #include "../../lib/FormulaPool.h"
 #include "ParserUtils.h"
-#include "Common.h"
+#include "ParserTypes.h"
+
+namespace smtrat {
+namespace parser {
 
 namespace spirit = boost::spirit;
 namespace qi = boost::spirit::qi;
 namespace px = boost::phoenix;
-
-namespace smtrat {
-namespace parser {
 
 using qi::_val;
 using qi::lit;

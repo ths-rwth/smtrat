@@ -11,8 +11,9 @@
 #include <boost/spirit/include/qi.hpp>
 
 #include "../../lib/Common.h"
+#include "../../lib/datastructures/VariantMap.h"
 #include "Driver.h"
-#include "Common.h"
+#include "ParserTypes.h"
 
 namespace smtrat {
 namespace parser {
