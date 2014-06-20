@@ -9,6 +9,9 @@
 #include <sstream>
 #include <type_traits>
 #include <boost/spirit/include/qi.hpp>
+#include <boost/variant.hpp>
+#include <boost/spirit/include/phoenix_core.hpp>
+#include <boost/spirit/include/phoenix_bind.hpp>
 
 #include "../../lib/Common.h"
 #include "../../lib/datastructures/VariantMap.h"
@@ -266,6 +269,11 @@ struct RationalPolicies : qi::ureal_policies<smtrat::Rational> {
 	static bool parse_inf(It&, It const&, Attr&) { return false; }
 };
 
+struct Skipper : public qi::grammar<Iterator> {
+	Skipper();
+	qi::rule<Iterator> main;
+};
+
 struct SymbolParser : public qi::grammar<Iterator, std::string(), Skipper> {
 	SymbolParser();
 	qi::rule<Iterator, std::string(), Skipper> main;
@@ -324,29 +332,6 @@ struct IntegralParser : public qi::grammar<Iterator, Rational(), Skipper> {
 };
 
 struct DecimalParser : qi::real_parser<Rational, RationalPolicies> {};
-
-struct TypeOfTerm : public boost::static_visitor<ExpressionType> {
-	ExpressionType operator()(const Formula*) const { return BOOLEAN; }
-	ExpressionType operator()(const Polynomial&) const { return THEORY; }
-	ExpressionType operator()(const carl::Variable& v) const { return (*this)(v.getType()); }
-	ExpressionType operator()(const carl::VariableType& v) const {
-		switch (v) {
-			case carl::VariableType::VT_BOOL: return BOOLEAN;
-			case carl::VariableType::VT_INT:
-			case carl::VariableType::VT_REAL: return THEORY;
-			default:
-				return THEORY;
-		}
-	}
-	template<typename T>
-	static ExpressionType get(const T& t) {
-		return TypeOfTerm()(t);
-	}
-	template<typename... T>
-	static ExpressionType get(const boost::variant<T...>& var) {
-		return boost::apply_visitor(TypeOfTerm(), var);
-	}
-};
 
 }
 }

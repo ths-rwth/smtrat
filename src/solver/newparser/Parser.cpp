@@ -105,7 +105,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 			|	("forall" > bindlist > formula)
 			|	("ite" >> (formula >> formula >> formula)[_val = px::bind(&newIte, qi::_1, qi::_2, qi::_3)])
 			|	(("!" > formula > *attribute)[px::bind(&annotateFormula, qi::_1, qi::_2), _val = qi::_1])
-			|	((funmap_bool >> fun_arguments)[qi::_val = px::bind(&SMTLIBParser::applyBooleanFunction, px::ref(*this), qi::_1, qi::_2)])
+			|	((funmap_bool >> fun_arguments)[qi::_val = px::bind(&applyBooleanFunction, qi::_1, qi::_2, std::bind(&InstructionHandler::error, this->handler))])
 	;
 	formula_op.name("formula operation");
 
@@ -113,7 +113,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 	polynomial_op.name("polynomial operation");
 	polynomial_ite = lit("ite") >> (formula >> polynomial >> polynomial)[_val = px::bind(&SMTLIBParser::mkIteInExpr, px::ref(*this), qi::_1, qi::_2, qi::_3)];
 	polynomial_ite.name("polynomial if-then-else");
-	polynomial_fun = (funmap_theory >> fun_arguments)[qi::_val = px::bind(&SMTLIBParser::applyTheoryFunction, px::ref(*this), qi::_1, qi::_2)];
+	polynomial_fun = (funmap_theory >> fun_arguments)[qi::_val = px::bind(&applyTheoryFunction, qi::_1, qi::_2, std::bind(&InstructionHandler::error, this->handler))];
 	polynomial_fun.name("theory function");
 	polynomial =
 			(bind_theory >> boundary)
@@ -150,7 +150,7 @@ bool SMTLIBParser::parse(std::istream& in, const std::string& filename) {
 	BaseIteratorType basebegin(in);
 	Iterator begin(basebegin);
 	Iterator end;
-	Skipper skipper = SKIPPER;
+	//Skipper skipper = SKIPPER;
 	return qi::phrase_parse(begin, end, main, skipper);
 }
 
@@ -308,7 +308,7 @@ void SMTLIBParser::push(const Rational& n) {
 	if (this->handler->printInstruction()) handler->regular() << "(push " << n << ")" << std::endl;
 	callHandler(&InstructionHandler::push, carl::toInt<unsigned>(n));
 }
-void SMTLIBParser::setInfo(const std::string& key, const Value& val) {
+void SMTLIBParser::setInfo(const std::string& key, const AttributeValue& val) {
 	if (this->handler->printInstruction()) handler->regular() << "(set-info :" << key << " " << val << ")" << std::endl;
 	callHandler(&InstructionHandler::setInfo, key, val);
 }
@@ -317,7 +317,7 @@ void SMTLIBParser::setLogic(const smtrat::Logic& l) {
 	if (this->handler->printInstruction()) handler->regular() << "(set-logic " << l << ")" << std::endl;
 	callHandler(&InstructionHandler::setLogic, l);
 }
-void SMTLIBParser::setOption(const std::string& key, const Value& val) {
+void SMTLIBParser::setOption(const std::string& key, const AttributeValue& val) {
 	if (this->handler->printInstruction()) handler->regular() << "(set-option " << key << " " << val << ")" << std::endl;
 	callHandler(&InstructionHandler::setOption, key, val);
 }
@@ -443,10 +443,11 @@ bool SMTLIBParser::checkArguments(const std::string& name, const std::vector<car
 	return true;
 }
 
+
 const smtrat::Formula* SMTLIBParser::applyBooleanFunction(const BooleanFunction& f, const Arguments& args) const {
 	std::map<carl::Variable, const Formula*> boolAssignments;
 	std::map<carl::Variable, Polynomial> theoryAssignments;
-	if (!this->checkArguments(std::get<0>(f), std::get<1>(f), args, boolAssignments, theoryAssignments)) {
+	if (!checkArguments(std::get<0>(f), std::get<1>(f), args, boolAssignments, theoryAssignments, std::bind(&InstructionHandler::error, this->handler))) {
 		return nullptr;
 	}
 	return std::get<2>(f)->substitute(boolAssignments, theoryAssignments);

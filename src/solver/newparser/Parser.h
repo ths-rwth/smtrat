@@ -62,6 +62,7 @@ public:
 	DeclaredSymbolParser<Polynomial> bind_theory;
 	
 	// Basic rules
+	Skipper skipper;
 	SymbolParser symbol;
 	StringParser string;
 	RelationParser relation;
@@ -80,23 +81,19 @@ public:
 	rule<carl::Variable> var;
 	rule<std::pair<std::string, carl::VariableType>> sortedVar;
 	rule<std::string> key;
-	rule<std::pair<std::string, Value>> attribute;
+	rule<Attribute> attribute;
 	
-	rule<Value> value;
+	rule<AttributeValue> value;
 	rule<std::vector<std::string>> symlist;
 	rule<std::vector<carl::Variable>> varlist;
 	rule<> bindlist;
 	qi::rule<Iterator, qi::unused_type, Skipper, qi::locals<std::string>> binding;
 	
 	// Custom functions
-	typedef std::tuple<std::string, std::vector<carl::Variable>, const Formula*> BooleanFunction;
-	typedef std::tuple<std::string, std::vector<carl::Variable>, Polynomial> TheoryFunction;
 	qi::symbols<char, BooleanFunction> funmap_bool;
 	qi::symbols<char, TheoryFunction> funmap_theory;
 	qi::rule<Iterator, Skipper, qi::locals<std::string, std::vector<carl::Variable>>> fun_definition;
 
-	typedef boost::variant<const Formula*, Polynomial> Argument;
-	typedef std::vector<Argument> Arguments;
 	rule<Arguments> fun_arguments;
 
 	// Commands	
@@ -139,9 +136,9 @@ protected:
 	void getValue(const std::vector<carl::Variable>&);
 	void pop(const Rational&);
 	void push(const Rational&);
-	void setInfo(const std::string& key, const Value& val);
+	void setInfo(const std::string& key, const AttributeValue& val);
 	void setLogic(const smtrat::Logic&);
-	void setOption(const std::string& key, const Value& val);
+	void setOption(const std::string& key, const AttributeValue& val);
 	
 	template<typename Function, typename... Args>
 	void callHandler(const Function& f, const Args&... args) {
@@ -174,9 +171,6 @@ private:
 	const smtrat::Formula* mkConstraint(const smtrat::Polynomial&, const smtrat::Polynomial&, Relation);
 	Polynomial mkIteInExpr(const Formula* _condition, Polynomial& _then, Polynomial& _else);
 	const smtrat::Formula* mkFormula(smtrat::Type _type, PointerSet<Formula>& _subformulas);
-	bool checkArguments(const std::string&, const std::vector<carl::Variable>&, const Arguments& args, std::map<carl::Variable, const Formula*>&, std::map<carl::Variable, Polynomial>&) const;
-	const smtrat::Formula* applyBooleanFunction(const BooleanFunction& f, const Arguments& args) const;
-	Polynomial applyTheoryFunction(const TheoryFunction& f, const Arguments& args) const;
 	
 	void pushVariableStack() {
 		mVariableStack.emplace();
