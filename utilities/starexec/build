@@ -1,0 +1,7 @@
+#!/bin/sh
+
+echo "Copying smtratSolver from build/"
+cp ../../build/smtratSolver bin/
+
+echo "Creating archive"
+tar -czf smtrat.tgz bin/
