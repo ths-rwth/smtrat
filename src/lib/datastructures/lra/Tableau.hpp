@@ -40,7 +40,7 @@
 #define LRA_USE_PIVOTING_STRATEGY
 #define LRA_REFINEMENT
 //#define LRA_EQUATION_FIRST
-//#define LRA_LOCAL_CONFLICT_DIRECTED
+#define LRA_LOCAL_CONFLICT_DIRECTED
 //#define LRA_USE_ACTIVITY_STRATEGY
 //#define LRA_USE_THETA_STRATEGY
 #ifdef LRA_REFINEMENT
@@ -369,6 +369,8 @@ namespace smtrat
                 Variable<T1, T2>* newBasicVariable( const smtrat::Polynomial*, std::map<carl::Variable, Variable<T1, T2>*>&, bool );
                 void activateBasicVar( Variable<T1, T2>* );
                 void deactivateBasicVar( Variable<T1, T2>* );
+                void storeAssignment();
+                void resetAssignment();
                 void compressRows();
                 void activateBound( const Bound<T1, T2>* );
                 void deactivateBound( const Bound<T1, T2>* );
@@ -1019,6 +1021,32 @@ namespace smtrat
             _var->rPosition() = 0;
             _var->setPositionInNonActives( mNonActiveBasics.begin() );
             mRowsCompressed = false;
+        }
+        
+        /**
+         *
+         * @return
+         */
+        template<typename T1, typename T2>
+        void Tableau<T1,T2>::storeAssignment()
+        {
+            for( Variable<T1, T2>* basicVar : mRows )
+                basicVar->storeAssignment();
+            for( Variable<T1, T2>* nonbasicVar : mColumns )
+                nonbasicVar->storeAssignment();
+        }
+        
+        /**
+         *
+         * @return
+         */
+        template<typename T1, typename T2>
+        void Tableau<T1,T2>::resetAssignment()
+        {
+            for( Variable<T1, T2>* basicVar : mRows )
+                basicVar->resetAssignment();
+            for( Variable<T1, T2>* nonbasicVar : mColumns )
+                nonbasicVar->resetAssignment();
         }
         
         /**

@@ -35,6 +35,7 @@
 #define LRA_SIMPLE_THEORY_PROPAGATION
 #define LRA_SIMPLE_CONFLICT_SEARCH
 //#define LRA_ONE_REASON
+//#define LRA_RESTORE_PREVIOUS_CONSISTENT_ASSIGNMENT
 //#define LRA_EARLY_BRANCHING
 #ifndef LRA_GOMORY_CUTS
 #ifndef LRA_CUTS_FROM_PROOFS
@@ -50,6 +51,7 @@ namespace smtrat
         Module( _type, _formula, _conditionals, _manager ),
         mInitialized( false ),
         mAssignmentFullfilsNonlinearConstraints( false ),
+        mStrongestBoundsRemoved( false ),
         mProbableLoopCounter( 0 ),
         mTableau( mpPassedFormula->end() ),
         mLinearConstraints(),
@@ -149,6 +151,11 @@ namespace smtrat
 //                        }
                         if( constraint->relation() != Relation::NEQ )
                         {
+                            if( mStrongestBoundsRemoved )
+                            {
+                                mTableau.resetAssignment();
+                                mStrongestBoundsRemoved = false;
+                            }
                             auto constrBoundIter = mTableau.constraintToBound().find( constraint );
                             assert( constrBoundIter != mTableau.constraintToBound().end() );
                             const vector< const LRABound* >* bounds = constrBoundIter->second;
@@ -288,6 +295,12 @@ namespace smtrat
                                         }
                                     }
                                     LRAVariable& var = *(*bound)->pVariable();
+                                    #ifdef LRA_RESTORE_PREVIOUS_CONSISTENT_ASSIGNMENT
+                                    if( var.deactivateBound( *bound, mpPassedFormula->end() ) )
+                                    {
+                                        mStrongestBoundsRemoved = true;
+                                    }
+                                    #else
                                     if( var.deactivateBound( *bound, mpPassedFormula->end() ) && !var.isBasic() )
                                     {
                                         if( var.supremum() < var.assignment() )
@@ -301,6 +314,7 @@ namespace smtrat
                                             var.rAssignment() = var.infimum().limit();
                                         }
                                     }
+                                    #endif
                                     if( !(*bound)->pVariable()->pSupremum()->isInfinite() )
                                     {
                                         mBoundCandidatesToPass.push_back( (*bound)->pVariable()->pSupremum() );
@@ -471,6 +485,9 @@ namespace smtrat
                         if( branch_and_bound() )
                             goto Return; // Unknown
                         result = True;
+                        #ifdef LRA_RESTORE_PREVIOUS_CONSISTENT_ASSIGNMENT
+                        mTableau.storeAssignment();
+                        #endif
 //                        if( !assignmentCorrect() )
 //                            exit( 7771 );
                         assert( assignmentCorrect() );

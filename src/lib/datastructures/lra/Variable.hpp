@@ -69,6 +69,7 @@ namespace smtrat
                 const Bound<T1, T2>*             mpInfimum;
                 const smtrat::Polynomial*        mExpression;
                 Value<T1>                        mAssignment;
+                Value<T1>                        mLastConsistentAssignment;
                 #ifdef LRA_NO_DIVISION
                 T2                               mFactor;
                 #endif
@@ -86,6 +87,16 @@ namespace smtrat
                 Value<T1>& rAssignment()
                 {
                     return mAssignment;
+                }
+                
+                void resetAssignment()
+                {
+                    mAssignment = mLastConsistentAssignment;
+                }
+                
+                void storeAssignment()
+                {
+                    mLastConsistentAssignment = mAssignment;
                 }
 
                 void setBasic( bool _basic )
@@ -311,7 +322,8 @@ namespace smtrat
             mUpperbounds(),
             mLowerbounds(),
             mExpression( _expression),
-            mAssignment()
+            mAssignment( T1( 0 ) ),
+            mLastConsistentAssignment( mAssignment )
             #ifdef LRA_NO_DIVISION
             ,
             mFactor( 1 )
@@ -333,7 +345,8 @@ namespace smtrat
             mUpperbounds(),
             mLowerbounds(),
             mExpression( _expression),
-            mAssignment()
+            mAssignment( T1( 0 ) ),
+            mLastConsistentAssignment( mAssignment )
             #ifdef LRA_NO_DIVISION
             ,
             mFactor( 1 )

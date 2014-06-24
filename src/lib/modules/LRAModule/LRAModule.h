@@ -32,9 +32,6 @@
 
 #include "../../Module.h"
 #include "../../RuntimeSettings.h"
-#include "../../datastructures/lra/Value.hpp"
-#include "../../datastructures/lra/Variable.hpp"
-#include "../../datastructures/lra/Bound.hpp"
 #include "../../datastructures/lra/Tableau.hpp"
 #include "LRAModuleStatistics.h"
 #include <stdio.h>
@@ -57,7 +54,7 @@ namespace smtrat
                 const Formula*                      origin;
                 std::list<const Formula*>::iterator position;
             };
-            typedef std::map< carl::Variable, LRAVariable*>                   VarVariableMap;
+            typedef std::map<carl::Variable, LRAVariable*>                    VarVariableMap;
             typedef FastPointerMap<Polynomial, LRAVariable*>                  ExVariableMap;
             typedef FastPointerMap<Constraint, std::vector<const LRABound*>*> ConstraintBoundsMap;
             typedef FastPointerMap<Constraint, Context>                       ConstraintContextMap;
@@ -69,6 +66,7 @@ namespace smtrat
              */
             bool                       mInitialized;
             bool                       mAssignmentFullfilsNonlinearConstraints;
+            bool                       mStrongestBoundsRemoved;
             unsigned                   mProbableLoopCounter;
             LRATableau                 mTableau;
             PointerSet<Constraint>     mLinearConstraints;
