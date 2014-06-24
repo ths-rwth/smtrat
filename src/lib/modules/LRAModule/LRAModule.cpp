@@ -1572,7 +1572,7 @@ Return:
                 return maybeGomoryCut( branch_var->second, ass_ );
             }
             PointerSet<Formula> premises;
-            mTableau.collect_premises( branch_var->second , premises  );                
+            mTableau.collect_premises( branch_var->second , premises  ); 
             branchAt( branch_var->second->expression(), ass_, premises );
             return true;
         }
@@ -1602,7 +1602,7 @@ Return:
                 }
                 PointerSet<Formula> premises;
                 mTableau.collect_premises( var->second, premises  ); 
-                branchAt( var->second->expression(), ass );
+                branchAt( var->second->expression(), ass, premises );
                 return true;           
             }
             ++map_iterator;
