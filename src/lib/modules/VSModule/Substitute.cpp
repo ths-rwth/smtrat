@@ -27,6 +27,7 @@
 
 #include "Substitute.h"
 #include <cmath>
+#include <limits>
 
 //#define VS_DEBUG_SUBSTITUTION
 const unsigned MAX_NUM_OF_TERMS = 512;
@@ -99,6 +100,10 @@ namespace vs
         if( _cons->hasVariable( _subs.variable() ) )
         {
             // Collect all necessary left hand sides to create the new conditions of all cases referring to the virtual substitution.
+            if( carl::pow( smtrat::Rational(_subs.term().constantPart().nrTerms()) + smtrat::Rational(_subs.term().factor().nrTerms()) * smtrat::Rational(_subs.term().radicand().nrTerms()), _cons->maxDegree( _subs.variable() )) > (MAX_NUM_OF_TERMS*MAX_NUM_OF_TERMS) )
+            {
+                return false;
+            }
             SqrtEx sub = SqrtEx::subBySqrtEx( _cons->lhs(), _subs.variable(), _subs.term() );
             #ifdef VS_DEBUG_SUBSTITUTION
             cout << "Result of common substitution:" << sub << endl;

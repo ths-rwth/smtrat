@@ -153,7 +153,6 @@ namespace smtrat
         mSatisfiedClauses( 0 ),
         mNumberOfFullLazyCalls( 0 ),
         mCurr_Restarts( 0 ),
-        mNumOfTheoryClauses( 0 ),
         mConstraintLiteralMap(),
         mBooleanVarMap(),
         mFormulaClauseMap(),
@@ -294,16 +293,17 @@ namespace smtrat
             budgetOff();
 
             assumptions.clear();
-
-            // TODO: Is this necessary?
-            ++solves;
-            max_learnts             = nClauses() * learntsize_factor;
-            learntsize_adjust_confl = learntsize_adjust_start_confl;
-            learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
             
             Module::init();
             processLemmas();
 //            simplify();
+
+            ++solves;
+            max_learnts             = (nAssigns() + nClauses() + nLearnts() ) * learntsize_factor; // compared to original minisat we add the number of clauses with size 1 (nAssigns()) and learnts, we got after init()
+//            cout << "init max_learnts to " << max_learnts << endl;
+            learntsize_adjust_confl = learntsize_adjust_start_confl;
+            learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
+            
             
             if( !ok )
             {
@@ -879,7 +879,9 @@ namespace smtrat
                 // Store it as learned clause
                 cr = ca.alloc( add_tmp, _type );
                 learnts.push( cr );
-                ++mNumOfTheoryClauses;
+                decrementLearntSizeAdjustCnt();
+                mChangedActivities.push_back( cr );
+                claBumpActivity( ca[cr] );
             }
             else
             {
@@ -1345,6 +1347,7 @@ SetWatches:
         cout << endl << "Number of theory calls:" << endl << endl;
         #endif
         #endif
+        bool madeTheoryCall = false;
 
         Answer currentAssignmentConsistent = True;
         for( ; ; )
@@ -1364,13 +1367,7 @@ SetWatches:
             {
                 confl = propagate();
             }
-            #ifdef SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN
-            #ifdef DEBUG_SATMODULE
-            bool madeTheoryCall = false;
-            #endif
-            #else
-            bool madeTheoryCall = false;
-            #endif
+            madeTheoryCall = false;
 
             #ifdef DEBUG_SATMODULE
             cout << "### Sat iteration" << endl;
@@ -1400,13 +1397,7 @@ SetWatches:
                 adaptPassedFormula();
                 if( mChangedPassedFormula )
                 {
-                    #ifdef SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN
-                    #ifdef DEBUG_SATMODULE
                     madeTheoryCall = true;
-                    #endif
-                    #else
-                    madeTheoryCall = true;
-                    #endif
                     #ifdef DEBUG_SATMODULE
                     if( numberOfTheoryCalls >= debugFromCall-1 )
                     {
@@ -1680,6 +1671,8 @@ SetWatches:
                     #endif
                     assert( value( learnt_clause[0] ) == l_Undef );
                     uncheckedEnqueue( learnt_clause[0], cr );
+                    
+                    decrementLearntSizeAdjustCnt();
                 }
 
                 varDecayActivity();
@@ -1689,26 +1682,10 @@ SetWatches:
                 //Theory propagation.
                 deductionsLearned = processLemmas();
                 #endif
-
-                if( --learntsize_adjust_cnt == 0 )
+                if( madeTheoryCall )
                 {
-                    learntsize_adjust_confl *= learntsize_adjust_inc;
-                    learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
-                    max_learnts             *= learntsize_inc;
-
-                    if( verbosity >= 1 )
-                        printf( "| %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n",
-                                (int)conflicts,
-                                (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]),
-                                nClauses(),
-                                (int)clauses_literals,
-                                (int)max_learnts,
-                                nLearnts(),
-                                (double)learnts_literals / nLearnts(),
-                                progressEstimate() * 100 );
+                    currentAssignmentConsistent = True;
                 }
-                currentAssignmentConsistent = True;
-                
             }
             else
             {
@@ -1726,8 +1703,9 @@ SetWatches:
                     return l_Undef;
                 }
                 #endif
-
-                if( learnts.size() - mNumOfTheoryClauses - nAssigns() >= max_learnts )
+//                cout << "\r" << "learnts.size() = " << learnts.size() << ", nAssigns() = " << nAssigns() << ", max_learnts = " << max_learnts;
+//                cout.flush();
+                if( learnts.size() - nAssigns() >= max_learnts )
                 {
                     // Reduce the set of learned clauses:
                     reduceDB();
@@ -1783,6 +1761,27 @@ SetWatches:
                 assert( value( next ) == l_Undef );
                 uncheckedEnqueue( next );
             }
+        }
+    }
+    
+    void SATModule::decrementLearntSizeAdjustCnt()
+    {
+        if( --learntsize_adjust_cnt == 0 )
+        {
+            learntsize_adjust_confl *= learntsize_adjust_inc;
+            learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
+            max_learnts             *= learntsize_inc;
+
+            if( verbosity >= 1 )
+                printf( "| %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n",
+                        (int)conflicts,
+                        (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]),
+                        nClauses(),
+                        (int)clauses_literals,
+                        (int)max_learnts,
+                        nLearnts(),
+                        (double)learnts_literals / nLearnts(),
+                        progressEstimate() * 100 );
         }
     }
 
@@ -1857,11 +1856,11 @@ SetWatches:
             assert( confl != CRef_Undef );    // (otherwise should be UIP)
             Clause& c = ca[confl];
 
-            if( c.learnt() )
-            {  
-                mChangedActivities.push_back( confl );
-                claBumpActivity( c );
-            }
+//            if( c.learnt() ) // TODO: Find out, why the hell am I doing this.
+//            {  
+//                mChangedActivities.push_back( confl );
+//                claBumpActivity( c );
+//            }
 
             for( int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++ )
             {
@@ -2161,6 +2160,7 @@ NextClause:
         int    i, j;
         double extra_lim = cla_inc / learnts.size();    // Remove any clause below this activity
 
+//        cout << "reduce " << learnts.size() << " to ";
         sort( learnts, reduceDB_lt( ca ) );
         // Don't delete binary or locked clauses. From the rest, delete clauses from the first half
         // and clauses with activity smaller than 'extra_lim':
@@ -2168,14 +2168,16 @@ NextClause:
         {
             Clause& c = ca[learnts[i]];
             if( c.type() != CONFLICT_CLAUSE && c.size() > 2 && !locked( c ) && (i < learnts.size() / 2 || c.activity() < extra_lim) )
+//            if( c.size() > 2 && !locked( c ) && (i < learnts.size() / 2 || c.activity() < extra_lim) )
             {
-                mNumOfTheoryClauses -= (c.type() == DEDUCTED_CLAUSE ? 1 : 0);
                 removeClause( learnts[i] );
             }
             else
                 learnts[j++] = learnts[i];
         }
         learnts.shrink( i - j );
+        mLearntDeductions.clear();
+//        cout << learnts.size() << endl;
         checkGarbage();
     }
 

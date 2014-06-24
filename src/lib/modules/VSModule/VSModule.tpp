@@ -1230,7 +1230,15 @@ namespace smtrat
         {
             _currentState->rFather().addConflicts( _currentState->pSubstitution(), conflictSet );
             _currentState->rInconsistent() = true;
-            _currentState->resetConflictSets();
+            while( !_currentState->rConflictSets().empty() )
+            {
+                const Substitution* sub = _currentState->rConflictSets().begin()->first;
+                _currentState->rConflictSets().erase( _currentState->rConflictSets().begin() );
+                if( sub != NULL && sub->type() == Substitution::Type::INVALID )
+                {
+                    delete sub;
+                }
+            }
             while( !_currentState->children().empty() )
             {
                 State* toDelete = _currentState->rChildren().back();

@@ -262,7 +262,6 @@ namespace smtrat
             mutable double        mSatisfiedClauses;
             size_t                mNumberOfFullLazyCalls;
             int                   mCurr_Restarts;
-            int                   mNumOfTheoryClauses;
             BooleanConstraintMap  mBooleanConstraintMap;
             ConstraintLiteralsMap  mConstraintLiteralMap;
             BooleanVarMap         mBooleanVarMap;
@@ -390,6 +389,8 @@ namespace smtrat
             //
             // Insert a variable in the decision order priority queue.
             void insertVarOrder( Minisat::Var x );
+            //
+            void decrementLearntSizeAdjustCnt();
             // Return the next decision variable.
             Minisat::Lit pickBranchLit();
             // Begins a new decision level.
