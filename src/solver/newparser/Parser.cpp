@@ -3,6 +3,7 @@
 #include <cassert>
 #include <iostream>
 #include <limits>
+#include <set>
 
 #include "../../lib/ConstraintPool.h"
 #include "../../lib/Formula.h"
@@ -321,12 +322,16 @@ void SMTLIBParser::setOption(const std::string& key, const AttributeValue& val) 
 	callHandler(&InstructionHandler::setOption, key, val);
 }
 
-#if 0
+#if 1
 
 const Formula* SMTLIBParser::mkConstraint(const Polynomial& lhs, const Polynomial& rhs, Relation rel) {
 	Polynomial p = lhs - rhs;
-	///@todo check if variables from the ites vanish in the variables
-	std::size_t n = this->mTheoryItes.size();
+	std::set<carl::Variable> pVars = p.gatherVariables();
+	std::set<carl::Variable> vars;
+	for (auto it: this->mTheoryItes) {
+		if (pVars.count(it.first) > 0) vars.insert(it.first);
+	}
+	std::size_t n = vars.size();
 	if (n == 0) {
 		// There are no ITEs.
 		const Constraint* cons = newConstraint(p, rel);
@@ -338,23 +343,23 @@ const Formula* SMTLIBParser::mkConstraint(const Polynomial& lhs, const Polynomia
 		// 2^n Formulas collecting the conditions.
 		std::vector<PointerSet<Formula>> conds(1 << n);
 		unsigned repeat = 1 << (n-1);
-		for (auto it: this->mTheoryItes) {
+		for (auto v: vars) {
+			auto t = this->mTheoryItes[v];
 			std::vector<Polynomial> ptmp;
 			for (auto& p: polys) {
 				// Substitute both possibilities for this ITE.
-				ptmp.push_back(p.substitute(it.first, std::get<1>(it.second)));
-				ptmp.push_back(p.substitute(it.first, std::get<2>(it.second)));
+				ptmp.push_back(p.substitute(v, std::get<1>(t)));
+				ptmp.push_back(p.substitute(v, std::get<2>(t)));
 			}
 			std::swap(polys, ptmp);
 			// Add the conditions at the appropriate positions.
-			const Formula* f[2]= { std::get<0>(it.second), newNegation(std::get<0>(it.second)) };
+			const Formula* f[2]= { std::get<0>(t), newNegation(std::get<0>(t)) };
 			for (unsigned i = 0; i < (1 << n); i++) {
 				conds[i].insert(f[0]);
 				if ((i+1) % repeat == 0) std::swap(f[0], f[1]);
 			}
 			repeat /= 2;
 		}
-		mTheoryItes.clear();
 		// Now combine everything: (and (=> (and conditions) constraint) ...)
 		PointerSet<Formula> subs;
 		for (unsigned i = 0; i < polys.size(); i++) {
@@ -364,15 +369,14 @@ const Formula* SMTLIBParser::mkConstraint(const Polynomial& lhs, const Polynomia
 		return res;
 	} else {
 		// There are many ITEs, we keep the auxiliary variables.
-		for (auto it: this->mTheoryItes) {
-			carl::Variable v = it.first;
-			const Formula* consThen = newFormula(newConstraint(Polynomial(v) - std::get<1>(it.second), Relation::EQ));
-			const Formula* consElse = newFormula(newConstraint(Polynomial(v) - std::get<2>(it.second), Relation::EQ));
+		for (auto v: vars) {
+			auto t = this->mTheoryItes[v];
+			const Formula* consThen = newFormula(newConstraint(Polynomial(v) - std::get<1>(t), Relation::EQ));
+			const Formula* consElse = newFormula(newConstraint(Polynomial(v) - std::get<2>(t), Relation::EQ));
 
-			mTheoryIteBindings.emplace(newImplication(std::get<0>(it.second), consThen));
-			mTheoryIteBindings.emplace(newImplication(newNegation(std::get<0>(it.second)), consElse));
+			mTheoryIteBindings.emplace(newImplication(std::get<0>(t), consThen));
+			mTheoryIteBindings.emplace(newImplication(newNegation(std::get<0>(t)), consElse));
 		}
-		mTheoryItes.clear();
 		const Constraint* cons = newConstraint(p, rel);
 		return newFormula(cons);
 	}
