@@ -36,9 +36,6 @@ namespace spirit = boost::spirit;
 namespace qi = boost::spirit::qi;
 namespace px = boost::phoenix;
 
-using qi::_val;
-using qi::lit;
-
 template <typename... T>
 using rule = qi::rule<Iterator, T()..., Skipper>;
 

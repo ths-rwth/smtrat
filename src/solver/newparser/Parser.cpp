@@ -42,7 +42,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 	symlist = *symbol;
 	symlist.name("symbol list");
 
-	bindlist = +(lit("(") > binding > lit(")"));
+	bindlist = +(qi::lit("(") > binding > qi::lit(")"));
 	bindlist.name("binding list");
 	binding = symbol[qi::_a = qi::_1] > (
 			polynomial[px::bind(&SMTLIBParser::addTheoryBinding, px::ref(*this), qi::_a, qi::_1)]
@@ -59,59 +59,59 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 	fun_arguments.name("function arguments");
 	
 	cmd = "(" > (
-			(lit("assert") > formula > ")")[px::bind(&SMTLIBParser::add, px::ref(*this), qi::_1)]
-		|	(lit("check-sat") > ")")[px::bind(&SMTLIBParser::check, px::ref(*this))]
-		|	(lit("declare-const") > symbol > domain > ")")[px::bind(&SMTLIBParser::declareConst, px::ref(*this), qi::_1, qi::_2)]
-		|	(lit("declare-fun") > symbol > "(" > *domain > ")" > domain > ")")[px::bind(&SMTLIBParser::declareFun, px::ref(*this), qi::_1, qi::_2, qi::_3)]
-		|	(lit("declare-sort") > symbol > integral > ")")[px::bind(&SMTLIBParser::declareSort, px::ref(*this), qi::_1, qi::_2)]
-		|	(lit("define-fun") > fun_definition > ")")
-		|	(lit("define-sort") > symbol > "(" > symlist > ")" > symbol > ")")[px::bind(&SMTLIBParser::defineSort, px::ref(*this), qi::_1, qi::_2, qi::_3)]
-		|	(lit("exit") > ")")[px::bind(&SMTLIBParser::exit, px::ref(*this))]
-		|	(lit("get-assertions") > ")")[px::bind(&SMTLIBParser::getAssertions, px::ref(*this))]
-		|	(lit("get-assignment") > ")")[px::bind(&SMTLIBParser::getAssignment, px::ref(*this))]
-		|	(lit("get-info") > key > ")")[px::bind(&SMTLIBParser::getInfo, px::ref(*this), qi::_1)]
-		|	(lit("get-option") > key > ")")[px::bind(&SMTLIBParser::getOption, px::ref(*this), qi::_1)]
-		|	(lit("get-proof") > ")")[px::bind(&SMTLIBParser::getProof, px::ref(*this))]
-		|	(lit("get-unsat-core") > ")")[px::bind(&SMTLIBParser::getUnsatCore, px::ref(*this))]
-		|	(lit("get-value") > *var > ")")[px::bind(&SMTLIBParser::getValue, px::ref(*this), qi::_1)]
-		|	(lit("pop") > integral > ")")[px::bind(&SMTLIBParser::pop, px::ref(*this), qi::_1)]
-		|	(lit("push") > integral > ")")[px::bind(&SMTLIBParser::push, px::ref(*this), qi::_1)]
-		|	(lit("set-info") > key > value > ")")[px::bind(&SMTLIBParser::setInfo, px::ref(*this), qi::_1, qi::_2)]
-		|	(lit("set-logic") > logic > ")")[px::bind(&SMTLIBParser::setLogic, px::ref(*this), qi::_1)]
-		|	(lit("set-option") > key > value > ")")[px::bind(&SMTLIBParser::setOption, px::ref(*this), qi::_1, qi::_2)]
+			(qi::lit("assert") > formula > ")")[px::bind(&SMTLIBParser::add, px::ref(*this), qi::_1)]
+		|	(qi::lit("check-sat") > ")")[px::bind(&SMTLIBParser::check, px::ref(*this))]
+		|	(qi::lit("declare-const") > symbol > domain > ")")[px::bind(&SMTLIBParser::declareConst, px::ref(*this), qi::_1, qi::_2)]
+		|	(qi::lit("declare-fun") > symbol > "(" > *domain > ")" > domain > ")")[px::bind(&SMTLIBParser::declareFun, px::ref(*this), qi::_1, qi::_2, qi::_3)]
+		|	(qi::lit("declare-sort") > symbol > integral > ")")[px::bind(&SMTLIBParser::declareSort, px::ref(*this), qi::_1, qi::_2)]
+		|	(qi::lit("define-fun") > fun_definition > ")")
+		|	(qi::lit("define-sort") > symbol > "(" > symlist > ")" > symbol > ")")[px::bind(&SMTLIBParser::defineSort, px::ref(*this), qi::_1, qi::_2, qi::_3)]
+		|	(qi::lit("exit") > ")")[px::bind(&SMTLIBParser::exit, px::ref(*this))]
+		|	(qi::lit("get-assertions") > ")")[px::bind(&SMTLIBParser::getAssertions, px::ref(*this))]
+		|	(qi::lit("get-assignment") > ")")[px::bind(&SMTLIBParser::getAssignment, px::ref(*this))]
+		|	(qi::lit("get-info") > key > ")")[px::bind(&SMTLIBParser::getInfo, px::ref(*this), qi::_1)]
+		|	(qi::lit("get-option") > key > ")")[px::bind(&SMTLIBParser::getOption, px::ref(*this), qi::_1)]
+		|	(qi::lit("get-proof") > ")")[px::bind(&SMTLIBParser::getProof, px::ref(*this))]
+		|	(qi::lit("get-unsat-core") > ")")[px::bind(&SMTLIBParser::getUnsatCore, px::ref(*this))]
+		|	(qi::lit("get-value") > *var > ")")[px::bind(&SMTLIBParser::getValue, px::ref(*this), qi::_1)]
+		|	(qi::lit("pop") > integral > ")")[px::bind(&SMTLIBParser::pop, px::ref(*this), qi::_1)]
+		|	(qi::lit("push") > integral > ")")[px::bind(&SMTLIBParser::push, px::ref(*this), qi::_1)]
+		|	(qi::lit("set-info") > key > value > ")")[px::bind(&SMTLIBParser::setInfo, px::ref(*this), qi::_1, qi::_2)]
+		|	(qi::lit("set-logic") > logic > ")")[px::bind(&SMTLIBParser::setLogic, px::ref(*this), qi::_1)]
+		|	(qi::lit("set-option") > key > value > ")")[px::bind(&SMTLIBParser::setOption, px::ref(*this), qi::_1, qi::_2)]
 	);
 	cmd.name("command");
 
 	formula = 
-			(bind_bool >> boundary)[_val = qi::_1]
-		|	(var_bool >> boundary)[_val = px::bind(&SMTLIBParser::mkBoolean, px::ref(*this), qi::_1)]
-		|	lit("true")[_val = px::bind(&trueFormula)]
-		|	lit("false")[_val = px::bind(&falseFormula)]
-		|	("(" >> formula_op >> ")")[_val = qi::_1]
+			(bind_bool >> boundary)[qi::_val = qi::_1]
+		|	(var_bool >> boundary)[qi::_val = px::bind(&SMTLIBParser::mkBoolean, px::ref(*this), qi::_1)]
+		|	qi::lit("true")[qi::_val = px::bind(&trueFormula)]
+		|	qi::lit("false")[qi::_val = px::bind(&falseFormula)]
+		|	("(" >> formula_op >> ")")[qi::_val = qi::_1]
 	;
 	formula.name("formula");
 	
 	formula_list = +formula;
 	formula_list.name("formula list");
 	formula_op =
-				((op_bool >> formula_list)[_val = px::bind(&SMTLIBParser::mkFormula, px::ref(*this), qi::_1, qi::_2)])
-			|	(relation >> polynomial >> polynomial)[_val = px::bind(&SMTLIBParser::mkConstraint, px::ref(*this), qi::_2, qi::_3, qi::_1)]
-			|	(lit("as")[qi::_pass = false] > symbol > symbol)
-			|	(lit("not") > formula[_val = px::bind(&newNegation, qi::_1)])
-			|	((lit("implies") | "=>") > formula > formula)[_val = px::bind(newImplication, qi::_1, qi::_2)]
-			|	(lit("let")[px::bind(&SMTLIBParser::pushVariableStack, px::ref(*this))]
-				> ("(" > bindlist > ")" > formula)[px::bind(&SMTLIBParser::popVariableStack, px::ref(*this)), _val = qi::_1])
+				((op_bool >> formula_list)[qi::_val = px::bind(&SMTLIBParser::mkFormula, px::ref(*this), qi::_1, qi::_2)])
+			|	(relation >> polynomial >> polynomial)[qi::_val = px::bind(&SMTLIBParser::mkConstraint, px::ref(*this), qi::_2, qi::_3, qi::_1)]
+			|	(qi::lit("as")[qi::_pass = false] > symbol > symbol)
+			|	(qi::lit("not") > formula[qi::_val = px::bind(&newNegation, qi::_1)])
+			|	((qi::lit("implies") | "=>") > formula > formula)[qi::_val = px::bind(newImplication, qi::_1, qi::_2)]
+			|	(qi::lit("let")[px::bind(&SMTLIBParser::pushVariableStack, px::ref(*this))]
+				> ("(" > bindlist > ")" > formula)[px::bind(&SMTLIBParser::popVariableStack, px::ref(*this)), qi::_val = qi::_1])
 			|	("exists" > bindlist > formula)
 			|	("forall" > bindlist > formula)
-			|	("ite" >> (formula >> formula >> formula)[_val = px::bind(&newIte, qi::_1, qi::_2, qi::_3)])
-			|	(("!" > formula > *attribute)[px::bind(&annotateFormula, qi::_1, qi::_2), _val = qi::_1])
+			|	("ite" >> (formula >> formula >> formula)[qi::_val = px::bind(&newIte, qi::_1, qi::_2, qi::_3)])
+			|	(("!" > formula > *attribute)[px::bind(&annotateFormula, qi::_1, qi::_2), qi::_val = qi::_1])
 			|	((funmap_bool >> fun_arguments)[qi::_val = px::bind(&applyBooleanFunction, qi::_1, qi::_2, std::bind(&InstructionHandler::error, this->handler))])
 	;
 	formula_op.name("formula operation");
 
 	polynomial_op = op_theory >> +polynomial;
 	polynomial_op.name("polynomial operation");
-	polynomial_ite = lit("ite") >> (formula >> polynomial >> polynomial)[_val = px::bind(&SMTLIBParser::mkIteInExpr, px::ref(*this), qi::_1, qi::_2, qi::_3)];
+	polynomial_ite = qi::lit("ite") >> (formula >> polynomial >> polynomial)[qi::_val = px::bind(&SMTLIBParser::mkIteInExpr, px::ref(*this), qi::_1, qi::_2, qi::_3)];
 	polynomial_ite.name("polynomial if-then-else");
 	polynomial_fun = (funmap_theory >> fun_arguments)[qi::_val = px::bind(&applyTheoryFunction, qi::_1, qi::_2, std::bind(&InstructionHandler::error, this->handler))];
 	polynomial_fun.name("theory function");
@@ -150,7 +150,6 @@ bool SMTLIBParser::parse(std::istream& in, const std::string& filename) {
 	BaseIteratorType basebegin(in);
 	Iterator begin(basebegin);
 	Iterator end;
-	//Skipper skipper = SKIPPER;
 	return qi::phrase_parse(begin, end, main, skipper);
 }
 
