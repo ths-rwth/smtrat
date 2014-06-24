@@ -217,7 +217,7 @@ namespace vs
                                  DisjunctionOfConstraintConjunctions& _result,
                                  bool _accordingPaper )
     {
-        if( _q.nrTerms() > MAX_NUM_OF_TERMS || _r.nrTerms() > MAX_NUM_OF_TERMS )
+        if( _q.nrTerms() > MAX_NUM_OF_TERMS || _r.nrTerms() > MAX_NUM_OF_TERMS || _radicand.nrTerms() > MAX_NUM_OF_TERMS )
             return false;
         smtrat::Polynomial lhs = _q.pow( 2 ) - _r.pow( 2 ) * _radicand;
         if( _accordingPaper )
@@ -258,7 +258,7 @@ namespace vs
                                   DisjunctionOfConstraintConjunctions& _result,
                                   bool _accordingPaper )
     {
-        if( _q.nrTerms() > MAX_NUM_OF_TERMS || _r.nrTerms() > MAX_NUM_OF_TERMS )
+        if( _q.nrTerms() > MAX_NUM_OF_TERMS || _r.nrTerms() > MAX_NUM_OF_TERMS || _radicand.nrTerms() > MAX_NUM_OF_TERMS )
             return false;
         smtrat::Polynomial lhs = _q.pow( 2 ) - _r.pow( 2 ) * _radicand;
         if( _accordingPaper )
@@ -293,7 +293,7 @@ namespace vs
                                    DisjunctionOfConstraintConjunctions& _result,
                                    bool _accordingPaper )
     {
-        if( _q.nrTerms() > MAX_NUM_OF_TERMS || _r.nrTerms() > MAX_NUM_OF_TERMS )
+        if( _q.nrTerms() > MAX_NUM_OF_TERMS || _r.nrTerms() > MAX_NUM_OF_TERMS || _radicand.nrTerms() > MAX_NUM_OF_TERMS )
             return false;
         smtrat::Polynomial lhs = _q.pow( 2 ) - _r.pow( 2 ) * _radicand;
         if( _accordingPaper )
@@ -356,7 +356,7 @@ namespace vs
                                   DisjunctionOfConstraintConjunctions& _result,
                                   bool _accordingPaper )
     {
-        if( _q.nrTerms() > MAX_NUM_OF_TERMS || _r.nrTerms() > MAX_NUM_OF_TERMS )
+        if( _q.nrTerms() > MAX_NUM_OF_TERMS || _r.nrTerms() > MAX_NUM_OF_TERMS || _radicand.nrTerms() > MAX_NUM_OF_TERMS )
             return false;
         smtrat::Polynomial lhs = _q.pow( 2 ) - _r.pow( 2 ) * _radicand;
         if( _accordingPaper )

@@ -1,47 +1,22 @@
 /**
- * @file Common.h
+ * @file VariantMap.h
  * @author Gereon Kremer <gereon.kremer@cs.rwth-aachen.de>
  */
 
 #pragma once
 
 #include <cxxabi.h>
-#include <iostream>
-#include <map>
-#include <typeinfo>
-
-#define BOOST_SPIRIT_USE_PHOENIX_V3
 #include <boost/variant.hpp>
-#include <boost/spirit/include/qi.hpp>
-#include <boost/spirit/include/support_line_pos_iterator.hpp>
-
-#include "../../lib/Common.h"
 
 namespace smtrat {
-namespace parser {
-	
-namespace spirit = boost::spirit;
-namespace qi = boost::spirit::qi;
-namespace px = boost::phoenix;
 
-typedef boost::spirit::istream_iterator BaseIteratorType;
-typedef boost::spirit::line_pos_iterator<BaseIteratorType> PositionIteratorType;
-typedef PositionIteratorType Iterator;
-#define SKIPPER (qi::space | qi::lit(";") >> *(qi::char_ - qi::eol) >> qi::eol)
-typedef BOOST_TYPEOF(SKIPPER) Skipper;
-
-typedef boost::variant<bool, std::string, Rational, unsigned, boost::spirit::qi::unused_type> Value;
-inline std::ostream& operator<<(std::ostream& os, const Value& value) {
-	if (value.which() == 0) {
-		return os << std::boolalpha << boost::get<bool>(value);
-	} else {
-		return boost::operator<<(os, value);
-	}
-}
-typedef std::pair<std::string, Value> Attribute;
+template <class T> struct is_variant : std::false_type {};
+template <class... U> struct is_variant<boost::variant<U...>> : std::true_type {};
+template <class... U> struct is_variant<const boost::variant<U...>> : std::true_type {};
 
 template<typename Key, typename Value>
 class VariantMap : public std::map<Key, Value> {
+	static_assert(is_variant<Value>::value, "VariantMap is designed for Values of type boost::variant only.");
 private:
 	std::string demangle(const char* t) const {
 		int status;
@@ -74,5 +49,4 @@ public:
 	}
 };
 
-}
 }

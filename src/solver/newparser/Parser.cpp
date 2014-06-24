@@ -3,6 +3,7 @@
 #include <cassert>
 #include <iostream>
 #include <limits>
+#include <set>
 
 #include "../../lib/ConstraintPool.h"
 #include "../../lib/Formula.h"
@@ -42,7 +43,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 	symlist = *symbol;
 	symlist.name("symbol list");
 
-	bindlist = +(lit("(") > binding > lit(")"));
+	bindlist = +(qi::lit("(") > binding > qi::lit(")"));
 	bindlist.name("binding list");
 	binding = symbol[qi::_a = qi::_1] > (
 			polynomial[px::bind(&SMTLIBParser::addTheoryBinding, px::ref(*this), qi::_a, qi::_1)]
@@ -59,61 +60,61 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 	fun_arguments.name("function arguments");
 	
 	cmd = "(" > (
-			(lit("assert") > formula > ")")[px::bind(&SMTLIBParser::add, px::ref(*this), qi::_1)]
-		|	(lit("check-sat") > ")")[px::bind(&SMTLIBParser::check, px::ref(*this))]
-		|	(lit("declare-const") > symbol > domain > ")")[px::bind(&SMTLIBParser::declareConst, px::ref(*this), qi::_1, qi::_2)]
-		|	(lit("declare-fun") > symbol > "(" > *domain > ")" > domain > ")")[px::bind(&SMTLIBParser::declareFun, px::ref(*this), qi::_1, qi::_2, qi::_3)]
-		|	(lit("declare-sort") > symbol > integral > ")")[px::bind(&SMTLIBParser::declareSort, px::ref(*this), qi::_1, qi::_2)]
-		|	(lit("define-fun") > fun_definition > ")")
-		|	(lit("define-sort") > symbol > "(" > symlist > ")" > symbol > ")")[px::bind(&SMTLIBParser::defineSort, px::ref(*this), qi::_1, qi::_2, qi::_3)]
-		|	(lit("exit") > ")")[px::bind(&SMTLIBParser::exit, px::ref(*this))]
-		|	(lit("get-assertions") > ")")[px::bind(&SMTLIBParser::getAssertions, px::ref(*this))]
-		|	(lit("get-assignment") > ")")[px::bind(&SMTLIBParser::getAssignment, px::ref(*this))]
-		|	(lit("get-info") > key > ")")[px::bind(&SMTLIBParser::getInfo, px::ref(*this), qi::_1)]
-		|	(lit("get-option") > key > ")")[px::bind(&SMTLIBParser::getOption, px::ref(*this), qi::_1)]
-		|	(lit("get-proof") > ")")[px::bind(&SMTLIBParser::getProof, px::ref(*this))]
-		|	(lit("get-unsat-core") > ")")[px::bind(&SMTLIBParser::getUnsatCore, px::ref(*this))]
-		|	(lit("get-value") > *var > ")")[px::bind(&SMTLIBParser::getValue, px::ref(*this), qi::_1)]
-		|	(lit("pop") > integral > ")")[px::bind(&SMTLIBParser::pop, px::ref(*this), qi::_1)]
-		|	(lit("push") > integral > ")")[px::bind(&SMTLIBParser::push, px::ref(*this), qi::_1)]
-		|	(lit("set-info") > key > value > ")")[px::bind(&SMTLIBParser::setInfo, px::ref(*this), qi::_1, qi::_2)]
-		|	(lit("set-logic") > logic > ")")[px::bind(&SMTLIBParser::setLogic, px::ref(*this), qi::_1)]
-		|	(lit("set-option") > key > value > ")")[px::bind(&SMTLIBParser::setOption, px::ref(*this), qi::_1, qi::_2)]
+			(qi::lit("assert") > formula > ")")[px::bind(&SMTLIBParser::add, px::ref(*this), qi::_1)]
+		|	(qi::lit("check-sat") > ")")[px::bind(&SMTLIBParser::check, px::ref(*this))]
+		|	(qi::lit("declare-const") > symbol > domain > ")")[px::bind(&SMTLIBParser::declareConst, px::ref(*this), qi::_1, qi::_2)]
+		|	(qi::lit("declare-fun") > symbol > "(" > *domain > ")" > domain > ")")[px::bind(&SMTLIBParser::declareFun, px::ref(*this), qi::_1, qi::_2, qi::_3)]
+		|	(qi::lit("declare-sort") > symbol > integral > ")")[px::bind(&SMTLIBParser::declareSort, px::ref(*this), qi::_1, qi::_2)]
+		|	(qi::lit("define-fun") > fun_definition > ")")
+		|	(qi::lit("define-sort") > symbol > "(" > symlist > ")" > symbol > ")")[px::bind(&SMTLIBParser::defineSort, px::ref(*this), qi::_1, qi::_2, qi::_3)]
+		|	(qi::lit("exit") > ")")[px::bind(&SMTLIBParser::exit, px::ref(*this))]
+		|	(qi::lit("get-assertions") > ")")[px::bind(&SMTLIBParser::getAssertions, px::ref(*this))]
+		|	(qi::lit("get-assignment") > ")")[px::bind(&SMTLIBParser::getAssignment, px::ref(*this))]
+		|	(qi::lit("get-info") > key > ")")[px::bind(&SMTLIBParser::getInfo, px::ref(*this), qi::_1)]
+		|	(qi::lit("get-option") > key > ")")[px::bind(&SMTLIBParser::getOption, px::ref(*this), qi::_1)]
+		|	(qi::lit("get-proof") > ")")[px::bind(&SMTLIBParser::getProof, px::ref(*this))]
+		|	(qi::lit("get-unsat-core") > ")")[px::bind(&SMTLIBParser::getUnsatCore, px::ref(*this))]
+		|	(qi::lit("get-value") > *var > ")")[px::bind(&SMTLIBParser::getValue, px::ref(*this), qi::_1)]
+		|	(qi::lit("pop") > integral > ")")[px::bind(&SMTLIBParser::pop, px::ref(*this), qi::_1)]
+		|	(qi::lit("push") > integral > ")")[px::bind(&SMTLIBParser::push, px::ref(*this), qi::_1)]
+		|	(qi::lit("set-info") > key > value > ")")[px::bind(&SMTLIBParser::setInfo, px::ref(*this), qi::_1, qi::_2)]
+		|	(qi::lit("set-logic") > logic > ")")[px::bind(&SMTLIBParser::setLogic, px::ref(*this), qi::_1)]
+		|	(qi::lit("set-option") > key > value > ")")[px::bind(&SMTLIBParser::setOption, px::ref(*this), qi::_1, qi::_2)]
 	);
 	cmd.name("command");
 
 	formula = 
-			(bind_bool >> boundary)[_val = qi::_1]
-		|	(var_bool >> boundary)[_val = px::bind(&SMTLIBParser::mkBoolean, px::ref(*this), qi::_1)]
-		|	lit("true")[_val = px::bind(&trueFormula)]
-		|	lit("false")[_val = px::bind(&falseFormula)]
-		|	("(" >> formula_op >> ")")[_val = qi::_1]
+			(bind_bool >> boundary)[qi::_val = qi::_1]
+		|	(var_bool >> boundary)[qi::_val = px::bind(&SMTLIBParser::mkBoolean, px::ref(*this), qi::_1)]
+		|	qi::lit("true")[qi::_val = px::bind(&trueFormula)]
+		|	qi::lit("false")[qi::_val = px::bind(&falseFormula)]
+		|	("(" >> formula_op >> ")")[qi::_val = qi::_1]
 	;
 	formula.name("formula");
 	
 	formula_list = +formula;
 	formula_list.name("formula list");
 	formula_op =
-				((op_bool >> formula_list)[_val = px::bind(&SMTLIBParser::mkFormula, px::ref(*this), qi::_1, qi::_2)])
-			|	(relation >> polynomial >> polynomial)[_val = px::bind(&SMTLIBParser::mkConstraint, px::ref(*this), qi::_2, qi::_3, qi::_1)]
-			|	(lit("as")[qi::_pass = false] > symbol > symbol)
-			|	(lit("not") > formula[_val = px::bind(&newNegation, qi::_1)])
-			|	((lit("implies") | "=>") > formula > formula)[_val = px::bind(newImplication, qi::_1, qi::_2)]
-			|	(lit("let")[px::bind(&SMTLIBParser::pushVariableStack, px::ref(*this))]
-				> ("(" > bindlist > ")" > formula)[px::bind(&SMTLIBParser::popVariableStack, px::ref(*this)), _val = qi::_1])
+				((op_bool >> formula_list)[qi::_val = px::bind(&SMTLIBParser::mkFormula, px::ref(*this), qi::_1, qi::_2)])
+			|	(relation >> polynomial >> polynomial)[qi::_val = px::bind(&SMTLIBParser::mkConstraint, px::ref(*this), qi::_2, qi::_3, qi::_1)]
+			|	(qi::lit("as")[qi::_pass = false] > symbol > symbol)
+			|	(qi::lit("not") > formula[qi::_val = px::bind(&newNegation, qi::_1)])
+			|	((qi::lit("implies") | "=>") > formula > formula)[qi::_val = px::bind(newImplication, qi::_1, qi::_2)]
+			|	(qi::lit("let")[px::bind(&SMTLIBParser::pushVariableStack, px::ref(*this))]
+				> ("(" > bindlist > ")" > formula)[px::bind(&SMTLIBParser::popVariableStack, px::ref(*this)), qi::_val = qi::_1])
 			|	("exists" > bindlist > formula)
 			|	("forall" > bindlist > formula)
-			|	("ite" >> (formula >> formula >> formula)[_val = px::bind(&newIte, qi::_1, qi::_2, qi::_3)])
-			|	(("!" > formula > *attribute)[px::bind(&annotateFormula, qi::_1, qi::_2), _val = qi::_1])
-			|	((funmap_bool >> fun_arguments)[qi::_val = px::bind(&SMTLIBParser::applyBooleanFunction, px::ref(*this), qi::_1, qi::_2)])
+			|	("ite" >> (formula >> formula >> formula)[qi::_val = px::bind(&newIte, qi::_1, qi::_2, qi::_3)])
+			|	(("!" > formula > *attribute)[px::bind(&annotateFormula, qi::_1, qi::_2), qi::_val = qi::_1])
+			|	((funmap_bool >> fun_arguments)[qi::_val = px::bind(&applyBooleanFunction, qi::_1, qi::_2, std::bind(&InstructionHandler::error, this->handler))])
 	;
 	formula_op.name("formula operation");
 
 	polynomial_op = op_theory >> +polynomial;
 	polynomial_op.name("polynomial operation");
-	polynomial_ite = lit("ite") >> (formula >> polynomial >> polynomial)[_val = px::bind(&SMTLIBParser::mkIteInExpr, px::ref(*this), qi::_1, qi::_2, qi::_3)];
+	polynomial_ite = qi::lit("ite") >> (formula >> polynomial >> polynomial)[qi::_val = px::bind(&SMTLIBParser::mkIteInExpr, px::ref(*this), qi::_1, qi::_2, qi::_3)];
 	polynomial_ite.name("polynomial if-then-else");
-	polynomial_fun = (funmap_theory >> fun_arguments)[qi::_val = px::bind(&SMTLIBParser::applyTheoryFunction, px::ref(*this), qi::_1, qi::_2)];
+	polynomial_fun = (funmap_theory >> fun_arguments)[qi::_val = px::bind(&applyTheoryFunction, qi::_1, qi::_2, std::bind(&InstructionHandler::error, this->handler))];
 	polynomial_fun.name("theory function");
 	polynomial =
 			(bind_theory >> boundary)
@@ -150,7 +151,6 @@ bool SMTLIBParser::parse(std::istream& in, const std::string& filename) {
 	BaseIteratorType basebegin(in);
 	Iterator begin(basebegin);
 	Iterator end;
-	Skipper skipper = SKIPPER;
 	return qi::phrase_parse(begin, end, main, skipper);
 }
 
@@ -308,7 +308,7 @@ void SMTLIBParser::push(const Rational& n) {
 	if (this->handler->printInstruction()) handler->regular() << "(push " << n << ")" << std::endl;
 	callHandler(&InstructionHandler::push, carl::toInt<unsigned>(n));
 }
-void SMTLIBParser::setInfo(const std::string& key, const Value& val) {
+void SMTLIBParser::setInfo(const std::string& key, const AttributeValue& val) {
 	if (this->handler->printInstruction()) handler->regular() << "(set-info :" << key << " " << val << ")" << std::endl;
 	callHandler(&InstructionHandler::setInfo, key, val);
 }
@@ -317,17 +317,21 @@ void SMTLIBParser::setLogic(const smtrat::Logic& l) {
 	if (this->handler->printInstruction()) handler->regular() << "(set-logic " << l << ")" << std::endl;
 	callHandler(&InstructionHandler::setLogic, l);
 }
-void SMTLIBParser::setOption(const std::string& key, const Value& val) {
+void SMTLIBParser::setOption(const std::string& key, const AttributeValue& val) {
 	if (this->handler->printInstruction()) handler->regular() << "(set-option " << key << " " << val << ")" << std::endl;
 	callHandler(&InstructionHandler::setOption, key, val);
 }
 
-#if 0
+#if 1
 
 const Formula* SMTLIBParser::mkConstraint(const Polynomial& lhs, const Polynomial& rhs, Relation rel) {
 	Polynomial p = lhs - rhs;
-	///@todo check if variables from the ites vanish in the variables
-	std::size_t n = this->mTheoryItes.size();
+	std::set<carl::Variable> pVars = p.gatherVariables();
+	std::set<carl::Variable> vars;
+	for (auto it: this->mTheoryItes) {
+		if (pVars.count(it.first) > 0) vars.insert(it.first);
+	}
+	std::size_t n = vars.size();
 	if (n == 0) {
 		// There are no ITEs.
 		const Constraint* cons = newConstraint(p, rel);
@@ -339,23 +343,23 @@ const Formula* SMTLIBParser::mkConstraint(const Polynomial& lhs, const Polynomia
 		// 2^n Formulas collecting the conditions.
 		std::vector<PointerSet<Formula>> conds(1 << n);
 		unsigned repeat = 1 << (n-1);
-		for (auto it: this->mTheoryItes) {
+		for (auto v: vars) {
+			auto t = this->mTheoryItes[v];
 			std::vector<Polynomial> ptmp;
 			for (auto& p: polys) {
 				// Substitute both possibilities for this ITE.
-				ptmp.push_back(p.substitute(it.first, std::get<1>(it.second)));
-				ptmp.push_back(p.substitute(it.first, std::get<2>(it.second)));
+				ptmp.push_back(p.substitute(v, std::get<1>(t)));
+				ptmp.push_back(p.substitute(v, std::get<2>(t)));
 			}
 			std::swap(polys, ptmp);
 			// Add the conditions at the appropriate positions.
-			const Formula* f[2]= { std::get<0>(it.second), newNegation(std::get<0>(it.second)) };
+			const Formula* f[2]= { std::get<0>(t), newNegation(std::get<0>(t)) };
 			for (unsigned i = 0; i < (1 << n); i++) {
 				conds[i].insert(f[0]);
 				if ((i+1) % repeat == 0) std::swap(f[0], f[1]);
 			}
 			repeat /= 2;
 		}
-		mTheoryItes.clear();
 		// Now combine everything: (and (=> (and conditions) constraint) ...)
 		PointerSet<Formula> subs;
 		for (unsigned i = 0; i < polys.size(); i++) {
@@ -365,15 +369,14 @@ const Formula* SMTLIBParser::mkConstraint(const Polynomial& lhs, const Polynomia
 		return res;
 	} else {
 		// There are many ITEs, we keep the auxiliary variables.
-		for (auto it: this->mTheoryItes) {
-			carl::Variable v = it.first;
-			const Formula* consThen = newFormula(newConstraint(Polynomial(v) - std::get<1>(it.second), Relation::EQ));
-			const Formula* consElse = newFormula(newConstraint(Polynomial(v) - std::get<2>(it.second), Relation::EQ));
+		for (auto v: vars) {
+			auto t = this->mTheoryItes[v];
+			const Formula* consThen = newFormula(newConstraint(Polynomial(v) - std::get<1>(t), Relation::EQ));
+			const Formula* consElse = newFormula(newConstraint(Polynomial(v) - std::get<2>(t), Relation::EQ));
 
-			mTheoryIteBindings.emplace(newImplication(std::get<0>(it.second), consThen));
-			mTheoryIteBindings.emplace(newImplication(newNegation(std::get<0>(it.second)), consElse));
+			mTheoryIteBindings.emplace(newImplication(std::get<0>(t), consThen));
+			mTheoryIteBindings.emplace(newImplication(newNegation(std::get<0>(t)), consElse));
 		}
-		mTheoryItes.clear();
 		const Constraint* cons = newConstraint(p, rel);
 		return newFormula(cons);
 	}
@@ -421,43 +424,6 @@ const smtrat::Formula* SMTLIBParser::mkFormula( smtrat::Type type, PointerSet<Fo
 	assert(type == smtrat::AND || type == smtrat::OR || type == smtrat::XOR || type == smtrat::IFF);
 	auto f =  newFormula(type, _subformulas);
 	return f;
-}
-
-bool SMTLIBParser::checkArguments(const std::string& name, const std::vector<carl::Variable>& types, const Arguments& args, std::map<carl::Variable, const Formula*>& boolAssignments, std::map<carl::Variable, Polynomial>& theoryAssignments) const {
-	if (types.size() != args.size()) {
-		this->handler->error() << "The number of arguments for \"" << name << "\" does not match its declaration.";
-		return false;
-	}
-	for (unsigned id = 0; id < types.size(); id++) {
-		ExpressionType type = TypeOfTerm::get(types[id]);
-		if (type != TypeOfTerm::get(args[id])) {
-			this->handler->error() << "The type of argument " << (id+1) << " for \"" << name << "\" did not match the declaration.";
-			return false;
-		}
-		if (type == BOOLEAN) {
-			boolAssignments[types[id]] = boost::get<const Formula*>(args[id]);
-		} else {
-			theoryAssignments[types[id]] = boost::get<Polynomial>(args[id]);
-		}
-	}
-	return true;
-}
-
-const smtrat::Formula* SMTLIBParser::applyBooleanFunction(const BooleanFunction& f, const Arguments& args) const {
-	std::map<carl::Variable, const Formula*> boolAssignments;
-	std::map<carl::Variable, Polynomial> theoryAssignments;
-	if (!this->checkArguments(std::get<0>(f), std::get<1>(f), args, boolAssignments, theoryAssignments)) {
-		return nullptr;
-	}
-	return std::get<2>(f)->substitute(boolAssignments, theoryAssignments);
-}
-Polynomial SMTLIBParser::applyTheoryFunction(const TheoryFunction& f, const Arguments& args) const {
-	std::map<carl::Variable, const Formula*> boolAssignments;
-	std::map<carl::Variable, Polynomial> theoryAssignments;
-	if (!this->checkArguments(std::get<0>(f), std::get<1>(f), args, boolAssignments, theoryAssignments)) {
-		return smtrat::Polynomial();
-	}
-	return std::get<2>(f).substitute(theoryAssignments);
 }
 
 carl::Variable SMTLIBParser::addVariableBinding(const std::pair<std::string, carl::VariableType>& b) {
