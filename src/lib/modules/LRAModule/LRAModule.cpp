@@ -1572,7 +1572,7 @@ Return:
                 return maybeGomoryCut( branch_var->second, ass_ );
             }
             PointerSet<Formula> premises;
-            mTableau.collect_premises( branch_var->second , premises  );                
+            mTableau.collect_premises( branch_var->second , premises  ); 
             branchAt( branch_var->second->expression(), ass_, premises );
             return true;
         }
@@ -1590,7 +1590,6 @@ Return:
     {
         EvalRationalMap _rMap = getRationalModel();
         auto map_iterator = _rMap.begin();
-        Rational ass_;
         for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
         {
             assert( var->first == map_iterator->first );
@@ -1599,11 +1598,11 @@ Return:
             {
                 if( gc_support )
                 {
-                    return maybeGomoryCut( var->second, ass_ );
+                    return maybeGomoryCut( var->second, ass );
                 }
                 PointerSet<Formula> premises;
-                mTableau.collect_premises( var->second, premises  );                
-                branchAt( var->second->expression(), ass_, premises );
+                mTableau.collect_premises( var->second, premises  ); 
+                branchAt( var->second->expression(), ass, premises );
                 return true;           
             }
             ++map_iterator;
