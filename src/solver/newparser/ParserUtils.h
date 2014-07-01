@@ -33,6 +33,13 @@ inline std::ostream& operator<<(std::ostream& os, const AttributeValue& value) {
 	}
 }
 
+template<typename T>
+std::ostream& operator<<(std::ostream& os, const qi::symbols<char, T>& sym) {
+	os << "Symbols " << sym.name() << std::endl;
+	sym.for_each([&](const std::string& key, const T& val){ os << "\t" << key << " -> " << val << std::endl; });
+	return os;
+}
+
 struct TypeOfTerm : public boost::static_visitor<ExpressionType> {
 	ExpressionType operator()(const Formula*) const { return BOOLEAN; }
 	ExpressionType operator()(const Polynomial&) const { return THEORY; }
