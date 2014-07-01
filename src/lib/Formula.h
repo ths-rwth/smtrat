@@ -45,7 +45,7 @@
 
 namespace smtrat
 {
-    enum Type { AND, OR, NOT, IFF, XOR, IMPLIES, ITE, BOOL, CONSTRAINT, TTRUE, FFALSE };
+    enum Type { AND, OR, NOT, IFF, XOR, IMPLIES, ITE, BOOL, CONSTRAINT, TTRUE, FFALSE, EXISTS, FORALL };
     
     class Formula
     {
@@ -76,6 +76,14 @@ namespace smtrat
                     mpCondition( _condition ), mpThen( _then ), mpElse( _else ) {}
             };
 
+			struct QuantifierContent
+			{
+				std::vector<carl::Variable> mVariables;
+				const Formula* mpFormula;
+				QuantifierContent(const std::vector<carl::Variable>&& vars, const Formula* formula):
+					mVariables(vars), mpFormula(formula) {}
+			};
+
             // Members.
 
             /// The deduction flag, which indicates, that this formula g is a direct sub-formula of
@@ -97,6 +105,7 @@ namespace smtrat
                 const Formula*       mpSubformula;
                 IMPLIESContent*      mpImpliesContent;
                 ITEContent*          mpIteContent;
+				QuantifierContent*	 mpQuantifierContent;
                 PointerSet<Formula>* mpSubformulas;
                 const Constraint*    mpConstraint;
                 carl::Variable       mBoolean;
@@ -144,6 +153,14 @@ namespace smtrat
              * @param _else The second case of the ITE expression to create.
              */
             Formula( const Formula* _condition, const Formula* _then, const Formula* _else );
+
+			/**
+			 * Constructs a quantifier expression: (exists (vars) term) or (forall (vars) term)
+			 * @param _type The type of the quantifier to construct.
+			 * @param _vars The variables that are bound.
+			 * @param _term The term in which the variables are bound.
+			 */
+			Formula(const Type _type, const std::vector<carl::Variable>&& _vars, const Formula* _term);
             
             /**
              * Constructs the formula of the given type. 

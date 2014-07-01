@@ -123,6 +123,20 @@ namespace smtrat
     {
         mpIteContent = new ITEContent( _conditon, _then, _else );
     }
+
+	Formula::Formula(const Type _type, const std::vector<carl::Variable>&& _vars, const Formula* _term):
+		mDeducted( false ),
+		///@todo Construct reasonable hash
+		mHash( _term->getHash() ),
+		mId( 0 ),
+		mActivity( 0 ),
+		mDifficulty( 0 ),
+		mType( _type ),
+		mProperties()
+	{
+		assert(_type == EXISTS || _type == FORALL);
+		mpQuantifierContent = new QuantifierContent(std::move(_vars), _term);
+	}
     
     Formula::Formula( Type _type, PointerSet<Formula>&& _subformulas ):
         mDeducted( false ),
@@ -379,6 +393,18 @@ namespace smtrat
                 }
                 return result;
             }
+			case EXISTS:
+			{
+				///@todo do something here
+				return 2;
+				break;
+			}
+			case FORALL:
+			{
+				///@todo do something here
+				return 2;
+				break;
+			}
             default:
             {
                 assert( false );
@@ -522,6 +548,16 @@ namespace smtrat
                 }
                 break;
             }
+			case EXISTS:
+			{
+				///@todo do something here
+				break;
+			}
+			case FORALL:
+			{
+				///@todo do something here
+				break;
+			}
             default:
             {
                 assert( false );
@@ -680,6 +716,26 @@ namespace smtrat
                 result += activity;
             return result;
         }
+		else if (mType == EXISTS)
+		{
+			string result = _init + "(exists ";
+			for (auto v: this->mpQuantifierContent->mVariables) {
+				result += constraintPool().getVariableName(v, _friendlyNames) + " ";
+			}
+			result += this->mpQuantifierContent->mpFormula->toString(_withActivity, _resolveUnequal, _init, _oneline, _infix, _friendlyNames);
+			result += ")";
+			return result;
+		}
+		else if (mType == FORALL)
+		{
+			string result = _init + "(forall ";
+			for (auto v: this->mpQuantifierContent->mVariables) {
+				result += constraintPool().getVariableName(v, _friendlyNames) + " ";
+			}
+			result += this->mpQuantifierContent->mpFormula->toString(_withActivity, _resolveUnequal, _init, _oneline, _infix, _friendlyNames);
+			result += ")";
+			return result;
+		}
         assert( mType == AND || mType == OR || mType == IFF || mType == XOR );
         string stringOfType = FormulaTypeToString( mType );
         string result = _init + "(";
@@ -965,6 +1021,10 @@ namespace smtrat
             case OR: // (not (or phi_1 .. phi_n))  ->  (and (not phi_1) .. (not phi_n))
                 newType = AND;
                 break;
+			case EXISTS: // (not (exists (vars) phi)) -> (forall (vars) (not phi))
+				newType = FORALL;
+			case FORALL: // (not (forall (vars) phi)) -> (exists (vars) (not phi))
+				newType = EXISTS;
             default:
                 assert( false );
                 cerr << "Unexpected type of formula!" << endl;
@@ -1266,6 +1326,16 @@ namespace smtrat
                                 phis.push_back( newFormula( AND, newNegation( lhs ), rhs ) );
                                 break;
                             }
+							case EXISTS:
+							{
+								///@todo do something here
+								break;
+							}
+							case FORALL:
+							{
+								///@todo do something here
+								break;
+							}
                             default:
                             {
                                 assert( false );
@@ -1291,6 +1361,16 @@ namespace smtrat
                     }
                     break;
                 }
+				case EXISTS:
+				{
+					///@todo do something here
+					break;
+				}
+				case FORALL:
+				{
+					///@todo do something here
+					break;
+				}
                 default:
                 {
                     assert( false );
