@@ -24,6 +24,7 @@
 #include <boost/spirit/include/phoenix_statement.hpp>
 
 #include "../../lib/Common.h"
+#include "../../lib/ConstraintPool.h"
 #include "../../lib/Formula.h"
 #include "../../lib/FormulaPool.h"
 #include "ParserUtils.h"
@@ -76,6 +77,7 @@ public:
 	
 	// Variables
 	rule<carl::Variable> var;
+	rule<carl::Variable> quantifiedVar;
 	rule<std::pair<std::string, carl::VariableType>> sortedVar;
 	rule<std::string> key;
 	rule<Attribute> attribute;
@@ -150,16 +152,47 @@ private:
 	smtrat::Logic mLogic;
 	PointerSet<Formula> mTheoryIteBindings;
 	std::map<carl::Variable, std::tuple<const Formula*, Polynomial, Polynomial>> mTheoryItes;
-	std::stack<std::list<std::pair<std::string, carl::VariableType>>> mVariableStack;
-	
-	bool isSymbolFree(const std::string& name) {
-		if (name == "true" || name == "false") this->handler->error() << "\"" << name << "\" is a reserved keyword.";
-		else if (this->var_bool.sym.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a boolean variable.";
-		else if (this->var_theory.sym.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a theory variable.";
-		else if (this->bind_bool.sym.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a boolean binding.";
-		else if (this->bind_theory.sym.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a theory binding.";
-		else return true;
-		return false;
+
+	struct Scope {
+	private:
+		qi::symbols<char, carl::Variable> var_bool;
+		qi::symbols<char, carl::Variable> var_theory;
+		qi::symbols<char, const Formula*> bind_bool;
+		qi::symbols<char, Polynomial> bind_theory;
+	public:
+		Scope(const SMTLIBParser& parser):
+			var_bool(parser.var_bool.sym),
+			var_theory(parser.var_theory.sym),
+			bind_bool(parser.bind_bool.sym),
+			bind_theory(parser.bind_theory.sym)
+		{}
+		void restore(SMTLIBParser& parser) {
+			parser.var_bool.sym = this->var_bool;
+			parser.var_theory.sym = this->var_theory;
+			parser.bind_bool.sym = this->bind_bool;
+			parser.bind_theory.sym = this->bind_theory;
+		}
+	};
+
+	std::stack<Scope> mScopeStack;
+
+	bool isSymbolFree(const std::string& name, bool output = true) {
+		if (output) {
+			if (name == "true" || name == "false") this->handler->error() << "\"" << name << "\" is a reserved keyword.";
+			else if (this->var_bool.sym.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a boolean variable.";
+			else if (this->var_theory.sym.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a theory variable.";
+			else if (this->bind_bool.sym.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a boolean binding.";
+			else if (this->bind_theory.sym.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a theory binding.";
+			else return true;
+			return false;
+		} else {
+			if (name == "true" || name == "false") return false;
+			else if (this->var_bool.sym.find(name) != nullptr) return false;
+			else if (this->var_theory.sym.find(name) != nullptr) return false;
+			else if (this->bind_bool.sym.find(name) != nullptr) return false;
+			else if (this->bind_theory.sym.find(name) != nullptr) return false;
+			else return true;
+		}
 	}
 			
 	const Formula* mkBoolean(const carl::Variable& var) {
@@ -169,19 +202,49 @@ private:
 	Polynomial mkIteInExpr(const Formula* _condition, Polynomial& _then, Polynomial& _else);
 	const smtrat::Formula* mkFormula(smtrat::Type _type, PointerSet<Formula>& _subformulas);
 	
-	void pushVariableStack() {
-		mVariableStack.emplace();
+	void pushScope() {
+		mScopeStack.emplace(*this);
 	}
-	void popVariableStack()
-	{
-		while (!mVariableStack.top().empty()) {
-			if (mVariableStack.top().back().second == carl::VariableType::VT_BOOL) this->bind_bool.sym.remove(mVariableStack.top().back().first);
-			else this->bind_theory.sym.remove(mVariableStack.top().back().first);
-			mVariableStack.top().pop_back();
-		}
-		mVariableStack.pop();
+	void popScope() {
+		mScopeStack.top().restore(*this);
+		mScopeStack.pop();
 	}
 	
+	carl::Variable addQuantifiedVariable(const std::string& _name, const boost::optional<carl::VariableType>& type) {
+		std::string name = _name;
+		for (unsigned id = 1; !this->isSymbolFree(name, false); id++) {
+			name = _name + "_q" + std::to_string(id);
+		}
+		if (type.is_initialized()) {
+			switch (TypeOfTerm::get(type.get())) {
+				case BOOLEAN: {
+					carl::Variable v = newBooleanVariable(name);
+					this->var_bool.sym.remove(_name);
+					this->var_bool.sym.add(_name, v);
+					return v;
+				}
+				case THEORY: {
+					carl::Variable v = newArithmeticVariable(name, type.get());
+					this->var_theory.sym.remove(_name);
+					this->var_theory.sym.add(_name, v);
+					return v;
+				}
+			}
+		} else if (this->var_bool.sym.find(_name) != nullptr) {
+			carl::Variable v = newBooleanVariable(name);
+			this->var_bool.sym.remove(_name);
+			this->var_bool.sym.add(_name, v);
+			return v;
+		} else if (this->var_theory.sym.find(_name) != nullptr) {
+			carl::Variable v = newArithmeticVariable(name, this->var_theory.sym.at(_name).getType());
+			this->var_theory.sym.remove(_name);
+			this->var_theory.sym.add(_name, v);
+			return v;
+		} else {
+			this->handler->error() << "Tried to quantify <" << _name << "> but no type could be inferred.";
+			return carl::Variable::NO_VARIABLE;
+		}
+	}
 	carl::Variable addVariableBinding(const std::pair<std::string, carl::VariableType>&);
 	void addTheoryBinding(std::string& _varName, Polynomial& _polynomial);
 	void addBooleanBinding(std::string&, const Formula*);
