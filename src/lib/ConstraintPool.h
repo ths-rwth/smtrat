@@ -400,7 +400,16 @@ namespace smtrat
              * @return The constructed constraint.
              */
             const Constraint* newConstraint( const Polynomial& _lhs, const Relation _rel );
-            
+
+			/**
+			 * Creates an variable.
+			 * @param _name The external name of the variable to construct.
+			 * @param _domain The domain of the variable to construct.
+			 * @param _parsed A special flag indicating whether this variable is constructed during parsing.
+			 * @return A pair of the internal name of the variable and the variable as an expression.
+			 */
+			carl::Variable newVariable( const std::string& _name, carl::VariableType _domain, bool _parsed = false );
+
             /**
              * Creates an arithmetic variable.
              * @param _name The external name of the variable to construct.
@@ -464,6 +473,14 @@ namespace smtrat
       * @return The constructed constraint.
       */
      const Constraint* newConstraint( const Polynomial& _lhs, const Relation _rel );
+
+	/**
+	 * Constructs a new variable of the given domain.
+	 * @param _name The intended name of the variable.
+	 * @param _domain The domain of the variable.
+	 * @return The constructed variable.
+	 */
+	carl::Variable newVariable( const std::string& _name, carl::VariableType _domain, bool _parsed = false );
 
      /**
       * Constructs a new real variable.

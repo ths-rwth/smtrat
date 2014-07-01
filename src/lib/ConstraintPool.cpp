@@ -129,6 +129,15 @@ namespace smtrat
         return result;
     }
 
+	carl::Variable ConstraintPool::newVariable( const string& _name, carl::VariableType _domain, bool _parsed )
+	{
+		if (_domain == carl::VariableType::VT_BOOL) {
+			return newBooleanVariable(_name, _parsed);
+		} else {
+			return newArithmeticVariable(_name, _domain, _parsed);
+		}
+	}
+
     carl::Variable ConstraintPool::newArithmeticVariable( const string& _name, carl::VariableType _domain, bool _parsed )
     {
         assert( !_name.empty() );
@@ -323,6 +332,11 @@ namespace smtrat
     {
         return ConstraintPool::getInstance().newConstraint( _lhs, _rel );
     }
+
+	carl::Variable newVariable( const std::string& _name, carl::VariableType _domain, bool _parsed )
+	{
+		return ConstraintPool::getInstance().newVariable( _name, _domain, _parsed );
+	}
 
     carl::Variable newRealVariable( const std::string& _name )
     {
