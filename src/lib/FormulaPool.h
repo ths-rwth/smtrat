@@ -171,34 +171,11 @@ namespace smtrat
 			 * @param _term
 			 * @return
 			 */
-			const Formula* newQuantifier(const Type _type, const std::vector<carl::Variable>&& _vars, const Formula* _term)
+			const Formula* newQuantifier(Type _type, const std::vector<carl::Variable>&& _vars, const Formula* _term)
 			{
-				Variables varsInTerm;
-				_term->collectVariables(varsInTerm, carl::VariableType::VT_BOOL, true);
-				std::vector<carl::Variable> vars(_vars);
-				std::map<carl::Variable, const Formula*> sub1;
-				std::map<carl::Variable, const Formula*> sub2;
-				for (auto it = vars.begin(); it != vars.end();) {
-					if (it->getType() == carl::VariableType::VT_BOOL) {
-						// Variable is boolean
-						if (varsInTerm.count(*it) > 0) {
-							// Variable occurs in _term
-							sub1[*it] = trueFormula();
-							sub2[*it] = falseFormula();
-							if (_type == EXISTS) {
-								_term = newFormula(OR, _term->substitute({{*it, trueFormula()}}), _term->substitute(sub2));
-							} else if (_type == FORALL) {
-								_term = newFormula(AND, _term->substitute(sub1), _term->substitute(sub2));
-							}
-							sub1.clear();
-							sub2.clear();
-						}
-						it = vars.erase(it);
-					}
-					else it++;
-				}
-				if (vars.size() > 0) {
-					return addFormulaToPool(new Formula(_type, std::move(vars), _term));
+				assert(_type == Type::EXISTS || _type == Type::FORALL);
+				if (_vars.size() > 0) {
+					return addFormulaToPool(new Formula(_type, std::move(_vars), _term));
 				} else {
 					return _term;
 				}
@@ -333,7 +310,7 @@ namespace smtrat
     
     const Formula* newIte( const Formula* _condition, const Formula* _else, const Formula* _then );
 
-	const Formula* newQuantifier(const Type _type, const std::vector<carl::Variable>& _vars, const Formula* _term);
+	const Formula* newQuantifier( Type _type, const std::vector<carl::Variable>& _vars, const Formula* _term );
     
     const Formula* newFormula( Type _type, const Formula* _subformulaA, const Formula* _subformulaB );
     
