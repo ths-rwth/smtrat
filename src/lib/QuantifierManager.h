@@ -70,6 +70,16 @@ public:
 		return Type::EXISTS;
 	}
 
+	/**
+	 * Adds a variable that was has not been quantified explicitly.
+	 * Such a variable is assumed to be quantified existentially.
+	 * @param v Variable to add.
+	 */
+	void addUnquantifiedVariable(const carl::Variable& v) {
+		if (mData.empty()) mData.emplace_back();
+		mData.front().insert(v);
+	}
+
 	const QuantifiedVariables& quantifiers() const {
 		return mData;
 	}
