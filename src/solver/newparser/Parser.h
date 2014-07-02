@@ -194,13 +194,6 @@ private:
 			else return true;
 		}
 	}
-			
-	const Formula* mkBoolean(const carl::Variable& var) {
-        return newFormula(var);
-    }
-	const smtrat::Formula* mkConstraint(const smtrat::Polynomial&, const smtrat::Polynomial&, Relation);
-	Polynomial mkIteInExpr(const Formula* _condition, Polynomial& _then, Polynomial& _else);
-	const smtrat::Formula* mkFormula(smtrat::Type _type, PointerSet<Formula>& _subformulas);
 	
 	void pushScope() {
 		mScopeStack.emplace(*this);
@@ -209,42 +202,15 @@ private:
 		mScopeStack.top().restore(*this);
 		mScopeStack.pop();
 	}
+
+	const Formula* mkBoolean(const carl::Variable& var) {
+        return newFormula(var);
+    }
+	const Formula* mkConstraint(const Polynomial&, const Polynomial&, Relation);
+	Polynomial mkIteInExpr(const Formula* _condition, Polynomial& _then, Polynomial& _else);
+	const Formula* mkFormula(Type _type, PointerSet<Formula>& _subformulas);
 	
-	carl::Variable addQuantifiedVariable(const std::string& _name, const boost::optional<carl::VariableType>& type) {
-		std::string name = _name;
-		for (unsigned id = 1; !this->isSymbolFree(name, false); id++) {
-			name = _name + "_q" + std::to_string(id);
-		}
-		if (type.is_initialized()) {
-			switch (TypeOfTerm::get(type.get())) {
-				case BOOLEAN: {
-					carl::Variable v = newBooleanVariable(name);
-					this->var_bool.sym.remove(_name);
-					this->var_bool.sym.add(_name, v);
-					return v;
-				}
-				case THEORY: {
-					carl::Variable v = newArithmeticVariable(name, type.get());
-					this->var_theory.sym.remove(_name);
-					this->var_theory.sym.add(_name, v);
-					return v;
-				}
-			}
-		} else if (this->var_bool.sym.find(_name) != nullptr) {
-			carl::Variable v = newBooleanVariable(name);
-			this->var_bool.sym.remove(_name);
-			this->var_bool.sym.add(_name, v);
-			return v;
-		} else if (this->var_theory.sym.find(_name) != nullptr) {
-			carl::Variable v = newArithmeticVariable(name, this->var_theory.sym.at(_name).getType());
-			this->var_theory.sym.remove(_name);
-			this->var_theory.sym.add(_name, v);
-			return v;
-		} else {
-			this->handler->error() << "Tried to quantify <" << _name << "> but no type could be inferred.";
-			return carl::Variable::NO_VARIABLE;
-		}
-	}
+	carl::Variable addQuantifiedVariable(const std::string& _name, const boost::optional<carl::VariableType>& type);
 	carl::Variable addVariableBinding(const std::pair<std::string, carl::VariableType>&);
 	void addTheoryBinding(std::string& _varName, Polynomial& _polynomial);
 	void addBooleanBinding(std::string&, const Formula*);

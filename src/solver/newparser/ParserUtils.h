@@ -162,6 +162,7 @@ public:
 	}
 	virtual void add(const Formula* f) = 0;
 	virtual void check() = 0;
+	virtual void declareFun(const carl::Variable&) = 0;
 	virtual void declareSort(const std::string&, const unsigned&) = 0;
 	virtual void defineSort(const std::string&, const std::vector<std::string>&, const std::string&) = 0;
 	virtual void exit() = 0;
