@@ -1642,6 +1642,11 @@ namespace smtrat
                 const Formula* elseSubstituted = secondCase().substitute( _booleanSubstitutions, _arithmeticSubstitutions );
                 return newIte( conditionSubstituted, thenSubstituted, elseSubstituted );
             }
+			case Type::EXISTS:
+			case Type::FORALL:
+			{
+				return newQuantifier(mType, quantifiedVariables(), quantifiedFormula().substitute(_booleanSubstitutions, _arithmeticSubstitutions));
+			}
             default:
             {
                 assert( isNary() );
