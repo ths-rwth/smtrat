@@ -220,6 +220,10 @@ namespace smtrat
                 firstCase().collectVariables( _vars, _type, _ofThisType );
                 secondCase().collectVariables( _vars, _type, _ofThisType );
                 break;
+			case EXISTS:
+			case FORALL:
+				quantifiedFormula().collectVariables(_vars, _type, _ofThisType);
+				break;
             default:
             {
                 for( const Formula* subform : *mpSubformulas )
@@ -250,6 +254,10 @@ namespace smtrat
                     return premise() == _formula.premise() && conclusion() == _formula.conclusion();
                 case ITE:
                     return condition() == _formula.condition() && firstCase() == _formula.firstCase() && secondCase() == _formula.secondCase();
+				case Type::EXISTS:
+					return (*this->mpQuantifierContent == *_formula.mpQuantifierContent);
+				case Type::FORALL:
+					return (*this->mpQuantifierContent == *_formula.mpQuantifierContent);
                 default:
                     return (*mpSubformulas) == _formula.subformulas();
             }
@@ -1056,7 +1064,200 @@ namespace smtrat
             return *(mpSubformulas->begin());
         }
     }
-    
+
+	const Formula* Formula::toPNF() const
+	{
+		switch (this->mType) {
+			case Type::AND:
+			case Type::IFF:
+			case Type::OR:
+			case Type::XOR:
+			{
+				std::vector<const Formula*> quantifier;
+				PointerSet<Formula> subs;
+				for (auto sub: *this->mpSubformulas) {
+					// Convert every subformula to PNF and extract the quantifiers.
+					const Formula* f = sub->toPNF();
+					while ((f->mType == Type::EXISTS) || (f->mType == Type::FORALL)) {
+						quantifier.push_back(f);
+						f = f->mpQuantifierContent->mpFormula;
+					}
+					subs.insert(f);
+				}
+				// Apply the operand on the quantifier-free formulas and preprend the quantifiers.
+				const Formula* res = newFormula(this->mType, std::move(subs));
+				for (auto it = quantifier.rbegin(); it != quantifier.rend(); it++) {
+					res = newQuantifier((*it)->mType, (*it)->mpQuantifierContent->mVariables, res);
+				}
+				return res;
+			}
+			case Type::BOOL:
+			case Type::CONSTRAINT:
+			case Type::FFALSE:
+			case Type::TTRUE:
+				return this;
+			case Type::EXISTS:
+			case Type::FORALL:
+				return newQuantifier(this->mType, this->mpQuantifierContent->mVariables, this->mpQuantifierContent->mpFormula->toPNF());
+			case Type::IMPLIES:
+			{
+				std::vector<const Formula*> quantifier;
+				// Convert subformulas to PNF and extract quantifiers.
+				const Formula* premise = this->mpImpliesContent->mpPremise->toPNF();
+				while ((premise->mType == Type::EXISTS) || (premise->mType == Type::FORALL)) {
+					quantifier.push_back(premise);
+					premise = premise->mpQuantifierContent->mpFormula;
+				}
+				// nullptr indicates the boundary between the quantifiers from the premise (that must be negated) and those from the conclusion.
+				quantifier.push_back(nullptr);
+				const Formula* conclusion = this->mpImpliesContent->mpConlusion->toPNF();
+				while ((conclusion->mType == Type::EXISTS) || (conclusion->mType == Type::FORALL)) {
+					quantifier.push_back(conclusion);
+					conclusion = conclusion->mpQuantifierContent->mpFormula;
+				}
+				// Apply implication to quantifier-free formula and prepend inverted quantifiers.
+				const Formula* res = newImplication(premise, conclusion);
+				bool swap = true;
+				for (auto it = quantifier.rbegin(); it != quantifier.rend(); it++) {
+					if (*it == nullptr) swap = false; // stop negating the quantifiers.
+					else if (swap) {
+						if ((*it)->mType == Type::EXISTS) {
+							res = newQuantifier(Type::FORALL, (*it)->mpQuantifierContent->mVariables, res);
+						} else {
+							res = newQuantifier(Type::EXISTS, (*it)->mpQuantifierContent->mVariables, res);
+						}
+					} else {
+						res = newQuantifier((*it)->mType, (*it)->mpQuantifierContent->mVariables, res);
+					}
+				}
+				return res;
+			}
+			case Type::ITE:
+			{
+				std::vector<const Formula*> quantifier;
+				// Convert subformulas to PNF and extract quantifiers.
+				const Formula* c = this->mpIteContent->mpCondition->toPNF();
+				while ((c->mType == Type::EXISTS) || (c->mType == Type::FORALL)) {
+					quantifier.push_back(c);
+					c = c->mpIteContent->mpCondition;
+				}
+				const Formula* t = this->mpIteContent->mpThen->toPNF();
+				while ((t->mType == Type::EXISTS) || (t->mType == Type::FORALL)) {
+					quantifier.push_back(t);
+					t = t->mpIteContent->mpThen;
+				}
+				const Formula* e = this->mpIteContent->mpThen->toPNF();
+				while ((e->mType == Type::EXISTS) || (e->mType == Type::FORALL)) {
+					quantifier.push_back(e);
+					e = e->mpIteContent->mpElse;
+				}
+				// Apply ite to quantifier-free formula and prepend quantifiers.
+				const Formula* res = newIte(c, t, e);
+				for (auto it = quantifier.rbegin(); it != quantifier.rend(); it++) {
+					res = newQuantifier((*it)->mType, (*it)->mpQuantifierContent->mVariables, res);
+				}
+				return res;
+			}
+			case Type::NOT:
+			{
+				std::vector<const Formula*> quantifier;
+				// Convert subformula to PNF and extract quantifiers.
+				const Formula* f = this->mpSubformula->toPNF();
+				while ((f->mType == Type::EXISTS) || (f->mType == Type::FORALL)) {
+					quantifier.push_back(f);
+					f = f->mpQuantifierContent->mpFormula;
+				}
+				// Apply negation to quantifier-free formula and prepend inverted quantifiers.
+				const Formula* res = newNegation(f);
+				for (auto it = quantifier.rbegin(); it != quantifier.rend(); it++) {
+					if ((*it)->mType == Type::EXISTS) {
+						res = newQuantifier(Type::FORALL, (*it)->mpQuantifierContent->mVariables, res);
+					} else {
+						res = newQuantifier(Type::EXISTS, (*it)->mpQuantifierContent->mVariables, res);
+					}
+				}
+				return res;
+			}
+		}
+	}
+
+	const Formula* Formula::toQF(QuantifiedVariables& variables, unsigned level, bool negated) const
+	{
+		const Formula* res;
+		switch (this->mType) {
+			case Type::AND:
+			case Type::IFF:
+			case Type::OR:
+			case Type::XOR:
+			{
+				PointerSet<Formula> subs;
+				for (auto sub: *this->mpSubformulas) {
+					subs.insert(sub->toQF(variables, level, negated));
+				}
+				res = newFormula(this->mType, std::move(subs));
+				break;
+			}
+			case Type::BOOL:
+			case Type::CONSTRAINT:
+			case Type::FFALSE:
+			case Type::TTRUE:
+				res = this;
+				break;
+			case Type::EXISTS:
+			{
+				unsigned cur = 0;
+				if ((level % 2 == 0) xor negated) cur = level;
+				else cur = level+1;
+				assert(variables.size() == 0 || variables.size() >= cur);
+				while (variables.size() <= cur) variables.emplace_back();
+				variables[cur].insert(this->quantifiedVariables().begin(), this->quantifiedVariables().end());
+				res = this->pQuantifiedFormula()->toQF(variables, level, negated);
+				break;
+			}
+			case Type::FORALL:
+			{
+				unsigned cur = 0;
+				if ((level % 2 == 1) xor negated) cur = level;
+				else cur = level+1;
+				assert(variables.size() == 0 || variables.size() >= cur);
+				while (variables.size() <= cur) variables.emplace_back();
+				variables[cur].insert(this->quantifiedVariables().begin(), this->quantifiedVariables().end());
+				res = this->pQuantifiedFormula()->toQF(variables, level, negated);
+				break;
+			}
+			case Type::IMPLIES:
+				res = newImplication(pPremise()->toQF(variables, level, !negated), pConclusion()->toQF(variables, level, negated));
+				break;
+			case Type::ITE:
+				res = newIte(pCondition()->toQF(variables, level, negated), pFirstCase()->toQF(variables, level, negated), pSecondCase()->toQF(variables, level, negated));
+				break;
+			case Type::NOT:
+				res = this->pSubformula()->toQF(variables, level, !negated);
+				break;
+		}
+		return res;
+	}
+
+	const Formula* Formula::stripQuantifiers(QuantifiedVariables& variables) const
+	{
+		Type cur = Type::EXISTS;
+		const Formula* f = this;
+		variables.clear();
+		variables.emplace_back();
+		while (true) {
+			while (f->mType == cur) {
+				variables.back().insert(f->quantifiedVariables().begin(), f->quantifiedVariables().end());
+				f = f->pQuantifiedFormula();
+			}
+			if (f->mType == Type::EXISTS || f->mType == Type::FORALL) {
+				cur = f->mType;
+				variables.emplace_back();
+			} else {
+				return f;
+			}
+		}
+	}
+
     const Formula* Formula::toCNF( bool _keepConstraints ) const
     {
         if( propertyHolds( PROP_IS_IN_CNF ) )
@@ -1328,12 +1529,14 @@ namespace smtrat
                             }
 							case EXISTS:
 							{
-								///@todo do something here
+								assert(false);
+								std::cerr << "Formula must be quantifier-free!" << std::endl;
 								break;
 							}
 							case FORALL:
 							{
-								///@todo do something here
+								assert(false);
+								std::cerr << "Formula must be quantifier-free!" << std::endl;
 								break;
 							}
                             default:
@@ -1363,12 +1566,14 @@ namespace smtrat
                 }
 				case EXISTS:
 				{
-					///@todo do something here
+					assert(false);
+					std::cerr << "Formula must be quantifier-free!" << std::endl;
 					break;
 				}
 				case FORALL:
 				{
-					///@todo do something here
+					assert(false);
+					std::cerr << "Formula must be quantifier-free!" << std::endl;
 					break;
 				}
                 default:
