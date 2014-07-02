@@ -1088,25 +1088,32 @@ namespace smtrat
 				res = this;
 				break;
 			case Type::EXISTS:
-			{
-				unsigned cur = 0;
-				if ((level % 2 == 0) xor negated) cur = level;
-				else cur = level+1;
-				assert(variables.size() == 0 || variables.size() >= cur);
-				while (variables.size() <= cur) variables.emplace_back();
-				variables[cur].insert(this->quantifiedVariables().begin(), this->quantifiedVariables().end());
-				res = this->pQuantifiedFormula()->toQF(variables, level, negated);
-				break;
-			}
 			case Type::FORALL:
 			{
 				unsigned cur = 0;
-				if ((level % 2 == 1) xor negated) cur = level;
+				if ((level % 2 == (mType == Type::EXISTS ? 0 : 1)) xor negated) cur = level;
 				else cur = level+1;
-				assert(variables.size() == 0 || variables.size() >= cur);
-				while (variables.size() <= cur) variables.emplace_back();
-				variables[cur].insert(this->quantifiedVariables().begin(), this->quantifiedVariables().end());
-				res = this->pQuantifiedFormula()->toQF(variables, level, negated);
+				Variables vars(this->quantifiedVariables().begin(), this->quantifiedVariables().end());
+				const Formula* f = this->pQuantifiedFormula();
+				for (auto it = vars.begin(); it != vars.end();) {
+					if (it->getType() == carl::VariableType::VT_BOOL) {
+						// Just leave boolean variables at the base level up to the SAT solver.
+						if (cur > 0) {
+							f = newFormula(
+								(mType == Type::EXISTS ? Type::OR : Type::AND),
+								f->substitute({{*it, trueFormula()}}),
+								f->substitute({{*it, falseFormula()}})
+							);
+						}
+						it = vars.erase(it);
+					}
+					else it++;
+				}
+				if (vars.size() > 0) {
+					while (variables.size() <= cur) variables.emplace_back();
+					variables[cur].insert(vars.begin(), vars.end());
+				}
+				res = f->toQF(variables, cur, negated);
 				break;
 			}
 			case Type::IMPLIES:
