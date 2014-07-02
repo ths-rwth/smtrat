@@ -753,16 +753,9 @@ namespace smtrat
              *                  If n = 2, return = a1
              */
             const Formula* connectPrecedingSubformulas() const;
-            
-			/**
-			 * Transforms this formula to prenex normal form (PNF).
-			 * @return This formula in PNF.
-			 */
-			const Formula* toPNF() const;
 
 			/**
 			 * Transforms this formula to its quantifier free equivalent.
-			 * This transformation is equivalent to toPNF() and stripQuantifiers(), but it is more efficient and tries to reduce the number of quantifier alternations.
 			 * The quantifiers are represented by the parameter variables. Each entry in variables contains all variables between two quantifier alternations.
 			 * The even entries (starting with 0) are quantified existentially, the odd entries are quantified universally.
 			 * @param variables Contains the quantified variables.
@@ -771,14 +764,6 @@ namespace smtrat
 			 * @return The quantifier-free version of this formula.
 			 */
 			const Formula* toQF(QuantifiedVariables& variables, unsigned level = 0, bool negated = false) const;
-
-			/**
-			 * Removes all leading quantifiers from this formula and removes the remaining formula.
-			 * If this formula is in prenex normal form (PNF), the resulting formula is quantifier free and can be converted to CNF.
-			 * The quantified variables are stored in the variables argument where each entry corresponds to a quantifier.
-			 * The first quantifier is assumed to be existential.
-			 */
-			const Formula* stripQuantifiers(QuantifiedVariables& variables) const;
 
             /**
              * Transforms this formula to conjunctive normal form (CNF).
