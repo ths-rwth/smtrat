@@ -94,6 +94,11 @@ public:
 			}
 		}
 	}
+	void declareFun(const carl::Variable& var) {
+		if (smtrat::parser::TypeOfTerm::get(var.getType()) == smtrat::parser::ExpressionType::THEORY) {
+			this->solver->quantifierManager().addUnquantifiedVariable(var);
+		}
+	}
 	void declareSort(const std::string&, const unsigned&) {
 		error() << "(declare-sort <name> <arity>) is not implemented.";
 	}

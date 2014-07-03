@@ -42,6 +42,7 @@
 #include "config.h"
 #include "modules/StandardModuleFactory.h"
 #include "GeneralStatistics.h"
+#include "QuantifierManager.h"
 
 namespace smtrat
 {
@@ -76,6 +77,8 @@ namespace smtrat
             StrategyGraph mStrategyGraph;
             /// channel to write debug output
             std::ostream mDebugOutputChannel;
+			/// quantified variables
+			QuantifierManager mQuantifierManager;
             /// the logic this solver 
             Logic mLogic;
             #ifdef SMTRAT_DEVOPTION_Statistics
@@ -276,7 +279,23 @@ namespace smtrat
             {
                 return mDebugOutputChannel;
             }
-            
+
+			const QuantifierManager& quantifierManager() const {
+				return mQuantifierManager;
+			}
+
+			QuantifierManager& quantifierManager() {
+				return mQuantifierManager;
+			}
+
+			const QuantifiedVariables& quantifiedVariables() const {
+				return mQuantifierManager.quantifiers();
+			}
+
+			QuantifiedVariables& quantifiedVariables() {
+				return mQuantifierManager.quantifiers();
+			}
+
             const Logic& logic() const
             {
                 return mLogic;

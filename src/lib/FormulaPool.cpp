@@ -204,14 +204,14 @@ namespace smtrat
         return FormulaPool::getInstance().falseFormula();
     }
     
-    const Formula* newFormula( carl::Variable::Arg _booleanVar )
+    const Formula* newVariableFormula( carl::Variable::Arg _booleanVar )
     {
-        return FormulaPool::getInstance().newFormula( _booleanVar );
+        return FormulaPool::getInstance().newVariableFormula( _booleanVar );
     }
     
     const Formula* newFormula( const Constraint* _constraint )
     {
-        return FormulaPool::getInstance().newFormula( _constraint );
+        return FormulaPool::getInstance().newConstraintFormula( _constraint );
     }
     
     const Formula* newNegation( const Formula* _subformula )
@@ -228,6 +228,11 @@ namespace smtrat
     {
         return FormulaPool::getInstance().newIte( _condition, _else, _then );
     }
+
+	const Formula* newQuantifier(Type _type, const std::vector<carl::Variable>& _vars, const Formula* _term)
+	{
+		return FormulaPool::getInstance().newQuantifier(_type, std::move(_vars), _term);
+	}
     
     const Formula* newFormula( Type _type, const Formula* _subformulaA, const Formula* _subformulaB )
     {

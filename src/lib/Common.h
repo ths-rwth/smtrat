@@ -132,6 +132,8 @@ namespace smtrat
     typedef std::map<carl::Variable, VarInfo> VarInfoMap;
     
     typedef std::set<carl::Variable> Variables;
+
+	typedef std::vector<Variables> QuantifiedVariables;
     
     template<typename T> 
     using PointerSet = std::set<const T*, pointerLess<T>>;

@@ -45,7 +45,7 @@
 
 namespace smtrat
 {
-    enum Type { AND, OR, NOT, IFF, XOR, IMPLIES, ITE, BOOL, CONSTRAINT, TTRUE, FFALSE };
+    enum Type { AND, OR, NOT, IFF, XOR, IMPLIES, ITE, BOOL, CONSTRAINT, TTRUE, FFALSE, EXISTS, FORALL };
     
     class Formula
     {
@@ -76,6 +76,17 @@ namespace smtrat
                     mpCondition( _condition ), mpThen( _then ), mpElse( _else ) {}
             };
 
+			struct QuantifierContent
+			{
+				std::vector<carl::Variable> mVariables;
+				const Formula* mpFormula;
+				QuantifierContent(const std::vector<carl::Variable>&& vars, const Formula* formula):
+					mVariables(vars), mpFormula(formula) {}
+				bool operator==(const QuantifierContent& qc) {
+					return (this->mVariables == qc.mVariables) && (this->mpFormula == qc.mpFormula);
+				}
+			};
+
             // Members.
 
             /// The deduction flag, which indicates, that this formula g is a direct sub-formula of
@@ -97,6 +108,7 @@ namespace smtrat
                 const Formula*       mpSubformula;
                 IMPLIESContent*      mpImpliesContent;
                 ITEContent*          mpIteContent;
+				QuantifierContent*	 mpQuantifierContent;
                 PointerSet<Formula>* mpSubformulas;
                 const Constraint*    mpConstraint;
                 carl::Variable       mBoolean;
@@ -144,6 +156,14 @@ namespace smtrat
              * @param _else The second case of the ITE expression to create.
              */
             Formula( const Formula* _condition, const Formula* _then, const Formula* _else );
+
+			/**
+			 * Constructs a quantifier expression: (exists (vars) term) or (forall (vars) term)
+			 * @param _type The type of the quantifier to construct.
+			 * @param _vars The variables that are bound.
+			 * @param _term The term in which the variables are bound.
+			 */
+			Formula(const Type _type, const std::vector<carl::Variable>&& _vars, const Formula* _term);
             
             /**
              * Constructs the formula of the given type. 
@@ -355,6 +375,24 @@ namespace smtrat
                 assert( mType == ITE );
                 return *mpIteContent->mpElse;
             }
+
+			const std::vector<carl::Variable>& quantifiedVariables() const
+			{
+				assert( mType == Type::EXISTS || mType == Type::FORALL );
+				return mpQuantifierContent->mVariables;
+			}
+
+			const Formula* pQuantifiedFormula() const
+			{
+				assert( mType == Type::EXISTS || mType == Type::FORALL );
+				return mpQuantifierContent->mpFormula;
+			}
+
+			const Formula& quantifiedFormula() const
+			{
+				assert( mType == Type::EXISTS || mType == Type::FORALL );
+				return *mpQuantifierContent->mpFormula;
+			}
 
             /**
              * @return A constant reference to the list of sub-formulas of this formula. Note, that
@@ -715,7 +753,18 @@ namespace smtrat
              *                  If n = 2, return = a1
              */
             const Formula* connectPrecedingSubformulas() const;
-            
+
+			/**
+			 * Transforms this formula to its quantifier free equivalent.
+			 * The quantifiers are represented by the parameter variables. Each entry in variables contains all variables between two quantifier alternations.
+			 * The even entries (starting with 0) are quantified existentially, the odd entries are quantified universally.
+			 * @param variables Contains the quantified variables.
+			 * @param level Used for internal recursion.
+			 * @param negated Used for internal recursion.
+			 * @return The quantifier-free version of this formula.
+			 */
+			const Formula* toQF(QuantifiedVariables& variables, unsigned level = 0, bool negated = false) const;
+
             /**
              * Transforms this formula to conjunctive normal form (CNF).
              * @param _keepConstraints A flag indicating whether to keep the constraints as they are, or to

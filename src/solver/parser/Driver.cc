@@ -393,7 +393,7 @@ namespace smtrat
         }
         carl::Variable var = getBooleanVariable( _loc, *_varName );
         delete _varName;
-        return newFormula( var );
+        return newVariableFormula( var );
     }
     
     /**

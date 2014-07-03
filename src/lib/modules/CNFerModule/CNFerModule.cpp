@@ -76,7 +76,8 @@ namespace smtrat
              * Add the currently considered formula of the received constraint as clauses
              * to the passed formula.
              */
-            const Formula* formulaToAssertInCnf = (*receivedSubformula)->toCNF( false );
+            const Formula* formulaQF = (*receivedSubformula)->toQF(mpManager->quantifiedVariables());
+            const Formula* formulaToAssertInCnf = formulaQF->toCNF( false );
             if( formulaToAssertInCnf->getType() == TTRUE )
             {
                 // No need to add it.

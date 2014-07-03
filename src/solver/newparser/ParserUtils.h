@@ -33,17 +33,24 @@ inline std::ostream& operator<<(std::ostream& os, const AttributeValue& value) {
 	}
 }
 
+template<typename T>
+std::ostream& operator<<(std::ostream& os, const qi::symbols<char, T>& sym) {
+	os << "Symbols " << sym.name() << std::endl;
+	sym.for_each([&](const std::string& key, const T& val){ os << "\t" << key << " -> " << val << std::endl; });
+	return os;
+}
+
 struct TypeOfTerm : public boost::static_visitor<ExpressionType> {
-	ExpressionType operator()(const Formula*) const { return BOOLEAN; }
-	ExpressionType operator()(const Polynomial&) const { return THEORY; }
+	ExpressionType operator()(const Formula*) const { return ExpressionType::BOOLEAN; }
+	ExpressionType operator()(const Polynomial&) const { return ExpressionType::THEORY; }
 	ExpressionType operator()(const carl::Variable& v) const { return (*this)(v.getType()); }
 	ExpressionType operator()(const carl::VariableType& v) const {
 		switch (v) {
-			case carl::VariableType::VT_BOOL: return BOOLEAN;
+			case carl::VariableType::VT_BOOL: return ExpressionType::BOOLEAN;
 			case carl::VariableType::VT_INT:
-			case carl::VariableType::VT_REAL: return THEORY;
+			case carl::VariableType::VT_REAL: return ExpressionType::THEORY;
 			default:
-				return THEORY;
+				return ExpressionType::THEORY;
 		}
 	}
 	template<typename T>
@@ -155,6 +162,7 @@ public:
 	}
 	virtual void add(const Formula* f) = 0;
 	virtual void check() = 0;
+	virtual void declareFun(const carl::Variable&) = 0;
 	virtual void declareSort(const std::string&, const unsigned&) = 0;
 	virtual void defineSort(const std::string&, const std::vector<std::string>&, const std::string&) = 0;
 	virtual void exit() = 0;

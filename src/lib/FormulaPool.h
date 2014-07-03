@@ -90,7 +90,7 @@ namespace smtrat
              * @param _booleanVar The Boolean variable wrapped by this formula.
              * @return A formula with wrapping the given Boolean variable.
              */
-            const Formula* newFormula( carl::Variable::Arg _booleanVar )
+            const Formula* newVariableFormula( carl::Variable::Arg _booleanVar )
             {
                 return addFormulaToPool( new Formula( _booleanVar ) );
             }
@@ -99,7 +99,7 @@ namespace smtrat
              * @param _constraint The constraint wrapped by this formula.
              * @return A formula with wrapping the given constraint.
              */
-            const Formula* newFormula( const Constraint* _constraint )
+            const Formula* newConstraintFormula( const Constraint* _constraint )
             {
                 #ifdef SIMPLIFY_FORMULAS
                 if( _constraint == constraintPool().consistentConstraint() )
@@ -163,6 +163,23 @@ namespace smtrat
                 #endif
                 return addFormulaToPool( new Formula( _condition, _then, _else ) );
             }
+
+			/**
+			 *
+			 * @param _type
+			 * @param _vars
+			 * @param _term
+			 * @return
+			 */
+			const Formula* newQuantifier(Type _type, const std::vector<carl::Variable>&& _vars, const Formula* _term)
+			{
+				assert(_type == Type::EXISTS || _type == Type::FORALL);
+				if (_vars.size() > 0) {
+					return addFormulaToPool(new Formula(_type, std::move(_vars), _term));
+				} else {
+					return _term;
+				}
+			}
             
             /**
              * @param _type The type of the n-ary operator (n>1) of the formula to create.
@@ -283,7 +300,7 @@ namespace smtrat
     
     const Formula* falseFormula();
     
-    const Formula* newFormula( carl::Variable::Arg _booleanVar );
+    const Formula* newVariableFormula( carl::Variable::Arg _booleanVar );
     
     const Formula* newFormula( const Constraint* _constraint );
     
@@ -292,6 +309,8 @@ namespace smtrat
     const Formula* newImplication( const Formula* _premise, const Formula* _conclusion );
     
     const Formula* newIte( const Formula* _condition, const Formula* _else, const Formula* _then );
+
+	const Formula* newQuantifier( Type _type, const std::vector<carl::Variable>& _vars, const Formula* _term );
     
     const Formula* newFormula( Type _type, const Formula* _subformulaA, const Formula* _subformulaB );
     
