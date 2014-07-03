@@ -334,7 +334,7 @@ namespace smtrat
             // Removes already satisfied clauses.
             bool simplify();
             ///
-            bool applyValidSubstitutions( int );
+            bool applyValidSubstitutionsOnClauses( int );
             // Learns a clause.
             bool addClause( Minisat::vec<Minisat::Lit>&, unsigned = 0 );
             // Checks the correctness of the watches in a clause

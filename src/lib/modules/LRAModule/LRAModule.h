@@ -108,6 +108,7 @@ namespace smtrat
             void removeSubformula( ModuleInput::const_iterator );
             Answer isConsistent();
             void updateModel() const;
+            
             EvalRationalMap getRationalModel() const;
             EvalIntervalMap getVariableBounds() const;
 

@@ -199,7 +199,7 @@ namespace smtrat
                 std::vector<TableauEntry<T1,T2> >* mpEntries;
                 std::vector<Variable<T1,T2>*>   mConflictingRows;
                 Value<T1>*                      mpTheta;
-                std::map< carl::Variable, Variable<T1,T2>*>  mOriginalVars;
+                std::map<carl::Variable, Variable<T1,T2>*>  mOriginalVars;
                 FastPointerMap<Polynomial, Variable<T1,T2>*> mSlackVars;
                 FastPointerMap<Constraint, std::vector<const Bound<T1, T2>*>*> mConstraintToBound;
                 #ifdef LRA_REFINEMENT
@@ -371,8 +371,8 @@ namespace smtrat
                 void deactivateBasicVar( Variable<T1, T2>* );
                 void storeAssignment();
                 void resetAssignment();
+                smtrat::EvalRationalMap getRationalAssignment() const;
                 void compressRows();
-                void activateBound( const Bound<T1, T2>* );
                 void deactivateBound( const Bound<T1, T2>* );
                 std::pair<EntryID, bool> nextPivotingElement();
                 std::pair<EntryID, bool> isSuitable( const Variable<T1, T2>&, bool ) const;
@@ -380,12 +380,14 @@ namespace smtrat
                 std::vector< const Bound<T1, T2>* > getConflict( EntryID ) const;
                 std::vector< std::set< const Bound<T1, T2>* > > getConflictsFrom( EntryID ) const;
                 void updateBasicAssignments( size_t, const Value<T1>& );
-                Variable<T1, T2>* pivot( EntryID );
-                void update( bool downwards, EntryID, std::vector<Iterator>&, std::vector<Iterator>& );
+                Variable<T1, T2>* pivot( EntryID, bool = true );
+                void update( bool downwards, EntryID, std::vector<Iterator>&, std::vector<Iterator>&, bool = true );
                 void addToEntry( const T2&, Iterator&, bool, Iterator&, bool );
                 #ifdef LRA_REFINEMENT
                 void rowRefinement( Variable<T1, T2>* );
                 #endif
+                typename std::map<carl::Variable, Variable<T1, T2>*>::iterator substitute( carl::Variable::Arg, const smtrat::Polynomial& );
+                std::list<std::pair<carl::Variable,smtrat::Polynomial>> findValidSubstitutions();
                 size_t boundedVariables( const Variable<T1,T2>&, size_t = 0 ) const;
                 size_t unboundedVariables( const Variable<T1,T2>&, size_t = 0 ) const;
                 size_t checkCorrectness() const;
@@ -906,6 +908,7 @@ namespace smtrat
                 }
             }
             mNonActiveBasics.erase( _var->positionInNonActives() );
+            _var->setPositionInNonActives( mNonActiveBasics.end() );
             
             T2 g = carl::abs( _var->factor() );
             for( auto iter = coeffs.begin(); iter != coeffs.end(); ++iter )
@@ -1047,6 +1050,87 @@ namespace smtrat
                 basicVar->resetAssignment();
             for( Variable<T1, T2>* nonbasicVar : mColumns )
                 nonbasicVar->resetAssignment();
+        }
+        
+        
+        /**
+         *
+         * @return
+         */
+        template<typename T1, typename T2>
+        smtrat::EvalRationalMap Tableau<T1,T2>::getRationalAssignment() const
+        {
+            smtrat::EvalRationalMap result;
+            T1 minDelta = -1;
+            T1 curDelta = 0;
+            Variable<T1,T2>* variable = NULL;
+            // For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
+            for( auto originalVar = originalVars().begin(); originalVar != originalVars().end(); ++originalVar )
+            {
+                variable = originalVar->second;
+                const Value<T1>& assValue = variable->assignment();
+                const Bound<T1,T2>& inf = variable->infimum();
+                if( !inf.isInfinite() )
+                {
+                    // .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
+                    if( inf.limit().mainPart() < assValue.mainPart() && inf.limit().deltaPart() > assValue.deltaPart() )
+                    {
+                        curDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
+                        if( minDelta < 0 || curDelta < minDelta )
+                            minDelta = curDelta;
+                    }
+                }
+                const Bound<T1,T2>& sup = variable->supremum();
+                if( !sup.isInfinite() )
+                {
+                    // .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
+                    if( sup.limit().mainPart() > assValue.mainPart() && sup.limit().deltaPart() < assValue.deltaPart() )
+                    {
+                        curDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
+                        if( minDelta < 0 || curDelta < minDelta )
+                            minDelta = curDelta;
+                    }
+                }
+            }
+            // For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
+            for( auto slackVar = slackVars().begin(); slackVar != slackVars().end(); ++slackVar )
+            {
+                variable = slackVar->second;
+                if( !variable->isActive() ) continue;
+                const Value<T1>& assValue = variable->assignment();
+                const Bound<T1,T2>& inf = variable->infimum();
+                if( !inf.isInfinite() )
+                {
+                    // .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
+                    if( inf.limit().mainPart() < assValue.mainPart() && inf.limit().deltaPart() > assValue.deltaPart() )
+                    {
+                        curDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
+                        if( minDelta < 0 || curDelta < minDelta )
+                            minDelta = curDelta;
+                    }
+                }
+                const Bound<T1,T2>& sup = variable->supremum();
+                if( !sup.isInfinite() )
+                {
+                    // .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
+                    if( sup.limit().mainPart() > assValue.mainPart() && sup.limit().deltaPart() < assValue.deltaPart() )
+                    {
+                        curDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
+                        if( minDelta < 0 || curDelta < minDelta )
+                            minDelta = curDelta;
+                    }
+                }
+            }
+
+            curDelta = minDelta < 0 ? 1 : minDelta;
+            // Calculate the rational assignment of all original variables.
+            for( auto var = originalVars().begin(); var != originalVars().end(); ++var )
+            {
+                T1 value = var->second->assignment().mainPart();
+                value += (var->second->assignment().deltaPart() * curDelta);
+                result.insert( std::pair<const carl::Variable,T1>( var->first, value ) );
+            }
+            return result;
         }
         
         /**
@@ -1678,12 +1762,14 @@ FindPivot:
             }
         }
 
+        
+
         /**
          *
          * @param _pivotingElement
          */
         template<typename T1, typename T2>
-        Variable<T1, T2>* Tableau<T1,T2>::pivot( EntryID _pivotingElement )
+        Variable<T1, T2>* Tableau<T1,T2>::pivot( EntryID _pivotingElement, bool updateAssignments )
         {
             // Find all columns having "a nonzero entry in the pivoting row"**, update this entry and store it.
             // First the column with ** left to the pivoting column until the leftmost column with **.
@@ -1730,29 +1816,34 @@ FindPivot:
             // Swap the variables
             mRows[rowVar->position()] = columnVar;
             mColumns[columnVar->position()] = rowVar;
-            // Update the assignments of the pivoting variables
-            #ifdef LRA_NO_DIVISION
-            rowVar->rAssignment() += ((*mpTheta) * pivotContent) / rowVar->factor();
-            #else
-            rowVar->rAssignment() += (*mpTheta) * pivotContent;
-            #endif
-            if( !( rowVar->supremum() > rowVar->assignment() || rowVar->supremum() == rowVar->assignment() ) ) 
+            assert( updateAssignments || rowVar->assignment() == T1( 0 ) );
+            assert( updateAssignments || columnVar->assignment() == T1( 0 ) );
+            if( updateAssignments )
             {
-                std::cout << "rowVar->assignment() = " << rowVar->assignment() << std::endl;
-                std::cout << "rowVar->supremum() = " << rowVar->supremum() << std::endl; 
-                std::cout << "(error: " << __func__ << " " << __LINE__ << ")" << std::endl; 
-//                exit( 7771 );
+                // Update the assignments of the pivoting variables
+                #ifdef LRA_NO_DIVISION
+                rowVar->rAssignment() += ((*mpTheta) * pivotContent) / rowVar->factor();
+                #else
+                rowVar->rAssignment() += (*mpTheta) * pivotContent;
+                #endif
+                if( !( rowVar->supremum() > rowVar->assignment() || rowVar->supremum() == rowVar->assignment() ) ) 
+                {
+                    std::cout << "rowVar->assignment() = " << rowVar->assignment() << std::endl;
+                    std::cout << "rowVar->supremum() = " << rowVar->supremum() << std::endl; 
+                    std::cout << "(error: " << __func__ << " " << __LINE__ << ")" << std::endl; 
+    //                exit( 7771 );
+                }
+                assert( rowVar->supremum() > rowVar->assignment() || rowVar->supremum() == rowVar->assignment() );
+                if( !( rowVar->infimum() < rowVar->assignment() || rowVar->infimum() == rowVar->assignment() ) ) 
+                {
+                    std::cout << "rowVar->assignment() = " << rowVar->assignment() << std::endl;
+                    std::cout << "rowVar->infimum() = " << rowVar->infimum() << std::endl;
+                    std::cout << "(error: " << __func__ << " " << __LINE__ << ")" << std::endl; 
+    //                exit( 7771 );
+                }
+                assert( rowVar->infimum() < rowVar->assignment() || rowVar->infimum() == rowVar->assignment() );
+                columnVar->rAssignment() += (*mpTheta);
             }
-            assert( rowVar->supremum() > rowVar->assignment() || rowVar->supremum() == rowVar->assignment() );
-            if( !( rowVar->infimum() < rowVar->assignment() || rowVar->infimum() == rowVar->assignment() ) ) 
-            {
-                std::cout << "rowVar->assignment() = " << rowVar->assignment() << std::endl;
-                std::cout << "rowVar->infimum() = " << rowVar->infimum() << std::endl;
-                std::cout << "(error: " << __func__ << " " << __LINE__ << ")" << std::endl; 
-//                exit( 7771 );
-            }
-            assert( rowVar->infimum() < rowVar->assignment() || rowVar->infimum() == rowVar->assignment() );
-            columnVar->rAssignment() += (*mpTheta);
             // Adapt both variables.
             Variable<T1, T2>& basicVar = *columnVar;
             Variable<T1, T2>& nonbasicVar = *rowVar;
@@ -1778,7 +1869,7 @@ FindPivot:
             pivotContent = carl::div( T2(1), pivotContent );
             #endif
             #ifdef LRA_REFINEMENT
-            if( basicVar.isActive() || basicVar.isOriginal() )
+            if( updateAssignments && basicVar.isActive() )
             {
                 rowRefinement( columnVar ); // Note, we have swapped the variables, so the current basic var is now corresponding to what we have stored in columnVar.
             }
@@ -1789,25 +1880,28 @@ FindPivot:
             //        Update the entry (t_r,t_c,t_e) of the intersection of R and C to (t_r,t_c,t_e+r_e).
             if( pivotEntry.vNext( false ) == LAST_ENTRY_ID )
             {
-                update( true, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
+                update( true, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, updateAssignments );
             }
             else if( pivotEntry.vNext( true ) == LAST_ENTRY_ID )
             {
-                update( false, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
+                update( false, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, updateAssignments );
             }
             else
             {
-                update( true, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
-                update( false, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
+                update( true, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, updateAssignments );
+                update( false, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, updateAssignments );
             }
-            ++mPivotingSteps;
-            if( !basicVar.isActive() && !basicVar.isOriginal() )
+            if( updateAssignments )
             {
-                deactivateBasicVar( columnVar );
-                compressRows();
+                ++mPivotingSteps;
+                if( !basicVar.isActive() && !basicVar.isOriginal() )
+                {
+                    deactivateBasicVar( columnVar );
+                    compressRows();
+                }
+                assert( basicVar.supremum() >= basicVar.assignment() || basicVar.infimum() <= basicVar.assignment() );
+                assert( nonbasicVar.supremum() == nonbasicVar.assignment() || nonbasicVar.infimum() == nonbasicVar.assignment() );
             }
-            assert( basicVar.supremum() >= basicVar.assignment() || basicVar.infimum() <= basicVar.assignment() );
-            assert( nonbasicVar.supremum() == nonbasicVar.assignment() || nonbasicVar.infimum() == nonbasicVar.assignment() );
             assert( checkCorrectness() == mRows.size() );
             return columnVar;
         }
@@ -1826,7 +1920,7 @@ FindPivot:
          *                              iterator's index in the vector.
          */
         template<typename T1, typename T2>
-        void Tableau<T1,T2>::update( bool _downwards, EntryID _pivotingElement, std::vector<Iterator>& _pivotingRowLeftSide, std::vector<Iterator>& _pivotingRowRightSide )
+        void Tableau<T1,T2>::update( bool _downwards, EntryID _pivotingElement, std::vector<Iterator>& _pivotingRowLeftSide, std::vector<Iterator>& _pivotingRowRightSide, bool _updateAssignments )
         {
             std::vector<Iterator> leftColumnIters = std::vector<Iterator>( _pivotingRowLeftSide );
             std::vector<Iterator> rightColumnIters = std::vector<Iterator>( _pivotingRowRightSide );
@@ -1846,11 +1940,14 @@ FindPivot:
                 }
                 // Update the assignment of the basic variable corresponding to this row
                 Variable<T1,T2>& currBasicVar = *((*pivotingColumnIter).rowVar());
-                #ifdef LRA_NO_DIVISION
-                currBasicVar.rAssignment() += ((*mpTheta) * (*pivotingColumnIter).content())/currBasicVar.factor();
-                #else
-                currBasicVar.rAssignment() += (*mpTheta) * (*pivotingColumnIter).content();
-                #endif
+                if( _updateAssignments )
+                {
+                    #ifdef LRA_NO_DIVISION
+                    currBasicVar.rAssignment() += ((*mpTheta) * (*pivotingColumnIter).content())/currBasicVar.factor();
+                    #else
+                    currBasicVar.rAssignment() += (*mpTheta) * (*pivotingColumnIter).content();
+                    #endif
+                }
                 // Update the row
                 Iterator currentRowIter = pivotingColumnIter;
                 #ifdef LRA_NO_DIVISION
@@ -1935,7 +2032,7 @@ FindPivot:
                 #else
                 (*pivotingColumnIter).rContent() *= (*mpEntries)[_pivotingElement].content();
                 #endif
-                if( currBasicVar.supremum() > currBasicVar.assignment() || currBasicVar.infimum() < currBasicVar.assignment() )
+                if( _updateAssignments && (currBasicVar.supremum() > currBasicVar.assignment() || currBasicVar.infimum() < currBasicVar.assignment()) )
                 {
                     #ifdef LRA_LOCAL_CONFLICT_DIRECTED
                     mConflictingRows.push_back( (*pivotingColumnIter).rowVar() );
@@ -2370,6 +2467,270 @@ FindPivot:
                 }
                 return unboundedVars;
             }
+        }
+        
+//        #define LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
+        
+        template<typename T1, typename T2>
+        typename std::map<carl::Variable, Variable<T1,T2>*>::iterator Tableau<T1,T2>::substitute( carl::Variable::Arg _var, const smtrat::Polynomial& _term )
+        {
+            #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
+            std::cout << __func__ << "  " << _var << " -> " << _term << std::endl;
+            print();
+            #endif
+            assert( mNonActiveBasics.empty() ); // This makes removing lra-variables far easier and must be assured before invoking this method.
+            std::set<Variable<T1,T2>*> slackVarsToRemove;
+            std::map<const Constraint*,smtrat::PointerSet<smtrat::Formula>> constraintToAdd;
+            auto iter = mConstraintToBound.begin();
+            while( iter != mConstraintToBound.end() )
+            {
+                const Constraint& constraint = *iter->first;
+                if( constraint.hasVariable( _var ) )
+                {
+                    assert( iter->second->front()->pVariable()->isBasic() ); // This makes removing lra-variables far easier and must be assured before invoking this method.
+                    #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
+                    std::cout << "remove variable: " << std::endl;
+                    iter->second->front()->pVariable()->print();
+                    std::cout << std::endl;
+                    iter->second->front()->pVariable()->printAllBounds();
+                    std::cout << std::endl;
+                    #endif
+                    slackVarsToRemove.insert( iter->second->front()->pVariable() );
+                    const Constraint* cons = smtrat::newConstraint( constraint.lhs().substitute( _var, _term ), constraint.relation() );
+                    assert( cons->isConsistent() != 0 );
+                    if( cons->isConsistent() == 2 )
+                    {
+                        #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
+                        std::cout << "add constraint " << *cons << std::endl;
+                        #endif
+                        smtrat::PointerSet<smtrat::Formula> origins;
+                        constraintToAdd.insert( std::pair<const Constraint*,smtrat::PointerSet<smtrat::Formula>>( cons, origins ) );
+                    }
+                    iter = mConstraintToBound.erase( iter );
+                }
+                else
+                {
+                    ++iter;
+                }
+            }
+            while( !slackVarsToRemove.empty() )
+            {
+                Variable<T1,T2>* var = *slackVarsToRemove.begin();
+                slackVarsToRemove.erase( slackVarsToRemove.begin() );
+                deactivateBasicVar( var );
+                assert( mLearnedLowerBounds.empty() );
+                assert( mLearnedUpperBounds.empty() );
+                assert( mNewLearnedBounds.empty() );
+                mSlackVars.erase( var->pExpression() );
+                assert( mConflictingRows.empty() );
+                mNonActiveBasics.erase( var->positionInNonActives() );
+                var->setPositionInNonActives( mNonActiveBasics.end() );
+                delete var;
+            }
+            typename std::map<carl::Variable, Variable<T1,T2>*>::iterator pos = mOriginalVars.find( _var );
+            pos = mOriginalVars.erase(pos);
+            for( auto iter = constraintToAdd.begin(); iter != constraintToAdd.end(); ++iter )
+            {
+                std::pair<const lra::Bound<carl::Numeric<Rational>,carl::Numeric<Rational>>*, bool> res = newBound( iter->first );
+                if( res.second )
+                {
+                    activateBound( res.first, iter->second );
+                } 
+            }
+            #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
+            print(); 
+            #endif
+            return pos;
+        }
+        
+        template<typename T1, typename T2>
+        std::list<std::pair<carl::Variable,smtrat::Polynomial>> Tableau<T1,T2>::findValidSubstitutions()
+        {
+            std::list<std::pair<carl::Variable,smtrat::Polynomial>> validSubstitutions;
+            for( auto iter = mSlackVars.begin(); iter != mSlackVars.end(); ++iter )
+            {
+                assert( iter->second->isBasic() );
+                if( !iter->second->isActive() )
+                {
+                    activateBasicVar( iter->second );
+                }
+            }
+            #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
+            print();
+            printVariables();
+            #endif
+            for( auto iter = mOriginalVars.begin(); iter != mOriginalVars.end(); )
+            {
+                if( !iter->second->supremum().isInfinite() && !iter->second->infimum().isInfinite() 
+                    && iter->second->supremum().isWeak() && iter->second->infimum().isWeak()
+                    && iter->second->supremum().limit() == iter->second->infimum().limit() )
+                {
+                    smtrat::Polynomial term = smtrat::Polynomial( smtrat::Rational( iter->second->supremum().limit().mainPart() ) );
+                    validSubstitutions.push_back( std::pair<carl::Variable,smtrat::Polynomial>( iter->first, term ) );
+                    iter = substitute( iter->first, term );
+                }
+                else
+                {
+                    ++iter;
+                }
+            }
+            for( auto iter = mSlackVars.begin(); iter != mSlackVars.end(); )
+            {
+                Variable<T1,T2>& svar = *iter->second;
+                if( !svar.supremum().isInfinite() && !svar.infimum().isInfinite() 
+                    && svar.supremum().isWeak() && svar.infimum().isWeak() 
+                    && svar.supremum().limit() == svar.infimum().limit() )
+                {
+                    assert( svar.supremum().limit().deltaPart() == T1( 0 ) );
+                    Variable<T1,T2>* bestOVar = NULL;
+                    T1 coeff = T1( 0 );
+                    Iterator rowEntry = Iterator( svar.startEntry(), mpEntries );
+                    while( true )
+                    {
+                        if( bestOVar == NULL || (*rowEntry).columnVar()->size() > bestOVar->size() )
+                        {
+                            bestOVar = (*rowEntry).columnVar();
+                            coeff = (*rowEntry).content();
+                        }
+                        if( rowEntry.hEnd( false ) )
+                        {
+                            break;
+                        }
+                        rowEntry.hMove( false );
+                    }
+                    assert( bestOVar != NULL );
+                    coeff /= svar.factor();
+                    smtrat::Polynomial term = svar.expression() - (bestOVar->expression() * smtrat::Rational( coeff ) ) - smtrat::Rational( svar.supremum().limit().mainPart() );
+                    carl::Variable toSubstitute = *bestOVar->expression().gatherVariables().begin();
+                    validSubstitutions.push_back( std::pair<carl::Variable,smtrat::Polynomial>( toSubstitute, term ) );
+                    substitute( toSubstitute, term );
+                    iter = mSlackVars.begin();
+                }
+                else
+                {
+                    ++iter;
+                }
+            }
+            
+            while( true )
+            {
+                #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
+                std::cout << "########################################################### Try:" << std::endl;
+                print();
+                printVariables();
+                #endif
+                std::stack<std::pair<Variable<T1,T2>*,Variable<T1,T2>*>> pivotingElements;
+                std::map<carl::Variable, Variable<T1,T2>*> varsToSubstitute;
+                auto best = mOriginalVars.begin();
+                while( best != mOriginalVars.end() )
+                {
+                    best = mOriginalVars.end();
+                    for( auto iter = mOriginalVars.begin(); iter != mOriginalVars.end(); ++iter )
+                    {
+                        Variable<T1,T2>& oVar = *iter->second;
+                        if( !oVar.isBasic() && oVar.upperbounds().size() == 1 && oVar.lowerbounds().size() == 1 && varsToSubstitute.find( iter->first ) == varsToSubstitute.end() )
+                        {
+                            if( best == mOriginalVars.end() || best->second->size() < oVar.size() )
+                            {
+                                best = iter;
+                            }
+                        }
+                    }
+                    if( best != mOriginalVars.end() )
+                    {
+                        Variable<T1,T2>& oVar = *best->second;
+                        EntryID bestPivot = LAST_ENTRY_ID;
+                        Iterator columnEntry = Iterator( oVar.startEntry(), mpEntries );
+                        while( true )
+                        {
+                            if( !(*columnEntry).rowVar()->isOriginal() )
+                            {
+                                if( bestPivot == LAST_ENTRY_ID || (*columnEntry).rowVar()->size() < (*mpEntries)[bestPivot].rowVar()->size() )
+                                {
+                                    bestPivot = columnEntry.entryID();
+                                }
+                            }
+                            if( columnEntry.vEnd( false ) )
+                                break;
+                            columnEntry.vMove( false );
+                        }
+                        if( bestPivot != LAST_ENTRY_ID )
+                        {
+                            pivotingElements.push( std::pair<Variable<T1,T2>*,Variable<T1,T2>*>( best->second, (*mpEntries)[bestPivot].rowVar() ) );
+                            pivot( bestPivot, false );
+                        }
+                        else
+                        {
+                            varsToSubstitute.insert( std::pair<carl::Variable, Variable<T1,T2>*>( best->first, best->second ) );
+                        }
+                    }
+                }
+                #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
+                std::cout << "########################################################### Results in:" << std::endl;
+                print();
+                printVariables();
+                #endif
+                std::list<std::pair<carl::Variable,smtrat::Polynomial>>::iterator subToApply = validSubstitutions.end();
+                for( auto iter = varsToSubstitute.begin(); iter != varsToSubstitute.end(); ++iter )
+                {
+                    Variable<T1,T2>& oVar = *iter->second;
+                    assert( !oVar.isBasic() && oVar.upperbounds().size() == 1 && oVar.lowerbounds().size() == 1 );
+                    if( oVar.size() > 0 )
+                    {
+                        Polynomial substituteBy = smtrat::ZERO_POLYNOMIAL;
+                        Iterator columnEntry = Iterator( oVar.startEntry(), mpEntries );
+                        while( true )
+                        {
+                            substituteBy += (*columnEntry).rowVar()->expression() * smtrat::Rational( (*columnEntry).content()/(*columnEntry).rowVar()->factor() );
+                            if( columnEntry.vEnd( false ) )
+                                break;
+                            columnEntry.vMove( false );
+                        }
+                        validSubstitutions.push_back( std::pair<carl::Variable,smtrat::Polynomial>( iter->first, substituteBy ) );
+                        if( subToApply == validSubstitutions.end() ) --subToApply;
+                    }
+                }
+                while( !pivotingElements.empty() )
+                {
+                    Iterator rowEntry = Iterator( pivotingElements.top().first->startEntry(), mpEntries );
+                    while( true )
+                    {
+                        if( (*rowEntry).columnVar() == pivotingElements.top().second )
+                        {
+                            pivot( rowEntry.entryID(), false );
+                            pivotingElements.pop();
+                            break;
+                        }
+                        if( rowEntry.hEnd( false ) )
+                        {
+                            assert( false );
+                            break;
+                        }
+                        rowEntry.hMove( false );
+                    }
+                }
+                if( subToApply == validSubstitutions.end() ) break;
+                for( ; subToApply != validSubstitutions.end(); ++subToApply )
+                {
+                    substitute( subToApply->first, subToApply->second );
+                }
+            }
+            for( auto iter = mOriginalVars.begin(); iter != mOriginalVars.end(); ++iter )
+            {
+                if( iter->second->isBasic() )
+                    deactivateBasicVar( iter->second );
+            }
+            for( auto iter = mSlackVars.begin(); iter != mSlackVars.end(); ++iter )
+            {
+                if( iter->second->isBasic() )
+                    deactivateBasicVar( iter->second );
+            }
+            #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
+            std::cout << "Found substitutions:" << std::endl;
+            for( auto iter = validSubstitutions.begin(); iter != validSubstitutions.end(); ++iter )
+                std::cout << iter->first << " -> " << iter->second << std::endl;
+            #endif
+            return validSubstitutions;
         }
         
         /**

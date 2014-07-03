@@ -668,80 +668,11 @@ Return:
      */
     EvalRationalMap LRAModule::getRationalModel() const
     {
-        EvalRationalMap result = EvalRationalMap();
         if( mInfeasibleSubsets.empty() )
         {
-            LRABoundType minDelta = -1;
-            LRABoundType curDelta = 0;
-            LRAVariable* variable = NULL;
-            // For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
-            for( auto originalVar = mTableau.originalVars().begin(); originalVar != mTableau.originalVars().end(); ++originalVar )
-            {
-                variable = originalVar->second;
-                const LRAValue& assValue = variable->assignment();
-                const LRABound& inf = variable->infimum();
-                if( !inf.isInfinite() )
-                {
-                    // .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
-                    if( inf.limit().mainPart() < assValue.mainPart() && inf.limit().deltaPart() > assValue.deltaPart() )
-                    {
-                        curDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
-                        if( minDelta < 0 || curDelta < minDelta )
-                            minDelta = curDelta;
-                    }
-                }
-                const LRABound& sup = variable->supremum();
-                if( !sup.isInfinite() )
-                {
-                    // .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
-                    if( sup.limit().mainPart() > assValue.mainPart() && sup.limit().deltaPart() < assValue.deltaPart() )
-                    {
-                        curDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
-                        if( minDelta < 0 || curDelta < minDelta )
-                            minDelta = curDelta;
-                    }
-                }
-            }
-            // For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
-            for( auto slackVar = mTableau.slackVars().begin(); slackVar != mTableau.slackVars().end(); ++slackVar )
-            {
-                variable = slackVar->second;
-                if( !variable->isActive() ) continue;
-                const LRAValue& assValue = variable->assignment();
-                const LRABound& inf = variable->infimum();
-                if( !inf.isInfinite() )
-                {
-                    // .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
-                    if( inf.limit().mainPart() < assValue.mainPart() && inf.limit().deltaPart() > assValue.deltaPart() )
-                    {
-                        curDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
-                        if( minDelta < 0 || curDelta < minDelta )
-                            minDelta = curDelta;
-                    }
-                }
-                const LRABound& sup = variable->supremum();
-                if( !sup.isInfinite() )
-                {
-                    // .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
-                    if( sup.limit().mainPart() > assValue.mainPart() && sup.limit().deltaPart() < assValue.deltaPart() )
-                    {
-                        curDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
-                        if( minDelta < 0 || curDelta < minDelta )
-                            minDelta = curDelta;
-                    }
-                }
-            }
-
-            curDelta = minDelta < 0 ? 1 : minDelta;
-            // Calculate the rational assignment of all original variables.
-            for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
-            {
-                LRABoundType value = var->second->assignment().mainPart() + var->second->assignment().deltaPart() * curDelta;
-                result.insert( pair< const carl::Variable, Rational >( var->first, value ) );
-            }
-//            assert( assignmentConsistentWithTableau( result, curDelta ) );
+            return mTableau.getRationalAssignment();
         }
-        return result;
+        return EvalRationalMap();
     }
 
     /**
