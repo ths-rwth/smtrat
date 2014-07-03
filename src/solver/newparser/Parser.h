@@ -202,10 +202,6 @@ private:
 		mScopeStack.top().restore(*this);
 		mScopeStack.pop();
 	}
-
-	const Formula* mkBoolean(const carl::Variable& var) {
-        return newFormula(var);
-    }
 	const Formula* mkConstraint(const Polynomial&, const Polynomial&, Relation);
 	Polynomial mkIteInExpr(const Formula* _condition, Polynomial& _then, Polynomial& _else);
 	const Formula* mkFormula(Type _type, PointerSet<Formula>& _subformulas);

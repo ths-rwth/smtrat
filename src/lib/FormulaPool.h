@@ -90,7 +90,7 @@ namespace smtrat
              * @param _booleanVar The Boolean variable wrapped by this formula.
              * @return A formula with wrapping the given Boolean variable.
              */
-            const Formula* newFormula( carl::Variable::Arg _booleanVar )
+            const Formula* newVariableFormula( carl::Variable::Arg _booleanVar )
             {
                 return addFormulaToPool( new Formula( _booleanVar ) );
             }
@@ -99,7 +99,7 @@ namespace smtrat
              * @param _constraint The constraint wrapped by this formula.
              * @return A formula with wrapping the given constraint.
              */
-            const Formula* newFormula( const Constraint* _constraint )
+            const Formula* newConstraintFormula( const Constraint* _constraint )
             {
                 #ifdef SIMPLIFY_FORMULAS
                 if( _constraint == constraintPool().consistentConstraint() )
@@ -300,7 +300,7 @@ namespace smtrat
     
     const Formula* falseFormula();
     
-    const Formula* newFormula( carl::Variable::Arg _booleanVar );
+    const Formula* newVariableFormula( carl::Variable::Arg _booleanVar );
     
     const Formula* newFormula( const Constraint* _constraint );
     

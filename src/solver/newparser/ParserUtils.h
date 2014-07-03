@@ -41,16 +41,16 @@ std::ostream& operator<<(std::ostream& os, const qi::symbols<char, T>& sym) {
 }
 
 struct TypeOfTerm : public boost::static_visitor<ExpressionType> {
-	ExpressionType operator()(const Formula*) const { return BOOLEAN; }
-	ExpressionType operator()(const Polynomial&) const { return THEORY; }
+	ExpressionType operator()(const Formula*) const { return ExpressionType::BOOLEAN; }
+	ExpressionType operator()(const Polynomial&) const { return ExpressionType::THEORY; }
 	ExpressionType operator()(const carl::Variable& v) const { return (*this)(v.getType()); }
 	ExpressionType operator()(const carl::VariableType& v) const {
 		switch (v) {
-			case carl::VariableType::VT_BOOL: return BOOLEAN;
+			case carl::VariableType::VT_BOOL: return ExpressionType::BOOLEAN;
 			case carl::VariableType::VT_INT:
-			case carl::VariableType::VT_REAL: return THEORY;
+			case carl::VariableType::VT_REAL: return ExpressionType::THEORY;
 			default:
-				return THEORY;
+				return ExpressionType::THEORY;
 		}
 	}
 	template<typename T>

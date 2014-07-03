@@ -1173,7 +1173,7 @@ namespace smtrat
                     {
                         const Constraint* c1 = newConstraint( currentFormula->constraint().lhs(), Relation::LESS );
                         const Constraint* c2 = newConstraint( currentFormula->constraint().lhs(), Relation::EQ );
-                        subformulasToTransform.push_back( newFormula( OR, newFormula( c1 ), newFormula( c2 ) ) );
+                        subformulasToTransform.push_back( newFormula( OR, newVariableFormula( c1 ), newVariableFormula( c2 ) ) );
                     }
                     else
                     {
@@ -1336,7 +1336,7 @@ namespace smtrat
                                 if( iter.second )
                                 {
                                     carl::Variable auxVar = newAuxiliaryBooleanVariable();
-                                    const Formula* hi = newFormula( auxVar );
+                                    const Formula* hi = newVariableFormula( auxVar );
                                     hi->setDifficulty( currentSubformula->difficulty() );
                                     iter.first->second = new pair<const Formula*,const Formula*>( hi, newNegation( hi ) );
                                 }

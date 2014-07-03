@@ -88,7 +88,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 
 	formula = 
 			(bind_bool >> boundary)[qi::_val = qi::_1]
-		|	(var_bool >> boundary)[qi::_val = px::bind(&SMTLIBParser::mkBoolean, px::ref(*this), qi::_1)]
+		|	(var_bool >> boundary)[qi::_val = px::bind(&newVariableFormula, qi::_1)]
 		|	qi::lit("true")[qi::_val = px::bind(&trueFormula)]
 		|	qi::lit("false")[qi::_val = px::bind(&falseFormula)]
 		|	("(" >> formula_op >> ")")[qi::_val = qi::_1]
@@ -202,7 +202,7 @@ void SMTLIBParser::declareFun(const std::string& name, const std::vector<carl::V
 	assert(this->isSymbolFree(name));
 	assert(args.size() == 0);
 	switch (TypeOfTerm::get(sort)) {
-	case BOOLEAN: {
+	case ExpressionType::BOOLEAN: {
 			if (this->var_bool.sym.find(name) != nullptr) handler->warn() << "a boolean variable with name '" << name << "' has already been defined.";
 			carl::Variable var = newBooleanVariable(name, true);
 			this->var_bool.sym.add(name, var);
@@ -210,7 +210,7 @@ void SMTLIBParser::declareFun(const std::string& name, const std::vector<carl::V
 			break;
 		}
 		break;
-	case THEORY: {
+	case ExpressionType::THEORY: {
 			if (this->var_theory.sym.find(name) != nullptr) handler->warn() << "a theory variable with name '" << name << "' has already been defined.";
 			carl::Variable var = newArithmeticVariable(name, sort, true);
 			this->var_theory.sym.add(name, var);
@@ -228,8 +228,8 @@ void SMTLIBParser::declareSort(const std::string& name, const Rational& arity) {
 void SMTLIBParser::defineFun(const std::string& name, const std::vector<carl::Variable>& args, const carl::VariableType& sort, const boost::variant<const Formula*, Polynomial>& term) {
 	if (this->handler->printInstruction()) handler->regular() << "(define-fun " << name << " () " << term << ")" << std::endl;
 	switch (TypeOfTerm::get(sort)) {
-	case BOOLEAN:
-		if (TypeOfTerm::get(term) != BOOLEAN) {
+	case ExpressionType::BOOLEAN:
+		if (TypeOfTerm::get(term) != ExpressionType::BOOLEAN) {
 			this->handler->error() << "The return type of \"" << name << "\" was given as Bool, but the parsed expression is a polynomial.";
 			return;
 		}
@@ -239,13 +239,13 @@ void SMTLIBParser::defineFun(const std::string& name, const std::vector<carl::Va
 			this->funmap_bool.add(name, std::make_tuple(name, args, boost::get<const Formula*>(term)));
 		}
 		break;
-	case THEORY:
-		if (TypeOfTerm::get(term) != THEORY) {
+	case ExpressionType::THEORY:
+		if (TypeOfTerm::get(term) != ExpressionType::THEORY) {
 			this->handler->error() << "The return type of \"" << name << "\" was given as a theory type, but the parsed expression is a formula.";
 			return;
 		}
 		for (const carl::Variable& v: args) {
-			if (TypeOfTerm::get(v) != THEORY) {
+			if (TypeOfTerm::get(v) != ExpressionType::THEORY) {
 				this->handler->error() << "The argument " << carl::VariablePool::getInstance().getName(v) << " of " << name << " is Bool. For theory functions, only theory arguments are supported.";
 				return;
 			}
@@ -401,7 +401,7 @@ Polynomial SMTLIBParser::mkIteInExpr(const Formula* _condition, Polynomial& _the
 
 const Formula* SMTLIBParser::mkConstraint(const Polynomial& lhs, const Polynomial& rhs, Relation rel) {
 	const Constraint* cons = newConstraint(lhs-rhs, rel);
-	return newFormula(cons);
+	return newVariableFormula(cons);
 }
 
 Polynomial SMTLIBParser::mkIteInExpr(const Formula* _condition, Polynomial& _then, Polynomial& _else) {
@@ -425,8 +425,7 @@ Polynomial SMTLIBParser::mkIteInExpr(const Formula* _condition, Polynomial& _the
 const smtrat::Formula* SMTLIBParser::mkFormula( smtrat::Type type, PointerSet<Formula>& _subformulas )
 {
 	assert(type == smtrat::AND || type == smtrat::OR || type == smtrat::XOR || type == smtrat::IFF);
-	auto f =  newFormula(type, _subformulas);
-	return f;
+	return newFormula(type, _subformulas);
 }
 
 carl::Variable SMTLIBParser::addQuantifiedVariable(const std::string& _name, const boost::optional<carl::VariableType>& type) {
@@ -436,13 +435,13 @@ carl::Variable SMTLIBParser::addQuantifiedVariable(const std::string& _name, con
 	}
 	if (type.is_initialized()) {
 		switch (TypeOfTerm::get(type.get())) {
-			case BOOLEAN: {
+			case ExpressionType::BOOLEAN: {
 				carl::Variable v = newBooleanVariable(name);
 				this->var_bool.sym.remove(_name);
 				this->var_bool.sym.add(_name, v);
 				return v;
 			}
-			case THEORY: {
+			case ExpressionType::THEORY: {
 				carl::Variable v = newArithmeticVariable(name, type.get());
 				this->var_theory.sym.remove(_name);
 				this->var_theory.sym.add(_name, v);
@@ -469,10 +468,10 @@ carl::Variable SMTLIBParser::addVariableBinding(const std::pair<std::string, car
 	assert(this->isSymbolFree(b.first));
 	carl::Variable v = carl::VariablePool::getInstance().getFreshVariable(b.first, b.second);
 	switch (TypeOfTerm::get(b.second)) {
-	case BOOLEAN:
-		bind_bool.sym.add(b.first, newFormula(v));
+	case ExpressionType::BOOLEAN:
+		bind_bool.sym.add(b.first, newVariableFormula(v));
 		break;
-	case THEORY:
+	case ExpressionType::THEORY:
 		bind_theory.sym.add(b.first, Polynomial(v));
 		break;
 	}

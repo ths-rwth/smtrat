@@ -16,7 +16,7 @@ bool checkArguments(const std::string& name, const std::vector<carl::Variable>& 
 			out() << "The type of argument " << (id+1) << " for \"" << name << "\" did not match the declaration.";
 			return false;
 		}
-		if (type == BOOLEAN) {
+		if (type == ExpressionType::BOOLEAN) {
 			boolAssignments[types[id]] = boost::get<const Formula*>(args[id]);
 		} else {
 			theoryAssignments[types[id]] = boost::get<Polynomial>(args[id]);

@@ -204,14 +204,14 @@ namespace smtrat
         return FormulaPool::getInstance().falseFormula();
     }
     
-    const Formula* newFormula( carl::Variable::Arg _booleanVar )
+    const Formula* newVariableFormula( carl::Variable::Arg _booleanVar )
     {
-        return FormulaPool::getInstance().newFormula( _booleanVar );
+        return FormulaPool::getInstance().newVariableFormula( _booleanVar );
     }
     
     const Formula* newFormula( const Constraint* _constraint )
     {
-        return FormulaPool::getInstance().newFormula( _constraint );
+        return FormulaPool::getInstance().newConstraintFormula( _constraint );
     }
     
     const Formula* newNegation( const Formula* _subformula )

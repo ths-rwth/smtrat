@@ -21,7 +21,7 @@ class Formula;
 
 namespace parser {
 
-enum ExpressionType { BOOLEAN, THEORY };
+enum class ExpressionType : unsigned { BOOLEAN, THEORY };
 
 typedef boost::variant<bool, std::string, Rational, unsigned, boost::spirit::qi::unused_type> AttributeValue;
 typedef std::pair<std::string, AttributeValue> Attribute;
