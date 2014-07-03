@@ -43,7 +43,7 @@
 #endif //SMTRAT_DEVOPTION_Statistics
 
 
-#include "newparser/Parser.h"
+#include "parser/Parser.h"
 
 class Executor : public smtrat::parser::InstructionHandler {
 	CMakeStrategySolver* solver;

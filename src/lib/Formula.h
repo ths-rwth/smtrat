@@ -41,7 +41,7 @@
 #include "modules/ModuleType.h"
 #include "Assignment.h"
 #include "Constraint.h"
-#include "../solver/newparser/ParserTypes.h"
+#include "../solver/parser/ParserTypes.h"
 
 namespace smtrat
 {
