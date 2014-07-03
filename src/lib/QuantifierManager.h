@@ -25,8 +25,8 @@ private:
      * @param c Third set.
      * @return If intersection is not empty.
      */
-	template<typename T>
-	bool intersect(const std::set<T>& a, const std::set<T>& b, std::set<T>& c) const {
+	template<typename T, typename O1, typename O2, typename O3>
+	bool intersect(const std::set<T, O1>& a, const std::set<T, O2>& b, std::set<T, O3>& c) const {
 		size_t s = c.size();
 		std::set_intersection(
 			a.begin(), a.end(),
@@ -45,7 +45,7 @@ public:
      * @param eliminable Set of eliminable variables.
      * @return Type of quantification. Can only be EXISTS or FORALL.
      */
-	Type eliminable(const std::set<carl::Variable>& variables, std::set<carl::Variable>& eliminable) const {
+	Type eliminable(const Variables& variables, Variables& eliminable) const {
 		// Start with an empty set.
 		eliminable.clear();
 		// Iterate over all levels, starting with the deepest one.
@@ -86,6 +86,45 @@ public:
 
 	QuantifiedVariables& quantifiers() {
 		return mData;
+	}
+
+	/**
+	 * Extends the given variable order (that may be empty) such that it includes all given variables.
+	 * Variables with a higher quantifier level have a lower precedence and end up in the back of the resulting vector.
+	 * Depending on rebuildOrder, the order is either rebuild completely or only extended. In the latter case, the order of the elements already in the order will not change and new variables are inserted.
+	 * If necessary, a custom ordering can be given.
+	 * If the given order does not comply to the partial order induced by the quantifier hierarchy, this method may exhibit undefined behaviour.
+	 * @param vars Variables to add to the variable order.
+	 * @param order Existing variable order that is to be extended.
+	 * @param rebuildOrder Controls if the order shall be extended or rebuilt.
+	 * @param ordering A custom ordering.
+	 * @return New extended variable order.
+	 */
+	template<typename Ordering = std::less<carl::Variable>>
+	std::vector<carl::Variable> extendVariableOrder(const Variables& vars, const std::vector<carl::Variable>& order, bool rebuildOrder = true, const Ordering& ordering = Ordering()) {
+		std::vector<carl::Variable> result;
+		auto orderIt = order.begin();
+		std::set<carl::Variable, Ordering> v(ordering);
+		// Iterate over all quantifier levels.
+		for (auto curLvl: mData) {
+			v.clear();
+			// Select variables from this level.
+			intersect(curLvl, vars, v);
+			// Process variables from order that are in this level.
+			while (orderIt != order.end() && curLvl.count(*orderIt) > 0) {
+				// If rebuildOrder, just insert the variable into v.
+				// Otherwise directly write it to the result and make sure it won't appear again.
+				if (rebuildOrder) v.insert(*orderIt);
+				else {
+					result.push_back(*orderIt);
+					v.erase(*orderIt);
+				}
+				orderIt++;
+			}
+			// Append new variables to the result.
+			result.insert(result.end(), v.begin(), v.end());
+		}
+		return result;
 	}
 };
 
