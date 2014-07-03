@@ -8,14 +8,15 @@
 #include <algorithm>
 #include <sstream>
 #include <type_traits>
+#include <fstream>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/variant.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_bind.hpp>
 
 #include "../../lib/Common.h"
+#include "../../lib/Formula.h"
 #include "../../lib/datastructures/VariantMap.h"
-#include "Driver.h"
 #include "ParserTypes.h"
 
 namespace smtrat {

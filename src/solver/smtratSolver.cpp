@@ -34,7 +34,6 @@
 
 #include "config.h"
 #include CMakeStrategyHeader
-#include "parser/ParserSettings.h"
 #include "RuntimeSettingsManager.h"
 #include "../lib/modules/AddModules.h"
 
@@ -43,9 +42,6 @@
 #include "lib/utilities/stats/StatisticSettings.h"
 #endif //SMTRAT_DEVOPTION_Statistics
 
-#define NEWPARSER
-
-#ifdef NEWPARSER
 
 #include "newparser/Parser.h"
 
@@ -148,25 +144,24 @@ public:
  * @param formula A pointer to the formula object which holds the parsed input afterwards.
  * @param options Save options from the smt2 file here.
  */
-unsigned executeFile(const std::string& pathToInputFile, smtrat::ParserSettings* settings, CMakeStrategySolver* solver, const smtrat::RuntimeSettingsManager& settingsManager) {
+unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* solver, const smtrat::RuntimeSettingsManager& settingsManager) {
 
-	// Increase stack size to the maximum.
-	rlimit rl;
-	getrlimit(RLIMIT_STACK, &rl);
-	rl.rlim_cur = rl.rlim_max;
-	setrlimit(RLIMIT_STACK, &rl);
+    // Increase stack size to the maximum.
+    rlimit rl;
+    getrlimit(RLIMIT_STACK, &rl);
+    rl.rlim_cur = rl.rlim_max;
+    setrlimit(RLIMIT_STACK, &rl);
 
     std::ifstream infile(pathToInputFile);
     if (!infile.good()) {
         std::cerr << "Could not open file: " << pathToInputFile << std::endl;
         exit(SMTRAT_EXIT_NOSUCHFILE);
     }
-	Executor* e = new Executor(solver);
-	smtrat::parser::SMTLIBParser parser(e, true);
-    settings->setOptionsToParser(parser);
+    Executor* e = new Executor(solver);
+    smtrat::parser::SMTLIBParser parser(e, true);
     bool parsingSuccessful = parser.parse(infile, pathToInputFile);
-	if (parser.queueInstructions) e->runInstructions();
-	unsigned exitCode = e->getExitCode();
+    if (parser.queueInstructions) e->runInstructions();
+    unsigned exitCode = e->getExitCode();
     if (!parsingSuccessful) {
         std::cerr << "Parse error" << std::endl;
 		delete e;
@@ -177,140 +172,9 @@ unsigned executeFile(const std::string& pathToInputFile, smtrat::ParserSettings*
         std::cout << std::endl;
         solver->printAssignment( std::cout );
     }
-	delete e;
-	return exitCode;
+    delete e;
+    return exitCode;
 }
-
-#else
-
-unsigned executeFile(const std::string& pathToInputFile, smtrat::ParserSettings* settings, CMakeStrategySolver* nratSolver, const smtrat::RuntimeSettingsManager& settingsManager) {
-	smtrat::Driver parser;
-	settings->setOptionsToParser( parser );
-    std::fstream infile( pathToInputFile.c_str() );
-    if( !infile.good() )
-    {
-        std::cerr << "Could not open file: " << pathToInputFile << std::endl;
-        return SMTRAT_EXIT_NOSUCHFILE;
-    }
-    bool parsingSuccessful = parser.parse_stream( infile, pathToInputFile.c_str() );
-    if(!parsingSuccessful)
-    {
-        std::cerr << "Parse error" << std::endl;
-        return SMTRAT_EXIT_PARSERFAILURE;
-    }
-	
-	nratSolver->rDebugOutputChannel().rdbuf( parser.rDiagnosticOutputChannel().rdbuf() );
-	
-	unsigned returnValue = 0;
-	smtrat::Answer lastAnswer = smtrat::Unknown;
-    smtrat::InstructionKey currentInstructionKey;
-    smtrat::InstructionValue currentInstructionValue;
-    while( parser.getInstruction( currentInstructionKey, currentInstructionValue ) )
-    {
-        switch( currentInstructionKey )
-        {
-            case smtrat::PUSHBT:
-            {
-                for( int i = 0; i<currentInstructionValue.num; ++i )
-                    nratSolver->push();
-                break;
-            }
-            case smtrat::POPBT:
-            {
-                for( int i = 0; i<currentInstructionValue.num; ++i )
-                    if( !nratSolver->pop() )
-                        parser.error( "Cannot pop an empty stack of backtrack points!", true );
-                break;
-            }
-            case smtrat::ASSERT:
-            {
-                nratSolver->add( currentInstructionValue.formula );
-                break;
-            }
-            case smtrat::CHECK:
-            {
-                lastAnswer = nratSolver->check();
-                switch( lastAnswer )
-                {
-                    case smtrat::True:
-                    {
-                        if( parser.status() == 0 )
-                        {
-                            parser.error( "expected unsat, but returned sat", true );
-                            returnValue = SMTRAT_EXIT_WRONG_ANSWER;
-                        }
-                        else
-                        {
-                            parser.rRegularOutputChannel() << "sat" << std::endl;
-                            returnValue = SMTRAT_EXIT_SAT;
-                        }
-                        break;
-                    }
-                    case smtrat::False:
-                    {
-                        if( parser.status() == 1 )
-                        {
-                            parser.error( "error, expected sat, but returned unsat", true );
-                            returnValue = SMTRAT_EXIT_WRONG_ANSWER;
-                        }
-                        else
-                        {
-                            parser.rRegularOutputChannel() << "unsat" << std::endl;
-                            returnValue = SMTRAT_EXIT_UNSAT;
-                        }
-                        break;
-                    }
-                    case smtrat::Unknown:
-                    {
-                        parser.rRegularOutputChannel() << "unknown" << std::endl;
-                        returnValue = SMTRAT_EXIT_UNKNOWN;
-                        break;
-                    }
-                    default:
-                    {
-                        parser.error( "Unexpected output!", true );
-                        returnValue = SMTRAT_EXIT_UNEXPECTED_ANSWER;
-                    }
-                }
-                break;
-            }
-            case smtrat::GET_ASSIGNMENT:
-            {
-                if( lastAnswer == smtrat::True )
-                {
-                    nratSolver->printAssignment( parser.rRegularOutputChannel() );
-                }
-                break;
-            }
-            case smtrat::GET_ASSERTS:
-            {
-                nratSolver->printAssertions( parser.rRegularOutputChannel() );
-                break;
-            }
-            case smtrat::GET_UNSAT_CORE:
-            {
-                nratSolver->printInfeasibleSubset( parser.rRegularOutputChannel() );
-                break;
-            }
-            default:
-            {
-                parser.error( "Unknown order!" );
-                assert( false );
-            }
-        }
-    }
-	
-	// Print assignment if provoked by system call.
-    if( settingsManager.printModel() && lastAnswer == smtrat::True )
-    {
-        std::cout << std::endl;
-        nratSolver->printAssignment( std::cout );
-    }
-	
-	return returnValue;
-}
-
-#endif
 
 void printTimings(smtrat::Manager* solver)
 {
@@ -341,9 +205,6 @@ int main( int argc, char* argv[] )
     #ifdef SMTRAT_DEVOPTION_Validation
     settingsManager.addSettingsObject( "validation", smtrat::Module::validationSettings );
     #endif
-    // Create and introduce a parser settings object.
-    smtrat::ParserSettings* parserSettings = new smtrat::ParserSettings();
-    settingsManager.addSettingsObject( "parser", parserSettings );
     // Introduce the settings object for the statistics to the manager.
     #ifdef SMTRAT_DEVOPTION_Statistics
     settingsManager.addSettingsObject("stats", smtrat::CollectStatistics::settings);
@@ -369,7 +230,7 @@ int main( int argc, char* argv[] )
     settingsManager.addSettingsObject( settingsObjects );
 	
 	// Parse input.
-    unsigned exitCode = executeFile(pathToInputFile, parserSettings, solver, settingsManager);
+    unsigned exitCode = executeFile(pathToInputFile, solver, settingsManager);
 
     if( settingsManager.doPrintTimings() )
     {
@@ -389,7 +250,6 @@ int main( int argc, char* argv[] )
     
     // Delete the solver and the formula.
     delete solver;
-    delete parserSettings;
 
-	return (int)exitCode;
+    return (int)exitCode;
 }
