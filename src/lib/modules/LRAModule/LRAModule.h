@@ -74,7 +74,6 @@ namespace smtrat
             ConstraintContextMap       mActiveResolvedNEQConstraints;
             ConstraintContextMap       mActiveUnresolvedNEQConstraints;
             PointerSet<Constraint>     mResolvedNEQConstraints;
-            ConstraintBoundsMap        mConstraintToBound;
             carl::Variable             mDelta;
             std::vector<const LRABound* >  mBoundCandidatesToPass;
             #ifdef LRA_CUTS_FROM_PROOFS
@@ -130,8 +129,8 @@ namespace smtrat
 
             const LRAVariable* getSlackVariable( const Constraint* _constraint ) const
             {
-                ConstraintBoundsMap::const_iterator iter = mConstraintToBound.find( _constraint );
-                assert( iter != mConstraintToBound.end() );
+                ConstraintBoundsMap::const_iterator iter = mTableau.constraintToBound().find( _constraint );
+                assert( iter != mTableau.constraintToBound().end() );
                 return iter->second->back()->pVariable();
             }
 

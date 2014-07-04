@@ -1029,10 +1029,12 @@ namespace smtrat
             case OR: // (not (or phi_1 .. phi_n))  ->  (and (not phi_1) .. (not phi_n))
                 newType = AND;
                 break;
-			case EXISTS: // (not (exists (vars) phi)) -> (forall (vars) (not phi))
-				newType = FORALL;
-			case FORALL: // (not (forall (vars) phi)) -> (exists (vars) (not phi))
-				newType = EXISTS;
+            case EXISTS: // (not (exists (vars) phi)) -> (forall (vars) (not phi))
+                break;
+                newType = FORALL;
+            case FORALL: // (not (forall (vars) phi)) -> (exists (vars) (not phi))
+                break;
+                newType = EXISTS;
             default:
                 assert( false );
                 cerr << "Unexpected type of formula!" << endl;
@@ -1065,69 +1067,70 @@ namespace smtrat
         }
     }
 
-	const Formula* Formula::toQF(QuantifiedVariables& variables, unsigned level, bool negated) const
-	{
-		const Formula* res;
-		switch (this->mType) {
-			case Type::AND:
-			case Type::IFF:
-			case Type::OR:
-			case Type::XOR:
-			{
-				PointerSet<Formula> subs;
-				for (auto sub: *this->mpSubformulas) {
-					subs.insert(sub->toQF(variables, level, negated));
-				}
-				res = newFormula(this->mType, std::move(subs));
-				break;
-			}
-			case Type::BOOL:
-			case Type::CONSTRAINT:
-			case Type::FFALSE:
-			case Type::TTRUE:
-				res = this;
-				break;
-			case Type::EXISTS:
-			case Type::FORALL:
-			{
-				unsigned cur = 0;
-				if ((level % 2 == (mType == Type::EXISTS ? 0 : 1)) xor negated) cur = level;
-				else cur = level+1;
-				Variables vars(this->quantifiedVariables().begin(), this->quantifiedVariables().end());
-				const Formula* f = this->pQuantifiedFormula();
-				for (auto it = vars.begin(); it != vars.end();) {
-					if (it->getType() == carl::VariableType::VT_BOOL) {
-						// Just leave boolean variables at the base level up to the SAT solver.
-						if (cur > 0) {
-							f = newFormula(
-								(mType == Type::EXISTS ? Type::OR : Type::AND),
-								f->substitute({{*it, trueFormula()}}),
-								f->substitute({{*it, falseFormula()}})
-							);
-						}
-						it = vars.erase(it);
-					}
-					else it++;
-				}
-				if (vars.size() > 0) {
-					while (variables.size() <= cur) variables.emplace_back();
-					variables[cur].insert(vars.begin(), vars.end());
-				}
-				res = f->toQF(variables, cur, negated);
-				break;
-			}
-			case Type::IMPLIES:
-				res = newImplication(pPremise()->toQF(variables, level, !negated), pConclusion()->toQF(variables, level, negated));
-				break;
-			case Type::ITE:
-				res = newIte(pCondition()->toQF(variables, level, negated), pFirstCase()->toQF(variables, level, negated), pSecondCase()->toQF(variables, level, negated));
-				break;
-			case Type::NOT:
-				res = this->pSubformula()->toQF(variables, level, !negated);
-				break;
-		}
-		return res;
-	}
+    const Formula* Formula::toQF(QuantifiedVariables& variables, unsigned level, bool negated) const
+    {
+        return this; // Disabled because of incorrectness
+//        const Formula* res;
+//        switch (this->mType) {
+//            case Type::AND:
+//            case Type::IFF:
+//            case Type::OR:
+//            case Type::XOR:
+//            {
+//                PointerSet<Formula> subs;
+//                for (auto sub: *this->mpSubformulas) {
+//                    subs.insert(sub->toQF(variables, level, negated));
+//                }
+//                res = newFormula(this->mType, std::move(subs));
+//                break;
+//            }
+//            case Type::BOOL:
+//            case Type::CONSTRAINT:
+//            case Type::FFALSE:
+//            case Type::TTRUE:
+//                res = this;
+//                break;
+//            case Type::EXISTS:
+//            case Type::FORALL:
+//            {
+//                unsigned cur = 0;
+//                if ((level % 2 == (mType == Type::EXISTS ? 0 : 1)) xor negated) cur = level;
+//                else cur = level+1;
+//                Variables vars(this->quantifiedVariables().begin(), this->quantifiedVariables().end());
+//                const Formula* f = this->pQuantifiedFormula();
+//                for (auto it = vars.begin(); it != vars.end();) {
+//                    if (it->getType() == carl::VariableType::VT_BOOL) {
+//                        // Just leave boolean variables at the base level up to the SAT solver.
+//                        if (cur > 0) {
+//                            f = newFormula(
+//                                (mType == Type::EXISTS ? Type::OR : Type::AND),
+//                                f->substitute({{*it, trueFormula()}}),
+//                                f->substitute({{*it, falseFormula()}})
+//                            );
+//                        }
+//                        it = vars.erase(it);
+//                    }
+//                    else it++;
+//                }
+//                if (vars.size() > 0) {
+//                    while (variables.size() <= cur) variables.emplace_back();
+//                    variables[cur].insert(vars.begin(), vars.end());
+//                }
+//                res = f->toQF(variables, cur, negated);
+//                break;
+//            }
+//            case Type::IMPLIES:
+//                res = newImplication(pPremise()->toQF(variables, level, !negated), pConclusion()->toQF(variables, level, negated));
+//                break;
+//            case Type::ITE:
+//                res = newIte(pCondition()->toQF(variables, level, negated), pFirstCase()->toQF(variables, level, negated), pSecondCase()->toQF(variables, level, negated));
+//                break;
+//            case Type::NOT:
+//                res = this->pSubformula()->toQF(variables, level, !negated);
+//                break;
+//        }
+//        return res;
+    }
 
     const Formula* Formula::toCNF( bool _keepConstraints ) const
     {
@@ -1150,14 +1153,14 @@ namespace smtrat
         while( !subformulasToTransform.empty() )
         {
             const Formula* currentFormula = subformulasToTransform.back();
-//            cout << "To add:" << endl;
-//            for( auto f : subformulasToTransform )
-//                cout << "   " << *f << endl;
-//            cout << endl;
-//            cout << "Conjunction:" << endl;
-//            for( auto f : subformulas )
-//                cout << "   " << *f << endl;
-//            cout << endl;
+            cout << "To add:" << endl;
+            for( auto f : subformulasToTransform )
+                cout << "   " << *f << endl;
+            cout << endl;
+            cout << "Conjunction:" << endl;
+            for( auto f : subformulas )
+                cout << "   " << *f << endl;
+            cout << endl;
             subformulasToTransform.pop_back();
             switch( currentFormula->getType() )
             {
@@ -1284,14 +1287,14 @@ namespace smtrat
                     while( !currentFormulaValid && !phis.empty() )
                     {
                         const Formula* currentSubformula = phis.back();
-//                        cout << "    To add:" << endl;
-//                        for( auto f : phis )
-//                            cout << "       " << *f << endl;
-//                        cout << endl;
-//                        cout << "    Disjunction:" << endl;
-//                        for( auto f : subsubformulas )
-//                            cout << "       " << *f << endl;
-//                        cout << endl;
+                        cout << "    To add:" << endl;
+                        for( auto f : phis )
+                            cout << "       " << *f << endl;
+                        cout << endl;
+                        cout << "    Disjunction:" << endl;
+                        for( auto f : subsubformulas )
+                            cout << "       " << *f << endl;
+                        cout << endl;
                         phis.pop_back();
                         switch( currentSubformula->getType() )
                         {
@@ -1398,18 +1401,18 @@ namespace smtrat
                                 phis.push_back( newFormula( AND, newNegation( lhs ), rhs ) );
                                 break;
                             }
-							case EXISTS:
-							{
-								assert(false);
-								std::cerr << "Formula must be quantifier-free!" << std::endl;
-								break;
-							}
-							case FORALL:
-							{
-								assert(false);
-								std::cerr << "Formula must be quantifier-free!" << std::endl;
-								break;
-							}
+                            case EXISTS:
+                            {
+                                    assert(false);
+                                    std::cerr << "Formula must be quantifier-free!" << std::endl;
+                                    break;
+                            }
+                            case FORALL:
+                            {
+                                    assert(false);
+                                    std::cerr << "Formula must be quantifier-free!" << std::endl;
+                                    break;
+                            }
                             default:
                             {
                                 assert( false );
@@ -1435,18 +1438,18 @@ namespace smtrat
                     }
                     break;
                 }
-				case EXISTS:
-				{
-					assert(false);
-					std::cerr << "Formula must be quantifier-free!" << std::endl;
-					break;
-				}
-				case FORALL:
-				{
-					assert(false);
-					std::cerr << "Formula must be quantifier-free!" << std::endl;
-					break;
-				}
+                case EXISTS:
+                {
+                        assert(false);
+                        std::cerr << "Formula must be quantifier-free!" << std::endl;
+                        break;
+                }
+                case FORALL:
+                {
+                        assert(false);
+                        std::cerr << "Formula must be quantifier-free!" << std::endl;
+                        break;
+                }
                 default:
                 {
                     assert( false );

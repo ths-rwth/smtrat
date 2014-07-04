@@ -722,8 +722,8 @@ namespace smtrat
         if( mpManager == NULL ) return Unknown;
         *mBackendsFoundAnswer = false;
         Answer result = Unknown;
-		// Update the propositions of the passed formula
-		mpPassedFormula->updateProperties();
+        // Update the propositions of the passed formula
+        mpPassedFormula->updateProperties();
         // Get the backends to be considered from the manager.
         mUsedBackends = mpManager->getBackends( this, mBackendsFoundAnswer );
         mAllBackends = mpManager->getAllBackends( this );
