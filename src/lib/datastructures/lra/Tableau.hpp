@@ -402,7 +402,7 @@ namespace smtrat
                 void addColumns( size_t, size_t, T2 );
                 void multiplyRow( size_t, T2 );
                 std::pair< const Variable<T1,T2>*, T2 > Scalar_Product( Tableau<T1,T2>&, Tableau<T1,T2>&, size_t, size_t, std::vector<size_t>&, std::vector<size_t>&);
-                void calculate_hermite_normalform( std::vector<size_t>& );
+                void calculate_hermite_normalform( std::vector<size_t>&, bool& );
                 void invert_HNF_Matrix( std::vector<size_t>& );
                 smtrat::Polynomial* create_cut_from_proof( Tableau<T1,T2>&, Tableau<T1,T2>&, size_t, std::vector<size_t>&, std::vector<size_t>&, T2&, T2&);
                 #endif
@@ -2865,9 +2865,7 @@ FindPivot:
                 {
                     dc_poly = dc_poly - (Rational)(basic_var.infimum().limit().mainPart());
                 }
-                std::cout << dc_poly << std::endl;
                 const smtrat::Constraint* dc_constraint = newConstraint( dc_poly, Relation::EQ );
-                std::cout << *dc_constraint << std::endl;
                 return dc_constraint;
             }
             else
@@ -3252,10 +3250,6 @@ FindPivot:
         template<typename T1, typename T2> 
         std::pair< const Variable<T1,T2>*, T2 > Tableau<T1,T2>::Scalar_Product(Tableau<T1,T2>& A, Tableau<T1,T2>& B,size_t rowA, size_t columnB,std::vector<size_t>& diagonals,std::vector<size_t>& dc_positions) 
         {
-            //A.print( LAST_ENTRY_ID, std::cout, "", true, true );
-            //B.print( LAST_ENTRY_ID, std::cout, "", true, true );
-            //for( auto iter = diagonals.begin(); iter != diagonals.end(); ++iter ) 
-                //printf( "%u", *iter ); 
             Iterator rowA_iterator = Iterator((*A.mRows.at(rowA)).startEntry(),A.mpEntries);
             Iterator columnB_iterator = Iterator( (*B.mColumns.at(columnB)).startEntry(),B.mpEntries );
             T2 sum = T2(0);
@@ -3301,7 +3295,7 @@ FindPivot:
          * @return   the vector containing the indices of the diagonal elements.
          */        
         template<typename T1, typename T2> 
-        void Tableau<T1,T2>::calculate_hermite_normalform(std::vector<size_t>& diagonals)
+        void Tableau<T1,T2>::calculate_hermite_normalform( std::vector<size_t>& diagonals, bool& full_rank )
         {
             for(size_t i=0;i<mColumns.size();i++)
             {
@@ -3477,8 +3471,13 @@ FindPivot:
                      * The current row does not need any eliminations.
                      * So search manually for the diagonal element.
                      */
-                    while(isDiagonal((*(*row_iterator).columnVar()).position(),diagonals))
+                    while( isDiagonal((*(*row_iterator).columnVar()).position(),diagonals) )
                     {
+                        if( row_iterator.hEnd( false ) )
+                        {
+                            full_rank = false;
+                            return;
+                        }
                         row_iterator.hMove( false );                        
                     }
                     if( (*row_iterator).content() < 0 )

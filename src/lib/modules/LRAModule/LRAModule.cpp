@@ -1248,7 +1248,13 @@ Return:
             dc_Tableau.addColumns(4,4,-1);
             dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
             */
-            dc_Tableau.calculate_hermite_normalform( diagonals_ref );
+            bool full_rank = true;
+            dc_Tableau.calculate_hermite_normalform( diagonals_ref, full_rank );
+            if( !full_rank)
+            {
+                branchAt( Polynomial( var->first ), (Rational)map_iterator->second );
+                return true;
+            }
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
             cout << "HNF of defining constraints:" << endl;
             dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
