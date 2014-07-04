@@ -3596,6 +3596,7 @@ FindPivot:
                         column_iterator2.vMove( false );
                         while( true )
                         {
+                            row_iterator = Iterator( (*column_iterator).rowVar()->startEntry(), mpEntries );
                             res = revert_diagonals( (*(*row_iterator).columnVar()).position(), diagonals );
                             while( res != (*(*column_iterator2).rowVar()).position() && !row_iterator.hEnd( false ) )
                             {
@@ -3611,6 +3612,7 @@ FindPivot:
                                 break;
                             }
                             column_iterator2.vMove( false );
+                            row_iterator = Iterator( (*column_iterator).rowVar()->startEntry(), mpEntries );
                         }   
                         value_to_be_changed = sum / divisor;
                     }  
