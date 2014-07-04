@@ -1153,14 +1153,14 @@ namespace smtrat
         while( !subformulasToTransform.empty() )
         {
             const Formula* currentFormula = subformulasToTransform.back();
-            cout << "To add:" << endl;
-            for( auto f : subformulasToTransform )
-                cout << "   " << *f << endl;
-            cout << endl;
-            cout << "Conjunction:" << endl;
-            for( auto f : subformulas )
-                cout << "   " << *f << endl;
-            cout << endl;
+//            cout << "To add:" << endl;
+//            for( auto f : subformulasToTransform )
+//                cout << "   " << *f << endl;
+//            cout << endl;
+//            cout << "Conjunction:" << endl;
+//            for( auto f : subformulas )
+//                cout << "   " << *f << endl;
+//            cout << endl;
             subformulasToTransform.pop_back();
             switch( currentFormula->getType() )
             {
@@ -1287,14 +1287,14 @@ namespace smtrat
                     while( !currentFormulaValid && !phis.empty() )
                     {
                         const Formula* currentSubformula = phis.back();
-                        cout << "    To add:" << endl;
-                        for( auto f : phis )
-                            cout << "       " << *f << endl;
-                        cout << endl;
-                        cout << "    Disjunction:" << endl;
-                        for( auto f : subsubformulas )
-                            cout << "       " << *f << endl;
-                        cout << endl;
+//                        cout << "    To add:" << endl;
+//                        for( auto f : phis )
+//                            cout << "       " << *f << endl;
+//                        cout << endl;
+//                        cout << "    Disjunction:" << endl;
+//                        for( auto f : subsubformulas )
+//                            cout << "       " << *f << endl;
+//                        cout << endl;
                         phis.pop_back();
                         switch( currentSubformula->getType() )
                         {
