@@ -1252,7 +1252,7 @@ Return:
             */
             bool full_rank = true;
             dc_Tableau.calculate_hermite_normalform( diagonals_ref, full_rank );
-            if( !full_rank)
+            if( !full_rank )
             {
                 branchAt( Polynomial( var->first ), (Rational)map_iterator->second );
                 return true;
@@ -1275,7 +1275,7 @@ Return:
                 LRAEntryType upper_lower_bound;
                 cut_from_proof = dc_Tableau.create_cut_from_proof( dc_Tableau, mTableau, i, diagonals, dc_positions, upper_lower_bound, max_value );
                 #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-                cout << "Proof of unsatisfiability:  " << *pcut << " = 0" << endl;
+                cout << "Proof of unsatisfiability:  " << *cut_from_proof << " = 0" << endl;
                 #endif
                 if( cut_from_proof != NULL )
                 {
@@ -1379,7 +1379,7 @@ Return:
 //            }
         }
         //PointerSet<Formula> premises;
-        //mTableau.collect_premises( _lraVar , premises  );                
+        //mTableau.collect_premises( _lraVar , premises  );  
         branchAt( _lraVar->expression(), _branchingValue );
         return true;
     }
