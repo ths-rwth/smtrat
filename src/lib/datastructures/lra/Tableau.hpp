@@ -48,7 +48,7 @@
 #endif
 //#define LRA_GOMORY_CUTS
 #ifndef LRA_GOMORY_CUTS
-//define LRA_CUTS_FROM_PROOFS
+//#define LRA_CUTS_FROM_PROOFS
 #ifdef LRA_CUTS_FROM_PROOFS
 //#define LRA_DEBUG_CUTS_FROM_PROOFS
 #endif
