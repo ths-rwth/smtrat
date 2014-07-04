@@ -3549,7 +3549,7 @@ FindPivot:
              * column which only contains one element.
              */  
             size_t i = mRows.size()-1;
-            std::map< std::pair<size_t, size_t >, T2 > changed_values  = std::map< std::pair<size_t, size_t>, T2 >();
+           std::map< std::pair<size_t, size_t >, T2 > changed_values  = std::map< std::pair<size_t, size_t>, T2 >();
             while( true )
             {
                 /*
@@ -3665,10 +3665,8 @@ FindPivot:
                     row_iterator.hMove( false );
                 }                
             }
-            std::cout << "Result: " << result.mainPart() << std::endl;
             if( !carl::isInteger( (Rational)result.mainPart() ) )
             {
-                std::cout << "Fractional result: " << result.mainPart() << std::endl;
                 // Construct the Cut
                 std::pair< const Variable<T1,T2>*, T2 > product;
                 size_t i=0;
@@ -3690,21 +3688,15 @@ FindPivot:
                     }
                     if( var_exists )
                     {
-                        std::cout << "Scalar_product with row: " << row_index << std::endl;
-                        std::cout << "Scalar_product with column: " << i << std::endl;
-                        //std::cout << "Row: " << Inverted_Tableau.mRows.at(i)->expression() << std::endl;
                         product = Scalar_Product(Inverted_Tableau,DC_Tableau,row_index,i,diagonals,dc_positions);
                     }
                     else
                     {
-                        std::cout << "Var not included: " << i << std::endl;
                         product.second = 0;
                     }
                     if(product.second != 0)
                     {
-                        std::cout << "Coefficient: " << product.second << std::endl;
                         T2 temp = (Rational)(carl::getDenom((Rational)result.mainPart()))*(Rational)product.second;
-                        std::cout << "Coefficient*Denom: " << temp << std::endl;
                         gcd_row  = carl::gcd( gcd_row , temp );
                         *sum += (*product.first).expression()*(Rational)temp;
                     }
@@ -3714,7 +3706,6 @@ FindPivot:
                  * than max_value*gcd_row and also divide the coefficients of the sum by gcd_row 
                  * according to the algorithm.
                  */ 
-                std::cout << "Cut: " << *sum << std::endl;
                 auto iter = (*sum).begin();
                 while( iter != (*sum).end() )
                 {
@@ -3726,11 +3717,13 @@ FindPivot:
                     ++iter;
                 }
                 lower = (Rational)carl::getNum((Rational)result.mainPart())/(Rational)gcd_row;
+                #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                 std::cout << "Numerator: " << carl::getNum((Rational)result.mainPart()) << std::endl;
                 std::cout << "Denominator: " << carl::getDenom((Rational)result.mainPart()) << std::endl;
                 std::cout << "gcd: " << gcd_row << std::endl;
                 std::cout << "lower: " << lower << std::endl;
                 std::cout << "Cut: " << *sum << std::endl;
+                #endif
                 return sum; 
             }
             else
