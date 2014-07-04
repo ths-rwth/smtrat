@@ -1143,15 +1143,17 @@ Return:
                     { 
                         assert( !gomory_constr->satisfiedBy( rMap_ ) );
                         PointerSet<Formula> subformulas; 
+                        /*
                         mTableau.collect_premises( basicVar, subformulas );
                         PointerSet<Formula> premise;
                         for( const Formula* pre : subformulas )
                         {
                             premise.insert( newNegation( pre ) );
                         }
+                        */
                         const Formula* gomory_formula = newFormula( gomory_constr );
-                        premise.insert( gomory_formula );
-                        addDeduction( newFormula( OR, std::move( premise ) ) );
+                        //premise.insert( gomory_formula );
+                        addDeduction( gomory_formula );
                     } 
                 }
             }    
@@ -1376,9 +1378,9 @@ Return:
 //                    return false;
 //            }
         }
-        PointerSet<Formula> premises;
-        mTableau.collect_premises( _lraVar , premises  );                
-        branchAt( _lraVar->expression(), _branchingValue, premises );
+        //PointerSet<Formula> premises;
+        //mTableau.collect_premises( _lraVar , premises  );                
+        branchAt( _lraVar->expression(), _branchingValue );
         return true;
     }
     
@@ -1418,9 +1420,9 @@ Return:
             {
                 return maybeGomoryCut( branch_var->second, ass_ );
             }
-            PointerSet<Formula> premises;
-            mTableau.collect_premises( branch_var->second , premises  );                
-            branchAt( branch_var->second->expression(), ass_, premises );
+            //PointerSet<Formula> premises;
+            //mTableau.collect_premises( branch_var->second , premises  );                
+            branchAt( branch_var->second->expression(), ass_ );
             return true;
         }
         else
@@ -1465,9 +1467,9 @@ Return:
             {
                 return maybeGomoryCut( branch_var->second, ass_ );
             }
-            PointerSet<Formula> premises;
-            mTableau.collect_premises( branch_var->second , premises  );                
-            branchAt( branch_var->second->expression(), ass_, premises );
+            //PointerSet<Formula> premises;
+            //mTableau.collect_premises( branch_var->second , premises  );                
+            branchAt( branch_var->second->expression(), ass_ );
             return true;         
         }
         else
@@ -1512,9 +1514,9 @@ Return:
             {
                 return maybeGomoryCut( branch_var->second, ass_ );
             }
-            PointerSet<Formula> premises;
-            mTableau.collect_premises( branch_var->second , premises  ); 
-            branchAt( branch_var->second->expression(), ass_, premises );
+            //PointerSet<Formula> premises;
+            //mTableau.collect_premises( branch_var->second , premises  ); 
+            branchAt( branch_var->second->expression(), ass_ );
             return true;
         }
         else
@@ -1541,9 +1543,9 @@ Return:
                 {
                     return maybeGomoryCut( var->second, ass );
                 }
-                PointerSet<Formula> premises;
-                mTableau.collect_premises( var->second, premises  ); 
-                branchAt( var->second->expression(), ass, premises );
+                //PointerSet<Formula> premises;
+                //mTableau.collect_premises( var->second, premises  ); 
+                branchAt( var->second->expression(), ass );
                 return true;           
             }
             ++map_iterator;
