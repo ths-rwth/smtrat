@@ -1143,15 +1143,17 @@ Return:
                     { 
                         assert( !gomory_constr->satisfiedBy( rMap_ ) );
                         PointerSet<Formula> subformulas; 
+                        /*
                         mTableau.collect_premises( basicVar, subformulas );
                         PointerSet<Formula> premise;
                         for( const Formula* pre : subformulas )
                         {
                             premise.insert( newNegation( pre ) );
                         }
+                        */
                         const Formula* gomory_formula = newFormula( gomory_constr );
-                        premise.insert( gomory_formula );
-                        addDeduction( newFormula( OR, std::move( premise ) ) );
+                        //premise.insert( gomory_formula );
+                        addDeduction( gomory_formula );
                     } 
                 }
             }    
@@ -1181,7 +1183,9 @@ Return:
             Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
+                #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                 cout << "Fix: " << var->first << endl;
+                #endif
                 break;
             }
             ++map_iterator;
@@ -1210,7 +1214,6 @@ Return:
             const Constraint* dc_constraint = mTableau.isDefining( i, max_value );
             if( dc_constraint != NULL  )
             {
-                cout << "Found defining constraint!" << endl;
                 size_t row_count_before = dc_Tableau.rows().size();
                 pair< const LRABound*, bool> result = dc_Tableau.newBound(dc_constraint);
                 PointerSet<Formula> formulas;
@@ -1228,18 +1231,16 @@ Return:
         {
             mProcessedDCMatrices.insert( DC_Matrix );
         }
-        dc_Tableau.print();
         if( dc_Tableau.rows().size() > 0 && pos == mProcessedDCMatrices.end() )
         {
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-            cout << "Defining constraint:" << endl;
+            cout << "Defining constraints:" << endl;
             dc_Tableau.print();   
             #endif
 
             // At least one DC exists -> Construct and embed it.
             vector<size_t> diagonals = vector<size_t>();    
             vector<size_t>& diagonals_ref = diagonals;               
-            dc_Tableau.print( );
             /*
             dc_Tableau.addColumns(0,2,2);
             dc_Tableau.addColumns(1,2,4);
@@ -1249,9 +1250,13 @@ Return:
             dc_Tableau.addColumns(4,4,-1);
             dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
             */
-            cout << "HNF matrix:" << endl;
-            dc_Tableau.calculate_hermite_normalform( diagonals_ref );
-            dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
+            bool full_rank = true;
+            dc_Tableau.calculate_hermite_normalform( diagonals_ref, full_rank );
+            if( !full_rank)
+            {
+                branchAt( Polynomial( var->first ), (Rational)map_iterator->second );
+                return true;
+            }
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
             cout << "HNF of defining constraints:" << endl;
             dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
@@ -1259,19 +1264,18 @@ Return:
             for( auto iter = diagonals.begin(); iter != diagonals.end(); ++iter ) 
                 printf( "%u", *iter );
             #endif  
-            cout << "Inverted matrix:" << endl;
             dc_Tableau.invert_HNF_Matrix( diagonals );
+            #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+            cout << "Inverted matrix:" << endl;
             dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
+            #endif 
             Polynomial* cut_from_proof = new Polynomial();
             for( size_t i = 0; i < dc_positions.size(); ++i )
             {
                 LRAEntryType upper_lower_bound;
                 cut_from_proof = dc_Tableau.create_cut_from_proof( dc_Tableau, mTableau, i, diagonals, dc_positions, upper_lower_bound, max_value );
-                mTableau.print();
                 #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-                #ifdef MODULE_VERBOSE_INTEGERS
                 cout << "Proof of unsatisfiability:  " << *pcut << " = 0" << endl;
-                #endif
                 #endif
                 if( cut_from_proof != NULL )
                 {
@@ -1283,16 +1287,6 @@ Return:
                     }
                     const smtrat::Constraint* cut_constraint = newConstraint( *cut_from_proof - (Rational)carl::floor((Rational)upper_lower_bound) , Relation::LEQ );
                     const smtrat::Constraint* cut_constraint2 = newConstraint( *cut_from_proof - ((Rational)carl::floor((Rational)upper_lower_bound)+bound_add) , Relation::GEQ );
-                    cout << "Constraint1: " << *cut_constraint << endl;
-                    cout << "Constraint2: " << *cut_constraint2 << endl;
-                    cout << "Cut: " << *cut_from_proof << endl;
-                    cout << "max_value: " << max_value << endl;
-                    //pair< const LRABound*, bool> result = mTableau.newBound(cut_constraint);
-                    //set<const Formula*> formulas;
-                    //mTableau.activateBound(result.first, formulas);
-                    //pair< const LRABound*, bool> result2 = mTableau.newBound(cut_constraint2);
-                    //set<const Formula*> formulas2;
-                    //mTableau.activateBound(result2.first, formulas2);
                     // Construct and add (p<=I-1 or p>=I))
                     const Formula* cons1 = newFormula( cut_constraint );
                     cons1->setActivity( -numeric_limits<double>::infinity() );
@@ -1307,9 +1301,11 @@ Return:
                     subformulasB.insert( newNegation( cons1 ) );
                     subformulasB.insert( newNegation( cons2 ) );
                     addDeduction( newFormula( OR, std::move( subformulasB ) ) );
+                    #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                     cout << "After adding proof of unsatisfiability:" << endl;
                     mTableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
                     cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+                    #endif
                     return true;
                 }
             }
@@ -1318,11 +1314,10 @@ Return:
             #endif
         }
         #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-        else
             cout << "No defining constraint!" << endl;
         cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
-        #endif
         cout << "Branch at: " << var->first << endl;
+        #endif
         branchAt( Polynomial( var->first ), (Rational)map_iterator->second );
         return true;
     }
@@ -1383,9 +1378,9 @@ Return:
 //                    return false;
 //            }
         }
-        PointerSet<Formula> premises;
-        mTableau.collect_premises( _lraVar , premises  );                
-        branchAt( _lraVar->expression(), _branchingValue, premises );
+        //PointerSet<Formula> premises;
+        //mTableau.collect_premises( _lraVar , premises  );                
+        branchAt( _lraVar->expression(), _branchingValue );
         return true;
     }
     
@@ -1425,9 +1420,9 @@ Return:
             {
                 return maybeGomoryCut( branch_var->second, ass_ );
             }
-            PointerSet<Formula> premises;
-            mTableau.collect_premises( branch_var->second , premises  );                
-            branchAt( branch_var->second->expression(), ass_, premises );
+            //PointerSet<Formula> premises;
+            //mTableau.collect_premises( branch_var->second , premises  );                
+            branchAt( branch_var->second->expression(), ass_ );
             return true;
         }
         else
@@ -1472,9 +1467,9 @@ Return:
             {
                 return maybeGomoryCut( branch_var->second, ass_ );
             }
-            PointerSet<Formula> premises;
-            mTableau.collect_premises( branch_var->second , premises  );                
-            branchAt( branch_var->second->expression(), ass_, premises );
+            //PointerSet<Formula> premises;
+            //mTableau.collect_premises( branch_var->second , premises  );                
+            branchAt( branch_var->second->expression(), ass_ );
             return true;         
         }
         else
@@ -1519,9 +1514,9 @@ Return:
             {
                 return maybeGomoryCut( branch_var->second, ass_ );
             }
-            PointerSet<Formula> premises;
-            mTableau.collect_premises( branch_var->second , premises  ); 
-            branchAt( branch_var->second->expression(), ass_, premises );
+            //PointerSet<Formula> premises;
+            //mTableau.collect_premises( branch_var->second , premises  ); 
+            branchAt( branch_var->second->expression(), ass_ );
             return true;
         }
         else
@@ -1548,9 +1543,9 @@ Return:
                 {
                     return maybeGomoryCut( var->second, ass );
                 }
-                PointerSet<Formula> premises;
-                mTableau.collect_premises( var->second, premises  ); 
-                branchAt( var->second->expression(), ass, premises );
+                //PointerSet<Formula> premises;
+                //mTableau.collect_premises( var->second, premises  ); 
+                branchAt( var->second->expression(), ass );
                 return true;           
             }
             ++map_iterator;

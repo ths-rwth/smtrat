@@ -402,7 +402,7 @@ namespace smtrat
                 void addColumns( size_t, size_t, T2 );
                 void multiplyRow( size_t, T2 );
                 std::pair< const Variable<T1,T2>*, T2 > Scalar_Product( Tableau<T1,T2>&, Tableau<T1,T2>&, size_t, size_t, std::vector<size_t>&, std::vector<size_t>&);
-                void calculate_hermite_normalform( std::vector<size_t>& );
+                void calculate_hermite_normalform( std::vector<size_t>&, bool& );
                 void invert_HNF_Matrix( std::vector<size_t>& );
                 smtrat::Polynomial* create_cut_from_proof( Tableau<T1,T2>&, Tableau<T1,T2>&, size_t, std::vector<size_t>&, std::vector<size_t>&, T2&, T2&);
                 #endif
@@ -2865,9 +2865,7 @@ FindPivot:
                 {
                     dc_poly = dc_poly - (Rational)(basic_var.infimum().limit().mainPart());
                 }
-                std::cout << dc_poly << std::endl;
                 const smtrat::Constraint* dc_constraint = newConstraint( dc_poly, Relation::EQ );
-                std::cout << *dc_constraint << std::endl;
                 return dc_constraint;
             }
             else
@@ -3252,10 +3250,6 @@ FindPivot:
         template<typename T1, typename T2> 
         std::pair< const Variable<T1,T2>*, T2 > Tableau<T1,T2>::Scalar_Product(Tableau<T1,T2>& A, Tableau<T1,T2>& B,size_t rowA, size_t columnB,std::vector<size_t>& diagonals,std::vector<size_t>& dc_positions) 
         {
-            //A.print( LAST_ENTRY_ID, std::cout, "", true, true );
-            //B.print( LAST_ENTRY_ID, std::cout, "", true, true );
-            //for( auto iter = diagonals.begin(); iter != diagonals.end(); ++iter ) 
-                //printf( "%u", *iter ); 
             Iterator rowA_iterator = Iterator((*A.mRows.at(rowA)).startEntry(),A.mpEntries);
             Iterator columnB_iterator = Iterator( (*B.mColumns.at(columnB)).startEntry(),B.mpEntries );
             T2 sum = T2(0);
@@ -3301,7 +3295,7 @@ FindPivot:
          * @return   the vector containing the indices of the diagonal elements.
          */        
         template<typename T1, typename T2> 
-        void Tableau<T1,T2>::calculate_hermite_normalform(std::vector<size_t>& diagonals)
+        void Tableau<T1,T2>::calculate_hermite_normalform( std::vector<size_t>& diagonals, bool& full_rank )
         {
             for(size_t i=0;i<mColumns.size();i++)
             {
@@ -3477,8 +3471,13 @@ FindPivot:
                      * The current row does not need any eliminations.
                      * So search manually for the diagonal element.
                      */
-                    while(isDiagonal((*(*row_iterator).columnVar()).position(),diagonals))
+                    while( isDiagonal((*(*row_iterator).columnVar()).position(),diagonals) )
                     {
+                        if( row_iterator.hEnd( false ) )
+                        {
+                            full_rank = false;
+                            return;
+                        }
                         row_iterator.hMove( false );                        
                     }
                     if( (*row_iterator).content() < 0 )
@@ -3549,7 +3548,7 @@ FindPivot:
              * column which only contains one element.
              */  
             size_t i = mRows.size()-1;
-            std::map< std::pair<size_t, size_t >, T2 > changed_values  = std::map< std::pair<size_t, size_t>, T2 >();
+           std::map< std::pair<size_t, size_t >, T2 > changed_values  = std::map< std::pair<size_t, size_t>, T2 >();
             while( true )
             {
                 /*
@@ -3596,6 +3595,7 @@ FindPivot:
                         column_iterator2.vMove( false );
                         while( true )
                         {
+                            row_iterator = Iterator( (*column_iterator).rowVar()->startEntry(), mpEntries );
                             res = revert_diagonals( (*(*row_iterator).columnVar()).position(), diagonals );
                             while( res != (*(*column_iterator2).rowVar()).position() && !row_iterator.hEnd( false ) )
                             {
@@ -3611,6 +3611,7 @@ FindPivot:
                                 break;
                             }
                             column_iterator2.vMove( false );
+                            row_iterator = Iterator( (*column_iterator).rowVar()->startEntry(), mpEntries );
                         }   
                         value_to_be_changed = sum / divisor;
                     }  
@@ -3663,10 +3664,8 @@ FindPivot:
                     row_iterator.hMove( false );
                 }                
             }
-            std::cout << "Result: " << result.mainPart() << std::endl;
             if( !carl::isInteger( (Rational)result.mainPart() ) )
             {
-                std::cout << "Fractional result: " << result.mainPart() << std::endl;
                 // Construct the Cut
                 std::pair< const Variable<T1,T2>*, T2 > product;
                 size_t i=0;
@@ -3688,21 +3687,15 @@ FindPivot:
                     }
                     if( var_exists )
                     {
-                        std::cout << "Scalar_product with row: " << row_index << std::endl;
-                        std::cout << "Scalar_product with column: " << i << std::endl;
-                        //std::cout << "Row: " << Inverted_Tableau.mRows.at(i)->expression() << std::endl;
                         product = Scalar_Product(Inverted_Tableau,DC_Tableau,row_index,i,diagonals,dc_positions);
                     }
                     else
                     {
-                        std::cout << "Var not included: " << i << std::endl;
                         product.second = 0;
                     }
                     if(product.second != 0)
                     {
-                        std::cout << "Coefficient: " << product.second << std::endl;
                         T2 temp = (Rational)(carl::getDenom((Rational)result.mainPart()))*(Rational)product.second;
-                        std::cout << "Coefficient*Denom: " << temp << std::endl;
                         gcd_row  = carl::gcd( gcd_row , temp );
                         *sum += (*product.first).expression()*(Rational)temp;
                     }
@@ -3712,7 +3705,6 @@ FindPivot:
                  * than max_value*gcd_row and also divide the coefficients of the sum by gcd_row 
                  * according to the algorithm.
                  */ 
-                std::cout << "Cut: " << *sum << std::endl;
                 auto iter = (*sum).begin();
                 while( iter != (*sum).end() )
                 {
@@ -3724,11 +3716,13 @@ FindPivot:
                     ++iter;
                 }
                 lower = (Rational)carl::getNum((Rational)result.mainPart())/(Rational)gcd_row;
+                #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                 std::cout << "Numerator: " << carl::getNum((Rational)result.mainPart()) << std::endl;
                 std::cout << "Denominator: " << carl::getDenom((Rational)result.mainPart()) << std::endl;
                 std::cout << "gcd: " << gcd_row << std::endl;
                 std::cout << "lower: " << lower << std::endl;
                 std::cout << "Cut: " << *sum << std::endl;
+                #endif
                 return sum; 
             }
             else
