@@ -325,7 +325,7 @@ void SMTLIBParser::setOption(const std::string& key, const AttributeValue& val) 
 	callHandler(&InstructionHandler::setOption, key, val);
 }
 
-#if 1
+#if 0
 
 const Formula* SMTLIBParser::mkConstraint(const Polynomial& lhs, const Polynomial& rhs, Relation rel) {
 	Polynomial p = lhs - rhs;
@@ -401,7 +401,7 @@ Polynomial SMTLIBParser::mkIteInExpr(const Formula* _condition, Polynomial& _the
 
 const Formula* SMTLIBParser::mkConstraint(const Polynomial& lhs, const Polynomial& rhs, Relation rel) {
 	const Constraint* cons = newConstraint(lhs-rhs, rel);
-	return newVariableFormula(cons);
+	return newFormula(cons);
 }
 
 Polynomial SMTLIBParser::mkIteInExpr(const Formula* _condition, Polynomial& _then, Polynomial& _else) {
