@@ -1143,17 +1143,15 @@ Return:
                     { 
                         assert( !gomory_constr->satisfiedBy( rMap_ ) );
                         PointerSet<Formula> subformulas; 
-                        /*
                         mTableau.collect_premises( basicVar, subformulas );
                         PointerSet<Formula> premise;
                         for( const Formula* pre : subformulas )
                         {
                             premise.insert( newNegation( pre ) );
                         }
-                        */
                         const Formula* gomory_formula = newFormula( gomory_constr );
-                        //premise.insert( gomory_formula );
-                        addDeduction( gomory_formula );
+                        premise.insert( gomory_formula );
+                        addDeduction( newFormula( OR, std::move( premise ) ) );
                     } 
                 }
             }    
