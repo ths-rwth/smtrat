@@ -187,6 +187,7 @@ namespace smtrat
         if( !mIsIcpInitialized)
         {
             // catch deductions
+            mLRA.init();
             mLRA.updateDeductions();
             while( !mLRA.deductions().empty() )
             {
@@ -730,6 +731,7 @@ namespace smtrat
         #endif
         // call mLRA to check linear feasibility
         mLRA.clearDeductions();
+        mLRA.rReceivedFormula().updateProperties();
         Answer lraAnswer = mLRA.isConsistent();
         
         // catch deductions
@@ -1402,6 +1404,7 @@ namespace smtrat
         }while ( boxFeasible );
         // This should not happen!
         assert(false);
+        return foundAnswer(Unknown);
     }
     
     
@@ -2319,8 +2322,9 @@ namespace smtrat
 
         #ifdef ICPMODULE_DEBUG
         cout << "[mLRA] receivedFormula: " << endl;
-        cout << mLRA.rReceivedFormula() << endl;
+        cout << mLRA.rReceivedFormula().toString() << endl;
         #endif
+        mLRA.rReceivedFormula().updateProperties();
         Answer centerFeasible = mLRA.isConsistent();
         mLRA.clearDeductions();
         
@@ -2680,6 +2684,7 @@ namespace smtrat
             mValidationFormula->push_back( *formulaIt );
             mLRA.assertSubformula( --mValidationFormula->end() );
         }
+        mLRA.rReceivedFormula().updateProperties();
         Answer boxCheck = mLRA.isConsistent();
         #ifdef ICPMODULE_DEBUG
         cout << "Boxcheck: " << boxCheck << endl;

@@ -8,6 +8,7 @@
 #include <cassert>
 #include <iterator>
 #include <list>
+#include <stack>
 
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 

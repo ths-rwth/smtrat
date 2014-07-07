@@ -35,6 +35,7 @@
 #define LRA_SIMPLE_THEORY_PROPAGATION
 #define LRA_SIMPLE_CONFLICT_SEARCH
 //#define LRA_ONE_REASON
+//#define LRA_RESTORE_PREVIOUS_CONSISTENT_ASSIGNMENT
 //#define LRA_EARLY_BRANCHING
 #ifndef LRA_GOMORY_CUTS
 #ifndef LRA_CUTS_FROM_PROOFS
@@ -50,6 +51,7 @@ namespace smtrat
         Module( _type, _formula, _conditionals, _manager ),
         mInitialized( false ),
         mAssignmentFullfilsNonlinearConstraints( false ),
+        mStrongestBoundsRemoved( false ),
         mProbableLoopCounter( 0 ),
         mTableau( mpPassedFormula->end() ),
         mLinearConstraints(),
@@ -149,6 +151,11 @@ namespace smtrat
 //                        }
                         if( constraint->relation() != Relation::NEQ )
                         {
+                            if( mStrongestBoundsRemoved )
+                            {
+                                mTableau.resetAssignment();
+                                mStrongestBoundsRemoved = false;
+                            }
                             auto constrBoundIter = mTableau.constraintToBound().find( constraint );
                             assert( constrBoundIter != mTableau.constraintToBound().end() );
                             const vector< const LRABound* >* bounds = constrBoundIter->second;
@@ -288,6 +295,12 @@ namespace smtrat
                                         }
                                     }
                                     LRAVariable& var = *(*bound)->pVariable();
+                                    #ifdef LRA_RESTORE_PREVIOUS_CONSISTENT_ASSIGNMENT
+                                    if( var.deactivateBound( *bound, mpPassedFormula->end() ) )
+                                    {
+                                        mStrongestBoundsRemoved = true;
+                                    }
+                                    #else
                                     if( var.deactivateBound( *bound, mpPassedFormula->end() ) && !var.isBasic() )
                                     {
                                         if( var.supremum() < var.assignment() )
@@ -301,6 +314,7 @@ namespace smtrat
                                             var.rAssignment() = var.infimum().limit();
                                         }
                                     }
+                                    #endif
                                     if( !(*bound)->pVariable()->pSupremum()->isInfinite() )
                                     {
                                         mBoundCandidatesToPass.push_back( (*bound)->pVariable()->pSupremum() );
@@ -471,6 +485,9 @@ namespace smtrat
                         if( branch_and_bound() )
                             goto Return; // Unknown
                         result = True;
+                        #ifdef LRA_RESTORE_PREVIOUS_CONSISTENT_ASSIGNMENT
+                        mTableau.storeAssignment();
+                        #endif
 //                        if( !assignmentCorrect() )
 //                            exit( 7771 );
                         assert( assignmentCorrect() );
@@ -651,80 +668,11 @@ Return:
      */
     EvalRationalMap LRAModule::getRationalModel() const
     {
-        EvalRationalMap result = EvalRationalMap();
         if( mInfeasibleSubsets.empty() )
         {
-            LRABoundType minDelta = -1;
-            LRABoundType curDelta = 0;
-            LRAVariable* variable = NULL;
-            // For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
-            for( auto originalVar = mTableau.originalVars().begin(); originalVar != mTableau.originalVars().end(); ++originalVar )
-            {
-                variable = originalVar->second;
-                const LRAValue& assValue = variable->assignment();
-                const LRABound& inf = variable->infimum();
-                if( !inf.isInfinite() )
-                {
-                    // .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
-                    if( inf.limit().mainPart() < assValue.mainPart() && inf.limit().deltaPart() > assValue.deltaPart() )
-                    {
-                        curDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
-                        if( minDelta < 0 || curDelta < minDelta )
-                            minDelta = curDelta;
-                    }
-                }
-                const LRABound& sup = variable->supremum();
-                if( !sup.isInfinite() )
-                {
-                    // .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
-                    if( sup.limit().mainPart() > assValue.mainPart() && sup.limit().deltaPart() < assValue.deltaPart() )
-                    {
-                        curDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
-                        if( minDelta < 0 || curDelta < minDelta )
-                            minDelta = curDelta;
-                    }
-                }
-            }
-            // For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
-            for( auto slackVar = mTableau.slackVars().begin(); slackVar != mTableau.slackVars().end(); ++slackVar )
-            {
-                variable = slackVar->second;
-                if( !variable->isActive() ) continue;
-                const LRAValue& assValue = variable->assignment();
-                const LRABound& inf = variable->infimum();
-                if( !inf.isInfinite() )
-                {
-                    // .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
-                    if( inf.limit().mainPart() < assValue.mainPart() && inf.limit().deltaPart() > assValue.deltaPart() )
-                    {
-                        curDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
-                        if( minDelta < 0 || curDelta < minDelta )
-                            minDelta = curDelta;
-                    }
-                }
-                const LRABound& sup = variable->supremum();
-                if( !sup.isInfinite() )
-                {
-                    // .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
-                    if( sup.limit().mainPart() > assValue.mainPart() && sup.limit().deltaPart() < assValue.deltaPart() )
-                    {
-                        curDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
-                        if( minDelta < 0 || curDelta < minDelta )
-                            minDelta = curDelta;
-                    }
-                }
-            }
-
-            curDelta = minDelta < 0 ? 1 : minDelta;
-            // Calculate the rational assignment of all original variables.
-            for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
-            {
-                LRABoundType value = var->second->assignment().mainPart() + var->second->assignment().deltaPart() * curDelta;
-                result.insert( pair< const carl::Variable, Rational >( var->first, value ) );
-            }
-//            assert( assignmentConsistentWithTableau( result, curDelta ) );
+            return mTableau.getRationalAssignment();
         }
-        return result;
+        return EvalRationalMap();
     }
 
     /**
@@ -1195,15 +1143,17 @@ Return:
                     { 
                         assert( !gomory_constr->satisfiedBy( rMap_ ) );
                         PointerSet<Formula> subformulas; 
+                        /*
                         mTableau.collect_premises( basicVar, subformulas );
                         PointerSet<Formula> premise;
                         for( const Formula* pre : subformulas )
                         {
                             premise.insert( newNegation( pre ) );
                         }
+                        */
                         const Formula* gomory_formula = newFormula( gomory_constr );
-                        premise.insert( gomory_formula );
-                        addDeduction( newFormula( OR, std::move( premise ) ) );
+                        //premise.insert( gomory_formula );
+                        addDeduction( gomory_formula );
                     } 
                 }
             }    
@@ -1233,7 +1183,9 @@ Return:
             Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
+                #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                 cout << "Fix: " << var->first << endl;
+                #endif
                 break;
             }
             ++map_iterator;
@@ -1262,7 +1214,6 @@ Return:
             const Constraint* dc_constraint = mTableau.isDefining( i, max_value );
             if( dc_constraint != NULL  )
             {
-                cout << "Found defining constraint!" << endl;
                 size_t row_count_before = dc_Tableau.rows().size();
                 pair< const LRABound*, bool> result = dc_Tableau.newBound(dc_constraint);
                 PointerSet<Formula> formulas;
@@ -1280,18 +1231,16 @@ Return:
         {
             mProcessedDCMatrices.insert( DC_Matrix );
         }
-        dc_Tableau.print();
         if( dc_Tableau.rows().size() > 0 && pos == mProcessedDCMatrices.end() )
         {
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-            cout << "Defining constraint:" << endl;
+            cout << "Defining constraints:" << endl;
             dc_Tableau.print();   
             #endif
 
             // At least one DC exists -> Construct and embed it.
             vector<size_t> diagonals = vector<size_t>();    
             vector<size_t>& diagonals_ref = diagonals;               
-            dc_Tableau.print( );
             /*
             dc_Tableau.addColumns(0,2,2);
             dc_Tableau.addColumns(1,2,4);
@@ -1301,9 +1250,13 @@ Return:
             dc_Tableau.addColumns(4,4,-1);
             dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
             */
-            cout << "HNF matrix:" << endl;
-            dc_Tableau.calculate_hermite_normalform( diagonals_ref );
-            dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
+            bool full_rank = true;
+            dc_Tableau.calculate_hermite_normalform( diagonals_ref, full_rank );
+            if( !full_rank )
+            {
+                branchAt( Polynomial( var->first ), (Rational)map_iterator->second );
+                return true;
+            }
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
             cout << "HNF of defining constraints:" << endl;
             dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
@@ -1311,19 +1264,18 @@ Return:
             for( auto iter = diagonals.begin(); iter != diagonals.end(); ++iter ) 
                 printf( "%u", *iter );
             #endif  
-            cout << "Inverted matrix:" << endl;
             dc_Tableau.invert_HNF_Matrix( diagonals );
+            #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+            cout << "Inverted matrix:" << endl;
             dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
+            #endif 
             Polynomial* cut_from_proof = new Polynomial();
             for( size_t i = 0; i < dc_positions.size(); ++i )
             {
                 LRAEntryType upper_lower_bound;
                 cut_from_proof = dc_Tableau.create_cut_from_proof( dc_Tableau, mTableau, i, diagonals, dc_positions, upper_lower_bound, max_value );
-                mTableau.print();
                 #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-                #ifdef MODULE_VERBOSE_INTEGERS
-                cout << "Proof of unsatisfiability:  " << *pcut << " = 0" << endl;
-                #endif
+                cout << "Proof of unsatisfiability:  " << *cut_from_proof << " = 0" << endl;
                 #endif
                 if( cut_from_proof != NULL )
                 {
@@ -1335,16 +1287,6 @@ Return:
                     }
                     const smtrat::Constraint* cut_constraint = newConstraint( *cut_from_proof - (Rational)carl::floor((Rational)upper_lower_bound) , Relation::LEQ );
                     const smtrat::Constraint* cut_constraint2 = newConstraint( *cut_from_proof - ((Rational)carl::floor((Rational)upper_lower_bound)+bound_add) , Relation::GEQ );
-                    cout << "Constraint1: " << *cut_constraint << endl;
-                    cout << "Constraint2: " << *cut_constraint2 << endl;
-                    cout << "Cut: " << *cut_from_proof << endl;
-                    cout << "max_value: " << max_value << endl;
-                    //pair< const LRABound*, bool> result = mTableau.newBound(cut_constraint);
-                    //set<const Formula*> formulas;
-                    //mTableau.activateBound(result.first, formulas);
-                    //pair< const LRABound*, bool> result2 = mTableau.newBound(cut_constraint2);
-                    //set<const Formula*> formulas2;
-                    //mTableau.activateBound(result2.first, formulas2);
                     // Construct and add (p<=I-1 or p>=I))
                     const Formula* cons1 = newFormula( cut_constraint );
                     cons1->setActivity( -numeric_limits<double>::infinity() );
@@ -1359,9 +1301,11 @@ Return:
                     subformulasB.insert( newNegation( cons1 ) );
                     subformulasB.insert( newNegation( cons2 ) );
                     addDeduction( newFormula( OR, std::move( subformulasB ) ) );
+                    #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                     cout << "After adding proof of unsatisfiability:" << endl;
                     mTableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
                     cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+                    #endif
                     return true;
                 }
             }
@@ -1370,11 +1314,10 @@ Return:
             #endif
         }
         #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-        else
             cout << "No defining constraint!" << endl;
         cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
-        #endif
         cout << "Branch at: " << var->first << endl;
+        #endif
         branchAt( Polynomial( var->first ), (Rational)map_iterator->second );
         return true;
     }
@@ -1435,9 +1378,9 @@ Return:
 //                    return false;
 //            }
         }
-        PointerSet<Formula> premises;
-        mTableau.collect_premises( _lraVar , premises  );                
-        branchAt( _lraVar->expression(), _branchingValue, premises );
+        //PointerSet<Formula> premises;
+        //mTableau.collect_premises( _lraVar , premises  );  
+        branchAt( _lraVar->expression(), _branchingValue );
         return true;
     }
     
@@ -1477,9 +1420,9 @@ Return:
             {
                 return maybeGomoryCut( branch_var->second, ass_ );
             }
-            PointerSet<Formula> premises;
-            mTableau.collect_premises( branch_var->second , premises  );                
-            branchAt( branch_var->second->expression(), ass_, premises );
+            //PointerSet<Formula> premises;
+            //mTableau.collect_premises( branch_var->second , premises  );                
+            branchAt( branch_var->second->expression(), ass_ );
             return true;
         }
         else
@@ -1524,9 +1467,9 @@ Return:
             {
                 return maybeGomoryCut( branch_var->second, ass_ );
             }
-            PointerSet<Formula> premises;
-            mTableau.collect_premises( branch_var->second , premises  );                
-            branchAt( branch_var->second->expression(), ass_, premises );
+            //PointerSet<Formula> premises;
+            //mTableau.collect_premises( branch_var->second , premises  );                
+            branchAt( branch_var->second->expression(), ass_ );
             return true;         
         }
         else
@@ -1571,9 +1514,9 @@ Return:
             {
                 return maybeGomoryCut( branch_var->second, ass_ );
             }
-            PointerSet<Formula> premises;
-            mTableau.collect_premises( branch_var->second , premises  ); 
-            branchAt( branch_var->second->expression(), ass_, premises );
+            //PointerSet<Formula> premises;
+            //mTableau.collect_premises( branch_var->second , premises  ); 
+            branchAt( branch_var->second->expression(), ass_ );
             return true;
         }
         else
@@ -1600,9 +1543,9 @@ Return:
                 {
                     return maybeGomoryCut( var->second, ass );
                 }
-                PointerSet<Formula> premises;
-                mTableau.collect_premises( var->second, premises  ); 
-                branchAt( var->second->expression(), ass, premises );
+                //PointerSet<Formula> premises;
+                //mTableau.collect_premises( var->second, premises  ); 
+                branchAt( var->second->expression(), ass );
                 return true;           
             }
             ++map_iterator;

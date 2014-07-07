@@ -40,7 +40,7 @@
 #define LRA_USE_PIVOTING_STRATEGY
 #define LRA_REFINEMENT
 //#define LRA_EQUATION_FIRST
-//#define LRA_LOCAL_CONFLICT_DIRECTED
+#define LRA_LOCAL_CONFLICT_DIRECTED
 //#define LRA_USE_ACTIVITY_STRATEGY
 //#define LRA_USE_THETA_STRATEGY
 #ifdef LRA_REFINEMENT
@@ -199,7 +199,7 @@ namespace smtrat
                 std::vector<TableauEntry<T1,T2> >* mpEntries;
                 std::vector<Variable<T1,T2>*>   mConflictingRows;
                 Value<T1>*                      mpTheta;
-                std::map< carl::Variable, Variable<T1,T2>*>  mOriginalVars;
+                std::map<carl::Variable, Variable<T1,T2>*>  mOriginalVars;
                 FastPointerMap<Polynomial, Variable<T1,T2>*> mSlackVars;
                 FastPointerMap<Constraint, std::vector<const Bound<T1, T2>*>*> mConstraintToBound;
                 #ifdef LRA_REFINEMENT
@@ -369,8 +369,10 @@ namespace smtrat
                 Variable<T1, T2>* newBasicVariable( const smtrat::Polynomial*, std::map<carl::Variable, Variable<T1, T2>*>&, bool );
                 void activateBasicVar( Variable<T1, T2>* );
                 void deactivateBasicVar( Variable<T1, T2>* );
+                void storeAssignment();
+                void resetAssignment();
+                smtrat::EvalRationalMap getRationalAssignment() const;
                 void compressRows();
-                void activateBound( const Bound<T1, T2>* );
                 void deactivateBound( const Bound<T1, T2>* );
                 std::pair<EntryID, bool> nextPivotingElement();
                 std::pair<EntryID, bool> isSuitable( const Variable<T1, T2>&, bool ) const;
@@ -378,12 +380,14 @@ namespace smtrat
                 std::vector< const Bound<T1, T2>* > getConflict( EntryID ) const;
                 std::vector< std::set< const Bound<T1, T2>* > > getConflictsFrom( EntryID ) const;
                 void updateBasicAssignments( size_t, const Value<T1>& );
-                Variable<T1, T2>* pivot( EntryID );
-                void update( bool downwards, EntryID, std::vector<Iterator>&, std::vector<Iterator>& );
+                Variable<T1, T2>* pivot( EntryID, bool = true );
+                void update( bool downwards, EntryID, std::vector<Iterator>&, std::vector<Iterator>&, bool = true );
                 void addToEntry( const T2&, Iterator&, bool, Iterator&, bool );
                 #ifdef LRA_REFINEMENT
                 void rowRefinement( Variable<T1, T2>* );
                 #endif
+                typename std::map<carl::Variable, Variable<T1, T2>*>::iterator substitute( carl::Variable::Arg, const smtrat::Polynomial& );
+                std::list<std::pair<carl::Variable,smtrat::Polynomial>> findValidSubstitutions();
                 size_t boundedVariables( const Variable<T1,T2>&, size_t = 0 ) const;
                 size_t unboundedVariables( const Variable<T1,T2>&, size_t = 0 ) const;
                 size_t checkCorrectness() const;
@@ -397,10 +401,10 @@ namespace smtrat
                 void invertColumn( size_t );
                 void addColumns( size_t, size_t, T2 );
                 void multiplyRow( size_t, T2 );
-                std::pair< const Variable<T1,T2>*, T2 > Scalar_Product( Tableau<T1,T2>&, Tableau<T1,T2>&, size_t, size_t, std::vector<size_t>&, std::vector<size_t>&);
-                void calculate_hermite_normalform( std::vector<size_t>& );
+                std::pair< const Variable<T1,T2>*, T2 > Scalar_Product( Tableau<T1,T2>&, Tableau<T1,T2>&, size_t, size_t, std::vector<size_t>&, std::vector<size_t>& );
+                void calculate_hermite_normalform( std::vector<size_t>&, bool& );
                 void invert_HNF_Matrix( std::vector<size_t>& );
-                smtrat::Polynomial* create_cut_from_proof( Tableau<T1,T2>&, Tableau<T1,T2>&, size_t, std::vector<size_t>&, std::vector<size_t>&, T2&, T2&);
+                smtrat::Polynomial* create_cut_from_proof( Tableau<T1,T2>&, Tableau<T1,T2>&, size_t, std::vector<size_t>&, std::vector<size_t>&, T2&, T2& );
                 #endif
                 const smtrat::Constraint* gomoryCut( const T2&, Variable<T1, T2>* );
                 size_t getNumberOfEntries( Variable<T1,T2>* );
@@ -904,6 +908,7 @@ namespace smtrat
                 }
             }
             mNonActiveBasics.erase( _var->positionInNonActives() );
+            _var->setPositionInNonActives( mNonActiveBasics.end() );
             
             T2 g = carl::abs( _var->factor() );
             for( auto iter = coeffs.begin(); iter != coeffs.end(); ++iter )
@@ -1019,6 +1024,113 @@ namespace smtrat
             _var->rPosition() = 0;
             _var->setPositionInNonActives( mNonActiveBasics.begin() );
             mRowsCompressed = false;
+        }
+        
+        /**
+         *
+         * @return
+         */
+        template<typename T1, typename T2>
+        void Tableau<T1,T2>::storeAssignment()
+        {
+            for( Variable<T1, T2>* basicVar : mRows )
+                basicVar->storeAssignment();
+            for( Variable<T1, T2>* nonbasicVar : mColumns )
+                nonbasicVar->storeAssignment();
+        }
+        
+        /**
+         *
+         * @return
+         */
+        template<typename T1, typename T2>
+        void Tableau<T1,T2>::resetAssignment()
+        {
+            for( Variable<T1, T2>* basicVar : mRows )
+                basicVar->resetAssignment();
+            for( Variable<T1, T2>* nonbasicVar : mColumns )
+                nonbasicVar->resetAssignment();
+        }
+        
+        
+        /**
+         *
+         * @return
+         */
+        template<typename T1, typename T2>
+        smtrat::EvalRationalMap Tableau<T1,T2>::getRationalAssignment() const
+        {
+            smtrat::EvalRationalMap result;
+            T1 minDelta = -1;
+            T1 curDelta = 0;
+            Variable<T1,T2>* variable = NULL;
+            // For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
+            for( auto originalVar = originalVars().begin(); originalVar != originalVars().end(); ++originalVar )
+            {
+                variable = originalVar->second;
+                const Value<T1>& assValue = variable->assignment();
+                const Bound<T1,T2>& inf = variable->infimum();
+                if( !inf.isInfinite() )
+                {
+                    // .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
+                    if( inf.limit().mainPart() < assValue.mainPart() && inf.limit().deltaPart() > assValue.deltaPart() )
+                    {
+                        curDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
+                        if( minDelta < 0 || curDelta < minDelta )
+                            minDelta = curDelta;
+                    }
+                }
+                const Bound<T1,T2>& sup = variable->supremum();
+                if( !sup.isInfinite() )
+                {
+                    // .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
+                    if( sup.limit().mainPart() > assValue.mainPart() && sup.limit().deltaPart() < assValue.deltaPart() )
+                    {
+                        curDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
+                        if( minDelta < 0 || curDelta < minDelta )
+                            minDelta = curDelta;
+                    }
+                }
+            }
+            // For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
+            for( auto slackVar = slackVars().begin(); slackVar != slackVars().end(); ++slackVar )
+            {
+                variable = slackVar->second;
+                if( !variable->isActive() ) continue;
+                const Value<T1>& assValue = variable->assignment();
+                const Bound<T1,T2>& inf = variable->infimum();
+                if( !inf.isInfinite() )
+                {
+                    // .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
+                    if( inf.limit().mainPart() < assValue.mainPart() && inf.limit().deltaPart() > assValue.deltaPart() )
+                    {
+                        curDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
+                        if( minDelta < 0 || curDelta < minDelta )
+                            minDelta = curDelta;
+                    }
+                }
+                const Bound<T1,T2>& sup = variable->supremum();
+                if( !sup.isInfinite() )
+                {
+                    // .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
+                    if( sup.limit().mainPart() > assValue.mainPart() && sup.limit().deltaPart() < assValue.deltaPart() )
+                    {
+                        curDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
+                        if( minDelta < 0 || curDelta < minDelta )
+                            minDelta = curDelta;
+                    }
+                }
+            }
+
+            curDelta = minDelta < 0 ? 1 : minDelta;
+            // Calculate the rational assignment of all original variables.
+            for( auto var = originalVars().begin(); var != originalVars().end(); ++var )
+            {
+                T1 value = var->second->assignment().mainPart();
+                value += (var->second->assignment().deltaPart() * curDelta);
+                result.insert( std::pair<const carl::Variable,T1>( var->first, value ) );
+            }
+            return result;
         }
         
         /**
@@ -1650,12 +1762,14 @@ FindPivot:
             }
         }
 
+        
+
         /**
          *
          * @param _pivotingElement
          */
         template<typename T1, typename T2>
-        Variable<T1, T2>* Tableau<T1,T2>::pivot( EntryID _pivotingElement )
+        Variable<T1, T2>* Tableau<T1,T2>::pivot( EntryID _pivotingElement, bool updateAssignments )
         {
             // Find all columns having "a nonzero entry in the pivoting row"**, update this entry and store it.
             // First the column with ** left to the pivoting column until the leftmost column with **.
@@ -1702,29 +1816,34 @@ FindPivot:
             // Swap the variables
             mRows[rowVar->position()] = columnVar;
             mColumns[columnVar->position()] = rowVar;
-            // Update the assignments of the pivoting variables
-            #ifdef LRA_NO_DIVISION
-            rowVar->rAssignment() += ((*mpTheta) * pivotContent) / rowVar->factor();
-            #else
-            rowVar->rAssignment() += (*mpTheta) * pivotContent;
-            #endif
-            if( !( rowVar->supremum() > rowVar->assignment() || rowVar->supremum() == rowVar->assignment() ) ) 
+            assert( updateAssignments || rowVar->assignment() == T1( 0 ) );
+            assert( updateAssignments || columnVar->assignment() == T1( 0 ) );
+            if( updateAssignments )
             {
-                std::cout << "rowVar->assignment() = " << rowVar->assignment() << std::endl;
-                std::cout << "rowVar->supremum() = " << rowVar->supremum() << std::endl; 
-                std::cout << "(error: " << __func__ << " " << __LINE__ << ")" << std::endl; 
-//                exit( 7771 );
+                // Update the assignments of the pivoting variables
+                #ifdef LRA_NO_DIVISION
+                rowVar->rAssignment() += ((*mpTheta) * pivotContent) / rowVar->factor();
+                #else
+                rowVar->rAssignment() += (*mpTheta) * pivotContent;
+                #endif
+                if( !( rowVar->supremum() > rowVar->assignment() || rowVar->supremum() == rowVar->assignment() ) ) 
+                {
+                    std::cout << "rowVar->assignment() = " << rowVar->assignment() << std::endl;
+                    std::cout << "rowVar->supremum() = " << rowVar->supremum() << std::endl; 
+                    std::cout << "(error: " << __func__ << " " << __LINE__ << ")" << std::endl; 
+    //                exit( 7771 );
+                }
+                assert( rowVar->supremum() > rowVar->assignment() || rowVar->supremum() == rowVar->assignment() );
+                if( !( rowVar->infimum() < rowVar->assignment() || rowVar->infimum() == rowVar->assignment() ) ) 
+                {
+                    std::cout << "rowVar->assignment() = " << rowVar->assignment() << std::endl;
+                    std::cout << "rowVar->infimum() = " << rowVar->infimum() << std::endl;
+                    std::cout << "(error: " << __func__ << " " << __LINE__ << ")" << std::endl; 
+    //                exit( 7771 );
+                }
+                assert( rowVar->infimum() < rowVar->assignment() || rowVar->infimum() == rowVar->assignment() );
+                columnVar->rAssignment() += (*mpTheta);
             }
-            assert( rowVar->supremum() > rowVar->assignment() || rowVar->supremum() == rowVar->assignment() );
-            if( !( rowVar->infimum() < rowVar->assignment() || rowVar->infimum() == rowVar->assignment() ) ) 
-            {
-                std::cout << "rowVar->assignment() = " << rowVar->assignment() << std::endl;
-                std::cout << "rowVar->infimum() = " << rowVar->infimum() << std::endl;
-                std::cout << "(error: " << __func__ << " " << __LINE__ << ")" << std::endl; 
-//                exit( 7771 );
-            }
-            assert( rowVar->infimum() < rowVar->assignment() || rowVar->infimum() == rowVar->assignment() );
-            columnVar->rAssignment() += (*mpTheta);
             // Adapt both variables.
             Variable<T1, T2>& basicVar = *columnVar;
             Variable<T1, T2>& nonbasicVar = *rowVar;
@@ -1750,7 +1869,7 @@ FindPivot:
             pivotContent = carl::div( T2(1), pivotContent );
             #endif
             #ifdef LRA_REFINEMENT
-            if( basicVar.isActive() || basicVar.isOriginal() )
+            if( updateAssignments && basicVar.isActive() )
             {
                 rowRefinement( columnVar ); // Note, we have swapped the variables, so the current basic var is now corresponding to what we have stored in columnVar.
             }
@@ -1761,25 +1880,28 @@ FindPivot:
             //        Update the entry (t_r,t_c,t_e) of the intersection of R and C to (t_r,t_c,t_e+r_e).
             if( pivotEntry.vNext( false ) == LAST_ENTRY_ID )
             {
-                update( true, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
+                update( true, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, updateAssignments );
             }
             else if( pivotEntry.vNext( true ) == LAST_ENTRY_ID )
             {
-                update( false, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
+                update( false, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, updateAssignments );
             }
             else
             {
-                update( true, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
-                update( false, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
+                update( true, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, updateAssignments );
+                update( false, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, updateAssignments );
             }
-            ++mPivotingSteps;
-            if( !basicVar.isActive() && !basicVar.isOriginal() )
+            if( updateAssignments )
             {
-                deactivateBasicVar( columnVar );
-                compressRows();
+                ++mPivotingSteps;
+                if( !basicVar.isActive() && !basicVar.isOriginal() )
+                {
+                    deactivateBasicVar( columnVar );
+                    compressRows();
+                }
+                assert( basicVar.supremum() >= basicVar.assignment() || basicVar.infimum() <= basicVar.assignment() );
+                assert( nonbasicVar.supremum() == nonbasicVar.assignment() || nonbasicVar.infimum() == nonbasicVar.assignment() );
             }
-            assert( basicVar.supremum() >= basicVar.assignment() || basicVar.infimum() <= basicVar.assignment() );
-            assert( nonbasicVar.supremum() == nonbasicVar.assignment() || nonbasicVar.infimum() == nonbasicVar.assignment() );
             assert( checkCorrectness() == mRows.size() );
             return columnVar;
         }
@@ -1798,7 +1920,7 @@ FindPivot:
          *                              iterator's index in the vector.
          */
         template<typename T1, typename T2>
-        void Tableau<T1,T2>::update( bool _downwards, EntryID _pivotingElement, std::vector<Iterator>& _pivotingRowLeftSide, std::vector<Iterator>& _pivotingRowRightSide )
+        void Tableau<T1,T2>::update( bool _downwards, EntryID _pivotingElement, std::vector<Iterator>& _pivotingRowLeftSide, std::vector<Iterator>& _pivotingRowRightSide, bool _updateAssignments )
         {
             std::vector<Iterator> leftColumnIters = std::vector<Iterator>( _pivotingRowLeftSide );
             std::vector<Iterator> rightColumnIters = std::vector<Iterator>( _pivotingRowRightSide );
@@ -1818,11 +1940,14 @@ FindPivot:
                 }
                 // Update the assignment of the basic variable corresponding to this row
                 Variable<T1,T2>& currBasicVar = *((*pivotingColumnIter).rowVar());
-                #ifdef LRA_NO_DIVISION
-                currBasicVar.rAssignment() += ((*mpTheta) * (*pivotingColumnIter).content())/currBasicVar.factor();
-                #else
-                currBasicVar.rAssignment() += (*mpTheta) * (*pivotingColumnIter).content();
-                #endif
+                if( _updateAssignments )
+                {
+                    #ifdef LRA_NO_DIVISION
+                    currBasicVar.rAssignment() += ((*mpTheta) * (*pivotingColumnIter).content())/currBasicVar.factor();
+                    #else
+                    currBasicVar.rAssignment() += (*mpTheta) * (*pivotingColumnIter).content();
+                    #endif
+                }
                 // Update the row
                 Iterator currentRowIter = pivotingColumnIter;
                 #ifdef LRA_NO_DIVISION
@@ -1907,7 +2032,7 @@ FindPivot:
                 #else
                 (*pivotingColumnIter).rContent() *= (*mpEntries)[_pivotingElement].content();
                 #endif
-                if( currBasicVar.supremum() > currBasicVar.assignment() || currBasicVar.infimum() < currBasicVar.assignment() )
+                if( _updateAssignments && (currBasicVar.supremum() > currBasicVar.assignment() || currBasicVar.infimum() < currBasicVar.assignment()) )
                 {
                     #ifdef LRA_LOCAL_CONFLICT_DIRECTED
                     mConflictingRows.push_back( (*pivotingColumnIter).rowVar() );
@@ -2344,6 +2469,270 @@ FindPivot:
             }
         }
         
+//        #define LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
+        
+        template<typename T1, typename T2>
+        typename std::map<carl::Variable, Variable<T1,T2>*>::iterator Tableau<T1,T2>::substitute( carl::Variable::Arg _var, const smtrat::Polynomial& _term )
+        {
+            #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
+            std::cout << __func__ << "  " << _var << " -> " << _term << std::endl;
+            print();
+            #endif
+            assert( mNonActiveBasics.empty() ); // This makes removing lra-variables far easier and must be assured before invoking this method.
+            std::set<Variable<T1,T2>*> slackVarsToRemove;
+            std::map<const Constraint*,smtrat::PointerSet<smtrat::Formula>> constraintToAdd;
+            auto iter = mConstraintToBound.begin();
+            while( iter != mConstraintToBound.end() )
+            {
+                const Constraint& constraint = *iter->first;
+                if( constraint.hasVariable( _var ) )
+                {
+                    assert( iter->second->front()->pVariable()->isBasic() ); // This makes removing lra-variables far easier and must be assured before invoking this method.
+                    #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
+                    std::cout << "remove variable: " << std::endl;
+                    iter->second->front()->pVariable()->print();
+                    std::cout << std::endl;
+                    iter->second->front()->pVariable()->printAllBounds();
+                    std::cout << std::endl;
+                    #endif
+                    slackVarsToRemove.insert( iter->second->front()->pVariable() );
+                    const Constraint* cons = smtrat::newConstraint( constraint.lhs().substitute( _var, _term ), constraint.relation() );
+                    assert( cons->isConsistent() != 0 );
+                    if( cons->isConsistent() == 2 )
+                    {
+                        #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
+                        std::cout << "add constraint " << *cons << std::endl;
+                        #endif
+                        smtrat::PointerSet<smtrat::Formula> origins;
+                        constraintToAdd.insert( std::pair<const Constraint*,smtrat::PointerSet<smtrat::Formula>>( cons, origins ) );
+                    }
+                    iter = mConstraintToBound.erase( iter );
+                }
+                else
+                {
+                    ++iter;
+                }
+            }
+            while( !slackVarsToRemove.empty() )
+            {
+                Variable<T1,T2>* var = *slackVarsToRemove.begin();
+                slackVarsToRemove.erase( slackVarsToRemove.begin() );
+                deactivateBasicVar( var );
+                assert( mLearnedLowerBounds.empty() );
+                assert( mLearnedUpperBounds.empty() );
+                assert( mNewLearnedBounds.empty() );
+                mSlackVars.erase( var->pExpression() );
+                assert( mConflictingRows.empty() );
+                mNonActiveBasics.erase( var->positionInNonActives() );
+                var->setPositionInNonActives( mNonActiveBasics.end() );
+                delete var;
+            }
+            typename std::map<carl::Variable, Variable<T1,T2>*>::iterator pos = mOriginalVars.find( _var );
+            pos = mOriginalVars.erase(pos);
+            for( auto iter = constraintToAdd.begin(); iter != constraintToAdd.end(); ++iter )
+            {
+                std::pair<const lra::Bound<carl::Numeric<Rational>,carl::Numeric<Rational>>*, bool> res = newBound( iter->first );
+                if( res.second )
+                {
+                    activateBound( res.first, iter->second );
+                } 
+            }
+            #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
+            print(); 
+            #endif
+            return pos;
+        }
+        
+        template<typename T1, typename T2>
+        std::list<std::pair<carl::Variable,smtrat::Polynomial>> Tableau<T1,T2>::findValidSubstitutions()
+        {
+            std::list<std::pair<carl::Variable,smtrat::Polynomial>> validSubstitutions;
+            for( auto iter = mSlackVars.begin(); iter != mSlackVars.end(); ++iter )
+            {
+                assert( iter->second->isBasic() );
+                if( !iter->second->isActive() )
+                {
+                    activateBasicVar( iter->second );
+                }
+            }
+            #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
+            print();
+            printVariables();
+            #endif
+            for( auto iter = mOriginalVars.begin(); iter != mOriginalVars.end(); )
+            {
+                if( !iter->second->supremum().isInfinite() && !iter->second->infimum().isInfinite() 
+                    && iter->second->supremum().isWeak() && iter->second->infimum().isWeak()
+                    && iter->second->supremum().limit() == iter->second->infimum().limit() )
+                {
+                    smtrat::Polynomial term = smtrat::Polynomial( smtrat::Rational( iter->second->supremum().limit().mainPart() ) );
+                    validSubstitutions.push_back( std::pair<carl::Variable,smtrat::Polynomial>( iter->first, term ) );
+                    iter = substitute( iter->first, term );
+                }
+                else
+                {
+                    ++iter;
+                }
+            }
+            for( auto iter = mSlackVars.begin(); iter != mSlackVars.end(); )
+            {
+                Variable<T1,T2>& svar = *iter->second;
+                if( !svar.supremum().isInfinite() && !svar.infimum().isInfinite() 
+                    && svar.supremum().isWeak() && svar.infimum().isWeak() 
+                    && svar.supremum().limit() == svar.infimum().limit() )
+                {
+                    assert( svar.supremum().limit().deltaPart() == T1( 0 ) );
+                    Variable<T1,T2>* bestOVar = NULL;
+                    T1 coeff = T1( 0 );
+                    Iterator rowEntry = Iterator( svar.startEntry(), mpEntries );
+                    while( true )
+                    {
+                        if( bestOVar == NULL || (*rowEntry).columnVar()->size() > bestOVar->size() )
+                        {
+                            bestOVar = (*rowEntry).columnVar();
+                            coeff = (*rowEntry).content();
+                        }
+                        if( rowEntry.hEnd( false ) )
+                        {
+                            break;
+                        }
+                        rowEntry.hMove( false );
+                    }
+                    assert( bestOVar != NULL );
+                    coeff /= svar.factor();
+                    smtrat::Polynomial term = svar.expression() - (bestOVar->expression() * smtrat::Rational( coeff ) ) - smtrat::Rational( svar.supremum().limit().mainPart() );
+                    carl::Variable toSubstitute = *bestOVar->expression().gatherVariables().begin();
+                    validSubstitutions.push_back( std::pair<carl::Variable,smtrat::Polynomial>( toSubstitute, term ) );
+                    substitute( toSubstitute, term );
+                    iter = mSlackVars.begin();
+                }
+                else
+                {
+                    ++iter;
+                }
+            }
+            
+            while( true )
+            {
+                #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
+                std::cout << "########################################################### Try:" << std::endl;
+                print();
+                printVariables();
+                #endif
+                std::stack<std::pair<Variable<T1,T2>*,Variable<T1,T2>*>> pivotingElements;
+                std::map<carl::Variable, Variable<T1,T2>*> varsToSubstitute;
+                auto best = mOriginalVars.begin();
+                while( best != mOriginalVars.end() )
+                {
+                    best = mOriginalVars.end();
+                    for( auto iter = mOriginalVars.begin(); iter != mOriginalVars.end(); ++iter )
+                    {
+                        Variable<T1,T2>& oVar = *iter->second;
+                        if( !oVar.isBasic() && oVar.upperbounds().size() == 1 && oVar.lowerbounds().size() == 1 && varsToSubstitute.find( iter->first ) == varsToSubstitute.end() )
+                        {
+                            if( best == mOriginalVars.end() || best->second->size() < oVar.size() )
+                            {
+                                best = iter;
+                            }
+                        }
+                    }
+                    if( best != mOriginalVars.end() )
+                    {
+                        Variable<T1,T2>& oVar = *best->second;
+                        EntryID bestPivot = LAST_ENTRY_ID;
+                        Iterator columnEntry = Iterator( oVar.startEntry(), mpEntries );
+                        while( true )
+                        {
+                            if( !(*columnEntry).rowVar()->isOriginal() )
+                            {
+                                if( bestPivot == LAST_ENTRY_ID || (*columnEntry).rowVar()->size() < (*mpEntries)[bestPivot].rowVar()->size() )
+                                {
+                                    bestPivot = columnEntry.entryID();
+                                }
+                            }
+                            if( columnEntry.vEnd( false ) )
+                                break;
+                            columnEntry.vMove( false );
+                        }
+                        if( bestPivot != LAST_ENTRY_ID )
+                        {
+                            pivotingElements.push( std::pair<Variable<T1,T2>*,Variable<T1,T2>*>( best->second, (*mpEntries)[bestPivot].rowVar() ) );
+                            pivot( bestPivot, false );
+                        }
+                        else
+                        {
+                            varsToSubstitute.insert( std::pair<carl::Variable, Variable<T1,T2>*>( best->first, best->second ) );
+                        }
+                    }
+                }
+                #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
+                std::cout << "########################################################### Results in:" << std::endl;
+                print();
+                printVariables();
+                #endif
+                std::list<std::pair<carl::Variable,smtrat::Polynomial>>::iterator subToApply = validSubstitutions.end();
+                for( auto iter = varsToSubstitute.begin(); iter != varsToSubstitute.end(); ++iter )
+                {
+                    Variable<T1,T2>& oVar = *iter->second;
+                    assert( !oVar.isBasic() && oVar.upperbounds().size() == 1 && oVar.lowerbounds().size() == 1 );
+                    if( oVar.size() > 0 )
+                    {
+                        Polynomial substituteBy = smtrat::ZERO_POLYNOMIAL;
+                        Iterator columnEntry = Iterator( oVar.startEntry(), mpEntries );
+                        while( true )
+                        {
+                            substituteBy += (*columnEntry).rowVar()->expression() * smtrat::Rational( (*columnEntry).content()/(*columnEntry).rowVar()->factor() );
+                            if( columnEntry.vEnd( false ) )
+                                break;
+                            columnEntry.vMove( false );
+                        }
+                        validSubstitutions.push_back( std::pair<carl::Variable,smtrat::Polynomial>( iter->first, substituteBy ) );
+                        if( subToApply == validSubstitutions.end() ) --subToApply;
+                    }
+                }
+                while( !pivotingElements.empty() )
+                {
+                    Iterator rowEntry = Iterator( pivotingElements.top().first->startEntry(), mpEntries );
+                    while( true )
+                    {
+                        if( (*rowEntry).columnVar() == pivotingElements.top().second )
+                        {
+                            pivot( rowEntry.entryID(), false );
+                            pivotingElements.pop();
+                            break;
+                        }
+                        if( rowEntry.hEnd( false ) )
+                        {
+                            assert( false );
+                            break;
+                        }
+                        rowEntry.hMove( false );
+                    }
+                }
+                if( subToApply == validSubstitutions.end() ) break;
+                for( ; subToApply != validSubstitutions.end(); ++subToApply )
+                {
+                    substitute( subToApply->first, subToApply->second );
+                }
+            }
+            for( auto iter = mOriginalVars.begin(); iter != mOriginalVars.end(); ++iter )
+            {
+                if( iter->second->isBasic() )
+                    deactivateBasicVar( iter->second );
+            }
+            for( auto iter = mSlackVars.begin(); iter != mSlackVars.end(); ++iter )
+            {
+                if( iter->second->isBasic() )
+                    deactivateBasicVar( iter->second );
+            }
+            #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
+            std::cout << "Found substitutions:" << std::endl;
+            for( auto iter = validSubstitutions.begin(); iter != validSubstitutions.end(); ++iter )
+                std::cout << iter->first << " -> " << iter->second << std::endl;
+            #endif
+            return validSubstitutions;
+        }
+        
         /**
          * 
          * @param _var
@@ -2476,9 +2865,7 @@ FindPivot:
                 {
                     dc_poly = dc_poly - (Rational)(basic_var.infimum().limit().mainPart());
                 }
-                std::cout << dc_poly << std::endl;
                 const smtrat::Constraint* dc_constraint = newConstraint( dc_poly, Relation::EQ );
-                std::cout << *dc_constraint << std::endl;
                 return dc_constraint;
             }
             else
@@ -2511,12 +2898,12 @@ FindPivot:
          *         false,   otherwise   
          */ 
         template<typename T1, typename T2>
-        bool Tableau<T1,T2>::isDefining_Easy(std::vector<size_t>& dc_positions,size_t row_index)
+        bool Tableau<T1,T2>::isDefining_Easy( std::vector<size_t>& dc_positions,size_t row_index )
         {
             auto vector_iterator = dc_positions.begin();
-            while(vector_iterator != dc_positions.end())
+            while( vector_iterator != dc_positions.end() )
             {
-                if(*vector_iterator == row_index)
+                if( *vector_iterator == row_index )
                 {
                     return true;
                 }
@@ -2532,12 +2919,12 @@ FindPivot:
          *         false,   otherwise   
          */        
         template<typename T1, typename T2>
-        bool Tableau<T1,T2>::isDiagonal(size_t column_index , std::vector<size_t>& diagonals)
+        bool Tableau<T1,T2>::isDiagonal( size_t column_index , std::vector<size_t>& diagonals )
         {
         size_t i=0;
-        while(diagonals.at(i) != mColumns.size())
+        while( diagonals.at(i) != mColumns.size() )
         {
-            if(diagonals.at(i) == column_index)
+            if( diagonals.at(i) == column_index )
             {
                 return true;
             }
@@ -2552,13 +2939,13 @@ FindPivot:
          * 
          */ 
         template<typename T1, typename T2>
-        size_t Tableau<T1,T2>::position_DC(size_t row_index,std::vector<size_t>& dc_positions)
+        size_t Tableau<T1,T2>::position_DC( size_t row_index,std::vector<size_t>& dc_positions )
         {
             auto vector_iterator = dc_positions.begin();
             size_t i=0;
-            while(vector_iterator != dc_positions.end())
+            while( vector_iterator != dc_positions.end() )
             {
-                if(*vector_iterator == row_index)
+                if( *vector_iterator == row_index )
                 {
                     return i;
                 }
@@ -2573,7 +2960,7 @@ FindPivot:
          * index column_index in the permutated tableau.   
          */        
         template<typename T1, typename T2>
-        size_t Tableau<T1,T2>::revert_diagonals(size_t column_index,std::vector<size_t>& diagonals)
+        size_t Tableau<T1,T2>::revert_diagonals( size_t column_index,std::vector<size_t>& diagonals )
         {
             size_t i=0;
             while(diagonals.at(i) != mColumns.size())   
@@ -2593,13 +2980,13 @@ FindPivot:
          * @return   
          */        
         template<typename T1, typename T2>
-        void Tableau<T1,T2>::invertColumn(size_t column_index)
+        void Tableau<T1,T2>::invertColumn( size_t column_index )
         {   
             Iterator column_iterator = Iterator( (*mColumns.at(column_index)).startEntry(), mpEntries );   
             while(true)
             {
                 (*mpEntries)[column_iterator.entryID()].rContent() = (-1)*(((*mpEntries)[column_iterator.entryID()].rContent()).content());
-                if(!column_iterator.vEnd( false ))
+                if( !column_iterator.vEnd( false ) )
                 {
                     column_iterator.vMove( false );            
                 } 
@@ -2617,15 +3004,14 @@ FindPivot:
          * @return 
          */
         template<typename T1, typename T2>
-        void Tableau<T1,T2>::addColumns( size_t columnA_index, size_t columnB_index, T2 multiple)
+        void Tableau<T1,T2>::addColumns( size_t columnA_index, size_t columnB_index, T2 multiple )
         {
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
             std::cout << __func__ << "( " << columnA_index << ", " << columnB_index << ", " << multiple << " )" << std::endl;
             #endif
             Iterator columnA_iterator = Iterator((*mColumns.at(columnA_index)).startEntry(), mpEntries);
-            Iterator columnB_iterator = Iterator((*mColumns.at(columnB_index)).startEntry(), mpEntries);
-                
-            while(true)
+            Iterator columnB_iterator = Iterator((*mColumns.at(columnB_index)).startEntry(), mpEntries);                
+            while( true )
             {
             /* 
              * Make columnA_iterator and columnB_iterator neighbors. 
@@ -2641,7 +3027,7 @@ FindPivot:
                 if(content == 0)
                 {
                     EntryID to_delete = columnA_iterator.entryID();
-                    if(!columnA_iterator.vEnd( false ))
+                    if( !columnA_iterator.vEnd( false ) )
                     {                        
                         columnA_iterator.vMove( false );
                     }    
@@ -2670,8 +3056,6 @@ FindPivot:
                   (*columnA_iterator).setVNext( true, entryID);
                   Variable<T1, T2>& nonBasicVar = *mColumns[(*entry.columnVar()).position()];
                   ++nonBasicVar.rSize();
-                  //TableauHead& columnHead = mColumns[entry.columnNumber()];
-                  //++columnHead.mSize;
                   Iterator row_iterator = Iterator(columnB_iterator.entryID(), mpEntries);
                   ID2_to_be_Fixed = row_iterator.entryID();
                   if( (*(*row_iterator).columnVar()).position() > entry.columnVar()->position() )
@@ -2692,8 +3076,6 @@ FindPivot:
                           (*mpEntries)[entryID].setHNext( false,ID2_to_be_Fixed);
                           (*mpEntries)[ID2_to_be_Fixed].setHNext( true,entryID);
                           mRows[(*(*columnB_iterator).rowVar()).position()]->rStartEntry() = entryID;
-                          //TableauHead& rowHead = mRows[(*columnB_iterator).rowNumber()];
-                          //rowHead.mStartEntry = entryID;
                       }                     
                       else
                       {
@@ -2730,13 +3112,9 @@ FindPivot:
                       }
                   }
                   ++(mRows[(*entry.rowVar()).position()]->rSize());
-                  //TableauHead& rowHead = mRows[entry.rowNumber()];
-                  //++rowHead.mSize;                      
-                  //if(columnHead.mStartEntry == columnA_iterator.entryID())
                   if( nonBasicVar.startEntry() == columnA_iterator.entryID() )    
                   {
                       nonBasicVar.rStartEntry() = entryID;
-                      //columnHead.mStartEntry = entryID;
                   }  
                                    
               }
@@ -2755,8 +3133,6 @@ FindPivot:
                   (*columnA_iterator).setVNext( false,entryID);
                   Variable<T1, T2>& nonBasicVar = *mColumns[(*entry.columnVar()).position()];
                   ++nonBasicVar.rSize();                  
-                  //TableauHead& columnHead = mColumns[entry.columnNumber()];
-                  //++columnHead.mSize;
                   Iterator row_iterator = Iterator(columnB_iterator.entryID(), mpEntries);
                   ID2_to_be_Fixed = row_iterator.entryID();
                   if( (*(*row_iterator).columnVar()).position() > entry.columnVar()->position() )
@@ -2776,9 +3152,7 @@ FindPivot:
                           (*mpEntries)[entryID].setHNext( true,LAST_ENTRY_ID);
                           (*mpEntries)[entryID].setHNext( false,ID2_to_be_Fixed);
                           (*mpEntries)[ID2_to_be_Fixed].setHNext( true,entryID);
-                          mRows[(*(*columnB_iterator).rowVar()).position()]->rStartEntry() = entryID;
-                          //TableauHead& rowHead = mRows[(*columnB_iterator).rowNumber()];
-                          //rowHead.mStartEntry = entryID;                          
+                          mRows[(*(*columnB_iterator).rowVar()).position()]->rStartEntry() = entryID;                       
                       }                     
                       else
                       {
@@ -2814,11 +3188,9 @@ FindPivot:
                           (*mpEntries)[entryID].setHNext( true,ID1_to_be_Fixed);
                       }                      
                   }
-               ++mRows[(*(entry.rowVar())).position()]->rSize();   
-               //TableauHead& rowHead = mRows[entry.rowNumber()];
-               //++rowHead.mSize;                  
+               ++mRows[(*(entry.rowVar())).position()]->rSize();                    
                }
-               if(!columnB_iterator.vEnd( false ))
+               if( !columnB_iterator.vEnd( false ) )
                {
                    columnB_iterator.vMove( false );
                }
@@ -2835,7 +3207,7 @@ FindPivot:
          * @return 
          */        
         template<typename T1, typename T2> 
-        void Tableau<T1,T2>::multiplyRow(size_t row_index,T2 multiple)
+        void Tableau<T1,T2>::multiplyRow( size_t row_index,T2 multiple )
         {            
             const Variable<T1, T2>& basic_var = *mRows.at(row_index);
             Iterator row_iterator = Iterator( basic_var.position(), mpEntries);
@@ -2843,7 +3215,7 @@ FindPivot:
             { 
                 T2 content = T2(((*row_iterator).content().content())*(multiple.content()));
                 (*row_iterator).rContent() = content;
-                if(!row_iterator.hEnd( false ))
+                if( !row_iterator.hEnd( false ) )
                 {
                     row_iterator.hMove( false );
                 }
@@ -2861,27 +3233,23 @@ FindPivot:
          * @return   the value (T) of the scalarproduct.
          */        
         template<typename T1, typename T2> 
-        std::pair< const Variable<T1,T2>*, T2 > Tableau<T1,T2>::Scalar_Product(Tableau<T1,T2>& A, Tableau<T1,T2>& B,size_t rowA, size_t columnB,std::vector<size_t>& diagonals,std::vector<size_t>& dc_positions) 
+        std::pair< const Variable<T1,T2>*, T2 > Tableau<T1,T2>::Scalar_Product( Tableau<T1,T2>& A, Tableau<T1,T2>& B,size_t rowA, size_t columnB,std::vector<size_t>& diagonals,std::vector<size_t>& dc_positions ) 
         {
-            //A.print( LAST_ENTRY_ID, std::cout, "", true, true );
-            //B.print( LAST_ENTRY_ID, std::cout, "", true, true );
-            //for( auto iter = diagonals.begin(); iter != diagonals.end(); ++iter ) 
-                //printf( "%u", *iter ); 
             Iterator rowA_iterator = Iterator((*A.mRows.at(rowA)).startEntry(),A.mpEntries);
             Iterator columnB_iterator = Iterator( (*B.mColumns.at(columnB)).startEntry(),B.mpEntries );
             T2 sum = T2(0);
-            while(true)
+            while( true )
             {
                 columnB_iterator = Iterator( (*B.mColumns.at(columnB)).startEntry(),B.mpEntries );
                 size_t actual_column = revert_diagonals( (*(*rowA_iterator).columnVar()).position(),diagonals ); 
-                while(true)
+                while( true )
                 {
                     if( actual_column == position_DC( (*(*columnB_iterator).rowVar()).position(),dc_positions) )
                     {
                         sum += (*rowA_iterator).content()*(*columnB_iterator).content();
                         break;
                     }
-                    if(columnB_iterator.vEnd( false ))
+                    if( columnB_iterator.vEnd( false ) )
                     {
                         break;
                     }
@@ -2890,7 +3258,7 @@ FindPivot:
                         columnB_iterator.vMove( false );
                     }
                 }
-                if(rowA_iterator.hEnd( false ))
+                if( rowA_iterator.hEnd( false ) )
                 {
                     break;
                 }
@@ -2912,7 +3280,7 @@ FindPivot:
          * @return   the vector containing the indices of the diagonal elements.
          */        
         template<typename T1, typename T2> 
-        void Tableau<T1,T2>::calculate_hermite_normalform(std::vector<size_t>& diagonals)
+        void Tableau<T1,T2>::calculate_hermite_normalform( std::vector<size_t>& diagonals, bool& full_rank )
         {
             for(size_t i=0;i<mColumns.size();i++)
             {
@@ -2955,9 +3323,9 @@ FindPivot:
                 /*
                  * Eliminate as many entries as necessary.
                  */
-                while(number_of_entries + diag_zero_entries > i + 1)
+                while( number_of_entries + diag_zero_entries > i + 1 )
                 {
-                    if(just_deleted)
+                    if( just_deleted )
                     {
                         /*
                          * Move the iterator to the correct position if an entry
@@ -2965,13 +3333,13 @@ FindPivot:
                          */
                         row_iterator = Iterator(added_entry, mpEntries);
                     }    
-                    else if (!first_loop)
+                    else if( !first_loop )
                     {
                         /*
                          * If no entry was deleted during the last loop run and it is not 
                          * the first loop run, correct the position of the iterators.
                          */                        
-                        if((*(*mpEntries)[added_entry].columnVar()).position() > (*(*mpEntries)[elim_entry].columnVar()).position())
+                        if( (*(*mpEntries)[added_entry].columnVar()).position() > (*(*mpEntries)[elim_entry].columnVar()).position() )
                         {
                             row_iterator = Iterator(elim_entry,mpEntries);
                         }    
@@ -2984,13 +3352,13 @@ FindPivot:
                      * Make all entries in the current row positive.
                      */
                     Iterator help_iterator = Iterator((*mRows.at(i)).startEntry(), mpEntries);
-                    while(true)
+                    while( true )
                     {
-                        if((*help_iterator).content() < 0 && !isDiagonal((*(*help_iterator).columnVar()).position(),diagonals))
+                        if( (*help_iterator).content() < 0 && !isDiagonal((*(*help_iterator).columnVar()).position(),diagonals) )
                         {
-                            invertColumn((*(*help_iterator).columnVar()).position());
+                            invertColumn( (*(*help_iterator).columnVar()).position() );
                         }
-                        if(!help_iterator.hEnd( false ))
+                        if( !help_iterator.hEnd( false ) )
                         {
                             help_iterator.hMove( false );
                         }
@@ -3000,13 +3368,13 @@ FindPivot:
                         }
                     }
                     
-                    while(elim_pos == added_pos)
+                    while( elim_pos == added_pos )
                     {
                         T2 content = (*mpEntries)[row_iterator.entryID()].content();
                         size_t column = (*(*mpEntries)[row_iterator.entryID()].columnVar()).position();   
-                        if(!isDiagonal(column,diagonals))
+                        if( !isDiagonal(column,diagonals) )
                         {    
-                            if(first_free)
+                            if( first_free )
                             {                                
                                 elim_pos = column;
                                 elim_content = content; 
@@ -3018,7 +3386,7 @@ FindPivot:
                             }
                             else
                             {
-                                if(elim_content <= content)
+                                if( elim_content <= content )
                                 {
                                     elim_pos = column;
                                     elim_content = content;  
@@ -3032,7 +3400,7 @@ FindPivot:
                                 }
                              }
                         }                        
-                        if(elim_pos == added_pos && !row_iterator.hEnd( false ))
+                        if( elim_pos == added_pos && !row_iterator.hEnd( false ) )
                         {
                             row_iterator.hMove( false );  
                         }    
@@ -3056,7 +3424,7 @@ FindPivot:
                     std::cout << "i: " << i << std::endl;
                     #endif
                     first_loop = false;
-                    if(mod( (Rational)elim_content, (Rational)added_content ) == 0)
+                    if( mod( (Rational)elim_content, (Rational)added_content ) == 0 )
                     {
                         /*
                          * If the remain of the division is zero,
@@ -3082,14 +3450,19 @@ FindPivot:
                          }         
                     }
                 }
-                if(first_loop)
+                if( first_loop )
                 {
                     /*
                      * The current row does not need any eliminations.
                      * So search manually for the diagonal element.
                      */
-                    while(isDiagonal((*(*row_iterator).columnVar()).position(),diagonals))
+                    while( isDiagonal((*(*row_iterator).columnVar()).position(),diagonals) )
                     {
+                        if( row_iterator.hEnd( false ) )
+                        {
+                            full_rank = false;
+                            return;
+                        }
                         row_iterator.hMove( false );                        
                     }
                     if( (*row_iterator).content() < 0 )
@@ -3104,7 +3477,7 @@ FindPivot:
                  *  Normalize row.
                  */
                 row_iterator = Iterator((*mRows.at(i)).startEntry(), mpEntries);
-                while(true)
+                while( true )
                 {   
                     if( (*(*row_iterator).columnVar()).position() != added_pos && isDiagonal((*(*row_iterator).columnVar()).position(),diagonals) && ( added_content <= carl::abs( (*row_iterator).content() ) || (*row_iterator).content() > 0 ) )
                     {
@@ -3128,14 +3501,14 @@ FindPivot:
                         {
                             inverter = inverter * (Rational)-1;                            
                         }
-                        addColumns((*(*mpEntries)[row_iterator.entryID()].columnVar()).position(),
+                        addColumns( (*(*mpEntries)[row_iterator.entryID()].columnVar()).position(),
                                   diagonals.at(i),
-                                  (Rational)(-1)*inverter*(Rational)(floor_value));
+                                  (Rational)(-1)*inverter*(Rational)(floor_value) );
                         #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                         print();
                         #endif
                     }
-                    if(!row_iterator.hEnd( false ))
+                    if( !row_iterator.hEnd( false ) )
                     {
                         row_iterator.hMove( false ); 
                     }
@@ -3159,8 +3532,8 @@ FindPivot:
              * Iterate through the tableau beginning in the the last
              * column which only contains one element.
              */  
-            size_t i = mRows.size()-1;
-            std::map< std::pair<size_t, size_t >, T2 > changed_values  = std::map< std::pair<size_t, size_t>, T2 >();
+           size_t i = mRows.size()-1;
+           std::map< std::pair<size_t, size_t >, T2 > changed_values  = std::map< std::pair<size_t, size_t>, T2 >();
             while( true )
             {
                 /*
@@ -3177,9 +3550,9 @@ FindPivot:
                 /*
                  * Now change the other entries in the current column if necessary.
                  */
-                if(column_iterator.vEnd( true ))
+                if( column_iterator.vEnd( true ) )
                 {
-                    if(i == 0)
+                    if( i == 0 )
                     {
                         return;
                     }
@@ -3207,6 +3580,7 @@ FindPivot:
                         column_iterator2.vMove( false );
                         while( true )
                         {
+                            row_iterator = Iterator( (*column_iterator).rowVar()->startEntry(), mpEntries );
                             res = revert_diagonals( (*(*row_iterator).columnVar()).position(), diagonals );
                             while( res != (*(*column_iterator2).rowVar()).position() && !row_iterator.hEnd( false ) )
                             {
@@ -3222,10 +3596,11 @@ FindPivot:
                                 break;
                             }
                             column_iterator2.vMove( false );
+                            row_iterator = Iterator( (*column_iterator).rowVar()->startEntry(), mpEntries );
                         }   
                         value_to_be_changed = sum / divisor;
                     }  
-                    if(!column_iterator.vEnd( true ))
+                    if( !column_iterator.vEnd( true ) )
                     {
                         column_iterator.vMove( true );
                     }
@@ -3250,7 +3625,7 @@ FindPivot:
          *         NULL,               otherwise.   
          */
         template<typename T1, typename T2>
-        smtrat::Polynomial* Tableau<T1,T2>::create_cut_from_proof(Tableau<T1,T2>& Inverted_Tableau, Tableau<T1,T2>& DC_Tableau, size_t row_index, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions, T2& lower, T2& max_value)
+        smtrat::Polynomial* Tableau<T1,T2>::create_cut_from_proof( Tableau<T1,T2>& Inverted_Tableau, Tableau<T1,T2>& DC_Tableau, size_t row_index, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions, T2& lower, T2& max_value )
         {
             Value<T1> result = T2(0);
             assert( mRows.size() > row_index );
@@ -3259,13 +3634,13 @@ FindPivot:
              * Calculate H^(-1)*b 
              */
             size_t i;
-            while(true)
+            while( true )
             {
                 i = revert_diagonals((*(*row_iterator).columnVar()).position(),diagonals);
                 assert( i < mColumns.size() );
                 const Variable<T1, T2>& basic_var = *(DC_Tableau.mRows).at(dc_positions.at(i));
                 result += basic_var.assignment() * (*row_iterator).content();                    
-                if(row_iterator.hEnd( false ))
+                if( row_iterator.hEnd( false ) )
                 {
                     break;
                 }
@@ -3274,16 +3649,14 @@ FindPivot:
                     row_iterator.hMove( false );
                 }                
             }
-            std::cout << "Result: " << result.mainPart() << std::endl;
             if( !carl::isInteger( (Rational)result.mainPart() ) )
             {
-                std::cout << "Fractional result: " << result.mainPart() << std::endl;
                 // Construct the Cut
                 std::pair< const Variable<T1,T2>*, T2 > product;
                 size_t i=0;
                 Polynomial* sum = new Polynomial();
                 T2 gcd_row = T2(1);
-                while(i < DC_Tableau.mColumns.size())
+                while( i < DC_Tableau.mColumns.size() )
                 {
                     // Check whether the current column variable also exists in the inverted Tableau
                     size_t j = 0;
@@ -3299,21 +3672,15 @@ FindPivot:
                     }
                     if( var_exists )
                     {
-                        std::cout << "Scalar_product with row: " << row_index << std::endl;
-                        std::cout << "Scalar_product with column: " << i << std::endl;
-                        //std::cout << "Row: " << Inverted_Tableau.mRows.at(i)->expression() << std::endl;
                         product = Scalar_Product(Inverted_Tableau,DC_Tableau,row_index,i,diagonals,dc_positions);
                     }
                     else
                     {
-                        std::cout << "Var not included: " << i << std::endl;
                         product.second = 0;
                     }
-                    if(product.second != 0)
+                    if( product.second != 0 )
                     {
-                        std::cout << "Coefficient: " << product.second << std::endl;
                         T2 temp = (Rational)(carl::getDenom((Rational)result.mainPart()))*(Rational)product.second;
-                        std::cout << "Coefficient*Denom: " << temp << std::endl;
                         gcd_row  = carl::gcd( gcd_row , temp );
                         *sum += (*product.first).expression()*(Rational)temp;
                     }
@@ -3323,7 +3690,6 @@ FindPivot:
                  * than max_value*gcd_row and also divide the coefficients of the sum by gcd_row 
                  * according to the algorithm.
                  */ 
-                std::cout << "Cut: " << *sum << std::endl;
                 auto iter = (*sum).begin();
                 while( iter != (*sum).end() )
                 {
@@ -3335,11 +3701,13 @@ FindPivot:
                     ++iter;
                 }
                 lower = (Rational)carl::getNum((Rational)result.mainPart())/(Rational)gcd_row;
+                #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                 std::cout << "Numerator: " << carl::getNum((Rational)result.mainPart()) << std::endl;
                 std::cout << "Denominator: " << carl::getDenom((Rational)result.mainPart()) << std::endl;
                 std::cout << "gcd: " << gcd_row << std::endl;
                 std::cout << "lower: " << lower << std::endl;
                 std::cout << "Cut: " << *sum << std::endl;
+                #endif
                 return sum; 
             }
             else
@@ -3537,7 +3905,7 @@ FindPivot:
          * Collects the premises for branch and bound and stores them in premises.  
          */ 
         template<typename T1, typename T2>
-        void Tableau<T1,T2>::collect_premises( const Variable<T1,T2>* _rowVar, PointerSet<Formula>& premises)
+        void Tableau<T1,T2>::collect_premises( const Variable<T1,T2>* _rowVar, PointerSet<Formula>& premises )
         {
             Iterator row_iterator = Iterator( _rowVar->startEntry(), mpEntries );  
             while( true )

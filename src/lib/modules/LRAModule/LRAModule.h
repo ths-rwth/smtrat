@@ -32,9 +32,6 @@
 
 #include "../../Module.h"
 #include "../../RuntimeSettings.h"
-#include "../../datastructures/lra/Value.hpp"
-#include "../../datastructures/lra/Variable.hpp"
-#include "../../datastructures/lra/Bound.hpp"
 #include "../../datastructures/lra/Tableau.hpp"
 #include "LRAModuleStatistics.h"
 #include <stdio.h>
@@ -57,7 +54,7 @@ namespace smtrat
                 const Formula*                      origin;
                 std::list<const Formula*>::iterator position;
             };
-            typedef std::map< carl::Variable, LRAVariable*>                   VarVariableMap;
+            typedef std::map<carl::Variable, LRAVariable*>                    VarVariableMap;
             typedef FastPointerMap<Polynomial, LRAVariable*>                  ExVariableMap;
             typedef FastPointerMap<Constraint, std::vector<const LRABound*>*> ConstraintBoundsMap;
             typedef FastPointerMap<Constraint, Context>                       ConstraintContextMap;
@@ -69,6 +66,7 @@ namespace smtrat
              */
             bool                       mInitialized;
             bool                       mAssignmentFullfilsNonlinearConstraints;
+            bool                       mStrongestBoundsRemoved;
             unsigned                   mProbableLoopCounter;
             LRATableau                 mTableau;
             PointerSet<Constraint>     mLinearConstraints;
@@ -76,7 +74,6 @@ namespace smtrat
             ConstraintContextMap       mActiveResolvedNEQConstraints;
             ConstraintContextMap       mActiveUnresolvedNEQConstraints;
             PointerSet<Constraint>     mResolvedNEQConstraints;
-            ConstraintBoundsMap        mConstraintToBound;
             carl::Variable             mDelta;
             std::vector<const LRABound* >  mBoundCandidatesToPass;
             #ifdef LRA_CUTS_FROM_PROOFS
@@ -110,6 +107,7 @@ namespace smtrat
             void removeSubformula( ModuleInput::const_iterator );
             Answer isConsistent();
             void updateModel() const;
+            
             EvalRationalMap getRationalModel() const;
             EvalIntervalMap getVariableBounds() const;
 
@@ -131,8 +129,8 @@ namespace smtrat
 
             const LRAVariable* getSlackVariable( const Constraint* _constraint ) const
             {
-                ConstraintBoundsMap::const_iterator iter = mConstraintToBound.find( _constraint );
-                assert( iter != mConstraintToBound.end() );
+                ConstraintBoundsMap::const_iterator iter = mTableau.constraintToBound().find( _constraint );
+                assert( iter != mTableau.constraintToBound().end() );
                 return iter->second->back()->pVariable();
             }
 
