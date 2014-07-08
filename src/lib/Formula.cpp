@@ -124,19 +124,19 @@ namespace smtrat
         mpIteContent = new ITEContent( _conditon, _then, _else );
     }
 
-	Formula::Formula(const Type _type, const std::vector<carl::Variable>&& _vars, const Formula* _term):
-		mDeducted( false ),
-		///@todo Construct reasonable hash
-		mHash( _term->getHash() ),
-		mId( 0 ),
-		mActivity( 0 ),
-		mDifficulty( 0 ),
-		mType( _type ),
-		mProperties()
-	{
-		assert(_type == EXISTS || _type == FORALL);
-		mpQuantifierContent = new QuantifierContent(std::move(_vars), _term);
-	}
+    Formula::Formula(const Type _type, const std::vector<carl::Variable>&& _vars, const Formula* _term):
+        mDeducted( false ),
+        ///@todo Construct reasonable hash
+        mHash( _term->getHash() ),
+        mId( 0 ),
+        mActivity( 0 ),
+        mDifficulty( 0 ),
+        mType( _type ),
+        mProperties()
+    {
+        assert(_type == EXISTS || _type == FORALL);
+        mpQuantifierContent = new QuantifierContent(std::move(_vars), _term);
+    }
     
     Formula::Formula( Type _type, PointerSet<Formula>&& _subformulas ):
         mDeducted( false ),
@@ -220,10 +220,10 @@ namespace smtrat
                 firstCase().collectVariables( _vars, _type, _ofThisType );
                 secondCase().collectVariables( _vars, _type, _ofThisType );
                 break;
-			case EXISTS:
-			case FORALL:
-				quantifiedFormula().collectVariables(_vars, _type, _ofThisType);
-				break;
+            case EXISTS:
+            case FORALL:
+                quantifiedFormula().collectVariables(_vars, _type, _ofThisType);
+                break;
             default:
             {
                 for( const Formula* subform : *mpSubformulas )
@@ -254,10 +254,10 @@ namespace smtrat
                     return premise() == _formula.premise() && conclusion() == _formula.conclusion();
                 case ITE:
                     return condition() == _formula.condition() && firstCase() == _formula.firstCase() && secondCase() == _formula.secondCase();
-				case Type::EXISTS:
-					return (*this->mpQuantifierContent == *_formula.mpQuantifierContent);
-				case Type::FORALL:
-					return (*this->mpQuantifierContent == *_formula.mpQuantifierContent);
+                case Type::EXISTS:
+                    return (*this->mpQuantifierContent == *_formula.mpQuantifierContent);
+                case Type::FORALL:
+                    return (*this->mpQuantifierContent == *_formula.mpQuantifierContent);
                 default:
                     return (*mpSubformulas) == _formula.subformulas();
             }
@@ -401,18 +401,18 @@ namespace smtrat
                 }
                 return result;
             }
-			case EXISTS:
-			{
-				///@todo do something here
-				return 2;
-				break;
-			}
-			case FORALL:
-			{
-				///@todo do something here
-				return 2;
-				break;
-			}
+            case EXISTS:
+            {
+                ///@todo do something here
+                return 2;
+                break;
+            }
+            case FORALL:
+            {
+                ///@todo do something here
+                return 2;
+                break;
+            }
             default:
             {
                 assert( false );
@@ -556,16 +556,16 @@ namespace smtrat
                 }
                 break;
             }
-			case EXISTS:
-			{
-				///@todo do something here
-				break;
-			}
-			case FORALL:
-			{
-				///@todo do something here
-				break;
-			}
+            case EXISTS:
+            {
+                ///@todo do something here
+                break;
+            }
+            case FORALL:
+            {
+                ///@todo do something here
+                break;
+            }
             default:
             {
                 assert( false );
@@ -724,26 +724,26 @@ namespace smtrat
                 result += activity;
             return result;
         }
-		else if (mType == EXISTS)
-		{
-			string result = _init + "(exists ";
-			for (auto v: this->mpQuantifierContent->mVariables) {
-				result += constraintPool().getVariableName(v, _friendlyNames) + " ";
-			}
-			result += this->mpQuantifierContent->mpFormula->toString(_withActivity, _resolveUnequal, _init, _oneline, _infix, _friendlyNames);
-			result += ")";
-			return result;
-		}
-		else if (mType == FORALL)
-		{
-			string result = _init + "(forall ";
-			for (auto v: this->mpQuantifierContent->mVariables) {
-				result += constraintPool().getVariableName(v, _friendlyNames) + " ";
-			}
-			result += this->mpQuantifierContent->mpFormula->toString(_withActivity, _resolveUnequal, _init, _oneline, _infix, _friendlyNames);
-			result += ")";
-			return result;
-		}
+        else if (mType == EXISTS)
+        {
+            string result = _init + "(exists ";
+            for (auto v: this->mpQuantifierContent->mVariables) {
+                result += constraintPool().getVariableName(v, _friendlyNames) + " ";
+            }
+            result += this->mpQuantifierContent->mpFormula->toString(_withActivity, _resolveUnequal, _init, _oneline, _infix, _friendlyNames);
+            result += ")";
+            return result;
+        }
+        else if (mType == FORALL)
+        {
+            string result = _init + "(forall ";
+            for (auto v: this->mpQuantifierContent->mVariables) {
+                result += constraintPool().getVariableName(v, _friendlyNames) + " ";
+            }
+            result += this->mpQuantifierContent->mpFormula->toString(_withActivity, _resolveUnequal, _init, _oneline, _infix, _friendlyNames);
+            result += ")";
+            return result;
+        }
         assert( mType == AND || mType == OR || mType == IFF || mType == XOR );
         string stringOfType = FormulaTypeToString( mType );
         string result = _init + "(";
@@ -1069,67 +1069,91 @@ namespace smtrat
 
     const Formula* Formula::toQF(QuantifiedVariables& variables, unsigned level, bool negated) const
     {
-        return this; // Disabled because of incorrectness
-//        const Formula* res;
-//        switch (this->mType) {
-//            case Type::AND:
-//            case Type::IFF:
-//            case Type::OR:
-//            case Type::XOR:
-//            {
-//                PointerSet<Formula> subs;
-//                for (auto sub: *this->mpSubformulas) {
-//                    subs.insert(sub->toQF(variables, level, negated));
-//                }
-//                res = newFormula(this->mType, std::move(subs));
-//                break;
-//            }
-//            case Type::BOOL:
-//            case Type::CONSTRAINT:
-//            case Type::FFALSE:
-//            case Type::TTRUE:
-//                res = this;
-//                break;
-//            case Type::EXISTS:
-//            case Type::FORALL:
-//            {
-//                unsigned cur = 0;
-//                if ((level % 2 == (mType == Type::EXISTS ? 0 : 1)) xor negated) cur = level;
-//                else cur = level+1;
-//                Variables vars(this->quantifiedVariables().begin(), this->quantifiedVariables().end());
-//                const Formula* f = this->pQuantifiedFormula();
-//                for (auto it = vars.begin(); it != vars.end();) {
-//                    if (it->getType() == carl::VariableType::VT_BOOL) {
-//                        // Just leave boolean variables at the base level up to the SAT solver.
-//                        if (cur > 0) {
-//                            f = newFormula(
-//                                (mType == Type::EXISTS ? Type::OR : Type::AND),
-//                                f->substitute({{*it, trueFormula()}}),
-//                                f->substitute({{*it, falseFormula()}})
-//                            );
-//                        }
-//                        it = vars.erase(it);
-//                    }
-//                    else it++;
-//                }
-//                if (vars.size() > 0) {
-//                    while (variables.size() <= cur) variables.emplace_back();
-//                    variables[cur].insert(vars.begin(), vars.end());
-//                }
-//                res = f->toQF(variables, cur, negated);
-//                break;
-//            }
-//            case Type::IMPLIES:
-//                res = newImplication(pPremise()->toQF(variables, level, !negated), pConclusion()->toQF(variables, level, negated));
-//                break;
-//            case Type::ITE:
-//                res = newIte(pCondition()->toQF(variables, level, negated), pFirstCase()->toQF(variables, level, negated), pSecondCase()->toQF(variables, level, negated));
-//                break;
-//            case Type::NOT:
-//                res = this->pSubformula()->toQF(variables, level, !negated);
-//                break;
-//        }
-//        return res;
+        const Formula* res;
+        switch (this->mType) {
+            case Type::AND:
+            case Type::IFF:
+            case Type::OR:
+            case Type::XOR:
+            {
+                if (!negated) {
+                    PointerSet<Formula> subs;
+                    for (auto sub: *this->mpSubformulas) {
+                        subs.insert(sub->toQF(variables, level, false));
+                    }
+                    res = newFormula(this->mType, std::move(subs));
+                } else if (this->mType == Type::AND || this->mType == Type::OR) {
+                    PointerSet<Formula> subs;
+                    for (auto sub: *this->mpSubformulas) {
+                        subs.insert(sub->toQF(variables, level, true));
+                    }
+                    if (this->mType == Type::AND) res = newFormula(Type::OR, std::move(subs));
+                    else res = newFormula(Type::AND, std::move(subs));
+                } else if (this->mType == Type::IFF) {
+                    PointerSet<Formula> sub1;
+                    PointerSet<Formula> sub2;
+                    for (auto sub: *this->mpSubformulas) {
+                        sub1.insert(sub->toQF(variables, level, true));
+                        sub2.insert(sub->toQF(variables, level, false));
+                    }
+                    res = newFormula(Type::AND, newFormula(Type::OR, std::move(sub1)), newFormula(Type::OR, std::move(sub2)));
+                } else if (this->mType == Type::XOR) {
+                    auto lhs = this->back()->toQF(variables, level, false);
+                    auto rhs = this->connectPrecedingSubformulas()->toQF(variables, level, true);
+                    res = newFormula(Type::IFF, lhs, rhs);
+                } else assert(false);
+                break;
+            }
+            case Type::BOOL:
+            case Type::CONSTRAINT:
+            case Type::FFALSE:
+            case Type::TTRUE:
+            {
+                if (negated) res = newNegation(this);
+                else res = this;
+                break;
+            }
+            case Type::EXISTS:
+            case Type::FORALL:
+            {
+                unsigned cur = 0;
+                if ((level % 2 == (mType == Type::EXISTS ? 0 : 1)) xor negated) cur = level;
+                else cur = level+1;
+                Variables vars(this->quantifiedVariables().begin(), this->quantifiedVariables().end());
+                const Formula* f = this->pQuantifiedFormula();
+                for (auto it = vars.begin(); it != vars.end();) {
+                    if (it->getType() == carl::VariableType::VT_BOOL) {
+                        // Just leave boolean variables at the base level up to the SAT solver.
+                        if (cur > 0) {
+                            f = newFormula(
+                                (mType == Type::EXISTS ? Type::OR : Type::AND),
+                                f->substitute({{*it, trueFormula()}}),
+                                f->substitute({{*it, falseFormula()}})
+                            );
+                        }
+                        it = vars.erase(it);
+                    }
+                    else it++;
+                }
+                if (vars.size() > 0) {
+                    while (variables.size() <= cur) variables.emplace_back();
+                    variables[cur].insert(vars.begin(), vars.end());
+                }
+                res = f->toQF(variables, cur, negated);
+                break;
+            }
+            case Type::IMPLIES:
+                if (negated) res = newFormula(Type::AND, pPremise()->toQF(variables, level, false), pConclusion()->toQF(variables, level, true));
+                else res = newImplication(pPremise()->toQF(variables, level, false), pConclusion()->toQF(variables, level, false));
+                break;
+            case Type::ITE:
+                res = newIte(pCondition()->toQF(variables, level, negated), pFirstCase()->toQF(variables, level, negated), pSecondCase()->toQF(variables, level, negated));
+                break;
+            case Type::NOT:
+                res = this->pSubformula()->toQF(variables, level, !negated);
+                break;
+        }
+        return res;
     }
 
     const Formula* Formula::toCNF( bool _keepConstraints ) const
@@ -1516,11 +1540,11 @@ namespace smtrat
                 const Formula* elseSubstituted = secondCase().substitute( _booleanSubstitutions, _arithmeticSubstitutions );
                 return newIte( conditionSubstituted, thenSubstituted, elseSubstituted );
             }
-			case Type::EXISTS:
-			case Type::FORALL:
-			{
-				return newQuantifier(mType, quantifiedVariables(), quantifiedFormula().substitute(_booleanSubstitutions, _arithmeticSubstitutions));
-			}
+            case Type::EXISTS:
+            case Type::FORALL:
+            {
+                return newQuantifier(mType, quantifiedVariables(), quantifiedFormula().substitute(_booleanSubstitutions, _arithmeticSubstitutions));
+            }
             default:
             {
                 assert( isNary() );
