@@ -117,9 +117,10 @@ namespace smtrat
             EvalDoubleIntervalMap                                                               mIntervals; // actual intervals relevant for contraction
             std::set<std::pair<double, unsigned>, comp>                                         mIcpRelevantCandidates; // candidates considered for contraction 
             
-            std::map<const Formula*, const Formula*>                                            mReplacements; // linearized constraint -> original constraint
-            FastMap<Polynomial, carl::Variable>                                                 mLinearizations; // monome -> variable
-            std::map<carl::Variable, const Polynomial>                                          mSubstitutions; // variable -> monome/variable
+            FastPointerMap<Formula,const Formula*>                                              mLinearizations; // linearized constraint -> original constraint
+            FastPointerMap<Formula,const Formula*>                                              mDeLinearizations; // linearized constraint -> original constraint
+            FastMap<Polynomial, carl::Variable>                                                 mVariableLinearizations; // monome -> variable
+            std::map<carl::Variable, Polynomial>                                                mSubstitutions; // variable -> monome/variable
             FastMap<Polynomial, Contractor<carl::SimpleNewton> >                                mContractors;
             
             icp::HistoryNode*                                                                   mHistoryRoot; // Root-Node of the state-tree
@@ -141,6 +142,7 @@ namespace smtrat
             unsigned                                                                            mCurrentId; // keeps the currentId of the state nodes
             bool                                                                                mIsBackendCalled; // has a backend already been called in the actual run?
             double                                                                              mTargetDiameter;
+            double                                                                              mContractionThreshold;
             
             #ifdef ICP_BOXLOG
             std::fstream                                                                        icpLog;
@@ -179,6 +181,27 @@ namespace smtrat
             /**
              * Methods:
              */
+            
+            /**
+             * Performs a consistency check on the linearization of the received constraints.
+             * @param _answer The answer of the consistency check on the linearization of the received constraints.
+             * @return true, if the linear check led to a conclusive answer which should be returned by this module;
+             *         false, otherwise.
+             */
+            bool initialLinearCheck( Answer& _answer );
+            
+            /**
+             * 
+             * @param _splitOccurred
+             * @return 
+             */
+            bool contractCurrentBox( bool& _splitOccurred );
+            
+            /**
+             * 
+             * @return 
+             */
+            Answer callBackends();
 
             /**
              * Creates ContractionCandidates from all items in mTemporaryMonomes and empties mTemporaryMonomes.
@@ -274,6 +297,14 @@ namespace smtrat
             std::pair<bool,bool> validateSolution();
             
             /**
+             * 
+             * @param _infSubsetsInLinearization
+             * @param _candidates
+             * @return 
+             */
+            bool updateIcpRelevantCandidates( const vec_set_const_pFormula& _infSubsetsInLinearization );
+            
+            /**
              * Removes all centerconstraints from the validation formula - needed before adding actual centerconstraints
              * and before a new contraction sequence starts in order to check linear feasibility.
              */
@@ -340,7 +371,7 @@ namespace smtrat
              * creates constraints for the actual bounds of the original variables.
              * @return 
              */
-            std::vector<const Formula*> createConstraintsFromBounds( const EvalDoubleIntervalMap& _map );
+            PointerSet<Formula> createConstraintsFromBounds( const EvalDoubleIntervalMap& _map );
             
             /**
              * Parses obtained deductions from the LRA module and maps them to original constraints or introduces new ones.

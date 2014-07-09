@@ -111,11 +111,13 @@ namespace smtrat
             EvalRationalMap getRationalModel() const;
             EvalIntervalMap getVariableBounds() const;
 
-            void printLinearConstraints ( std::ostream& = std::cout, const std::string = "" ) const;
-            void printNonlinearConstraints ( std::ostream& = std::cout, const std::string = "" ) const;
-            void printConstraintToBound ( std::ostream& = std::cout, const std::string = "" ) const;
-            void printBoundCandidatesToPass ( std::ostream& = std::cout, const std::string = "" ) const;
-            void printRationalModel ( std::ostream& = std::cout, const std::string = "" ) const;
+            void printLinearConstraints( std::ostream& = std::cout, const std::string = "" ) const;
+            void printNonlinearConstraints( std::ostream& = std::cout, const std::string = "" ) const;
+            void printConstraintToBound( std::ostream& = std::cout, const std::string = "" ) const;
+            void printBoundCandidatesToPass( std::ostream& = std::cout, const std::string = "" ) const;
+            void printRationalModel( std::ostream& = std::cout, const std::string = "" ) const;
+            void printTableau( std::ostream& = std::cout, const std::string = "" ) const;
+            void printVariables( std::ostream& = std::cout, const std::string = "" ) const;
 
             const VarVariableMap& originalVariables() const
             {

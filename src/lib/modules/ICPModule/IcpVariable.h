@@ -120,23 +120,7 @@ namespace icp
             }
             
             ~IcpVariable()
-            {
-                switch(mBoundsSet.first)
-                {
-                    case Updated::LEFT:
-                        delete mInternalLeftBound;
-                        break;
-                    case Updated::RIGHT:
-                        delete mInternalRightBound;
-                        break;
-                    case Updated::BOTH:
-                        delete mInternalLeftBound;
-                        delete mInternalRightBound;
-                        break;
-                    default:
-                        break;
-                }
-            }
+            {}
             
             /*
              * Getter/Setter
@@ -275,7 +259,6 @@ namespace icp
             
             void setInternalLeftBound( const smtrat::Formula* _left )
             {
-                const smtrat::Formula* toDelete = mInternalLeftBound;
                 mInternalLeftBound = _left;
                 switch(mBoundsSet.first)
                 {
@@ -288,12 +271,10 @@ namespace icp
                     default:
                         break;
                 }
-                delete toDelete;
             }
             
             void setInternalRightBound( const smtrat::Formula* _right )
             {
-                const smtrat::Formula* toDelete = mInternalRightBound;
                 mInternalRightBound = _right;
                 switch(mBoundsSet.first)
                 {
@@ -306,7 +287,6 @@ namespace icp
                     default:
                         break;
                 }
-                delete toDelete;
             }
             
             void setExternalLeftBound( ModuleInput::iterator _left )

@@ -161,7 +161,13 @@ namespace smtrat
     bool Module::inform( const Constraint* const _constraint )
     {
         #ifdef MODULE_VERBOSE
-        cout << __func__ << " in " << this << " with name " << moduleName( mModuleType ) << ": " << _constraint->toString() << endl;
+        cout << __func__ << " in " << this << " with name " << moduleName( mModuleType ) << ": ";
+        if( _constraint == ConstraintPool::getInstance().consistentConstraint() )
+            cout << true << endl;
+        else if( _constraint == ConstraintPool::getInstance().inconsistentConstraint() )
+            cout << "false" << endl;
+        else
+            cout << _constraint->toString() << endl;
         #endif
         addConstraintToInform( _constraint );
         return true;
@@ -537,7 +543,8 @@ namespace smtrat
         consB->setActivity( -numeric_limits<double>::infinity() );
         subformulasA.insert( consA );
         subformulasA.insert( consB );
-        addDeduction( newFormula( OR, std::move( subformulasA ) ) );
+        const Formula* dedA = newFormula( OR, std::move( subformulasA ) );
+        addDeduction( dedA );
         // (not(x<=I-1) or not(x>=I))
         PointerSet<Formula> subformulasB;
         for( const Formula* pre : _premise )
@@ -645,12 +652,12 @@ namespace smtrat
             assert( (*module)->solverState() != False );
             if( (*module)->solverState() == True )
             {
-				//@todo modules should be disjoint, but this breaks CAD on certain inputs.
+		//@todo modules should be disjoint, but this breaks CAD on certain inputs.
                 //assert( modelsDisjoint( mModel, (*module)->model() ) );
                 (*module)->updateModel();
                 for (auto ass: (*module)->model())
                 {
-					if (mModel.count(ass.first) == 0) mModel.insert(ass);
+                    if( mModel.count(ass.first) == 0 ) mModel.insert(ass);
                 }
                 break;
             }
