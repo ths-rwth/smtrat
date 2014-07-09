@@ -330,9 +330,15 @@ void SMTLIBParser::setOption(const std::string& key, const AttributeValue& val) 
 const Formula* SMTLIBParser::mkConstraint(const Polynomial& lhs, const Polynomial& rhs, Relation rel) {
 	Polynomial p = lhs - rhs;
 	std::set<carl::Variable> pVars = p.gatherVariables();
-	std::set<carl::Variable> vars;
-	for (auto it: this->mTheoryItes) {
-		if (pVars.count(it.first) > 0) vars.insert(it.first);
+	std::vector<carl::Variable> vars;
+	while (!pVars.empty()) {
+		auto it = this->mTheoryItes.find(*pVars.begin());
+		pVars.erase(pVars.begin());
+		if (it != this->mTheoryItes.end()) {
+			std::get<1>(it->second).gatherVariables(pVars);
+			std::get<2>(it->second).gatherVariables(pVars);
+			vars.push_back(it->first);
+		}
 	}
 	std::size_t n = vars.size();
 	if (n == 0) {
