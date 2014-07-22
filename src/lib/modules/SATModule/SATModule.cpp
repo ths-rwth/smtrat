@@ -453,6 +453,11 @@ namespace smtrat
         }
         else
         {
+            if( formulaInCnf->getType() != OR )
+            {
+                cout << __LINE__ << endl;
+                cout << *formulaInCnf << endl;
+            }
             assert( formulaInCnf->getType() == OR );
             return addClause( formulaInCnf, _type );
         }

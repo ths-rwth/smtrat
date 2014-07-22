@@ -87,7 +87,7 @@ namespace smtrat
     bool LRAModule::inform( const Constraint* const _constraint )
     {
         #ifdef DEBUG_LRA_MODULE
-        cout << "inform about " << *_constraint << endl;
+        cout << "LRAModule::inform  " << "inform about " << *_constraint << endl;
         #endif
         Module::inform( _constraint );
         if( !_constraint->lhs().isConstant() && _constraint->lhs().isLinear() )
@@ -112,7 +112,7 @@ namespace smtrat
     bool LRAModule::assertSubformula( list<const Formula*>::const_iterator _subformula )
     {
         #ifdef DEBUG_LRA_MODULE
-        cout << "add " << **_subformula << "(" << *_subformula << ")" << endl;
+        cout << "LRAModule::assertSubformula  " << "add " << **_subformula << "(" << *_subformula << ")" << endl;
         #endif
         Module::assertSubformula( _subformula );
         switch( (*_subformula)->getType() )
@@ -262,11 +262,13 @@ namespace smtrat
                             if( !(*bound)->origins().empty() )
                             {
                                 auto originSet = (*bound)->pOrigins()->begin();
+                                bool mainOriginRemains = true;
                                 while( originSet != (*bound)->origins().end() )
                                 {
-                                    if( originSet->find( *_subformula ) != originSet->end() )
+                                    if( originSet->find( *_subformula ) != originSet->end() && (mainOriginRemains || originSet->size() > 1) )
                                     {
                                         originSet = (*bound)->pOrigins()->erase( originSet );
+                                        if( originSet->size() == 1 ) mainOriginRemains = false; // ensures that only one main origin is removed, in the case that a formula is contained more than once in the module input
                                     }
                                     else
                                     {
@@ -370,6 +372,7 @@ namespace smtrat
     {
         #ifdef DEBUG_LRA_MODULE
         cout << "check for consistency" << endl;
+        printReceivedFormula();
         #endif
         Answer result = Unknown;
         #ifdef LRA_TERMINATION_INVARIANCE
@@ -1143,17 +1146,15 @@ Return:
                     { 
                         assert( !gomory_constr->satisfiedBy( rMap_ ) );
                         PointerSet<Formula> subformulas; 
-                        /*
                         mTableau.collect_premises( basicVar, subformulas );
                         PointerSet<Formula> premise;
                         for( const Formula* pre : subformulas )
                         {
                             premise.insert( newNegation( pre ) );
                         }
-                        */
                         const Formula* gomory_formula = newFormula( gomory_constr );
-                        //premise.insert( gomory_formula );
-                        addDeduction( gomory_formula );
+                        premise.insert( gomory_formula );
+                        addDeduction( newFormula( OR, std::move( premise ) ) );
                     } 
                 }
             }    
@@ -1687,6 +1688,28 @@ Return:
             _out << setw(10) << assign->first;
             _out << " -> " << assign->second << endl;
         }
+    }
+
+    /**
+     * Prints the current tableau.
+     *
+     * @param _out The output stream to print on.
+     * @param _init The beginning of each line to print.
+     */
+    void LRAModule::printTableau( ostream& _out, const string _init ) const
+    {
+        mTableau.print( LAST_ENTRY_ID, _out, _init );
+    }
+
+    /**
+     * Prints all lra variables and their assignments.
+     *
+     * @param _out The output stream to print on.
+     * @param _init The beginning of each line to print.
+     */
+    void LRAModule::printVariables( ostream& _out, const string _init ) const
+    {
+        mTableau.printVariables( true, _out, _init );
     }
 }    // namespace smtrat
 

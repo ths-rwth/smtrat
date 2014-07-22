@@ -84,16 +84,14 @@ namespace smtrat
             return false;
         }
         
-        const LRAVariable* getOriginalLraVar ( const carl::Variable::Arg _var, LRAModule& _lra )
+        const LRAVariable* getOriginalLraVar( const carl::Variable::Arg _var, const LRAModule& _lra )
         {
-            LRAModule::VarVariableMap originalVars = _lra.originalVariables();
-            LRAModule::VarVariableMap::iterator target = originalVars.find(_var);
-//            cout << "VAR: " << _var << endl;
-            assert(target != originalVars.end());
-            if( target != originalVars.end() )
+            LRAModule::VarVariableMap::const_iterator target = _lra.originalVariables().find(_var);
+            if( target != _lra.originalVariables().end() )
+            {
                 return (*target).second;
-            else
-                return NULL;
+            }
+            return NULL;
         }
     }
 }
