@@ -99,7 +99,6 @@ namespace smtrat
                 #endif
                 setting.computeConflictGraph    = true;
                 setting.numberOfDeductions      = 1;
-                setting.warmRestart             = true;
                 setting.simplifyByFactorization = true;
                 setting.simplifyByRootcounting  = true;
             #endif
