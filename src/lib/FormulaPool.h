@@ -122,6 +122,8 @@ namespace smtrat
                     return mpFalse;
                 if( _subformula == mpFalse )
                     return mpTrue;
+				if (_subformula->getType() == Type::NOT)
+					return _subformula->pSubformula();
                 #endif
                 return addFormulaToPool( new Formula( _subformula ) );
             }
