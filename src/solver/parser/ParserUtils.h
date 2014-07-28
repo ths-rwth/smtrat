@@ -11,13 +11,16 @@
 #include <fstream>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/variant.hpp>
+#include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_bind.hpp>
+#include <boost/spirit/include/phoenix_operator.hpp>
 
 #include "../../lib/Common.h"
 #include "../../lib/Formula.h"
 #include "../../lib/datastructures/VariantMap.h"
 #include "ParserTypes.h"
+#include "Sort.h"
 
 namespace smtrat {
 namespace parser {
@@ -53,6 +56,10 @@ struct TypeOfTerm : public boost::static_visitor<ExpressionType> {
 			default:
 				return ExpressionType::THEORY;
 		}
+	}
+	ExpressionType operator()(const Sort& v) const {
+		if (SortManager::getInstance().isInterpreted(v)) return (*this)(SortManager::getInstance().interpretedType(v));
+		else return ExpressionType::UNINTERPRETED;
 	}
 	template<typename T>
 	static ExpressionType get(const T& t) {
@@ -134,7 +141,8 @@ protected:
 	}
 public:
 	InstructionHandler(): mRegular(std::cout.rdbuf()), mDiagnostic(std::cerr.rdbuf()) {
-		this->setOption("print-instruction", false);
+		Attribute attr("print-instruction", false);
+		this->setOption(attr);
 	}
 	virtual ~InstructionHandler() {
 		for (auto& it: this->streams) it.second.close();
@@ -165,7 +173,7 @@ public:
 	virtual void check() = 0;
 	virtual void declareFun(const carl::Variable&) = 0;
 	virtual void declareSort(const std::string&, const unsigned&) = 0;
-	virtual void defineSort(const std::string&, const std::vector<std::string>&, const std::string&) = 0;
+	virtual void defineSort(const std::string&, const std::vector<std::string>&, const Sort&) = 0;
 	virtual void exit() = 0;
 	virtual void getAssertions() = 0;
 	virtual void getAssignment() = 0;
@@ -182,15 +190,16 @@ public:
 	virtual void getValue(const std::vector<carl::Variable>&) = 0;
 	virtual void pop(const unsigned&) = 0;
 	virtual void push(const unsigned&) = 0;
-	void setInfo(const std::string& key, const Value& val) {
-		if (this->infos.count(key) > 0) warn() << "overwriting info for :" << key;
-		if (key == "name" || key == "authors" || key == "version") error() << "The info :" << key << " is read-only.";
-		else this->infos[key] = val;
+	void setInfo(const Attribute& attr) {
+		if (this->infos.count(attr.key) > 0) warn() << "overwriting info for :" << attr.key;
+		if (attr.key == "name" || attr.key == "authors" || attr.key == "version") error() << "The info :" << attr.key << " is read-only.";
+		else this->infos[attr.key] = attr.value;
 	}
 	virtual void setLogic(const smtrat::Logic&) = 0;
-	void setOption(const std::string& key, const Value& val)  {
+	void setOption(const Attribute& option)  {
+		std::string key = option.key;
 		if (this->options.count(key) > 0) warn() << "overwriting option for :" << key;
-		this->options[key] = val;
+		this->options[key] = option.value;
 		if (key == "diagnostic-output-channel") this->diagnostic(this->options.get<std::string>(key));
 		else if (key == "expand-definitions") this->error() << "The option :expand-definitions is not supported.";
 		else if (key == "interactive-mode") {
@@ -290,6 +299,20 @@ struct SymbolParser : public qi::grammar<Iterator, std::string(), Skipper> {
 	qi::rule<Iterator, std::string(), Skipper> simple;
 };
 
+struct KeywordParser : public qi::grammar<Iterator, std::string(), Skipper> {
+	KeywordParser();
+	qi::rule<Iterator, std::string(), Skipper> main;
+};
+
+struct IdentifierParser : public qi::grammar<Iterator, std::string(), Skipper> {
+	IdentifierParser();
+	SymbolParser symbol;
+	qi::uint_parser<Rational,10,1,-1> numeral;
+	qi::rule<Iterator, std::string(), Skipper> main;
+	qi::rule<Iterator, std::string(), Skipper> indexed;
+	std::string buildIdentifier(const std::string& name, const std::vector<Rational>& nums) const;
+};
+
 template<typename T>
 struct DeclaredSymbolParser : public qi::grammar<Iterator, T(), Skipper> {
 	DeclaredSymbolParser(): DeclaredSymbolParser::base_type(main, "declared symbol") {
@@ -298,6 +321,33 @@ struct DeclaredSymbolParser : public qi::grammar<Iterator, T(), Skipper> {
 	}
 	qi::rule<Iterator, T(), Skipper> main;
 	qi::symbols<char, T> sym;
+};
+
+struct SortParser : public qi::grammar<Iterator, Sort(), Skipper> {
+	SortParser(): SortParser::base_type(sort, "sort") {
+		sort =
+				simpleSort[qi::_val = qi::_1]
+			|	parameters[qi::_val = qi::_1]
+			|	identifier[qi::_val = px::bind(&SortParser::mkSort, px::ref(*this), qi::_1)]
+			|	("(" >> identifier >> +sort >> ")")[qi::_val = px::bind(&SortParser::mkSort, px::ref(*this), qi::_1, qi::_2)]
+		;
+		sort.name("sort");
+		simpleSort.add("Bool", SortManager::getInstance().interpretedSort("Bool", carl::VariableType::VT_BOOL));
+		simpleSort.add("Int", SortManager::getInstance().interpretedSort("Int", carl::VariableType::VT_INT));
+		simpleSort.add("Real", SortManager::getInstance().interpretedSort("Real", carl::VariableType::VT_REAL));
+	}
+
+	Sort mkSort(const std::string& name) {
+		return newSort(name);
+	}
+	Sort mkSort(const std::string& name, const std::vector<Sort>& parameters) {
+		return newSort(name, parameters);
+	}
+
+	IdentifierParser identifier;
+	qi::symbols<char, Sort> simpleSort;
+	qi::symbols<char, Sort> parameters;
+	qi::rule<Iterator, Sort(), Skipper> sort;
 };
 
 struct StringParser : public qi::grammar<Iterator, std::string(), Skipper> {
@@ -331,13 +381,13 @@ struct LogicParser : public qi::symbols<char, smtrat::Logic> {
 
 struct IntegralParser : public qi::grammar<Iterator, Rational(), Skipper> {
 	IntegralParser() : IntegralParser::base_type(integral, "integral") {
-		integral = ("#b" > integralBin) | integralDec | ("#x" > integralHex);
+		integral = ("#b" > binary) | numeral | ("#x" > hexadecimal);
 		integral.name("integral number");
 	}
 	qi::rule<Iterator, Rational(), Skipper> integral;
-	qi::uint_parser<Rational,2,1,-1> integralBin;
-	qi::uint_parser<Rational,10,1,-1> integralDec;
-	qi::uint_parser<Rational,16,1,-1> integralHex;
+	qi::uint_parser<Rational,2,1,-1> binary;
+	qi::uint_parser<Rational,10,1,-1> numeral;
+	qi::uint_parser<Rational,16,1,-1> hexadecimal;
 };
 
 struct DecimalParser : qi::real_parser<Rational, RationalPolicies> {};
