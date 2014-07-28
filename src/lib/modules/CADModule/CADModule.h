@@ -39,9 +39,7 @@
 
 #include "carl/cad/CAD.h"
 
-#ifdef SMTRAT_CAD_VARIABLEBOUNDS
 #include "../../VariableBounds.h"
-#endif
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "CADStatistics.h"
 #endif
@@ -70,9 +68,7 @@ namespace smtrat
         public Module
     {
         typedef std::unordered_map<const Formula*, unsigned> ConstraintIndexMap;
-        #ifdef SMTRAT_CAD_VARIABLEBOUNDS
         typedef smtrat::vb::VariableBounds< Formula > VariableBounds;
-        #endif
 
         ////////////////
         // ATTRIBUTES //
@@ -98,9 +94,7 @@ namespace smtrat
         carl::RealAlgebraicPoint<smtrat::Rational> mRealAlgebraicSolution;
         /// the conflict graph storing for each last component of all sample points which constraints were satisfied by the point
         carl::cad::ConflictGraph mConflictGraph;
-        #ifdef SMTRAT_CAD_VARIABLEBOUNDS
         VariableBounds mVariableBounds;
-        #endif
 
         public:
 
@@ -114,10 +108,8 @@ namespace smtrat
             void updateModel() const;
 
 
-            #ifdef SMTRAT_CAD_VARIABLEBOUNDS
             const VariableBounds&   variableBounds  ()	const 	{ return mVariableBounds; }
             VariableBounds&         rVariableBounds ()      	{ return mVariableBounds; }
-            #endif
 
         private:
 			bool addConstraintFormula(const Formula* f);
