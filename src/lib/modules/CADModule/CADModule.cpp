@@ -33,6 +33,7 @@
 #include "../../Manager.h"
 #include "CADModule.h"
 
+#include <boost/range/adaptor/reversed.hpp>
 #include <memory>
 #include <iostream>
 
@@ -65,9 +66,9 @@ using namespace std;
 namespace smtrat
 {
 
-	CADModule::CADModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
-		Module( _type, _formula, _conditionals, _manager ),
-		mCAD( _conditionals ),
+	CADModule::CADModule(ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager):
+		Module(_type, _formula, _conditionals, _manager),
+		mCAD(_conditionals),
 		mConstraints(),
 		hasFalse(false),
 		subformulaQueue(),
@@ -89,7 +90,7 @@ namespace smtrat
 			#ifdef SMTRAT_CAD_DISABLEEQUATIONDETECT_SETTING
 				setting = carl::cad::CADSettings::getSettings( carl::cad::CADSettingsType::GENERIC );
 			#else
-				setting = carl::cad::CADSettings::getSettings( carl::cad::CADSettingsType::BOUNDED ); // standard
+				setting = carl::cad::CADSettings::getSettings(carl::cad::CADSettingsType::BOUNDED); // standard
 				setting.computeConflictGraph	= true;
 				setting.numberOfDeductions	  = 1;
 				setting.simplifyByFactorization = true;
@@ -132,7 +133,7 @@ namespace smtrat
 		cout << endl;;
 		#endif
 		#else
-		mCAD.alterSetting( setting );
+		mCAD.alterSetting(setting);
 		#endif
 		#ifdef MODULE_VERBOSE
 		cout << "Initial CAD setting: " << endl << setting << endl;
@@ -150,9 +151,6 @@ namespace smtrat
 		#endif
 		#ifdef SMTRAT_CAD_DISABLE_SMT
 		cout << "SMTRAT_CAD_DISABLE_SMT set" << endl;
-		#endif
-		#ifdef SMTRAT_CAD_DISABLE_MIS
-		cout << "SMTRAT_CAD_DISABLE_MIS set" << endl;
 		#endif
 		#ifdef SMTRAT_CAD_DISABLE_MIS
 		cout << "SMTRAT_CAD_DISABLE_MIS set" << endl;
@@ -176,9 +174,9 @@ namespace smtrat
 	 * @param _subformula
 	 * @return returns false if the current list of constraints was already found to be unsatisfiable (in this case, nothing is done), returns true previous result if the constraint was already checked for consistency before, otherwise true
 	 */
-	bool CADModule::assertSubformula( ModuleInput::const_iterator _subformula )
+	bool CADModule::assertSubformula(ModuleInput::const_iterator _subformula)
 	{
-		Module::assertSubformula( _subformula );
+		Module::assertSubformula(_subformula);
 		switch ((*_subformula)->getType()) {
 		case TTRUE: 
 			return true;
@@ -186,7 +184,7 @@ namespace smtrat
 			this->hasFalse = true;
 			PointerSet<Formula> infSubSet;
 			infSubSet.insert(*_subformula);
-			mInfeasibleSubsets.push_back( infSubSet );
+			mInfeasibleSubsets.push_back(infSubSet);
 			foundAnswer( False );
 			return false;
 		}
@@ -210,7 +208,7 @@ namespace smtrat
 	 */
 	Answer CADModule::isConsistent()
 	{
-		if (this->hasFalse) return foundAnswer( False );
+		if (this->hasFalse) return foundAnswer(False);
 		else {
 			for (auto f: this->subformulaQueue) {
 				this->addConstraintFormula(f);
@@ -220,33 +218,32 @@ namespace smtrat
 		//std::cout << "CAD has:" << std::endl;
 		//for (auto c: this->mConstraints) std::cout << "\t\t" << c << std::endl;
 		//this->printReceivedFormula();
-		if( !mpReceivedFormula->isRealConstraintConjunction() && !mpReceivedFormula->isIntegerConstraintConjunction() ) {
-			return foundAnswer( Unknown );
+		if (!mpReceivedFormula->isRealConstraintConjunction() && !mpReceivedFormula->isIntegerConstraintConjunction()) {
+			return foundAnswer(Unknown);
 		}
-		if( !mInfeasibleSubsets.empty() )
-			return foundAnswer( False ); // there was no constraint removed which was in a previously generated infeasible subset
+		if (!mInfeasibleSubsets.empty())
+			return foundAnswer(False); // there was no constraint removed which was in a previously generated infeasible subset
 		// perform the scheduled elimination and see if there were new variables added
-		if( mCAD.prepareElimination() )
+		if (mCAD.prepareElimination())
 			mConflictGraph.clearSampleVertices(); // all sample vertices are now invalid, thus remove them
 		// check the extended constraints for satisfiability
 
-		if( variableBounds().isConflicting() )
-		{
-			mInfeasibleSubsets.push_back( variableBounds().getConflict() );
+		if (variableBounds().isConflicting()) {
+			mInfeasibleSubsets.push_back(variableBounds().getConflict());
 			mRealAlgebraicSolution = carl::RealAlgebraicPoint<smtrat::Rational>();
-			return foundAnswer( False );
+			return foundAnswer(False);
 		}
 		carl::CAD<smtrat::Rational>::BoundMap boundMap;
 		std::map<carl::Variable, carl::Interval<smtrat::Rational>> eiMap = mVariableBounds.getEvalIntervalMap();
 		std::vector<carl::Variable> variables = mCAD.getVariables();
 		for (unsigned v = 0; v < variables.size(); ++v)
 		{
-			auto vPos = eiMap.find( variables[v] );
+			auto vPos = eiMap.find(variables[v]);
 			if (vPos != eiMap.end())
 				boundMap[v] = vPos->second;
 		}
 		list<pair<list<carl::cad::Constraint<smtrat::Rational>>, list<carl::cad::Constraint<smtrat::Rational>> > > deductions;
-		if( !mCAD.check( mConstraints, mRealAlgebraicSolution, mConflictGraph, boundMap, deductions, false, false ) )
+		if (!mCAD.check(mConstraints, mRealAlgebraicSolution, mConflictGraph, boundMap, deductions, false, false))
 		{
 			#ifdef SMTRAT_CAD_DISABLE_SMT
 			// simulate non-incrementality by constructing a trivial infeasible subset and clearing all data in the CAD
@@ -268,9 +265,9 @@ namespace smtrat
 			mInfeasibleSubsets.back().insert( boundConstraints.begin(), boundConstraints.end() );
 			#else
 			// construct an infeasible subset
-			assert( mCAD.getSetting().computeConflictGraph );
+			assert(mCAD.getSetting().computeConflictGraph);
 			// copy conflict graph for destructive heuristics and invert it
-			ConflictGraph g = ConflictGraph( mConflictGraph );
+			ConflictGraph g(mConflictGraph);
 			g.invert();
 			#if defined SMTRAT_CAD_ONEMOSTDEGREEVERTEX_MISHEURISTIC
 				// remove the lowest-degree vertex (highest degree in inverted graph)
@@ -282,24 +279,23 @@ namespace smtrat
 			#else
 				// remove last vertex, assuming it is part of the MIS
 				assert(mConstraints.size() > 0);
-				g.removeConstraintVertex(mConstraints.size()-1);
+				g.removeConstraintVertex(mConstraints.size() - 1);
 			#endif
 			
-			vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics( g );
+			vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics(g);
 
 			PointerSet<Formula> boundConstraints = mVariableBounds.getOriginsOfBounds();
-			for( vec_set_const_pFormula::const_iterator i = infeasibleSubsets.begin(); i != infeasibleSubsets.end(); ++i )
-			{
-				mInfeasibleSubsets.push_back( *i );
-				mInfeasibleSubsets.back().insert( boundConstraints.begin(), boundConstraints.end() );
+			for (auto i: infeasibleSubsets) {
+				mInfeasibleSubsets.push_back(i);
+				mInfeasibleSubsets.back().insert(boundConstraints.begin(), boundConstraints.end());
 			}
 
 			#ifdef CHECK_SMALLER_MUSES
-			Module::checkInfSubsetForMinimality( mInfeasibleSubsets->begin() );
+			Module::checkInfSubsetForMinimality(mInfeasibleSubsets->begin());
 			#endif
 			#endif
 			mRealAlgebraicSolution = carl::RealAlgebraicPoint<smtrat::Rational>();
-			return foundAnswer( False );
+			return foundAnswer(False);
 		}
 		#ifdef MODULE_VERBOSE
 		cout << endl << "#Samples: " << mCAD.samples().size() << endl;
@@ -321,7 +317,7 @@ namespace smtrat
 		#endif
 		this->addDeductions( deductions );
 		#endif
-		if( mpReceivedFormula->isIntegerConstraintConjunction() )
+		if (mpReceivedFormula->isIntegerConstraintConjunction())
 		{
 			// Check whether the found assignment is integer.
 			std::vector<carl::Variable> vars(mCAD.getVariables());
@@ -333,18 +329,18 @@ namespace smtrat
 				}
 			}
 		}
-		return foundAnswer( True );
+		return foundAnswer(True);
 	}
 
-	void CADModule::removeSubformula( ModuleInput::const_iterator _subformula )
+	void CADModule::removeSubformula(ModuleInput::const_iterator _subformula)
 	{
 		switch ((*_subformula)->getType()) {
 		case TTRUE:
-			Module::removeSubformula( _subformula );
+			Module::removeSubformula(_subformula);
 			return;
 		case FFALSE:
 			this->hasFalse = false;
-			Module::removeSubformula( _subformula );
+			Module::removeSubformula(_subformula);
 			return;
 		case CONSTRAINT: {
 			auto it = this->subformulaQueue.find(*_subformula);
@@ -354,10 +350,10 @@ namespace smtrat
 			}
 			//std::cout << "removing " << **_subformula << std::endl;
 			
-			mVariableBounds.removeBound( (*_subformula)->pConstraint(), *_subformula );
+			mVariableBounds.removeBound((*_subformula)->pConstraint(), *_subformula);
 
-			ConstraintIndexMap::iterator constraintIt = mConstraintsMap.find( *_subformula );
-			if( constraintIt == mConstraintsMap.end() )
+			ConstraintIndexMap::iterator constraintIt = mConstraintsMap.find(*_subformula);
+			if (constraintIt == mConstraintsMap.end())
 				return; // there is nothing to remove
 			carl::cad::Constraint<smtrat::Rational> constraint = mConstraints[constraintIt->second];
 			//std::cout << "removing\t" << constraint << std::endl;
@@ -373,26 +369,26 @@ namespace smtrat
 			#endif
 			unsigned constraintIndex = constraintIt->second;
 			// remove the constraint in mConstraintsMap
-			mConstraintsMap.erase( constraintIt );
+			mConstraintsMap.erase(constraintIt);
 			// remove the constraint from the list of constraints
-			assert( mConstraints.size() > constraintIndex ); // the constraint to be removed should be stored in the local constraint list
-			mConstraints.erase( mConstraints.begin() + constraintIndex );	// erase the (constraintIt->second)-th element
+			assert(mConstraints.size() > constraintIndex); // the constraint to be removed should be stored in the local constraint list
+			mConstraints.erase(mConstraints.begin() + constraintIndex);	// erase the (constraintIt->second)-th element
 			// update the constraint / index map, i.e., decrement all indices above the removed one
-			updateConstraintMap( constraintIndex, true );
+			updateConstraintMap(constraintIndex, true);
 			// remove the corresponding constraint node with index constraintIndex
 			mConflictGraph.removeConstraintVertex(constraintIndex);
 			// remove the corresponding polynomial from the CAD if it is not occurring in another constraint
 			bool doDelete = true;
-			for( vector<carl::cad::Constraint<smtrat::Rational>>::const_reverse_iterator c = mConstraints.rbegin(); c != mConstraints.rend(); ++c )
-			{
-				if( constraint.getPolynomial() == c->getPolynomial() )
-				{
+
+			///@todo Why reversed?
+			for (auto c: boost::adaptors::reverse(mConstraints)) {
+				if (constraint.getPolynomial() == c.getPolynomial()) {
 					doDelete = false;
 					break;
 				}
 			}
-			if( doDelete ) // no other constraint claims the polynomial, hence remove it from the list and the cad
-				mCAD.removePolynomial( constraint.getPolynomial() );
+			if (doDelete) // no other constraint claims the polynomial, hence remove it from the list and the cad
+				mCAD.removePolynomial(constraint.getPolynomial());
 			#ifdef MODULE_VERBOSE
 			cout << endl << "---- Constraint removal (afterwards) ----" << endl;
 			cout << "New constraint set:" << endl;
@@ -405,7 +401,7 @@ namespace smtrat
 			cout << endl << "#Samples: " << mCAD.samples().size() << endl;
 			cout << "-----------------------------------------" << endl;
 			#endif
-			Module::removeSubformula( _subformula );
+			Module::removeSubformula(_subformula);
 			return;
 		}
 		default:
@@ -427,13 +423,13 @@ namespace smtrat
 				mModel.insert(std::make_pair(vars[varID], ass));
 			}
 			// bounds for variables which were not handled in the solution point
-			for (auto b: mVariableBounds.getIntervalMap())
-			{ // add an assignment for every bound of a variable not in vars (Caution! Destroys vars!)
+			for (auto b: mVariableBounds.getIntervalMap()) {
+				// add an assignment for every bound of a variable not in vars (Caution! Destroys vars!)
 				std::vector<carl::Variable>::iterator v = std::find(vars.begin(), vars.end(), b.first);
-				if( v != vars.end() )
-					vars.erase( v ); // shall never be found again
-				else
-				{ // variable not handled by CAD, use the midpoint of the bounding interval for the assignment
+				if (v != vars.end()) {
+					vars.erase(v); // shall never be found again
+				} else {
+					// variable not handled by CAD, use the midpoint of the bounding interval for the assignment
 					Assignment ass = b.second.center();
 					mModel.insert(std::make_pair(b.first, ass));
 				}
@@ -448,17 +444,17 @@ namespace smtrat
 	bool CADModule::addConstraintFormula(const Formula* f) {
 		assert(f->getType() == CONSTRAINT);
 		//std::cout << "adding   " << *f << std::endl;
-		mVariableBounds.addBound( f->pConstraint(), f );
+		mVariableBounds.addBound(f->pConstraint(), f);
 		// add the constraint to the local list of constraints and memorize the index/constraint assignment if the constraint is not present already
-		if( mConstraintsMap.find( f ) != mConstraintsMap.end() )
+		if (mConstraintsMap.find(f) != mConstraintsMap.end())
 			return true;	// the exact constraint was already considered
-		carl::cad::Constraint<smtrat::Rational> constraint = convertConstraint( f->constraint() );
+		carl::cad::Constraint<smtrat::Rational> constraint = convertConstraint(f->constraint());
 		//std::cout << "asserting\t" << constraint << std::endl;
-		mConstraints.push_back( constraint );
-		mConstraintsMap[ f ] = (unsigned)(mConstraints.size() - 1);
+		mConstraints.push_back(constraint);
+		mConstraintsMap[f] = (unsigned)(mConstraints.size() - 1);
 		mCAD.addPolynomial(Polynomial(constraint.getPolynomial()), constraint.getVariables());
 		mConflictGraph.addConstraintVertex(); // increases constraint index internally what corresponds to adding a new constraint node with index mConstraints.size()-1
-		if( solverState() == False ) {
+		if (solverState() == False) {
 			//std::cerr << "assertSubformula although solverState() == False" << std::endl;
 			return false;
 		}
@@ -544,18 +540,17 @@ namespace smtrat
 	inline vec_set_const_pFormula CADModule::extractMinimalInfeasibleSubsets_GreedyHeuristics( ConflictGraph& conflictGraph )
 	{
 		// initialize MIS with the last constraint
-		vec_set_const_pFormula mis = vec_set_const_pFormula( 1, PointerSet<Formula>() );
-		mis.front().insert( getConstraintAt( (unsigned)(mConstraints.size() - 1) ) );	// the last constraint is assumed to be always in the MIS
-		if( mConstraints.size() > 1 )
-		{ // construct set cover by greedy heuristic
-			list<ConflictGraph::Vertex> setCover = list<ConflictGraph::Vertex>();
+		vec_set_const_pFormula mis = vec_set_const_pFormula(1, PointerSet<Formula>());
+		mis.front().insert(getConstraintAt((unsigned)(mConstraints.size() - 1)));	// the last constraint is assumed to be always in the MIS
+		if (mConstraints.size() > 1) {
+			// construct set cover by greedy heuristic
+			std::list<ConflictGraph::Vertex> setCover;
 			long unsigned vertex = conflictGraph.maxDegreeVertex();
-			while( conflictGraph.degree( vertex ) > 0 )
-			{
+			while (conflictGraph.degree(vertex) > 0) {
 				// add v to the setCover
-				setCover.push_back( vertex );
+				setCover.push_back(vertex);
 				// remove coverage information of v from conflictGraph
-				conflictGraph.invertConflictingVertices( vertex );
+				conflictGraph.invertConflictingVertices(vertex);
 				#ifdef MODULE_VERBOSE
 				cout << "Conflict graph after removal of " << vertex << ": " << endl << conflictGraph << endl << endl;
 				#endif
@@ -563,32 +558,30 @@ namespace smtrat
 				vertex = conflictGraph.maxDegreeVertex();
 			}
 			// collect constraints according to the vertex cover
-			for( list<ConflictGraph::Vertex>::const_iterator v = setCover.begin(); v != setCover.end(); ++v )
-				mis.front().insert( getConstraintAt( (unsigned)(*v) ) );
+			for (auto v: setCover)
+				mis.front().insert(getConstraintAt((unsigned)(v)));
 		}
 		return mis;
 	}
 
 	void CADModule::addDeductions( const list<pair<list<carl::cad::Constraint<smtrat::Rational>>, list<carl::cad::Constraint<smtrat::Rational>> > >& deductions )
 	{
-		for (auto implication: deductions)
-		{
-			assert( ( !implication.first.empty() && !implication.second.empty() ) || implication.first.size() > 1 || implication.second.size() > 1  );
+		for (auto implication: deductions) {
+			assert((!implication.first.empty() && !implication.second.empty()) || implication.first.size() > 1 || implication.second.size() > 1);
 			PointerSet<Formula> subformulas;
 			// process A in A => B
 			for (auto constraint: implication.first)
 			{
 				// check whether the given constraint is one of the input constraints
 				unsigned index = 0;
-				for ( ; index < mConstraints.size(); ++index)
+				for ( ; index < mConstraints.size(); ++index) {
 					if (mConstraints[index] == constraint)
 						break;
-				if (mConstraints.size() != index)
-				{ // the constraint matches the input constraint at position i
-					for (auto i: mConstraintsMap)
-					{
-						if (i.second == index) // found the entry in the constraint map
-						{
+				}
+				if (mConstraints.size() != index) {
+				// the constraint matches the input constraint at position i
+					for (auto i: mConstraintsMap) {
+						if (i.second == index) { // found the entry in the constraint map
 							subformulas.insert(newNegation(newFormula((i.first)->pConstraint())));
 							break;
 						}
@@ -598,19 +591,18 @@ namespace smtrat
 					subformulas.insert(newFormula(convertConstraint(constraint)));
 			}
 			// process B in A => B
-			for(auto constraint: implication.second)
-			{ // take the constraints in second as they are
+			for (auto constraint: implication.second) {
+			// take the constraints in second as they are
 				// check whether the given constraint is one of the input constraints
 				unsigned index = 0;
-				for( ; index < mConstraints.size(); ++index )
+				for ( ; index < mConstraints.size(); ++index) {
 					if (mConstraints[index] == constraint)
 						break;
-				if (mConstraints.size() != index)
-				{ // the constraint matches the input constraint at position i
-					for (auto i: mConstraintsMap)
-					{
-						if (i.second == index) // found the entry in the constraint map
-						{
+				}
+				if (mConstraints.size() != index) {
+				// the constraint matches the input constraint at position i
+					for (auto i: mConstraintsMap) {
+						if (i.second == index) { // found the entry in the constraint map
 							subformulas.insert(newFormula((i.first)->pConstraint()));
 							break;
 						}

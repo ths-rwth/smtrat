@@ -49,7 +49,7 @@ namespace smtrat
     /// Hash function for use of Input::const_iterator in unordered data structures
     struct FormulaIteratorHasher
     {
-        size_t operator ()( ModuleInput::const_iterator i ) const
+        size_t operator ()(ModuleInput::const_iterator i) const
         {
             return (*i)->pConstraint()->id();
         }
@@ -113,12 +113,12 @@ namespace smtrat
 
         private:
 			bool addConstraintFormula(const Formula* f);
-            const carl::cad::Constraint<smtrat::Rational> convertConstraint( const Constraint& );
-            const Constraint* convertConstraint( const carl::cad::Constraint<smtrat::Rational>& );
-            vec_set_const_pFormula extractMinimalInfeasibleSubsets_GreedyHeuristics( carl::cad::ConflictGraph& conflictGraph );
-            void addDeductions( const std::list<std::pair<std::list<carl::cad::Constraint<smtrat::Rational>>, std::list<carl::cad::Constraint<smtrat::Rational>> > >& deductions );
-            const Formula* getConstraintAt( unsigned index );
-            void updateConstraintMap( unsigned index, bool decrement = true );
+            const carl::cad::Constraint<smtrat::Rational> convertConstraint(const Constraint&);
+            const Constraint* convertConstraint(const carl::cad::Constraint<smtrat::Rational>&);
+            vec_set_const_pFormula extractMinimalInfeasibleSubsets_GreedyHeuristics(carl::cad::ConflictGraph& conflictGraph);
+            void addDeductions(const std::list<std::pair<std::list<carl::cad::Constraint<smtrat::Rational>>, std::list<carl::cad::Constraint<smtrat::Rational>> > >& deductions);
+            const Formula* getConstraintAt(unsigned index);
+            void updateConstraintMap(unsigned index, bool decrement = true);
 #ifdef SMTRAT_DEVOPTION_Statistics
 			CADStatistics* mStats;
 #endif
