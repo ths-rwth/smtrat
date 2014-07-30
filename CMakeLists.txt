@@ -46,10 +46,12 @@ set(smtrat_DESCRIPTION ${PROJECT_DESCRIPTION} )
 
 # options
 option( DEVELOPER "Compile with extra warnings" ON )
-option(STATICLIB_SWITCH "Compile a statically linked version of the library." OFF)
-option(BUILD_SOLVER "Build the SMT-RAT Solver" ON)
-option(BUILD_GUI "Build the GUI" OFF)
-option(USE_GINAC "If disabled, all implementations using the ginac library are disabled." OFF)
+option( STATICLIB_SWITCH "Compile a statically linked version of the library." OFF )
+option( LOGGING "Enable logging within the carl library" ON )
+option( LOGGING_CARL "Compile with the logging facility of the carl library" ON )
+option( BUILD_SOLVER "Build the SMT-RAT Solver" ON )
+option( BUILD_GUI "Build the GUI" OFF )
+option( USE_GINAC "If disabled, all implementations using the ginac library are disabled." OFF )
 
 # Strategy
 option( SMTRAT_STRAT_Factorization "Factorization" ON )

@@ -28,14 +28,13 @@
  * @version 2013-07-10
  */
 
-//#define MODULE_VERBOSE
-
 #include "../../Manager.h"
 #include "CADModule.h"
 
-#include <boost/range/adaptor/reversed.hpp>
 #include <memory>
 #include <iostream>
+
+#include "carl/core/logging.h"
 
 using carl::UnivariatePolynomial;
 using carl::cad::EliminationSet;
@@ -48,8 +47,6 @@ using carl::cad::ConflictGraph;
 using namespace std;
 
 // CAD settings
-//#define SMTRAT_CAD_ALTERNATIVE_SETTING
-//#define SMTRAT_CAD_DISABLEEQUATIONDETECT_SETTING
 //#define SMTRAT_CAD_GENERIC_SETTING
 #define SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
 //#define SMTRAT_CAD_DISABLE_SMT
@@ -77,26 +74,16 @@ namespace smtrat
 		mConflictGraph(),
 		mVariableBounds()
 #ifdef SMTRAT_DEVOPTION_Statistics
-			   ,mStats(CADStatistics::getInstance(0))
+		,mStats(CADStatistics::getInstance(0))
 #endif
 	{
 		mInfeasibleSubsets.clear();	// initially everything is satisfied
 		// CAD setting
 		carl::cad::CADSettings setting = mCAD.getSetting();
 		// general setting set
-		#ifdef SMTRAT_CAD_ALTERNATIVE_SETTING
-			setting = carl::cad::CADSettings::getSettings( carl::cad::CADSettingsType::RATIONALSAMPLE );
-		#else
-			#ifdef SMTRAT_CAD_DISABLEEQUATIONDETECT_SETTING
-				setting = carl::cad::CADSettings::getSettings( carl::cad::CADSettingsType::GENERIC );
-			#else
-				setting = carl::cad::CADSettings::getSettings(carl::cad::CADSettingsType::BOUNDED); // standard
-				setting.computeConflictGraph	= true;
-				setting.numberOfDeductions	  = 1;
-				setting.simplifyByFactorization = true;
-				setting.simplifyByRootcounting  = true;
-			#endif
-		#endif
+		setting = carl::cad::CADSettings::getSettings(carl::cad::CADSettingsType::BOUNDED); // standard
+		setting.simplifyByFactorization = true;
+		setting.simplifyByRootcounting  = true;
 
 		// single settings altered
 		#ifdef SMTRAT_CAD_DISABLE_THEORYPROPAGATION
@@ -135,32 +122,19 @@ namespace smtrat
 		#else
 		mCAD.alterSetting(setting);
 		#endif
-		#ifdef MODULE_VERBOSE
-		cout << "Initial CAD setting: " << endl << setting << endl;
-		#ifdef SMTRAT_CAD_ALTERNATIVE_SETTING
-		cout << "SMTRAT_CAD_ALTERNATIVE_SETTING set" << endl;
-		#endif
-		#ifdef SMTRAT_CAD_DISABLEEQUATIONDETECT_SETTING
-		cout << "SMTRAT_CAD_DISABLEEQUATIONDETECT_SETTING set" << endl;
-		#endif
+
+		LOGMSG_TRACE("smtrat.cad", "Initial CAD setting:" << std::endl << setting);
 		#ifdef SMTRAT_CAD_GENERIC_SETTING
-		cout << "SMTRAT_CAD_GENERIC_SETTING set" << endl;
+		LOGMSG_TRACE("smtrat.cad", "SMTRAT_CAD_GENERIC_SETTING set");
 		#endif
 		#ifdef SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
-		cout << "SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION set" << endl;
+		LOGMSG_TRACE("smtrat.cad", "SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION set");
 		#endif
 		#ifdef SMTRAT_CAD_DISABLE_SMT
-		cout << "SMTRAT_CAD_DISABLE_SMT set" << endl;
+		LOGMSG_TRACE("smtrat.cad", "SMTRAT_CAD_DISABLE_SMT set");
 		#endif
 		#ifdef SMTRAT_CAD_DISABLE_MIS
-		cout << "SMTRAT_CAD_DISABLE_MIS set" << endl;
-		#endif
-		
-		#define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
-		//#define SMTRAT_CAD_DISABLE_MIS
-		//#define CHECK_SMALLER_MUSES
-		//#define SMTRAT_CAD_ONEMOSTDEGREEVERTEX_MISHEURISTIC
-		//#define SMTRAT_CAD_TWOMOSTDEGREEVERTICES_MISHEURISTIC
+		LOGMSG_TRACE("smtrat.cad", "SMTRAT_CAD_DISABLE_MIS set");
 		#endif
 	}
 
@@ -185,7 +159,7 @@ namespace smtrat
 			PointerSet<Formula> infSubSet;
 			infSubSet.insert(*_subformula);
 			mInfeasibleSubsets.push_back(infSubSet);
-			foundAnswer( False );
+			foundAnswer(False);
 			return false;
 		}
 		case CONSTRAINT: {
@@ -297,24 +271,19 @@ namespace smtrat
 			mRealAlgebraicSolution = carl::RealAlgebraicPoint<smtrat::Rational>();
 			return foundAnswer(False);
 		}
-		#ifdef MODULE_VERBOSE
-		cout << endl << "#Samples: " << mCAD.samples().size() << endl;
-		cout << "Elimination sets:" << endl;
-		vector<EliminationSet> elimSets = mCAD.eliminationSets();
-		for( unsigned i = 0; i != elimSets.size(); ++i )
-			cout << "  Level " << i << " (" << elimSets[i].size() << "): " << elimSets[i] << endl;
-		cout << "Result: true" << endl;
-		cout << "CAD complete: " << mCAD.isComplete() << endl;
-		cout << "Solution point: " << mRealAlgebraicSolution << endl << endl;
-//		mCAD.printSampleTree();
-		#endif
+		LOGMSG_TRACE("smtrat.cad", "#Samples: " << mCAD.samples().size());
+		LOGMSG_TRACE("smtrat.cad", "Elimination sets:");
+		for (unsigned i = 0; i != mCAD.getEliminationSets().size(); ++i) {
+			LOGMSG_TRACE("smtrat.cad", "\tLevel " << i << " (" << mCAD.getEliminationSet(i).size() << "): " << mCAD.getEliminationSet(i));
+		}
+		LOGMSG_TRACE("smtrat.cad", "Result: true");
+		LOGMSG_TRACE("smtrat.cad", "CAD complete: " << mCAD.isComplete());
+		LOGMSG_TRACE("smtrat.cad", "Solution point: " << mRealAlgebraicSolution);
 		mInfeasibleSubsets.clear();
 		#ifndef SMTRAT_CAD_DISABLE_THEORYPROPAGATION
 		// compute theory deductions
 		assert( mCAD.setting().numberOfDeductions > 0 );
-		#ifdef MODULE_VERBOSE
-		cout << "Constructing theory deductions..." << endl;
-		#endif
+		LOGMSG_TRACE("smtrat.cad", "Constructing theory deductions...");
 		this->addDeductions( deductions );
 		#endif
 		if (mpReceivedFormula->isIntegerConstraintConjunction())
@@ -348,25 +317,23 @@ namespace smtrat
 				this->subformulaQueue.erase(it);
 				return;
 			}
-			//std::cout << "removing " << **_subformula << std::endl;
-			
+
 			mVariableBounds.removeBound((*_subformula)->pConstraint(), *_subformula);
 
 			ConstraintIndexMap::iterator constraintIt = mConstraintsMap.find(*_subformula);
 			if (constraintIt == mConstraintsMap.end())
 				return; // there is nothing to remove
 			carl::cad::Constraint<smtrat::Rational> constraint = mConstraints[constraintIt->second];
-			//std::cout << "removing\t" << constraint << std::endl;
-			#ifdef MODULE_VERBOSE
-			cout << endl << "---- Constraint removal (before) ----" << endl;
-			cout << "Elimination set sizes:";
-			vector<EliminationSet> elimSets = mCAD.eliminationSets();
-			for( unsigned i = 0; i != elimSets.size(); ++i )
-				cout << "  Level " << i << " (" << elimSets[i].size() << "): " << elimSets[i] << endl;
-			cout << endl << "#Samples: " << mCAD.samples().size() << endl;
-			cout << "-----------------------------------------" << endl;
-			cout << "Removing " << constraint << "..." << endl;
-			#endif
+
+			LOGMSG_TRACE("smtrat.cad", "---- Constraint removal (before) ----");
+			LOGMSG_TRACE("smtrat.cad", "Elimination sets:");
+			for (unsigned i = 0; i != mCAD.getEliminationSets().size(); ++i) {
+				LOGMSG_TRACE("smtrat.cad", "\tLevel " << i << " (" << mCAD.getEliminationSet(i).size() << "): " << mCAD.getEliminationSet(i));
+			}
+			LOGMSG_TRACE("smtrat.cad", "#Samples: " << mCAD.samples().size());
+			LOGMSG_TRACE("smtrat.cad", "-----------------------------------------");
+			LOGMSG_TRACE("smtrat.cad", "Removing " << constraint << "...");
+
 			unsigned constraintIndex = constraintIt->second;
 			// remove the constraint in mConstraintsMap
 			mConstraintsMap.erase(constraintIt);
@@ -381,7 +348,7 @@ namespace smtrat
 			bool doDelete = true;
 
 			///@todo Why reversed?
-			for (auto c: boost::adaptors::reverse(mConstraints)) {
+			for (auto c: mConstraints) {
 				if (constraint.getPolynomial() == c.getPolynomial()) {
 					doDelete = false;
 					break;
@@ -389,18 +356,16 @@ namespace smtrat
 			}
 			if (doDelete) // no other constraint claims the polynomial, hence remove it from the list and the cad
 				mCAD.removePolynomial(constraint.getPolynomial());
-			#ifdef MODULE_VERBOSE
-			cout << endl << "---- Constraint removal (afterwards) ----" << endl;
-			cout << "New constraint set:" << endl;
-			for( auto k = mConstraints.begin(); k != mConstraints.end(); ++k )
-				cout << " " << *k << endl;
-			cout << "Elimination sets:";
-			elimSets = mCAD.eliminationSets();
-			for( unsigned i = 0; i != elimSets.size(); ++i )
-				cout << "  Level " << i << " (" << elimSets[i].size() << "): " << elimSets[i] << endl;
-			cout << endl << "#Samples: " << mCAD.samples().size() << endl;
-			cout << "-----------------------------------------" << endl;
-			#endif
+
+			LOGMSG_TRACE("smtrat.cad", "---- Constraint removal (afterwards) ----");
+			LOGMSG_TRACE("smtrat.cad", "New constraint set: " << mConstraints);
+			LOGMSG_TRACE("smtrat.cad", "Elimination sets:");
+			for (unsigned i = 0; i != mCAD.getEliminationSets().size(); ++i) {
+				LOGMSG_TRACE("smtrat.cad", "\tLevel " << i << " (" << mCAD.getEliminationSet(i).size() << "): " << mCAD.getEliminationSet(i));
+			}
+			LOGMSG_TRACE("smtrat.cad", "#Samples: " << mCAD.samples().size());
+			LOGMSG_TRACE("smtrat.cad", "-----------------------------------------");
+
 			Module::removeSubformula(_subformula);
 			return;
 		}
@@ -443,22 +408,17 @@ namespace smtrat
 	
 	bool CADModule::addConstraintFormula(const Formula* f) {
 		assert(f->getType() == CONSTRAINT);
-		//std::cout << "adding   " << *f << std::endl;
 		mVariableBounds.addBound(f->pConstraint(), f);
 		// add the constraint to the local list of constraints and memorize the index/constraint assignment if the constraint is not present already
 		if (mConstraintsMap.find(f) != mConstraintsMap.end())
 			return true;	// the exact constraint was already considered
 		carl::cad::Constraint<smtrat::Rational> constraint = convertConstraint(f->constraint());
-		//std::cout << "asserting\t" << constraint << std::endl;
 		mConstraints.push_back(constraint);
 		mConstraintsMap[f] = (unsigned)(mConstraints.size() - 1);
 		mCAD.addPolynomial(Polynomial(constraint.getPolynomial()), constraint.getVariables());
 		mConflictGraph.addConstraintVertex(); // increases constraint index internally what corresponds to adding a new constraint node with index mConstraints.size()-1
-		if (solverState() == False) {
-			//std::cerr << "assertSubformula although solverState() == False" << std::endl;
-			return false;
-		}
-		return true;
+
+		return solverState() != False;
 	}
 
 	/**
@@ -551,9 +511,7 @@ namespace smtrat
 				setCover.push_back(vertex);
 				// remove coverage information of v from conflictGraph
 				conflictGraph.invertConflictingVertices(vertex);
-				#ifdef MODULE_VERBOSE
-				cout << "Conflict graph after removal of " << vertex << ": " << endl << conflictGraph << endl << endl;
-				#endif
+				LOGMSG_TRACE("smtrat.cad", "Conflict graph after removal of " << vertex << ": " << endl << conflictGraph);
 				// get the new vertex with the biggest number of adjacent solution point vertices
 				vertex = conflictGraph.maxDegreeVertex();
 			}
