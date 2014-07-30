@@ -39,9 +39,7 @@
 
 #include "carl/cad/CAD.h"
 
-#ifdef SMTRAT_CAD_VARIABLEBOUNDS
 #include "../../VariableBounds.h"
-#endif
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "CADStatistics.h"
 #endif
@@ -51,7 +49,7 @@ namespace smtrat
     /// Hash function for use of Input::const_iterator in unordered data structures
     struct FormulaIteratorHasher
     {
-        size_t operator ()( ModuleInput::const_iterator i ) const
+        size_t operator ()(ModuleInput::const_iterator i) const
         {
             return (*i)->pConstraint()->id();
         }
@@ -70,9 +68,7 @@ namespace smtrat
         public Module
     {
         typedef std::unordered_map<const Formula*, unsigned> ConstraintIndexMap;
-        #ifdef SMTRAT_CAD_VARIABLEBOUNDS
         typedef smtrat::vb::VariableBounds< Formula > VariableBounds;
-        #endif
 
         ////////////////
         // ATTRIBUTES //
@@ -98,9 +94,7 @@ namespace smtrat
         carl::RealAlgebraicPoint<smtrat::Rational> mRealAlgebraicSolution;
         /// the conflict graph storing for each last component of all sample points which constraints were satisfied by the point
         carl::cad::ConflictGraph mConflictGraph;
-        #ifdef SMTRAT_CAD_VARIABLEBOUNDS
         VariableBounds mVariableBounds;
-        #endif
 
         public:
 
@@ -114,19 +108,17 @@ namespace smtrat
             void updateModel() const;
 
 
-            #ifdef SMTRAT_CAD_VARIABLEBOUNDS
             const VariableBounds&   variableBounds  ()	const 	{ return mVariableBounds; }
             VariableBounds&         rVariableBounds ()      	{ return mVariableBounds; }
-            #endif
 
         private:
 			bool addConstraintFormula(const Formula* f);
-            const carl::cad::Constraint<smtrat::Rational> convertConstraint( const Constraint& );
-            const Constraint* convertConstraint( const carl::cad::Constraint<smtrat::Rational>& );
-            vec_set_const_pFormula extractMinimalInfeasibleSubsets_GreedyHeuristics( carl::cad::ConflictGraph& conflictGraph );
-            void addDeductions( const std::list<std::pair<std::list<carl::cad::Constraint<smtrat::Rational>>, std::list<carl::cad::Constraint<smtrat::Rational>> > >& deductions );
-            const Formula* getConstraintAt( unsigned index );
-            void updateConstraintMap( unsigned index, bool decrement = true );
+            const carl::cad::Constraint<smtrat::Rational> convertConstraint(const Constraint&);
+            const Constraint* convertConstraint(const carl::cad::Constraint<smtrat::Rational>&);
+            vec_set_const_pFormula extractMinimalInfeasibleSubsets_GreedyHeuristics(carl::cad::ConflictGraph& conflictGraph);
+            void addDeductions(const std::list<std::pair<std::list<carl::cad::Constraint<smtrat::Rational>>, std::list<carl::cad::Constraint<smtrat::Rational>> > >& deductions);
+            const Formula* getConstraintAt(unsigned index);
+            void updateConstraintMap(unsigned index, bool decrement = true);
 #ifdef SMTRAT_DEVOPTION_Statistics
 			CADStatistics* mStats;
 #endif

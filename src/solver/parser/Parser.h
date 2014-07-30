@@ -6,6 +6,7 @@
 #pragma once
 
 #include <cassert>
+#include <iostream>
 #include <iterator>
 #include <list>
 #include <stack>
@@ -30,6 +31,7 @@
 #include "../../lib/FormulaPool.h"
 #include "ParserUtils.h"
 #include "ParserTypes.h"
+#include "Sort.h"
 
 namespace smtrat {
 namespace parser {
@@ -62,6 +64,7 @@ public:
 	
 	// Basic rules
 	Skipper skipper;
+	KeywordParser keyword;
 	SymbolParser symbol;
 	StringParser string;
 	RelationParser relation;
@@ -69,23 +72,23 @@ public:
 	TheoryOpParser op_theory;
 	DomainParser domain;
 	LogicParser logic;
+	SortParser sort;
 	
 	rule<> boundary;
 	
 	// Numbers
+	qi::uint_parser<unsigned,10,1,-1> numeral;
 	IntegralParser integral;
 	DecimalParser decimal;
 	
 	// Variables
 	rule<carl::Variable> var;
 	rule<carl::Variable> quantifiedVar;
-	rule<std::pair<std::string, carl::VariableType>> sortedVar;
-	rule<std::string> key;
+	rule<std::pair<std::string, Sort>> sortedVar;
 	rule<Attribute> attribute;
 	
-	rule<AttributeValue> value;
+	rule<AttributeMandatoryValue> value;
 	rule<std::vector<std::string>> symlist;
-	rule<std::vector<carl::Variable>> varlist;
 	rule<> bindlist;
 	qi::rule<Iterator, qi::unused_type, Skipper, qi::locals<std::string>> binding;
 	
@@ -121,11 +124,11 @@ public:
 protected:
 	void add(const Formula* f);
 	void check();
-	void declareConst(const std::string&, const carl::VariableType&);
-	void declareFun(const std::string& name, const std::vector<carl::VariableType>& args, const carl::VariableType& sort);
-	void declareSort(const std::string&, const Rational&);
-	void defineFun(const std::string&, const std::vector<carl::Variable>&, const carl::VariableType&, const boost::variant<const Formula*, Polynomial>&);
-	void defineSort(const std::string&, const std::vector<std::string>&, const std::string&);
+	void declareConst(const std::string&, const Sort&);
+	void declareFun(const std::string& name, const std::vector<Sort>& args, const Sort& sort);
+	void declareSort(const std::string&, const unsigned&);
+	void defineFun(const std::string&, const std::vector<carl::Variable>&, const Sort&, const boost::variant<const Formula*, Polynomial>&);
+	void defineSort(const std::string&, const std::vector<std::string>&, const Sort&);
 	void exit();
 	void getAssertions();
 	void getAssignment();
@@ -134,11 +137,11 @@ protected:
 	void getProof();
 	void getUnsatCore();
 	void getValue(const std::vector<carl::Variable>&);
-	void pop(const Rational&);
-	void push(const Rational&);
-	void setInfo(const std::string& key, const AttributeValue& val);
+	void pop(const unsigned&);
+	void push(const unsigned&);
+	void setInfo(const Attribute& attribute);
 	void setLogic(const smtrat::Logic&);
-	void setOption(const std::string& key, const AttributeValue& val);
+	void setOption(const Attribute& option);
 	
 	template<typename Function, typename... Args>
 	void callHandler(const Function& f, const Args&... args) {
@@ -161,12 +164,13 @@ private:
 		qi::symbols<char, const Formula*> bind_bool;
 		qi::symbols<char, Polynomial> bind_theory;
 	public:
-		Scope(const SMTLIBParser& parser):
-			var_bool(parser.var_bool.sym),
-			var_theory(parser.var_theory.sym),
-			bind_bool(parser.bind_bool.sym),
-			bind_theory(parser.bind_theory.sym)
-		{}
+		Scope(const SMTLIBParser& parser)
+		{
+			var_bool = parser.var_bool.sym;
+			var_theory = parser.var_theory.sym;
+			bind_bool = parser.bind_bool.sym;
+			bind_theory = parser.bind_theory.sym;
+		}
 		void restore(SMTLIBParser& parser) {
 			parser.var_bool.sym = this->var_bool;
 			parser.var_theory.sym = this->var_theory;
@@ -179,11 +183,11 @@ private:
 
 	bool isSymbolFree(const std::string& name, bool output = true) {
 		if (output) {
-			if (name == "true" || name == "false") this->handler->error() << "\"" << name << "\" is a reserved keyword.";
-			else if (this->var_bool.sym.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a boolean variable.";
-			else if (this->var_theory.sym.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a theory variable.";
-			else if (this->bind_bool.sym.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a boolean binding.";
-			else if (this->bind_theory.sym.find(name) != nullptr) this->handler->error() << "\"" << name << "\" has already been defined as a theory binding.";
+			if (name == "true" || name == "false") this->handler->error() << "'" << name << "' is a reserved keyword.";
+			else if (this->var_bool.sym.find(name) != nullptr) this->handler->error() << "'" << name << "' has already been defined as a boolean variable.";
+			else if (this->var_theory.sym.find(name) != nullptr) this->handler->error() << "'" << name << "' has already been defined as a theory variable.";
+			else if (this->bind_bool.sym.find(name) != nullptr) this->handler->error() << "'" << name << "' has already been defined as a boolean binding.";
+			else if (this->bind_theory.sym.find(name) != nullptr) this->handler->error() << "'" << name << "' has already been defined as a theory binding.";
 			else return true;
 			return false;
 		} else {
@@ -208,9 +212,19 @@ private:
 	const Formula* mkFormula(Type _type, PointerSet<Formula>& _subformulas);
 	
 	carl::Variable addQuantifiedVariable(const std::string& _name, const boost::optional<carl::VariableType>& type);
-	carl::Variable addVariableBinding(const std::pair<std::string, carl::VariableType>&);
+	carl::Variable addVariableBinding(const std::pair<std::string, Sort>&);
 	void addTheoryBinding(std::string& _varName, Polynomial& _polynomial);
 	void addBooleanBinding(std::string&, const Formula*);
+
+	void setSortParameters(const std::vector<std::string>& params) {
+		for (auto p: params) {
+			sort.parameters.add(p, Sort(p));
+		}
+	}
+
+	void clearSortParameters() {
+		sort.parameters.clear();
+	}
 		
 public:
 	std::stringstream lastrule;

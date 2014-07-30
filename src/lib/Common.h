@@ -33,6 +33,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include "Relation.h"
+#include "carl/core/logging.h"
 #include "carl/core/MultivariatePolynomial.h"
 #include "carl/interval/Interval.h"
 #include "carl/interval/IntervalEvaluation.h"
@@ -50,8 +51,8 @@ namespace smtrat
 		case Logic::UNDEFINED:	os << "undefined"; break;
 		case Logic::QF_NRA:		os << "QF_NRA"; break;
 		case Logic::QF_LRA:		os << "QF_LRA"; break;
-		case Logic::QF_NIA:		os << "QF_NRI"; break;
-		case Logic::QF_LIA:		os << "QF_LRI"; break;
+		case Logic::QF_NIA:		os << "QF_NIA"; break;
+		case Logic::QF_LIA:		os << "QF_LIA"; break;
 	}
 	return os;
 }
