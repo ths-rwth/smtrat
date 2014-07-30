@@ -276,6 +276,11 @@ namespace smtrat
                 }
                 #endif
 
+                bool isSatisfiedBy( const T1& _value ) const
+                {
+                    return (*mpInfimum) <= _value && (*mpSupremum) >= _value;
+                }
+
                 void updateConflictActivity()
                 {
                     mConflictActivity = 0;

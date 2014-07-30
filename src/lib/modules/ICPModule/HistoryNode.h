@@ -192,7 +192,7 @@ namespace smtrat
                     return mIntervals.at( _variable );
                 }
                 
-                void setIntervals( EvalDoubleIntervalMap _map )
+                void setIntervals( const EvalDoubleIntervalMap& _map )
                 {
                     EvalDoubleIntervalMap::const_iterator intervalIt;
                     for( intervalIt = _map.begin(); intervalIt != _map.end(); ++intervalIt )
@@ -253,7 +253,7 @@ namespace smtrat
                     PointerSet<Formula> appliedConstraints;
                     for( std::set<const ContractionCandidate*>::iterator candidateIt = mAppliedContractions.begin(); candidateIt != mAppliedContractions.end(); ++candidateIt )
                     {
-                        for( std::set<const Formula*,ContractionCandidate::originComp>::iterator originIt = (*candidateIt)->origin().begin(); originIt != (*candidateIt)->origin().end(); ++originIt )
+                        for( auto originIt = (*candidateIt)->origin().begin(); originIt != (*candidateIt)->origin().end(); ++originIt )
                         {
                             appliedConstraints.insert(*originIt);
                         }
@@ -388,18 +388,18 @@ namespace smtrat
                     assert( mReasons.find( _variable ) != mReasons.end() );
                 }
 
-                void addReasons( const carl::Variable::Arg _variable, std::set<const Constraint*> _reasons )
+                void addReasons( const carl::Variable::Arg _variable, const std::set<const Constraint*>& _reasons )
                 {
                     for( std::set<const Constraint*>::iterator reasonsIt = _reasons.begin(); reasonsIt != _reasons.end(); ++reasonsIt )
                         addReason( _variable, (*reasonsIt) );
                 }
 
-                void addReasons( const carl::Variable::Arg _variable, std::set<const Formula*, icp::ContractionCandidate::originComp> _origins )
+                void addReasons( const carl::Variable::Arg _variable, const PointerSet<Formula>& _origins )
                 {
                     assert( mReasons.find( _variable ) != mReasons.end() );
                     bool                               contained = false;
-                    std::set<const Formula*, icp::ContractionCandidate::originComp>::iterator minimal   = _origins.begin();
-                    for( std::set<const Formula*, icp::ContractionCandidate::originComp>::iterator originIt = _origins.begin(); originIt != _origins.end(); ++originIt )
+                    auto minimal = _origins.begin();
+                    for( auto originIt = _origins.begin(); originIt != _origins.end(); ++originIt )
                     {
                         if( mReasons.at( _variable ).find( (*originIt)->pConstraint() ) != mReasons.at( _variable ).end() )
                         {

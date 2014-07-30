@@ -28,7 +28,7 @@ namespace smtrat
     
     ContractionCandidateManager::ContractionCandidateManager():
     mCurrentId(1),
-    mCandidates()
+    mCandidates() // TODO: initialize with a certain size
     {}
     
     ContractionCandidateManager* ContractionCandidateManager::getInstance()
@@ -46,7 +46,7 @@ namespace smtrat
                                                                         carl::Variable _derivationVar,
                                                                         Contractor<carl::SimpleNewton>& _contractor,
                                                                         const Formula* _origin )
-    {        
+    {
         ContractionCandidate* tmp;
         
         // Todo: Is it better to make the replacement here instead of outside?
@@ -59,54 +59,20 @@ namespace smtrat
             tmp = new ContractionCandidate(_lhs, _rhs, _constraint, _derivationVar, _contractor, _origin, mCurrentId);    
         }
         
-        std::pair<std::map<unsigned, ContractionCandidate*>::iterator, bool> insertionResult = mCandidates.insert(std::make_pair(mCurrentId,tmp));
-        assert( insertionResult.second );
+        assert( mCurrentId == mCandidates.size() + 1 );
+        mCandidates.push_back( tmp );
         ++mCurrentId;
         
-        return (*insertionResult.first).second;
+        return tmp;
     }
     
-    unsigned ContractionCandidateManager::getId ( const ContractionCandidate* const _candidate ) const
+    ContractionCandidate* ContractionCandidateManager::getCandidate( const unsigned _id )
     {
-        for ( auto candidateIt = mCandidates.begin(); candidateIt != mCandidates.end(); ++candidateIt )
+        if( _id < mCandidates.size() && _id > 0 )
         {
-            if ( _candidate == (*candidateIt).second )
-            {
-                return (*candidateIt).first;
-            }
-        }
-        return 0;
-    }
-    
-    ContractionCandidate* ContractionCandidateManager::getCandidate ( const unsigned _id )
-    {
-        if ( mCandidates.find(_id) != mCandidates.end() )
-        {
-            return mCandidates.at(_id);
+            return mCandidates[_id - 1];
         }
         return NULL;
-    }
-    
-    void ContractionCandidateManager::removeCandidate ( ContractionCandidate* _candidate )
-    {
-        for ( auto candidateIt = mCandidates.begin(); candidateIt != mCandidates.end(); ++candidateIt )
-        {
-            if ( _candidate == (*candidateIt).second )
-            {
-                delete (*candidateIt).second;
-                mCandidates.erase(candidateIt);
-            }
-        }
-    }
-    
-    void ContractionCandidateManager::clearCandidates()
-    {
-        for ( auto candidateIt = mCandidates.begin(); candidateIt != mCandidates.end();  )
-        {
-            ContractionCandidate* toDelete = (*candidateIt).second;
-            candidateIt = mCandidates.erase(candidateIt);
-            delete toDelete;
-        }
     }
     
     void ContractionCandidateManager::closure (const ContractionCandidate* const _candidate, std::set<const ContractionCandidate*>& _candidates) const
@@ -116,13 +82,13 @@ namespace smtrat
         {
 //            cout << "[Closure] Add candidate ";
             _candidate->print();
-            for ( auto symbolIt = _candidate->constraint()->variables().begin(); symbolIt != _candidate->constraint()->variables().end(); ++symbolIt )
+            for( auto symbolIt = _candidate->constraint()->variables().begin(); symbolIt != _candidate->constraint()->variables().end(); ++symbolIt )
             {
-                for ( auto candidateIt = mCandidates.begin(); candidateIt != mCandidates.end(); ++candidateIt )
+                for( auto candidateIt = mCandidates.begin(); candidateIt != mCandidates.end(); ++candidateIt )
                 {
-                    if ( (*candidateIt).second->lhs() == (*symbolIt) )
+                    if( (*candidateIt)->lhs() == (*symbolIt) )
                     {
-                        mInstance->closure((*candidateIt).second, _candidates);
+                        mInstance->closure(*candidateIt, _candidates);
                     }
                 }
             }

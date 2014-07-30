@@ -22,7 +22,7 @@ namespace smtrat
         * @param _expr Expression, which is checked
         * @return true, if expression is linear
         */
-        bool isLinear( const Constraint* _constr, const Polynomial& _expr, FastMap<Polynomial, const Constraint*>& _tempMonomes );
+        bool isLinear( const Constraint* _constr, const Polynomial& _expr, std::vector<Polynomial>& _tempMonomes );
         
         /**
         * Creates a new constraint from an existing interval

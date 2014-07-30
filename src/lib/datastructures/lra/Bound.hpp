@@ -91,6 +91,11 @@ namespace smtrat
                 bool operator <( const Value<T1>& ) const;
                 bool operator <( const Bound& ) const;
                 bool operator >( const Bound& ) const;
+                bool operator ==( const T1& ) const;
+                bool operator >( const T1& ) const;
+                bool operator <( const T1& ) const;
+                bool operator >=( const T1& ) const;
+                bool operator <=( const T1& ) const;
                 const std::string toString() const;
                 template <typename T3, typename T4> friend std::ostream& operator <<( std::ostream&, const Bound<T3, T4>& );
                 void print( bool _withOrigins = false,  std::ostream& _out = std::cout, bool _printTypebool = false ) const;
@@ -368,6 +373,44 @@ namespace smtrat
                 return false;
             }
             return (*mLimit) == v;
+        }
+        
+        template<typename T1, typename T2>
+        bool Bound<T1, T2>::operator ==( const T1& _value ) const
+        {
+            return mLimit != NULL && (*mLimit) == _value;
+        }
+        
+        template<typename T1, typename T2>
+        bool Bound<T1, T2>::operator >( const T1& _value ) const
+        {
+            if( mLimit == NULL )
+                return mType == UPPER;
+            return (*mLimit) > _value;
+        }
+        
+        template<typename T1, typename T2>
+        bool Bound<T1, T2>::operator <( const T1& _value ) const
+        {
+            if( mLimit == NULL )
+                return mType == LOWER;
+            return (*mLimit) < _value;
+        }
+        
+        template<typename T1, typename T2>
+        bool Bound<T1, T2>::operator >=( const T1& _value ) const
+        {
+            if( mLimit == NULL )
+                return mType == UPPER;
+            return (*mLimit) >= _value;
+        }
+        
+        template<typename T1, typename T2>
+        bool Bound<T1, T2>::operator <=( const T1& _value ) const
+        {
+            if( mLimit == NULL )
+                return mType == LOWER;
+            return (*mLimit) <= _value;
         }
 
         /**

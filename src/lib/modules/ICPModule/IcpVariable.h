@@ -37,6 +37,9 @@
 
 namespace smtrat
 {
+    
+    typedef std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> ContractionCandidates;
+    
 namespace icp
 {   
     enum class Updated{
@@ -59,7 +62,7 @@ namespace icp
              */
             const carl::Variable               mVar;
             bool                               mOriginal;
-            std::vector<ContractionCandidate*> mCandidates;
+            ContractionCandidates              mCandidates;
             const LRAVariable*                 mLraVar;
             bool                               mActive;
             bool                               mLinear;
@@ -69,8 +72,8 @@ namespace icp
             std::pair<Updated,Updated>         mUpdated; // internal, external
             const smtrat::Formula*             mInternalLeftBound;
             const smtrat::Formula*             mInternalRightBound;
-            ModuleInput::iterator          mExternalLeftBound;
-            ModuleInput::iterator          mExternalRightBound;
+            ModuleInput::iterator              mExternalLeftBound;
+            ModuleInput::iterator              mExternalRightBound;
 
         private:
             IcpVariable();
@@ -131,7 +134,7 @@ namespace icp
                 return mVar;
             }
 
-            std::vector<ContractionCandidate*>& candidates()
+            ContractionCandidates& candidates()
             {
                 return mCandidates;
             }
@@ -143,6 +146,7 @@ namespace icp
 
             void addCandidate( ContractionCandidate* _candidate )
             {
+                assert( _candidate->lhs() == mVar );
                 mCandidates.insert( mCandidates.end(), _candidate );
                 if( _candidate->isActive() )
                 {
@@ -153,24 +157,9 @@ namespace icp
 
             void setLraVar( const LRAVariable* _lraVar )
             {
+                assert( mLraVar == NULL );
                 mLraVar = _lraVar;
                 mUpdated = std::make_pair(Updated::BOTH,Updated::BOTH);
-            }
-
-            void deleteCandidate( ContractionCandidate* _candidate )
-            {
-                std::vector<ContractionCandidate*>::iterator candidateIt;
-                for( candidateIt = mCandidates.begin(); candidateIt != mCandidates.end(); )
-                {
-                    if( *candidateIt == _candidate )
-                    {
-                        candidateIt = mCandidates.erase( candidateIt );
-                    }
-                    else
-                    {
-                        ++candidateIt;
-                    }
-                }
             }
 
             void print( std::ostream& _out = std::cout ) const
@@ -200,7 +189,7 @@ namespace icp
 
             bool checkLinear()
             {
-                std::vector<ContractionCandidate*>::iterator candidateIt = mCandidates.begin();
+                ContractionCandidates::iterator candidateIt = mCandidates.begin();
                 for ( ; candidateIt != mCandidates.end(); ++candidateIt )
                 {
                     if ( (*candidateIt)->isLinear() == false )
@@ -218,9 +207,9 @@ namespace icp
                 return mLinear;
             }
             
-            void setUpdated(Updated _internal=Updated::BOTH, Updated _external=Updated::BOTH)
+            void setUpdated()
             {
-                mUpdated = std::make_pair(_internal,_external);
+                mUpdated = std::make_pair( Updated::BOTH, Updated::BOTH );
             }
             
             Updated isInternalUpdated() const
@@ -321,23 +310,6 @@ namespace icp
                 }
             }
             
-            void boundsSet(Updated _internal=Updated::BOTH, Updated _external=Updated::BOTH)
-            {
-                mBoundsSet = std::make_pair(_internal,_external);
-            }
-            
-            void internalBoundsSet(Updated _internal=Updated::BOTH)
-            {
-                mBoundsSet = std::make_pair(_internal,mBoundsSet.second);
-                mUpdated = std::pair<Updated,Updated>(Updated::NONE, mUpdated.second);
-            }
-            
-            void externalBoundsSet(Updated _external=Updated::BOTH)
-            {
-                mBoundsSet = std::make_pair(mBoundsSet.first,_external);
-                mUpdated = std::pair<Updated,Updated>(mUpdated.first, Updated::NONE);
-            }
-            
             Updated isInternalBoundsSet() const
             {
                 return mBoundsSet.first;
@@ -359,7 +331,7 @@ namespace icp
              */
             bool autoActivate()
             {
-                std::vector<ContractionCandidate*>::iterator candidateIt;
+                ContractionCandidates::iterator candidateIt;
                 for( candidateIt = mCandidates.begin(); candidateIt != mCandidates.end(); ++candidateIt )
                 {
                     if( (*candidateIt)->isActive() )

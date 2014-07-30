@@ -38,7 +38,6 @@
 #include "../../Module.h"
 #include "DerivativeTable.h"
 #include "ContractionCandidateManager.h"
-#include "HistoryNode.h"
 #include "IcpVariable.h"
 #include "../LRAModule/LRAModule.h"
 #include "../../Common.h"
@@ -46,6 +45,10 @@
 #include "IcpVariable.h"
 #include "utils.h"
 #include <fstream>
+
+//#ifdef BOXMANAGEMENT
+#include "HistoryNode.h"
+//#endif
 
 namespace smtrat
 {
@@ -99,39 +102,41 @@ namespace smtrat
                 double                     weight;
             };
 
-            typedef std::set<icp::ContractionCandidate*, icp::contractionCandidateComp>                      ContractionCandidates;
-            typedef FastPointerMap<Polynomial*, weights>                             WeightMap;
+            typedef FastPointerMap<Polynomial*, weights>                                WeightMap;
 
         private:
 
             /**
              * Members:
              */
-            icp::ContractionCandidateManager*                                                   mCandidateManager; // keeps all candidates
-            std::map<icp::ContractionCandidate*, unsigned, icp::contractionCandidateComp>       mActiveNonlinearConstraints; // nonlinear candidates considered
-            std::map<icp::ContractionCandidate*, unsigned, icp::contractionCandidateComp>       mActiveLinearConstraints; // linear candidates considered
+            icp::ContractionCandidateManager*                                   mCandidateManager; // keeps all candidates
+            std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> mActiveNonlinearConstraints; // nonlinear candidates considered
+            std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> mActiveLinearConstraints; // linear candidates considered
             std::map<const LRAVariable*, ContractionCandidates>                 mLinearConstraints; // all linear candidates
-            std::map<const Constraint*, ContractionCandidates>                                  mNonlinearConstraints; // all nonlinear candidates
+            std::map<const Constraint*, ContractionCandidates>                  mNonlinearConstraints; // all nonlinear candidates
             
-            std::map<const carl::Variable, icp::IcpVariable*>                                         mVariables; // list of occurring variables
+            std::map<const carl::Variable, icp::IcpVariable*>                                   mVariables; // list of occurring variables
             EvalDoubleIntervalMap                                                               mIntervals; // actual intervals relevant for contraction
+            EvalRationalMap                                                                     mFoundSolution;
             std::set<std::pair<double, unsigned>, comp>                                         mIcpRelevantCandidates; // candidates considered for contraction 
             
             FastPointerMap<Formula,const Formula*>                                              mLinearizations; // linearized constraint -> original constraint
             FastPointerMap<Formula,const Formula*>                                              mDeLinearizations; // linearized constraint -> original constraint
             FastMap<Polynomial, carl::Variable>                                                 mVariableLinearizations; // monome -> variable
             std::map<carl::Variable, Polynomial>                                                mSubstitutions; // variable -> monome/variable
-            FastMap<Polynomial, Contractor<carl::SimpleNewton> >                                mContractors;
+            FastMap<Polynomial, Contractor<carl::SimpleNewton>>                                 mContractors;
             
+            //#ifdef BOXMANAGEMENT
             icp::HistoryNode*                                                                   mHistoryRoot; // Root-Node of the state-tree
             icp::HistoryNode*                                                                   mHistoryActual; // Actual node of the state-tree
+            //#endif
             
             ModuleInput*                                                                        mValidationFormula; // ReceivedFormula of the internal LRA Module
-//            std::map<const Formula*, const Formula*, formulaPtrComp>                            mReceivedFormulaMapping; // LraReceived -> IcpReceived
-            std::vector< std::atomic_bool* >                                                    mLRAFoundAnswer;
+            std::vector<std::atomic_bool*>                                                      mLRAFoundAnswer;
             RuntimeSettings*                                                                    mLraRuntimeSettings;
             LRAModule                                                                           mLRA; // internal LRA module
             
+            FastPointerMap<Constraint,unsigned>                                                 mReceivedConstraints; // Checks whether a constraints has already been added.
             std::set<const Constraint*>                                                         mCenterConstraints; // keeps actual centerConstaints for deletion
             PointerSet<Formula>                                                                 mCreatedDeductions; // keeps pointers to the created deductions for deletion
             icp::ContractionCandidate*                                                          mLastCandidate; // the last applied candidate
@@ -183,6 +188,34 @@ namespace smtrat
              */
             
             /**
+             * 
+             * @param _splitOccurred
+             * @return 
+             */
+            void addConstraint( const Formula* _formula );
+            
+            /**
+             * 
+             * @param _var
+             * @param _original
+             * @param _lraVar
+             * @return 
+             */
+            icp::IcpVariable* getIcpVariable( carl::Variable::Arg _var, bool _original, const LRAVariable* _lraVar );
+            
+            /**
+             * 
+             * @param _formula
+             */
+            void activateNonlinearConstraint( const Formula* _formula );
+            
+            /**
+             * 
+             * @param _formula
+             */
+            void activateLinearConstraint( const Formula* _formula, const Formula* _origin );
+            
+            /**
              * Performs a consistency check on the linearization of the received constraints.
              * @param _answer The answer of the consistency check on the linearization of the received constraints.
              * @return true, if the linear check led to a conclusive answer which should be returned by this module;
@@ -204,15 +237,25 @@ namespace smtrat
             Answer callBackends();
 
             /**
-             * Creates ContractionCandidates from all items in mTemporaryMonomes and empties mTemporaryMonomes.
+             * Creates the non-linear contraction candidates from all items in mTemporaryMonomes and empties mTemporaryMonomes.
              */
-            Polynomial createContractionCandidates(FastMap<Polynomial, const Constraint*>& _tempMonomes );
+            Polynomial createNonlinearCCs( const Constraint* _constraint, const std::vector<Polynomial>& _tempMonomes );
+
+            /**
+             * Creates the linear contraction candidates corresponding to the given linear constraint.
+             * @param _constraint
+             * @param _origin
+             */
+            void createLinearCCs( const Constraint* _constraint, const Formula* _origin );
             
             /**
-             * Initiates weights for contractions
+             * Initiates weights for contractions   
              */
             void initiateWeights();
             
+            /**
+             * 
+             */
             void activateLinearEquations();
             
             /**
@@ -231,13 +274,6 @@ namespace smtrat
              * @param _candidate
              */
             bool removeCandidateFromRelevant(icp::ContractionCandidate* _candidate);
-            
-            /**
-             * Checks whether a candidate is already relevant.
-             * @param _candidate
-             * @return 
-             */
-            bool findCandidateInRelevant(icp::ContractionCandidate* _candidate);
             
             /**
              * Update all affected candidates and reinsert them into icpRelevantCandidates
@@ -260,7 +296,12 @@ namespace smtrat
              */
             bool contraction( icp::ContractionCandidate* _selection, double& _relativeContraction, double& _absoluteContraction );
             
-            std::map<carl::Variable, double> createModel( bool antipoint=false ) const;
+            /**
+             * 
+             * @param antipoint
+             * @return 
+             */
+            std::map<carl::Variable, double> createModel( bool antipoint = false ) const;
             
             /**
              * Calls the actual contraction on a separate map to check, whether contraction is possible. Returns the node, where insertion makes sense.
@@ -268,7 +309,7 @@ namespace smtrat
              * @param _relativeContraction
              * @param _intervals
              */
-            void tryContraction( icp::ContractionCandidate* _selection, double& _relativeContraction, EvalDoubleIntervalMap _intervals );
+            void tryContraction( icp::ContractionCandidate* _selection, double& _relativeContraction, const EvalDoubleIntervalMap& _intervals );
             
             /**
              * Selects the next splitting direction according to different heuristics.
@@ -277,9 +318,17 @@ namespace smtrat
              */
             double calculateSplittingImpact ( const carl::Variable& _var, icp::ContractionCandidate& _candidate ) const;
             
+            /**
+             * 
+             * @return 
+             */
             PointerSet<Formula> createPremiseDeductions();
             
-            const Formula* createBoxFormula();
+            /**
+             * 
+             * @return 
+             */
+            PointerSet<Formula> createBoxFormula();
                         
             /**
              * Checks if there is a need for a split and manages the splitting and branching in the
@@ -290,11 +339,18 @@ namespace smtrat
             std::pair<bool,carl::Variable> checkAndPerformSplit();
 
             /**
-             * Validates the actual intervals against the linear feasible region returned
-             * by the mLRA module
-             * @return a set of violated constraints
+             * 
+             * @param _solution
+             * @return 
              */
-            std::pair<bool,bool> validateSolution();
+            bool tryTestPoints();
+            
+            /**
+             * Validates the actual intervals against the linear feasible region returned by the mLRA module.
+             * @param 
+             * @return 
+             */
+            bool validateSolution( bool& _newConstraintAdded );
             
             /**
              * 
@@ -317,36 +373,17 @@ namespace smtrat
             bool checkBoxAgainstLinearFeasibleRegion();
             
             /**
-             * Selects and sets the next possible interval box from the history nodes.
-             * @return true if a new box has been selected.
+             * Selects and sets the next possible interval box from the history nodes. If there is no new box, 
+             * the infeasible subset is updated accordingly.
+             * @return true, if there is a new box;
+             *         false, otherwise.
              */
-            icp::HistoryNode* chooseBox( icp::HistoryNode* _basis );
-            
-            /**
-             * Set all parameters of the module according to the selected HistoryNode
-             * @param _selection the Node which contains the new context
-             */
-            void setBox( icp::HistoryNode* _selection );
-            
-            /**
-             * Safely removes unneeded nodes in the tree, when a new node has been set.
-             * @param _old
-             * @param _new
-             */
-            icp::HistoryNode* saveSetNode( icp::HistoryNode* _old, const icp::HistoryNode* const _new);
-            
-            /**
-             * Finds position, where to add a set of Contraction candidates into the HistoryTree and sets the actual node.
-             * @param _candidate
-             * @return 
-             */
-            icp::HistoryNode* tryToAddConstraint( ContractionCandidates _candidates, icp::HistoryNode* _node );
+            bool chooseBox();
             
             /**
              * Creates Bounds and passes them to PassedFormula for the Backends.
-             * @return true if new bounds have been added
              */
-            bool pushBoundsToPassedFormula();
+            void pushBoundsToPassedFormula();
             
             /**
              * Compute hull of defining origins for set of icpVariables.
@@ -362,10 +399,6 @@ namespace smtrat
              */
             PointerSet<Formula> constraintReasonHull( std::set<const Constraint*>& _reasons );
             
-            /**
-             * generates and sets the infeasible subset
-             */
-            PointerSet<Formula> collectReasons( icp::HistoryNode* _node );
             
             /**
              * creates constraints for the actual bounds of the original variables.
@@ -383,12 +416,39 @@ namespace smtrat
              */
             void remapAndSetLraInfeasibleSubsets();
             
-#ifdef ICP_BOXLOG
+            //#ifdef BOXMANAGEMENT
+            /**
+             * Selects and sets the next possible interval box from the history nodes.
+             * @param _basis
+             * @return 
+             */
+            icp::HistoryNode* chooseBox( icp::HistoryNode* _basis );
+            
+            /**
+             * Set all parameters of the module according to the selected HistoryNode
+             * @param _selection the Node which contains the new context
+             */
+            void setBox( icp::HistoryNode* _selection );
+            
+            /**
+             * Finds position, where to add a set of Contraction candidates into the HistoryTree and sets the actual node.
+             * @param _candidate
+             * @return 
+             */
+            icp::HistoryNode* tryToAddConstraint( const ContractionCandidates& _candidates, icp::HistoryNode* _node );
+            
+            /**
+             * generates and sets the infeasible subset
+             */
+            PointerSet<Formula> collectReasons( icp::HistoryNode* _node );
+            //#endif
+            
+            #ifdef ICP_BOXLOG
             /**
              * Writes actual box to file. Note that the file has to be open.
              */
             void writeBox();
-#endif
+            #endif
             
             /**
              * Printout of actual tables of linear constraints, active linear

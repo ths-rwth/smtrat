@@ -13,7 +13,7 @@ namespace smtrat
 {
     namespace icp
     {
-        bool isLinear( const Constraint* _constr, const Polynomial& _expr, FastMap<Polynomial, const Constraint*>& _tempMonomes )
+        bool isLinear( const Constraint* _constr, const Polynomial& _expr, std::vector<Polynomial>& _tempMonomes )
         {
             bool isLinear = true;
             for( auto termIt = _expr.begin(); termIt != _expr.end(); ++termIt )
@@ -22,7 +22,7 @@ namespace smtrat
                 {
                     if( !(*termIt)->monomial()->isLinear() )
                     {
-                        _tempMonomes.insert( std::make_pair(Polynomial( *(*termIt)->monomial() ), _constr) );
+                        _tempMonomes.push_back( Polynomial( *(*termIt)->monomial() ) );
                         isLinear = false;
                     }
                 }

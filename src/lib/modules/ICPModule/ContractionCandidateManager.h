@@ -45,7 +45,7 @@ namespace smtrat
          */
         static ContractionCandidateManager* mInstance;
         unsigned mCurrentId;
-        std::map<unsigned, ContractionCandidate*> mCandidates;
+        std::vector<ContractionCandidate*> mCandidates;
         
         /**
          * Constructors
@@ -54,8 +54,13 @@ namespace smtrat
         ContractionCandidateManager();
         
         ~ContractionCandidateManager()
-        {
-            clearCandidates();
+        {   
+            while( !mCandidates.empty() )
+            {
+                ContractionCandidate* toDelete = mCandidates.back();
+                mCandidates.pop_back();
+                delete toDelete;
+            }
         }
         
     public:
@@ -98,24 +103,13 @@ namespace smtrat
         ContractionCandidate* getCandidate ( const unsigned _id );
         
         /**
-         * Removes a candidate from the list
-         * @param _candidate
-         */
-        void removeCandidate ( ContractionCandidate* _candidate );
-        
-        /**
-         * deletes all candidates.
-         */
-        void clearCandidates ();
-        
-        /**
          * Calculates the closure of a certain candidate according to the variables contained.
          * @param _candidate
          * @return the set of candidates in the closure of _candidate
          */
         void closure (const ContractionCandidate* const _candidate, std::set<const ContractionCandidate*>& _candidates) const;
         
-        std::map<unsigned, ContractionCandidate*>& rCandidates()
+        const std::vector<ContractionCandidate*>& candidates()
         {
             return mCandidates;
         }

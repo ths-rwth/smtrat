@@ -41,7 +41,7 @@
 #include "ModuleFactory.h"
 
 // Flag activating some informative and not exaggerated output about module calls.
-//#define MODULE_VERBOSE
+#define MODULE_VERBOSE
 //#define MODULE_VERBOSE_INTEGERS
 //#define DEBUG_MODULE_CALLS_IN_SMTLIB
 
@@ -544,6 +544,8 @@ namespace smtrat
         subformulasA.insert( consA );
         subformulasA.insert( consB );
         const Formula* dedA = newFormula( OR, std::move( subformulasA ) );
+        cout << "add deduction " << endl;
+        cout << *dedA << endl << endl;
         addDeduction( dedA );
         // (not(x<=I-1) or not(x>=I))
         PointerSet<Formula> subformulasB;
@@ -555,6 +557,8 @@ namespace smtrat
         subformulasB.insert( newNegation( consA ) );
         subformulasB.insert( newNegation( consB ) );
         const Formula* deduction = newFormula( OR, std::move( subformulasB ) );
+        cout << "add deduction " << endl;
+        cout << *deduction << endl << endl;
         addDeduction( deduction );
     }
     
