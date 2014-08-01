@@ -68,7 +68,7 @@ namespace smtrat
     
     ContractionCandidate* ContractionCandidateManager::getCandidate( const unsigned _id )
     {
-        if( _id < mCandidates.size() && _id > 0 )
+        if( _id <= mCandidates.size() && _id > 0 )
         {
             return mCandidates[_id - 1];
         }

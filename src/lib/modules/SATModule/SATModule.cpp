@@ -52,8 +52,8 @@
 #include <iomanip>
 #include "../../datastructures/lra/Tableau.hpp"
 
-#define DEBUG_SATMODULE
-#define DEBUG_SATMODULE_THEORY_PROPAGATION
+//#define DEBUG_SATMODULE
+//#define DEBUG_SATMODULE_THEORY_PROPAGATION
 //#define SATMODULE_WITH_CALL_NUMBER
 //#define WITH_PROGRESS_ESTIMATION
 //#define SAT_MODULE_OUTPUT_PROGRESS

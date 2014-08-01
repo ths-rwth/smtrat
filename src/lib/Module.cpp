@@ -41,7 +41,7 @@
 #include "ModuleFactory.h"
 
 // Flag activating some informative and not exaggerated output about module calls.
-#define MODULE_VERBOSE
+//#define MODULE_VERBOSE
 //#define MODULE_VERBOSE_INTEGERS
 //#define DEBUG_MODULE_CALLS_IN_SMTLIB
 
@@ -354,7 +354,6 @@ namespace smtrat
     void Module::addSubformulaToPassedFormula( const Formula* _formula, const vec_set_const_pFormula& _origins )
     {
         assert( mpReceivedFormula->size() != UINT_MAX );
-//        assert( mPassedformulaOrigins.find(_formula) == mPassedformulaOrigins.end());
         mpPassedFormula->push_back( _formula );
         mPassedformulaOrigins[_formula] = _origins;
         if( mFirstSubformulaToPass == mpPassedFormula->end() )
@@ -370,7 +369,6 @@ namespace smtrat
     void Module::addSubformulaToPassedFormula( const Formula* _formula, vec_set_const_pFormula&& _origins )
     {
         assert( mpReceivedFormula->size() != UINT_MAX );
-        assert( mPassedformulaOrigins.find(_formula) == mPassedformulaOrigins.end());
         mpPassedFormula->push_back( _formula );
         mPassedformulaOrigins.emplace( _formula, _origins );
         if( mFirstSubformulaToPass == mpPassedFormula->end() )
@@ -544,8 +542,8 @@ namespace smtrat
         subformulasA.insert( consA );
         subformulasA.insert( consB );
         const Formula* dedA = newFormula( OR, std::move( subformulasA ) );
-        cout << "add deduction " << endl;
-        cout << *dedA << endl << endl;
+//        cout << "add deduction " << endl;
+//        cout << *dedA << endl << endl;
         addDeduction( dedA );
         // (not(x<=I-1) or not(x>=I))
         PointerSet<Formula> subformulasB;
@@ -557,8 +555,8 @@ namespace smtrat
         subformulasB.insert( newNegation( consA ) );
         subformulasB.insert( newNegation( consB ) );
         const Formula* deduction = newFormula( OR, std::move( subformulasB ) );
-        cout << "add deduction " << endl;
-        cout << *deduction << endl << endl;
+//        cout << "add deduction " << endl;
+//        cout << *deduction << endl << endl;
         addDeduction( deduction );
     }
     
@@ -1243,7 +1241,7 @@ namespace smtrat
             auto formulaOrigins = mPassedformulaOrigins.find( *form );
             assert( formulaOrigins != mPassedformulaOrigins.end() );
             _out << _initiation << "  ";
-            _out << setw( 30 ) << (*form)->toString( true );
+            _out << setw( 30 ) << (*form)->toString( false, 0, "", true, true, true );
             stringstream out;
             out << "  [" << *form << "]" << " from " << "(";
             _out << setw( 22 ) << out.str();

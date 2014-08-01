@@ -74,6 +74,7 @@ namespace icp
             const smtrat::Formula*             mInternalRightBound;
             ModuleInput::iterator              mExternalLeftBound;
             ModuleInput::iterator              mExternalRightBound;
+            ModuleInput::iterator              mDefaultPosition;
 
         private:
             IcpVariable();
@@ -86,25 +87,25 @@ namespace icp
             
             
 
-            IcpVariable( const carl::Variable::Arg _var, bool _original, const LRAVariable* _lraVar = NULL ):
+            IcpVariable( const carl::Variable::Arg _var, bool _original, ModuleInput::iterator _defaultPosition, const LRAVariable* _lraVar = NULL ):
                 mVar( _var ),
                 mOriginal( _original ),
                 mCandidates(),
                 mLraVar( _lraVar ),
                 mActive( false ),
                 mLinear( true ),
-                mBoundsSet( std::make_pair(Updated::NONE,Updated::NONE) ),
                 mUpdated( std::make_pair(Updated::NONE,Updated::NONE) ),
-                mInternalLeftBound ( ),
-                mInternalRightBound ( ),
-                mExternalLeftBound ( ),
-                mExternalRightBound ( )
-            {
-            }
+                mInternalLeftBound( NULL ),
+                mInternalRightBound( NULL ),
+                mExternalLeftBound( _defaultPosition ),
+                mExternalRightBound( _defaultPosition ),
+                mDefaultPosition( _defaultPosition )
+            {}
 
             IcpVariable( const carl::Variable::Arg _var,
                          bool _original,
                          ContractionCandidate* _candidate,
+                         ModuleInput::iterator _defaultPosition,
                          const LRAVariable* _lraVar = NULL ):
                 mVar( _var ),
                 mOriginal ( _original ),
@@ -112,12 +113,12 @@ namespace icp
                 mLraVar( _lraVar ),
                 mActive( _candidate->isActive() ),
                 mLinear( _candidate->isLinear() ),
-                mBoundsSet (std::make_pair(Updated::NONE,Updated::NONE)),
                 mUpdated( std::make_pair(Updated::NONE,Updated::NONE) ),
-                mInternalLeftBound ( ),
-                mInternalRightBound ( ),
-                mExternalLeftBound ( ),
-                mExternalRightBound ( )
+                mInternalLeftBound( NULL ),
+                mInternalRightBound( NULL ),
+                mExternalLeftBound( _defaultPosition ),
+                mExternalRightBound( _defaultPosition ),
+                mDefaultPosition( _defaultPosition )
             {
                 mCandidates.insert( mCandidates.end(), _candidate );
             }
@@ -212,6 +213,16 @@ namespace icp
                 mUpdated = std::make_pair( Updated::BOTH, Updated::BOTH );
             }
             
+            void setExternalDeactivated()
+            {
+                mUpdated = std::make_pair( mUpdated.first, Updated::NONE );
+            }
+            
+            void setInternalDeactivated()
+            {
+                mUpdated = std::make_pair( Updated::NONE, mUpdated.second );
+            }
+            
             Updated isInternalUpdated() const
             {
                 return mUpdated.first;
@@ -224,100 +235,53 @@ namespace icp
             
             const smtrat::Formula* internalLeftBound() const
             {
-                assert(mBoundsSet.first == Updated::LEFT || mBoundsSet.first == Updated::BOTH);
                 return mInternalLeftBound;
             }
             
             const smtrat::Formula* internalRightBound() const
             {
-                assert(mBoundsSet.first == Updated::RIGHT || mBoundsSet.first == Updated::BOTH);
                 return mInternalRightBound;
             }
             
             ModuleInput::iterator externalLeftBound() const
             {
-                assert(mBoundsSet.second == Updated::LEFT || mBoundsSet.second == Updated::BOTH);
                 return mExternalLeftBound;
             }
             
             ModuleInput::iterator externalRightBound() const
             {
-                assert(mBoundsSet.second == Updated::RIGHT || mBoundsSet.second == Updated::BOTH);
                 return mExternalRightBound;
             }
             
             void setInternalLeftBound( const smtrat::Formula* _left )
             {
                 mInternalLeftBound = _left;
-                switch(mBoundsSet.first)
-                {
-                    case Updated::RIGHT:
-                        mBoundsSet.first = Updated::BOTH;
-                        break;
-                    case Updated::NONE:
-                        mBoundsSet.first = Updated::LEFT;
-                        break;
-                    default:
-                        break;
-                }
             }
             
             void setInternalRightBound( const smtrat::Formula* _right )
             {
                 mInternalRightBound = _right;
-                switch(mBoundsSet.first)
-                {
-                    case Updated::LEFT:
-                        mBoundsSet.first = Updated::BOTH;
-                        break;
-                    case Updated::NONE:
-                        mBoundsSet.first = Updated::RIGHT;
-                        break;
-                    default:
-                        break;
-                }
             }
             
             void setExternalLeftBound( ModuleInput::iterator _left )
             {
                 mExternalLeftBound = _left;
-                switch(mBoundsSet.second)
-                {
-                    case Updated::RIGHT:
-                        mBoundsSet.second = Updated::BOTH;
-                        break;
-                    case Updated::NONE:
-                        mBoundsSet.second = Updated::LEFT;
-                        break;
-                    default:
-                        break;
-                }
             }
             
             void setExternalRightBound( ModuleInput::iterator _right )
             {
                 mExternalRightBound = _right;
-                switch(mBoundsSet.second)
-                {
-                    case Updated::LEFT:
-                        mBoundsSet.second = Updated::BOTH;
-                        break;
-                    case Updated::NONE:
-                        mBoundsSet.second = Updated::RIGHT;
-                        break;
-                    default:
-                        break;
-                }
             }
             
             Updated isInternalBoundsSet() const
             {
-                return mBoundsSet.first;
-            }
-            
-            Updated isExternalBoundsSet() const
-            {
-                return mBoundsSet.second;
+                if( mInternalLeftBound != NULL )
+                {
+                    if( mInternalRightBound != NULL )
+                        return Updated::BOTH;
+                    return Updated::LEFT;
+                }
+                return Updated::RIGHT;
             }
             
             bool isOriginal() const

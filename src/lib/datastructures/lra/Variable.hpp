@@ -276,9 +276,12 @@ namespace smtrat
                 }
                 #endif
 
-                bool isSatisfiedBy( const T1& _value ) const
+                unsigned isSatisfiedBy( const smtrat::EvalRationalMap& _ass ) const
                 {
-                    return (*mpInfimum) <= _value && (*mpSupremum) >= _value;
+                    smtrat::Polynomial polyTmp = mExpression->substitute( _ass );
+                    if( polyTmp.isConstant() )
+                        return (*mpInfimum) <= polyTmp.constantPart() && (*mpSupremum) >= polyTmp.constantPart();
+                    return 2;
                 }
 
                 void updateConflictActivity()

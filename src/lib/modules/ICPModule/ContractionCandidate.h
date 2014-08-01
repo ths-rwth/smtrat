@@ -276,7 +276,7 @@ namespace smtrat
                 }
             }
 
-            unsigned activity()
+            size_t activity()
             {
                 return mOrigin.size();
             }

@@ -258,17 +258,20 @@ namespace smtrat
         }
         if( Settings::use_variable_bounds )
         {
-            vector<pair<vector<const Constraint*>, const Constraint*>> bDeds = mpStateTree->variableBounds().getBoundDeductions();
-            for( auto bDed = bDeds.begin(); bDed != bDeds.end(); ++bDed )
+            if( !mpStateTree->variableBounds().isConflicting() )
             {
-                PointerSet<Formula> subformulas;
-                for( auto cons = bDed->first.begin(); cons != bDed->first.end(); ++cons )
+                vector<pair<vector<const Constraint*>, const Constraint*>> bDeds = mpStateTree->variableBounds().getBoundDeductions();
+                for( auto bDed = bDeds.begin(); bDed != bDeds.end(); ++bDed )
                 {
-                    subformulas.insert( newNegation( newFormula( *cons ) ) );
+                    PointerSet<Formula> subformulas;
+                    for( auto cons = bDed->first.begin(); cons != bDed->first.end(); ++cons )
+                    {
+                        subformulas.insert( newNegation( newFormula( *cons ) ) );
+                    }
+                    subformulas.insert( newFormula( bDed->second ) );
+    //                cout << "learn: " << deduction->toString( true, true ) << endl;
+                    addDeduction( newFormula( OR, std::move( subformulas ) ) );
                 }
-                subformulas.insert( newFormula( bDed->second ) );
-//                cout << "learn: " << deduction->toString( true, true ) << endl;
-                addDeduction( newFormula( OR, std::move( subformulas ) ) );
             }
         }
         #ifdef VS_TERMINATION_INVARIANCE

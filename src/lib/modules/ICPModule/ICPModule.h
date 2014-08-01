@@ -443,6 +443,8 @@ namespace smtrat
             PointerSet<Formula> collectReasons( icp::HistoryNode* _node );
             //#endif
             
+            bool intervalsEmpty( bool _original = false);
+            
             #ifdef ICP_BOXLOG
             /**
              * Writes actual box to file. Note that the file has to be open.
