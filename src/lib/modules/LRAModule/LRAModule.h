@@ -133,7 +133,7 @@ namespace smtrat
             {
                 ConstraintBoundsMap::const_iterator iter = mTableau.constraintToBound().find( _constraint );
                 assert( iter != mTableau.constraintToBound().end() );
-                return iter->second->back()->pVariable();
+                return (*iter->second->begin())->pVariable();
             }
 
         private:

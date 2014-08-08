@@ -324,7 +324,7 @@ namespace smtrat
                     return mStateInfeasibleVariables.insert(_variable).second;
                 }
 
-                void addContraction( ContractionCandidate* _candidate, set_icpVariable _variables )
+                void addContraction( ContractionCandidate* _candidate, const set_icpVariable& _variables )
                 {
                     mAppliedContractions.insert( _candidate );
                     

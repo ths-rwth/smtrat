@@ -1271,7 +1271,7 @@ namespace smtrat
                 _out << endl << _initiation << "    ";
             _out << " {";
             for( auto infSubFormula = infSubSet->begin(); infSubFormula != infSubSet->end(); ++infSubFormula )
-                _out << " " << **infSubFormula;
+                _out << " " << (*infSubFormula)->toString( false, 0, "", true, true, true ) << endl;
             _out << " }";
         }
         _out << " }" << endl;

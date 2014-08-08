@@ -66,6 +66,7 @@ namespace icp
             const LRAVariable*                 mLraVar;
             bool                               mActive;
             bool                               mLinear;
+            EvalDoubleIntervalMap::iterator    mIntervalPos;
             
             // interval Bound generation
             std::pair<Updated,Updated>         mBoundsSet; // internal, external
@@ -84,16 +85,18 @@ namespace icp
             /*
              * Constructors
              */
-            
-            
-
-            IcpVariable( const carl::Variable::Arg _var, bool _original, ModuleInput::iterator _defaultPosition, const LRAVariable* _lraVar = NULL ):
+            IcpVariable( const carl::Variable::Arg _var, 
+                         bool _original, 
+                         ModuleInput::iterator _defaultPosition, 
+                         EvalDoubleIntervalMap::iterator _intervalPos, 
+                         const LRAVariable* _lraVar = NULL ):
                 mVar( _var ),
                 mOriginal( _original ),
                 mCandidates(),
                 mLraVar( _lraVar ),
                 mActive( false ),
                 mLinear( true ),
+                mIntervalPos( _intervalPos ),
                 mUpdated( std::make_pair(Updated::NONE,Updated::NONE) ),
                 mInternalLeftBound( NULL ),
                 mInternalRightBound( NULL ),
@@ -101,27 +104,6 @@ namespace icp
                 mExternalRightBound( _defaultPosition ),
                 mDefaultPosition( _defaultPosition )
             {}
-
-            IcpVariable( const carl::Variable::Arg _var,
-                         bool _original,
-                         ContractionCandidate* _candidate,
-                         ModuleInput::iterator _defaultPosition,
-                         const LRAVariable* _lraVar = NULL ):
-                mVar( _var ),
-                mOriginal ( _original ),
-                mCandidates(),
-                mLraVar( _lraVar ),
-                mActive( _candidate->isActive() ),
-                mLinear( _candidate->isLinear() ),
-                mUpdated( std::make_pair(Updated::NONE,Updated::NONE) ),
-                mInternalLeftBound( NULL ),
-                mInternalRightBound( NULL ),
-                mExternalLeftBound( _defaultPosition ),
-                mExternalRightBound( _defaultPosition ),
-                mDefaultPosition( _defaultPosition )
-            {
-                mCandidates.insert( mCandidates.end(), _candidate );
-            }
             
             ~IcpVariable()
             {}
@@ -149,10 +131,6 @@ namespace icp
             {
                 assert( _candidate->lhs() == mVar );
                 mCandidates.insert( mCandidates.end(), _candidate );
-                if( _candidate->isActive() )
-                {
-                    mActive = true;
-                }
                 checkLinear();
             }
 
@@ -208,17 +186,42 @@ namespace icp
                 return mLinear;
             }
             
-            void setUpdated()
+            EvalDoubleIntervalMap::const_iterator intervalPosition() const
             {
-                mUpdated = std::make_pair( Updated::BOTH, Updated::BOTH );
+                return mIntervalPos;
             }
             
-            void setExternalDeactivated()
+            const DoubleInterval& interval() const
+            {
+                return mIntervalPos->second;
+            }
+            
+            void setInterval( const DoubleInterval& _interval )
+            {
+                if( _interval.lowerBoundType() != mIntervalPos->second.lowerBoundType() || _interval.lower() != mIntervalPos->second.lower() )
+                {
+                    mUpdated.first = (mUpdated.first == Updated::BOTH || mUpdated.first == Updated::RIGHT) ? Updated::BOTH : Updated::LEFT;
+                    mUpdated.second = (mUpdated.second == Updated::BOTH || mUpdated.second == Updated::RIGHT) ? Updated::BOTH : Updated::LEFT;
+                }
+                if( _interval.upperBoundType() != mIntervalPos->second.upperBoundType() || _interval.upper() != mIntervalPos->second.upper() )
+                {
+                    mUpdated.first = (mUpdated.first == Updated::BOTH || mUpdated.first == Updated::LEFT) ? Updated::BOTH : Updated::RIGHT;
+                    mUpdated.second = (mUpdated.second == Updated::BOTH || mUpdated.second == Updated::LEFT) ? Updated::BOTH : Updated::RIGHT;
+                }
+                mIntervalPos->second = _interval;
+            }
+            
+            void setUnmodified()
+            {
+                mUpdated = std::make_pair( Updated::NONE, Updated::NONE );
+            }
+            
+            void setExternalUnmodified()
             {
                 mUpdated = std::make_pair( mUpdated.first, Updated::NONE );
             }
             
-            void setInternalDeactivated()
+            void setInternalUnmodified()
             {
                 mUpdated = std::make_pair( Updated::NONE, mUpdated.second );
             }

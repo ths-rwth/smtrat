@@ -189,6 +189,12 @@ namespace smtrat
             
             /**
              * 
+             * @param 
+             */
+            void resetHistory( icp::ContractionCandidate* );
+            
+            /**
+             * 
              * @param _splitOccurred
              * @return 
              */
@@ -336,7 +342,7 @@ namespace smtrat
              * @param _targetDiameter
              * @return if a split has happened and in which dimension.
              */
-            std::pair<bool,carl::Variable> checkAndPerformSplit();
+            carl::Variable checkAndPerformSplit( bool );
 
             /**
              * 
@@ -397,7 +403,7 @@ namespace smtrat
              * @param _map
              * @return 
              */
-            PointerSet<Formula> constraintReasonHull( std::set<const Constraint*>& _reasons );
+            PointerSet<Formula> constraintReasonHull( const std::set<const Constraint*>& _reasons );
             
             
             /**
@@ -443,7 +449,9 @@ namespace smtrat
             PointerSet<Formula> collectReasons( icp::HistoryNode* _node );
             //#endif
             
-            bool intervalsEmpty( bool _original = false);
+            bool intervalsEmpty( bool _original = false) const;
+            
+            bool icpVariablesConsistent() const;
             
             #ifdef ICP_BOXLOG
             /**

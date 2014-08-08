@@ -145,7 +145,7 @@ namespace smtrat
              * Functions:
              */
 
-            const Polynomial rhs() const
+            const Polynomial& rhs() const
             {
                 return mRhs;
             }

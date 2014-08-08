@@ -259,7 +259,7 @@ namespace smtrat
                     return mExpression;
                 }
 
-                const smtrat::Polynomial expression() const
+                const smtrat::Polynomial& expression() const
                 {
                     return *mExpression;
                 }
