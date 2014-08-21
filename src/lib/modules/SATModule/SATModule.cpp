@@ -897,29 +897,22 @@ namespace smtrat
                 clauses.push( cr );
             }
             arrangeForWatches( cr );
-            if( _type == DEDUCTED_CLAUSE )
+            Clause& c = ca[cr];
+            if( _type == DEDUCTED_CLAUSE && value( c[1] ) == l_False )
             {
-                Clause& c = ca[cr];
-                if( value( c[1] ) == l_False )
-                {
-//                    cout << "Add deducted clause:" << endl;
-//                    printClause( cr, true );
-                    int lev = level( var( c[1] ) );
-                    cancelUntil( lev );
-                    arrangeForWatches( cr );
-//                    printClause( cr, true );
-//                    cout << endl;
-                }
+//                cout << "Add deducted clause:" << endl;
+//                printClause( cr, true );
+                int lev = level( var( c[1] ) );
+                cancelUntil( lev );
+                arrangeForWatches( cr );
+//                printClause( cr, true );
+//                cout << endl;
             }
             attachClause( cr );
             // Clause is unit
-            if( _type == DEDUCTED_CLAUSE )
+            if( _type == DEDUCTED_CLAUSE && value( c[0] ) == l_Undef && value( c[1] ) == l_False )
             {
-                Clause& c = ca[cr];
-                if( value( c[0] ) == l_Undef && value( c[1] ) == l_False )
-                {
-                    uncheckedEnqueue( c[0], cr );
-                }
+                uncheckedEnqueue( c[0], cr );
             }
         }
         return true;
@@ -1278,6 +1271,9 @@ SetWatches:
      */
     void SATModule::cancelUntil( int level )
     {
+        #ifdef DEBUG_SATMODULE
+        cout << "### cancel until " << level << endl;
+        #endif
         if( decisionLevel() > level )
         {
             for( int c = trail.size() - 1; c >= trail_lim[level]; --c )
@@ -1508,6 +1504,7 @@ SetWatches:
                             confl = learnTheoryConflict();
                             if( confl == CRef_Undef )
                             {
+                                cout << __func__ << ":" << __LINE__ << endl;
                                 if( !ok ) return l_False;
                                 processLemmas();
                                 continue;

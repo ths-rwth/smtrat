@@ -827,6 +827,11 @@ namespace smtrat
                     #endif
                     result = (*module)->isConsistent();
                     assert(result == Unknown || result == False || result == True);
+                    if( !(result != False || (*module)->hasValidInfeasibleSubset()) )
+                    {
+                        cout << "failed!" << endl;
+                        exit( 7772 );
+                    }
                     assert( result != False || (*module)->hasValidInfeasibleSubset() );
                     #ifdef SMTRAT_DEVOPTION_MeasureTime
                     (*module)->stopCheckTimer();

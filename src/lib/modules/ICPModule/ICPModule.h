@@ -451,8 +451,6 @@ namespace smtrat
             
             bool intervalsEmpty( bool _original = false) const;
             
-            bool icpVariablesConsistent() const;
-            
             #ifdef ICP_BOXLOG
             /**
              * Writes actual box to file. Note that the file has to be open.

@@ -33,7 +33,7 @@
 using namespace std;
 using namespace carl;
 
-//#define ICP_MODULE_DEBUG_0
+#define ICP_MODULE_DEBUG_0
 //#define ICP_MODULE_DEBUG_1
 #define ICP_CONSIDER_WIDTH
 //#define ICP_SIMPLE_VALIDATION
@@ -342,7 +342,7 @@ namespace smtrat
 
         // Debug Outputs of linear and nonlinear Tables
         #ifdef ICP_MODULE_DEBUG_0
-        debugPrint();
+//        debugPrint();
         printAffectedCandidates();
         printIcpVariables();
         cout << "Id selected box: " << mHistoryRoot->id() << " Size subtree: " << mHistoryRoot->sizeSubtree() << endl;
@@ -613,7 +613,6 @@ namespace smtrat
         mLRA.clearDeductions();
         mLRA.rReceivedFormula().updateProperties();
         _answer = mLRA.isConsistent();
-        assert( icpVariablesConsistent() );
         
         // catch deductions
         mLRA.updateDeductions();
@@ -1008,6 +1007,9 @@ namespace smtrat
             while( backend != usedBackends().end() )
             {
                 assert( !(*backend)->infeasibleSubsets().empty() );
+                #ifdef ICP_MODULE_DEBUG_0
+                (*backend)->printInfeasibleSubsets();
+                #endif
                 for( auto infsubset = (*backend)->infeasibleSubsets().begin(); infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
                 {
                     PointerSet<Formula> newInfSubset;
@@ -1569,7 +1571,13 @@ namespace smtrat
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
             assert(resultA.upperBoundType() != BoundType::INFTY );
             Rational bound = carl::rationalize<Rational>( resultA.upper() );
-            assert( !probablyLooping( Polynomial( variable ), bound ) );
+            if( probablyLooping( Polynomial( variable ), bound ) )
+            {
+                cout << "probably looping!" << endl;
+                Module::storeAssumptionsToCheck( *mpManager );
+                exit( 7771 );
+            }
+            //assert( !probablyLooping( Polynomial( variable ), bound ) );
             Module::branchAt( Polynomial( variable ), bound, splitPremise, true );
             cout << "division causes split on " << variable << " at " << bound << "!" << endl << endl;
 #endif
@@ -1992,7 +2000,13 @@ namespace smtrat
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
             Rational bound = carl::rationalize<Rational>( mIntervals.at(variable).sample( false ) );
             
-            assert( !probablyLooping( Polynomial( variable ), bound ) );
+            if( probablyLooping( Polynomial( variable ), bound ) )
+            {
+                cout << "probably looping!" << endl;
+                Module::storeAssumptionsToCheck( *mpManager );
+                exit( 7771 );
+            }
+            //assert( !probablyLooping( Polynomial( variable ), bound ) );
             Module::branchAt( Polynomial( variable ), bound, splitPremise, false );
             #ifdef ICP_MODULE_DEBUG_0
             cout << "force split on " << variable << " at " << bound << "!" << endl << endl;
@@ -2994,21 +3008,6 @@ namespace smtrat
             }
         }
         return false;
-    }
-    
-    bool ICPModule::icpVariablesConsistent() const
-    {
-        for( auto linearization = mLinearizations.begin(); linearization != mLinearizations.end(); ++linearization )
-        {
-            const LRAVariable* slackvariable = mLRA.getSlackVariable( linearization->second->pConstraint() );
-            assert( slackvariable != NULL );
-            if( !Polynomial( linearization->second->constraint().lhs() - slackvariable->expression() ).isConstant() 
-                && !Polynomial( linearization->second->constraint().lhs() + slackvariable->expression() ).isConstant() )
-            {
-                return false;
-            }
-        }
-        return true;
     }
     
     #ifdef ICP_BOXLOG
