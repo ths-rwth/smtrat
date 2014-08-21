@@ -67,34 +67,34 @@ namespace smtrat
     class CADModule:
         public Module
     {
-        typedef std::unordered_map<const Formula*, unsigned> ConstraintIndexMap;
-        typedef smtrat::vb::VariableBounds< Formula > VariableBounds;
+		typedef std::unordered_map<const Formula*, unsigned> ConstraintIndexMap;
+		typedef smtrat::vb::VariableBounds< Formula > VariableBounds;
 
-        ////////////////
-        // ATTRIBUTES //
-        ////////////////
+		////////////////
+		// ATTRIBUTES //
+		////////////////
 
-        /// representation of the solution space containing all data relevant for CAD computations
-        
-        carl::CAD<smtrat::Rational> mCAD;
-        /// the GiNaCRA constraints
-        std::vector<carl::cad::Constraint<smtrat::Rational>> mConstraints;
-		/**
-		 * Indicates if false has been asserted.
-		 */
+		/// The actual CAD object.
+		carl::CAD<smtrat::Rational> mCAD;
+
+		/// The constraints extracted from the passed formulas.
+		std::vector<carl::cad::Constraint<smtrat::Rational>> mConstraints;
+
+		/// Indicates if false has been asserted.
 		bool hasFalse;
 		/**
 		 * If false has been asserted, new formulas are stored in this list until false is removed.
 		 * This prevents unnecessary add() and remove() operation on the CAD object.
 		 */
 		std::set<const Formula*> subformulaQueue;
-        /// the GiNaCRA constraints' indices assigned to the received constraints
-        ConstraintIndexMap mConstraintsMap;
-        /// a satisfying assignment of the received constraints if existent; otherwise it is empty
-        carl::RealAlgebraicPoint<smtrat::Rational> mRealAlgebraicSolution;
-        /// the conflict graph storing for each last component of all sample points which constraints were satisfied by the point
-        carl::cad::ConflictGraph mConflictGraph;
-        VariableBounds mVariableBounds;
+		/// Maps the received formulas to indices within mConstraints.
+		ConstraintIndexMap mConstraintsMap;
+		
+		/// A satisfying assignment of the received constraints if existent; otherwise it is empty.
+		carl::RealAlgebraicPoint<smtrat::Rational> mRealAlgebraicSolution;
+		/// the conflict graph storing for each last component of all sample points which constraints were satisfied by the point
+		carl::cad::ConflictGraph mConflictGraph;
+		VariableBounds mVariableBounds;
 
         public:
 
@@ -116,7 +116,6 @@ namespace smtrat
             const carl::cad::Constraint<smtrat::Rational> convertConstraint(const Constraint&);
             const Constraint* convertConstraint(const carl::cad::Constraint<smtrat::Rational>&);
             vec_set_const_pFormula extractMinimalInfeasibleSubsets_GreedyHeuristics(carl::cad::ConflictGraph& conflictGraph);
-            void addDeductions(const std::list<std::pair<std::list<carl::cad::Constraint<smtrat::Rational>>, std::list<carl::cad::Constraint<smtrat::Rational>> > >& deductions);
             const Formula* getConstraintAt(unsigned index);
             void updateConstraintMap(unsigned index, bool decrement = true);
 #ifdef SMTRAT_DEVOPTION_Statistics
