@@ -50,13 +50,11 @@ using namespace std;
 //#define SMTRAT_CAD_GENERIC_SETTING
 #define SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
 //#define SMTRAT_CAD_DISABLE_SMT
-#define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
 //#define SMTRAT_CAD_DISABLE_MIS
 //#define CHECK_SMALLER_MUSES
 //#define SMTRAT_CAD_ONEMOSTDEGREEVERTEX_MISHEURISTIC
 //#define SMTRAT_CAD_TWOMOSTDEGREEVERTICES_MISHEURISTIC
 #ifdef SMTRAT_CAD_DISABLE_SMT
-	#define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
 	#define SMTRAT_CAD_DISABLE_MIS
 #endif
 
@@ -85,12 +83,6 @@ namespace smtrat
 		setting.simplifyByFactorization = true;
 		setting.simplifyByRootcounting  = true;
 
-		// single settings altered
-		#ifdef SMTRAT_CAD_DISABLE_THEORYPROPAGATION
-			setting.numberOfDeductions = 0;
-		#else
-			setting.numberOfDeductions = 1;
-		#endif
 		#ifdef SMTRAT_CAD_DISABLE_MIS
 			setting.computeConflictGraph = false;
 		#else
@@ -170,6 +162,8 @@ namespace smtrat
 			}
 		}
 		default:
+			LOGMSG_ERROR("smtrat.cad", "Asserted " << **_subformula);
+			assert(false);
 			return true;
 		}
 	}
@@ -216,13 +210,11 @@ namespace smtrat
 			if (vPos != eiMap.end())
 				boundMap[v] = vPos->second;
 		}
-		list<pair<list<carl::cad::Constraint<smtrat::Rational>>, list<carl::cad::Constraint<smtrat::Rational>> > > deductions;
-		if (!mCAD.check(mConstraints, mRealAlgebraicSolution, mConflictGraph, boundMap, deductions, false, false))
+		if (!mCAD.check(mConstraints, mRealAlgebraicSolution, mConflictGraph, boundMap, false, false))
 		{
 			#ifdef SMTRAT_CAD_DISABLE_SMT
 			// simulate non-incrementality by constructing a trivial infeasible subset and clearing all data in the CAD
 			#define SMTRAT_CAD_DISABLE_MIS // this constructs a trivial infeasible subset below
-			#define SMTRAT_CAD_DISABLE_THEORYPROPAGATION // no lemmata from staisfying assignments are going to be constracted
 			mCAD.clear();
 			// replay adding the polynomials as scheduled polynomials
 			for( vector<carl::cad::Constraint<smtrat::Rational>>::const_iterator constraint = mConstraints.begin(); constraint != mConstraints.end(); ++constraint )
@@ -232,9 +224,9 @@ namespace smtrat
 			// construct a trivial infeasible subset
 			PointerSet<Formula> boundConstraints = mVariableBounds.getOriginsOfBounds();
 			mInfeasibleSubsets.push_back( PointerSet<Formula>() );
-			for( ConstraintIndexMap::const_iterator i = mConstraintsMap.begin(); i != mConstraintsMap.end(); ++i )
+			for (auto i:mConstraintsMap)
 			{
-				mInfeasibleSubsets.back().insert( *i->first );
+				mInfeasibleSubsets.back().insert( *i.first );
 			}
 			mInfeasibleSubsets.back().insert( boundConstraints.begin(), boundConstraints.end() );
 			#else
@@ -256,10 +248,16 @@ namespace smtrat
 				g.removeConstraintVertex(mConstraints.size() - 1);
 			#endif
 			
+			LOGMSG_DEBUG("smtrat.cad", "Input: " << mConstraints);
+			for (auto j: mConstraints) LOGMSG_DEBUG("smtrat.cad", "\t" << j);
+			LOGMSG_DEBUG("smtrat.cad", "Bounds: " << mVariableBounds);
+				
 			vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics(g);
 
 			PointerSet<Formula> boundConstraints = mVariableBounds.getOriginsOfBounds();
 			for (auto i: infeasibleSubsets) {
+				LOGMSG_DEBUG("smtrat.cad", "Infeasible:");
+				for (auto j: i) LOGMSG_DEBUG("smtrat.cad", "\t" << *j);
 				mInfeasibleSubsets.push_back(i);
 				mInfeasibleSubsets.back().insert(boundConstraints.begin(), boundConstraints.end());
 			}
@@ -280,14 +278,7 @@ namespace smtrat
 		LOGMSG_TRACE("smtrat.cad", "CAD complete: " << mCAD.isComplete());
 		LOGMSG_TRACE("smtrat.cad", "Solution point: " << mRealAlgebraicSolution);
 		mInfeasibleSubsets.clear();
-		#ifndef SMTRAT_CAD_DISABLE_THEORYPROPAGATION
-		// compute theory deductions
-		assert( mCAD.setting().numberOfDeductions > 0 );
-		LOGMSG_TRACE("smtrat.cad", "Constructing theory deductions...");
-		this->addDeductions( deductions );
-		#endif
-		if (mpReceivedFormula->isIntegerConstraintConjunction())
-		{
+		if (mpReceivedFormula->isIntegerConstraintConjunction()) {
 			// Check whether the found assignment is integer.
 			std::vector<carl::Variable> vars(mCAD.getVariables());
 			for (unsigned d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
@@ -347,7 +338,7 @@ namespace smtrat
 			// remove the corresponding polynomial from the CAD if it is not occurring in another constraint
 			bool doDelete = true;
 
-			///@todo Why reversed?
+			///@todo Why was this iteration reversed?
 			for (auto c: mConstraints) {
 				if (constraint.getPolynomial() == c.getPolynomial()) {
 					doDelete = false;
@@ -522,63 +513,13 @@ namespace smtrat
 		return mis;
 	}
 
-	void CADModule::addDeductions( const list<pair<list<carl::cad::Constraint<smtrat::Rational>>, list<carl::cad::Constraint<smtrat::Rational>> > >& deductions )
-	{
-		for (auto implication: deductions) {
-			assert((!implication.first.empty() && !implication.second.empty()) || implication.first.size() > 1 || implication.second.size() > 1);
-			PointerSet<Formula> subformulas;
-			// process A in A => B
-			for (auto constraint: implication.first)
-			{
-				// check whether the given constraint is one of the input constraints
-				unsigned index = 0;
-				for ( ; index < mConstraints.size(); ++index) {
-					if (mConstraints[index] == constraint)
-						break;
-				}
-				if (mConstraints.size() != index) {
-				// the constraint matches the input constraint at position i
-					for (auto i: mConstraintsMap) {
-						if (i.second == index) { // found the entry in the constraint map
-							subformulas.insert(newNegation(newFormula((i.first)->pConstraint())));
-							break;
-						}
-					}
-				}
-				else // add a new constraint
-					subformulas.insert(newFormula(convertConstraint(constraint)));
-			}
-			// process B in A => B
-			for (auto constraint: implication.second) {
-			// take the constraints in second as they are
-				// check whether the given constraint is one of the input constraints
-				unsigned index = 0;
-				for ( ; index < mConstraints.size(); ++index) {
-					if (mConstraints[index] == constraint)
-						break;
-				}
-				if (mConstraints.size() != index) {
-				// the constraint matches the input constraint at position i
-					for (auto i: mConstraintsMap) {
-						if (i.second == index) { // found the entry in the constraint map
-							subformulas.insert(newFormula((i.first)->pConstraint()));
-							break;
-						}
-					}
-				}
-				else // add a new constraint
-					subformulas.insert(newFormula(convertConstraint(constraint)));
-			}
-			Module::addDeduction(newFormula(OR, subformulas));
-		}
-	}
-
 	/**
 	 *
 	 * @param index
 	 * @return
 	 */
 	inline const Formula* CADModule::getConstraintAt(unsigned index) {
+		LOGMSG_TRACE("smtrat.cad", "get " << index << " from " << mConstraintsMap);
 		for (auto i: mConstraintsMap) {
 			if (i.second == index) // found the entry in the constraint map
 				return i.first;
@@ -593,15 +534,17 @@ namespace smtrat
 	 * @param decrement
 	 */
 	inline void CADModule::updateConstraintMap(unsigned index, bool decrement) {
+		LOGMSG_TRACE("smtrat.cad", "updating " << index << " from " << mConstraintsMap);
 		if (decrement) {
-			for (auto i: mConstraintsMap) {
+			for (auto& i: mConstraintsMap) {
 				if (i.second > index) i.second--;
 			}
 		} else {
-			for (auto i: mConstraintsMap) {
+			for (auto& i: mConstraintsMap) {
 				if (i.second > index) i.second++;
 			}
 		}
+		LOGMSG_TRACE("smtrat.cad", "now: " << mConstraintsMap);
 	}
 
 }	// namespace smtrat
