@@ -498,6 +498,12 @@ namespace smtrat
                  */
                 void print( std::ostream& _out = std::cout, const std::string _init = "", bool _printAllBounds = false ) const;
 
+				template<typename Type>
+				friend std::ostream& operator<<(std::ostream& os, const VariableBounds<Type>& vs) {
+					vs.print(os);
+					return os;
+				}
+
                 /**
                  * @return true, if there is a conflicting variable;
                  *          false, otherwise.
