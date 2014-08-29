@@ -455,7 +455,6 @@ namespace smtrat
         if( linearization == mLinearizations.end() ) // If this constraint has not been added before
         {
             const Polynomial constr = constraint.lhs();
-            bool linear = false;
             // add original variables to substitution mapping
             for( auto var = constraint.variables().begin(); var != constraint.variables().end(); ++var )
             {
@@ -478,7 +477,6 @@ namespace smtrat
             {
                 assert( mLinearizations.find( _formula ) == mLinearizations.end() );
                 vector<Polynomial> temporaryMonomes;
-                linear = icp::isLinear( _formula->pConstraint(), constr, temporaryMonomes );
                 assert( !temporaryMonomes.empty() );
                 Polynomial lhs = createNonlinearCCs( _formula->pConstraint(), temporaryMonomes );
                 linearFormula = newFormula( newConstraint( lhs, constraint.relation() ) );

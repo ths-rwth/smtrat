@@ -152,8 +152,8 @@ namespace smtrat
         mCurrentAssignmentConsistent( True ),
         mSatisfiedClauses( 0 ),
         mNumberOfFullLazyCalls( 0 ),
-        mNumberOfTheoryCalls( 0 ),
         mCurr_Restarts( 0 ),
+        mNumberOfTheoryCalls( 0 ),
         mConstraintLiteralMap(),
         mBooleanVarMap(),
         mFormulaClauseMap(),
@@ -759,7 +759,7 @@ namespace smtrat
      *
      * @return
      */
-    Var SATModule::newVar( bool sign, bool dvar, double _activity, const Formula* _abstractedConstraint, const Formula* _abstractedConstraintNegated, const Formula* _origin )
+    Var SATModule::newVar( bool sign, bool dvar, double _activity )
     {
         int v = nVars();
         watches.init( mkLit( v, false ) );
@@ -2273,11 +2273,11 @@ NextClause:
     /**
      * 
      */
-    bool SATModule::applyValidSubstitutionsOnClauses( int _trailStart )
+    bool SATModule::applyValidSubstitutionsOnClauses()
     {
         assert( decisionLevel() == 0 );
         #ifdef SAT_APPLY_VALID_SUBS_DEBUG
-        cout << "applyValidSubstitutionsOnClauses from " << _trailStart << " to " << trail.size() << endl;
+        cout << __func__ << endl;
         #endif
         lra::Tableau<carl::Numeric<Rational>, carl::Numeric<Rational>> tableau( mpPassedFormula->end() );
         for( int i = 0; i < mBooleanConstraintMap.size(); ++i )

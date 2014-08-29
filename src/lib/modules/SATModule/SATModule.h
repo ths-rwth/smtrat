@@ -345,14 +345,14 @@ namespace smtrat
             // Problem specification:
             //
             // Add a new variable with parameters specifying variable mode.
-            Minisat::Var newVar( bool polarity = true, bool dvar = true, double = 0, const Formula* = NULL, const Formula* = NULL, const Formula* = NULL );
+            Minisat::Var newVar( bool polarity = true, bool dvar = true, double = 0 );
 
             // Solving:
             //
             // Removes already satisfied clauses.
             bool simplify();
             ///
-            bool applyValidSubstitutionsOnClauses( int );
+            bool applyValidSubstitutionsOnClauses();
             // Learns a clause.
             bool addClause( Minisat::vec<Minisat::Lit>&, unsigned = 0 );
             // Checks the correctness of the watches in a clause
