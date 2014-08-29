@@ -10,7 +10,7 @@
 #include "../../Constraint.h"
 #include "../../Formula.h"
 #include "../LRAModule/LRAModule.h"
-#include <carl/numbers/operations.h>
+#include <carl/numbers/numbers.h>
 
 namespace smtrat
 {
