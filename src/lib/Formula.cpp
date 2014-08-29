@@ -1118,7 +1118,7 @@ namespace smtrat
             case Type::FORALL:
             {
                 unsigned cur = 0;
-                if ((level % 2 == (mType == Type::EXISTS ? 0 : 1)) xor negated) cur = level;
+                if ((level % 2 == (mType == Type::EXISTS ? (unsigned)0 : (unsigned)1)) xor negated) cur = level;
                 else cur = level+1;
                 Variables vars(this->quantifiedVariables().begin(), this->quantifiedVariables().end());
                 const Formula* f = this->pQuantifiedFormula();
