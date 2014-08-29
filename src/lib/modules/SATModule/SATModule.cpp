@@ -621,7 +621,7 @@ namespace smtrat
                     constraint = newFormula( newConstraint( constraintLhs, cons.relation() ) );
                     invertedConstraint = newFormula( newConstraint( constraintLhs, Constraint::invertRelation( cons.relation() ) ) );
                 }
-                Var constraintAbstraction = newVar( !preferredToTSolver, true, act, constraint, invertedConstraint, _origin );
+                Var constraintAbstraction = newVar( !preferredToTSolver, true, act );
                 // map the abstraction variable to the abstraction information for the constraint and it's negation
                 mBooleanConstraintMap.push( make_pair( Abstraction( mpPassedFormula->end(), constraint ), Abstraction( mpPassedFormula->end(), invertedConstraint ) ) );
                 // add the constraint and its negation to the constraints to inform backends about
