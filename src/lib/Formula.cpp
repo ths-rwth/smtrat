@@ -1358,7 +1358,8 @@ namespace smtrat
                                     phis.push_back( resolvedFormula );
                                 break;
                             }
-                            case AND: // (and phi_i1 .. phi_ik) -> h_i, where (or (not h_i) phi_i1) .. (or (not h_i) phi_ik) is added to the queue
+                            case AND: // (and phi_i1 .. phi_ik) -> h_i, where (or (not h_i) phi_i1) .. (or (not h_i) phi_ik) 
+                                      //                                and (or h_i (not phi_i1) .. (not phi_ik))  is added to the queue
                             {
                                 auto iter = tseitinVars.insert( pair<const Formula*,pair<const Formula*,const Formula*>*>( currentSubformula, NULL ) );
                                 if( iter.second )
@@ -1370,6 +1371,11 @@ namespace smtrat
                                 }
                                 for( const Formula* subsubformula : currentSubformula->subformulas() )
                                     subformulasToTransformTmp.push_back( newFormula( OR, iter.first->second->second, subsubformula ) );
+//                                PointerSet<Formula> subformulas;
+//                                subformulas.insert( iter.first->second->first );
+//                                for( const Formula* subsubformula : currentSubformula->subformulas() )
+//                                    subformulas.insert( newNegation( subsubformula ) );
+//                                subformulasToTransformTmp.push_back( newFormula( OR, subformulas ) );
                                 subsubformulas.insert( iter.first->second->first );
                                 break;
                             }

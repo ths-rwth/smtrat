@@ -421,11 +421,11 @@ namespace smtrat
         {
             for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
             {
-                if( mResolvedNEQConstraints.find( iter->first ) == mResolvedNEQConstraints.end() )
-                {
+//                if( mResolvedNEQConstraints.find( iter->first ) == mResolvedNEQConstraints.end() )
+//                {
                     splitUnequalConstraint( iter->first );
-                    mResolvedNEQConstraints.insert( iter->first );
-                }
+//                    mResolvedNEQConstraints.insert( iter->first );
+//                }
             }
             goto Return; // Unknown
         }

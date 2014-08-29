@@ -88,11 +88,28 @@ namespace smtrat
 
             struct Abstraction
             {
+                bool consistencyRelevant;
+                int updateInfo;
                 std::list<const Formula*>::iterator position;
                 const Formula* constraint;
-                const Formula* origin;
-                int updateInfo;
-                bool deducted;
+                std::map<const Formula*,unsigned>* origins;
+                
+                Abstraction( std::list<const Formula*>::iterator _position ):
+                    consistencyRelevant( false ),
+                    updateInfo( 0 ),
+                    position( _position ),
+                    constraint( NULL ),
+                    origins( NULL )
+                {}
+                
+                Abstraction( std::list<const Formula*>::iterator _position, const Formula* _constraint ):
+                    consistencyRelevant( false ),
+                    updateInfo( 0 ),
+                    position( _position ),
+                    constraint( _constraint ),
+                    origins( new std::map<const Formula*,unsigned>() )
+                {}
+                    
             };
 
             struct Watcher
@@ -142,12 +159,12 @@ namespace smtrat
                 {}
             };
 
-            typedef std::map<const Constraint*, std::vector<Minisat::Lit>>    ConstraintLiteralsMap;
-            typedef std::map<const carl::Variable, Minisat::Var> BooleanVarMap;
-            typedef Minisat::vec< Abstraction >                  BooleanConstraintMap;
-            typedef std::map<const Formula*, Minisat::CRef >     FormulaClauseMap;
-            typedef std::vector< std::vector<Minisat::Lit> >     ClauseVector;
-            typedef std::set<std::vector<int>>                   ClauseSet;
+            typedef std::map<const Formula*, std::vector<Minisat::Lit>>    ConstraintLiteralsMap;
+            typedef std::map<const carl::Variable, Minisat::Var>           BooleanVarMap;
+            typedef Minisat::vec<std::pair<Abstraction,Abstraction>>       BooleanConstraintMap;
+            typedef std::map<const Formula*, Minisat::CRef >               FormulaClauseMap;
+            typedef std::vector< std::vector<Minisat::Lit> >               ClauseVector;
+            typedef std::set<std::vector<int>>                             ClauseSet;
 
             static inline VarData mkVarData( Minisat::CRef cr, int l )
             {
@@ -259,20 +276,21 @@ namespace smtrat
             bool                  asynch_interrupt;
 
             bool                  mChangedPassedFormula;
+            Answer                mCurrentAssignmentConsistent;
             mutable double        mSatisfiedClauses;
             size_t                mNumberOfFullLazyCalls;
             int                   mCurr_Restarts;
+            unsigned              mNumberOfTheoryCalls;
             BooleanConstraintMap  mBooleanConstraintMap;
             ConstraintLiteralsMap  mConstraintLiteralMap;
             BooleanVarMap         mBooleanVarMap;
             FormulaClauseMap      mFormulaClauseMap;
             /// If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
-            ClauseVector          mMaxSatAssigns;
             ClauseSet             mLearntDeductions;
             std::vector<signed>   mChangedBooleans;
             bool                  mAllActivitiesChanged;
             std::vector<Minisat::CRef>     mChangedActivities;
-            std::map<carl::Variable,std::set<const Constraint*>> mVarOccurrences;
+            std::map<carl::Variable,std::set<const Formula*>> mVarOccurrences;
             std::map<carl::Variable,Polynomial> mVarReplacements;
 
             #ifdef SMTRAT_DEVOPTION_Statistics
@@ -327,7 +345,7 @@ namespace smtrat
             // Problem specification:
             //
             // Add a new variable with parameters specifying variable mode.
-            Minisat::Var newVar( bool polarity = true, bool dvar = true, double = 0, const Constraint* = NULL, const Formula* = NULL );
+            Minisat::Var newVar( bool polarity = true, bool dvar = true, double = 0, const Formula* = NULL, const Formula* = NULL, const Formula* = NULL );
 
             // Solving:
             //
@@ -340,7 +358,7 @@ namespace smtrat
             // Checks the correctness of the watches in a clause
             bool watchesCorrect( const Minisat::Clause& ) const;
             // Finds the best two candidates for watching
-            void arrangeForWatches( Minisat::CRef );
+            void arrangeForWatches( Minisat::Clause& );
             // FALSE means solver is in a conflicting state
             bool okay() const;
 
@@ -411,6 +429,7 @@ namespace smtrat
             bool processLemmas();
             //
             Minisat::CRef learnTheoryConflict();
+            Minisat::CRef propagateConsistently( bool& );
             // Search for a given number of conflicts.
             #ifdef SAT_WITH_RESTARTS
             Minisat::lbool search( int nof_conflicts = 100 );
@@ -488,10 +507,10 @@ namespace smtrat
 
             Minisat::CRef addFormula( const Formula*, unsigned );
             Minisat::CRef addClause( const Formula*, unsigned = 0 );
-            Minisat::Lit getLiteral( const Formula&, const Formula* = NULL );
             //Deprecated method
-            Minisat::Lit getLiteral( const Constraint*, const Formula* = NULL, double = 0, bool = false, bool = true );
+            Minisat::Lit getLiteral( const Formula*, const Formula* = NULL );
             void adaptPassedFormula();
+            void adaptPassedFormula( Abstraction& );
     };
 
     //=================================================================================================

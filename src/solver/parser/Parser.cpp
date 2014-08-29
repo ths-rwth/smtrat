@@ -463,10 +463,10 @@ carl::Variable SMTLIBParser::addQuantifiedVariable(const std::string& _name, con
 				this->var_theory.sym.add(_name, v);
 				return v;
 			}
-			case ExpressionType::UNINTERPRETED: {
+                    default: { // case ExpressionType::UNINTERPRETED
 				this->handler->error() << "Tried to quantify over an uninterpreted type.";
 				assert(false);
-				break;
+				return carl::Variable::NO_VARIABLE;
 			}
 		}
 	} else if (this->var_bool.sym.find(_name) != nullptr) {
@@ -498,9 +498,9 @@ carl::Variable SMTLIBParser::addVariableBinding(const std::pair<std::string, Sor
 		bind_theory.sym.add(b.first, Polynomial(v));
 		return v;
 	}
-	case ExpressionType::UNINTERPRETED:
+        default: // case ExpressionType::UNINTERPRETED
 		assert(false);
-		break;
+		return carl::Variable::NO_VARIABLE;
 	}
 }
 
