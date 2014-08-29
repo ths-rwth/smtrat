@@ -373,7 +373,7 @@ const Formula* SMTLIBParser::mkConstraint(const Polynomial& lhs, const Polynomia
 			std::swap(polys, ptmp);
 			// Add the conditions at the appropriate positions.
 			const Formula* f[2]= { std::get<0>(t), newNegation(std::get<0>(t)) };
-			for (unsigned i = 0; i < (1 << n); i++) {
+			for (size_t i = 0; i < (1 << n); i++) {
 				conds[i].insert(f[0]);
 				if ((i+1) % repeat == 0) std::swap(f[0], f[1]);
 			}
