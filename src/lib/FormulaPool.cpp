@@ -43,8 +43,8 @@ namespace smtrat
         mFormulas.reserve( _capacity );
         mFormulas.insert( mpTrue );
         mFormulas.insert( mpFalse );
-		mpTrue->initProperties();
-		mpFalse->initProperties();
+        mpTrue->initProperties();
+        mpFalse->initProperties();
     }
 
     FormulaPool::~FormulaPool()
@@ -115,32 +115,36 @@ namespace smtrat
                 // in a set of formulas whose comparison operator is based on the one of formulas This is due to
                 // them comparing just the ids and we construct the negation of a formula right after the formula
                 // itself and assign the next id to it.
-                if( iter != _subformulas.end() && (*iter)->getType() == NOT && (*iter)->subformula() == (**iterB) )
+                if( iter != _subformulas.end() )
                 {
-                    switch( _type )
+                    if( (*iterB == mpTrue && *iter == mpFalse) || ((*iter)->getType() == NOT && (*iter)->subformula() == (**iterB)) )
                     {
-                        case AND:
+                        switch( _type )
                         {
-                            return mpFalse;
-                        }
-                        case OR:
-                        {
-                            return mpTrue;
-                        }
-                        case IFF:
-                        {
-                            return mpFalse;
-                        }
-                        case XOR:
-                        {
-                            _subformulas.erase( iterB );
-                            iter = _subformulas.erase( iter );
-                            _subformulas.insert( mpTrue );
-                        }
-                        default:
-                        {
-                            assert( false );
-                            break;
+                            case AND:
+                            {
+                                return mpFalse;
+                            }
+                            case OR:
+                            {
+                                return mpTrue;
+                            }
+                            case IFF:
+                            {
+                                return mpFalse;
+                            }
+                            case XOR:
+                            {
+                                _subformulas.erase( iterB );
+                                iter = _subformulas.erase( iter );
+                                _subformulas.insert( mpTrue );
+                                break;
+                            }
+                            default:
+                            {
+                                assert( false );
+                                break;
+                            }
                         }
                     }
                 }
