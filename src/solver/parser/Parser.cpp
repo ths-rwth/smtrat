@@ -498,16 +498,13 @@ carl::Variable SMTLIBParser::addVariableBinding(const std::pair<std::string, Sor
 		bind_theory.sym.add(b.first, Polynomial(v));
 		return v;
 	}
-<<<<<<< HEAD
 	case ExpressionType::UNINTERPRETED:
 		this->handler->error() << "Tryied to bind a uninterpreted variable.";
 		return carl::Variable::NO_VARIABLE;
 		break;
-=======
-        default: // case ExpressionType::UNINTERPRETED
+	default:
 		assert(false);
 		return carl::Variable::NO_VARIABLE;
->>>>>>> e0557f82c397119a6e13572601683e17960f83cf
 	}
 }
 
