@@ -37,6 +37,9 @@
 
 namespace smtrat
 {
+    
+    typedef std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> ContractionCandidates;
+    
 namespace icp
 {   
     enum class Updated{
@@ -59,18 +62,20 @@ namespace icp
              */
             const carl::Variable               mVar;
             bool                               mOriginal;
-            std::vector<ContractionCandidate*> mCandidates;
+            ContractionCandidates              mCandidates;
             const LRAVariable*                 mLraVar;
             bool                               mActive;
             bool                               mLinear;
+            EvalDoubleIntervalMap::iterator    mIntervalPos;
             
             // interval Bound generation
             std::pair<Updated,Updated>         mBoundsSet; // internal, external
             std::pair<Updated,Updated>         mUpdated; // internal, external
             const smtrat::Formula*             mInternalLeftBound;
             const smtrat::Formula*             mInternalRightBound;
-            ModuleInput::iterator          mExternalLeftBound;
-            ModuleInput::iterator          mExternalRightBound;
+            ModuleInput::iterator              mExternalLeftBound;
+            ModuleInput::iterator              mExternalRightBound;
+            ModuleInput::iterator              mDefaultPosition;
 
         private:
             IcpVariable();
@@ -80,44 +85,25 @@ namespace icp
             /*
              * Constructors
              */
-            
-            
-
-            IcpVariable( const carl::Variable::Arg _var, bool _original, const LRAVariable* _lraVar = NULL ):
+            IcpVariable( const carl::Variable::Arg _var, 
+                         bool _original, 
+                         ModuleInput::iterator _defaultPosition, 
+                         EvalDoubleIntervalMap::iterator _intervalPos, 
+                         const LRAVariable* _lraVar = NULL ):
                 mVar( _var ),
                 mOriginal( _original ),
                 mCandidates(),
                 mLraVar( _lraVar ),
                 mActive( false ),
                 mLinear( true ),
-                mBoundsSet( std::make_pair(Updated::NONE,Updated::NONE) ),
+                mIntervalPos( _intervalPos ),
                 mUpdated( std::make_pair(Updated::NONE,Updated::NONE) ),
-                mInternalLeftBound ( ),
-                mInternalRightBound ( ),
-                mExternalLeftBound ( ),
-                mExternalRightBound ( )
-            {
-            }
-
-            IcpVariable( const carl::Variable::Arg _var,
-                         bool _original,
-                         ContractionCandidate* _candidate,
-                         const LRAVariable* _lraVar = NULL ):
-                mVar( _var ),
-                mOriginal ( _original ),
-                mCandidates(),
-                mLraVar( _lraVar ),
-                mActive( _candidate->isActive() ),
-                mLinear( _candidate->isLinear() ),
-                mBoundsSet (std::make_pair(Updated::NONE,Updated::NONE)),
-                mUpdated( std::make_pair(Updated::NONE,Updated::NONE) ),
-                mInternalLeftBound ( ),
-                mInternalRightBound ( ),
-                mExternalLeftBound ( ),
-                mExternalRightBound ( )
-            {
-                mCandidates.insert( mCandidates.end(), _candidate );
-            }
+                mInternalLeftBound( NULL ),
+                mInternalRightBound( NULL ),
+                mExternalLeftBound( _defaultPosition ),
+                mExternalRightBound( _defaultPosition ),
+                mDefaultPosition( _defaultPosition )
+            {}
             
             ~IcpVariable()
             {}
@@ -131,7 +117,7 @@ namespace icp
                 return mVar;
             }
 
-            std::vector<ContractionCandidate*>& candidates()
+            ContractionCandidates& candidates()
             {
                 return mCandidates;
             }
@@ -143,34 +129,16 @@ namespace icp
 
             void addCandidate( ContractionCandidate* _candidate )
             {
+                assert( _candidate->lhs() == mVar );
                 mCandidates.insert( mCandidates.end(), _candidate );
-                if( _candidate->isActive() )
-                {
-                    mActive = true;
-                }
                 checkLinear();
             }
 
             void setLraVar( const LRAVariable* _lraVar )
             {
+                assert( mLraVar == NULL );
                 mLraVar = _lraVar;
                 mUpdated = std::make_pair(Updated::BOTH,Updated::BOTH);
-            }
-
-            void deleteCandidate( ContractionCandidate* _candidate )
-            {
-                std::vector<ContractionCandidate*>::iterator candidateIt;
-                for( candidateIt = mCandidates.begin(); candidateIt != mCandidates.end(); )
-                {
-                    if( *candidateIt == _candidate )
-                    {
-                        candidateIt = mCandidates.erase( candidateIt );
-                    }
-                    else
-                    {
-                        ++candidateIt;
-                    }
-                }
             }
 
             void print( std::ostream& _out = std::cout ) const
@@ -200,7 +168,7 @@ namespace icp
 
             bool checkLinear()
             {
-                std::vector<ContractionCandidate*>::iterator candidateIt = mCandidates.begin();
+                ContractionCandidates::iterator candidateIt = mCandidates.begin();
                 for ( ; candidateIt != mCandidates.end(); ++candidateIt )
                 {
                     if ( (*candidateIt)->isLinear() == false )
@@ -218,9 +186,44 @@ namespace icp
                 return mLinear;
             }
             
-            void setUpdated(Updated _internal=Updated::BOTH, Updated _external=Updated::BOTH)
+            EvalDoubleIntervalMap::const_iterator intervalPosition() const
             {
-                mUpdated = std::make_pair(_internal,_external);
+                return mIntervalPos;
+            }
+            
+            const DoubleInterval& interval() const
+            {
+                return mIntervalPos->second;
+            }
+            
+            void setInterval( const DoubleInterval& _interval )
+            {
+                if( _interval.lowerBoundType() != mIntervalPos->second.lowerBoundType() || _interval.lower() != mIntervalPos->second.lower() )
+                {
+                    mUpdated.first = (mUpdated.first == Updated::BOTH || mUpdated.first == Updated::RIGHT) ? Updated::BOTH : Updated::LEFT;
+                    mUpdated.second = (mUpdated.second == Updated::BOTH || mUpdated.second == Updated::RIGHT) ? Updated::BOTH : Updated::LEFT;
+                }
+                if( _interval.upperBoundType() != mIntervalPos->second.upperBoundType() || _interval.upper() != mIntervalPos->second.upper() )
+                {
+                    mUpdated.first = (mUpdated.first == Updated::BOTH || mUpdated.first == Updated::LEFT) ? Updated::BOTH : Updated::RIGHT;
+                    mUpdated.second = (mUpdated.second == Updated::BOTH || mUpdated.second == Updated::LEFT) ? Updated::BOTH : Updated::RIGHT;
+                }
+                mIntervalPos->second = _interval;
+            }
+            
+            void setUnmodified()
+            {
+                mUpdated = std::make_pair( Updated::NONE, Updated::NONE );
+            }
+            
+            void setExternalUnmodified()
+            {
+                mUpdated = std::make_pair( mUpdated.first, Updated::NONE );
+            }
+            
+            void setInternalUnmodified()
+            {
+                mUpdated = std::make_pair( Updated::NONE, mUpdated.second );
             }
             
             Updated isInternalUpdated() const
@@ -235,117 +238,53 @@ namespace icp
             
             const smtrat::Formula* internalLeftBound() const
             {
-                assert(mBoundsSet.first == Updated::LEFT || mBoundsSet.first == Updated::BOTH);
                 return mInternalLeftBound;
             }
             
             const smtrat::Formula* internalRightBound() const
             {
-                assert(mBoundsSet.first == Updated::RIGHT || mBoundsSet.first == Updated::BOTH);
                 return mInternalRightBound;
             }
             
             ModuleInput::iterator externalLeftBound() const
             {
-                assert(mBoundsSet.second == Updated::LEFT || mBoundsSet.second == Updated::BOTH);
                 return mExternalLeftBound;
             }
             
             ModuleInput::iterator externalRightBound() const
             {
-                assert(mBoundsSet.second == Updated::RIGHT || mBoundsSet.second == Updated::BOTH);
                 return mExternalRightBound;
             }
             
             void setInternalLeftBound( const smtrat::Formula* _left )
             {
                 mInternalLeftBound = _left;
-                switch(mBoundsSet.first)
-                {
-                    case Updated::RIGHT:
-                        mBoundsSet.first = Updated::BOTH;
-                        break;
-                    case Updated::NONE:
-                        mBoundsSet.first = Updated::LEFT;
-                        break;
-                    default:
-                        break;
-                }
             }
             
             void setInternalRightBound( const smtrat::Formula* _right )
             {
                 mInternalRightBound = _right;
-                switch(mBoundsSet.first)
-                {
-                    case Updated::LEFT:
-                        mBoundsSet.first = Updated::BOTH;
-                        break;
-                    case Updated::NONE:
-                        mBoundsSet.first = Updated::RIGHT;
-                        break;
-                    default:
-                        break;
-                }
             }
             
             void setExternalLeftBound( ModuleInput::iterator _left )
             {
                 mExternalLeftBound = _left;
-                switch(mBoundsSet.second)
-                {
-                    case Updated::RIGHT:
-                        mBoundsSet.second = Updated::BOTH;
-                        break;
-                    case Updated::NONE:
-                        mBoundsSet.second = Updated::LEFT;
-                        break;
-                    default:
-                        break;
-                }
             }
             
             void setExternalRightBound( ModuleInput::iterator _right )
             {
                 mExternalRightBound = _right;
-                switch(mBoundsSet.second)
-                {
-                    case Updated::LEFT:
-                        mBoundsSet.second = Updated::BOTH;
-                        break;
-                    case Updated::NONE:
-                        mBoundsSet.second = Updated::RIGHT;
-                        break;
-                    default:
-                        break;
-                }
-            }
-            
-            void boundsSet(Updated _internal=Updated::BOTH, Updated _external=Updated::BOTH)
-            {
-                mBoundsSet = std::make_pair(_internal,_external);
-            }
-            
-            void internalBoundsSet(Updated _internal=Updated::BOTH)
-            {
-                mBoundsSet = std::make_pair(_internal,mBoundsSet.second);
-                mUpdated = std::pair<Updated,Updated>(Updated::NONE, mUpdated.second);
-            }
-            
-            void externalBoundsSet(Updated _external=Updated::BOTH)
-            {
-                mBoundsSet = std::make_pair(mBoundsSet.first,_external);
-                mUpdated = std::pair<Updated,Updated>(mUpdated.first, Updated::NONE);
             }
             
             Updated isInternalBoundsSet() const
             {
-                return mBoundsSet.first;
-            }
-            
-            Updated isExternalBoundsSet() const
-            {
-                return mBoundsSet.second;
+                if( mInternalLeftBound != NULL )
+                {
+                    if( mInternalRightBound != NULL )
+                        return Updated::BOTH;
+                    return Updated::LEFT;
+                }
+                return Updated::RIGHT;
             }
             
             bool isOriginal() const
@@ -359,7 +298,7 @@ namespace icp
              */
             bool autoActivate()
             {
-                std::vector<ContractionCandidate*>::iterator candidateIt;
+                ContractionCandidates::iterator candidateIt;
                 for( candidateIt = mCandidates.begin(); candidateIt != mCandidates.end(); ++candidateIt )
                 {
                     if( (*candidateIt)->isActive() )

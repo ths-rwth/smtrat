@@ -259,7 +259,7 @@ namespace smtrat
                     return mExpression;
                 }
 
-                const smtrat::Polynomial expression() const
+                const smtrat::Polynomial& expression() const
                 {
                     return *mExpression;
                 }
@@ -275,6 +275,14 @@ namespace smtrat
                     return mFactor;
                 }
                 #endif
+
+                unsigned isSatisfiedBy( const smtrat::EvalRationalMap& _ass ) const
+                {
+                    smtrat::Polynomial polyTmp = mExpression->substitute( _ass );
+                    if( polyTmp.isConstant() )
+                        return (*mpInfimum) <= polyTmp.constantPart() && (*mpSupremum) >= polyTmp.constantPart();
+                    return 2;
+                }
 
                 void updateConflictActivity()
                 {

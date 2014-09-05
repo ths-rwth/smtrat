@@ -45,22 +45,7 @@ namespace smtrat
     class ContractionCandidate
     {
         friend ContractionCandidateManager;
-        public:
-
-            /**
-             * Typedefs:
-             */
-
-            struct originComp
-            {
-                bool operator() (const Formula* const lhs, const Formula* const rhs) const
-                {
-                    assert(lhs->getType() == CONSTRAINT);
-                    assert(rhs->getType() == CONSTRAINT);
-                    return (lhs->constraint().variables().size() < rhs->constraint().variables().size() || (lhs->constraint().variables().size() == rhs->constraint().variables().size() && lhs->constraint() < rhs->constraint()) );
-                }
-            };
-            
+        
         private:
 
             /**
@@ -74,10 +59,9 @@ namespace smtrat
             carl::Variable            mLhs;
             carl::Variable            mDerivationVar;
             Polynomial                mDerivative;
-            std::set<const Formula*,originComp> mOrigin;
+            PointerSet<Formula>       mOrigin;
             unsigned    mId;
             bool        mIsLinear;
-            bool        mActive;
             bool        mDerived;
 
 
@@ -85,6 +69,7 @@ namespace smtrat
             static const uint       mK     = 10;
             static constexpr double mAlpha = 0.9;
             double                  mRWA;
+            double                  mLastRWA;
             double                  mLastPayoff;
 
         public:
@@ -93,23 +78,23 @@ namespace smtrat
              * Constructors:
              */
 
-            ContractionCandidate( const ContractionCandidate& _original ):
-            mRhs(_original.rhs()),
-            mConstraint(_original.constraint()),
-            mContractor(_original.contractor()),
-            mLhs(_original.lhs()),
-            mDerivationVar(_original.derivationVar()),
-            mDerivative(_original.derivative()),
-            mOrigin(),
-            mId(_original.id()),
-            mIsLinear(_original.isLinear()),
-            mActive(_original.isActive()),
-            mDerived(_original.isDerived()),
-            mRWA(_original.RWA()),
-            mLastPayoff(_original.lastPayoff())
-            {
-                mOrigin.insert(_original.origin().begin(), _original.origin().end());
-            }
+            ContractionCandidate( const ContractionCandidate& _original );
+//            :
+//            mRhs(_original.rhs()),
+//            mConstraint(_original.constraint()),
+//            mContractor(_original.contractor()),
+//            mLhs(_original.lhs()),
+//            mDerivationVar(_original.derivationVar()),
+//            mDerivative(_original.derivative()),
+//            mOrigin(),
+//            mId(_original.id()),
+//            mIsLinear(_original.isLinear()),
+//            mDerived(_original.isDerived()),
+//            mRWA(_original.RWA()),
+//            mLastPayoff(_original.lastPayoff())
+//            {
+//                mOrigin.insert(_original.origin().begin(), _original.origin().end());
+//            }
 
             ContractionCandidate( carl::Variable _lhs, const Polynomial _rhs, const Constraint* _constraint, carl::Variable _derivationVar, Contractor<carl::SimpleNewton>& _contractor, const Formula* _origin, unsigned _id ):
             mRhs(_rhs),
@@ -121,7 +106,6 @@ namespace smtrat
             mOrigin(),
             mId(_id),
             mIsLinear(true),
-            mActive(false),
             mDerived(false),
             mRWA(1),
             mLastPayoff(0)
@@ -144,9 +128,9 @@ namespace smtrat
             mOrigin(),
             mId(_id),
             mIsLinear(false),
-            mActive(false),
             mDerived(false),
             mRWA(1),
+            mLastRWA(1),
             mLastPayoff(0)
             {
             }
@@ -161,7 +145,7 @@ namespace smtrat
              * Functions:
              */
 
-            const Polynomial rhs() const
+            const Polynomial& rhs() const
             {
                 return mRhs;
             }
@@ -196,12 +180,12 @@ namespace smtrat
                 return mLhs;
             }
 
-            const std::set<const Formula*, originComp>& origin() const
+            const PointerSet<Formula>& origin() const
             {
                 return mOrigin;
             }
 
-            std::set<const Formula*, originComp>& rOrigin()
+            PointerSet<Formula>& rOrigin()
             {
                 return mOrigin;
             }
@@ -214,24 +198,12 @@ namespace smtrat
 
             void removeOrigin( const Formula* _origin )
             {
-                if ( mOrigin.find(_origin) != mOrigin.end() )
-                    mOrigin.erase(_origin);
+                mOrigin.erase(_origin);
             }
 
             bool hasOrigin( const Formula* _origin ) const
             {
                 return ( mOrigin.find(_origin) != mOrigin.end() );
-            }
-
-            bool hasOrigin( const Constraint* _origin ) const
-            {
-                std::set<const Formula*>::iterator originIt;
-                for ( originIt = mOrigin.begin(); originIt != mOrigin.end(); ++originIt )
-                {
-                    if ( (*originIt)->pConstraint() == _origin )
-                        return true;
-                }
-                return false;
             }
 
             void setLinear()
@@ -258,6 +230,16 @@ namespace smtrat
             double RWA() const
             {
                 return mRWA;
+            }
+
+            double lastRWA() const
+            {
+                return mRWA;
+            }
+            
+            void updateLastRWA()
+            {
+                mLastRWA = mRWA;
             }
 
             double lastPayoff() const
@@ -294,19 +276,14 @@ namespace smtrat
                 }
             }
 
-            void activate()
+            size_t activity()
             {
-                mActive = true;
-            }
-
-            void deactivate()
-            {
-                mActive = false;
+                return mOrigin.size();
             }
 
             bool isActive() const
             {
-                return mActive;
+                return mOrigin.size() > 0;
             }
             
             bool isDerived() const

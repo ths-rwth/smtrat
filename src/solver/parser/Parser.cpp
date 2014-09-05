@@ -373,7 +373,7 @@ const Formula* SMTLIBParser::mkConstraint(const Polynomial& lhs, const Polynomia
 			std::swap(polys, ptmp);
 			// Add the conditions at the appropriate positions.
 			const Formula* f[2]= { std::get<0>(t), newNegation(std::get<0>(t)) };
-			for (unsigned i = 0; i < (1 << n); i++) {
+			for (size_t i = 0; i < (size_t)(1 << n); i++) {
 				conds[i].insert(f[0]);
 				if ((i+1) % repeat == 0) std::swap(f[0], f[1]);
 			}
@@ -463,10 +463,10 @@ carl::Variable SMTLIBParser::addQuantifiedVariable(const std::string& _name, con
 				this->var_theory.sym.add(_name, v);
 				return v;
 			}
-			case ExpressionType::UNINTERPRETED: {
+			default: { // case ExpressionType::UNINTERPRETED
 				this->handler->error() << "Tried to quantify over an uninterpreted type.";
+				assert(false);
 				return carl::Variable::NO_VARIABLE;
-				break;
 			}
 		}
 	} else if (this->var_bool.sym.find(_name) != nullptr) {
@@ -498,10 +498,16 @@ carl::Variable SMTLIBParser::addVariableBinding(const std::pair<std::string, Sor
 		bind_theory.sym.add(b.first, Polynomial(v));
 		return v;
 	}
+<<<<<<< HEAD
 	case ExpressionType::UNINTERPRETED:
 		this->handler->error() << "Tryied to bind a uninterpreted variable.";
 		return carl::Variable::NO_VARIABLE;
 		break;
+=======
+        default: // case ExpressionType::UNINTERPRETED
+		assert(false);
+		return carl::Variable::NO_VARIABLE;
+>>>>>>> e0557f82c397119a6e13572601683e17960f83cf
 	}
 }
 

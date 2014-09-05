@@ -143,7 +143,7 @@ protected:
 	}
 public:
 	InstructionHandler(): mRegular(std::cout.rdbuf()), mDiagnostic(std::cerr.rdbuf()) {
-		Attribute attr("print-instruction", false);
+		Attribute attr("print-instruction", AttributeMandatoryValue(false));
 		this->setOption(attr);
 	}
 	virtual ~InstructionHandler() {

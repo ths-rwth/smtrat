@@ -69,6 +69,11 @@ namespace smtrat
                 bool operator >( const Value<T>& ) const;
                 bool operator <=( const Value<T>& ) const;
                 bool operator ==( const Value<T>& ) const;
+                bool operator ==( const T& _value ) const;
+                bool operator <( const T& ) const;
+                bool operator >( const T& ) const;
+                bool operator <=( const T& ) const;
+                bool operator >=( const T& ) const;
 
                 const std::string toString() const;
                 template <typename T1> friend std::ostream& operator<<( std::ostream&, const Value<T1>& );
@@ -304,6 +309,36 @@ namespace smtrat
             if( (mMainPart == val.mainPart()) && (mDeltaPart == val.deltaPart()) )
                 b = true;
             return b;
+        }
+        
+        template<class T>
+        bool Value<T>::operator ==( const T& _value ) const
+        {
+            return (mMainPart == _value && mDeltaPart == 0 );
+        }
+        
+        template<class T>
+        bool Value<T>::operator <( const T& _value ) const
+        {
+            return (mMainPart < _value || (mMainPart == _value && mDeltaPart < 0 ));
+        }
+        
+        template<class T>
+        bool Value<T>::operator >( const T& _value ) const
+        {
+            return (mMainPart > _value || (mMainPart == _value && mDeltaPart > 0 ));
+        }
+        
+        template<class T>
+        bool Value<T>::operator <=( const T& _value ) const
+        {
+            return (mMainPart < _value || (mMainPart == _value && mDeltaPart <= 0 ));
+        }
+        
+        template<class T>
+        bool Value<T>::operator >=( const T& _value ) const
+        {
+            return (mMainPart > _value || (mMainPart == _value && mDeltaPart >= 0 ));
         }
 
         /**

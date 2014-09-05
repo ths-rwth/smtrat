@@ -162,16 +162,6 @@ else()
 endif()
 
 # # # # # # # # # # # # # # # # # # # # # #
-# C.3. Required libaries for solver.
-# # # # # # # # # # # # # # # # # # # # # #
-
-if( BUILD_SOLVER )
-	# for building the parser
-    find_package(BISON REQUIRED)
-    find_package(FLEX REQUIRED)
-endif()
-
-# # # # # # # # # # # # # # # # # # # # # #
 # C.4. Required libraries for GUI.
 # # # # # # # # # # # # # # # # # # # # # #
 

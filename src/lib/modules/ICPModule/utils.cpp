@@ -12,24 +12,7 @@
 namespace smtrat
 {
     namespace icp
-    {
-        bool isLinear( const Constraint* _constr, const Polynomial& _expr, FastMap<Polynomial, const Constraint*>& _tempMonomes )
-        {
-            bool isLinear = true;
-            for( auto termIt = _expr.begin(); termIt != _expr.end(); ++termIt )
-            {
-                if( (*termIt)->monomial() )
-                {
-                    if( !(*termIt)->monomial()->isLinear() )
-                    {
-                        _tempMonomes.insert( std::make_pair(Polynomial( *(*termIt)->monomial() ), _constr) );
-                        isLinear = false;
-                    }
-                }
-            }
-            return isLinear;
-        }
-        
+    {   
         std::pair<const Constraint*, const Constraint*> intervalToConstraint( const carl::Variable::Arg _var, const smtrat::DoubleInterval _interval )
         {
             // left:
