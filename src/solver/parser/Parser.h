@@ -33,6 +33,8 @@
 #include "ParserTypes.h"
 #include "Sort.h"
 
+#include "carl/core/logging.h"
+
 namespace smtrat {
 namespace parser {
 

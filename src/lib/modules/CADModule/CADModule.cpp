@@ -142,6 +142,7 @@ namespace smtrat
 	 */
 	bool CADModule::assertSubformula(ModuleInput::const_iterator _subformula)
 	{
+		LOG_FUNC("smtrat.cad", **_subformula);
 		Module::assertSubformula(_subformula);
 		switch ((*_subformula)->getType()) {
 		case TTRUE: 
@@ -157,6 +158,7 @@ namespace smtrat
 		case CONSTRAINT: {
 			if (this->hasFalse) {
 				this->subformulaQueue.insert(*_subformula);
+				return false;
 			} else {
 				return this->addConstraintFormula(*_subformula);
 			}

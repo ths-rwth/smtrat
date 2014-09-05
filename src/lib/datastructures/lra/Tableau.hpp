@@ -586,7 +586,7 @@ namespace smtrat
                 auto term = _constraint->lhs().begin();
                 for( ; term != _constraint->lhs().end(); ++term )
                     if( !(*term)->isConstant() ) break;
-                carl::Variable var = (*(*term)->monomial())[0].var;
+				carl::Variable var = (*term)->monomial()->begin()->first;
                 T1 primCoeff = T1( (*term)->coeff() );
                 negative = (primCoeff < T1( 0 ));
                 boundValue = T1( -_constraint->constantPart() )/primCoeff;
@@ -811,7 +811,7 @@ namespace smtrat
             {
                 assert( !(*term)->isConstant() );
                 assert( carl::isInteger( (*term)->coeff() ) );
-                carl::Variable var = (*(*term)->monomial())[0].var;
+				carl::Variable var = (*term)->monomial()->begin()->first;
                 Variable<T1, T2>* nonBasic;
                 auto nonBasicIter = _originalVars.find( var );
                 if( _originalVars.end() == nonBasicIter )

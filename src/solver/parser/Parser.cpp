@@ -465,7 +465,7 @@ carl::Variable SMTLIBParser::addQuantifiedVariable(const std::string& _name, con
 			}
 			case ExpressionType::UNINTERPRETED: {
 				this->handler->error() << "Tried to quantify over an uninterpreted type.";
-				assert(false);
+				return carl::Variable::NO_VARIABLE;
 				break;
 			}
 		}
@@ -499,7 +499,8 @@ carl::Variable SMTLIBParser::addVariableBinding(const std::pair<std::string, Sor
 		return v;
 	}
 	case ExpressionType::UNINTERPRETED:
-		assert(false);
+		this->handler->error() << "Tryied to bind a uninterpreted variable.";
+		return carl::Variable::NO_VARIABLE;
 		break;
 	}
 }

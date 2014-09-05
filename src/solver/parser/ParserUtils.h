@@ -22,6 +22,8 @@
 #include "ParserTypes.h"
 #include "Sort.h"
 
+#include "carl/core/logging.h"
+
 namespace smtrat {
 namespace parser {
 
@@ -268,13 +270,13 @@ struct ErrorHandler {
 		std::string input(where, line_end);
 		
 		std::cerr << std::endl;
-		std::cerr << "Parsing error at " << spirit::get_line(where) << ":" << spirit::get_column(line_start, where) << std::endl;
+		LOGMSG_ERROR("smtrat.parser", "Parsing error at " << spirit::get_line(where) << ":" << spirit::get_column(line_start, where));
 		if (p.lastrule.str().size() > 0) {
-			std::cerr << "after parsing rule " << p.lastrule.str() << ": " << p.lastentity.str() << std::endl;
+			LOGMSG_ERROR("smtrat.parser", "after parsing rule " << p.lastrule.str() << ": " << p.lastentity.str());
 		}
-		std::cerr << "expected" << std::endl << "\t" << what.tag << ": " << what << std::endl;
-		std::cerr << "but got" << std::endl << "\t" << input << std::endl;
-		std::cerr << "in line " << spirit::get_line(where) << std::endl << "\t" << line << std::endl;
+		LOGMSG_ERROR("smtrat.parser", "expected" << std::endl << "\t" << what.tag << ": " << what);
+		LOGMSG_ERROR("smtrat.parser", "but got" << std::endl << "\t" << input);
+		LOGMSG_ERROR("smtrat.parser", "in line " << spirit::get_line(where) << std::endl << "\t" << line);
 		return qi::fail;
 	}
 };
