@@ -1274,12 +1274,14 @@ Return:
             for( size_t i = 0; i < dc_positions.size(); ++i )
             {
                 LRAEntryType upper_lower_bound;
+                cout << "Premise for CFP is fulfilled!" << endl;
                 cut_from_proof = dc_Tableau.create_cut_from_proof( dc_Tableau, mTableau, i, diagonals, dc_positions, upper_lower_bound, max_value );
-                #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-                cout << "Proof of unsatisfiability:  " << *cut_from_proof << " = 0" << endl;
-                #endif
                 if( cut_from_proof != NULL )
                 {
+                    #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+                    cout << "Proof of unsatisfiability:  " << *cut_from_proof << " = 0" << endl;
+                    #endif
+                    if( mTableau.slackVars().size() > 1 ) exit(7771);
                     LRAEntryType bound_add = 1;
                     LRAEntryType bound = upper_lower_bound;
                     if( carl::isInteger( upper_lower_bound ) )
@@ -1309,6 +1311,8 @@ Return:
                     #endif
                     return true;
                 }
+                else 
+                    cout << "No CFP found!" << endl;
             }
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
             cout << "Found no proof of unsatisfiability!" << endl;
