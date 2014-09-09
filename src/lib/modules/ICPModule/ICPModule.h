@@ -72,14 +72,6 @@ namespace smtrat
                 }
             };
             
-            struct lraVarComp
-            {
-                bool operator ()( const LRAVariable* lhs, const LRAVariable* rhs ) const
-                {
-                    return (lhs->expression().hash() < rhs->expression().hash());
-                }
-            };
-            
             struct formulaPtrComp
             {
                 bool operator ()(const Formula* _lhs, const Formula* _rhs ) const
