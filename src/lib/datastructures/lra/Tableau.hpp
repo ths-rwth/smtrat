@@ -915,7 +915,7 @@ namespace smtrat
             {
                 if( g == 1 ) break;
                 if( iter->second != T2( 0 ) )
-                    carl::gcd_here( g, iter->second );
+                    carl::gcd_assign( g, iter->second );
             }
             if( !(g == 1) )
             {
@@ -923,9 +923,9 @@ namespace smtrat
                 for( auto iter = coeffs.begin(); iter != coeffs.end(); ++iter  )
                 {
                     if( iter->second != T2( 0 ) )
-                        carl::div_here( iter->second, g );
+                        carl::div_assign( iter->second, g );
                 }
-                carl::div_here( _var->rFactor(), g );
+                carl::div_assign( _var->rFactor(), g );
             }
             
             _var->setPosition( mRows.size() );
@@ -2013,7 +2013,7 @@ FindPivot:
                 rowIter = Iterator( currBasicVar.startEntry(), mpEntries );
                 while( !(g == 1) )
                 {
-                    carl::gcd_here( g, (*rowIter).content() );
+                    carl::gcd_assign( g, (*rowIter).content() );
                     if( rowIter.hEnd( false ) ) break;
                     rowIter.hMove( false );
                 }
@@ -2023,11 +2023,11 @@ FindPivot:
                     rowIter = Iterator( currBasicVar.startEntry(), mpEntries );
                     while( true )
                     {
-                        carl::div_here( (*rowIter).rContent(), g );
+                        carl::div_assign( (*rowIter).rContent(), g );
                         if( rowIter.hEnd( false ) ) break;
                         else rowIter.hMove( false );
                     }
-                    carl::div_here( currBasicVar.rFactor(), g );
+                    carl::div_assign( currBasicVar.rFactor(), g );
                 }
                 #else
                 (*pivotingColumnIter).rContent() *= (*mpEntries)[_pivotingElement].content();
