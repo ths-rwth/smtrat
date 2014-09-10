@@ -35,6 +35,8 @@
 #include "Relation.h"
 #include "carl/core/logging.h"
 #include "carl/core/MultivariatePolynomial.h"
+#include "carl/core/Variable.h"
+#include "carl/core/VariablePool.h"
 #include "carl/interval/Interval.h"
 #include "carl/interval/IntervalEvaluation.h"
 #include "carl/interval/Contraction.h"
