@@ -230,6 +230,7 @@ void SMTLIBParser::declareSort(const std::string& name, const unsigned& arity) {
 }
 void SMTLIBParser::defineFun(const std::string& name, const std::vector<carl::Variable>& args, const Sort& sort, const boost::variant<const Formula*, Polynomial>& term) {
 	if (this->handler->printInstruction()) handler->regular() << "(define-fun " << name << " () " << term << ")" << std::endl;
+	this->popScope();
 	switch (TypeOfTerm::get(sort)) {
 	case ExpressionType::BOOLEAN:
 		if (TypeOfTerm::get(term) != ExpressionType::BOOLEAN) {
@@ -265,7 +266,6 @@ void SMTLIBParser::defineFun(const std::string& name, const std::vector<carl::Va
 	default:
 		handler->error() << "Unsupported function return type.";
 	}
-	this->popScope();
 
 	//callHandler(&InstructionHandler::defineFun, name, args, sort, term);
 }
