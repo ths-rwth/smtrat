@@ -38,6 +38,8 @@ set(smtrat_VERSION "${smtrat_MAJORVERSION}.${smtrat_MINORVERSION}.${smtrat_MAINT
 set(PROJECT_VERSION "${smtrat_MAJORVERSION}.${smtrat_MINORVERSION}.${smtrat_MAINTENANCEVERSION}")
 set(smtrat_NAME "SMT-RAT" )
 set(smtrat_DESCRIPTION ${PROJECT_DESCRIPTION} )
+set(ADDITIONAL_INCLUDE_DIRS "" CACHE STRING "Additional directories added to the include directories.")
+set(ADDITIONAL_LINK_DIRS "" CACHE STRING "Additional directories added to the link directories.")
 
 
 # # # # # # # # # # # # # # # # # # # # # #
@@ -255,6 +257,16 @@ source_group(lib\\modules\\SingleVSModule FILES ${SMTRAT_SINGLEVS_MODULE_FILES})
 source_group(lib\\modules\\SmartSimplifier FILES ${SMTRAT_SMART_MODULE_FILES})
 source_group(lib\\modules\\VRWModule FILES ${SMTRAT_VRW_MODULE_FILES})
 source_group(lib\\modules\\VSModule FILES ${SMTRAT_VS_MODULE_FILES})
+
+# Add custom additional include or link directories
+if (ADDITIONAL_INCLUDE_DIRS)
+	message(STATUS "SMT-RAT - Using additional include directories ${ADDITIONAL_INCLUDE_DIRS}")
+	include_directories(${ADDITIONAL_INCLUDE_DIRS})
+endif(ADDITIONAL_INCLUDE_DIRS)
+if (ADDITIONAL_LINK_DIRS)
+	message(STATUS "SMT-RAT - Using additional link directories ${ADDITIONAL_LINK_DIRS}")
+	link_directories(${ADDITIONAL_LINK_DIRS})
+endif(ADDITIONAL_LINK_DIRS)
 
 # # # # # # # # # # # # # # # # # # # # # #
 # F. Invoke subdirectories.
