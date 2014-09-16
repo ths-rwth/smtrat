@@ -29,7 +29,7 @@ namespace smtrat
         * @param _interval
         * @return pair <lowerBoundConstraint*, upperBoundConstraint*>
         */
-        std::pair<const Constraint*, const Constraint*> intervalToConstraint( const carl::Variable& _var, const smtrat::DoubleInterval _interval );
+        std::pair<const Constraint*, const Constraint*> intervalToConstraint( carl::Variable::Arg _var, const smtrat::DoubleInterval _interval );
         
         /**
         * Checks mIntervals if it contains an empty interval.
@@ -38,7 +38,7 @@ namespace smtrat
         bool intervalBoxContainsEmptyInterval(const EvalDoubleIntervalMap& _intervals);
         
         
-        const LRAVariable* getOriginalLraVar ( const carl::Variable::Arg _var, const LRAModule& _lra );
+        const LRAVariable* getOriginalLraVar ( carl::Variable::Arg _var, const LRAModule& _lra );
         
     }
 }

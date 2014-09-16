@@ -843,7 +843,7 @@ namespace smtrat
                      * of which the interval has significantly changed are
                      * contained in mIcpRelevantCandidates.
                      */
-                    std::map<const carl::Variable, icp::IcpVariable*>::iterator icpVar = mVariables.find(candidate->derivationVar());
+                    std::map<carl::Variable, icp::IcpVariable*>::iterator icpVar = mVariables.find(candidate->derivationVar());
                     assert(icpVar != mVariables.end());
                     for ( auto candidateIt = (*icpVar).second->candidates().begin(); candidateIt != (*icpVar).second->candidates().end(); ++candidateIt )
                     {
@@ -1036,7 +1036,7 @@ namespace smtrat
                     for( auto subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                     {
                         isBound = false;
-                        std::map<const carl::Variable, icp::IcpVariable*>::iterator iter = mVariables.begin();
+                        std::map<carl::Variable, icp::IcpVariable*>::iterator iter = mVariables.begin();
                         for ( ; iter != mVariables.end(); ++iter )
                         {
                             icp::IcpVariable& icpVar = *(*iter).second;
@@ -1399,7 +1399,7 @@ namespace smtrat
         // update all candidates which contract in the dimension in which the split has happened
         std::set<icp::ContractionCandidate*> updatedCandidates;
         // iterate over all affected constraints
-        std::map<const carl::Variable, icp::IcpVariable*>::iterator icpVar = mVariables.find(_var);
+        std::map<carl::Variable, icp::IcpVariable*>::iterator icpVar = mVariables.find(_var);
         assert(icpVar != mVariables.end());
         for ( auto candidatesIt = (*icpVar).second->candidates().begin(); candidatesIt != (*icpVar).second->candidates().end(); ++candidatesIt)
         {
@@ -1460,7 +1460,7 @@ namespace smtrat
 
         const Polynomial               constr     = _selection->rhs();
         const Polynomial               derivative = _selection->derivative();
-        const carl::Variable           variable   = _selection->derivationVar();
+        carl::Variable           variable   = _selection->derivationVar();
         assert( mVariables.find( variable ) != mVariables.end() );
         icp::IcpVariable& icpVar = *mVariables.find( variable )->second;
         const DoubleInterval& icpVarInterval = icpVar.interval();
@@ -1490,7 +1490,7 @@ namespace smtrat
             for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
             {
                 if ( (*intervalIt).first == variable )
-                    tmpRight.insert(std::pair<const carl::Variable,smtrat::DoubleInterval>(variable, resultA ));
+                    tmpRight.insert(std::pair<carl::Variable,smtrat::DoubleInterval>(variable, resultA ));
                 else
                     tmpRight.insert((*intervalIt));
             }
@@ -1520,7 +1520,7 @@ namespace smtrat
             for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
             {
                 if ( (*intervalIt).first == variable )
-                    tmpLeft.insert(std::pair<const carl::Variable,smtrat::DoubleInterval>(variable, resultB ));
+                    tmpLeft.insert(std::pair<carl::Variable,smtrat::DoubleInterval>(variable, resultB ));
                 else
                     tmpLeft.insert((*intervalIt));
             }
@@ -1761,7 +1761,7 @@ namespace smtrat
 
         const Polynomial               constr     = _selection->rhs();
         const Polynomial               derivative = _selection->derivative();
-        const carl::Variable           variable   = _selection->derivationVar();
+        carl::Variable           variable   = _selection->derivationVar();
         assert(intervals.find(variable) != intervals.end());
         double                 originalDiameter = intervals.at(variable).diameter();
         bool originalUnbounded = ( intervals.at(variable).lowerBoundType() == carl::BoundType::INFTY || intervals.at(variable).upperBoundType() == carl::BoundType::INFTY );
@@ -1777,7 +1777,7 @@ namespace smtrat
             for ( auto intervalIt = intervals.begin(); intervalIt != intervals.end(); ++intervalIt )
             {
                 if ( (*intervalIt).first == variable )
-                    tmpRight.insert(std::pair<const carl::Variable,smtrat::DoubleInterval>(variable, resultA ));
+                    tmpRight.insert(std::pair<carl::Variable,smtrat::DoubleInterval>(variable, resultA ));
                 else
                     tmpRight.insert((*intervalIt));
             }
@@ -1787,7 +1787,7 @@ namespace smtrat
             for ( auto intervalIt = intervals.begin(); intervalIt != intervals.end(); ++intervalIt )
             {
                 if ( (*intervalIt).first == variable )
-                    tmpLeft.insert(std::pair<const carl::Variable,smtrat::DoubleInterval>(variable, resultB ));
+                    tmpLeft.insert(std::pair<carl::Variable,smtrat::DoubleInterval>(variable, resultB ));
                 else
                     tmpLeft.insert((*intervalIt));
             }
@@ -1809,7 +1809,7 @@ namespace smtrat
         }
     }
     
-    double ICPModule::calculateSplittingImpact ( const carl::Variable& _var, icp::ContractionCandidate& _candidate ) const
+    double ICPModule::calculateSplittingImpact ( carl::Variable::Arg _var, icp::ContractionCandidate& _candidate ) const
     {
         double impact = 0;
         assert(mIntervals.count(_var) > 0);
@@ -1952,7 +1952,7 @@ namespace smtrat
             // search for the biggest interval and check if it is larger than the target Diameter
             for( auto variableIt = (*candidateIt)->constraint()->variables().begin(); variableIt != (*candidateIt)->constraint()->variables().end(); ++variableIt )
             {
-                std::map<const carl::Variable, icp::IcpVariable*>::iterator icpVar = mVariables.find(*variableIt);
+                std::map<carl::Variable, icp::IcpVariable*>::iterator icpVar = mVariables.find(*variableIt);
                 assert(icpVar != mVariables.end());
                 if( mVariables.find(*variableIt)->second->isOriginal() )
                 {
@@ -2385,7 +2385,7 @@ namespace smtrat
 //                                // activate all icpVariables for that candidate
 //                                for ( auto variableIt = actCandidateIt->constraint()->variables().begin(); variableIt != actCandidateIt->constraint()->variables().end(); ++variableIt )
 //                                {
-//                                    std::map<const carl::Variable, icp::IcpVariable*>::iterator icpVar = mVariables.find(*variableIt);
+//                                    std::map<carl::Variable, icp::IcpVariable*>::iterator icpVar = mVariables.find(*variableIt);
 //                                    assert(icpVar != mVariables.end());
 //                                    (*icpVar).second->activate();
 //                                }
@@ -2592,7 +2592,7 @@ namespace smtrat
             // if spliting constraint or the constraint resulting from a contraction
             // of the splitting constraint is included in the infeasible subset
             // skip the right box and continue.
-            const carl::Variable variable = _basis->variable();
+            carl::Variable variable = _basis->variable();
             assert( mIntervals.find(variable) != mIntervals.end() );
             if ( _basis->stateInfeasibleConstraintsContainSplit() )
             {
@@ -2657,9 +2657,9 @@ namespace smtrat
     {
         Variables originalRealVariables;
         mpReceivedFormula->realValuedVars( originalRealVariables );
-        for( std::map<const carl::Variable, icp::IcpVariable*>::iterator iter = mVariables.begin(); iter != mVariables.end(); ++iter )
+        for( std::map<carl::Variable, icp::IcpVariable*>::iterator iter = mVariables.begin(); iter != mVariables.end(); ++iter )
         {
-            const carl::Variable::Arg tmpSymbol = iter->first;
+            carl::Variable::Arg tmpSymbol = iter->first;
             icp::IcpVariable& icpVar = *iter->second;
             if( icpVar.isOriginal() && originalRealVariables.find( tmpSymbol ) != originalRealVariables.end() )
             {
@@ -2812,10 +2812,10 @@ namespace smtrat
         mpReceivedFormula->realValuedVars(originalRealVariables);
         for ( auto variablesIt = originalRealVariables.begin(); variablesIt != originalRealVariables.end(); ++variablesIt )
         {
-            const carl::Variable tmpSymbol = *variablesIt;
+            carl::Variable tmpSymbol = *variablesIt;
             if ( _map.find(tmpSymbol) != _map.end() )
             {
-                std::map<const carl::Variable, icp::IcpVariable*>::iterator pos = mVariables.find(tmpSymbol);
+                std::map<carl::Variable, icp::IcpVariable*>::iterator pos = mVariables.find(tmpSymbol);
                 if ( pos != mVariables.end() )
                 {
                     if( (*pos).second->isInternalBoundsSet() == icp::Updated::BOTH && (*pos).second->isInternalUpdated() == icp::Updated::NONE )
@@ -2927,7 +2927,7 @@ namespace smtrat
             // only update intervals which changed
             if ( !(mIntervals.at((*constraintIt).first)==(*constraintIt).second) )
             {
-                std::map<const carl::Variable, icp::IcpVariable*>::const_iterator icpVar = mVariables.find((*constraintIt).first);
+                std::map<carl::Variable, icp::IcpVariable*>::const_iterator icpVar = mVariables.find((*constraintIt).first);
                 // cout << "Searching for " << (*intervalIt).first.get_name() << endl;
                 assert(icpVar != mVariables.end());
                 (*icpVar).second->setInterval( (*constraintIt).second );

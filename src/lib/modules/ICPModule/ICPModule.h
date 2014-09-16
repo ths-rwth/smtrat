@@ -107,7 +107,7 @@ namespace smtrat
             std::map<const LRAVariable*, ContractionCandidates>                 mLinearConstraints; // all linear candidates
             std::map<const Constraint*, ContractionCandidates>                  mNonlinearConstraints; // all nonlinear candidates
             
-            std::map<const carl::Variable, icp::IcpVariable*>                                   mVariables; // list of occurring variables
+            std::map<carl::Variable, icp::IcpVariable*>                                   mVariables; // list of occurring variables
             EvalDoubleIntervalMap                                                               mIntervals; // actual intervals relevant for contraction
             EvalRationalMap                                                                     mFoundSolution;
             std::set<std::pair<double, unsigned>, comp>                                         mIcpRelevantCandidates; // candidates considered for contraction 
@@ -314,7 +314,7 @@ namespace smtrat
              * @param _targetDiameter
              * @return 
              */
-            double calculateSplittingImpact ( const carl::Variable& _var, icp::ContractionCandidate& _candidate ) const;
+            double calculateSplittingImpact ( carl::Variable::Arg _var, icp::ContractionCandidate& _candidate ) const;
             
             /**
              * 

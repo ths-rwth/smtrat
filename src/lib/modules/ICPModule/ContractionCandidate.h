@@ -165,7 +165,7 @@ namespace smtrat
                 return mContractor(_intervals, mDerivationVar, _resA, _resB);
             }
 
-            const carl::Variable& derivationVar() const
+            carl::Variable::Arg derivationVar() const
             {
                 return mDerivationVar;
             }
@@ -175,7 +175,7 @@ namespace smtrat
                 return mDerivative;
             }
 
-            const carl::Variable& lhs() const
+            carl::Variable::Arg lhs() const
             {
                 return mLhs;
             }

@@ -13,7 +13,7 @@ namespace smtrat
 {
     namespace icp
     {   
-        std::pair<const Constraint*, const Constraint*> intervalToConstraint( const carl::Variable::Arg _var, const smtrat::DoubleInterval _interval )
+        std::pair<const Constraint*, const Constraint*> intervalToConstraint( carl::Variable::Arg _var, const smtrat::DoubleInterval _interval )
         {
             // left:
             Rational           bound  = carl::rationalize<Rational>( _interval.lower() );
@@ -67,7 +67,7 @@ namespace smtrat
             return false;
         }
         
-        const LRAVariable* getOriginalLraVar( const carl::Variable::Arg _var, const LRAModule& _lra )
+        const LRAVariable* getOriginalLraVar( carl::Variable::Arg _var, const LRAModule& _lra )
         {
             LRAModule::VarVariableMap::const_iterator target = _lra.originalVariables().find(_var);
             if( target != _lra.originalVariables().end() )

@@ -60,7 +60,7 @@ namespace icp
             /*
              * Members
              */
-            const carl::Variable               mVar;
+            carl::Variable               mVar;
             bool                               mOriginal;
             ContractionCandidates              mCandidates;
             const LRAVariable*                 mLraVar;
@@ -85,7 +85,7 @@ namespace icp
             /*
              * Constructors
              */
-            IcpVariable( const carl::Variable::Arg _var, 
+            IcpVariable( carl::Variable::Arg _var, 
                          bool _original, 
                          ModuleInput::iterator _defaultPosition, 
                          EvalDoubleIntervalMap::iterator _intervalPos, 
@@ -112,7 +112,7 @@ namespace icp
              * Getter/Setter
              */
 
-            const carl::Variable::Arg var() const
+            carl::Variable::Arg var() const
             {
                 return mVar;
             }
