@@ -2872,7 +2872,7 @@ NextClause:
         }
 
         if( satisfied( c ) )
-            cout << "      ok";
+            _out << "      ok";
     }
 
     /**
@@ -3031,16 +3031,16 @@ NextClause:
                 _out << "l_True";
                 // if it is not a Boolean variable
                 if( mBooleanConstraintMap[pos].first.constraint != NULL && !mBooleanConstraintMap[pos].first.origins->empty() )
-                    cout << "   ( " << *mBooleanConstraintMap[pos].first.constraint << " )";
-                cout << endl;
+                    _out << "   ( " << *mBooleanConstraintMap[pos].first.constraint << " )";
+                _out << endl;
             }
             else if( assigns[pos] == l_False )
             {
                 _out << "l_False";
                 // if it is not a Boolean variable
                 if( mBooleanConstraintMap[pos].second.constraint != NULL && !mBooleanConstraintMap[pos].second.origins->empty() )
-                    cout << "   ( " << *mBooleanConstraintMap[pos].second.constraint << " )";
-                cout << endl;
+                    _out << "   ( " << *mBooleanConstraintMap[pos].second.constraint << " )";
+                _out << endl;
             }
             else
             {
@@ -3078,15 +3078,15 @@ NextClause:
             // if it is not a Boolean variable
             if( assigns[var(trail[pos])] == l_True && mBooleanConstraintMap[var(trail[pos])].first.constraint != NULL && !mBooleanConstraintMap[var(trail[pos])].first.origins->empty() )
             {
-                cout << "   ( " << *mBooleanConstraintMap[var(trail[pos])].first.constraint << " )";
-                cout << " [" << mBooleanConstraintMap[var(trail[pos])].first.updateInfo << "]";
+                _out << "   ( " << *mBooleanConstraintMap[var(trail[pos])].first.constraint << " )";
+                _out << " [" << mBooleanConstraintMap[var(trail[pos])].first.updateInfo << "]";
             }
             else if( assigns[var(trail[pos])] == l_False && mBooleanConstraintMap[var(trail[pos])].second.constraint != NULL && !mBooleanConstraintMap[var(trail[pos])].second.origins->empty() )
             {
-                cout << "   ( " << *mBooleanConstraintMap[var(trail[pos])].second.constraint << " )";
-                cout << " [" << mBooleanConstraintMap[var(trail[pos])].second.updateInfo << "]";
+                _out << "   ( " << *mBooleanConstraintMap[var(trail[pos])].second.constraint << " )";
+                _out << " [" << mBooleanConstraintMap[var(trail[pos])].second.updateInfo << "]";
             }
-            cout << endl;
+            _out << endl;
         }
     }
 

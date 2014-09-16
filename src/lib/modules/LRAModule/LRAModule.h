@@ -145,7 +145,7 @@ namespace smtrat
             #endif
             void adaptPassedFormula();
             bool checkAssignmentForNonlinearConstraint();
-            bool activateBound( const LRABound*, const PointerSet<Formula>& );
+            void activateBound( const LRABound*, const PointerSet<Formula>& );
             void setBound( const Constraint* );
             void addSimpleBoundDeduction( const LRABound*, bool = false );
             void addSimpleBoundConflict( const LRABound&, const LRABound&, bool = false );

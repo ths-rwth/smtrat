@@ -913,7 +913,7 @@ namespace smtrat
         }
     }
 
-    const Formula* Formula::resolveNegation( bool _keepConstraint ) const
+    const Formula* Formula::resolveNegation( bool _keepConstraint, bool _splitLinearNotEquals ) const
     {
         if( mType != NOT ) return this;
         Type newType = mType;
@@ -923,23 +923,24 @@ namespace smtrat
                 return this;
             case CONSTRAINT:
             {
-                if( _keepConstraint )
+                const Constraint* constraint = mpSubformula->pConstraint();
+                if( _keepConstraint && (!_splitLinearNotEquals || constraint->relation() != Relation::EQ || !constraint->lhs().isLinear()) )
                     return this;
                 else
                 {
-                    const Constraint* constraint = mpSubformula->pConstraint();
                     switch( constraint->relation() )
                     {
                         case Relation::EQ:
                         {
-                            #ifdef REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
-                            PointerSet<Formula> subformulas;
-                            subformulas.insert( newFormula( newConstraint( constraint->lhs(), Relation::LESS ) ) );
-                            subformulas.insert( newFormula( newConstraint( -constraint->lhs(), Relation::LESS ) ) );
-                            return newFormula( OR, move( subformulas ) );
-                            #else
-                            return newFormula( newConstraint( constraint->lhs(), Relation::NEQ ) );
-                            #endif
+                            if( _splitLinearNotEquals && constraint->lhs().isLinear() )
+                            {
+                                PointerSet<Formula> subformulas;
+                                subformulas.insert( newFormula( newConstraint( constraint->lhs(), Relation::LESS ) ) );
+                                subformulas.insert( newFormula( newConstraint( -constraint->lhs(), Relation::LESS ) ) );
+                                return newFormula( OR, move( subformulas ) );
+                            }
+                            else
+                                return newFormula( newConstraint( constraint->lhs(), Relation::NEQ ) );
                         }
                         case Relation::LEQ:
                         {
@@ -1157,16 +1158,16 @@ namespace smtrat
         return res;
     }
 
-    const Formula* Formula::toCNF( bool _keepConstraints ) const
+    const Formula* Formula::toCNF( bool _keepConstraints, bool _splitLinearNotEquals ) const
     {
         if( propertyHolds( PROP_IS_IN_CNF ) )
         {
-            if( _keepConstraints )
+            if( _keepConstraints && !_splitLinearNotEquals )
                 return this;
             else if( mType == NOT )
             {
                 assert( propertyHolds( PROP_IS_A_LITERAL ) );
-                return resolveNegation( _keepConstraints );
+                return resolveNegation( _keepConstraints, _splitLinearNotEquals );
             }
         }
         else if( isAtom() )
@@ -1206,8 +1207,7 @@ namespace smtrat
                     else
                     {
                     #endif
-                    #ifdef REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
-                    if( currentFormula->constraint().relation() == Relation::NEQ )
+                    if( _splitLinearNotEquals && currentFormula->constraint().relation() == Relation::NEQ && currentFormula->constraint().lhs().isLinear() )
                     {
                         const Constraint* c1 =  newConstraint( currentFormula->constraint().lhs(), Relation::LESS );
                         const Constraint* c2 =  newConstraint( -currentFormula->constraint().lhs(), Relation::LESS );
@@ -1215,11 +1215,8 @@ namespace smtrat
                     }
                     else
                     {
-                    #endif
-                    subformulas.insert( currentFormula );
-                    #ifdef REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
+                        subformulas.insert( currentFormula );
                     }
-                    #endif
                     #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
                     }
                     #endif
@@ -1231,7 +1228,7 @@ namespace smtrat
                     goto ReturnFalse;
                 case NOT: // Try to resolve this negation.
                 {
-                    const Formula* resolvedFormula = currentFormula->resolveNegation( _keepConstraints );
+                    const Formula* resolvedFormula = currentFormula->resolveNegation( _keepConstraints, _splitLinearNotEquals );
                     if( resolvedFormula == currentFormula ) // It is a literal.
                         subformulas.insert( currentFormula );
                     else
@@ -1351,7 +1348,7 @@ namespace smtrat
                             }
                             case NOT: // resolve the negation
                             {
-                                const Formula* resolvedFormula = currentSubformula->resolveNegation( _keepConstraints );
+                                const Formula* resolvedFormula = currentSubformula->resolveNegation( _keepConstraints, _splitLinearNotEquals );
                                 if( resolvedFormula == currentSubformula ) // It is a literal.
                                     subsubformulas.insert( currentSubformula );
                                 else
@@ -1371,11 +1368,11 @@ namespace smtrat
                                 }
                                 for( const Formula* subsubformula : currentSubformula->subformulas() )
                                     subformulasToTransformTmp.push_back( newFormula( OR, iter.first->second->second, subsubformula ) );
-//                                PointerSet<Formula> subformulas;
-//                                subformulas.insert( iter.first->second->first );
-//                                for( const Formula* subsubformula : currentSubformula->subformulas() )
-//                                    subformulas.insert( newNegation( subsubformula ) );
-//                                subformulasToTransformTmp.push_back( newFormula( OR, subformulas ) );
+                                PointerSet<Formula> subformulas;
+                                subformulas.insert( iter.first->second->first );
+                                for( const Formula* subsubformula : currentSubformula->subformulas() )
+                                    subformulas.insert( newNegation( subsubformula ) );
+                                subformulasToTransformTmp.push_back( newFormula( OR, subformulas ) );
                                 subsubformulas.insert( iter.first->second->first );
                                 break;
                             }

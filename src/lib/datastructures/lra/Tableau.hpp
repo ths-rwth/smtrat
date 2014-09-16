@@ -630,155 +630,104 @@ namespace smtrat
                 }
             }
             std::pair<const Bound<T1,T2>*, bool> result;
-            if( _constraint->relation() == Relation::EQ )
+            switch( _constraint->relation() )
             {
-                // TODO: Take value from an allocator to assure the values are located close to each other in the memory.
-                Value<T1>* value  = new Value<T1>( boundValue );
-                result = newVar->addEqualBound( value, mDefaultBoundPosition, _constraint );
-                std::vector< const Bound<T1,T2>* >* boundVector = new std::vector< const Bound<T1,T2>* >();
-                result.first->boundExists();
-                boundVector->push_back( result.first );
-                mConstraintToBound[_constraint] = boundVector;
-            }
-            if( _constraint->relation() == Relation::LEQ || ( _constraint->integerValued() && _constraint->relation() == Relation::NEQ ) )
-            {   
-                const Constraint* constraint;
-                Value<T1>* value;
-                if( _constraint->integerValued() && _constraint->relation() == Relation::NEQ )
+                case Relation::EQ:
                 {
-                    constraint = newConstraint( _constraint->lhs(), Relation::LESS );
-                    value = new Value<T1>( boundValue - T1( 1 ) );
+                    // TODO: Take value from an allocator to assure the values are located close to each other in the memory.
+                    Value<T1>* value  = new Value<T1>( boundValue );
+                    result = newVar->addEqualBound( value, mDefaultBoundPosition, _constraint );
+                    std::vector< const Bound<T1,T2>* >* boundVector = new std::vector< const Bound<T1,T2>* >();
+                    result.first->boundExists();
+                    boundVector->push_back( result.first );
+                    mConstraintToBound[_constraint] = boundVector;
+                    break;
                 }
-                else
-                {
-                    constraint = _constraint;
-                    value = new Value<T1>( boundValue );
+                case Relation::LEQ:
+                {   
+                    Value<T1>* value = new Value<T1>( boundValue );
+                    result = negative ? newVar->addLowerBound( value, mDefaultBoundPosition, _constraint ) : newVar->addUpperBound( value, mDefaultBoundPosition, _constraint );
+                    std::vector< const Bound<T1,T2>* >* boundVector = new std::vector< const Bound<T1,T2>* >();
+                    result.first->boundExists();
+                    boundVector->push_back( result.first );
+                    mConstraintToBound[_constraint] = boundVector;
+                    result.first->boundExists();
+                    break;
                 }
-                if( negative )
+                case Relation::GEQ:
                 {
-                    result = newVar->addLowerBound( value, mDefaultBoundPosition, constraint );
+                    Value<T1>* value = new Value<T1>( boundValue );
+                    result = negative ? newVar->addUpperBound( value, mDefaultBoundPosition, _constraint ) : newVar->addLowerBound( value, mDefaultBoundPosition, _constraint );
+                    std::vector< const Bound<T1,T2>* >* boundVector = new std::vector< const Bound<T1,T2>* >();
+                    boundVector->push_back( result.first );
+                    mConstraintToBound[_constraint] = boundVector;
+                    result.first->boundExists();
+                    break;
                 }
-                else
+                case Relation::LESS:
                 {
-                    result = newVar->addUpperBound( value, mDefaultBoundPosition, constraint );
+                    Value<T1>* value = new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
+                    result = negative ? newVar->addLowerBound( value, mDefaultBoundPosition, _constraint ) : newVar->addUpperBound( value, mDefaultBoundPosition, _constraint );
+                    std::vector< const Bound<T1,T2>* >* boundVector = new std::vector< const Bound<T1,T2>* >();
+                    boundVector->push_back( result.first );
+                    mConstraintToBound[_constraint] = boundVector;
+                    result.first->boundExists();
+                    break;
                 }
-                std::vector< const Bound<T1,T2>* >* boundVector = new std::vector< const Bound<T1,T2>* >();
-                result.first->boundExists();
-                boundVector->push_back( result.first );
-                mConstraintToBound[constraint] = boundVector;
-                if( _constraint->integerValued() && _constraint->relation() == Relation::NEQ )
+                case Relation::GREATER:
                 {
+                    Value<T1>* value = new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
+                    result = negative ? newVar->addUpperBound( value, mDefaultBoundPosition, _constraint ) : newVar->addLowerBound( value, mDefaultBoundPosition, _constraint );
+                    std::vector< const Bound<T1,T2>* >* boundVector = new std::vector< const Bound<T1,T2>* >();
+                    boundVector->push_back( result.first );
+                    mConstraintToBound[_constraint] = boundVector;
+                    result.first->boundExists();
+                    break;
+                }
+                case Relation::NEQ:
+                {
+                    const Constraint* constraintLess = newConstraint( _constraint->lhs(), Relation::LESS );
+                    Value<T1>* valueA = _constraint->integerValued() ? new Value<T1>( boundValue - T1( 1 ) ) : new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
+                    result = negative ? newVar->addLowerBound( valueA, mDefaultBoundPosition, constraintLess ) : newVar->addUpperBound( valueA, mDefaultBoundPosition, constraintLess );
+                    std::vector< const Bound<T1,T2>* >* boundVectorLess = new std::vector< const Bound<T1,T2>* >();
+                    boundVectorLess->push_back( result.first );
+                    mConstraintToBound[constraintLess] = boundVectorLess;
+                    result.first->setNeqRepresentation( _constraint );
+                    
                     std::vector< const Bound<T1,T2>* >* boundVectorB = new std::vector< const Bound<T1,T2>* >();
                     boundVectorB->push_back( result.first );
-                    mConstraintToBound[_constraint] = boundVectorB;
+                    
+                    const Constraint* constraintLeq = newConstraint( _constraint->lhs(), Relation::LEQ );
+                    Value<T1>* valueB = new Value<T1>( boundValue );
+                    result = negative ? newVar->addLowerBound( valueB, mDefaultBoundPosition, constraintLeq ) : newVar->addUpperBound( valueB, mDefaultBoundPosition, constraintLeq );
+                    std::vector< const Bound<T1,T2>* >* boundVectorLeq = new std::vector< const Bound<T1,T2>* >();
+                    boundVectorLeq->push_back( result.first );
+                    mConstraintToBound[constraintLeq] = boundVectorLeq;
                     result.first->setNeqRepresentation( _constraint );
-                }
-                else
-                {  
-                    result.first->boundExists();
-                }
-            }
-            if( _constraint->relation() == Relation::GEQ || ( _constraint->integerValued() && _constraint->relation() == Relation::NEQ ) )
-            {
-                const Constraint* constraint;
-                Value<T1>* value;
-                if( _constraint->integerValued() && _constraint->relation() == Relation::NEQ )
-                {
-                    constraint = newConstraint( _constraint->lhs(), Relation::GREATER );
-                    value = new Value<T1>( boundValue + T1( 1 ) );
-                }
-                else
-                {
-                    constraint = _constraint;
-                    value = new Value<T1>( boundValue );
-                }
-                if( negative )
-                {
-                    result = newVar->addUpperBound( value, mDefaultBoundPosition, constraint );
-                }
-                else
-                {
-                    result = newVar->addLowerBound( value, mDefaultBoundPosition, constraint );
-                }
-                std::vector< const Bound<T1,T2>* >* boundVector = new std::vector< const Bound<T1,T2>* >();
-                boundVector->push_back( result.first );
-                mConstraintToBound[constraint] = boundVector;
-                if( _constraint->integerValued() && _constraint->relation() == Relation::NEQ )
-                {
-                    mConstraintToBound[_constraint]->push_back( result.first );
+                    
+                    boundVectorB->push_back( result.first );
+                    
+                    const Constraint* constraintGeq = newConstraint( _constraint->lhs(), Relation::GEQ );
+                    Value<T1>* valueC = new Value<T1>( boundValue );
+                    result = negative ? newVar->addUpperBound( valueC, mDefaultBoundPosition, constraintGeq ) : newVar->addLowerBound( valueC, mDefaultBoundPosition, constraintGeq );
+                    std::vector< const Bound<T1,T2>* >* boundVectorGeq = new std::vector< const Bound<T1,T2>* >();
+                    boundVectorGeq->push_back( result.first );
+                    mConstraintToBound[constraintGeq] = boundVectorGeq;
                     result.first->setNeqRepresentation( _constraint );
-                }
-                else
-                {  
-                    result.first->boundExists();
-                }
-            }
-            if( _constraint->relation() == Relation::LESS || _constraint->relation() == Relation::NEQ )
-            {
-                const Constraint* constraint;
-                if( _constraint->relation() != Relation::NEQ )
-                {
-                    constraint = _constraint;
-                }
-                else
-                {
-                    constraint = newConstraint( _constraint->lhs(), Relation::LESS );
-                }
-                Value<T1>* value = new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
-                if( negative )
-                {
-                    result = newVar->addLowerBound( value, mDefaultBoundPosition, constraint );
-                }
-                else
-                {
-                    result = newVar->addUpperBound( value, mDefaultBoundPosition, constraint );
-                }
-                std::vector< const Bound<T1,T2>* >* boundVector = new std::vector< const Bound<T1,T2>* >();
-                boundVector->push_back( result.first );
-                mConstraintToBound[constraint] = boundVector;
-                if( _constraint->relation() == Relation::NEQ )
-                {
-                    std::vector< const Bound<T1,T2>* >* boundVectorB = new std::vector< const Bound<T1,T2>* >();
+                    
+                    boundVectorB->push_back( result.first );
+                    
+                    const Constraint* constraintGreater = newConstraint( _constraint->lhs(), Relation::GREATER );
+                    Value<T1>* valueD = _constraint->integerValued() ? new Value<T1>( boundValue + T1( 1 ) ) : new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
+                    result = negative ? newVar->addUpperBound( valueD, mDefaultBoundPosition, constraintGreater ) : newVar->addLowerBound( valueD, mDefaultBoundPosition, constraintGreater );
+                    std::vector< const Bound<T1,T2>* >* boundVectorGreater = new std::vector< const Bound<T1,T2>* >();
+                    boundVectorGreater->push_back( result.first );
+                    mConstraintToBound[constraintGreater] = boundVectorGreater;
+                    result.first->setNeqRepresentation( _constraint );
+                    
                     boundVectorB->push_back( result.first );
                     mConstraintToBound[_constraint] = boundVectorB;
-                    result.first->setNeqRepresentation( _constraint );
-                }
-                else
-                {  
-                    result.first->boundExists();
-                }
-            }
-            if( _constraint->relation() == Relation::GREATER || _constraint->relation() == Relation::NEQ )
-            {
-                const Constraint* constraint;
-                if( _constraint->relation() != Relation::NEQ )
-                {
-                    constraint = _constraint;
-                }
-                else
-                {
-                    constraint = newConstraint( _constraint->lhs(), Relation::GREATER );
-                }
-                Value<T1>* value = new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
-                if( negative )
-                {
-                    result = newVar->addUpperBound( value, mDefaultBoundPosition, constraint );
-                }
-                else
-                {
-                    result = newVar->addLowerBound( value, mDefaultBoundPosition, constraint );
-                }
-                std::vector< const Bound<T1,T2>* >* boundVector = new std::vector< const Bound<T1,T2>* >();
-                boundVector->push_back( result.first );
-                mConstraintToBound[constraint] = boundVector;
-                if( _constraint->relation() == Relation::NEQ )
-                {
-                    mConstraintToBound[_constraint]->push_back( result.first );
-                    result.first->setNeqRepresentation( _constraint );
-                }
-                else
-                {
-                    result.first->boundExists();
+                    break;
                 }
             }
             return result;
@@ -1543,10 +1492,17 @@ FindPivot:
             assert( _rowEntry != LAST_ENTRY_ID );
             const Variable<T1,T2>& basicVar = *((*mpEntries)[_rowEntry].rowVar());
             // Upper bound is violated
-            std::vector< const Bound<T1, T2>* > conflict = std::vector< const Bound<T1, T2>* >();
+            std::vector< const Bound<T1, T2>* > conflict;
             if( basicVar.supremum() < basicVar.assignment() )
             {
-                conflict.push_back( basicVar.pSupremum() );
+                auto iter = basicVar.upperbounds().rbegin();
+                while( *iter != basicVar.pSupremum() && iter != basicVar.upperbounds().rend() )
+                {
+                    if( (*iter)->isActive() && **iter < basicVar.assignment() )
+                        break;
+                    ++iter;
+                }
+                conflict.push_back( *iter );
                 // Check all entries in the row / basic variables
                 Iterator rowIter = Iterator( basicVar.startEntry(), mpEntries );
                 while( true )
@@ -1579,7 +1535,14 @@ FindPivot:
             else
             {
                 assert( basicVar.infimum() > basicVar.assignment() );
-                conflict.push_back( basicVar.pInfimum() );
+                auto iter = basicVar.lowerbounds().begin();
+                while( *iter != basicVar.pInfimum() && iter != basicVar.lowerbounds().end() )
+                {
+                    if( (*iter)->isActive() && **iter > basicVar.assignment() )
+                        break;
+                    ++iter;
+                }
+                conflict.push_back( *iter );
                 // Check all entries in the row / basic variables
                 Iterator rowIter = Iterator( basicVar.startEntry(), mpEntries );
                 while( true )

@@ -743,7 +743,7 @@ namespace smtrat
              * to resolve the negation in front of them, or to keep the constraints and leave 
              * the negation.
              */
-            const Formula* resolveNegation( bool _keepConstraints = true ) const;
+            const Formula* resolveNegation( bool _keepConstraints = true, bool _splitLinearNotEquals = false ) const;
             
             /**
              * [Auxiliary method]
@@ -771,7 +771,7 @@ namespace smtrat
              *                          resolve constraints p!=0 to (or p<0 p>0) and to resolve negations in
              *                          front of constraints, e.g., (not p<0) gets p>=0.
              */
-            const Formula* toCNF( bool _keepConstraints = true ) const;
+            const Formula* toCNF( bool _keepConstraints = true, bool _splitLinearNotEquals = false ) const;
             
             const Formula* substitute( const std::map<carl::Variable, Polynomial>& _arithmeticSubstitutions ) const
             {
