@@ -187,8 +187,8 @@ namespace smtrat
                                 mActiveResolvedNEQConstraints.insert( pair< const Constraint*, Context >( constraint, context ) );
                                 if( (*bounds)[1]->isActive() || (*bounds)[2]->isActive() )
                                 {
-                                    int numA = (*bounds)[1]->isActive() ? 1 : 2;
-                                    int numB = (*bounds)[1]->isActive() ? 0 : 3;
+                                    size_t numA = (*bounds)[1]->isActive() ? 1 : 2;
+                                    size_t numB = (*bounds)[1]->isActive() ? 0 : 3;
                                     PointerSet<Formula> involvedConstraints;
                                     PointerSet<Formula> originSet;
                                     originSet.insert( *_subformula );
