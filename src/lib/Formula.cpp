@@ -51,7 +51,7 @@ namespace smtrat
         mProperties()
     {}
     
-    Formula::Formula( const carl::Variable::Arg _boolean ):
+    Formula::Formula( carl::Variable::Arg _boolean ):
         mDeducted( false ),
         mHash( (size_t)_boolean.getId() ), // TODO: subtract the id of the boolean variable with the smallest id
         mId( 0 ),
