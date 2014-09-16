@@ -77,7 +77,7 @@ namespace smtrat {
 			if (a.isSqrtEx()) {
 				return false;
 			} else if (a.isRAN()) {
-				return carl::Equal<smtrat::Rational>()(this->asRAN(), a.asRAN());
+				return std::equal_to<carl::RealAlgebraicNumberPtr<smtrat::Rational>>()(this->asRAN(), a.asRAN());
 			}
 		}
 		return false;

@@ -128,7 +128,7 @@ namespace smtrat
              * @param _booleanVarName The pointer to the string representing the name of the Boolean variable.
              * @param _id A unique id of the formula to create.
              */
-            Formula( const carl::Variable::Arg _boolean );
+            Formula( carl::Variable::Arg _boolean );
             
             /**
              * Constructs a formula being a constraint.
@@ -428,7 +428,7 @@ namespace smtrat
              * @return The name of the Boolean variable represented by this formula. Note, that
              *          this formula has to be of type BOOL, if you invoke this method.
              */
-            const carl::Variable::Arg boolean() const
+            carl::Variable::Arg boolean() const
             {
                 assert( mType == BOOL );
                 return mBoolean;

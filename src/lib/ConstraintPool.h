@@ -26,12 +26,14 @@
  * @author Ulrich Loup
  * @version 2013-10-21
  */
-#include "Constraint.h"
-#include "datastructures/vs/SqrtEx.h"
-#include <mutex>
 
 #ifndef CONSTRAINTPOOL_H
 #define CONSTRAINTPOOL_H
+
+#include "Common.h"
+#include "Constraint.h"
+#include "datastructures/vs/SqrtEx.h"
+#include <mutex>
 
 namespace smtrat
 {
