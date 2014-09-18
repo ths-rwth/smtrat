@@ -342,7 +342,7 @@ namespace smtrat
                         && (*cond)->constraint().relation() == Relation::NEQ )
                     {
                         // Split the neq-constraint in a preceeding sat module (make sure that it is there in your strategy when choosing this vssetting)
-                        splitUnequalConstraint( (*cond)->pConstraint() );
+                        splitUnequalConstraint( newFormula( (*cond)->pConstraint() ) );
                         assert( currentState->isRoot() );
                         return foundAnswer( Unknown );
                     }
@@ -1955,7 +1955,7 @@ namespace smtrat
             vec_set_const_pFormula origins;
             const Formula* formula = newFormula( iter->first );
             _formulaCondMap[formula] = iter->second;
-            addConstraintToInform( iter->first );
+            addConstraintToInform( formula );
             addSubformulaToPassedFormula( formula, move( origins ) );
         }
         return changedPassedFormula;

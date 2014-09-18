@@ -25,8 +25,7 @@
  * @version 2013-10-22
  */
 
-#ifndef SMTRAT_VS_SQRTEX_H
-#define SMTRAT_VS_SQRTEX_H
+#pragma once
 
 #include <iostream>
 #include <assert.h>
@@ -228,10 +227,17 @@ namespace vs
 
 namespace std
 {
+    /**
+     * Implements std::hash for square root expressions.
+     */
     template<>
     struct hash<vs::SqrtEx>
     {
     public:
+        /**
+         * @param _sqrtEx The square root expression to get the hash for.
+         * @return The hash of the given square root expression.
+         */
         size_t operator()( const vs::SqrtEx& _sqrtEx ) const 
         {
             return ((hash<smtrat::Polynomial>()(_sqrtEx.radicand()) ^ hash<smtrat::Polynomial>()(_sqrtEx.denominator())) ^ hash<smtrat::Polynomial>()(_sqrtEx.factor())) ^ hash<smtrat::Polynomial>()(_sqrtEx.constantPart());
@@ -239,4 +245,3 @@ namespace std
     };
 } // namespace std
 
-#endif

@@ -34,9 +34,6 @@ namespace vs
 {
     using namespace std;
 
-    /**
-     * Constructors:
-     */
     SqrtEx::SqrtEx():
         mConstantPart( smtrat::ZERO_RATIONAL ),
         mFactor( smtrat::ZERO_RATIONAL ),

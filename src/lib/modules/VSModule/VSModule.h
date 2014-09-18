@@ -25,8 +25,7 @@
  * Created on January 18, 2012, 3:45 PM
  */
 
-#ifndef SMTRAT_VSMODULE_H
-#define SMTRAT_VSMODULE_H
+#pragma once
 
 #define VS_INCREMENTAL
 #define VS_INFEASIBLE_SUBSET_GENERATION
@@ -35,6 +34,7 @@
 //#define VS_PRINT_ANSWERS
 //#define VS_LOG_INTERMEDIATE_STEPS
 
+#include "../../Constraint.h"
 #include "Substitute.h"
 #include "State.h"
 #include "VSSettings.h"
@@ -127,4 +127,3 @@ namespace smtrat
 
 #include "VSModule.tpp"
 
-#endif   /** VSMODULE_H */

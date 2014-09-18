@@ -27,8 +27,7 @@
  * @version 2011-12-05
  */
 
-#ifndef SMTRAT_VS_CONDITION_H
-#define SMTRAT_VS_CONDITION_H
+#pragma once
 
 #include <set>
 #include "../../Formula.h"
@@ -120,5 +119,3 @@ namespace vs
     };
 
 }    // end namspace vs
-
-#endif

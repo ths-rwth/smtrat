@@ -63,10 +63,6 @@ namespace smtrat
             mThreads.pop_back();
     }
 
-    /**
-     * 
-     * @param _threadId
-     */
     void ThreadPool::consumeBackend( unsigned _threadId )
     {
         thread_priority nextThreadPriority;
@@ -93,10 +89,6 @@ namespace smtrat
         }
     }
 
-    /**
-     * 
-     * @param _pModule
-     */
     void ThreadPool::checkBackendPriority( Module* _pModule )
     {
         assert(mNumberOfRunningThreads <= mNumberOfCores);
@@ -122,11 +114,6 @@ namespace smtrat
         }
     }
 
-    /**
-     * 
-     * @param _pModule
-     * @return 
-     */
     std::future<Answer> ThreadPool::submitBackend( Module* _pModule )
     {
         assert(mNumberOfRunningThreads <= mNumberOfCores);

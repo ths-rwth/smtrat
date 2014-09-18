@@ -68,7 +68,6 @@ namespace smtrat
 
         protected:
             void setDifficulty( Formula* formula, bool invert = false );
-            Formula* splitProductConstraints( Formula* );
             void rewritePotentialInequalities( Formula* formula, bool invert = false );
             void assignActivitiesToPassedFormula();
             void addLinearDeductions( Formula* formula );

@@ -167,7 +167,7 @@ namespace smtrat
             ~ICPModule();
 
             // Interfaces.
-            bool inform( const Constraint* const );
+            bool inform( const Formula* );
             bool assertSubformula( ModuleInput::const_iterator );
             void removeSubformula( ModuleInput::const_iterator );
             Answer isConsistent();
@@ -244,7 +244,7 @@ namespace smtrat
              * @param _constraint
              * @param _origin
              */
-            void createLinearCCs( const Constraint* _constraint, const Formula* _origin );
+            void createLinearCCs( const Formula* _constraint, const Formula* _origin );
             
             /**
              * Initiates weights for contractions   

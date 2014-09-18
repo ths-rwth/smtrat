@@ -18,7 +18,6 @@
  * along with SMT-RAT. If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
 /**
  * @file Manager.cpp
  *
@@ -33,6 +32,7 @@
 #include "Manager.h"
 #include "StrategyGraph.h"
 #include "modules/Modules.h"
+#include <functional>
 
 #include <typeinfo>
 #include <cln/cln.h>
@@ -69,8 +69,9 @@ namespace smtrat
         mGeneratedModules.push_back( mpPrimaryBackend );
         mpModuleFactories = new map<const ModuleType, ModuleFactory*>();
         // inform it about all constraints
-        for( auto constraint = constraintPool().begin(); constraint != constraintPool().end(); ++constraint )
-            mpPrimaryBackend->inform( (*constraint) );
+        typedef void (*Func)( Module*, const Formula* );
+        Func f = [] ( Module* _module, const Formula* _constraint ) { _module->inform( _constraint ); };
+        FormulaPool::getInstance().forallDo<Module>( f, mpPrimaryBackend );
     }
 
     // Destructor.
@@ -110,9 +111,6 @@ namespace smtrat
     // Methods.
 
     #ifdef SMTRAT_STRAT_PARALLEL_MODE
-    /**
-     * Initializes some members of the manager, which are only needed for supporting parallel module calls.
-     */
     void Manager::initialize()
     {
         mNumberOfBranches = mStrategyGraph.numberOfBranches();
@@ -131,10 +129,6 @@ namespace smtrat
     }
     #endif
     
-    /**
-     * Prints the so far added formulas.
-     * @param _out The stream to print on.
-     */
     void Manager::printAssertions( ostream& _out ) const
     {
         _out << "(";
@@ -152,10 +146,6 @@ namespace smtrat
         _out << ")" << endl;
     }
 
-    /**
-     * Prints the first found infeasible subset of the set of received formulas.
-     * @param _out The stream to print on.
-     */
     void Manager::printInfeasibleSubset( ostream& _out ) const
     {
         _out << "(";
@@ -177,16 +167,6 @@ namespace smtrat
         _out << ")" << endl;
     }
     
-    /**
-     * Get the backends to call for the given problem instance required by the given module.
-     *
-     * @param _formula     The problem instance.
-     * @param _requiredBy  The module asking for a backend.
-     * @param _foundAnswer A conditional
-     *
-     * @return  A vector of modules, which the module defined by _requiredBy calls in parallel to achieve
-     *           an answer to the given instance.
-     */
     vector<Module*> Manager::getBackends( Module* _requiredBy, atomic_bool* _foundAnswer )
     {
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
@@ -237,21 +217,12 @@ namespace smtrat
     }
 
     #ifdef SMTRAT_STRAT_PARALLEL_MODE
-    /**
-     * 
-     * @param _pModule
-     * @return
-     */
     std::future<Answer> Manager::submitBackend( Module* _pModule )
     {
         assert( mRunsParallel );
         return mpThreadPool->submitBackend( _pModule );
     }
 
-    /**
-     * 
-     * @param _pModule
-     */
     void Manager::checkBackendPriority( Module* _pModule )
     {
         assert( mRunsParallel );

@@ -29,16 +29,12 @@
 
 #include "PreprocessingModule.h"
 #include "../../../solver/ExitCodes.h"
-#include "../../misc/VS_Tools.hpp"
 #include <limits.h>
 #include <bits/stl_map.h>
 
 //#define REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION (Not working)
 //#define ADDLINEARDEDUCTIONS
 //#define PREPROCESSING_DEVELOP_MODE
-#ifdef SMTRAT_DEVOPTION_Statistics
-#define PREPROCESSING_FACTORIZATION
-#endif
 
 namespace smtrat {
 PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
@@ -79,17 +75,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         Formula::const_iterator receivedSubformula = firstUncheckedReceivedSubformula();
         while( receivedSubformula != mpReceivedFormula->end() )
         {
-            #ifdef PREPROCESSING_FACTORIZATION
-            Formula* formulaToAssert = new Formula( **receivedSubformula );
-            // Split constraints over polynomials being products.
-            Formula* afterProductSplitting = splitProductConstraints( formulaToAssert );
-            if( afterProductSplitting != formulaToAssert )
-            {
-                delete formulaToAssert;
-            }
-            #else
             Formula* afterProductSplitting = new Formula( **receivedSubformula );
-            #endif
             // Inequations are transformed.
             rewritePotentialInequalities( afterProductSplitting );
             #ifdef ADDLINEARDEDUCTIONS
@@ -150,83 +136,6 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
     void PreprocessingModule::removeSubformula( Formula::const_iterator _subformula )
     {
         Module::removeSubformula( _subformula );
-    }
-
-    /**
-     *
-     * @param formula
-     */
-    Formula* PreprocessingModule::splitProductConstraints( Formula* _formula )
-    {
-        if( _formula->getType() == CONSTRAINT )
-        {
-            #ifdef SMTRAT_DEVOPTION_Validation
-            Formula assumption = Formula( NOT );
-            Formula* iffFormula = new Formula( IFF );
-            iffFormula->addSubformula( new Formula( *_formula ) );
-            #endif
-            Formula* result;
-            vs::DisjunctionOfConstraintConjunctions splittedForm = vs::splitProducts( _formula->pConstraint() );
-            if( splittedForm.empty() )
-            {
-                result = new Formula( smtrat::FFALSE );
-            }
-            else if( splittedForm.size() == 1 )
-            {
-                assert( !splittedForm.back().empty() );
-                if( splittedForm.back().size() == 1 )
-                {
-                    result = new Formula( splittedForm.back().back() );
-                }
-                else
-                {
-                    result = new Formula( AND );
-                    for( auto cons = splittedForm.back().begin(); cons != splittedForm.back().end(); ++cons )
-                    {
-                        result->addSubformula( *cons );
-                    }
-                }
-            }
-            else
-            {
-                result = new Formula( OR );
-                for( auto conj = splittedForm.begin(); conj != splittedForm.end(); ++conj )
-                {
-                    assert( !conj->empty() );
-                    if( conj->size() == 1 )
-                    {
-                        result->addSubformula( conj->back() );
-                    }
-                    else
-                    {
-                        Formula* conjunction = new Formula( AND );
-                        result->addSubformula( conjunction );
-                        for( auto cons = conj->begin(); cons != conj->end(); ++cons )
-                        {
-                            conjunction->addSubformula( *cons );
-                        }
-                    }
-                }
-            }
-            #ifdef SMTRAT_DEVOPTION_Validation
-            iffFormula->addSubformula( new Formula( *result ) );
-            assumption.addSubformula( iffFormula );
-            Module::addAssumptionToCheck( assumption, false, "FactorizationInPreprocessing" );
-            #endif
-            return result;
-        }
-        else if( _formula->isBooleanCombination() )
-        {
-            for( auto subFormula = _formula->begin(); subFormula != _formula->end(); ++subFormula )
-            {
-                Formula* result = splitProductConstraints( *subFormula );
-                if( result != *subFormula )
-                {
-                    subFormula = _formula->replace( subFormula, result );
-                }
-            }
-        }
-        return _formula;
     }
 
     /**

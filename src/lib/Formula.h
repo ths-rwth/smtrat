@@ -45,45 +45,93 @@
 
 namespace smtrat
 {
+    /// The possible types of a formula.
     enum Type { AND, OR, NOT, IFF, XOR, IMPLIES, ITE, BOOL, CONSTRAINT, TTRUE, FFALSE, EXISTS, FORALL };
     
+    /**
+     * The formula class.
+     */
     class Formula
     {
         friend class FormulaPool;
         
         public:
-            typedef PointerSet<Formula>::const_iterator         const_iterator;
+            /// A constant iterator to a sub-formula of a formula.
+            typedef PointerSet<Formula>::const_iterator const_iterator;
+            /// A constant reverse iterator to a sub-formula of a formula.
             typedef PointerSet<Formula>::const_reverse_iterator const_reverse_iterator;
             
         private:
             
+            /**
+             * Stores the sub-formulas of a formula being an implication.
+             */
             struct IMPLIESContent
             {
+                /// The premise of the implication.
                 const Formula* mpPremise;
+                /// The conclusion of the implication.
                 const Formula* mpConlusion;
                 
+                /**
+                 * Constructs the content of a formula being an implication.
+                 * @param _premise The premise of the implication.
+                 * @param _conclusion The conclusion of the implication.
+                 */
                 IMPLIESContent( const Formula* _premise, const Formula* _conclusion): 
                     mpPremise( _premise ), mpConlusion( _conclusion ) {}
             };
             
+            /**
+             * Stores the sub-formulas of a formulas being an if-then-else expression of formulas.
+             */
             struct ITEContent
             {
+                /// The condition of the if-then-else expression.
                 const Formula* mpCondition;
+                /// The then-case of the if-then-else expression.
                 const Formula* mpThen;
+                /// The else-case of if-then-else expression.
                 const Formula* mpElse;
                 
+                /**
+                 * Constructs the content of a formula being an implication.
+                 * @param _condition The condition of the if-then-else expression.
+                 * @param _then The then-case of the if-then-else expression.
+                 * @param _else The else-case of if-then-else expression.
+                 */
                 ITEContent( const Formula* _condition, const Formula* _then, const Formula* _else ): 
                     mpCondition( _condition ), mpThen( _then ), mpElse( _else ) {}
             };
 
+            /**
+             * Stores the variables and the formula bound by a quantifier.
+             */
 			struct QuantifierContent
 			{
+                /// The quantified variables.
 				std::vector<carl::Variable> mVariables;
+                /// The formula bound by this quantifier.
 				const Formula* mpFormula;
-				QuantifierContent(const std::vector<carl::Variable>&& vars, const Formula* formula):
-					mVariables(vars), mpFormula(formula) {}
-				bool operator==(const QuantifierContent& qc) {
-					return (this->mVariables == qc.mVariables) && (this->mpFormula == qc.mpFormula);
+                
+                /**
+                 * Constructs the content of a quantified formula.
+                 * @param _vars The quantified variables.
+                 * @param _formula The formula bound by this quantifier.
+                 */
+				QuantifierContent( const std::vector<carl::Variable>&& _vars, const Formula* _formula ):
+					mVariables( _vars ), 
+                    mpFormula( _formula )
+                {}
+                
+                /**
+                 * Checks this content of a quantified formula and the given content of a quantified formula is equal.
+                 * @param _qc The content of a quantified formula to check for equality.
+                 * @return true, if this content of a quantified formula and the given content of a quantified formula is equal.
+                 */
+				bool operator==( const QuantifierContent& _qc )
+                {
+					return (this->mVariables == _qc.mVariables) && (this->mpFormula == _qc.mpFormula);
 				}
 			};
 
@@ -105,12 +153,19 @@ namespace smtrat
             /// The content of this formula.
             union
             {
+                /// The only sub-formula, in case this formula is an negation.
                 const Formula*       mpSubformula;
+                /// The premise and conclusion, in case this formula is an implication.
                 IMPLIESContent*      mpImpliesContent;
+                /// The condition, then- and else-case, in case this formula is an ite-expression of formulas.
                 ITEContent*          mpIteContent;
+                /// The quantifed variables and the bound formula, in case this formula is a quantified formula.
 				QuantifierContent*	 mpQuantifierContent;
+                /// The subformulas, in case this formula is a n-nary operation as AND, OR, IFF or XOR.
                 PointerSet<Formula>* mpSubformulas;
+                /// The constraint, in case this formulas wraps a constraint.
                 const Constraint*    mpConstraint;
+                /// The Boolean variables, in case this formula wraps a Boolean variable.
                 carl::Variable       mBoolean;
             };
             /// The propositions of this formula.
@@ -304,90 +359,135 @@ namespace smtrat
                 collectVariables( _booleanVars, carl::VariableType::VT_BOOL );
             }
             
+            /**
+             * @return A pointer to the only sub-formula, in case this formula is an negation.
+             */
             const Formula* pSubformula() const
             {
                 assert( mType == NOT );
                 return mpSubformula;
             }
             
+            /**
+             * @return A constant reference to the only sub-formula, in case this formula is an negation.
+             */
             const Formula& subformula() const
             {
                 assert( mType == NOT );
                 return *mpSubformula;
             }
             
+            /**
+             * @return A pointer to the premise, in case this formula is an implication.
+             */
             const Formula* pPremise() const
             {
                 assert( mType == IMPLIES );
                 return mpImpliesContent->mpPremise;
             }
             
+            /**
+             * @return A constant reference to the premise, in case this formula is an implication.
+             */
             const Formula& premise() const
             {
                 assert( mType == IMPLIES );
                 return *mpImpliesContent->mpPremise;
             }
             
+            /**
+             * @return A pointer to the conclusion, in case this formula is an implication.
+             */
             const Formula* pConclusion() const
             {
                 assert( mType == IMPLIES );
                 return mpImpliesContent->mpConlusion;
             }
             
+            /**
+             * @return A constant reference to the conclusion, in case this formula is an implication.
+             */
             const Formula& conclusion() const
             {
                 assert( mType == IMPLIES );
                 return *mpImpliesContent->mpConlusion;
             }
             
+            /**
+             * @return A pointer to the condition, in case this formula is an ite-expression of formulas.
+             */
             const Formula* pCondition() const
             {
                 assert( mType == ITE );
                 return mpIteContent->mpCondition;
             }
             
+            /**
+             * @return A constant reference to the condition, in case this formula is an ite-expression of formulas.
+             */
             const Formula& condition() const
             {
                 assert( mType == ITE );
                 return *mpIteContent->mpCondition;
             }
             
+            /**
+             * @return A pointer to the then-case, in case this formula is an ite-expression of formulas.
+             */
             const Formula* pFirstCase() const
             {
                 assert( mType == ITE );
                 return mpIteContent->mpThen;
             }
             
+            /**
+             * @return A constant reference to the then-case, in case this formula is an ite-expression of formulas.
+             */
             const Formula& firstCase() const
             {
                 assert( mType == ITE );
                 return *mpIteContent->mpThen;
             }
             
+            /**
+             * @return A pointer to the else-case, in case this formula is an ite-expression of formulas.
+             */
             const Formula* pSecondCase() const
             {
                 assert( mType == ITE );
                 return mpIteContent->mpElse;
             }
             
+            /**
+             * @return A constant reference to the else-case, in case this formula is an ite-expression of formulas.
+             */
             const Formula& secondCase() const
             {
                 assert( mType == ITE );
                 return *mpIteContent->mpElse;
             }
 
+            /**
+             * @return A constant reference to the quantifed variables, in case this formula is a quantified formula.
+             */
 			const std::vector<carl::Variable>& quantifiedVariables() const
 			{
 				assert( mType == Type::EXISTS || mType == Type::FORALL );
 				return mpQuantifierContent->mVariables;
 			}
 
+            /**
+             * @return A pointer to the bound formula, in case this formula is a quantified formula.
+             */
 			const Formula* pQuantifiedFormula() const
 			{
 				assert( mType == Type::EXISTS || mType == Type::FORALL );
 				return mpQuantifierContent->mpFormula;
 			}
 
+            /**
+             * @return A constant reference to the bound formula, in case this formula is a quantified formula.
+             */
 			const Formula& quantifiedFormula() const
 			{
 				assert( mType == Type::EXISTS || mType == Type::FORALL );
@@ -527,6 +627,12 @@ namespace smtrat
                     return **(mpSubformulas->end());
             }
             
+            /**
+             * Checks if the given property holds for this formula. (Very cheap operation which only relies on bit checks)
+             * @param _property The property to check this formula for.
+             * @return true, if the given property holds for this formula;
+             *         false, otherwise.
+             */
             bool propertyHolds( const Condition& _property ) const
             {
                 return (mProperties | ~_property) == ~PROP_TRUE;
@@ -685,8 +791,6 @@ namespace smtrat
              */
             void addConstraintProperties( const Constraint& _constraint );
             
-            void initBooleans();
-            
         public:
             
             /**
@@ -743,7 +847,7 @@ namespace smtrat
              * to resolve the negation in front of them, or to keep the constraints and leave 
              * the negation.
              */
-            const Formula* resolveNegation( bool _keepConstraints = true, bool _splitLinearNotEquals = false ) const;
+            const Formula* resolveNegation( bool _keepConstraints = true ) const;
             
             /**
              * [Auxiliary method]
@@ -771,40 +875,93 @@ namespace smtrat
              *                          resolve constraints p!=0 to (or p<0 p>0) and to resolve negations in
              *                          front of constraints, e.g., (not p<0) gets p>=0.
              */
-            const Formula* toCNF( bool _keepConstraints = true, bool _splitLinearNotEquals = false ) const;
+            const Formula* toCNF( bool _keepConstraints = true, bool _simplifyConstraintCombinations = true ) const;
             
+            /**
+             * Substitutes all occurrences of the given arithmetic variables in this formula by the given polynomials.
+             * @param _arithmeticSubstitutions A substitution-mapping of arithmetic variables to polynomials.
+             * @return The resulting formula after substitution.
+             */
             const Formula* substitute( const std::map<carl::Variable, Polynomial>& _arithmeticSubstitutions ) const
             {
                 std::map<carl::Variable, const Formula*> booleanSubstitutions;
                 return substitute( booleanSubstitutions, _arithmeticSubstitutions );
             }
             
+            /**
+             * Substitutes all occurrences of the given Boolean variables in this formula by the given formulas.
+             * @param _booleanSubstitutions A substitution-mapping of Boolean variables to formulas.
+             * @return The resulting formula after substitution.
+             */
             const Formula* substitute( const std::map<carl::Variable, const Formula*>& _booleanSubstitutions ) const
             {
                 std::map<carl::Variable, Polynomial> arithmeticSubstitutions;
                 return substitute( _booleanSubstitutions, arithmeticSubstitutions );
             }
             
+            /**
+             * Substitutes all occurrences of the given Boolean and arithmetic variables in this formula by the given formulas resp. polynomials.
+             * @param _booleanSubstitutions A substitution-mapping of Boolean variables to formulas.
+             * @param _arithmeticSubstitutions A substitution-mapping of arithmetic variables to polynomials.
+             * @return The resulting formula after substitution.
+             */
             const Formula* substitute( const std::map<carl::Variable, const Formula*>& _booleanSubstitutions, const std::map<carl::Variable,Polynomial>& _arithmeticSubstitutions ) const;
             
-            struct IteratorCompare
-            {
-                bool operator() ( const_iterator i1, const_iterator i2 ) const
-                {
-                    return (**i1) < (**i2);
-                }
-            };
+            /// A map from formula pointers to a map of rationals to a pair of a constraint relation and a formula pointer. (internally used)
+            typedef FastPointerMap<Polynomial, std::map<Rational, std::pair<Relation, const Formula*>>> ConstraintBounds;
+            
+            /**
+             * Adds the bound to the bounds of the polynomial specified by this constraint. E.g., if the constraint is p+b~0, where p is a sum 
+             * of terms, being a rational (actually integer) coefficient times a non-trivial (!=1) monomial( product of variables to the power 
+             * of an exponent), b is a rational and ~ is any constraint relation. Furthermore, the leading coefficient of p is 1. Then we add
+             * the bound -b to the bounds of p (means that p ~ -b) stored in the given constraint bounds.
+             * @param _constraintBounds An object collecting bounds of polynomials.
+             * @param _constraint The constraint to find a bound for a polynomial for.
+             * @param _inConjunction true, if the constraint is part of a conjunction.
+             *                       false, if the constraint is part of a disjunction.
+             * @return true, if the yet determined bounds imply that the conjunction (_inConjunction == true) or disjunction 
+             *                (_inConjunction == false) of which we got the given constraint is invalid resp. valid;
+             *         false, otherwise.
+             */
+            static bool addConstraintBound( ConstraintBounds& _constraintBounds, const Formula* _constraint, bool _inConjunction );
+            
+            /**
+             * Stores for every polynomial for which we determined bounds for given constraints a minimal set of constraints
+             * representing these bounds into the given set of sub-formulas of a conjunction (_inConjunction == true) or disjunction 
+             * (_inConjunction == false) to construct.
+             * @param _constraintBounds An object collecting bounds of polynomials.
+             * @param _intoFormulas A set of sub-formulas of a conjunction (_inConjunction == true) or disjunction (_inConjunction == false) to construct.
+             * @param _inConjunction true, if constraints representing the polynomial's bounds are going to be part of a conjunction.
+             *                       false, if constraints representing the polynomial's bounds are going to be part of a disjunction.
+             * @return true, if the yet added bounds imply that the conjunction (_inConjunction == true) or disjunction 
+             *                (_inConjunction == false) to which the bounds are added is invalid resp. valid;
+             *         false, otherwise.
+             */
+            static bool swapConstraintBounds( ConstraintBounds& _constraintBounds, PointerSet<Formula>& _intoFormulas, bool _inConjunction );
     };
     
+    /**
+     * Prints the given formula on the given stream.
+     * @param _out The stream to print the given formula on.
+     * @param _formula The formula to print.
+     * @return The stream after printing the given formula on it.
+     */
     std::ostream& operator<<( std::ostream& _out, const Formula& _formula );
 }    // namespace smtrat
 
 namespace std
 {
+    /**
+     * Implements std::hash for formulas.
+     */
     template<>
     struct hash<smtrat::Formula>
     {
     public:
+        /**
+         * @param _formula The formula to get the hash for.
+         * @return The hash of the given formula.
+         */
         size_t operator()( const smtrat::Formula& _formula ) const 
         {
             return _formula.getHash();

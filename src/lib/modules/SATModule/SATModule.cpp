@@ -586,7 +586,7 @@ namespace smtrat
                 {
                     if( abstr.origins->empty() )
                     {
-                        addConstraintToInform( abstr.constraint->pConstraint() );
+                        addConstraintToInform( abstr.constraint );
                         if( (sign(constraintLiteralPair->second.front()) && assigns[var( constraintLiteralPair->second.front() )] == l_False)
                             || (!sign(constraintLiteralPair->second.front()) && assigns[var( constraintLiteralPair->second.front() )] == l_True) )
                         {
@@ -628,12 +628,12 @@ namespace smtrat
                 if( negated )
                 {
                     mBooleanConstraintMap.last().second.origins->insert( make_pair( _origin, 0 ) );
-                    addConstraintToInform( invertedConstraint->pConstraint() );
+                    addConstraintToInform( invertedConstraint );
                 }
                 else
                 {
                     mBooleanConstraintMap.last().first.origins->insert( make_pair( _origin, 0 ) );
-                    addConstraintToInform( constraint->pConstraint() );
+                    addConstraintToInform( constraint );
                 }
                 // create a literal for the constraint and its negation
                 Lit litPositive = mkLit( constraintAbstraction, false );
@@ -2286,16 +2286,16 @@ NextClause:
             Abstraction& abstr = assigns[i] == l_True ? mBooleanConstraintMap[i].first : mBooleanConstraintMap[i].second;
             if( abstr.constraint != NULL )
             {
-                const Constraint* pconstr = abstr.constraint->pConstraint();
-                unsigned constraintConsistency = pconstr->isConsistent();
+                const Constraint& constr = abstr.constraint->constraint();
+                unsigned constraintConsistency = constr.isConsistent();
                 if( constraintConsistency == 0 )
                 {
                     ok = false;
                     return false;
                 }
-                else if( pconstr->relation() != Relation::NEQ && pconstr->lhs().isLinear() && constraintConsistency == 2 )
+                else if( constr.relation() != Relation::NEQ && constr.lhs().isLinear() && constraintConsistency == 2 )
                 {
-                    std::pair<const lra::Bound<carl::Numeric<Rational>,carl::Numeric<Rational>>*, bool> res = tableau.newBound( pconstr );
+                    std::pair<const lra::Bound<carl::Numeric<Rational>,carl::Numeric<Rational>>*, bool> res = tableau.newBound( abstr.constraint );
                     if( res.second )
                     {
                         PointerSet<Formula> originSet;
@@ -2358,7 +2358,7 @@ NextClause:
                         mConstraintLiteralMap[newNegation( subResult )] = consLitPair->second;
                         Abstraction& abstr = negativeLiteral ? mBooleanConstraintMap[var( consLitPair->second.front() )].second : mBooleanConstraintMap[var( consLitPair->second.front() )].first;
                         if( !abstr.origins->empty() )
-                            informBackends( subResult->pConstraint() );
+                            informBackends( subResult );
                         for( auto var = subResult->constraint().variables().begin(); var != subResult->constraint().variables().end(); ++var )
                         {
                             mVarOccurrences[*var].insert( subResult );

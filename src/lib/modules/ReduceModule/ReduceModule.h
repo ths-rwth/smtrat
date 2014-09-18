@@ -46,7 +46,7 @@ namespace smtrat
             ~ReduceModule();
 
             // Main interfaces.
-            bool inform( const Constraint* const );
+            bool inform( const Formula* );
             bool assertSubformula( Formula::const_iterator );
             void removeSubformula( Formula::const_iterator );
             void updateModel();

@@ -24,14 +24,12 @@
  * @version 2013-10-24
  */
 
-#ifndef SMTRAT_VS_STATE_H
-#define SMTRAT_VS_STATE_H
+#pragma once
 
 #include <map>
 #include <limits.h>
-#include "Substitution.h"
-#include "../../misc/VS_Tools.hpp"
 #include "config.h"
+#include "Substitution.h"
 #include "../../VariableBounds.h"
 #ifdef SMTRAT_VS_VARIABLEBOUNDS
 #define SMTRAT_VS_VARIABLEBOUNDS_B
@@ -1096,4 +1094,3 @@ namespace vs
         static size_t coveringSet( const ConditionSetSetSet& _conflictSets, std::set<const Condition*>& _minCovSet, unsigned _currentTreeDepth );
     };
 } // end namspace vs
-#endif

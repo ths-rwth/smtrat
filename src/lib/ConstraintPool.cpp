@@ -54,9 +54,6 @@ namespace smtrat
         mIdAllocator = 3;
     }
 
-    /**
-     * Destructor of the constraint pool.
-     */
     ConstraintPool::~ConstraintPool()
     {
         mConstraints.erase( mConsistentConstraint );

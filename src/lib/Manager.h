@@ -49,7 +49,9 @@ namespace smtrat
     // Forward declaration to speed up compile-time.
     class Constraint;
     
-    // Base class for solvers. This is the interface to the user.
+    /**
+     * Base class for solvers. This is the interface to the user.
+     **/
     class Manager
     {
         friend class Module;
@@ -79,10 +81,10 @@ namespace smtrat
             std::ostream mDebugOutputChannel;
 			/// quantified variables
 			QuantifierManager mQuantifierManager;
-            /// the logic this solver 
+            /// the logic this solver considers
             Logic mLogic;
             #ifdef SMTRAT_DEVOPTION_Statistics
-            ///
+            /// Stores all statistics for the solver this manager belongs to.
             GeneralStatistics* mpStatistics;
             #endif
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
@@ -97,11 +99,21 @@ namespace smtrat
             /// a mutex for exclusive access of the backends to members of this state
             mutable std::mutex mBackendsMutex;
 
+            /**
+             * Initializes some members of the manager, which are only needed for supporting parallel module calls.
+             */
             void initialize();
             #endif
 
         public:
+            /**
+             * Constructs a manager.
+             */
             Manager();
+            
+            /**
+             * Destructs a manager.
+             */
             ~Manager();
 
             // Main interfaces
@@ -115,7 +127,7 @@ namespace smtrat
              *          the constraint itself is inconsistent;
              *          true, otherwise.
              */
-            bool inform( const Constraint* const _constraint )
+            bool inform( const Formula* _constraint )
             {
                 return mpPrimaryBackend->inform( _constraint );
             }
@@ -216,6 +228,10 @@ namespace smtrat
                 return mpPrimaryBackend->infeasibleSubsets();
             }
 
+            /**
+             * Determines variables assigned by the currently found satisfying assignment to an equal value in their domain.
+             * @return A list of vectors of variables, stating that the variables in one vector are assigned to equal values.
+             */
 			std::list<std::vector<carl::Variable>> getModelEqualities() const
 			{
 				return mpPrimaryBackend->getModelEqualities();
@@ -256,56 +272,102 @@ namespace smtrat
                 mpPrimaryBackend->printModel( _out );
             }
     
+            /**
+             * Prints the so far added formulas.
+             * @param _out The stream to print on.
+             */
             void printAssertions( std::ostream& = std::cout ) const;
+            
+            /**
+             * Prints the first found infeasible subset of the set of received formulas.
+             * @param _out The stream to print on.
+             */
             void printInfeasibleSubset( std::ostream& = std::cout ) const;
             
             // Internally used interfaces
+            
+            /**
+             * Adds a module type to this manager, for which modules can be instantiated in order to be part of the solving procedure.
+             * @param _moduleType The module type to add to the module types for which modules can be instantiated in order to be 
+             *                     part of the solving procedure.
+             * @param _factory The factory to instantiate modules of this type.
+             */
             void addModuleType( const ModuleType _moduleType, ModuleFactory* _factory )
             {
                 mpModuleFactories->insert( std::pair<const ModuleType, ModuleFactory*>( _moduleType, _factory ) );
             }
 
+            /**
+             * @return All instantiated modules of the solver belonging to this manager.
+             */
             const std::vector<Module*>& getAllGeneratedModules() const
             {
                 return mGeneratedModules;
             }
             
+            /**
+             * @return A constant reference to the mapping of module types to the factories to instantiate the modules of this type.
+             */
             const std::map<const ModuleType, ModuleFactory*>& rModuleFactories() const
             {
                 return *mpModuleFactories;
             }
             
+            /**
+             * @return The stream to print the debug information on.
+             */
             std::ostream& rDebugOutputChannel()
             {
                 return mDebugOutputChannel;
             }
 
+            /**
+             * @return A constant reference to the managing unit for the quantifiers occurring in the formulas to solve.
+             */
 			const QuantifierManager& quantifierManager() const {
 				return mQuantifierManager;
 			}
 
+            /**
+             * @return A reference to the managing unit for the quantifiers occurring in the formulas to solve.
+             */
 			QuantifierManager& quantifierManager() {
 				return mQuantifierManager;
 			}
 
+            /**
+             * @return A constant reference to the variables, which are bound by a quantifier.
+             */
 			const QuantifiedVariables& quantifiedVariables() const {
 				return mQuantifierManager.quantifiers();
 			}
 
+			/**
+             * @return A reference to the variables, which are bound by a quantifier.
+             */
 			QuantifiedVariables& quantifiedVariables() {
 				return mQuantifierManager.quantifiers();
 			}
 
+            /**
+             * @return A constant reference to the logic this solver considers.
+             */
             const Logic& logic() const
             {
                 return mLogic;
             }
             
+            /**
+             * @return A reference to the logic this solver considers.
+             */
             Logic& rLogic()
             {
                 return mLogic;
             }
             
+            /**
+             * @return The string naming the logic this solver considers.
+             */
             std::string logicToString() const
             {
                 switch( mLogic )
@@ -323,11 +385,19 @@ namespace smtrat
             
         protected:
 
+            /**
+             * @return A reference to the graph representing the solving strategy.
+             */
             StrategyGraph& rStrategyGraph()
             {
                 return mStrategyGraph;
             }
 
+            /**
+             * Gets all backends so far instantiated according the strategy and all previous enquiries of the given module.
+             * @param _module The module to get all backends so far instantiated according the strategy and all previous enquiries of this module. 
+             * @return All backends so far instantiated according the strategy and all previous enquiries of the given module.
+             */
             std::vector<Module*> getAllBackends( Module* _module ) const
             {
                 // Mutex?
@@ -337,27 +407,71 @@ namespace smtrat
                 return result;
             }
             
+            /**
+             * Adds the module type of a backend for the module of the type given by the given position in the manager's strategy graph. 
+             * Backends of the given type will be instantiated if a module corresponding to the given position in the strategy graph asks 
+             * for backends with a formula fulfilling the given conditions.
+             * @param _at The position in the strategy graph to add a backend's module type.
+             * @param _moduleType The module type of the backend to instantiate for modules corresponding to the given position in the 
+             *                     managers strategy graph.
+             * @param _conditionEvaluation A function which evaluates whether the properties of a given formula fulfill certain conditions.
+             * @return The position in this managers strategy graph corresponding to the added module type.
+             */
             size_t addBackendIntoStrategyGraph( size_t _at, ModuleType _moduleType, ConditionEvaluation _conditionEvaluation = isCondition )
             {
                 return mStrategyGraph.addBackend( _at, _moduleType, _conditionEvaluation );
             }
 
+            /**
+             * Extends the strategy graph of this manager such that if a module corresponding to the first given position in the
+             * strategy graph asks for backends for a formula whose properties satisfy the conditions checked by the given function pointer,
+             * the this manager instantiates (if not yet instantiated) a backend corresponding to the second given position in the 
+             * strategy graph.
+             * @param _from The position in the strategy graph to which the enquiring module corresponds to.
+             * @param _to The position in the strategy graph to which the instantiated backend for this enquiry corresponds to.
+             * @param _conditionEvaluation A function which evaluates whether the properties of a given formula fulfill certain conditions.
+             */
             void addBacklinkIntoStrategyGraph( size_t _from, size_t _to, ConditionEvaluation _conditionEvaluation = isCondition )
             {
                 mStrategyGraph.addBacklink( _from, _to, _conditionEvaluation );
             }
 
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
-            const bool runsParallel() const
+            /**
+             * @return true, if we might run in parallel eventually;
+             *         false, otherwise.
+             */
+            bool runsParallel() const
             {
                 return mRunsParallel;
             }
             #endif
 
+            /**
+             * Get the backends to call for the given problem instance required by the given module.
+             *
+             * @param _formula     The problem instance.
+             * @param _requiredBy  The module asking for a backend.
+             * @param _foundAnswer A conditional
+             *
+             * @return  A vector of modules, which the module defined by _requiredBy calls in parallel to achieve
+             *           an answer to the given instance.
+             */
             std::vector<Module*> getBackends( Module*, std::atomic_bool* );
+            
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
-            std::future<Answer> submitBackend( Module* );
-            void checkBackendPriority( Module* );
+            /**
+             * Submits an enquiry of a module to solve its passed formula.
+             * @param _module The module which wants its passed formula to be solved.
+             * @return A future containing the answer, as soon as the enquiry has been processed.
+             */
+            std::future<Answer> submitBackend( Module* _module );
+            
+            /**
+             * 
+             * @param _module
+             */
+            void checkBackendPriority( Module* _module );
             #endif
     };
 }    // namespace smtrat

@@ -314,7 +314,7 @@ namespace smtrat
              */
 
             // Interfaces.
-            bool inform( const Constraint* const )
+            bool inform( const Formula* )
             {
                 return true;
             }

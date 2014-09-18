@@ -64,7 +64,7 @@ namespace smtrat
             {
                 int                                         updated;
                 std::list<const smtrat::Formula*>::iterator position;
-                const smtrat::Constraint*                   neqRepresentation;
+                const smtrat::Formula*                      neqRepresentation;
                 bool                                        exists;
             };
 
@@ -77,13 +77,13 @@ namespace smtrat
                 Type                               mType;
                 const Value<T1>*                   mLimit;
                 Variable<T1, T2>* const            mVar;
-                const smtrat::Constraint*          mpAsConstraint; // TODO: make this a formula pointer
+                const smtrat::Formula*             mpAsConstraint;
                 std::vector<PointerSet<Formula> >* mpOrigins;
                 Info*                              mpInfo;
 
             public:
                 Bound();
-                Bound( const Value<T1>* const, Variable<T1, T2>* const, Type, const smtrat::Constraint*, Info* = NULL, bool = false );
+                Bound( const Value<T1>* const, Variable<T1, T2>* const, Type, const smtrat::Formula*, Info* = NULL, bool = false );
                 ~Bound();
 
                 bool operator >( const Value<T1>& ) const;
@@ -150,19 +150,19 @@ namespace smtrat
                     return mType != UPPER;
                 }
 
-                const smtrat::Constraint* pAsConstraint() const
+                const smtrat::Formula* pAsConstraint() const
                 {
                     return mpAsConstraint;
                 }
                 
-                const smtrat::Constraint* neqRepresentation() const
+                const smtrat::Formula* neqRepresentation() const
                 {
                     return mpInfo->neqRepresentation;
                 }
                 
-                void setNeqRepresentation( const smtrat::Constraint* _constraint ) const
+                void setNeqRepresentation( const smtrat::Formula* _constraint ) const
                 {
-                    assert( _constraint->relation() == smtrat::Relation::NEQ );
+                    assert( _constraint->getType() == smtrat::CONSTRAINT && _constraint->constraint().relation() == smtrat::Relation::NEQ );
                     if( mpInfo->neqRepresentation == NULL )
                     {
                         mpInfo->neqRepresentation = _constraint;
@@ -221,7 +221,7 @@ namespace smtrat
         }
 
         template<typename T1, typename T2>
-        Bound<T1, T2>::Bound( const Value<T1>* const _limit, Variable<T1, T2>* const _var, Type _type, const smtrat::Constraint* _constraint, Bound<T1, T2>::Info* _boundInfo, bool _deduced ):
+        Bound<T1, T2>::Bound( const Value<T1>* const _limit, Variable<T1, T2>* const _var, Type _type, const smtrat::Formula* _constraint, Bound<T1, T2>::Info* _boundInfo, bool _deduced ):
             mDeduced( _deduced ),
             mType( _type ),
             mLimit( _limit ),

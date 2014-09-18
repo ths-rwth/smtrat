@@ -25,8 +25,7 @@
  * @version 2013-10-23
  */
 
-#ifndef SMTRAT_VS_SUBSTITUTION_H
-#define SMTRAT_VS_SUBSTITUTION_H
+#pragma once
 
 #include "Condition.h"
 #include "../../datastructures/vs/SqrtEx.h"
@@ -37,21 +36,20 @@ namespace vs
     class Substitution
     {
         public:
-            // Type and object definitions.
-
+            /// The type of a substitution.
             enum Type { NORMAL, PLUS_EPSILON, MINUS_INFINITY, PLUS_INFINITY, INVALID };
         
         private:
             // Members.
             
             /// The variable to substitute.
-            carl::Variable                 mVariable;
+            carl::Variable mVariable;
             /// The pointer (if != NULL) to the square root term to substitute the variable for.
-            SqrtEx*                        mpTerm;
+            SqrtEx* mpTerm;
             /// The type.
-            Type                           mType;
+            Type mType;
             /// The variables occurring in the term to substitute for.
-            mutable smtrat::Variables*     mpTermVariables;
+            mutable smtrat::Variables* mpTermVariables;
             /// The conditions from which this substitution has been originated. (e.g. [x -> 2] could have had the origins {x-2<=0, x^2-4=0})
             std::set<const Condition*>* mpOriginalConditions;
             /// The side conditions, which have to hold to make this substitution valid. (e.g. [x -> 1/a] has the side condition {a!=0})
@@ -104,6 +102,10 @@ namespace vs
                 return *mpTerm;
             }
             
+            /**
+             * Sets the substitution term to the given rational.
+             * @param _value The value to set the substitution term to.
+             */
             void setTerm( const smtrat::Rational& _value )
             {
                 assert( mType == Type::MINUS_INFINITY );
@@ -151,6 +153,9 @@ namespace vs
                 return mSideCondition;
             }
             
+            /**
+             * @return A constant reference to the variables occurring in the substitution term.
+             */
             const smtrat::Variables& termVariables() const
             {
                 if( mpTermVariables == NULL )
@@ -248,4 +253,3 @@ namespace vs
     using SubstitutionFastPointerMap = std::unordered_map<const smtrat::Polynomial*, T, substitutionPointerHash, substitutionPointerEqual>;
 }
 
-#endif

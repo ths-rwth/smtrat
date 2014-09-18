@@ -36,6 +36,15 @@
 
 namespace smtrat
 {
+    struct dereference_compare
+    {
+        template <class I>
+        bool operator()(const I& a, const I& b)
+        {
+            return *a < *b;
+        }
+    };
+    
     /**
      * A preprocessing module which takes real constraints.
      * More information can be found in the DESCRIPTION file.

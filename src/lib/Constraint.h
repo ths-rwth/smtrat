@@ -27,8 +27,7 @@
  * @version 2013-10-21
  */
 
-#ifndef SMTRAT_TS_CONSTRAINT_H
-#define SMTRAT_TS_CONSTRAINT_H
+#pragma once
 
 //#define NDEBUG
 
@@ -53,11 +52,6 @@ namespace smtrat
     {
         friend class ConstraintPool;
         
-        public:
-            typedef std::vector<const Constraint*>                                   PointerVector;
-            typedef std::vector<PointerSet<Constraint>>                              PointerSetVector;
-            typedef PointerMap<Constraint,PointerSetVector>                          OriginsMap;
-
         private:
             /// A unique id.
             unsigned             mID;
@@ -135,6 +129,9 @@ namespace smtrat
                 return mRelation;
             }
 
+            /**
+             * @return The unique id of this constraint.
+             */
             unsigned id() const
             {
                 return mID;
@@ -503,6 +500,13 @@ namespace smtrat
             static Relation invertRelation( const Relation _rel );
             
             /**
+             * Turns around the given relation symbol.
+             * @param _rel The relation symbol to invert.
+             * @return The resulting inverted relation symbol.
+             */
+            static Relation turnAroundRelation( const Relation _rel );
+            
+            /**
              * Compares _constraintA with _constraintB.
              * @return  2, if it is easy to decide that _constraintA and _constraintB have the same solutions. _constraintA = _constraintB
              *           1, if it is easy to decide that _constraintB includes all solutions of _constraintA;   _constraintA -> _constraintB
@@ -520,20 +524,34 @@ namespace smtrat
 
 namespace std
 {
+    /**
+     * Implements std::hash for constraints.
+     */
     template<>
     struct hash<smtrat::Constraint>
     {
     public:
+        /**
+         * @param _constraint The constraint to get the hash for.
+         * @return The hash of the given constraint.
+         */
         size_t operator()( const smtrat::Constraint& _constraint ) const 
         {
             return _constraint.getHash();
         }
     };
     
+    /**
+     * Implements std::hash for vectors of constraints.
+     */
     template<>
     struct hash<std::vector<const smtrat::Constraint* >>
     {
     public:
+        /**
+         * @param _arg The vector of constraints to get the hash for.
+         * @return The hash of the given vector of constraints.
+         */
         size_t operator()( const std::vector<const smtrat::Constraint* >& _arg ) const
         {
             size_t result = 0;
@@ -547,4 +565,3 @@ namespace std
     };
 } // namespace std
 
-#endif

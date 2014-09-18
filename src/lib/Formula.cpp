@@ -28,8 +28,6 @@
  * @version 2013-10-21
  */
 
-//#define REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
-#define REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
 
 #include "Formula.h"
 #include "Module.h"
@@ -913,7 +911,7 @@ namespace smtrat
         }
     }
 
-    const Formula* Formula::resolveNegation( bool _keepConstraint, bool _splitLinearNotEquals ) const
+    const Formula* Formula::resolveNegation( bool _keepConstraint ) const
     {
         if( mType != NOT ) return this;
         Type newType = mType;
@@ -924,7 +922,7 @@ namespace smtrat
             case CONSTRAINT:
             {
                 const Constraint* constraint = mpSubformula->pConstraint();
-                if( _keepConstraint && (!_splitLinearNotEquals || constraint->relation() != Relation::EQ || !constraint->lhs().isLinear()) )
+                if( _keepConstraint )
                     return this;
                 else
                 {
@@ -932,15 +930,7 @@ namespace smtrat
                     {
                         case Relation::EQ:
                         {
-                            if( _splitLinearNotEquals && constraint->lhs().isLinear() )
-                            {
-                                PointerSet<Formula> subformulas;
-                                subformulas.insert( newFormula( newConstraint( constraint->lhs(), Relation::LESS ) ) );
-                                subformulas.insert( newFormula( newConstraint( -constraint->lhs(), Relation::LESS ) ) );
-                                return newFormula( OR, move( subformulas ) );
-                            }
-                            else
-                                return newFormula( newConstraint( constraint->lhs(), Relation::NEQ ) );
+                            return newFormula( newConstraint( constraint->lhs(), Relation::NEQ ) );
                         }
                         case Relation::LEQ:
                         {
@@ -948,14 +938,7 @@ namespace smtrat
                         }
                         case Relation::LESS:
                         {
-                            #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
-                            PointerSet<Formula> subformulas;
-                            subformulas.insert( newFormula( newConstraint( -constraint->lhs(), Relation::LESS ) ) );
-                            subformulas.insert( newFormula( newConstraint( -constraint->lhs(), Relation::EQ ) ) );
-                            return newFormula( OR, move( subformulas ) );
-                            #else
                             return newFormula( newConstraint( -constraint->lhs(), Relation::LEQ ) );
-                            #endif
                         }
                         case Relation::GEQ:
                         {
@@ -963,14 +946,7 @@ namespace smtrat
                         }
                         case Relation::GREATER:
                         {
-                            #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
-                            PointerSet<Formula> subformulas;
-                            subformulas.insert( newFormula( newConstraint( constraint->lhs(), Relation::LESS ) ) );
-                            subformulas.insert( newFormula( newConstraint( constraint->lhs(), Relation::EQ ) ) );
-                            return newFormula( OR, move( subformulas ) );
-                            #else
                             return newFormula( newConstraint( constraint->lhs(), Relation::LEQ ) );
-                            #endif
                         }
                         case Relation::NEQ:
                         {
@@ -1158,22 +1134,25 @@ namespace smtrat
         return res;
     }
 
-    const Formula* Formula::toCNF( bool _keepConstraints, bool _splitLinearNotEquals ) const
+    //TODO: in each conjunction and disjunction, collect the bounds of polynomials and compose them. Maybe use the variable-bounds-object, 
+    //      after enabling such that it can also deal with disjunctions
+    const Formula* Formula::toCNF( bool _keepConstraints, bool _simplifyConstraintCombinations ) const
     {
         if( propertyHolds( PROP_IS_IN_CNF ) )
         {
-            if( _keepConstraints && !_splitLinearNotEquals )
+            if( _keepConstraints )
                 return this;
             else if( mType == NOT )
             {
                 assert( propertyHolds( PROP_IS_A_LITERAL ) );
-                return resolveNegation( _keepConstraints, _splitLinearNotEquals );
+                return resolveNegation( _keepConstraints );
             }
         }
         else if( isAtom() )
             return this;
         PointerMap<Formula,pair<const Formula*,const Formula*>*> tseitinVars;
-        PointerSet<Formula> subformulas;
+        PointerSet<Formula> resultSubformulas;
+        ConstraintBounds constraintBoundsAnd;
         vector<const Formula*> subformulasToTransform;
         subformulasToTransform.push_back( this );
         while( !subformulasToTransform.empty() )
@@ -1192,34 +1171,20 @@ namespace smtrat
             {
                 case BOOL:
                 {
-                    subformulas.insert( currentFormula );
+                    resultSubformulas.insert( currentFormula );
                     break;
                 }
                 case CONSTRAINT:
-                {
-                    #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
-                    if( currentFormula->constraint().relation() == Relation::LEQ )
+                {   
+                    if( _simplifyConstraintCombinations )
                     {
-                        const Constraint* c1 = newConstraint( currentFormula->constraint().lhs(), Relation::LESS );
-                        const Constraint* c2 = newConstraint( currentFormula->constraint().lhs(), Relation::EQ );
-                        subformulasToTransform.push_back( newFormula( OR, newVariableFormula( c1 ), newVariableFormula( c2 ) ) );
+                        if( addConstraintBound( constraintBoundsAnd, currentFormula, true ) )
+                        {
+                            goto ReturnFalse;
+                        }
                     }
                     else
-                    {
-                    #endif
-                    if( _splitLinearNotEquals && currentFormula->constraint().relation() == Relation::NEQ && currentFormula->constraint().lhs().isLinear() )
-                    {
-                        const Constraint* c1 =  newConstraint( currentFormula->constraint().lhs(), Relation::LESS );
-                        const Constraint* c2 =  newConstraint( -currentFormula->constraint().lhs(), Relation::LESS );
-                        subformulasToTransform.push_back( newFormula( OR, newFormula( c1 ), newFormula( c2 ) ) );
-                    }
-                    else
-                    {
-                        subformulas.insert( currentFormula );
-                    }
-                    #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
-                    }
-                    #endif
+                        resultSubformulas.insert( currentFormula );
                     break;
                 }
                 case TTRUE: // Remove it.
@@ -1228,9 +1193,28 @@ namespace smtrat
                     goto ReturnFalse;
                 case NOT: // Try to resolve this negation.
                 {
-                    const Formula* resolvedFormula = currentFormula->resolveNegation( _keepConstraints, _splitLinearNotEquals );
-                    if( resolvedFormula == currentFormula ) // It is a literal.
-                        subformulas.insert( currentFormula );
+                    const Formula* resolvedFormula = currentFormula->resolveNegation( _keepConstraints );
+                    if( resolvedFormula->propertyHolds( PROP_IS_A_LITERAL ) ) // It is a literal.
+                    {
+                        if( resolvedFormula->getType() == CONSTRAINT || (resolvedFormula->getType() == NOT && resolvedFormula->subformula().getType() == CONSTRAINT) )
+                        {
+                            if( _simplifyConstraintCombinations )
+                            {
+                                if( addConstraintBound( constraintBoundsAnd, resolvedFormula, true ) )
+                                {
+                                    goto ReturnFalse;
+                                }
+                            }
+                            else
+                            {
+                                resultSubformulas.insert( resolvedFormula );
+                            }
+                        }
+                        else
+                        {
+                            resultSubformulas.insert( resolvedFormula );
+                        }
+                    }
                     else
                         subformulasToTransform.push_back( resolvedFormula );
                     break;
@@ -1301,6 +1285,7 @@ namespace smtrat
                 case OR: // (or phi_1 .. phi_n) -> (or psi_1 .. psi_m),  where phi_i is transformed as follows:
                 {
                     bool currentFormulaValid = false;
+                    ConstraintBounds constraintBoundsOr;
                     PointerSet<Formula> subsubformulas;
                     vector<const Formula*> phis;
                     for( const Formula* subformula : currentFormula->subformulas() )
@@ -1348,9 +1333,28 @@ namespace smtrat
                             }
                             case NOT: // resolve the negation
                             {
-                                const Formula* resolvedFormula = currentSubformula->resolveNegation( _keepConstraints, _splitLinearNotEquals );
-                                if( resolvedFormula == currentSubformula ) // It is a literal.
-                                    subsubformulas.insert( currentSubformula );
+                                const Formula* resolvedFormula = currentSubformula->resolveNegation( _keepConstraints );
+                                if( resolvedFormula->propertyHolds( PROP_IS_A_LITERAL ) ) // It is a literal.
+                                {
+                                    if( resolvedFormula->getType() == CONSTRAINT || (resolvedFormula->getType() == NOT && resolvedFormula->subformula().getType() == CONSTRAINT) )
+                                    {
+                                        if( _simplifyConstraintCombinations )
+                                        {
+                                            if( addConstraintBound( constraintBoundsOr, resolvedFormula, false ) )
+                                            {
+                                                goto ReturnFalse;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            subsubformulas.insert( resolvedFormula );
+                                        }
+                                    }
+                                    else
+                                    {
+                                        subsubformulas.insert( resolvedFormula );
+                                    }
+                                }
                                 else
                                     phis.push_back( resolvedFormula );
                                 break;
@@ -1358,6 +1362,35 @@ namespace smtrat
                             case AND: // (and phi_i1 .. phi_ik) -> h_i, where (or (not h_i) phi_i1) .. (or (not h_i) phi_ik) 
                                       //                                and (or h_i (not phi_i1) .. (not phi_ik))  is added to the queue
                             {
+                                bool conjunctionIsFalse = false;
+                                ConstraintBounds constraintBoundsOrAnd;
+                                PointerSet<Formula> tmpSubSubformulas;
+                                for( const Formula* subsubformula : currentSubformula->subformulas() )
+                                {
+                                    if( subsubformula->getType() == CONSTRAINT || (subsubformula->getType() == NOT && subsubformula->subformula().getType() == CONSTRAINT ) )
+                                    {
+                                        if( _simplifyConstraintCombinations )
+                                        {
+                                            if( addConstraintBound( constraintBoundsOrAnd, subsubformula, true ) )
+                                            {
+                                                conjunctionIsFalse = true;
+                                                break;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            tmpSubSubformulas.insert( subsubformula );
+                                        }
+                                    }
+                                    else
+                                    {
+                                        tmpSubSubformulas.insert( subsubformula );
+                                    }
+                                }
+                                if( conjunctionIsFalse )
+                                    break;
+                                if( _simplifyConstraintCombinations && swapConstraintBounds( constraintBoundsOrAnd, tmpSubSubformulas, true ) )
+                                    break;
                                 auto iter = tseitinVars.insert( pair<const Formula*,pair<const Formula*,const Formula*>*>( currentSubformula, NULL ) );
                                 if( iter.second )
                                 {
@@ -1366,43 +1399,30 @@ namespace smtrat
                                     hi->setDifficulty( currentSubformula->difficulty() );
                                     iter.first->second = new pair<const Formula*,const Formula*>( hi, newNegation( hi ) );
                                 }
-                                for( const Formula* subsubformula : currentSubformula->subformulas() )
+                                for( const Formula* subsubformula : tmpSubSubformulas )
                                     subformulasToTransformTmp.push_back( newFormula( OR, iter.first->second->second, subsubformula ) );
-                                PointerSet<Formula> subformulas;
-                                subformulas.insert( iter.first->second->first );
-                                for( const Formula* subsubformula : currentSubformula->subformulas() )
-                                    subformulas.insert( newNegation( subsubformula ) );
-                                subformulasToTransformTmp.push_back( newFormula( OR, subformulas ) );
+                                PointerSet<Formula> tmpSubformulas;
+                                tmpSubformulas.insert( iter.first->second->first );
+                                for( const Formula* subsubformula : tmpSubSubformulas )
+                                    tmpSubformulas.insert( newNegation( subsubformula ) );
+                                subformulasToTransformTmp.push_back( newFormula( OR, tmpSubformulas ) );
                                 subsubformulas.insert( iter.first->second->first );
                                 break;
                             }
                             case CONSTRAINT: // p~0 -> p~0
                             {
-                                #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
-                                if( currentSubformula->constraint().relation() == Relation::LEQ )
+                                if( _simplifyConstraintCombinations )
                                 {
-                                    subsubformulas.insert( newFormula( newConstraint( currentSubformula->constraint().lhs(), Relation::LESS ) ) );
-                                    subsubformulas.insert( newFormula( newConstraint( currentSubformula->constraint().lhs(), Relation::EQ ) ) );
+                                    if( addConstraintBound( constraintBoundsOr, currentSubformula, false ) )
+                                    {
+                                        currentFormulaValid = true;
+                                        break;
+                                    }
                                 }
                                 else
                                 {
-                                #endif
-                                #ifdef REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
-                                if( currentSubformula->constraint().relation() == Relation::NEQ )
-                                {
-                                    subsubformulas.insert( newFormula( newConstraint( currentSubformula->constraint().lhs(), Relation::LESS ) ) );
-                                    subsubformulas.insert( newFormula( newConstraint( -currentSubformula->constraint().lhs(), Relation::LESS ) ) );
+                                    subsubformulas.insert( currentSubformula );
                                 }
-                                else
-                                {
-                                #endif
-                                subsubformulas.insert( currentSubformula );
-                                #ifdef REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
-                                }
-                                #endif
-                                #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
-                                }
-                                #endif
                                 break;
                             }
                             case IFF: // (iff phi_1 .. phi_n) -> (and phi_1 .. phi_n) and (and (not phi_1) .. (not phi_n)) are added to the queue
@@ -1431,15 +1451,15 @@ namespace smtrat
                             }
                             case EXISTS:
                             {
-                                    assert(false);
-                                    std::cerr << "Formula must be quantifier-free!" << std::endl;
-                                    break;
+                                assert(false);
+                                std::cerr << "Formula must be quantifier-free!" << std::endl;
+                                break;
                             }
                             case FORALL:
                             {
-                                    assert(false);
-                                    std::cerr << "Formula must be quantifier-free!" << std::endl;
-                                    break;
+                                assert(false);
+                                std::cerr << "Formula must be quantifier-free!" << std::endl;
+                                break;
                             }
                             default:
                             {
@@ -1448,7 +1468,7 @@ namespace smtrat
                             }
                         }
                     }
-                    if( !currentFormulaValid )
+                    if( !currentFormulaValid && (!_simplifyConstraintCombinations || !swapConstraintBounds( constraintBoundsOr, subsubformulas, false )) )
                     {
                         subformulasToTransform.insert( subformulasToTransform.end(), subformulasToTransformTmp.begin(), subformulasToTransformTmp.end() );
                         if( subsubformulas.empty() ) // Empty clause = false, which, added to a conjunction, leads to false.
@@ -1457,26 +1477,26 @@ namespace smtrat
                         }
                         else if( subsubformulas.size() == 1 )
                         {
-                            subformulas.insert( *subsubformulas.begin() );
+                            resultSubformulas.insert( *subsubformulas.begin() );
                         }
                         else
                         {
-                            subformulas.insert( newFormula( OR, move( subsubformulas ) ) );
+                            resultSubformulas.insert( newFormula( OR, move( subsubformulas ) ) );
                         }
                     }
                     break;
                 }
                 case EXISTS:
                 {
-                        assert(false);
-                        std::cerr << "Formula must be quantifier-free!" << std::endl;
-                        break;
+                    assert(false);
+                    std::cerr << "Formula must be quantifier-free!" << std::endl;
+                    break;
                 }
                 case FORALL:
                 {
-                        assert(false);
-                        std::cerr << "Formula must be quantifier-free!" << std::endl;
-                        break;
+                    assert(false);
+                    std::cerr << "Formula must be quantifier-free!" << std::endl;
+                    break;
                 }
                 default:
                 {
@@ -1485,14 +1505,16 @@ namespace smtrat
                 }
             }
         }
-        if( subformulas.empty() )
+        if( _simplifyConstraintCombinations && swapConstraintBounds( constraintBoundsAnd, resultSubformulas, true ) )
+            goto ReturnFalse;
+        if( resultSubformulas.empty() )
             return trueFormula();
-        else if( subformulas.size() == 1 )
-            return *subformulas.begin();
+        else if( resultSubformulas.size() == 1 )
+            return *resultSubformulas.begin();
         else
-            return newFormula( AND, move( subformulas ) );
+            return newFormula( AND, move( resultSubformulas ) );
         ReturnFalse:
-            while( !tseitinVars.empty() )
+            while( !tseitinVars.empty() ) // TODO: why only here?
             {
                 auto toDel = tseitinVars.begin()->second;
                 tseitinVars.erase( tseitinVars.begin() );
@@ -1557,6 +1579,498 @@ namespace smtrat
                     subformulasSubstituted.insert( subformula->substitute( _booleanSubstitutions, _arithmeticSubstitutions ) );
                 return newFormula( mType, subformulasSubstituted );
             }
+        }
+    }
+    
+    //#define CONSTRAINT_BOUND_DEBUG
+
+    bool Formula::addConstraintBound( ConstraintBounds& _constraintBounds, const Formula* _constraint, bool _inConjunction )
+    {
+        #ifdef CONSTRAINT_BOUND_DEBUG
+        cout << "add from a " << (_inConjunction ? "conjunction" : "disjunction") << " to " << &_constraintBounds << ":   " << *_constraint << endl;
+        #endif
+        bool negated = _constraint->getType() == NOT;
+        assert( _constraint->getType() == CONSTRAINT || (negated && _constraint->subformula().getType() == CONSTRAINT ) );
+        const Constraint& constraint = negated ? _constraint->subformula().constraint() : _constraint->constraint();
+        assert( constraint.isConsistent() == 2 );
+        Rational boundValue;
+        Relation relation = negated ? Constraint::invertRelation( constraint.relation() ) : constraint.relation();
+        const Polynomial& lhs = constraint.lhs();
+        Polynomial* poly = NULL;
+        if( lhs.nrTerms() == 1 || ( lhs.nrTerms() == 2 && lhs.hasConstantTerm() ) )
+        {
+            auto term = lhs.begin();
+            for( ; term != lhs.end(); ++term )
+                if( !(*term)->isConstant() ) break;
+            poly = new Polynomial( (*term)->monomial()->begin()->first );
+            Rational primCoeff( (*term)->coeff() );
+            if( primCoeff < Rational( 0 ) )
+                relation = Constraint::turnAroundRelation( relation );
+            boundValue = Rational( -constraint.constantPart() )/primCoeff;
+        }
+        else
+        {
+            if( lhs.lterm()->coeff() < Rational( 0 ) )
+            {
+                boundValue = constraint.constantPart();
+                relation = Constraint::turnAroundRelation( relation );
+                poly = new Polynomial( -lhs + boundValue );
+            }
+            else
+            {
+                boundValue = -constraint.constantPart();
+                poly = new Polynomial( lhs + boundValue );
+            }
+            Rational cf( poly->coprimeFactor() );
+            assert( cf > 0 );
+            boundValue *= cf;
+            (*poly) *= cf;
+        }
+        #ifdef CONSTRAINT_BOUND_DEBUG
+        cout << "try to add the bound  " << Constraint::relationToString( relation ) << boundValue << "  for the polynomial  " << *poly << endl; 
+        #endif
+        auto resA = _constraintBounds.insert( make_pair( poly, std::move( map<Rational, pair<Relation, const Formula*>>() ) ) );
+        if( !resA.second )
+        {
+            delete poly;
+        }
+        auto resB = resA.first->second.insert( make_pair( boundValue, make_pair( relation, _constraint ) ) );
+        if( resB.second || resB.first->second.first == relation )
+            return false;
+        switch( relation )
+        {
+            case Relation::EQ:
+                if( _inConjunction )
+                {
+                    if( resB.first->second.first == Relation::LEQ || resB.first->second.first == Relation::GEQ )
+                    {
+                        resB.first->second.first = Relation::EQ;
+                        resB.first->second.second = _constraint;
+                        return false;
+                    }
+                    else
+                        return true;
+                }
+                else
+                {
+                    switch( resB.first->second.first )
+                    {
+                        case Relation::LEQ:
+                            return false;
+                        case Relation::GEQ:
+                            return false;
+                        case Relation::LESS:
+                            resB.first->second.first = Relation::LEQ;
+                            resB.first->second.second = _constraint;
+                            return false;
+                        case Relation::GREATER:
+                            resB.first->second.first = Relation::GEQ;
+                            resB.first->second.second = _constraint;
+                            return false;
+                        default:
+                            assert( resB.first->second.first == Relation::NEQ );
+                            return true;
+                    }
+                }
+            case Relation::LEQ:
+                if( _inConjunction )
+                {
+                    switch( resB.first->second.first )
+                    {
+                        case Relation::EQ:
+                            return false;
+                        case Relation::GEQ:
+                            resB.first->second.first = Relation::EQ;
+                            resB.first->second.second = _constraint;
+                            return false;
+                        case Relation::LESS:
+                            return false;
+                        case Relation::GREATER:
+                            return true;
+                        default:
+                            assert( resB.first->second.first == Relation::NEQ );
+                            resB.first->second.first = Relation::LESS;
+                            resB.first->second.second = _constraint;
+                            return false;
+                    }
+                }
+                else
+                {
+                    switch( resB.first->second.first )
+                    {
+                        case Relation::EQ:
+                            resB.first->second.first = Relation::LEQ;
+                            resB.first->second.second = _constraint;
+                            return false;
+                        case Relation::GEQ:
+                            return true;
+                        case Relation::LESS:
+                            resB.first->second.first = Relation::LEQ;
+                            resB.first->second.second = _constraint;
+                            return false;
+                        case Relation::GREATER:
+                            return true;
+                        default:
+                            assert( resB.first->second.first == Relation::NEQ );
+                            return true;
+                    }
+                }
+            case Relation::GEQ:
+                if( _inConjunction )
+                {
+                    switch( resB.first->second.first )
+                    {
+                        case Relation::EQ:
+                            return false;
+                        case Relation::LEQ:
+                            resB.first->second.first = Relation::EQ;
+                            resB.first->second.second = _constraint;
+                            return false;
+                        case Relation::LESS:
+                            return true;
+                        case Relation::GREATER:
+                            return false;
+                        default:
+                            assert( resB.first->second.first == Relation::NEQ );
+                            resB.first->second.first = Relation::GREATER;
+                            resB.first->second.second = _constraint;
+                            return false;
+                    }
+                }
+                else
+                {
+                    switch( resB.first->second.first )
+                    {
+                        case Relation::EQ:
+                            resB.first->second.first = Relation::GEQ;
+                            resB.first->second.second = _constraint;
+                            return false;
+                        case Relation::LEQ:
+                            return true;
+                        case Relation::LESS:
+                            return true;
+                        case Relation::GREATER:
+                            resB.first->second.first = Relation::GEQ;
+                            resB.first->second.second = _constraint;
+                            return true;
+                        default:
+                            assert( resB.first->second.first == Relation::NEQ );
+                            return true;
+                    }
+                }
+            case Relation::LESS:
+                if( _inConjunction )
+                {
+                    switch( resB.first->second.first )
+                    {
+                        case Relation::EQ:
+                            return true;
+                        case Relation::LEQ:
+                            resB.first->second.first = Relation::LESS;
+                            resB.first->second.second = _constraint;
+                            return false;
+                        case Relation::GEQ:
+                            return true;
+                        case Relation::GREATER:
+                            return true;
+                        default:
+                            assert( resB.first->second.first == Relation::NEQ );
+                            resB.first->second.first = Relation::LESS;
+                            resB.first->second.second = _constraint;
+                            return false;
+                    }
+                }
+                else
+                {
+                    switch( resB.first->second.first )
+                    {
+                        case Relation::EQ:
+                            resB.first->second.first = Relation::LEQ;
+                            resB.first->second.second = _constraint;
+                            return false;
+                        case Relation::LEQ:
+                            return false;
+                        case Relation::GEQ:
+                            return true;
+                        case Relation::GREATER:
+                            resB.first->second.first = Relation::NEQ;
+                            resB.first->second.second = newFormula( newConstraint( lhs, Relation::NEQ ) );
+                            return false;
+                        default:
+                            assert( resB.first->second.first == Relation::NEQ );
+                            return false;
+                    }
+                }
+            case Relation::GREATER:
+                if( _inConjunction )
+                {
+                    switch( resB.first->second.first )
+                    {
+                        case Relation::EQ:
+                            return true;
+                        case Relation::LEQ:
+                            return true;
+                        case Relation::GEQ:
+                            resB.first->second.first = Relation::GREATER;
+                            resB.first->second.second = _constraint;
+                            return false;
+                        case Relation::LESS:
+                            return true;
+                        default:
+                            assert( resB.first->second.first == Relation::NEQ );
+                            resB.first->second.first = Relation::GREATER;
+                            resB.first->second.second = _constraint;
+                            return false;
+                    }
+                }
+                else
+                {
+                    switch( resB.first->second.first )
+                    {
+                        case Relation::EQ:
+                            resB.first->second.first = Relation::GEQ;
+                            resB.first->second.second = _constraint;
+                            return false;
+                        case Relation::LEQ:
+                            return true;
+                        case Relation::GEQ:
+                            return false;
+                        case Relation::LESS:
+                            resB.first->second.first = Relation::NEQ;
+                            resB.first->second.second = newFormula( newConstraint( lhs, Relation::NEQ ) );
+                            return false;
+                        default:
+                            assert( resB.first->second.first == Relation::NEQ );
+                            return false;
+                    }
+                }
+            default:
+                assert( relation == Relation::NEQ );
+                if( _inConjunction )
+                {
+                    switch( resB.first->second.first )
+                    {
+                        case Relation::EQ:
+                            return true;
+                        case Relation::LEQ:
+                            resB.first->second.first = Relation::LESS;
+                            resB.first->second.second = _constraint;
+                            return false;
+                        case Relation::GEQ:
+                            resB.first->second.first = Relation::GREATER;
+                            resB.first->second.second = _constraint;
+                            return false;
+                        case Relation::LESS:
+                            resB.first->second.first = Relation::LESS;
+                            resB.first->second.second = _constraint;
+                            return false;
+                        default:
+                            assert( resB.first->second.first == Relation::GREATER );
+                            resB.first->second.first = Relation::GREATER;
+                            resB.first->second.second = _constraint;
+                            return false;
+                    }
+                }
+                else
+                {
+                    switch( resB.first->second.first )
+                    {
+                        case Relation::EQ:
+                            return true;
+                        case Relation::LEQ:
+                            return true;
+                        case Relation::GEQ:
+                            return true;
+                        case Relation::LESS:
+                            return false;
+                        default:
+                            assert( resB.first->second.first == Relation::GREATER );
+                            return false;
+                    }
+                }
+        }
+    }
+
+    bool Formula::swapConstraintBounds( ConstraintBounds& _constraintBounds, PointerSet<Formula>& _intoFormulas, bool _inConjunction )
+    {
+        #ifdef CONSTRAINT_BOUND_DEBUG
+        cout << "swap from " << &_constraintBounds << " to a " << (_inConjunction ? "conjunction" : "disjunction") << endl;
+        #endif
+        while( !_constraintBounds.empty() )
+        {
+            #ifdef CONSTRAINT_BOUND_DEBUG
+            cout << "for the bounds of  " << *_constraintBounds.begin()->first << endl;
+            #endif
+            const map<Rational, pair<Relation, const Formula*>>& bounds = _constraintBounds.begin()->second;
+            assert( !bounds.empty() );
+            if( bounds.size() == 1 )
+            {
+                _intoFormulas.insert( bounds.begin()->second.second );
+                #ifdef CONSTRAINT_BOUND_DEBUG
+                cout << "   just add the only bound" << endl;
+                #endif
+            }
+            else
+            {
+                auto mostSignificantLowerBound = bounds.end();
+                auto mostSignificantUpperBound = bounds.end();
+                auto moreSignificantCase = bounds.end();
+                PointerSet<Formula> lessSignificantCases;
+                auto iter = bounds.begin();
+                for( ; iter != bounds.end(); ++iter )
+                {
+                    #ifdef CONSTRAINT_BOUND_DEBUG
+                    cout << "   bound is  " << Constraint::relationToString( iter->second.first ) << iter->first << endl;
+                    #endif
+                    if( (_inConjunction && iter->second.first == Relation::NEQ)
+                        || (!_inConjunction && iter->second.first == Relation::EQ) )
+                    {
+                        if( moreSignificantCase == bounds.end() )
+                        {
+                            if( (_inConjunction && mostSignificantUpperBound == bounds.end())
+                                || (!_inConjunction && mostSignificantLowerBound == bounds.end()) )
+                            {
+                                if( (_inConjunction && mostSignificantLowerBound != bounds.end())
+                                    || (!_inConjunction && mostSignificantUpperBound != bounds.end()) )
+                                {
+                                    #ifdef CONSTRAINT_BOUND_DEBUG
+                                    cout << "      case: " << __LINE__ << endl;
+                                    #endif
+                                    _intoFormulas.insert( iter->second.second );
+                                }
+                                else
+                                {
+                                    #ifdef CONSTRAINT_BOUND_DEBUG
+                                    cout << "      case: " << __LINE__ << endl;
+                                    #endif
+                                    lessSignificantCases.insert( iter->second.second );
+                                }
+                            }
+                        }
+                    }
+                    else if( (_inConjunction && (iter->second.first == Relation::GEQ || iter->second.first == Relation::GREATER)) // found a lower bound
+                             || (!_inConjunction && (iter->second.first == Relation::LEQ || iter->second.first == Relation::LESS)) ) // found an upper bound
+                    {
+                        if( (_inConjunction && mostSignificantUpperBound != bounds.end()) // found already an upper bound -> conjunction is invalid!
+                            || (!_inConjunction && mostSignificantLowerBound != bounds.end()) // found already a lower bound -> disjunction is valid!
+                            || moreSignificantCase != bounds.end() )
+                        {
+                            #ifdef CONSTRAINT_BOUND_DEBUG
+                            cout << "      case: " << __LINE__ << endl;
+                            #endif
+                            break;
+                        }
+                        else
+                        {
+                            #ifdef CONSTRAINT_BOUND_DEBUG
+                            cout << "      case: " << __LINE__ << endl;
+                            #endif
+                            if( _inConjunction ) // update the strongest upper bound
+                                mostSignificantLowerBound = iter;
+                            else // update the weakest upper bound
+                                mostSignificantUpperBound = iter;
+                            lessSignificantCases.clear();
+                        }
+                    }
+                    else if( (_inConjunction && iter->second.first == Relation::EQ)
+                            || (!_inConjunction && iter->second.first == Relation::NEQ) )
+                    {
+                        // _inConjunction == true: found already another equality or an upper bound -> conjunction is invalid!
+                        // _inConjunction == false: found already another bound with != as relation or a lower bound -> disjunction is valid!
+                        if( moreSignificantCase != bounds.end() || mostSignificantUpperBound != bounds.end() )
+                        {
+                            #ifdef CONSTRAINT_BOUND_DEBUG
+                            cout << "      case: " << __LINE__ << endl;
+                            #endif
+                            break;
+                        }
+                        // _inConjunction == true: found first equality
+                        // _inConjunction == false: found first bound with !=
+                        else 
+                        {
+                            #ifdef CONSTRAINT_BOUND_DEBUG
+                            cout << "      case: " << __LINE__ << endl;
+                            #endif
+                            moreSignificantCase = iter;
+                        }
+                    }
+                    // _inConjunction == true: found an upper bound
+                    // _inConjunction == false: found a lower bound
+                    else
+                    {
+                        #ifdef CONSTRAINT_BOUND_DEBUG
+                        cout << "      case: " << __LINE__ << endl;
+                        #endif
+                        assert( !_inConjunction || iter->second.first == Relation::LEQ || iter->second.first == Relation::LESS );
+                        assert( _inConjunction || iter->second.first == Relation::GEQ || iter->second.first == Relation::GREATER );
+                        if( _inConjunction && mostSignificantUpperBound == bounds.end() ) // first upper bound found = strongest upper bound
+                        {
+                            #ifdef CONSTRAINT_BOUND_DEBUG
+                            cout << "      case: " << __LINE__ << endl;
+                            #endif
+                            mostSignificantUpperBound = iter;
+                        }
+                        else if( !_inConjunction && mostSignificantLowerBound == bounds.end() ) // first lower bound found = weakest lower bound
+                        {
+                            #ifdef CONSTRAINT_BOUND_DEBUG
+                            cout << "      case: " << __LINE__ << endl;
+                            #endif
+                            mostSignificantLowerBound = iter;
+                        }
+                    }
+                }
+                if( iter != bounds.end() )
+                    break;
+                if( moreSignificantCase != bounds.end() )
+                {
+                    _intoFormulas.insert( moreSignificantCase->second.second );
+                }
+                else
+                {
+                    #ifdef CONSTRAINT_BOUND_DEBUG
+                    if( !(_inConjunction || mostSignificantUpperBound == bounds.end() || mostSignificantLowerBound == bounds.end() 
+                            || mostSignificantUpperBound->first > mostSignificantLowerBound->first) 
+                        || !( !_inConjunction || mostSignificantUpperBound == bounds.end() || mostSignificantLowerBound == bounds.end() 
+                             || mostSignificantLowerBound->first > mostSignificantUpperBound->first ) )
+                    {
+                        cout << "mostSignificantUpperBound:   " << mostSignificantUpperBound->first << "  [" << *mostSignificantUpperBound->second.second << "]" << endl;
+                        cout << "mostSignificantLowerBound:   " << mostSignificantLowerBound->first << "  [" << *mostSignificantLowerBound->second.second << "]" << endl;
+                    }
+                    #endif
+                    assert( !_inConjunction || mostSignificantUpperBound == bounds.end() || mostSignificantLowerBound == bounds.end() 
+                            || mostSignificantUpperBound->first > mostSignificantLowerBound->first );
+                    assert( _inConjunction || mostSignificantUpperBound == bounds.end() || mostSignificantLowerBound == bounds.end() 
+                             || mostSignificantLowerBound->first > mostSignificantUpperBound->first );
+                    if( mostSignificantUpperBound != bounds.end() )
+                        _intoFormulas.insert( mostSignificantUpperBound->second.second );
+                    if( mostSignificantLowerBound != bounds.end() )
+                        _intoFormulas.insert( mostSignificantLowerBound->second.second );
+                    _intoFormulas.insert( lessSignificantCases.begin(), lessSignificantCases.end() );
+                }
+            }
+            const Polynomial* poly = _constraintBounds.begin()->first;
+            _constraintBounds.erase( _constraintBounds.begin() );
+            delete poly;
+        }
+        if( _constraintBounds.empty() )
+        {
+            #ifdef CONSTRAINT_BOUND_DEBUG
+            cout << endl;
+            #endif
+            return false;
+        }
+        else
+        {
+            while( !_constraintBounds.empty() )
+            {
+                const Polynomial* poly = _constraintBounds.begin()->first;
+                _constraintBounds.erase( _constraintBounds.begin() );
+                delete poly;
+            }
+            #ifdef CONSTRAINT_BOUND_DEBUG
+            cout << "is " << (_inConjunction ? "invalid" : "valid") << endl << endl;
+            #endif
+            return true;
         }
     }
 }    // namespace smtrat

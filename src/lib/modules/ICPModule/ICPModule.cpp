@@ -109,23 +109,27 @@ namespace smtrat
         #endif
     }
 
-    bool ICPModule::inform( const Constraint* const _constraint )
+    bool ICPModule::inform( const Formula* _constraint )
     {
         #ifdef ICP_MODULE_DEBUG_0
-        cout << "[ICP] inform: " << (*_constraint) << " (id: " << _constraint->id() << ")" << endl;
+        cout << "[ICP] inform: " << (*_constraint) << endl;
         #endif  
-        // do not inform about boundary constraints - this leads to confusion
-        if ( !_constraint->isBound() )
-            Module::inform( _constraint );
-        
-        unsigned constraintConsistency = _constraint->isConsistent();
-        
-        if( constraintConsistency == 2 )
+        if( _constraint->getType() == CONSTRAINT )
         {
-            const Formula* constraintAsFormula = newFormula( _constraint );  // TODO (From Florian): Can we omit the construction here?
-            addConstraint( constraintAsFormula );
+            const Constraint& constraint = _constraint->constraint();
+            // do not inform about boundary constraints - this leads to confusion
+            if ( !constraint.isBound() )
+                Module::inform( _constraint );
+
+            unsigned constraintConsistency = constraint.isConsistent();
+
+            if( constraintConsistency == 2 )
+            {
+                addConstraint( _constraint );
+            }
+            return constraintConsistency != 0;
         }
-        return constraintConsistency != 0;
+        return true;
     }
 
     bool ICPModule::assertSubformula( ModuleInput::const_iterator _formula )
@@ -281,7 +285,7 @@ namespace smtrat
         // linear handling
         auto linearization = mLinearizations.find( *_formula );
         assert( linearization != mLinearizations.end() );
-        const LRAVariable* slackvariable = mLRA.getSlackVariable( linearization->second->pConstraint() );
+        const LRAVariable* slackvariable = mLRA.getSlackVariable( linearization->second );
         assert( slackvariable != NULL );
 
         // lookup if contraction candidates already exist - if so, add origins
@@ -490,7 +494,7 @@ namespace smtrat
             mDeLinearizations[linearFormula] = _formula;
             mLinearizations[_formula] = linearFormula;
             // inform internal LRAmodule of the linearized constraint
-            mLRA.inform(linearFormula->pConstraint());
+            mLRA.inform( linearFormula );
             const Constraint& linearizedConstraint = linearFormula->constraint();
             #ifdef ICP_MODULE_DEBUG_0
             cout << "[mLRA] inform: " << linearizedConstraint << endl;
@@ -499,7 +503,7 @@ namespace smtrat
             
             if( !linearizedConstraint.isBound() )
             {
-                createLinearCCs( linearFormula->pConstraint(), _formula );
+                createLinearCCs( linearFormula, _formula );
             }
             
             // set the lra variables for the icp variables regarding variables (introduced and original ones)
@@ -563,7 +567,7 @@ namespace smtrat
     void ICPModule::activateLinearConstraint( const Formula* _formula, const Formula* _origin )
     {
         assert( _formula->getType() == CONSTRAINT );
-        const LRAVariable* slackvariable = mLRA.getSlackVariable( _formula->pConstraint() );
+        const LRAVariable* slackvariable = mLRA.getSlackVariable( _formula );
         assert( slackvariable != NULL );
 
         // lookup if contraction candidates already exist - if so, add origins
@@ -1198,14 +1202,15 @@ namespace smtrat
         return linearizedConstraint;
     }
     
-    void ICPModule::createLinearCCs( const Constraint* _constraint, const Formula* _origin )
+    void ICPModule::createLinearCCs( const Formula* _constraint, const Formula* _origin )
     {
-        assert( _constraint->lhs().isLinear() );
+        assert( _constraint->getType() == CONSTRAINT );
+        assert( _constraint->constraint().lhs().isLinear() );
         const LRAVariable* slackvariable = mLRA.getSlackVariable( _constraint );
         assert( slackvariable != NULL );
         if( mLinearConstraints.find( slackvariable ) == mLinearConstraints.end() )
         {
-            Variables variables = _constraint->variables();
+            Variables variables = _constraint->constraint().variables();
             bool hasRealVar = false;
             for( carl::Variable::Arg var : variables )
             {
@@ -2439,7 +2444,7 @@ namespace smtrat
         PointerSet<Formula> addedBoundaries = createConstraintsFromBounds(mIntervals);
         for( auto formulaIt = addedBoundaries.begin(); formulaIt != addedBoundaries.end(); ++formulaIt )
         {
-            mLRA.inform((*formulaIt)->pConstraint());
+            mLRA.inform( *formulaIt );
             mValidationFormula->push_back( *formulaIt );
             mLRA.assertSubformula( --mValidationFormula->end() );
         }
@@ -2675,14 +2680,14 @@ namespace smtrat
                         Rational bound = carl::rationalize<Rational>( interval.lower() );
                         Polynomial leftEx = Polynomial( tmpSymbol ) - Polynomial(bound);
 
-                        const Constraint* leftTmp;
+                        const Formula* leftTmp;
                         switch( interval.lowerBoundType() )
                         {
                             case carl::BoundType::STRICT:
-                                leftTmp = newConstraint( leftEx, Relation::GREATER );
+                                leftTmp = newFormula( newConstraint( leftEx, Relation::GREATER ) );
                                 break;
                             case carl::BoundType::WEAK:
-                                leftTmp = newConstraint( leftEx, Relation::GEQ );
+                                leftTmp = newFormula( newConstraint( leftEx, Relation::GEQ ) );
                                 break;
                             default:
                                 leftTmp = NULL;
@@ -2695,10 +2700,10 @@ namespace smtrat
                         }
                         else
                         {
-                            addConstraintToInform(leftTmp);
+                            addConstraintToInform( leftTmp );
                             vec_set_const_pFormula origins;
                             origins.push_back( PointerSet<Formula>() );
-                            addSubformulaToPassedFormula( newFormula( leftTmp ), move( origins ) );
+                            addSubformulaToPassedFormula( leftTmp, move( origins ) );
                             icpVar.setExternalLeftBound( --mpPassedFormula->end() );
                         }
                     }
@@ -2708,14 +2713,14 @@ namespace smtrat
                         // right:
                         Rational bound = carl::rationalize<Rational>( interval.upper() );
                         Polynomial rightEx = Polynomial( tmpSymbol ) - Polynomial( bound );
-                        const Constraint* rightTmp;
+                        const Formula* rightTmp;
                         switch( interval.upperBoundType() )
                         {
                             case carl::BoundType::STRICT:
-                                rightTmp = newConstraint( rightEx, Relation::LESS );
+                                rightTmp = newFormula( newConstraint( rightEx, Relation::LESS ) );
                                 break;
                             case carl::BoundType::WEAK:
-                                rightTmp = newConstraint( rightEx, Relation::LEQ );
+                                rightTmp = newFormula( newConstraint( rightEx, Relation::LEQ ) );
                                 break;
                             default:
                                 rightTmp = NULL;
@@ -2731,7 +2736,7 @@ namespace smtrat
                             addConstraintToInform( rightTmp );
                             vec_set_const_pFormula origins;
                             origins.push_back( PointerSet<Formula>() );
-                            addSubformulaToPassedFormula( newFormula( rightTmp ), move( origins ) );
+                            addSubformulaToPassedFormula( rightTmp, move( origins ) );
                             icpVar.setExternalRightBound( --mpPassedFormula->end() );
                         }
                     }

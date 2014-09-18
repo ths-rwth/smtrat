@@ -84,13 +84,6 @@ set(lib_datastructures_src
 	datastructures/vs/SqrtEx.cpp
 )
 
-set(lib_misc_headers
-	misc/VS_Tools.hpp
-)
-set(lib_misc_src
-	misc/VS_Tools.cpp
-)
-
 set(lib_utilities_headers
 	utilities/debug/debug.h
 	utilities/stats/Statistics.h
@@ -105,10 +98,9 @@ set(lib_utilities_src
 set(lib_${PROJECT_NAME}_SRCS
     ${lib_core_src}
     ${lib_datastructures_src}
-    ${lib_misc_src}
     ${lib_modules_src}
     ${lib_strategies_src}
-	${lib_utilities_src}
+    ${lib_utilities_src}
 )
 
 # set linking flags

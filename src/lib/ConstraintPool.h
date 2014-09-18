@@ -27,8 +27,7 @@
  * @version 2013-10-21
  */
 
-#ifndef CONSTRAINTPOOL_H
-#define CONSTRAINTPOOL_H
+#pragma once
 
 #include "Common.h"
 #include "Constraint.h"
@@ -45,7 +44,7 @@ namespace smtrat
 
             /// A flag indicating whether the prefix of the internally created external variable names has already been initialized.
             bool mExternalPrefixInitialized;
-            ///
+            /// A flag indicating whether the last constraint which has been tried to add to the pool, was already an element of it.
             bool mLastConstructedConstraintWasKnown;
             /// id allocator
             unsigned mIdAllocator;
@@ -177,7 +176,9 @@ namespace smtrat
                 return result;
             }
             
-            /*
+            /**
+             * @return true, the last constraint which has been tried to add to the pool, was already an element of it;
+             *         false, otherwise.
              */
             bool lastConstructedConstraintWasKnown() const
             {
@@ -544,5 +545,3 @@ namespace smtrat
      const carl::Variable newAuxiliaryBooleanVariable();
     
 }    // namespace smtrat
-
-#endif   /* CONSTRAINTPOOL_H */

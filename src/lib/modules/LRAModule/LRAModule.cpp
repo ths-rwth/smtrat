@@ -31,7 +31,6 @@
 #include <iostream>
 
 //#define DEBUG_LRA_MODULE
-//#define LRA_TERMINATION_INVARIANCE
 #define LRA_SIMPLE_THEORY_PROPAGATION
 #define LRA_SIMPLE_CONFLICT_SEARCH
 #define LRA_ONE_REASON
@@ -81,24 +80,29 @@ namespace smtrat
      * that it could be added in future.
      *
      * @param _constraint The constraint to inform about.
-     * @return False, if the it can be determined that the constraint itself is conflicting;
-     *         True,  otherwise.
+     * @return false, if the it can be determined that the constraint itself is conflicting;
+     *         true,  otherwise.
      */
-    bool LRAModule::inform( const Constraint* const _constraint )
+    bool LRAModule::inform( const Formula* _constraint )
     {
         #ifdef DEBUG_LRA_MODULE
         cout << "LRAModule::inform  " << "inform about " << *_constraint << endl;
         #endif
         Module::inform( _constraint );
-        if( !_constraint->lhs().isConstant() && _constraint->lhs().isLinear() )
+        if( _constraint->getType() == CONSTRAINT )
         {
-            bool elementInserted = mLinearConstraints.insert( _constraint ).second;
-            if( elementInserted )
+            const Constraint& constraint = _constraint->constraint();
+            if( !constraint.lhs().isConstant() && constraint.lhs().isLinear() )
             {
-                setBound( _constraint );
+                bool elementInserted = mLinearConstraints.insert( _constraint ).second;
+                if( elementInserted )
+                {
+                    setBound( _constraint );
+                }
             }
+            return constraint.isConsistent() != 0;
         }
-        return _constraint->isConsistent() != 0;
+        return true;
     }
 
     /**
@@ -134,24 +138,24 @@ namespace smtrat
             }
             case CONSTRAINT:
             {
-                const Constraint* constraint  = (*_subformula)->pConstraint();
+                const Constraint& constraint  = (*_subformula)->constraint();
                 #ifdef SMTRAT_DEVOPTION_Statistics
-                mpStatistics->add( *constraint );
+                mpStatistics->add( constraint );
                 #endif
-                unsigned consistency = constraint->isConsistent();
+                unsigned consistency = constraint.isConsistent();
                 if( consistency == 2 )
                 {
                     mAssignmentFullfilsNonlinearConstraints = false;
-                    if( constraint->lhs().isLinear() )
+                    if( constraint.lhs().isLinear() )
                     {
-//                        bool elementInserted = mLinearConstraints.insert( constraint ).second;
+//                        bool elementInserted = mLinearConstraints.insert( *_subformula ).second;
 //                        if( elementInserted && mInitialized )
 //                        {
-//                            mTableau.newBound( constraint );
+//                            mTableau.newBound( *_subformula );
 //                        }
-                        if( constraint->relation() != Relation::NEQ )
+                        if( constraint.relation() != Relation::NEQ )
                         {
-                            auto constrBoundIter = mTableau.constraintToBound().find( constraint );
+                            auto constrBoundIter = mTableau.constraintToBound().find( *_subformula );
                             assert( constrBoundIter != mTableau.constraintToBound().end() );
                             const vector< const LRABound* >* bounds = constrBoundIter->second;
                             assert( bounds != NULL );
@@ -168,68 +172,49 @@ namespace smtrat
                                     removeSubformulaFromPassedFormula( pos->second.position );
                                     entry.first->second.position = mpPassedFormula->end();
                                     mActiveUnresolvedNEQConstraints.erase( pos );
+                                    auto constrBoundIter = mTableau.constraintToBound().find( (*bounds->begin())->neqRepresentation() );
+                                    assert( constrBoundIter != mTableau.constraintToBound().end() );
+                                    const vector< const LRABound* >* boundsOfNeqConstraint = constrBoundIter->second;
+                                    if( *bounds->begin() == (*boundsOfNeqConstraint)[1] || *bounds->begin() == (*boundsOfNeqConstraint)[2] )
+                                    {
+                                        bool leqBoundActive = *bounds->begin() == (*boundsOfNeqConstraint)[1];
+                                        activateStrictBound( (*bounds->begin())->neqRepresentation(), **bounds->begin(), (*boundsOfNeqConstraint)[leqBoundActive ? 0 : 3] );
+                                    }
                                 }
                             }
                             return mInfeasibleSubsets.empty();
                         }
                         else
                         {
-                            auto constrBoundIter = mTableau.constraintToBound().find( constraint );
+                            auto constrBoundIter = mTableau.constraintToBound().find( *_subformula );
                             assert( constrBoundIter != mTableau.constraintToBound().end() );
                             const vector< const LRABound* >* bounds = constrBoundIter->second;
-                            assert( bounds != NULL );
-                            assert( bounds->size() >= 4 );
                             if( (*bounds)[0]->isActive() || (*bounds)[1]->isActive() || (*bounds)[2]->isActive() || (*bounds)[3]->isActive() )
                             {
                                 Context context = Context();
                                 context.origin = *_subformula;
                                 context.position = mpPassedFormula->end();
-                                mActiveResolvedNEQConstraints.insert( pair< const Constraint*, Context >( constraint, context ) );
-                                if( (*bounds)[1]->isActive() || (*bounds)[2]->isActive() )
+                                mActiveResolvedNEQConstraints.insert( pair< const Formula*, Context >( *_subformula, context ) );
+                                bool leqBoundActive = (*bounds)[1]->isActive();
+                                if( leqBoundActive || (*bounds)[2]->isActive() )
                                 {
-                                    size_t numA = (*bounds)[1]->isActive() ? 1 : 2;
-                                    size_t numB = (*bounds)[1]->isActive() ? 0 : 3;
-                                    PointerSet<Formula> involvedConstraints;
-                                    PointerSet<Formula> originSet;
-                                    originSet.insert( *_subformula );
-                                    auto iter = (*bounds)[numA]->origins().begin();
-                                    assert( iter != (*bounds)[numA]->origins().end() );
-                                    originSet.insert( iter->begin(), iter->end() );
-                                    involvedConstraints.insert( iter->begin(), iter->end() );
-                                    activateBound( (*bounds)[numB], originSet );
-                                    ++iter;
-                                    while( iter != (*bounds)[numA]->origins().end() )
-                                    {
-                                        PointerSet<Formula> originSetB;
-                                        originSetB.insert( *_subformula );
-                                        originSetB.insert( iter->begin(), iter->end() );
-                                        involvedConstraints.insert( iter->begin(), iter->end() );
-                                        (*bounds)[numB]->pOrigins()->push_back( std::move( originSetB ) );
-                                        ++iter;
-                                    }
-                                    for( const Formula* fconstraint : involvedConstraints )
-                                    {
-                                        auto constrBoundIter = mTableau.rConstraintToBound().find( fconstraint->pConstraint() );
-                                        assert( constrBoundIter != mTableau.constraintToBound().end() );
-                                        vector< const LRABound* >* constraintToBounds = constrBoundIter->second;
-                                        constraintToBounds->push_back( (*bounds)[numB] );
-                                    }
+                                    activateStrictBound( *_subformula, *(*bounds)[leqBoundActive ? 1 : 2], (*bounds)[leqBoundActive ? 0 : 3] );
                                 }
                             }
                             else
                             {
-                                addSubformulaToPassedFormula( newFormula( constraint ), *_subformula ); // TODO: maybe not necessary to create this formula every time, store it instead an reuse it
+                                addSubformulaToPassedFormula( *_subformula, *_subformula );
                                 Context context = Context();
                                 context.origin = *_subformula;
                                 context.position = --mpPassedFormula->end();
-                                mActiveUnresolvedNEQConstraints.insert( pair< const Constraint*, Context >( constraint, context ) );
+                                mActiveUnresolvedNEQConstraints.insert( pair< const Formula*, Context >( *_subformula, context ) );
                             }
                         }
                     }
                     else
                     {
                         addSubformulaToPassedFormula( *_subformula, *_subformula );
-                        mNonlinearConstraints.insert( constraint );
+                        mNonlinearConstraints.insert( *_subformula );
                         return true;
                     }
                 }
@@ -253,16 +238,16 @@ namespace smtrat
         if( (*_subformula)->getType() == CONSTRAINT )
         {
             // Remove the mapping of the constraint to the sub-formula in the received formula
-            const Constraint* constraint = (*_subformula)->pConstraint();
+            const Constraint& constraint = (*_subformula)->constraint();
             #ifdef SMTRAT_DEVOPTION_Statistics
-            mpStatistics->remove( *constraint );
+            mpStatistics->remove( constraint );
             #endif
-            if( constraint->isConsistent() == 2 )
+            if( constraint.isConsistent() == 2 )
             {
-                if( constraint->lhs().isLinear() )
+                if( constraint.lhs().isLinear() )
                 {
                     // Deactivate the bounds regarding the given constraint
-                    auto constrBoundIter = mTableau.constraintToBound().find( constraint );
+                    auto constrBoundIter = mTableau.constraintToBound().find( *_subformula );
                     assert( constrBoundIter != mTableau.rConstraintToBound().end() );
                     vector< const LRABound* >* bounds = constrBoundIter->second;
                     assert( bounds != NULL );
@@ -280,7 +265,8 @@ namespace smtrat
                                 if( originSet->find( *_subformula ) != originSet->end() && (mainOriginRemains || originSet->size() > 1) )
                                 {
                                     originSet = (*bound)->pOrigins()->erase( originSet );
-                                    if( originSet->size() == 1 ) mainOriginRemains = false; // ensures that only one main origin is removed, in the case that a formula is contained more than once in the module input
+                                    // ensures that only one main origin is removed, in the case that a formula is contained more than once in the module input
+                                    if( originSet->size() == 1 ) mainOriginRemains = false; 
                                 }
                                 else
                                 {
@@ -303,7 +289,7 @@ namespace smtrat
                                         {
                                             auto entry = mActiveUnresolvedNEQConstraints.insert( *pos );
                                             mActiveResolvedNEQConstraints.erase( pos );
-                                            addSubformulaToPassedFormula( newFormula( entry.first->first ), entry.first->second.origin );
+                                            addSubformulaToPassedFormula( entry.first->first, entry.first->second.origin );
                                             entry.first->second.position = --mpPassedFormula->end();
                                         }
                                     }
@@ -354,9 +340,9 @@ namespace smtrat
                     }
                     if( (*_subformula)->constraint().relation() == Relation::NEQ )
                     {
-                        if( mActiveResolvedNEQConstraints.erase( (*_subformula)->pConstraint() ) == 0 )
+                        if( mActiveResolvedNEQConstraints.erase( *_subformula ) == 0 )
                         {
-                            auto iter = mActiveUnresolvedNEQConstraints.find( (*_subformula)->pConstraint() );
+                            auto iter = mActiveUnresolvedNEQConstraints.find( *_subformula );
                             if( iter != mActiveUnresolvedNEQConstraints.end() )
                             {
                                 removeSubformulaFromPassedFormula( iter->second.position );
@@ -367,7 +353,7 @@ namespace smtrat
                 }
                 else
                 {
-                    auto nonLinearConstraint = mNonlinearConstraints.find( constraint );
+                    auto nonLinearConstraint = mNonlinearConstraints.find( *_subformula );
                     assert( nonLinearConstraint != mNonlinearConstraints.end() );
                     mNonlinearConstraints.erase( nonLinearConstraint );
                 }
@@ -389,37 +375,6 @@ namespace smtrat
         printReceivedFormula();
         #endif
         Answer result = Unknown;
-        #ifdef LRA_TERMINATION_INVARIANCE
-        typedef pair<vector<const LRAVariable*>, vector<const LRAVariable*>> TableauConf;
-        struct compTableaus
-        {
-            bool operator()( const TableauConf& _tcA, const TableauConf& _tcB ) const
-            {
-                auto iterA = _tcA.first.begin();
-                auto iterB = _tcB.first.begin();
-                while( iterA != _tcA.first.end() && iterB != _tcB.first.end() )
-                {
-                    if( *iterA < *iterB ) return true;
-                    else if( *iterA > *iterB ) return false;
-                    ++iterA;
-                    ++iterB;
-                }
-                assert( iterA == _tcA.first.end() && iterB == _tcB.first.end() );
-                iterA = _tcA.second.begin();
-                iterB = _tcB.second.begin();
-                while( iterA != _tcA.second.end() && iterB != _tcB.second.end() )
-                {
-                    if( *iterA < *iterB ) return true;
-                    else if( *iterA > *iterB ) return false;
-                    ++iterA;
-                    ++iterB;
-                }
-                assert( iterA == _tcA.second.end() && iterB == _tcB.second.end() );
-                return false;
-            }
-        };
-        set<TableauConf, compTableaus> tcs;
-        #endif
         if( !mpReceivedFormula->isConstraintConjunction() )
         {
             goto Return; // Unknown
@@ -442,16 +397,6 @@ namespace smtrat
                 goto Return;
             }
             // Find a pivoting element in the tableau.
-            #ifdef LRA_TERMINATION_INVARIANCE
-            TableauConf tc;
-            for( auto iter = mTableau.rows().begin(); iter != mTableau.rows().end(); ++iter )
-                tc.first.push_back(iter->mName);
-            for( auto iter = mTableau.columns().begin(); iter != mTableau.columns().end(); ++iter )
-                tc.second.push_back(iter->mName);
-            bool inserted = tcs.insert( tc ).second;
-            if( inserted ) cout << "[LRA] non-termination" << endl;
-            assert( inserted );
-            #endif
             struct pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElement();
 //            cout << "\r" << mTableau.numberOfPivotingSteps() << endl;
             #ifdef DEBUG_LRA_MODULE
@@ -540,24 +485,24 @@ namespace smtrat
                             originSet.insert( (*bound)->origins().begin()->begin(), (*bound)->origins().begin()->end() );
                             for( auto origin = (*bound)->origins().begin()->begin(); origin != (*bound)->origins().begin()->end(); ++origin )
                             {
-                                const Constraint* constraint = (*origin)->pConstraint();
-                                if( constraint != NULL )
-                                {
-                                    auto constrBoundIter = mTableau.rConstraintToBound().find( constraint );
-                                    assert( constrBoundIter != mTableau.constraintToBound().end() );
-                                    vector< const LRABound* >* constraintToBounds = constrBoundIter->second;
-                                    constraintToBounds->push_back( learnedBound.nextWeakerBound );
-                                    #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
-                                    if( learnedBound.newBound != NULL ) constraintToBounds->push_back( learnedBound.newBound );
-                                    #endif
-                                }
+                                assert( *origin != NULL );
+//                                if( *origin != NULL )
+//                                {
+                                auto constrBoundIter = mTableau.rConstraintToBound().find( *origin );
+                                assert( constrBoundIter != mTableau.constraintToBound().end() );
+                                vector< const LRABound* >* constraintToBounds = constrBoundIter->second;
+                                constraintToBounds->push_back( learnedBound.nextWeakerBound );
+                                #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
+                                if( learnedBound.newBound != NULL ) constraintToBounds->push_back( learnedBound.newBound );
+                                #endif
+//                                }
                             }
                         }
                         activateBound( learnedBound.nextWeakerBound, originSet );
                         #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
                         if( learnedBound.newBound != NULL )
                         {
-                            const Constraint* newConstraint = learnedBound.newBound->pAsConstraint();
+                            const Formula* newConstraint = learnedBound.newBound->pAsConstraint();
                             addConstraintToInform( newConstraint );
                             mLinearConstraints.insert( newConstraint );
                             vector< const LRABound* >* boundVector = new vector< const LRABound* >();
@@ -751,7 +696,7 @@ Return:
                     ++originIterB;
                 }
             }
-            subformulas.insert( newFormula( iter->second.nextWeakerBound->pAsConstraint() ) );
+            subformulas.insert( iter->second.nextWeakerBound->pAsConstraint() );
             addDeduction( newFormula( OR, subformulas ) );
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->addRefinement();
@@ -771,7 +716,7 @@ Return:
                     ++originIterB;
                 }
             }
-            subformulas.insert( newFormula( iter->second.nextWeakerBound->pAsConstraint() ) );
+            subformulas.insert( iter->second.nextWeakerBound->pAsConstraint() );
             addDeduction( newFormula( OR, subformulas ) );
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->addRefinement();
@@ -793,7 +738,7 @@ Return:
             const LRABound& bound = *mBoundCandidatesToPass.back();
             if( bound.pInfo()->updated > 0 )
             {
-                addSubformulaToPassedFormula( newFormula( bound.pAsConstraint() ), bound.origins() ); // TODO: reuse an once created formula for this constraint
+                addSubformulaToPassedFormula( bound.pAsConstraint(), bound.origins() ); // TODO: reuse an once created formula for this constraint
                 bound.pInfo()->position = --mpPassedFormula->end();
                 bound.pInfo()->updated = 0;
             }
@@ -904,6 +849,35 @@ Return:
             mpStatistics->addConflict( mInfeasibleSubsets );
         #endif
     }
+    
+    void LRAModule::activateStrictBound( const Formula* _neqOrigin, const LRABound& _weakBound, const LRABound* _strictBound )
+    {
+        PointerSet<Formula> involvedConstraints;
+        PointerSet<Formula> originSet;
+        originSet.insert( _neqOrigin );
+        auto iter = _weakBound.origins().begin();
+        assert( iter != _weakBound.origins().end() );
+        originSet.insert( iter->begin(), iter->end() );
+        involvedConstraints.insert( iter->begin(), iter->end() );
+        activateBound( _strictBound, originSet );
+        ++iter;
+        while( iter != _weakBound.origins().end() )
+        {
+            PointerSet<Formula> originSetB;
+            originSetB.insert( _neqOrigin );
+            originSetB.insert( iter->begin(), iter->end() );
+            involvedConstraints.insert( iter->begin(), iter->end() );
+            _strictBound->pOrigins()->push_back( std::move( originSetB ) );
+            ++iter;
+        }
+        for( const Formula* fconstraint : involvedConstraints )
+        {
+            auto constrBoundIter = mTableau.rConstraintToBound().find( fconstraint );
+            assert( constrBoundIter != mTableau.constraintToBound().end() );
+            vector< const LRABound* >* constraintToBounds = constrBoundIter->second;
+            constraintToBounds->push_back( _strictBound );
+        }
+    }
 
     /**
      * Creates a bound corresponding to the given constraint.
@@ -913,13 +887,13 @@ Return:
      * @param _boundValue The limit of the bound.
      * @param _constraint The constraint corresponding to the bound to create.
      */
-    void LRAModule::setBound( const Constraint* _constraint )
+    void LRAModule::setBound( const Formula* _constraint )
     {
         pair<const LRABound*, bool> retValue = mTableau.newBound( _constraint );
         if( retValue.second )
         {
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
-            addSimpleBoundDeduction( retValue.first, _constraint->relation() == Relation::NEQ );
+            addSimpleBoundDeduction( retValue.first, _constraint->constraint().relation() == Relation::NEQ );
             #endif
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *retValue.first );
@@ -965,8 +939,8 @@ Return:
                     if( (*currentBound)->pInfo()->exists && (*currentBound)->type() != LRABound::Type::EQUAL )
                     {
                         PointerSet<Formula> subformulas;
-                        subformulas.insert( newNegation( newFormula( _bound->pAsConstraint() ) ) );
-                        subformulas.insert( newFormula( (*currentBound)->pAsConstraint() ) );
+                        subformulas.insert( newNegation( _bound->pAsConstraint() ) );
+                        subformulas.insert( (*currentBound)->pAsConstraint() );
                         addDeduction( newFormula( OR, subformulas ) );
                         #ifdef SMTRAT_DEVOPTION_Statistics
                         mpStatistics->addDeduction();
@@ -993,8 +967,8 @@ Return:
                     if( (*currentBound)->pInfo()->exists && (*currentBound)->type() != LRABound::Type::EQUAL )
                     {
                         PointerSet<Formula> subformulas;
-                        subformulas.insert( newNegation( newFormula( _bound->pAsConstraint() ) ) );
-                        subformulas.insert( newFormula( (*currentBound)->pAsConstraint() ) );
+                        subformulas.insert( newNegation( _bound->pAsConstraint() ) );
+                        subformulas.insert( (*currentBound)->pAsConstraint() );
                         addDeduction( newFormula( OR, subformulas ) );
                         #ifdef SMTRAT_DEVOPTION_Statistics
                         mpStatistics->addDeduction();
@@ -1033,8 +1007,8 @@ Return:
     void LRAModule::addSimpleBoundConflict( const LRABound& _caseA, const LRABound& _caseB, bool _caseBneq )
     {
         PointerSet<Formula> subformulas;
-        subformulas.insert( newNegation( newFormula( _caseA.pAsConstraint() ) ) );
-        subformulas.insert( newNegation( newFormula( _caseBneq ? _caseB.neqRepresentation() : _caseB.pAsConstraint() ) ) );
+        subformulas.insert( newNegation( _caseA.pAsConstraint() ) );
+        subformulas.insert( newNegation( _caseBneq ? _caseB.neqRepresentation() : _caseB.pAsConstraint() ) );
         addDeduction( newFormula( OR, subformulas ) );
         #ifdef SMTRAT_DEVOPTION_Statistics
         mpStatistics->addDeduction();
@@ -1124,16 +1098,7 @@ Return:
         if( !mInitialized )
         {
             mInitialized = true;
-//            map<carl::Variable, PointerSet<Constraint>> linearConstraintSCCs;
-//            for( const Constraint* constraint : mLinearConstraints )
-//            {
-//                const Variables& vars = constraint->variables();
-//                for( carl::Variable var : vars )
-//                {
-//                    linearConstraintSCCs[var].insert( constraint );
-//                }
-//            }
-            for( const Constraint* constraint : mLinearConstraints )
+            for( const Formula* constraint : mLinearConstraints )
             {
                 setBound( constraint );
             }
@@ -1165,10 +1130,11 @@ Return:
                 if( !carl::isInteger( ass ) )
                 {
                     all_int = false;
-                    const Constraint* gomory_constr = mTableau.gomoryCut(ass, basicVar);
+                    const Formula* gomory_constr = mTableau.gomoryCut(ass, basicVar);
                     if( gomory_constr != NULL )
-                    { 
-                        assert( !gomory_constr->satisfiedBy( rMap_ ) );
+                    {
+                        assert( gomory_constr->getType() == CONSTRAINT );
+                        assert( !gomory_constr->constraint().satisfiedBy( rMap_ ) );
                         PointerSet<Formula> subformulas; 
                         mTableau.collect_premises( basicVar, subformulas );
                         PointerSet<Formula> premise;
@@ -1176,8 +1142,7 @@ Return:
                         {
                             premise.insert( newNegation( pre ) );
                         }
-                        const Formula* gomory_formula = newFormula( gomory_constr );
-                        premise.insert( gomory_formula );
+                        premise.insert( gomory_constr );
                         addDeduction( newFormula( OR, std::move( premise ) ) );
                     } 
                 }
@@ -1240,7 +1205,7 @@ Return:
             if( dc_constraint != NULL  )
             {
                 size_t row_count_before = dc_Tableau.rows().size();
-                pair< const LRABound*, bool> result = dc_Tableau.newBound(dc_constraint);
+                pair< const LRABound*, bool> result = dc_Tableau.newBound( newFormula( dc_constraint ) );
                 PointerSet<Formula> formulas;
                 dc_Tableau.activateBound(result.first, formulas);
                 if( row_count_before < dc_Tableau.rows().size() )
@@ -1287,7 +1252,7 @@ Return:
             dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
             cout << "Actual order of columns:" << endl;
             for( auto iter = diagonals.begin(); iter != diagonals.end(); ++iter ) 
-                printf( "%u", *iter );
+                printf( "%u", (unsigned)*iter );
             #endif  
             dc_Tableau.invert_HNF_Matrix( diagonals );
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS

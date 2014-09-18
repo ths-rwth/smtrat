@@ -432,14 +432,6 @@ namespace smtrat
     bool Constraint::operator<( const Constraint& _constraint ) const
     {
         assert( mID > 0 && _constraint.id() > 0 );
-//        if( mID == 0 || _constraint.id() == 0 )
-//        {
-//            if( relation() < _constraint.relation() )
-//            {
-//                return lhs() < _constraint.lhs();
-//            }
-//            return false;
-//        }
         return mID < _constraint.id();
     }
 
@@ -631,6 +623,28 @@ namespace smtrat
                 return Relation::GEQ;
             case Relation::GREATER:
                 return Relation::LEQ;
+            default:
+                assert( false );
+                return Relation::EQ;
+        }
+    }
+    
+    Relation Constraint::turnAroundRelation( const Relation _rel )
+    {
+        switch( _rel )
+        {
+            case Relation::EQ:
+                return Relation::EQ;
+            case Relation::NEQ:
+                return Relation::NEQ;
+            case Relation::LEQ:
+                return Relation::GEQ;
+            case Relation::GEQ:
+                return Relation::LEQ;
+            case Relation::LESS:
+                return Relation::GREATER;
+            case Relation::GREATER:
+                return Relation::LESS;
             default:
                 assert( false );
                 return Relation::EQ;

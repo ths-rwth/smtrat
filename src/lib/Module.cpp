@@ -18,7 +18,6 @@
  * along with SMT-RAT. If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
 /**
  * @file Module.cpp
  *
@@ -63,12 +62,12 @@ namespace smtrat
 
     // Constructor.
     
-    Module::Module( ModuleType type, const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* const _tsManager ):
+    Module::Module( ModuleType type, const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager ):
         mId( 0 ),
         mThreadPriority( thread_priority( 0 , 0 ) ),
-        mModuleType( type ),
+        mType( type ),
         mInfeasibleSubsets(),
-        mpManager( _tsManager ),
+        mpManager( _manager ),
         mpReceivedFormula( _formula ),
         mpPassedFormula( new ModuleInput() ),
         mModel(),
@@ -109,16 +108,6 @@ namespace smtrat
         delete mBackendsFoundAnswer;
     }
 
-    /**
-     * Checks the received formula for consistency. Note, that this is an implementation of 
-     * the satisfiability check of the conjunction of the so far received formulas, which does
-     * actually nothing but passing the problem to its backends. This implementation is only used
-     * internally and must be overwritten by any derived module.
-     *
-     * @return True,    if the received formula is satisfiable;
-     *          False,   if the received formula is not satisfiable;
-     *          Unknown, otherwise.
-     */
     Answer Module::isConsistent()
     {
         assert( mInfeasibleSubsets.empty() );
@@ -149,34 +138,15 @@ namespace smtrat
         #endif
     }
 
-    /**
-     * Informs the module about the given constraint. It should be tried to inform this
-     * module about any constraint it could receive eventually before assertSubformula
-     * is called (preferably for the first time, but at least before adding a formula
-     * containing that constraint).
-     * @param _constraint The constraint to inform about.
-     * @return false, if it can be easily decided whether the given constraint is inconsistent;
-     *          true, otherwise.
-     */
-    bool Module::inform( const Constraint* const _constraint )
+    bool Module::inform( const Formula* _constraint )
     {
         #ifdef MODULE_VERBOSE
-        cout << __func__ << " in " << this << " with name " << moduleName( mModuleType ) << ": ";
-        if( _constraint == ConstraintPool::getInstance().consistentConstraint() )
-            cout << true << endl;
-        else if( _constraint == ConstraintPool::getInstance().inconsistentConstraint() )
-            cout << "false" << endl;
-        else
-            cout << _constraint->toString() << endl;
+        cout << __func__ << " in " << this << " with name " << moduleName( mType ) << ": " << *_constraint << endl;
         #endif
         addConstraintToInform( _constraint );
         return true;
     }
     
-    /**
-     * Informs all backends about the so far encountered constraints, which have not yet been communicated.
-     * This method must not be called twice and only before the first runBackends call.
-     */
     void Module::init()
     {
         if( mpManager == NULL || mConstraintsToInform.empty() ) return;
@@ -193,18 +163,10 @@ namespace smtrat
         mConstraintsToInform.clear();
     }
 
-    /**
-     * The module has to take the given sub-formula of the received formula into account.
-     *
-     * @param _subformula The sub-formula to take additionally into account.
-     * @return false, if it can be easily decided that this sub-formula causes a conflict with
-     *          the already considered sub-formulas;
-     *          true, otherwise.
-     */
     bool Module::assertSubformula( ModuleInput::const_iterator _receivedSubformula )
     {
         #ifdef MODULE_VERBOSE
-        cout << __func__ << " in " << this << " with name " << moduleName( mModuleType ) << ":" << endl << endl;
+        cout << __func__ << " in " << this << " with name " << moduleName( mType ) << ":" << endl << endl;
         cout << " " << **_receivedSubformula << " [" << *_receivedSubformula << "]" << endl << endl;
         #endif
         if( mFirstUncheckedReceivedSubformula == mpReceivedFormula->end() )
@@ -214,17 +176,10 @@ namespace smtrat
         return true;
     }
     
-    /**
-     * Removes everything related to the given sub-formula of the received formula. However,
-     * it is desired not to lose track of search spaces where no satisfying  assignment can 
-     * be found for the remaining sub-formulas.
-     *
-     * @param _subformula The sub formula of the received formula to remove.
-     */
     void Module::removeSubformula( ModuleInput::const_iterator _receivedSubformula )
     {
         #ifdef MODULE_VERBOSE
-        cout << __func__ << " in " << this << " with name " << moduleName( mModuleType ) << ":" << endl << endl;
+        cout << __func__ << " in " << this << " with name " << moduleName( mType ) << ":" << endl << endl;
         cout << " " << **_receivedSubformula << " [" << *_receivedSubformula << "]" << endl << endl;
         #endif
         if( mFirstUncheckedReceivedSubformula == _receivedSubformula )
@@ -270,9 +225,6 @@ namespace smtrat
             mSolverState = Unknown;
     }
 
-    /**
-     * Updates the model, if the solver has detected the consistency of the received formula, beforehand.
-     */
     void Module::updateModel() const
     {
         clearModel();
@@ -281,29 +233,7 @@ namespace smtrat
             getBackendsModel();
         }
     }
-    
-    /**
-     * Rates the given set of formulas according to an estimation of the difficulty
-     * of solving the conjunction of the given formulas by the methods implemented in this module.
-     * This rating should involve the current state of the module being a result from the last consistency
-     * check and consult also the ratings of the module's backends.
-     * @param The set of formulas to rate.
-     * @return A positive number representing the rating of this module for conjunction of the given formulas.
-     *         If this number is 0, it means that this module can solve the given formula with almost
-     *         no effort.
-     */
-    double Module::rateCall( const PointerSet<Formula>& ) const
-    {
-        return 1;
-    }
 
-    /**
-     * Partition the variables from the current model into equivalence classes according to their assigned value.
-     * 
-     * The result is a set of equivalence classes of variables where all variables within one class are assigned the same value.
-     * Note that the number of classes may not be minimal, i.e. two classes may actually be equivalent.
-     * @return Equivalence classes.
-     */
     list<std::vector<carl::Variable>> Module::getModelEqualities() const
     {
         list<std::vector<carl::Variable>> res;
@@ -334,23 +264,11 @@ namespace smtrat
         return res;
     }
 
-    /**
-     * Copies the given sub-formula of the received formula to the passed formula. Note, that
-     * there is always a link between sub-formulas of the passed formulas to sub-formulas of
-     * the received formulas, which are responsible for its occurrence.
-     * @param _subformula The sub-formula of the received formula to copy.
-     */
     void Module::addReceivedSubformulaToPassedFormula( ModuleInput::const_iterator _subformula )
     {
         addSubformulaToPassedFormula( *_subformula, *_subformula );
     }
 
-    /**
-     * Adds the given formula to the passed formula.
-     * @param _formula The formula to add to the passed formula.
-     * @param _origins The link of the formula to add to the passed formula to sub-formulas 
-     *         of the received formulas, which are responsible for its occurrence
-     */
     void Module::addSubformulaToPassedFormula( const Formula* _formula, const vec_set_const_pFormula& _origins )
     {
         assert( mpReceivedFormula->size() != UINT_MAX );
@@ -360,12 +278,6 @@ namespace smtrat
             mFirstSubformulaToPass = --mpPassedFormula->end();
     }
 
-    /**
-     * Adds the given formula to the passed formula.
-     * @param _formula The formula to add to the passed formula.
-     * @param _origins The link of the formula to add to the passed formula to sub-formulas 
-     *         of the received formulas, which are responsible for its occurrence
-     */
     void Module::addSubformulaToPassedFormula( const Formula* _formula, vec_set_const_pFormula&& _origins )
     {
         assert( mpReceivedFormula->size() != UINT_MAX );
@@ -375,12 +287,6 @@ namespace smtrat
             mFirstSubformulaToPass = --mpPassedFormula->end();
     }
 
-    /**
-     * Adds the given formula to the passed formula.
-     * @param _formula The formula to add to the passed formula.
-     * @param _origin The sub-formula of the received formula being responsible for the
-     *        occurrence of the formula to add to the passed formula.
-     */
     void Module::addSubformulaToPassedFormula( const Formula* _formula, const Formula* _origin )
     {
         assert( mpReceivedFormula->size() != UINT_MAX );
@@ -393,16 +299,6 @@ namespace smtrat
             mFirstSubformulaToPass = --mpPassedFormula->end();
     }
 
-    /**
-     * Merges the two vectors of sets into the first one.
-     *
-     * ({a,b},{a,c}) and ({b,d},{b}) -> ({a,b,d},{a,b},{a,b,c,d},{a,b,c})
-     *
-     * @param _vecSetA  A vector of sets of constraints.
-     * @param _vecSetB  A vector of sets of constraints.
-     *
-     * @result The vector being the two given vectors merged.
-     */
     vec_set_const_pFormula Module::merge( const vec_set_const_pFormula& _vecSetA, const vec_set_const_pFormula& _vecSetB ) const
     {
         vec_set_const_pFormula result = vec_set_const_pFormula();
@@ -471,20 +367,6 @@ namespace smtrat
         return false;
     }
     
-    /**
-     * Adds a deductions which provoke a branching for the given variable at the given value,
-     * if this module returns Unknown and there exists a preceding SATModule. Note that the 
-     * given value is rounded down and up, if the given variable is integer-valued.
-     * @param _var The variable to branch for.
-     * @param _value The value to branch at.
-     * @param _premise The sub-formulas of the received formula from which the branch is followed.
-     *                 Note, that a premise is not necessary, as every branch is a valid formula.
-     *                 But a premise can prevent from branching unnecessarily.
-     * @param _leftCaseWeak true, if the given variable should be less or equal than the given value
-     *                            or greater than the given value;
-     *                      false, if the given variable should be less than the given value or
-     *                             or greater or equal than the given value.
-     */
     void Module::branchAt( const Polynomial& _polynomial, const Rational& _value, const PointerSet<Formula>& _premise, bool _leftCaseWeak )
     {
         assert( !_polynomial.hasConstantTerm() );
@@ -560,49 +442,35 @@ namespace smtrat
         addDeduction( deduction );
     }
     
-    /**
-     * Adds the following lemmas for the given constraint p!=0
-     *
-     *      (p!=0 <-> (p<0 or p>0))
-     * and  not(p<0 and p>0)
-     *
-     * @param _unequalConstraint A constraint having the relation symbol !=.
-     */
-    void Module::splitUnequalConstraint( const Constraint* _unequalConstraint )
+    void Module::splitUnequalConstraint( const Formula* _unequalConstraint )
     {
-        assert( _unequalConstraint->relation() == Relation::NEQ );
-        const Formula* lessConstraint = newFormula( newConstraint( _unequalConstraint->lhs(), Relation::LESS ) );
+        assert( _unequalConstraint->getType() == CONSTRAINT );
+        assert( _unequalConstraint->constraint().relation() == Relation::NEQ );
+        const Polynomial& lhs = _unequalConstraint->constraint().lhs();
+        const Formula* lessConstraint = newFormula( newConstraint( lhs, Relation::LESS ) );
         const Formula* notLessConstraint = newNegation( lessConstraint );
-        const Formula* greaterConstraint = newFormula( newConstraint( _unequalConstraint->lhs(), Relation::GREATER ) );
+        const Formula* greaterConstraint = newFormula( newConstraint( lhs, Relation::GREATER ) );
         const Formula* notGreaterConstraint = newNegation( greaterConstraint );
-        const Formula* unequalConstraint = newFormula( _unequalConstraint );
         // (not p!=0 or p<0 or p>0)
         PointerSet<Formula> subformulas;
-        subformulas.insert( newNegation( unequalConstraint ) );
+        subformulas.insert( newNegation( _unequalConstraint ) );
         subformulas.insert( lessConstraint );
         subformulas.insert( greaterConstraint );
         addDeduction( newFormula( OR, std::move( subformulas ) ) );
         // (not p<0 or p!=0)
-        addDeduction( newFormula( OR, notLessConstraint, unequalConstraint ) );
+        addDeduction( newFormula( OR, notLessConstraint, _unequalConstraint ) );
         // (not p>0 or p!=0)
-        addDeduction( newFormula( OR, notGreaterConstraint, unequalConstraint ) );
+        addDeduction( newFormula( OR, notGreaterConstraint, _unequalConstraint ) );
         // (not p>0 or not p<0)
         addDeduction( newFormula( OR, notGreaterConstraint, notLessConstraint ) );
     }
     
-    /**
-     * @return false, if the current model of this module does not satisfy the current given formula;
-     *         true, if it cannot be said whether the model satisfies the given formula.
-     */
     unsigned Module::checkModel() const
     {
         this->updateModel();
         return mpReceivedFormula->satisfiedBy( mModel );
     }
 
-    /**
-     * Copies the infeasible subsets of the passed formula
-     */
     void Module::getInfeasibleSubsets()
     {
         vector<Module*>::const_iterator backend = mUsedBackends.begin();
@@ -618,13 +486,6 @@ namespace smtrat
         }
     }
 
-    /**
-     * Checks whether there is no variable assigned by both models.
-     * @param _modelA The first model to check for.
-     * @param _modelB The second model to check for.
-     * @return true, if there is no variable assigned by both models;
-     *          false, otherwise.
-     */
     bool Module::modelsDisjoint( const Model& _modelA, const Model& _modelB )
     {
         Model::const_iterator assignment = _modelA.begin();
@@ -642,10 +503,6 @@ namespace smtrat
         return true;
     }
 
-    /**
-     * Stores the model of a backend which determined satisfiability of the passed 
-     * formula in the model of this module.
-     */
     void Module::getBackendsModel() const
     {
         auto module = mUsedBackends.begin();
@@ -667,14 +524,6 @@ namespace smtrat
         }
     }
 
-    /**
-     * Get the infeasible subsets the given backend provides. Note, that an infeasible subset
-     * in a backend contains sub formulas of the passed formula and an infeasible subset of
-     * this module contains sub formulas of the received formula. In this method the LATTER is
-     * returned.
-     * @param _backend The backend from which to obtain the infeasible subsets.
-     * @return The infeasible subsets the given backend provides.
-     */
     vec_set_const_pFormula Module::getInfeasibleSubsets( const Module& _backend ) const
     {
         vec_set_const_pFormula result = vec_set_const_pFormula();
@@ -692,7 +541,7 @@ namespace smtrat
             result.push_back( PointerSet<Formula>() );
             for( PointerSet<Formula>::const_iterator cons = infSubSet->begin(); cons != infSubSet->end(); ++cons )
             {
-                vec_set_const_pFormula formOrigins = vec_set_const_pFormula();
+                vec_set_const_pFormula formOrigins;
                 getOrigins( *cons, formOrigins );
                 // Find the smallest set of origins.
                 vec_set_const_pFormula::const_iterator smallestOriginSet = formOrigins.begin();
@@ -720,12 +569,6 @@ namespace smtrat
         return result;
     }
 
-    /**
-     * Runs the backend solvers on the passed formula.
-     * @return True,    if the passed formula is consistent;
-     *          False,   if the passed formula is inconsistent;
-     *          Unknown, otherwise.
-     */
     Answer Module::runBackends()
     {
         if( mpManager == NULL ) return Unknown;
@@ -851,12 +694,6 @@ namespace smtrat
         return result;
     }
 
-    /**
-     * Removes everything related to the sub-formula to remove from the passed formula in the backends of this module.
-     * Afterwards the sub-formula is removed from the passed formula.
-     * @param _subformula The sub-formula to remove from the passed formula.
-     * @return 
-     */
     ModuleInput::iterator Module::removeSubformulaFromPassedFormula( ModuleInput::iterator _subformula )
     {
         assert( _subformula != mpPassedFormula->end() );
@@ -911,17 +748,9 @@ namespace smtrat
         return result;
     }
 
-    /**
-     * Sets the solver state to the given answer value. This method also fires the flag 
-     * given by the antecessor module of this module to true, if the given answer value is not Unknown.
-     * CALL THIS METHOD ALWAYS BEFORE RETURNING A RESULT WITH ISCONSISTENT!!!
-     * @param _answer The found answer.
-     */
     Answer Module::foundAnswer( Answer _answer )
     {
         mSolverState = _answer;
-//        if( !(_answer != True || checkModel() != 0 ))
-//            exit( 7771 );
         assert( _answer != True || checkModel() != 0 );
         // If we are in the SMT environment:
         if( mpManager != NULL && _answer != Unknown )
@@ -932,21 +761,13 @@ namespace smtrat
         return _answer;
     }
 
-    /**
-     * Adds a constraint to the collection of constraints of this module, which are informed to a 
-     * freshly generated backend.
-     * @param The constraint to add.
-     */
-    void Module::addConstraintToInform( const Constraint* const constraint )
+    void Module::addConstraintToInform( const Formula* const constraint )
     {
         // We can give the hint that this constraint will probably be inserted in the end of this container,
         // as it is compared by an id which gets incremented every time a new constraint is constructed.
         mConstraintsToInform.insert( mConstraintsToInform.end(), constraint );
     }
 
-    /**
-     * Stores all deductions of any backend of this module in its own deduction vector.
-     */
     void Module::updateDeductions()
     {
         for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
@@ -967,14 +788,7 @@ namespace smtrat
         }
     }
 
-    /**
-     * Add a formula to the assumption vector and its predetermined consistency status.
-     * @param _formula The formula which should be consistent/inconsistent.
-     * @param _consistent A flag indicating whether the conjunction of the given constraints should be
-     *         consistent or inconsistent.
-     * @see Module::storeAssumptionsToCheck
-     */
-    void Module::addAssumptionToCheck( const Formula* _formula, bool _consistent, const string& _moduleName )
+    void Module::addAssumptionToCheck( const Formula* _formula, bool _consistent, const string& _label )
     {
         string assumption = "";
         #ifdef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
@@ -987,86 +801,60 @@ namespace smtrat
         #ifdef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
         assumption += ")\n";
         #else
-        assumption += " " + _moduleName;
+        assumption += " " + _label;
         assumption += "))\n";
         assumption += "(get-assertions)\n";
         #endif
         assumption += "(check-sat)\n";
         mAssumptionToCheck.push_back( assumption );
-        mVariablesInAssumptionToCheck.insert( _moduleName );
+        mVariablesInAssumptionToCheck.insert( _label );
     }
     
-    /**
-     * Add a formula to the assumption vector and its predetermined consistency status.
-     * @param _subformulas The sub-formulas whose conjunction should be consistent/inconsistent.
-     * @param _consistent A flag indicating whether the conjunction of the given constraints should be
-     *         consistent or inconsistent.
-     * @see Module::storeAssumptionsToCheck
-     */
-    void Module::addAssumptionToCheck( const ModuleInput& _subformulas, bool _consistent, const std::string& _moduleName )
+    void Module::addAssumptionToCheck( const ModuleInput& _subformulas, bool _consistent, const std::string& _label )
     {
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
         assumption += "(assert (and";
         for( auto formula = _subformulas.begin(); formula != _subformulas.end(); ++formula )
             assumption += " " + (*formula)->toString( false, 1, "", true, false, true );
-        assumption += " " + _moduleName;
+        assumption += " " + _label;
         assumption += "))\n";
         assumption += "(get-assertions)\n";
         assumption += "(check-sat)\n";
         mAssumptionToCheck.push_back( assumption );
-        mVariablesInAssumptionToCheck.insert( _moduleName );
+        mVariablesInAssumptionToCheck.insert( _label );
     }
 
-    /**
-     * Add a conjunction of formulas to the assumption vector and its predetermined consistency status.
-     * @param _formulas The formulas, whose conjunction should be consistent/inconsistent.
-     * @param _consistent A flag indicating whether the conjunction of the given constraints should be
-     *         consistent or inconsistent.
-     * @see Module::storeAssumptionsToCheck
-     */
-    void Module::addAssumptionToCheck( const PointerSet<Formula>& _formulas, bool _consistent, const string& _moduleName )
+    void Module::addAssumptionToCheck( const PointerSet<Formula>& _formulas, bool _consistent, const string& _label )
     {
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
         assumption += "(assert (and";
         for( auto formula = _formulas.begin(); formula != _formulas.end(); ++formula )
             assumption += " " + (*formula)->toString( false, 1, "", true, false, true );
-        assumption += " " + _moduleName;
+        assumption += " " + _label;
         assumption += "))\n";
         assumption += "(get-assertions)\n";
         assumption += "(check-sat)\n";
         mAssumptionToCheck.push_back( assumption );
-        mVariablesInAssumptionToCheck.insert( _moduleName );
+        mVariablesInAssumptionToCheck.insert( _label );
     }
 
-    /**
-     * Add a conjunction of _constraints to the assumption vector and its predetermined consistency status.
-     * @param _constraints The constraints, whose conjunction should be consistent/inconsistent.
-     * @param _consistent A flag indicating whether the conjunction of the given constraints should be
-     *         consistent or inconsistent.
-     * @see Module::storeAssumptionsToCheck
-     */
-    void Module::addAssumptionToCheck( const set<const Constraint*>& _constraints, bool _consistent, const string& _moduleName )
+    void Module::addAssumptionToCheck( const set<const Constraint*>& _constraints, bool _consistent, const string& _label )
     {
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
         assumption += "(assert (and";
         for( auto constraint = _constraints.begin(); constraint != _constraints.end(); ++constraint )
             assumption += " " + (*constraint)->toString( 1, false, true );
-        assumption += " " + _moduleName;
+        assumption += " " + _label;
         assumption += "))\n";
         assumption += "(get-assertions)\n";
         assumption += "(check-sat)\n";
         mAssumptionToCheck.push_back( assumption );
-        mVariablesInAssumptionToCheck.insert( _moduleName );
+        mVariablesInAssumptionToCheck.insert( _label );
     }
 
-    /**
-     * Prints the collected assumptions in the assumption vector into _filename with an appropriate smt2 
-     * header including all variables used.
-     * @param _filename The name of the smt2-file to store the formulas.
-     */
     void Module::storeAssumptionsToCheck( const Manager& 
                                           #ifdef SMTRAT_DEVOPTION_Validation
                                           _manager
@@ -1113,10 +901,6 @@ namespace smtrat
         #endif
     }
     
-    /**
-     * @return true, if the module has at least one valid infeasible subset, that is all its
-     *         elements are sub-formulas of the received formula (pointer must be equal).
-     */
     bool Module::hasValidInfeasibleSubset() const
     {
         if( mInfeasibleSubsets.empty() ) return false;
@@ -1131,17 +915,10 @@ namespace smtrat
         return true;
     }
     
-    /**
-     * Checks the given infeasible subset for minimality by storing all subsets of it, which have a smaller size 
-     * which differs from the size of the infeasible subset not more than the given threshold.
-     * @param _infsubset The infeasible subset to check for minimality.
-     * @param _filename The name of the file to store the infeasible subsets in order to be able to check their infeasibility.
-     * @param _maxSizeDifference The maximal difference between the sizes of the subsets compared to the size of the infeasible subset.
-     */
     void Module::checkInfSubsetForMinimality( vec_set_const_pFormula::const_iterator _infsubset, const string& _filename, unsigned _maxSizeDifference ) const
     {
         stringstream filename;
-        filename << _filename << "_" << moduleName(mModuleType) << "_" << mSmallerMusesCheckCounter << ".smt2";
+        filename << _filename << "_" << moduleName(mType) << "_" << mSmallerMusesCheckCounter << ".smt2";
         ofstream smtlibFile;
         smtlibFile.open( filename.str() );
         for( size_t size = _infsubset->size() - _maxSizeDifference; size < _infsubset->size(); ++size )
@@ -1186,11 +963,6 @@ namespace smtrat
         smtlibFile.close();
     }
 
-    /**
-     * Prints everything relevant of the solver.
-     * @param _out The output stream where the answer should be printed.
-     * @param _initiation The line initiation.
-     */
     void Module::print( ostream& _out, const string _initiation ) const
     {
         _out << _initiation << "********************************************************************************" << endl;
@@ -1207,11 +979,6 @@ namespace smtrat
         _out << _initiation << "********************************************************************************" << endl;
     }
 
-    /**
-     * Prints the vector of the received formula.
-     * @param _out The output stream where the answer should be printed.
-     * @param _initiation The line initiation.
-     */
     void Module::printReceivedFormula( ostream& _out, const string _initiation ) const
     {
         _out << _initiation << "Received formula:" << endl;
@@ -1228,11 +995,6 @@ namespace smtrat
         }
     }
 
-    /**
-     * Prints the vector of passed formula.
-     * @param _out The output stream where the answer should be printed.
-     * @param _initiation The line initiation.
-     */
     void Module::printPassedFormula( ostream& _out, const string _initiation ) const
     {
         _out << _initiation << "Passed formula:" << endl;
@@ -1256,11 +1018,6 @@ namespace smtrat
         }
     }
 
-    /**
-     * Prints the infeasible subsets.
-     * @param _out The output stream where the answer should be printed.
-     * @param _initiation The line initiation.
-     */
     void Module::printInfeasibleSubsets( ostream& _out, const string _initiation ) const
     {
         _out << _initiation << "Infeasible subsets:" << endl;
@@ -1277,11 +1034,6 @@ namespace smtrat
         _out << " }" << endl;
     }
     
-    /**
-     * Prints the assignment of this module satisfying its received formula if it satisfiable
-     * and this module could find an assignment.
-     * @param _out The stream to print the assignment on.
-     */
     void Module::printModel( ostream& _out ) const
     {
         this->updateModel();

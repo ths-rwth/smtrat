@@ -201,7 +201,7 @@ namespace smtrat
                 Value<T1>*                      mpTheta;
                 std::map<carl::Variable, Variable<T1,T2>*>  mOriginalVars;
                 FastPointerMap<Polynomial, Variable<T1,T2>*> mSlackVars;
-                FastPointerMap<Constraint, std::vector<const Bound<T1, T2>*>*> mConstraintToBound;
+                FastPointerMap<Formula, std::vector<const Bound<T1, T2>*>*> mConstraintToBound;
                 #ifdef LRA_REFINEMENT
                 std::map<Variable<T1,T2>*, LearnedBound> mLearnedLowerBounds;
                 std::map<Variable<T1,T2>*, LearnedBound> mLearnedUpperBounds;
@@ -319,12 +319,12 @@ namespace smtrat
                     return mSlackVars;
                 }
                 
-                const FastPointerMap<Constraint, std::vector<const Bound<T1, T2>*>*>& constraintToBound() const
+                const FastPointerMap<Formula, std::vector<const Bound<T1, T2>*>*>& constraintToBound() const
                 {
                     return mConstraintToBound;
                 }
                 
-                FastPointerMap<Constraint, std::vector<const Bound<T1, T2>*>*>& rConstraintToBound()
+                FastPointerMap<Formula, std::vector<const Bound<T1, T2>*>*>& rConstraintToBound()
                 {
                     return mConstraintToBound;
                 }
@@ -363,7 +363,7 @@ namespace smtrat
 
                 EntryID newTableauEntry( const T2& );
                 void removeEntry( EntryID );
-                std::pair<const Bound<T1,T2>*, bool> newBound( const smtrat::Constraint* );
+                std::pair<const Bound<T1,T2>*, bool> newBound( const smtrat::Formula* );
                 void activateBound( const Bound<T1,T2>*, const PointerSet<Formula>& );
                 Variable<T1, T2>* newNonbasicVariable( const smtrat::Polynomial*, bool );
                 Variable<T1, T2>* newBasicVariable( const smtrat::Polynomial*, std::map<carl::Variable, Variable<T1, T2>*>&, bool );
@@ -406,7 +406,7 @@ namespace smtrat
                 void invert_HNF_Matrix( std::vector<size_t>& );
                 smtrat::Polynomial* create_cut_from_proof( Tableau<T1,T2>&, Tableau<T1,T2>&, size_t, std::vector<size_t>&, std::vector<size_t>&, T2&, T2& );
                 #endif
-                const smtrat::Constraint* gomoryCut( const T2&, Variable<T1, T2>* );
+                const smtrat::Formula* gomoryCut( const T2&, Variable<T1, T2>* );
                 size_t getNumberOfEntries( Variable<T1,T2>* );
                 void collect_premises( const Variable<T1,T2>*, PointerSet<Formula>&  );
                 void printHeap( std::ostream& = std::cout, int = 30, const std::string = "" ) const;
@@ -575,21 +575,23 @@ namespace smtrat
         }
         
         template<typename T1, typename T2>
-        std::pair<const Bound<T1,T2>*, bool> Tableau<T1,T2>::newBound( const smtrat::Constraint* _constraint )
+        std::pair<const Bound<T1,T2>*, bool> Tableau<T1,T2>::newBound( const smtrat::Formula* _constraint )
         {
-            assert( _constraint->isConsistent() == 2 );
+            assert( _constraint->getType() == smtrat::CONSTRAINT );
+            const Constraint& constraint = _constraint->constraint();
+            assert( constraint.isConsistent() == 2 );
             T1 boundValue = T1( 0 );
             bool negative = false;
             Variable<T1, T2>* newVar;
-            if( _constraint->lhs().nrTerms() == 1 || ( _constraint->lhs().nrTerms() == 2 && _constraint->lhs().hasConstantTerm() ) )
+            if( constraint.lhs().nrTerms() == 1 || ( constraint.lhs().nrTerms() == 2 && constraint.lhs().hasConstantTerm() ) )
             {
-                auto term = _constraint->lhs().begin();
-                for( ; term != _constraint->lhs().end(); ++term )
+                auto term = constraint.lhs().begin();
+                for( ; term != constraint.lhs().end(); ++term )
                     if( !(*term)->isConstant() ) break;
 				carl::Variable var = (*term)->monomial()->begin()->first;
                 T1 primCoeff = T1( (*term)->coeff() );
                 negative = (primCoeff < T1( 0 ));
-                boundValue = T1( -_constraint->constantPart() )/primCoeff;
+                boundValue = T1( -constraint.constantPart() )/primCoeff;
                 typename std::map<carl::Variable, Variable<T1, T2>*>::iterator basicIter = mOriginalVars.find( var );
                 // constraint not found, add new nonbasic variable
                 if( basicIter == mOriginalVars.end() )
@@ -605,13 +607,13 @@ namespace smtrat
             }
             else
             {
-                T1 constantPart = T1( _constraint->constantPart() );
-                negative = (_constraint->lhs().lterm()->coeff() < T1( 0 ));
+                T1 constantPart = T1( constraint.constantPart() );
+                negative = (constraint.lhs().lterm()->coeff() < T1( 0 ));
                 Polynomial* linearPart;
                 if( negative )
-                    linearPart = new Polynomial( -_constraint->lhs() + (Rational)constantPart );
+                    linearPart = new Polynomial( -constraint.lhs() + (Rational)constantPart );
                 else
-                    linearPart = new Polynomial( _constraint->lhs() - (Rational)constantPart );
+                    linearPart = new Polynomial( constraint.lhs() - (Rational)constantPart );
                 T1 cf = T1( linearPart->coprimeFactor() );
                 assert( cf > 0 );
                 constantPart *= cf;
@@ -620,7 +622,7 @@ namespace smtrat
                 typename FastPointerMap<Polynomial, Variable<T1, T2>*>::iterator slackIter = mSlackVars.find( linearPart );
                 if( slackIter == mSlackVars.end() )
                 {
-                    newVar = newBasicVariable( linearPart, mOriginalVars, _constraint->integerValued() );
+                    newVar = newBasicVariable( linearPart, mOriginalVars, constraint.integerValued() );
                     mSlackVars.insert( std::pair<const Polynomial*, Variable<T1, T2>*>( linearPart, newVar ) );
                 }
                 else
@@ -630,7 +632,7 @@ namespace smtrat
                 }
             }
             std::pair<const Bound<T1,T2>*, bool> result;
-            switch( _constraint->relation() )
+            switch( constraint.relation() )
             {
                 case Relation::EQ:
                 {
@@ -686,8 +688,8 @@ namespace smtrat
                 }
                 case Relation::NEQ:
                 {
-                    const Constraint* constraintLess = newConstraint( _constraint->lhs(), Relation::LESS );
-                    Value<T1>* valueA = _constraint->integerValued() ? new Value<T1>( boundValue - T1( 1 ) ) : new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
+                    const Formula* constraintLess = newFormula( newConstraint( constraint.lhs(), Relation::LESS ) );
+                    Value<T1>* valueA = constraint.integerValued() ? new Value<T1>( boundValue - T1( 1 ) ) : new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
                     result = negative ? newVar->addLowerBound( valueA, mDefaultBoundPosition, constraintLess ) : newVar->addUpperBound( valueA, mDefaultBoundPosition, constraintLess );
                     std::vector< const Bound<T1,T2>* >* boundVectorLess = new std::vector< const Bound<T1,T2>* >();
                     boundVectorLess->push_back( result.first );
@@ -697,7 +699,7 @@ namespace smtrat
                     std::vector< const Bound<T1,T2>* >* boundVectorB = new std::vector< const Bound<T1,T2>* >();
                     boundVectorB->push_back( result.first );
                     
-                    const Constraint* constraintLeq = newConstraint( _constraint->lhs(), Relation::LEQ );
+                    const Formula* constraintLeq = newFormula( newConstraint( constraint.lhs(), Relation::LEQ ) );
                     Value<T1>* valueB = new Value<T1>( boundValue );
                     result = negative ? newVar->addLowerBound( valueB, mDefaultBoundPosition, constraintLeq ) : newVar->addUpperBound( valueB, mDefaultBoundPosition, constraintLeq );
                     std::vector< const Bound<T1,T2>* >* boundVectorLeq = new std::vector< const Bound<T1,T2>* >();
@@ -707,7 +709,7 @@ namespace smtrat
                     
                     boundVectorB->push_back( result.first );
                     
-                    const Constraint* constraintGeq = newConstraint( _constraint->lhs(), Relation::GEQ );
+                    const Formula* constraintGeq = newFormula( newConstraint( constraint.lhs(), Relation::GEQ ) );
                     Value<T1>* valueC = new Value<T1>( boundValue );
                     result = negative ? newVar->addUpperBound( valueC, mDefaultBoundPosition, constraintGeq ) : newVar->addLowerBound( valueC, mDefaultBoundPosition, constraintGeq );
                     std::vector< const Bound<T1,T2>* >* boundVectorGeq = new std::vector< const Bound<T1,T2>* >();
@@ -717,8 +719,8 @@ namespace smtrat
                     
                     boundVectorB->push_back( result.first );
                     
-                    const Constraint* constraintGreater = newConstraint( _constraint->lhs(), Relation::GREATER );
-                    Value<T1>* valueD = _constraint->integerValued() ? new Value<T1>( boundValue + T1( 1 ) ) : new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
+                    const Formula* constraintGreater = newFormula( newConstraint( constraint.lhs(), Relation::GREATER ) );
+                    Value<T1>* valueD = constraint.integerValued() ? new Value<T1>( boundValue + T1( 1 ) ) : new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
                     result = negative ? newVar->addUpperBound( valueD, mDefaultBoundPosition, constraintGreater ) : newVar->addLowerBound( valueD, mDefaultBoundPosition, constraintGreater );
                     std::vector< const Bound<T1,T2>* >* boundVectorGreater = new std::vector< const Bound<T1,T2>* >();
                     boundVectorGreater->push_back( result.first );
@@ -2443,11 +2445,11 @@ FindPivot:
             #endif
             assert( mNonActiveBasics.empty() ); // This makes removing lra-variables far easier and must be assured before invoking this method.
             std::set<Variable<T1,T2>*> slackVarsToRemove;
-            std::map<const Constraint*,smtrat::PointerSet<smtrat::Formula>> constraintToAdd;
+            std::map<const Formula*,smtrat::PointerSet<smtrat::Formula>> constraintToAdd;
             auto iter = mConstraintToBound.begin();
             while( iter != mConstraintToBound.end() )
             {
-                const Constraint& constraint = *iter->first;
+                const Constraint& constraint = iter->first->constraint();
                 if( constraint.hasVariable( _var ) )
                 {
                     assert( iter->second->front()->pVariable()->isBasic() ); // This makes removing lra-variables far easier and must be assured before invoking this method.
@@ -2459,15 +2461,15 @@ FindPivot:
                     std::cout << std::endl;
                     #endif
                     slackVarsToRemove.insert( iter->second->front()->pVariable() );
-                    const Constraint* cons = smtrat::newConstraint( constraint.lhs().substitute( _var, _term ), constraint.relation() );
-                    assert( cons->isConsistent() != 0 );
-                    if( cons->isConsistent() == 2 )
+                    const Formula* cons = smtrat::newFormula( smtrat::newConstraint( constraint.lhs().substitute( _var, _term ), constraint.relation() ) );
+                    assert( cons->constraint().isConsistent() != 0 );
+                    if( cons->constraint().isConsistent() == 2 )
                     {
                         #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
                         std::cout << "add constraint " << *cons << std::endl;
                         #endif
                         smtrat::PointerSet<smtrat::Formula> origins;
-                        constraintToAdd.insert( std::pair<const Constraint*,smtrat::PointerSet<smtrat::Formula>>( cons, origins ) );
+                        constraintToAdd.insert( std::pair<const Formula*,smtrat::PointerSet<smtrat::Formula>>( cons, origins ) );
                     }
                     iter = mConstraintToBound.erase( iter );
                 }
@@ -3695,7 +3697,7 @@ FindPivot:
          *         otherwise the valid constraint is returned.   
          */ 
         template<typename T1, typename T2>
-        const smtrat::Constraint* Tableau<T1,T2>::gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar )
+        const smtrat::Formula* Tableau<T1,T2>::gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar )
         { 
             Iterator row_iterator = Iterator( _rowVar->startEntry(), mpEntries );
             std::vector<GOMORY_SET> splitting;
@@ -3835,7 +3837,7 @@ FindPivot:
             #ifdef LRA_DEBUG_GOMORY_CUT
             std::cout << "sum = " << sum << std::endl;
             #endif
-            const smtrat::Constraint* gomory_constr = newConstraint( sum , Relation::GEQ );
+            const smtrat::Formula* gomory_constr = newFormula( newConstraint( sum , Relation::GEQ ) );
             newBound(gomory_constr);
             // TODO: check whether there is already a basic variable with this polynomial (psum, cf. LRAModule::initialize(..)) 
             return gomory_constr;

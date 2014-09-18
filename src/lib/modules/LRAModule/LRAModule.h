@@ -54,10 +54,10 @@ namespace smtrat
                 const Formula*                      origin;
                 std::list<const Formula*>::iterator position;
             };
-            typedef std::map<carl::Variable, LRAVariable*>                    VarVariableMap;
-            typedef FastPointerMap<Polynomial, LRAVariable*>                  ExVariableMap;
-            typedef FastPointerMap<Constraint, std::vector<const LRABound*>*> ConstraintBoundsMap;
-            typedef FastPointerMap<Constraint, Context>                       ConstraintContextMap;
+            typedef std::map<carl::Variable, LRAVariable*>                 VarVariableMap;
+            typedef FastPointerMap<Polynomial, LRAVariable*>               ExVariableMap;
+            typedef FastPointerMap<Formula, std::vector<const LRABound*>*> ConstraintBoundsMap;
+            typedef FastPointerMap<Formula, Context>                       ConstraintContextMap;
 
         private:
 
@@ -69,11 +69,11 @@ namespace smtrat
             bool                       mStrongestBoundsRemoved;
             unsigned                   mProbableLoopCounter;
             LRATableau                 mTableau;
-            PointerSet<Constraint>     mLinearConstraints;
-            PointerSet<Constraint>     mNonlinearConstraints;
+            PointerSet<Formula>        mLinearConstraints;
+            PointerSet<Formula>        mNonlinearConstraints;
             ConstraintContextMap       mActiveResolvedNEQConstraints;
             ConstraintContextMap       mActiveUnresolvedNEQConstraints;
-            PointerSet<Constraint>     mResolvedNEQConstraints;
+            PointerSet<Formula>        mResolvedNEQConstraints;
             carl::Variable             mDelta;
             std::vector<const LRABound* >  mBoundCandidatesToPass;
             #ifdef LRA_CUTS_FROM_PROOFS
@@ -101,7 +101,7 @@ namespace smtrat
              */
 
             // Interfaces.
-            bool inform( const Constraint* const );
+            bool inform( const Formula* );
             void init();
             bool assertSubformula( ModuleInput::const_iterator );
             void removeSubformula( ModuleInput::const_iterator );
@@ -129,7 +129,7 @@ namespace smtrat
                 return mTableau.slackVars();
             }
 
-            const LRAVariable* getSlackVariable( const Constraint* _constraint ) const
+            const LRAVariable* getSlackVariable( const Formula* _constraint ) const
             {
                 ConstraintBoundsMap::const_iterator iter = mTableau.constraintToBound().find( _constraint );
                 assert( iter != mTableau.constraintToBound().end() );
@@ -146,7 +146,8 @@ namespace smtrat
             void adaptPassedFormula();
             bool checkAssignmentForNonlinearConstraint();
             void activateBound( const LRABound*, const PointerSet<Formula>& );
-            void setBound( const Constraint* );
+            void activateStrictBound( const Formula* _neqOrigin, const LRABound& _weakBound, const LRABound* _strictBound );
+            void setBound( const Formula* );
             void addSimpleBoundDeduction( const LRABound*, bool = false );
             void addSimpleBoundConflict( const LRABound&, const LRABound&, bool = false );
             void findSimpleConflicts( const LRABound& );

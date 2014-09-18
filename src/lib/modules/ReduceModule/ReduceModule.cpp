@@ -68,7 +68,7 @@ namespace smtrat
      * @return False, if the it can be determined that the constraint itself is conflicting;
      *          True,  otherwise.
      */
-    bool ReduceModule::inform( const Constraint* const _constraint )
+    bool ReduceModule::inform( const Formula* _constraint )
     {
         Module::inform( _constraint ); // This must be invoked at the beginning of this method.
         // Your code.

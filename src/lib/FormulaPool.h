@@ -260,6 +260,24 @@ namespace smtrat
                 return createFormula( _type, std::move( _subformulas ) );
             }
             
+            template<typename ArgType>
+            void forallDo( void (*_func)( ArgType*, const Formula* ), ArgType* _arg ) const
+            {
+                FORMULA_POOL_LOCK_GUARD
+                for( const Formula* formula : mFormulas )
+                    (*_func)( _arg, formula );
+            }
+            
+            template<typename ReturnType, typename ArgType>
+            PointerMap<Formula,ReturnType> forallDo( ReturnType (*_func)( ArgType*, const Formula* ), ArgType* _arg ) const
+            {
+                FORMULA_POOL_LOCK_GUARD
+                PointerMap<Formula,ReturnType> result;
+                for( const Formula* formula : mFormulas )
+                    result.push_back( (*_func)( _arg, formula ) );
+                return result;
+            }
+            
     private:
         
             const Formula* createFormula( Type _type, PointerSet<Formula>&& _subformulas );

@@ -15,6 +15,7 @@ namespace smtrat {
 
 class QuantifierManager {
 private:
+    /// The quantified variables.
 	QuantifiedVariables mData;
 
 	/**
@@ -80,10 +81,16 @@ public:
 		mData.front().insert(v);
 	}
 
+    /**
+     * @return A constant reference to the quantified variables.
+     */
 	const QuantifiedVariables& quantifiers() const {
 		return mData;
 	}
 
+    /**
+     * @return A reference to the quantified variables.
+     */
 	QuantifiedVariables& quantifiers() {
 		return mData;
 	}

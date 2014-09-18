@@ -43,7 +43,7 @@ namespace smtrat
     class ModuleInput;
     class Formula;
 
-    typedef std::vector< std::atomic_bool* >                 Conditionals;
+    typedef std::vector< std::atomic_bool* > Conditionals;
 
     
     /**
