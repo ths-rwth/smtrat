@@ -43,6 +43,8 @@
 
 namespace smtrat
 {
+	using carl::operator<<;
+
     // Enumerations.
     
     enum class Variable_Domain: unsigned { BOOLEAN = 0, REAL = 1, INTEGER = 2 };
