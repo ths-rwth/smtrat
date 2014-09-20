@@ -200,7 +200,7 @@ namespace smtrat
         {
             if (mFormulaClauseMap.find( *_subformula ) == mFormulaClauseMap.end())
             {
-                    mFormulaClauseMap[*_subformula] = addClause( *_subformula, false );
+                mFormulaClauseMap[*_subformula] = addClause( *_subformula, false );
             }
         }
         return true;
@@ -442,7 +442,7 @@ namespace smtrat
     CRef SATModule::addFormula( const Formula* _formula, unsigned _type )
     {
         assert( _type < 2 );
-        const Formula* formulaInCnf = _formula->toCNF( true );
+        const Formula* formulaInCnf = _formula->toCNF( true, _type == NORMAL_CLAUSE );
         if( formulaInCnf->getType() == AND )
         {
             CRef c = CRef_Undef;
@@ -1563,6 +1563,9 @@ SetWatches:
                 #ifdef SAT_WITH_RESTARTS
                 if( nof_conflicts >= 0 && (conflictC >= nof_conflicts) ) // ||!withinBudget()) )
                 {
+                    #ifdef DEBUG_SATMODULE
+                    cout << "###" << endl << "### Restart." << endl << "###" << endl;
+                    #endif
                     // Reached bound on number of conflicts:
                     progress_estimate = progressEstimate();
                     cancelUntil( 0 );
@@ -2250,7 +2253,7 @@ NextClause:
             simpDB_assigns = nAssigns();
 //            simpDB_props   = (int64_t)(clauses_literals + learnts_literals);    // (shouldn't depend on stats really, but it will do for now)
             #ifdef SAT_APPLY_VALID_SUBSTITUTIONS
-            if( !applyValidSubstitutionsOnClauses( trailStartTmp ) )
+            if( !applyValidSubstitutionsOnClauses() )
             {
 //                cout << "simpDB_assigns = " << simpDB_assigns << endl;
 //                cout << "nAssigns() = " << nAssigns() << endl;

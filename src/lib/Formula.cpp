@@ -1138,7 +1138,7 @@ namespace smtrat
     //      after enabling such that it can also deal with disjunctions
     const Formula* Formula::toCNF( bool _keepConstraints, bool _simplifyConstraintCombinations ) const
     {
-        if( propertyHolds( PROP_IS_IN_CNF ) )
+        if( !_simplifyConstraintCombinations && propertyHolds( PROP_IS_IN_CNF ) )
         {
             if( _keepConstraints )
                 return this;
@@ -1342,7 +1342,8 @@ namespace smtrat
                                         {
                                             if( addConstraintBound( constraintBoundsOr, resolvedFormula, false ) )
                                             {
-                                                goto ReturnFalse;
+                                                currentFormulaValid = true;
+                                                break;
                                             }
                                         }
                                         else
@@ -1582,7 +1583,7 @@ namespace smtrat
         }
     }
     
-    //#define CONSTRAINT_BOUND_DEBUG
+//    #define CONSTRAINT_BOUND_DEBUG
 
     bool Formula::addConstraintBound( ConstraintBounds& _constraintBounds, const Formula* _constraint, bool _inConjunction )
     {
