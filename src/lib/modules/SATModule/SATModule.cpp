@@ -2282,6 +2282,7 @@ NextClause:
         #ifdef SAT_APPLY_VALID_SUBS_DEBUG
         cout << __func__ << endl;
         #endif
+        // Create a tableau using the constraints which have to hold in decision level 0
         lra::Tableau<carl::Numeric<Rational>, carl::Numeric<Rational>> tableau( mpPassedFormula->end() );
         for( int i = 0; i < mBooleanConstraintMap.size(); ++i )
         {
@@ -2308,7 +2309,9 @@ NextClause:
                 }
             }
         }
+        // Find all substitutions with the created tableau
         list<pair<carl::Variable,Polynomial>> validSubstitutions = tableau.findValidSubstitutions();
+        // Apply the found substitution in the constraints which have to hold in decision level 0 to all constraints
         for( auto validSub = validSubstitutions.begin(); validSub != validSubstitutions.end(); ++validSub )
         {
             assert( mVarReplacements.find( validSub->first ) == mVarReplacements.end() );
@@ -2337,6 +2340,7 @@ NextClause:
                 assert( consLitPair->second.size() == 1 );
                 if( subResult->constraint().isConsistent() == 0 )
                 {
+                    // applying the substitution to this constraint leads to conflict
                     if( assigns[ var( consLitPair->second.front() ) ] == l_Undef )
                     {
                         vec<Lit> clauseLits;
@@ -2354,6 +2358,7 @@ NextClause:
                     auto iter = mConstraintLiteralMap.find( subResult );
                     if( iter == mConstraintLiteralMap.end() )
                     {
+                        // applying the substitution to this constraint leads to a new constraint (which did not yet occur in the received formula)
                         #ifdef SAT_APPLY_VALID_SUBS_DEBUG
                         cout << __LINE__ << endl;
                         #endif
@@ -2368,20 +2373,11 @@ NextClause:
                         }
                     }
                     else
-                    { 
+                    {
+                        // applying the substitution to this constraint leads to a constraint which already occurs in the received formula
                         #ifdef SAT_APPLY_VALID_SUBS_DEBUG
                         cout << __LINE__ << endl;
                         #endif
-//                        // add clauses to state that the two literals are equivalent
-//                        vec<Lit> clauseLitsA;
-//                        clauseLitsA.push( mkLit( var( consLitPair->second.front() ), !sign( consLitPair->second.front() ) ) );
-//                        clauseLitsA.push( mkLit( var( iter->second.front() ), sign( iter->second.front() ) ) );
-//                        addClause( clauseLitsA, DEDUCTED_CLAUSE );
-//                        vec<Lit> clauseLitsB;
-//                        clauseLitsB.push( mkLit( var( consLitPair->second.front() ), sign( consLitPair->second.front() ) ) );
-//                        clauseLitsB.push( mkLit( var( iter->second.front() ), !sign( iter->second.front() ) ) );
-//                        addClause( clauseLitsB, DEDUCTED_CLAUSE );
-//                        iter->second.insert( iter->second.end(), consLitPair->second.begin(), consLitPair->second.end() );
                         assert( consLitPair->second.size() == 1 );
                         assert( iter->second.size() == 1 );
                         replaceVariable( clauses, var( consLitPair->second.front() ), var( iter->second.front() ) );
@@ -2398,8 +2394,9 @@ NextClause:
                             clauseLits.push( mkLit( var(consLitPair->second.front()), !sign( iter->second.front() ) ) );
                             addClause( clauseLits, DEDUCTED_CLAUSE );
                         }
-                        else if( assigns[var(consLitPair->second.front())] != assigns[var(iter->second.front())] )
+                        else if( (assigns[var(consLitPair->second.front())] == assigns[var(iter->second.front())]) != (sign(consLitPair->second.front()) == sign(iter->second.front())) )
                         {
+                            ok = false;
                             return false;
                         }
                     }
