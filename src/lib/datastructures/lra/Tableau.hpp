@@ -2450,9 +2450,8 @@ FindPivot:
             while( iter != mConstraintToBound.end() )
             {
                 const Constraint& constraint = iter->first->constraint();
-                if( constraint.hasVariable( _var ) )
+                if( constraint.hasVariable( _var ) && constraint.variables().size() > 1 )
                 {
-                    assert( iter->second->front()->pVariable()->isBasic() ); // This makes removing lra-variables far easier and must be assured before invoking this method.
                     #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
                     std::cout << "remove variable: " << std::endl;
                     iter->second->front()->pVariable()->print();
@@ -2460,6 +2459,7 @@ FindPivot:
                     iter->second->front()->pVariable()->printAllBounds();
                     std::cout << std::endl;
                     #endif
+                    assert( iter->second->front()->pVariable()->isBasic() ); // This makes removing lra-variables far easier and must be assured before invoking this method.
                     slackVarsToRemove.insert( iter->second->front()->pVariable() );
                     const Formula* cons = smtrat::newFormula( smtrat::newConstraint( constraint.lhs().substitute( _var, _term ), constraint.relation() ) );
                     assert( cons->constraint().isConsistent() != 0 );

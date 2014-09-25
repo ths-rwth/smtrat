@@ -875,7 +875,7 @@ namespace smtrat
              *                          resolve constraints p!=0 to (or p<0 p>0) and to resolve negations in
              *                          front of constraints, e.g., (not p<0) gets p>=0.
              */
-            const Formula* toCNF( bool _keepConstraints = true, bool _simplifyConstraintCombinations = true ) const;
+            const Formula* toCNF( bool _keepConstraints = true, bool _simplifyConstraintCombinations = false ) const;
             
             /**
              * Substitutes all occurrences of the given arithmetic variables in this formula by the given polynomials.
