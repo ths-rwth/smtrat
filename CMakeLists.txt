@@ -99,14 +99,15 @@ message("-- CXX Flags: ${CMAKE_CXX_FLAGS}")
 message("-- CXX Debug Flags: ${CMAKE_CXX_DEBUG_FLAGS}")
 message("-- CXX Release Flags: ${CMAKE_CXX_RELEASE_FLAGS}")
 
-if("${STATICLIB_SWITCH}" STREQUAL "ON")
+if(STATICLIB_SWITCH)
 	message("-- linking static")
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
 	set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
 endif()
 
-if(${SMTRAT_STRAT_PARALLEL_MODE} STREQUAL "ON")
+if(SMTRAT_STRAT_PARALLEL_MODE)
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--whole-archive -lpthread -Wl,--no-whole-archive")
+	set(libraries ${libraries} pthread)
 endif()
 
 # path to put in the executables
@@ -126,29 +127,14 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 # C.1. Required libraries for core.
 # # # # # # # # # # # # # # # # # # # # # #
 
-if(${SMTRAT_STRAT_PARALLEL_MODE} STREQUAL "ON")
-  set( libraries pthread )
-endif()
-
-# GiNaC and GiNaCRA are necessary
-# TODO: add support for version number
-find_package( carl )
+# use carl, carl pulls in the required libraries.
+find_package( carl REQUIRED )
 message("-- Using CArL from ${carl_INCLUDE_DIR}")
-set( libraries ${libraries} )
 
-#notice that GiNacra might use log4cplus, but we cannot currently support that as Ginacra does not export this knowledge.
-include( FindCLN REQUIRED )
-set( libraries ${libraries} ${CLN_LIBRARY} )
-
-# find gmp (which is necessary for CLN, at least when linking statically)
-include( FindGMP REQUIRED )
-set( libraries ${libraries} ${GMP_LIBRARY} )
-
-# find itpp (numeric library, used for eigenvalues in rootfinding within ginacra)
-include( FindITPP REQUIRED )
-if( ${ITPP_FOUND} )
-	find_package( LAPACK REQUIRED )
-	set( libraries ${libraries} ${ITPP_LIBRARY} ${LAPACK_LIBRARIES} /usr/lib64/gcc/x86_64-pc-linux-gnu/4.7.3/libgfortran.a )
+if(STATICLIB_SWITCH)
+	set( libraries ${libraries} lib_carl_static)
+else()
+	set( libraries ${libraries} lib_carl)
 endif()
 
 # # # # # # # # # # # # # # # # # # # # # #

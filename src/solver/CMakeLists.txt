@@ -33,25 +33,20 @@ configure_file( ${CMAKE_SOURCE_DIR}/src/solver/config.h.in ${CMAKE_SOURCE_DIR}/s
 add_executable( smtratSolver
 	${CMAKE_SOURCE_DIR}/src/solver/parser/Parser.cpp
 	${CMAKE_SOURCE_DIR}/src/solver/parser/ParserUtils.cpp
-        ${CMAKE_SOURCE_DIR}/src/solver/parser/Sort.cpp
+	${CMAKE_SOURCE_DIR}/src/solver/parser/Sort.cpp
 	smtratSolver.cpp
 	RuntimeSettingsManager.cpp
 )
 
 target_link_libraries( smtratSolver
                         lib_${PROJECT_NAME} # smtrat library
-                        lib_carl # arithmetic library
                         ${libraries} # libraries definied in top-level CMakeLists.txt
 )
 
 if(${USE_GINAC} STREQUAL "ON")
-  target_link_libraries( smtratSolver ginac ${libraries})
+	target_link_libraries( smtratSolver ginac)
 endif()
 set_target_properties( smtratSolver PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
-if(${STATICLIB_SWITCH} STREQUAL "ON")
-  set_target_properties( smtratSolver PROPERTIES LINK_SEARCH_END_STATIC TRUE )
-  set_target_properties( smtratSolver PROPERTIES LINK_SEARCH_START_STATIC TRUE )
-endif()
 
 add_library( smtlibParser
 	${CMAKE_SOURCE_DIR}/src/solver/smtratSolver.cpp
@@ -61,12 +56,7 @@ add_library( smtlibParser
 )
 
 # add linking libraries. This is an over-approximation.
-target_link_libraries( smtlibParser lib_carl ${libraries})
-
-if(${STATICLIB_SWITCH} STREQUAL "ON")
-  set_target_properties( smtlibParser PROPERTIES LINK_SEARCH_START_STATIC TRUE )
-  set_target_properties( smtlibParser PROPERTIES LINK_SEARCH_END_STATIC TRUE )
-endif()
+target_link_libraries( smtlibParser ${libraries})
 
 set_target_properties( smtlibParser PROPERTIES
 		# create *nix style library versions + symbolic links
