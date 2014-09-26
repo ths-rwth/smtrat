@@ -199,7 +199,8 @@ int main( int argc, char* argv[] )
 {   
 #ifdef LOGGING
 #ifdef LOGGING_CARL
-	carl::logging::logger().filter("logfile")
+	carl::logging::logger().configure("smtrat", "smtrat.log");
+	carl::logging::logger().filter("smtrat")
 		("smtrat", carl::logging::LogLevel::LVL_INFO)
 		("smtrat.cad", carl::logging::LogLevel::LVL_TRACE)
 	;
