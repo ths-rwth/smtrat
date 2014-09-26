@@ -38,14 +38,12 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
  * OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
 /**
  * @file   SATModule.cpp
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  * @author Ulrich Loup
- *
  * @since 2012-01-18
- * @version 2012-11-12
+ * @version 2014-09-26
  */
 
 #include "SATModule.h"
@@ -54,25 +52,24 @@
 
 //#define DEBUG_SATMODULE
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION
+//#define DEBUG_SAT_APPLY_VALID_SUBS
+//#define DEBUG_SAT_REPLACE_VARIABLE
 //#define SATMODULE_WITH_CALL_NUMBER
 //#define WITH_PROGRESS_ESTIMATION
+
 #define SAT_MODULE_THEORY_PROPAGATION
 //#define SAT_MODULE_DETECT_DEDUCTIONS
 //#define SAT_TRY_FULL_LAZY_CALLS_FIRST
 //#define SAT_APPLY_VALID_SUBSTITUTIONS
 #define SAT_THEORY_CONFLICT_AS_LEMMA
 
-
 using namespace std;
 using namespace Minisat;
 
 namespace smtrat
 {
-    //=================================================================================================
     // Options:
-
     static const char*  _cat = "CORE";
-
     static DoubleOption opt_var_decay( _cat, "var-decay", "The variable activity decay factor", 0.95, DoubleRange( 0, false, 1, false ) );
     static DoubleOption opt_clause_decay( _cat, "cla-decay", "The clause activity decay factor", 0.999, DoubleRange( 0, false, 1, false ) );
     static DoubleOption opt_random_var_freq( _cat, "rnd-freq", "The frequency with which the decision heuristic tries to choose a random variable",
@@ -88,13 +85,9 @@ namespace smtrat
     static DoubleOption opt_garbage_frac( _cat, "gc-frac", "The fraction of wasted memory allowed before a garbage collection is triggered", 0.20,
                                           DoubleRange( 0, false, HUGE_VAL, false ) );
 
-    /**
-     * Constructor
-     */
-    SATModule::SATModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
-        Module( _type, _formula, _conditionals, _manager ),
+    SATModule::SATModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _foundAnswer, Manager* const _manager ):
+        Module( _type, _formula, _foundAnswer, _manager ),
         // Parameters (user settable):
-        //
         verbosity( 0 ),
         var_decay( opt_var_decay ),
         clause_decay( opt_clause_decay ),
@@ -107,20 +100,14 @@ namespace smtrat
         rnd_init_act( opt_rnd_init_act ),
         garbage_frac( opt_garbage_frac ),
         restart_first( opt_restart_first ),
-        restart_inc( opt_restart_inc )
+        restart_inc( opt_restart_inc ),
         // Parameters (the rest):
-        //
-        ,
         learntsize_factor( (double)1 / (double)3 ),
-        learntsize_inc( 1.1 )
+        learntsize_inc( 1.1 ),
         // Parameters (experimental):
-        //
-        ,
         learntsize_adjust_start_confl( 100 ),
-        learntsize_adjust_inc( 1.5 )
+        learntsize_adjust_inc( 1.5 ),
         // Statistics: (formerly in 'SolverStats')
-        //
-        ,
         solves( 0 ),
         starts( 0 ),
         decisions( 0 ),
@@ -141,10 +128,8 @@ namespace smtrat
         simpDB_props( 0 ),
         order_heap( VarOrderLt( activity ) ),
         progress_estimate( 0 ),
-        remove_satisfied( true )
+        remove_satisfied( true ),
         // Resource constraints:
-        //
-        ,
         conflict_budget( -1 ),
         propagation_budget( -1 ),
         asynch_interrupt( false ),
@@ -172,9 +157,6 @@ namespace smtrat
         #endif
     }
 
-    /**
-     * Destructor:
-     */
     SATModule::~SATModule()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
@@ -182,18 +164,6 @@ namespace smtrat
         #endif
     }
 
-    /**
-     * Methods:
-     */
-
-    /**
-     * Adds a constraint to this module.
-     *
-     * @param _formula The formula to add to the already added formulas.
-     *
-     * @return  true,   if the constraint and all previously added constraints are consistent;
-     *          false,  if the added constraint or one of the previously added ones is inconsistent.
-     */
     bool SATModule::assertSubformula( ModuleInput::const_iterator _subformula )
     {
         Module::assertSubformula( _subformula );
@@ -209,11 +179,6 @@ namespace smtrat
         return ok;
     }
 
-    /**
-     * Removes a everything related to a sub formula of the received formula.
-     *
-     * @param _subformula The sub formula of the received formula to remove.
-     */
     void SATModule::removeSubformula( ModuleInput::const_iterator _subformula )
     {
         FormulaClauseMap::iterator iter = mFormulaClauseMap.find( *_subformula );
@@ -248,7 +213,6 @@ namespace smtrat
      *
      * @return
      */
-    #ifdef SAT_WITH_RESTARTS
     static double luby( double y, int x )
     {
         // Find the finite subsequence that contains index 'x', and the
@@ -265,15 +229,7 @@ namespace smtrat
 
         return pow( y, seq );
     }
-    #endif
     
-    /**
-     * Checks the so far received constraints for consistency.
-     *
-     * @return  True,    if the conjunction of received constraints is consistent;
-     *          False,   if the conjunction of received constraints is inconsistent;
-     *          Unknown, otherwise.
-     */
     Answer SATModule::isConsistent()
     {
         if( PROP_IS_IN_CNF <= mpReceivedFormula->properties() )
@@ -294,26 +250,16 @@ namespace smtrat
             }
             #endif
 
-//        printClauses( clauses, "Clauses", cout, "### " );
-//        cout << "###" << endl;
-//        printClauses( learnts, "Learnts", cout, "### " );
-//        cout << "###" << endl;
-//        exit(0);
-            // TODO: Is this necessary?
             budgetOff();
-
             assumptions.clear();
-            
             Module::init();
             processLemmas();
-//            simplify();
 
             ++solves;
-            max_learnts             = (nAssigns() + nClauses() + nLearnts() ) * learntsize_factor; // compared to original minisat we add the number of clauses with size 1 (nAssigns()) and learnts, we got after init()
-//            cout << "init max_learnts to " << max_learnts << endl;
+            // compared to original minisat we add the number of clauses with size 1 (nAssigns()) and learnts, we got after init()
+            max_learnts = (nAssigns() + nClauses() + nLearnts() ) * learntsize_factor;
             learntsize_adjust_confl = learntsize_adjust_start_confl;
-            learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
-            
+            learntsize_adjust_cnt = (int)learntsize_adjust_confl;
             
             if( !ok )
             {
@@ -324,7 +270,7 @@ namespace smtrat
                 return foundAnswer( False );
             }
 
-#ifdef SAT_WITH_RESTARTS
+            #ifdef SAT_WITH_RESTARTS
             mCurr_Restarts = 0;
             int current_restarts = -1;
             lbool result = l_Undef;
@@ -333,11 +279,11 @@ namespace smtrat
                 current_restarts = mCurr_Restarts;
                 double rest_base = luby_restart ? luby( restart_inc, mCurr_Restarts ) : pow( restart_inc, mCurr_Restarts );
                 result = search( (int)rest_base * restart_first );
-//                if( !withinBudget() ) break;
+                // if( !withinBudget() ) break;
             }
-#else
+            #else
             lbool result = search();
-#endif
+            #endif
 
             #ifdef SATMODULE_WITH_CALL_NUMBER
             cout << endl << endl;
@@ -372,9 +318,6 @@ namespace smtrat
         }
     }
 
-    /**
-     *
-     */
     void SATModule::updateModel() const
     {
         clearModel();
@@ -393,19 +336,14 @@ namespace smtrat
         }
     }
     
-    /**
-     * 
-     */
     void SATModule::updateInfeasibleSubset()
     {
         assert( !ok );
         mInfeasibleSubsets.clear();
-        /*
-         * Set the infeasible subset to the set of all clauses.
-         */
+        // Set the infeasible subset to the set of all clauses.
         PointerSet<Formula> infeasibleSubset;
 //        if( mpReceivedFormula->isConstraintConjunction() )
-//        { 
+//        {
 //            getInfeasibleSubsets();
 //        }
 //        else
@@ -437,11 +375,6 @@ namespace smtrat
         }
     }
 
-    /**
-     *
-     * @param _formula
-     * @return The reference to the first clause which has been added.
-     */
     CRef SATModule::addFormula( const Formula* _formula, unsigned _type )
     {
         assert( _type < 2 );
@@ -463,14 +396,6 @@ namespace smtrat
         }
     }
 
-    /**
-     * Adds the Boolean abstraction of the given formula in CNF to the SAT solver.
-     *
-     * @param _formula  The formula to abstract and add to the SAT solver. Note, that the
-     *                  formula is expected to be in CNF.
-     * @param _literals The literals occurring in the added clauses.
-     * @return The reference to the added clause, if any has been added; otherwise CRef_Undef.
-     */
     CRef SATModule::addClause( const Formula* _formula, unsigned _type )
     {
         assert( _formula->propertyHolds( PROP_IS_A_CLAUSE ) );
@@ -543,12 +468,6 @@ namespace smtrat
         }
     }
 
-    /**
-     * Creates the literal belonging to the formula being the first argument. 
-     * @param _formula The formula to get the literal for.
-     * @param _origin The origin of the formula to get the literal for.
-     * @return The created literal.
-     */
     Lit SATModule::getLiteral( const Formula* _formula, const Formula* _origin )
     {
         assert( _formula->propertyHolds( PROP_IS_A_LITERAL ) );
@@ -664,11 +583,6 @@ namespace smtrat
         }
     }
 
-    /**
-     * Adapts the passed formula according to the current assignment within the SAT solver.
-     * @return  true,   if the passed formula has been changed;
-     *          false,  otherwise.
-     */
     void SATModule::adaptPassedFormula()
     {
         // Adapt the constraints in the passed formula for the just assigned Booleans being abstractions of constraints.
@@ -715,11 +629,6 @@ namespace smtrat
         assert( passedFormulaCorrect() );
     }
     
-    /**
-     * Adapts the passed formula according to the given abstraction information.
-     * @param _abstr The information of a Boolean abstraction of a constraint (contains no 
-     *               information, if the Boolean does not correspond to a constraint's abstraction).
-     */
     void SATModule::adaptPassedFormula( Abstraction& _abstr )
     {
         if( _abstr.updateInfo < 0 )
@@ -783,18 +692,6 @@ namespace smtrat
         return true;
     }
 
-    //=================================================================================================
-    // Minor methods:
-
-    /**
-     * Creates a new SAT variable in the solver. If 'decision' is cleared, variable will not be
-     * used as a decision variable (NOTE! This has effects on the meaning of a SATISFIABLE result).
-     *
-     * @param sign
-     * @param dvar decision variable
-     *
-     * @return
-     */
     Var SATModule::newVar( bool sign, bool dvar, double _activity )
     {
         int v = nVars();
@@ -813,14 +710,6 @@ namespace smtrat
         return v;
     }
 
-    /**
-     *
-     * @param _clause
-     * @param _withNewVariable
-     * @param _theoryDeduction
-     * @return  true , if a clause has been added to either to learnts or clauses;
-     *          false, otherwise.
-     */
     bool SATModule::addClause( vec<Lit>& _clause, unsigned _type )
     {
         if( _type == DEDUCTED_CLAUSE )
@@ -981,14 +870,6 @@ namespace smtrat
         }
     }
     
-    /**
-     * Moves two literals which are not assigned to false to the beginning of the clause.
-     * If only one literal is not assigned to false, it is moved to the beginning.
-     * If all literals are false, the first literal is one of the literals with the highest decision level.
-     * If all literals are false but the first one, the second literal has the highest decision level.
-     *
-     * @param _clause The clause in which the literals shall be reordered.
-     */
     void SATModule::arrangeForWatches( Clause& _clause )
     {
         if( _clause.size() < 2 )
@@ -1162,11 +1043,6 @@ SetWatches:
         assert( watchesCorrect( _clause ) );
     }
 
-    /**
-     * The highest decision level which assigned a literal of the given clause.
-     * @param _clause
-     * @return
-     */
     int SATModule::level( const vec< Lit >& _clause ) const
     {
         int result = 0;
@@ -1181,11 +1057,6 @@ SetWatches:
         return result;
     }
 
-    /**
-     * Description.
-     *
-     * @param cr
-     */
     void SATModule::attachClause( CRef cr )
     {
         Clause& c = ca[cr];
@@ -1204,12 +1075,6 @@ SetWatches:
             clauses_literals += (uint64_t)c.size();
     }
 
-    /**
-     * Description.
-     *
-     * @param cr
-     * @param strict
-     */
     void SATModule::detachClause( CRef cr, bool strict )
     {
         const Clause& c = ca[cr];
@@ -1237,11 +1102,6 @@ SetWatches:
             clauses_literals -= (uint64_t)c.size();
     }
 
-    /**
-     * Description.
-     *
-     * @param cr
-     */
     void SATModule::removeClause( CRef cr )
     {
         Clause& c = ca[cr];
@@ -1255,13 +1115,6 @@ SetWatches:
         mAllActivitiesChanged = true;
     }
 
-    /**
-     * Description.
-     *
-     * @param c
-     *
-     * @return
-     */
     bool SATModule::satisfied( const Clause& c ) const
     {
         for( int i = 0; i < c.size(); i++ )
@@ -1275,11 +1128,6 @@ SetWatches:
         return false;
     }
 
-    /**
-     * Revert to the state at given level (keeping all assignment at 'level' but not beyond).
-     *
-     * @param level
-     */
     void SATModule::cancelUntil( int level )
     {
         #ifdef DEBUG_SATMODULE
@@ -1308,9 +1156,6 @@ SetWatches:
             ok = true;
         }
     }
-
-    //=================================================================================================
-    // Major methods:
     
     CRef SATModule::propagateConsistently( bool& _madeTheoryCall )
     {
@@ -1430,42 +1275,13 @@ SetWatches:
         return confl;
     }
 
-    /**
-     * search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
-     *
-     *  Description:
-     *    Search for a model the specified number of conflicts.
-     *    NOTE! Use negative value for 'nof_conflicts' indicate infinity.
-     *
-     *  Output:
-     *    'l_True' if a partial assignment that is consistent with respect to the clause set is found. If
-     *    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
-     *    if the clause set is unsatisfiable. 'l_Undef' if the bound on number of conflicts is reached.
-     *
-     * @param nof_conflicts
-     *
-     * @return
-     */
-    #ifdef SAT_WITH_RESTARTS
-    lbool SATModule::search( int nof_conflicts )
-    #else
-    lbool SATModule::search()
-    #endif
+    lbool SATModule::search
+    (
+        #ifdef SAT_WITH_RESTARTS
+        int nof_conflicts
+        #endif
+    )
     {
-        
-////        Variables allVariables = constraintPool().arithmeticVariables();
-////        for( auto var = allVariables.begin(); var != allVariables.end(); ++var )
-////        {
-////                cout << "(declare-fun " << *var << " () " << var->getType() << ")\n";
-////        }
-////        // Add all Boolean variables.
-////        Variables allBooleans = constraintPool().booleanVariables();
-////        for( auto var = allBooleans.begin(); var != allBooleans.end(); ++var )
-////            cout << "(declare-fun " << *var << " () Bool)\n";
-////        cout << "(assert (and";
-////        for( auto subformula : *mpReceivedFormula )
-////            cout << " " << subformula->toString( false, true );
-////        cout << "))\n";
         #ifdef DEBUG_SATMODULE
         cout << "### search()" << endl << "###" << endl;
         printClauses( clauses, "Clauses", cout, "### " );
@@ -1707,11 +1523,6 @@ SetWatches:
         }
     }
 
-    /**
-     * Description.
-     *
-     * @return
-     */
     Lit SATModule::pickBranchLit()
     {
         Var next = var_Undef;
@@ -1743,25 +1554,6 @@ SetWatches:
         //return next == var_Undef ? lit_Undef : mkLit( next, rnd_pol ? drand( random_seed ) < 0.5 : polarity[next] );
     }
 
-    /**
-     *  analyze : (confl : Clause*) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->  [void]
-     *
-     *  Description:
-     *    Analyze conflict and produce a reason clause.
-     *
-     *    Pre-conditions:
-     *      - 'out_learnt' is assumed to be cleared.
-     *      - Current decision level must be greater than root level.
-     *
-     *    Post-conditions:
-     *      - 'out_learnt[0]' is the asserting literal at level 'out_btlevel'.
-     *      - If out_learnt.size() > 1 then 'out_learnt[1]' has the greatest decision level of the
-     *        rest of literals. There may be others from the same level though.
-     *
-     * @param confl
-     * @param out_learnt
-     * @param out_btlevel
-     */
     void SATModule::analyze( CRef confl, vec<Lit>& out_learnt, int& out_btlevel )
     {
         int pathC = 0;
@@ -1875,15 +1667,6 @@ SetWatches:
             seen[var( analyze_toclear[j] )] = 0;    // ('seen[]' is now cleared)
     }
 
-    /**
-     * Check if 'p' can be removed. 'abstract_levels' is used to abort early if the algorithm is
-     * visiting literals at levels that cannot be removed later.
-     *
-     * @param p
-     * @param abstract_levels
-     *
-     * @return
-     */
     bool SATModule::litRedundant( Lit p, uint32_t abstract_levels )
     {
         analyze_stack.clear();
@@ -1920,12 +1703,6 @@ SetWatches:
         return true;
     }
 
-    /**
-     * Description.
-     *
-     * @param p
-     * @param from
-     */
     void SATModule::uncheckedEnqueue( Lit p, CRef from )
     {
         assert( value( p ) == l_Undef );
@@ -1963,18 +1740,6 @@ SetWatches:
         #endif
     }
 
-    /**
-     * propagate : [void]  ->  [Clause*]
-     *
-     * Description:
-     *   Propagates all enqueued facts. If a conflict arises, the conflicting clause is returned,
-     *   otherwise CRef_Undef.
-     *
-     * Post-conditions:
-     *   - the propagation queue is empty, even if there was a conflict.
-     *
-     * @return
-     */
     CRef SATModule::propagate()
     {
         #ifdef DEBUG_SATMODULE
@@ -2072,13 +1837,6 @@ NextClause:
         }
     };
 
-    /**
-     * reduceDB : ()  ->  [void]
-     *
-     * Description:
-     *   Remove half of the learnt clauses, minus the clauses locked by the current assignment. Locked
-     *   clauses are clauses that are reason to some assignment. Binary clauses are never removed.
-     */
     void SATModule::reduceDB()
     {
         int    i, j;
@@ -2103,10 +1861,6 @@ NextClause:
         checkGarbage();
     }
 
-    /**
-     *
-     * @param cs
-     */
     void SATModule::removeSatisfied( vec<CRef>& cs )
     {
         int i, j;
@@ -2121,11 +1875,9 @@ NextClause:
         cs.shrink( i - j );
     }
     
-//#define SAT_REPLACE_VARIABLE_DEBUG
-    
     void SATModule::replaceVariable( Lit _var, Lit _by )
     {
-        #ifdef SAT_REPLACE_VARIABLE_DEBUG
+        #ifdef DEBUG_SAT_REPLACE_VARIABLE
         cout << __func__ << endl;
         cout << "replace " << (sign( _var ) ? "-" : "") << var( _var ) << " by " << (sign( _by ) ? "-" : "") << var( _by ) << endl;
         #endif
@@ -2137,13 +1889,13 @@ NextClause:
         int removedLearnts = 0;
         for( set<CRef>::iterator crIter = varClauses.begin(); crIter != varClauses.end(); )
         {
-            #ifdef SAT_REPLACE_VARIABLE_DEBUG
+            #ifdef DEBUG_SAT_REPLACE_VARIABLE
             cout << "Consider clause with number " << *crIter << endl;
             #endif
             unsigned type = ca[*crIter].type();
             if( !replaceVariable( *crIter++, _var, _by ) )
             {
-                #ifdef SAT_REPLACE_VARIABLE_DEBUG
+                #ifdef DEBUG_SAT_REPLACE_VARIABLE
                 cout << "Remove clause!" << endl;
                 #endif
                 if( type == NORMAL_CLAUSE )
@@ -2151,7 +1903,7 @@ NextClause:
                 else
                     ++removedLearnts;
             }
-            #ifdef SAT_REPLACE_VARIABLE_DEBUG
+            #ifdef DEBUG_SAT_REPLACE_VARIABLE
             else
             {
                 cout << "Result:  ";
@@ -2166,7 +1918,7 @@ NextClause:
     
     bool SATModule::replaceVariable( CRef _cr, Lit _var, Lit _by )
     {
-        #ifdef SAT_REPLACE_VARIABLE_DEBUG
+        #ifdef DEBUG_SAT_REPLACE_VARIABLE
         cout << "Before substitution:  ";
         printClause( _cr );
         cout << endl;
@@ -2185,7 +1937,7 @@ NextClause:
                 newClause.push( c[j] );
             }
         }
-        #ifdef SAT_REPLACE_VARIABLE_DEBUG
+        #ifdef DEBUG_SAT_REPLACE_VARIABLE
         cout << "After substitution:  ";
         printClause( newClause );
         #endif
@@ -2193,9 +1945,6 @@ NextClause:
         return addClause( newClause, type );
     }
 
-    /**
-     *
-     */
     void SATModule::rebuildOrderHeap()
     {
         vec<Var> vs;
@@ -2205,15 +1954,6 @@ NextClause:
         order_heap.build( vs );
     }
 
-    /**
-     * simplify : [void]  ->  [bool]
-     *
-     * Description:
-     *   Simplify the clause database according to the current top-level assignment. Currently, the only
-     *   thing done here is the removal of satisfied clauses, but more things can be put here.
-     *
-     * @return
-     */
     void SATModule::simplify()
     {
         assert( decisionLevel() == 0 );
@@ -2247,25 +1987,12 @@ NextClause:
         }
     }
     
-//#define SAT_APPLY_VALID_SUBS_DEBUG
-    
-    /**
-     * 
-     */
     void SATModule::applyValidSubstitutionsOnClauses()
     {
         assert( decisionLevel() == 0 );
-        #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+        #ifdef DEBUG_SAT_APPLY_VALID_SUBS
         cout << __func__ << endl;
-        printConstraintLiteralMap();
-        printBooleanConstraintMap();
-        printBooleanVarMap();
-        printDecisions();
-        printClauses(clauses,"Clauses:");
-        printClauses(learnts,"Learnts:");
-        printVariableOccurrences();
-        printVariableClausesMap();
-        printPassedFormula();
+        print();
         #endif
         // Create a tableau using the constraints which have to hold in decision level 0
         lra::Tableau<carl::Numeric<Rational>, carl::Numeric<Rational>> tableau( mpPassedFormula->end() );
@@ -2300,7 +2027,7 @@ NextClause:
         {
             assert( mVarReplacements.find( validSub->first ) == mVarReplacements.end() );
             mVarReplacements[validSub->first] = validSub->second;
-            #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+            #ifdef DEBUG_SAT_APPLY_VALID_SUBS
             cout << "replace " << validSub->first << " by " << validSub->second << std::endl;
             #endif
             auto elimVarOccs = mVarOccurrences.find( validSub->first );
@@ -2310,14 +2037,14 @@ NextClause:
             for( const Formula* cons : elimVarOccs->second )
             {
 //                if( cons == pcons ) continue;
-                #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                #ifdef DEBUG_SAT_APPLY_VALID_SUBS
                 cout << "  replace in " << *cons << std::endl;
                 #endif
                 auto consLitPair = mConstraintLiteralMap.find( cons );
                 bool negativeLiteral = sign( consLitPair->second.front() );
                 assert( consLitPair != mConstraintLiteralMap.end() );
                 const Formula* subResult = newFormula( newConstraint( cons->constraint().lhs().substitute( validSub->first, validSub->second ), cons->constraint().relation() ) );
-                #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                #ifdef DEBUG_SAT_APPLY_VALID_SUBS
                 cout << "    results in " << *subResult << endl;
                 #endif
 //                cout << "add the unary clause ";
@@ -2341,7 +2068,7 @@ NextClause:
                     if( iter == mConstraintLiteralMap.end() )
                     {
                         // applying the substitution to this constraint leads to a new constraint (which did not yet occur in the received formula)
-                        #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                        #ifdef DEBUG_SAT_APPLY_VALID_SUBS
                         cout << __LINE__ << endl;
                         #endif
                         auto negConsLitPair = consLitPair;
@@ -2368,7 +2095,7 @@ NextClause:
                     else
                     {
                         // applying the substitution to this constraint leads to a constraint which already occurs in the received formula
-                        #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                        #ifdef DEBUG_SAT_APPLY_VALID_SUBS
                         cout << __LINE__ << endl;
                         cout << "consLitPair->second.front(): " << (sign( consLitPair->second.front() ) ? "-" : "") << var( consLitPair->second.front() ) << endl;
                         cout << "iter->second.front(): " << (sign( iter->second.front() ) ? "-" : "") << var( iter->second.front() ) << endl;
@@ -2437,13 +2164,13 @@ NextClause:
                 }
                 for( auto litIter = consLitPair->second.begin(); litIter != consLitPair->second.end(); ++litIter )
                 {
-                    #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                    #ifdef DEBUG_SAT_APPLY_VALID_SUBS
                     cout << "consider the literal: " << (sign( *litIter ) ? "-" : "") << var( *litIter ) << endl;
                     #endif
                     Abstraction& abstr = negativeLiteral ? mBooleanConstraintMap[var( *litIter )].second : mBooleanConstraintMap[var( *litIter )].first;
                     if( abstr.position != mpPassedFormula->end() )
                     {
-                        #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                        #ifdef DEBUG_SAT_APPLY_VALID_SUBS
                         cout << __LINE__ << endl;
                         #endif
                         removeSubformulaFromPassedFormula( abstr.position );
@@ -2454,13 +2181,13 @@ NextClause:
                             if( abstr.updateInfo <= 0 )
                                 if( ++abstr.updateInfo > 0 )
                                     mChangedBooleans.push_back( var( *litIter ) );
-                            #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                            #ifdef DEBUG_SAT_APPLY_VALID_SUBS
                             cout << __LINE__ << endl;
                             #endif
                         }
                         else
                         {
-                            #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                            #ifdef DEBUG_SAT_APPLY_VALID_SUBS
                             cout << __LINE__ << endl;
                             #endif
                             abstr.constraint = NULL;
@@ -2470,7 +2197,7 @@ NextClause:
                     }
                     else
                     {
-                        #ifdef SAT_APPLY_VALID_SUBS_DEBUG
+                        #ifdef DEBUG_SAT_APPLY_VALID_SUBS
                         cout << __LINE__ << endl;
                         #endif
                         abstr.constraint = subResult;
@@ -2490,25 +2217,12 @@ NextClause:
                 }
             }
             mVarOccurrences.erase( elimVarOccs );
-            #ifdef SAT_APPLY_VALID_SUBS_DEBUG
-            printVariableClausesMap();
-            printVariableOccurrences();
-            printConstraintLiteralMap();
-            printBooleanConstraintMap();
-            printBooleanVarMap();
-            printClauses(clauses,"Clauses:");
-            printClauses(learnts,"Learnts:");
-            printDecisions();
-            printPassedFormula();
-            for(int i = 0; i < vardata.size(); i++ )
-                cout << i << " -> " << ((uint32_t) vardata[i].reason) << endl;
+            #ifdef DEBUG_SAT_APPLY_VALID_SUBS
+            print();
             #endif
         }
     }
 
-    /**
-     *
-     */
     bool SATModule::processLemmas()
     {
         bool deductionsLearned = false;
@@ -2541,11 +2255,6 @@ NextClause:
         return deductionsLearned;
     }
 
-    /**
-     *
-     * @param _theoryReason
-     * @return
-     */
     CRef SATModule::learnTheoryConflict()
     {
         CRef conflictClause = CRef_Undef;
@@ -2678,10 +2387,6 @@ NextClause:
         return conflictClause;
     }
 
-    /**
-     *
-     * @return
-     */
     double SATModule::progressEstimate() const
     {
         double progress = 0;
@@ -2697,14 +2402,6 @@ NextClause:
         return progress / nVars();
     }
 
-    //=================================================================================================
-    // Garbage Collection methods:
-
-    /**
-     * Description.
-     *
-     * @param to
-     */
     void SATModule::relocAll( ClauseAllocator& to )
     {
         #ifdef SAT_APPLY_VALID_SUBSTITUTIONS
@@ -2766,9 +2463,6 @@ NextClause:
             ca.reloc( clauses[i], to );
     }
 
-    /**
-     * Description.
-     */
     void SATModule::garbageCollect()
     {
         // Initialize the next region to a size corresponding to the estimated utilization degree. This
@@ -2783,18 +2477,6 @@ NextClause:
         to.moveTo( ca );
     }
 
-    //=================================================================================================
-    // Methods to print.
-
-    /**
-     * Description.
-     *
-     * @param x
-     * @param map
-     * @param max
-     *
-     * @return
-     */
     Var SATModule::mapVar( Var x, vec<Var>& map, Var& max )
     {
         if( map.size() <= x || map[x] == -1 )
@@ -2805,25 +2487,24 @@ NextClause:
         return map[x];
     }
 
-    /**
-     * Prints everything.
-     *
-     * @param _out  The output stream where the answer should be printed.
-     * @param _init The line initiation.
-     */
     void SATModule::print( ostream& _out, const string _init ) const
     {
         printConstraintLiteralMap( _out, _init );
         printBooleanVarMap( _out, _init );
         printBooleanConstraintMap( _out, _init );
+        printVariableClausesMap( _out, _init );
+        printVariableOccurrences( _out, _init );
+        printConstraintLiteralMap( _out, _init );
+        printBooleanConstraintMap( _out, _init );
+        printBooleanVarMap( _out, _init );
+        printClauses( clauses, "Clauses", _out, _init );
+        printClauses( learnts, "Learnts", _out, _init );
+        printDecisions( _out, _init );
+        printPassedFormula( _out, _init );
+        for(int i = 0; i < vardata.size(); i++ )
+            _out << _init << i << " -> " << ((uint32_t) vardata[i].reason) << endl;
     }
 
-    /**
-     * Prints the constraints to literal map.
-     *
-     * @param _out  The output stream where the answer should be printed.
-     * @param _init The line initiation.
-     */
     void SATModule::printConstraintLiteralMap( ostream& _out, const string _init ) const
     {
         _out << _init << " ConstraintLiteralMap" << endl;
@@ -2843,12 +2524,6 @@ NextClause:
         }
     }
 
-    /**
-     * Prints map of the Boolean within the SAT solver to the given Booleans.
-     *
-     * @param _out  The output stream where the answer should be printed.
-     * @param _init The line initiation.
-     */
     void SATModule::printBooleanVarMap( ostream& _out, const string _init ) const
     {
         _out << _init << " BooleanVarMap" << endl;
@@ -2858,12 +2533,6 @@ NextClause:
         }
     }
 
-    /**
-     * Prints the literal to constraint map.
-     *
-     * @param _out  The output stream where the answer should be printed.
-     * @param _init The line initiation.
-     */
     void SATModule::printBooleanConstraintMap( ostream& _out, const string _init ) const
     {
         _out << _init << " BooleanConstraintMap" << endl;
@@ -2882,69 +2551,21 @@ NextClause:
         }
     }
 
-    /**
-     * Prints the given clause.
-     *
-     * @param _out  The output stream where the answer should be printed.
-     * @param _init The line initiation.
-     */
-    void SATModule::printClause( ostream& _out, Clause& c )
+    void SATModule::printClause( const vec<Lit>& _clause, bool _withAssignment, ostream& _out, const string& _init ) const
     {
-        vec<Var> map;
-        Var max = 0;
-
-        // Cannot use removeClauses here because it is not safe
-        // to deallocate them at this point. Could be improved.
-        int cnt = 0;
-        for( int i = 0; i < clauses.size(); i++ )
-            if( !satisfied( ca[clauses[i]] ) )
-                cnt++;
-
-        for( int i = 0; i < clauses.size(); i++ )
-            if( !satisfied( ca[clauses[i]] ) )
+        _out << _init;
+        for( int pos = 0; pos < _clause.size(); ++pos )
+        {
+            _out << " ";
+            if( sign( _clause[pos] ) )
             {
-                Clause& c = ca[clauses[i]];
-                for( int j = 0; j < c.size(); j++ )
-                    if( value( c[j] ) != l_False )
-                        mapVar( var( c[j] ), map, max );
+                _out << "-";
             }
-
-        for( int i = 0; i < c.size(); i++ )
-        {
-            stringstream s;
-            s << (sign( c[i] ) ? " -" : " ") << var( c[i] );
-            _out << setw( 6 ) << s.str();
-        }
-
-        if( satisfied( c ) )
-            _out << "      ok";
-    }
-
-    /**
-     * Prints the given clause.
-     *
-     * @param _out  The output stream where the answer should be printed.
-     * @param c     The clause to print.
-     * @param c     The clause to print.
-     * @param map
-     */
-    void SATModule::printClauses( ostream& _out, Clause& c, bool _withAssignment )
-    {
-        for( int i = 0; i < c.size(); i++ )
-        {
-            stringstream s;
-            s << (sign( c[i] ) ? " -" : " ") << var( c[i] );
+            _out << var( _clause[pos] );
             if( _withAssignment )
-            {
-                s << "(" << (value( c[i] ) == l_True ? "true" : (value( c[i] ) == l_False ? "false" : "undef")) << "@" << level( var( c[i] ) ) << ")";
-                _out << setw( 10 ) << s.str();
-            }
-            else
-                _out << setw( 6 ) << s.str();
+                _out << "(" << (value( _clause[pos] ) == l_True ? "true" : (value( _clause[pos] ) == l_False ? "false" : "undef")) << "@" << level( var( _clause[pos] ) ) << ")";
         }
-
-        if( satisfied( c ) && !_withAssignment )
-            _out << "      ok";
+        _out << endl;
     }
 
     void SATModule::printClause( CRef _clause, bool _withAssignment, ostream& _out, const string& _init ) const
@@ -2972,36 +2593,7 @@ NextClause:
         _out << endl;
     }
 
-    /**
-     *
-     * @param _clause
-     * @param _out
-     * @param _init
-     */
-    void SATModule::printClause( const vec<Lit>& _clause, bool _withAssignment, ostream& _out, const string& _init ) const
-    {
-        _out << _init;
-        for( int pos = 0; pos < _clause.size(); ++pos )
-        {
-            _out << " ";
-            if( sign( _clause[pos] ) )
-            {
-                _out << "-";
-            }
-            _out << var( _clause[pos] );
-            if( _withAssignment )
-                _out << "(" << (value( _clause[pos] ) == l_True ? "true" : (value( _clause[pos] ) == l_False ? "false" : "undef")) << "@" << level( var( _clause[pos] ) ) << ")";
-        }
-        _out << endl;
-    }
-
-    /**
-     * Prints the clauses the SAT solver got.
-     *
-     * @param _out  The output stream where the answer should be printed.
-     * @param _init The line initiation.
-     */
-    void SATModule::printClauses( const vec<CRef>& _clauses, const string _name, ostream& _out, const string _init, int _from, bool _withAssignment )
+    void SATModule::printClauses( const vec<CRef>& _clauses, const string _name, ostream& _out, const string _init, int _from, bool _withAssignment ) const
     {
         _out << _init << " " << _name << ":" << endl;
         // Handle case when solver is in contradictory state:
@@ -3026,7 +2618,7 @@ NextClause:
         for( int i = _from; i < _clauses.size(); i++ )
             if( !satisfied( ca[_clauses[i]] ) )
             {
-                Clause& c = ca[_clauses[i]];
+                const Clause& c = ca[_clauses[i]];
                 for( int j = 0; j < c.size(); j++ )
                     if( value( c[j] ) != l_False )
                         mapVar( var( c[j] ), map, max );
@@ -3046,7 +2638,7 @@ NextClause:
         for( int i = _from; i < _clauses.size(); i++ )
         {
             _out << _init << " ";
-            printClauses( _out, ca[_clauses[i]], _withAssignment );
+            printClause( _clauses[i], _withAssignment, _out, _init  );
             _out << "  [" << ((uint32_t) _clauses[i]) << "]" << endl;
         }
 
@@ -3054,12 +2646,6 @@ NextClause:
             _out << _init << "  Wrote " << cnt << " clauses with " << max << " variables." << endl;
     }
 
-    /**
-     * Prints the current assignment of the SAT solver.
-     *
-     * @param _out  The output stream where the answer should be printed.
-     * @param _init The line initiation.
-     */
     void SATModule::printCurrentAssignment( ostream& _out, string _init ) const
     {
         _out << _init << " Assignments:  ";
@@ -3094,12 +2680,6 @@ NextClause:
         }
     }
 
-    /**
-     * Prints the decisions the SAT solver has made.
-     *
-     * @param _out  The output stream where the answer should be printed.
-     * @param _init The line initiation.
-     */
     void SATModule::printDecisions( ostream& _out, string _init ) const
     {
         _out << _init << " Decisions:  ";
@@ -3135,12 +2715,6 @@ NextClause:
         }
     }
     
-    /**
-     * Prints the occurrences of arithmetic variables in constraints the SAT solver has contains.
-     *
-     * @param _out  The output stream where the answer should be printed.
-     * @param _init The line initiation.
-     */
     void SATModule::printVariableOccurrences( ostream& _out, string _init ) const
     {
         _out << _init << "Variable Occurrences: " << endl;
@@ -3152,13 +2726,6 @@ NextClause:
             _out << "  }" << endl;
         }
     }
-    
-    /**
-     * Prints the mapping of variable managed by the SAT solver to the clauses they occur.
-     *
-     * @param _out  The output stream where the answer should be printed.
-     * @param _init The line initiation.
-     */
     
     void SATModule::printVariableClausesMap( ostream& _out, string _init ) const
     {
@@ -3172,10 +2739,6 @@ NextClause:
         }
     }
 
-
-    /**
-     *
-     */
     void SATModule::collectStats()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics

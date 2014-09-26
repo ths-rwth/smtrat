@@ -79,7 +79,6 @@ namespace smtrat
     /**
      * Informs this module about the existence of the given constraint, which means
      * that it could be added in future.
-     *
      * @param _constraint The constraint to inform about.
      * @return false, if the it can be determined that the constraint itself is conflicting;
      *         true,  otherwise.
