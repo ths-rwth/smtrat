@@ -31,7 +31,7 @@
 #include <string>
 #include <assert.h>
 #include <list>
-#include "../lib/RuntimeSettings.h"
+#include "../lib/solver/RuntimeSettings.h"
 
 namespace smtrat
 {    

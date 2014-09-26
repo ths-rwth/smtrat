@@ -26,7 +26,7 @@
 #ifndef SMTRAT_STRATEGYONE_H
 #define SMTRAT_STRATEGYONE_H
 
-#include "../Manager.h"
+#include "../solver/Manager.h"
 
 namespace smtrat
 {

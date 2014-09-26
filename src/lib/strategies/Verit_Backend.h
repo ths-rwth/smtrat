@@ -26,7 +26,7 @@
 #ifndef SMTRAT_VERIT_BACKEND_H
 #define SMTRAT_VERIT_BACKEND_H
 
-#include "../Manager.h"
+#include "../solver/Manager.h"
 
 namespace smtrat
 {

@@ -30,8 +30,8 @@
 #define LRAMODULE_H
 
 
-#include "../../Module.h"
-#include "../../RuntimeSettings.h"
+#include "../../solver/Module.h"
+#include "../../solver/RuntimeSettings.h"
 #include "../../datastructures/lra/Tableau.hpp"
 #include "LRAModuleStatistics.h"
 #include <stdio.h>

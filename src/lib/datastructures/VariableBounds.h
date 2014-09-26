@@ -27,8 +27,7 @@
 
 #pragma once
 
-#include "Constraint.h"
-#include "Formula.h"
+#include "../Formula.h"
 #include <iomanip>
 
 namespace smtrat

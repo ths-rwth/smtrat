@@ -27,7 +27,7 @@
  * Created on 02. May 2012, 20:53
  */
 
-#include "../../Manager.h"
+#include "../../solver/Manager.h"
 #include "CNFerModule.h"
 
 using namespace std;

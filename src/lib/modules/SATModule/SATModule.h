@@ -56,8 +56,8 @@
 #include "SolverTypes.h"
 #include "Sort.h"
 #include <math.h>
-#include "../../Module.h"
-#include "../../RuntimeSettings.h"
+#include "../../solver/Module.h"
+#include "../../solver/RuntimeSettings.h"
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "SATModuleStatistics.h"

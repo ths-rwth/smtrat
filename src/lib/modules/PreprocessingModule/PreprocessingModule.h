@@ -30,7 +30,7 @@
 
 #pragma once
 
-#include "../../Module.h"
+#include "../../solver/Module.h"
 #include "PreprocessingSettings.h"
 
 namespace smtrat

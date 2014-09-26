@@ -30,9 +30,8 @@
 
 #pragma once
 
-#include "../../Module.h"
-
-#include "VariableConstraintGraph.h"
+#include "../../solver/Module.h"
+#include "../../datastructures/VariableConstraintGraph.h"
 
 namespace smtrat
 {

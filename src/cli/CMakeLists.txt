@@ -1,6 +1,6 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #                                                             #
-# File: src/solver/CMakeLists.txt                             #
+# File: src/cli/CMakeLists.txt                             #
 #                                                             #
 # Project name: SMT-RAT                                       #
 # Contact: Florian Corzilius <corzilius@cs.rwth-aachen.de>,   #
@@ -13,8 +13,8 @@
 
 #TODO: are all these directories really necessary?
 include_directories(${CMAKE_SOURCE_DIR}/src
-                    ${CMAKE_SOURCE_DIR}/src/solver
-                    ${CMAKE_BINARY_DIR}/src/solver
+                    ${CMAKE_SOURCE_DIR}/src/cli
+                    ${CMAKE_BINARY_DIR}/src/cli
                     ${carl_INCLUDE_DIR}
  )
 
@@ -24,16 +24,16 @@ link_directories( ${PROJECT_BINARY_DIR}/src/lib
 
 # write config.h
 #######################
-configure_file( ${CMAKE_SOURCE_DIR}/src/solver/config.h.in ${CMAKE_SOURCE_DIR}/src/solver/config.h )
+configure_file( ${CMAKE_SOURCE_DIR}/src/cli/config.h.in ${CMAKE_SOURCE_DIR}/src/cli/config.h )
 
 
 # executable solver
 # # # # # # # # # #
 
 add_executable( smtratSolver
-	${CMAKE_SOURCE_DIR}/src/solver/parser/Parser.cpp
-	${CMAKE_SOURCE_DIR}/src/solver/parser/ParserUtils.cpp
-	${CMAKE_SOURCE_DIR}/src/solver/parser/Sort.cpp
+	${CMAKE_SOURCE_DIR}/src/cli/parser/Parser.cpp
+	${CMAKE_SOURCE_DIR}/src/cli/parser/ParserUtils.cpp
+	${CMAKE_SOURCE_DIR}/src/cli/parser/Sort.cpp
 	smtratSolver.cpp
 	RuntimeSettingsManager.cpp
 )
@@ -49,7 +49,7 @@ endif()
 set_target_properties( smtratSolver PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
 
 add_library( smtlibParser
-	${CMAKE_SOURCE_DIR}/src/solver/smtratSolver.cpp
+	${CMAKE_SOURCE_DIR}/src/cli/smtratSolver.cpp
 	${CMAKE_SOURCE_DIR}/src/lib/Formula.cpp
 	${CMAKE_SOURCE_DIR}/src/lib/ConstraintPool.cpp
 	${CMAKE_SOURCE_DIR}/src/lib/Constraint.cpp

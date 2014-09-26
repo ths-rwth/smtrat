@@ -28,7 +28,7 @@
  */
 
 #include "CacheModule.h"
-#include "../../../solver/ExitCodes.h"
+#include "../../../cli/ExitCodes.h"
 
 
 #define CACHE_ONLY_TRUE

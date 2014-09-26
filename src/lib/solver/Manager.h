@@ -37,10 +37,10 @@
 
 #include "ModuleFactory.h"
 #include "StrategyGraph.h"
-#include "modules/ModuleType.h"
+#include "../modules/ModuleType.h"
 #include "Module.h"
-#include "config.h"
-#include "modules/StandardModuleFactory.h"
+#include "../config.h"
+#include "../modules/StandardModuleFactory.h"
 #include "GeneralStatistics.h"
 #include "QuantifierManager.h"
 

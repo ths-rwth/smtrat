@@ -26,7 +26,7 @@
  */
 
 #include "State.h"
-#include "../../Module.h"
+#include "../../solver/Module.h"
 #include <cmath>
 #include <float.h>
 

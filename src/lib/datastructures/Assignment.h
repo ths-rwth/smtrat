@@ -7,7 +7,7 @@
 
 #include <map>
 #include <boost/variant.hpp>
-#include "datastructures/vs/SqrtEx.h"
+#include "vs/SqrtEx.h"
 #include "carl/core/RealAlgebraicNumber.h"
 
 namespace smtrat {

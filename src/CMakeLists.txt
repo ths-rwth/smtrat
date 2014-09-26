@@ -14,7 +14,7 @@
 
 add_subdirectory(lib)
 if(BUILD_SOLVER)
-	add_subdirectory(solver)
+	add_subdirectory(cli)
 endif()
 # unit tests
 # # # # # # #

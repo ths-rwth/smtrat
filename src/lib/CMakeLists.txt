@@ -19,39 +19,19 @@ endif()
 # Core library
 # # # # # # # # # # #
 set(lib_core_src
-    Assignment.cpp
-    Manager.cpp
-    Module.cpp
-    ModuleInput.cpp
     Formula.cpp
-    StrategyGraph.cpp
     Constraint.cpp
     ConstraintPool.cpp
     FormulaPool.cpp
-    RuntimeSettings.cpp
-    ThreadPool.cpp
-    ValidationSettings.cpp
-    CompileInfo.cpp
 )
 
 set(lib_core_headers
-    Assignment.h
-    Manager.h
-    Module.h
-    ModuleInput.h
     Condition.h
     Formula.h
-    StrategyGraph.h
-    ModuleFactory.h
-    ModuleType.h
     Common.h
     Constraint.h
     ConstraintPool.h
     FormulaPool.h
-    RuntimeSettings.h
-    ThreadPool.h
-    VariableBounds.h
-    ValidationSettings.h
     smtrat.h
 )
 
@@ -68,10 +48,12 @@ add_subdirectory(strategies)
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/config.h.in ${CMAKE_SOURCE_DIR}/src/lib/config.h )
 
 # write CompileInfo.cpp
-configure_file( ${CMAKE_SOURCE_DIR}/src/lib/CompileInfo.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/CompileInfo.cpp )
+configure_file( ${CMAKE_SOURCE_DIR}/src/lib/solver/CompileInfo.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/solver/CompileInfo.cpp )
 
 
 set(lib_datastructures_headers
+        datastructures/Assignment.h
+        datastructures/VariableBounds.h
 	datastructures/lra/Bound.hpp
 	datastructures/lra/Tableau.hpp
 	datastructures/lra/Value.hpp
@@ -79,17 +61,42 @@ set(lib_datastructures_headers
 	datastructures/lra/Numeric.h
 	datastructures/vs/SqrtEx.h
 )
+
 set(lib_datastructures_src
+        datastructures/Assignment.cpp
 	datastructures/lra/Numeric.cpp
 	datastructures/vs/SqrtEx.cpp
 )
 
+set(lib_solver_headers
+	solver/debug.h
+        solver/Manager.h
+        solver/Module.h
+        solver/ModuleInput.h
+        solver/StrategyGraph.h
+        solver/ModuleFactory.h
+        solver/RuntimeSettings.h
+        solver/ThreadPool.h
+        solver/ValidationSettings.h
+)
+
+set(lib_solver_src
+	solver/Manager.cpp
+	solver/Module.cpp
+	solver/ModuleInput.cpp
+        solver/StrategyGraph.cpp
+        solver/RuntimeSettings.cpp
+        solver/ThreadPool.cpp
+        solver/ValidationSettings.cpp
+        solver/CompileInfo.cpp
+)
+
 set(lib_utilities_headers
-	utilities/debug/debug.h
 	utilities/stats/Statistics.h
 	utilities/stats/CollectStatistics.h
 	utilities/stats/StatisticSettings.h
 )
+
 set(lib_utilities_src
 	utilities/stats/CollectStatistics.cpp
 	utilities/stats/StatisticSettings.cpp
@@ -99,6 +106,7 @@ set(lib_${PROJECT_NAME}_SRCS
     ${lib_core_src}
     ${lib_datastructures_src}
     ${lib_modules_src}
+    ${lib_solver_src}
     ${lib_strategies_src}
     ${lib_utilities_src}
 )

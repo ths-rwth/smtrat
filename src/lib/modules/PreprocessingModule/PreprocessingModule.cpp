@@ -28,7 +28,7 @@
  */
 
 #include "PreprocessingModule.h"
-#include "../../../solver/ExitCodes.h"
+#include "../../../cli/ExitCodes.h"
 #include <limits.h>
 #include <bits/stl_map.h>
 

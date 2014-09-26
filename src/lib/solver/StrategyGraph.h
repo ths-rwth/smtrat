@@ -32,9 +32,9 @@
 
 #include <vector>
 
-#include "Formula.h"
+#include "../Formula.h"
 #include "ThreadPool.h"
-#include "modules/ModuleType.h"
+#include "../modules/ModuleType.h"
 
 namespace smtrat
 {

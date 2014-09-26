@@ -28,7 +28,7 @@
  */
 
 #include "VRWModule.h"
-#include "../../../solver/ExitCodes.h"
+#include "../../../cli/ExitCodes.h"
 
 //#define SMTRAT_VRW_DEBUGOUTPUT
 

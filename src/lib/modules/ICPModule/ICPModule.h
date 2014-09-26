@@ -35,13 +35,13 @@
 #endif
 
 
-#include "../../Module.h"
+#include "../../solver/Module.h"
 #include "DerivativeTable.h"
 #include "ContractionCandidateManager.h"
 #include "IcpVariable.h"
 #include "../LRAModule/LRAModule.h"
 #include "../../Common.h"
-#include "../../VariableBounds.h"
+#include "../../datastructures/VariableBounds.h"
 #include "IcpVariable.h"
 #include "utils.h"
 #include <fstream>

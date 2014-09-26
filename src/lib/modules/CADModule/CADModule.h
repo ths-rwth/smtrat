@@ -32,14 +32,14 @@
 #define SMTRAT_CADMODULE_H
 
 #include "config.h"
-#include "../../Module.h"
-#include "../../RuntimeSettings.h"
+#include "../../solver/Module.h"
+#include "../../solver/RuntimeSettings.h"
 
 #include <unordered_map>
 
 #include "carl/cad/CAD.h"
 
-#include "../../VariableBounds.h"
+#include "../../datastructures/VariableBounds.h"
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "CADStatistics.h"
 #endif

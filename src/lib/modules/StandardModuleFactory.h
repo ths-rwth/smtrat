@@ -30,8 +30,8 @@
 #ifndef SMTRAT_STANDARDMODULEFACTORY_H
 #define SMTRAT_STANDARDMODULEFACTORY_H
 
-#include "../ModuleFactory.h"
-#include "../RuntimeSettings.h"
+#include "../solver/ModuleFactory.h"
+#include "../solver/RuntimeSettings.h"
 
 namespace smtrat
 {
