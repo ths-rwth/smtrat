@@ -28,7 +28,7 @@
 #pragma once
 
 #include <iostream>
-#include "../../RuntimeSettings.h"
+#include "../../solver/RuntimeSettings.h"
 
 namespace smtrat {
 class StatisticSettings : public RuntimeSettings

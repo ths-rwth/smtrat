@@ -25,7 +25,7 @@
  * @version 2013-02-05
  */
 
-#include "ConstraintPool.h"
+#include "../ConstraintPool.h"
 
 namespace smtrat
 {

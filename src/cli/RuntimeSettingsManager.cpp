@@ -37,7 +37,7 @@
 
 #include "../lib/modules/Modules.h"
 #include "../lib/config.h"
-#include "../lib/CompileInfo.h"
+#include "../lib/solver/CompileInfo.h"
 
 namespace smtrat
 {

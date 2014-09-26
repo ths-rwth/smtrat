@@ -32,9 +32,9 @@
 
 #include <algorithm>
 #include <list>
-#include "ConstraintPool.h"
-#include "FormulaPool.h"
-#include "config.h"
+#include "../ConstraintPool.h"
+#include "../FormulaPool.h"
+#include "../config.h"
 
 namespace smtrat
 {   

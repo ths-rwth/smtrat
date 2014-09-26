@@ -39,9 +39,9 @@
 #include <boost/dynamic_bitset.hpp>
 #include "Condition.h"
 #include "modules/ModuleType.h"
-#include "Assignment.h"
+#include "datastructures/Assignment.h"
 #include "Constraint.h"
-#include "../solver/parser/ParserTypes.h"
+#include "../cli/parser/ParserTypes.h"
 
 namespace smtrat
 {

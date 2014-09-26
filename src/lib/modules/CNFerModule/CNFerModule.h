@@ -30,7 +30,7 @@
 #ifndef SMTRAT_CNFERMODULE_H
 #define SMTRAT_CNFERMODULE_H
 
-#include "../../Module.h"
+#include "../../solver/Module.h"
 
 namespace smtrat
 {

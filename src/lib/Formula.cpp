@@ -30,9 +30,7 @@
 
 
 #include "Formula.h"
-#include "Module.h"
 #include "FormulaPool.h"
-#include "carl/util/debug.h"
 
 using namespace std;
 

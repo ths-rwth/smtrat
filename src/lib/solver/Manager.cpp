@@ -31,7 +31,7 @@
 
 #include "Manager.h"
 #include "StrategyGraph.h"
-#include "modules/Modules.h"
+#include "../modules/Modules.h"
 #include <functional>
 
 #include <typeinfo>

@@ -38,8 +38,8 @@
 #include "Substitute.h"
 #include "State.h"
 #include "VSSettings.h"
-#include "../../Module.h"
-#include "../../RuntimeSettings.h"
+#include "../../solver/Module.h"
+#include "../../solver/RuntimeSettings.h"
 
 namespace smtrat
 {

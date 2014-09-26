@@ -32,7 +32,7 @@
 #ifndef SMTRAT_MODULEFACTORY_H
 #define SMTRAT_MODULEFACTORY_H
 
-#include "modules/ModuleType.h"
+#include "../modules/ModuleType.h"
 #include <atomic>
 
 namespace smtrat

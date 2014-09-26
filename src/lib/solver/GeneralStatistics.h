@@ -23,10 +23,10 @@
 #ifndef GENERALSTATISTICS_H
 #define	GENERALSTATISTICS_H
 
-#include "config.h"
+#include "../config.h"
 #ifdef SMTRAT_DEVOPTION_Statistics
-#include "Formula.h"
-#include "utilities/stats/Statistics.h"
+#include "../Formula.h"
+#include "../utilities/stats/Statistics.h"
 
 namespace smtrat
 {

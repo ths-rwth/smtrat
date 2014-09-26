@@ -28,7 +28,7 @@
  * @version 2013-07-10
  */
 
-#include "../../Manager.h"
+#include "../../solver/Manager.h"
 #include "CADModule.h"
 
 #include <memory>

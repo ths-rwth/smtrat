@@ -6,8 +6,8 @@
 #include <algorithm>
 #include <set>
 
-#include "Common.h"
-#include "Formula.h"
+#include "../Common.h"
+#include "../Formula.h"
 
 #pragma once
 

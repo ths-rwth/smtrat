@@ -30,7 +30,7 @@
 #include <limits.h>
 #include "config.h"
 #include "Substitution.h"
-#include "../../VariableBounds.h"
+#include "../../datastructures/VariableBounds.h"
 #ifdef SMTRAT_VS_VARIABLEBOUNDS
 #define SMTRAT_VS_VARIABLEBOUNDS_B
 #endif
