@@ -159,12 +159,12 @@ namespace smtrat
                 {}
             };
 
-            typedef std::map<const Formula*, std::vector<Minisat::Lit>>    ConstraintLiteralsMap;
-            typedef std::map<const carl::Variable, Minisat::Var>           BooleanVarMap;
-            typedef Minisat::vec<std::pair<Abstraction,Abstraction>>       BooleanConstraintMap;
-            typedef std::map<const Formula*, Minisat::CRef >               FormulaClauseMap;
-            typedef std::vector< std::vector<Minisat::Lit> >               ClauseVector;
-            typedef std::set<std::vector<int>>                             ClauseSet;
+            typedef PointerMap<Formula, std::vector<Minisat::Lit>>   ConstraintLiteralsMap;
+            typedef std::map<const carl::Variable, Minisat::Var>     BooleanVarMap;
+            typedef Minisat::vec<std::pair<Abstraction,Abstraction>> BooleanConstraintMap;
+            typedef std::map<const Formula*, Minisat::CRef >         FormulaClauseMap;
+            typedef std::vector< std::vector<Minisat::Lit> >         ClauseVector;
+            typedef std::set<std::vector<int>>                       ClauseSet;
 
             static inline VarData mkVarData( Minisat::CRef cr, int l )
             {
@@ -290,7 +290,8 @@ namespace smtrat
             std::vector<signed>   mChangedBooleans;
             bool                  mAllActivitiesChanged;
             std::vector<Minisat::CRef>     mChangedActivities;
-            std::map<carl::Variable,std::set<const Formula*>> mVarOccurrences;
+            std::map<carl::Variable,PointerSet<Formula>> mVarOccurrences;
+            std::vector<std::set<Minisat::CRef>> mVarClausesMap;
             std::map<carl::Variable,Polynomial> mVarReplacements;
 
             #ifdef SMTRAT_DEVOPTION_Statistics
@@ -338,6 +339,8 @@ namespace smtrat
             void printClauses( std::ostream&, Minisat::Clause&, bool = false );
             void printClauses( const Minisat::vec<Minisat::CRef>&, const std::string, std::ostream& = std::cout, const std::string = "***", int = 0, bool = false );
             void printDecisions( std::ostream& = std::cout, std::string = "***" ) const;
+            void printVariableOccurrences( std::ostream& = std::cout, std::string = "***" ) const;
+            void printVariableClausesMap( std::ostream& = std::cout, std::string = "***" ) const;
 
             void collectStats();
 
@@ -350,9 +353,9 @@ namespace smtrat
             // Solving:
             //
             // Removes already satisfied clauses.
-            bool simplify();
+            void simplify();
             ///
-            bool applyValidSubstitutionsOnClauses();
+            void applyValidSubstitutionsOnClauses();
             // Learns a clause.
             bool addClause( Minisat::vec<Minisat::Lit>&, unsigned = 0 );
             // Checks the correctness of the watches in a clause
@@ -440,7 +443,8 @@ namespace smtrat
             void reduceDB();
             // Shrink 'cs' to contain only non-satisfied clauses.
             void removeSatisfied( Minisat::vec<Minisat::CRef>& cs );
-            void replaceVariable( Minisat::vec<Minisat::CRef>&, Minisat::Var, Minisat::Var );
+            void replaceVariable( Minisat::Lit, Minisat::Lit );
+            bool replaceVariable( Minisat::CRef, Minisat::Lit, Minisat::Lit );
             void rebuildOrderHeap();
             bool conflictingVars( const Minisat::vec<Minisat::CRef>& _clauses, const EvalRationalMap& _rationalAssignment, Minisat::vec<Minisat::Var>& _result, bool _includeConflicting = true ) const;
 
@@ -511,6 +515,7 @@ namespace smtrat
             Minisat::Lit getLiteral( const Formula*, const Formula* = NULL );
             void adaptPassedFormula();
             void adaptPassedFormula( Abstraction& );
+            bool passedFormulaCorrect() const;
     };
 
     //=================================================================================================

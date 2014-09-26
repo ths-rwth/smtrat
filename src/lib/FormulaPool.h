@@ -125,6 +125,7 @@ namespace smtrat
 				if (_subformula->getType() == Type::NOT)
 					return _subformula->pSubformula();
                 #endif
+                // TODO: Actually we know that this formula does not begin with NOT and is already in the pool. Use this for optimization purposes.
                 return addFormulaToPool( new Formula( _subformula ) );
             }
     

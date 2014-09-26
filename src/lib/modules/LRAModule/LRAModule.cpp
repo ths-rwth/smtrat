@@ -33,8 +33,9 @@
 //#define DEBUG_LRA_MODULE
 #define LRA_SIMPLE_THEORY_PROPAGATION
 #define LRA_SIMPLE_CONFLICT_SEARCH
+#define LRA_SIMPLE_CONFLICTS_AND_DEDUCTIONS_ON_DEMAND
 //#define LRA_ONE_REASON
-//#defineLRA_RESTORE_PREVIOUS_CONSISTENT_ASSIGNMENT
+//#define LRA_RESTORE_PREVIOUS_CONSISTENT_ASSIGNMENT
 //#define LRA_EARLY_BRANCHING
 #ifndef LRA_GOMORY_CUTS
 #ifndef LRA_CUTS_FROM_PROOFS
@@ -795,11 +796,13 @@ Return:
             mTableau.resetAssignment();
             mStrongestBoundsRemoved = false;
         }
+        #ifdef LRA_SIMPLE_CONFLICTS_AND_DEDUCTIONS_ON_DEMAND
         #ifdef LRA_SIMPLE_THEORY_PROPAGATION
-        addSimpleBoundDeduction( _bound, false );
+        addSimpleBoundDeduction( _bound, true, false );
         #endif
         #ifdef LRA_SIMPLE_CONFLICT_SEARCH
         findSimpleConflicts( *_bound );
+        #endif
         #endif
         // If the bounds constraint has already been passed to the backend, add the given formulas to it's origins
         if( _bound->pInfo()->position != mpPassedFormula->end() )
@@ -889,19 +892,23 @@ Return:
      */
     void LRAModule::setBound( const Formula* _constraint )
     {
+        #ifdef LRA_SIMPLE_CONFLICTS_AND_DEDUCTIONS_ON_DEMAND
+        mTableau.newBound( _constraint );
+        #else
         pair<const LRABound*, bool> retValue = mTableau.newBound( _constraint );
         if( retValue.second )
         {
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
-            addSimpleBoundDeduction( retValue.first, _constraint->constraint().relation() == Relation::NEQ );
+            addSimpleBoundDeduction( retValue.first, true, _constraint->constraint().relation() == Relation::NEQ );
             #endif
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *retValue.first );
             #endif
         }
+        #endif
     }
     
-    void LRAModule::addSimpleBoundDeduction( const LRABound* _bound, bool _boundNeq )
+    void LRAModule::addSimpleBoundDeduction( const LRABound* _bound, bool _exhaustively, bool _boundNeq )
     {
         const LRAVariable& lraVar = _bound->variable();
         if( _bound->isUpperBound() )
@@ -918,16 +925,16 @@ Return:
             {
                 while( currentBound != boundPos )
                 {
-//                    if( (*currentBound)->pInfo()->exists )
-//                    {
-//                        PointerSet<Formula> subformulas;
-//                        subformulas.insert( newNegation( newFormula( (*currentBound)->pAsConstraint() ) ) );
-//                        subformulas.insert( newFormula( _boundNeq ? _bound->neqRepresentation() : _bound->pAsConstraint() ) );
-//                        addDeduction( newFormula( OR, subformulas ) );
-//                        #ifdef SMTRAT_DEVOPTION_Statistics
-//                        mpStatistics->addDeduction();
-//                        #endif
-//                    }
+                    if( _exhaustively && (*currentBound)->pInfo()->exists )
+                    {
+                        PointerSet<Formula> subformulas;
+                        subformulas.insert( newNegation( (*currentBound)->pAsConstraint() ) );
+                        subformulas.insert( _boundNeq ? _bound->neqRepresentation() : _bound->pAsConstraint() );
+                        addDeduction( newFormula( OR, subformulas ) );
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                        mpStatistics->addDeduction();
+                        #endif
+                    }
                     ++currentBound;
                 }
                 ++currentBound;
@@ -976,25 +983,26 @@ Return:
                     }
                     ++currentBound;
                 }
-//                ++currentBound;
+                if( _exhaustively )
+                    ++currentBound;
             }
-//            if( _bound->type() != LRABound::Type::EQUAL )
-//            {
-//                while( currentBound != lraVar.lowerbounds().end() )
-//                {
-//                    if( (*currentBound)->pInfo()->exists )
-//                    {
-//                        PointerSet<Formula> subformulas;
-//                        subformulas.insert( newNegation( newFormula( (*currentBound)->pAsConstraint() ) ) );
-//                        subformulas.insert( newFormula( _boundNeq ? _bound->neqRepresentation() : _bound->pAsConstraint() ) );
-//                        addDeduction( newFormula( OR, subformulas ) );
-//                        #ifdef SMTRAT_DEVOPTION_Statistics
-//                        mpStatistics->addDeduction();
-//                        #endif
-//                    }
-//                    ++currentBound;
-//                }
-//            }
+            if( _exhaustively && _bound->type() != LRABound::Type::EQUAL )
+            {
+                while( currentBound != lraVar.lowerbounds().end() )
+                {
+                    if( (*currentBound)->pInfo()->exists )
+                    {
+                        PointerSet<Formula> subformulas;
+                        subformulas.insert( newNegation( (*currentBound)->pAsConstraint() ) );
+                        subformulas.insert( _boundNeq ? _bound->neqRepresentation() : _bound->pAsConstraint() );
+                        addDeduction( newFormula( OR, subformulas ) );
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                        mpStatistics->addDeduction();
+                        #endif
+                    }
+                    ++currentBound;
+                }
+            }
         }
     }
     
