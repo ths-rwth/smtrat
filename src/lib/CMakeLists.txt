@@ -107,7 +107,7 @@ set(lib_${PROJECT_NAME}_SRCS
 # # # # # # # # # #
 
 set(STATICLIB "SHARED")
-if(${STATICLIB_SWITCH} STREQUAL "ON")
+if(STATICLIB_SWITCH)
 	set(STATICLIB "STATIC")
 endif()
 
@@ -126,11 +126,11 @@ set_target_properties( lib_${PROJECT_NAME} PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
         ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
-if(${STATICLIB_SWITCH} STREQUAL "ON")
-  set_target_properties( lib_${PROJECT_NAME} PROPERTIES LINK_SEARCH_END_STATIC TRUE )
-  set_target_properties( lib_${PROJECT_NAME} PROPERTIES LINK_SEARCH_START_STATIC TRUE )
+if(STATICLIB_SWITCH)
+	target_link_libraries( lib_${PROJECT_NAME} lib_carl_static ${libraries} ) # libraries definied in top-level CMakeLists.txt
+else()
+	target_link_libraries( lib_${PROJECT_NAME} lib_carl ${libraries} ) # libraries definied in top-level CMakeLists.txt
 endif()
-target_link_libraries( lib_${PROJECT_NAME} lib_carl ${libraries} ) # libraries definied in top-level CMakeLists.txt
 
 
 # Install destination and permissions for the library
