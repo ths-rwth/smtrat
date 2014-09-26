@@ -1134,8 +1134,6 @@ namespace smtrat
         return res;
     }
 
-    //TODO: in each conjunction and disjunction, collect the bounds of polynomials and compose them. Maybe use the variable-bounds-object, 
-    //      after enabling such that it can also deal with disjunctions
     const Formula* Formula::toCNF( bool _keepConstraints, bool _simplifyConstraintCombinations ) const
     {
         if( !_simplifyConstraintCombinations && propertyHolds( PROP_IS_IN_CNF ) )
@@ -1163,7 +1161,7 @@ namespace smtrat
 //                cout << "   " << *f << endl;
 //            cout << endl;
 //            cout << "Conjunction:" << endl;
-//            for( auto f : subformulas )
+//            for( auto f : resultSubformulas )
 //                cout << "   " << *f << endl;
 //            cout << endl;
             subformulasToTransform.pop_back();
@@ -1691,7 +1689,7 @@ namespace smtrat
                         default:
                             assert( resB.first->second.first == Relation::NEQ );
                             resB.first->second.first = Relation::LESS;
-                            resB.first->second.second = _constraint;
+                            resB.first->second.second = newFormula( newConstraint( lhs, Relation::LESS ) );
                             return false;
                     }
                 }
@@ -1734,7 +1732,7 @@ namespace smtrat
                         default:
                             assert( resB.first->second.first == Relation::NEQ );
                             resB.first->second.first = Relation::GREATER;
-                            resB.first->second.second = _constraint;
+                            resB.first->second.second = newFormula( newConstraint( lhs, Relation::GREATER ) );
                             return false;
                     }
                 }
@@ -1855,11 +1853,11 @@ namespace smtrat
                             return true;
                         case Relation::LEQ:
                             resB.first->second.first = Relation::LESS;
-                            resB.first->second.second = _constraint;
+                            resB.first->second.second = newFormula( newConstraint( lhs, Relation::LESS ) );
                             return false;
                         case Relation::GEQ:
                             resB.first->second.first = Relation::GREATER;
-                            resB.first->second.second = _constraint;
+                            resB.first->second.second = newFormula( newConstraint( lhs, Relation::GREATER ) );
                             return false;
                         case Relation::LESS:
                             resB.first->second.first = Relation::LESS;

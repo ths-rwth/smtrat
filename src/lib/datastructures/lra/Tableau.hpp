@@ -2462,7 +2462,6 @@ FindPivot:
                     assert( iter->second->front()->pVariable()->isBasic() ); // This makes removing lra-variables far easier and must be assured before invoking this method.
                     slackVarsToRemove.insert( iter->second->front()->pVariable() );
                     const Formula* cons = smtrat::newFormula( smtrat::newConstraint( constraint.lhs().substitute( _var, _term ), constraint.relation() ) );
-                    assert( cons->constraint().isConsistent() != 0 );
                     if( cons->constraint().isConsistent() == 2 )
                     {
                         #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
@@ -2524,6 +2523,7 @@ FindPivot:
             print();
             printVariables();
             #endif
+            // Collect all substitutions, where an original variable x occurs in an equation x=r, with r being a rational
             for( auto iter = mOriginalVars.begin(); iter != mOriginalVars.end(); )
             {
                 if( !iter->second->supremum().isInfinite() && !iter->second->infimum().isInfinite() 
@@ -2539,6 +2539,8 @@ FindPivot:
                     ++iter;
                 }
             }
+            // Collect all substitutions, where an original variable x occurs in an equation x=p, with being a linear 
+            // polynomial not containing x
             for( auto iter = mSlackVars.begin(); iter != mSlackVars.end(); )
             {
                 Variable<T1,T2>& svar = *iter->second;
@@ -2565,7 +2567,9 @@ FindPivot:
                     }
                     assert( bestOVar != NULL );
                     coeff /= svar.factor();
-                    smtrat::Polynomial term = svar.expression() - (bestOVar->expression() * smtrat::Rational( coeff ) ) - smtrat::Rational( svar.supremum().limit().mainPart() );
+                    smtrat::Polynomial term = (bestOVar->expression() * smtrat::Rational( coeff )) - svar.expression();
+                    term = term * (smtrat::Rational(1)/smtrat::Rational( coeff ));
+                    term += smtrat::Rational( svar.supremum().limit().mainPart() );
                     carl::Variable toSubstitute = *bestOVar->expression().gatherVariables().begin();
                     validSubstitutions.push_back( std::pair<carl::Variable,smtrat::Polynomial>( toSubstitute, term ) );
                     substitute( toSubstitute, term );
@@ -2576,110 +2580,114 @@ FindPivot:
                     ++iter;
                 }
             }
-            
-            while( true )
-            {
-                #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
-                std::cout << "########################################################### Try:" << std::endl;
-                print();
-                printVariables();
-                #endif
-                std::stack<std::pair<Variable<T1,T2>*,Variable<T1,T2>*>> pivotingElements;
-                std::map<carl::Variable, Variable<T1,T2>*> varsToSubstitute;
-                auto best = mOriginalVars.begin();
-                while( best != mOriginalVars.end() )
-                {
-                    best = mOriginalVars.end();
-                    for( auto iter = mOriginalVars.begin(); iter != mOriginalVars.end(); ++iter )
-                    {
-                        Variable<T1,T2>& oVar = *iter->second;
-                        if( !oVar.isBasic() && oVar.upperbounds().size() == 1 && oVar.lowerbounds().size() == 1 && varsToSubstitute.find( iter->first ) == varsToSubstitute.end() )
-                        {
-                            if( best == mOriginalVars.end() || best->second->size() < oVar.size() )
-                            {
-                                best = iter;
-                            }
-                        }
-                    }
-                    if( best != mOriginalVars.end() )
-                    {
-                        Variable<T1,T2>& oVar = *best->second;
-                        EntryID bestPivot = LAST_ENTRY_ID;
-                        Iterator columnEntry = Iterator( oVar.startEntry(), mpEntries );
-                        while( true )
-                        {
-                            if( !(*columnEntry).rowVar()->isOriginal() )
-                            {
-                                if( bestPivot == LAST_ENTRY_ID || (*columnEntry).rowVar()->size() < (*mpEntries)[bestPivot].rowVar()->size() )
-                                {
-                                    bestPivot = columnEntry.entryID();
-                                }
-                            }
-                            if( columnEntry.vEnd( false ) )
-                                break;
-                            columnEntry.vMove( false );
-                        }
-                        if( bestPivot != LAST_ENTRY_ID )
-                        {
-                            pivotingElements.push( std::pair<Variable<T1,T2>*,Variable<T1,T2>*>( best->second, (*mpEntries)[bestPivot].rowVar() ) );
-                            pivot( bestPivot, false );
-                        }
-                        else
-                        {
-                            varsToSubstitute.insert( std::pair<carl::Variable, Variable<T1,T2>*>( best->first, best->second ) );
-                        }
-                    }
-                }
-                #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
-                std::cout << "########################################################### Results in:" << std::endl;
-                print();
-                printVariables();
-                #endif
-                std::list<std::pair<carl::Variable,smtrat::Polynomial>>::iterator subToApply = validSubstitutions.end();
-                for( auto iter = varsToSubstitute.begin(); iter != varsToSubstitute.end(); ++iter )
-                {
-                    Variable<T1,T2>& oVar = *iter->second;
-                    assert( !oVar.isBasic() && oVar.upperbounds().size() == 1 && oVar.lowerbounds().size() == 1 );
-                    if( oVar.size() > 0 )
-                    {
-                        Polynomial substituteBy = smtrat::ZERO_POLYNOMIAL;
-                        Iterator columnEntry = Iterator( oVar.startEntry(), mpEntries );
-                        while( true )
-                        {
-                            substituteBy += (*columnEntry).rowVar()->expression() * smtrat::Rational( (*columnEntry).content()/(*columnEntry).rowVar()->factor() );
-                            if( columnEntry.vEnd( false ) )
-                                break;
-                            columnEntry.vMove( false );
-                        }
-                        validSubstitutions.push_back( std::pair<carl::Variable,smtrat::Polynomial>( iter->first, substituteBy ) );
-                        if( subToApply == validSubstitutions.end() ) --subToApply;
-                    }
-                }
-                while( !pivotingElements.empty() )
-                {
-                    Iterator rowEntry = Iterator( pivotingElements.top().first->startEntry(), mpEntries );
-                    while( true )
-                    {
-                        if( (*rowEntry).columnVar() == pivotingElements.top().second )
-                        {
-                            pivot( rowEntry.entryID(), false );
-                            pivotingElements.pop();
-                            break;
-                        }
-                        if( rowEntry.hEnd( false ) )
-                        {
-                            assert( false );
-                            break;
-                        }
-                        rowEntry.hMove( false );
-                    }
-                }
-                if( subToApply == validSubstitutions.end() ) break;
-                for( ; subToApply != validSubstitutions.end(); ++subToApply )
-                {
-                    substitute( subToApply->first, subToApply->second );
-                }
-            }
+            // Find all substitutions which ...
+//            while( true )
+//            {
+//                #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
+//                std::cout << "########################################################### Try:" << std::endl;
+//                print();
+//                printVariables();
+//                #endif
+//                std::stack<std::pair<Variable<T1,T2>*,Variable<T1,T2>*>> pivotingElements;
+//                std::map<carl::Variable, Variable<T1,T2>*> varsToSubstitute;
+//                auto best = mOriginalVars.begin();
+//                while( best != mOriginalVars.end() )
+//                {
+//                    best = mOriginalVars.end();
+//                    // Find a unrestricted non-basic original variable 
+//                    for( auto iter = mOriginalVars.begin(); iter != mOriginalVars.end(); ++iter )
+//                    {
+//                        Variable<T1,T2>& oVar = *iter->second;
+//                        if( !oVar.isBasic() && oVar.upperbounds().size() == 1 && oVar.lowerbounds().size() == 1 && varsToSubstitute.find( iter->first ) == varsToSubstitute.end() )
+//                        {
+//                            if( best == mOriginalVars.end() || best->second->size() < oVar.size() )
+//                            {
+//                                best = iter;
+//                            }
+//                        }
+//                    }
+//                    if( best != mOriginalVars.end() )
+//                    {
+//                        // find an entry where the row/basic variable is not original
+//                        Variable<T1,T2>& oVar = *best->second;
+//                        EntryID bestPivot = LAST_ENTRY_ID;
+//                        Iterator columnEntry = Iterator( oVar.startEntry(), mpEntries );
+//                        while( true )
+//                        {
+//                            if( (*columnEntry).rowVar() != NULL && !(*columnEntry).rowVar()->isOriginal() )
+//                            {
+//                                if( bestPivot == LAST_ENTRY_ID || (*columnEntry).rowVar()->size() < (*mpEntries)[bestPivot].rowVar()->size() )
+//                                {
+//                                    bestPivot = columnEntry.entryID();
+//                                }
+//                            }
+//                            if( columnEntry.vEnd( false ) )
+//                                break;
+//                            columnEntry.vMove( false );
+//                        }
+//                        // if an entry where the row/basic variable is not original has been found, pivot on that entry
+//                        if( bestPivot != LAST_ENTRY_ID )
+//                        {
+//                            pivotingElements.push( std::pair<Variable<T1,T2>*,Variable<T1,T2>*>( best->second, (*mpEntries)[bestPivot].rowVar() ) );
+//                            pivot( bestPivot, false );
+//                        }
+//                        // substitute this variable by the expression consisting only of original variables
+//                        else
+//                        {
+//                            varsToSubstitute.insert( std::pair<carl::Variable, Variable<T1,T2>*>( best->first, best->second ) );
+//                        }
+//                    }
+//                }
+//                #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
+//                std::cout << "########################################################### Results in:" << std::endl;
+//                print();
+//                printVariables();
+//                #endif
+//                std::list<std::pair<carl::Variable,smtrat::Polynomial>>::iterator subToApply = validSubstitutions.end();
+//                for( auto iter = varsToSubstitute.begin(); iter != varsToSubstitute.end(); ++iter )
+//                {
+//                    Variable<T1,T2>& oVar = *iter->second;
+//                    assert( !oVar.isBasic() && oVar.upperbounds().size() == 1 && oVar.lowerbounds().size() == 1 );
+//                    if( oVar.size() > 0 )
+//                    {
+//                        Polynomial substituteBy = smtrat::ZERO_POLYNOMIAL;
+//                        Iterator columnEntry = Iterator( oVar.startEntry(), mpEntries );
+//                        while( true )
+//                        {
+//                            substituteBy += (*columnEntry).rowVar()->expression() * smtrat::Rational( (*columnEntry).content()/(*columnEntry).rowVar()->factor() );
+//                            if( columnEntry.vEnd( false ) )
+//                                break;
+//                            columnEntry.vMove( false );
+//                        }
+//                        validSubstitutions.push_back( std::pair<carl::Variable,smtrat::Polynomial>( iter->first, substituteBy ) );
+//                        if( subToApply == validSubstitutions.end() ) --subToApply;
+//                    }
+//                }
+//                while( !pivotingElements.empty() )
+//                {
+//                    Iterator rowEntry = Iterator( pivotingElements.top().first->startEntry(), mpEntries );
+//                    while( true )
+//                    {
+//                        if( (*rowEntry).columnVar() == pivotingElements.top().second )
+//                        {
+//                            pivot( rowEntry.entryID(), false );
+//                            pivotingElements.pop();
+//                            break;
+//                        }
+//                        if( rowEntry.hEnd( false ) )
+//                        {
+//                            assert( false );
+//                            break;
+//                        }
+//                        rowEntry.hMove( false );
+//                    }
+//                }
+//                if( subToApply == validSubstitutions.end() ) break;
+//                for( ; subToApply != validSubstitutions.end(); ++subToApply )
+//                {
+//                    substitute( subToApply->first, subToApply->second );
+//                }
+//            }
             for( auto iter = mOriginalVars.begin(); iter != mOriginalVars.end(); ++iter )
             {
                 if( iter->second->isBasic() )

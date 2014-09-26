@@ -148,7 +148,7 @@ namespace smtrat
             void activateBound( const LRABound*, const PointerSet<Formula>& );
             void activateStrictBound( const Formula* _neqOrigin, const LRABound& _weakBound, const LRABound* _strictBound );
             void setBound( const Formula* );
-            void addSimpleBoundDeduction( const LRABound*, bool = false );
+            void addSimpleBoundDeduction( const LRABound*, bool, bool = false );
             void addSimpleBoundConflict( const LRABound&, const LRABound&, bool = false );
             void findSimpleConflicts( const LRABound& );
             bool gomory_cut();
