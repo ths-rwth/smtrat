@@ -907,7 +907,7 @@ namespace smtrat
             }
             Clause& c = ca[cr];
             for( int i = 0; i < c.size(); ++i )
-                mVarClausesMap[var(c[i])].insert( cr );
+                mVarClausesMap[(size_t)var(c[i])].insert( cr );
             arrangeForWatches( c );
             if( _type == DEDUCTED_CLAUSE && value( c[1] ) == l_False )
             {
@@ -2132,7 +2132,7 @@ NextClause:
         assert( decisionLevel() == 0 );
         assert( var( _var ) != var( _by ) );
         setDecisionVar( var( _var ), false );
-        set<CRef>& varClauses = mVarClausesMap[var(_var)];
+        set<CRef>& varClauses = mVarClausesMap[(size_t)var(_var)];
         int removedClauses = 0;
         int removedLearnts = 0;
         for( set<CRef>::iterator crIter = varClauses.begin(); crIter != varClauses.end(); )
@@ -2709,7 +2709,7 @@ NextClause:
     {
         #ifdef SAT_APPLY_VALID_SUBSTITUTIONS
         // variable to clauses mapping:
-        for( int pos = 0; pos < mVarClausesMap.size(); ++pos )
+        for( size_t pos = 0; pos < mVarClausesMap.size(); ++pos )
         {
             set<CRef> toInsert;
             set<CRef>& cls = mVarClausesMap[pos];
@@ -3143,10 +3143,10 @@ NextClause:
      */
     void SATModule::printVariableOccurrences( ostream& _out, string _init ) const
     {
-        _out << "Variable Occurrences: " << endl;
+        _out << _init << "Variable Occurrences: " << endl;
         for( auto varOccPair = mVarOccurrences.begin(); varOccPair != mVarOccurrences.end(); ++varOccPair )
         {
-            _out << varOccPair->first << " in {";
+            _out << _init << varOccPair->first << " in {";
             for( const Formula* cons : varOccPair->second )
                 _out << "  " << *cons;
             _out << "  }" << endl;
@@ -3162,10 +3162,10 @@ NextClause:
     
     void SATModule::printVariableClausesMap( ostream& _out, string _init ) const
     {
-        _out << "Variable to clauses map: " << endl;
-        for( int pos = 0; pos < mVarClausesMap.size(); ++pos )
+        _out << _init << "Variable to clauses map: " << endl;
+        for( size_t pos = 0; pos < mVarClausesMap.size(); ++pos )
         {
-            _out << pos << " in {";
+            _out << _init << pos << " in {";
             for( CRef cr : mVarClausesMap[pos] )
                 _out << " " << cr;
             _out << " }" << endl;
