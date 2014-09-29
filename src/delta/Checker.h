@@ -39,7 +39,8 @@ class Checker {
 		ss << "ulimit -t " << timeout << ";";
 		ss << executable << " " << filename << " 2> /dev/null > /dev/null";
 		ss << "\" 2> /dev/null";
-		return system(ss.str().c_str());
+		int code = system(ss.str().c_str());
+		return WEXITSTATUS(code);
 	}
 public:
 	/**

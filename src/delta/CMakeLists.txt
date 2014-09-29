@@ -17,7 +17,7 @@ add_executable( delta
 
 target_link_libraries( delta
                         lib_${PROJECT_NAME} # smtrat library
-                        ${libraries} # libraries definied in top-level CMakeLists.txt
+                        ${libraries} # libraries defined in top-level CMakeLists.txt
 						boost_program_options
 )
 
