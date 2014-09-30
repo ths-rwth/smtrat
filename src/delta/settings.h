@@ -9,7 +9,7 @@
 
 #include <boost/program_options.hpp>
 
-#include "Manager.h"
+#include "Simplifier.h"
 
 namespace bpo = boost::program_options;
 

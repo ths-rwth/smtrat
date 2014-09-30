@@ -1,14 +1,12 @@
 /* 
- * File:   delta.cpp
- * Author: Gereon Kremer <gereon.kremer@cs.rwth-aachen.de>
- *
- * Created on September 25, 2014, 4:12 PM
+ * @file delta.cpp
+ * @author Gereon Kremer <gereon.kremer@cs.rwth-aachen.de>
  */
 
 #include <fstream>
 #include <iostream>
 
-#include "Manager.h"
+#include "Simplifier.h"
 #include "Parser.h"
 #include "settings.h"
 #include "Executor.h"
@@ -33,8 +31,8 @@ int main(int argc, char* argv[]) {
 	std::cout << "Original (" << n.complexity() << " nodes):" << std::endl << n << std::endl;
 
 	// Perform simplications.
-	delta::Manager m(c, temp, verbose);
-	m.simplify(n);
+	delta::Simplifier simplifier(c, temp, verbose);
+	simplifier(n);
 
 	// Print result and store to file.
 	std::cout << std::endl << "Result (" << n.complexity() << " nodes):" << std::endl << n << std::endl;

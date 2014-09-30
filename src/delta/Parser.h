@@ -93,10 +93,8 @@ public:
 		empty_node.name("empty node");
 		node = symbol_node | full_node | empty_node;
 		node.name("node");
-		qi::debug(node);
 		main = *node >> qi::eoi;
 		main.name("main");
-		qi::debug(main);
 	}
 
 	/**

@@ -21,15 +21,15 @@ namespace delta {
 /**
  * This class iteratively applies the operators to a smtlib file until no further simplifications can be performed.
  */
-class Manager {
+class Simplifier {
 	/// Registered operators.
 	std::vector<std::tuple<NodeOperator, std::string, std::string, std::string>> operators;
 	/// Checker object.
-	Checker checker;
+	const Checker checker;
 	// Executor object.
 	Executor executor;
 	/// Verbosity flag.
-	bool verbose;
+	const bool verbose;
 	
 	/// Terminal code for bold red font.
 	std::string bred = "\033[1;31m";
@@ -67,7 +67,7 @@ public:
 	 * @param checker Checker to call the solver.
 	 * @param verbose Verbosity flag.
 	 */
-	Manager(const Checker& checker, const std::string& temp, bool verbose):
+	Simplifier(const Checker& checker, const std::string& temp, bool verbose):
 		checker(checker), executor(temp), verbose(verbose)
 	{
 		operators.emplace_back(&children, "Replaced ", " by child ", ".");
@@ -78,7 +78,7 @@ public:
 	 * Apply simplifications to the given node.
 	 * @param n Node to simplify.
 	 */
-	void simplify(Node& n) {
+	void operator()(Node& n) {
 		executor.reset();
 		while (true) {
 			unsigned progress = 0;
