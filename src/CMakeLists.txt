@@ -25,3 +25,5 @@ endif()
 
 
 add_subdirectory(gui EXCLUDE_FROM_ALL)
+
+add_subdirectory(delta)
