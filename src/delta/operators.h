@@ -48,8 +48,10 @@ NodeChangeSet number(const Node& n) {
 		return NodeChangeSet();
 	}
 	NodeChangeSet res;
-	res.emplace_back("0");
-	res.emplace_back("1");
+	if (n.name != "0" && n.name != "1") {
+		res.emplace_back("0");
+		res.emplace_back("1");
+	}
 	for (unsigned i = 1; i < n.name.size(); i++) {
 		res.emplace_back(n.name.substr(0, i));
 	}

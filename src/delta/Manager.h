@@ -22,7 +22,7 @@ namespace delta {
  * This class iteratively applies the operators to a smtlib file until no further simplifications can be performed.
  */
 class Manager {
-	/// Registebred operators.
+	/// Registered operators.
 	std::vector<std::tuple<NodeOperator, std::string, std::string, std::string>> operators;
 	/// Checker object.
 	Checker checker;
@@ -54,6 +54,10 @@ class Manager {
 		if (n > 0) std::cout << clearline;
 		std::cout << "[" << std::string(size, '=') << std::string(30 - size, ' ') << "] (" << n << " / " << total << ")" << std::endl;
 	}
+	/**
+	 * Print a progress bar for a progress of `n / total`.
+     * @param p Pair of `n` and `total`.
+     */
 	void progressbar(const std::pair<unsigned, unsigned>& p) {
 		progressbar(p.first, p.second);
 	}
