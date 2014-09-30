@@ -14,10 +14,8 @@
 #include <vector>
 
 #include "Node.h"
-#include "carl/io/streamingOperators.h"
 
 namespace delta {
-using carl::operator<<;
 
 /// Set of new nodes.
 typedef std::vector<Node> NodeChangeSet;

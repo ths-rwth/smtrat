@@ -29,7 +29,9 @@ int main(int argc, char* argv[]) {
 	bool verbose = s.has("verbose");
 
 	// Parse file.
-	delta::Node n = delta::Parser::parse(input);
+	delta::Node n;
+	if (!delta::Parser::parse(input, n)) return 1;
+
 	// Initialize checker.
 	delta::Checker c(solver, timeout, input);
 	std::cout << "Original (" << n.complexity() << " nodes):" << std::endl << n << std::endl;

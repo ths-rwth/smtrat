@@ -34,29 +34,11 @@ struct Node {
 	 */
 	explicit Node(): brackets(false) {}
 	/**
-	 * Create an empty node that may be contained in brackets.
-	 * @param brackets If not is contained in brackets.
-	 */
-	explicit Node(bool brackets): brackets(brackets) {}
-	/**
 	 * Create a node with a name.
 	 * @param name Name of the node.
 	 * @param brackets If not is contained in brackets.
 	 */
 	explicit Node(const std::string& name, bool brackets = true): name(name), brackets(brackets) {}
-	/**
-	 * Create a node with children.
-	 * @param children Children of the node.
-	 * @param brackets If not is contained in brackets.
-	 */
-	explicit Node(const std::vector<Node>& children, bool brackets = true): children(children), brackets(brackets) {}
-	/**
-	 * Create a node with a name and children.
-	 * @param name Name of the node.
-	 * @param children Children of the node.
-	 * @param brackets If not is contained in brackets.
-	 */
-	explicit Node(const std::string& name, const std::vector<Node>& children, bool brackets = true): name(name), children(children), brackets(brackets) {}
 	/**
 	 * Create a node with a name.
 	 * @param data Tuple containing the name and the brackets flag.
