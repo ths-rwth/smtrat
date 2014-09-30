@@ -1,21 +1,23 @@
 /* 
- * File:   delta.cpp
- * Author: Gereon Kremer <gereon.kremer@cs.rwth-aachen.de>
- *
- * Created on September 25, 2014, 4:12 PM
+ * @file delta.cpp
+ * @author Gereon Kremer <gereon.kremer@cs.rwth-aachen.de>
  */
 
+#include <chrono>
 #include <fstream>
 #include <iostream>
 
-#include "Manager.h"
+#include "Simplifier.h"
 #include "Parser.h"
 #include "settings.h"
 #include "Executor.h"
 
 namespace bpo = boost::program_options;
+typedef std::chrono::system_clock Clock;
+typedef std::chrono::seconds seconds;
 
 int main(int argc, char* argv[]) {
+	auto start = Clock::now();
 	
 	// Load settings.
 	delta::Settings s;
@@ -27,14 +29,16 @@ int main(int argc, char* argv[]) {
 	bool verbose = s.has("verbose");
 
 	// Parse file.
-	delta::Node n = delta::Parser::parse(input);
+	delta::Node n;
+	if (!delta::Parser::parse(input, n)) return 1;
+
 	// Initialize checker.
 	delta::Checker c(solver, timeout, input);
 	std::cout << "Original (" << n.complexity() << " nodes):" << std::endl << n << std::endl;
 
 	// Perform simplications.
-	delta::Manager m(c, temp, verbose);
-	m.simplify(n);
+	delta::Simplifier simplifier(c, temp, verbose);
+	simplifier(n);
 
 	// Print result and store to file.
 	std::cout << std::endl << "Result (" << n.complexity() << " nodes):" << std::endl << n << std::endl;
@@ -45,6 +49,8 @@ int main(int argc, char* argv[]) {
 		out << n;
 		out.close();
 	}
+
+	std::cout << "This run took " << std::chrono::duration_cast<seconds>(Clock::now() - start).count() << " seconds." << std::endl;
 	return 0;
 }
 

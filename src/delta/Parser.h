@@ -63,6 +63,21 @@ struct SymbolParser : public qi::grammar<Iterator, std::string(), Skipper> {
 	qi::rule<Iterator, std::string(), Skipper> simple;
 };
 
+struct ErrorHandler {
+	template<typename> struct result { typedef qi::error_handler_result type; };
+	template<typename T>
+	qi::error_handler_result operator()(T b, T e, T where) const {
+		auto line_start = spirit::get_line_start(b, where);
+		auto line_end = std::find(where, e, '\n');
+		std::string line(++line_start, line_end);
+	
+		std::cerr << std::endl;
+		std::cerr << "Parsing error in line " << spirit::get_line(where) << " at position " << spirit::get_column(line_start, where) << ":" << std::endl;
+		std::cerr << "\t" << line << std::endl;
+		return qi::fail;
+	}
+};
+
 /**
  * This class parses a whole smtlib file into a hierarchy of Node objects.
  */
@@ -77,9 +92,13 @@ class Parser {
 	qi::rule<Iterator, std::tuple<std::string, std::vector<Node>, bool>(), Skipper> full_node;
 	/// Parses any Node.
 	qi::rule<Iterator, Node(), Skipper> node;
+	/// Parses a sequence of nodes.
+	qi::rule<Iterator, std::tuple<std::vector<Node>, bool>(), Skipper> nodelist;
 	/// Parses a smtlib file.
-	qi::rule<Iterator, std::vector<Node>(), Skipper> main;
-	
+	qi::rule<Iterator, Node(), Skipper> main;
+	// Error handler.
+	px::function<ErrorHandler> errorHandler;
+
 public:
 	/**
 	 * Constructs the parsing rules.
@@ -93,10 +112,10 @@ public:
 		empty_node.name("empty node");
 		node = symbol_node | full_node | empty_node;
 		node.name("node");
-		qi::debug(node);
-		main = *node >> qi::eoi;
+		nodelist = *node >> qi::attr(false);
+		main = qi::eps > nodelist > qi::eoi;
 		main.name("main");
-		qi::debug(main);
+		qi::on_error<qi::fail>(main, errorHandler(qi::_1, qi::_2, qi::_3));
 	}
 
 	/**
@@ -104,19 +123,13 @@ public:
 	 * @param filename Filename of the input file.
 	 * @return Node object produced by the parser.
 	 */
-	Node parseFile(const std::string& filename) {
+	bool parseFile(const std::string& filename, Node& node) {
 		std::ifstream in(filename);
 		in.unsetf(std::ios::skipws);
 		BaseIteratorType basebegin(in);
 		Iterator begin(basebegin);
 		Iterator end;
-		Skipper skipper;
-		std::vector<Node> n;
-		auto res = qi::phrase_parse(begin, end, main, skipper, n);
-		if (!res) {
-			std::cerr << "Parser error." << std::endl;
-		}
-		return Node(n, false);
+		return qi::phrase_parse(begin, end, main, Skipper(), node);
 	}
 	
 	/**
@@ -124,9 +137,9 @@ public:
 	 * @param filename Filename of the input file.
 	 * @return Node object produced by the parser.
 	 */
-	static Node parse(const std::string& filename) {
+	static bool parse(const std::string& filename, Node& node) {
 		Parser p;
-		return p.parseFile(filename);
+		return p.parseFile(filename, node);
 	}
 };
 

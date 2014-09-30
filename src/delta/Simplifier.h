@@ -21,15 +21,15 @@ namespace delta {
 /**
  * This class iteratively applies the operators to a smtlib file until no further simplifications can be performed.
  */
-class Manager {
-	/// Registebred operators.
+class Simplifier {
+	/// Registered operators.
 	std::vector<std::tuple<NodeOperator, std::string, std::string, std::string>> operators;
 	/// Checker object.
-	Checker checker;
+	const Checker checker;
 	// Executor object.
 	Executor executor;
 	/// Verbosity flag.
-	bool verbose;
+	const bool verbose;
 	
 	/// Terminal code for bold red font.
 	std::string bred = "\033[1;31m";
@@ -54,6 +54,10 @@ class Manager {
 		if (n > 0) std::cout << clearline;
 		std::cout << "[" << std::string(size, '=') << std::string(30 - size, ' ') << "] (" << n << " / " << total << ")" << std::endl;
 	}
+	/**
+	 * Print a progress bar for a progress of `n / total`.
+     * @param p Pair of `n` and `total`.
+     */
 	void progressbar(const std::pair<unsigned, unsigned>& p) {
 		progressbar(p.first, p.second);
 	}
@@ -63,18 +67,18 @@ public:
 	 * @param checker Checker to call the solver.
 	 * @param verbose Verbosity flag.
 	 */
-	Manager(const Checker& checker, const std::string& temp, bool verbose):
+	Simplifier(const Checker& checker, const std::string& temp, bool verbose):
 		checker(checker), executor(temp), verbose(verbose)
 	{
 		operators.emplace_back(&children, "Replaced ", " by child ", ".");
-		operators.emplace_back(&number, "Replaced ", " by number ", ".");
+		operators.emplace_back(&number, "Replaced number ", " by ", ".");
 	}
 	
 	/**
 	 * Apply simplifications to the given node.
 	 * @param n Node to simplify.
 	 */
-	void simplify(Node& n) {
+	void operator()(Node& n) {
 		executor.reset();
 		while (true) {
 			unsigned progress = 0;
@@ -106,13 +110,14 @@ private:
 	void process(const Node& root, Node& n, unsigned& progress) {
 		if (executor.hasResult()) return;
 		progressbar(++progress, root.complexity());
+		if (!n.removable()) return;
 		for (auto it = n.children.begin(); it != n.children.end(); it++) {
 			if (!it->removable()) continue;
 			Node tmp = *it;
 			it = n.children.erase(it);
 			std::stringstream ss;
-			if (verbose) ss << "Removed " << tmp;
-			else ss << "Removed " << tmp.shortName();
+			if (verbose) ss << "Removed \"" << tmp << "\"";
+			else ss << "Removed \"" << tmp.shortName() << "\"";
 			executor.check(root, checker, ss.str());
 			it = n.children.insert(it, tmp);
 		}
@@ -122,8 +127,8 @@ private:
 				for (auto& c: changes) {
 					std::swap(child, c);
 					std::stringstream ss;
-					if (verbose) ss << std::get<1>(op) << c << std::get<2>(op) << child << std::get<3>(op);
-					else ss << std::get<1>(op) << c.shortName() << std::get<2>(op) << child.shortName() << std::get<3>(op);
+					if (verbose) ss << std::get<1>(op) << "\"" << c << "\"" << std::get<2>(op) << "\"" << child << "\"" << std::get<3>(op);
+					else ss << std::get<1>(op) << "\"" << c.shortName() << "\"" << std::get<2>(op) << "\"" << child.shortName() << "\"" << std::get<3>(op);
 					executor.check(root, checker, ss.str());
 					std::swap(child, c);
 				}
