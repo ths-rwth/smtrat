@@ -62,7 +62,7 @@ namespace smtrat
     /// A vector of sets of formula pointers.
     typedef std::vector<PointerSet<Formula>> vec_set_const_pFormula;
     /// A map of formula pointers to a vector of sets of formula pointers.
-    typedef std::map<const Formula*,vec_set_const_pFormula> FormulaOrigins;
+    typedef FastPointerMap<Formula,vec_set_const_pFormula> FormulaOrigins;
     /// A vector of atomic bool pointers.
     typedef std::vector<std::atomic_bool*> Conditionals;
     

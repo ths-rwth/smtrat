@@ -82,7 +82,7 @@ namespace smtrat
         mConstraintsToInform(),
         mInformedConstraints(),
         mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() ),
-        mSmallerMusesCheckCounter(0)
+        mSmallerMusesCheckCounter( 0 )
 #ifdef SMTRAT_DEVOPTION_MeasureTime
         ,
         mTimerAddTotal( 0 ),
@@ -272,31 +272,54 @@ namespace smtrat
     void Module::addSubformulaToPassedFormula( const Formula* _formula, const vec_set_const_pFormula& _origins )
     {
         assert( mpReceivedFormula->size() != UINT_MAX );
-        mpPassedFormula->push_back( _formula );
-        mPassedformulaOrigins[_formula] = _origins;
-        if( mFirstSubformulaToPass == mpPassedFormula->end() )
-            mFirstSubformulaToPass = --mpPassedFormula->end();
+        auto ret = mPassedformulaOrigins.emplace( _formula, _origins );
+        if( ret.second )
+        {
+            mpPassedFormula->push_back( _formula );
+            if( mFirstSubformulaToPass == mpPassedFormula->end() )
+                mFirstSubformulaToPass = --mpPassedFormula->end();
+        }
+        else
+        {
+            ret.first->second.insert( ret.first->second.end(), _origins.begin(), _origins.end() );
+        }
     }
 
     void Module::addSubformulaToPassedFormula( const Formula* _formula, vec_set_const_pFormula&& _origins )
     {
         assert( mpReceivedFormula->size() != UINT_MAX );
-        mpPassedFormula->push_back( _formula );
-        mPassedformulaOrigins.emplace( _formula, _origins );
-        if( mFirstSubformulaToPass == mpPassedFormula->end() )
-            mFirstSubformulaToPass = --mpPassedFormula->end();
+        auto ret = mPassedformulaOrigins.emplace( _formula, move( _origins ) );
+        if( ret.second )
+        {
+            mpPassedFormula->push_back( _formula );
+            if( mFirstSubformulaToPass == mpPassedFormula->end() )
+                mFirstSubformulaToPass = --mpPassedFormula->end();
+        }
+        else
+        {
+            ret.first->second.insert( ret.first->second.end(), _origins.begin(), _origins.end() );
+        }
     }
 
     void Module::addSubformulaToPassedFormula( const Formula* _formula, const Formula* _origin )
     {
         assert( mpReceivedFormula->size() != UINT_MAX );
-        mpPassedFormula->push_back( _formula );
-        vec_set_const_pFormula originals;
-        originals.push_back( PointerSet<Formula>() );
-        originals.front().insert( _origin );
-        mPassedformulaOrigins.emplace( _formula, move( originals ) );
-        if( mFirstSubformulaToPass == mpPassedFormula->end() )
-            mFirstSubformulaToPass = --mpPassedFormula->end();
+        PointerSet<Formula> originSet;
+        originSet.insert( _origin );
+        vec_set_const_pFormula origins;
+        origins.push_back( originSet );
+        auto ret = mPassedformulaOrigins.emplace( _formula, move( origins ) );
+        if( ret.second )
+        {
+            mpPassedFormula->push_back( _formula );
+            if( mFirstSubformulaToPass == mpPassedFormula->end() )
+                mFirstSubformulaToPass = --mpPassedFormula->end();
+        }
+        else
+        {
+            origins.clear();
+            ret.first->second.push_back( move( originSet ) );
+        }
     }
 
     vec_set_const_pFormula Module::merge( const vec_set_const_pFormula& _vecSetA, const vec_set_const_pFormula& _vecSetB ) const

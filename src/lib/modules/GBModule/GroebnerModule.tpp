@@ -39,7 +39,7 @@
 
 //#define CHECK_SMALLER_MUSES
 //#define SEARCH_FOR_RADICALMEMBERS
-#define GB_OUTPUT
+//#define GB_OUTPUT
 
 using std::set;
 

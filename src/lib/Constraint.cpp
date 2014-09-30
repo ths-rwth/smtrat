@@ -417,9 +417,7 @@ namespace smtrat
         if( lhs().nrTerms() <= MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION && mVariables.size() <= MAX_DIMENSION_FOR_FACTORIZATION
             && maxDegree() <= MAX_DEGREE_FOR_FACTORIZATION && maxDegree() >= MIN_DEGREE_FOR_FACTORIZATION )
         {
-//            cout << "factorize:   " << mLhs << endl;
             mFactorization = ginacFactorization( mLhs );
-//            cout << "factorize:   finished" << endl;
         }
         #else
         mFactorization.insert( pair<Polynomial, unsigned>( mLhs, 1 ) );
@@ -701,14 +699,12 @@ namespace smtrat
                 g = Rational( -1 );
                 termBCoeffGreater = true;
             }
-//        cout << "test2" << endl;
             // Check whether the left-hand sides of the two constraints without their constant part
             // are equal when one of the left-hand sides is multiplied by g.
             ++termA;
             ++termB;
             while( termA != _constraintA->lhs().rend() && !(*termA)->isConstant() && termB != _constraintB->lhs().rend() && !(*termB)->isConstant() )
             {
-//                cout << (**termA) << " and " << (**termB) << endl;
                 if( *(*termA)->monomial() != *(*termB)->monomial() ) return 0;
                 else if( termACoeffGreater )
                 {
@@ -723,13 +719,11 @@ namespace smtrat
                 ++termB;
             }
         }
-//        cout << "g = " << g << endl;
         if( termA != _constraintA->lhs().rend() )
         {
             if( (*termA)->isConstant() )
             {
                 c = (termBCoeffGreater ? (*termA)->coeff() * g : (*termA)->coeff());
-//                cout << "c = " << c << endl;
             }
             else
                 return 0;
@@ -739,21 +733,16 @@ namespace smtrat
             if( (*termB)->isConstant() )
             {
                 d = (termACoeffGreater ? (*termB)->coeff() * g : (*termB)->coeff());
-//                cout << "d = " << d << endl;
             }
             else
                 return 0;
         }
-//        cout << "test" << endl;
-//        cout << "termACoeffGreater: " << termACoeffGreater << endl;
-//        cout << "termBCoeffGreater: " << termBCoeffGreater << endl;
         // Apply the multiplication by a negative g to the according relation symbol, which
         // has to be turned around then.
         Relation relA = _constraintA->relation();
         Relation relB = _constraintB->relation();
         if( g < 0 )
         {
-//        cout << "test3" << endl;
             switch( (termACoeffGreater ? relB : relA ) )
             {
                 case Relation::LEQ:
@@ -776,8 +765,6 @@ namespace smtrat
                     break;
             }
         }
-//        cout << "relA: " << Constraint::relationToString( relA ) << endl;
-//        cout << "relB: " << Constraint::relationToString( relB ) << endl;
         // Compare the adapted constant parts.
         switch( relB )
         {

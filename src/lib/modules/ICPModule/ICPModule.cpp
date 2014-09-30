@@ -65,7 +65,6 @@ namespace smtrat
         mLRAFoundAnswer( vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
         mLraRuntimeSettings(new RuntimeSettings),
         mLRA(MT_LRAModule, mValidationFormula, mLraRuntimeSettings, mLRAFoundAnswer),
-        mReceivedConstraints(),
         mCenterConstraints(),
         mCreatedDeductions(),
         mLastCandidate(NULL),
@@ -150,17 +149,6 @@ namespace smtrat
             }
             case CONSTRAINT:
             {
-                // Avoid constraints to be added twice to the icp module internals, as this provokes undefined behavior
-                auto rc = mReceivedConstraints.find( (*_formula)->pConstraint() );
-                if( rc != mReceivedConstraints.end() )
-                {
-                    ++(rc->second);
-                    return true;
-                }
-                else
-                {
-                    mReceivedConstraints.insert( std::pair<const Constraint*, unsigned>( (*_formula)->pConstraint(), 1 ) );
-                }
                 const Constraint& constr = (*_formula)->constraint();
                 // create and initialize slackvariables
                 if( constr.satisfiedBy( mFoundSolution ) != 1 )
@@ -244,21 +232,6 @@ namespace smtrat
         cout << "[ICP] Remove Formula " << *constr << endl;
         #endif
         assert( constr->isConsistent() == 2 );
-        auto rc = mReceivedConstraints.find( constr );
-        if( rc != mReceivedConstraints.end() )
-        {
-            assert( rc->second > 0 );
-            --(rc->second);
-            if( rc->second > 0 )
-            {
-                Module::removeSubformula( _formula );
-                return;
-            }
-            else
-            {
-                mReceivedConstraints.erase( rc );
-            }
-        }
         // is it nonlinear?
         auto iter = mNonlinearConstraints.find( constr );
         if( iter != mNonlinearConstraints.end() )
