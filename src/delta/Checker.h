@@ -53,6 +53,7 @@ public:
 	Checker(const std::string& exec, const std::string& temp, unsigned timeout, const std::string& original):
 		executable(exec), timeout(timeout), temp(temp), expected(execute(original))
 	{
+		std::cout << "Expected exit code: " << expected << std::endl;
 	}
 
 	/**

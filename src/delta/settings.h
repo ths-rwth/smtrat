@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <cassert>
+
 #include <boost/program_options.hpp>
 
 namespace bpo = boost::program_options;
@@ -36,7 +38,6 @@ public:
 		;
 		bpo::positional_options_description pd;
 		pd.add("input-file", 1);
-		bpo::variables_map vm;
 		try {
 			bpo::store(bpo::command_line_parser(argc, argv).options(desc).positional(pd).run(), vm);
 			if (vm.count("help")) {
@@ -63,6 +64,7 @@ public:
      */
 	template<typename T>
 	T as(const std::string& s) {
+		assert(has(s));
 		return vm[s].as<T>();
 	}
 	/**
