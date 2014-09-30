@@ -63,6 +63,11 @@ struct Node {
 	 */
 	explicit Node(const std::tuple<std::string, bool>& data): name(std::get<0>(data)), brackets(std::get<1>(data)) {}
 	/**
+	 * Create a node with children.
+	 * @param data Tuple containing the children and the brackets flag.
+	 */
+	explicit Node(const std::tuple<std::vector<Node>, bool>& data): children(std::get<0>(data)), brackets(std::get<1>(data)) {}
+	/**
 	 * Create a node with a name and children.
 	 * @param data Tuple containing the name, the children and the brackets flag.
 	 */

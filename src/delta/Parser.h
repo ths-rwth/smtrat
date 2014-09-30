@@ -52,7 +52,7 @@ struct SymbolParser : public qi::grammar<Iterator, std::string(), Skipper> {
 	SymbolParser(): SymbolParser::base_type(main, "symbol") {
 		main = quoted | simple;
 		main.name("symbol");
-		quoted = qi::lit('|') > qi::no_skip[+(~qi::char_("|")) > qi::lit('|')];
+		quoted = qi::char_('|') > qi::no_skip[+(~qi::char_("|")) > qi::char_('|')];
 		quoted.name("quoted symbol");
 		// Attention: "-" must be the first or last character!
 		simple = qi::lexeme[ (qi::alnum | qi::char_("~\":!@$%^&*_+=<>.?/-")) > *(qi::alnum | qi::char_("~\":!@$%^&*_+=<>.?/-"))];
@@ -72,7 +72,7 @@ class Parser {
 	/// Parses a Node that consists of a symbol.
 	qi::rule<Iterator, std::tuple<std::string, bool>(), Skipper> symbol_node;
 	/// Parses a Node that is empty.
-	qi::rule<Iterator, Node(), Skipper> empty_node;
+	qi::rule<Iterator, std::tuple<std::vector<Node>, bool>(), Skipper> empty_node;
 	/// Parses a Node that consists of a symbol and further children.
 	qi::rule<Iterator, std::tuple<std::string, std::vector<Node>, bool>(), Skipper> full_node;
 	/// Parses any Node.
@@ -89,12 +89,14 @@ public:
 		symbol_node = symbol >> qi::attr(false);
 		full_node = qi::lit("(") >> symbol >> *node >> qi::attr(true) >> qi::lit(")");
 		full_node.name("full node");
-		empty_node = qi::lit("(") >> qi::attr(true) >> qi::lit(")");
+		empty_node = qi::lit("(") >> *node >> qi::attr(true) >> qi::lit(")");
 		empty_node.name("empty node");
 		node = symbol_node | full_node | empty_node;
 		node.name("node");
+		qi::debug(node);
 		main = *node >> qi::eoi;
 		main.name("main");
+		qi::debug(main);
 	}
 
 	/**
