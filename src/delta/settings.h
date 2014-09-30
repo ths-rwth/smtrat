@@ -9,6 +9,8 @@
 
 #include <boost/program_options.hpp>
 
+#include "Manager.h"
+
 namespace bpo = boost::program_options;
 
 namespace delta {

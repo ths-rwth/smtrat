@@ -42,12 +42,16 @@ NodeChangeSet children(const Node& n) {
 NodeChangeSet number(const Node& n) {
 	if (!n.children.empty()) return NodeChangeSet();
 	if (n.name == "") return NodeChangeSet();
-	if (!std::all_of(n.name.begin(), n.name.end(), &isdigit)) return NodeChangeSet();
+	for (auto it: n.name) {
+		if (isdigit(it)) continue;
+		if (it == '.') continue;
+		return NodeChangeSet();
+	}
 	NodeChangeSet res;
 	res.emplace_back("0");
 	res.emplace_back("1");
 	for (unsigned i = 1; i < n.name.size(); i++) {
-		res.emplace_back(n.name.substr(i));
+		res.emplace_back(n.name.substr(0, i));
 	}
 	return res;
 }

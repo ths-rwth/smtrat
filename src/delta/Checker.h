@@ -23,8 +23,6 @@ class Checker {
 	std::string executable;
 	/// Timeout for a single call.
 	unsigned timeout;
-	/// Filename of the temporary file.
-	std::string temp;
 	/// Expected exit code.
 	int expected;
 
@@ -33,7 +31,7 @@ class Checker {
 	 * @param filename Input filename.
 	 * @return Exit code.
 	 */
-	int execute(const std::string& filename) {
+	int execute(const std::string& filename) const {
 		std::stringstream ss;
 		ss << "sh -c \"";
 		ss << "ulimit -t " << timeout << ";";
@@ -46,12 +44,11 @@ public:
 	/**
 	 * Creates a new checker.
 	 * @param exec Filename of the solver executable.
-	 * @param temp Filename of the temporary file.
 	 * @param timeout Timeout for a single call to the solver.
 	 * @param original Filename of the original file to obtain the expected exit code.
 	 */
-	Checker(const std::string& exec, const std::string& temp, unsigned timeout, const std::string& original):
-		executable(exec), timeout(timeout), temp(temp), expected(execute(original))
+	Checker(const std::string& exec, unsigned timeout, const std::string& original):
+		executable(exec), timeout(timeout), expected(execute(original))
 	{
 		std::cout << "Expected exit code: " << expected << std::endl;
 	}
@@ -60,9 +57,10 @@ public:
 	 * Call the solver with the given node.
 	 * Checks if the exit code is the same as for the original file.
 	 * @param n Input data.
+	 * @param temp Filename of the temporary file.
 	 * @return If the exit code is still the same.
 	 */
-	bool operator()(const Node& n) {
+	bool operator()(const Node& n, const std::string& temp) const {
 		std::fstream out(temp, std::ios::out);
 		out << n;
 		out.close();
