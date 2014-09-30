@@ -106,6 +106,7 @@ private:
 	void process(const Node& root, Node& n, unsigned& progress) {
 		if (executor.hasResult()) return;
 		progressbar(++progress, root.complexity());
+		if (!n.removable()) return;
 		for (auto it = n.children.begin(); it != n.children.end(); it++) {
 			if (!it->removable()) continue;
 			Node tmp = *it;

@@ -91,6 +91,7 @@ struct Node {
      */
 	bool removable() const {
 		if (name == "set-logic") return false;
+		if (name == "set-info") return false;
 		return true;
 	}
 	/**
