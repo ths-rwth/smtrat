@@ -61,4 +61,13 @@ namespace smtrat
         }
         return result;
     }
+    
+    unsigned satisfies( const Model& _assignment, const Formula* _formula )
+    {
+        EvalRationalMap rationalAssigns;
+        if( getRationalAssignmentsFromModel( _assignment, rationalAssigns ) )
+            return _formula->satisfiedBy( rationalAssigns );
+        else
+            return 2; // TODO: Check also models having square roots as value.
+    }
 }    

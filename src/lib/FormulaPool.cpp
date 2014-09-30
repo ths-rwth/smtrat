@@ -233,10 +233,10 @@ namespace smtrat
         return FormulaPool::getInstance().newIte( _condition, _else, _then );
     }
 
-	const Formula* newQuantifier(Type _type, const std::vector<carl::Variable>& _vars, const Formula* _term)
-	{
-		return FormulaPool::getInstance().newQuantifier(_type, std::move(_vars), _term);
-	}
+    const Formula* newQuantifier(Type _type, const std::vector<carl::Variable>& _vars, const Formula* _term)
+    {
+        return FormulaPool::getInstance().newQuantifier(_type, std::move(_vars), _term);
+    }
     
     const Formula* newFormula( Type _type, const Formula* _subformulaA, const Formula* _subformulaB )
     {
@@ -257,8 +257,4 @@ namespace smtrat
     {
         return FormulaPool::getInstance().newFormula( _type, move(_subformulas) );
     }
-
-	void annotateFormula( const Formula*, const std::vector<parser::Attribute>&)
-	{
-	}
 }    // namespace smtrat

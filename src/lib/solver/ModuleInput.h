@@ -18,22 +18,21 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-
 /**
  * @file ModuleInput.h
  * @author Florian Corzilius
  * @version 2014-05-16
  */
 
-#ifndef SMTRAT_MODULE_INPUT_H
-#define SMTRAT_MODULE_INPUT_H
+#pragma once
 
 
 #include <algorithm>
 #include <list>
 #include "../ConstraintPool.h"
 #include "../FormulaPool.h"
+#include "../datastructures/Assignment.h"
+#include "../../cli/parser/ParserTypes.h"
 #include "../config.h"
 
 namespace smtrat
@@ -195,5 +194,6 @@ namespace smtrat
 //            return _out << _mi.toString()
 //        }
     };
+    
+    void annotateFormula( const Formula*, const std::vector<parser::Attribute>& );
 }    // namespace smtrat
-#endif   /* SMTRAT_MODULE_INPUT_H */
