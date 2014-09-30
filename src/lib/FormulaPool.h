@@ -28,8 +28,7 @@
 #include "ConstraintPool.h"
 #include <mutex>
 
-#ifndef FORMULAPOOL_H
-#define FORMULAPOOL_H
+#pragma once
 
 #define SIMPLIFY_FORMULAS
 
@@ -340,8 +339,4 @@ namespace smtrat
     const Formula* newFormula( Type _type, const PointerSet<Formula>& _subformulas );
     
     const Formula* newFormula( Type _type, PointerSet<Formula>&& _subformulas );
-
-	void annotateFormula( const Formula* formula, const std::vector<parser::Attribute>& attributes );
 }    // namespace smtrat
-
-#endif   /* FORMULAPOOL_H */

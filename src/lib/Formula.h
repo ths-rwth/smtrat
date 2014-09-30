@@ -18,8 +18,6 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-
 /**
  * @file Formula.h
  *
@@ -38,10 +36,7 @@
 #include <set>
 #include <boost/dynamic_bitset.hpp>
 #include "Condition.h"
-#include "modules/ModuleType.h"
-#include "datastructures/Assignment.h"
 #include "Constraint.h"
-#include "../cli/parser/ParserTypes.h"
 
 namespace smtrat
 {
@@ -763,14 +758,6 @@ namespace smtrat
              *         2, otherwise.
              */
             unsigned satisfiedBy( const EvalRationalMap& _assignment ) const;
-            
-            /**
-             * @param _assignment The assignment for which to check whether this formula is satisfied by it.
-             * @return 0, if this formula is violated by the given assignment;
-             *         1, if this formula is satisfied by the given assignment;
-             *         2, otherwise.
-             */
-            unsigned satisfiedBy( const Model& _assignment ) const;
             
         private:
 

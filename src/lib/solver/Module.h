@@ -47,6 +47,7 @@
 #include <string>
 #include <chrono>
 #include <atomic>
+#include "../modules/ModuleType.h"
 #include "ModuleInput.h"
 #include "ValidationSettings.h"
 #include "ThreadPool.h"

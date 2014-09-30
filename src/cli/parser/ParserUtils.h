@@ -9,6 +9,7 @@
 #include <sstream>
 #include <type_traits>
 #include <fstream>
+#include <queue>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/variant.hpp>
 #include <boost/spirit/include/phoenix_object.hpp>

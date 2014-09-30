@@ -136,10 +136,10 @@ void GroebnerModule<Settings>::handleConstraintToGBQueue(ModuleInput::const_iter
 {
     pushBacktrackPoint( _formula );
     // Equalities do not need to be transformed, so we add them directly.
-	Polynomial newPol;
+	GBPolynomial newPol;
     if((*_formula)->constraint( ).relation() ==  smtrat::Relation::EQ)
     {
-		newPol = Polynomial ((*_formula)->constraint().lhs());
+		newPol = GBPolynomial ((*_formula)->constraint().lhs());
     }
     else
     {
@@ -258,7 +258,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
         {
             iterativeVariableRewriting();
         }
-        Polynomial witness;
+        GBPolynomial witness;
         #ifdef USE_NSS
         // If the system is constant, we already have a witness for unsatisfiability.
         // On linear systems, all solutions lie in Q. So we do not have to check for a solution.        
@@ -409,7 +409,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
 template<class Settings>
 bool GroebnerModule<Settings>::iterativeVariableRewriting()
 {
-    std::list<Polynomial> polynomials = mBasis.listBasisPolynomials();
+    std::list<GBPolynomial> polynomials = mBasis.listBasisPolynomials();
     bool newRuleFound = true;
     bool gbUpdate = false;
 
@@ -426,7 +426,7 @@ bool GroebnerModule<Settings>::iterativeVariableRewriting()
         newRuleFound = false;
 #ifdef GB_OUTPUT
         std::cout << "current gb" << std::endl;
-        for(typename std::list<Polynomial>::const_iterator it = polynomials.begin(); it != polynomials.end(); ++it )
+        for(typename std::list<GBPolynomial>::const_iterator it = polynomials.begin(); it != polynomials.end(); ++it )
         {
             std::cout << *it;
             it->getReasons().print();
@@ -435,7 +435,7 @@ bool GroebnerModule<Settings>::iterativeVariableRewriting()
         std::cout << "----" << std::endl;
 #endif
 
-        for(typename std::list<Polynomial>::iterator it = polynomials.begin(); it != polynomials.end();)
+        for(typename std::list<GBPolynomial>::iterator it = polynomials.begin(); it != polynomials.end();)
         {
             if( it->nrTerms() == 1 && it->lterm()->tdeg()==1 )
             {
@@ -496,9 +496,9 @@ bool GroebnerModule<Settings>::iterativeVariableRewriting()
             gbUpdate = true;
             rewrites.insert(std::pair<carl::Variable, std::pair<Term, carl::BitVector> >(ruleVar, std::pair<Term, BitVector>(ruleTerm, ruleReasons ) ) );
 
-            std::list<Polynomial> resultingGb;
+            std::list<GBPolynomial> resultingGb;
             basis.reset();
-            for(typename std::list<Polynomial>::const_iterator it = polynomials.begin(); it != polynomials.end(); ++it )
+            for(typename std::list<GBPolynomial>::const_iterator it = polynomials.begin(); it != polynomials.end(); ++it )
             {
                 resultingGb.push_back(rewriteVariable(*it,ruleVar, ruleTerm, ruleReasons));
                 basis.addPolynomial(resultingGb.back());
@@ -551,7 +551,7 @@ bool GroebnerModule<Settings>::iterativeVariableRewriting()
         {
             // Construct x^exp
             Term t(Rational(1), *it, exponent);
-            Polynomial reduce(t);
+            GBPolynomial reduce(t);
 
             // reduce x^exp
             typename Settings::Reductor reduction( mBasis.getGbIdeal( ), reduce );
@@ -836,9 +836,9 @@ typename Settings::Polynomial GroebnerModule<Settings>::callGroebnerToSDP( const
  * @return The polynomial which represents the equality.
  */
 template<class Settings>
-typename GroebnerModule<Settings>::Polynomial GroebnerModule<Settings>::transformIntoEquality( ModuleInput::const_iterator constraint )
+typename GroebnerModule<Settings>::GBPolynomial GroebnerModule<Settings>::transformIntoEquality( ModuleInput::const_iterator constraint )
 {
-    Polynomial result( (*constraint)->constraint( ).lhs( ) );
+    GBPolynomial result( (*constraint)->constraint( ).lhs( ) );
     unsigned constrId = (*constraint)->constraint( ).id( );
     std::map<unsigned, carl::Variable>::const_iterator mapentry = mAdditionalVarMap.find( constrId );
     carl::Variable var = carl::Variable::NO_VARIABLE;
@@ -928,9 +928,9 @@ void GroebnerModule<Settings>::passGB( )
     }
 
     // We extract the current polynomials from the Groebner Basis.
-    std::vector<Polynomial> simplified = mBasis.getBasisPolynomials();
+    std::vector<GBPolynomial> simplified = mBasis.getBasisPolynomials();
     // For each polynomial in this Groebner basis, 
-    for( typename std::vector<Polynomial>::const_iterator simplIt = simplified.begin( ); simplIt != simplified.end( ); ++simplIt )
+    for( typename std::vector<GBPolynomial>::const_iterator simplIt = simplified.begin( ); simplIt != simplified.end( ); ++simplIt )
     {
         if( Settings::passWithMinimalReasons )
         {

@@ -7,6 +7,7 @@
 
 #include <map>
 #include <boost/variant.hpp>
+#include "../Formula.h"
 #include "vs/SqrtEx.h"
 #include "carl/core/RealAlgebraicNumber.h"
 
@@ -148,4 +149,15 @@ namespace smtrat {
      * @return true, if the entire model could be transformed to rational assignments. (not possible if, e.g., sqrt is contained)
      */
     bool getRationalAssignmentsFromModel( const Model& _model, EvalRationalMap& _rationalAssigns );
+    
+    
+            
+    /**
+     * @param _assignment The assignment for which to check whether the given formula is satisfied by it.
+     * @param _formula The formula to be satisfied.
+     * @return 0, if this formula is violated by the given assignment;
+     *         1, if this formula is satisfied by the given assignment;
+     *         2, otherwise.
+     */
+    unsigned satisfies( const Model& _assignment, const Formula* _formula );
 }

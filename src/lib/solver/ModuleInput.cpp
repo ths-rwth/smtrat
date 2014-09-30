@@ -79,4 +79,8 @@ namespace smtrat
             mProperties |= (subFormulaConds & WEAK_CONDITIONS);
         }
     }
+    
+    void annotateFormula( const Formula*, const std::vector<parser::Attribute>& )
+    {
+    }
 } // namespace smtrat

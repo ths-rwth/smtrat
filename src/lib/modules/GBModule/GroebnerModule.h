@@ -71,7 +71,7 @@ class GroebnerModule : public Module
     friend class InequalitiesTable<Settings>;
 public:
     typedef typename Settings::Order Order;
-    typedef typename Settings::PolynomialWithReasons Polynomial;
+    typedef typename Settings::PolynomialWithReasons GBPolynomial;
     typedef typename Settings::MultivariateIdeal Ideal;
 protected:
     /// The current Groebner basis
@@ -119,11 +119,11 @@ protected:
     
     void knownConstraintDeduction( const std::list<std::pair<carl::BitVector, carl::BitVector> >& deductions );
     void newConstraintDeduction( );
-    void factorisedConstraintDeduction( const std::list<Polynomial>& factorisation, const carl::BitVector& reasons );
+    void factorisedConstraintDeduction( const std::list<GBPolynomial>& factorisation, const carl::BitVector& reasons );
     
-    Polynomial transformIntoEquality( ModuleInput::const_iterator constraint );
+    GBPolynomial transformIntoEquality( ModuleInput::const_iterator constraint );
 
-    Polynomial callGroebnerToSDP( const Ideal& gb);
+    GBPolynomial callGroebnerToSDP( const Ideal& gb);
     
     bool iterativeVariableRewriting();
     bool findTrivialFactorisations();
@@ -136,7 +136,7 @@ protected:
     void removeReceivedFormulaFromNewInequalities( ModuleInput::const_iterator _formula );
     void removeSubformulaFromPassedFormula( ModuleInput::iterator _formula );
 
-	Polynomial rewriteVariable(const Polynomial&, const carl::Variable&, const Term&, const BitVector&);
+	GBPolynomial rewriteVariable(const GBPolynomial&, const carl::Variable&, const Term&, const BitVector&);
     bool validityCheck( );
 public:
     void printStateHistory( );

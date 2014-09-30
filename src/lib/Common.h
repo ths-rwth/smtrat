@@ -32,7 +32,6 @@
 #include <string.h>
 #include <unordered_set>
 #include <unordered_map>
-#include "Relation.h"
 #include "carl/core/logging.h"
 #include "carl/core/MultivariatePolynomial.h"
 #include "carl/core/Variable.h"

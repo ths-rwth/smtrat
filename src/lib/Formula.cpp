@@ -419,15 +419,6 @@ namespace smtrat
         }
     }
     
-    unsigned Formula::satisfiedBy( const Model& _assignment ) const
-    {
-        EvalRationalMap rationalAssigns;
-        if( getRationalAssignmentsFromModel( _assignment, rationalAssigns ) )
-            return satisfiedBy( rationalAssigns );
-        else
-            return 2; // TODO: Check also models having square roots as value.
-    }
-    
     void Formula::initProperties()
     {
         mProperties = Condition();

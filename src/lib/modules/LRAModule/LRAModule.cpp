@@ -47,18 +47,16 @@ using namespace smtrat::lra;
 
 namespace smtrat
 {
-    LRAModule::LRAModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
+    LRAModule::LRAModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         mInitialized( false ),
         mAssignmentFullfilsNonlinearConstraints( false ),
         mStrongestBoundsRemoved( false ),
-        mProbableLoopCounter( 0 ),
         mTableau( mpPassedFormula->end() ),
         mLinearConstraints(),
         mNonlinearConstraints(),
         mActiveResolvedNEQConstraints(),
         mActiveUnresolvedNEQConstraints(),
-        mResolvedNEQConstraints(),
         mDelta( newAuxiliaryRealVariable( "delta_" + to_string( id() ) ) ),
         mBoundCandidatesToPass()
     {
@@ -76,13 +74,6 @@ namespace smtrat
         #endif
     }
 
-    /**
-     * Informs this module about the existence of the given constraint, which means
-     * that it could be added in future.
-     * @param _constraint The constraint to inform about.
-     * @return false, if the it can be determined that the constraint itself is conflicting;
-     *         true,  otherwise.
-     */
     bool LRAModule::inform( const Formula* _constraint )
     {
         #ifdef DEBUG_LRA_MODULE
@@ -105,14 +96,6 @@ namespace smtrat
         return true;
     }
 
-    /**
-     *
-     * Adds a sub-formula/constraint to the so far received sub-formula/constraints.
-     *
-     * @param _subformula The position of the constraint within the received constraints.
-     * @return False, if a conflict is detected;
-     *         True,  otherwise.
-     */
     bool LRAModule::assertSubformula( list<const Formula*>::const_iterator _subformula )
     {
         #ifdef DEBUG_LRA_MODULE
@@ -225,11 +208,6 @@ namespace smtrat
         return true;
     }
 
-    /**
-     * Removes a sub-formula/constraint of the so far received sub-formula/constraints.
-     *
-     * @param _subformula The position of the constraint within the received constraints.
-     */
     void LRAModule::removeSubformula( ModuleInput::const_iterator _subformula )
     {
         #ifdef DEBUG_LRA_MODULE
@@ -362,12 +340,6 @@ namespace smtrat
         Module::removeSubformula( _subformula );
     }
 
-    /**
-     * Checks the consistency of the so far received constraints.
-     * @return true, if the so far received constraints are consistent;
-     *         false, if the so far received constraints are inconsistent;
-     *         unknown, if this module cannot determine whether the so far received constraints are consistent or not.
-     */
     Answer LRAModule::isConsistent()
     {
         #ifdef DEBUG_LRA_MODULE
@@ -597,9 +569,6 @@ Return:
         return foundAnswer( result );
     }
 
-    /**
-     * Updates the current assignment into the model. Note, that this is a unique but symbolic assignment still containing delta as a variable.
-     */
     void LRAModule::updateModel() const
     {
         clearModel();
@@ -622,12 +591,6 @@ Return:
         }
     }
 
-    /**
-     * Gives a rational model if the received formula is satisfiable. Note, that it
-     * is calculated from scratch every time you call this method.
-     *
-     * @return The rational model.
-     */
     EvalRationalMap LRAModule::getRationalModel() const
     {
         if( mInfeasibleSubsets.empty() )
@@ -637,11 +600,6 @@ Return:
         return EvalRationalMap();
     }
 
-    /**
-     * Returns the bounds of the variables as intervals.
-     *
-     * @return The bounds of the variables as intervals.
-     */
     EvalIntervalMap LRAModule::getVariableBounds() const
     {
         EvalIntervalMap result = EvalIntervalMap();
@@ -679,9 +637,6 @@ Return:
     }
 
     #ifdef LRA_REFINEMENT
-    /**
-     * Adds the refinements learned during pivoting to the deductions.
-     */
     void LRAModule::learnRefinements()
     {
         for( auto iter = mTableau.rLearnedLowerBounds().begin(); iter != mTableau.rLearnedLowerBounds().end(); ++iter )
@@ -727,10 +682,6 @@ Return:
     }
     #endif
 
-    /**
-     * Adapt the passed formula, such that it consists of the finite infimums and supremums
-     * of all variables and the non linear constraints.
-     */
     void LRAModule::adaptPassedFormula()
     {
         while( !mBoundCandidatesToPass.empty() )
@@ -752,12 +703,6 @@ Return:
         }
     }
 
-    /**
-     * Checks whether the current assignment of the linear constraints fulfills the non linear constraints.
-     *
-     * @return True, if the current assignment of the linear constraints fulfills the non linear constraints;
-     *         False, otherwise.
-     */
     bool LRAModule::checkAssignmentForNonlinearConstraint()
     {
         if( mNonlinearConstraints.empty() )
@@ -781,13 +726,6 @@ Return:
         }
     }
 
-    /**
-     * Activate the given bound and update the supremum, the infimum and the assignment of
-     * variable to which the bound belongs.
-     *
-     * @param _bound The bound to activate.
-     * @param _formulas The constraints which form this bound.
-     */
     void LRAModule::activateBound( const LRABound* _bound, const PointerSet<Formula>& _formulas )
     {
         if( mStrongestBoundsRemoved )
@@ -881,14 +819,6 @@ Return:
         }
     }
 
-    /**
-     * Creates a bound corresponding to the given constraint.
-     *
-     * @param _var The variable to which the bound must be added.
-     * @param _constraintInverted A flag, which is true if the inverted form of the given constraint forms the bound.
-     * @param _boundValue The limit of the bound.
-     * @param _constraint The constraint corresponding to the bound to create.
-     */
     void LRAModule::setBound( const Formula* _constraint )
     {
         #ifdef LRA_SIMPLE_CONFLICTS_AND_DEDUCTIONS_ON_DEMAND
@@ -1005,12 +935,6 @@ Return:
         }
     }
     
-    /**
-     * 
-     * @param _premise
-     * @param _conclusion
-     * @param _conlusionNeq
-     */
     void LRAModule::addSimpleBoundConflict( const LRABound& _caseA, const LRABound& _caseB, bool _caseBneq )
     {
         PointerSet<Formula> subformulas;
@@ -1022,12 +946,6 @@ Return:
         #endif
     }
 
-    /**
-     * Finds all conflicts between lower resp. upper bounds and the given upper
-     * resp. lower bound and adds them to the deductions.
-     *
-     * @param _bound The bound to find conflicts for.
-     */
     void LRAModule::findSimpleConflicts( const LRABound& _bound )
     {
         assert( !_bound.deduced() );
@@ -1097,9 +1015,6 @@ Return:
         }
     }
 
-    /**
-     * Initializes the tableau according to all linear constraints, of which this module has been informed.
-     */
     void LRAModule::init()
     {
         if( !mInitialized )
@@ -1116,11 +1031,6 @@ Return:
         }
     }
     
-    /**
-     * 
-     * @return True, if a branching occurred.
-     *         False, otherwise.
-     */
     bool LRAModule::gomory_cut()
     {
         EvalRationalMap rMap_ = getRationalModel();
@@ -1159,10 +1069,6 @@ Return:
     }
     
     #ifdef LRA_CUTS_FROM_PROOFS
-    /**
-     * @return true, if a branching occurred.
-     *         false, otherwise.
-     */
     bool LRAModule::cuts_from_proofs()
     {
         #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
@@ -1332,10 +1238,6 @@ Return:
         NATIVE
     };
     
-    /**
-     * @return true, if a branching occurred.
-     *         false, otherwise.
-     */
     bool LRAModule::branch_and_bound()
     {
         BRANCH_STRATEGY strat = MOST_INFEASIBLE;
@@ -1365,32 +1267,12 @@ Return:
         if( probablyLooping( _lraVar->expression(), _branchingValue ) )
         {
             return gomory_cut();
-//            if( gomory_cut() )
-//            {
-//                mProbableLoopCounter = 0;
-//            }
-//            else
-//            {
-//                if( mProbableLoopCounter < 3 )
-//                {
-//                    ++mProbableLoopCounter;
-//                }
-//                else 
-//                    return false;
-//            }
         }
-        //PointerSet<Formula> premises;
-        //mTableau.collect_premises( _lraVar , premises  );  
         branchAt( _lraVar->expression(), _branchingValue );
         return true;
     }
     
-     /**
-      * @return true,  if a branching occured with an original variable that has to be fixed 
-      *                which has the lowest count of entries in its row.
-      *         false, if no branching occured.
-      */    
-    bool LRAModule::minimal_row_var( bool& gc_support )
+    bool LRAModule::minimal_row_var( bool _gc_support )
     {
         EvalRationalMap _rMap = getRationalModel();
         auto map_iterator = _rMap.begin();
@@ -1417,7 +1299,7 @@ Return:
         }
         if( result )
         {
-            if( gc_support )
+            if( _gc_support )
             {
                 return maybeGomoryCut( branch_var->second, ass_ );
             }
@@ -1432,12 +1314,7 @@ Return:
         }
     }
     
-     /**
-      * @return true,  if a branching occured with an original variable that has to be fixed 
-      *                which is most feasible.
-      *         false, if no branching occured.
-      */    
-    bool LRAModule::most_feasible_var( bool& gc_support )
+    bool LRAModule::most_feasible_var( bool _gc_support )
     {
         EvalRationalMap _rMap = getRationalModel();
         auto map_iterator = _rMap.begin();
@@ -1464,7 +1341,7 @@ Return:
         }
         if( result )
         {
-            if( gc_support )
+            if( _gc_support )
             {
                 return maybeGomoryCut( branch_var->second, ass_ );
             }
@@ -1479,12 +1356,7 @@ Return:
         } 
     }
     
-     /**
-      * @return true,  if a branching occured with an original variable that has to be fixed 
-      *                which is most infeasible.
-      *         false, if no branching occured.
-      */   
-    bool LRAModule::most_infeasible_var( bool& gc_support ) 
+    bool LRAModule::most_infeasible_var( bool _gc_support ) 
     {
         EvalRationalMap _rMap = getRationalModel();
         auto map_iterator = _rMap.begin();
@@ -1511,7 +1383,7 @@ Return:
         }
         if( result )
         {
-            if( gc_support )
+            if( _gc_support )
             {
                 return maybeGomoryCut( branch_var->second, ass_ );
             }
@@ -1526,11 +1398,7 @@ Return:
         } 
     }
     
-     /**
-      * @return true,  if a branching occured with the first original variable that has to be fixed.
-      *         false, if no branching occured.
-      */    
-    bool LRAModule::first_var( bool& gc_support )
+    bool LRAModule::first_var( bool _gc_support )
     {
         EvalRationalMap _rMap = getRationalModel();
         auto map_iterator = _rMap.begin();
@@ -1540,7 +1408,7 @@ Return:
             Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
-                if( gc_support )
+                if( _gc_support )
                 {
                     return maybeGomoryCut( var->second, ass );
                 }
@@ -1554,14 +1422,6 @@ Return:
         return false;
     }
     
-    /**
-     * Checks whether the found assignment is consistent with the tableau, hence replacing the original
-     * variables in the expressions represented by the slack variables equals their assignment.
-     * @param _assignment The assignment of the original variables.
-     * @param _delta The calculated delta for the given assignment.
-     * @return true, if the found assignment is consistent with the tableau;
-     *         false, otherwise.
-     */
     bool LRAModule::assignmentConsistentWithTableau( const EvalRationalMap& _assignment, const LRABoundType& _delta ) const
     {
         for( auto slackVar : mTableau.slackVars() )
@@ -1577,14 +1437,10 @@ Return:
         return true;
     }
     
-    /**
-     * @return true, if the encountered satisfying assignment for the received formula
-     *               indeed satisfies it;
-     *         false, otherwise.
-     */
     bool LRAModule::assignmentCorrect() const
     {
         if( solverState() == False ) return true;
+        if( !mAssignmentFullfilsNonlinearConstraints ) return true;
         EvalRationalMap model = getRationalModel();
         for( auto ass = model.begin(); ass != model.end(); ++ass )
         {
@@ -1604,12 +1460,6 @@ Return:
         return true;
     }
 
-    /**
-     * Prints all linear constraints.
-     *
-     * @param _out The output stream to print on.
-     * @param _init The beginning of each line to print.
-     */
     void LRAModule::printLinearConstraints( ostream& _out, const string _init ) const
     {
         _out << _init << "Linear constraints:" << endl;
@@ -1619,12 +1469,6 @@ Return:
         }
     }
 
-    /**
-     * Prints all non-linear constraints.
-     *
-     * @param _out The output stream to print on.
-     * @param _init The beginning of each line to print.
-     */
     void LRAModule::printNonlinearConstraints( ostream& _out, const string _init ) const
     {
         _out << _init << "Nonlinear constraints:" << endl;
@@ -1634,13 +1478,7 @@ Return:
         }
     }
 
-    /**
-     * Prints the mapping of constraints to their corresponding bounds.
-     *
-     * @param _out The output stream to print on.
-     * @param _init The beginning of each line to print.
-     */
-    void LRAModule::printConstraintToBound( ostream& _out, const string _init ) const
+   void LRAModule::printConstraintToBound( ostream& _out, const string _init ) const
     {
         _out << _init << "Mapping of constraints to bounds:" << endl;
         for( auto iter = mTableau.constraintToBound().begin(); iter != mTableau.constraintToBound().end(); ++iter )
@@ -1655,12 +1493,6 @@ Return:
         }
     }
 
-    /**
-     * Prints the strictest bounds, which have to be passed the backend in case.
-     *
-     * @param _out The output stream to print on.
-     * @param _init The beginning of each line to print.
-     */
     void LRAModule::printBoundCandidatesToPass( ostream& _out, const string _init ) const
     {
         _out << _init << "Bound candidates to pass:" << endl;
@@ -1672,12 +1504,6 @@ Return:
         }
     }
 
-    /**
-     * Prints the current rational assignment.
-     *
-     * @param _out The output stream to print on.
-     * @param _init The beginning of each line to print.
-     */
     void LRAModule::printRationalModel( ostream& _out, const string _init ) const
     {
         EvalRationalMap rmodel = getRationalModel();
@@ -1690,23 +1516,11 @@ Return:
         }
     }
 
-    /**
-     * Prints the current tableau.
-     *
-     * @param _out The output stream to print on.
-     * @param _init The beginning of each line to print.
-     */
     void LRAModule::printTableau( ostream& _out, const string _init ) const
     {
         mTableau.print( LAST_ENTRY_ID, _out, _init );
     }
 
-    /**
-     * Prints all lra variables and their assignments.
-     *
-     * @param _out The output stream to print on.
-     * @param _init The beginning of each line to print.
-     */
     void LRAModule::printVariables( ostream& _out, const string _init ) const
     {
         mTableau.printVariables( true, _out, _init );

@@ -419,11 +419,11 @@ namespace smtrat
              * Constructs a SATModule.
              * @param _type The type of this module being SATModule.
              * @param _formula The formula passed to this module, called received formula.
-             * @param [Not yet used.]
+             * @param _settings [Not yet used.]
              * @param _foundAnswer Vector of Booleans: If any of them is true, we have to terminate a running check procedure.
              * @param _manager A reference to the manager of the solver using this module.
              */
-            SATModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _foundAnswer, Manager* const _manager = NULL );
+            SATModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _foundAnswer, Manager* const _manager = NULL );
 
             /**
              * Destructs this SATModule.
