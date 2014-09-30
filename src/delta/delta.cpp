@@ -3,6 +3,7 @@
  * @author Gereon Kremer <gereon.kremer@cs.rwth-aachen.de>
  */
 
+#include <chrono>
 #include <fstream>
 #include <iostream>
 
@@ -12,8 +13,11 @@
 #include "Executor.h"
 
 namespace bpo = boost::program_options;
+typedef std::chrono::system_clock Clock;
+typedef std::chrono::seconds seconds;
 
 int main(int argc, char* argv[]) {
+	auto start = Clock::now();
 	
 	// Load settings.
 	delta::Settings s;
@@ -43,6 +47,8 @@ int main(int argc, char* argv[]) {
 		out << n;
 		out.close();
 	}
+
+	std::cout << "This run took " << std::chrono::duration_cast<seconds>(Clock::now() - start).count() << " seconds." << std::endl;
 	return 0;
 }
 

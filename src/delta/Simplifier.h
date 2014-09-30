@@ -71,7 +71,7 @@ public:
 		checker(checker), executor(temp), verbose(verbose)
 	{
 		operators.emplace_back(&children, "Replaced ", " by child ", ".");
-		operators.emplace_back(&number, "Replaced ", " by number ", ".");
+		operators.emplace_back(&number, "Replaced number ", " by ", ".");
 	}
 	
 	/**
@@ -116,8 +116,8 @@ private:
 			Node tmp = *it;
 			it = n.children.erase(it);
 			std::stringstream ss;
-			if (verbose) ss << "Removed " << tmp;
-			else ss << "Removed " << tmp.shortName();
+			if (verbose) ss << "Removed \"" << tmp << "\"";
+			else ss << "Removed \"" << tmp.shortName() << "\"";
 			executor.check(root, checker, ss.str());
 			it = n.children.insert(it, tmp);
 		}
@@ -127,8 +127,8 @@ private:
 				for (auto& c: changes) {
 					std::swap(child, c);
 					std::stringstream ss;
-					if (verbose) ss << std::get<1>(op) << c << std::get<2>(op) << child << std::get<3>(op);
-					else ss << std::get<1>(op) << c.shortName() << std::get<2>(op) << child.shortName() << std::get<3>(op);
+					if (verbose) ss << std::get<1>(op) << "\"" << c << "\"" << std::get<2>(op) << "\"" << child << "\"" << std::get<3>(op);
+					else ss << std::get<1>(op) << "\"" << c.shortName() << "\"" << std::get<2>(op) << "\"" << child.shortName() << "\"" << std::get<3>(op);
 					executor.check(root, checker, ss.str());
 					std::swap(child, c);
 				}

@@ -60,7 +60,7 @@ public:
 	 * Returns a filename to the pool of available filenames.
      * @param temp Temporary filename.
      */
-	void refund(const std::string& temp) {
+	void put(const std::string& temp) {
 		std::lock_guard<std::mutex> guard(mutex);
 		pool.push(temp);
 	}
@@ -85,8 +85,6 @@ private:
 	std::atomic<unsigned> jobcount;
 	/// Number of jobs that have terminated.
 	std::atomic<unsigned> progress;
-	/// Number of actual calls to the solver.
-	std::atomic<unsigned> callCount;
 
 	/**
 	 * Calls the checker and checks the result.
@@ -99,13 +97,12 @@ private:
 		progress++;
 		if (found) return;
 		std::string tmp = temp.get();
-		callCount++;
 		bool res = checker(n, tmp);
-		temp.refund(tmp);
-		if (res && !found) {
+		temp.put(tmp);
+		if (res) {
 			std::lock_guard<std::mutex> guard(resultMutex);
+			if (!found) result = std::make_pair(n, message);
 			found = true;
-			result = std::make_pair(n, message);
 		}
 	}
 public:
@@ -115,13 +112,11 @@ public:
      */
 	Executor(const std::string& tempPrefix): temp(tempPrefix), found(false) {
 		reset();
-		callCount = 0;
 	}
 	/**
 	 * Destructor.
      */
 	~Executor() {
-		std::cout << "Overall " << callCount << " calls." << std::endl;
 		reset();
 	}
 	/**
