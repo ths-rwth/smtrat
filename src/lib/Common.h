@@ -39,6 +39,7 @@
 #include "carl/interval/Interval.h"
 #include "carl/interval/IntervalEvaluation.h"
 #include "carl/interval/Contraction.h"
+#include "carl/io/streamingOperators.h"
 
 namespace smtrat
 {
