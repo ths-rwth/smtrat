@@ -11,6 +11,7 @@
 #include "Manager.h"
 #include "Parser.h"
 #include "settings.h"
+#include "Executor.h"
 
 namespace bpo = boost::program_options;
 
@@ -28,15 +29,15 @@ int main(int argc, char* argv[]) {
 	// Parse file.
 	delta::Node n = delta::Parser::parse(input);
 	// Initialize checker.
-	delta::Checker c(solver, temp, timeout, input);
-	std::cout << "Original (" << n.complexity() << "):" << std::endl << n << std::endl;
+	delta::Checker c(solver, timeout, input);
+	std::cout << "Original (" << n.complexity() << " nodes):" << std::endl << n << std::endl;
 
 	// Perform simplications.
-	delta::Manager m(c, verbose);
+	delta::Manager m(c, temp, verbose);
 	m.simplify(n);
 
 	// Print result and store to file.
-	std::cout << std::endl << "Result (" << n.complexity() << "):" << std::endl << n << std::endl;
+	std::cout << std::endl << "Result (" << n.complexity() << " nodes):" << std::endl << n << std::endl;
 	if (s.has("output-file")) {
 		std::string output = s.as<std::string>("output-file");
 		std::cout << "Writing to " << output << std::endl;
