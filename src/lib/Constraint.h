@@ -54,19 +54,19 @@ namespace smtrat
         
         private:
             /// A unique id.
-            unsigned             mID;
+            unsigned mID;
             /// The hash value.
-            size_t             mHash;
+            size_t mHash;
             /// The relation symbol comparing the polynomial considered by this constraint to zero.
-            Relation             mRelation;
+            Relation mRelation;
             /// The polynomial which is compared by this constraint to zero.
-            Polynomial           mLhs;
+            Polynomial mLhs;
             /// The factorization of the polynomial considered by this constraint.
             mutable Factorization mFactorization;
             /// A container which includes all variables occurring in the polynomial considered by this constraint.
-            Variables            mVariables;
+            Variables mVariables;
             /// A map which stores information about properties of the variables in this constraint.
-            mutable VarInfoMap   mVarInfoMap;
+            mutable VarInfoMap mVarInfoMap;
             /// Definiteness of the polynomial in this constraint.
             mutable carl::Definiteness mLhsDefinitess;
 
@@ -327,7 +327,6 @@ namespace smtrat
                 return ( mRelation != Relation::NEQ && mVariables.size() == 1 && maxDegree( *mVariables.begin() ) == 1 );
             }
             
-            
             /**
              * @return true, if this constraint is a lower bound.
              */
@@ -347,7 +346,6 @@ namespace smtrat
                 }
                 return false;
             }
-            
             
             /**
              * @return true, if this constraint is an upper bound.

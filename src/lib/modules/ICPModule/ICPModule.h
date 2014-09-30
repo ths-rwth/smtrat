@@ -128,7 +128,6 @@ namespace smtrat
             RuntimeSettings*                                                                    mLraRuntimeSettings;
             LRAModule                                                                           mLRA; // internal LRA module
             
-            FastPointerMap<Constraint,unsigned>                                                 mReceivedConstraints; // Checks whether a constraints has already been added.
             std::set<const Constraint*>                                                         mCenterConstraints; // keeps actual centerConstaints for deletion
             PointerSet<Formula>                                                                 mCreatedDeductions; // keeps pointers to the created deductions for deletion
             icp::ContractionCandidate*                                                          mLastCandidate; // the last applied candidate
