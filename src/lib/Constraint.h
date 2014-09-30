@@ -434,6 +434,16 @@ namespace smtrat
              * @return The ith coefficient of the given variable, where i is the given degree.
              */
             Polynomial coefficient( const carl::Variable& _var, unsigned _degree ) const;
+            
+            /**
+             * If this constraint represents a substitution (equation, where at least one variable occurs only linearly),
+             * this method detects a (there could be various possibilities) corresponding substitution variable and term.
+             * @param _substitutionVariable Is set to the substitution variable, if this constraint represents a substitution.
+             * @param _substitutionTerm Is set to the substitution term, if this constraint represents a substitution.
+             * @return true, if this constraints represents a substitution;
+             *         false, otherwise.
+             */
+            bool getSubstitution( carl::Variable& _substitutionVariable, Polynomial& _substitutionTerm ) const;
                
             /**
              * Applies some cheap simplifications to the constraints.

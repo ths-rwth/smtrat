@@ -910,7 +910,7 @@ namespace smtrat
              *                (_inConjunction == false) of which we got the given constraint is invalid resp. valid;
              *         false, otherwise.
              */
-            static bool addConstraintBound( ConstraintBounds& _constraintBounds, const Formula* _constraint, bool _inConjunction );
+            static const Formula* addConstraintBound( ConstraintBounds& _constraintBounds, const Formula* _constraint, bool _inConjunction );
             
             /**
              * Stores for every polynomial for which we determined bounds for given constraints a minimal set of constraints

@@ -280,6 +280,29 @@ namespace smtrat
         return d != varInfo->second.coeffs().end() ? d->second : ZERO_POLYNOMIAL;
     }
 
+    bool Constraint::getSubstitution( carl::Variable& _substitutionVariable, Polynomial& _substitutionTerm ) const
+    {
+        if( mRelation != Relation::EQ )
+            return false;
+        for( map<carl::Variable, VarInfo>::iterator varInfoPair = mVarInfoMap.begin(); varInfoPair != mVarInfoMap.end(); ++varInfoPair )
+        {
+            if( varInfoPair->second.maxDegree() == 1 )
+            {
+                if( !varInfoPair->second.hasCoeff() )
+                {
+                    varInfoPair->second = mLhs.getVarInfo<true>( varInfoPair->first );
+                }
+                auto d = varInfoPair->second.coeffs().find( 1 );
+                assert( d != varInfoPair->second.coeffs().end() );
+                _substitutionVariable = varInfoPair->first;
+                _substitutionTerm = Polynomial( _substitutionVariable ) * d->second - mLhs;
+                _substitutionTerm /= d->second.constantPart();
+                return true;
+            }
+        }
+        return false;
+    }
+    
     Constraint* Constraint::simplify() const
     {
         Relation rel = mRelation;

@@ -1165,7 +1165,7 @@ namespace smtrat
                 {   
                     if( _simplifyConstraintCombinations )
                     {
-                        if( addConstraintBound( constraintBoundsAnd, currentFormula, true ) )
+                        if( addConstraintBound( constraintBoundsAnd, currentFormula, true ) == NULL )
                         {
                             goto ReturnFalse;
                         }
@@ -1187,7 +1187,7 @@ namespace smtrat
                         {
                             if( _simplifyConstraintCombinations )
                             {
-                                if( addConstraintBound( constraintBoundsAnd, resolvedFormula, true ) )
+                                if( addConstraintBound( constraintBoundsAnd, resolvedFormula, true ) == NULL )
                                 {
                                     goto ReturnFalse;
                                 }
@@ -1327,7 +1327,7 @@ namespace smtrat
                                     {
                                         if( _simplifyConstraintCombinations )
                                         {
-                                            if( addConstraintBound( constraintBoundsOr, resolvedFormula, false ) )
+                                            if( addConstraintBound( constraintBoundsOr, resolvedFormula, false ) == NULL )
                                             {
                                                 currentFormulaValid = true;
                                                 break;
@@ -1359,7 +1359,7 @@ namespace smtrat
                                     {
                                         if( _simplifyConstraintCombinations )
                                         {
-                                            if( addConstraintBound( constraintBoundsOrAnd, subsubformula, true ) )
+                                            if( addConstraintBound( constraintBoundsOrAnd, subsubformula, true ) == NULL )
                                             {
                                                 conjunctionIsFalse = true;
                                                 break;
@@ -1401,7 +1401,7 @@ namespace smtrat
                             {
                                 if( _simplifyConstraintCombinations )
                                 {
-                                    if( addConstraintBound( constraintBoundsOr, currentSubformula, false ) )
+                                    if( addConstraintBound( constraintBoundsOr, currentSubformula, false ) == NULL )
                                     {
                                         currentFormulaValid = true;
                                         break;
@@ -1572,7 +1572,7 @@ namespace smtrat
     
 //    #define CONSTRAINT_BOUND_DEBUG
 
-    bool Formula::addConstraintBound( ConstraintBounds& _constraintBounds, const Formula* _constraint, bool _inConjunction )
+    const Formula* Formula::addConstraintBound( ConstraintBounds& _constraintBounds, const Formula* _constraint, bool _inConjunction )
     {
         #ifdef CONSTRAINT_BOUND_DEBUG
         cout << "add from a " << (_inConjunction ? "conjunction" : "disjunction") << " to " << &_constraintBounds << ":   " << *_constraint << endl;
@@ -1611,7 +1611,7 @@ namespace smtrat
         }
         auto resB = resA.first->second.insert( make_pair( boundValue, make_pair( relation, _constraint ) ) );
         if( resB.second || resB.first->second.first == relation )
-            return false;
+            return resB.first->second.second;
         switch( relation )
         {
             case Relation::EQ:
@@ -1621,30 +1621,30 @@ namespace smtrat
                     {
                         resB.first->second.first = Relation::EQ;
                         resB.first->second.second = _constraint;
-                        return false;
+                        return resB.first->second.second;
                     }
                     else
-                        return true;
+                        return NULL;
                 }
                 else
                 {
                     switch( resB.first->second.first )
                     {
                         case Relation::LEQ:
-                            return false;
+                            return resB.first->second.second;
                         case Relation::GEQ:
-                            return false;
+                            return resB.first->second.second;
                         case Relation::LESS:
                             resB.first->second.first = Relation::LEQ;
                             resB.first->second.second = newFormula( newConstraint( lhs, multipliedByMinusOne ? Relation::GEQ : Relation::LEQ ) );
-                            return false;
+                            return resB.first->second.second;
                         case Relation::GREATER:
                             resB.first->second.first = Relation::GEQ;
                             resB.first->second.second = newFormula( newConstraint( lhs, multipliedByMinusOne ? Relation::LEQ : Relation::GEQ ) );
-                            return false;
+                            return resB.first->second.second;
                         default:
                             assert( resB.first->second.first == Relation::NEQ );
-                            return true;
+                            return NULL;
                     }
                 }
             case Relation::LEQ:
@@ -1653,20 +1653,20 @@ namespace smtrat
                     switch( resB.first->second.first )
                     {
                         case Relation::EQ:
-                            return false;
+                            return resB.first->second.second;
                         case Relation::GEQ:
                             resB.first->second.first = Relation::EQ;
                             resB.first->second.second = newFormula( newConstraint( lhs, Relation::EQ ) );
-                            return false;
+                            return resB.first->second.second;
                         case Relation::LESS:
-                            return false;
+                            return resB.first->second.second;
                         case Relation::GREATER:
-                            return true;
+                            return NULL;
                         default:
                             assert( resB.first->second.first == Relation::NEQ );
                             resB.first->second.first = Relation::LESS;
                             resB.first->second.second = newFormula( newConstraint( lhs, multipliedByMinusOne ? Relation::GREATER : Relation::LESS ) );
-                            return false;
+                            return resB.first->second.second;
                     }
                 }
                 else
@@ -1676,18 +1676,18 @@ namespace smtrat
                         case Relation::EQ:
                             resB.first->second.first = Relation::LEQ;
                             resB.first->second.second = _constraint;
-                            return false;
+                            return resB.first->second.second;
                         case Relation::GEQ:
-                            return true;
+                            return NULL;
                         case Relation::LESS:
                             resB.first->second.first = Relation::LEQ;
                             resB.first->second.second = _constraint;
-                            return false;
+                            return resB.first->second.second;
                         case Relation::GREATER:
-                            return true;
+                            return NULL;
                         default:
                             assert( resB.first->second.first == Relation::NEQ );
-                            return true;
+                            return NULL;
                     }
                 }
             case Relation::GEQ:
@@ -1696,20 +1696,20 @@ namespace smtrat
                     switch( resB.first->second.first )
                     {
                         case Relation::EQ:
-                            return false;
+                            return resB.first->second.second;
                         case Relation::LEQ:
                             resB.first->second.first = Relation::EQ;
                             resB.first->second.second = newFormula( newConstraint( lhs, Relation::EQ ) );
-                            return false;
+                            return resB.first->second.second;
                         case Relation::LESS:
-                            return true;
+                            return NULL;
                         case Relation::GREATER:
-                            return false;
+                            return resB.first->second.second;
                         default:
                             assert( resB.first->second.first == Relation::NEQ );
                             resB.first->second.first = Relation::GREATER;
                             resB.first->second.second = newFormula( newConstraint( lhs, multipliedByMinusOne ? Relation::LESS : Relation::GREATER ) );
-                            return false;
+                            return resB.first->second.second;
                     }
                 }
                 else
@@ -1719,18 +1719,18 @@ namespace smtrat
                         case Relation::EQ:
                             resB.first->second.first = Relation::GEQ;
                             resB.first->second.second = _constraint;
-                            return false;
+                            return resB.first->second.second;
                         case Relation::LEQ:
-                            return true;
+                            return NULL;
                         case Relation::LESS:
-                            return true;
+                            return NULL;
                         case Relation::GREATER:
                             resB.first->second.first = Relation::GEQ;
                             resB.first->second.second = _constraint;
-                            return true;
+                            return NULL;
                         default:
                             assert( resB.first->second.first == Relation::NEQ );
-                            return true;
+                            return NULL;
                     }
                 }
             case Relation::LESS:
@@ -1739,20 +1739,20 @@ namespace smtrat
                     switch( resB.first->second.first )
                     {
                         case Relation::EQ:
-                            return true;
+                            return NULL;
                         case Relation::LEQ:
                             resB.first->second.first = Relation::LESS;
                             resB.first->second.second = _constraint;
-                            return false;
+                            return resB.first->second.second;
                         case Relation::GEQ:
-                            return true;
+                            return NULL;
                         case Relation::GREATER:
-                            return true;
+                            return NULL;
                         default:
                             assert( resB.first->second.first == Relation::NEQ );
                             resB.first->second.first = Relation::LESS;
                             resB.first->second.second = _constraint;
-                            return false;
+                            return resB.first->second.second;
                     }
                 }
                 else
@@ -1762,18 +1762,18 @@ namespace smtrat
                         case Relation::EQ:
                             resB.first->second.first = Relation::LEQ;
                             resB.first->second.second = newFormula( newConstraint( lhs, multipliedByMinusOne ? Relation::GEQ : Relation::LEQ ) );
-                            return false;
+                            return resB.first->second.second;
                         case Relation::LEQ:
-                            return false;
+                            return resB.first->second.second;
                         case Relation::GEQ:
-                            return true;
+                            return NULL;
                         case Relation::GREATER:
                             resB.first->second.first = Relation::NEQ;
                             resB.first->second.second = newFormula( newConstraint( lhs, Relation::NEQ ) );
-                            return false;
+                            return resB.first->second.second;
                         default:
                             assert( resB.first->second.first == Relation::NEQ );
-                            return false;
+                            return resB.first->second.second;
                     }
                 }
             case Relation::GREATER:
@@ -1782,20 +1782,20 @@ namespace smtrat
                     switch( resB.first->second.first )
                     {
                         case Relation::EQ:
-                            return true;
+                            return NULL;
                         case Relation::LEQ:
-                            return true;
+                            return NULL;
                         case Relation::GEQ:
                             resB.first->second.first = Relation::GREATER;
                             resB.first->second.second = _constraint;
-                            return false;
+                            return resB.first->second.second;
                         case Relation::LESS:
-                            return true;
+                            return NULL;
                         default:
                             assert( resB.first->second.first == Relation::NEQ );
                             resB.first->second.first = Relation::GREATER;
                             resB.first->second.second = _constraint;
-                            return false;
+                            return resB.first->second.second;
                     }
                 }
                 else
@@ -1805,18 +1805,18 @@ namespace smtrat
                         case Relation::EQ:
                             resB.first->second.first = Relation::GEQ;
                             resB.first->second.second = newFormula( newConstraint( lhs, multipliedByMinusOne ? Relation::LEQ : Relation::GEQ ) );
-                            return false;
+                            return resB.first->second.second;
                         case Relation::LEQ:
-                            return true;
+                            return NULL;
                         case Relation::GEQ:
-                            return false;
+                            return resB.first->second.second;
                         case Relation::LESS:
                             resB.first->second.first = Relation::NEQ;
                             resB.first->second.second = newFormula( newConstraint( lhs, Relation::NEQ ) );
-                            return false;
+                            return resB.first->second.second;
                         default:
                             assert( resB.first->second.first == Relation::NEQ );
-                            return false;
+                            return resB.first->second.second;
                     }
                 }
             default:
@@ -1826,24 +1826,24 @@ namespace smtrat
                     switch( resB.first->second.first )
                     {
                         case Relation::EQ:
-                            return true;
+                            return NULL;
                         case Relation::LEQ:
                             resB.first->second.first = Relation::LESS;
                             resB.first->second.second = newFormula( newConstraint( lhs, multipliedByMinusOne ? Relation::GREATER : Relation::LESS ) );
-                            return false;
+                            return resB.first->second.second;
                         case Relation::GEQ:
                             resB.first->second.first = Relation::GREATER;
                             resB.first->second.second = newFormula( newConstraint( lhs, multipliedByMinusOne ? Relation::LESS : Relation::GREATER ) );
-                            return false;
+                            return resB.first->second.second;
                         case Relation::LESS:
                             resB.first->second.first = Relation::LESS;
                             resB.first->second.second = _constraint;
-                            return false;
+                            return resB.first->second.second;
                         default:
                             assert( resB.first->second.first == Relation::GREATER );
                             resB.first->second.first = Relation::GREATER;
                             resB.first->second.second = _constraint;
-                            return false;
+                            return resB.first->second.second;
                     }
                 }
                 else
@@ -1851,16 +1851,16 @@ namespace smtrat
                     switch( resB.first->second.first )
                     {
                         case Relation::EQ:
-                            return true;
+                            return NULL;
                         case Relation::LEQ:
-                            return true;
+                            return NULL;
                         case Relation::GEQ:
-                            return true;
+                            return NULL;
                         case Relation::LESS:
-                            return false;
+                            return resB.first->second.second;
                         default:
                             assert( resB.first->second.first == Relation::GREATER );
-                            return false;
+                            return resB.first->second.second;
                     }
                 }
         }

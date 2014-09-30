@@ -1062,7 +1062,7 @@ SetWatches:
         Clause& c = ca[cr];
         #ifdef SAT_APPLY_VALID_SUBSTITUTIONS
         for( int i = 0; i < c.size(); ++i )
-            mVarClausesMap[var(c[i])].insert( cr );
+            mVarClausesMap[(size_t)var(c[i])].insert( cr );
         #endif
         assert( c.size() > 1 );
         watches[~c[0]].push( Watcher( cr, c[1] ) );
@@ -1080,7 +1080,7 @@ SetWatches:
         const Clause& c = ca[cr];
         #ifdef SAT_APPLY_VALID_SUBSTITUTIONS
         for( int i = 0; i < c.size(); ++i )
-            mVarClausesMap[var(c[i])].erase( cr );
+            mVarClausesMap[(size_t)var(c[i])].erase( cr );
         #endif
         assert( c.size() > 1 );
 
@@ -1994,8 +1994,11 @@ NextClause:
         cout << __func__ << endl;
         print();
         #endif
-        // Create a tableau using the constraints which have to hold in decision level 0
-        lra::Tableau<carl::Numeric<Rational>, carl::Numeric<Rational>> tableau( mpPassedFormula->end() );
+        // Consider all constraints which have to hold according to decision level 0
+        const Formula* addedConstraint = NULL;
+        carl::Variable varToSubstitute = carl::Variable::NO_VARIABLE;
+        Polynomial substitutionTerm;
+        Formula::ConstraintBounds constraintBoundsAnd;
         for( int i = 0; i < mBooleanConstraintMap.size(); ++i )
         {
             if( assigns[i] == l_Undef ) continue;
@@ -2008,218 +2011,219 @@ NextClause:
                 {
                     ok = false;
                 }
-                else if( constr.relation() != Relation::NEQ && constr.lhs().isLinear() && constraintConsistency == 2 )
+                else if( constraintConsistency == 2 )
                 {
-                    std::pair<const lra::Bound<carl::Numeric<Rational>,carl::Numeric<Rational>>*, bool> res = tableau.newBound( abstr.constraint );
-                    if( res.second )
-                    {
-                        PointerSet<Formula> originSet;
-                        originSet.insert( abstr.constraint );
-                        tableau.activateBound( res.first, originSet );
-                    } 
-                }
-            }
-        }
-        // Find all substitutions with the created tableau
-        list<pair<carl::Variable,Polynomial>> validSubstitutions = tableau.findValidSubstitutions();
-        // Apply the found substitution in the constraints which have to hold in decision level 0 to all constraints
-        for( auto validSub = validSubstitutions.begin(); validSub != validSubstitutions.end(); ++validSub )
-        {
-            assert( mVarReplacements.find( validSub->first ) == mVarReplacements.end() );
-            mVarReplacements[validSub->first] = validSub->second;
-            #ifdef DEBUG_SAT_APPLY_VALID_SUBS
-            cout << "replace " << validSub->first << " by " << validSub->second << std::endl;
-            #endif
-            auto elimVarOccs = mVarOccurrences.find( validSub->first );
-//            if( elimVarOccs == mVarOccurrences.end() )
-//                exit( 7773 );
-            assert( elimVarOccs != mVarOccurrences.end() );
-            for( const Formula* cons : elimVarOccs->second )
-            {
-//                if( cons == pcons ) continue;
-                #ifdef DEBUG_SAT_APPLY_VALID_SUBS
-                cout << "  replace in " << *cons << std::endl;
-                #endif
-                auto consLitPair = mConstraintLiteralMap.find( cons );
-                bool negativeLiteral = sign( consLitPair->second.front() );
-                assert( consLitPair != mConstraintLiteralMap.end() );
-                const Formula* subResult = newFormula( newConstraint( cons->constraint().lhs().substitute( validSub->first, validSub->second ), cons->constraint().relation() ) );
-                #ifdef DEBUG_SAT_APPLY_VALID_SUBS
-                cout << "    results in " << *subResult << endl;
-                #endif
-//                cout << "add the unary clause ";
-                if( subResult->constraint().isConsistent() == 0 )
-                {
-                    // applying the substitution to this constraint leads to conflict
-                    if( assigns[ var( consLitPair->second.front() ) ] == l_Undef )
-                    {
-                        vec<Lit> clauseLits;
-                        clauseLits.push( mkLit( var( consLitPair->second.front() ), !negativeLiteral ) );
-                        addClause( clauseLits, DEDUCTED_CLAUSE );
-                    }
-                    else if( assigns[ var( consLitPair->second.front() ) ] == (negativeLiteral ? l_False : l_True) )
+                    addedConstraint = Formula::addConstraintBound( constraintBoundsAnd, abstr.constraint, true );
+                    assert( addedConstraint->getType() == CONSTRAINT );
+                    if( addedConstraint == NULL )
                     {
                         ok = false;
                     }
+                    else if( addedConstraint->constraint().getSubstitution( varToSubstitute, substitutionTerm ) )
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+        if( addedConstraint == NULL )
+            return;
+        // Apply the found substitution
+        assert( mVarReplacements.find( varToSubstitute ) == mVarReplacements.end() );
+        mVarReplacements[varToSubstitute] = substitutionTerm;
+        #ifdef DEBUG_SAT_APPLY_VALID_SUBS
+        cout << "replace " << varToSubstitute << " by " << substitutionTerm << std::endl;
+        #endif
+        auto elimVarOccs = mVarOccurrences.find( varToSubstitute );
+        assert( elimVarOccs != mVarOccurrences.end() );
+        for( const Formula* cons : elimVarOccs->second )
+        {
+            #ifdef DEBUG_SAT_APPLY_VALID_SUBS
+            cout << "  replace in " << *cons << std::endl;
+            #endif
+            const Formula* subResult = newFormula( newConstraint( cons->constraint().lhs().substitute( varToSubstitute, substitutionTerm ), cons->constraint().relation() ) );
+            #ifdef DEBUG_SAT_APPLY_VALID_SUBS
+            cout << "    results in " << *subResult << endl;
+            #endif
+            replaceConstraint( cons, subResult );
+        }
+        for( auto varOccPair = mVarOccurrences.begin(); varOccPair != mVarOccurrences.end(); ++varOccPair )
+        {
+            if( varOccPair->first != varToSubstitute )
+            {
+                for( auto cons = elimVarOccs->second.begin(); cons != elimVarOccs->second.end(); ++cons )
+                    varOccPair->second.erase( *cons );
+            }
+        }
+        mVarOccurrences.erase( elimVarOccs );
+        #ifdef DEBUG_SAT_APPLY_VALID_SUBS
+        print();
+        #endif
+    }
+    
+    void SATModule::replaceConstraint( const Formula* _toReplace, const Formula* _replaceBy )
+    {
+        auto consLitPair = mConstraintLiteralMap.find( _toReplace );
+        bool negativeLiteral = sign( consLitPair->second.front() );
+        assert( consLitPair != mConstraintLiteralMap.end() );
+        if( _replaceBy->constraint().isConsistent() == 0 )
+        {
+            // applying the substitution to this constraint leads to conflict
+            if( assigns[ var( consLitPair->second.front() ) ] == l_Undef )
+            {
+                vec<Lit> clauseLits;
+                clauseLits.push( mkLit( var( consLitPair->second.front() ), !negativeLiteral ) );
+                addClause( clauseLits, DEDUCTED_CLAUSE );
+            }
+            else if( assigns[ var( consLitPair->second.front() ) ] == (negativeLiteral ? l_False : l_True) )
+            {
+                ok = false;
+            }
+        }
+        else
+        {
+            auto iter = mConstraintLiteralMap.find( _replaceBy );
+            if( iter == mConstraintLiteralMap.end() )
+            {
+                // applying the substitution to this constraint leads to a new constraint (which did not yet occur in the received formula)
+                #ifdef DEBUG_SAT_APPLY_VALID_SUBS
+                cout << __LINE__ << endl;
+                #endif
+                auto negConsLitPair = consLitPair;
+                ++negConsLitPair;
+                assert( (negConsLitPair->first->getType() == FFALSE && consLitPair->first->getType() == TTRUE) 
+                        || (negConsLitPair->first->getType() == NOT && negConsLitPair->first->pSubformula() == consLitPair->first) );
+                mConstraintLiteralMap[_replaceBy] = consLitPair->second;
+                mConstraintLiteralMap[newNegation( _replaceBy )] = negConsLitPair->second;
+                if( negativeLiteral )
+                {
+                    if( !mBooleanConstraintMap[var( consLitPair->second.front() )].second.origins->empty() )
+                        informBackends( _replaceBy );
                 }
                 else
                 {
-                    auto iter = mConstraintLiteralMap.find( subResult );
-                    if( iter == mConstraintLiteralMap.end() )
+                    if( !mBooleanConstraintMap[var( consLitPair->second.front() )].first.origins->empty() )
+                        informBackends( _replaceBy ); 
+                }
+                for( auto var = _replaceBy->constraint().variables().begin(); var != _replaceBy->constraint().variables().end(); ++var )
+                {
+                    mVarOccurrences[*var].insert( _replaceBy );
+                }
+            }
+            else
+            {
+                // applying the substitution to this constraint leads to a constraint which already occurs in the received formula
+                #ifdef DEBUG_SAT_APPLY_VALID_SUBS
+                cout << __LINE__ << endl;
+                cout << "consLitPair->second.front(): " << (sign( consLitPair->second.front() ) ? "-" : "") << var( consLitPair->second.front() ) << endl;
+                cout << "iter->second.front(): " << (sign( iter->second.front() ) ? "-" : "") << var( iter->second.front() ) << endl;
+                #endif
+                replaceVariable( consLitPair->second.front(), iter->second.front() );
+                Abstraction& abstrA = sign( consLitPair->second.front() ) ? mBooleanConstraintMap[var( consLitPair->second.front() )].second : mBooleanConstraintMap[var( consLitPair->second.front() )].first;
+                if( !abstrA.origins->empty() )
+                {
+                    Abstraction& abstrB = sign( iter->second.front() ) ? mBooleanConstraintMap[var( iter->second.front() )].second : mBooleanConstraintMap[var( iter->second.front() )].first;
+                    if( abstrB.origins->empty() )
                     {
-                        // applying the substitution to this constraint leads to a new constraint (which did not yet occur in the received formula)
-                        #ifdef DEBUG_SAT_APPLY_VALID_SUBS
-                        cout << __LINE__ << endl;
-                        #endif
-                        auto negConsLitPair = consLitPair;
-                        ++negConsLitPair;
-                        assert( (negConsLitPair->first->getType() == FFALSE && consLitPair->first->getType() == TTRUE) 
-                                || (negConsLitPair->first->getType() == NOT && negConsLitPair->first->pSubformula() == consLitPair->first) );
-                        mConstraintLiteralMap[subResult] = consLitPair->second;
-                        mConstraintLiteralMap[newNegation( subResult )] = negConsLitPair->second;
-                        if( negativeLiteral )
-                        {
-                            if( !mBooleanConstraintMap[var( consLitPair->second.front() )].second.origins->empty() )
-                                informBackends( subResult );
-                        }
-                        else
-                        {
-                            if( !mBooleanConstraintMap[var( consLitPair->second.front() )].first.origins->empty() )
-                                informBackends( subResult ); 
-                        }
-                        for( auto var = subResult->constraint().variables().begin(); var != subResult->constraint().variables().end(); ++var )
-                        {
-                            mVarOccurrences[*var].insert( subResult );
-                        }
+                        assert( abstrB.constraint != NULL );
+                        informBackends( abstrB.constraint );
                     }
-                    else
+                    for( auto origin = abstrA.origins->begin(); origin != abstrA.origins->end(); ++origin )
                     {
-                        // applying the substitution to this constraint leads to a constraint which already occurs in the received formula
-                        #ifdef DEBUG_SAT_APPLY_VALID_SUBS
-                        cout << __LINE__ << endl;
-                        cout << "consLitPair->second.front(): " << (sign( consLitPair->second.front() ) ? "-" : "") << var( consLitPair->second.front() ) << endl;
-                        cout << "iter->second.front(): " << (sign( iter->second.front() ) ? "-" : "") << var( iter->second.front() ) << endl;
-                        #endif
-                        replaceVariable( consLitPair->second.front(), iter->second.front() );
-                        Abstraction& abstrA = sign( consLitPair->second.front() ) ? mBooleanConstraintMap[var( consLitPair->second.front() )].second : mBooleanConstraintMap[var( consLitPair->second.front() )].first;
-                        if( !abstrA.origins->empty() )
+                        auto res = abstrB.origins->insert( *origin );
+                        if( !res.second )
                         {
-                            Abstraction& abstrB = sign( iter->second.front() ) ? mBooleanConstraintMap[var( iter->second.front() )].second : mBooleanConstraintMap[var( iter->second.front() )].first;
-                            if( abstrB.origins->empty() )
-                            {
-                                assert( abstrB.constraint != NULL );
-                                informBackends( abstrB.constraint );
-                            }
-                            for( auto origin = abstrA.origins->begin(); origin != abstrA.origins->end(); ++origin )
-                            {
-                                auto res = abstrB.origins->insert( *origin );
-                                if( !res.second )
-                                {
-                                    res.first->second += origin->second;
-                                }
-                            }
-                        }
-                        
-                        iter->second.insert( iter->second.end(), consLitPair->second.begin(), consLitPair->second.end() );
-                        auto iterB = iter;
-                        ++iterB;
-                        assert( (iterB->first->getType() == FFALSE && iter->first->getType() == TTRUE) 
-                                || (iterB->first->getType() == NOT && iterB->first->pSubformula() == iter->first) );
-                        auto iterC = consLitPair;
-                        ++iterC;
-                        assert( (iterC->first->getType() == FFALSE && consLitPair->first->getType() == TTRUE) 
-                                || (iterC->first->getType() == NOT && iterC->first->pSubformula() == consLitPair->first) );
-                        iterB->second.insert( iterB->second.end(), iterC->second.begin(), iterC->second.end() );
-                        if( assigns[var(consLitPair->second.front())] != l_Undef && assigns[var(iter->second.front())] == l_Undef )
-                        {
-                            vec<Lit> clauseLits;
-                            if( sign(consLitPair->second.front()) == sign(iter->second.front()) )
-                            {
-                                clauseLits.push( mkLit( var(iter->second.front()), assigns[var(consLitPair->second.front())] == l_False ) );
-                            }
-                            else
-                            {
-                                clauseLits.push( mkLit( var(iter->second.front()), assigns[var(consLitPair->second.front())] == l_True ) );
-                            }
-                            addClause( clauseLits, DEDUCTED_CLAUSE );
-                        }
-                        else if( assigns[var(iter->second.front())] != l_Undef && assigns[var(consLitPair->second.front())] == l_Undef )
-                        {
-                            vec<Lit> clauseLits;
-                            if( sign(consLitPair->second.front()) == sign(iter->second.front()) )
-                            {
-                                clauseLits.push( mkLit( var(consLitPair->second.front()), assigns[var(iter->second.front())] == l_False ) );
-                            }
-                            else
-                            {
-                                clauseLits.push( mkLit( var(consLitPair->second.front()), assigns[var(iter->second.front())] == l_True ) );
-                            }
-                            addClause( clauseLits, DEDUCTED_CLAUSE );
-                        }
-                        else if( (assigns[var(consLitPair->second.front())] == assigns[var(iter->second.front())]) != (sign(consLitPair->second.front()) == sign(iter->second.front())) )
-                        {
-                            ok = false;
+                            res.first->second += origin->second;
                         }
                     }
                 }
-                for( auto litIter = consLitPair->second.begin(); litIter != consLitPair->second.end(); ++litIter )
+
+                iter->second.insert( iter->second.end(), consLitPair->second.begin(), consLitPair->second.end() );
+                auto iterB = iter;
+                ++iterB;
+                assert( (iterB->first->getType() == FFALSE && iter->first->getType() == TTRUE) 
+                        || (iterB->first->getType() == NOT && iterB->first->pSubformula() == iter->first) );
+                auto iterC = consLitPair;
+                ++iterC;
+                assert( (iterC->first->getType() == FFALSE && consLitPair->first->getType() == TTRUE) 
+                        || (iterC->first->getType() == NOT && iterC->first->pSubformula() == consLitPair->first) );
+                iterB->second.insert( iterB->second.end(), iterC->second.begin(), iterC->second.end() );
+                if( assigns[var(consLitPair->second.front())] != l_Undef && assigns[var(iter->second.front())] == l_Undef )
+                {
+                    vec<Lit> clauseLits;
+                    if( sign(consLitPair->second.front()) == sign(iter->second.front()) )
+                    {
+                        clauseLits.push( mkLit( var(iter->second.front()), assigns[var(consLitPair->second.front())] == l_False ) );
+                    }
+                    else
+                    {
+                        clauseLits.push( mkLit( var(iter->second.front()), assigns[var(consLitPair->second.front())] == l_True ) );
+                    }
+                    addClause( clauseLits, DEDUCTED_CLAUSE );
+                }
+                else if( assigns[var(iter->second.front())] != l_Undef && assigns[var(consLitPair->second.front())] == l_Undef )
+                {
+                    vec<Lit> clauseLits;
+                    if( sign(consLitPair->second.front()) == sign(iter->second.front()) )
+                    {
+                        clauseLits.push( mkLit( var(consLitPair->second.front()), assigns[var(iter->second.front())] == l_False ) );
+                    }
+                    else
+                    {
+                        clauseLits.push( mkLit( var(consLitPair->second.front()), assigns[var(iter->second.front())] == l_True ) );
+                    }
+                    addClause( clauseLits, DEDUCTED_CLAUSE );
+                }
+                else if( (assigns[var(consLitPair->second.front())] == assigns[var(iter->second.front())]) != (sign(consLitPair->second.front()) == sign(iter->second.front())) )
+                {
+                    ok = false;
+                }
+            }
+        }
+        for( auto litIter = consLitPair->second.begin(); litIter != consLitPair->second.end(); ++litIter )
+        {
+            #ifdef DEBUG_SAT_APPLY_VALID_SUBS
+            cout << "consider the literal: " << (sign( *litIter ) ? "-" : "") << var( *litIter ) << endl;
+            #endif
+            Abstraction& abstr = negativeLiteral ? mBooleanConstraintMap[var( *litIter )].second : mBooleanConstraintMap[var( *litIter )].first;
+            if( abstr.position != mpPassedFormula->end() )
+            {
+                #ifdef DEBUG_SAT_APPLY_VALID_SUBS
+                cout << __LINE__ << endl;
+                #endif
+                removeSubformulaFromPassedFormula( abstr.position );
+                if( _replaceBy->constraint().isConsistent() == 2 )
+                {
+                    abstr.constraint = _replaceBy;
+                    abstr.position = mpPassedFormula->end();
+                    if( abstr.updateInfo <= 0 )
+                        if( ++abstr.updateInfo > 0 )
+                            mChangedBooleans.push_back( var( *litIter ) );
+                    #ifdef DEBUG_SAT_APPLY_VALID_SUBS
+                    cout << __LINE__ << endl;
+                    #endif
+                }
+                else
                 {
                     #ifdef DEBUG_SAT_APPLY_VALID_SUBS
-                    cout << "consider the literal: " << (sign( *litIter ) ? "-" : "") << var( *litIter ) << endl;
+                    cout << __LINE__ << endl;
                     #endif
-                    Abstraction& abstr = negativeLiteral ? mBooleanConstraintMap[var( *litIter )].second : mBooleanConstraintMap[var( *litIter )].first;
-                    if( abstr.position != mpPassedFormula->end() )
-                    {
-                        #ifdef DEBUG_SAT_APPLY_VALID_SUBS
-                        cout << __LINE__ << endl;
-                        #endif
-                        removeSubformulaFromPassedFormula( abstr.position );
-                        if( subResult->constraint().isConsistent() == 2 )
-                        {
-                            abstr.constraint = subResult;
-                            abstr.position = mpPassedFormula->end();
-                            if( abstr.updateInfo <= 0 )
-                                if( ++abstr.updateInfo > 0 )
-                                    mChangedBooleans.push_back( var( *litIter ) );
-                            #ifdef DEBUG_SAT_APPLY_VALID_SUBS
-                            cout << __LINE__ << endl;
-                            #endif
-                        }
-                        else
-                        {
-                            #ifdef DEBUG_SAT_APPLY_VALID_SUBS
-                            cout << __LINE__ << endl;
-                            #endif
-                            abstr.constraint = NULL;
-                            abstr.position = mpPassedFormula->end();
-                            abstr.updateInfo = 0;
-                        }
-                    }
-                    else
-                    {
-                        #ifdef DEBUG_SAT_APPLY_VALID_SUBS
-                        cout << __LINE__ << endl;
-                        #endif
-                        abstr.constraint = subResult;
-                        if( subResult->constraint().isConsistent() != 2 )
-                        {
-                            abstr.updateInfo = 0;
-                        }
-                    }
+                    abstr.constraint = NULL;
+                    abstr.position = mpPassedFormula->end();
+                    abstr.updateInfo = 0;
                 }
             }
-            for( auto varOccPair = mVarOccurrences.begin(); varOccPair != mVarOccurrences.end(); ++varOccPair )
+            else
             {
-                if( varOccPair->first != validSub->first )
+                #ifdef DEBUG_SAT_APPLY_VALID_SUBS
+                cout << __LINE__ << endl;
+                #endif
+                abstr.constraint = _replaceBy;
+                if( _replaceBy->constraint().isConsistent() != 2 )
                 {
-                    for( auto cons = elimVarOccs->second.begin(); cons != elimVarOccs->second.end(); ++cons )
-                        varOccPair->second.erase( *cons );
+                    abstr.updateInfo = 0;
                 }
             }
-            mVarOccurrences.erase( elimVarOccs );
-            #ifdef DEBUG_SAT_APPLY_VALID_SUBS
-            print();
-            #endif
         }
     }
 

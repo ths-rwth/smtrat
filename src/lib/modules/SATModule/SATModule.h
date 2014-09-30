@@ -600,6 +600,13 @@ namespace smtrat
             void applyValidSubstitutionsOnClauses();
             
             /**
+             * 
+             * @param _toReplace
+             * @param _replaceBy
+             */
+            void replaceConstraint( const Formula* _toReplace, const Formula* _replaceBy );
+            
+            /**
              * Adds the clause of the given type with the given literals to the clauses managed by Minisat.
              * @param _clause The clause to add.
              * @param _type The type of the clause (NORMAL_CLAUSE, DEDUCTED_CLAUSE or CONFLICT_CLAUSE).
