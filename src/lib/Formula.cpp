@@ -1585,35 +1585,22 @@ namespace smtrat
         Relation relation = negated ? Constraint::invertRelation( constraint.relation() ) : constraint.relation();
         const Polynomial& lhs = constraint.lhs();
         Polynomial* poly = NULL;
-        if( lhs.nrTerms() == 1 || ( lhs.nrTerms() == 2 && lhs.hasConstantTerm() ) )
+        bool multipliedByMinusOne = lhs.lterm()->coeff() < Rational( 0 );
+        if( multipliedByMinusOne )
         {
-            auto term = lhs.begin();
-            for( ; term != lhs.end(); ++term )
-                if( !(*term)->isConstant() ) break;
-            poly = new Polynomial( (*term)->monomial()->begin()->first );
-            Rational primCoeff( (*term)->coeff() );
-            if( primCoeff < Rational( 0 ) )
-                relation = Constraint::turnAroundRelation( relation );
-            boundValue = Rational( -constraint.constantPart() )/primCoeff;
+            boundValue = constraint.constantPart();
+            relation = Constraint::turnAroundRelation( relation );
+            poly = new Polynomial( -lhs + boundValue );
         }
         else
         {
-            if( lhs.lterm()->coeff() < Rational( 0 ) )
-            {
-                boundValue = constraint.constantPart();
-                relation = Constraint::turnAroundRelation( relation );
-                poly = new Polynomial( -lhs + boundValue );
-            }
-            else
-            {
-                boundValue = -constraint.constantPart();
-                poly = new Polynomial( lhs + boundValue );
-            }
-            Rational cf( poly->coprimeFactor() );
-            assert( cf > 0 );
-            boundValue *= cf;
-            (*poly) *= cf;
+            boundValue = -constraint.constantPart();
+            poly = new Polynomial( lhs + boundValue );
         }
+        Rational cf( poly->coprimeFactor() );
+        assert( cf > 0 );
+        boundValue *= cf;
+        (*poly) *= cf;
         #ifdef CONSTRAINT_BOUND_DEBUG
         cout << "try to add the bound  " << Constraint::relationToString( relation ) << boundValue << "  for the polynomial  " << *poly << endl; 
         #endif
@@ -1649,11 +1636,11 @@ namespace smtrat
                             return false;
                         case Relation::LESS:
                             resB.first->second.first = Relation::LEQ;
-                            resB.first->second.second = _constraint;
+                            resB.first->second.second = newFormula( newConstraint( lhs, multipliedByMinusOne ? Relation::GEQ : Relation::LEQ ) );
                             return false;
                         case Relation::GREATER:
                             resB.first->second.first = Relation::GEQ;
-                            resB.first->second.second = _constraint;
+                            resB.first->second.second = newFormula( newConstraint( lhs, multipliedByMinusOne ? Relation::LEQ : Relation::GEQ ) );
                             return false;
                         default:
                             assert( resB.first->second.first == Relation::NEQ );
@@ -1669,7 +1656,7 @@ namespace smtrat
                             return false;
                         case Relation::GEQ:
                             resB.first->second.first = Relation::EQ;
-                            resB.first->second.second = _constraint;
+                            resB.first->second.second = newFormula( newConstraint( lhs, Relation::EQ ) );
                             return false;
                         case Relation::LESS:
                             return false;
@@ -1678,7 +1665,7 @@ namespace smtrat
                         default:
                             assert( resB.first->second.first == Relation::NEQ );
                             resB.first->second.first = Relation::LESS;
-                            resB.first->second.second = newFormula( newConstraint( lhs, Relation::LESS ) );
+                            resB.first->second.second = newFormula( newConstraint( lhs, multipliedByMinusOne ? Relation::GREATER : Relation::LESS ) );
                             return false;
                     }
                 }
@@ -1712,7 +1699,7 @@ namespace smtrat
                             return false;
                         case Relation::LEQ:
                             resB.first->second.first = Relation::EQ;
-                            resB.first->second.second = _constraint;
+                            resB.first->second.second = newFormula( newConstraint( lhs, Relation::EQ ) );
                             return false;
                         case Relation::LESS:
                             return true;
@@ -1721,7 +1708,7 @@ namespace smtrat
                         default:
                             assert( resB.first->second.first == Relation::NEQ );
                             resB.first->second.first = Relation::GREATER;
-                            resB.first->second.second = newFormula( newConstraint( lhs, Relation::GREATER ) );
+                            resB.first->second.second = newFormula( newConstraint( lhs, multipliedByMinusOne ? Relation::LESS : Relation::GREATER ) );
                             return false;
                     }
                 }
@@ -1774,7 +1761,7 @@ namespace smtrat
                     {
                         case Relation::EQ:
                             resB.first->second.first = Relation::LEQ;
-                            resB.first->second.second = _constraint;
+                            resB.first->second.second = newFormula( newConstraint( lhs, multipliedByMinusOne ? Relation::GEQ : Relation::LEQ ) );
                             return false;
                         case Relation::LEQ:
                             return false;
@@ -1817,7 +1804,7 @@ namespace smtrat
                     {
                         case Relation::EQ:
                             resB.first->second.first = Relation::GEQ;
-                            resB.first->second.second = _constraint;
+                            resB.first->second.second = newFormula( newConstraint( lhs, multipliedByMinusOne ? Relation::LEQ : Relation::GEQ ) );
                             return false;
                         case Relation::LEQ:
                             return true;
@@ -1842,11 +1829,11 @@ namespace smtrat
                             return true;
                         case Relation::LEQ:
                             resB.first->second.first = Relation::LESS;
-                            resB.first->second.second = newFormula( newConstraint( lhs, Relation::LESS ) );
+                            resB.first->second.second = newFormula( newConstraint( lhs, multipliedByMinusOne ? Relation::GREATER : Relation::LESS ) );
                             return false;
                         case Relation::GEQ:
                             resB.first->second.first = Relation::GREATER;
-                            resB.first->second.second = newFormula( newConstraint( lhs, Relation::GREATER ) );
+                            resB.first->second.second = newFormula( newConstraint( lhs, multipliedByMinusOne ? Relation::LESS : Relation::GREATER ) );
                             return false;
                         case Relation::LESS:
                             resB.first->second.first = Relation::LESS;
