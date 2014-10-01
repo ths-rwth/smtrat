@@ -32,7 +32,7 @@
 
 #include "../../solver/Module.h"
 #include "../../solver/RuntimeSettings.h"
-#include "../../datastructures/lra/Tableau.hpp"
+#include "../../datastructures/lra/Tableau.h"
 #include "LRAModuleStatistics.h"
 #include <stdio.h>
 

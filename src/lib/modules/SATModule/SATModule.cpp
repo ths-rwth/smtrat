@@ -48,7 +48,6 @@
 
 #include "SATModule.h"
 #include <iomanip>
-#include "../../datastructures/lra/Tableau.hpp"
 
 //#define DEBUG_SATMODULE
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION

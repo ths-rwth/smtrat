@@ -54,17 +54,21 @@ configure_file( ${CMAKE_SOURCE_DIR}/src/lib/solver/CompileInfo.cpp.in ${CMAKE_SO
 set(lib_datastructures_headers
         datastructures/Assignment.h
         datastructures/VariableBounds.h
-	datastructures/lra/Bound.hpp
-	datastructures/lra/Tableau.hpp
-	datastructures/lra/Value.hpp
-	datastructures/lra/Variable.hpp
+	datastructures/lra/Bound.h
+	datastructures/lra/Tableau.h
+	datastructures/lra/Value.h
+	datastructures/lra/Variable.h
 	datastructures/lra/Numeric.h
 	datastructures/vs/SqrtEx.h
 )
 
 set(lib_datastructures_src
         datastructures/Assignment.cpp
+        datastructures/lra/Bound.tpp
 	datastructures/lra/Numeric.cpp
+	datastructures/lra/Tableau.tpp
+	datastructures/lra/Value.tpp
+	datastructures/lra/Variable.tpp
 	datastructures/vs/SqrtEx.cpp
 )
 
