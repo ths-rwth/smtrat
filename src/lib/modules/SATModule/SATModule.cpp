@@ -48,7 +48,6 @@
 
 #include "SATModule.h"
 #include <iomanip>
-#include "../../datastructures/lra/Tableau.hpp"
 
 //#define DEBUG_SATMODULE
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION
@@ -2026,7 +2025,7 @@ NextClause:
                 }
             }
         }
-        if( addedConstraint == NULL )
+        if( varToSubstitute == carl::Variable::NO_VARIABLE || !ok )
             return;
         // Apply the found substitution
         assert( mVarReplacements.find( varToSubstitute ) == mVarReplacements.end() );

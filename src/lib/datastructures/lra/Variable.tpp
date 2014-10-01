@@ -19,305 +19,20 @@
  *
  */
 /**
- * @file Variable.h
+ * @file Variable.tpp
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
- *
- * @version 2012-04-05
- * Created on November 14th, 2012
+ * @since 2012-04-05
+ * @version 2014-10-01
  */
 
-#ifndef LRA_VARIABLE_H
-#define LRA_VARIABLE_H
+#pragma once
 
-#define LRA_NO_DIVISION
-
-#include "Bound.hpp"
-#include "../../Common.h"
-#include <sstream>
-#include <iomanip>
-#include <list>
+#include "Variable.h"
 
 namespace smtrat
 {
     namespace lra
     {
-        typedef size_t EntryID;
-        static EntryID LAST_ENTRY_ID = 0;
-        
-        template<typename T1, typename T2>
-        class Variable
-        {
-            private:
-
-                /**
-                 * Members.
-                 */
-                bool                             mBasic;
-                bool                             mOriginal;
-                bool                             mInteger;
-                EntryID                          mStartEntry;
-                size_t                           mSize;
-                double                           mConflictActivity;
-                union
-                {
-                    size_t                       mPosition;
-                    typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator          mPositionInNonActives;
-                };
-                typename Bound<T1, T2>::BoundSet mUpperbounds;
-                typename Bound<T1, T2>::BoundSet mLowerbounds;
-                const Bound<T1, T2>*             mpSupremum;
-                const Bound<T1, T2>*             mpInfimum;
-                const smtrat::Polynomial*        mExpression;
-                Value<T1>                        mAssignment;
-                Value<T1>                        mLastConsistentAssignment;
-                #ifdef LRA_NO_DIVISION
-                T2                               mFactor;
-                #endif
-
-            public:
-                Variable( size_t, const smtrat::Polynomial*, std::list<const smtrat::Formula*>::iterator, bool );
-                Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator, const smtrat::Polynomial*, std::list<const smtrat::Formula*>::iterator, bool );
-                virtual ~Variable();
-
-                const Value<T1>& assignment() const
-                {
-                    return mAssignment;
-                }
-
-                Value<T1>& rAssignment()
-                {
-                    return mAssignment;
-                }
-                
-                void resetAssignment()
-                {
-                    mAssignment = mLastConsistentAssignment;
-                }
-                
-                void storeAssignment()
-                {
-                    mLastConsistentAssignment = mAssignment;
-                }
-
-                void setBasic( bool _basic )
-                {
-                    mBasic = _basic;
-                }
-
-                bool isBasic() const
-                {
-                    return mBasic;
-                }
-
-                bool isOriginal() const
-                {
-                    return mOriginal;
-                }
-
-                bool isInteger() const
-                {
-                    return mInteger;
-                }
-                
-                bool isActive() const
-                {
-                    return !(mpInfimum->isInfinite() && mpSupremum->isInfinite());
-                }
-                
-                bool involvesEquation() const
-                {
-                    return !mpInfimum->isInfinite() && mpInfimum->type() == Bound<T1,T2>::EQUAL;
-                }
-                
-                EntryID startEntry() const
-                {
-                    return mStartEntry;
-                }
-                
-                EntryID& rStartEntry()
-                {
-                    return mStartEntry;
-                }
-                
-                size_t size() const
-                {
-                    return mSize;
-                }
-                
-                size_t& rSize()
-                {
-                    return mSize;
-                }
-                
-                double conflictActivity() const
-                {
-                    return mConflictActivity;
-                }
-                
-                void setSupremum( const Bound<T1, T2>* _supremum )
-                {
-                    assert( _supremum->isActive() );
-                    assert( mpSupremum->isActive() );
-                    if( !mpSupremum->isInfinite() )
-                        --mpSupremum->pInfo()->updated;
-                    ++_supremum->pInfo()->updated;
-                    mpSupremum = _supremum;
-                }
-
-                const Bound<T1, T2>* pSupremum() const
-                {
-                    assert( !mpSupremum->origins().empty() );
-                    return mpSupremum;
-                }
-
-                const Bound<T1, T2>& supremum() const
-                {
-                    assert( !mpSupremum->origins().empty() );
-                    return *mpSupremum;
-                }
-
-                void setInfimum( const Bound<T1, T2>* _infimum )
-                {
-                    assert( _infimum->isActive() );
-                    assert( mpInfimum->isActive() );
-                    if( !mpInfimum->isInfinite() )
-                        --mpInfimum->pInfo()->updated;
-                    ++_infimum->pInfo()->updated;
-                    mpInfimum = _infimum;
-                    updateConflictActivity();
-                }
-
-                const Bound<T1, T2>* pInfimum() const
-                {
-                    assert( !mpInfimum->origins().empty() );
-                    return mpInfimum;
-                }
-
-                const Bound<T1, T2>& infimum() const
-                {
-                    assert( !mpInfimum->origins().empty() );
-                    return *mpInfimum;
-                }
-
-                size_t position() const
-                {
-                    return mPosition;
-                }
-                
-                void setPosition( size_t _position )
-                {
-                    mPosition = _position;
-                }
-
-                typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator positionInNonActives() const
-                {
-                    return mPositionInNonActives;
-                }
-                
-                void setPositionInNonActives( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator _positionInNonActives )
-                {
-                    mPositionInNonActives = _positionInNonActives;
-                }
-
-                size_t rLowerBoundsSize()
-                {
-                    return mLowerbounds.size();
-                }
-
-                size_t rUpperBoundsSize()
-                {
-                    return mUpperbounds.size();
-                }
-
-                const typename Bound<T1, T2>::BoundSet& upperbounds() const
-                {
-                    return mUpperbounds;
-                }
-
-                const typename Bound<T1, T2>::BoundSet& lowerbounds() const
-                {
-                    return mLowerbounds;
-                }
-
-                typename Bound<T1, T2>::BoundSet& rUpperbounds()
-                {
-                    return mUpperbounds;
-                }
-
-                typename Bound<T1, T2>::BoundSet& rLowerbounds()
-                {
-                    return mLowerbounds;
-                }
-
-                size_t& rPosition()
-                {
-                    return mPosition;
-                }
-
-                const smtrat::Polynomial* pExpression() const
-                {
-                    return mExpression;
-                }
-
-                const smtrat::Polynomial& expression() const
-                {
-                    return *mExpression;
-                }
-                
-                #ifdef LRA_NO_DIVISION
-                const T2& factor() const
-                {
-                    return mFactor;
-                }
-                
-                T2& rFactor()
-                {
-                    return mFactor;
-                }
-                #endif
-
-                unsigned isSatisfiedBy( const smtrat::EvalRationalMap& _ass ) const
-                {
-                    smtrat::Polynomial polyTmp = mExpression->substitute( _ass );
-                    if( polyTmp.isConstant() )
-                        return (*mpInfimum) <= polyTmp.constantPart() && (*mpSupremum) >= polyTmp.constantPart();
-                    return 2;
-                }
-
-                void updateConflictActivity()
-                {
-                    mConflictActivity = 0;
-                    int counter = 0;
-                    if( !mpInfimum->isInfinite() )
-                    {
-                        for( const Formula* form : mpInfimum->pOrigins()->front() )
-                        {
-                            mConflictActivity += form->activity();
-                            ++counter;
-                        }
-                    }
-                    if( !mpSupremum->isInfinite() )
-                    {
-                        for( const Formula* form : mpSupremum->pOrigins()->front() )
-                        {
-                            mConflictActivity += form->activity();
-                            ++counter;
-                        }
-                    }
-                    if( counter != 0 ) mConflictActivity /= counter;
-                }
-
-                std::pair<const Bound<T1, T2>*, bool> addUpperBound( Value<T1>* const, std::list<const smtrat::Formula*>::iterator, const smtrat::Formula* = NULL, bool = false );
-                std::pair<const Bound<T1, T2>*, bool> addLowerBound( Value<T1>* const, std::list<const smtrat::Formula*>::iterator, const smtrat::Formula* = NULL, bool = false );
-                std::pair<const Bound<T1, T2>*, bool> addEqualBound( Value<T1>* const, std::list<const smtrat::Formula*>::iterator, const smtrat::Formula* = NULL );
-                bool deactivateBound( const Bound<T1, T2>*, std::list<const smtrat::Formula*>::iterator );
-                Interval getVariableBounds() const;
-                PointerSet<smtrat::Formula> getDefiningOrigins() const;
-
-                void print( std::ostream& = std::cout ) const;
-                void printAllBounds( std::ostream& = std::cout, const std::string = "" ) const;
-        };
-		
         template<typename T1, typename T2>
         Variable<T1, T2>::Variable( size_t _position, const smtrat::Polynomial* _expression, std::list<const smtrat::Formula*>::iterator _defaultBoundPosition, bool _isInteger ):
             mBasic( false ),
@@ -382,11 +97,6 @@ namespace smtrat
             delete mExpression;
         }
 
-        /**
-         *
-         * @param _val
-         * @return
-         */
         template<typename T1, typename T2>
         std::pair<const Bound<T1, T2>*, bool> Variable<T1, T2>::addUpperBound( Value<T1>* const _val, std::list<const smtrat::Formula*>::iterator _position, const smtrat::Formula* _constraint, bool _deduced )
         {
@@ -404,11 +114,6 @@ namespace smtrat
             return std::pair<const Bound<T1, T2>*, bool>( *result.first, result.second );
         }
 
-        /**
-         *
-         * @param _val
-         * @return
-         */
         template<typename T1, typename T2>
         std::pair<const Bound<T1, T2>*, bool> Variable<T1, T2>::addLowerBound( Value<T1>* const _val, std::list<const smtrat::Formula*>::iterator _position, const smtrat::Formula* _constraint, bool _deduced )
         {
@@ -425,11 +130,6 @@ namespace smtrat
             return std::pair<const Bound<T1, T2>*, bool>( *result.first, result.second );
         }
 
-        /**
-         *
-         * @param _val
-         * @return
-         */
         template<typename T1, typename T2>
         std::pair<const Bound<T1, T2>*, bool> Variable<T1, T2>::addEqualBound( Value<T1>* const _val, std::list<const smtrat::Formula*>::iterator _position, const smtrat::Formula* _constraint )
         {
@@ -453,12 +153,6 @@ namespace smtrat
             }
         }
 
-        /**
-         * 
-         * @param bound
-         * @param _position
-         * @return 
-         */
         template<typename T1, typename T2>
         bool Variable<T1, T2>::deactivateBound( const Bound<T1, T2>* bound, std::list<const smtrat::Formula*>::iterator _position )
         {
@@ -510,9 +204,6 @@ namespace smtrat
             return variableBoundsChanged;
         }
 
-        /**
-         * @return
-         */
         template<typename T1, typename T2>
         Interval Variable<T1, T2>::getVariableBounds() const
         {
@@ -544,10 +235,6 @@ namespace smtrat
             return result;
         }
 
-        /**
-         *
-         * @return
-         */
         template<typename T1, typename T2>
         PointerSet<smtrat::Formula> Variable<T1, T2>::getDefiningOrigins() const
         {
@@ -563,10 +250,6 @@ namespace smtrat
             return result;
         }
 
-        /**
-         *
-         * @param _out
-         */
         template<typename T1, typename T2>
         void Variable<T1, T2>::print( std::ostream& _out ) const
         {
@@ -602,4 +285,5 @@ namespace smtrat
         }
     }    // end namspace lra
 } // end namespace smtrat
-#endif   /* LRA_VARIABLE_H */
+
+

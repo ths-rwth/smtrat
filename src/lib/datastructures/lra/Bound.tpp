@@ -19,192 +19,20 @@
  *
  */
 /**
- * File:   Bound.h
+ * @file Bound.tpp
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
- *
- * @version 2012-04-05
- * Created on November 14th, 2012
+ * @since 2012-04-05
+ * @version 2014-10-01
  */
 
-#ifndef LRA_BOUND_H
-#define LRA_BOUND_H
+#pragma once
 
-#include "Value.hpp"
-#include "../../Formula.h"
-#include <stddef.h>
-#include <set>
+#include "Bound.h"
 
 namespace smtrat
 {
     namespace lra
     {
-        template<class T1, class T2>
-        class Variable;
-
-        template<typename T1, typename T2>
-        class Bound;
-
-        template<typename T1, typename T2>
-        class Bound
-        {
-            public:
-            enum Type{ LOWER, UPPER, EQUAL };
-
-            struct boundComp
-            {
-                bool operator ()( const Bound<T1, T2>* const pBoundA, const Bound<T1, T2>* const pBoundB ) const
-                {
-                    return (*pBoundA) < (*pBoundB);
-                }
-            };
-
-            typedef std::set<const Bound<T1, T2>*, boundComp > BoundSet;
-
-            struct Info
-            {
-                int                                         updated;
-                std::list<const smtrat::Formula*>::iterator position;
-                const smtrat::Formula*                      neqRepresentation;
-                bool                                        exists;
-            };
-
-            private:
-
-                /**
-                 * Members.
-                 */
-                bool                               mDeduced;
-                Type                               mType;
-                const Value<T1>*                   mLimit;
-                Variable<T1, T2>* const            mVar;
-                const smtrat::Formula*             mpAsConstraint;
-                std::vector<PointerSet<Formula> >* mpOrigins;
-                Info*                              mpInfo;
-
-            public:
-                Bound();
-                Bound( const Value<T1>* const, Variable<T1, T2>* const, Type, const smtrat::Formula*, Info* = NULL, bool = false );
-                ~Bound();
-
-                bool operator >( const Value<T1>& ) const;
-                bool operator ==( const Value<T1>& ) const;
-                bool operator <( const Value<T1>& ) const;
-                bool operator <( const Bound& ) const;
-                bool operator >( const Bound& ) const;
-                bool operator ==( const T1& ) const;
-                bool operator >( const T1& ) const;
-                bool operator <( const T1& ) const;
-                bool operator >=( const T1& ) const;
-                bool operator <=( const T1& ) const;
-                const std::string toString() const;
-                template <typename T3, typename T4> friend std::ostream& operator <<( std::ostream&, const Bound<T3, T4>& );
-                void print( bool _withOrigins = false,  std::ostream& _out = std::cout, bool _printTypebool = false ) const;
-
-                bool deduced() const
-                {
-                    return mDeduced;
-                }
-
-                const Value<T1>& limit() const
-                {
-                    return *mLimit;
-                }
-
-                const Value<T1>* pLimit() const
-                {
-                    return mLimit;
-                }
-
-                bool isInfinite() const
-                {
-                    return mLimit == NULL;
-                }
-
-                Variable<T1, T2>* pVariable() const
-                {
-                    return mVar;
-                }
-
-                const Variable<T1, T2>& variable() const
-                {
-                    return *mVar;
-                }
-
-                Type type() const
-                {
-                    return mType;
-                }
-
-                bool isWeak() const
-                {
-                    return mLimit->deltaPart() == 0;
-                }
-
-                bool isUpperBound() const
-                {
-                    return mType != LOWER;
-                }
-
-                bool isLowerBound() const
-                {
-                    return mType != UPPER;
-                }
-
-                const smtrat::Formula* pAsConstraint() const
-                {
-                    return mpAsConstraint;
-                }
-                
-                const smtrat::Formula* neqRepresentation() const
-                {
-                    return mpInfo->neqRepresentation;
-                }
-                
-                void setNeqRepresentation( const smtrat::Formula* _constraint ) const
-                {
-                    assert( _constraint->getType() == smtrat::CONSTRAINT && _constraint->constraint().relation() == smtrat::Relation::NEQ );
-                    if( mpInfo->neqRepresentation == NULL )
-                    {
-                        mpInfo->neqRepresentation = _constraint;
-                    }
-                }
-                
-                void boundExists() const
-                {
-                    mpInfo->exists = true;
-                }
-
-                std::vector<PointerSet<Formula> >* pOrigins() const
-                {
-                    return mpOrigins;
-                }
-
-                const std::vector<PointerSet<Formula> >& origins() const
-                {
-                    return *mpOrigins;
-                }
-
-                bool isActive() const
-                {
-                    return !mpOrigins->empty();
-                }
-
-                Info* pInfo() const
-                {
-                    return mpInfo;
-                }
-
-                bool operator >=( const Value<T1>& v ) const
-                {
-                    return !((*this) < v);
-                }
-
-                bool operator <=( const Value<T1>& v ) const
-                {
-                    return !((*this) > v);
-                }
-        };
-
         template<typename T1, typename T2>
         Bound<T1, T2>::Bound():
             mDeduced( false ),
@@ -246,11 +74,6 @@ namespace smtrat
             delete mLimit;
         }
 
-        /**
-         *
-         * @param _bound
-         * @return
-         */
         template<typename T1, typename T2>
         bool Bound<T1, T2>::operator <( const Bound& _bound ) const
         {
@@ -282,11 +105,6 @@ namespace smtrat
             }
         }
 
-        /**
-         *
-         * @param _bound
-         * @return
-         */
         template<typename T1, typename T2>
         bool Bound<T1, T2>::operator >( const Bound& _bound ) const
         {
@@ -316,13 +134,8 @@ namespace smtrat
             }
         }
 
-        /**
-         *
-         * @param v
-         * @return
-         */
         template<typename T1, typename T2>
-        bool Bound<T1, T2>::operator <( const Value<T1>& v ) const
+        bool Bound<T1, T2>::operator <( const Value<T1>& _value ) const
         {
             if( mLimit == NULL && mType == UPPER )
             {
@@ -334,17 +147,12 @@ namespace smtrat
             }
             else
             {
-                return (*mLimit) < v;
+                return (*mLimit) < _value;
             }
         }
 
-        /**
-         *
-         * @param v
-         * @return
-         */
         template<typename T1, typename T2>
-        bool Bound<T1, T2>::operator >( const Value<T1>& v ) const
+        bool Bound<T1, T2>::operator >( const Value<T1>& _value ) const
         {
             if( mLimit == NULL && mType == UPPER )
             {
@@ -356,67 +164,58 @@ namespace smtrat
             }
             else
             {
-                return (*mLimit) > v;
+                return (*mLimit) > _value;
             }
         }
 
-        /**
-         *
-         * @param v
-         * @return
-         */
         template<typename T1, typename T2>
-        bool Bound<T1, T2>::operator ==( const Value<T1>& v ) const
+        bool Bound<T1, T2>::operator ==( const Value<T1>& _value ) const
         {
             if( mLimit == NULL )
             {
                 return false;
             }
-            return (*mLimit) == v;
+            return (*mLimit) == _value;
         }
         
         template<typename T1, typename T2>
-        bool Bound<T1, T2>::operator ==( const T1& _value ) const
+        bool Bound<T1, T2>::operator ==( const T1& _a ) const
         {
-            return mLimit != NULL && (*mLimit) == _value;
+            return mLimit != NULL && (*mLimit) == _a;
         }
         
         template<typename T1, typename T2>
-        bool Bound<T1, T2>::operator >( const T1& _value ) const
-        {
-            if( mLimit == NULL )
-                return mType == UPPER;
-            return (*mLimit) > _value;
-        }
-        
-        template<typename T1, typename T2>
-        bool Bound<T1, T2>::operator <( const T1& _value ) const
-        {
-            if( mLimit == NULL )
-                return mType == LOWER;
-            return (*mLimit) < _value;
-        }
-        
-        template<typename T1, typename T2>
-        bool Bound<T1, T2>::operator >=( const T1& _value ) const
+        bool Bound<T1, T2>::operator >( const T1& _a ) const
         {
             if( mLimit == NULL )
                 return mType == UPPER;
-            return (*mLimit) >= _value;
+            return (*mLimit) > _a;
         }
         
         template<typename T1, typename T2>
-        bool Bound<T1, T2>::operator <=( const T1& _value ) const
+        bool Bound<T1, T2>::operator <( const T1& _a ) const
         {
             if( mLimit == NULL )
                 return mType == LOWER;
-            return (*mLimit) <= _value;
+            return (*mLimit) < _a;
+        }
+        
+        template<typename T1, typename T2>
+        bool Bound<T1, T2>::operator >=( const T1& _a ) const
+        {
+            if( mLimit == NULL )
+                return mType == UPPER;
+            return (*mLimit) >= _a;
+        }
+        
+        template<typename T1, typename T2>
+        bool Bound<T1, T2>::operator <=( const T1& _a ) const
+        {
+            if( mLimit == NULL )
+                return mType == LOWER;
+            return (*mLimit) <= _a;
         }
 
-        /**
-         *
-         * @return
-         */
         template<typename T1, typename T2>
         const std::string Bound<T1, T2>::toString() const
         {
@@ -434,12 +233,6 @@ namespace smtrat
             }
         }
 
-        /**
-         *
-         * @param _ostream
-         * @param _bound
-         * @return
-         */
         template<typename T3, typename T4>
         std::ostream& operator <<( std::ostream& _ostream, const Bound<T3, T4>& _bound )
         {
@@ -447,10 +240,6 @@ namespace smtrat
             return _ostream;
         }
 
-        /**
-         *
-         * @param _out
-         */
         template<typename T1, typename T2>
         void Bound<T1, T2>::print( bool _withOrigins, std::ostream& _out, bool _printType ) const
         {
@@ -511,5 +300,3 @@ namespace smtrat
 
     }    // end namspace lra
 }    // end namspace smtrat
-
-#endif   /* LRA_BOUND_H */
