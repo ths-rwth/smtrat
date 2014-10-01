@@ -2026,7 +2026,7 @@ NextClause:
                 }
             }
         }
-        if( addedConstraint == NULL )
+        if( varToSubstitute == carl::Variable::NO_VARIABLE || !ok )
             return;
         // Apply the found substitution
         assert( mVarReplacements.find( varToSubstitute ) == mVarReplacements.end() );

@@ -26,8 +26,7 @@
  * Created on November 14th, 2012
  */
 
-#ifndef LRA_TABLEAU_H
-#define LRA_TABLEAU_H
+#pragma once
 
 #include <vector>
 #include <stack>
@@ -48,7 +47,7 @@
 #endif
 //#define LRA_GOMORY_CUTS
 #ifndef LRA_GOMORY_CUTS
-//#define LRA_CUTS_FROM_PROOFS
+#define LRA_CUTS_FROM_PROOFS
 #ifdef LRA_CUTS_FROM_PROOFS
 //#define LRA_DEBUG_CUTS_FROM_PROOFS
 #endif
@@ -80,14 +79,8 @@ namespace smtrat
                     mColumnVar( NULL ),
                     mpContent()
                 {}
-                ;
-                TableauEntry( EntryID _up,
-                              EntryID _down,
-                              EntryID _left,
-                              EntryID _right,
-                              Variable<T1, T2>* _rowVar,
-                              Variable<T1, T2>* _columnVar,
-                              const T2& _content ):
+                    
+                TableauEntry( EntryID _up, EntryID _down, EntryID _left, EntryID _right, Variable<T1, T2>* _rowVar, Variable<T1, T2>* _columnVar, const T2& _content ):
                     mUp( _up ),
                     mDown( _down ),
                     mLeft( _left ),
@@ -96,7 +89,7 @@ namespace smtrat
                     mColumnVar( _columnVar ),
                     mpContent( _content )
                 {}
-                ;
+                
                 TableauEntry( const TableauEntry& _entry ):
                     mUp( _entry.mUp ),
                     mDown( _entry.mDown ),
@@ -106,10 +99,9 @@ namespace smtrat
                     mColumnVar( _entry.mColumnVar ),
                     mpContent( _entry.mpContent )
                 {}
-                ;
+                
                 ~TableauEntry()
                 {}
-                ;
                 
                 void setVNext( bool downwards, const EntryID _entryId )
                 {
@@ -180,26 +172,26 @@ namespace smtrat
             public:
                 struct LearnedBound
                 {
-                    const Bound<T1, T2>*               newBound;
-                    const Bound<T1, T2>*               nextWeakerBound;
+                    const Bound<T1, T2>* newBound;
+                    const Bound<T1, T2>* nextWeakerBound;
                     std::vector< const Bound<T1, T2>*> premise;
                 };
             private:
-                bool                            mRowsCompressed;
-                size_t                          mWidth;
-                size_t                          mPivotingSteps;
+                bool mRowsCompressed;
+                size_t mWidth;
+                size_t mPivotingSteps;
                 #ifdef LRA_USE_PIVOTING_STRATEGY
-                size_t                          mMaxPivotsWithoutBlandsRule;
+                size_t mMaxPivotsWithoutBlandsRule;
                 #endif
                 std::list<const smtrat::Formula*>::iterator mDefaultBoundPosition;
-                std::stack<EntryID>             mUnusedIDs;
-                std::vector<Variable<T1,T2>*>   mRows;       // First element is the head of the row and the second the length of the row.
-                std::vector<Variable<T1,T2>*>   mColumns;    // First element is the end of the column and the second the length of the column.
+                std::stack<EntryID> mUnusedIDs;
+                std::vector<Variable<T1,T2>*> mRows;       // First element is the head of the row and the second the length of the row.
+                std::vector<Variable<T1,T2>*> mColumns;    // First element is the end of the column and the second the length of the column.
                 std::list<std::list<std::pair<Variable<T1,T2>*,T2>>> mNonActiveBasics;
                 std::vector<TableauEntry<T1,T2> >* mpEntries;
-                std::vector<Variable<T1,T2>*>   mConflictingRows;
-                Value<T1>*                      mpTheta;
-                std::map<carl::Variable, Variable<T1,T2>*>  mOriginalVars;
+                std::vector<Variable<T1,T2>*> mConflictingRows;
+                Value<T1>* mpTheta;
+                std::map<carl::Variable, Variable<T1,T2>*> mOriginalVars;
                 FastPointerMap<Polynomial, Variable<T1,T2>*> mSlackVars;
                 FastPointerMap<Formula, std::vector<const Bound<T1, T2>*>*> mConstraintToBound;
                 #ifdef LRA_REFINEMENT
@@ -211,7 +203,7 @@ namespace smtrat
                 class Iterator
                 {
                     private:
-                        EntryID                            mEntryID;
+                        EntryID mEntryID;
                         std::vector<TableauEntry<T1,T2> >* mpEntries;
 
                     public:
@@ -219,12 +211,11 @@ namespace smtrat
                             mEntryID( _start ),
                             mpEntries( _entries )
                         {}
-                        ;
+                            
                         Iterator( const Iterator& _iter ):
                             mEntryID( _iter.entryID() ),
                             mpEntries( _iter.pEntries() )
                         {}
-                        ;
 
                         EntryID entryID() const
                         {
@@ -361,61 +352,396 @@ namespace smtrat
                     return mDefaultBoundPosition;
                 }
 
-                EntryID newTableauEntry( const T2& );
-                void removeEntry( EntryID );
-                std::pair<const Bound<T1,T2>*, bool> newBound( const smtrat::Formula* );
-                void activateBound( const Bound<T1,T2>*, const PointerSet<Formula>& );
-                Variable<T1, T2>* newNonbasicVariable( const smtrat::Polynomial*, bool );
-                Variable<T1, T2>* newBasicVariable( const smtrat::Polynomial*, std::map<carl::Variable, Variable<T1, T2>*>&, bool );
-                void activateBasicVar( Variable<T1, T2>* );
-                void deactivateBasicVar( Variable<T1, T2>* );
+                /**
+                 * 
+                 * @param _content
+                 * @return 
+                 */
+                EntryID newTableauEntry( const T2& _content );
+                
+                /**
+                 * 
+                 * @param _entryID
+                 */
+                void removeEntry( EntryID _entryID );
+                
+                /**
+                 * 
+                 * @param _constraint
+                 * @return 
+                 */
+                std::pair<const Bound<T1,T2>*, bool> newBound( const smtrat::Formula* _constraint );
+                
+                /**
+                 * 
+                 * @param _bound
+                 * @param _formulas
+                 */
+                void activateBound( const Bound<T1,T2>* _bound, const PointerSet<Formula>& _formulas );
+                
+                /**
+                 * 
+                 * @param _poly
+                 * @param _isInteger
+                 * @return 
+                 */
+                Variable<T1, T2>* newNonbasicVariable( const smtrat::Polynomial* _poly, bool _isInteger );
+                
+                /**
+                 * 
+                 * @param _poly
+                 * @param _originalVars
+                 * @param _isInteger
+                 * @return 
+                 */
+                Variable<T1, T2>* newBasicVariable( const smtrat::Polynomial* _poly, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars, bool _isInteger );
+                
+                /**
+                 * 
+                 * @param _var
+                 */
+                void activateBasicVar( Variable<T1, T2>* _var );
+                
+                /**
+                 * 
+                 * @param _var
+                 */
+                void deactivateBasicVar( Variable<T1, T2>* _var );
+                
+                /**
+                 * 
+                 */
                 void storeAssignment();
+                
+                /**
+                 * 
+                 */
                 void resetAssignment();
+                
+                /**
+                 * 
+                 * @return 
+                 */
                 smtrat::EvalRationalMap getRationalAssignment() const;
+                
+                /**
+                 * 
+                 */
                 void compressRows();
-                void deactivateBound( const Bound<T1, T2>* );
+                
+                /**
+                 * 
+                 * @return 
+                 */
                 std::pair<EntryID, bool> nextPivotingElement();
-                std::pair<EntryID, bool> isSuitable( const Variable<T1, T2>&, bool ) const;
-                bool betterEntry( EntryID, EntryID ) const;
-                std::vector< const Bound<T1, T2>* > getConflict( EntryID ) const;
-                std::vector< std::set< const Bound<T1, T2>* > > getConflictsFrom( EntryID ) const;
-                void updateBasicAssignments( size_t, const Value<T1>& );
-                Variable<T1, T2>* pivot( EntryID, bool = true );
-                void update( bool downwards, EntryID, std::vector<Iterator>&, std::vector<Iterator>&, bool = true );
-                void addToEntry( const T2&, Iterator&, bool, Iterator&, bool );
+                
+                /**
+                 * 
+                 * @param _basicVar
+                 * @param supremumViolated
+                 * @return 
+                 */
+                std::pair<EntryID, bool> isSuitable( const Variable<T1, T2>& _basicVar, bool supremumViolated ) const;
+                
+                /**
+                 * 
+                 * @param _isBetter
+                 * @param _than
+                 * @return 
+                 */
+                bool betterEntry( EntryID _isBetter, EntryID _than ) const;
+                
+                /**
+                 * 
+                 * @param _rowEntry
+                 * @return 
+                 */
+                std::vector< const Bound<T1, T2>* > getConflict( EntryID _rowEntry ) const;
+                
+                /**
+                 * 
+                 * @param _rowEntry
+                 * @return 
+                 */
+                std::vector< std::set< const Bound<T1, T2>* > > getConflictsFrom( EntryID _rowEntry ) const;
+                
+                /**
+                 * 
+                 * @param _column
+                 * @param _change
+                 */
+                void updateBasicAssignments( size_t _column, const Value<T1>& _change );
+                
+                /**
+                 * 
+                 * @param _pivotingElement
+                 * @param updateAssignments
+                 * @return 
+                 */
+                Variable<T1, T2>* pivot( EntryID _pivotingElement, bool updateAssignments = true );
+                
+                /**
+                 * Updates the tableau according to the new values in the pivoting row containing the given pivoting element. The updating is
+                 * applied from the pivoting row downwards, if the given flag _downwards is true, and upwards, otherwise.
+                 * 
+                 * @param _downwards The flag indicating whether to update the tableau downwards or upwards starting from the pivoting row.
+                 * @param _pivotingElement The id of the current pivoting element.
+                 * @param _pivotingRowLeftSide For every element in the pivoting row, which is positioned left of the pivoting element, this 
+                 *                              vector contains an iterator. The closer the element is to the pivoting element, the smaller is the 
+                 *                              iterator's index in the vector.
+                 * @param _pivotingRowRightSide For every element in the pivoting row, which is positioned right of the pivoting element, this 
+                 *                              vector contains an iterator. The closer the element is to the pivoting element, the smaller is the 
+                 *                              iterator's index in the vector.
+                 * @param _updateAssignments If true, the assignments of all variables will be updated after pivoting.
+                 */
+                void update( bool _downwards, EntryID _pivotingElement, std::vector<Iterator>& _pivotingRowLeftSide, std::vector<Iterator>& _pivotingRowRightSide, bool = true );
+                
+                /**
+                 * Adds the given value to the entry being at the position (i,j), where i is the vertical position of the given horizontal 
+                 * iterator and j is the horizontal position of the given vertical iterator. Note, that the entry might not exist, if its
+                 * current value is 0. Then the horizontal iterator is located horizontally before or after the entry to change and the 
+                 * vertical iterator is located vertically before or after the entry to add.
+                 * 
+                 * @param _toAdd The value to add to the content of the entry specified by the given iterators and their relative position
+                 *                to each other.
+                 * @param _horiIter The iterator moving horizontally and, hence, giving the vertical position of the entry to add the given value to.
+                 * @param _horiIterLeftFromVertIter true, if the horizontally moving iterator is left from or equal to the horizontal position of the
+                 *                                         iterator moving vertically, and, hence, left from or equal to the position of the entry to add
+                 *                                         the given value to;
+                 *                                   false, it is right or equal to this position.
+                 * @param _vertIter The iterator moving vertically and, hence, giving the horizontal position of the entry to add the given value to.
+                 * @param _vertIterBelowHoriIter true, if the vertically moving iterator is below or exactly at the vertical position of the
+                 *                                      iterator moving horizontally, and, hence, below or exactly at the position of the entry to add
+                 *                                      the given value to;
+                 *                                false, it is above or equal to this position.
+                 * @sideeffect If the entry existed (!=0) and is removed because of becoming 0, the iterators are set according to the given relative
+                 *               positioning.
+                 */
+                void addToEntry( const T2& _toAdd, Iterator& _horiIter, bool _horiIterLeftFromVertIter, Iterator& _vertIter, bool _vertIterBelowHoriIter );
+                
                 #ifdef LRA_REFINEMENT
-                void rowRefinement( Variable<T1, T2>* );
+                /**
+                 * Tries to refine the supremum and infimum of the given basic variable. 
+                 * @param _basicVar The basic variable for which to refine the supremum and infimum.
+                 */
+                void rowRefinement( Variable<T1, T2>* _basicVar );
                 #endif
-                typename std::map<carl::Variable, Variable<T1, T2>*>::iterator substitute( carl::Variable::Arg, const smtrat::Polynomial& );
-                size_t boundedVariables( const Variable<T1,T2>&, size_t = 0 ) const;
-                size_t unboundedVariables( const Variable<T1,T2>&, size_t = 0 ) const;
+
+                /**
+                 * 
+                 * @param _var
+                 * @param _term
+                 * @return 
+                 */
+                typename std::map<carl::Variable, Variable<T1, T2>*>::iterator substitute( carl::Variable::Arg _var, const smtrat::Polynomial& _term );
+                
+                /**
+                 * 
+                 * @param _var
+                 * @param _stopCriterium
+                 * @return 
+                 */
+                size_t boundedVariables( const Variable<T1,T2>& _var, size_t _stopCriterium = 0 ) const;
+                
+                /**
+                 * 
+                 * @param _var
+                 * @param _stopCriterium
+                 * @return 
+                 */
+                size_t unboundedVariables( const Variable<T1,T2>& _var, size_t _stopCriterium = 0 ) const;
+                
+                /**
+                 * 
+                 * @return 
+                 */
                 size_t checkCorrectness() const;
+                
+                /**
+                 * 
+                 * @param _rowNumber
+                 * @return 
+                 */
                 bool rowCorrect( size_t _rowNumber ) const;
+                
                 #ifdef LRA_CUTS_FROM_PROOFS
-                const smtrat::Constraint* isDefining( size_t, T2& ) const;
-                bool isDefining_Easy( std::vector<size_t>&, size_t );
-                bool isDiagonal( size_t, std::vector<size_t>& );
-                size_t position_DC( size_t, std::vector<size_t>& );
-                size_t revert_diagonals( size_t, std::vector<size_t>& );
-                void invertColumn( size_t );
-                void addColumns( size_t, size_t, T2 );
-                void multiplyRow( size_t, T2 );
-                std::pair< const Variable<T1,T2>*, T2 > Scalar_Product( Tableau<T1,T2>&, Tableau<T1,T2>&, size_t, size_t, std::vector<size_t>&, std::vector<size_t>& );
-                void calculate_hermite_normalform( std::vector<size_t>&, bool& );
-                void invert_HNF_Matrix( std::vector<size_t>& );
-                smtrat::Polynomial* create_cut_from_proof( Tableau<T1,T2>&, Tableau<T1,T2>&, size_t, std::vector<size_t>&, std::vector<size_t>&, T2&, T2& );
+                /**
+                 * Checks whether a constraint is a defining constraint. 
+                 * @param row_index
+                 * @param max_value
+                 * @return true, if the constraint is a defining constraint
+                 *         false, otherwise   
+                 */
+                const smtrat::Constraint* isDefining( size_t row_index, T2& max_value ) const;
+                
+                /**
+                 * Checks whether the row with index row_index is defining. 
+                 * @param dc_positions
+                 * @param row_index
+                 * @return true, if so
+                 *         false, otherwise   
+                 */ 
+                bool isDefining_Easy( std::vector<size_t>& dc_positions, size_t row_index );
+                
+                /**
+                 * Checks whether the column with index column_index is a diagonal column.
+                 * @param column_index
+                 * @param diagonals
+                 * @return true, if the column with index column_index is a diagonal column
+                 *         false, otherwise   
+                 */        
+                bool isDiagonal( size_t column_index, std::vector<size_t>& diagonals );
+                
+                /**
+                 * @param row_index
+                 * @param dc_positions
+                 * @return The row of the defining constraint with index row_index in the Tableau containing this DC.
+                 */ 
+                size_t position_DC( size_t row_index, std::vector<size_t>& dc_positions );
+                
+                /**
+                 * @param column_index
+                 * @param diagonals
+                 * @return The the actual index of the column with index column_index in the permutated tableau.   
+                 */   
+                size_t revert_diagonals( size_t column_index, std::vector<size_t>& diagonals );
+                
+                /**
+                 * Multiplies all entries in the column with the index column_index by (-1).
+                 * @param column_index
+                 */     
+                void invertColumn( size_t column_index );
+                
+                /**
+                 * Adds the column with index columnB_index multiplied by multiple to the column with index columnA_index.
+                 * @param columnA_index
+                 * @param columnB_index
+                 * @param multiple
+                 */
+                void addColumns( size_t columnA_index, size_t columnB_index, T2 multiple );
+                
+                /**
+                 * Multiplies the row with index row_index by multiple.
+                 * @param row_index
+                 * @param multiple
+                 */        
+                void multiplyRow( size_t row_index, T2 multiple );
+                
+                /**
+                 * Calculates the scalar product of the row with index rowA from Tableau A with the column
+                 * with index columnB from Tableau B considering that the columns in B are permutated.
+                 * @param A
+                 * @param B
+                 * @param rowA
+                 * @param columnB
+                 * @param diagonals
+                 * @param dc_positions 
+                 * @return the value (T) of the scalar product.
+                 */        
+                std::pair< const Variable<T1,T2>*, T2 > Scalar_Product( Tableau<T1,T2>& A, Tableau<T1,T2>& B, size_t rowA, size_t columnB, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions );
+                
+                /**
+                 * Calculate the Hermite normal form of the calling Tableau. 
+                 * @param diagonals
+                 * @param full_rank
+                 * @return The vector containing the indices of the diagonal elements.
+                 */
+                void calculate_hermite_normalform( std::vector<size_t>& diagonals, bool& full_rank );
+                
+                /**
+                 * Inverts the HNF matrix.
+                 * @param diagonals
+                 */
+                void invert_HNF_Matrix( std::vector<size_t>& diagonals );
+                
+                /**
+                 * Checks whether a cut from proof can be constructed with the row with index row_index in the DC_Tableau. 
+                 * @param Inverted_Tableau
+                 * @param DC_Tableau
+                 * @param row_index
+                 * @param diagonals
+                 * @param dc_positions
+                 * @param lower
+                 * @param max_value
+                 * @return the valid proof,    if the proof can be constructed.
+                 *         NULL,               otherwise.   
+                 */
+                smtrat::Polynomial* create_cut_from_proof( Tableau<T1,T2>& Inverted_Tableau, Tableau<T1,T2>& DC_Tableau, size_t row_index, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions, T2& lower, T2& max_value );
                 #endif
-                const smtrat::Formula* gomoryCut( const T2&, Variable<T1, T2>* );
-                size_t getNumberOfEntries( Variable<T1,T2>* );
-                void collect_premises( const Variable<T1,T2>*, PointerSet<Formula>&  );
-                void printHeap( std::ostream& = std::cout, int = 30, const std::string = "" ) const;
-                void printEntry( EntryID, std::ostream& = std::cout, int = 20 ) const;
-                void printVariables( bool = true, std::ostream& = std::cout, const std::string = "" ) const;
+
+                /**
+                 * Creates a constraint referring to Gomory Cuts, if possible. 
+                 * @param _ass
+                 * @param _rowVar
+                 * @return NULL,    if the cut can´t be constructed;
+                 *         otherwise the valid constraint is returned.   
+                 */
+                const smtrat::Formula* gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar );
+                
+                /**
+                 * @param _rowVar
+                 * @return number of entries in the row belonging to _rowVar
+                 */
+                size_t getNumberOfEntries( Variable<T1,T2>* _rowVar );
+                
+                /**
+                 * Collects the premises for branch and bound and stores them in premises.  
+                 * @param _rowVar
+                 * @param premises
+                 */
+                void collect_premises( const Variable<T1,T2>* _rowVar, PointerSet<Formula>& premises );
+                
+                /**
+                 * 
+                 * @param _out
+                 * @param _maxEntryLength
+                 * @param _init
+                 */
+                void printHeap( std::ostream& _out = std::cout, int _maxEntryLength = 30, const std::string  _init = "" ) const;
+
+                /**
+                 * 
+                 * @param _entry
+                 * @param _out
+                 * @param _maxEntryLength
+                 */
+                void printEntry( EntryID _entry, std::ostream& _out = std::cout, int _maxEntryLength = 20 ) const;
+
+                /**
+                 * 
+                 * @param _allBounds
+                 * @param _out
+                 * @param _init
+                 */
+                void printVariables( bool _allBounds = true, std::ostream& _out = std::cout, const std::string _init = "" ) const;
+                
                 #ifdef LRA_REFINEMENT
-                void printLearnedBounds( const std::string = "", std::ostream& = std::cout ) const;
-                void printLearnedBound( const Variable<T1,T2>&, const LearnedBound&, const std::string = "", std::ostream& = std::cout ) const;
+                /**
+                 * 
+                 * @param _init
+                 * @param _out
+                 */
+                void printLearnedBounds( const std::string _init = "", std::ostream& _out = std::cout ) const;
+ 
+                /**
+                 * 
+                 * @param _var
+                 * @param _learnedBound
+                 * @param _init
+                 * @param _out
+                 */
+                void printLearnedBound( const Variable<T1,T2>& _var, const LearnedBound& _learnedBound, const std::string _init = "", std::ostream& _out = std::cout ) const;
                 #endif
-                void print( EntryID = LAST_ENTRY_ID, std::ostream& = std::cout, const std::string = "", bool = true, bool = false ) const;
+                
+                /**
+                 * 
+                 * @param _pivotingElement
+                 * @param _out
+                 * @param _init
+                 * @param _friendlyNames
+                 * @param _withZeroColumns
+                 */
+                void print( EntryID _pivotingElement = LAST_ENTRY_ID, std::ostream& _out = std::cout, const std::string _init = "", bool _friendlyNames = true, bool _withZeroColumns = false ) const;
 
         };
 
@@ -478,10 +804,6 @@ namespace smtrat
             delete mpTheta;
         };
 
-        /**
-         *
-         * @return
-         */
         template<typename T1, typename T2>
         EntryID Tableau<T1,T2>::newTableauEntry( const T2& _content )
         {
@@ -499,10 +821,6 @@ namespace smtrat
             }
         }
 
-        /**
-         *
-         * @param _entryID
-         */
         template<typename T1, typename T2>
         void Tableau<T1,T2>::removeEntry( EntryID _entryID )
         {
@@ -734,24 +1052,14 @@ namespace smtrat
             return result;
         }
         
-        /**
-         *
-         * @param _ex
-         * @return
-         */
         template<typename T1, typename T2>
         Variable<T1, T2>* Tableau<T1,T2>::newNonbasicVariable( const smtrat::Polynomial* _poly, bool _isInteger )
         {
-            Variable<T1, T2>* var = new Variable<T1, T2>( mWidth++, _poly, mDefaultBoundPosition,_isInteger );
+            Variable<T1, T2>* var = new Variable<T1, T2>( mWidth++, _poly, mDefaultBoundPosition, _isInteger );
             mColumns.push_back( var );
             return var;
         }
 
-        /**
-         *
-         * @param _poly
-         * @return
-         */
         template<typename T1, typename T2>
         Variable<T1, T2>* Tableau<T1,T2>::newBasicVariable( const smtrat::Polynomial* _poly, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars, bool _isInteger )
         {
@@ -779,10 +1087,6 @@ namespace smtrat
             return var;
         }
         
-        /**
-         * 
-         * @param _var
-         */
         template<typename T1, typename T2>
         void Tableau<T1,T2>::activateBasicVar( Variable<T1, T2>* _var )
         {
@@ -924,10 +1228,6 @@ namespace smtrat
             assert( checkCorrectness() == mRows.size() );
         }
         
-        /**
-         * 
-         * @param 
-         */
         template<typename T1, typename T2>
         void Tableau<T1,T2>::deactivateBasicVar( Variable<T1, T2>* _var )
         {
@@ -976,10 +1276,6 @@ namespace smtrat
             mRowsCompressed = false;
         }
         
-        /**
-         *
-         * @return
-         */
         template<typename T1, typename T2>
         void Tableau<T1,T2>::storeAssignment()
         {
@@ -989,10 +1285,6 @@ namespace smtrat
                 nonbasicVar->storeAssignment();
         }
         
-        /**
-         *
-         * @return
-         */
         template<typename T1, typename T2>
         void Tableau<T1,T2>::resetAssignment()
         {
@@ -1002,11 +1294,6 @@ namespace smtrat
                 nonbasicVar->resetAssignment();
         }
         
-        
-        /**
-         *
-         * @return
-         */
         template<typename T1, typename T2>
         smtrat::EvalRationalMap Tableau<T1,T2>::getRationalAssignment() const
         {
@@ -1083,10 +1370,6 @@ namespace smtrat
             return result;
         }
         
-        /**
-         *
-         * @return
-         */
         template<typename T1, typename T2>
         void Tableau<T1,T2>::compressRows()
         {
@@ -1113,10 +1396,6 @@ namespace smtrat
             mRowsCompressed = true;
         }
 
-        /**
-         *
-         * @return
-         */
         template<typename T1, typename T2>
         std::pair<EntryID,bool> Tableau<T1,T2>::nextPivotingElement()
         {
@@ -1124,9 +1403,9 @@ namespace smtrat
             //  Dynamic strategy for a fixed number of steps
             if( mPivotingSteps < mMaxPivotsWithoutBlandsRule )
             {
-#ifdef LRA_LOCAL_CONFLICT_DIRECTED
-FindPivot:
-#endif
+            #ifdef LRA_LOCAL_CONFLICT_DIRECTED
+            FindPivot:
+            #endif
                 EntryID bestTableauEntry = LAST_ENTRY_ID;
                 EntryID beginOfFirstConflictRow = LAST_ENTRY_ID;
                 Value<T1> bestDiff = Value<T1>( 0 );
@@ -1334,10 +1613,6 @@ FindPivot:
             #endif
         }
 
-        /**
-         * @param _rowNumber
-         * @return
-         */
         template<typename T1, typename T2>
         std::pair<EntryID,bool> Tableau<T1,T2>::isSuitable( const Variable<T1, T2>& _basicVar, bool supremumViolated ) const
         {
@@ -1482,11 +1757,6 @@ FindPivot:
             return false;
         }
 
-        /**
-         *
-         * @param _startRow
-         * @return
-         */
         template<typename T1, typename T2>
         std::vector< const Bound<T1, T2>* > Tableau<T1,T2>::getConflict( EntryID _rowEntry ) const
         {
@@ -1575,11 +1845,6 @@ FindPivot:
             return conflict;
         }
 
-        /**
-         *
-         * @param _startRow
-         * @return
-         */
         template<typename T1, typename T2>
         std::vector< std::set< const Bound<T1, T2>* > > Tableau<T1,T2>::getConflictsFrom( EntryID _rowEntry ) const
         {
@@ -1694,11 +1959,6 @@ FindPivot:
             return conflicts;
         }
 
-        /**
-         *
-         * @param _column
-         * @param _change
-         */
         template<typename T1, typename T2>
         void Tableau<T1,T2>::updateBasicAssignments( size_t _column, const Value<T1>& _change )
         {
@@ -1726,12 +1986,6 @@ FindPivot:
             }
         }
 
-        
-
-        /**
-         *
-         * @param _pivotingElement
-         */
         template<typename T1, typename T2>
         Variable<T1, T2>* Tableau<T1,T2>::pivot( EntryID _pivotingElement, bool updateAssignments )
         {
@@ -1870,19 +2124,6 @@ FindPivot:
             return columnVar;
         }
 
-        /**
-         * Updates the tableau according to the new values in the pivoting row containing the given pivoting element. The updating is
-         * applied from the pivoting row downwards, if the given flag _downwards is true, and upwards, otherwise.
-         * 
-         * @param _downwards The flag indicating whether to update the tableau downwards or upwards starting from the pivoting row.
-         * @param _pivotingElement The id of the current pivoting element.
-         * @param _pivotingRowLeftSide For every element in the pivoting row, which is positioned left of the pivoting element, this 
-         *                              vector contains an iterator. The closer the element is to the pivoting element, the smaller is the 
-         *                              iterator's index in the vector.
-         * @param _pivotingRowRightSide For every element in the pivoting row, which is positioned right of the pivoting element, this 
-         *                              vector contains an iterator. The closer the element is to the pivoting element, the smaller is the 
-         *                              iterator's index in the vector.
-         */
         template<typename T1, typename T2>
         void Tableau<T1,T2>::update( bool _downwards, EntryID _pivotingElement, std::vector<Iterator>& _pivotingRowLeftSide, std::vector<Iterator>& _pivotingRowRightSide, bool _updateAssignments )
         {
@@ -2008,27 +2249,6 @@ FindPivot:
             }
         }
         
-        /**
-         * Adds the given value to the entry being at the position (i,j), where i is the vertical position of the given horizontal 
-         * iterator and j is the horizontal position of the given vertical iterator. Note, that the entry might not exist, if its
-         * current value is 0. Then the horizontal iterator is located horizontally before or after the entry to change and the 
-         * vertical iterator is located vertically before or after the entry to add.
-         * 
-         * @param _toAdd The value to add to the content of the entry specified by the given iterators and their relative position
-         *                to each other.
-         * @param _horiIter The iterator moving horizontally and, hence, giving the vertical position of the entry to add the given value to.
-         * @param _horiIterLeftFromVertIter true, if the horizontally moving iterator is left from or equal to the horizontal position of the
-         *                                         iterator moving vertically, and, hence, left from or equal to the position of the entry to add
-         *                                         the given value to;
-         *                                   false, it is right or equal to this position.
-         * @param _vertIter The iterator moving vertically and, hence, giving the horizontal position of the entry to add the given value to.
-         * @param _vertIterBelowHoriIter true, if the vertically moving iterator is below or exactly at the vertical position of the
-         *                                      iterator moving horizontally, and, hence, below or exactly at the position of the entry to add
-         *                                      the given value to;
-         *                                false, it is above or equal to this position.
-         * @sideeffect If the entry existed (!=0) and is removed because of becoming 0, the iterators are set according to the given relative
-         *               positioning.
-         */
         template<typename T1, typename T2>
         void Tableau<T1,T2>::addToEntry( const T2& _toAdd, Iterator& _horiIter, bool _horiIterLeftFromVertIter, Iterator& _vertIter, bool _vertIterBelowHoriIter )
         {
@@ -2109,16 +2329,10 @@ FindPivot:
         }
 
         #ifdef LRA_REFINEMENT
-        /**
-         * Tries to refine the supremum and infimum of the given basic variable. 
-         * @param _basicVar The basic variable for which to refine the supremum and infimum.
-         */
         template<typename T1, typename T2>
         void Tableau<T1,T2>::rowRefinement( Variable<T1,T2>* _basicVar )
         {
-            /*
-             * Collect the bounds which form an upper resp. lower refinement.
-             */
+            // Collect the bounds which form an upper resp. lower refinement.
             const Variable<T1,T2>& basicVar = *_basicVar; 
             if( basicVar.size() > 128 ) return;
             std::vector<const Bound<T1, T2>*>* uPremise = new std::vector<const Bound<T1, T2>*>();
@@ -2200,9 +2414,7 @@ FindPivot:
             }
             if( uPremise != NULL )
             {
-                /*
-                 * Found an upper refinement.
-                 */
+                // Found an upper refinement.
                 Value<T1>* newlimit = new Value<T1>();
                 typename std::vector< const Bound<T1, T2>* >::iterator bound = uPremise->begin();
                 Iterator rowEntry = Iterator( basicVar.startEntry(), mpEntries );
@@ -2213,9 +2425,7 @@ FindPivot:
                     if( !rowEntry.hEnd( false ) ) rowEntry.hMove( false );
                     else break;
                 }
-                /*
-                 * Learn that the strongest weaker upper bound should be activated.
-                 */
+                // Learn that the strongest weaker upper bound should be activated.
                 const typename Bound<T1, T2>::BoundSet& upperBounds = basicVar.upperbounds();
                 auto ubound = upperBounds.begin();
                 while( ubound != upperBounds.end() )
@@ -2291,9 +2501,7 @@ FindPivot:
     CheckLowerPremise:
             if( lPremise != NULL )
             {
-                /*
-                 * Found an lower refinement.
-                 */
+                // Found an lower refinement.
                 Value<T1>* newlimit = new Value<T1>();
                 typename std::vector< const Bound<T1, T2>* >::iterator bound = lPremise->begin();
                 Iterator rowEntry = Iterator( basicVar.startEntry(), mpEntries );
@@ -2304,9 +2512,7 @@ FindPivot:
                     if( !rowEntry.hEnd( false ) ) rowEntry.hMove( false );
                     else break;
                 }
-                /*
-                 * Learn that the strongest weaker lower bound should be activated.
-                 */
+                // Learn that the strongest weaker lower bound should be activated.
                 const typename Bound<T1, T2>::BoundSet& lowerBounds = basicVar.lowerbounds();
                 auto lbound = lowerBounds.rbegin();
                 while( lbound != lowerBounds.rend() )
@@ -2382,11 +2588,6 @@ FindPivot:
         }
         #endif
         
-        /**
-         * 
-         * @param _var
-         * @return 
-         */
         template<typename T1, typename T2>
         size_t Tableau<T1,T2>::unboundedVariables( const Variable<T1,T2>& _var, size_t _stopCriterium ) const
         {
@@ -2506,11 +2707,6 @@ FindPivot:
             return pos;
         }
         
-        /**
-         * 
-         * @param _var
-         * @return 
-         */
         template<typename T1, typename T2>
         size_t Tableau<T1,T2>::boundedVariables( const Variable<T1,T2>& _var, size_t _stopCriterium ) const
         {
@@ -2557,10 +2753,6 @@ FindPivot:
             }
         }
 
-        /**
-         *
-         * @return
-         */
         template<typename T1, typename T2>
         size_t Tableau<T1,T2>::checkCorrectness() const
         {
@@ -2572,10 +2764,6 @@ FindPivot:
             return rowNumber;
         }
 
-        /**
-         *
-         * @return
-         */
         template<typename T1, typename T2>
         bool Tableau<T1,T2>::rowCorrect( size_t _rowNumber ) const
         {
@@ -2606,12 +2794,6 @@ FindPivot:
         }
         
         #ifdef LRA_CUTS_FROM_PROOFS
-        /**
-         * Checks whether a constraint is a defining constraint. 
-         * 
-         * @return true,    if the constraint is a defining constraint
-         *         false,   otherwise   
-         */
         template<typename T1, typename T2>
         const smtrat::Constraint* Tableau<T1,T2>::isDefining( size_t row_index, T2& max_value ) const
         {
@@ -2663,13 +2845,6 @@ FindPivot:
             return NULL;
         }
         
-        /**
-         * Checks whether the row with index row_index 
-         * is defining. 
-         * 
-         * @return true,    if so
-         *         false,   otherwise   
-         */ 
         template<typename T1, typename T2>
         bool Tableau<T1,T2>::isDefining_Easy( std::vector<size_t>& dc_positions,size_t row_index )
         {
@@ -2684,33 +2859,21 @@ FindPivot:
             return false;
         }
         
-        /**
-         * Checks whether the column with index column_index 
-         * is a diagonal column. 
-         * 
-         * @return true,    if the column with index column_index is a diagonal column
-         *         false,   otherwise   
-         */        
         template<typename T1, typename T2>
         bool Tableau<T1,T2>::isDiagonal( size_t column_index , std::vector<size_t>& diagonals )
         {
-        size_t i=0;
-        while( diagonals.at(i) != mColumns.size() )
-        {
-            if( diagonals.at(i) == column_index )
+            size_t i=0;
+            while( diagonals.at(i) != mColumns.size() )
             {
-                return true;
+                if( diagonals.at(i) == column_index )
+                {
+                    return true;
+                }
+            ++i;    
             }
-        ++i;    
-        }
-        return false;            
+            return false;            
         }
         
-        /**
-         * Returns the row of the defining constraint with index row_index
-         * in the Tableau containing this DC.
-         * 
-         */ 
         template<typename T1, typename T2>
         size_t Tableau<T1,T2>::position_DC( size_t row_index,std::vector<size_t>& dc_positions )
         {
@@ -2728,12 +2891,8 @@ FindPivot:
             return mRows.size();
         }
         
-        /**
-         * Returns the the actual index of the column with
-         * index column_index in the permutated tableau.   
-         */        
         template<typename T1, typename T2>
-        size_t Tableau<T1,T2>::revert_diagonals( size_t column_index,std::vector<size_t>& diagonals )
+        size_t Tableau<T1,T2>::revert_diagonals( size_t column_index, std::vector<size_t>& diagonals )
         {
             size_t i=0;
             while(diagonals.at(i) != mColumns.size())   
@@ -2747,11 +2906,6 @@ FindPivot:
             return mColumns.size();
         }
         
-        /**
-         * Multiplies all entries in the column with the index column_index by (-1). 
-         * 
-         * @return   
-         */        
         template<typename T1, typename T2>
         void Tableau<T1,T2>::invertColumn( size_t column_index )
         {   
@@ -2769,13 +2923,7 @@ FindPivot:
                 }
             }        
         }
-        
-        /**
-         * Adds the column with index columnB_index multplied by multiple 
-         * to the column with index columnA_index.
-         * 
-         * @return 
-         */
+
         template<typename T1, typename T2>
         void Tableau<T1,T2>::addColumns( size_t columnA_index, size_t columnB_index, T2 multiple )
         {
@@ -2974,11 +3122,6 @@ FindPivot:
            }
         }
         
-        /**
-         * Multiplies the row with index row_index by multiple.
-         * 
-         * @return 
-         */        
         template<typename T1, typename T2> 
         void Tableau<T1,T2>::multiplyRow( size_t row_index,T2 multiple )
         {            
@@ -2999,12 +3142,6 @@ FindPivot:
             }
         }
         
-        /**
-         * Calculates the scalarproduct of the row with index rowA from Tableau A with the column
-         * with index columnB from Tableau B considering that the columns in B are permutated. 
-         * 
-         * @return   the value (T) of the scalarproduct.
-         */        
         template<typename T1, typename T2> 
         std::pair< const Variable<T1,T2>*, T2 > Tableau<T1,T2>::Scalar_Product( Tableau<T1,T2>& A, Tableau<T1,T2>& B,size_t rowA, size_t columnB,std::vector<size_t>& diagonals,std::vector<size_t>& dc_positions ) 
         {
@@ -3047,11 +3184,6 @@ FindPivot:
             return result;    
         }
         
-        /**
-         * Calculate the Hermite normal form of the calling Tableau. 
-         * 
-         * @return   the vector containing the indices of the diagonal elements.
-         */        
         template<typename T1, typename T2> 
         void Tableau<T1,T2>::calculate_hermite_normalform( std::vector<size_t>& diagonals, bool& full_rank )
         {
@@ -3293,11 +3425,6 @@ FindPivot:
             }  
         }     
         
-        /*
-         * Inverts the HNF matrix.
-         * 
-         * @return 
-         */
         template<typename T1, typename T2> 
         void Tableau<T1,T2>::invert_HNF_Matrix(std::vector<size_t>& diagonals)
         {
@@ -3390,13 +3517,6 @@ FindPivot:
             }
         }
         
-        /**
-         * Checks whether a cut from proof can be constructed with the row with index row_index
-         * in the DC_Tableau. 
-         * 
-         * @return the valid proof,    if the proof can be constructed.
-         *         NULL,               otherwise.   
-         */
         template<typename T1, typename T2>
         smtrat::Polynomial* Tableau<T1,T2>::create_cut_from_proof( Tableau<T1,T2>& Inverted_Tableau, Tableau<T1,T2>& DC_Tableau, size_t row_index, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions, T2& lower, T2& max_value )
         {
@@ -3498,12 +3618,6 @@ FindPivot:
             K_MINUS
         };
 
-        /**
-         * Creates a constraint referring to Gomory Cuts, if possible. 
-         * 
-         * @return NULL,    if the cut can´t be constructed;
-         *         otherwise the valid constraint is returned.   
-         */ 
         template<typename T1, typename T2>
         const smtrat::Formula* Tableau<T1,T2>::gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar )
         { 
@@ -3651,11 +3765,8 @@ FindPivot:
             return gomory_constr;
         }
 
-        /**
-         * @return number of entries in the row belonging to _rowVar  
-         */ 
         template<typename T1, typename T2>
-        size_t Tableau<T1,T2>::getNumberOfEntries(Variable<T1,T2>* _rowVar)
+        size_t Tableau<T1,T2>::getNumberOfEntries( Variable<T1,T2>* _rowVar )
         {
             size_t result = 0;
             Iterator row_iterator = Iterator( _rowVar->startEntry(), mpEntries );
@@ -3673,10 +3784,6 @@ FindPivot:
             }
         }
         
-        
-        /**
-         * Collects the premises for branch and bound and stores them in premises.  
-         */ 
         template<typename T1, typename T2>
         void Tableau<T1,T2>::collect_premises( const Variable<T1,T2>* _rowVar, PointerSet<Formula>& premises )
         {
@@ -3705,12 +3812,6 @@ FindPivot:
             }            
         }
 
-        /**
-         *
-         * @param _out
-         * @param _maxEntryLength
-         * @param _init
-         */
         template<typename T1, typename T2>
         void Tableau<T1,T2>::printHeap( std::ostream& _out, int _maxEntryLength, const std::string _init ) const
         {
@@ -3722,12 +3823,6 @@ FindPivot:
             }
         }
 
-        /**
-         *
-         * @param _out
-         * @param _entry
-         * @param _maxEntryLength
-         */
         template<typename T1, typename T2>
         void Tableau<T1,T2>::printEntry( EntryID _entry, std::ostream& _out, int _maxEntryLength ) const
         {
@@ -3761,11 +3856,6 @@ FindPivot:
             }
         }
 
-        /**
-         *
-         * @param _out
-         * @param _init
-         */
         template<typename T1, typename T2>
         void Tableau<T1,T2>::printVariables( bool _allBounds, std::ostream& _out, const std::string _init ) const
         {
@@ -3791,11 +3881,6 @@ FindPivot:
         }
 
         #ifdef LRA_REFINEMENT
-        /**
-         *
-         * @param _out
-         * @param _init
-         */
         template<typename T1, typename T2>
         void Tableau<T1,T2>::printLearnedBounds( const std::string _init, std::ostream& _out  ) const
         {
@@ -3833,11 +3918,6 @@ FindPivot:
         }
         #endif
 
-        /**
-         *
-         * @param _out
-         * @param _init
-         */
         template<typename T1, typename T2>
         void Tableau<T1,T2>::print( EntryID _pivotingElement, std::ostream& _out, const std::string _init, bool _friendlyNames, bool _withZeroColumns ) const
         {
@@ -4066,4 +4146,3 @@ FindPivot:
     }    // end namspace lra
 }    // end namspace smtrat
 
-#endif   /* LRA_TABLEAU_H */
