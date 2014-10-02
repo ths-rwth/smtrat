@@ -23,9 +23,6 @@ int main(int argc, char* argv[]) {
 	delta::Settings s(argv[0]);
 	if (!s.load(argc, argv)) return 1;
 	std::string input = s.as<std::string>("input-file");
-	std::string solver = s.as<std::string>("solver");
-	std::string temp = s.as<std::string>("temp-file");
-	unsigned timeout = s.as<unsigned>("timeout");
 
 	// Parse file.
 	delta::Node n;
@@ -34,14 +31,14 @@ int main(int argc, char* argv[]) {
 
 	// Initialize checker.
 	std::cout << "Calculating original exit code..." << std::endl;
-	delta::Checker c(solver, timeout, input);
+	delta::Checker c(s.as<std::string>("solver"), s.as<unsigned>("timeout"), input);
 	std::cout << BGREEN << "Original exit code is " << c.expectedCode() << END << std::endl;
 	if (s.has("verbose")) {
 		std::cout << "Original (" << n.complexity() << " nodes):" << std::endl << n << std::endl;
 	}
 
 	// Perform simplications.
-	delta::Producer producer(c, temp, s);
+	delta::Producer producer(c, s);
 	unsigned iterations = producer(n);
 
 	// Print result and store to file.
@@ -50,13 +47,11 @@ int main(int argc, char* argv[]) {
 	} else {
 		std::cout << std::endl << "Reduced from " << originalSize << " to " << n.complexity() << " nodes." << std::endl;
 	}
-	if (s.has("output-file")) {
-		std::string output = s.as<std::string>("output-file");
-		std::cout << "Writing to " << output << std::endl;
-		std::ofstream out(output);
-		out << n;
-		out.close();
-	}
+	std::string output = s.as<std::string>("output-file");
+	std::cout << "Writing to " << output << std::endl;
+	std::ofstream out(output);
+	out << n;
+	out.close();
 
 	std::cout << "This run took " << std::chrono::duration_cast<seconds>(Clock::now() - start).count() << " seconds for " << iterations << " iterations." << std::endl;
 	return 0;

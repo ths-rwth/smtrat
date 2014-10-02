@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <numeric>
 #include <iostream>
 #include <utility>
 #include <vector>
@@ -57,16 +58,30 @@ struct Node {
 	 */
 	explicit Node(const std::tuple<std::string, std::vector<Node>, bool>& data): name(std::get<0>(data)), children(std::get<1>(data)), brackets(std::get<2>(data)) {}
 
-	friend inline std::ostream& operator<<(std::ostream& out, const Node& n);
+	/**
+	 * Streaming operator.
+	 * This operator should output a representation that is syntactically identically to the one that was parsed.
+	 * @param os Output stream.
+	 * @param n Node.
+	 * @return `os`.
+	 */
+	friend inline std::ostream& operator<<(std::ostream& os, const Node& n) {
+		if (n.brackets) os << "(";
+		os << n.name;
+		for (auto c: n.children) {
+			if (n.name == "") os << c << std::endl;
+			else os << " " << c;
+		}
+		if (n.brackets) os << ")";
+		return os;
+	}
 	
 	/**
 	 * Calculates the number of nodes.
      * @return Number of nodes.
      */
 	unsigned complexity() const {
-		unsigned sum = 1;
-		for (auto c: children) sum += c.complexity();
-		return sum;
+		return std::accumulate(children.begin(), children.end(), (unsigned)1, [](unsigned a, const Node& b){ return a + b.complexity(); });
 	}
 	/**
 	 * Checks if this node is immutable.
@@ -97,7 +112,6 @@ struct Node {
      */
 	Node clone(const Node* from, const Node* to) const {
 		std::vector<Node> newChildren;
-		newChildren.reserve(children.size());
 		for (auto& c: children) {
 			if (&c == from) {
 				if (to != nullptr) newChildren.push_back(*to);
@@ -108,23 +122,5 @@ struct Node {
 		return Node(std::make_tuple(name, newChildren, brackets));
 	}
 };
-
-/**
- * Streaming operator.
- * This operator should output a representation that is syntactically identically to the one that was parsed.
- * @param os Output stream.
- * @param n Node.
- * @return `os`.
- */
-inline std::ostream& operator<<(std::ostream& os, const Node& n) {
-	if (n.brackets) os << "(";
-	os << n.name;
-	for (auto c: n.children) {
-		if (n.name == "") os << c << std::endl;
-		else os << " " << c;
-	}
-	if (n.brackets) os << ")";
-	return os;
-}
 
 }

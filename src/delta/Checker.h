@@ -64,6 +64,10 @@ public:
 		out.close();
 		return execute(temp) == expected;
 	}
+	/**
+	 * Return expected exit code.
+     * @return Expected exit code.
+     */
 	int expectedCode() const {
 		return expected;
 	}

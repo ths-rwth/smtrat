@@ -40,9 +40,10 @@ public:
 	 * @param checker Checker to call the solver.
 	 * @param settings Settings object.
 	 */
-	Producer(const Checker& checker, const std::string& temp, const Settings& settings):
-		consumer(temp, checker), settings(settings)
+	Producer(const Checker& checker, const Settings& settings):
+		consumer(settings.as<std::string>("temp-file"), checker), settings(settings)
 	{
+		if (!settings.has("no-constants")) operators.emplace_back(&constant, "Replaced variable ", " by constant ", ".");
 		if (!settings.has("no-children")) operators.emplace_back(&children, "Replaced ", " by child ", ".");
 		if (!settings.has("no-numbers")) operators.emplace_back(&number, "Replaced number ", " by ", ".");
 		verbose = settings.has("verbose");
@@ -51,12 +52,9 @@ public:
 	/**
 	 * Apply simplifications to the given node.
 	 * @param n Node to simplify.
-	 * @param useDFS Flag whether to use DFS or BFS.
 	 */
 	unsigned operator()(Node& root) {
-		unsigned iterations = 0;
-		while (true) {
-			iterations++;
+		for (unsigned i = 1; ; i++) {
 			consumer.reset();
 			progress(0, root.complexity());
 			if (settings.has("useDFS")) dfs(root, &root);
@@ -70,15 +68,17 @@ public:
 				std::cout << GREEN << "Success: " << r.second << END << std::endl;
 				std::cout << std::endl << BGREEN << "Simplified problem, starting over." << END << std::endl;
 			} else {
-				break;
+				std::cout << std::endl << BRED << "No further simplifications found." << END << std::endl;
+				return i;
 			}
 		}
-		std::cout << std::endl << BRED << "No further simplifications found." << END << std::endl;
-		return iterations;
 	}
-
 private:
-	
+	/**
+	 * Iterate over nodes using DFS.
+	 * @param root Root of nodes.
+	 * @param n Current node.
+	 */
 	void dfs(const Node& root, const Node* n) {
 		if (consumer.hasResult()) return;
 		progress();
@@ -88,7 +88,10 @@ private:
 			dfs(root, &child);
 		}
 	}
-	
+	/**
+	 * Iterate over nodes using BFS.
+	 * @param root Root of nodes.
+	 */
 	void bfs(const Node& root) {
 		std::queue<const Node*> q;
 		q.push(&root);

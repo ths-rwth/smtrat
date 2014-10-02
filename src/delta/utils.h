@@ -25,6 +25,8 @@ namespace delta {
 #define GRAY "\033[0;37m"
 /// Terminal code for default font.
 #define END "\033[0;39m"
+/// Terminal code to clear the previous line.
+#define CLEARLINE "\033[1F\033[1K"
 
 /**
  * This class generates and reuses temporary filenames with a common prefix.
@@ -81,18 +83,20 @@ public:
 	}
 };
 
+/**
+ * This class provides a simple way to show progress bars on the command line.
+ */
 class ProgressBar {
 private:
+	/// Current total.
 	unsigned total;
+	/// Current progress.
 	unsigned progress;
-	/// Terminal code to remove the previous line.
-	std::string clearline = "\033[1F\033[1K";
 public:
-	explicit ProgressBar(unsigned total = 0): total(total) {
-		if (total != 0) (*this)(0, total);
-	}
+	/**
+	 * Increase progress by one and show progress bar.
+     */
 	void operator()() {
-		assert(total != 0);
 		progress++;
 		(*this)(progress, total);
 	}
@@ -109,25 +113,38 @@ public:
 	 * @param total Total.
 	 */
 	void operator()(unsigned progress, unsigned total) {
+		assert(total != 0);
 		this->total = total;
 		this->progress = progress;
 		unsigned size = progress*30 / total;
 		if (size == ((progress-1)*30 / total)) return;
-		if (progress > 0) std::cout << clearline;
+		if (progress > 0) std::cout << CLEARLINE;
 		std::cout << "[" << std::string(size, '=') << std::string(30 - size, ' ') << "] (" << progress << " / " << total << ")" << std::endl;
 	}
 };
 
+/**
+ * This class can be used to create `std::string` objects using streaming operators.
+ */
 class String {
 private:
+	/// Internal buffer.
 	std::stringstream s;
 public:
-	String() {}
+	/**
+	 * Add some data to the string.
+     * @param t Data.
+     * @return `*this`
+     */
 	template<typename T>
 	String& operator<<(const T& t) {
 		s << t;
 		return *this;
 	}
+	/**
+	 * Return data as string.
+     * @return Data as string.
+     */
 	operator std::string() const {
 		return s.str();
     }

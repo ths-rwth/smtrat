@@ -47,9 +47,10 @@ public:
 		;
 		bpo::options_description operators("Node operators");
 		operators.add_options()
-			("no-removal", "Disable removal")
 			("no-children", "Disable replacement by children")
+			("no-constants", "Disable replacement by constants")
 			("no-numbers", "Disable simplification of numbers")
+			("no-removal", "Disable removal")
 		;
 		desc.add(finetuning).add(operators);
 		pd.add("input-file", 1);
@@ -62,9 +63,7 @@ public:
      * @return os.
      */
 	friend std::ostream& operator<<(std::ostream& os, const Settings& s) {
-		os << "Usage: " << s.executable << " [options] <input-file>" << std::endl;
-		os << s.desc << std::endl;
-		return os;
+		return os << "Usage: " << s.executable << " [options] <input-file>" << std::endl << s.desc << std::endl;
 	}
 	
 	/**
@@ -81,12 +80,10 @@ public:
 			}
 			bpo::notify(vm);
 		} catch(boost::program_options::required_option& e) {
-			std::cerr << *this;
-			std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
+			std::cerr << *this << std::endl << "ERROR: " << e.what() << std::endl << std::endl;
 			return false;
 		} catch(boost::program_options::error& e) {
-			std::cerr << *this;
-			std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
+			std::cerr << *this << std::endl << "ERROR: " << e.what() << std::endl << std::endl;
 			return false;
 		}
 		return true;
