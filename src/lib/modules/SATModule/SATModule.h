@@ -39,16 +39,16 @@
  * OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /**
- * @file   SATModule.h
+ * @file SATModule.h
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  * @since 2012-01-18
- * @version 2014-09-26
+ * @version 2014-10-02
  */
 
 #pragma once
 
 #include "../../config.h"
-
+#include "SATSettings.h"
 #include "Vec.h"
 #include "Heap.h"
 #include "Alg.h"
@@ -63,15 +63,13 @@
 #include "SATModuleStatistics.h"
 #endif
 
-#define SAT_WITH_RESTARTS
-#define SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN //Todo: repair this when deactivated (see qf_lra/bugs/bug_sat_dont_stop_by_first_unknown.smt2)
-
 namespace smtrat
 {
     /**
      * Implements a module performing DPLL style SAT checking. It is mainly based on Minisat 2.0 and 
      * extends it by enabling the SMT-RAT module interfaces and some optimizations.
      */
+    template<class Settings>
     class SATModule:
         public Module
     {
@@ -299,10 +297,8 @@ namespace smtrat
             Minisat::vec<Minisat::CRef> clauses;
             /// List of learned clauses.
             Minisat::vec<Minisat::CRef> learnts;
-            #ifndef SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN
             /// List of clauses which exclude a call resulted in unknown.
             Minisat::vec<Minisat::CRef> unknown_excludes;
-            #endif
             /// Amount to bump next clause with.
             double cla_inc;
             /// A heuristic measurement of the activity of a variable.
@@ -942,12 +938,7 @@ namespace smtrat
              *         l_False, if the considered clauses are unsatisfiable;
              *         l_Undef, if it could not been detected whether the given set of clauses is satisfiable or not.
              */
-            Minisat::lbool search
-            (
-                #ifdef SAT_WITH_RESTARTS 
-                int nof_conflicts = 100 
-                #endif
-            );
+            Minisat::lbool search( int nof_conflicts = 100 );
             
             /**
              * reduceDB : ()  ->  [void]
@@ -1248,3 +1239,5 @@ namespace smtrat
             bool passedFormulaCorrect() const;
     };
 }    // namespace smtrat
+
+#include "SATModule.tpp"

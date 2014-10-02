@@ -39,11 +39,10 @@
  * OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /**
- * @file   SATModule.cpp
+ * @file SATModule.tpp
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
- * @author Ulrich Loup
  * @since 2012-01-18
- * @version 2014-09-26
+ * @version 2014-10-02
  */
 
 #include "SATModule.h"
@@ -55,12 +54,6 @@
 //#define DEBUG_SAT_REPLACE_VARIABLE
 //#define SATMODULE_WITH_CALL_NUMBER
 //#define WITH_PROGRESS_ESTIMATION
-
-#define SAT_MODULE_THEORY_PROPAGATION
-//#define SAT_MODULE_DETECT_DEDUCTIONS
-//#define SAT_TRY_FULL_LAZY_CALLS_FIRST
-//#define SAT_APPLY_VALID_SUBSTITUTIONS
-#define SAT_THEORY_CONFLICT_AS_LEMMA
 
 using namespace std;
 using namespace Minisat;
@@ -84,7 +77,8 @@ namespace smtrat
     static DoubleOption opt_garbage_frac( _cat, "gc-frac", "The fraction of wasted memory allowed before a garbage collection is triggered", 0.20,
                                           DoubleRange( 0, false, HUGE_VAL, false ) );
 
-    SATModule::SATModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _foundAnswer, Manager* const _manager ):
+    template<class Settings>
+    SATModule<Settings>::SATModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _foundAnswer, Manager* const _manager ):
         Module( _type, _formula, _foundAnswer, _manager ),
         // Parameters (user settable):
         verbosity( 0 ),
@@ -156,14 +150,16 @@ namespace smtrat
         #endif
     }
 
-    SATModule::~SATModule()
+    template<class Settings>
+    SATModule<Settings>::~SATModule()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
         delete mpStatistics;
         #endif
     }
 
-    bool SATModule::assertSubformula( ModuleInput::const_iterator _subformula )
+    template<class Settings>
+    bool SATModule<Settings>::assertSubformula( ModuleInput::const_iterator _subformula )
     {
         Module::assertSubformula( _subformula );
         if( PROP_IS_A_CLAUSE <= (*_subformula)->properties() )
@@ -178,7 +174,8 @@ namespace smtrat
         return ok;
     }
 
-    void SATModule::removeSubformula( ModuleInput::const_iterator _subformula )
+    template<class Settings>
+    void SATModule<Settings>::removeSubformula( ModuleInput::const_iterator _subformula )
     {
         FormulaClauseMap::iterator iter = mFormulaClauseMap.find( *_subformula );
         if( iter != mFormulaClauseMap.end() )
@@ -229,25 +226,27 @@ namespace smtrat
         return pow( y, seq );
     }
     
-    Answer SATModule::isConsistent()
+    template<class Settings>
+    Answer SATModule<Settings>::isConsistent()
     {
         if( PROP_IS_IN_CNF <= mpReceivedFormula->properties() )
         {
-            #ifndef SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN
-            // Remove all clauses which were only introduced in order to exclude this combination 
-            // of constraints, which couldn't be solved by any backend, as a theory call.
-            while( unknown_excludes.size() > 0 )
+            if( !Settings::stop_search_after_first_unknown )
             {
-                Clause& c = ca[unknown_excludes.last()];
-                if( value( c[1] ) != l_Undef )
+                // Remove all clauses which were only introduced in order to exclude this combination 
+                // of constraints, which couldn't be solved by any backend, as a theory call.
+                while( unknown_excludes.size() > 0 )
                 {
-                    int lev = level( var( c[1] ) );
-                    cancelUntil( lev );
+                    Clause& c = ca[unknown_excludes.last()];
+                    if( value( c[1] ) != l_Undef )
+                    {
+                        int lev = level( var( c[1] ) );
+                        cancelUntil( lev );
+                    }
+                    removeClause( unknown_excludes.last() );
+                    unknown_excludes.pop();
                 }
-                removeClause( unknown_excludes.last() );
-                unknown_excludes.pop();
             }
-            #endif
 
             budgetOff();
             assumptions.clear();
@@ -269,20 +268,24 @@ namespace smtrat
                 return foundAnswer( False );
             }
 
-            #ifdef SAT_WITH_RESTARTS
-            mCurr_Restarts = 0;
-            int current_restarts = -1;
             lbool result = l_Undef;
-            while( current_restarts < mCurr_Restarts )
+            if( Settings::use_restarts )
             {
-                current_restarts = mCurr_Restarts;
-                double rest_base = luby_restart ? luby( restart_inc, mCurr_Restarts ) : pow( restart_inc, mCurr_Restarts );
-                result = search( (int)rest_base * restart_first );
-                // if( !withinBudget() ) break;
+                mCurr_Restarts = 0;
+                int current_restarts = -1;
+                result = l_Undef;
+                while( current_restarts < mCurr_Restarts )
+                {
+                    current_restarts = mCurr_Restarts;
+                    double rest_base = luby_restart ? luby( restart_inc, mCurr_Restarts ) : pow( restart_inc, mCurr_Restarts );
+                    result = search( (int)rest_base * restart_first );
+                    // if( !withinBudget() ) break;
+                }
             }
-            #else
-            lbool result = search();
-            #endif
+            else
+            {
+                result = search();
+            }
 
             #ifdef SATMODULE_WITH_CALL_NUMBER
             cout << endl << endl;
@@ -317,7 +320,8 @@ namespace smtrat
         }
     }
 
-    void SATModule::updateModel() const
+    template<class Settings>
+    void SATModule<Settings>::updateModel() const
     {
         clearModel();
         if( solverState() == True )
@@ -335,7 +339,8 @@ namespace smtrat
         }
     }
     
-    void SATModule::updateInfeasibleSubset()
+    template<class Settings>
+    void SATModule<Settings>::updateInfeasibleSubset()
     {
         assert( !ok );
         mInfeasibleSubsets.clear();
@@ -357,7 +362,8 @@ namespace smtrat
         mInfeasibleSubsets.push_back( infeasibleSubset );
     }
     
-    void SATModule::addBooleanAssignments( EvalRationalMap& _rationalAssignment ) const
+    template<class Settings>
+    void SATModule<Settings>::addBooleanAssignments( EvalRationalMap& _rationalAssignment ) const
     {
         for( BooleanVarMap::const_iterator bVar = mBooleanVarMap.begin(); bVar != mBooleanVarMap.end(); ++bVar )
         {
@@ -374,7 +380,8 @@ namespace smtrat
         }
     }
 
-    CRef SATModule::addFormula( const Formula* _formula, unsigned _type )
+    template<class Settings>
+    CRef SATModule<Settings>::addFormula( const Formula* _formula, unsigned _type )
     {
         assert( _type < 2 );
         const Formula* formulaInCnf = _formula->toCNF( true, _type == NORMAL_CLAUSE );
@@ -395,7 +402,8 @@ namespace smtrat
         }
     }
 
-    CRef SATModule::addClause( const Formula* _formula, unsigned _type )
+    template<class Settings>
+    CRef SATModule<Settings>::addClause( const Formula* _formula, unsigned _type )
     {
         assert( _formula->propertyHolds( PROP_IS_A_CLAUSE ) );
         switch( _formula->getType() )
@@ -467,7 +475,8 @@ namespace smtrat
         }
     }
 
-    Lit SATModule::getLiteral( const Formula* _formula, const Formula* _origin )
+    template<class Settings>
+    Lit SATModule<Settings>::getLiteral( const Formula* _formula, const Formula* _origin )
     {
         assert( _formula->propertyHolds( PROP_IS_A_LITERAL ) );
         bool negated = _formula->getType() == NOT;
@@ -567,14 +576,15 @@ namespace smtrat
                 litsB.push_back( litNegative );
                 mConstraintLiteralMap.insert( make_pair( negated ? _formula : newNegation( constraint ), litsB ) );
                 mConstraintLiteralMap.insert( make_pair( invertedConstraint, move( litsB ) ) );
-                #ifdef SAT_APPLY_VALID_SUBSTITUTIONS
-                // map each variable occurring in the constraint (and hence its negation) to both of these constraints
-                for( carl::Variable::Arg var : constraint->constraint().variables() )
+                if( Settings::apply_valid_substitutions )
                 {
-                    mVarOccurrences[var].insert( constraint );
-                    mVarOccurrences[var].insert( invertedConstraint );
+                    // map each variable occurring in the constraint (and hence its negation) to both of these constraints
+                    for( carl::Variable::Arg var : constraint->constraint().variables() )
+                    {
+                        mVarOccurrences[var].insert( constraint );
+                        mVarOccurrences[var].insert( invertedConstraint );
+                    }
                 }
-                #endif
                 // we return the abstraction variable as literal, if the negated flag was negative,
                 // otherwise we return the abstraction variable's negation 
                 return negated ? litNegative : litPositive;
@@ -582,7 +592,8 @@ namespace smtrat
         }
     }
 
-    void SATModule::adaptPassedFormula()
+    template<class Settings>
+    void SATModule<Settings>::adaptPassedFormula()
     {
         // Adapt the constraints in the passed formula for the just assigned Booleans being abstractions of constraints.
         for( signed posInAssigns : mChangedBooleans )
@@ -628,7 +639,8 @@ namespace smtrat
         assert( passedFormulaCorrect() );
     }
     
-    void SATModule::adaptPassedFormula( Abstraction& _abstr )
+    template<class Settings>
+    void SATModule<Settings>::adaptPassedFormula( Abstraction& _abstr )
     {
         if( _abstr.updateInfo < 0 )
         {
@@ -667,7 +679,8 @@ namespace smtrat
         _abstr.updateInfo = 0;
     }
     
-    bool SATModule::passedFormulaCorrect() const
+    template<class Settings>
+    bool SATModule<Settings>::passedFormulaCorrect() const
     {
         for( int k = 0; k < mBooleanConstraintMap.size(); ++k )
         {
@@ -691,7 +704,8 @@ namespace smtrat
         return true;
     }
 
-    Var SATModule::newVar( bool sign, bool dvar, double _activity )
+    template<class Settings>
+    Var SATModule<Settings>::newVar( bool sign, bool dvar, double _activity )
     {
         int v = nVars();
         watches.init( mkLit( v, false ) );
@@ -709,7 +723,8 @@ namespace smtrat
         return v;
     }
 
-    bool SATModule::addClause( vec<Lit>& _clause, unsigned _type )
+    template<class Settings>
+    bool SATModule<Settings>::addClause( vec<Lit>& _clause, unsigned _type )
     {
         if( _type == DEDUCTED_CLAUSE )
         {
@@ -817,7 +832,8 @@ namespace smtrat
         return true;
     }
 
-    bool SATModule::watchesCorrect( const Clause& _clause ) const
+    template<class Settings>
+    bool SATModule<Settings>::watchesCorrect( const Clause& _clause ) const
     {
         if( _clause.size() == 1 )
             return true;
@@ -869,7 +885,8 @@ namespace smtrat
         }
     }
     
-    void SATModule::arrangeForWatches( Clause& _clause )
+    template<class Settings>
+    void SATModule<Settings>::arrangeForWatches( Clause& _clause )
     {
         if( _clause.size() < 2 )
         {
@@ -1042,7 +1059,8 @@ SetWatches:
         assert( watchesCorrect( _clause ) );
     }
 
-    int SATModule::level( const vec< Lit >& _clause ) const
+    template<class Settings>
+    int SATModule<Settings>::level( const vec< Lit >& _clause ) const
     {
         int result = 0;
         for( int i = 0; i < _clause.size(); ++i )
@@ -1056,13 +1074,15 @@ SetWatches:
         return result;
     }
 
-    void SATModule::attachClause( CRef cr )
+    template<class Settings>
+    void SATModule<Settings>::attachClause( CRef cr )
     {
         Clause& c = ca[cr];
-        #ifdef SAT_APPLY_VALID_SUBSTITUTIONS
-        for( int i = 0; i < c.size(); ++i )
-            mVarClausesMap[(size_t)var(c[i])].insert( cr );
-        #endif
+        if( Settings::apply_valid_substitutions )
+        {
+            for( int i = 0; i < c.size(); ++i )
+                mVarClausesMap[(size_t)var(c[i])].insert( cr );
+        }
         assert( c.size() > 1 );
         watches[~c[0]].push( Watcher( cr, c[1] ) );
         watches[~c[1]].push( Watcher( cr, c[0] ) );
@@ -1074,13 +1094,15 @@ SetWatches:
             clauses_literals += (uint64_t)c.size();
     }
 
-    void SATModule::detachClause( CRef cr, bool strict )
+    template<class Settings>
+    void SATModule<Settings>::detachClause( CRef cr, bool strict )
     {
         const Clause& c = ca[cr];
-        #ifdef SAT_APPLY_VALID_SUBSTITUTIONS
-        for( int i = 0; i < c.size(); ++i )
-            mVarClausesMap[(size_t)var(c[i])].erase( cr );
-        #endif
+        if( Settings::apply_valid_substitutions )
+        {
+            for( int i = 0; i < c.size(); ++i )
+                mVarClausesMap[(size_t)var(c[i])].erase( cr );
+        }
         assert( c.size() > 1 );
 
         if( strict )
@@ -1101,7 +1123,8 @@ SetWatches:
             clauses_literals -= (uint64_t)c.size();
     }
 
-    void SATModule::removeClause( CRef cr )
+    template<class Settings>
+    void SATModule<Settings>::removeClause( CRef cr )
     {
         Clause& c = ca[cr];
         detachClause( cr );
@@ -1114,7 +1137,8 @@ SetWatches:
         mAllActivitiesChanged = true;
     }
 
-    bool SATModule::satisfied( const Clause& c ) const
+    template<class Settings>
+    bool SATModule<Settings>::satisfied( const Clause& c ) const
     {
         for( int i = 0; i < c.size(); i++ )
         {
@@ -1127,7 +1151,8 @@ SetWatches:
         return false;
     }
 
-    void SATModule::cancelUntil( int level )
+    template<class Settings>
+    void SATModule<Settings>::cancelUntil( int level )
     {
         #ifdef DEBUG_SATMODULE
         cout << "### cancel until " << level << endl;
@@ -1156,7 +1181,8 @@ SetWatches:
         }
     }
     
-    CRef SATModule::propagateConsistently( bool& _madeTheoryCall )
+    template<class Settings>
+    CRef SATModule<Settings>::propagateConsistently( bool& _madeTheoryCall )
     {
         CRef confl = CRef_Undef;
         bool deductionsLearned = true;
@@ -1189,16 +1215,10 @@ SetWatches:
             cout << "### " << endl;
             #endif
 
-            #ifdef SAT_TRY_FULL_LAZY_CALLS_FIRST
-            if( confl == CRef_Undef && (mNumberOfFullLazyCalls > 0 || trail.size() == assigns.size()) )
-            #else
-            if( confl == CRef_Undef )
-            #endif
+            if( confl == CRef_Undef && (!Settings::try_full_lazy_call_first || mNumberOfFullLazyCalls > 0 || trail.size() == assigns.size()) )
             {
-                #ifdef SAT_TRY_FULL_LAZY_CALLS_FIRST
-                if( trail.size() == assigns.size() )
+                if( Settings::try_full_lazy_call_first && trail.size() == assigns.size() )
                     ++mNumberOfFullLazyCalls;
-                #endif
                 // Check constraints corresponding to the positively assigned Boolean variables for consistency.
                 // TODO: Do not call the theory solver on instances which have already been proved to be consistent.
                 //       (Happens if the Boolean assignment is extended by assignments to false only)
@@ -1228,10 +1248,11 @@ SetWatches:
                     {
                         case True:
                         {
-                            #ifdef SAT_MODULE_THEORY_PROPAGATION
-                            //Theory propagation.
-                            deductionsLearned = processLemmas();
-                            #endif
+                            if( Settings::allow_theory_propagation )
+                            {
+                                //Theory propagation.
+                                deductionsLearned = processLemmas();
+                            }
                             #ifdef DEBUG_SATMODULE
                             cout << "### Result: True!" << endl;
                             #endif
@@ -1255,10 +1276,11 @@ SetWatches:
                             #ifdef DEBUG_SATMODULE
                             cout << "### Result: Unknown!" << endl;
                             #endif
-                            #ifdef SAT_MODULE_THEORY_PROPAGATION
-                            //Theory propagation.
-                            deductionsLearned = processLemmas();
-                            #endif
+                            if( Settings::allow_theory_propagation )
+                            {
+                                //Theory propagation.
+                                deductionsLearned = processLemmas();
+                            }
                             break;
                         }
                         default:
@@ -1274,12 +1296,8 @@ SetWatches:
         return confl;
     }
 
-    lbool SATModule::search
-    (
-        #ifdef SAT_WITH_RESTARTS
-        int nof_conflicts
-        #endif
-    )
+    template<class Settings>
+    lbool SATModule<Settings>::search( int nof_conflicts )
     {
         #ifdef DEBUG_SATMODULE
         cout << "### search()" << endl << "###" << endl;
@@ -1316,15 +1334,17 @@ SetWatches:
             if( !ok )
                 return l_False;
             
-            #ifndef SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN
-            if( madeTheoryCall && mCurrentAssignmentConsistent == Unknown )
+            if( !Settings::stop_search_after_first_unknown && madeTheoryCall && mCurrentAssignmentConsistent == Unknown )
             {
                 vec<Lit> learnt_clause;
                 if( mpPassedFormula->size() > 1 )
                 {
                     for( auto subformula = mpPassedFormula->begin(); subformula != mpPassedFormula->end(); ++subformula )
                     {
-                        learnt_clause.push( getLiteral( newNegation( *subformula ), true ) );
+                        ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( *subformula );
+                        assert( constraintLiteralPair != mConstraintLiteralMap.end() );
+                        Lit lit = mkLit( var( constraintLiteralPair->second.front() ), !sign( constraintLiteralPair->second.front() ) );
+                        learnt_clause.push( lit );
                     }
                     if( addClause( learnt_clause, DEDUCTED_CLAUSE ) )
                     {
@@ -1333,7 +1353,6 @@ SetWatches:
                     }
                 }
             }
-            #endif
             #ifdef SATMODULE_WITH_CALL_NUMBER
             #ifndef DEBUG_SATMODULE
             #ifdef WITH_PROGRESS_ESTIMATION
@@ -1351,14 +1370,10 @@ SetWatches:
                 conflictC++;
                 if( decisionLevel() == 0 )
                 {
-                    #ifndef SAT_STOP_SEARCH_AFTER_FIRST_UNKNOWN
-                    if( unknown_excludes.size() > 0 )
+                    if( !Settings::stop_search_after_first_unknown && unknown_excludes.size() > 0 )
                     {
-//                        cout << unknown_excludes.size() << endl;
-//                        printClauses( unknown_excludes, "unknown_excludes" );
                         return l_Undef;
                     }
-                    #endif
                     return l_False;
                 }
 
@@ -1426,8 +1441,7 @@ SetWatches:
             else
             {
                 // NO CONFLICT
-                #ifdef SAT_WITH_RESTARTS
-                if( nof_conflicts >= 0 && (conflictC >= nof_conflicts) ) // ||!withinBudget()) )
+                if( Settings::use_restarts && nof_conflicts >= 0 && (conflictC >= nof_conflicts) ) // ||!withinBudget()) )
                 {
                     #ifdef DEBUG_SATMODULE
                     cout << "###" << endl << "### Restart." << endl << "###" << endl;
@@ -1441,7 +1455,6 @@ SetWatches:
                     #endif
                     return l_Undef;
                 }
-                #endif
                 if( mCurrentAssignmentConsistent != Unknown && learnts.size() - nAssigns() >= max_learnts )
                 {
                     // Reduce the set of learned clauses:
@@ -1501,7 +1514,8 @@ SetWatches:
         }
     }
     
-    void SATModule::decrementLearntSizeAdjustCnt()
+    template<class Settings>
+    void SATModule<Settings>::decrementLearntSizeAdjustCnt()
     {
         if( --learntsize_adjust_cnt == 0 )
         {
@@ -1522,7 +1536,8 @@ SetWatches:
         }
     }
 
-    Lit SATModule::pickBranchLit()
+    template<class Settings>
+    Lit SATModule<Settings>::pickBranchLit()
     {
         Var next = var_Undef;
 
@@ -1553,7 +1568,8 @@ SetWatches:
         //return next == var_Undef ? lit_Undef : mkLit( next, rnd_pol ? drand( random_seed ) < 0.5 : polarity[next] );
     }
 
-    void SATModule::analyze( CRef confl, vec<Lit>& out_learnt, int& out_btlevel )
+    template<class Settings>
+    void SATModule<Settings>::analyze( CRef confl, vec<Lit>& out_learnt, int& out_btlevel )
     {
         int pathC = 0;
         Lit p = lit_Undef;
@@ -1666,7 +1682,8 @@ SetWatches:
             seen[var( analyze_toclear[j] )] = 0;    // ('seen[]' is now cleared)
     }
 
-    bool SATModule::litRedundant( Lit p, uint32_t abstract_levels )
+    template<class Settings>
+    bool SATModule<Settings>::litRedundant( Lit p, uint32_t abstract_levels )
     {
         analyze_stack.clear();
         analyze_stack.push( p );
@@ -1702,7 +1719,8 @@ SetWatches:
         return true;
     }
 
-    void SATModule::uncheckedEnqueue( Lit p, CRef from )
+    template<class Settings>
+    void SATModule<Settings>::uncheckedEnqueue( Lit p, CRef from )
     {
         assert( value( p ) == l_Undef );
         assigns[var( p )] = lbool( !sign( p ) );
@@ -1714,32 +1732,32 @@ SetWatches:
         }
         vardata[var( p )] = mkVarData( from, decisionLevel() );
         trail.push_( p );
-        #ifdef SAT_MODULE_THEORY_PROPAGATION
-        // Check whether the lit is a deduction via a learned clause.
-        #ifdef SAT_MODULE_DETECT_DEDUCTIONS
-        if( from != CRef_Undef && ca[from].type() == DEDUCTED_CLAUSE && !sign( p ) && abstr.constraint != NULL  )
+        if( Settings::allow_theory_propagation && Settings::detect_deductions )
         {
-            Clause& c           = ca[from];
-            bool    isDeduction = true;
-            for( int k = 0; k < c.size(); ++k )
+            // Check whether the lit is a deduction via a learned clause.
+            if( from != CRef_Undef && ca[from].type() == DEDUCTED_CLAUSE && !sign( p ) && abstr.constraint != NULL  )
             {
-                if( !sign( c[k] ) && c[k] != p )
+                Clause& c           = ca[from];
+                bool    isDeduction = true;
+                for( int k = 0; k < c.size(); ++k )
                 {
-                    isDeduction = false;
-                    break;
+                    if( !sign( c[k] ) && c[k] != p )
+                    {
+                        isDeduction = false;
+                        break;
+                    }
+                }
+                if( isDeduction )
+                {
+                    abstr.consistencyRelevant = true;
+                    mChangedPassedFormula = true;
                 }
             }
-            if( isDeduction )
-            {
-                abstr.consistencyRelevant = true
-                mChangedPassedFormula = true;
-            }
         }
-        #endif
-        #endif
     }
 
-    CRef SATModule::propagate()
+    template<class Settings>
+    CRef SATModule<Settings>::propagate()
     {
         #ifdef DEBUG_SATMODULE
         cout << "### Propagate" << endl;
@@ -1836,7 +1854,8 @@ NextClause:
         }
     };
 
-    void SATModule::reduceDB()
+    template<class Settings>
+    void SATModule<Settings>::reduceDB()
     {
         int    i, j;
         double extra_lim = cla_inc / learnts.size();    // Remove any clause below this activity
@@ -1860,7 +1879,8 @@ NextClause:
         checkGarbage();
     }
 
-    void SATModule::removeSatisfied( vec<CRef>& cs )
+    template<class Settings>
+    void SATModule<Settings>::removeSatisfied( vec<CRef>& cs )
     {
         int i, j;
         for( i = j = 0; i < cs.size(); i++ )
@@ -1874,7 +1894,8 @@ NextClause:
         cs.shrink( i - j );
     }
     
-    void SATModule::replaceVariable( Lit _var, Lit _by )
+    template<class Settings>
+    void SATModule<Settings>::replaceVariable( Lit _var, Lit _by )
     {
         #ifdef DEBUG_SAT_REPLACE_VARIABLE
         cout << __func__ << endl;
@@ -1915,7 +1936,8 @@ NextClause:
         learnts.shrink( removedLearnts );
     }
     
-    bool SATModule::replaceVariable( CRef _cr, Lit _var, Lit _by )
+    template<class Settings>
+    bool SATModule<Settings>::replaceVariable( CRef _cr, Lit _var, Lit _by )
     {
         #ifdef DEBUG_SAT_REPLACE_VARIABLE
         cout << "Before substitution:  ";
@@ -1944,7 +1966,8 @@ NextClause:
         return addClause( newClause, type );
     }
 
-    void SATModule::rebuildOrderHeap()
+    template<class Settings>
+    void SATModule<Settings>::rebuildOrderHeap()
     {
         vec<Var> vs;
         for( Var v = 0; v < nVars(); v++ )
@@ -1953,7 +1976,8 @@ NextClause:
         order_heap.build( vs );
     }
 
-    void SATModule::simplify()
+    template<class Settings>
+    void SATModule<Settings>::simplify()
     {
         assert( decisionLevel() == 0 );
         while( ok )
@@ -1975,18 +1999,20 @@ NextClause:
             rebuildOrderHeap();
             simpDB_assigns = nAssigns();
 //            simpDB_props   = (int64_t)(clauses_literals + learnts_literals);    // (shouldn't depend on stats really, but it will do for now)
-            #ifdef SAT_APPLY_VALID_SUBSTITUTIONS
-            applyValidSubstitutionsOnClauses();
-            if( !ok )
+            if( Settings::apply_valid_substitutions )
             {
-                return;
+                applyValidSubstitutionsOnClauses();
+                if( !ok )
+                {
+                    return;
+                }
             }
-            #endif
             processLemmas();
         }
     }
     
-    void SATModule::applyValidSubstitutionsOnClauses()
+    template<class Settings>
+    void SATModule<Settings>::applyValidSubstitutionsOnClauses()
     {
         assert( decisionLevel() == 0 );
         #ifdef DEBUG_SAT_APPLY_VALID_SUBS
@@ -2060,7 +2086,8 @@ NextClause:
         #endif
     }
     
-    void SATModule::replaceConstraint( const Formula* _toReplace, const Formula* _replaceBy )
+    template<class Settings>
+    void SATModule<Settings>::replaceConstraint( const Formula* _toReplace, const Formula* _replaceBy )
     {
         auto consLitPair = mConstraintLiteralMap.find( _toReplace );
         bool negativeLiteral = sign( consLitPair->second.front() );
@@ -2226,7 +2253,8 @@ NextClause:
         }
     }
 
-    bool SATModule::processLemmas()
+    template<class Settings>
+    bool SATModule<Settings>::processLemmas()
     {
         bool deductionsLearned = false;
         vector<Module*>::const_iterator backend = usedBackends().begin();
@@ -2258,14 +2286,13 @@ NextClause:
         return deductionsLearned;
     }
 
-    CRef SATModule::learnTheoryConflict()
+    template<class Settings>
+    CRef SATModule<Settings>::learnTheoryConflict()
     {
         CRef conflictClause = CRef_Undef;
         int lowestLevel = decisionLevel()+1;
-        #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
         int numOfLowLevelLiterals = 0;
 //        int learntsSizeBefore = learnts.size();
-        #endif
         vector<Module*>::const_iterator backend = usedBackends().begin();
         while( backend != usedBackends().end() )
         {
@@ -2294,9 +2321,10 @@ NextClause:
                     if( level( var( lit ) ) <= lowestLevel )
                     {
                         lowestLevel = level( var( lit ) );
-                        #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
-                        numOfLowLevelLiterals = 1;
-                        #endif
+                        if( Settings::handle_theory_conflict_as_lemma )
+                        {
+                            numOfLowLevelLiterals = 1;
+                        }
                         betterConflict = true;
                     }
                     learnt_clause.push( lit );
@@ -2304,9 +2332,7 @@ NextClause:
                 else
                 {
                     int clauseLevel = 0;
-                    #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
                     int numOfLowestLevelLiteralsInClause = 0;
-                    #endif
                     for( auto subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                     {
                         ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( *subformula );
@@ -2316,39 +2342,29 @@ NextClause:
                         if( litLevel > clauseLevel )
                         {
                             clauseLevel = level( var( lit ) );
-                            #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
-                            numOfLowestLevelLiteralsInClause = 1;
-                            #endif
+                            if( Settings::handle_theory_conflict_as_lemma )
+                                numOfLowestLevelLiteralsInClause = 1;
                         }
-                        #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
-                        else if( litLevel == clauseLevel )
+                        else if( Settings::handle_theory_conflict_as_lemma && litLevel == clauseLevel )
                         {
                             ++numOfLowestLevelLiteralsInClause;
                         }
-                        #endif
                         learnt_clause.push( lit );
                     }
                     if( clauseLevel < lowestLevel )
                     {
                         lowestLevel = clauseLevel;
-                        #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
-                        numOfLowLevelLiterals = numOfLowestLevelLiteralsInClause;
-                        #endif
+                        if( Settings::handle_theory_conflict_as_lemma )
+                            numOfLowLevelLiterals = numOfLowestLevelLiteralsInClause;
                         betterConflict = true;
                     }
-                    #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
-                    else if( clauseLevel == lowestLevel && numOfLowLevelLiterals < numOfLowestLevelLiteralsInClause )
+                    else if( Settings::handle_theory_conflict_as_lemma && clauseLevel == lowestLevel && numOfLowLevelLiterals < numOfLowestLevelLiteralsInClause )
                     {
                         numOfLowLevelLiterals = numOfLowestLevelLiteralsInClause;
                         betterConflict = true;
                     }
-                    #endif
                 }
-                #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
-                if( addClause( learnt_clause, CONFLICT_CLAUSE ) )
-                #else
-                if( addClause( learnt_clause, CONFLICT_CLAUSE ) && betterConflict )
-                #endif
+                if( addClause( learnt_clause, CONFLICT_CLAUSE ) && (Settings::handle_theory_conflict_as_lemma || betterConflict) )
                 {
                     if( betterConflict )
                         conflictClause = learnts.last();
@@ -2364,33 +2380,28 @@ NextClause:
         }
         if( conflictClause != CRef_Undef && lowestLevel >= decisionLevel()+1 )
             Module::storeAssumptionsToCheck( *mpManager );
-        #ifdef SAT_THEORY_CONFLICT_AS_LEMMA
-        if( numOfLowLevelLiterals == 1 )
+        if( Settings::handle_theory_conflict_as_lemma )
         {
-            cancelUntil(lowestLevel == 0 ? 0 : lowestLevel-1);
-//            cout << "cancel until " << (lowestLevel == 0 ? 0 : lowestLevel-1) << endl;
-//            cout << endl;
-//            printClauses( learnts, "Learnts", cout, "", learntsSizeBefore - 1, true );
-//            cout << endl;
-            return CRef_Undef;
+            if( numOfLowLevelLiterals == 1 )
+            {
+                cancelUntil(lowestLevel == 0 ? 0 : lowestLevel-1);
+                return CRef_Undef;
+            }
+            else
+            {
+                cancelUntil(lowestLevel);
+            }
         }
         else
         {
+            assert( conflictClause == CRef_Undef || lowestLevel < decisionLevel()+1 );
             cancelUntil(lowestLevel);
-//            cout << "cancel until " << lowestLevel << endl;
         }
-        
-//        cout << endl;
-//        printClauses( learnts, "Learnts", cout, "", learntsSizeBefore - 1, true );
-//        cout << endl;
-        #else
-        assert( conflictClause == CRef_Undef || lowestLevel < decisionLevel()+1 );
-        cancelUntil(lowestLevel);
-        #endif
         return conflictClause;
     }
 
-    double SATModule::progressEstimate() const
+    template<class Settings>
+    double SATModule<Settings>::progressEstimate() const
     {
         double progress = 0;
         double F        = 1.0 / nVars();
@@ -2405,31 +2416,33 @@ NextClause:
         return progress / nVars();
     }
 
-    void SATModule::relocAll( ClauseAllocator& to )
+    template<class Settings>
+    void SATModule<Settings>::relocAll( ClauseAllocator& to )
     {
-        #ifdef SAT_APPLY_VALID_SUBSTITUTIONS
-        // variable to clauses mapping:
-        for( size_t pos = 0; pos < mVarClausesMap.size(); ++pos )
+        if( Settings::apply_valid_substitutions )
         {
-            set<CRef> toInsert;
-            set<CRef>& cls = mVarClausesMap[pos];
-            for( set<CRef>::iterator crIter = cls.begin(); crIter != cls.end(); )
+            // variable to clauses mapping:
+            for( size_t pos = 0; pos < mVarClausesMap.size(); ++pos )
             {
-                CRef cr = *crIter;
-                ca.reloc( cr, to );
-                if( cr != *crIter )
+                set<CRef> toInsert;
+                set<CRef>& cls = mVarClausesMap[pos];
+                for( set<CRef>::iterator crIter = cls.begin(); crIter != cls.end(); )
                 {
-                    crIter = cls.erase( crIter );
-                    toInsert.insert( cr );
+                    CRef cr = *crIter;
+                    ca.reloc( cr, to );
+                    if( cr != *crIter )
+                    {
+                        crIter = cls.erase( crIter );
+                        toInsert.insert( cr );
+                    }
+                    else
+                    {
+                        ++crIter;
+                    }
                 }
-                else
-                {
-                    ++crIter;
-                }
+                cls.insert( toInsert.begin(), toInsert.end() );
             }
-            cls.insert( toInsert.begin(), toInsert.end() );
         }
-        #endif
         
         // All watchers:
         //
@@ -2466,7 +2479,8 @@ NextClause:
             ca.reloc( clauses[i], to );
     }
 
-    void SATModule::garbageCollect()
+    template<class Settings>
+    void SATModule<Settings>::garbageCollect()
     {
         // Initialize the next region to a size corresponding to the estimated utilization degree. This
         // is not precise but should avoid some unnecessary reallocations for the new region:
@@ -2480,7 +2494,8 @@ NextClause:
         to.moveTo( ca );
     }
 
-    Var SATModule::mapVar( Var x, vec<Var>& map, Var& max )
+    template<class Settings>
+    Var SATModule<Settings>::mapVar( Var x, vec<Var>& map, Var& max )
     {
         if( map.size() <= x || map[x] == -1 )
         {
@@ -2490,7 +2505,8 @@ NextClause:
         return map[x];
     }
 
-    void SATModule::print( ostream& _out, const string _init ) const
+    template<class Settings>
+    void SATModule<Settings>::print( ostream& _out, const string _init ) const
     {
         printConstraintLiteralMap( _out, _init );
         printBooleanVarMap( _out, _init );
@@ -2508,7 +2524,8 @@ NextClause:
             _out << _init << i << " -> " << ((uint32_t) vardata[i].reason) << endl;
     }
 
-    void SATModule::printConstraintLiteralMap( ostream& _out, const string _init ) const
+    template<class Settings>
+    void SATModule<Settings>::printConstraintLiteralMap( ostream& _out, const string _init ) const
     {
         _out << _init << " ConstraintLiteralMap" << endl;
         for( ConstraintLiteralsMap::const_iterator clPair = mConstraintLiteralMap.begin(); clPair != mConstraintLiteralMap.end(); ++clPair )
@@ -2527,7 +2544,8 @@ NextClause:
         }
     }
 
-    void SATModule::printBooleanVarMap( ostream& _out, const string _init ) const
+    template<class Settings>
+    void SATModule<Settings>::printBooleanVarMap( ostream& _out, const string _init ) const
     {
         _out << _init << " BooleanVarMap" << endl;
         for( BooleanVarMap::const_iterator clPair = mBooleanVarMap.begin(); clPair != mBooleanVarMap.end(); ++clPair )
@@ -2536,7 +2554,8 @@ NextClause:
         }
     }
 
-    void SATModule::printBooleanConstraintMap( ostream& _out, const string _init ) const
+    template<class Settings>
+    void SATModule<Settings>::printBooleanConstraintMap( ostream& _out, const string _init ) const
     {
         _out << _init << " BooleanConstraintMap" << endl;
         for( int k = 0; k < mBooleanConstraintMap.size(); ++k )
@@ -2554,7 +2573,8 @@ NextClause:
         }
     }
 
-    void SATModule::printClause( const vec<Lit>& _clause, bool _withAssignment, ostream& _out, const string& _init ) const
+    template<class Settings>
+    void SATModule<Settings>::printClause( const vec<Lit>& _clause, bool _withAssignment, ostream& _out, const string& _init ) const
     {
         _out << _init;
         for( int pos = 0; pos < _clause.size(); ++pos )
@@ -2571,7 +2591,8 @@ NextClause:
         _out << endl;
     }
 
-    void SATModule::printClause( CRef _clause, bool _withAssignment, ostream& _out, const string& _init ) const
+    template<class Settings>
+    void SATModule<Settings>::printClause( CRef _clause, bool _withAssignment, ostream& _out, const string& _init ) const
     {
         const Clause& c = ca[_clause];
         _out << _init;
@@ -2596,7 +2617,8 @@ NextClause:
         _out << endl;
     }
 
-    void SATModule::printClauses( const vec<CRef>& _clauses, const string _name, ostream& _out, const string _init, int _from, bool _withAssignment ) const
+    template<class Settings>
+    void SATModule<Settings>::printClauses( const vec<CRef>& _clauses, const string _name, ostream& _out, const string _init, int _from, bool _withAssignment ) const
     {
         _out << _init << " " << _name << ":" << endl;
         // Handle case when solver is in contradictory state:
@@ -2649,7 +2671,8 @@ NextClause:
             _out << _init << "  Wrote " << cnt << " clauses with " << max << " variables." << endl;
     }
 
-    void SATModule::printCurrentAssignment( ostream& _out, string _init ) const
+    template<class Settings>
+    void SATModule<Settings>::printCurrentAssignment( ostream& _out, string _init ) const
     {
         _out << _init << " Assignments:  ";
         for( int pos = 0; pos < assigns.size(); ++pos )
@@ -2683,7 +2706,8 @@ NextClause:
         }
     }
 
-    void SATModule::printDecisions( ostream& _out, string _init ) const
+    template<class Settings>
+    void SATModule<Settings>::printDecisions( ostream& _out, string _init ) const
     {
         _out << _init << " Decisions:  ";
         int level = 0;
@@ -2718,7 +2742,8 @@ NextClause:
         }
     }
     
-    void SATModule::printVariableOccurrences( ostream& _out, string _init ) const
+    template<class Settings>
+    void SATModule<Settings>::printVariableOccurrences( ostream& _out, string _init ) const
     {
         _out << _init << "Variable Occurrences: " << endl;
         for( auto varOccPair = mVarOccurrences.begin(); varOccPair != mVarOccurrences.end(); ++varOccPair )
@@ -2730,7 +2755,8 @@ NextClause:
         }
     }
     
-    void SATModule::printVariableClausesMap( ostream& _out, string _init ) const
+    template<class Settings>
+    void SATModule<Settings>::printVariableClausesMap( ostream& _out, string _init ) const
     {
         _out << _init << "Variable to clauses map: " << endl;
         for( size_t pos = 0; pos < mVarClausesMap.size(); ++pos )
@@ -2742,7 +2768,8 @@ NextClause:
         }
     }
 
-    void SATModule::collectStats()
+    template<class Settings>
+    void SATModule<Settings>::collectStats()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
         mpStatistics->rNrTotalVariables() = (size_t) nVars();
