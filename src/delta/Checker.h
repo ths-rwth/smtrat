@@ -49,9 +49,7 @@ public:
 	 */
 	Checker(const std::string& exec, unsigned timeout, const std::string& original):
 		executable(exec), timeout(timeout), expected(execute(original))
-	{
-		std::cout << "Expected exit code: " << expected << std::endl;
-	}
+	{}
 
 	/**
 	 * Call the solver with the given node.
@@ -65,6 +63,9 @@ public:
 		out << n;
 		out.close();
 		return execute(temp) == expected;
+	}
+	int expectedCode() const {
+		return expected;
 	}
 };
 

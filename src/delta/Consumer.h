@@ -22,57 +22,14 @@
 namespace delta {
 
 /**
- * This class generates and reuses temporary filenames with a common prefix.
- */
-class TempFilenameGenerator {
-private:
-	/// Prefix for temporary files.
-	std::string prefix;
-	/// Mutex for changes to tempfiles.
-	std::mutex mutex;
-	/// List of temporary files that are available.
-	std::queue<std::string> pool;
-	/// Id of next temporary file.
-	std::atomic<int> nextid;
-public:
-	/**
-	 * Constructor.
-     * @param prefix Prefix for all filenames.
-     */
-	TempFilenameGenerator(const std::string& prefix): prefix(prefix), nextid(0) {}
-
-	/**
-	 * Retrieve a filename for a temporary file that is not in use.
-     * @return Temporary filename.
-     */
-	std::string get() {
-		std::lock_guard<std::mutex> guard(mutex);
-		if (pool.empty()) {
-			std::stringstream ss;
-			ss << prefix << "-" << nextid++;
-			return ss.str();
-		}
-		auto r = pool.front();
-		pool.pop();
-		return r;
-	}
-	/**
-	 * Returns a filename to the pool of available filenames.
-     * @param temp Temporary filename.
-     */
-	void put(const std::string& temp) {
-		std::lock_guard<std::mutex> guard(mutex);
-		pool.push(temp);
-	}
-};
-
-/**
  * This class takes care of asynchronous execution of calls to the solver.
  */
-class Executor {
+class Consumer {
 private:
 	/// Filename generator.
 	TempFilenameGenerator temp;
+	// Checker object.
+	Checker checker;
 	/// List of job results not checked yet.
 	std::queue<std::future<void>> jobs;
 	/// Flag if a call was successful.
@@ -93,9 +50,9 @@ private:
      * @param checker Checker.
      * @param message Message, if check is successful.
      */
-	void performCheck(const Node& n, const Checker& checker, const std::string& message) {
+	void performCheck(const Node& n, const std::string& message) {
 		progress++;
-		if (found) return;
+		if (hasResult()) return;
 		std::string tmp = temp.get();
 		bool res = checker(n, tmp);
 		temp.put(tmp);
@@ -110,13 +67,13 @@ public:
 	 * Constructor.
      * @param tempPrefix Prefix for temporary files.
      */
-	Executor(const std::string& tempPrefix): temp(tempPrefix), found(false) {
+	Consumer(const std::string& tempPrefix, const Checker& checker): temp(tempPrefix), checker(checker), found(false) {
 		reset();
 	}
 	/**
 	 * Destructor.
      */
-	~Executor() {
+	~Consumer() {
 		reset();
 	}
 	/**
@@ -125,20 +82,19 @@ public:
      * @param c Checker.
      * @param message Message.
      */
-	void check(Node n, const Checker& c, const std::string& message) {
-		if (found) return;
+	void consume(const Node& n, const std::string& message) {
+		if (hasResult()) return;
 		jobcount++;
 		while (jobcount - progress > 100) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 		}
-		jobs.push(std::async(std::launch::async, &Executor::performCheck, this, n, c, message));
+		jobs.push(std::async(std::launch::async, &Consumer::performCheck, this, n, message));
 	}
 	/**
 	 * Wait for at least one job to finish.
      * @return If all jobs have finished.
      */
 	bool wait() {
-		while (!jobs.empty() && jobs.front().valid()) jobs.pop();
 		if (!jobs.empty()) {
 			jobs.front().get();
 			jobs.pop();
