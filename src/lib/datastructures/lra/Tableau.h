@@ -33,13 +33,6 @@
 #include <deque>
 #include "Variable.h"
 
-#define LRA_USE_PIVOTING_STRATEGY
-#define LRA_REFINEMENT
-//#define LRA_GOMORY_CUTS
-#ifndef LRA_GOMORY_CUTS
-#define LRA_CUTS_FROM_PROOFS
-#endif
-
 namespace smtrat
 {
     namespace lra
@@ -226,7 +219,7 @@ namespace smtrat
         /**
          * 
          */
-        template <typename T1, typename T2>
+        template<class Settings, typename T1, typename T2>
         class Tableau
         {
             public:
@@ -249,10 +242,8 @@ namespace smtrat
                 size_t mWidth;
                 ///
                 size_t mPivotingSteps;
-                #ifdef LRA_USE_PIVOTING_STRATEGY
                 ///
                 size_t mMaxPivotsWithoutBlandsRule;
-                #endif
                 ///
                 std::list<const smtrat::Formula*>::iterator mDefaultBoundPosition;
                 ///
@@ -275,14 +266,12 @@ namespace smtrat
                 FastPointerMap<Polynomial, Variable<T1,T2>*> mSlackVars;
                 ///
                 FastPointerMap<Formula, std::vector<const Bound<T1, T2>*>*> mConstraintToBound;
-                #ifdef LRA_REFINEMENT
                 ///
                 std::map<Variable<T1,T2>*, LearnedBound> mLearnedLowerBounds;
                 ///
                 std::map<Variable<T1,T2>*, LearnedBound> mLearnedUpperBounds;
                 ///
                 std::vector<typename std::map<Variable<T1,T2>*, LearnedBound>::iterator> mNewLearnedBounds;
-                #endif
 
                 /**
                  *
@@ -390,7 +379,7 @@ namespace smtrat
                         {
                             return mEntryID != _iter.entryID();
                         }
-                };    /* class Tableau<T1,T2>::Iterator */
+                };    /* class Tableau<Settings,T1,T2>::Iterator */
 
             public:
                 /**
@@ -427,7 +416,6 @@ namespace smtrat
                     return mpEntries->size();
                 }
 
-                #ifdef LRA_USE_PIVOTING_STRATEGY
                 /**
                  * 
                  */
@@ -435,7 +423,6 @@ namespace smtrat
                 {
                     mMaxPivotsWithoutBlandsRule = _start;
                 }
-                #endif
 
                 /**
                  * @return 
@@ -501,7 +488,6 @@ namespace smtrat
                     mPivotingSteps = 0;
                 }
 
-                #ifdef LRA_REFINEMENT
                 /**
                  * @return 
                  */
@@ -525,7 +511,6 @@ namespace smtrat
                 {
                     return mNewLearnedBounds;
                 }
-                #endif
 
                 /**
                  * @return 
@@ -702,13 +687,11 @@ namespace smtrat
                  */
                 void addToEntry( const T2& _toAdd, Iterator& _horiIter, bool _horiIterLeftFromVertIter, Iterator& _vertIter, bool _vertIterBelowHoriIter );
                 
-                #ifdef LRA_REFINEMENT
                 /**
                  * Tries to refine the supremum and infimum of the given basic variable. 
                  * @param _basicVar The basic variable for which to refine the supremum and infimum.
                  */
                 void rowRefinement( Variable<T1, T2>* _basicVar );
-                #endif
 
                 /**
                  * 
@@ -747,7 +730,6 @@ namespace smtrat
                  */
                 bool rowCorrect( size_t _rowNumber ) const;
                 
-                #ifdef LRA_CUTS_FROM_PROOFS
                 /**
                  * Checks whether a constraint is a defining constraint. 
                  * @param row_index
@@ -821,7 +803,7 @@ namespace smtrat
                  * @param dc_positions 
                  * @return the value (T) of the scalar product.
                  */        
-                std::pair< const Variable<T1,T2>*, T2 > Scalar_Product( Tableau<T1,T2>& A, Tableau<T1,T2>& B, size_t rowA, size_t columnB, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions );
+                std::pair< const Variable<T1,T2>*, T2 > Scalar_Product( Tableau<Settings,T1,T2>& A, Tableau<Settings,T1,T2>& B, size_t rowA, size_t columnB, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions );
                 
                 /**
                  * Calculate the Hermite normal form of the calling Tableau. 
@@ -849,8 +831,7 @@ namespace smtrat
                  * @return the valid proof,    if the proof can be constructed.
                  *         NULL,               otherwise.   
                  */
-                smtrat::Polynomial* create_cut_from_proof( Tableau<T1,T2>& Inverted_Tableau, Tableau<T1,T2>& DC_Tableau, size_t row_index, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions, T2& lower, T2& max_value );
-                #endif
+                smtrat::Polynomial* create_cut_from_proof( Tableau<Settings,T1,T2>& Inverted_Tableau, Tableau<Settings,T1,T2>& DC_Tableau, size_t row_index, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions, T2& lower, T2& max_value );
 
                 /**
                  * Creates a constraint referring to Gomory Cuts, if possible. 
@@ -898,7 +879,6 @@ namespace smtrat
                  */
                 void printVariables( bool _allBounds = true, std::ostream& _out = std::cout, const std::string _init = "" ) const;
                 
-                #ifdef LRA_REFINEMENT
                 /**
                  * 
                  * @param _init
@@ -914,8 +894,7 @@ namespace smtrat
                  * @param _out
                  */
                 void printLearnedBound( const Variable<T1,T2>& _var, const LearnedBound& _learnedBound, const std::string _init = "", std::ostream& _out = std::cout ) const;
-                #endif
-                
+                 
                 /**
                  * 
                  * @param _pivotingElement

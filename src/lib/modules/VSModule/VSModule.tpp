@@ -25,8 +25,7 @@
  * @version 2013-06-20
  */
 
-#include <set>
-#include "State.h"
+
 #include "VSModule.h"
 
 using namespace std;

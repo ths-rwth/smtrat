@@ -56,6 +56,7 @@ set(lib_datastructures_headers
         datastructures/VariableBounds.h
 	datastructures/lra/Bound.h
 	datastructures/lra/Tableau.h
+	datastructures/lra/TableauSettings.h
 	datastructures/lra/Value.h
 	datastructures/lra/Variable.h
 	datastructures/lra/Numeric.h

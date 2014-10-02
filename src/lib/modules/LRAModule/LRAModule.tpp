@@ -18,36 +18,26 @@
  * along with SMT-RAT.  If not, see <http://www.gnrg/licenses/>.
  *
  */
-/*
- * File:   LRAModule.cpp
- * @author name surname <emailadress>
- *
- * @version 2012-04-05
- * Created on April 5th, 2012, 3:22 PM
+/**
+ * @file LRAModule.tpp
+ * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
+ * @since 2012-04-05
+ * @version 2014-10-01
  */
 
+#pragma once
 
 #include "LRAModule.h"
-#include <iostream>
 
 //#define DEBUG_LRA_MODULE
-#define LRA_SIMPLE_THEORY_PROPAGATION
-#define LRA_SIMPLE_CONFLICT_SEARCH
-#define LRA_SIMPLE_CONFLICTS_AND_DEDUCTIONS_ON_DEMAND
-//#define LRA_ONE_REASON
-//#define LRA_RESTORE_PREVIOUS_CONSISTENT_ASSIGNMENT
-//#define LRA_EARLY_BRANCHING
-#ifndef LRA_GOMORY_CUTS
-#ifndef LRA_CUTS_FROM_PROOFS
-#endif
-#endif
 
 using namespace std;
 using namespace smtrat::lra;
 
 namespace smtrat
 {
-    LRAModule::LRAModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
+    template<class Settings>
+    LRAModule<Settings>::LRAModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         mInitialized( false ),
         mAssignmentFullfilsNonlinearConstraints( false ),
@@ -67,14 +57,16 @@ namespace smtrat
         #endif
     }
 
-    LRAModule::~LRAModule()
+    template<class Settings>
+    LRAModule<Settings>::~LRAModule()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
         delete mpStatistics;
         #endif
     }
 
-    bool LRAModule::inform( const Formula* _constraint )
+    template<class Settings>
+    bool LRAModule<Settings>::inform( const Formula* _constraint )
     {
         #ifdef DEBUG_LRA_MODULE
         cout << "LRAModule::inform  " << "inform about " << *_constraint << endl;
@@ -96,7 +88,8 @@ namespace smtrat
         return true;
     }
 
-    bool LRAModule::assertSubformula( list<const Formula*>::const_iterator _subformula )
+    template<class Settings>
+    bool LRAModule<Settings>::assertSubformula( list<const Formula*>::const_iterator _subformula )
     {
         #ifdef DEBUG_LRA_MODULE
         cout << "LRAModule::assertSubformula  " << "add " << **_subformula << "(" << *_subformula << ")" << endl;
@@ -208,7 +201,8 @@ namespace smtrat
         return true;
     }
 
-    void LRAModule::removeSubformula( ModuleInput::const_iterator _subformula )
+    template<class Settings>
+    void LRAModule<Settings>::removeSubformula( ModuleInput::const_iterator _subformula )
     {
         #ifdef DEBUG_LRA_MODULE
         cout << "remove " << **_subformula << "(" << *_subformula << ")" << endl;
@@ -273,26 +267,29 @@ namespace smtrat
                                     }
                                 }
                                 LRAVariable& var = *(*bound)->pVariable();
-                                #ifdef LRA_RESTORE_PREVIOUS_CONSISTENT_ASSIGNMENT
-                                if( var.deactivateBound( *bound, mpPassedFormula->end() ) )
+                                if( Settings::restore_previous_consistent_assignment )
                                 {
-                                    mStrongestBoundsRemoved = true;
-                                }
-                                #else
-                                if( var.deactivateBound( *bound, mpPassedFormula->end() ) && !var.isBasic() )
-                                {
-                                    if( var.supremum() < var.assignment() )
+                                    if( var.deactivateBound( *bound, mpPassedFormula->end() ) )
                                     {
-                                        mTableau.updateBasicAssignments( var.position(), LRAValue( var.supremum().limit() - var.assignment() ) );
-                                        var.rAssignment() = var.supremum().limit();
-                                    }
-                                    else if( var.infimum() > var.assignment() )
-                                    {
-                                        mTableau.updateBasicAssignments( var.position(), LRAValue( var.infimum().limit() - var.assignment() ) );
-                                        var.rAssignment() = var.infimum().limit();
+                                        mStrongestBoundsRemoved = true;
                                     }
                                 }
-                                #endif
+                                else
+                                {
+                                    if( var.deactivateBound( *bound, mpPassedFormula->end() ) && !var.isBasic() )
+                                    {
+                                        if( var.supremum() < var.assignment() )
+                                        {
+                                            mTableau.updateBasicAssignments( var.position(), LRAValue( var.supremum().limit() - var.assignment() ) );
+                                            var.rAssignment() = var.supremum().limit();
+                                        }
+                                        else if( var.infimum() > var.assignment() )
+                                        {
+                                            mTableau.updateBasicAssignments( var.position(), LRAValue( var.infimum().limit() - var.assignment() ) );
+                                            var.rAssignment() = var.infimum().limit();
+                                        }
+                                    }
+                                }
                                 if( !(*bound)->pVariable()->pSupremum()->isInfinite() )
                                 {
                                     mBoundCandidatesToPass.push_back( (*bound)->pVariable()->pSupremum() );
@@ -340,7 +337,8 @@ namespace smtrat
         Module::removeSubformula( _subformula );
     }
 
-    Answer LRAModule::isConsistent()
+    template<class Settings>
+    Answer LRAModule<Settings>::isConsistent()
     {
         #ifdef DEBUG_LRA_MODULE
         cout << "check for consistency" << endl;
@@ -393,20 +391,17 @@ namespace smtrat
                     // If the current assignment also fulfills the nonlinear constraints.
                     if( checkAssignmentForNonlinearConstraint() )
                     {
-                        #ifdef LRA_GOMORY_CUTS 
-                        if( gomory_cut() )
+                        if( Settings::use_gomory_cuts && gomory_cut() )
                             goto Return; // Unknown
-                        #endif 
-                        #ifdef LRA_CUTS_FROM_PROOFS
-                        if( cuts_from_proofs() )
+                        if( !Settings::use_gomory_cuts && Settings::use_cuts_from_proofs && cuts_from_proofs() )
                             goto Return; // Unknown
-                        #endif
-                        if( branch_and_bound() )
+                        if( !Settings::use_gomory_cuts && !Settings::use_cuts_from_proofs && branch_and_bound() )
                             goto Return; // Unknown
                         result = True;
-                        #ifdef LRA_RESTORE_PREVIOUS_CONSISTENT_ASSIGNMENT
-                        mTableau.storeAssignment();
-                        #endif
+                        if( Settings::restore_previous_consistent_assignment )
+                        {
+                            mTableau.storeAssignment();
+                        }
                         goto Return;
                     }
                     // Otherwise, check the consistency of the formula consisting of the nonlinear constraints and the tightest bounds with the backends.
@@ -423,23 +418,26 @@ namespace smtrat
                 else
                 {
                     // Pivot at the found pivoting entry.
-                    #ifdef LRA_EARLY_BRANCHING
-                    LRAVariable* newBasicVar = mTableau.pivot( pivotingElement.first );
-                    Rational ratAss = newBasicVar->assignment().mainPart().toRational();
-                    if( newBasicVar->isActive() && newBasicVar->isInteger() && !carl::isInteger( ratAss ) )
+                    if( Settings::branch_and_bound_early )
                     {
-                        if( !probablyLooping( newBasicVar->expression(), ratAss ) )
+                        LRAVariable* newBasicVar = mTableau.pivot( pivotingElement.first );
+                        Rational ratAss = newBasicVar->assignment().mainPart().toRational();
+                        if( newBasicVar->isActive() && newBasicVar->isInteger() && !carl::isInteger( ratAss ) )
                         {
-                            assert( newBasicVar->assignment().deltaPart() == 0 );
-                            PointerSet<Formula> premises;
-                            mTableau.collect_premises( newBasicVar, premises );                
-                            branchAt( newBasicVar->expression(), ratAss, premises );
-                            goto Return;
+                            if( !probablyLooping( newBasicVar->expression(), ratAss ) )
+                            {
+                                assert( newBasicVar->assignment().deltaPart() == 0 );
+                                PointerSet<Formula> premises;
+                                mTableau.collect_premises( newBasicVar, premises );                
+                                branchAt( newBasicVar->expression(), ratAss, premises );
+                                goto Return;
+                            }
                         }
                     }
-                    #else
-                    mTableau.pivot( pivotingElement.first );
-                    #endif
+                    else
+                    {
+                        mTableau.pivot( pivotingElement.first );
+                    }
                     #ifdef SMTRAT_DEVOPTION_Statistics
                     mpStatistics->pivotStep();
                     #endif
@@ -448,7 +446,7 @@ namespace smtrat
                     while( !mTableau.rNewLearnedBounds().empty() )
                     {
                         PointerSet<Formula> originSet;
-                        LRATableau::LearnedBound& learnedBound = mTableau.rNewLearnedBounds().back()->second;
+                        typename LRATableau::LearnedBound& learnedBound = mTableau.rNewLearnedBounds().back()->second;
                         mTableau.rNewLearnedBounds().pop_back();
                         vector<const LRABound*>& bounds = learnedBound.premise;
                         for( auto bound = bounds.begin(); bound != bounds.end(); ++bound )
@@ -497,28 +495,31 @@ namespace smtrat
             else
             {
                 // Create the infeasible subsets.
-                #ifdef LRA_ONE_REASON
-                vector< const LRABound* > conflict = mTableau.getConflict( pivotingElement.first );
-                PointerSet<Formula> infSubSet;
-                for( auto bound = conflict.begin(); bound != conflict.end(); ++bound )
+                if( Settings::one_conflict_reason )
                 {
-                    assert( (*bound)->isActive() );
-                    infSubSet.insert( (*bound)->pOrigins()->begin()->begin(), (*bound)->pOrigins()->begin()->end() );
-                }
-                mInfeasibleSubsets.push_back( infSubSet );
-                #else
-                vector< set< const LRABound* > > conflictingBounds = mTableau.getConflictsFrom( pivotingElement.first );
-                for( auto conflict = conflictingBounds.begin(); conflict != conflictingBounds.end(); ++conflict )
-                {
+                    vector< const LRABound* > conflict = mTableau.getConflict( pivotingElement.first );
                     PointerSet<Formula> infSubSet;
-                    for( auto bound = conflict->begin(); bound != conflict->end(); ++bound )
+                    for( auto bound = conflict.begin(); bound != conflict.end(); ++bound )
                     {
                         assert( (*bound)->isActive() );
                         infSubSet.insert( (*bound)->pOrigins()->begin()->begin(), (*bound)->pOrigins()->begin()->end() );
                     }
                     mInfeasibleSubsets.push_back( infSubSet );
                 }
-                #endif
+                else
+                {
+                    vector< set< const LRABound* > > conflictingBounds = mTableau.getConflictsFrom( pivotingElement.first );
+                    for( auto conflict = conflictingBounds.begin(); conflict != conflictingBounds.end(); ++conflict )
+                    {
+                        PointerSet<Formula> infSubSet;
+                        for( auto bound = conflict->begin(); bound != conflict->end(); ++bound )
+                        {
+                            assert( (*bound)->isActive() );
+                            infSubSet.insert( (*bound)->pOrigins()->begin()->begin(), (*bound)->pOrigins()->begin()->end() );
+                        }
+                        mInfeasibleSubsets.push_back( infSubSet );
+                    }
+                }
                 result = False;
                 goto Return;
             }
@@ -569,7 +570,8 @@ Return:
         return foundAnswer( result );
     }
 
-    void LRAModule::updateModel() const
+    template<class Settings>
+    void LRAModule<Settings>::updateModel() const
     {
         clearModel();
         if( solverState() == True )
@@ -591,7 +593,8 @@ Return:
         }
     }
 
-    EvalRationalMap LRAModule::getRationalModel() const
+    template<class Settings>
+    EvalRationalMap LRAModule<Settings>::getRationalModel() const
     {
         if( mInfeasibleSubsets.empty() )
         {
@@ -600,7 +603,8 @@ Return:
         return EvalRationalMap();
     }
 
-    EvalIntervalMap LRAModule::getVariableBounds() const
+    template<class Settings>
+    EvalIntervalMap LRAModule<Settings>::getVariableBounds() const
     {
         EvalIntervalMap result = EvalIntervalMap();
         for( auto iter = mTableau.originalVars().begin(); iter != mTableau.originalVars().end(); ++iter )
@@ -637,7 +641,8 @@ Return:
     }
 
     #ifdef LRA_REFINEMENT
-    void LRAModule::learnRefinements()
+    template<class Settings>
+    void LRAModule<Settings>::learnRefinements()
     {
         for( auto iter = mTableau.rLearnedLowerBounds().begin(); iter != mTableau.rLearnedLowerBounds().end(); ++iter )
         {
@@ -682,7 +687,8 @@ Return:
     }
     #endif
 
-    void LRAModule::adaptPassedFormula()
+    template<class Settings>
+    void LRAModule<Settings>::adaptPassedFormula()
     {
         while( !mBoundCandidatesToPass.empty() )
         {
@@ -703,7 +709,8 @@ Return:
         }
     }
 
-    bool LRAModule::checkAssignmentForNonlinearConstraint()
+    template<class Settings>
+    bool LRAModule<Settings>::checkAssignmentForNonlinearConstraint()
     {
         if( mNonlinearConstraints.empty() )
         {
@@ -726,21 +733,25 @@ Return:
         }
     }
 
-    void LRAModule::activateBound( const LRABound* _bound, const PointerSet<Formula>& _formulas )
+    template<class Settings>
+    void LRAModule<Settings>::activateBound( const LRABound* _bound, const PointerSet<Formula>& _formulas )
     {
         if( mStrongestBoundsRemoved )
         {
             mTableau.resetAssignment();
             mStrongestBoundsRemoved = false;
         }
-        #ifdef LRA_SIMPLE_CONFLICTS_AND_DEDUCTIONS_ON_DEMAND
-        #ifdef LRA_SIMPLE_THEORY_PROPAGATION
-        addSimpleBoundDeduction( _bound, true, false );
-        #endif
-        #ifdef LRA_SIMPLE_CONFLICT_SEARCH
-        findSimpleConflicts( *_bound );
-        #endif
-        #endif
+        if( Settings::simple_conflicts_and_propagation_on_demand )
+        {
+            if( Settings::simple_theory_propagation )
+            {
+                addSimpleBoundDeduction( _bound, true, false );
+            }
+            if( Settings::simple_conflict_search )
+            {
+                findSimpleConflicts( *_bound );
+            }
+        }
         // If the bounds constraint has already been passed to the backend, add the given formulas to it's origins
         if( _bound->pInfo()->position != mpPassedFormula->end() )
             addOrigin( *_bound->pInfo()->position, _formulas );
@@ -790,7 +801,8 @@ Return:
         #endif
     }
     
-    void LRAModule::activateStrictBound( const Formula* _neqOrigin, const LRABound& _weakBound, const LRABound* _strictBound )
+    template<class Settings>
+    void LRAModule<Settings>::activateStrictBound( const Formula* _neqOrigin, const LRABound& _weakBound, const LRABound* _strictBound )
     {
         PointerSet<Formula> involvedConstraints;
         PointerSet<Formula> originSet;
@@ -819,25 +831,32 @@ Return:
         }
     }
 
-    void LRAModule::setBound( const Formula* _constraint )
+    template<class Settings>
+    void LRAModule<Settings>::setBound( const Formula* _constraint )
     {
-        #ifdef LRA_SIMPLE_CONFLICTS_AND_DEDUCTIONS_ON_DEMAND
-        mTableau.newBound( _constraint );
-        #else
-        pair<const LRABound*, bool> retValue = mTableau.newBound( _constraint );
-        if( retValue.second )
+        if( Settings::simple_conflicts_and_propagation_on_demand )
         {
-            #ifdef LRA_SIMPLE_THEORY_PROPAGATION
-            addSimpleBoundDeduction( retValue.first, true, _constraint->constraint().relation() == Relation::NEQ );
-            #endif
-            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
-            findSimpleConflicts( *retValue.first );
-            #endif
+            mTableau.newBound( _constraint );
         }
-        #endif
+        else
+        {
+            pair<const LRABound*, bool> retValue = mTableau.newBound( _constraint );
+            if( retValue.second )
+            {
+                if( Settings::simple_theory_propagation )
+                {
+                    addSimpleBoundDeduction( retValue.first, true, _constraint->constraint().relation() == Relation::NEQ );
+                }
+                if( Settings::simple_conflict_search )
+                {
+                    findSimpleConflicts( *retValue.first );
+                }
+            }
+        }
     }
     
-    void LRAModule::addSimpleBoundDeduction( const LRABound* _bound, bool _exhaustively, bool _boundNeq )
+    template<class Settings>
+    void LRAModule<Settings>::addSimpleBoundDeduction( const LRABound* _bound, bool _exhaustively, bool _boundNeq )
     {
         const LRAVariable& lraVar = _bound->variable();
         if( _bound->isUpperBound() )
@@ -935,7 +954,8 @@ Return:
         }
     }
     
-    void LRAModule::addSimpleBoundConflict( const LRABound& _caseA, const LRABound& _caseB, bool _caseBneq )
+    template<class Settings>
+    void LRAModule<Settings>::addSimpleBoundConflict( const LRABound& _caseA, const LRABound& _caseB, bool _caseBneq )
     {
         PointerSet<Formula> subformulas;
         subformulas.insert( newNegation( _caseA.pAsConstraint() ) );
@@ -946,7 +966,8 @@ Return:
         #endif
     }
 
-    void LRAModule::findSimpleConflicts( const LRABound& _bound )
+    template<class Settings>
+    void LRAModule<Settings>::findSimpleConflicts( const LRABound& _bound )
     {
         assert( !_bound.deduced() );
         if( _bound.isUpperBound() )
@@ -1015,7 +1036,8 @@ Return:
         }
     }
 
-    void LRAModule::init()
+    template<class Settings>
+    void LRAModule<Settings>::init()
     {
         if( !mInitialized )
         {
@@ -1031,7 +1053,8 @@ Return:
         }
     }
     
-    bool LRAModule::gomory_cut()
+    template<class Settings>
+    bool LRAModule<Settings>::gomory_cut()
     {
         EvalRationalMap rMap_ = getRationalModel();
         bool all_int = true;
@@ -1068,8 +1091,8 @@ Return:
         return !all_int;
     }
     
-    #ifdef LRA_CUTS_FROM_PROOFS
-    bool LRAModule::cuts_from_proofs()
+    template<class Settings>
+    bool LRAModule<Settings>::cuts_from_proofs()
     {
         #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
         cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
@@ -1228,7 +1251,6 @@ Return:
         branchAt( Polynomial( var->first ), (Rational)map_iterator->second );
         return true;
     }
-    #endif
 
     enum BRANCH_STRATEGY
     {
@@ -1238,7 +1260,8 @@ Return:
         NATIVE
     };
     
-    bool LRAModule::branch_and_bound()
+    template<class Settings>
+    bool LRAModule<Settings>::branch_and_bound()
     {
         BRANCH_STRATEGY strat = MOST_INFEASIBLE;
         bool gc_support = true;
@@ -1262,7 +1285,8 @@ Return:
         return result;
     }
     
-    bool LRAModule::maybeGomoryCut( const LRAVariable* _lraVar, const Rational& _branchingValue )
+    template<class Settings>
+    bool LRAModule<Settings>::maybeGomoryCut( const LRAVariable* _lraVar, const Rational& _branchingValue )
     {
         if( probablyLooping( _lraVar->expression(), _branchingValue ) )
         {
@@ -1272,7 +1296,8 @@ Return:
         return true;
     }
     
-    bool LRAModule::minimal_row_var( bool _gc_support )
+    template<class Settings>
+    bool LRAModule<Settings>::minimal_row_var( bool _gc_support )
     {
         EvalRationalMap _rMap = getRationalModel();
         auto map_iterator = _rMap.begin();
@@ -1314,7 +1339,8 @@ Return:
         }
     }
     
-    bool LRAModule::most_feasible_var( bool _gc_support )
+    template<class Settings>
+    bool LRAModule<Settings>::most_feasible_var( bool _gc_support )
     {
         EvalRationalMap _rMap = getRationalModel();
         auto map_iterator = _rMap.begin();
@@ -1356,7 +1382,8 @@ Return:
         } 
     }
     
-    bool LRAModule::most_infeasible_var( bool _gc_support ) 
+    template<class Settings>
+    bool LRAModule<Settings>::most_infeasible_var( bool _gc_support ) 
     {
         EvalRationalMap _rMap = getRationalModel();
         auto map_iterator = _rMap.begin();
@@ -1398,7 +1425,8 @@ Return:
         } 
     }
     
-    bool LRAModule::first_var( bool _gc_support )
+    template<class Settings>
+    bool LRAModule<Settings>::first_var( bool _gc_support )
     {
         EvalRationalMap _rMap = getRationalModel();
         auto map_iterator = _rMap.begin();
@@ -1422,7 +1450,8 @@ Return:
         return false;
     }
     
-    bool LRAModule::assignmentConsistentWithTableau( const EvalRationalMap& _assignment, const LRABoundType& _delta ) const
+    template<class Settings>
+    bool LRAModule<Settings>::assignmentConsistentWithTableau( const EvalRationalMap& _assignment, const LRABoundType& _delta ) const
     {
         for( auto slackVar : mTableau.slackVars() )
         {
@@ -1437,7 +1466,8 @@ Return:
         return true;
     }
     
-    bool LRAModule::assignmentCorrect() const
+    template<class Settings>
+    bool LRAModule<Settings>::assignmentCorrect() const
     {
         if( solverState() == False ) return true;
         if( !mAssignmentFullfilsNonlinearConstraints ) return true;
@@ -1460,7 +1490,8 @@ Return:
         return true;
     }
 
-    void LRAModule::printLinearConstraints( ostream& _out, const string _init ) const
+    template<class Settings>
+    void LRAModule<Settings>::printLinearConstraints( ostream& _out, const string _init ) const
     {
         _out << _init << "Linear constraints:" << endl;
         for( auto iter = mLinearConstraints.begin(); iter != mLinearConstraints.end(); ++iter )
@@ -1469,7 +1500,8 @@ Return:
         }
     }
 
-    void LRAModule::printNonlinearConstraints( ostream& _out, const string _init ) const
+    template<class Settings>
+    void LRAModule<Settings>::printNonlinearConstraints( ostream& _out, const string _init ) const
     {
         _out << _init << "Nonlinear constraints:" << endl;
         for( auto iter = mNonlinearConstraints.begin(); iter != mNonlinearConstraints.end(); ++iter )
@@ -1478,7 +1510,8 @@ Return:
         }
     }
 
-   void LRAModule::printConstraintToBound( ostream& _out, const string _init ) const
+    template<class Settings>
+    void LRAModule<Settings>::printConstraintToBound( ostream& _out, const string _init ) const
     {
         _out << _init << "Mapping of constraints to bounds:" << endl;
         for( auto iter = mTableau.constraintToBound().begin(); iter != mTableau.constraintToBound().end(); ++iter )
@@ -1493,7 +1526,8 @@ Return:
         }
     }
 
-    void LRAModule::printBoundCandidatesToPass( ostream& _out, const string _init ) const
+    template<class Settings>
+    void LRAModule<Settings>::printBoundCandidatesToPass( ostream& _out, const string _init ) const
     {
         _out << _init << "Bound candidates to pass:" << endl;
         for( auto iter = mBoundCandidatesToPass.begin(); iter != mBoundCandidatesToPass.end(); ++iter )
@@ -1504,7 +1538,8 @@ Return:
         }
     }
 
-    void LRAModule::printRationalModel( ostream& _out, const string _init ) const
+    template<class Settings>
+    void LRAModule<Settings>::printRationalModel( ostream& _out, const string _init ) const
     {
         EvalRationalMap rmodel = getRationalModel();
         _out << _init << "Rational model:" << endl;
@@ -1516,12 +1551,14 @@ Return:
         }
     }
 
-    void LRAModule::printTableau( ostream& _out, const string _init ) const
+    template<class Settings>
+    void LRAModule<Settings>::printTableau( ostream& _out, const string _init ) const
     {
         mTableau.print( LAST_ENTRY_ID, _out, _init );
     }
 
-    void LRAModule::printVariables( ostream& _out, const string _init ) const
+    template<class Settings>
+    void LRAModule<Settings>::printVariables( ostream& _out, const string _init ) const
     {
         mTableau.printVariables( true, _out, _init );
     }

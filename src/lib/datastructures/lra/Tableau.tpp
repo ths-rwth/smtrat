@@ -29,30 +29,18 @@
 
 #include "Tableau.h"
 
-//#define LRA_PRINT_STATS
-//#define LRA_EQUATION_FIRST
-#define LRA_LOCAL_CONFLICT_DIRECTED
-//#define LRA_USE_ACTIVITY_STRATEGY
-//#define LRA_USE_THETA_STRATEGY
-#ifdef LRA_REFINEMENT
-//#define LRA_INTRODUCE_NEW_CONSTRAINTS
-#endif
-#ifdef LRA_CUTS_FROM_PROOFS
 //#define LRA_DEBUG_CUTS_FROM_PROOFS
-#endif
 
 namespace smtrat
 {
     namespace lra
     {
-        template<typename T1, typename T2>
-        Tableau<T1,T2>::Tableau( std::list<const smtrat::Formula*>::iterator _defaultBoundPosition ):
+        template<class Settings, typename T1, typename T2>
+        Tableau<Settings,T1,T2>::Tableau( std::list<const smtrat::Formula*>::iterator _defaultBoundPosition ):
             mRowsCompressed( true ),
             mWidth( 0 ),
             mPivotingSteps( 0 ),
-            #ifdef LRA_USE_PIVOTING_STRATEGY
             mMaxPivotsWithoutBlandsRule( 0 ),
-            #endif
             mDefaultBoundPosition( _defaultBoundPosition ),
             mUnusedIDs(),
             mRows(),
@@ -61,27 +49,19 @@ namespace smtrat
             mConflictingRows(),
             mOriginalVars(),
             mSlackVars(),
-            mConstraintToBound()
-            #ifdef LRA_REFINEMENT
-            ,
+            mConstraintToBound(),
             mLearnedLowerBounds(),
             mLearnedUpperBounds(),
             mNewLearnedBounds()
-            #endif
         {
             mpEntries = new std::vector< TableauEntry<T1,T2> >();
             mpEntries->push_back( TableauEntry<T1,T2>() );
             mpTheta = new Value<T1>();
         };
 
-        template<typename T1, typename T2>
-        Tableau<T1,T2>::~Tableau()
+        template<class Settings, typename T1, typename T2>
+        Tableau<Settings,T1,T2>::~Tableau()
         {
-            #ifdef LRA_PRINT_STATS
-            std::cout << "#Pivoting steps:  " << mPivotingSteps << std::endl;
-            std::cout << "#Tableus entries: " << mpEntries->size()-1 << std::endl;
-            std::cout << "Tableau coverage: " << (double)(mpEntries->size()-1)/(double)(mRows.size()*mColumns.size())*100 << "%" << std::endl;
-            #endif
             while( !mConstraintToBound.empty() )
             {
                 std::vector< const Bound<T1,T2>* >* toDelete = mConstraintToBound.begin()->second;
@@ -104,8 +84,8 @@ namespace smtrat
             delete mpTheta;
         };
 
-        template<typename T1, typename T2>
-        EntryID Tableau<T1,T2>::newTableauEntry( const T2& _content )
+        template<class Settings, typename T1, typename T2>
+        EntryID Tableau<Settings,T1,T2>::newTableauEntry( const T2& _content )
         {
             if( mUnusedIDs.empty() )
             {
@@ -121,8 +101,8 @@ namespace smtrat
             }
         }
 
-        template<typename T1, typename T2>
-        void Tableau<T1,T2>::removeEntry( EntryID _entryID )
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::removeEntry( EntryID _entryID )
         {
             TableauEntry<T1,T2>& entry = (*mpEntries)[_entryID];
             const EntryID& up = entry.vNext( false );
@@ -158,8 +138,8 @@ namespace smtrat
             mUnusedIDs.push( _entryID );
         }
         
-        template<typename T1, typename T2>
-        void Tableau<T1,T2>::activateBound( const Bound<T1,T2>* _bound, const PointerSet<Formula>& _formulas )
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::activateBound( const Bound<T1,T2>* _bound, const PointerSet<Formula>& _formulas )
         {
             _bound->pOrigins()->push_back( _formulas );
             const Variable<T1,T2>& var = _bound->variable();
@@ -191,8 +171,8 @@ namespace smtrat
             }
         }
         
-        template<typename T1, typename T2>
-        std::pair<const Bound<T1,T2>*, bool> Tableau<T1,T2>::newBound( const smtrat::Formula* _constraint )
+        template<class Settings, typename T1, typename T2>
+        std::pair<const Bound<T1,T2>*, bool> Tableau<Settings,T1,T2>::newBound( const smtrat::Formula* _constraint )
         {
             assert( _constraint->getType() == smtrat::CONSTRAINT );
             const Constraint& constraint = _constraint->constraint();
@@ -352,16 +332,16 @@ namespace smtrat
             return result;
         }
         
-        template<typename T1, typename T2>
-        Variable<T1, T2>* Tableau<T1,T2>::newNonbasicVariable( const smtrat::Polynomial* _poly, bool _isInteger )
+        template<class Settings, typename T1, typename T2>
+        Variable<T1, T2>* Tableau<Settings,T1,T2>::newNonbasicVariable( const smtrat::Polynomial* _poly, bool _isInteger )
         {
             Variable<T1, T2>* var = new Variable<T1, T2>( mWidth++, _poly, mDefaultBoundPosition, _isInteger );
             mColumns.push_back( var );
             return var;
         }
 
-        template<typename T1, typename T2>
-        Variable<T1, T2>* Tableau<T1,T2>::newBasicVariable( const smtrat::Polynomial* _poly, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars, bool _isInteger )
+        template<class Settings, typename T1, typename T2>
+        Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( const smtrat::Polynomial* _poly, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars, bool _isInteger )
         {
             mNonActiveBasics.emplace_front();
             Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), _poly, mDefaultBoundPosition, _isInteger );
@@ -387,8 +367,8 @@ namespace smtrat
             return var;
         }
         
-        template<typename T1, typename T2>
-        void Tableau<T1,T2>::activateBasicVar( Variable<T1, T2>* _var )
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::activateBasicVar( Variable<T1, T2>* _var )
         {
             assert( _var->isBasic() );
             assert( !_var->isOriginal() );
@@ -528,20 +508,21 @@ namespace smtrat
             assert( checkCorrectness() == mRows.size() );
         }
         
-        template<typename T1, typename T2>
-        void Tableau<T1,T2>::deactivateBasicVar( Variable<T1, T2>* _var )
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::deactivateBasicVar( Variable<T1, T2>* _var )
         {
             assert( _var->isBasic() );
             assert( !_var->isOriginal() );
-            #ifdef LRA_LOCAL_CONFLICT_DIRECTED
-            auto crIter = mConflictingRows.begin();
-            for( ; crIter != mConflictingRows.end(); ++crIter )
-                if( (*crIter) == _var ) break;
-            if( crIter != mConflictingRows.end() )
+            if( Settings::pivot_into_local_conflict )
             {
-                mConflictingRows.erase( crIter );
+                auto crIter = mConflictingRows.begin();
+                for( ; crIter != mConflictingRows.end(); ++crIter )
+                    if( (*crIter) == _var ) break;
+                if( crIter != mConflictingRows.end() )
+                {
+                    mConflictingRows.erase( crIter );
+                }
             }
-            #endif
             mNonActiveBasics.emplace_front();
             EntryID entryToRemove = _var->startEntry();
             while( entryToRemove != LAST_ENTRY_ID )
@@ -576,8 +557,8 @@ namespace smtrat
             mRowsCompressed = false;
         }
         
-        template<typename T1, typename T2>
-        void Tableau<T1,T2>::storeAssignment()
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::storeAssignment()
         {
             for( Variable<T1, T2>* basicVar : mRows )
                 basicVar->storeAssignment();
@@ -585,8 +566,8 @@ namespace smtrat
                 nonbasicVar->storeAssignment();
         }
         
-        template<typename T1, typename T2>
-        void Tableau<T1,T2>::resetAssignment()
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::resetAssignment()
         {
             for( Variable<T1, T2>* basicVar : mRows )
                 basicVar->resetAssignment();
@@ -594,8 +575,8 @@ namespace smtrat
                 nonbasicVar->resetAssignment();
         }
         
-        template<typename T1, typename T2>
-        smtrat::EvalRationalMap Tableau<T1,T2>::getRationalAssignment() const
+        template<class Settings, typename T1, typename T2>
+        smtrat::EvalRationalMap Tableau<Settings,T1,T2>::getRationalAssignment() const
         {
             smtrat::EvalRationalMap result;
             T1 minDelta = -1;
@@ -670,8 +651,8 @@ namespace smtrat
             return result;
         }
         
-        template<typename T1, typename T2>
-        void Tableau<T1,T2>::compressRows()
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::compressRows()
         {
             if( mRowsCompressed ) return;
             std::deque<size_t> emptyPositions;
@@ -696,26 +677,20 @@ namespace smtrat
             mRowsCompressed = true;
         }
 
-        template<typename T1, typename T2>
-        std::pair<EntryID,bool> Tableau<T1,T2>::nextPivotingElement()
+        template<class Settings, typename T1, typename T2>
+        std::pair<EntryID,bool> Tableau<Settings,T1,T2>::nextPivotingElement()
         {
-            #ifdef LRA_USE_PIVOTING_STRATEGY
             //  Dynamic strategy for a fixed number of steps
-            if( mPivotingSteps < mMaxPivotsWithoutBlandsRule )
+            if( Settings::use_pivoting_strategy && mPivotingSteps < mMaxPivotsWithoutBlandsRule )
             {
-            #ifdef LRA_LOCAL_CONFLICT_DIRECTED
             FindPivot:
-            #endif
                 EntryID bestTableauEntry = LAST_ENTRY_ID;
                 EntryID beginOfFirstConflictRow = LAST_ENTRY_ID;
                 Value<T1> bestDiff = Value<T1>( 0 );
                 Value<T1> bestThetaB = Value<T1>( 0 );
-                #ifdef LRA_LOCAL_CONFLICT_DIRECTED
                 bool initialSearch = mConflictingRows.empty();
-                std::vector<Variable<T1,T2>*>& rowsToConsider = initialSearch ? mRows : mConflictingRows; // TODO: instead of running through all rows, just go through those which got conflicting
-                #else
-                std::vector<Variable<T1,T2>*>& rowsToConsider = mRows;
-                #endif 
+                std::vector<Variable<T1,T2>*>& rowsToConsider = Settings::pivot_into_local_conflict && initialSearch ? mRows : mConflictingRows; 
+                // TODO: instead of running through all rows, just go through those which got conflicting
                 typename std::vector<Variable<T1,T2>*>::iterator bestVar = rowsToConsider.end();
                 for( auto basicVar = rowsToConsider.begin(); basicVar != rowsToConsider.end(); )
                 {
@@ -739,8 +714,7 @@ namespace smtrat
                     }
                     else
                     {
-                        #ifdef LRA_LOCAL_CONFLICT_DIRECTED
-                        if( !initialSearch )
+                        if( Settings::pivot_into_local_conflict && !initialSearch )
                         {
                             bool resetBestVarToEnd = bestVar == mConflictingRows.end();
                             basicVar = mConflictingRows.erase( basicVar );
@@ -754,20 +728,17 @@ namespace smtrat
                         {
                             ++basicVar;
                         }
-                        #else
-                        ++basicVar;
-                        #endif
                         continue;
                     }
-                    #ifdef LRA_USE_THETA_STRATEGY
-                    if( diff <= bestDiff )
+                    if( Settings::use_theta_based_pivot_strategy )
                     {
-                        ++basicVar;
-                        continue;
+                        if( diff <= bestDiff )
+                        {
+                            ++basicVar;
+                            continue;
+                        }
                     }
-                    #else
-                    #ifdef LRA_USE_ACTIVITY_STRATEGY
-                    if( bestVar != rowsToConsider.end() )
+                    else if( Settings::use_activity_based_pivot_strategy && bestVar != rowsToConsider.end() )
                     {
                         if( (*basicVar)->conflictActivity() < (*bestVar)->conflictActivity() 
                             || ((*basicVar)->conflictActivity() == (*bestVar)->conflictActivity() && diff <= bestDiff) )
@@ -776,8 +747,6 @@ namespace smtrat
                             continue;
                         }
                     }
-                    #endif
-                    #endif
                     if( upperBoundViolated || lowerBoundViolated )
                     {
                         std::pair<EntryID,bool> result = isSuitable( bVar, upperBoundViolated );
@@ -806,28 +775,31 @@ namespace smtrat
                                 assert( result.first != LAST_ENTRY_ID );
                                 assert( bestVar != rowsToConsider.end() );
                                 assert( bestTableauEntry != LAST_ENTRY_ID );
-                                #ifdef LRA_EQUATION_FIRST
-                                if( !(*bestVar)->involvesEquation() && bVar.involvesEquation() )
+                                if( Settings::prefer_equations )
                                 {
-                                    bestTableauEntry = result.first;
-                                    bestVar = basicVar;
+                                    if( !(*bestVar)->involvesEquation() && bVar.involvesEquation() )
+                                    {
+                                        bestTableauEntry = result.first;
+                                        bestVar = basicVar;
+                                    }
+                                    else if( (*bestVar)->involvesEquation() || !bVar.involvesEquation() )
+                                    {
+                                        bestTableauEntry = result.first;
+                                        bestThetaB = thetaB;
+                                        bestDiff = diff;
+                                        if( Settings::pivot_into_local_conflict && initialSearch && (*bestVar)->involvesEquation() )
+                                            mConflictingRows.push_back( *bestVar );
+                                        bestVar = basicVar;
+                                    }
                                 }
-                                else if( (*bestVar)->involvesEquation() || !bVar.involvesEquation() )
+                                else
                                 {
-                                #endif
+                                    
                                     bestTableauEntry = result.first;
                                     bestThetaB = thetaB;
                                     bestDiff = diff;
-                                    #ifdef LRA_EQUATION_FIRST
-                                    #ifdef LRA_LOCAL_CONFLICT_DIRECTED
-                                    if( initialSearch && (*bestVar)->involvesEquation() )
-                                        mConflictingRows.push_back( *bestVar );
-                                    #endif
-                                    #endif
                                     bestVar = basicVar;
-                                #ifdef LRA_EQUATION_FIRST
                                 }
-                                #endif
                             }
                         }
                     }
@@ -836,9 +808,8 @@ namespace smtrat
                 if( bestTableauEntry == LAST_ENTRY_ID && beginOfFirstConflictRow != LAST_ENTRY_ID )
                 {
                     // Found a conflict
-                    #ifdef LRA_LOCAL_CONFLICT_DIRECTED
-                    mConflictingRows.clear();
-                    #endif
+                    if( Settings::pivot_into_local_conflict )
+                        mConflictingRows.clear();
                     return std::pair<EntryID,bool>( beginOfFirstConflictRow, false );
                 }
                 else if( bestTableauEntry != LAST_ENTRY_ID )
@@ -849,13 +820,11 @@ namespace smtrat
                     (*mpTheta) *= (*bestVar)->factor();
                     #endif 
                     (*mpTheta) /= (*mpEntries)[bestTableauEntry].content();
-                    #ifdef LRA_LOCAL_CONFLICT_DIRECTED
-                    if( !initialSearch )
+                    if( Settings::pivot_into_local_conflict && !initialSearch )
                     {
                         assert( bestVar != mConflictingRows.end() );
                         mConflictingRows.erase( bestVar );
                     }
-                    #endif
                     return std::pair<EntryID,bool>( bestTableauEntry, true );
                 }
                 else
@@ -865,10 +834,8 @@ namespace smtrat
                     return std::pair<EntryID,bool>( LAST_ENTRY_ID, true );
                 }
             }
-            // Bland's rule
-            else
+            else // Bland's rule
             {
-            #endif
                 for( const Variable<T1, T2>* basicVar : mRows )
                 {
                     assert( basicVar != NULL );
@@ -908,13 +875,11 @@ namespace smtrat
                 }
                 // Found no pivoting element, that is no variable violates its bounds.
                 return std::pair<EntryID,bool>( LAST_ENTRY_ID, true );
-            #ifdef LRA_USE_PIVOTING_STRATEGY
             }
-            #endif
         }
 
-        template<typename T1, typename T2>
-        std::pair<EntryID,bool> Tableau<T1,T2>::isSuitable( const Variable<T1, T2>& _basicVar, bool supremumViolated ) const
+        template<class Settings, typename T1, typename T2>
+        std::pair<EntryID,bool> Tableau<Settings,T1,T2>::isSuitable( const Variable<T1, T2>& _basicVar, bool supremumViolated ) const
         {
             EntryID bestEntry = LAST_ENTRY_ID;
             const Bound<T1, T2>& basicVarSupremum = _basicVar.supremum();
@@ -1026,39 +991,46 @@ namespace smtrat
             return std::pair<EntryID,bool>( bestEntry, true );
         }
 
-        template<typename T1, typename T2>
-        bool Tableau<T1,T2>::betterEntry( EntryID _isBetter, EntryID _than ) const
+        template<class Settings, typename T1, typename T2>
+        bool Tableau<Settings,T1,T2>::betterEntry( EntryID _isBetter, EntryID _than ) const
         {
             assert( _isBetter != LAST_ENTRY_ID );
             if( _than == LAST_ENTRY_ID ) return true;
             const Variable<T1,T2>& isBetterNbVar = *((*mpEntries)[_isBetter].columnVar());
             const Variable<T1,T2>& thanColumnNbVar = *((*mpEntries)[_than].columnVar());
-            #ifdef LRA_USE_ACTIVITY_STRATEGYZ
-            if( isBetterNbVar.conflictActivity() < thanColumnNbVar.conflictActivity() )
-                return true;
-            else if( isBetterNbVar.conflictActivity() == thanColumnNbVar.conflictActivity() )
+            if( Settings::use_activity_based_pivot_strategy )
             {
-            #endif
+                if( isBetterNbVar.conflictActivity() < thanColumnNbVar.conflictActivity() )
+                    return true;
+                else if( isBetterNbVar.conflictActivity() == thanColumnNbVar.conflictActivity() )
+                {
+                    size_t valueA = boundedVariables( isBetterNbVar );
+                    size_t valueB = boundedVariables( thanColumnNbVar, valueA );
+                    if( valueA < valueB  ) return true;
+                    else if( valueA == valueB )
+                    {
+                        if( isBetterNbVar.conflictActivity() < thanColumnNbVar.conflictActivity() ) 
+                            return true;
+                        else if( isBetterNbVar.conflictActivity() == thanColumnNbVar.conflictActivity() && isBetterNbVar.size() < thanColumnNbVar.size() ) 
+                            return true;
+                    }
+                }
+            }
+            else
+            {
                 size_t valueA = boundedVariables( isBetterNbVar );
                 size_t valueB = boundedVariables( thanColumnNbVar, valueA );
                 if( valueA < valueB  ) return true;
                 else if( valueA == valueB )
                 {
-                    #ifdef LRA_USE_ACTIVITY_STRATEGY
-                    if( isBetterNbVar.conflictActivity() < thanColumnNbVar.conflictActivity() ) return true;
-                    else if( isBetterNbVar.conflictActivity() == thanColumnNbVar.conflictActivity() && isBetterNbVar.size() < thanColumnNbVar.size() ) return true;
-                    #else
                     if( isBetterNbVar.size() < thanColumnNbVar.size() ) return true;
-                    #endif
                 }
-            #ifdef LRA_USE_ACTIVITY_STRATEGYZ
             }
-            #endif
             return false;
         }
 
-        template<typename T1, typename T2>
-        std::vector< const Bound<T1, T2>* > Tableau<T1,T2>::getConflict( EntryID _rowEntry ) const
+        template<class Settings, typename T1, typename T2>
+        std::vector< const Bound<T1, T2>* > Tableau<Settings,T1,T2>::getConflict( EntryID _rowEntry ) const
         {
             assert( _rowEntry != LAST_ENTRY_ID );
             const Variable<T1,T2>& basicVar = *((*mpEntries)[_rowEntry].rowVar());
@@ -1145,8 +1117,8 @@ namespace smtrat
             return conflict;
         }
 
-        template<typename T1, typename T2>
-        std::vector< std::set< const Bound<T1, T2>* > > Tableau<T1,T2>::getConflictsFrom( EntryID _rowEntry ) const
+        template<class Settings, typename T1, typename T2>
+        std::vector< std::set< const Bound<T1, T2>* > > Tableau<Settings,T1,T2>::getConflictsFrom( EntryID _rowEntry ) const
         {
             std::vector< std::set< const Bound<T1, T2>* > > conflicts = std::vector< std::set< const Bound<T1, T2>* > >();
             const Variable<T1,T2>* firstConflictingVar = (*mpEntries)[_rowEntry].rowVar();
@@ -1259,8 +1231,8 @@ namespace smtrat
             return conflicts;
         }
 
-        template<typename T1, typename T2>
-        void Tableau<T1,T2>::updateBasicAssignments( size_t _column, const Value<T1>& _change )
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::updateBasicAssignments( size_t _column, const Value<T1>& _change )
         {
             Variable<T1,T2>& nonbasicVar = *mColumns[_column];
             if( nonbasicVar.size() > 0 )
@@ -1286,8 +1258,8 @@ namespace smtrat
             }
         }
 
-        template<typename T1, typename T2>
-        Variable<T1, T2>* Tableau<T1,T2>::pivot( EntryID _pivotingElement, bool updateAssignments )
+        template<class Settings, typename T1, typename T2>
+        Variable<T1, T2>* Tableau<Settings,T1,T2>::pivot( EntryID _pivotingElement, bool updateAssignments )
         {
             // Find all columns having "a nonzero entry in the pivoting row"**, update this entry and store it.
             // First the column with ** left to the pivoting column until the leftmost column with **.
@@ -1386,12 +1358,10 @@ namespace smtrat
             #else
             pivotContent = carl::div( T2(1), pivotContent );
             #endif
-            #ifdef LRA_REFINEMENT
-            if( updateAssignments && basicVar.isActive() )
+            if( Settings::use_refinement && updateAssignments && basicVar.isActive() )
             {
                 rowRefinement( columnVar ); // Note, we have swapped the variables, so the current basic var is now corresponding to what we have stored in columnVar.
             }
-            #endif
             // Let (p_r,p_c,p_e) be the pivoting entry, where p_r is the row number, p_c the column number and p_e the content.
             // For all rows R having a nonzero entry in the pivoting column:
             //    For all columns C having a nonzero entry (r_r,r_c,r_e) in the pivoting row:
@@ -1424,8 +1394,8 @@ namespace smtrat
             return columnVar;
         }
 
-        template<typename T1, typename T2>
-        void Tableau<T1,T2>::update( bool _downwards, EntryID _pivotingElement, std::vector<Iterator>& _pivotingRowLeftSide, std::vector<Iterator>& _pivotingRowRightSide, bool _updateAssignments )
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::update( bool _downwards, EntryID _pivotingElement, std::vector<Iterator>& _pivotingRowLeftSide, std::vector<Iterator>& _pivotingRowRightSide, bool _updateAssignments )
         {
             std::vector<Iterator> leftColumnIters = std::vector<Iterator>( _pivotingRowLeftSide );
             std::vector<Iterator> rightColumnIters = std::vector<Iterator>( _pivotingRowRightSide );
@@ -1539,18 +1509,20 @@ namespace smtrat
                 #endif
                 if( _updateAssignments && (currBasicVar.supremum() > currBasicVar.assignment() || currBasicVar.infimum() < currBasicVar.assignment()) )
                 {
-                    #ifdef LRA_LOCAL_CONFLICT_DIRECTED
-                    mConflictingRows.push_back( (*pivotingColumnIter).rowVar() );
-                    #endif
-                    #ifdef LRA_REFINEMENT
-                    rowRefinement( (*pivotingColumnIter).rowVar() );
-                    #endif
+                    if( Settings::pivot_into_local_conflict )
+                    {
+                        mConflictingRows.push_back( (*pivotingColumnIter).rowVar() );
+                    }
+                    if( Settings::use_refinement )
+                    {
+                        rowRefinement( (*pivotingColumnIter).rowVar() );
+                    }
                 }
             }
         }
         
-        template<typename T1, typename T2>
-        void Tableau<T1,T2>::addToEntry( const T2& _toAdd, Iterator& _horiIter, bool _horiIterLeftFromVertIter, Iterator& _vertIter, bool _vertIterBelowHoriIter )
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::addToEntry( const T2& _toAdd, Iterator& _horiIter, bool _horiIterLeftFromVertIter, Iterator& _vertIter, bool _vertIterBelowHoriIter )
         {
             if( _horiIter == _vertIter )
             {
@@ -1628,12 +1600,11 @@ namespace smtrat
             }
         }
 
-        #ifdef LRA_REFINEMENT
-        template<typename T1, typename T2>
-        void Tableau<T1,T2>::rowRefinement( Variable<T1,T2>* _basicVar )
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::rowRefinement( Variable<T1,T2>* _basicVar )
         {
             // Collect the bounds which form an upper resp. lower refinement.
-            const Variable<T1,T2>& basicVar = *_basicVar; 
+            Variable<T1,T2>& basicVar = *_basicVar; 
             if( basicVar.size() > 128 ) return;
             std::vector<const Bound<T1, T2>*>* uPremise = new std::vector<const Bound<T1, T2>*>();
             std::vector<const Bound<T1, T2>*>* lPremise = new std::vector<const Bound<T1, T2>*>();
@@ -1753,30 +1724,33 @@ namespace smtrat
                     learnedBound.nextWeakerBound = *ubound;
                     learnedBound.premise = std::vector<const Bound<T1, T2>*>( std::move( *uPremise ) );
                     delete uPremise;
-                    #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
-                    #ifdef LRA_NO_DIVISION
-                    if( newlimit->mainPart() > (*ubound)->limit().mainPart()*rowFactor || (*ubound)->limit().deltaPart() == 0 )
-                    #else
-                    if( newlimit->mainPart() > (*ubound)->limit().mainPart() || (*ubound)->limit().deltaPart() == 0 )
-                    #endif
+                    if( Settings::introduce_new_constraint_in_refinement )
                     {
                         #ifdef LRA_NO_DIVISION
-                        smtrat::Polynomial lhs = (*ubound)->variable().expression()*(Rational)rowFactor - (Rational)newlimit->mainPart();
+                        if( newlimit->mainPart() > (*ubound)->limit().mainPart()*rowFactor || (*ubound)->limit().deltaPart() == 0 )
                         #else
-                        smtrat::Polynomial lhs = (*ubound)->variable().expression() - (Rational)newlimit->mainPart();
+                        if( newlimit->mainPart() > (*ubound)->limit().mainPart() || (*ubound)->limit().deltaPart() == 0 )
                         #endif
-                        smtrat::Relation rel = newlimit->deltaPart() != 0 ? smtrat::Relation::LESS : smtrat::Relation::LEQ;
-                        const smtrat::Constraint* constraint = smtrat::newConstraint( lhs, rel );
-                        learnedBound.newBound = basicVar.addUpperBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
+                        {
+                            #ifdef LRA_NO_DIVISION
+                            smtrat::Polynomial lhs = (*ubound)->variable().expression()*(Rational)rowFactor - (Rational)newlimit->mainPart();
+                            #else
+                            smtrat::Polynomial lhs = (*ubound)->variable().expression() - (Rational)newlimit->mainPart();
+                            #endif
+                            smtrat::Relation rel = newlimit->deltaPart() != 0 ? smtrat::Relation::LESS : smtrat::Relation::LEQ;
+                            const smtrat::Formula* constraint = smtrat::newFormula( smtrat::newConstraint( lhs, rel ) );
+                            learnedBound.newBound = basicVar.addUpperBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
+                        }
+                        else
+                        {
+                            learnedBound.newBound = NULL;
+                        }
                     }
                     else
                     {
+                        delete newlimit;
                         learnedBound.newBound = NULL;
                     }
-                    #else
-                    delete newlimit;
-                    learnedBound.newBound = NULL;
-                    #endif
                     std::pair<typename std::map<Variable<T1, T2>*, LearnedBound>::iterator, bool> insertionResult = mLearnedUpperBounds.insert( std::pair<Variable<T1, T2>*, LearnedBound>( _basicVar, learnedBound ) );
                     if( !insertionResult.second )
                     {
@@ -1840,30 +1814,33 @@ namespace smtrat
                     learnedBound.nextWeakerBound = *lbound;
                     learnedBound.premise = std::vector<const Bound<T1, T2>*>( std::move( *lPremise ) );
                     delete lPremise;
-                    #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
-                    #ifdef LRA_NO_DIVISION
-                    if( newlimit->mainPart() > (*lbound)->limit().mainPart()*rowFactor || (*lbound)->limit().deltaPart() == 0 )
-                    #else
-                    if( newlimit->mainPart() > (*lbound)->limit().mainPart() || (*lbound)->limit().deltaPart() == 0 )
-                    #endif
+                    if( Settings::introduce_new_constraint_in_refinement )
                     {
                         #ifdef LRA_NO_DIVISION
-                        smtrat::Polynomial lhs = (*lbound)->variable().expression()*(Rational)rowFactor - (Rational)newlimit->mainPart();
+                        if( newlimit->mainPart() > (*lbound)->limit().mainPart()*rowFactor || (*lbound)->limit().deltaPart() == 0 )
                         #else
-                        smtrat::Polynomial lhs = (*lbound)->variable().expression() - (Rational)newlimit->mainPart();
+                        if( newlimit->mainPart() > (*lbound)->limit().mainPart() || (*lbound)->limit().deltaPart() == 0 )
                         #endif
-                        smtrat::Relation rel = newlimit->deltaPart() != 0 ? smtrat::Relation::GREATER : smtrat::Relation::GEQ;
-                        const smtrat::Constraint* constraint = smtrat::newConstraint( lhs, rel );
-                        learnedBound.newBound = basicVar.addLowerBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
+                        {
+                            #ifdef LRA_NO_DIVISION
+                            smtrat::Polynomial lhs = (*lbound)->variable().expression()*(Rational)rowFactor - (Rational)newlimit->mainPart();
+                            #else
+                            smtrat::Polynomial lhs = (*lbound)->variable().expression() - (Rational)newlimit->mainPart();
+                            #endif
+                            smtrat::Relation rel = newlimit->deltaPart() != 0 ? smtrat::Relation::GREATER : smtrat::Relation::GEQ;
+                            const smtrat::Formula* constraint = smtrat::newFormula( smtrat::newConstraint( lhs, rel ) );
+                            learnedBound.newBound = basicVar.addLowerBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
+                        }
+                        else
+                        {
+                            learnedBound.newBound = NULL;
+                        }
                     }
                     else
                     {
+                        delete newlimit;
                         learnedBound.newBound = NULL;
                     }
-                    #else
-                    delete newlimit;
-                    learnedBound.newBound = NULL;
-                    #endif
                     std::pair<typename std::map<Variable<T1, T2>*, LearnedBound>::iterator, bool> insertionResult = mLearnedLowerBounds.insert( std::pair<Variable<T1, T2>*, LearnedBound>( _basicVar, learnedBound ) );
                     if( !insertionResult.second )
                     {
@@ -1886,10 +1863,9 @@ namespace smtrat
                 }
             }
         }
-        #endif
         
-        template<typename T1, typename T2>
-        size_t Tableau<T1,T2>::unboundedVariables( const Variable<T1,T2>& _var, size_t _stopCriterium ) const
+        template<class Settings, typename T1, typename T2>
+        size_t Tableau<Settings,T1,T2>::unboundedVariables( const Variable<T1,T2>& _var, size_t _stopCriterium ) const
         {
             if( _var.startEntry() == LAST_ENTRY_ID )
             {
@@ -1936,8 +1912,8 @@ namespace smtrat
         
 //        #define LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
         
-        template<typename T1, typename T2>
-        typename std::map<carl::Variable, Variable<T1,T2>*>::iterator Tableau<T1,T2>::substitute( carl::Variable::Arg _var, const smtrat::Polynomial& _term )
+        template<class Settings, typename T1, typename T2>
+        typename std::map<carl::Variable, Variable<T1,T2>*>::iterator Tableau<Settings,T1,T2>::substitute( carl::Variable::Arg _var, const smtrat::Polynomial& _term )
         {
             #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
             std::cout << __func__ << "  " << _var << " -> " << _term << std::endl;
@@ -2007,8 +1983,8 @@ namespace smtrat
             return pos;
         }
         
-        template<typename T1, typename T2>
-        size_t Tableau<T1,T2>::boundedVariables( const Variable<T1,T2>& _var, size_t _stopCriterium ) const
+        template<class Settings, typename T1, typename T2>
+        size_t Tableau<Settings,T1,T2>::boundedVariables( const Variable<T1,T2>& _var, size_t _stopCriterium ) const
         {
             if( _var.startEntry() == LAST_ENTRY_ID )
             {
@@ -2053,8 +2029,8 @@ namespace smtrat
             }
         }
 
-        template<typename T1, typename T2>
-        size_t Tableau<T1,T2>::checkCorrectness() const
+        template<class Settings, typename T1, typename T2>
+        size_t Tableau<Settings,T1,T2>::checkCorrectness() const
         {
             size_t rowNumber = 0;
             for( ; rowNumber < mRows.size(); ++rowNumber )
@@ -2064,8 +2040,8 @@ namespace smtrat
             return rowNumber;
         }
 
-        template<typename T1, typename T2>
-        bool Tableau<T1,T2>::rowCorrect( size_t _rowNumber ) const
+        template<class Settings, typename T1, typename T2>
+        bool Tableau<Settings,T1,T2>::rowCorrect( size_t _rowNumber ) const
         {
             if( mRows[_rowNumber] == NULL ) return false;
             if( _rowNumber != mRows[_rowNumber]->position() ) return false;
@@ -2093,9 +2069,8 @@ namespace smtrat
             return true;
         }
         
-        #ifdef LRA_CUTS_FROM_PROOFS
-        template<typename T1, typename T2>
-        const smtrat::Constraint* Tableau<T1,T2>::isDefining( size_t row_index, T2& max_value ) const
+        template<class Settings, typename T1, typename T2>
+        const smtrat::Constraint* Tableau<Settings,T1,T2>::isDefining( size_t row_index, T2& max_value ) const
         {
             const Variable<T1, T2>& basic_var = *mRows.at(row_index);
             basic_var.expression();
@@ -2145,8 +2120,8 @@ namespace smtrat
             return NULL;
         }
         
-        template<typename T1, typename T2>
-        bool Tableau<T1,T2>::isDefining_Easy( std::vector<size_t>& dc_positions,size_t row_index )
+        template<class Settings, typename T1, typename T2>
+        bool Tableau<Settings,T1,T2>::isDefining_Easy( std::vector<size_t>& dc_positions,size_t row_index )
         {
             auto vector_iterator = dc_positions.begin();
             while( vector_iterator != dc_positions.end() )
@@ -2159,8 +2134,8 @@ namespace smtrat
             return false;
         }
         
-        template<typename T1, typename T2>
-        bool Tableau<T1,T2>::isDiagonal( size_t column_index , std::vector<size_t>& diagonals )
+        template<class Settings, typename T1, typename T2>
+        bool Tableau<Settings,T1,T2>::isDiagonal( size_t column_index , std::vector<size_t>& diagonals )
         {
             size_t i=0;
             while( diagonals.at(i) != mColumns.size() )
@@ -2174,8 +2149,8 @@ namespace smtrat
             return false;            
         }
         
-        template<typename T1, typename T2>
-        size_t Tableau<T1,T2>::position_DC( size_t row_index,std::vector<size_t>& dc_positions )
+        template<class Settings, typename T1, typename T2>
+        size_t Tableau<Settings,T1,T2>::position_DC( size_t row_index,std::vector<size_t>& dc_positions )
         {
             auto vector_iterator = dc_positions.begin();
             size_t i=0;
@@ -2191,8 +2166,8 @@ namespace smtrat
             return mRows.size();
         }
         
-        template<typename T1, typename T2>
-        size_t Tableau<T1,T2>::revert_diagonals( size_t column_index, std::vector<size_t>& diagonals )
+        template<class Settings, typename T1, typename T2>
+        size_t Tableau<Settings,T1,T2>::revert_diagonals( size_t column_index, std::vector<size_t>& diagonals )
         {
             size_t i=0;
             while(diagonals.at(i) != mColumns.size())   
@@ -2206,8 +2181,8 @@ namespace smtrat
             return mColumns.size();
         }
         
-        template<typename T1, typename T2>
-        void Tableau<T1,T2>::invertColumn( size_t column_index )
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::invertColumn( size_t column_index )
         {   
             Iterator column_iterator = Iterator( (*mColumns.at(column_index)).startEntry(), mpEntries );   
             while(true)
@@ -2224,8 +2199,8 @@ namespace smtrat
             }        
         }
 
-        template<typename T1, typename T2>
-        void Tableau<T1,T2>::addColumns( size_t columnA_index, size_t columnB_index, T2 multiple )
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::addColumns( size_t columnA_index, size_t columnB_index, T2 multiple )
         {
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
             std::cout << __func__ << "( " << columnA_index << ", " << columnB_index << ", " << multiple << " )" << std::endl;
@@ -2422,8 +2397,8 @@ namespace smtrat
            }
         }
         
-        template<typename T1, typename T2> 
-        void Tableau<T1,T2>::multiplyRow( size_t row_index,T2 multiple )
+        template<class Settings, typename T1, typename T2> 
+        void Tableau<Settings,T1,T2>::multiplyRow( size_t row_index,T2 multiple )
         {            
             const Variable<T1, T2>& basic_var = *mRows.at(row_index);
             Iterator row_iterator = Iterator( basic_var.position(), mpEntries);
@@ -2442,8 +2417,8 @@ namespace smtrat
             }
         }
         
-        template<typename T1, typename T2> 
-        std::pair< const Variable<T1,T2>*, T2 > Tableau<T1,T2>::Scalar_Product( Tableau<T1,T2>& A, Tableau<T1,T2>& B,size_t rowA, size_t columnB,std::vector<size_t>& diagonals,std::vector<size_t>& dc_positions ) 
+        template<class Settings, typename T1, typename T2> 
+        std::pair< const Variable<T1,T2>*, T2 > Tableau<Settings,T1,T2>::Scalar_Product( Tableau<Settings,T1,T2>& A, Tableau<Settings,T1,T2>& B,size_t rowA, size_t columnB,std::vector<size_t>& diagonals,std::vector<size_t>& dc_positions ) 
         {
             Iterator rowA_iterator = Iterator((*A.mRows.at(rowA)).startEntry(),A.mpEntries);
             Iterator columnB_iterator = Iterator( (*B.mColumns.at(columnB)).startEntry(),B.mpEntries );
@@ -2484,8 +2459,8 @@ namespace smtrat
             return result;    
         }
         
-        template<typename T1, typename T2> 
-        void Tableau<T1,T2>::calculate_hermite_normalform( std::vector<size_t>& diagonals, bool& full_rank )
+        template<class Settings, typename T1, typename T2> 
+        void Tableau<Settings,T1,T2>::calculate_hermite_normalform( std::vector<size_t>& diagonals, bool& full_rank )
         {
             for(size_t i=0;i<mColumns.size();i++)
             {
@@ -2725,8 +2700,8 @@ namespace smtrat
             }  
         }     
         
-        template<typename T1, typename T2> 
-        void Tableau<T1,T2>::invert_HNF_Matrix(std::vector<size_t>& diagonals)
+        template<class Settings, typename T1, typename T2> 
+        void Tableau<Settings,T1,T2>::invert_HNF_Matrix(std::vector<size_t>& diagonals)
         {
             /*
              * Iterate through the tableau beginning in the the last
@@ -2817,8 +2792,8 @@ namespace smtrat
             }
         }
         
-        template<typename T1, typename T2>
-        smtrat::Polynomial* Tableau<T1,T2>::create_cut_from_proof( Tableau<T1,T2>& Inverted_Tableau, Tableau<T1,T2>& DC_Tableau, size_t row_index, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions, T2& lower, T2& max_value )
+        template<class Settings, typename T1, typename T2>
+        smtrat::Polynomial* Tableau<Settings,T1,T2>::create_cut_from_proof( Tableau<Settings,T1,T2>& Inverted_Tableau, Tableau<Settings,T1,T2>& DC_Tableau, size_t row_index, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions, T2& lower, T2& max_value )
         {
             Value<T1> result = T2(0);
             assert( mRows.size() > row_index );
@@ -2908,7 +2883,6 @@ namespace smtrat
                 return NULL;                
             }
         }
-        #endif
         
         enum GOMORY_SET
         {
@@ -2918,8 +2892,8 @@ namespace smtrat
             K_MINUS
         };
 
-        template<typename T1, typename T2>
-        const smtrat::Formula* Tableau<T1,T2>::gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar )
+        template<class Settings, typename T1, typename T2>
+        const smtrat::Formula* Tableau<Settings,T1,T2>::gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar )
         { 
             Iterator row_iterator = Iterator( _rowVar->startEntry(), mpEntries );
             std::vector<GOMORY_SET> splitting;
@@ -3065,8 +3039,8 @@ namespace smtrat
             return gomory_constr;
         }
 
-        template<typename T1, typename T2>
-        size_t Tableau<T1,T2>::getNumberOfEntries( Variable<T1,T2>* _rowVar )
+        template<class Settings, typename T1, typename T2>
+        size_t Tableau<Settings,T1,T2>::getNumberOfEntries( Variable<T1,T2>* _rowVar )
         {
             size_t result = 0;
             Iterator row_iterator = Iterator( _rowVar->startEntry(), mpEntries );
@@ -3084,8 +3058,8 @@ namespace smtrat
             }
         }
         
-        template<typename T1, typename T2>
-        void Tableau<T1,T2>::collect_premises( const Variable<T1,T2>* _rowVar, PointerSet<Formula>& premises )
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::collect_premises( const Variable<T1,T2>* _rowVar, PointerSet<Formula>& premises )
         {
             Iterator row_iterator = Iterator( _rowVar->startEntry(), mpEntries );  
             while( true )
@@ -3112,8 +3086,8 @@ namespace smtrat
             }            
         }
 
-        template<typename T1, typename T2>
-        void Tableau<T1,T2>::printHeap( std::ostream& _out, int _maxEntryLength, const std::string _init ) const
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::printHeap( std::ostream& _out, int _maxEntryLength, const std::string _init ) const
         {
             for( EntryID pos = 1; pos < mpEntries->size(); ++pos )
             {
@@ -3123,8 +3097,8 @@ namespace smtrat
             }
         }
 
-        template<typename T1, typename T2>
-        void Tableau<T1,T2>::printEntry( EntryID _entry, std::ostream& _out, int _maxEntryLength ) const
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::printEntry( EntryID _entry, std::ostream& _out, int _maxEntryLength ) const
         {
             _out << std::setw( 4 ) << _entry << ": ";
             std::stringstream out;
@@ -3156,8 +3130,8 @@ namespace smtrat
             }
         }
 
-        template<typename T1, typename T2>
-        void Tableau<T1,T2>::printVariables( bool _allBounds, std::ostream& _out, const std::string _init ) const
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::printVariables( bool _allBounds, std::ostream& _out, const std::string _init ) const
         {
             _out << _init << "Basic variables:" << std::endl;
             for( Variable<T1,T2>* rowVar : mRows )
@@ -3180,9 +3154,8 @@ namespace smtrat
             }
         }
 
-        #ifdef LRA_REFINEMENT
-        template<typename T1, typename T2>
-        void Tableau<T1,T2>::printLearnedBounds( const std::string _init, std::ostream& _out  ) const
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::printLearnedBounds( const std::string _init, std::ostream& _out  ) const
         {
             for( auto learnedBound = mLearnedLowerBounds.begin(); learnedBound != mLearnedLowerBounds.end(); ++learnedBound )
             {
@@ -3194,8 +3167,8 @@ namespace smtrat
             }
         }
         
-        template<typename T1, typename T2>
-        void Tableau<T1,T2>::printLearnedBound( const Variable<T1,T2>& _var, const LearnedBound& _learnedBound, const std::string _init, std::ostream& _out  ) const
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::printLearnedBound( const Variable<T1,T2>& _var, const LearnedBound& _learnedBound, const std::string _init, std::ostream& _out  ) const
         {
             for( auto premiseBound = _learnedBound.premise->begin(); premiseBound != _learnedBound.premise->end(); ++premiseBound )
             {
@@ -3210,16 +3183,16 @@ namespace smtrat
             _learnedBound.nextWeakerBound->print( true, _out, true );
             _out << std::endl;
             _out << std::endl;
-            #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
-            _out << _init << *_var.pExpression();
-            _learnedBound.newBound->print( true, _out, true );
-            _out << std::endl << std::endl;
-            #endif
+            if( Settings::introduce_new_constraint_in_refinement )
+            {
+                _out << _init << *_var.pExpression();
+                _learnedBound.newBound->print( true, _out, true );
+                _out << std::endl << std::endl;
+            }
         }
-        #endif
 
-        template<typename T1, typename T2>
-        void Tableau<T1,T2>::print( EntryID _pivotingElement, std::ostream& _out, const std::string _init, bool _friendlyNames, bool _withZeroColumns ) const
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::print( EntryID _pivotingElement, std::ostream& _out, const std::string _init, bool _friendlyNames, bool _withZeroColumns ) const
         {
             char frameSign = '-';
             char separator = '|';

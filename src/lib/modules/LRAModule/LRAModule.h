@@ -21,19 +21,18 @@
 /**
  * @file LRAModule.h
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
- *
- * @version 2012-04-05
- * Created on April 5th, 2012, 3:22 PM
+ * @since 2012-04-05
+ * @version 2014-10-01
  */
 
-#ifndef LRAMODULE_H
-#define LRAMODULE_H
+#pragma once
 
 
 #include "../../solver/Module.h"
 #include "../../solver/RuntimeSettings.h"
 #include "../../datastructures/lra/Tableau.h"
 #include "LRAModuleStatistics.h"
+#include "LRASettings.h"
 #include <stdio.h>
 
 namespace smtrat
@@ -48,12 +47,11 @@ namespace smtrat
     typedef lra::Variable<LRABoundType, LRAEntryType> LRAVariable;
     /// The type of the assignment of a variable maintained by the LRAModule. It consists of a tuple of two value of the bound type.
     typedef lra::Value<LRABoundType> LRAValue;
-    /// The tableau which is the main data structure maintained by the LRAModule responsible for the pivoting steps.
-    typedef lra::Tableau<LRABoundType, LRAEntryType> LRATableau;
     
     /**
      * A module which performs the Simplex method on the linear part of it's received formula.
      */
+    template<class Settings>
     class LRAModule:
         public Module
     {
@@ -78,6 +76,8 @@ namespace smtrat
             typedef FastPointerMap<Formula, std::vector<const LRABound*>*> ConstraintBoundsMap;
             /// Stores the position of a received formula in the passed formula.
             typedef FastPointerMap<Formula, Context> ConstraintContextMap;
+            /// The tableau which is the main data structure maintained by the LRAModule responsible for the pivoting steps.
+            typedef lra::Tableau<typename Settings::Tableau_settings, LRABoundType, LRAEntryType> LRATableau;
 
         private:
 
@@ -116,13 +116,11 @@ namespace smtrat
             carl::Variable mDelta;
             /// Stores the bounds, which would influence a backend call because of recent changes.
             std::vector<const LRABound* > mBoundCandidatesToPass;
-            #ifdef LRA_CUTS_FROM_PROOFS
             /**
              * Stores all set of constraints which have already led to defining constraint matrices. 
              * As the computation of these matrices is rather expensive, we try to omit this if possible.
              */
             std::set< std::vector< const Constraint* > > mProcessedDCMatrices;
-            #endif
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores the yet collected statistics of this LRAModule.
             LRAModuleStatistics* mpStatistics;
@@ -424,4 +422,4 @@ namespace smtrat
 
 }    // namespace smtrat
 
-#endif   /* LRAMODULE_H */
+#include "LRAModule.tpp"
