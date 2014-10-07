@@ -53,7 +53,23 @@ private:
 
 public:
 	Expression() {
-		
+	}
+	Expression(const Expression& ex) {
+		content = ex.content;
+	}
+	Expression(bool value) {
+		if (value) content = trueFormula();
+		else content = falseFormula();
+	}
+	Expression(const Rational& r) {
+		content = Polynomial(r);
+	}
+	Expression(carl::Variable::Arg v) {
+		if (v.getType() == carl::VariableType::VT_BOOL) {
+			content = newVariableFormula(v);
+		} else {
+			content = Polynomial(v);
+		}
 	}
 	Expression(const std::string& op, const Expression& ex) {
 		if (ex.isPolynomial()) {
