@@ -499,7 +499,7 @@ carl::Variable SMTLIBParser::addVariableBinding(const std::pair<std::string, Sor
 		return v;
 	}
 	case ExpressionType::UNINTERPRETED:
-		this->handler->error() << "Tryied to bind a uninterpreted variable.";
+		this->handler->error() << "Tried to bind a uninterpreted variable.";
 		return carl::Variable::NO_VARIABLE;
 		break;
 	default:
