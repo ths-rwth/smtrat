@@ -2893,8 +2893,10 @@ namespace smtrat
         };
 
         template<class Settings, typename T1, typename T2>
-        const smtrat::Formula* Tableau<Settings,T1,T2>::gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar )
-        { 
+        const smtrat::Polynomial* Tableau<Settings,T1,T2>::gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar )
+        {
+            Polynomial* sum = new Polynomial();
+            *sum = ZERO_POLYNOMIAL; 
             Iterator row_iterator = Iterator( _rowVar->startEntry(), mpEntries );
             std::vector<GOMORY_SET> splitting;
             // Check, whether the premises for a Gomory Cut are satisfied
@@ -2925,7 +2927,7 @@ namespace smtrat
                 }                               
                 else
                 {
-                    return NULL;
+                    return sum;
                 }     
                 if( row_iterator.hEnd( false ) )
                 {
@@ -2942,8 +2944,7 @@ namespace smtrat
             T2 f_zero = _ass - T2(carl::floor( (Rational)_ass ));
             #ifdef LRA_DEBUG_GOMORY_CUT
             std::cout << "f_zero = " << f_zero << std::endl;
-            #endif
-            Polynomial sum = ZERO_POLYNOMIAL;
+            #endif                   
             // Construction of the Gomory Cut 
             std::vector<GOMORY_SET>::const_iterator vec_iter = splitting.begin();
             row_iterator = Iterator( _rowVar->startEntry(), mpEntries );
@@ -2963,7 +2964,7 @@ namespace smtrat
                     #ifdef LRA_DEBUG_GOMORY_CUT
                     std::cout << "A: coeff = " << coeff << std::endl;
                     #endif
-                    sum += (Rational)coeff*( nonBasicVar.expression() - (Rational)nonBasicVar.infimum().limit().mainPart() );     
+                    *sum += (Rational)coeff*( nonBasicVar.expression() - (Rational)nonBasicVar.infimum().limit().mainPart() );     
                     #ifdef LRA_DEBUG_GOMORY_CUT              
                     std::cout << "(Rational)coeff*( nonBasicVar.expression() - (Rational)nonBasicVar.infimum().limit().mainPart() ) = " << ((Rational)coeff*( nonBasicVar.expression() - (Rational)nonBasicVar.infimum().limit().mainPart() )) << std::endl;
                     #endif
@@ -2981,7 +2982,7 @@ namespace smtrat
                     #ifdef LRA_DEBUG_GOMORY_CUT
                     std::cout << "B: coeff = " << coeff << std::endl;
                     #endif
-                    sum += (Rational)coeff*( nonBasicVar.expression() - (Rational)nonBasicVar.infimum().limit().mainPart() );
+                    *sum += (Rational)coeff*( nonBasicVar.expression() - (Rational)nonBasicVar.infimum().limit().mainPart() );
                     #ifdef LRA_DEBUG_GOMORY_CUT
                     std::cout << "(Rational)coeff*( nonBasicVar.expression() - (Rational)nonBasicVar.infimum().limit().mainPart() ) = " << ((Rational)coeff*( nonBasicVar.expression() - (Rational)nonBasicVar.infimum().limit().mainPart() )) << std::endl;                
                     #endif
@@ -2999,7 +3000,7 @@ namespace smtrat
                     #ifdef LRA_DEBUG_GOMORY_CUT
                     std::cout << "C: coeff = " << coeff << std::endl;
                     #endif
-                    sum += ((Rational)-coeff) * ( nonBasicVar.expression() - (Rational)nonBasicVar.supremum().limit().mainPart() );
+                    *sum += ((Rational)-coeff) * ( nonBasicVar.expression() - (Rational)nonBasicVar.supremum().limit().mainPart() );
                     #ifdef LRA_DEBUG_GOMORY_CUT
                     std::cout << "(Rational)coeff * ( (Rational)nonBasicVar.supremum().limit().mainPart() - nonBasicVar.expression() ) = " << ((Rational)coeff * ( (Rational)nonBasicVar.supremum().limit().mainPart() - nonBasicVar.expression() )) << std::endl;        
                     #endif
@@ -3017,7 +3018,7 @@ namespace smtrat
                     #ifdef LRA_DEBUG_GOMORY_CUT
                     std::cout << "D: coeff = " << coeff << std::endl;
                     #endif
-                    sum += ((Rational)-coeff) * (nonBasicVar.expression() - (Rational)nonBasicVar.supremum().limit().mainPart());
+                    *sum += ((Rational)-coeff) * (nonBasicVar.expression() - (Rational)nonBasicVar.supremum().limit().mainPart());
                     #ifdef LRA_DEBUG_GOMORY_CUT
                     std::cout << "(Rational)coeff * ( (Rational)nonBasicVar.supremum().limit().mainPart() - nonBasicVar.expression() ) = " << ((Rational)coeff * ( (Rational)nonBasicVar.supremum().limit().mainPart() - nonBasicVar.expression() )) << std::endl;
                     #endif
@@ -3029,14 +3030,14 @@ namespace smtrat
                 row_iterator.hMove( false );
                 ++vec_iter;
             }
-            sum -= (Rational)1;
+            *sum -= (Rational)1;
             #ifdef LRA_DEBUG_GOMORY_CUT
             std::cout << "sum = " << sum << std::endl;
             #endif
-            const smtrat::Formula* gomory_constr = newFormula( newConstraint( sum , Relation::GEQ ) );
-            newBound(gomory_constr);
+            //const smtrat::Constraint* gomory_constr = newConstraint( *sum , Relation::GEQ );
+            //newBound(gomory_constr);
             // TODO: check whether there is already a basic variable with this polynomial (psum, cf. LRAModule::initialize(..)) 
-            return gomory_constr;
+            return sum;
         }
 
         template<class Settings, typename T1, typename T2>

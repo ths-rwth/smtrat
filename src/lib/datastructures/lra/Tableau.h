@@ -840,7 +840,7 @@ namespace smtrat
                  * @return NULL,    if the cut can´t be constructed;
                  *         otherwise the valid constraint is returned.   
                  */
-                const smtrat::Formula* gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar );
+                const smtrat::Polynomial* gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar );
                 
                 /**
                  * @param _rowVar

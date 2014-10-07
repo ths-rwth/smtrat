@@ -1070,11 +1070,14 @@ Return:
                 if( !carl::isInteger( ass ) )
                 {
                     all_int = false;
-                    const Formula* gomory_constr = mTableau.gomoryCut(ass, basicVar);
-                    if( gomory_constr != NULL )
-                    {
-                        assert( gomory_constr->getType() == CONSTRAINT );
-                        assert( !gomory_constr->constraint().satisfiedBy( rMap_ ) );
+                    const Polynomial* gomory_poly = mTableau.gomoryCut(ass, basicVar);
+                    if( *gomory_poly != ZERO_POLYNOMIAL )
+                    { 
+                        const Constraint* gomory_constr = newConstraint( *gomory_poly , Relation::GEQ );
+                        const Constraint* neg_gomory_constr = newConstraint( *gomory_poly - (*gomory_poly).evaluate( rMap_ ), Relation::LESS );
+                        assert( !gomory_constr->satisfiedBy( rMap_ ) );
+                        assert( !neg_gomory_constr->satisfiedBy( rMap_ ) );
+                        /*
                         PointerSet<Formula> subformulas; 
                         mTableau.collect_premises( basicVar, subformulas );
                         PointerSet<Formula> premise;
@@ -1082,8 +1085,15 @@ Return:
                         {
                             premise.insert( newNegation( pre ) );
                         }
-                        premise.insert( gomory_constr );
-                        addDeduction( newFormula( OR, std::move( premise ) ) );
+                        */
+                        const Formula* gomory_formula = newFormula( gomory_constr );
+                        const Formula* neg_gomory_formula = newFormula( neg_gomory_constr );
+                        PointerSet<Formula> subformulas;
+                        subformulas.insert( gomory_formula );
+                        subformulas.insert( neg_gomory_formula );
+                        const Formula* branch_formula = newFormula( OR, std::move( subformulas ) );
+                        //premise.insert( gomory_formula );
+                        addDeduction( branch_formula );
                     } 
                 }
             }    
