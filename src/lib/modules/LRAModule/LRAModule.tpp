@@ -1075,6 +1075,7 @@ Return:
                     { 
                         const Constraint* gomory_constr = newConstraint( *gomory_poly , Relation::GEQ );
                         const Constraint* neg_gomory_constr = newConstraint( *gomory_poly - (*gomory_poly).evaluate( rMap_ ), Relation::LESS );
+                        //std::cout << *gomory_constr << endl;
                         assert( !gomory_constr->satisfiedBy( rMap_ ) );
                         assert( !neg_gomory_constr->satisfiedBy( rMap_ ) );
                         /*
@@ -1139,29 +1140,45 @@ Return:
          * Build the new Tableau consisting out of the defining constraints.
          */
         LRATableau dc_Tableau = LRATableau( mpPassedFormula->end() );  
+        size_t i=0;
+        for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
+        {
+            dc_Tableau.newNonbasicVariable( new Polynomial( (*mTableau.columns().at(i)).expression() ), true );
+            ++i;
+        } 
         size_t numRows = mTableau.rows().size();
-        size_t dc_count = 0;
         LRAEntryType max_value = 0;
         vector<size_t> dc_positions = vector<size_t>();
+        #ifdef LRA_NO_DIVISION
+        vector<LRAEntryType> lcm_rows;
+        #endif
         std::vector< const Constraint* > DC_Matrix = std::vector< const Constraint* >();
         for( size_t i = 0; i < numRows; ++i )
         {
+            std::vector<std::pair<size_t,LRAEntryType>> nonbasicindex_coefficient = std::vector<std::pair<size_t,LRAEntryType>>();
             LRAEntryType lcmOfCoeffDenoms = 1;
-            const Constraint* dc_constraint = mTableau.isDefining( i, max_value );
+            const Constraint* dc_constraint = mTableau.isDefining( i, nonbasicindex_coefficient,  lcmOfCoeffDenoms, max_value );
             if( dc_constraint != NULL  )
-            {
-                size_t row_count_before = dc_Tableau.rows().size();
-                pair< const LRABound*, bool> result = dc_Tableau.newBound( newFormula( dc_constraint ) );
-                PointerSet<Formula> formulas;
-                dc_Tableau.activateBound(result.first, formulas);
-                if( row_count_before < dc_Tableau.rows().size() )
-                {
-                    dc_count++;
-                    dc_positions.push_back(i);  
-                    DC_Matrix.push_back( dc_constraint );
-                }
+            {      
+                LRAVariable* new_var = dc_Tableau.newBasicVariable( nonbasicindex_coefficient, (*mTableau.rows().at(i)).expression(), (*mTableau.rows().at(i)).factor(),dc_constraint->integerValued() );
+                dc_Tableau.activateBasicVar(new_var);
+                dc_positions.push_back(i); 
+                #ifdef LRA_NO_DIVISION
+                lcm_rows.push_back( lcmOfCoeffDenoms );
+                #endif
+                DC_Matrix.push_back( dc_constraint );
             }   
         }
+        #ifdef LRA_NO_DIVISION
+        /* Multiply all defining constraints with the corresponding least common multiple 
+         * of the occuring denominators in order to ensure that we work on a tableau 
+         * contatining only integers
+         */
+        for( size_t i = 0; i < dc_Tableau.rows().size(); ++i )
+        {
+            dc_Tableau.multiplyRow(i,lcm_rows.at(i));          
+        }
+        #endif
         auto pos = mProcessedDCMatrices.find( DC_Matrix );
         if( pos == mProcessedDCMatrices.end() )
         {
@@ -1209,7 +1226,6 @@ Return:
             for( size_t i = 0; i < dc_positions.size(); ++i )
             {
                 LRAEntryType upper_lower_bound;
-                cout << "Premise for CFP is fulfilled!" << endl;
                 cut_from_proof = dc_Tableau.create_cut_from_proof( dc_Tableau, mTableau, i, diagonals, dc_positions, upper_lower_bound, max_value );
                 if( cut_from_proof != NULL )
                 {
@@ -1246,8 +1262,6 @@ Return:
                     #endif
                     return true;
                 }
-                else 
-                    cout << "No CFP found!" << endl;
             }
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
             cout << "Found no proof of unsatisfiability!" << endl;

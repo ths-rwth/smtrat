@@ -368,6 +368,28 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
+        Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, const smtrat::Polynomial& poly, T2 leading_coeff, bool isInteger )
+        {
+            std::list<std::pair<Variable<T1,T2>*,T2>> nonbasicvar_coefficient = std::list<std::pair<Variable<T1,T2>*,T2>>();            
+            auto iter = nonbasicindex_coefficient.begin();
+            while( iter !=  nonbasicindex_coefficient.end() )
+            {
+                std::pair<Variable<T1,T2>*,T2> to_be_added = std::pair<Variable<T1,T2>*,T2>();
+                to_be_added.first = mColumns.at((*iter).first);
+                to_be_added.second = (*iter).second;
+                nonbasicvar_coefficient.push_back(to_be_added);
+                ++iter;
+            }          
+            mNonActiveBasics.push_front( nonbasicvar_coefficient ); 
+            smtrat::Polynomial* ppoly = new Polynomial();
+            *ppoly = poly;
+            Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), ppoly, mDefaultBoundPosition, isInteger );            
+            T2& factor = var->rFactor();
+            factor = leading_coeff;
+            return var;
+        }
+        
+        template<class Settings, typename T1, typename T2>
         void Tableau<Settings,T1,T2>::activateBasicVar( Variable<T1, T2>* _var )
         {
             assert( _var->isBasic() );
@@ -2070,7 +2092,7 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
-        const smtrat::Constraint* Tableau<Settings,T1,T2>::isDefining( size_t row_index, T2& max_value ) const
+        const smtrat::Constraint* Tableau<Settings,T1,T2>::isDefining( size_t row_index, std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, T2 lcm, T2& max_value ) const
         {
             const Variable<T1, T2>& basic_var = *mRows.at(row_index);
             basic_var.expression();
@@ -2083,8 +2105,35 @@ namespace smtrat
                     upper_bound_hit = true;                    
                 }
                 /*
-                 * The row represents a DC. Collect the nonbasics and the referring coefficients.
-                 */
+                 * The row represents a DC. Collect the nonbasics and the corresponding coefficients.
+                 */ 
+                while( true )
+                {
+                    T2 content = (*row_iterator).content();
+                    T2 abs_content = carl::abs( content );
+                    std::pair<size_t,T2> to_be_added = std::pair<size_t,T2>();
+                    to_be_added.first = (*(*row_iterator).columnVar()).position();
+                    to_be_added.second = content;
+                    nonbasicindex_coefficient.push_back(to_be_added);
+                    //non_basic_vars_positions.push_back( (*(*row_iterator).columnVar()).position() );
+                    //row_polynomial += (Rational)content*(*(*row_iterator).columnVar()).expression();
+                    //coefficients.push_back( content );
+                    if( abs_content > max_value )
+                    {
+                        max_value = abs_content;                        
+                    }
+                    #ifdef LRA_NO_DIVISION
+                    lcm = carl::lcm(lcm,content);
+                    #endif
+                    if( !row_iterator.hEnd( false ) )
+                    {
+                        row_iterator.hMove( false );                   
+                    }
+                    else
+                    {
+                        break;
+                    }                    
+                }
                 Polynomial dc_poly = Polynomial();
                 dc_poly = basic_var.expression();
                 if( upper_bound_hit )
@@ -2102,8 +2151,8 @@ namespace smtrat
             {
                 while( true )
                 {
-                    T2 abs_content = carl::abs((*row_iterator).content());
-                    if(abs_content > max_value)
+                    T2 abs_content = carl::abs( (*row_iterator).content() );
+                    if( abs_content > max_value )
                     {
                         max_value = abs_content;                        
                     }
