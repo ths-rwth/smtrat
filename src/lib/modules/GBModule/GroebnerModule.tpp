@@ -62,7 +62,7 @@ GroebnerModule<Settings>::GroebnerModule( ModuleType _type, const ModuleInput* c
     mGBStats(GBCalculationStats::getInstance(Settings::identifier))
 #endif
 {
-    pushBacktrackPoint( mpReceivedFormula->end( ) );
+    pushBacktrackPoint( rReceivedFormula().end( ) );
 }
 
 template<class Settings>
@@ -81,12 +81,12 @@ template<class Settings>
 bool GroebnerModule<Settings>::assertSubformula( ModuleInput::const_iterator _formula )
 {
     Module::assertSubformula( _formula );
-    if( (*_formula)->getType() != smtrat::Type::CONSTRAINT )
+    if( _formula->formula().getType() != smtrat::Type::CONSTRAINT )
     {
         return true;
     }
 
-    const Constraint& constraint = (*_formula)->constraint( );
+    const Constraint& constraint = _formula->formula().constraint( );
     
 
     #ifdef SMTRAT_DEVOPTION_Statistics
@@ -114,7 +114,7 @@ bool GroebnerModule<Settings>::constraintByGB(smtrat::Relation cr)
 template<class Settings>
 void GroebnerModule<Settings>::processNewConstraint(ModuleInput::const_iterator _formula)
 {
-    const Constraint& constraint = (*_formula)->constraint( );
+    const Constraint& constraint = _formula->formula().constraint( );
     bool toGb = constraintByGB(constraint.relation());
 
     if( toGb )
@@ -137,9 +137,9 @@ void GroebnerModule<Settings>::handleConstraintToGBQueue(ModuleInput::const_iter
     pushBacktrackPoint( _formula );
     // Equalities do not need to be transformed, so we add them directly.
 	GBPolynomial newPol;
-    if((*_formula)->constraint( ).relation() ==  smtrat::Relation::EQ)
+    if(_formula->formula().constraint( ).relation() ==  smtrat::Relation::EQ)
     {
-		newPol = GBPolynomial ((*_formula)->constraint().lhs());
+		newPol = GBPolynomial (_formula->formula().constraint().lhs());
     }
     else
     {
@@ -171,7 +171,7 @@ void GroebnerModule<Settings>::handleConstraintNotToGB(ModuleInput::const_iterat
     else if( Settings::checkInequalities == ALWAYS )
     {
         mNewInequalities.push_back( mInequalities.InsertReceivedFormula( _formula ) );
-        assert((*(mNewInequalities.back()->first))->constraint().relation() !=  smtrat::Relation::EQ);
+        // assert((mNewInequalities.back()->first)->formula()->constraint().relation() !=  smtrat::Relation::EQ); TODO: ???
     }
     else
     {
@@ -192,7 +192,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
     std::cout << "GB Called" << std::endl;
 #endif
     // We can only handle conjunctions of constraints.
-    if(!mpReceivedFormula->isRealConstraintConjunction())
+    if(!rReceivedFormula().isRealConstraintConjunction())
     {
         return foundAnswer( Unknown );
     }
@@ -298,21 +298,21 @@ Answer GroebnerModule<Settings>::isConsistent( )
             for( ++it; it != mBacktrackPoints.end( ); ++it )
             {
                 assert(it != mBacktrackPoints.end());
-                assert( (**it)->getType( ) == smtrat::Type::CONSTRAINT );
-                assert( Settings::transformIntoEqualities != NO_INEQUALITIES || (**it)->constraint( ).relation( ) ==  smtrat::Relation::EQ );
+                assert( (*it)->formula().getType( ) == smtrat::Type::CONSTRAINT );
+                assert( Settings::transformIntoEqualities != NO_INEQUALITIES || (*it)->formula().constraint( ).relation( ) ==  smtrat::Relation::EQ );
 
                 if( Settings::getReasonsForInfeasibility )
                 {
 					
                     if( origIt.get( ) )
                     {
-                        mInfeasibleSubsets.back( ).insert( **it );
+                        mInfeasibleSubsets.back( ).insert( (*it)->pFormula() );
                     }
                     origIt++;
                 }
                 else
                 {
-                    mInfeasibleSubsets.back( ).insert( **it );
+                    mInfeasibleSubsets.back( ).insert( (*it)->pFormula() );
                 }
             }
 
@@ -345,12 +345,13 @@ Answer GroebnerModule<Settings>::isConsistent( )
         // When passing a gb, first remove last and then pass current gb.
         if( Settings::passGB )
         {
-            for( ModuleInput::iterator i = mpPassedFormula->begin( ); i != mpPassedFormula->end( ); )
+            // TODO: Do not use rPassedFormulaBegin, which should be disabled
+            for( ModuleInput::iterator i = passedFormulaBegin( ); i != rPassedFormula().end( ); )
             {
-                assert( (*i)->getType( ) == smtrat::Type::CONSTRAINT );
-                if( mGbEqualities.count(*i) == 1 )
+                assert( i->formula().getType( ) == smtrat::Type::CONSTRAINT );
+                if( mGbEqualities.count(i->pFormula()) == 1 )
                 {
-                    i = super::removeSubformulaFromPassedFormula( i );
+                    i = super::eraseSubformulaFromPassedFormula( i );
                 }
                 else
                 {
@@ -651,14 +652,14 @@ void GroebnerModule<Settings>::newConstraintDeduction( )
 template<class Settings>
 void GroebnerModule<Settings>::removeSubformula( ModuleInput::const_iterator _formula )
 {
-    if((*_formula)->getType() !=  smtrat::Type::CONSTRAINT) {
+    if(_formula->formula().getType() !=  smtrat::Type::CONSTRAINT) {
         super::removeSubformula( _formula );
         return;
     }
     #ifdef SMTRAT_DEVOPTION_Statistics
     mStats->constraintRemoved((*_formula)->constraint().relation());
     #endif
-    if( constraintByGB((*_formula)->constraint().relation()))
+    if( constraintByGB(_formula->formula().constraint().relation()))
     {
         popBacktrackPoint( _formula );
     }
@@ -700,7 +701,7 @@ void GroebnerModule<Settings>::removeReceivedFormulaFromNewInequalities( ModuleI
 template<class Settings>
 void GroebnerModule<Settings>::pushBacktrackPoint( ModuleInput::const_iterator btpoint )
 {
-    assert( mBacktrackPoints.empty( ) || (*btpoint)->getType( ) ==  smtrat::Type::CONSTRAINT );
+    assert( mBacktrackPoints.empty( ) || btpoint->formula().getType( ) ==  smtrat::Type::CONSTRAINT );
     assert( mBacktrackPoints.size( ) == mStateHistory.size( ) );
 
     // We save the current level
@@ -838,8 +839,8 @@ typename Settings::Polynomial GroebnerModule<Settings>::callGroebnerToSDP( const
 template<class Settings>
 typename GroebnerModule<Settings>::GBPolynomial GroebnerModule<Settings>::transformIntoEquality( ModuleInput::const_iterator constraint )
 {
-    GBPolynomial result( (*constraint)->constraint( ).lhs( ) );
-    unsigned constrId = (*constraint)->constraint( ).id( );
+    GBPolynomial result( constraint->formula().constraint( ).lhs( ) );
+    unsigned constrId = constraint->formula().constraint( ).id( );
     std::map<unsigned, carl::Variable>::const_iterator mapentry = mAdditionalVarMap.find( constrId );
     carl::Variable var = carl::Variable::NO_VARIABLE;
     if( mapentry == mAdditionalVarMap.end( ) )
@@ -856,7 +857,7 @@ typename GroebnerModule<Settings>::GBPolynomial GroebnerModule<Settings>::transf
     }
 
     // Modify to reflect inequalities.
-    switch( (*constraint)->constraint( ).relation( ) )
+    switch( constraint->formula().constraint( ).relation( ) )
     {
     case smtrat::Relation::GEQ:
         result = result + Term( -1, var, 2 );
@@ -916,12 +917,12 @@ void GroebnerModule<Settings>::passGB( )
     {
         // In the case we do not want to pass the GB with a minimal reason set,
         // we calculate the reason set here for all polynomials.
-        for( ModuleInput::const_iterator it = mpReceivedFormula->begin( ); it != mpReceivedFormula->end( ); ++it )
+        for( ModuleInput::const_iterator it = rReceivedFormula().begin( ); it != rReceivedFormula().end( ); ++it )
         {
             // Add the constraint if it is of a type that it was handled by the gb.
-            if( constraintByGB((*it)->constraint( ).relation( )) )
+            if( constraintByGB(it->formula().constraint( ).relation( )) )
             {
-                originals.front( ).insert( *it );
+                originals.front( ).insert( it->pFormula() );
             }
         }
 		assert(!originals.front().empty());
@@ -944,8 +945,9 @@ void GroebnerModule<Settings>::passGB( )
         // We use the originals set calculated before as reason set. 
         // TODO: replace "constraintPool().variables()" by a smaller approximations
         // of the variables contained in "simplIt->toEx( )"
-        addSubformulaToPassedFormula( newFormula( newConstraint( smtrat::Polynomial(*simplIt), smtrat::Relation::EQ ) ), originals );
-        mGbEqualities.insert(mpPassedFormula->back());
+        auto res = addSubformulaToPassedFormula( newFormula( newConstraint( smtrat::Polynomial(*simplIt), smtrat::Relation::EQ ) ), originals );
+        if( res.second )
+            mGbEqualities.insert(res.first->pFormula());
     }
 }
 
@@ -969,13 +971,13 @@ PointerSet<Formula> GroebnerModule<Settings>::generateReasons( const carl::BitVe
     auto it = mBacktrackPoints.begin( );
     for( ++it; it != mBacktrackPoints.end( ); ++it )
     {
-        assert( (**it)->getType( ) == smtrat::Type::CONSTRAINT );
-        assert( Settings::transformIntoEqualities != NO_INEQUALITIES || (**it)->constraint( ).relation( ) == smtrat::Relation::EQ );
+        assert( (*it)->formula().getType( ) == smtrat::Type::CONSTRAINT );
+        assert( Settings::transformIntoEqualities != NO_INEQUALITIES || (*it)->formula().constraint( ).relation( ) == smtrat::Relation::EQ );
         // If the corresponding entry in the reason vector is set,
         // we add the polynomial.
         if( origIt.get( ) )
         {
-            origins.insert( **it );
+            origins.insert( (*it)->pFormula() );
         }
         origIt++;
     }
@@ -993,9 +995,9 @@ bool GroebnerModule<Settings>::validityCheck( )
 {
     auto btp = mBacktrackPoints.begin( );
     ++btp;
-    for( auto it = mpReceivedFormula->begin( ); it != mpReceivedFormula->end( ); ++it )
+    for( auto it = rReceivedFormula().begin( ); it != rReceivedFormula().end( ); ++it )
     {
-        bool isInGb = constraintByGB((*it)->constraint( ).relation( ));
+        bool isInGb = constraintByGB(it->formula().constraint( ).relation( ));
 
         if( isInGb )
         {
@@ -1014,13 +1016,13 @@ bool GroebnerModule<Settings>::validityCheck( )
 
 /**
  * This function is overwritten such that it is visible to the InequalitiesTable.
- *  For more details take a look at Module::removeSubformulaFromPassedFormula()
+ *  For more details take a look at Module::eraseSubformulaFromPassedFormula(..)
  * @param _formula
  */
 template<class Settings>
 void GroebnerModule<Settings>::removeSubformulaFromPassedFormula( ModuleInput::iterator _formula )
 {
-    super::removeSubformulaFromPassedFormula( _formula );
+    super::eraseSubformulaFromPassedFormula( _formula );
 }
 
 
@@ -1034,7 +1036,7 @@ void GroebnerModule<Settings>::printStateHistory( )
     auto btp = mBacktrackPoints.begin( );
     for( auto it = mStateHistory.begin( ); it != mStateHistory.end( ); ++it )
     {
-        std::cout << **btp << ": ";
+        std::cout << (*btp)->formula() << ": ";
         it->getBasis( ).getGbIdeal( ).print( );
         std::cout << "," << std::endl;
         btp++;

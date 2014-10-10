@@ -51,7 +51,7 @@ namespace smtrat
     {
         size_t operator ()(ModuleInput::const_iterator i) const
         {
-            return (*i)->pConstraint()->id();
+            return i->formula().constraint().id();
         }
     };
 

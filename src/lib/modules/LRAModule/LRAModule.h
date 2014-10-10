@@ -66,7 +66,7 @@ namespace smtrat
                 /// The formula in the received formula.
                 const Formula* origin;
                 /// The position of this formula in the passed formula.
-                std::list<const Formula*>::iterator position;
+                ModuleInput::iterator position;
             };
             /// Maps an original variable to it's corresponding LRAModule variable.
             typedef std::map<carl::Variable, LRAVariable*> VarVariableMap;

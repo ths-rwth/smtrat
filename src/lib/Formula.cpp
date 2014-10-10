@@ -564,31 +564,38 @@ namespace smtrat
     
     void Formula::addConstraintProperties( const Constraint& _constraint )
     {
-        switch( _constraint.lhs().totalDegree() )
+        if( _constraint.lhs().isZero() )
         {
-            case 0:
-                mProperties |= PROP_CONTAINS_LINEAR_POLYNOMIAL;
-                break;
-            case 1:
-                mProperties |= PROP_CONTAINS_LINEAR_POLYNOMIAL;
-                break;
-            case 2:
-                mProperties |= PROP_CONTAINS_NONLINEAR_POLYNOMIAL;
-                break;
-            case 3:
-                mProperties |= PROP_CONTAINS_NONLINEAR_POLYNOMIAL;
-                mProperties &= ~PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
-                break;
-            case 4:
-                mProperties |= PROP_CONTAINS_NONLINEAR_POLYNOMIAL;
-                mProperties &= ~PROP_VARIABLE_DEGREE_LESS_THAN_FOUR;
-                break;
-            case 5:
-                mProperties |= PROP_CONTAINS_NONLINEAR_POLYNOMIAL;
-                mProperties &= ~PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
-                break;
-            default:
+            mProperties |= PROP_CONTAINS_LINEAR_POLYNOMIAL;
+        }
+        else
+        {
+            switch( _constraint.lhs().totalDegree() )
             {
+                case 0:
+                    mProperties |= PROP_CONTAINS_LINEAR_POLYNOMIAL;
+                    break;
+                case 1:
+                    mProperties |= PROP_CONTAINS_LINEAR_POLYNOMIAL;
+                    break;
+                case 2:
+                    mProperties |= PROP_CONTAINS_NONLINEAR_POLYNOMIAL;
+                    break;
+                case 3:
+                    mProperties |= PROP_CONTAINS_NONLINEAR_POLYNOMIAL;
+                    mProperties &= ~PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
+                    break;
+                case 4:
+                    mProperties |= PROP_CONTAINS_NONLINEAR_POLYNOMIAL;
+                    mProperties &= ~PROP_VARIABLE_DEGREE_LESS_THAN_FOUR;
+                    break;
+                case 5:
+                    mProperties |= PROP_CONTAINS_NONLINEAR_POLYNOMIAL;
+                    mProperties &= ~PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
+                    break;
+                default:
+                {
+                }
             }
         }
         switch( _constraint.relation() )

@@ -133,12 +133,12 @@ namespace smtrat
 
     bool ICPModule::assertSubformula( ModuleInput::const_iterator _formula )
     {
-        switch( (*_formula)->getType() )
+        switch( _formula->formula().getType() )
         {
             case FFALSE:
             {
                 PointerSet<Formula> infSubSet;
-                infSubSet.insert( *_formula );
+                infSubSet.insert( _formula->pFormula() );
                 mInfeasibleSubsets.push_back( infSubSet );
                 mFoundSolution.clear();
                 return false;
@@ -149,7 +149,7 @@ namespace smtrat
             }
             case CONSTRAINT:
             {
-                const Constraint& constr = (*_formula)->constraint();
+                const Constraint& constr = _formula->formula().constraint();
                 // create and initialize slackvariables
                 if( constr.satisfiedBy( mFoundSolution ) != 1 )
                 {
@@ -178,30 +178,30 @@ namespace smtrat
                 #ifdef ICP_MODULE_DEBUG_0
                 cout << "[ICP] Assertion: " << constr << endl;
                 #endif
-                if( !(*_formula)->constraint().isBound() )
+                if( !_formula->formula().constraint().isBound() )
                 {
-                    addSubformulaToPassedFormula( *_formula, *_formula );
+                    addSubformulaToPassedFormula( _formula->pFormula(), _formula->pFormula() );
                     Module::assertSubformula( _formula );
                 }
 
                 // activate associated nonlinear contraction candidates
                 if( !constr.lhs().isLinear() )
                 {
-                    activateNonlinearConstraint( *_formula );
+                    activateNonlinearConstraint( _formula->pFormula() );
                 }
                 // lookup corresponding linearization - in case the constraint is already linear, mReplacements holds the constraint as the linearized one
-                auto replacementIt = mLinearizations.find( *_formula );
+                auto replacementIt = mLinearizations.find( _formula->pFormula() );
                 assert( replacementIt != mLinearizations.end() );
                 const Formula* replacementPtr = (*replacementIt).second;
                 assert( replacementPtr->getType() == CONSTRAINT );
                 if( replacementPtr->constraint().isBound() )
                 {
                     // considered constraint is activated but has no slack variable -> it is a boundary constraint
-                    mValidationFormula->push_back(replacementPtr);
+                    auto res = mValidationFormula->add( replacementPtr );
                     #ifdef ICP_MODULE_DEBUG_0
                     cout << "[mLRA] Assert bound constraint: " << *replacementPtr << endl;
                     #endif
-                    if( !mLRA.assertSubformula( --mValidationFormula->end() ) )
+                    if( res.second && !mLRA.assertSubformula( res.first ) )
                     {
                         remapAndSetLraInfeasibleSubsets();
                         assert( !mInfeasibleSubsets.empty() );
@@ -210,7 +210,7 @@ namespace smtrat
                 }
                 else
                 {
-                    activateLinearConstraint( replacementPtr, *_formula );
+                    activateLinearConstraint( replacementPtr, _formula->pFormula() );
                 }
                 return true;
             }
@@ -222,12 +222,12 @@ namespace smtrat
 
     void ICPModule::removeSubformula( ModuleInput::const_iterator _formula )
     {
-        if( (*_formula)->getType() != CONSTRAINT )
+        if( _formula->formula().getType() != CONSTRAINT )
         {
             Module::removeSubformula( _formula );
             return;
         }
-        const Constraint* constr = (*_formula)->pConstraint();
+        const Constraint* constr = _formula->formula().pConstraint();
         #ifdef ICP_MODULE_DEBUG_0
         cout << "[ICP] Remove Formula " << *constr << endl;
         #endif
@@ -244,7 +244,7 @@ namespace smtrat
                 // remove candidate if counter == 1, else decrement counter.
                 assert( cc->isActive() );
                 // remove origin, no matter if constraint is active or not
-                cc->removeOrigin( *_formula );
+                cc->removeOrigin( _formula->pFormula() );
                 if( cc->activity() == 0 )
                 {
                     // reset History to point before this candidate was used
@@ -256,7 +256,7 @@ namespace smtrat
             }
         }
         // linear handling
-        auto linearization = mLinearizations.find( *_formula );
+        auto linearization = mLinearizations.find( _formula->pFormula() );
         assert( linearization != mLinearizations.end() );
         const LRAVariable* slackvariable = mLRA.getSlackVariable( linearization->second );
         assert( slackvariable != NULL );
@@ -273,7 +273,7 @@ namespace smtrat
                 // remove candidate if counter == 1, else decrement counter.
                 assert( cc->isActive() );
                 // remove origin, no matter if constraint is active or not
-                cc->removeOrigin( *_formula );
+                cc->removeOrigin( _formula->pFormula() );
                 if( cc->activity() == 0 )
                 {
                     // reset History to point before this candidate was used
@@ -285,16 +285,16 @@ namespace smtrat
             }
         }
         // remove constraint from mLRA module
-        auto replacementIt = mLinearizations.find( *_formula );
+        auto replacementIt = mLinearizations.find( _formula->pFormula() );
         assert( replacementIt != mLinearizations.end() );
-        auto validationFormulaIt = std::find( mValidationFormula->begin(), mValidationFormula->end(), (*replacementIt).first );
+        auto validationFormulaIt = mValidationFormula->find( replacementIt->first );
         if( validationFormulaIt != mValidationFormula->end() )
         {
             #ifdef ICP_MODULE_DEBUG_0
-            cout << "[mLRA] remove " << *(*validationFormulaIt)->pConstraint() << endl;
+            cout << "[mLRA] remove " << validationFormulaIt->formula().constraint() << endl;
             #endif
-            mLRA.removeSubformula(validationFormulaIt);
-            mValidationFormula->erase(validationFormulaIt);
+            mLRA.removeSubformula( validationFormulaIt );
+            mValidationFormula->erase( validationFormulaIt );
         }
         Module::removeSubformula( _formula );
     }
@@ -505,7 +505,7 @@ namespace smtrat
         }
         auto res = mIntervals.insert( std::make_pair( _var, smtrat::DoubleInterval::unboundedInterval() ) );
         assert( res.second );
-        icp::IcpVariable* icpVar = new icp::IcpVariable( _var, _original, mpPassedFormula->end(), res.first, _lraVar );
+        icp::IcpVariable* icpVar = new icp::IcpVariable( _var, _original, passedFormulaEnd(), res.first, _lraVar );
         mVariables.insert( std::make_pair( _var, icpVar ) );
         return icpVar;
     }
@@ -568,15 +568,17 @@ namespace smtrat
         }
 
         // assert in mLRA
-        mValidationFormula->push_back( _formula );
-
-        if( !mLRA.assertSubformula(--mValidationFormula->end()) )
+        auto res = mValidationFormula->add( _formula );
+        if( res.second )
         {
-            remapAndSetLraInfeasibleSubsets();
+            if( !mLRA.assertSubformula( res.first ) )
+            {
+                remapAndSetLraInfeasibleSubsets();
+            }
+            #ifdef ICP_MODULE_DEBUG_0
+            cout << "[mLRA] Assert " << *_formula << endl;
+            #endif
         }
-        #ifdef ICP_MODULE_DEBUG_0
-        cout << "[mLRA] Assert " << *_formula << endl;
-        #endif
     }
     
     bool ICPModule::initialLinearCheck( Answer& _answer )
@@ -650,7 +652,7 @@ namespace smtrat
             }
             
             // get intervals for slackvariables
-            const LRAModule::ExVariableMap slackVariables = mLRA.slackVariables();
+            const LRAModule<LRASettings1>::ExVariableMap slackVariables = mLRA.slackVariables();
             for( auto slackIt = slackVariables.begin(); slackIt != slackVariables.end(); ++slackIt )
             {
                 std::map<const LRAVariable*, ContractionCandidates>::iterator linIt = mLinearConstraints.find((*slackIt).second);
@@ -697,7 +699,7 @@ namespace smtrat
 
             icp::set_icpVariable icpVariables;
             Variables originalRealVariables;
-            mpReceivedFormula->realValuedVars(originalRealVariables);
+            rReceivedFormula().realValuedVars(originalRealVariables);
             for( auto variablesIt = originalRealVariables.begin(); variablesIt != originalRealVariables.end(); ++variablesIt )
             {
                 assert(mVariables.count(*variablesIt) > 0);
@@ -847,7 +849,7 @@ namespace smtrat
                 #ifdef ICP_CONSIDER_WIDTH
                 bool originalAllFinished = true;
                 Variables originalRealVariables;
-                mpReceivedFormula->realValuedVars(originalRealVariables);
+                rReceivedFormula().realValuedVars(originalRealVariables);
                 for( auto varIt = originalRealVariables.begin(); varIt != originalRealVariables.end(); ++varIt )
                 {
                     auto varInterval = mIntervals.find(*varIt);
@@ -1860,7 +1862,7 @@ namespace smtrat
     PointerSet<Formula> ICPModule::createBoxFormula()
     {
         Variables originalRealVariables;
-        mpReceivedFormula->realValuedVars(originalRealVariables);
+        rReceivedFormula().realValuedVars(originalRealVariables);
         PointerSet<Formula> subformulas;
         for( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
         {
@@ -2399,12 +2401,12 @@ namespace smtrat
     
     void ICPModule::clearCenterConstraintsFromValidationFormula()
     {
-        for ( auto centerIt = mValidationFormula->begin(); centerIt != mValidationFormula->end(); )
+        for( auto centerIt = mValidationFormula->begin(); centerIt != mValidationFormula->end(); )
         {
-            if ( mCenterConstraints.find((*centerIt)->pConstraint()) != mCenterConstraints.end() )
+            if( mCenterConstraints.find( centerIt->formula().pConstraint()) != mCenterConstraints.end() )
             {
-                mLRA.removeSubformula(centerIt);
-                centerIt = mValidationFormula->erase(centerIt);
+                mLRA.removeSubformula( centerIt );
+                centerIt = mValidationFormula->erase( centerIt );
             }
             else
                 ++centerIt;
@@ -2417,11 +2419,15 @@ namespace smtrat
         PointerSet<Formula> addedBoundaries = createConstraintsFromBounds(mIntervals);
         for( auto formulaIt = addedBoundaries.begin(); formulaIt != addedBoundaries.end(); ++formulaIt )
         {
-            mLRA.inform( *formulaIt );
-            mValidationFormula->push_back( *formulaIt );
-            mLRA.assertSubformula( --mValidationFormula->end() );
+            auto res = mValidationFormula->add( *formulaIt );
+            if( res.second )
+            {
+                assert( res.first == mValidationFormula->end() );
+                mLRA.inform( *formulaIt );
+                mLRA.assertSubformula( res.first );
+            }
         }
-        mLRA.rReceivedFormula().updateProperties();
+        mValidationFormula->updateProperties();
         Answer boxCheck = mLRA.isConsistent();
         #ifdef ICP_MODULE_DEBUG_0
         cout << "Boxcheck: " << boxCheck << endl;
@@ -2485,7 +2491,7 @@ namespace smtrat
             }
             
             // get intervals for slackvariables
-            const LRAModule::ExVariableMap slackVariables = mLRA.slackVariables();
+            const LRAModule<LRASettings1>::ExVariableMap slackVariables = mLRA.slackVariables();
             for ( auto slackIt = slackVariables.begin(); slackIt != slackVariables.end(); ++slackIt )
             {
                 std::map<const LRAVariable*, ContractionCandidates>::iterator linIt = mLinearConstraints.find((*slackIt).second);
@@ -2496,7 +2502,7 @@ namespace smtrat
                     // keep root updated about the initial box.
                     // mHistoryRoot->rIntervals()[(*(*linIt).second.begin())->lhs()] = smtrat::DoubleInterval(tmp.lower(), tmp.lowerBoundType(), tmp.upper(), tmp.upperBoundType());
                     DoubleInterval newInterval = DoubleInterval(tmp.lower(), tmp.lowerBoundType(), tmp.upper(), tmp.upperBoundType() );
-                    Variable var = (*(*linIt).second.begin())->lhs();
+                    carl::Variable var = (*(*linIt).second.begin())->lhs();
                     icp::IcpVariable& icpVar = *mVariables.at(var);
                     const DoubleInterval& icpVarInterval = icpVar.interval();
                     if( !(icpVarInterval == newInterval) && icpVarInterval.contains(newInterval) )
@@ -2516,18 +2522,11 @@ namespace smtrat
         // remove boundaries from mLRA module after boxChecking.
         for( auto boundIt = addedBoundaries.begin(); boundIt != addedBoundaries.end(); )
         {
-            for (auto formulaIt = mValidationFormula->begin(); formulaIt != mValidationFormula->end(); )
+            auto pos = mValidationFormula->find( *boundIt );
+            if( pos != mValidationFormula->end() )
             {
-                if( (*boundIt)->constraint() == (*formulaIt)->constraint() )
-                {
-                    mLRA.removeSubformula(formulaIt);
-                    formulaIt = mValidationFormula->erase(formulaIt);
-                    break;
-                }
-                else
-                {
-                    ++formulaIt;
-                }
+                mLRA.removeSubformula( pos );
+                mValidationFormula->erase( pos );
             }
             boundIt = addedBoundaries.erase(boundIt);
         }
@@ -2634,7 +2633,7 @@ namespace smtrat
     void ICPModule::pushBoundsToPassedFormula()
     {
         Variables originalRealVariables;
-        mpReceivedFormula->realValuedVars( originalRealVariables );
+        rReceivedFormula().realValuedVars( originalRealVariables );
         for( std::map<carl::Variable, icp::IcpVariable*>::iterator iter = mVariables.begin(); iter != mVariables.end(); ++iter )
         {
             carl::Variable::Arg tmpSymbol = iter->first;
@@ -2665,19 +2664,22 @@ namespace smtrat
                             default:
                                 leftTmp = NULL;
                         }
-                        if( icpVar.externalLeftBound() != mpPassedFormula->end() )
-                            removeSubformulaFromPassedFormula( icpVar.externalLeftBound() );
+                        if( icpVar.externalLeftBound() != passedFormulaEnd() )
+                            eraseSubformulaFromPassedFormula( icpVar.externalLeftBound() );
                         if ( leftTmp == NULL )
                         {
-                            icpVar.setExternalLeftBound( mpPassedFormula->end() );
+                            icpVar.setExternalLeftBound( passedFormulaEnd() );
                         }
                         else
                         {
                             addConstraintToInform( leftTmp );
                             vec_set_const_pFormula origins;
                             origins.push_back( PointerSet<Formula>() );
-                            addSubformulaToPassedFormula( leftTmp, move( origins ) );
-                            icpVar.setExternalLeftBound( --mpPassedFormula->end() );
+                            auto res = addSubformulaToPassedFormula( leftTmp, std::move( origins ) );
+                            if( res.second )
+                            {
+                                icpVar.setExternalLeftBound( res.first );
+                            }
                         }
                     }
                     
@@ -2698,19 +2700,22 @@ namespace smtrat
                             default:
                                 rightTmp = NULL;
                         }
-                        if( icpVar.externalRightBound() != mpPassedFormula->end() )
-                            removeSubformulaFromPassedFormula( icpVar.externalRightBound() );
+                        if( icpVar.externalRightBound() != passedFormulaEnd() )
+                            eraseSubformulaFromPassedFormula( icpVar.externalRightBound() );
                         if( rightTmp == NULL )
                         {
-                            icpVar.setExternalRightBound( mpPassedFormula->end() );
+                            icpVar.setExternalRightBound( passedFormulaEnd() );
                         }
                         else
                         {
                             addConstraintToInform( rightTmp );
                             vec_set_const_pFormula origins;
                             origins.push_back( PointerSet<Formula>() );
-                            addSubformulaToPassedFormula( rightTmp, move( origins ) );
-                            icpVar.setExternalRightBound( --mpPassedFormula->end() );
+                            auto res = addSubformulaToPassedFormula( rightTmp, origins );
+                            if( res.second )
+                            {
+                                icpVar.setExternalRightBound( res.first );
+                            }
                         }
                     }
                     icpVar.setExternalUnmodified();
@@ -2732,7 +2737,7 @@ namespace smtrat
                     // cout << "Defining origin: " << **formulaIt << " FOR " << *(*variableIt) << endl;
                     bool hasAdditionalVariables = false;
                     Variables realValuedVars;
-                    mpReceivedFormula->realValuedVars(realValuedVars);
+                    rReceivedFormula().realValuedVars(realValuedVars);
                     for( auto varIt = realValuedVars.begin(); varIt != realValuedVars.end(); ++varIt )
                     {
                         if(*varIt != (*variableIt)->var() && (*formulaIt)->constraint().hasVariable(*varIt))
@@ -2744,11 +2749,11 @@ namespace smtrat
                     if( hasAdditionalVariables)
                     {
                         // cout << "Addidional variables." << endl;
-                        for( auto receivedFormulaIt = mpReceivedFormula->begin(); receivedFormulaIt != mpReceivedFormula->end(); ++receivedFormulaIt )
+                        for( auto receivedFormulaIt = rReceivedFormula().begin(); receivedFormulaIt != rReceivedFormula().end(); ++receivedFormulaIt )
                         {
-                            if( (*receivedFormulaIt)->pConstraint()->hasVariable((*variableIt)->var()) && (*receivedFormulaIt)->pConstraint()->isBound() )
+                            if( receivedFormulaIt->formula().constraint().hasVariable((*variableIt)->var()) && receivedFormulaIt->formula().constraint().isBound() )
                             {
-                                reasons.insert(*receivedFormulaIt);
+                                reasons.insert( receivedFormulaIt->pFormula() );
                                 // cout << "Also add: " << **receivedFormulaIt << endl;
                             }
                         }
@@ -2771,11 +2776,11 @@ namespace smtrat
         PointerSet<Formula> reasons;
         for ( auto constraintIt = _reasons.begin(); constraintIt != _reasons.end(); ++constraintIt )
         {
-            for ( auto formulaIt = mpReceivedFormula->begin(); formulaIt != mpReceivedFormula->end(); ++formulaIt )
+            for ( auto formulaIt = rReceivedFormula().begin(); formulaIt != rReceivedFormula().end(); ++formulaIt )
             {
-                if ( *constraintIt == (*formulaIt)->pConstraint() )
+                if ( *constraintIt == formulaIt->formula().pConstraint() )
                 {
-                    reasons.insert(*formulaIt);
+                    reasons.insert( formulaIt->pFormula() );
                     break;
                 }
             }
@@ -2787,7 +2792,7 @@ namespace smtrat
     {
         PointerSet<Formula> addedBoundaries;
         Variables originalRealVariables;
-        mpReceivedFormula->realValuedVars(originalRealVariables);
+        rReceivedFormula().realValuedVars(originalRealVariables);
         for ( auto variablesIt = originalRealVariables.begin(); variablesIt != originalRealVariables.end(); ++variablesIt )
         {
             carl::Variable tmpSymbol = *variablesIt;
@@ -2883,7 +2888,7 @@ namespace smtrat
             {
                 auto delinIt = mDeLinearizations.find(*formulaIt);
                 assert( delinIt != mDeLinearizations.end() ); 
-                assert( std::find( mpReceivedFormula->begin(), mpReceivedFormula->end(), delinIt->second ) != mpReceivedFormula->end());
+                assert( std::find( rReceivedFormula().begin(), rReceivedFormula().end(), delinIt->second ) != rReceivedFormula().end());
                 newSet.insert( delinIt->second );
             }
             assert(newSet.size() == (*infSetIt).size());
@@ -2989,7 +2994,7 @@ namespace smtrat
     #ifdef ICP_BOXLOG
     void ICPModule::writeBox()
     {
-        GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
+        GiNaC::symtab originalRealVariables = rReceivedFormula().realValuedVars();
         
         for ( auto varIt = originalRealVariables.begin(); varIt != originalRealVariables.end(); ++varIt )
         {

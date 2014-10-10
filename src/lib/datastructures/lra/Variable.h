@@ -95,7 +95,7 @@ namespace smtrat
                  * @param _defaultBoundPosition
                  * @param _isInteger
                  */
-                Variable( size_t _position, const smtrat::Polynomial* _expression, std::list<const smtrat::Formula*>::iterator _defaultBoundPosition, bool _isInteger );
+                Variable( size_t _position, const smtrat::Polynomial* _expression, ModuleInput::iterator _defaultBoundPosition, bool _isInteger );
                 
                 /**
                  * 
@@ -104,7 +104,7 @@ namespace smtrat
                  * @param _defaultBoundPosition
                  * @param _isInteger
                  */
-                Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator _positionInNonActives, const smtrat::Polynomial* _expression, std::list<const smtrat::Formula*>::iterator _defaultBoundPosition, bool _isInteger );
+                Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator _positionInNonActives, const smtrat::Polynomial* _expression, ModuleInput::iterator _defaultBoundPosition, bool _isInteger );
                 
                 /**
                  * 
@@ -467,7 +467,7 @@ namespace smtrat
                  * @param _deduced
                  * @return 
                  */
-                std::pair<const Bound<T1, T2>*, bool> addUpperBound( Value<T1>* const _val, std::list<const smtrat::Formula*>::iterator _position, const smtrat::Formula* _constraint = NULL, bool _deduced = false );
+                std::pair<const Bound<T1, T2>*, bool> addUpperBound( Value<T1>* const _val, ModuleInput::iterator _position, const smtrat::Formula* _constraint = NULL, bool _deduced = false );
                 
                 /**
                  * 
@@ -477,7 +477,7 @@ namespace smtrat
                  * @param _deduced
                  * @return 
                  */
-                std::pair<const Bound<T1, T2>*, bool> addLowerBound( Value<T1>* const _val, std::list<const smtrat::Formula*>::iterator _position, const smtrat::Formula* _constraint = NULL, bool _deduced = false );
+                std::pair<const Bound<T1, T2>*, bool> addLowerBound( Value<T1>* const _val, ModuleInput::iterator _position, const smtrat::Formula* _constraint = NULL, bool _deduced = false );
                 
                 /**
                  * 
@@ -486,7 +486,7 @@ namespace smtrat
                  * @param _constraint
                  * @return 
                  */
-                std::pair<const Bound<T1, T2>*, bool> addEqualBound( Value<T1>* const _val, std::list<const smtrat::Formula*>::iterator _position, const smtrat::Formula* _constraint = NULL );
+                std::pair<const Bound<T1, T2>*, bool> addEqualBound( Value<T1>* const _val, ModuleInput::iterator _position, const smtrat::Formula* _constraint = NULL );
                 
                 /**
                  * 
@@ -494,7 +494,7 @@ namespace smtrat
                  * @param _position
                  * @return 
                  */
-                bool deactivateBound( const Bound<T1, T2>* bound, std::list<const smtrat::Formula*>::iterator _position );
+                bool deactivateBound( const Bound<T1, T2>* bound, ModuleInput::iterator _position );
                 
                 /**
                  * 

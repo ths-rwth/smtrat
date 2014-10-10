@@ -61,8 +61,6 @@ namespace smtrat
 
     /// A vector of sets of formula pointers.
     typedef std::vector<PointerSet<Formula>> vec_set_const_pFormula;
-    /// A map of formula pointers to a vector of sets of formula pointers.
-    typedef FastPointerMap<Formula,vec_set_const_pFormula> FormulaOrigins;
     /// A vector of atomic bool pointers.
     typedef std::vector<std::atomic_bool*> Conditionals;
     
@@ -118,17 +116,15 @@ namespace smtrat
             thread_priority mThreadPriority;
             /// The type of this module.
             ModuleType mType;
+            /// The formula passed to this module.
+            const ModuleInput* mpReceivedFormula;
+            /// The formula passed to the backends of this module.
+            ModuleInput* mpPassedFormula;
         protected:
             /// Stores the infeasible subsets.
             vec_set_const_pFormula mInfeasibleSubsets;
             /// A reference to the manager.
             Manager* const mpManager;
-            /// The formula passed to this module.
-            const ModuleInput* mpReceivedFormula;
-            /// The formula passed to the backends of this module.
-            ModuleInput* mpPassedFormula;
-            /// The propositions of the passed formula.
-            Condition mPropositions;
             /// Stores the assignment of the current satisfiable result, if existent.
             mutable Model mModel;
 
@@ -143,8 +139,6 @@ namespace smtrat
             std::vector<Module*> mUsedBackends;
             /// The backends of this module which have been used.
             std::vector<Module*> mAllBackends;
-            /// For each passed formula index its original sub formulas in the received formula.
-            FormulaOrigins mPassedformulaOrigins;
             /// Stores the deductions/lemmas being valid formulas this module or its backends made.
             std::vector<const Formula*> mDeductions;
             /// Stores the position of the first sub-formula in the passed formula, which has not yet been considered for a consistency check of the backends.
@@ -558,14 +552,20 @@ namespace smtrat
             }
             
             /**
-             * Sets the origins of the given passed formula to the given sets of formulas in the received formula.
-             * @param _formula The passed formula to set the origins for.
-             * @param _origins A vector of sets of formulas in the received formula of this module.
+             * @return An iterator to the end of the passed formula.
+             * TODO: disable this method
              */
-            void setOrigins( const Formula* _formula, vec_set_const_pFormula& _origins )
+            ModuleInput::iterator passedFormulaBegin()
             {
-                assert( mPassedformulaOrigins.find( _formula ) != mPassedformulaOrigins.end() );
-                mPassedformulaOrigins[_formula] = _origins;
+                return mpPassedFormula->begin();
+            }
+            
+            /**
+             * @return An iterator to the end of the passed formula.
+             */
+            ModuleInput::iterator passedFormulaEnd()
+            {
+                return mpPassedFormula->end();
             }
             
             /**
@@ -573,10 +573,10 @@ namespace smtrat
              * @param _formula The passed formula to set the origins for.
              * @param _origins A set of formulas in the received formula of this module.
              */
-            void addOrigin( const Formula* _formula, const PointerSet<Formula>& _origin )
+            void addOrigin( ModuleInput::iterator _formula, const PointerSet<Formula>& _origin )
             {
-                assert( mPassedformulaOrigins.find( _formula ) != mPassedformulaOrigins.end() );
-                mPassedformulaOrigins[_formula].push_back( _origin );
+                assert( _formula != mpPassedFormula->end() );
+                _formula->rOrigins().push_back( _origin );
             }
 
             /**
@@ -584,37 +584,49 @@ namespace smtrat
              * @param _formula The passed formula to set the origins for.
              * @param _origins A vector of sets of formulas in the received formula of this module.
              */
-            void addOrigins( const Formula* _formula, vec_set_const_pFormula& _origins )
+            void addOrigins( ModuleInput::iterator _formula, vec_set_const_pFormula& _origins )
             {
-                assert( mPassedformulaOrigins.find( _formula ) != mPassedformulaOrigins.end() );
-                vec_set_const_pFormula& formulaOrigins = mPassedformulaOrigins[_formula];
-                formulaOrigins.insert( formulaOrigins.end(), _origins.begin(), _origins.end() );
+                assert( _formula != mpPassedFormula->end() );
+                auto& origs = _formula->rOrigins();
+                origs.insert( origs.end(), _origins.begin(), _origins.end() );
             }
             
             /**
              * Gets the origins of the passed formula at the given position.
-             * @param _subformula A position of a formula in the passed formulas.
+             * @param _formula The position of a formula in the passed formulas.
              * @return The origins of the passed formula at the given position.
              */
-            const PointerSet<Formula>& getOrigins( Formula::const_iterator _subformula ) const
+            const PointerSet<Formula>& getOrigins( ModuleInput::const_iterator _formula ) const
             {
-                FormulaOrigins::const_iterator origins = mPassedformulaOrigins.find( *_subformula );
-                assert( origins != mPassedformulaOrigins.end() );
-                assert( origins->second.size() == 1 );
-                return origins->second.front();
+                assert( _formula != mpPassedFormula->end() );
+                return _formula->origins().front();
             }
             
-            /**
-             * Collects the origins of the given formula being a part of the passed formula in the given 
-             * vector of sets of origins, being formulas in the received formula.
-             * @param _subformula The formula in the passed formula to collect the origins for.
-             * @param _origins The container to store the origins.
-             */
-            void getOrigins( const Formula* _subformula, vec_set_const_pFormula& _origins ) const
+            std::pair<ModuleInput::iterator,bool> removeOrigin( ModuleInput::iterator _formula, const Formula* _origin )
             {
-                FormulaOrigins::const_iterator origins = mPassedformulaOrigins.find( _subformula );
-                assert( origins != mPassedformulaOrigins.end() );
-                _origins = origins->second;
+                if( mpPassedFormula->removeOrigin( _formula, _origin ) )
+                {
+                    return std::make_pair( eraseSubformulaFromPassedFormula( _formula ), true );
+                }
+                return std::make_pair( _formula, false );
+            }
+            
+            std::pair<ModuleInput::iterator,bool> removeOrigins( ModuleInput::iterator _formula, const PointerSet<Formula>& _origins )
+            {
+                if( mpPassedFormula->removeOrigins( _formula, _origins ) )
+                {
+                    return std::make_pair( eraseSubformulaFromPassedFormula( _formula ), true );
+                }
+                return std::make_pair( _formula, false );
+            }
+            
+            std::pair<ModuleInput::iterator,bool> removeOrigins( ModuleInput::iterator _formula, const vec_set_const_pFormula& _origins )
+            {
+                if( mpPassedFormula->removeOrigins( _formula, _origins ) )
+                {
+                    return std::make_pair( eraseSubformulaFromPassedFormula( _formula ), true );
+                }
+                return std::make_pair( _formula, false );
             }
             
             /**
@@ -650,7 +662,7 @@ namespace smtrat
              * the received formulas, which are responsible for its occurrence.
              * @param _subformula The sub-formula of the received formula to copy.
              */
-            void addReceivedSubformulaToPassedFormula( ModuleInput::const_iterator _subformula );
+            std::pair<ModuleInput::iterator,bool> addReceivedSubformulaToPassedFormula( ModuleInput::const_iterator _subformula );
             
             /**
              * Adds the given formula to the passed formula.
@@ -658,7 +670,7 @@ namespace smtrat
              * @param _origins The link of the formula to add to the passed formula to sub-formulas 
              *         of the received formulas, which are responsible for its occurrence
              */
-            void addSubformulaToPassedFormula( const Formula* _formula, const vec_set_const_pFormula& _origins );
+            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const Formula* _formula, const vec_set_const_pFormula& _origins );
             
             /**
              * Adds the given formula to the passed formula.
@@ -666,7 +678,7 @@ namespace smtrat
              * @param _origins The link of the formula to add to the passed formula to sub-formulas 
              *         of the received formulas, which are responsible for its occurrence
              */
-            void addSubformulaToPassedFormula( const Formula* _formula, vec_set_const_pFormula&& _origins );
+            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const Formula* _formula, vec_set_const_pFormula&& _origins );
             
             /**
              * Adds the given formula to the passed formula.
@@ -674,7 +686,7 @@ namespace smtrat
              * @param _origin The sub-formula of the received formula being responsible for the
              *        occurrence of the formula to add to the passed formula.
              */
-            void addSubformulaToPassedFormula( const Formula* _formula, const Formula* _origin );
+            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const Formula* _formula, const Formula* _origin );
             
             /**
              * Copies the infeasible subsets of the passed formula
@@ -710,7 +722,7 @@ namespace smtrat
              * @param _subformula The sub-formula to remove from the passed formula.
              * @return 
              */
-            ModuleInput::iterator removeSubformulaFromPassedFormula( ModuleInput::iterator _subformula );
+            ModuleInput::iterator eraseSubformulaFromPassedFormula( ModuleInput::iterator _subformula );
             
             /**
              * Get the infeasible subsets the given backend provides. Note, that an infeasible subset

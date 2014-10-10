@@ -245,7 +245,7 @@ namespace smtrat
                 ///
                 size_t mMaxPivotsWithoutBlandsRule;
                 ///
-                std::list<const smtrat::Formula*>::iterator mDefaultBoundPosition;
+                ModuleInput::iterator mDefaultBoundPosition;
                 ///
                 std::stack<EntryID> mUnusedIDs;
                 ///
@@ -386,7 +386,7 @@ namespace smtrat
                  * 
                  * @param _defaultBoundPosition
                  */
-                Tableau( std::list<const smtrat::Formula*>::iterator _defaultBoundPosition );
+                Tableau( ModuleInput::iterator _defaultBoundPosition );
                 
                 /**
                  * 

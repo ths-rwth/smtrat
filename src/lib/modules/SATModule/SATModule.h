@@ -97,10 +97,16 @@ namespace smtrat
             struct Abstraction
             {
                 /**
+                 * A flag, which is set to false, if the constraint corresponding to the abstraction does
+                 * not occur in the received formula and, hence, does not need to be part of a consistency check.
+                 */ 
+                bool consistencyRelevant;
+                
+                /**
                  * A flag, which is set to false, if the constraint corresponding to the abstraction is redundant
                  * and hence there is no need to include it to a consistency check. (NOT YET USED)
                  */ 
-                bool consistencyRelevant;
+                bool isDeduction;
                 
                 /**
                  * <0, if the corresponding constraint must still be added to the passed formula;
@@ -113,7 +119,7 @@ namespace smtrat
                  * The position of the corresponding constraint in the passed formula. It points to the end
                  * if the constraint is not part of the passed formula.
                  */
-                std::list<const Formula*>::iterator position;
+                ModuleInput::iterator position;
                 
                 /**
                  * The constraint corresponding to this abstraction. It is NULL, if the literal for which we 
@@ -122,33 +128,21 @@ namespace smtrat
                 const Formula* constraint;
                 
                 // The origins of this constraint. Usually it is its own origin, but the origins can be extended during solving.
-                std::map<const Formula*,unsigned>* origins;
+                std::vector<PointerSet<Formula>>* origins;
                 
                 /**
                  * Constructs abstraction information, for a literal which does actually not belong to an abstraction.
                  * @param _position The end of the passed formula of this module.
-                 */
-                Abstraction( std::list<const Formula*>::iterator _position ):
-                    consistencyRelevant( false ),
-                    updateInfo( 0 ),
-                    position( _position ),
-                    constraint( NULL ),
-                    origins( NULL )
-                {}
-                
-                /**
-                 * Constructs abstraction information for the given constraint.
-                 * @param _position The end of the passed formula of this module.
                  * @param _constraint The constraint to abstract.
                  */
-                Abstraction( std::list<const Formula*>::iterator _position, const Formula* _constraint ):
+                Abstraction( ModuleInput::iterator _position, const Formula* _constraint = NULL ):
                     consistencyRelevant( false ),
+                    isDeduction( true ),
                     updateInfo( 0 ),
                     position( _position ),
                     constraint( _constraint ),
-                    origins( new std::map<const Formula*,unsigned>() )
+                    origins( new std::vector<PointerSet<Formula>>() )
                 {}
-                    
             };
 
             /// [Minisat related code.]
@@ -592,8 +586,10 @@ namespace smtrat
             
             /**
              * Applies all valid substitutions resulting of equations containing at least one variable only linearly.
+             * @return true, if a valid substitution took place;
+             *         false, otherwise.
              */
-            void applyValidSubstitutionsOnClauses();
+            bool applyValidSubstitutionsOnClauses();
             
             /**
              * 
@@ -1214,9 +1210,10 @@ namespace smtrat
              * Creates the literal belonging to the formula being the first argument. 
              * @param _formula The formula to get the literal for.
              * @param _origin The origin of the formula to get the literal for.
+             * @param _fromReceived true, if the literal stems from a received clause.
              * @return The created literal.
              */
-            Minisat::Lit getLiteral( const Formula* _formula, const Formula* _origin = NULL );
+            Minisat::Lit getLiteral( const Formula* _formula, const Formula* _origin );
             
             /**
              * Adapts the passed formula according to the current assignment within the SAT solver.

@@ -25,12 +25,11 @@ namespace smtrat
     template<class Settings>
     typename InequalitiesTable<Settings>::Rows::iterator InequalitiesTable<Settings>::InsertReceivedFormula( ModuleInput::const_iterator received )
     {
-        assert( (*received)->constraint().relation() != smtrat::Relation::EQ );
-        mModule->addReceivedSubformulaToPassedFormula( received );
+        assert( received->formula().constraint().relation() != smtrat::Relation::EQ );
         // We assume that the just added formula is the last one.
-        ModuleInput::iterator passedEntry = --(mModule->mpPassedFormula->end());
+        ModuleInput::iterator passedEntry = mModule->addReceivedSubformulaToPassedFormula(received).first;
         // And we add a row to our table
-        return mReducedInequalities.insert( Row( received, RowEntry( passedEntry, (*received)->constraint( ).relation( ), std::list<CellEntry > (1, CellEntry( 0, Polynomial( (*received)->constraint( ).lhs( ) ) )) ) ) ).first;
+        return mReducedInequalities.insert( Row( received, RowEntry( passedEntry, received->formula().constraint( ).relation( ), std::list<CellEntry > (1, CellEntry( 0, Polynomial( received->formula().constraint( ).lhs( ) ) )) ) ) ).first;
     }
 
     /**
@@ -78,36 +77,34 @@ namespace smtrat
                     // what shall we pass
                     if( Settings::passInequalities == AS_RECEIVED )
                     {
-                        if( std::get < 0 > (it->second) == mModule->mpPassedFormula->end( ) )
+                        if( std::get < 0 > (it->second) == mModule->rPassedFormula().end( ) )
                         {
-                            // we had reduced it to true, therefore not passed it, but now we have to pass the original one again.
-                            mModule->addReceivedSubformulaToPassedFormula( it->first );
-                            std::get < 0 > (it->second) = --(mModule->mpPassedFormula->end());
+                            // we had reduced it to true, therefore not passed it, but now we have to pass the original one again
+                            std::get < 0 > (it->second) = mModule->addReceivedSubformulaToPassedFormula( it->first ).first;
                         }
                     }
                     else
                     {
-                        if( std::get < 0 > (it->second) != mModule->mpPassedFormula->end( ) )
+                        if( std::get < 0 > (it->second) != mModule->rPassedFormula().end( ) )
                         {
-                            // we can of course only remove something which is in the formula.
+                            // we can of course only remove something which is in the formula
                             mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
                         }
                         if( Settings::passInequalities == FULL_REDUCED || (Settings::passInequalities == FULL_REDUCED_IF && pass) )
                         {
                             std::vector<PointerSet<Formula> > originals;
                             originals.push_back( mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() ));
-                            originals.front( ).insert( *(it->first) );
-                            mModule->addSubformulaToPassedFormula( newFormula( newConstraint( smtrat::Polynomial(std::get<2>(it->second).back().second), std::get<1>(it->second) ) ), originals );
+                            originals.front( ).insert( it->first->pFormula() );
+                            // we update the reference to the passed formula again
+                            std::get < 0 > (it->second) = mModule->addSubformulaToPassedFormula( newFormula( newConstraint( smtrat::Polynomial(std::get<2>(it->second).back().second), std::get<1>(it->second) ) ), originals ).first;
 
                         }
                         else
                         {
                             assert( Settings::passInequalities == FULL_REDUCED_IF );
-                            //we pass the original one.
-                            mModule->addReceivedSubformulaToPassedFormula( it->first );
+                            // we pass the original one and update the reference to the passed formula again
+                            std::get < 0 > (it->second) = mModule->addReceivedSubformulaToPassedFormula( it->first ).first;
                         }
-                        //update the reference to the passed formula again
-                        std::get < 0 > (it->second) = --(mModule->mpPassedFormula->end());
                     }
                     break;
                 }
@@ -248,7 +245,7 @@ namespace smtrat
         smtrat::Relation relation = std::get < 1 > (it->second);
         if( rewriteOccured || reductionOccured )
         {
-            assert(std::get < 0 > (it->second) != mModule->mpPassedFormula->end());
+            assert(std::get < 0 > (it->second) != mModule->rPassedFormula().end());
             if( reduced.isZero( ) || reduced.isConstant( ) )
             {
                 bool satisfied = false;
@@ -288,7 +285,7 @@ namespace smtrat
                     std::get < 2 > (it->second).push_back( CellEntry( mBtnumber, reduced ) );
                     PointerSet<Formula> originals( mModule->generateReasons( reduced.getReasons( ) ) );
 
-                    std::get < 0 > (it->second) = mModule->mpPassedFormula->end( );
+                    std::get < 0 > (it->second) = mModule->passedFormulaEnd( );
                     if( Settings::addTheoryDeductions != NO_CONSTRAINTS )
                     {
                         PointerSet<Formula> subformulas;
@@ -296,7 +293,7 @@ namespace smtrat
                         {
                             subformulas.insert( newNegation( *jt ) );
                         }
-                        subformulas.insert( *(it->first) );
+                        subformulas.insert( it->first->pFormula() );
     //                    mModule->print();
     //                    std::cout << "Id="<<(*(it->first))->pConstraint()->id()<<std::endl;
     //                    std::cout << "Gb learns: ";
@@ -313,7 +310,7 @@ namespace smtrat
                 {
 
                     PointerSet<Formula> infeasibleSubset( mModule->generateReasons( reduced.getReasons( ) ) );
-                    infeasibleSubset.insert( *(it->first) );
+                    infeasibleSubset.insert( it->first->pFormula() );
                     #ifdef SMTRAT_DEVOPTION_Statistics
                     mStats->EffectivenessOfConflicts(infeasibleSubset.size()/mModule->mpReceivedFormula->size());
                     #endif //SMTRAT_DEVOPTION_Statistics
@@ -344,13 +341,12 @@ namespace smtrat
                     // get the reason set for the reduced polynomial
                     std::vector<PointerSet<Formula> > originals;
                     originals.push_back( mModule->generateReasons( reduced.getReasons( ) ) );
-                    originals.front( ).insert( *(it->first) );
+                    originals.front( ).insert( it->first->pFormula() );
 
                     //pass the result
                     //TODO: replace "Formula::constraintPool().variables()" by a smaller approximations of the variables contained in "reduced.toEx( )"
-                    mModule->addSubformulaToPassedFormula( newFormula( newConstraint( smtrat::Polynomial(reduced), relation ) ), originals );
-                    //set the pointer to the passed formula accordingly.
-                    std::get < 0 > (it->second) = --(mModule->mpPassedFormula->end());
+                    // and set the pointer to the passed formula accordingly.
+                    std::get < 0 > (it->second) = mModule->addSubformulaToPassedFormula( newFormula( newConstraint( smtrat::Polynomial(reduced), relation ) ), originals ).first;
                 }
                 // new constraint learning
                 // If the original constraint is nonlinear

@@ -153,6 +153,14 @@ namespace smtrat
     template<class Settings>
     SATModule<Settings>::~SATModule()
     {
+        while( mBooleanConstraintMap.size() > 0 )
+        {
+            vector<PointerSet<Formula>>* toDelA = mBooleanConstraintMap.last().first.origins;
+            vector<PointerSet<Formula>>* toDelB = mBooleanConstraintMap.last().second.origins;
+            mBooleanConstraintMap.pop();
+            delete toDelA;
+            delete toDelB;
+        }
         #ifdef SMTRAT_DEVOPTION_Statistics
         delete mpStatistics;
         #endif
@@ -162,11 +170,11 @@ namespace smtrat
     bool SATModule<Settings>::assertSubformula( ModuleInput::const_iterator _subformula )
     {
         Module::assertSubformula( _subformula );
-        if( PROP_IS_A_CLAUSE <= (*_subformula)->properties() )
+        if( PROP_IS_A_CLAUSE <= _subformula->formula().properties() )
         {
-            if (mFormulaClauseMap.find( *_subformula ) == mFormulaClauseMap.end())
+            if (mFormulaClauseMap.find( _subformula->pFormula() ) == mFormulaClauseMap.end())
             {
-                mFormulaClauseMap[*_subformula] = addClause( *_subformula, false );
+                mFormulaClauseMap[_subformula->pFormula()] = addClause( _subformula->pFormula(), false );
             }
         }
         if( !ok )
@@ -177,7 +185,7 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::removeSubformula( ModuleInput::const_iterator _subformula )
     {
-        FormulaClauseMap::iterator iter = mFormulaClauseMap.find( *_subformula );
+        FormulaClauseMap::iterator iter = mFormulaClauseMap.find( _subformula->pFormula() );
         if( iter != mFormulaClauseMap.end() )
         {
             if( iter->second != CRef_Undef )
@@ -229,7 +237,7 @@ namespace smtrat
     template<class Settings>
     Answer SATModule<Settings>::isConsistent()
     {
-        if( PROP_IS_IN_CNF <= mpReceivedFormula->properties() )
+        if( PROP_IS_IN_CNF <= rReceivedFormula().properties() )
         {
             if( !Settings::stop_search_after_first_unknown )
             {
@@ -354,9 +362,9 @@ namespace smtrat
 //        {
             // Just add all sub formulas.
             // TODO: compute a better infeasible subset
-            for( const Formula* subformula : *mpReceivedFormula )
+            for( auto subformula = rReceivedFormula().begin(); subformula != rReceivedFormula().end(); ++subformula )
             {
-                infeasibleSubset.insert( subformula );
+                infeasibleSubset.insert( subformula->pFormula() );
             }
 //        }
         mInfeasibleSubsets.push_back( infeasibleSubset );
@@ -483,20 +491,27 @@ namespace smtrat
         const Formula* content = negated ? _formula->pSubformula() : _formula;
         if( content->getType() == BOOL )
         {
+            Lit l = lit_Undef;
             BooleanVarMap::iterator booleanVarPair = mBooleanVarMap.find(content->boolean());
             if( booleanVarPair != mBooleanVarMap.end() )
             {
-                Lit l = mkLit( booleanVarPair->second, negated );
-                return l;
+                l = mkLit( booleanVarPair->second, negated );
             }
             else
             {
                 Var var = newVar( true, true, content->activity() );
                 mBooleanVarMap[content->boolean()] = var;
-                mBooleanConstraintMap.push(make_pair( Abstraction( mpPassedFormula->end() ), Abstraction( mpPassedFormula->end() ) ) );
-                Lit l = mkLit( var, negated );
-                return l;
+                mBooleanConstraintMap.push( make_pair( Abstraction( passedFormulaEnd() ), Abstraction( passedFormulaEnd() ) ) );
+                l = mkLit( var, negated );
             }
+            if( _origin != NULL )
+            {
+                Abstraction& abstr = negated ? mBooleanConstraintMap[var(l)].second : mBooleanConstraintMap[var(l)].first;
+                PointerSet<Formula> originsSet;
+                originsSet.insert( _origin );
+                abstr.origins->push_back( std::move( originsSet ) );
+            }
+            return l;
         }
         else
         {
@@ -511,10 +526,12 @@ namespace smtrat
                 // add the origin (if already the same formula is an origin, increment the counter)
                 auto& abstrPair = mBooleanConstraintMap[var(constraintLiteralPair->second.front())];
                 Abstraction& abstr = sign(constraintLiteralPair->second.front()) ? abstrPair.second : abstrPair.first;
-                assert( abstr.origins != NULL );
                 if( _origin != NULL || !negated )
                 {
-                    if( abstr.origins->empty() )
+                    PointerSet<Formula> originsSet;
+                    originsSet.insert( _origin );
+                    assert( abstr.origins->empty() || std::find( abstr.origins->begin(), abstr.origins->end(), originsSet ) == abstr.origins->end() );
+                    if( !abstr.consistencyRelevant )
                     {
                         addConstraintToInform( abstr.constraint );
                         if( (sign(constraintLiteralPair->second.front()) && assigns[var( constraintLiteralPair->second.front() )] == l_False)
@@ -523,10 +540,12 @@ namespace smtrat
                             if( ++abstr.updateInfo > 0 )
                                 mChangedBooleans.push_back( var( constraintLiteralPair->second.front() ) );
                         }
+                        abstr.consistencyRelevant = true;
                     }
-                    auto ret = abstr.origins->insert( make_pair( _origin, 1 ) );
-                    if( !ret.second )
-                        ++ret.first->second;
+                    if( _origin != NULL )
+                    {
+                        abstr.origins->push_back( std::move( originsSet ) );
+                    }
                 }
                 return constraintLiteralPair->second.front();
             }
@@ -553,16 +572,28 @@ namespace smtrat
                 }
                 Var constraintAbstraction = newVar( !preferredToTSolver, true, act );
                 // map the abstraction variable to the abstraction information for the constraint and it's negation
-                mBooleanConstraintMap.push( make_pair( Abstraction( mpPassedFormula->end(), constraint ), Abstraction( mpPassedFormula->end(), invertedConstraint ) ) );
+                mBooleanConstraintMap.push( make_pair( Abstraction( passedFormulaEnd(), constraint ), Abstraction( passedFormulaEnd(), invertedConstraint ) ) );
                 // add the constraint and its negation to the constraints to inform backends about
-                if( negated )
+                if( _origin != NULL )
                 {
-                    mBooleanConstraintMap.last().second.origins->insert( make_pair( _origin, 0 ) );
-                    addConstraintToInform( invertedConstraint );
+                    PointerSet<Formula> originsSet;
+                    originsSet.insert( _origin );
+                    if( negated )
+                    {
+                        mBooleanConstraintMap.last().second.origins->push_back( std::move( originsSet ) );
+                        mBooleanConstraintMap.last().second.consistencyRelevant = true;
+                        addConstraintToInform( invertedConstraint );
+                    }
+                    else
+                    {
+                        mBooleanConstraintMap.last().first.origins->push_back( std::move( originsSet ) );
+                        mBooleanConstraintMap.last().first.consistencyRelevant = true;
+                        addConstraintToInform( constraint );
+                    }
                 }
-                else
+                else if( !negated )
                 {
-                    mBooleanConstraintMap.last().first.origins->insert( make_pair( _origin, 0 ) );
+                    mBooleanConstraintMap.last().first.consistencyRelevant = true;
                     addConstraintToInform( constraint );
                 }
                 // create a literal for the constraint and its negation
@@ -608,11 +639,11 @@ namespace smtrat
             for( int i = 0; i < mBooleanConstraintMap.size(); ++i )
             {
                 auto posInPasForm = mBooleanConstraintMap[i].first.position;
-                if( posInPasForm != mpPassedFormula->end() )
-                    (*posInPasForm)->setActivity(activity[i]);
+                if( posInPasForm != rPassedFormula().end() )
+                    posInPasForm->formula().setActivity(activity[i]);
                 posInPasForm = mBooleanConstraintMap[i].second.position;
-                if( posInPasForm != mpPassedFormula->end() )
-                    (*posInPasForm)->setActivity(activity[i]);
+                if( posInPasForm != rPassedFormula().end() )
+                    posInPasForm->formula().setActivity(activity[i]);
             }
             mAllActivitiesChanged = false;
         }
@@ -625,17 +656,15 @@ namespace smtrat
                 {
                     int v = var( cl[i] );
                     auto posInPasForm = mBooleanConstraintMap[v].first.position;
-                    if( posInPasForm != mpPassedFormula->end() )
-                        (*posInPasForm)->setActivity(activity[v]);
+                    if( posInPasForm != rPassedFormula().end() )
+                        posInPasForm->formula().setActivity(activity[v]);
                     posInPasForm = mBooleanConstraintMap[v].second.position;
-                    if( posInPasForm != mpPassedFormula->end() )
-                        (*posInPasForm)->setActivity(activity[v]);
+                    if( posInPasForm != rPassedFormula().end() )
+                        posInPasForm->formula().setActivity(activity[v]);
                 }
             }
         }
         mChangedActivities.clear();
-        if( !passedFormulaCorrect() )
-            printPassedFormula();
         assert( passedFormulaCorrect() );
     }
     
@@ -645,35 +674,22 @@ namespace smtrat
         if( _abstr.updateInfo < 0 )
         {
             assert( _abstr.constraint != NULL );
-            if( _abstr.position != mpPassedFormula->end() )
+            if( _abstr.position != rPassedFormula().end() )
             {
-                removeSubformulaFromPassedFormula( _abstr.position );
-                _abstr.position = mpPassedFormula->end();
-                mChangedPassedFormula = true;
+                if( removeOrigins( _abstr.position, *_abstr.origins ).second )
+                {
+                    _abstr.position = passedFormulaEnd();
+                    mChangedPassedFormula = true;
+                }
             }
         }
         else if( _abstr.updateInfo > 0 )
         {
             assert( _abstr.constraint != NULL );
-            _abstr.constraint->setDeducted( _abstr.consistencyRelevant );
-            if( _abstr.origins == NULL )
-            {
-                assert( _abstr.constraint->constraint().isConsistent() == 2 );
-                addSubformulaToPassedFormula( _abstr.constraint, move( vec_set_const_pFormula() ) );
-            }
-            else
-            {
-                vec_set_const_pFormula originSets;
-                originSets.push_back( PointerSet<Formula>() );
-                for( auto formulaCounterPair = _abstr.origins->begin(); formulaCounterPair != _abstr.origins->end(); ++formulaCounterPair )
-                {
-                    if( formulaCounterPair->first != NULL )
-                        originSets.back().insert( originSets.back().end(), formulaCounterPair->first );
-                }
-                assert( _abstr.constraint->constraint().isConsistent() == 2 );
-                addSubformulaToPassedFormula( _abstr.constraint, originSets );
-            }
-            _abstr.position = --mpPassedFormula->end();
+            _abstr.constraint->setDeducted( _abstr.isDeduction );
+            assert( _abstr.constraint->constraint().isConsistent() == 2 );
+            auto res = addSubformulaToPassedFormula( _abstr.constraint, *_abstr.origins );
+            _abstr.position = res.first;
             mChangedPassedFormula = true;
         }
         _abstr.updateInfo = 0;
@@ -687,19 +703,25 @@ namespace smtrat
             if( assigns[k] != l_Undef )
             {
                 const Abstraction& abstr = assigns[k] == l_False ? mBooleanConstraintMap[k].second : mBooleanConstraintMap[k].first;
-                if( abstr.constraint != NULL && !abstr.origins->empty() && abstr.constraint->constraint().isConsistent() != 1 ) 
+                if( abstr.constraint != NULL && abstr.consistencyRelevant && abstr.constraint->constraint().isConsistent() != 1 ) 
                 {
-                    if( !mpPassedFormula->contains( abstr.constraint ) )
+                    if( !rPassedFormula().contains( abstr.constraint ) )
+                    {
+                        cout << "does not contain  " << *abstr.constraint << endl;
                         return false;
+                    }
                 }
             }
         }
-        for( auto subformula = mpPassedFormula->begin(); subformula != mpPassedFormula->end(); ++subformula )
+        for( auto subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
         {
-            auto iter = mConstraintLiteralMap.find( *subformula );
+            auto iter = mConstraintLiteralMap.find( subformula->pFormula() );
             assert( iter != mConstraintLiteralMap.end() );
             if( value( iter->second.front() ) != l_True )
+            {
+                cout << "should not contain  " << *iter->first << endl;
                 return false;
+            }
         }
         return true;
     }
@@ -1163,9 +1185,9 @@ SetWatches:
             {
                 Var x       = var( trail[c] );
                 Abstraction& abstr = sign( trail[c] ) ? mBooleanConstraintMap[x].second : mBooleanConstraintMap[x].first;
-                if( abstr.position != mpPassedFormula->end() )
+                if( abstr.position != rPassedFormula().end() )
                 {
-                    if( --abstr.updateInfo < 0 )
+                    if( abstr.updateInfo >=0 && --abstr.updateInfo < 0 )
                         mChangedBooleans.push_back( x );
                 }
                 else if( abstr.constraint != NULL ) abstr.updateInfo = 0;
@@ -1238,8 +1260,8 @@ SetWatches:
                     #endif
                     #ifdef DEBUG_SATMODULE
                     cout << "{ ";
-                    for( ModuleInput::const_iterator subformula = mpPassedFormula->begin(); subformula != mpPassedFormula->end(); ++subformula )
-                        cout << (*subformula)->constraint().toString() << " ";
+                    for( ModuleInput::const_iterator subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
+                        cout << subformula->formula().constraint().toString() << " ";
                     cout << "}" << endl;
                     #endif
                     mChangedPassedFormula = false;
@@ -1333,15 +1355,14 @@ SetWatches:
             CRef confl = propagateConsistently( madeTheoryCall );
             if( !ok )
                 return l_False;
-            
             if( !Settings::stop_search_after_first_unknown && madeTheoryCall && mCurrentAssignmentConsistent == Unknown )
             {
                 vec<Lit> learnt_clause;
-                if( mpPassedFormula->size() > 1 )
+                if( rPassedFormula().size() > 1 )
                 {
-                    for( auto subformula = mpPassedFormula->begin(); subformula != mpPassedFormula->end(); ++subformula )
+                    for( auto subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
                     {
-                        ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( *subformula );
+                        ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( subformula->pFormula() );
                         assert( constraintLiteralPair != mConstraintLiteralMap.end() );
                         Lit lit = mkLit( var( constraintLiteralPair->second.front() ), !sign( constraintLiteralPair->second.front() ) );
                         learnt_clause.push( lit );
@@ -1722,10 +1743,13 @@ SetWatches:
     template<class Settings>
     void SATModule<Settings>::uncheckedEnqueue( Lit p, CRef from )
     {
+        #ifdef DEBUG_SATMODULE
+        cout << __func__ << " " << (sign(p) ? "-" : "") << var(p) << "  from " << from << endl;
+        #endif
         assert( value( p ) == l_Undef );
         assigns[var( p )] = lbool( !sign( p ) );
         Abstraction& abstr = sign( p ) ? mBooleanConstraintMap[var( p )].second : mBooleanConstraintMap[var( p )].first;
-        if( abstr.constraint != NULL && !abstr.origins->empty() && abstr.constraint->constraint().isConsistent() != 1 ) 
+        if( abstr.constraint != NULL && abstr.consistencyRelevant && abstr.constraint->constraint().isConsistent() != 1 ) 
         {
             if( ++abstr.updateInfo > 0 )
                 mChangedBooleans.push_back( var( p ) );
@@ -1749,7 +1773,7 @@ SetWatches:
                 }
                 if( isDeduction )
                 {
-                    abstr.consistencyRelevant = true;
+                    abstr.isDeduction = true;
                     mChangedPassedFormula = true;
                 }
             }
@@ -1761,7 +1785,6 @@ SetWatches:
     {
         #ifdef DEBUG_SATMODULE
         cout << "### Propagate" << endl;
-        printDecisions();
         #endif
         CRef confl = CRef_Undef;
         int num_props = 0;
@@ -1932,8 +1955,6 @@ NextClause:
             }
             #endif
         }
-        clauses.shrink( removedClauses );
-        learnts.shrink( removedLearnts );
     }
     
     template<class Settings>
@@ -1980,6 +2001,7 @@ NextClause:
     void SATModule<Settings>::simplify()
     {
         assert( decisionLevel() == 0 );
+        bool appliedValidSubstitution = false;
         while( ok )
         {
             if( propagate() != CRef_Undef )
@@ -1987,7 +2009,7 @@ NextClause:
                 ok = false;
                 return;
             }
-            if( nAssigns() == simpDB_assigns )// || (simpDB_props > 0) )
+            if( !appliedValidSubstitution && nAssigns() == simpDB_assigns )// || (simpDB_props > 0) )
             {
                 return;
             }
@@ -2001,7 +2023,7 @@ NextClause:
 //            simpDB_props   = (int64_t)(clauses_literals + learnts_literals);    // (shouldn't depend on stats really, but it will do for now)
             if( Settings::apply_valid_substitutions )
             {
-                applyValidSubstitutionsOnClauses();
+                appliedValidSubstitution = applyValidSubstitutionsOnClauses();
                 if( !ok )
                 {
                     return;
@@ -2012,7 +2034,7 @@ NextClause:
     }
     
     template<class Settings>
-    void SATModule<Settings>::applyValidSubstitutionsOnClauses()
+    bool SATModule<Settings>::applyValidSubstitutionsOnClauses()
     {
         assert( decisionLevel() == 0 );
         #ifdef DEBUG_SAT_APPLY_VALID_SUBS
@@ -2039,7 +2061,6 @@ NextClause:
                 else if( constraintConsistency == 2 )
                 {
                     addedConstraint = Formula::addConstraintBound( constraintBoundsAnd, abstr.constraint, true );
-                    assert( addedConstraint->getType() == CONSTRAINT );
                     if( addedConstraint == NULL )
                     {
                         ok = false;
@@ -2052,7 +2073,7 @@ NextClause:
             }
         }
         if( varToSubstitute == carl::Variable::NO_VARIABLE || !ok )
-            return;
+            return false;
         // Apply the found substitution
         assert( mVarReplacements.find( varToSubstitute ) == mVarReplacements.end() );
         mVarReplacements[varToSubstitute] = substitutionTerm;
@@ -2084,6 +2105,7 @@ NextClause:
         #ifdef DEBUG_SAT_APPLY_VALID_SUBS
         print();
         #endif
+        return true;
     }
     
     template<class Settings>
@@ -2123,12 +2145,12 @@ NextClause:
                 mConstraintLiteralMap[newNegation( _replaceBy )] = negConsLitPair->second;
                 if( negativeLiteral )
                 {
-                    if( !mBooleanConstraintMap[var( consLitPair->second.front() )].second.origins->empty() )
+                    if( mBooleanConstraintMap[var( consLitPair->second.front() )].second.consistencyRelevant )
                         informBackends( _replaceBy );
                 }
                 else
                 {
-                    if( !mBooleanConstraintMap[var( consLitPair->second.front() )].first.origins->empty() )
+                    if( mBooleanConstraintMap[var( consLitPair->second.front() )].first.consistencyRelevant )
                         informBackends( _replaceBy ); 
                 }
                 for( auto var = _replaceBy->constraint().variables().begin(); var != _replaceBy->constraint().variables().end(); ++var )
@@ -2145,23 +2167,23 @@ NextClause:
                 cout << "iter->second.front(): " << (sign( iter->second.front() ) ? "-" : "") << var( iter->second.front() ) << endl;
                 #endif
                 replaceVariable( consLitPair->second.front(), iter->second.front() );
+                // Remove satisfied clauses:
+                removeSatisfied( learnts );
+                removeSatisfied( clauses );
+                checkGarbage();
+                rebuildOrderHeap();
+                
                 Abstraction& abstrA = sign( consLitPair->second.front() ) ? mBooleanConstraintMap[var( consLitPair->second.front() )].second : mBooleanConstraintMap[var( consLitPair->second.front() )].first;
                 if( !abstrA.origins->empty() )
                 {
                     Abstraction& abstrB = sign( iter->second.front() ) ? mBooleanConstraintMap[var( iter->second.front() )].second : mBooleanConstraintMap[var( iter->second.front() )].first;
-                    if( abstrB.origins->empty() )
+                    if( !abstrB.consistencyRelevant )
                     {
                         assert( abstrB.constraint != NULL );
                         informBackends( abstrB.constraint );
                     }
-                    for( auto origin = abstrA.origins->begin(); origin != abstrA.origins->end(); ++origin )
-                    {
-                        auto res = abstrB.origins->insert( *origin );
-                        if( !res.second )
-                        {
-                            res.first->second += origin->second;
-                        }
-                    }
+                    abstrB.origins->insert( abstrB.origins->end(), abstrA.origins->begin(), abstrA.origins->end() );
+                    abstrB.consistencyRelevant = true;
                 }
 
                 iter->second.insert( iter->second.end(), consLitPair->second.begin(), consLitPair->second.end() );
@@ -2206,22 +2228,24 @@ NextClause:
                 }
             }
         }
+        bool maybeStillInPassedFormula = true;
         for( auto litIter = consLitPair->second.begin(); litIter != consLitPair->second.end(); ++litIter )
         {
             #ifdef DEBUG_SAT_APPLY_VALID_SUBS
             cout << "consider the literal: " << (sign( *litIter ) ? "-" : "") << var( *litIter ) << endl;
             #endif
-            Abstraction& abstr = negativeLiteral ? mBooleanConstraintMap[var( *litIter )].second : mBooleanConstraintMap[var( *litIter )].first;
-            if( abstr.position != mpPassedFormula->end() )
+            Abstraction& abstr = sign( *litIter ) ? mBooleanConstraintMap[var( *litIter )].second : mBooleanConstraintMap[var( *litIter )].first;
+            if( abstr.position != rPassedFormula().end() )
             {
                 #ifdef DEBUG_SAT_APPLY_VALID_SUBS
                 cout << __LINE__ << endl;
                 #endif
-                removeSubformulaFromPassedFormula( abstr.position );
+                if( maybeStillInPassedFormula && removeOrigins( abstr.position, *abstr.origins ).second )
+                    maybeStillInPassedFormula = false;
                 if( _replaceBy->constraint().isConsistent() == 2 )
                 {
                     abstr.constraint = _replaceBy;
-                    abstr.position = mpPassedFormula->end();
+                    abstr.position = passedFormulaEnd();
                     if( abstr.updateInfo <= 0 )
                         if( ++abstr.updateInfo > 0 )
                             mChangedBooleans.push_back( var( *litIter ) );
@@ -2235,7 +2259,7 @@ NextClause:
                     cout << __LINE__ << endl;
                     #endif
                     abstr.constraint = NULL;
-                    abstr.position = mpPassedFormula->end();
+                    abstr.position = passedFormulaEnd();
                     abstr.updateInfo = 0;
                 }
             }
@@ -2484,7 +2508,7 @@ NextClause:
     {
         // Initialize the next region to a size corresponding to the estimated utilization degree. This
         // is not precise but should avoid some unnecessary reallocations for the new region:
-        ClauseAllocator to( ca.size() - ca.wasted() );
+        ClauseAllocator to( ca.size() - (ca.wasted() <= ca.size() ? ca.wasted() : ca.wasted() - ca.size()) );
 
         relocAll( to );
         if( verbosity >= 2 )
@@ -2614,7 +2638,7 @@ NextClause:
                 _out << "]";
             }
         }
-        _out << endl;
+        _out << "  [" << ((uint32_t) _clause) << "]" << endl;
     }
 
     template<class Settings>
@@ -2662,9 +2686,7 @@ NextClause:
 
         for( int i = _from; i < _clauses.size(); i++ )
         {
-            _out << _init << " ";
             printClause( _clauses[i], _withAssignment, _out, _init  );
-            _out << "  [" << ((uint32_t) _clauses[i]) << "]" << endl;
         }
 
         if( verbosity > 0 )
@@ -2687,7 +2709,7 @@ NextClause:
             {
                 _out << "l_True";
                 // if it is not a Boolean variable
-                if( mBooleanConstraintMap[pos].first.constraint != NULL && !mBooleanConstraintMap[pos].first.origins->empty() )
+                if( mBooleanConstraintMap[pos].first.constraint != NULL && mBooleanConstraintMap[pos].first.consistencyRelevant )
                     _out << "   ( " << *mBooleanConstraintMap[pos].first.constraint << " )";
                 _out << endl;
             }
@@ -2695,7 +2717,7 @@ NextClause:
             {
                 _out << "l_False";
                 // if it is not a Boolean variable
-                if( mBooleanConstraintMap[pos].second.constraint != NULL && !mBooleanConstraintMap[pos].second.origins->empty() )
+                if( mBooleanConstraintMap[pos].second.constraint != NULL && mBooleanConstraintMap[pos].second.consistencyRelevant )
                     _out << "   ( " << *mBooleanConstraintMap[pos].second.constraint << " )";
                 _out << endl;
             }
@@ -2728,12 +2750,12 @@ NextClause:
             tmpStream << (sign( trail[pos] ) ? "-" : "") << var( trail[pos] );
             _out << setw( 6 ) << tmpStream.str() << " @ " << level;
             // if it is not a Boolean variable
-            if( assigns[var(trail[pos])] == l_True && mBooleanConstraintMap[var(trail[pos])].first.constraint != NULL && !mBooleanConstraintMap[var(trail[pos])].first.origins->empty() )
+            if( assigns[var(trail[pos])] == l_True && mBooleanConstraintMap[var(trail[pos])].first.constraint != NULL && mBooleanConstraintMap[var(trail[pos])].first.consistencyRelevant  )
             {
                 _out << "   ( " << *mBooleanConstraintMap[var(trail[pos])].first.constraint << " )";
                 _out << " [" << mBooleanConstraintMap[var(trail[pos])].first.updateInfo << "]";
             }
-            else if( assigns[var(trail[pos])] == l_False && mBooleanConstraintMap[var(trail[pos])].second.constraint != NULL && !mBooleanConstraintMap[var(trail[pos])].second.origins->empty() )
+            else if( assigns[var(trail[pos])] == l_False && mBooleanConstraintMap[var(trail[pos])].second.constraint != NULL && mBooleanConstraintMap[var(trail[pos])].second.consistencyRelevant  )
             {
                 _out << "   ( " << *mBooleanConstraintMap[var(trail[pos])].second.constraint << " )";
                 _out << " [" << mBooleanConstraintMap[var(trail[pos])].second.updateInfo << "]";

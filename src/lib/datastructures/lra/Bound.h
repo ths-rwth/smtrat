@@ -29,6 +29,7 @@
 
 #include "Value.h"
 #include "../../Formula.h"
+#include "../../solver/ModuleInput.h"
 #include <stddef.h>
 #include <set>
 
@@ -45,46 +46,40 @@ namespace smtrat
         class Bound;
 
         /**
-         * 
+         * Stores a bound, which could be an upper "<= b" or a lower bound ">= b" for a bound value b.
+         * In the case that "<= b" and ">= b" hold this bound is a so called equal bound represented by "==b".
          */
         template<typename T1, typename T2>
         class Bound
         {
             public:
-            ///
+            /// The type of the bound: LOWER = ">=", UPPER = "<=", EQUAL "=="
             enum Type{ LOWER, UPPER, EQUAL };
 
-            /**
-             * 
-             */
-            struct boundComp
-            {
-                /**
-                 * @param pBoundA
-                 * @param pBoundB
-                 * @return 
-                 */
-                bool operator ()( const Bound<T1, T2>* const _pBoundA, const Bound<T1, T2>* const _pBoundB ) const
-                {
-                    return (*_pBoundA) < (*_pBoundB);
-                }
-            };
-
-            ///
-            typedef std::set<const Bound<T1, T2>*, boundComp > BoundSet;
+            /// A set of pointer to bounds.
+            typedef smtrat::PointerSet<Bound<T1, T2>> BoundSet;
 
             /**
-             * 
+             * Stores some additional information for a bound.
              */
             struct Info
             {
-                ///
+                /**
+                 * A value to store the information whether this bounds constraint has already been processed (=0), 
+                 * must be processed (>0) or must be removed from consideration (<0).
+                 */
                 int updated;
-                ///
-                std::list<const smtrat::Formula*>::iterator position;
-                ///
+                /**
+                 * The position of this bounds constraint in a formula, if it has been processed already. Otherwise
+                 * it points to the end of a formula.
+                 */
+                ModuleInput::iterator position;
+                /// If this bound corresponds to a constraint being p<0 or p>0 for a polynomial p, we store here the constraint p!=0.
                 const smtrat::Formula* neqRepresentation;
-                ///
+                /**
+                 * A flag which is only false, if this bound has been created for a constraint having != as 
+                 * relation symbol, i.e. p!=0, and not yet for the constraint p<0 or p>0.
+                 */
                 bool exists;
             };
 

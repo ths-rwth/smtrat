@@ -126,7 +126,7 @@ namespace smtrat
             ModuleInput*                                                                        mValidationFormula; // ReceivedFormula of the internal LRA Module
             std::vector<std::atomic_bool*>                                                      mLRAFoundAnswer;
             RuntimeSettings*                                                                    mLraRuntimeSettings;
-            LRAModule                                                                           mLRA; // internal LRA module
+            LRAModule<LRASettings1>                                                             mLRA; // internal LRA module
             
             std::set<const Constraint*>                                                         mCenterConstraints; // keeps actual centerConstaints for deletion
             PointerSet<Formula>                                                                 mCreatedDeductions; // keeps pointers to the created deductions for deletion

@@ -47,7 +47,7 @@ namespace smtrat
     Answer CNFerModule::isConsistent()
     {
         auto receivedSubformula = firstUncheckedReceivedSubformula();
-        while( receivedSubformula != mpReceivedFormula->end() )
+        while( receivedSubformula != rReceivedFormula().end() )
         {
             /*
              * Add the currently considered formula of the received constraint as clauses
@@ -56,7 +56,7 @@ namespace smtrat
 //            const Formula* formulaQF = (*receivedSubformula)->toQF(mpManager->quantifiedVariables());
 //            const Formula* formulaToAssertInCnf = formulaQF->toCNF( true );
 //            cout << (**receivedSubformula) << endl;
-            const Formula* formulaToAssertInCnf = (*receivedSubformula)->toCNF( true, true );
+            const Formula* formulaToAssertInCnf = receivedSubformula->formula().toCNF( true, true );
             if( formulaToAssertInCnf->getType() == TTRUE )
             {
                 // No need to add it.
@@ -64,7 +64,7 @@ namespace smtrat
             else if( formulaToAssertInCnf->getType() == FFALSE )
             {
                 PointerSet<Formula> reason;
-                reason.insert( *receivedSubformula );
+                reason.insert( receivedSubformula->pFormula() );
                 mInfeasibleSubsets.push_back( reason );
                 return foundAnswer( False );
             }
@@ -74,17 +74,17 @@ namespace smtrat
                 {
                     for( const Formula* subFormula : formulaToAssertInCnf->subformulas()  )
                     {
-                        addSubformulaToPassedFormula( subFormula, *receivedSubformula );
+                        addSubformulaToPassedFormula( subFormula, receivedSubformula->pFormula() );
                     }
                 }
                 else
                 {
-                    addSubformulaToPassedFormula( formulaToAssertInCnf, *receivedSubformula );
+                    addSubformulaToPassedFormula( formulaToAssertInCnf, receivedSubformula->pFormula() );
                 }
             }
             ++receivedSubformula;
         }
-        if( mpPassedFormula->empty() )
+        if( rPassedFormula().empty() )
         {
             return foundAnswer( True );
         }

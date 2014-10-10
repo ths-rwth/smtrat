@@ -77,11 +77,11 @@ namespace smtrat
     bool VSModule<Settings>::assertSubformula( ModuleInput::const_iterator _subformula )
     {
         Module::assertSubformula( _subformula );
-        if( (*_subformula)->getType() == CONSTRAINT )
+        if( _subformula->formula().getType() == CONSTRAINT )
         {
-            const Constraint* constraint = (*_subformula)->pConstraint();
+            const Constraint* constraint = _subformula->formula().pConstraint();
             const vs::Condition* condition = new vs::Condition( constraint );
-            mFormulaConditionMap[*_subformula] = condition;
+            mFormulaConditionMap[_subformula->pFormula()] = condition;
             assert( constraint->isConsistent() == 2 );
             for( auto var = constraint->variables().begin(); var != constraint->variables().end(); ++var )
                 mAllVariables.insert( *var );
@@ -118,13 +118,13 @@ namespace smtrat
             }
             mConditionsChanged = true;
         }
-        else if( (*_subformula)->getType() == FFALSE )
+        else if( _subformula->formula().getType() == FFALSE )
         {
             removeStatesFromRanking( *mpStateTree );
             mIDCounter = 0;
             mInfeasibleSubsets.clear();
             mInfeasibleSubsets.push_back( PointerSet<Formula>() );
-            mInfeasibleSubsets.back().insert( *_subformula );
+            mInfeasibleSubsets.back().insert( _subformula->pFormula() );
             mInconsistentConstraintAdded = true;
             foundAnswer( False );
             assert( checkRanking() );
@@ -142,10 +142,10 @@ namespace smtrat
     template<class Settings>
     void VSModule<Settings>::removeSubformula( ModuleInput::const_iterator _subformula )
     {
-        if( (*_subformula)->getType() == CONSTRAINT )
+        if( _subformula->formula().getType() == CONSTRAINT )
         {
             mInconsistentConstraintAdded = false;
-            auto formulaConditionPair = mFormulaConditionMap.find( *_subformula );
+            auto formulaConditionPair = mFormulaConditionMap.find( _subformula->pFormula() );
             assert( formulaConditionPair != mFormulaConditionMap.end() );
             const vs::Condition* condToDelete = formulaConditionPair->second;
             if( Settings::incremental_solving )
@@ -180,7 +180,7 @@ namespace smtrat
     Answer VSModule<Settings>::isConsistent()
     {
         #ifdef VS_MODULE_VERBOSE_INTEGERS
-        cout << mpReceivedFormula->toString( false, 0, "", true, true, true ) << endl;
+        cout << rReceivedFormula().toString( false, 0, "", true, true, true ) << endl;
         #endif
         #ifdef VS_STATISTICS
         mStepCounter = 0;
@@ -204,9 +204,9 @@ namespace smtrat
             }
             addStateToRanking( mpStateTree );
         }
-        if( !mpReceivedFormula->isConstraintConjunction() )
+        if( !rReceivedFormula().isConstraintConjunction() )
             return foundAnswer( Unknown );
-        if( Settings::int_constraints_allowed && !(mpReceivedFormula->isIntegerConstraintConjunction() || mpReceivedFormula->isRealConstraintConjunction()) )
+        if( Settings::int_constraints_allowed && !(rReceivedFormula().isIntegerConstraintConjunction() || rReceivedFormula().isRealConstraintConjunction()) )
             return foundAnswer( Unknown );
         if( !mConditionsChanged )
         {
@@ -235,7 +235,7 @@ namespace smtrat
                 return foundAnswer( False );
         }
         mConditionsChanged = false;
-        if( mpReceivedFormula->empty() )
+        if( rReceivedFormula().empty() )
         {
             if( Settings::int_constraints_allowed && !solutionInDomain() )
             {
@@ -1596,18 +1596,18 @@ namespace smtrat
         {
             assert( (*oCond)->pConstraint() != NULL );
             assert( (*oCond)->originalConditions().empty() );
-            std::list<const Formula*>::const_iterator receivedConstraint = mpReceivedFormula->begin();
-            while( receivedConstraint != mpReceivedFormula->end() )
+            auto receivedConstraint = rReceivedFormula().begin();
+            while( receivedConstraint != rReceivedFormula().end() )
             {
-                if( (*receivedConstraint)->getType() == CONSTRAINT )
+                if( receivedConstraint->formula().getType() == CONSTRAINT )
                 {
-                    if( (**oCond).constraint() == (*receivedConstraint)->constraint() )
+                    if( (**oCond).constraint() == receivedConstraint->formula().constraint() )
                         break;
                 }
                 ++receivedConstraint;
             }
-            assert( receivedConstraint != mpReceivedFormula->end() );
-            result.insert( *receivedConstraint );
+            assert( receivedConstraint != rReceivedFormula().end() );
+            result.insert( receivedConstraint->pFormula() );
         }
         return result;
     }
@@ -1622,8 +1622,8 @@ namespace smtrat
         {
             // Set the infeasible subset to the set of all received constraints.
             mInfeasibleSubsets.push_back( PointerSet<Formula>() );
-            for( auto cons = mpReceivedFormula->begin(); cons != mpReceivedFormula->end(); ++cons )
-                mInfeasibleSubsets.back().insert( *cons );
+            for( auto cons = rReceivedFormula().begin(); cons != rReceivedFormula().end(); ++cons )
+                mInfeasibleSubsets.back().insert( cons->pFormula() );
             return;
         }
         // Determine the minimum covering sets of the conflict sets, i.e. the infeasible subsets of the root.
@@ -1931,19 +1931,19 @@ namespace smtrat
          * and remove the sub formulas (constraints) in the passed formula, which do not occur in the
          * constraints to add.
          */
-        std::list<const Formula*>::iterator subformula = mpPassedFormula->begin();
-        while( subformula != mpPassedFormula->end() )
+        auto subformula = passedFormulaBegin();
+        while( subformula != rPassedFormula().end() )
         {
-            auto iter = constraintsToCheck.find( (*subformula)->pConstraint() );
+            auto iter = constraintsToCheck.find( subformula->formula().pConstraint() );
             if( iter != constraintsToCheck.end() )
             {
-                _formulaCondMap[*subformula] = iter->second;
+                _formulaCondMap[subformula->pFormula()] = iter->second;
                 constraintsToCheck.erase( iter );
                 ++subformula;
             }
             else
             {
-                subformula = removeSubformulaFromPassedFormula( subformula );
+                subformula = eraseSubformulaFromPassedFormula( subformula );
                 changedPassedFormula = true;
             }
         }
@@ -1978,7 +1978,7 @@ namespace smtrat
         Answer result = runBackends();
         #ifdef VS_DEBUG
         cout << "Ask backend      : ";
-        cout << mpPassedFormula->toString();
+        cout << passedFormula().toString();
         cout << endl;
         cout << "Answer           : " << ( result == True ? "True" : ( result == False ? "False" : "Unknown" ) ) << endl;
         #endif

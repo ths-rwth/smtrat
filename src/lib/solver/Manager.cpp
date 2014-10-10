@@ -134,13 +134,13 @@ namespace smtrat
         _out << "(";
         if( mpPassedFormula->size() == 1 )
         {
-            _out << *mpPassedFormula->back();
+            _out << mpPassedFormula->back().formula();
         }
         else
         {
             for( auto subFormula = mpPassedFormula->begin(); subFormula != mpPassedFormula->end(); ++subFormula )
             {
-                _out << **subFormula << endl;
+                _out << (*subFormula).formula() << endl;
             }
         }
         _out << ")" << endl;

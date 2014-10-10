@@ -35,28 +35,168 @@ namespace smtrat
     unsigned ModuleInput::satisfiedBy( const EvalRationalMap& _assignment ) const
     {
         unsigned result = 1;
-//        std::cout << __func__ << std::endl;
-//        std::cout << "check against " << std::endl; 
-//        for( auto iter = _assignment.begin(); iter != _assignment.end(); ++iter )
-//            std::cout << iter->first << " -> " << iter->second << std::endl;
-        for( auto subFormula = begin(); subFormula != end(); ++subFormula )
+        for( const FormulaWithOrigins& fwo : *this )
         {
-//            std::cout << **subFormula << std::endl;
-            switch( (*subFormula)->satisfiedBy( _assignment ) )
+            switch( fwo.formula().satisfiedBy( _assignment ) )
             {
                 case 0:
-//                    std::cout << " = false" << std::endl;
                     return 0;
                 case 1:
-//                    std::cout << " = true" << std::endl;
                     break;
                 default:
-//                    std::cout << " = unknown" << std::endl;
                     if( result != 2 ) result = 2;
             }
         }
-//        std::cout << std::endl << "makes " << result << std::endl << std::endl;
         return result;
+    }
+        
+    ModuleInput::iterator ModuleInput::find( const Formula* _formula )
+    {
+        #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
+        auto res = mFormulaPositionMap.find( _formula );
+        if( res == mFormulaPositionMap.end() )
+        {
+            return end();
+        }
+        else
+        {
+            return res->second;
+        }
+        #else
+        return find( begin(), end(), _formula );
+        #endif
+    }
+
+    ModuleInput::const_iterator ModuleInput::find( const Formula* _formula ) const
+    {
+        #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
+        auto res = mFormulaPositionMap.find( _formula );
+        if( res == mFormulaPositionMap.end() )
+        {
+            return end();
+        }
+        else
+        {
+            return res->second;
+        }
+        #else
+        return std::find( begin(), end(), _formula );
+        #endif
+    }
+
+    ModuleInput::iterator ModuleInput::find( const_iterator _hint, const Formula* _formula )
+    {
+        #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
+        auto res = mFormulaPositionMap.find( _formula );
+        if( res == mFormulaPositionMap.end() )
+        {
+            return end();
+        }
+        else
+        {
+            return res->second;
+        }
+        #else
+        return std::find( _hint, end(), _formula );
+        #endif
+    }
+
+    ModuleInput::const_iterator ModuleInput::find( const_iterator _hint, const Formula* _formula ) const
+    {
+        #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
+        auto res = mFormulaPositionMap.find( _formula );
+        if( res == mFormulaPositionMap.end() )
+        {
+            return end();
+        }
+        else
+        {
+            return res->second;
+        }
+        #else
+        return std::find( _hint, end(), _formula );
+        #endif
+    }
+    
+    ModuleInput::iterator ModuleInput::erase( iterator _formula )
+    {
+        assert( _formula != end() );
+        assert( _formula->origins().empty() );
+        #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
+        mFormulaPositionMap.erase( _formula->pFormula() );
+        #endif
+        return super::erase( _formula );
+    }
+
+    bool ModuleInput::removeOrigin( iterator _formula, const Formula* _origin )
+    {
+        assert( _formula != end() );
+        auto& origs = _formula->rOrigins();
+        auto iter = origs.begin();
+        while( iter != origs.end() )
+        {
+            iter->erase( _origin );
+            if( iter->empty() )
+            {
+                iter = origs.erase( iter );
+            }
+            else
+            {
+                ++iter;
+            }
+        }
+        return origs.empty();
+    }
+
+    bool ModuleInput::removeOrigins( iterator _formula, const vector<PointerSet<Formula>>& _origins )
+    {
+        assert( _formula != end() );
+        for( auto origsIter = _origins.begin(); origsIter != _origins.end(); ++origsIter )
+        {
+            if( removeOrigins( _formula, *origsIter ) )
+            {
+                return true;
+            }
+        }
+        return _formula->origins().empty();
+    }
+
+    bool ModuleInput::removeOrigins( iterator _formula, const PointerSet<Formula>& _origins )
+    {
+        assert( _formula != end() );
+        auto& origs = _formula->rOrigins();
+        auto iter = origs.begin();
+        while( iter != origs.end() )
+        {
+            auto formulaAIter = iter->begin();
+            auto formulaBIter = _origins.begin();
+            while( formulaAIter != iter->end() && formulaBIter != _origins.end() )
+            {
+                if( iter->value_comp()( *formulaAIter, *formulaBIter ) )
+                {
+                    ++formulaAIter;
+                }
+                else if( iter->value_comp()( *formulaBIter, *formulaAIter ) )
+                {
+                    ++formulaBIter;
+                }
+                else
+                {
+                    formulaAIter = iter->erase( formulaAIter );
+                    ++formulaBIter;
+                }
+            }
+//                iter->erase( _origins.begin(), _origins.end() ); // TODO: Why does erase not work here?
+            if( iter->empty() )
+            {
+                iter = origs.erase( iter );
+            }
+            else
+            {
+                ++iter;
+            }
+        }
+        return origs.empty();
     }
     
     void ModuleInput::updateProperties() const
@@ -64,9 +204,9 @@ namespace smtrat
         mProperties = Condition();
         mProperties |= PROP_IS_PURE_CONJUNCTION | PROP_IS_IN_CNF | PROP_IS_IN_NNF;
         mProperties |= PROP_VARIABLE_DEGREE_LESS_THAN_THREE | PROP_VARIABLE_DEGREE_LESS_THAN_FOUR | PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
-        for( auto subFormula = begin(); subFormula != end(); ++subFormula )
+        for( const FormulaWithOrigins& fwo : *this )
         {
-            Condition subFormulaConds = (*subFormula)->properties();
+            Condition subFormulaConds = fwo.formula().properties();
             if( !(PROP_IS_A_CLAUSE<=subFormulaConds) )
             {
                 mProperties &= ~PROP_IS_PURE_CONJUNCTION;
@@ -80,7 +220,49 @@ namespace smtrat
         }
     }
     
-    void annotateFormula( const Formula*, const std::vector<parser::Attribute>& )
+    pair<ModuleInput::iterator,bool> ModuleInput::add( const Formula* _formula, PointerSet<Formula>&& _origins )
+    {
+        iterator iter = find( _formula );
+        if( iter == end() )
+        {
+            vector<PointerSet<Formula>> vecOfOrigs;
+            vecOfOrigs.emplace_back( move( _origins ) );
+            emplace_back( _formula, move( vecOfOrigs ) );
+            iterator pos = --end();
+            #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
+            mFormulaPositionMap.insert( make_pair( _formula, pos ) );
+            #endif
+            return make_pair( pos, true );
+        }
+        else
+        {
+            iter->rOrigins().emplace_back( move( _origins ) );
+            return make_pair( iter, false );
+        }
+    }
+
+    pair<ModuleInput::iterator,bool> ModuleInput::add( const Formula* _formula, vector<PointerSet<Formula>>&& _origins )
+    {
+        iterator iter = find( _formula );
+        if( iter == end() )
+        {
+            emplace_back( _formula, move( _origins ) );
+            iterator pos = --end();
+            #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
+            mFormulaPositionMap.insert( make_pair( _formula, pos ) );
+            #endif
+            return make_pair( pos, true );
+        }
+        else
+        {
+            auto& origs = iter->rOrigins();
+            origs.reserve( origs.size() + _origins.size() );
+            origs.insert( origs.end(), make_move_iterator( _origins.begin() ), make_move_iterator( _origins.end() ) );
+            return make_pair( iter, false );
+        }
+    }
+    
+    void annotateFormula( const Formula*, const vector<parser::Attribute>& )
     {
     }
 } // namespace smtrat

@@ -36,7 +36,7 @@ namespace smtrat
     namespace lra
     {
         template<class Settings, typename T1, typename T2>
-        Tableau<Settings,T1,T2>::Tableau( std::list<const smtrat::Formula*>::iterator _defaultBoundPosition ):
+        Tableau<Settings,T1,T2>::Tableau( ModuleInput::iterator _defaultBoundPosition ):
             mRowsCompressed( true ),
             mWidth( 0 ),
             mPivotingSteps( 0 ),

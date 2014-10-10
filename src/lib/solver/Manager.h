@@ -64,7 +64,7 @@ namespace smtrat
             /// The propositions of the passed formula.
             Condition mPropositions;
             /// the backtrack points
-            std::vector< std::list<const Formula*>::iterator > mBacktrackPoints;
+            std::vector< ModuleInput::iterator > mBacktrackPoints;
             /// all generated instances of modules
             std::vector<Module*> mGeneratedModules;
             /// a mapping of each module to its backends
@@ -141,18 +141,21 @@ namespace smtrat
              */
             bool add( const Formula* _subformula )
             {
-                mpPassedFormula->push_back( _subformula );
-                auto pos = --(mpPassedFormula->end());
-                auto btp = mBacktrackPoints.end();
-                while( btp != mBacktrackPoints.begin() )
+                auto res = mpPassedFormula->add( _subformula );
+                if( res.second )
                 {
-                    --btp;
-                    if( *btp == mpPassedFormula->end() )
-                        *btp = pos;
-                    else
-                        break;
+                    auto btp = mBacktrackPoints.end();
+                    while( btp != mBacktrackPoints.begin() )
+                    {
+                        --btp;
+                        if( *btp == mpPassedFormula->end() )
+                            *btp = res.first;
+                        else
+                            break;
+                    }
+                    return mpPrimaryBackend->assertSubformula( res.first );
                 }
-                return mpPrimaryBackend->assertSubformula( pos );
+                return true;
             }
 
             /**
@@ -180,7 +183,7 @@ namespace smtrat
              *          end of the conjunction of formulas, which will be considered for the 
              *          next satisfiability check is returned.
              */
-            std::list<const Formula*>::iterator remove( std::list<const Formula*>::iterator _subformula )
+            ModuleInput::iterator remove( ModuleInput::iterator _subformula )
             {
                 assert( _subformula != mpPassedFormula->end() );
                 mpPrimaryBackend->removeSubformula( _subformula );
@@ -256,7 +259,7 @@ namespace smtrat
             /**
              * @return The conjunction of so far added formulas.
              */
-            const std::list<const Formula*>& formula() const
+            const ModuleInput& formula() const
             {
                 return *mpPassedFormula;
             }

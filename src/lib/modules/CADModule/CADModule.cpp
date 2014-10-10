@@ -142,29 +142,29 @@ namespace smtrat
 	 */
 	bool CADModule::assertSubformula(ModuleInput::const_iterator _subformula)
 	{
-		LOG_FUNC("smtrat.cad", **_subformula);
+		LOG_FUNC("smtrat.cad", _subformula->formula());
 		Module::assertSubformula(_subformula);
-		switch ((*_subformula)->getType()) {
+		switch (_subformula->formula().getType()) {
 		case TTRUE: 
 			return true;
 		case FFALSE: {
 			this->hasFalse = true;
 			PointerSet<Formula> infSubSet;
-			infSubSet.insert(*_subformula);
+			infSubSet.insert(_subformula->pFormula());
 			mInfeasibleSubsets.push_back(infSubSet);
 			foundAnswer(False);
 			return false;
 		}
 		case CONSTRAINT: {
 			if (this->hasFalse) {
-				this->subformulaQueue.insert(*_subformula);
+				this->subformulaQueue.insert(_subformula->pFormula());
 				return false;
 			} else {
-				return this->addConstraintFormula(*_subformula);
+				return this->addConstraintFormula(_subformula->pFormula());
 			}
 		}
 		default:
-			LOGMSG_ERROR("smtrat.cad", "Asserted " << **_subformula);
+			LOGMSG_ERROR("smtrat.cad", "Asserted " << _subformula->formula());
 			assert(false);
 			return true;
 		}
@@ -188,7 +188,7 @@ namespace smtrat
 		//std::cout << "CAD has:" << std::endl;
 		//for (auto c: this->mConstraints) std::cout << "\t\t" << c << std::endl;
 		//this->printReceivedFormula();
-		if (!mpReceivedFormula->isRealConstraintConjunction() && !mpReceivedFormula->isIntegerConstraintConjunction()) {
+		if (!rReceivedFormula().isRealConstraintConjunction() && !rReceivedFormula().isIntegerConstraintConjunction()) {
 			return foundAnswer(Unknown);
 		}
 		if (!mInfeasibleSubsets.empty())
@@ -280,7 +280,7 @@ namespace smtrat
 		LOGMSG_TRACE("smtrat.cad", "CAD complete: " << mCAD.isComplete());
 		LOGMSG_TRACE("smtrat.cad", "Solution point: " << mRealAlgebraicSolution);
 		mInfeasibleSubsets.clear();
-		if (mpReceivedFormula->isIntegerConstraintConjunction()) {
+		if (rReceivedFormula().isIntegerConstraintConjunction()) {
 			// Check whether the found assignment is integer.
 			std::vector<carl::Variable> vars(mCAD.getVariables());
 			for (unsigned d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
@@ -296,7 +296,7 @@ namespace smtrat
 
 	void CADModule::removeSubformula(ModuleInput::const_iterator _subformula)
 	{
-		switch ((*_subformula)->getType()) {
+		switch (_subformula->formula().getType()) {
 		case TTRUE:
 			Module::removeSubformula(_subformula);
 			return;
@@ -305,15 +305,15 @@ namespace smtrat
 			Module::removeSubformula(_subformula);
 			return;
 		case CONSTRAINT: {
-			auto it = this->subformulaQueue.find(*_subformula);
+			auto it = this->subformulaQueue.find(_subformula->pFormula());
 			if (it != this->subformulaQueue.end()) {
 				this->subformulaQueue.erase(it);
 				return;
 			}
 
-			mVariableBounds.removeBound((*_subformula)->pConstraint(), *_subformula);
+			mVariableBounds.removeBound(_subformula->formula().pConstraint(), _subformula->pFormula());
 
-			ConstraintIndexMap::iterator constraintIt = mConstraintsMap.find(*_subformula);
+			ConstraintIndexMap::iterator constraintIt = mConstraintsMap.find(_subformula->pFormula());
 			if (constraintIt == mConstraintsMap.end())
 				return; // there is nothing to remove
 			carl::cad::Constraint<smtrat::Rational> constraint = mConstraints[constraintIt->second];

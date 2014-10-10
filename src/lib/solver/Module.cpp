@@ -76,7 +76,6 @@ namespace smtrat
         mFoundAnswer( _foundAnswer ),
         mUsedBackends(),
         mAllBackends(),
-        mPassedformulaOrigins(),
         mDeductions(),
         mFirstSubformulaToPass( mpPassedFormula->end() ),
         mConstraintsToInform(),
@@ -167,7 +166,7 @@ namespace smtrat
     {
         #ifdef MODULE_VERBOSE
         cout << __func__ << " in " << this << " with name " << moduleName( mType ) << ":" << endl << endl;
-        cout << " " << **_receivedSubformula << " [" << *_receivedSubformula << "]" << endl << endl;
+        cout << " " << _receivedSubformula->formula() << " [" << _receivedSubformula->pFormula() << "]" << endl << endl;
         #endif
         if( mFirstUncheckedReceivedSubformula == mpReceivedFormula->end() )
         {
@@ -180,30 +179,24 @@ namespace smtrat
     {
         #ifdef MODULE_VERBOSE
         cout << __func__ << " in " << this << " with name " << moduleName( mType ) << ":" << endl << endl;
-        cout << " " << **_receivedSubformula << " [" << *_receivedSubformula << "]" << endl << endl;
+        cout << " " << _receivedSubformula->formula() << " [" << _receivedSubformula->pFormula() << "]" << endl << endl;
         #endif
         if( mFirstUncheckedReceivedSubformula == _receivedSubformula )
             ++mFirstUncheckedReceivedSubformula;
         // Check if the constraint to delete is an original constraint of constraints in the vector
         // of passed constraints.
-        auto passedSubformula = mpPassedFormula->begin();
+        ModuleInput::iterator passedSubformula = mpPassedFormula->begin();
         while( passedSubformula != mpPassedFormula->end() )
         {
             // Remove the received formula from the set of origins.
-            vec_set_const_pFormula& formulaOrigins = mPassedformulaOrigins[*passedSubformula];
-            vec_set_const_pFormula::iterator formulaOrigin = formulaOrigins.begin();
-            while( formulaOrigin != formulaOrigins.end() )
+            if( mpPassedFormula->removeOrigin( passedSubformula, _receivedSubformula->pFormula() ) )
             {
-                // If the received formula is in the set of origins, erase it.
-                if( formulaOrigin->find( *_receivedSubformula ) != formulaOrigin->end() )
-                    formulaOrigin = formulaOrigins.erase( formulaOrigin );
-                else
-                    ++formulaOrigin;
+                passedSubformula = mpPassedFormula->erase( passedSubformula );
             }
-            if( formulaOrigins.empty() )
-                passedSubformula = removeSubformulaFromPassedFormula( passedSubformula );
             else
+            {
                 ++passedSubformula;
+            }
         }
         // Delete all infeasible subsets in which the constraint to delete occurs.
         vec_set_const_pFormula::iterator infSubSet = mInfeasibleSubsets.begin();
@@ -263,63 +256,49 @@ namespace smtrat
         }
         return res;
     }
-
-    void Module::addReceivedSubformulaToPassedFormula( ModuleInput::const_iterator _subformula )
+    
+    pair<ModuleInput::iterator,bool> Module::addReceivedSubformulaToPassedFormula( ModuleInput::const_iterator _subformula )
     {
-        addSubformulaToPassedFormula( *_subformula, *_subformula );
+        return addSubformulaToPassedFormula( _subformula->pFormula(), _subformula->pFormula() );
     }
 
-    void Module::addSubformulaToPassedFormula( const Formula* _formula, const vec_set_const_pFormula& _origins )
+    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const Formula* _formula, const vec_set_const_pFormula& _origins )
     {
         assert( mpReceivedFormula->size() != UINT_MAX );
-        auto ret = mPassedformulaOrigins.emplace( _formula, _origins );
-        if( ret.second )
+        auto res = mpPassedFormula->add( _formula, _origins );
+        if( res.second )
         {
-            mpPassedFormula->push_back( _formula );
+            assert( res.first == --mpPassedFormula->end() );
             if( mFirstSubformulaToPass == mpPassedFormula->end() )
-                mFirstSubformulaToPass = --mpPassedFormula->end();
+                mFirstSubformulaToPass = res.first;
         }
-        else
-        {
-            ret.first->second.insert( ret.first->second.end(), _origins.begin(), _origins.end() );
-        }
+        return res;
     }
 
-    void Module::addSubformulaToPassedFormula( const Formula* _formula, vec_set_const_pFormula&& _origins )
+    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const Formula* _formula, vec_set_const_pFormula&& _origins )
     {
         assert( mpReceivedFormula->size() != UINT_MAX );
-        auto ret = mPassedformulaOrigins.emplace( _formula, move( _origins ) );
-        if( ret.second )
+        auto res = mpPassedFormula->add( _formula, std::move( _origins ) );
+        if( res.second )
         {
-            mpPassedFormula->push_back( _formula );
+            assert( res.first == --mpPassedFormula->end() );
             if( mFirstSubformulaToPass == mpPassedFormula->end() )
-                mFirstSubformulaToPass = --mpPassedFormula->end();
+                mFirstSubformulaToPass = res.first;
         }
-        else
-        {
-            ret.first->second.insert( ret.first->second.end(), _origins.begin(), _origins.end() );
-        }
+        return res;
     }
 
-    void Module::addSubformulaToPassedFormula( const Formula* _formula, const Formula* _origin )
+    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const Formula* _formula, const Formula* _origin )
     {
         assert( mpReceivedFormula->size() != UINT_MAX );
-        PointerSet<Formula> originSet;
-        originSet.insert( _origin );
-        vec_set_const_pFormula origins;
-        origins.push_back( originSet );
-        auto ret = mPassedformulaOrigins.emplace( _formula, move( origins ) );
-        if( ret.second )
+        auto res = mpPassedFormula->add( _formula, _origin );
+        if( res.second )
         {
-            mpPassedFormula->push_back( _formula );
+            assert( res.first == --mpPassedFormula->end() );
             if( mFirstSubformulaToPass == mpPassedFormula->end() )
-                mFirstSubformulaToPass = --mpPassedFormula->end();
+                mFirstSubformulaToPass = res.first;
         }
-        else
-        {
-            origins.clear();
-            ret.first->second.push_back( move( originSet ) );
-        }
+        return res;
     }
 
     vec_set_const_pFormula Module::merge( const vec_set_const_pFormula& _vecSetA, const vec_set_const_pFormula& _vecSetB ) const
@@ -447,8 +426,6 @@ namespace smtrat
         subformulasA.insert( consA );
         subformulasA.insert( consB );
         const Formula* dedA = newFormula( OR, std::move( subformulasA ) );
-//        cout << "add deduction " << endl;
-//        cout << *dedA << endl << endl;
         addDeduction( dedA );
         // (not(x<=I-1) or not(x>=I))
         PointerSet<Formula> subformulasB;
@@ -460,8 +437,6 @@ namespace smtrat
         subformulasB.insert( newNegation( consA ) );
         subformulasB.insert( newNegation( consB ) );
         const Formula* deduction = newFormula( OR, std::move( subformulasB ) );
-//        cout << "add deduction " << endl;
-//        cout << *deduction << endl << endl;
         addDeduction( deduction );
     }
     
@@ -564,11 +539,12 @@ namespace smtrat
             result.push_back( PointerSet<Formula>() );
             for( PointerSet<Formula>::const_iterator cons = infSubSet->begin(); cons != infSubSet->end(); ++cons )
             {
-                vec_set_const_pFormula formOrigins;
-                getOrigins( *cons, formOrigins );
+                ModuleInput::const_iterator posInReceived = mpPassedFormula->find( *cons );
+                assert( posInReceived != mpReceivedFormula->end() );
+                const vec_set_const_pFormula& formOrigins = posInReceived->origins();
                 // Find the smallest set of origins.
                 vec_set_const_pFormula::const_iterator smallestOriginSet = formOrigins.begin();
-                vec_set_const_pFormula::const_iterator originSet         = formOrigins.begin();
+                vec_set_const_pFormula::const_iterator originSet = formOrigins.begin();
                 while( originSet != formOrigins.end() )
                 {
                     if( originSet->size() == 1 )
@@ -717,13 +693,12 @@ namespace smtrat
         return result;
     }
 
-    ModuleInput::iterator Module::removeSubformulaFromPassedFormula( ModuleInput::iterator _subformula )
+    ModuleInput::iterator Module::eraseSubformulaFromPassedFormula( ModuleInput::iterator _subformula )
     {
-        assert( _subformula != mpPassedFormula->end() );
+        assert( _subformula->origins().empty() );
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         int timers = stopAllTimers();
         #endif
-        assert( _subformula != mpPassedFormula->end() );
         // Check whether the passed sub-formula has already been part of a consistency check of the backends.
         bool subformulaChecked = true;
         if( _subformula == mFirstSubformulaToPass )
@@ -763,7 +738,6 @@ namespace smtrat
             }
         }
         // Delete the sub formula from the passed formula.
-        mPassedformulaOrigins.erase( *_subformula );
         auto result = mpPassedFormula->erase( _subformula );
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         startTimers(timers);
@@ -839,7 +813,7 @@ namespace smtrat
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
         assumption += "(assert (and";
         for( auto formula = _subformulas.begin(); formula != _subformulas.end(); ++formula )
-            assumption += " " + (*formula)->toString( false, 1, "", true, false, true );
+            assumption += " " + formula->formula().toString( false, 1, "", true, false, true );
         assumption += " " + _label;
         assumption += "))\n";
         assumption += "(get-assertions)\n";
@@ -1009,11 +983,11 @@ namespace smtrat
         {
             _out << _initiation << "  ";
             // bool _withActivity, unsigned _resolveUnequal, const string _init, bool _oneline, bool _infix, bool _friendlyNames
-            _out << setw( 30 ) << (*form)->toString( false, 0, "", true, true, true );
+            _out << setw( 30 ) << form->formula().toString( false, 0, "", true, true, true );
             stringstream out;
-            out << "  [" << *form << "]";
+            out << "  [" << form->pFormula() << "]";
             _out << setw( 15 ) << out.str();
-            if( (*form)->deducted() ) _out << " deducted";
+            if( form->formula().deducted() ) _out << " deducted";
             _out << endl;
         }
     }
@@ -1023,14 +997,12 @@ namespace smtrat
         _out << _initiation << "Passed formula:" << endl;
         for( auto form = mpPassedFormula->begin(); form != mpPassedFormula->end(); ++form )
         {
-            auto formulaOrigins = mPassedformulaOrigins.find( *form );
-            assert( formulaOrigins != mPassedformulaOrigins.end() );
             _out << _initiation << "  ";
-            _out << setw( 30 ) << (*form)->toString( false, 0, "", true, true, true );
+            _out << setw( 30 ) << form->formula().toString( false, 0, "", true, true, true );
             stringstream out;
-            out << "  [" << *form << "]" << " from " << "(";
+            out << "  [" << form->pFormula() << "]" << " from " << "(";
             _out << setw( 22 ) << out.str();
-            for( auto oSubformulas = formulaOrigins->second.begin(); oSubformulas != formulaOrigins->second.end(); ++oSubformulas )
+            for( auto oSubformulas = form->origins().begin(); oSubformulas != form->origins().end(); ++oSubformulas )
             {
                 _out << " {";
                 for( auto oSubformula = oSubformulas->begin(); oSubformula != oSubformulas->end(); ++oSubformula )

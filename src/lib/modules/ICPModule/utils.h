@@ -38,7 +38,7 @@ namespace smtrat
         bool intervalBoxContainsEmptyInterval(const EvalDoubleIntervalMap& _intervals);
         
         
-        const LRAVariable* getOriginalLraVar ( carl::Variable::Arg _var, const LRAModule& _lra );
+        const LRAVariable* getOriginalLraVar ( carl::Variable::Arg _var, const LRAModule<LRASettings1>& _lra );
         
     }
 }
