@@ -1141,7 +1141,7 @@ Return:
         /*
          * Build the new Tableau consisting out of the defining constraints.
          */
-        LRATableau dc_Tableau = LRATableau( mpPassedFormula->end() );  
+        LRATableau dc_Tableau = LRATableau( passedFormulaEnd() );  
         size_t i=0;
         for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
         {
