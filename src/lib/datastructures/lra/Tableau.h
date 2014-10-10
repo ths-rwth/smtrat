@@ -566,6 +566,13 @@ namespace smtrat
                 
                 /**
                  * 
+                 * @param nonbasic_coefficient_list
+                 * @return 
+                 */
+                Variable<T1, T2>* newBasicVariable( std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, const smtrat::Polynomial& poly, T2 leading_coeff, bool isInteger );
+                
+                /**
+                 * g
                  * @param _var
                  */
                 void activateBasicVar( Variable<T1, T2>* _var );
@@ -737,7 +744,7 @@ namespace smtrat
                  * @return true, if the constraint is a defining constraint
                  *         false, otherwise   
                  */
-                const smtrat::Constraint* isDefining( size_t row_index, T2& max_value ) const;
+                const smtrat::Constraint* isDefining( size_t row_index, std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient_list, T2 lcm, T2& max_value ) const;
                 
                 /**
                  * Checks whether the row with index row_index is defining. 
@@ -840,7 +847,7 @@ namespace smtrat
                  * @return NULL,    if the cut can´t be constructed;
                  *         otherwise the valid constraint is returned.   
                  */
-                const smtrat::Formula* gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar );
+                const smtrat::Polynomial* gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar );
                 
                 /**
                  * @param _rowVar

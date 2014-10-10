@@ -368,6 +368,28 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
+        Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, const smtrat::Polynomial& poly, T2 leading_coeff, bool isInteger )
+        {
+            std::list<std::pair<Variable<T1,T2>*,T2>> nonbasicvar_coefficient = std::list<std::pair<Variable<T1,T2>*,T2>>();            
+            auto iter = nonbasicindex_coefficient.begin();
+            while( iter !=  nonbasicindex_coefficient.end() )
+            {
+                std::pair<Variable<T1,T2>*,T2> to_be_added = std::pair<Variable<T1,T2>*,T2>();
+                to_be_added.first = mColumns.at((*iter).first);
+                to_be_added.second = (*iter).second;
+                nonbasicvar_coefficient.push_back(to_be_added);
+                ++iter;
+            }          
+            mNonActiveBasics.push_front( nonbasicvar_coefficient ); 
+            smtrat::Polynomial* ppoly = new Polynomial();
+            *ppoly = poly;
+            Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), ppoly, mDefaultBoundPosition, isInteger );            
+            T2& factor = var->rFactor();
+            factor = leading_coeff;
+            return var;
+        }
+        
+        template<class Settings, typename T1, typename T2>
         void Tableau<Settings,T1,T2>::activateBasicVar( Variable<T1, T2>* _var )
         {
             assert( _var->isBasic() );
@@ -2070,7 +2092,7 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
-        const smtrat::Constraint* Tableau<Settings,T1,T2>::isDefining( size_t row_index, T2& max_value ) const
+        const smtrat::Constraint* Tableau<Settings,T1,T2>::isDefining( size_t row_index, std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, T2 lcm, T2& max_value ) const
         {
             const Variable<T1, T2>& basic_var = *mRows.at(row_index);
             basic_var.expression();
@@ -2083,8 +2105,35 @@ namespace smtrat
                     upper_bound_hit = true;                    
                 }
                 /*
-                 * The row represents a DC. Collect the nonbasics and the referring coefficients.
-                 */
+                 * The row represents a DC. Collect the nonbasics and the corresponding coefficients.
+                 */ 
+                while( true )
+                {
+                    T2 content = (*row_iterator).content();
+                    T2 abs_content = carl::abs( content );
+                    std::pair<size_t,T2> to_be_added = std::pair<size_t,T2>();
+                    to_be_added.first = (*(*row_iterator).columnVar()).position();
+                    to_be_added.second = content;
+                    nonbasicindex_coefficient.push_back(to_be_added);
+                    //non_basic_vars_positions.push_back( (*(*row_iterator).columnVar()).position() );
+                    //row_polynomial += (Rational)content*(*(*row_iterator).columnVar()).expression();
+                    //coefficients.push_back( content );
+                    if( abs_content > max_value )
+                    {
+                        max_value = abs_content;                        
+                    }
+                    #ifdef LRA_NO_DIVISION
+                    lcm = carl::lcm(lcm,content);
+                    #endif
+                    if( !row_iterator.hEnd( false ) )
+                    {
+                        row_iterator.hMove( false );                   
+                    }
+                    else
+                    {
+                        break;
+                    }                    
+                }
                 Polynomial dc_poly = Polynomial();
                 dc_poly = basic_var.expression();
                 if( upper_bound_hit )
@@ -2102,8 +2151,8 @@ namespace smtrat
             {
                 while( true )
                 {
-                    T2 abs_content = carl::abs((*row_iterator).content());
-                    if(abs_content > max_value)
+                    T2 abs_content = carl::abs( (*row_iterator).content() );
+                    if( abs_content > max_value )
                     {
                         max_value = abs_content;                        
                     }
@@ -2893,8 +2942,10 @@ namespace smtrat
         };
 
         template<class Settings, typename T1, typename T2>
-        const smtrat::Formula* Tableau<Settings,T1,T2>::gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar )
-        { 
+        const smtrat::Polynomial* Tableau<Settings,T1,T2>::gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar )
+        {
+            Polynomial* sum = new Polynomial();
+            *sum = ZERO_POLYNOMIAL; 
             Iterator row_iterator = Iterator( _rowVar->startEntry(), mpEntries );
             std::vector<GOMORY_SET> splitting;
             // Check, whether the premises for a Gomory Cut are satisfied
@@ -2925,7 +2976,7 @@ namespace smtrat
                 }                               
                 else
                 {
-                    return NULL;
+                    return sum;
                 }     
                 if( row_iterator.hEnd( false ) )
                 {
@@ -2942,8 +2993,7 @@ namespace smtrat
             T2 f_zero = _ass - T2(carl::floor( (Rational)_ass ));
             #ifdef LRA_DEBUG_GOMORY_CUT
             std::cout << "f_zero = " << f_zero << std::endl;
-            #endif
-            Polynomial sum = ZERO_POLYNOMIAL;
+            #endif                   
             // Construction of the Gomory Cut 
             std::vector<GOMORY_SET>::const_iterator vec_iter = splitting.begin();
             row_iterator = Iterator( _rowVar->startEntry(), mpEntries );
@@ -2963,7 +3013,7 @@ namespace smtrat
                     #ifdef LRA_DEBUG_GOMORY_CUT
                     std::cout << "A: coeff = " << coeff << std::endl;
                     #endif
-                    sum += (Rational)coeff*( nonBasicVar.expression() - (Rational)nonBasicVar.infimum().limit().mainPart() );     
+                    *sum += (Rational)coeff*( nonBasicVar.expression() - (Rational)nonBasicVar.infimum().limit().mainPart() );     
                     #ifdef LRA_DEBUG_GOMORY_CUT              
                     std::cout << "(Rational)coeff*( nonBasicVar.expression() - (Rational)nonBasicVar.infimum().limit().mainPart() ) = " << ((Rational)coeff*( nonBasicVar.expression() - (Rational)nonBasicVar.infimum().limit().mainPart() )) << std::endl;
                     #endif
@@ -2981,7 +3031,7 @@ namespace smtrat
                     #ifdef LRA_DEBUG_GOMORY_CUT
                     std::cout << "B: coeff = " << coeff << std::endl;
                     #endif
-                    sum += (Rational)coeff*( nonBasicVar.expression() - (Rational)nonBasicVar.infimum().limit().mainPart() );
+                    *sum += (Rational)coeff*( nonBasicVar.expression() - (Rational)nonBasicVar.infimum().limit().mainPart() );
                     #ifdef LRA_DEBUG_GOMORY_CUT
                     std::cout << "(Rational)coeff*( nonBasicVar.expression() - (Rational)nonBasicVar.infimum().limit().mainPart() ) = " << ((Rational)coeff*( nonBasicVar.expression() - (Rational)nonBasicVar.infimum().limit().mainPart() )) << std::endl;                
                     #endif
@@ -2999,7 +3049,7 @@ namespace smtrat
                     #ifdef LRA_DEBUG_GOMORY_CUT
                     std::cout << "C: coeff = " << coeff << std::endl;
                     #endif
-                    sum += ((Rational)-coeff) * ( nonBasicVar.expression() - (Rational)nonBasicVar.supremum().limit().mainPart() );
+                    *sum += ((Rational)-coeff) * ( nonBasicVar.expression() - (Rational)nonBasicVar.supremum().limit().mainPart() );
                     #ifdef LRA_DEBUG_GOMORY_CUT
                     std::cout << "(Rational)coeff * ( (Rational)nonBasicVar.supremum().limit().mainPart() - nonBasicVar.expression() ) = " << ((Rational)coeff * ( (Rational)nonBasicVar.supremum().limit().mainPart() - nonBasicVar.expression() )) << std::endl;        
                     #endif
@@ -3017,7 +3067,7 @@ namespace smtrat
                     #ifdef LRA_DEBUG_GOMORY_CUT
                     std::cout << "D: coeff = " << coeff << std::endl;
                     #endif
-                    sum += ((Rational)-coeff) * (nonBasicVar.expression() - (Rational)nonBasicVar.supremum().limit().mainPart());
+                    *sum += ((Rational)-coeff) * (nonBasicVar.expression() - (Rational)nonBasicVar.supremum().limit().mainPart());
                     #ifdef LRA_DEBUG_GOMORY_CUT
                     std::cout << "(Rational)coeff * ( (Rational)nonBasicVar.supremum().limit().mainPart() - nonBasicVar.expression() ) = " << ((Rational)coeff * ( (Rational)nonBasicVar.supremum().limit().mainPart() - nonBasicVar.expression() )) << std::endl;
                     #endif
@@ -3029,14 +3079,14 @@ namespace smtrat
                 row_iterator.hMove( false );
                 ++vec_iter;
             }
-            sum -= (Rational)1;
+            *sum -= (Rational)1;
             #ifdef LRA_DEBUG_GOMORY_CUT
             std::cout << "sum = " << sum << std::endl;
             #endif
-            const smtrat::Formula* gomory_constr = newFormula( newConstraint( sum , Relation::GEQ ) );
-            newBound(gomory_constr);
+            //const smtrat::Constraint* gomory_constr = newConstraint( *sum , Relation::GEQ );
+            //newBound(gomory_constr);
             // TODO: check whether there is already a basic variable with this polynomial (psum, cf. LRAModule::initialize(..)) 
-            return gomory_constr;
+            return sum;
         }
 
         template<class Settings, typename T1, typename T2>

@@ -5,9 +5,12 @@
 
 #pragma once
 
+#include <numeric>
 #include <iostream>
 #include <utility>
 #include <vector>
+
+#include "utils.h"
 
 namespace delta {
 
@@ -55,68 +58,69 @@ struct Node {
 	 */
 	explicit Node(const std::tuple<std::string, std::vector<Node>, bool>& data): name(std::get<0>(data)), children(std::get<1>(data)), brackets(std::get<2>(data)) {}
 
-	friend inline std::ostream& operator<<(std::ostream& out, const Node& n);
+	/**
+	 * Streaming operator.
+	 * This operator should output a representation that is syntactically identically to the one that was parsed.
+	 * @param os Output stream.
+	 * @param n Node.
+	 * @return `os`.
+	 */
+	friend inline std::ostream& operator<<(std::ostream& os, const Node& n) {
+		if (n.brackets) os << "(";
+		os << n.name;
+		for (auto c: n.children) {
+			if (n.name == "") os << c << std::endl;
+			else os << " " << c;
+		}
+		if (n.brackets) os << ")";
+		return os;
+	}
 	
 	/**
 	 * Calculates the number of nodes.
      * @return Number of nodes.
      */
 	unsigned complexity() const {
-		unsigned sum = 1;
-		for (auto c: children) sum += c.complexity();
-		return sum;
+		return std::accumulate(children.begin(), children.end(), (unsigned)1, [](unsigned a, const Node& b){ return a + b.complexity(); });
 	}
 	/**
-	 * Checks if this node may be removed.
+	 * Checks if this node is immutable.
 	 * This method implements simple checks to prevent unnecessary solver errors if essential parts of the smtlib file are removed, for example the `set-logic` statement.
      * @return If node may be removed.
      */
-	bool removable() const {
-		if (name == "set-logic") return false;
-		if (name == "set-info") return false;
-		return true;
+	bool immutable() const {
+		if (name == "set-logic") return true;
+		if (name == "set-info") return true;
+		return false;
 	}
 	/**
-	 * Returns a short name of this node, usually the name.
-     * @return Short name of the node.
+	 * Returns a string representation of this node.
+     * @return String of the node.
      */
-	std::string shortName() const {
+	std::string repr(bool longRepr = false) const {
+		if (longRepr) return String() << *this;
 		if (name != "") return name;
 		return "Node";
 	}
-};
-
-/**
- * Streaming operator.
- * This operator should output a representation that is syntactically identically to the one that was parsed.
- * @param os Output stream.
- * @param n Node.
- * @return `os`.
- */
-inline std::ostream& operator<<(std::ostream& os, const Node& n) {
-	if (n.brackets) os << "(";
-	os << n.name;
-	for (auto c: n.children) {
-		if (n.name == "") os << c << std::endl;
-		else os << " " << c;
+	
+	/**
+	 * Clone this node recursively.
+	 * If the node `from` is encountered, replace it with `to`. If `to` is a nullptr, remove it instead.
+     * @param from Node to replace.
+     * @param to Node to replace with.
+     * @return Cloned node.
+     */
+	Node clone(const Node* from, const Node* to) const {
+		std::vector<Node> newChildren;
+		for (auto& c: children) {
+			if (&c == from) {
+				if (to != nullptr) newChildren.push_back(*to);
+			} else {
+				newChildren.push_back(c.clone(from, to));
+			}
+		}
+		return Node(std::make_tuple(name, newChildren, brackets));
 	}
-	if (n.brackets) os << ")";
-	return os;
-}
-
-}
-
-namespace std {
-
-/**
- * Implementation of `std::swap` for Node objects.
- * @param lhs First node.
- * @param rhs Second node.
- */
-void swap(delta::Node& lhs, delta::Node& rhs) {
-	std::swap(lhs.name, rhs.name);
-	std::swap(lhs.children, rhs.children);
-	std::swap(lhs.brackets, rhs.brackets);
-}
+};
 
 }

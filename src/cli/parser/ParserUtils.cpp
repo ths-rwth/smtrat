@@ -121,6 +121,7 @@ LogicParser::LogicParser() {
 	add("QF_LRA", smtrat::Logic::QF_LRA);
 	add("QF_NIA", smtrat::Logic::QF_NIA);
 	add("QF_NRA", smtrat::Logic::QF_NRA);
+	add("QF_UF", smtrat::Logic::QF_NRA);
 }
 
 }

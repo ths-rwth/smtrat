@@ -31,9 +31,7 @@ typedef boost::spirit::istream_iterator BaseIteratorType;
 typedef boost::spirit::line_pos_iterator<BaseIteratorType> PositionIteratorType;
 typedef PositionIteratorType Iterator;
 
-namespace spirit = boost::spirit;
 namespace qi = boost::spirit::qi;
-namespace px = boost::phoenix;
 
 /**
  * This class is a `boost::spirit::qi` grammar that matches whitespaces and smtlib comments.
@@ -67,13 +65,10 @@ struct ErrorHandler {
 	template<typename> struct result { typedef qi::error_handler_result type; };
 	template<typename T>
 	qi::error_handler_result operator()(T b, T e, T where) const {
-		auto line_start = spirit::get_line_start(b, where);
+		auto line_start = boost::spirit::get_line_start(b, where);
 		auto line_end = std::find(where, e, '\n');
-		std::string line(++line_start, line_end);
-	
-		std::cerr << std::endl;
-		std::cerr << "Parsing error in line " << spirit::get_line(where) << " at position " << spirit::get_column(line_start, where) << ":" << std::endl;
-		std::cerr << "\t" << line << std::endl;
+		std::cerr << std::endl << "Parsing error in line " << boost::spirit::get_line(where) << " at position " << boost::spirit::get_column(line_start, where) << ":" << std::endl;
+		std::cerr << "\t" << std::string(++line_start, line_end) << std::endl;
 		return qi::fail;
 	}
 };
@@ -97,24 +92,19 @@ class Parser {
 	/// Parses a smtlib file.
 	qi::rule<Iterator, Node(), Skipper> main;
 	// Error handler.
-	px::function<ErrorHandler> errorHandler;
+	boost::phoenix::function<ErrorHandler> errorHandler;
 
 public:
 	/**
 	 * Constructs the parsing rules.
 	 */
 	Parser() {
-		symbol_node.name("symbol node");
 		symbol_node = symbol >> qi::attr(false);
 		full_node = qi::lit("(") >> symbol >> *node >> qi::attr(true) >> qi::lit(")");
-		full_node.name("full node");
 		empty_node = qi::lit("(") >> *node >> qi::attr(true) >> qi::lit(")");
-		empty_node.name("empty node");
 		node = symbol_node | full_node | empty_node;
-		node.name("node");
 		nodelist = *node >> qi::attr(false);
 		main = qi::eps > nodelist > qi::eoi;
-		main.name("main");
 		qi::on_error<qi::fail>(main, errorHandler(qi::_1, qi::_2, qi::_3));
 	}
 
@@ -138,8 +128,7 @@ public:
 	 * @return Node object produced by the parser.
 	 */
 	static bool parse(const std::string& filename, Node& node) {
-		Parser p;
-		return p.parseFile(filename, node);
+		return Parser().parseFile(filename, node);
 	}
 };
 
