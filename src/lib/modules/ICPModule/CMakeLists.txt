@@ -6,7 +6,6 @@ foreach(src ${sources})
 endforeach()
 ModuleName(ICPModule)
 ModuleClass(ICPModule)
-ModuleDefaultEnabled()
 EndDefineModule(moduleEnabled)
 
 if(${moduleEnabled})

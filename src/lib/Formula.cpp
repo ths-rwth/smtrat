@@ -1844,12 +1844,12 @@ namespace smtrat
                             return resB.first->second.second;
                         case Relation::LESS:
                             resB.first->second.first = Relation::LESS;
-                            resB.first->second.second = _constraint;
+                            resB.first->second.second = newFormula( newConstraint( lhs, multipliedByMinusOne ? Relation::GREATER : Relation::LESS ) );
                             return resB.first->second.second;
                         default:
                             assert( resB.first->second.first == Relation::GREATER );
                             resB.first->second.first = Relation::GREATER;
-                            resB.first->second.second = _constraint;
+                            resB.first->second.second = newFormula( newConstraint( lhs, multipliedByMinusOne ? Relation::LESS : Relation::GREATER ) );
                             return resB.first->second.second;
                     }
                 }
