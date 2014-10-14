@@ -533,7 +533,7 @@ Return:
         #ifdef SMTRAT_DEVOPTION_Statistics
         if( result != Unknown )
         {
-            mpStatistics->check( *mpReceivedFormula );
+            mpStatistics->check( rReceivedFormula() );
             if( result == False )
                 mpStatistics->addConflict( mInfeasibleSubsets );
             mpStatistics->setNumberOfTableauxEntries( mTableau.size() );

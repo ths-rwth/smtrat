@@ -84,9 +84,29 @@ namespace smtrat
         #endif
     }
 
+    #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
+    ModuleInput::iterator ModuleInput::find( const_iterator, const Formula* _formula )
+    {
+        auto res = mFormulaPositionMap.find( _formula );
+        if( res == mFormulaPositionMap.end() )
+        {
+            return end();
+        }
+        else
+        {
+            return res->second;
+        }
+    }
+    #else
     ModuleInput::iterator ModuleInput::find( const_iterator _hint, const Formula* _formula )
     {
-        #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
+        return std::find( _hint, end(), _formula );
+    }
+    #endif
+
+    #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
+    ModuleInput::const_iterator ModuleInput::find( const_iterator, const Formula* _formula ) const
+    {
         auto res = mFormulaPositionMap.find( _formula );
         if( res == mFormulaPositionMap.end() )
         {
@@ -96,27 +116,13 @@ namespace smtrat
         {
             return res->second;
         }
-        #else
-        return std::find( _hint, end(), _formula );
-        #endif
     }
-
+    #else
     ModuleInput::const_iterator ModuleInput::find( const_iterator _hint, const Formula* _formula ) const
     {
-        #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
-        auto res = mFormulaPositionMap.find( _formula );
-        if( res == mFormulaPositionMap.end() )
-        {
-            return end();
-        }
-        else
-        {
-            return res->second;
-        }
-        #else
         return std::find( _hint, end(), _formula );
-        #endif
     }
+    #endif
     
     ModuleInput::iterator ModuleInput::erase( iterator _formula )
     {

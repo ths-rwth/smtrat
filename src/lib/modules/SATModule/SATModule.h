@@ -1101,6 +1101,22 @@ namespace smtrat
             static Minisat::Var mapVar( Minisat::Var x, Minisat::vec<Minisat::Var>& map, Minisat::Var& max );
             
             /**
+             * Finite subsequences of the Luby-sequence:
+             *
+             * 0: 1
+             * 1: 1 1 2
+             * 2: 1 1 2 1 1 2 4
+             * 3: 1 1 2 1 1 2 4 1 1 2 1 1 2 4 8
+             * ...
+             *
+             * @param y
+             * @param x
+             *
+             * @return
+             */
+            static double luby( double y, int x );
+            
+            /**
              * [Minisat related code.]
              * @param to [Minisat related code.]
              */

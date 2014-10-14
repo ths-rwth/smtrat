@@ -203,21 +203,8 @@ namespace smtrat
         Module::removeSubformula( _subformula );
     }
 
-    /**
-     * Finite subsequences of the Luby-sequence:
-     *
-     * 0: 1
-     * 1: 1 1 2
-     * 2: 1 1 2 1 1 2 4
-     * 3: 1 1 2 1 1 2 4 1 1 2 1 1 2 4 8
-     * ...
-     *
-     * @param y
-     * @param x
-     *
-     * @return
-     */
-    static double luby( double y, int x )
+    template<class Settings>
+    double SATModule<Settings>::luby( double y, int x )
     {
         // Find the finite subsequence that contains index 'x', and the
         // size of that subsequence:
