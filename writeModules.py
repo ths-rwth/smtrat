@@ -19,7 +19,7 @@ if(${moduleEnabled})\n\
 endif()'
   return result
 
-def headerContent(modName):
+def headerContent(modName,templated):
   result = '/*\n\
  * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox\n\
  * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges\n\
@@ -50,7 +50,7 @@ def headerContent(modName):
 \n\
 #pragma once\n\
 \n\
-#include "../../Module.h"\n\
+#include "../../solver/Module.h"\n\
 \n\
 namespace smtrat\n\
 {\n\
@@ -59,18 +59,22 @@ namespace smtrat\n\
         private:\n\
             // Members.\n\
         public:\n\
-            '+modName+'( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );\n\
+            '+modName+'( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );\n\
 \n\
             ~'+modName+'();\n\
 \n\
             // Main interfaces.\n\
-            bool inform( const Constraint* const );\n\
-            bool assertSubformula( Formula::const_iterator );\n\
-            void removeSubformula( Formula::const_iterator );\n\
-            void updateModel();\n\
+            bool inform( const Formula* _constraint );\n\
+            bool assertSubformula( ModuleInput::const_iterator _subformula );\n\
+            void removeSubformula( ModuleInput::const_iterator _subformula );\n\
+            void updateModel() const;\n\
             Answer isConsistent();\n\
     };\n\
-}'
+}\n'
+  if(templated):
+    print "F"
+    result = result + '#include "IntEqModule.tpp"\n'
+    print result
   return result
 
 def sourceContent(modName):
@@ -110,8 +114,8 @@ namespace smtrat\n\
      * Constructors.\n\
      */\n\
 \n\
-    '+modName+'::'+modName+'( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):\n\
-        Module( _type, _formula, _conditionals, _manager )\n\
+    '+modName+'::'+modName+'( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager ):\n\
+Module( _type, _formula, _conditionals, _manager ) \n\
     {\n\
     }\n\
 \n\
@@ -135,11 +139,12 @@ namespace smtrat\n\
      * @return False, if the it can be determined that the constraint itself is conflicting;\n\
      *          True,  otherwise.\n\
      */\n\
-    bool '+modName+'::inform( const Constraint* const _constraint )\n\
+    bool '+modName+'::inform( const Formula* _constraint )\n\
     {\n\
         Module::inform( _constraint ); // This must be invoked at the beginning of this method.\n\
         // Your code.\n\
-        return _constraint->isConsistent() != 0;\n\
+	const Constraint& constraint = _constraint->constraint(); \n\
+        return constraint.isConsistent() != 0;\n\
     }\n\
 \n\
     /**\n\
@@ -149,7 +154,7 @@ namespace smtrat\n\
      * @return False, if it is easy to decide whether the subformula at the given position is unsatisfiable;\n\
      *          True,  otherwise.\n\
      */\n\
-    bool '+modName+'::assertSubformula( Formula::const_iterator _subformula )\n\
+    bool '+modName+'::assertSubformula( ModuleInput::const_iterator _subformula )\n\
     {\n\
         Module::assertSubformula( _subformula ); // This must be invoked at the beginning of this method.\n\
         // Your code.\n\
@@ -162,7 +167,7 @@ namespace smtrat\n\
      *\n\
      * @param _subformula The position of the subformula to remove.\n\
      */\n\
-    void '+modName+'::removeSubformula( Formula::const_iterator _subformula )\n\
+    void '+modName+'::removeSubformula( ModuleInput::const_iterator _subformula )\n\
     {\n\
         // Your code.\n\
         Module::removeSubformula( _subformula ); // This must be invoked at the end of this method.\n\
@@ -172,7 +177,7 @@ namespace smtrat\n\
      * Updates the current assignment into the model.\n\
      * Note, that this is a unique but possibly symbolic assignment maybe containing newly introduced variables.\n\
      */\n\
-    void '+modName+'::updateModel()\n\
+    void '+modName+'::updateModel() const\n\
     {\n\
         mModel.clear();\n\
         if( solverState() == True )\n\
@@ -205,20 +210,23 @@ def printUsage():
 # Parse input.
 #
 moduleName = ""
+templated = False
 i = 0
 for entry in sys.argv:
-  try:
-    if i == 1:
-      if entry == "-h" or entry == "--help":
-        printUsage()
-        sys.exit(1)
+  try: 
+    if entry == "-h" or entry == "--help":
+      printUsage()
+      sys.exit(1)
+    if entry == "-t":	
+      templated = True
+    else:
       moduleName = entry
   except ValueError:
     print( "Error:",entry, "should be an appropriate value at position %i." % i )
     printUsage()
     sys.exit(0)
   i += 1
-if i != 2:
+if i != 3:
   print( "Error: Insufficient number of arguments." )
   printUsage()
   sys.exit(0)
@@ -232,10 +240,13 @@ cmakeFile.write(cmakeContent(moduleName))
 cmakeFile.close()
 
 headerFile = open(moduleDirectory + '/' + moduleName + '.h', 'w')
-headerFile.write(headerContent(moduleName))
+headerFile.write(headerContent(moduleName,templated))
 headerFile.close()
 
-sourceFile = open(moduleDirectory + '/' + moduleName + '.cpp', 'w')
+if(templated):
+  sourceFile = open(moduleDirectory + '/' + moduleName + '.tpp', 'w')
+else:
+  sourceFile = open(moduleDirectory + '/' + moduleName + '.cpp', 'w')
 sourceFile.write(sourceContent(moduleName))
 sourceFile.close()
 
