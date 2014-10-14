@@ -44,7 +44,7 @@
 
 
 #include "parser/Parser.h"
-#include "parser/Sort.h"
+#include "../lib/Sort.h"
 
 class Executor : public smtrat::parser::InstructionHandler {
 	CMakeStrategySolver* solver;

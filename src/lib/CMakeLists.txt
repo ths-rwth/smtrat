@@ -23,16 +23,19 @@ set(lib_core_src
     Constraint.cpp
     ConstraintPool.cpp
     FormulaPool.cpp
+    Sort.cpp
 )
 
 set(lib_core_headers
     Condition.h
+    Expression.h
     Formula.h
     Common.h
     Constraint.h
     ConstraintPool.h
     FormulaPool.h
     smtrat.h
+    Sort.h
 )
 
 # Include modules

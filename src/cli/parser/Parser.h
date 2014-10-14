@@ -30,9 +30,9 @@
 #include "../../lib/Formula.h"
 #include "../../lib/FormulaPool.h"
 #include "../../lib/solver/ModuleInput.h"
+#include "../../lib/Sort.h"
 #include "ParserUtils.h"
 #include "ParserTypes.h"
-#include "Sort.h"
 
 #include "carl/core/logging.h"
 
