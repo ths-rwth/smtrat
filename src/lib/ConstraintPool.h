@@ -277,7 +277,7 @@ namespace smtrat
                 CONSTRAINT_POOL_LOCK_GUARD
                 for( auto constraint = mConstraints.begin(); constraint != mConstraints.end(); ++constraint )
                 {
-                    carl::exponent maxdeg = (*constraint)->lhs().totalDegree();
+                    carl::exponent maxdeg = (*constraint)->lhs().isZero() ? 0 : (*constraint)->lhs().totalDegree();
                     if(maxdeg > result) 
                         result = maxdeg;
                 }
