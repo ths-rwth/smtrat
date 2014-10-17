@@ -54,6 +54,7 @@ option( LOGGING_CARL "Compile with the logging facility of the carl library" ON 
 option( BUILD_SOLVER "Build the SMT-RAT Solver" ON )
 option( BUILD_GUI "Build the GUI" OFF )
 option( USE_GINAC "If disabled, all implementations using the ginac library are disabled." OFF )
+option(${PROJECT_NAME}_DOC_CREATE_PDF "Create PDF reference manual" ON )
 
 # Strategy
 option( SMTRAT_STRAT_Factorization "Factorization" ON )

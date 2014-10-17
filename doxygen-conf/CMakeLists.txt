@@ -23,7 +23,6 @@ endif()
 # Cmake doxygen settings
 # # # # # # # # # # # # #
 
-option(${PROJECT_NAME}_DOC_CREATE_PDF "Create PDF reference manual" ON )
 
 option(MYPROJECT_DOC_WITH_STATIC "Create documentation for static members" ON )
 option(MYPROJECT_DOC_WITH_PRIVATE "Create documentation for private members" ON )
