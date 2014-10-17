@@ -44,7 +44,7 @@ if( MANUAL_PDFLATEX )
                       ARGS -output-directory=${CMAKE_CURRENT_BINARY_DIR} manual.tex
                       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
   add_custom_target( manual
-                     COMMAND mv -T ${PDF_OUTPUT} ${CMAKE_CURRENT_BINARY_DIR}/manual_${PROJECT_NAME}-${PROJECT_VERSION}.pdf
+                     COMMAND mv ${PDF_OUTPUT} ${CMAKE_CURRENT_BINARY_DIR}/manual_${PROJECT_NAME}-${PROJECT_VERSION}.pdf
                      DEPENDS ${PDF_OUTPUT} )
 endif( MANUAL_PDFLATEX )
 

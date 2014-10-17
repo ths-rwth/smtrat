@@ -2,13 +2,13 @@
 \label{chapter:generalframework}
 \smtrat is a \Cpp library consisting of a collection of
 SMT-compliant implementations of methods for solving non-linear real
-arithmetic (NRA) formulas, we refer to as modules. These modules can be 
+and integer arithmetic (NRA/NIA) formulas, we refer to as modules. These modules can be 
 combined to (1) a theory solver in order to extend the supported logics of an
-existing SMT solver by NRA (see Figure~\ref{fig:frameworkb}) or (2) an SMT 
-solver for NRA (see Figure~\ref{fig:frameworka}). The latter is 
+existing SMT solver by NRA/NIA (see Figure~\ref{fig:frameworkb}) or (2) an SMT 
+solver for NRA/NIA (see Figure~\ref{fig:frameworka}). The latter is 
 especially intended to be a testing environment for the development 
-of SMT-compliant implementations of further methods tackling NRA. Here,
-the developer must only implement the given interfaces of an \smtrat 
+of SMT-compliant implementations of further methods tackling NRA/NIA. Here,
+the developer only needs to implement the given interfaces of an \smtrat 
 module and does not need to care about parsing input files, transforming
 formulas to conjunctive normal form or embedding a SAT solver in order
 to solve the Boolean skeleton of the given formula. Instead, \smtrat
@@ -28,7 +28,7 @@ extraction, which will be explained in following.
 \begin{center}
 \input{figures/framework_for_tsolver}
 \end{center}
-\label{fig:framework}b
+\label{fig:frameworkb}
 \end{figure}
 
 \smtrat defines three types of components: the \emph{manager}, the \emph{strategy} and, as already mentioned, \emph{modules}. 
