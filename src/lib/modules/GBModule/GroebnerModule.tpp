@@ -317,7 +317,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
             }
 
             #ifdef SMTRAT_DEVOPTION_Statistics
-            mStats->EffectivenessOfConflicts( (double)mInfeasibleSubsets.back().size()/(double)mpReceivedFormula->size());
+            mStats->EffectivenessOfConflicts( (double)mInfeasibleSubsets.back().size()/(double)rReceivedFormula().size());
             #endif
             #ifdef CHECK_SMALLER_MUSES
             Module::checkInfSubsetForMinimality( mInfeasibleSubsets->begin() );
@@ -657,7 +657,7 @@ void GroebnerModule<Settings>::removeSubformula( ModuleInput::const_iterator _fo
         return;
     }
     #ifdef SMTRAT_DEVOPTION_Statistics
-    mStats->constraintRemoved((*_formula)->constraint().relation());
+    mStats->constraintRemoved(_formula->formula().constraint().relation());
     #endif
     if( constraintByGB(_formula->formula().constraint().relation()))
     {

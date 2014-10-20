@@ -639,7 +639,7 @@ namespace smtrat
         }
         if( mType == BOOL )
         {
-            return (_init + constraintPool().getVariableName( mBoolean, _friendlyNames ) + activity);
+            return (_init + variablePool().getVariableName( mBoolean, _friendlyNames ) + activity);
         }
         else if( mType == CONSTRAINT )
             return (_init + mpConstraint->toString( _resolveUnequal, _infix, _friendlyNames ) + activity);
@@ -723,7 +723,7 @@ namespace smtrat
         {
             string result = _init + "(exists ";
             for (auto v: this->mpQuantifierContent->mVariables) {
-                result += constraintPool().getVariableName(v, _friendlyNames) + " ";
+                result += variablePool().getVariableName(v, _friendlyNames) + " ";
             }
             result += this->mpQuantifierContent->mpFormula->toString(_withActivity, _resolveUnequal, _init, _oneline, _infix, _friendlyNames);
             result += ")";
@@ -733,7 +733,7 @@ namespace smtrat
         {
             string result = _init + "(forall ";
             for (auto v: this->mpQuantifierContent->mVariables) {
-                result += constraintPool().getVariableName(v, _friendlyNames) + " ";
+                result += variablePool().getVariableName(v, _friendlyNames) + " ";
             }
             result += this->mpQuantifierContent->mpFormula->toString(_withActivity, _resolveUnequal, _init, _oneline, _infix, _friendlyNames);
             result += ")";
@@ -805,7 +805,7 @@ namespace smtrat
                 result += constraint().toString( 1 );
                 break;
             case BOOL:
-                result += constraintPool().getVariableName( mBoolean, true ) + " = 1";
+                result += variablePool().getVariableName( mBoolean, true ) + " = 1";
                 break;
             case IMPLIES:
                 result += "( " + premise().toRedlogFormat( _withVariables ) + " " + oper + " " + premise().toRedlogFormat( _withVariables ) + " )";
@@ -823,7 +823,7 @@ namespace smtrat
                     booleanVars( boolVars );
                     for( auto j = boolVars.begin(); j != boolVars.end(); ++j )
                     {
-                        string boolName = constraintPool().getVariableName( *j, true );
+                        string boolName = variablePool().getVariableName( *j, true );
                         result += "(" + boolName + " = 0 or " + boolName + " = 1) and ";
                     }
                 }
@@ -866,12 +866,12 @@ namespace smtrat
         }
         else if( j != boolVars.end() )
         {
-            string boolName = constraintPool().getVariableName( *j, true );
+            string boolName = variablePool().getVariableName( *j, true );
             unordered_map<string, string>::const_iterator vId = _variableIds.find(boolName);
             result += vId == _variableIds.end() ? boolName : vId->second;
             for( ++j; j != boolVars.end(); ++j )
             {
-                boolName = constraintPool().getVariableName( *j, true );
+                boolName = variablePool().getVariableName( *j, true );
                 result += _separator;
                 vId = _variableIds.find(boolName);
                 result += vId == _variableIds.end() ? boolName : vId->second;

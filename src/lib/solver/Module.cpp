@@ -875,14 +875,14 @@ namespace smtrat
                 #endif
                 smtlibFile << "(set-info :smt-lib-version 2.0)\n";
                 // Add all real-valued variables.
-                Variables allVariables = constraintPool().arithmeticVariables();
+                Variables allVariables = variablePool().arithmeticVariables();
                 for( auto var = allVariables.begin(); var != allVariables.end(); ++var )
                 {
                     if( !(_manager.logic() == Logic::QF_NIA || _manager.logic() == Logic::QF_LIA) || var->getType() == carl::VariableType::VT_INT)
                         smtlibFile << "(declare-fun " << *var << " () " << var->getType() << ")\n";
                 }
                 // Add all Boolean variables.
-                Variables allBooleans = constraintPool().booleanVariables();
+                Variables allBooleans = variablePool().booleanVariables();
                 for( auto var = allBooleans.begin(); var != allBooleans.end(); ++var )
                     smtlibFile << "(declare-fun " << *var << " () Bool)\n";
                 #ifndef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
@@ -936,7 +936,7 @@ namespace smtrat
                 smtlibFile << "(set-option :interactive-mode true)\n";
                 smtlibFile << "(set-info :smt-lib-version 2.0)\n";
                 // Add all real-valued variables.
-                Variables allVars = constraintPool().arithmeticVariables();
+                Variables allVars = variablePool().arithmeticVariables();
                 for( auto var = allVars.begin(); var != allVars.end(); ++var )
                     smtlibFile << "(declare-fun " << *var << " () Real)\n";
                 string assumption = "";

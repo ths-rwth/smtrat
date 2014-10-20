@@ -25,6 +25,7 @@
  * @version 2014-05-08
  */
 #include "Formula.h"
+#include "VariablePool.h"
 #include "ConstraintPool.h"
 #include <mutex>
 

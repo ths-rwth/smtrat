@@ -312,7 +312,7 @@ namespace smtrat
                     PointerSet<Formula> infeasibleSubset( mModule->generateReasons( reduced.getReasons( ) ) );
                     infeasibleSubset.insert( it->first->pFormula() );
                     #ifdef SMTRAT_DEVOPTION_Statistics
-                    mStats->EffectivenessOfConflicts(infeasibleSubset.size()/mModule->mpReceivedFormula->size());
+                    mStats->EffectivenessOfConflicts(infeasibleSubset.size()/mModule->rReceivedFormula().size());
                     #endif //SMTRAT_DEVOPTION_Statistics
                     mModule->mInfeasibleSubsets.push_back( infeasibleSubset );
                     if( Settings::withInfeasibleSubset == RETURN_DIRECTLY )

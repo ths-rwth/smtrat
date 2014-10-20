@@ -64,14 +64,14 @@ Now, we can construct the atoms of the Boolean formula
 \scriptsize
 \begin{verbatim}
 const std::string* b = smtrat::Formula::newBooleanVariable( "b" );
-smtrat::Formula* atomA = new smtrat::Formula( constraintA );
-smtrat::Formula* atomB = new smtrat::Formula( constraintB );
-smtrat::Formula* atomC = new smtrat::Formula( b );
-smtrat::Formula* atomD = new smtrat::Formula( constraintA );
-smtrat::Formula* atomE = new smtrat::Formula( b );
+smtrat::Formula* atomA = new smtrat::newFormula( constraintA );
+smtrat::Formula* atomB = new smtrat::newFormula( constraintB );
+smtrat::Formula* atomC = new smtrat::newFormula( b );
+smtrat::Formula* atomD = new smtrat::newFormula( constraintA );
+smtrat::Formula* atomE = new smtrat::newFormula( b );
 \end{verbatim}
 \normalsize
-and the formula itself.
+and the formula itself:
 \scriptsize
 \begin{verbatim}
 smtrat::Formula* phiA = new smtrat::Formula( smtrat::AND );

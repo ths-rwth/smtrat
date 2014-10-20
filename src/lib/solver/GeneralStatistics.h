@@ -36,9 +36,9 @@ namespace smtrat
          // Override Statistics::collect.
          void collect()
          {
-            Statistics::addKeyValuePair( "boolean_variables", constraintPool().numberOfBooleanVariables() );
-            Statistics::addKeyValuePair( "real_variables", constraintPool().numberOfRealVariables() );
-            Statistics::addKeyValuePair( "integer_variables", constraintPool().numberOfIntVariables() );
+            Statistics::addKeyValuePair( "boolean_variables", variablePool().numberOfBooleanVariables() );
+            Statistics::addKeyValuePair( "real_variables", variablePool().numberOfRealVariables() );
+            Statistics::addKeyValuePair( "integer_variables", variablePool().numberOfIntVariables() );
             Statistics::addKeyValuePair( "constraints", constraintPool().size() );
             Statistics::addKeyValuePair( "non-linear_constraints", constraintPool().nrNonLinearConstraints() );
             Statistics::addKeyValuePair( "maximal_degree", constraintPool().maxDegree() );

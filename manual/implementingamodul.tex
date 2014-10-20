@@ -136,11 +136,10 @@ Running the backend is done in two steps:
 \end{enumerate}
 The first step is a bit more tricky, as we need to know which received formulas led to a passed
 formula. For this purpose a module contains a mapping from a passed formula to one or more
-sets of received formulas. We give a small example by showing the behavior of one of the modules
-we provide, the \simplifierModuleClass. Let us assume that this module has so far received the following
-constraints:
+sets of received formulas. We give a small example. Let us assume that a module has so far received the following
+constraints
 $$c_0:x\leq0,\ c_1:x\geq 0,\ c_2:x=0$$
-\simplifierModuleClass combines the first two constraints $c_0$ and $c_1$ to $c_3:x=0$. Then it combines
+and combines the first two constraints $c_0$ and $c_1$ to $c_3:x=0$. Then it combines
 $c_3$ with $c_2$ to $c_5:x=0$. Afterwards it calls its backend on the only remaining constraint,
 that means the passed constraints contain only $c_5:x=0$. The mapping of $c_5$ to the received constraints it
 stems from is $$c_5\ \mapsto\ (\{c_0,\ c_1\},\ \{c_2\}).$$

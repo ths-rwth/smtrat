@@ -23,6 +23,7 @@ set(lib_core_src
     Constraint.cpp
     ConstraintPool.cpp
     FormulaPool.cpp
+    VariablePool.cpp
     Sort.cpp
 )
 
@@ -34,6 +35,7 @@ set(lib_core_headers
     Constraint.h
     ConstraintPool.h
     FormulaPool.h
+    VariablePool.h
     smtrat.h
     Sort.h
 )
