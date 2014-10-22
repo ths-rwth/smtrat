@@ -93,6 +93,17 @@ namespace smtrat
             {
                 return mVar < _uvar();
             }
+            
+            /**
+             * Prints the given uninterpreted variable on the given output stream.
+             * @param _os The output stream to print on.
+             * @param _uvar The uninterpreted variable to print.
+             * @return The output stream after printing the given uninterpreted variable on it.
+             */
+            friend std::ostream& operator<<( std::ostream& _os, const UIVariable& _uvar )
+            {
+                return (_os << _uvar());
+            }
     };
 } // end namespace smtrat
 
@@ -106,7 +117,7 @@ namespace std
     {
     public:
         /**
-         * @param _ueq The uninterpreted variable to get the hash for.
+         * @param _uvar The uninterpreted variable to get the hash for.
          * @return The hash of the given uninterpreted variable.
          */
         size_t operator()( const smtrat::UIVariable& _uvar ) const 

@@ -147,6 +147,7 @@ namespace smtrat
         // Check if this sort has already been created
         if( nameIdPair != mSortcontentIdMap.end() )
         {
+            delete _sc;
             return Sort( nameIdPair->second );
         }
         // Create the sort
@@ -156,7 +157,7 @@ namespace smtrat
         return s;
     }
     
-    Sort SortManager::getSort( const string& _name )
+    Sort SortManager::newSort( const string& _name )
     {
         SortContent* sc = new SortContent( _name );
         // Find an instantiation of the given sort template.
@@ -171,10 +172,10 @@ namespace smtrat
         return Sort( nameIdPair->second );
     }
     
-    Sort SortManager::getSort( const string& _name, const vector<Sort>& _params )
+    Sort SortManager::newSort( const string& _name, const vector<Sort>& _params )
     {
         if( _params.empty() )
-            return getSort( _name );
+            return newSort( _name );
         // If no such instantiation has been found, instantiate the template of given name and number of parameters.
         auto decIter = mDeclarations.find( _name );
         if( decIter != mDeclarations.end() )

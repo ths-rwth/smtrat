@@ -28,18 +28,11 @@
 
 #pragma once
 
-#include <cassert>
 #include <iostream>
 #include <utility>
-#include <vector>
 
-#include "carl/util/Singleton.h"
-#include "carl/core/Variable.h"
-
-namespace smtrat {
-    
-// Forward declaration.
-class SortManager;
+namespace smtrat
+{
 
 /**
  * Implements a sort (for defining types of variables and functions).
@@ -58,14 +51,29 @@ class Sort
         /// A unique id to identify this sort in the sort manager.
         IDType mId;
 
-    public:
-
         /**
          * Constructs a sort.
          * @param _id The id of the sort to construct.
          */
-        explicit Sort( IDType _id = 0 ):
+        explicit Sort( IDType _id ):
             mId(_id)
+        {}
+
+    public:
+        
+        /**
+         * Default constructor.
+         */
+        Sort():
+            mId( 0 )
+        {}
+
+        /**
+         * Constructs a sort by copying the given sort.
+         * @param _sort The sort to copy.
+         */
+        Sort( const Sort& _sort ):
+            mId( _sort.id() )
         {}
 
         /**

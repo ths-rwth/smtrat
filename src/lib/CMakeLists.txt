@@ -25,6 +25,8 @@ set(lib_core_src
     FormulaPool.cpp
     Sort.cpp
     SortManager.cpp
+    UFInstance.cpp
+    UFInstancesManager.cpp
     VariablePool.cpp
 )
 
@@ -41,6 +43,7 @@ set(lib_core_headers
     SortManager.h
     UninterpretedEquality.h
     UFInstance.h
+    UFInstancesManager.h
     UninterpretedVariable.h
 )
 

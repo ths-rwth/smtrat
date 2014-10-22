@@ -313,6 +313,36 @@ namespace smtrat
                 }
                 return false;
             }
+            
+            /**
+             * Prints the given uninterpreted equality on the given output stream.
+             * @param _os The output stream to print on.
+             * @param _uvar The uninterpreted equality to print.
+             * @return The output stream after printing the given uninterpreted equality on it.
+             */
+            friend std::ostream& operator<<( std::ostream& _os, const UIEquality& _ueq )
+            {
+                _os << "(= ";
+                if( _ueq.lhsIsUV() )
+                {
+                    _os << _ueq.lhsAsUV();
+                }
+                else
+                {
+                    _os << _ueq.lhsAsUF();
+                }
+                _os << " ";
+                if( _ueq.rhsIsUV() )
+                {
+                    _os << _ueq.rhsAsUV();
+                }
+                else
+                {
+                    _os << _ueq.rhsAsUF();
+                }
+                _os << ")";
+                return _os;
+            }
     };
 } // end namespace smtrat
 

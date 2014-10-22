@@ -262,7 +262,7 @@ class SortManager : public carl::Singleton<SortManager>
          * @param _name The name of the sort to get.
          * @return The resulting sort.
          */
-        Sort getSort( const std::string& _name );
+        Sort newSort( const std::string& _name );
 
         /**
          * Gets the sort with arity greater than zero corresponding the given name and having the arguments
@@ -271,7 +271,7 @@ class SortManager : public carl::Singleton<SortManager>
          * @param _params The sort of the arguments of the sort to get.
          * @return The resulting sort.
          */
-        Sort getSort( const std::string& _name, const std::vector<Sort>& _params );
+        Sort newSort( const std::string& _name, const std::vector<Sort>& _params );
 };
 
 /**
@@ -281,7 +281,7 @@ class SortManager : public carl::Singleton<SortManager>
  */
 inline Sort newSort( const std::string& _name )
 {
-    return SortManager::getInstance().getSort( _name );
+    return SortManager::getInstance().newSort( _name );
 }
 
 /**
@@ -293,7 +293,7 @@ inline Sort newSort( const std::string& _name )
  */
 inline Sort newSort( const std::string& _name, const std::vector<Sort>& _params )
 {
-    return SortManager::getInstance().getSort( _name, _params );
+    return SortManager::getInstance().newSort( _name, _params );
 }
 
 }
