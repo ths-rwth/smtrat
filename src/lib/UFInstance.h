@@ -22,7 +22,7 @@
  * @file UFInstance.h
  * @author Florian Corzilius
  * @since 2014-10-20
- * @version 2014-10-20
+ * @version 2014-10-22
  */
 
 #pragma once
@@ -35,31 +35,34 @@
 
 namespace smtrat
 {
+    /**
+     * Implements an uninterpreted function instance.
+     */
     class UFInstance
     {
 
         private:
         
-            ///
+            /// A unique id.
             size_t mId;
-            ///
+            /// The name.
             std::string mName;
-            ///
+            /// The domain.
             std::vector<Sort> mDomain;
-            ///
+            /// The arguments.
             std::vector<UIVariable> mArgs;
-            ///
+            /// The codomain.
             Sort mCodomain;
         public:
         
             UFInstance(); // No default constructor.
             
             /**
-             * 
-             * @param _name
-             * @param _domain
-             * @param _args
-             * @param _codomain
+             * Constructs an uninterpreted function instance.
+             * @param _name The name of the uninterpreted function instance to construct.
+             * @param _domain The domain of the uninterpreted function instance to construct.
+             * @param _args The arguments of the uninterpreted function instance to construct.
+             * @param _codomain The codomain of the uninterpreted function instance to construct.
              */
             UFInstance( std::string&& _name, std::vector<Sort>&& _domain, std::vector<UIVariable>&& _args, const Sort& _codomain ):
                 mId( 0 ),
@@ -72,11 +75,11 @@ namespace smtrat
             }
             
             /**
-             * 
-             * @param _name
-             * @param _domain
-             * @param _args
-             * @param _codomain
+             * Constructs an uninterpreted function instance.
+             * @param _name The name of the uninterpreted function instance to construct.
+             * @param _domain The domain of the uninterpreted function instance to construct.
+             * @param _args The arguments of the uninterpreted function instance to construct.
+             * @param _codomain The codomain of the uninterpreted function instance to construct.
              */
             UFInstance( const std::string& _name, const std::vector<Sort>& _domain, const std::vector<UIVariable>& _args, const Sort& _codomain ):
                 mId( 0 ),
@@ -88,40 +91,58 @@ namespace smtrat
                 assert( argsCorrect() );
             }
             
+            /**
+             * @return The unique id of this uninterpreted function instance.
+             */
             size_t id() const
             {
                 return mId;
             }
             
+            /**
+             * @return The name of this uninterpreted function instance.
+             */
             const std::string& name() const
             {
                 return mName;
             }
 
+            /**
+             * @return The domain of this uninterpreted function instance.
+             */
             const std::vector<Sort>& domain() const
             {
                 return mDomain;
             }
 
+            /**
+             * @return The arguments of this uninterpreted function instance.
+             */
             const std::vector<UIVariable>& args() const
             {
                 return mArgs;
             }
 
+            /**
+             * @return The codomain of this uninterpreted function instance.
+             */
             const Sort& codomain() const
             {
                 return mCodomain;
             }
             
+            /**
+             * @return true, if the arguments domains coincide with those of the domain.
+             */
             bool argsCorrect() const
             {
-                if( mDomain.size() != mArgs.size() )
+                if( !(mDomain.size() == mArgs.size()) )
                 {
                     return false;
                 }
                 for( size_t i = 0; i < mDomain.size(); ++i )
                 {
-                    if( mDomain[i] != mArgs[i].domain() )
+                    if( !(mDomain[i] == mArgs[i].domain()) )
                     {
                         return false;
                     }
@@ -129,6 +150,10 @@ namespace smtrat
                 return true;
             }
             
+            /**
+             * @param _ufun The uninterpreted function instance to compare with.
+             * @return true, if this and the given uninterpreted function instance are equal.
+             */
             bool operator==( const UFInstance& _ufun ) const
             {
                 if( mId != 0 && _ufun.id() != 0 )
@@ -141,6 +166,10 @@ namespace smtrat
                 return false;
             }
             
+            /**
+             * @param _ufun The uninterpreted function instance to compare with.
+             * @return true, if this uninterpreted function instance is less than the given one.
+             */
             bool operator<( const UFInstance& _ufun ) const
             {
                 if( mId != 0 && _ufun.id() != 0 )
@@ -160,7 +189,7 @@ namespace smtrat
                     assert( argB != _ufun.args().end() );
                     if( *argA < *argB )
                         return true;
-                    if( *argA > *argB )
+                    if( *argB < *argA )
                         return false;
                     ++argA;
                     ++argB;

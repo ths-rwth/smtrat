@@ -41,9 +41,13 @@ namespace smtrat {
 // Forward declaration.
 class SortManager;
 
+/**
+ * Implements a sort (for defining types of variables and functions).
+ */
 class Sort
 {
     public:
+        /// The type if the unique id to identify a sort in the sort manager.
         typedef size_t IDType;
     
         friend SortManager;
@@ -51,32 +55,51 @@ class Sort
     private:
         // Members.
 
-        ///
+        /// A unique id to identify this sort in the sort manager.
         IDType mId;
 
     public:
 
+        /**
+         * Constructs a sort.
+         * @param _id The id of the sort to construct.
+         */
         explicit Sort( IDType _id = 0 ):
             mId(_id)
         {}
 
+        /**
+         * @return The aritiy of this sort.
+         */
         std::size_t arity() const;
 
+        /**
+         * @return The id of this sort.
+         */
         IDType id() const
         {
             return mId;
         }
 
+        /**
+         * Prints the given sort on the given output stream.
+         * @param _os The output stream to print on.
+         * @param _sort The sort to print.
+         * @return The output stream after printing the given sort on it.
+         */
         friend std::ostream& operator<<( std::ostream& _os, const Sort& _sort );
 
+        /**
+         * @param _sort The sort to compare with.
+         * @return true, if this sort equals the given one.
+         */
         bool operator==( const Sort& _sort ) const;
 
+        /**
+         * @param _sort The sort to compare with.
+         * @return true, if this sort is less than the given one.
+         */
         bool operator<( const Sort& _sort ) const;
-
-        bool operator!=( const Sort& _sort ) const
-        {
-            return !(*this == _sort);
-        }
 };
 
 }

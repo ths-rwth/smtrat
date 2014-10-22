@@ -22,7 +22,7 @@
  * @file UIVariable.h
  * @author Florian Corzilius
  * @since 2014-10-20
- * @version 2014-10-20
+ * @version 2014-10-22
  */
 
 #pragma once
@@ -32,15 +32,18 @@
 
 namespace smtrat
 {
+    /**
+     * Implements an uninterpreted variable.
+     */
     class UIVariable
     {
         private:
             
             // Members.
             
-            ///
+            /// The according carl::variable, hence, the actual content of this class.
             carl::Variable mVar;
-            ///
+            /// The domain.
             Sort mDomain;
             
         public:
@@ -48,43 +51,47 @@ namespace smtrat
             UIVariable(); // No default constructor.
             
             /**
-             * 
-             * @param _var
-             * @param _domain
+             * Constructs an uninterpreted variable.
+             * @param _var The carl::variable of the uninterpreted variable to construct.
+             * @param _domain The domain of the uninterpreted variable to construct.
              */
             UIVariable( carl::Variable::Arg _var, Sort _domain ):
                 mVar( _var ),
                 mDomain( _domain )
             {}
             
+            /**
+             * @return The according carl::variable, hence, the actual content of this class.
+             */
             carl::Variable operator()() const 
             {
                 return mVar;
             }
             
+            /**
+             * @return The domain of this uninterpreted variable.
+             */
             const Sort& domain() const
             {
                 return mDomain;
             }
             
+            /**
+             * @param _uvar The uninterpreted variable to compare with.
+             * @return true, if this and the given uninterpreted variable are equal.
+             */
             bool operator==( const UIVariable& _uvar ) const
             {
                 return mVar == _uvar();
             }
             
-            bool operator!=( const UIVariable& _uvar ) const
-            {
-                return mVar != _uvar();
-            }
-            
+            /**
+             * @param _uvar The uninterpreted variable to compare with.
+             * @return true, if this uninterpreted variable is less than the given one.
+             */
             bool operator<( const UIVariable& _uvar ) const
             {
                 return mVar < _uvar();
-            }
-            
-            bool operator>( const UIVariable& _uvar ) const
-            {
-                return mVar > _uvar();
             }
     };
 } // end namespace smtrat

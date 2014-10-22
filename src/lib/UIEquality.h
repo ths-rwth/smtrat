@@ -23,7 +23,7 @@
  * @author Gereon Kremer <gereon.kremer@cs.rwth-aachen.de>
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  * @since 2014-10-20
- * @version 2014-10-20
+ * @version 2014-10-22
  */
 
 #pragma once
@@ -34,36 +34,84 @@
 
 namespace smtrat
 {
+    /**
+     * Implements an uninterpreted equality, that is an equality of either 
+     *     two uninterpreted function instances,
+     *     two uninterpreted variables,
+     *     or an uninterpreted function instance and an uninterpreted variable. 
+     */
     class UIEquality
     {
         public:
+            /// The type of the left and right-hand side of an uninterpreted equality.
             typedef boost::variant<UIVariable, UFInstance> Arg;
 
         private:
 
+            /**
+             * Checks whether the given argument is an uninterpreted variable.
+             */
             struct IsUIVariable: public boost::static_visitor<bool> 
             {
-                bool operator()(const UIVariable&) const { return true; }
-                bool operator()(const UFInstance&) const { return false; }
+                /**
+                 * @param An uninterpreted variable.
+                 * @return true
+                 */
+                bool operator()(const UIVariable&) const
+                {
+                    return true;
+                }
+                
+                /**
+                 * @param An uninterpreted function instance.
+                 * @return false
+                 */
+                bool operator()(const UFInstance&) const 
+                {
+                    return false;
+                }
             };
 
+            /**
+             * Checks whether the given argument is an uninterpreted function instance.
+             */
             struct IsUFInstance: public boost::static_visitor<bool> 
             {
-                bool operator()(const UIVariable&) const { return false; }
-                bool operator()(const UFInstance&) const { return true; }
+                /**
+                 * @param An uninterpreted variable.
+                 * @return false
+                 */
+                bool operator()(const UIVariable&) const
+                {
+                    return true;
+                }
+                
+                /**
+                 * @param An uninterpreted function instance.
+                 * @return true
+                 */
+                bool operator()(const UFInstance&) const 
+                {
+                    return false;
+                }
             };
 
             // Member.
 
-            ///
+            /// The left-hand side of this uninterpreted equality.
             Arg mLhs;
-            ///
+            /// The right-hand side of this uninterpreted equality.
             Arg mRhs;
 
         public:
             
             UIEquality(); // No default constructor.
             
+            /**
+             * Constructs an uninterpreted equality.
+             * @param _uvarA An uninterpreted variable, which is going to be the left-hand side of this uninterpreted equality.
+             * @param _uvarBAn uninterpreted variable, which is going to be the right-hand side of this uninterpreted equality.
+             */
             UIEquality( const UIVariable& _uvarA, const UIVariable& _uvarB ):
                 mLhs( _uvarA ),
                 mRhs( _uvarB )
@@ -71,6 +119,11 @@ namespace smtrat
                 assert( _uvarA.domain() == _uvarB.domain() );
             }
             
+            /**
+             * Constructs an uninterpreted equality.
+             * @param _uvar An uninterpreted variable, which is going to be the left-hand side of this uninterpreted equality.
+             * @param _ufun An uninterpreted function instance, which is going to be the right-hand side of this uninterpreted equality.
+             */
             UIEquality( const UIVariable& _uvar, const UFInstance& _ufun ):
                 mLhs( _uvar ),
                 mRhs( _ufun )
@@ -78,6 +131,11 @@ namespace smtrat
                 assert( _uvar.domain() == _ufun.codomain() );
             }
             
+            /**
+             * Constructs an uninterpreted equality.
+             * @param _ufun An uninterpreted function instance, which is going to be the left-hand side of this uninterpreted equality.
+             * @param _uvar An uninterpreted variable, which is going to be the right-hand side of this uninterpreted equality.
+             */
             UIEquality( const UFInstance& _ufun, const UIVariable& _uvar ):
                 mLhs( _ufun ),
                 mRhs( _uvar )
@@ -85,6 +143,11 @@ namespace smtrat
                 assert( _uvar.domain() == _ufun.codomain() );
             }
             
+            /**
+             * Constructs an uninterpreted equality.
+             * @param _ufunA An uninterpreted function instance, which is going to be the left-hand side of this uninterpreted equality.
+             * @param _ufunB An uninterpreted function instance, which is going to be the right-hand side of this uninterpreted equality.
+             */
             UIEquality( const UFInstance& _ufunA, const UFInstance& _ufunB ):
                 mLhs( _ufunA ),
                 mRhs( _ufunB )
@@ -92,46 +155,74 @@ namespace smtrat
                 assert( _ufunA.codomain() == _ufunB.codomain() );
             }
 
+            /**
+             * @return true, if the left-hand side is an uninterpreted variable.
+             */
             bool lhsIsUV() const 
             {
                 return boost::apply_visitor(IsUIVariable(), mLhs);
             }
 
+            /**
+             * @return true, if the right-hand side is an uninterpreted variable.
+             */
             bool rhsIsUV() const 
             {
                 return boost::apply_visitor(IsUIVariable(), mRhs);
             }
 
+            /**
+             * @return true, if the left-hand side is an uninterpreted function instance.
+             */
             bool lhsIsUF() const 
             {
                 return boost::apply_visitor(IsUFInstance(), mLhs);
             }
 
+            /**
+             * @return true, if the right-hand side is an uninterpreted function instance.
+             */
             bool rhsIsUF() const 
             {
                 return boost::apply_visitor(IsUFInstance(), mRhs);
             }
 
+            /**
+             * @return The left-hand side, which must be an uninterpreted variable.
+             */
             const UIVariable& lhsAsUV() const 
             {
                 return boost::get<UIVariable>(mLhs);
             }
 
+            /**
+             * @return The right-hand side, which must be an uninterpreted variable.
+             */
             const UIVariable& rhsAsUV() const 
             {
                 return boost::get<UIVariable>(mRhs);
             }
 
+            /**
+             * @return The left-hand side, which must be an uninterpreted function instance.
+             */
             const UFInstance& lhsAsUF() const 
             {
                 return boost::get<UFInstance>(mLhs);
             }
 
+            /**
+             * @return The right-hand side, which must be an uninterpreted function instance.
+             */
             const UFInstance& rhsAsUF() const 
             {
                 return boost::get<UFInstance>(mRhs);
             }
             
+            /**
+             * @param _ueq The uninterpreted equality to compare with.
+             * @return true, if this and the given equality instance are equal.
+             */
             bool operator==( const UIEquality& _ueq ) const
             {
                 if( lhsIsUV() != _ueq.lhsIsUV() )
@@ -166,6 +257,10 @@ namespace smtrat
                 }
             }
             
+            /**
+             * @param _ueq The uninterpreted equality to compare with.
+             * @return true, if this uninterpreted equality is less than the given one.
+             */
             bool operator<( const UIEquality& _ueq ) const
             {
                 if( lhsIsUV() && !_ueq.lhsIsUV() )
@@ -198,7 +293,6 @@ namespace smtrat
                 }
                 else
                 {
-                    
                     if( lhsAsUF() < _ueq.lhsAsUF() )
                     {
                         return true;
@@ -218,16 +312,6 @@ namespace smtrat
                     return rhsAsUF() < _ueq.rhsAsUF();
                 }
                 return false;
-            }
-            
-            bool operator!=( const UIEquality& _ueq ) const
-            {
-                return !(*this == _ueq);
-            }
-            
-            bool operator>( const UIEquality& _ueq ) const
-            {
-                return _ueq < *this;
             }
     };
 } // end namespace smtrat
