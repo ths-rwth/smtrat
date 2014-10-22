@@ -37,11 +37,12 @@
 #include <boost/dynamic_bitset.hpp>
 #include "Condition.h"
 #include "Constraint.h"
+#include "UIEquality.h"
 
 namespace smtrat
 {
     /// The possible types of a formula.
-    enum Type { AND, OR, NOT, IFF, XOR, IMPLIES, ITE, BOOL, CONSTRAINT, TTRUE, FFALSE, EXISTS, FORALL };
+    enum Type { AND, OR, NOT, IFF, XOR, IMPLIES, ITE, BOOL, CONSTRAINT, TTRUE, FFALSE, EXISTS, FORALL, UEQ };
     
     /**
      * The formula class.
@@ -149,19 +150,21 @@ namespace smtrat
             union
             {
                 /// The only sub-formula, in case this formula is an negation.
-                const Formula*       mpSubformula;
+                const Formula* mpSubformula;
                 /// The premise and conclusion, in case this formula is an implication.
-                IMPLIESContent*      mpImpliesContent;
+                IMPLIESContent* mpImpliesContent;
                 /// The condition, then- and else-case, in case this formula is an ite-expression of formulas.
-                ITEContent*          mpIteContent;
+                ITEContent* mpIteContent;
                 /// The quantifed variables and the bound formula, in case this formula is a quantified formula.
-				QuantifierContent*	 mpQuantifierContent;
+				QuantifierContent* mpQuantifierContent;
                 /// The subformulas, in case this formula is a n-nary operation as AND, OR, IFF or XOR.
                 PointerSet<Formula>* mpSubformulas;
                 /// The constraint, in case this formulas wraps a constraint.
-                const Constraint*    mpConstraint;
-                /// The Boolean variables, in case this formula wraps a Boolean variable.
-                carl::Variable       mBoolean;
+                const Constraint* mpConstraint;
+                /// The Boolean variable, in case this formula wraps a Boolean variable.
+                carl::Variable mBoolean;
+                /// The uninterpreted equality, in case this formula wraps an uninterpreted equality.
+                UIEquality mUIEquality;
             };
             /// The propositions of this formula.
             Condition mProperties;
@@ -171,7 +174,7 @@ namespace smtrat
              * @param _true Specifies whether to create the formula (true) or (false).
              * @param _id A unique id of the formula to create.
              */
-            Formula( bool _true, size_t _id = 0);
+            Formula( bool _true, size_t _id = 0 );
             
             /**
              * Constructs a formula being a Boolean variable.
@@ -185,6 +188,12 @@ namespace smtrat
              * @param _constraint The pointer to the constraint.
              */
             Formula( const Constraint* _constraint );
+            
+            /**
+             * Constructs a formula being an uninterpreted equality.
+             * @param _ueq The pointer to the constraint.
+             */
+            Formula( UIEquality&& _ueq );
             
             /**
              * Constructs the negation of the given formula: (not _subformula)
@@ -527,6 +536,16 @@ namespace smtrat
             {
                 assert( mType == BOOL );
                 return mBoolean;
+            }
+            
+            /**
+             * @return A constant reference to the uninterpreted equality represented by this formula. Note, that
+             *          this formula has to be of type UEQ, if you invoke this method.
+             */
+            const UIEquality& uequality() const
+            {
+                assert( mType == UEQ );
+                return mUIEquality;
             }
 
             /**

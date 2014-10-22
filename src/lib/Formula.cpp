@@ -84,6 +84,17 @@ namespace smtrat
             {}
         }
     }
+
+    Formula::Formula( UIEquality&& _ueq ):
+        mDeducted( false ),
+        mHash( std::hash<UIEquality>()( _ueq ) ),
+        mId( 0 ),
+        mActivity( 0 ),
+        mDifficulty( 0 ),
+        mType( UEQ ),
+        mUIEquality( std::move( _ueq ) ),
+        mProperties()
+    {}
          
     Formula::Formula( const Formula* _subformula ):
         mDeducted( false ),
@@ -552,6 +563,11 @@ namespace smtrat
             case FORALL:
             {
                 ///@todo do something here
+                break;
+            }
+            case UEQ:
+            {
+                mProperties |= STRONG_CONDITIONS | PROP_CONTAINS_UNINTERPRETED_EQUATIONS;
                 break;
             }
             default:
@@ -1081,6 +1097,7 @@ namespace smtrat
             case Type::BOOL:
             case Type::CONSTRAINT:
             case Type::FFALSE:
+            case Type::UEQ:
             case Type::TTRUE:
             {
                 if (negated) res = newNegation(this);

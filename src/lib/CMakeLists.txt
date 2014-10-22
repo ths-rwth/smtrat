@@ -23,13 +23,13 @@ set(lib_core_src
     Constraint.cpp
     ConstraintPool.cpp
     FormulaPool.cpp
-    VariablePool.cpp
     Sort.cpp
+    SortManager.cpp
+    VariablePool.cpp
 )
 
 set(lib_core_headers
     Condition.h
-    Expression.h
     Formula.h
     Common.h
     Constraint.h
@@ -38,6 +38,10 @@ set(lib_core_headers
     VariablePool.h
     smtrat.h
     Sort.h
+    SortManager.h
+    UninterpretedEquality.h
+    UFInstance.h
+    UninterpretedVariable.h
 )
 
 # Include modules

@@ -30,7 +30,7 @@
 #include "../../lib/Formula.h"
 #include "../../lib/FormulaPool.h"
 #include "../../lib/solver/ModuleInput.h"
-#include "../../lib/Sort.h"
+#include "../../lib/SortManager.h"
 #include "ParserUtils.h"
 #include "ParserTypes.h"
 
@@ -221,7 +221,7 @@ private:
 
 	void setSortParameters(const std::vector<std::string>& params) {
 		for (auto p: params) {
-			sort.parameters.add(p, Sort(p));
+			sort.parameters.add(p, newSort(p));
 		}
 	}
 

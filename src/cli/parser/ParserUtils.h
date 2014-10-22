@@ -20,7 +20,7 @@
 #include "../../lib/Common.h"
 #include "../../lib/Formula.h"
 #include "../../lib/datastructures/VariantMap.h"
-#include "../../lib/Sort.h"
+#include "../../lib/SortManager.h"
 #include "ParserTypes.h"
 
 #include "carl/core/logging.h"

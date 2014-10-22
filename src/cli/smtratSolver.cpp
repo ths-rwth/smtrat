@@ -99,7 +99,7 @@ public:
 	void declareSort(const std::string&, const unsigned&) {
 		//error() << "(declare-sort <name> <arity>) is not implemented.";
 	}
-	void defineSort(const std::string&, const std::vector<std::string>&, const smtrat::parser::Sort&) {
+	void defineSort(const std::string&, const std::vector<std::string>&, const smtrat::Sort&) {
 		//error() << "(define-sort <name> <sort>) is not implemented.";
 	}
 	void exit() {
