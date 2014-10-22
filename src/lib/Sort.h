@@ -43,7 +43,7 @@ class Sort
         /// The type if the unique id to identify a sort in the sort manager.
         typedef size_t IDType;
     
-        friend SortManager;
+        friend class SortManager;
 
     private:
         // Members.
