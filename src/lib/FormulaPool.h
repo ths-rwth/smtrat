@@ -260,6 +260,11 @@ namespace smtrat
                 assert( _type == AND || _type == OR || _type == IFF || _type == XOR  );
                 return createFormula( _type, std::move( _subformulas ) );
             }
+
+			const Formula* newFormula( const UFInstance& lhs, const UFInstance& rhs)
+			{
+				return addFormulaToPool(new Formula(UIEquality(lhs, rhs)));
+			}
             
             template<typename ArgType>
             void forallDo( void (*_func)( ArgType*, const Formula* ), ArgType* _arg ) const
@@ -340,4 +345,6 @@ namespace smtrat
     const Formula* newFormula( Type _type, const PointerSet<Formula>& _subformulas );
     
     const Formula* newFormula( Type _type, PointerSet<Formula>&& _subformulas );
+
+	const Formula* newFormula( const UFInstance& lhs, const UFInstance& rhs);
 }    // namespace smtrat
