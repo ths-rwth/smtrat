@@ -23,7 +23,7 @@
  * @author Gereon Kremer <gereon.kremer@cs.rwth-aachen.de>
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  * @since 2014-10-22
- * @version 2014-10-22
+ * @version 2014-10-23
  */
 
 #include "UFInstancesManager.h"
@@ -37,7 +37,7 @@ namespace smtrat
         assert( _ufi.id() != 0 );
         assert( _ufi.id() < mUFInstances.size() );
         const UFInstanceContent& ufic = *mUFInstances[_ufi.id()];
-        _out << "(" << ufic.name();
+        _out << "(" << ufic.uninterpretedFunction().name();
         for( auto& arg : ufic.args() )
         {
             _out << " " << arg;
@@ -64,13 +64,13 @@ namespace smtrat
     
     bool UFInstancesManager::argsCorrect( const UFInstanceContent& _ufic )
     {
-        if( !(_ufic.domain().size() == _ufic.args().size()) )
+        if( !(_ufic.uninterpretedFunction().domain().size() == _ufic.args().size()) )
         {
             return false;
         }
-        for( size_t i = 0; i < _ufic.domain().size(); ++i )
+        for( size_t i = 0; i < _ufic.uninterpretedFunction().domain().size(); ++i )
         {
-            if( !(_ufic.domain().at(i) == _ufic.args().at(i).domain()) )
+            if( !(_ufic.uninterpretedFunction().domain().at(i) == _ufic.args().at(i).domain()) )
             {
                 return false;
             }

@@ -128,7 +128,7 @@ namespace smtrat
                 mLhs( _uvar ),
                 mRhs( _ufun )
             {
-                assert( _uvar.domain() == _ufun.codomain() );
+                assert( _uvar.domain() == _ufun.uninterpretedFunction().codomain() );
             }
             
             /**
@@ -140,7 +140,7 @@ namespace smtrat
                 mLhs( _ufun ),
                 mRhs( _uvar )
             {
-                assert( _uvar.domain() == _ufun.codomain() );
+                assert( _uvar.domain() == _ufun.uninterpretedFunction().codomain() );
             }
             
             /**
@@ -152,7 +152,7 @@ namespace smtrat
                 mLhs( _ufunA ),
                 mRhs( _ufunB )
             {
-                assert( _ufunA.codomain() == _ufunB.codomain() );
+                assert( _ufunA.uninterpretedFunction().codomain() == _ufunB.uninterpretedFunction().codomain() );
             }
 
             /**

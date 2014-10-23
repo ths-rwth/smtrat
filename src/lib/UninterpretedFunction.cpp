@@ -19,31 +19,36 @@
  *
  */
 /**
- * @file UFInstance.cpp
+ * @file UninterpretedFunction.cpp
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
- * @since 2014-10-22
+ * @since 2014-10-23
  * @version 2014-10-23
  */
 
-#include "UFInstance.h"
-#include "UFInstancesManager.h"
+#include "UninterpretedFunction.h"
+#include "UFManager.h"
 
 using namespace std;
 
 namespace smtrat
 {
-    const UninterpretedFunction& UFInstance::uninterpretedFunction() const
+    const string& UninterpretedFunction::name() const
     {
-       return UFInstancesManager::getInstance().getUninterpretedFunction( *this );
+       return UFManager::getInstance().getName( *this );
     }
 
-    const vector<UIVariable>& UFInstance::args() const
+    const vector<Sort>& UninterpretedFunction::domain() const
     {
-       return UFInstancesManager::getInstance().getArgs( *this );
+       return UFManager::getInstance().getDomain( *this );
+    }
+
+    const Sort& UninterpretedFunction::codomain() const
+    {
+       return UFManager::getInstance().getCodomain( *this );
     }
     
-    ostream& operator<<( ostream& _out, const UFInstance& _ufic )
+    ostream& operator<<( ostream& _out, const UninterpretedFunction& _uf )
     {
-        return UFInstancesManager::getInstance().print( _out, _ufic );
+        return UFManager::getInstance().print( _out, _uf );
     }
 }

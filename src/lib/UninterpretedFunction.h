@@ -19,9 +19,9 @@
  *
  */
 /**
- * @file UFInstance.h
+ * @file UninterpretedFunction.h
  * @author Florian Corzilius
- * @since 2014-10-20
+ * @since 2014-10-23
  * @version 2014-10-23
  */
 
@@ -30,19 +30,18 @@
 #include <iostream>
 #include <utility>
 #include <vector>
-#include "UIVariable.h"
-#include "UninterpretedFunction.h"
+#include "Sort.h"
 
 namespace smtrat
 {
     /**
-     * Implements an uninterpreted function instance.
+     * Implements an uninterpreted function.
      */
-    class UFInstance
+    class UninterpretedFunction
     {
         public:
-            friend class UFInstancesManager;
-            /// A unique id to identify this uninterpreted function instance in it's manager.
+            friend class UFManager;
+            /// A unique id to identify this uninterpreted function in it's manager.
             typedef std::size_t IDType;
         
         private:
@@ -51,10 +50,10 @@ namespace smtrat
             IDType mId;
             
             /**
-             * Constructs an uninterpreted function instance.
+             * Constructs an uninterpreted function.
              * @param _id
              */
-            explicit UFInstance( IDType _id ):
+            explicit UninterpretedFunction( IDType _id ):
                 mId( _id )
             {}
             
@@ -63,16 +62,16 @@ namespace smtrat
             /**
              * Default constructor.
              */
-            UFInstance():
+            UninterpretedFunction():
                 mId( 0 )
             {}
             
             /**
-             * Constructs a uninterpreted function instance by copying the given uninterpreted function instance.
-             * @param _ufi The uninterpreted function instance to copy.
+             * Constructs a uninterpreted function by copying the given uninterpreted function instance.
+             * @param _uf The uninterpreted function to copy.
              */
-            UFInstance( const UFInstance& _ufi ):
-                mId( _ufi.id() )
+            UninterpretedFunction( const UninterpretedFunction& _uf ):
+                mId( _uf.id() )
             {}
             
             /**
@@ -84,40 +83,45 @@ namespace smtrat
             }
             
             /**
-             * @return The underlying uninterpreted function of this instance.
+             * @return The name of this uninterpreted function.
              */
-            const UninterpretedFunction& uninterpretedFunction() const;
+            const std::string& name() const;
 
             /**
-             * @return The arguments of this uninterpreted function instance.
+             * @return The domain of this uninterpreted function.
              */
-            const std::vector<UIVariable>& args() const;
+            const std::vector<Sort>& domain() const;
+
+            /**
+             * @return The codomain of this uninterpreted function.
+             */
+            const Sort& codomain() const;
             
             /**
-             * @param _ufun The uninterpreted function instance to compare with.
-             * @return true, if this and the given uninterpreted function instance are equal.
+             * @param _ufun The uninterpreted function to compare with.
+             * @return true, if this and the given uninterpreted function are equal.
              */
-            bool operator==( const UFInstance& _ufun ) const
+            bool operator==( const UninterpretedFunction& _ufun ) const
             {
                 return mId == _ufun.id();
             }
             
             /**
-             * @param _ufun The uninterpreted function instance to compare with.
-             * @return true, if this uninterpreted function instance is less than the given one.
+             * @param _ufun The uninterpreted function to compare with.
+             * @return true, if this uninterpreted function is less than the given one.
              */
-            bool operator<( const UFInstance& _ufun ) const
+            bool operator<( const UninterpretedFunction& _ufun ) const
             {
                 return mId < _ufun.id();
             }
             
             /**
-             * Prints the given uninterpreted function instance on the given output stream.
+             * Prints the given uninterpreted function on the given output stream.
              * @param _os The output stream to print on.
-             * @param _ufun The uninterpreted function instance to print.
-             * @return The output stream after printing the given uninterpreted function instance on it.
+             * @param _ufun The uninterpreted function to print.
+             * @return The output stream after printing the given uninterpreted function on it.
              */
-            friend std::ostream& operator<<( std::ostream& _os, const UFInstance& _ufun );
+            friend std::ostream& operator<<( std::ostream& _os, const UninterpretedFunction& _ufun );
     };
 } // end namespace smtrat
 
@@ -125,19 +129,19 @@ namespace smtrat
 namespace std
 {
     /**
-     * Implements std::hash for uninterpreted function instances.
+     * Implements std::hash for uninterpreted functions.
      */
     template<>
-    struct hash<smtrat::UFInstance>
+    struct hash<smtrat::UninterpretedFunction>
     {
     public:
         /**
-         * @param _ufi The uninterpreted function instance to get the hash for.
-         * @return The hash of the given uninterpreted function instance.
+         * @param _uf The uninterpreted function to get the hash for.
+         * @return The hash of the given uninterpreted function.
          */
-        size_t operator()( const smtrat::UFInstance& _ufi ) const 
+        size_t operator()( const smtrat::UninterpretedFunction& _uf ) const 
         {
-            return (size_t) _ufi.id();
+            return (size_t) _uf.id();
         }
     };
 }

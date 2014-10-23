@@ -111,3 +111,23 @@ class Sort
 };
 
 }
+
+namespace std
+{
+    /**
+     * Implements std::hash for sort.
+     */
+    template<>
+    struct hash<smtrat::Sort>
+    {
+    public:
+        /**
+         * @param _sort The sort to get the hash for.
+         * @return The hash of the given sort.
+         */
+        size_t operator()( const smtrat::Sort& _sort ) const 
+        {
+            return (size_t) _sort.id();
+        }
+    };
+}

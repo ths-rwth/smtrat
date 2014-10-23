@@ -22,7 +22,7 @@
  * @file UFInstancesManager.h
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  * @since 2014-10-22
- * @version 2014-10-22
+ * @version 2014-10-23
  */
 
 #pragma once
@@ -56,43 +56,31 @@ class UFInstanceContent
     friend class UFInstancesManager;
     
     private:
-        /// The uninterpreted function instance's name.
-        std::string mName;
-        /// The uninterpreted function instance's domain.
-        std::vector<Sort> mDomain;
+        /// The underlying uninterpreted function of theinstance.
+        UninterpretedFunction mUninterpretedFunction;
         /// The uninterpreted function instance's arguments.
         std::vector<UIVariable> mArgs;
-        /// The uninterpreted function instance's codomain.
-        Sort mCodomain;
 
         UFInstanceContent(); // The default constructor is disabled.
 
         /**
          * Constructs the content of an uninterpreted function instance.
-         * @param _name The name of the uninterpreted function instance to construct.
-         * @param _domain The domain of the uninterpreted function instance to construct.
+         * @param _uf The underlying function of the uninterpreted function instance to construct.
          * @param _args The arguments of the uninterpreted function instance to construct.
-         * @param _codomain The codomain of the uninterpreted function instance to construct.
          */
-        explicit UFInstanceContent( std::string&& _name, std::vector<Sort>&& _domain, std::vector<UIVariable>&& _args, const Sort& _codomain ):
-            mName( std::move( _name ) ),
-            mDomain( std::move( _domain ) ),
-            mArgs( std::move( _args ) ),
-            mCodomain( _codomain )
+        explicit UFInstanceContent( const UninterpretedFunction& _uf, std::vector<UIVariable>&& _args ):
+            mUninterpretedFunction( _uf ),
+            mArgs( std::move( _args ) )
         {}
 
         /**
          * Constructs the content of an uninterpreted function instance.
-         * @param _name The name of the uninterpreted function instance to construct.
-         * @param _domain The domain of the uninterpreted function instance to construct.
+         * @param _uf The underlying function of the uninterpreted function instance to construct.
          * @param _args The arguments of the uninterpreted function instance to construct.
-         * @param _codomain The codomain of the uninterpreted function instance to construct.
          */
-        explicit UFInstanceContent( const std::string& _name, const std::vector<Sort>& _domain, const std::vector<UIVariable>& _args, const Sort& _codomain ):
-            mName( _name ),
-            mDomain( _domain ),
-            mArgs( _args ),
-            mCodomain( _codomain )
+        explicit UFInstanceContent( const UninterpretedFunction& _uf, const std::vector<UIVariable>& _args ):
+            mUninterpretedFunction( _uf ),
+            mArgs( _args )
         {}
 
         UFInstanceContent( const UFInstanceContent& ); // The copy constructor is disabled.
@@ -100,19 +88,11 @@ class UFInstanceContent
     public:
         
         /**
-         * @return The name of the uninterpreted function.
+         * @return The underlying function of the uninterpreted function instance
          */
-        const std::string& name() const
+        const UninterpretedFunction& uninterpretedFunction() const
         {
-            return mName;
-        }
-        
-        /**
-         * @return The domain of the uninterpreted function.
-         */
-        const std::vector<Sort>& domain() const
-        {
-            return mDomain;
+            return mUninterpretedFunction;
         }
         
         /**
@@ -124,25 +104,12 @@ class UFInstanceContent
         }
         
         /**
-         * @return The codomain of the uninterpreted function.
-         */
-        const Sort& codomain() const
-        {
-            return mCodomain;
-        }
-        
-        /**
          * @param _ufic The uninterpreted function instance's content to compare with.
          * @return true, if this uninterpreted function instance's content is less than the given one.
          */
         bool operator==( const UFInstanceContent& _ufic ) const
         {
-            if( mArgs == _ufic.args() && mName == _ufic.name() )
-            {
-                assert( mCodomain == _ufic.codomain() );
-                return true;
-            }
-            return false;
+            return (mUninterpretedFunction == _ufic.uninterpretedFunction() && mArgs == _ufic.args());
         }
 
         /**
@@ -151,9 +118,9 @@ class UFInstanceContent
          */
         bool operator<( const UFInstanceContent& _ufic ) const
         {   
-            if( mName < _ufic.name() )
+            if( mUninterpretedFunction < _ufic.uninterpretedFunction() )
                 return true;
-            if( mName > _ufic.name() )
+            if( _ufic.uninterpretedFunction() < mUninterpretedFunction )
                 return false;
             if( mArgs.size() < _ufic.args().size() )
                 return true;
@@ -193,7 +160,7 @@ public:
     size_t operator()( const smtrat::UFInstanceContent& _ufun ) const 
     {
         hash<smtrat::UIVariable> h;
-        size_t result = 0;
+        size_t result = hash<smtrat::UninterpretedFunction>()( _ufun.uninterpretedFunction() );
         for( auto& arg : _ufun.args() )
         {
             // perform a circular shift by 5 bits.
@@ -247,24 +214,13 @@ class UFInstancesManager : public carl::Singleton<UFInstancesManager>
         
         /**
          * @param _ufi An uninterpreted function instance.
-         * @return The name of the uninterpreted function of the given uninterpreted function instance.
+         * @return The underlying uninterpreted function of the uninterpreted function of the given uninterpreted function instance.
          */
-        const std::string& getName( const UFInstance& _ufi ) const
+        const UninterpretedFunction& getUninterpretedFunction( const UFInstance& _ufi ) const
         {
             assert( _ufi.id() != 0 );
             assert( _ufi.id() < mUFInstances.size() );
-            return mUFInstances[_ufi.id()]->name();
-        }
-        
-        /**
-         * @param _ufi An uninterpreted function instance.
-         * @return The domain of the uninterpreted function of the given uninterpreted function instance.
-         */
-        const std::vector<Sort>& getDomain( const UFInstance& _ufi ) const
-        {
-            assert( _ufi.id() != 0 );
-            assert( _ufi.id() < mUFInstances.size() );
-            return mUFInstances[_ufi.id()]->domain();
+            return mUFInstances[_ufi.id()]->uninterpretedFunction();
         }
         
         /**
@@ -279,17 +235,6 @@ class UFInstancesManager : public carl::Singleton<UFInstancesManager>
         }
         
         /**
-         * @param _ufi An uninterpreted function instance.
-         * @return The codomain of the uninterpreted function of the given uninterpreted function instance.
-         */
-        const Sort& getCodomain( const UFInstance& _ufi ) const
-        {
-            assert( _ufi.id() != 0 );
-            assert( _ufi.id() < mUFInstances.size() );
-            return mUFInstances[_ufi.id()]->codomain();
-        }
-        
-        /**
          * Prints the given uninterpreted function instance on the given output stream.
          * @param _out The output stream to print the given uninterpreted function instance on.
          * @param  _ufi The uninterpreted function instance to print.
@@ -299,30 +244,26 @@ class UFInstancesManager : public carl::Singleton<UFInstancesManager>
         
         /**
          * Gets the uninterpreted function instance with the given name, domain, arguments and codomain.
-         * @param _name The name of the uninterpreted function of the uninterpreted function instance to get.
-         * @param _domain The domain of the uninterpreted function of the uninterpreted function instance to get.
+         * @param _uf The underlying function of the uninterpreted function instance to get.
          * @param _args The arguments of the uninterpreted function instance to get.
-         * @param _codomain The codomain of the uninterpreted function of the uninterpreted function instance to get.
          * @return The resulting uninterpreted function instance.
          */
-        UFInstance newUFInstance( std::string&& _name, std::vector<Sort>&& _domain, std::vector<UIVariable>&& _args, const Sort& _codomain )
+        UFInstance newUFInstance( const UninterpretedFunction& _uf, std::vector<UIVariable>&& _args )
         {
-            UFInstanceContent* result = new UFInstanceContent( std::move( _name ), std::move( _domain ), std::move( _args ), _codomain );
+            UFInstanceContent* result = new UFInstanceContent( _uf, std::move( _args ) );
             assert( argsCorrect( *result ) );
             return newUFInstance( result );
         }
 
         /**
          * Gets the uninterpreted function instance with the given name, domain, arguments and codomain.
-         * @param _name The name of the uninterpreted function of the uninterpreted function instance to get.
-         * @param _domain The domain of the uninterpreted function of the uninterpreted function instance to get.
+         * @param _uf The underlying function of the uninterpreted function instance to get.
          * @param _args The arguments of the uninterpreted function instance to get.
-         * @param _codomain The codomain of the uninterpreted function of the uninterpreted function instance to get.
          * @return The resulting uninterpreted function instance.
          */
-        UFInstance newUFInstance( const std::string& _name, const std::vector<Sort>& _domain, const std::vector<UIVariable>& _args, const Sort& _codomain )
+        UFInstance newUFInstance( const UninterpretedFunction& _uf, const std::vector<UIVariable>& _args )
         {
-            UFInstanceContent* result = new UFInstanceContent( _name, _domain, _args, _codomain );
+            UFInstanceContent* result = new UFInstanceContent( _uf, _args );
             assert( argsCorrect( *result ) );
             return newUFInstance( result );
         }
@@ -335,28 +276,24 @@ class UFInstancesManager : public carl::Singleton<UFInstancesManager>
 
 /**
  * Gets the uninterpreted function instance with the given name, domain, arguments and codomain.
- * @param _name The name of the uninterpreted function of the uninterpreted function instance to get.
- * @param _domain The domain of the uninterpreted function of the uninterpreted function instance to get.
+ * @param _uf The underlying function of the uninterpreted function instance to get.
  * @param _args The arguments of the uninterpreted function instance to get.
- * @param _codomain The codomain of the uninterpreted function of the uninterpreted function instance to get.
  * @return The resulting uninterpreted function instance.
  */
-inline UFInstance newUFInstance( std::string&& _name, std::vector<Sort>&& _domain, std::vector<UIVariable>&& _args, const Sort& _codomain )
+inline UFInstance newUFInstance( const UninterpretedFunction& _uf, std::vector<UIVariable>&& _args )
 {
-    return UFInstancesManager::getInstance().newUFInstance( std::move( _name ), std::move( _domain ), std::move( _args ), _codomain );
+    return UFInstancesManager::getInstance().newUFInstance( _uf, std::move( _args ) );
 }
 
 /**
  * Gets the uninterpreted function instance with the given name, domain, arguments and codomain.
- * @param _name The name of the uninterpreted function of the uninterpreted function instance to get.
- * @param _domain The domain of the uninterpreted function of the uninterpreted function instance to get.
+ * @param _uf The underlying function of the uninterpreted function instance to get.
  * @param _args The arguments of the uninterpreted function instance to get.
- * @param _codomain The codomain of the uninterpreted function of the uninterpreted function instance to get.
  * @return The resulting uninterpreted function instance.
  */
-inline UFInstance newUFInstance( const std::string& _name, const std::vector<Sort>& _domain, const std::vector<UIVariable>& _args, const Sort& _codomain )
+inline UFInstance newUFInstance( const UninterpretedFunction& _uf, const std::vector<UIVariable>& _args )
 {
-    return UFInstancesManager::getInstance().newUFInstance( _name, _domain, _args, _codomain );
+    return UFInstancesManager::getInstance().newUFInstance( _uf, _args );
 }
 
 }
