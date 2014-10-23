@@ -279,58 +279,65 @@ namespace smtrat
 	 */
 	carl::Variable newVariable( const std::string& _name, carl::VariableType _domain, bool _parsed = false );
 
-     /**
-      * Constructs a new real variable.
-      * @param _name The intended name of the real variable.
-      * @return The constructed real variable.
-      */
-     carl::Variable newRealVariable( const std::string& _name );
+	/**
+	 * Constructs a new real variable.
+	 * @param _name The intended name of the real variable.
+	 * @return The constructed real variable.
+	 */
+	carl::Variable newRealVariable( const std::string& _name );
 
-     /**
-      * Constructs a new arithmetic variable of the given domain.
-      * @param _name The intended name of the arithmetic variable.
-      * @param _domain The domain of the arithmetic variable.
-      * @return The constructed arithmetic variable.
-      */
-     carl::Variable newArithmeticVariable( const std::string& _name, carl::VariableType _domain, bool _parsed = false );
+	/**
+	 * Constructs a new arithmetic variable of the given domain.
+	 * @param _name The intended name of the arithmetic variable.
+	 * @param _domain The domain of the arithmetic variable.
+	 * @return The constructed arithmetic variable.
+	 */
+	carl::Variable newArithmeticVariable( const std::string& _name, carl::VariableType _domain, bool _parsed = false );
 
-     /**
-      * Constructs a new Boolean variable.
-      * @param _name The intended name of the variable.
-      * @return A pointer to the name of the constructed Boolean variable.
-      */
-     carl::Variable newBooleanVariable( const std::string& _name, bool _parsed = false );
+	/**
+	 * Constructs a new Boolean variable.
+	 * @param _name The intended name of the variable.
+	 * @return A pointer to the name of the constructed Boolean variable.
+	 */
+	carl::Variable newBooleanVariable( const std::string& _name, bool _parsed = false );
 
-     /**
-      * Generates a fresh real variable and returns its identifier.
-      * @return The fresh real variable.
-      */
-     carl::Variable newAuxiliaryIntVariable();
+	/**
+	 * Generates a fresh real variable and returns its identifier.
+	 * @return The fresh real variable.
+	 */
+	carl::Variable newAuxiliaryIntVariable();
 
-     /**
-      * Generates a fresh real variable and returns its identifier.
-      * @param _varName The dedicated name of the real variable.
-      * @return The fresh real variable.
-      */
-     carl::Variable newAuxiliaryIntVariable( const std::string& _varName );
+	/**
+	 * Generates a fresh real variable and returns its identifier.
+	 * @param _varName The dedicated name of the real variable.
+	 * @return The fresh real variable.
+	 */
+	carl::Variable newAuxiliaryIntVariable( const std::string& _varName );
 
-     /**
-      * Generates a fresh real variable and returns its identifier.
-      * @return The fresh real variable.
-      */
-     carl::Variable newAuxiliaryRealVariable();
+	/**
+	 * Generates a fresh real variable and returns its identifier.
+	 * @return The fresh real variable.
+	 */
+	carl::Variable newAuxiliaryRealVariable();
 
-     /**
-      * Generates a fresh real variable and returns its identifier.
-      * @param _varName The dedicated name of the real variable.
-      * @return The fresh real variable.
-      */
-     carl::Variable newAuxiliaryRealVariable( const std::string& _varName );
+	/**
+	 * Generates a fresh real variable and returns its identifier.
+	 * @param _varName The dedicated name of the real variable.
+	 * @return The fresh real variable.
+	 */
+	carl::Variable newAuxiliaryRealVariable( const std::string& _varName );
 
-     /**
-      * Generates a fresh Boolean variable and returns its identifier.
-      * @return The identifier of a fresh Boolean variable.
-      */
-     carl::Variable newAuxiliaryBooleanVariable();
+	/**
+	 * Generates a fresh Boolean variable and returns its identifier.
+	 * @return The identifier of a fresh Boolean variable.
+	 */
+	carl::Variable newAuxiliaryBooleanVariable();
+
+	/**
+	 * Generates a fresh variable of the given type.
+	 * @param type Variable type.
+	 * @return The identifier of a fresh variable.
+	 */
+	 carl::Variable newAuxiliaryVariable(carl::VariableType type);
     
 }    // namespace smtrat

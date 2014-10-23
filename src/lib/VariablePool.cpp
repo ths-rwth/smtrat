@@ -179,5 +179,15 @@ namespace smtrat
         return VariablePool::getInstance().newAuxiliaryBooleanVariable();
     }
 
+	carl::Variable newAuxiliaryVariable(carl::VariableType type)
+	{
+		switch (type) {
+			case carl::VariableType::VT_REAL: return newAuxiliaryRealVariable();
+			case carl::VariableType::VT_INT: return newAuxiliaryIntVariable();
+			case carl::VariableType::VT_BOOL: return newAuxiliaryBooleanVariable();
+		}
+		return newAuxiliaryBooleanVariable();
+	}
+
 }    // namespace smtrat
 
