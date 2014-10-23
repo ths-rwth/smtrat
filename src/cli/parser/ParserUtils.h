@@ -95,10 +95,6 @@ public:
 	}
 };
 
-bool checkArguments(const std::string& name, const std::vector<carl::Variable>& types, const Arguments& args, std::map<carl::Variable, const Formula*>& boolAssignments, std::map<carl::Variable, Polynomial>& theoryAssignments, std::function<OutputWrapper()> out);
-const smtrat::Formula* applyBooleanFunction(const BooleanFunction& f, const Arguments& args, std::function<OutputWrapper()> out);
-Polynomial applyTheoryFunction(const TheoryFunction& f, const Arguments& args, std::function<OutputWrapper()> out);
-
 class InstructionHandler {
 public:
 	typedef smtrat::parser::AttributeValue Value;

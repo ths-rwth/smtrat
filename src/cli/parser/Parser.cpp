@@ -7,6 +7,7 @@
 
 #include "../../lib/ConstraintPool.h"
 #include "../../lib/Formula.h"
+#include "../../lib/UFInstancesManager.h"
 #include "lib/FormulaPool.h"
 #include "carl/util/debug.h"
 
@@ -54,7 +55,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 		> ")" > (sort > (formula | polynomial))[px::bind(&SMTLIBParser::defineFun, px::ref(*this), qi::_a, qi::_b, qi::_1, qi::_2)];
 	fun_definition.name("function definition");
 	
-	fun_arguments = *(formula | polynomial);
+	fun_arguments = *(formula | polynomial | uninterpreted);
 	fun_arguments.name("function arguments");
 	
 	cmd = "(" > (
@@ -81,6 +82,9 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 	);
 	cmd.name("command");
 
+	uninterpreted = (qi::lit("(") >> funmap_uf >> fun_arguments >> qi::lit(")"))[qi::_val = px::bind(&SMTLIBParser::applyUninterpretedFunction, px::ref(*this), qi::_1, qi::_2)];
+	uninterpreted.name("uninterpreted function call");
+
 	formula = 
 			(bind_bool >> boundary)[qi::_val = qi::_1]
 		|	(var_bool >> boundary)[qi::_val = px::bind(&newBoolean, qi::_1)]
@@ -95,6 +99,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 	formula_op =
 				((op_bool >> formula_list)[qi::_val = px::bind(&SMTLIBParser::mkFormula, px::ref(*this), qi::_1, qi::_2)])
 			|	(relation >> polynomial >> polynomial)[qi::_val = px::bind(&SMTLIBParser::mkConstraint, px::ref(*this), qi::_2, qi::_3, qi::_1)]
+			|	((qi::lit("=") >> uninterpreted >> uninterpreted)[qi::_val = px::bind(&newEquality, qi::_1, qi::_2)])
 			|	(qi::lit("as")[qi::_pass = false] > symbol > symbol)
 			|	(qi::lit("not") > formula[qi::_val = px::bind(&newNegation, qi::_1)])
 			|	((qi::lit("implies") | "=>") > formula > formula)[qi::_val = px::bind(newImplication, qi::_1, qi::_2)]
@@ -104,7 +109,8 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 			|	(qi::lit("forall")[px::bind(&SMTLIBParser::pushScope, px::ref(*this))] > "(" > *quantifiedVar > ")" > formula)[qi::_val = px::bind(&newQuantifier, FORALL, qi::_1, qi::_2), px::bind(&SMTLIBParser::popScope, px::ref(*this))]
 			|	("ite" >> (formula >> formula >> formula)[qi::_val = px::bind(&newIte, qi::_1, qi::_2, qi::_3)])
 			|	(("!" > formula > *attribute)[px::bind(&annotateFormula, qi::_1, qi::_2), qi::_val = qi::_1])
-			|	((funmap_bool >> fun_arguments)[qi::_val = px::bind(&applyBooleanFunction, qi::_1, qi::_2, std::bind(&InstructionHandler::error, this->handler))])
+			|	((funmap_bool >> fun_arguments)[qi::_val = px::bind(&SMTLIBParser::applyBooleanFunction, px::ref(*this), qi::_1, qi::_2)])
+			|	((funmap_ufbool >> fun_arguments)[qi::_val = px::bind(&SMTLIBParser::applyUninterpretedBooleanFunction, px::ref(*this), qi::_1, qi::_2)])
 	;
 	formula_op.name("formula operation");
 
@@ -112,8 +118,10 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 	polynomial_op.name("polynomial operation");
 	polynomial_ite = qi::lit("ite") >> (formula >> polynomial >> polynomial)[qi::_val = px::bind(&SMTLIBParser::mkIteInExpr, px::ref(*this), qi::_1, qi::_2, qi::_3)];
 	polynomial_ite.name("polynomial if-then-else");
-	polynomial_fun = (funmap_theory >> fun_arguments)[qi::_val = px::bind(&applyTheoryFunction, qi::_1, qi::_2, std::bind(&InstructionHandler::error, this->handler))];
+	polynomial_fun = (funmap_theory >> fun_arguments)[qi::_val = px::bind(&SMTLIBParser::applyTheoryFunction, px::ref(*this), qi::_1, qi::_2)];
 	polynomial_fun.name("theory function");
+	polynomial_uf = (funmap_uftheory >> fun_arguments)[qi::_val = px::bind(&SMTLIBParser::applyUninterpretedTheoryFunction, px::ref(*this), qi::_1, qi::_2)];
+	polynomial_uf.name("uninterpreted theory function");
 	polynomial =
 			(bind_theory >> boundary)
 		|	(var_theory >> boundary)
@@ -123,6 +131,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 				polynomial_ite
 			|	polynomial_op
 			|	polynomial_fun
+			|	polynomial_uf
 		) >> ")")
 	;
 	polynomial.name("polynomial");
@@ -161,6 +170,13 @@ void SMTLIBParser::add(const Formula* f) {
 		mTheoryIteBindings.insert(f);
 		f = newFormula(smtrat::AND, std::move(mTheoryIteBindings));
 		mTheoryIteBindings.clear();
+	}
+	if (!mUninterpretedEqualities.empty()) {
+		// There have been uninterpreted expressions within this formula.
+		// We add the formulas from mUninterpretedExpressions to the formula.
+		mUninterpretedEqualities.insert(f);
+		f = newFormula(smtrat::AND, std::move(mUninterpretedEqualities));
+		mUninterpretedEqualities.clear();
 	}
 	
 	callHandler(&InstructionHandler::add, f);
@@ -516,6 +532,76 @@ void SMTLIBParser::addTheoryBinding(std::string& _varName, Polynomial& _polynomi
 void SMTLIBParser::addBooleanBinding(std::string& _varName, const Formula* _formula) {
 	assert(this->isSymbolFree(_varName));
 	bind_bool.sym.add(_varName, _formula);
+}
+
+bool SMTLIBParser::checkArguments(const std::string& name, const std::vector<carl::Variable>& types, const Arguments& args, std::map<carl::Variable, const Formula*>& boolAssignments, std::map<carl::Variable, Polynomial>& theoryAssignments) {
+	if (types.size() != args.size()) {
+		this->handler->error() << "The number of arguments for \"" << name << "\" does not match its declaration.";
+		return false;
+	}
+	for (unsigned id = 0; id < types.size(); id++) {
+		ExpressionType type = TypeOfTerm::get(types[id]);
+		if (type != TypeOfTerm::get(args[id])) {
+			this->handler->error() << "The type of argument " << (id+1) << " for \"" << name << "\" did not match the declaration.";
+			return false;
+		}
+		if (type == ExpressionType::BOOLEAN) {
+			boolAssignments[types[id]] = boost::get<const Formula*>(args[id]);
+		} else {
+			theoryAssignments[types[id]] = boost::get<Polynomial>(args[id]);
+		}
+	}
+	return true;
+}
+
+const smtrat::Formula* SMTLIBParser::applyBooleanFunction(const BooleanFunction& f, const Arguments& args) {
+	std::map<carl::Variable, const Formula*> boolAssignments;
+	std::map<carl::Variable, Polynomial> theoryAssignments;
+	if (!checkArguments(std::get<0>(f), std::get<1>(f), args, boolAssignments, theoryAssignments)) {
+		return nullptr;
+	}
+	return std::get<2>(f)->substitute(boolAssignments, theoryAssignments);
+}
+const smtrat::Formula* SMTLIBParser::applyUninterpretedBooleanFunction(const UninterpretedFunction& f, const Arguments& args) {
+	carl::Variable v = newAuxiliaryBooleanVariable();
+	mUninterpretedEqualities.insert(newFormula(std::move(UIEquality(UIVariable(v), applyUninterpretedFunction(f, args)))));
+	return newBoolean(v);
+}
+Polynomial SMTLIBParser::applyTheoryFunction(const TheoryFunction& f, const Arguments& args) {
+	std::map<carl::Variable, const Formula*> boolAssignments;
+	std::map<carl::Variable, Polynomial> theoryAssignments;
+	if (!checkArguments(std::get<0>(f), std::get<1>(f), args, boolAssignments, theoryAssignments)) {
+		return smtrat::Polynomial();
+	}
+	return std::get<2>(f).substitute(theoryAssignments);
+}
+
+Polynomial SMTLIBParser::applyUninterpretedTheoryFunction(const UninterpretedFunction& f, const Arguments& args) {
+	assert(SortManager::getInstance().isInterpreted(f.codomain()));
+	
+	carl::Variable v = newAuxiliaryVariable(SortManager::getInstance().interpretedType(f.codomain()));
+	mUninterpretedEqualities.insert(newFormula(std::move(UIEquality(UIVariable(v), applyUninterpretedFunction(f, args)))));
+	return Polynomial(v);
+}
+
+UFInstance SMTLIBParser::applyUninterpretedFunction(const UninterpretedFunction& f, const Arguments& args) {
+	std::vector<UIVariable> vars;
+	for (auto v: args) {
+		if (const Formula** f = boost::get<const Formula*>(&v)) {
+			carl::Variable tmp = newAuxiliaryBooleanVariable();
+			vars.push_back(UIVariable(tmp));
+			mUninterpretedEqualities.insert(newFormula(Type::AND, newBoolean(tmp), *f));
+		} else if (Polynomial* p = boost::get<Polynomial>(&v)) {
+			carl::Variable tmp = newAuxiliaryRealVariable();
+			vars.push_back(UIVariable(tmp));
+			mUninterpretedEqualities.insert(newFormula(newConstraint(*p - tmp, Relation::EQ)));
+		} else if (UFInstance* uf = boost::get<UFInstance>(&v)) {
+			carl::Variable tmp = newAuxiliaryRealVariable();
+			vars.push_back(UIVariable(tmp));
+			mUninterpretedEqualities.insert(newFormula(std::move(UIEquality(vars.back(), *uf))));
+		}
+	}
+	return newUFInstance(f, vars);
 }
 
 }

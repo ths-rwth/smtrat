@@ -31,6 +31,7 @@
 #include "../../lib/FormulaPool.h"
 #include "../../lib/solver/ModuleInput.h"
 #include "../../lib/SortManager.h"
+#include "../../lib/UFInstance.h"
 #include "ParserUtils.h"
 #include "ParserTypes.h"
 
@@ -98,6 +99,9 @@ public:
 	// Custom functions
 	qi::symbols<char, BooleanFunction> funmap_bool;
 	qi::symbols<char, TheoryFunction> funmap_theory;
+	qi::symbols<char, UninterpretedFunction> funmap_ufbool;
+	qi::symbols<char, UninterpretedFunction> funmap_uftheory;
+	qi::symbols<char, UninterpretedFunction> funmap_uf;
 	qi::rule<Iterator, Skipper, qi::locals<std::string, std::vector<carl::Variable>>> fun_definition;
 
 	rule<Arguments> fun_arguments;
@@ -109,12 +113,15 @@ public:
 	rule<const Formula*> formula;
 	rule<const Formula*> formula_op;
 	rule<PointerSet<Formula>> formula_list;
-	
+
+	rule<UFInstance> uninterpreted;
+
 	// Polynomial
 	rule<Polynomial> polynomial;
 	rule<std::pair<Polynomial::ConstructorOperation, std::vector<Polynomial>>> polynomial_op;
 	rule<Polynomial> polynomial_ite;
 	rule<Polynomial> polynomial_fun;
+	rule<Polynomial> polynomial_uf;
 	// Main rule
 	rule<> main;
 	
@@ -158,6 +165,7 @@ protected:
 private:
 	smtrat::Logic mLogic;
 	PointerSet<Formula> mTheoryIteBindings;
+	PointerSet<Formula> mUninterpretedEqualities;
 	std::map<carl::Variable, std::tuple<const Formula*, Polynomial, Polynomial>> mTheoryItes;
 
 	struct Scope {
@@ -218,6 +226,13 @@ private:
 	carl::Variable addVariableBinding(const std::pair<std::string, Sort>&);
 	void addTheoryBinding(std::string& _varName, Polynomial& _polynomial);
 	void addBooleanBinding(std::string&, const Formula*);
+
+	bool checkArguments(const std::string& name, const std::vector<carl::Variable>& types, const Arguments& args, std::map<carl::Variable, const Formula*>& boolAssignments, std::map<carl::Variable, Polynomial>& theoryAssignments);
+	const smtrat::Formula* applyBooleanFunction(const BooleanFunction& f, const Arguments& args);
+	const smtrat::Formula* applyUninterpretedBooleanFunction(const UninterpretedFunction& f, const Arguments& args);
+	Polynomial applyTheoryFunction(const TheoryFunction& f, const Arguments& args);
+	Polynomial applyUninterpretedTheoryFunction(const UninterpretedFunction& f, const Arguments& args);
+	UFInstance applyUninterpretedFunction(const UninterpretedFunction& f, const Arguments& args);
 
 	void setSortParameters(const std::vector<std::string>& params) {
 		for (auto p: params) {

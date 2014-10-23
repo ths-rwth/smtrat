@@ -5,43 +5,6 @@
 namespace smtrat {
 namespace parser {
 
-bool checkArguments(const std::string& name, const std::vector<carl::Variable>& types, const Arguments& args, std::map<carl::Variable, const Formula*>& boolAssignments, std::map<carl::Variable, Polynomial>& theoryAssignments, std::function<OutputWrapper()> out) {
-	if (types.size() != args.size()) {
-		out() << "The number of arguments for \"" << name << "\" does not match its declaration.";
-		return false;
-	}
-	for (unsigned id = 0; id < types.size(); id++) {
-		ExpressionType type = TypeOfTerm::get(types[id]);
-		if (type != TypeOfTerm::get(args[id])) {
-			out() << "The type of argument " << (id+1) << " for \"" << name << "\" did not match the declaration.";
-			return false;
-		}
-		if (type == ExpressionType::BOOLEAN) {
-			boolAssignments[types[id]] = boost::get<const Formula*>(args[id]);
-		} else {
-			theoryAssignments[types[id]] = boost::get<Polynomial>(args[id]);
-		}
-	}
-	return true;
-}
-
-const smtrat::Formula* applyBooleanFunction(const BooleanFunction& f, const Arguments& args, std::function<OutputWrapper()> out) {
-	std::map<carl::Variable, const Formula*> boolAssignments;
-	std::map<carl::Variable, Polynomial> theoryAssignments;
-	if (!checkArguments(std::get<0>(f), std::get<1>(f), args, boolAssignments, theoryAssignments, out)) {
-		return nullptr;
-	}
-	return std::get<2>(f)->substitute(boolAssignments, theoryAssignments);
-}
-Polynomial applyTheoryFunction(const TheoryFunction& f, const Arguments& args, std::function<OutputWrapper()> out) {
-	std::map<carl::Variable, const Formula*> boolAssignments;
-	std::map<carl::Variable, Polynomial> theoryAssignments;
-	if (!checkArguments(std::get<0>(f), std::get<1>(f), args, boolAssignments, theoryAssignments, out)) {
-		return smtrat::Polynomial();
-	}
-	return std::get<2>(f).substitute(theoryAssignments);
-}
-
 Skipper::Skipper(): Skipper::base_type(main, "skipper") {
 	main = (qi::space | qi::lit(";") >> *(qi::char_ - qi::eol) >> qi::eol);
 };
