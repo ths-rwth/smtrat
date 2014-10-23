@@ -51,7 +51,7 @@ typedef boost::spirit::istream_iterator BaseIteratorType;
 typedef boost::spirit::line_pos_iterator<BaseIteratorType> PositionIteratorType;
 typedef PositionIteratorType Iterator;
 
-typedef boost::variant<const Formula*, Polynomial> Argument;
+typedef boost::variant<const Formula*, Polynomial, UFInstance> Argument;
 typedef std::vector<Argument> Arguments;
 
 typedef std::tuple<std::string, std::vector<carl::Variable>, const Formula*> BooleanFunction;
