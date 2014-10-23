@@ -265,6 +265,11 @@ namespace smtrat
 			{
 				return addFormulaToPool(new Formula(UIEquality(lhs, rhs)));
 			}
+
+			const Formula* newFormula( const UIEquality& eq)
+			{
+				return addFormulaToPool(new Formula(eq));
+			}
             
             template<typename ArgType>
             void forallDo( void (*_func)( ArgType*, const Formula* ), ArgType* _arg ) const
@@ -346,5 +351,7 @@ namespace smtrat
     
     const Formula* newFormula( Type _type, PointerSet<Formula>&& _subformulas );
 
-	const Formula* newFormula( const UFInstance& lhs, const UFInstance& rhs);
+	const Formula* newFormula( const UFInstance& lhs, const UFInstance& rhs );
+
+	const Formula* newFormula( const UIEquality& eq );
 }    // namespace smtrat
