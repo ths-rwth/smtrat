@@ -266,9 +266,9 @@ namespace smtrat
 				return addFormulaToPool(new Formula(UIEquality(lhs, rhs)));
 			}
 
-			const Formula* newFormula( const UIEquality& eq)
+			const Formula* newFormula( UIEquality&& eq)
 			{
-				return addFormulaToPool(new Formula(eq));
+				return addFormulaToPool(new Formula(std::move(eq)));
 			}
             
             template<typename ArgType>
@@ -353,5 +353,5 @@ namespace smtrat
 
 	const Formula* newFormula( const UFInstance& lhs, const UFInstance& rhs );
 
-	const Formula* newFormula( const UIEquality& eq );
+	const Formula* newFormula( UIEquality&& eq );
 }    // namespace smtrat

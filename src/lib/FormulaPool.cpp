@@ -263,8 +263,8 @@ namespace smtrat
 		return FormulaPool::getInstance().newFormula(lhs, rhs);
 	}
 
-	const Formula* newFormula( const UIEquality& eq)
+	const Formula* newFormula( UIEquality&& eq)
 	{
-		return FormulaPool::getInstance().newFormula(eq);
+		return FormulaPool::getInstance().newFormula(std::move(eq));
 	}
 }    // namespace smtrat
