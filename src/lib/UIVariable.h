@@ -29,6 +29,7 @@
 
 #include "Common.h"
 #include "Sort.h"
+#include "SortManager.h"
 
 namespace smtrat
 {
@@ -49,6 +50,12 @@ namespace smtrat
         public:
             
             UIVariable(); // No default constructor.
+
+			UIVariable( carl::Variable::Arg _var):
+                mVar( _var ),
+				mDomain( SortManager::getInstance().interpretedSort(_var.getType()) )
+            {
+			}
             
             /**
              * Constructs an uninterpreted variable.
