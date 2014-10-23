@@ -83,7 +83,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 
 	formula = 
 			(bind_bool >> boundary)[qi::_val = qi::_1]
-		|	(var_bool >> boundary)[qi::_val = px::bind(&newVariableFormula, qi::_1)]
+		|	(var_bool >> boundary)[qi::_val = px::bind(&newBoolean, qi::_1)]
 		|	qi::lit("true")[qi::_val = px::bind(&trueFormula)]
 		|	qi::lit("false")[qi::_val = px::bind(&falseFormula)]
 		|	("(" >> formula_op >> ")")[qi::_val = qi::_1]
@@ -490,7 +490,7 @@ carl::Variable SMTLIBParser::addVariableBinding(const std::pair<std::string, Sor
 	switch (TypeOfTerm::get(b.second)) {
 	case ExpressionType::BOOLEAN: {
 		carl::Variable v = carl::VariablePool::getInstance().getFreshVariable(b.first, carl::VariableType::VT_BOOL);
-		bind_bool.sym.add(b.first, newVariableFormula(v));
+		bind_bool.sym.add(b.first, newBoolean(v));
 		return v;
 	}
 	case ExpressionType::THEORY: {

@@ -42,22 +42,30 @@ We do some further simplifactions, such as the elimination of multiple roots of 
 
 \subsection{Boolean combinations of constraints and Boolean variables}
 The \texttt{Formula} class can be constructed with a constraint as argument, which leads to a formula wrapping a constraint only. Furthermore, we can construct a formula representing a Boolean by passing its name as argument. A Boolean combinations of constraints and Boolean variables consists of a Boolean operator and the sub-formulas it interconnects. They are built by firstly constructing a formula with the according operator as argument and then adding the formulas which are the according operands. The \texttt{Formula} class provides the beforementioned constructors and interfaces to manipulate it. We give a small example constructing the formula \[(\neg b\ \land\ x^2-y<0\ \land\ 4x+y-8y^2=0 )\ \rightarrow\ (\neg(x^2-y<0)\ \lor\ b )\]
-, with the Boolean variable $b$ and the real-valued variables $x$ and $y$, for demonstration. Firstly, we create the real valued variables.
+, with the Boolean variable $b$ and the real-valued variables $x$ and $y$, for demonstration. Firstly, we create the real valued variables and the Boolean variable.
 \scriptsize
 \begin{verbatim}
-carl::Variable x = smtrat::Formula::newArithmeticVariable( "x", smtrat::REAL_DOMAIN );
-carl::Variable y = smtrat::Formula::newArithmeticVariable( "y", smtrat::REAL_DOMAIN );
+carl::Variable x = smtrat::newArithmeticVariable( "x", carl::VariableType::VT_REAL );
+carl::Variable y = smtrat::newArithmeticVariable( "y", carl::VariableType::VT_REAL );
+carl::Variable b = smtrat::newBooleanVariable( "b" );
 \end{verbatim}
 \normalsize
-Afterwards we create the constraints.
+Afterwards we create the polynomials later forming the left-hand sides of the constraints.
 \scriptsize
 \begin{verbatim}
-smtrat::Polynomial lhsA = x.power(2)-y;
-const smtrat::Constraint* constraintA 
-  = smtrat::Formula::newConstraint( lhsA, smtrat::CR_LESS );
-smtrat::Polynomial lhsB = Rational(4)*x+y-Rational(8)*y.power(7);
-const smtrat::Constraint* constraintB
-   = smtrat::Formula::newConstraint( lhsB, smtrat::CR_EQ );
+smtrat::Polynomial px( x );
+smtrat::Polynomial py( y );
+smtrat::Polynomial lhsA = px.pow(2) - py;
+smtrat::Polynomial lhsB = smtrat::Rational(4) * px + py - smtrat::Rational(8) * py.pow(7);
+\end{verbatim}
+\normalsize
+Then 
+\scriptsize
+\begin{verbatim}
+smtrat::Polynomial px( x );
+smtrat::Polynomial py( y );
+smtrat::Polynomial lhsA = px.pow(2) - py;
+smtrat::Polynomial lhsB = smtrat::Rational(4) * px + py - smtrat::Rational(8) * py.pow(7);
 \end{verbatim}
 \normalsize
 Now, we can construct the atoms of the Boolean formula

@@ -1407,7 +1407,7 @@ namespace smtrat
                                 if( iter.second )
                                 {
                                     carl::Variable auxVar = newAuxiliaryBooleanVariable();
-                                    const Formula* hi = newVariableFormula( auxVar );
+                                    const Formula* hi = newBoolean( auxVar );
                                     hi->setDifficulty( currentSubformula->difficulty() );
                                     iter.first->second = new pair<const Formula*,const Formula*>( hi, newNegation( hi ) );
                                 }

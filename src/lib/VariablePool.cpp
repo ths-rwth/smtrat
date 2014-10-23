@@ -82,7 +82,7 @@ namespace smtrat
         return iterBoolPair.first->second;
     }
     
-    const carl::Variable VariablePool::newBooleanVariable( const string& _name, bool _parsed )
+    carl::Variable VariablePool::newBooleanVariable( const string& _name, bool _parsed )
     {
         BOOLEAN_VAR_LOCK_GUARD
         assert( !booleanExistsAlready( _name ) );
@@ -97,7 +97,7 @@ namespace smtrat
         return result;
     }
 
-    const carl::Variable VariablePool::newAuxiliaryBooleanVariable( const std::string& _externalPrefix )
+    carl::Variable VariablePool::newAuxiliaryBooleanVariable( const std::string& _externalPrefix )
     {
         stringstream out;
         BOOLEAN_VAR_LOCK
@@ -149,7 +149,7 @@ namespace smtrat
         return VariablePool::getInstance().newArithmeticVariable( _name, _domain, _parsed );
     }
 
-    const carl::Variable newBooleanVariable( const std::string& _name, bool _parsed )
+    carl::Variable newBooleanVariable( const std::string& _name, bool _parsed )
     {
         return VariablePool::getInstance().newBooleanVariable( _name, _parsed );
     }
@@ -174,7 +174,7 @@ namespace smtrat
         return VariablePool::getInstance().newAuxiliaryRealVariable( _varName );
     }
 
-    const carl::Variable newAuxiliaryBooleanVariable()
+    carl::Variable newAuxiliaryBooleanVariable()
     {
         return VariablePool::getInstance().newAuxiliaryBooleanVariable();
     }

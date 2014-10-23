@@ -251,14 +251,14 @@ namespace smtrat
              * @param _name The external name of the variable to construct.
              * @param _parsed A special flag indicating whether this variable is constructed during parsing.
              */
-            const carl::Variable newBooleanVariable( const std::string& _name, bool _parsed = false );
+            carl::Variable newBooleanVariable( const std::string& _name, bool _parsed = false );
             
             /**
              * Creates an auxiliary Boolean variable.
              * @param _externalPrefix The prefix of the external name of the auxiliary variable to construct.
              * @return The internal name of the variable.
              */
-            const carl::Variable newAuxiliaryBooleanVariable( const std::string& _externalPrefix = "h_b" );
+            carl::Variable newAuxiliaryBooleanVariable( const std::string& _externalPrefix = "h_b" );
             
             /**
              * Initializes the prefix of the external variable names of internally declared (not parsed) variables.
@@ -299,7 +299,7 @@ namespace smtrat
       * @param _name The intended name of the variable.
       * @return A pointer to the name of the constructed Boolean variable.
       */
-     const carl::Variable newBooleanVariable( const std::string& _name, bool _parsed = false );
+     carl::Variable newBooleanVariable( const std::string& _name, bool _parsed = false );
 
      /**
       * Generates a fresh real variable and returns its identifier.
@@ -331,6 +331,6 @@ namespace smtrat
       * Generates a fresh Boolean variable and returns its identifier.
       * @return The identifier of a fresh Boolean variable.
       */
-     const carl::Variable newAuxiliaryBooleanVariable();
+     carl::Variable newAuxiliaryBooleanVariable();
     
 }    // namespace smtrat
