@@ -149,6 +149,8 @@ class SortManager : public carl::Singleton<SortManager>
         std::map<std::string, unsigned> mDeclarations;
         /// Stores all sort definitions invoked by a define-sort.
         std::map<std::string, SortTemplate> mDefinitions;
+		/// Stores all interpreted sorts.
+		std::map<carl::VariableType, Sort> mInterpretedSorts;
 
         /**
          * Constructs a sort manager.
@@ -232,6 +234,19 @@ class SortManager : public carl::Singleton<SortManager>
          * @return The resulting sort.
          */
         Sort interpretedSort( const std::string& _name, carl::VariableType type );
+
+		/**
+		 * Retrieves an interpreted sort.
+		 * Asserts, that the sort was already registered via interpretedSort(std::string, carl::VariableType).
+		 * @param vt VariableType.
+		 * @return Sort corresponding to vt.
+		 */
+		const Sort& interpretedSort( carl::VariableType vt ) const
+		{
+			auto it = mInterpretedSorts.find(vt);
+			assert(it != mInterpretedSorts.end());
+			return it->second;
+		}
 
         /**
          * @param _sort A sort.

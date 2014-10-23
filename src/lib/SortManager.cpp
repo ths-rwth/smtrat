@@ -138,6 +138,7 @@ namespace smtrat
         mSortcontentIdMap.emplace( sc, mSorts.size() );
         Sort s( mSorts.size() );
         mSorts.push_back( sc );
+		mInterpretedSorts.emplace(_type, s);
         return s;
     }
     
