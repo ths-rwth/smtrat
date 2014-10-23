@@ -57,6 +57,7 @@ struct TypeOfTerm : public boost::static_visitor<ExpressionType> {
 			case carl::VariableType::VT_BOOL: return ExpressionType::BOOLEAN;
 			case carl::VariableType::VT_INT:
 			case carl::VariableType::VT_REAL: return ExpressionType::THEORY;
+			case carl::VariableType::VT_UNINTERPRETED: return ExpressionType::UNINTERPRETED;
 			default:
 				return ExpressionType::THEORY;
 		}
@@ -342,6 +343,7 @@ struct SortParser : public qi::grammar<Iterator, Sort(), Skipper> {
 	}
 
 	Sort mkSort(const std::string& name) {
+		std::cout << "newSort(" << name << ")" << std::endl;
 		return newSort(name);
 	}
 	Sort mkSort(const std::string& name, const std::vector<Sort>& parameters) {

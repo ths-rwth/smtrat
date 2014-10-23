@@ -59,9 +59,24 @@ namespace smtrat
     {
         if (_domain == carl::VariableType::VT_BOOL) {
                 return newBooleanVariable(_name, _parsed);
-        } else {
+        } else if (_domain == carl::VariableType::VT_UNINTERPRETED) {
+			return newUninterpretedVariable(_name, _parsed);
+		} else {
                 return newArithmeticVariable(_name, _domain, _parsed);
         }
+    }
+	
+	carl::Variable VariablePool::newUninterpretedVariable( const string& _name, bool _parsed )
+    {
+        UNINTERPRETED_VAR_LOCK_GUARD
+        if( _parsed )
+        {
+            assert( !mExternalPrefixInitialized );
+            mParsedVarNames.push_back( _name );
+        }
+        carl::Variable result = carl::VariablePool::getInstance().getFreshVariable( carl::VariableType::VT_UNINTERPRETED );
+        carl::VariablePool::getInstance().setName( result, _name );
+        return result;
     }
 
     carl::Variable VariablePool::newArithmeticVariable( const string& _name, carl::VariableType _domain, bool _parsed )
@@ -105,6 +120,16 @@ namespace smtrat
         out << mExternalVarNamePrefix << _externalPrefix << mAuxiliaryBoolVarCounter++;
         BOOLEAN_VAR_UNLOCK
         return newBooleanVariable( out.str() );;
+    }
+	
+	carl::Variable VariablePool::newAuxiliaryUninterpretedVariable( const std::string& _externalPrefix )
+    {
+        stringstream out;
+        UNINTERPRETED_VAR_LOCK
+        if( !mExternalPrefixInitialized ) initExternalPrefix();
+        out << mExternalVarNamePrefix << _externalPrefix << mAuxiliaryUninterpretedVarCounter++;
+        UNINTERPRETED_VAR_UNLOCK
+        return newUninterpretedVariable( out.str() );;
     }
     
     void VariablePool::initExternalPrefix()
@@ -178,6 +203,11 @@ namespace smtrat
     {
         return VariablePool::getInstance().newAuxiliaryBooleanVariable();
     }
+	
+	carl::Variable newAuxiliaryUninterpretedVariable()
+    {
+        return VariablePool::getInstance().newAuxiliaryUninterpretedVariable();
+    }
 
 	carl::Variable newAuxiliaryVariable(carl::VariableType type)
 	{
@@ -185,6 +215,8 @@ namespace smtrat
 			case carl::VariableType::VT_REAL: return newAuxiliaryRealVariable();
 			case carl::VariableType::VT_INT: return newAuxiliaryIntVariable();
 			case carl::VariableType::VT_BOOL: return newAuxiliaryBooleanVariable();
+			default:
+				assert(false);
 		}
 		return newAuxiliaryBooleanVariable();
 	}

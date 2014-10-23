@@ -45,10 +45,14 @@ namespace smtrat
             unsigned mAuxiliaryRealVarCounter;
             /// A counter for the auxiliary integer valued variables.
             unsigned mAuxiliaryIntVarCounter;
+			/// A counter for the auxiliary uninterpreted variables.
+            unsigned mAuxiliaryUninterpretedVarCounter;
             /// Mutex to avoid multiple access to the map of arithmetic variables
             mutable std::mutex mMutexArithmeticVariables;
             /// Mutex to avoid multiple access to the set of Boolean variables
             mutable std::mutex mMutexBooleanVariables;
+			/// Mutex to avoid multiple access to the set of Uninterpreted variables
+            mutable std::mutex mMutexUninterpretedVariables;
             /// The external prefix for a variable.
             std::string mExternalVarNamePrefix;
             /// The map of external variable names to internal variable names.
@@ -65,6 +69,9 @@ namespace smtrat
             #define BOOLEAN_VAR_LOCK_GUARD std::lock_guard<std::mutex> lock3( mMutexBooleanVariables );
             #define BOOLEAN_VAR_LOCK mMutexBooleanVariables.lock();
             #define BOOLEAN_VAR_UNLOCK mMutexBooleanVariables.unlock();
+			#define UNINTERPRETED_VAR_LOCK_GUARD std::lock_guard<std::mutex> lock4( mMutexUninterpretedVariables );
+            #define UNINTERPRETED_VAR_LOCK mMutexUninterpretedVariables.lock();
+            #define UNINTERPRETED_VAR_UNLOCK mMutexUninterpretedVariables.unlock();
             #else
             #define ARITHMETIC_VAR_LOCK_GUARD
             #define ARITHMETIC_VAR_LOCK
@@ -72,6 +79,9 @@ namespace smtrat
             #define BOOLEAN_VAR_LOCK_GUARD
             #define BOOLEAN_VAR_LOCK
             #define BOOLEAN_VAR_UNLOCK
+			#define UNINTERPRETED_VAR_LOCK_GUARD
+            #define UNINTERPRETED_VAR_LOCK
+            #define UNINTERPRETED_VAR_UNLOCK
             #endif
 
         protected:
@@ -237,6 +247,8 @@ namespace smtrat
 			 */
 			carl::Variable newVariable( const std::string& _name, carl::VariableType _domain, bool _parsed = false );
 
+			carl::Variable newUninterpretedVariable( const std::string& _name, bool _parsed = false );
+			
             /**
              * Creates an arithmetic variable.
              * @param _name The external name of the variable to construct.
@@ -259,6 +271,8 @@ namespace smtrat
              * @return The internal name of the variable.
              */
             carl::Variable newAuxiliaryBooleanVariable( const std::string& _externalPrefix = "h_b" );
+			
+			carl::Variable newAuxiliaryUninterpretedVariable( const std::string& _externalPrefix = "h_b" );
             
             /**
              * Initializes the prefix of the external variable names of internally declared (not parsed) variables.
@@ -332,6 +346,8 @@ namespace smtrat
 	 * @return The identifier of a fresh Boolean variable.
 	 */
 	carl::Variable newAuxiliaryBooleanVariable();
+	
+	carl::Variable newAuxiliaryUninterpretedVariable();
 
 	/**
 	 * Generates a fresh variable of the given type.

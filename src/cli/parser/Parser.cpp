@@ -8,6 +8,7 @@
 #include "../../lib/ConstraintPool.h"
 #include "../../lib/Formula.h"
 #include "../../lib/UFInstancesManager.h"
+#include "../../lib/UFManager.h"
 #include "lib/FormulaPool.h"
 #include "carl/util/debug.h"
 
@@ -82,7 +83,10 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 	);
 	cmd.name("command");
 
-	uninterpreted = (qi::lit("(") >> funmap_uf >> fun_arguments >> qi::lit(")"))[qi::_val = px::bind(&SMTLIBParser::applyUninterpretedFunction, px::ref(*this), qi::_1, qi::_2)];
+	uninterpreted = (
+			(qi::lit("(") >> funmap_uf >> fun_arguments >> qi::lit(")"))[qi::_val = px::bind(&SMTLIBParser::applyUninterpretedFunction, px::ref(*this), qi::_1, qi::_2)]
+		|	var_uninterpreted
+	);
 	uninterpreted.name("uninterpreted function call");
 
 	formula = 
@@ -230,7 +234,10 @@ void SMTLIBParser::declareFun(const std::string& name, const std::vector<Sort>& 
 		break;
 	}
 	case ExpressionType::UNINTERPRETED: {
-		handler->error() << "Functions of uninterpreted type are not allowed!";
+		if (this->var_uninterpreted.sym.find(name) != nullptr) handler->warn() << "a variable of uninterpreted type with name '" << name << "' has already been defined.";
+		carl::Variable var = newVariable(name, carl::VariableType::VT_UNINTERPRETED);
+		this->var_uninterpreted.sym.add(name, newUFInstance(newUninterpretedVariable(name, sort), {UIVariable(var, sort)}));
+		callHandler(&InstructionHandler::declareFun, var);
 		break;
 	}
 	default:
@@ -596,7 +603,7 @@ UFInstance SMTLIBParser::applyUninterpretedFunction(const UninterpretedFunction&
 			vars.push_back(UIVariable(tmp));
 			mUninterpretedEqualities.insert(newFormula(newConstraint(*p - tmp, Relation::EQ)));
 		} else if (UFInstance* uf = boost::get<UFInstance>(&v)) {
-			carl::Variable tmp = newAuxiliaryRealVariable();
+			carl::Variable tmp = newAuxiliaryUninterpretedVariable();
 			vars.push_back(UIVariable(tmp));
 			mUninterpretedEqualities.insert(newFormula(std::move(UIEquality(vars.back(), *uf))));
 		}

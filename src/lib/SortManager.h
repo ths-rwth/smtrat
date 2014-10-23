@@ -243,6 +243,7 @@ class SortManager : public carl::Singleton<SortManager>
 		 */
 		const Sort& interpretedSort( carl::VariableType vt ) const
 		{
+			std::cout << "Looking for " << vt << " in " << mInterpretedSorts << std::endl;
 			auto it = mInterpretedSorts.find(vt);
 			assert(it != mInterpretedSorts.end());
 			return it->second;

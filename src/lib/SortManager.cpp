@@ -87,11 +87,16 @@ namespace smtrat
     
     bool SortManager::declare( const string& _name, unsigned _arity )
     {
+		std::cout << "Declaring " << _name << " with arity " << _arity << std::endl;
         if( mDeclarations.count( _name ) > 0 )
         {
             return false;
         }
         mDeclarations[_name] = _arity;
+		if (_arity == 0) {
+			SortContent* sc = new SortContent( _name );
+			newSort(sc);
+		}
         return true;
     }
 

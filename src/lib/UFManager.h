@@ -87,6 +87,11 @@ class UFContent
             mDomain( _domain ),
             mCodomain( _codomain )
         {}
+		
+		explicit UFContent( const std::string& _name, const Sort& _codomain ):
+            mName( _name ),
+            mCodomain( _codomain )
+        {}
 
         UFContent( const UFContent& ); // The copy constructor is disabled.
 
@@ -295,6 +300,11 @@ class UFManager : public carl::Singleton<UFManager>
             UFContent* result = new UFContent( _name, _domain, _codomain );
             return newUF( result );
         }
+        UninterpretedFunction newUninterpretedVariable( const std::string& _name, const Sort& _codomain )
+        {
+            UFContent* result = new UFContent( _name, _codomain );
+            return newUF( result );
+        }
 };
 
 /**
@@ -316,9 +326,13 @@ inline UninterpretedFunction newUninterpretedFunction( std::string&& _name, std:
  * @param _codomain The codomain of the uninterpreted function of the uninterpreted function to get.
  * @return The resulting uninterpreted function.
  */
-inline UninterpretedFunction newUFInstanceUninterpretedFunction( const std::string& _name, const std::vector<Sort>& _domain, const Sort& _codomain )
+inline UninterpretedFunction newUninterpretedFunction( const std::string& _name, const std::vector<Sort>& _domain, const Sort& _codomain )
 {
     return UFManager::getInstance().newUninterpretedFunction( _name, _domain, _codomain );
+}
+inline UninterpretedFunction newUninterpretedVariable(const std::string& _name, const Sort& _codomain )
+{
+    return UFManager::getInstance().newUninterpretedVariable( _name, _codomain );
 }
 
 }
