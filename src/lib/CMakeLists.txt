@@ -69,6 +69,8 @@ configure_file( ${CMAKE_SOURCE_DIR}/src/lib/solver/CompileInfo.cpp.in ${CMAKE_SO
 
 set(lib_datastructures_headers
         datastructures/Assignment.h
+        datastructures/SortValue.h
+        datastructures/SortValueManager.h
         datastructures/VariableBounds.h
 	datastructures/lra/Bound.h
 	datastructures/lra/Tableau.h
@@ -81,6 +83,8 @@ set(lib_datastructures_headers
 
 set(lib_datastructures_src
         datastructures/Assignment.cpp
+        datastructures/SortValue.cpp
+        datastructures/SortValueManager.cpp
         datastructures/lra/Bound.tpp
 	datastructures/lra/Numeric.cpp
 	datastructures/lra/Tableau.tpp
