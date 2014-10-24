@@ -300,11 +300,6 @@ class UFManager : public carl::Singleton<UFManager>
             UFContent* result = new UFContent( _name, _domain, _codomain );
             return newUF( result );
         }
-        UninterpretedFunction newUninterpretedVariable( const std::string& _name, const Sort& _codomain )
-        {
-            UFContent* result = new UFContent( _name, _codomain );
-            return newUF( result );
-        }
 };
 
 /**
@@ -329,10 +324,6 @@ inline UninterpretedFunction newUninterpretedFunction( std::string&& _name, std:
 inline UninterpretedFunction newUninterpretedFunction( const std::string& _name, const std::vector<Sort>& _domain, const Sort& _codomain )
 {
     return UFManager::getInstance().newUninterpretedFunction( _name, _domain, _codomain );
-}
-inline UninterpretedFunction newUninterpretedVariable(const std::string& _name, const Sort& _codomain )
-{
-    return UFManager::getInstance().newUninterpretedVariable( _name, _codomain );
 }
 
 }

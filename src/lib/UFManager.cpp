@@ -41,7 +41,7 @@ namespace smtrat
         {
             _out << " " << dom;
         }
-        _out << ")" << ufc.codomain();
+        _out << ") " << ufc.codomain();
         return _out;
     }
     
