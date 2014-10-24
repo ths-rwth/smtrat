@@ -25,6 +25,7 @@
  * @version 2014-10-24
  */
 
+#include "SortValue.h"
 #include "SortValueManager.h"
 
 using namespace std;

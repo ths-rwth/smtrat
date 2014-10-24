@@ -52,8 +52,6 @@ class SortValue
         Sort mSort;
         /// A unique id to identify this sort in the sort value manager.
         IDType mId;
-
-        SortValue() = delete; // Default constructor disabled.
         
         /**
          * Constructs a sort value.
@@ -65,6 +63,11 @@ class SortValue
         {}
 
     public:
+
+        SortValue():
+            mSort(),
+            mId( 0 )
+        {}
         
         /**
          * Constructs a sort value by copying the given sort value.
