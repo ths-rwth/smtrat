@@ -36,7 +36,7 @@ namespace smtrat
         assert( _uf.id() != 0 );
         assert( _uf.id() < mUFs.size() );
         const UFContent& ufc = *mUFs[_uf.id()];
-        _out << ufc.name() << " (";
+        _out << "(" << ufc.name();
         for( auto& dom : ufc.domain() )
         {
             _out << " " << dom;
