@@ -204,26 +204,23 @@ namespace smtrat
         
         /**
          * @return true, if this formula is a conjunction of constraints;
-         *          false, otherwise.
+         *         false, otherwise.
          */
         bool isConstraintConjunction() const
         {
             if( PROP_IS_PURE_CONJUNCTION <= mProperties )
-                return !(PROP_CONTAINS_BOOLEAN <= mProperties);
+                return !(PROP_CONTAINS_BOOLEAN <= mProperties) && !(PROP_CONTAINS_UNINTERPRETED_EQUATIONS <= mProperties);
             else
                 return false;
         }
 
         /**
          * @return true, if this formula is a conjunction of real constraints;
-         *          false, otherwise.
+         *         false, otherwise.
          */
         bool isRealConstraintConjunction() const
         {
-            if( PROP_IS_PURE_CONJUNCTION <= mProperties )
-                return (!(PROP_CONTAINS_INTEGER_VALUED_VARS <= mProperties) && !(PROP_CONTAINS_BOOLEAN <= mProperties));
-            else
-                return false;
+            return isConstraintConjunction() && !(PROP_CONTAINS_INTEGER_VALUED_VARS <= mProperties);
         }
 
         /**
@@ -232,10 +229,7 @@ namespace smtrat
          */
         bool isIntegerConstraintConjunction() const
         {
-            if( PROP_IS_PURE_CONJUNCTION <= mProperties )
-                return (!(PROP_CONTAINS_REAL_VALUED_VARS <= mProperties) && !(PROP_CONTAINS_BOOLEAN <= mProperties));
-            else
-                return false;
+            return isConstraintConjunction() && !(PROP_CONTAINS_REAL_VALUED_VARS <= mProperties);
         }
         
         /**
