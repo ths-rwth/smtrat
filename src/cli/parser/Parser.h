@@ -105,6 +105,7 @@ public:
 	qi::symbols<char, UninterpretedFunction> funmap_uf;
 	qi::rule<Iterator, Skipper, qi::locals<std::string, std::vector<carl::Variable>>> fun_definition;
 
+	rule<Argument> fun_argument;
 	rule<Arguments> fun_arguments;
 
 	// Commands	
@@ -138,7 +139,7 @@ protected:
 	void declareConst(const std::string&, const Sort&);
 	void declareFun(const std::string& name, const std::vector<Sort>& args, const Sort& sort);
 	void declareSort(const std::string&, const unsigned&);
-	void defineFun(const std::string&, const std::vector<carl::Variable>&, const Sort&, const boost::variant<const Formula*, Polynomial>&);
+	void defineFun(const std::string&, const std::vector<carl::Variable>&, const Sort&, const Argument&);
 	void defineSort(const std::string&, const std::vector<std::string>&, const Sort&);
 	void exit();
 	void getAssertions();
@@ -194,22 +195,21 @@ private:
 	std::stack<Scope> mScopeStack;
 
 	bool isSymbolFree(const std::string& name, bool output = true) {
-		if (output) {
-			if (name == "true" || name == "false") this->handler->error() << "'" << name << "' is a reserved keyword.";
-			else if (this->var_bool.sym.find(name) != nullptr) this->handler->error() << "'" << name << "' has already been defined as a boolean variable.";
-			else if (this->var_theory.sym.find(name) != nullptr) this->handler->error() << "'" << name << "' has already been defined as a theory variable.";
-			else if (this->bind_bool.sym.find(name) != nullptr) this->handler->error() << "'" << name << "' has already been defined as a boolean binding.";
-			else if (this->bind_theory.sym.find(name) != nullptr) this->handler->error() << "'" << name << "' has already been defined as a theory binding.";
-			else return true;
-			return false;
-		} else {
-			if (name == "true" || name == "false") return false;
-			else if (this->var_bool.sym.find(name) != nullptr) return false;
-			else if (this->var_theory.sym.find(name) != nullptr) return false;
-			else if (this->bind_bool.sym.find(name) != nullptr) return false;
-			else if (this->bind_theory.sym.find(name) != nullptr) return false;
-			else return true;
-		}
+		std::stringstream out;
+		if (name == "true" || name == "false") out << "'" << name << "' is a reserved keyword.";
+		else if (this->var_bool.sym.find(name) != nullptr) out << "'" << name << "' has already been defined as a boolean variable.";
+		else if (this->var_theory.sym.find(name) != nullptr) out << "'" << name << "' has already been defined as a theory variable.";
+		else if (this->var_uninterpreted.sym.find(name) != nullptr) out << "'" << name << "' has already been defined as an uninterpreted variable.";
+		else if (this->bind_bool.sym.find(name) != nullptr) out << "'" << name << "' has already been defined as a boolean binding.";
+		else if (this->bind_theory.sym.find(name) != nullptr) out << "'" << name << "' has already been defined as a theory binding.";
+		else if (this->funmap_bool.find(name) != nullptr) out << "'" << name << "' has already been defined as a boolean function.";
+		else if (this->funmap_theory.find(name) != nullptr) out << "'" << name << "' has already been defined as a theory funtion.";
+		else if (this->funmap_ufbool.find(name) != nullptr) out << "'" << name << "' has already been defined as an uninterpreted function of boolean return type.";
+		else if (this->funmap_uftheory.find(name) != nullptr) out << "'" << name << "' has already been defined as an uninterpreted function of theory return type.";
+		else if (this->funmap_uf.find(name) != nullptr) out << "'" << name << "' has already been defined as an uninterpreted function.";
+		else return true;
+		if (output) this->handler->error() << out.str();
+		return false;
 	}
 	
 	void pushScope() {

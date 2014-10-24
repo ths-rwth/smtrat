@@ -266,6 +266,8 @@ namespace smtrat
                     return (*this->mpQuantifierContent == *_formula.mpQuantifierContent);
                 case Type::FORALL:
                     return (*this->mpQuantifierContent == *_formula.mpQuantifierContent);
+				case Type::UEQ:
+					return (this->mUIEquality == _formula.mUIEquality);
                 default:
                     return (*mpSubformulas) == _formula.subformulas();
             }
@@ -754,6 +756,12 @@ namespace smtrat
             result += this->mpQuantifierContent->mpFormula->toString(_withActivity, _resolveUnequal, _init, _oneline, _infix, _friendlyNames);
             result += ")";
             return result;
+        }
+		else if( mType == UEQ )
+        {
+            std::stringstream ss;
+			ss << this->mUIEquality;
+			return ss.str();
         }
         assert( mType == AND || mType == OR || mType == IFF || mType == XOR );
         string stringOfType = FormulaTypeToString( mType );

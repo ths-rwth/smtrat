@@ -422,7 +422,7 @@ namespace smtrat
                                 case FFALSE:
                                     return CRef_Undef;
                                 default:
-                                    assert( subsubformula.getType() == CONSTRAINT || subsubformula.getType() == BOOL || _formula->getType() == UEQ );
+                                    assert( subsubformula.getType() == CONSTRAINT || subsubformula.getType() == BOOL || subsubformula.getType() == UEQ );
                                     clauseLits.push( getLiteral( subformula, _type == NORMAL_CLAUSE ? _formula : NULL ) );
                             }
                             break;
@@ -432,7 +432,7 @@ namespace smtrat
                         case FFALSE:
                             break;
                         default:
-                            assert( subformula->getType() == CONSTRAINT || subformula->getType() == BOOL || _formula->getType() == UEQ );
+                            assert( subformula->getType() == CONSTRAINT || subformula->getType() == BOOL || subformula->getType() == UEQ );
                             clauseLits.push( getLiteral( subformula, _type == NORMAL_CLAUSE ? _formula : NULL ) );
                             break;
                     }
@@ -451,7 +451,7 @@ namespace smtrat
                     case FFALSE:
                         return CRef_Undef;
                     default:
-                        assert( subformula.getType() == CONSTRAINT || subformula.getType() == BOOL || _formula->getType() == UEQ );
+                        assert( subformula.getType() == CONSTRAINT || subformula.getType() == BOOL || subformula.getType() == UEQ );
                         vec<Lit> learned_clause;
                         learned_clause.push( getLiteral( _formula, _type == NORMAL_CLAUSE ? _formula : NULL ) );
                         return addClause( learned_clause, _type ) ? (_type == NORMAL_CLAUSE ? clauses.last() : learnts.last() ) : CRef_Undef;
