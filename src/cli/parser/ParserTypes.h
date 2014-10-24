@@ -51,12 +51,13 @@ typedef boost::spirit::istream_iterator BaseIteratorType;
 typedef boost::spirit::line_pos_iterator<BaseIteratorType> PositionIteratorType;
 typedef PositionIteratorType Iterator;
 
-typedef boost::variant<const Formula*, Polynomial, UFInstance> Argument;
+
+typedef boost::variant<UFInstance, UIVariable> UninterpretedType;
+typedef boost::variant<const Formula*, Polynomial, UninterpretedType> Argument;
 typedef std::vector<Argument> Arguments;
 
 typedef std::tuple<std::string, std::vector<carl::Variable>, const Formula*> BooleanFunction;
 typedef std::tuple<std::string, std::vector<carl::Variable>, Polynomial> TheoryFunction;
-
 
 }
 }
