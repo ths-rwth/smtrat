@@ -689,7 +689,7 @@ namespace smtrat
         {
             assert( _abstr.constraint != NULL );
             _abstr.constraint->setDeducted( _abstr.isDeduction );
-            assert( _abstr.constraint->constraint().isConsistent() == 2 );
+            assert( _abstr.constraint->getType() == UEQ || _abstr.constraint->constraint().isConsistent() == 2 );
             auto res = addSubformulaToPassedFormula( _abstr.constraint, *_abstr.origins );
             _abstr.position = res.first;
             mChangedPassedFormula = true;
@@ -705,7 +705,7 @@ namespace smtrat
             if( assigns[k] != l_Undef )
             {
                 const Abstraction& abstr = assigns[k] == l_False ? mBooleanConstraintMap[k].second : mBooleanConstraintMap[k].first;
-                if( abstr.constraint != NULL && abstr.consistencyRelevant && abstr.constraint->constraint().isConsistent() != 1 ) 
+                if( abstr.constraint != NULL && abstr.consistencyRelevant && (abstr.constraint->getType() == UEQ || abstr.constraint->constraint().isConsistent() != 1)) 
                 {
                     if( !rPassedFormula().contains( abstr.constraint ) )
                     {
@@ -1169,7 +1169,7 @@ SetWatches:
             if( value( c[i] ) == l_True )
                 return true;
             const Formula* constraint = sign( c[i] ) ? mBooleanConstraintMap[var(c[i])].second.constraint : mBooleanConstraintMap[var(c[i])].first.constraint;
-            if( constraint != NULL && constraint->constraint().isConsistent() == 1 )
+            if( constraint != NULL && (constraint->getType() == UEQ || constraint->constraint().isConsistent() == 1))
                 return true;
         }
         return false;
@@ -1263,7 +1263,7 @@ SetWatches:
                     #ifdef DEBUG_SATMODULE
                     cout << "{ ";
                     for( ModuleInput::const_iterator subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
-                        cout << subformula->formula().constraint().toString() << " ";
+                        cout << subformula->formula() << " ";
                     cout << "}" << endl;
                     #endif
                     mChangedPassedFormula = false;
@@ -1751,7 +1751,7 @@ SetWatches:
         assert( value( p ) == l_Undef );
         assigns[var( p )] = lbool( !sign( p ) );
         Abstraction& abstr = sign( p ) ? mBooleanConstraintMap[var( p )].second : mBooleanConstraintMap[var( p )].first;
-        if( abstr.constraint != NULL && abstr.consistencyRelevant && abstr.constraint->constraint().isConsistent() != 1 ) 
+        if( abstr.constraint != NULL && abstr.consistencyRelevant && (abstr.constraint->getType() == UEQ || abstr.constraint->constraint().isConsistent() != 1)) 
         {
             if( ++abstr.updateInfo > 0 )
                 mChangedBooleans.push_back( var( p ) );
