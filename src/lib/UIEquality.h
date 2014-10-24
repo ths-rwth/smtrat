@@ -107,6 +107,16 @@ namespace smtrat
             
             UIEquality(); // No default constructor.
             
+			UIEquality( const Arg& _uvarA, const Arg& _uvarB ):
+				mLhs( _uvarA ),
+				mRhs( _uvarB )
+			{
+				if (lhsIsUV() && rhsIsUV()) assert( lhsAsUV().domain() == rhsAsUV().domain() );
+				else if (lhsIsUV() && rhsIsUF()) assert( lhsAsUV().domain() == rhsAsUF().uninterpretedFunction().codomain() );
+				else if (lhsIsUF() && rhsIsUV()) assert( lhsAsUF().uninterpretedFunction().codomain() == rhsAsUV().domain() );
+				else if (lhsIsUF() && rhsIsUF()) assert( lhsAsUF().uninterpretedFunction().codomain() == rhsAsUF().uninterpretedFunction().codomain() );
+			}
+
             /**
              * Constructs an uninterpreted equality.
              * @param _uvarA An uninterpreted variable, which is going to be the left-hand side of this uninterpreted equality.
