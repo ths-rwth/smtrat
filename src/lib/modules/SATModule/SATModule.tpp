@@ -1751,7 +1751,7 @@ SetWatches:
         assert( value( p ) == l_Undef );
         assigns[var( p )] = lbool( !sign( p ) );
         Abstraction& abstr = sign( p ) ? mBooleanConstraintMap[var( p )].second : mBooleanConstraintMap[var( p )].first;
-        if( abstr.constraint != NULL && abstr.consistencyRelevant && (abstr.constraint->getType() == UEQ || abstr.constraint->constraint().isConsistent() != 1)) 
+        if( abstr.constraint != NULL && abstr.consistencyRelevant && (abstr.constraint->getType() == UEQ || abstr.constraint->constraint().isConsistent() != 1)) 
         {
             if( ++abstr.updateInfo > 0 )
                 mChangedBooleans.push_back( var( p ) );
