@@ -236,7 +236,7 @@ void SMTLIBParser::declareFun(const std::string& name, const std::vector<Sort>& 
 	case ExpressionType::UNINTERPRETED: {
 		if (this->var_uninterpreted.sym.find(name) != nullptr) handler->warn() << "a variable of uninterpreted type with name '" << name << "' has already been defined.";
 		carl::Variable var = newVariable(name, carl::VariableType::VT_UNINTERPRETED);
-		this->var_uninterpreted.sym.add(name, newUFInstance(newUninterpretedVariable(name, sort), {UIVariable(var, sort)}));
+		this->var_uninterpreted.sym.add(name, UIVariable(var, sort));
 		callHandler(&InstructionHandler::declareFun, var);
 		break;
 	}

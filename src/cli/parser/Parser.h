@@ -62,7 +62,7 @@ public:
 	
 	DeclaredSymbolParser<carl::Variable> var_bool;
 	DeclaredSymbolParser<carl::Variable> var_theory;
-	DeclaredSymbolParser<UFInstance> var_uninterpreted;
+	DeclaredSymbolParser<UIVariable> var_uninterpreted;
 	
 	DeclaredSymbolParser<const Formula*> bind_bool;
 	DeclaredSymbolParser<Polynomial> bind_theory;
@@ -115,7 +115,7 @@ public:
 	rule<const Formula*> formula_op;
 	rule<PointerSet<Formula>> formula_list;
 
-	rule<UFInstance> uninterpreted;
+	rule<UninterpretedType> uninterpreted;
 
 	// Polynomial
 	rule<Polynomial> polynomial;
@@ -222,6 +222,7 @@ private:
 	const Formula* mkConstraint(const Polynomial&, const Polynomial&, Relation);
 	Polynomial mkIteInExpr(const Formula* _condition, Polynomial& _then, Polynomial& _else);
 	const Formula* mkFormula(Type _type, PointerSet<Formula>& _subformulas);
+	const Formula* mkUFEquality(const UninterpretedType& lhs, const UninterpretedType& rhs);
 	
 	carl::Variable addQuantifiedVariable(const std::string& _name, const boost::optional<carl::VariableType>& type);
 	carl::Variable addVariableBinding(const std::pair<std::string, Sort>&);
