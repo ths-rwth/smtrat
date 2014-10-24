@@ -87,7 +87,6 @@ namespace smtrat
     
     bool SortManager::declare( const string& _name, unsigned _arity )
     {
-		std::cout << "Declaring " << _name << " with arity " << _arity << std::endl;
         if( mDeclarations.count( _name ) > 0 )
         {
             return false;
