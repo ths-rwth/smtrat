@@ -257,8 +257,8 @@ namespace smtrat
     {
         return FormulaPool::getInstance().newFormula( _type, move(_subformulas) );
     }
-
-	const Formula* newEquality( const UFInstance& lhs, const UFInstance& rhs)
+	
+	const Formula* newEquality( const UIEquality::Arg& lhs, const UIEquality::Arg& rhs)
 	{
 		return FormulaPool::getInstance().newEquality(lhs, rhs);
 	}

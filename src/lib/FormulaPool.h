@@ -261,7 +261,7 @@ namespace smtrat
                 return createFormula( _type, std::move( _subformulas ) );
             }
 
-			const Formula* newEquality( const UFInstance& lhs, const UFInstance& rhs)
+			const Formula* newEquality( const UIEquality::Arg& lhs, const UIEquality::Arg& rhs)
 			{
 				return addFormulaToPool(new Formula(UIEquality(lhs, rhs)));
 			}
@@ -351,7 +351,7 @@ namespace smtrat
     
     const Formula* newFormula( Type _type, PointerSet<Formula>&& _subformulas );
 
-	const Formula* newEquality( const UFInstance& lhs, const UFInstance& rhs );
+	const Formula* newEquality( const UIEquality::Arg& lhs, const UIEquality::Arg& rhs );
 
 	const Formula* newFormula( UIEquality&& eq );
 }    // namespace smtrat
