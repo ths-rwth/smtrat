@@ -48,8 +48,12 @@ namespace smtrat
             Sort mDomain;
             
         public:
-            
-            UIVariable(); // No default constructor.
+			/**
+			 * Default constructor.
+			 * The resulting object will not be a valid variable, but a dummy object.
+             */
+            UIVariable(): mVar(carl::Variable::NO_VARIABLE) {
+			}
 
 			UIVariable( carl::Variable::Arg _var):
                 mVar( _var ),
