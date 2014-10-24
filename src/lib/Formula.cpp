@@ -757,6 +757,12 @@ namespace smtrat
             result += ")";
             return result;
         }
+		else if( mType == UEQ )
+        {
+            std::stringstream ss;
+			ss << this->mUIEquality;
+			return ss.str();
+        }
         assert( mType == AND || mType == OR || mType == IFF || mType == XOR );
         string stringOfType = FormulaTypeToString( mType );
         string result = _init + "(";
