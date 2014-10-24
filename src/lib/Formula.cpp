@@ -266,6 +266,8 @@ namespace smtrat
                     return (*this->mpQuantifierContent == *_formula.mpQuantifierContent);
                 case Type::FORALL:
                     return (*this->mpQuantifierContent == *_formula.mpQuantifierContent);
+				case Type::UEQ:
+					return (this->mUIEquality == _formula.mUIEquality);
                 default:
                     return (*mpSubformulas) == _formula.subformulas();
             }
