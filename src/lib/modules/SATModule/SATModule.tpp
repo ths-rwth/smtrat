@@ -502,15 +502,16 @@ namespace smtrat
         }
         else
         {
-            assert( content->getType() == CONSTRAINT );
+            assert( content->getType() == CONSTRAINT || content->getType() == UEQ );
             double act = fabs( _formula->activity() );
             bool preferredToTSolver = false; //(_formula.activity()<0)
             ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( _formula );
             if( constraintLiteralPair != mConstraintLiteralMap.end() )
             {
+                // Check whether the theory solver wants this literal to assigned as soon as possible.
                 if( act == numeric_limits<double>::infinity() )
                     activity[var(constraintLiteralPair->second.front())] = maxActivity() + 1;
-                // add the origin (if already the same formula is an origin, increment the counter)
+                // add the origin
                 auto& abstrPair = mBooleanConstraintMap[var(constraintLiteralPair->second.front())];
                 Abstraction& abstr = sign(constraintLiteralPair->second.front()) ? abstrPair.second : abstrPair.first;
                 if( _origin != NULL || !negated )
@@ -544,18 +545,26 @@ namespace smtrat
                 #endif
                 const Formula* constraint = NULL;
                 const Formula* invertedConstraint = NULL;
-                if( mVarReplacements.empty() )
+                if( content->getType() == CONSTRAINT )
+                {
+                    if( mVarReplacements.empty() )
+                    {
+                        constraint = content;
+                        const Constraint& cons = content->constraint();
+                        invertedConstraint = newFormula( newConstraint( cons.lhs(), Constraint::invertRelation( cons.relation() ) ) );
+                    }
+                    else
+                    {
+                        const Constraint& cons = content->constraint();
+                        Polynomial constraintLhs = cons.lhs().substitute( mVarReplacements );
+                        constraint = newFormula( newConstraint( constraintLhs, cons.relation() ) );
+                        invertedConstraint = newFormula( newConstraint( constraintLhs, Constraint::invertRelation( cons.relation() ) ) );
+                    }
+                }
+                else // content->getType() == UEQ
                 {
                     constraint = content;
-                    const Constraint& cons = content->constraint();
-                    invertedConstraint = newFormula( newConstraint( cons.lhs(), Constraint::invertRelation( cons.relation() ) ) );
-                }
-                else
-                {
-                    const Constraint& cons = content->constraint();
-                    Polynomial constraintLhs = cons.lhs().substitute( mVarReplacements );
-                    constraint = newFormula( newConstraint( constraintLhs, cons.relation() ) );
-                    invertedConstraint = newFormula( newConstraint( constraintLhs, Constraint::invertRelation( cons.relation() ) ) );
+                    invertedConstraint = negated ? _formula : newNegation( _formula );
                 }
                 Var constraintAbstraction = newVar( !preferredToTSolver, true, act );
                 // map the abstraction variable to the abstraction information for the constraint and it's negation
@@ -587,14 +596,20 @@ namespace smtrat
                 Lit litPositive = mkLit( constraintAbstraction, false );
                 vector<Lit> litsA;
                 litsA.push_back( litPositive );
-                mConstraintLiteralMap.insert( make_pair( newNegation( invertedConstraint ), litsA ) );
+                if( content->getType() == CONSTRAINT )
+                {
+                    mConstraintLiteralMap.insert( make_pair( newNegation( invertedConstraint ), litsA ) );
+                }
                 mConstraintLiteralMap.insert( make_pair( constraint, move( litsA ) ) );
                 Lit litNegative = mkLit( constraintAbstraction, true );
                 vector<Lit> litsB;
                 litsB.push_back( litNegative );
-                mConstraintLiteralMap.insert( make_pair( negated ? _formula : newNegation( constraint ), litsB ) );
+                if( content->getType() == CONSTRAINT )
+                {
+                    mConstraintLiteralMap.insert( make_pair( negated ? _formula : newNegation( constraint ), litsB ) );
+                }
                 mConstraintLiteralMap.insert( make_pair( invertedConstraint, move( litsB ) ) );
-                if( Settings::apply_valid_substitutions )
+                if( Settings::apply_valid_substitutions && content->getType() == CONSTRAINT )
                 {
                     // map each variable occurring in the constraint (and hence its negation) to both of these constraints
                     for( carl::Variable::Arg var : constraint->constraint().variables() )
@@ -2037,7 +2052,7 @@ NextClause:
         {
             if( assigns[i] == l_Undef ) continue;
             Abstraction& abstr = assigns[i] == l_True ? mBooleanConstraintMap[i].first : mBooleanConstraintMap[i].second;
-            if( abstr.constraint != NULL )
+            if( abstr.constraint != NULL && abstr.constraint->getType() == CONSTRAINT )
             {
                 const Constraint& constr = abstr.constraint->constraint();
                 unsigned constraintConsistency = constr.isConsistent();
@@ -2104,6 +2119,8 @@ NextClause:
     template<class Settings>
     void SATModule<Settings>::replaceConstraint( const Formula* _toReplace, const Formula* _replaceBy )
     {
+        assert( _toReplace->getType() == CONSTRAINT );
+        assert( _replaceBy->getType() == CONSTRAINT );
         auto consLitPair = mConstraintLiteralMap.find( _toReplace );
         bool negativeLiteral = sign( consLitPair->second.front() );
         assert( consLitPair != mConstraintLiteralMap.end() );
