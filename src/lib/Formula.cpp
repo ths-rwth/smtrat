@@ -931,6 +931,8 @@ namespace smtrat
         {
             case BOOL:
                 return this;
+            case UEQ:
+                return this;
             case CONSTRAINT:
             {
                 const Constraint* constraint = mpSubformula->pConstraint();
@@ -1185,6 +1187,11 @@ namespace smtrat
                     resultSubformulas.insert( currentFormula );
                     break;
                 }
+                case UEQ:
+                {
+                    resultSubformulas.insert( currentFormula );
+                    break;
+                }
                 case CONSTRAINT:
                 {   
                     if( _simplifyConstraintCombinations )
@@ -1317,6 +1324,9 @@ namespace smtrat
                         switch( currentSubformula->getType() )
                         {
                             case BOOL: // B -> B
+                                subsubformulas.insert( currentSubformula );
+                                break;
+                            case UEQ: // u -> u
                                 subsubformulas.insert( currentSubformula );
                                 break;
                             case TTRUE: // remove the entire considered disjunction and everything which has been created by considering it

@@ -225,10 +225,10 @@ namespace smtrat
             typedef Minisat::vec<std::pair<Abstraction,Abstraction>> BooleanConstraintMap;
             
             /// Maps the clauses in the received formula to the corresponding Minisat clause.
-            typedef std::map<const Formula*, Minisat::CRef > FormulaClauseMap;
+            typedef std::map<const Formula*, Minisat::CRef> FormulaClauseMap;
             
             /// A vector of vectors of literals representing a vector of clauses.
-            typedef std::vector< std::vector<Minisat::Lit> > ClauseVector;
+            typedef std::vector<std::vector<Minisat::Lit>> ClauseVector;
             
             /// A set of vectors of integer representing a set of clauses.
             typedef std::set<std::vector<int>> ClauseSet;

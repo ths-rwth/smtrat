@@ -1,21 +1,24 @@
 \chapter{Embedding of an \smtrat theory solver composition into an SMT solver}
 \label{chapter:embeddingats}
-In this section we show how to embed a composed theory solver according
-to Chapter~\ref{chapter:composingats}, e.g., the built-in theory 
+In this section we show how to embed a theory solver composed as explained
+in Chapter~\ref{chapter:composingats}, e.g., the built-in theory 
 solver \texttt{NRATSolver}, into an SMT solver in order to 
-extend its supported logics by NRA. Firstly, we explain how to
-create an NRA formula, which is used to inform the theory solver about the
+extend its supported logics by \SmtratLogic. Firstly, we explain how to
+create a \SmtratLogic formula, which is used to inform the theory solver about the
 constraints it has to check for consistency. Afterwards, we introduce the 
 interfaces of the class \managerClass, which form the interfaces of
 a theory solver composed by \smtrat.
 
-\section{Constructing an NRA formula}
-The class \formulaClass represents arbitrary NRA formulas, which are
+\section{Constructing a \SmtratLogic formula}
+The class \formulaClass represents arbitrary \SmtratLogic formulas, which are
 defined according to the following abstract grammar
 
 \[
 \begin{array}{rccccccccccccc}
   p &\quad ::=\quad & a & | & b & | & x & | & (p + p) & | & (p \cdot p) & | & (p^e) \\
+  v &\quad ::=\quad & u & | & x \\
+  s &\quad ::=\quad & f(v,\ldots,v) & | & u & | & x \\
+  e &\quad ::=\quad & s = s \\
   c &\quad ::=\quad & p = 0 & | & p < 0 & | & p \leq 0 & | & p > 0 & | & p \geq 0 & | & p \neq 0 \\
  \varphi &\quad ::=\quad & c & | & (\neg \varphi) & | &
  (\varphi\land\varphi) & | &
@@ -26,23 +29,42 @@ defined according to the following abstract grammar
 \end{array}
 \]
 
-where $a$ is a rational number, $e$ is a natural number greater one, $b$ is a Boolean  and $x$ is an inherently existential 
-quantified real-valued variable. We call $p$ a polynomial and use a \carl multivariate polynomial with \cln rationals to represent it. A constraint $c$
-has its own \Cpp class and their construction is managed by a pool in order to normalize them and identify
-equal constraints according to the normalization criteria. 
+where $a$ is a rational number, $e$ is a natural number greater one, $b$ is a \emph{Boolean variable} and the \emph{arithmetic variable} $x$ is an inherently existential quantified and either real- or integer-valued. We call $p$ a \emph{polynomial} and use a \carl multivariate polynomial with \cln rationals as coefficients to represent it. The \emph{uninterpreted function} $f$ is of a certain \emph{order} $o(f)$ and each of its $o(f)$ arguments are either an arithmetic variable or an \emph{uninterpreted variable} $u$, which is also inherently existential quantified, but has no domain specified. Than an \emph{uninterpreted equation} $e$ has either an uninterpreted function, an uninterpreted variable or an arithmetic variable as left-hand respectively right-hand side. A \emph{constraint} $c$ compares a polynomial to zero, using a \emph{relation symbol}. Furthermore, we keep constraints in a normalized representation to be able to differ them better.
 
 \subsection{Normalized constraints}
 A normalized constraint has the form
 \[a_1\overbrace{x_{1,1}^{e_{1,1}}\cdot\ldots\cdot x_{1,k_1}^{e_{1,k_1}}}^{m_1}+\ldots+a_n\overbrace{x_{n,1}^{e_{n,1}}\cdot\ldots\cdot x_{n,k_n}^{e_{n,k_n}}}^{m_n}\ + \ d\ \sim \ 0\]
-with $n\geq0$, the \emph{$i$th coefficient} $a_i$ being an integral number ($\neq 0$), $d$ being a integral number, $x_{i,j_i}$ being a real-valued variable and $e_{i,j_i}$ being a natural number greater zero (for all $1\leq i\leq n$ and $1\leq j_i\leq k_i$). Furthermore, it holds that
+with $n\geq0$, the \emph{$i$th coefficient} $a_i$ being an integral number ($\neq 0$), $d$ being a integral number, $x_{i,j_i}$ being a real- or integer-valued variable and $e_{i,j_i}$ being a natural number greater zero (for all $1\leq i\leq n$ and $1\leq j_i\leq k_i$). Furthermore, it holds that
 $x_{i,j_i}\neq x_{i,l_i}$ if $j_i\neq l_i$ (for all $1\leq i\leq n$ and $1\leq j_i, l_i\leq k_i$) and $m_{i_1}\neq m_{i_2}$ if $i_1\neq i_2$ (for all $1\leq i_1,i_2\leq n$). If $n$ is $0$ then $d$ is $0$ and $\sim$ is either $=$ or $<$. In the former case we have the normalized representation of any variable-free consistent constraint, which semantically equals \true, and in the latter case we have the normalized representation of any variable-free inconsistent constraint, which semantically equals \false. Note that the monomials and the variables in them are ordered according the XXX variable order of \carl.
-Moreover, the first coefficient of normalized constraint (with respect to this order) is always positive and the greatest common divisor of $a_1,\ldots,\ a_n,\ d$ is $1$.
+Moreover, the first coefficient of a normalized constraint (with respect to this order) is always positive and the greatest common divisor of $a_1,\ldots,\ a_n,\ d$ is $1$. If all variable are integer valued the constraint is further simplified to
+\[\frac{a_1}{g}\cdot m_1\ +\ \ldots\ +\ \frac{a_n}{g}\cdot m_n\ + \ d'\  \sim \ 0,\]
+where $g$ is the greatest common divisor of $a_1,\ldots,\ a_n$, 
+\[\sim'=\left\{
+\begin{array}{ll}
+\leq, &\text{ if }\sim\text{ is }< \\
+\geq, &\text{ if }\sim\text{ is }> \\
+\sim, &\text{ otherwise }
+\end{array}
+\right.\]
+and
+\[
+d' = \left\{
+\begin{array}{ll}
+\lceil\frac{d}{g}\rceil &\text{ if }\sim'\text{ is }\leq \\[1.5ex]
+\lfloor\frac{d}{g}\rfloor &\text{ if }\sim'\text{ is }\geq \\[1.5ex]
+\frac{d}{g} &\text{ otherwise }
+\end{array}
+\right.\]
+If additionally $\frac{d}{g}$ is not integral and $\sim'$ is $=$, the constraint is simplified $0<0$, or if $\sim'$ is $\neq$,
+the constraint is simplified $0=0$.
 
 We do some further simplifactions, such as the elimination of multiple roots of the left-hand sides in equations and inequalities with the relation symbol $\neq$, e.g., $x^3=0$ is simplified to $x=0$. We also simplify constraints whose left-hand sides are obviously positive (semi)/negative (semi) definite, e.g., $x^2\leq 0$ is simplified to $x^2=0$, which again can be simplified to $x=0$ according to the first simplification rule.
 
 \subsection{Boolean combinations of constraints and Boolean variables}
-The \texttt{Formula} class can be constructed with a constraint as argument, which leads to a formula wrapping a constraint only. Furthermore, we can construct a formula representing a Boolean by passing its name as argument. A Boolean combinations of constraints and Boolean variables consists of a Boolean operator and the sub-formulas it interconnects. They are built by firstly constructing a formula with the according operator as argument and then adding the formulas which are the according operands. The \texttt{Formula} class provides the beforementioned constructors and interfaces to manipulate it. We give a small example constructing the formula \[(\neg b\ \land\ x^2-y<0\ \land\ 4x+y-8y^2=0 )\ \rightarrow\ (\neg(x^2-y<0)\ \lor\ b )\]
-, with the Boolean variable $b$ and the real-valued variables $x$ and $y$, for demonstration. Firstly, we create the real valued variables and the Boolean variable.
+A formula is stored as a directed acyclic graph, where the intermediate nodes represent the Boolean operations on the sub-formulas represented by the successors of this node. The leaves (nodes without successor) contain either a Boolean variable or a constraint. Note that equal formulas, that is formulas being leaves and containing the same element or formulas representing the same operation on the same sub-formulas are stored once and are therefore physically the same objects.
+
+Formulas can be constructed with a constraint as argument, which leads to a formula wrapping a constraint only. Furthermore, we can construct a formula representing a Boolean by passing it as argument. A Boolean combinations of constraints and Boolean variables consists of a Boolean operator and the sub-formulas it interconnects. They are built by firstly opening a set of formulas and inserting all sub-formulas to be. Note that this set will constructing a formula with the according operator as argument and then adding the formulas which are the according operands. The \texttt{Formula} class provides the beforementioned constructors and interfaces to manipulate it. We give a small example constructing the formula \[(\neg b\ \land\ x^2-y<0\ \land\ 4x+y-8y^2=0 )\ \rightarrow\ (\neg(x^2-y<0)\ \lor\ b ),\]
+with the Boolean variable $b$ and the real-valued variables $x$ and $y$, for demonstration. Firstly, we create the real valued variables and the Boolean variable.
 \scriptsize
 \begin{verbatim}
 carl::Variable x = smtrat::newArithmeticVariable( "x", carl::VariableType::VT_REAL );
@@ -59,43 +81,34 @@ smtrat::Polynomial lhsA = px.pow(2) - py;
 smtrat::Polynomial lhsB = smtrat::Rational(4) * px + py - smtrat::Rational(8) * py.pow(7);
 \end{verbatim}
 \normalsize
-Then 
+Then construct the constraints.
 \scriptsize
 \begin{verbatim}
-smtrat::Polynomial px( x );
-smtrat::Polynomial py( y );
-smtrat::Polynomial lhsA = px.pow(2) - py;
-smtrat::Polynomial lhsB = smtrat::Rational(4) * px + py - smtrat::Rational(8) * py.pow(7);
+const smtrat::Constraint* constraintA = smtrat::newConstraint( lhsA, smtrat::Relation::LESS );
+const smtrat::Constraint* constraintB = smtrat::newConstraint( lhsB, smtrat::Relation::EQ );
 \end{verbatim}
 \normalsize
 Now, we can construct the atoms of the Boolean formula
 \scriptsize
 \begin{verbatim}
-const std::string* b = smtrat::Formula::newBooleanVariable( "b" );
-smtrat::Formula* atomA = new smtrat::newFormula( constraintA );
-smtrat::Formula* atomB = new smtrat::newFormula( constraintB );
-smtrat::Formula* atomC = new smtrat::newFormula( b );
-smtrat::Formula* atomD = new smtrat::newFormula( constraintA );
-smtrat::Formula* atomE = new smtrat::newFormula( b );
+const smtrat::Formula* atomA = smtrat::newFormula( constraintA );
+const smtrat::Formula* atomB = smtrat::newFormula( constraintB );
+const smtrat::Formula* atomC = smtrat::newBoolean( b );
 \end{verbatim}
 \normalsize
 and the formula itself:
 \scriptsize
 \begin{verbatim}
-smtrat::Formula* phiA = new smtrat::Formula( smtrat::AND );
-smtrat::Formula* phiB = new smtrat::Formula( smtrat::NOT );
-phiB->addSubformula( atomC );
-phiA->addSubformula( phiB );
-phiA->addSubformula( atomA );
-phiA->addSubformula( atomB );
-smtrat::Formula* phiC = new smtrat::Formula( smtrat::OR );
-smtrat::Formula* phiD = new smtrat::Formula( smtrat::NOT );
-phiD->addSubformula( atomD );
-phiC->addSubformula( phiD );
-phiC->addSubformula( atomE );
-smtrat::Formula* phiE = new smtrat::Formula( smtrat::IMPLIES );
-phiE->addSubformula( phiA );
-phiE->addSubformula( phiC );
+smtrat::PointerSet<smtrat::Formula> subformulasA;
+subformulasA.insert( smtrat::newNegation( atomC ) );
+subformulasA.insert( atomA );
+subformulasA.insert( atomB );
+const smtrat::Formula* phiA = smtrat::newFormula( smtrat::AND, subformulasA );
+smtrat::PointerSet<smtrat::Formula> subformulasB;
+subformulasB.insert( smtrat::newNegation( atomA ) );
+subformulasB.insert( atomC );
+const smtrat::Formula* phiC = smtrat::newFormula( smtrat::OR, subformulasB );
+const smtrat::Formula* phiE = smtrat::newImplication( phiA, phiC );
 \end{verbatim}
 \normalsize
 Note, that $\land$ and $\lor$ are $n$-ary constructors, $\neg$ is a unary constructor and all the other Boolean operators are binary.
