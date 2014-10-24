@@ -258,13 +258,13 @@ namespace smtrat
         return FormulaPool::getInstance().newFormula( _type, move(_subformulas) );
     }
 	
-	const Formula* newEquality( const UIEquality::Arg& lhs, const UIEquality::Arg& rhs)
-	{
-		return FormulaPool::getInstance().newEquality(lhs, rhs);
-	}
+    const Formula* newEquality( const UEquality::Arg& _lhs, const UEquality::Arg& _rhs, bool _negated )
+    {
+        return FormulaPool::getInstance().newEquality( _lhs, _rhs, _negated );
+    }
 
-	const Formula* newFormula( UIEquality&& eq)
-	{
-		return FormulaPool::getInstance().newFormula(std::move(eq));
-	}
+    const Formula* newFormula( UEquality&& eq )
+    {
+        return FormulaPool::getInstance().newFormula( std::move( eq ) );
+    }
 }    // namespace smtrat

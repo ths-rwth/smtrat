@@ -43,7 +43,8 @@ set(lib_core_headers
     smtrat.h
     Sort.h
     SortManager.h
-    UninterpretedEquality.h
+    UEquality.h
+    UVariable.h
     UninterpretedFunction.h
     UFInstance.h
     UFInstancesManager.h

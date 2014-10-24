@@ -30,7 +30,7 @@
 #include <iostream>
 #include <utility>
 #include <vector>
-#include "UIVariable.h"
+#include "UVariable.h"
 #include "UninterpretedFunction.h"
 
 namespace smtrat
@@ -91,7 +91,7 @@ namespace smtrat
             /**
              * @return The arguments of this uninterpreted function instance.
              */
-            const std::vector<UIVariable>& args() const;
+            const std::vector<UVariable>& args() const;
             
             /**
              * @param _ufun The uninterpreted function instance to compare with.

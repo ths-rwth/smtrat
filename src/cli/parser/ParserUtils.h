@@ -50,7 +50,7 @@ std::ostream& operator<<(std::ostream& os, const qi::symbols<char, T>& sym) {
 struct TypeOfTerm : public boost::static_visitor<ExpressionType> {
 	ExpressionType operator()(const Formula*) const { return ExpressionType::BOOLEAN; }
 	ExpressionType operator()(const UFInstance&) const { return ExpressionType::UNINTERPRETED; }
-	ExpressionType operator()(const UIVariable&) const { return ExpressionType::UNINTERPRETED; }
+	ExpressionType operator()(const UVariable&) const { return ExpressionType::UNINTERPRETED; }
 	ExpressionType operator()(const UninterpretedType&) const { return ExpressionType::UNINTERPRETED; }
 	ExpressionType operator()(const Polynomial&) const { return ExpressionType::THEORY; }
 	ExpressionType operator()(const carl::Variable& v) const { return (*this)(v.getType()); }

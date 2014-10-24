@@ -37,7 +37,7 @@
 #include <boost/dynamic_bitset.hpp>
 #include "Condition.h"
 #include "Constraint.h"
-#include "UIEquality.h"
+#include "UEquality.h"
 
 namespace smtrat
 {
@@ -164,7 +164,7 @@ namespace smtrat
                 /// The Boolean variable, in case this formula wraps a Boolean variable.
                 carl::Variable mBoolean;
                 /// The uninterpreted equality, in case this formula wraps an uninterpreted equality.
-                UIEquality mUIEquality;
+                UEquality mUIEquality;
             };
             /// The propositions of this formula.
             Condition mProperties;
@@ -193,7 +193,7 @@ namespace smtrat
              * Constructs a formula being an uninterpreted equality.
              * @param _ueq The pointer to the constraint.
              */
-            Formula( UIEquality&& _ueq );
+            Formula( UEquality&& _ueq );
             
             /**
              * Constructs the negation of the given formula: (not _subformula)
@@ -542,7 +542,7 @@ namespace smtrat
              * @return A constant reference to the uninterpreted equality represented by this formula. Note, that
              *          this formula has to be of type UEQ, if you invoke this method.
              */
-            const UIEquality& uequality() const
+            const UEquality& uequality() const
             {
                 assert( mType == UEQ );
                 return mUIEquality;

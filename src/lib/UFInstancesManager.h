@@ -40,7 +40,7 @@
 #include "Common.h"
 #include "Sort.h"
 #include "UFInstance.h"
-#include "UIVariable.h"
+#include "UVariable.h"
 
 namespace smtrat
 {
@@ -59,7 +59,7 @@ class UFInstanceContent
         /// The underlying uninterpreted function of theinstance.
         UninterpretedFunction mUninterpretedFunction;
         /// The uninterpreted function instance's arguments.
-        std::vector<UIVariable> mArgs;
+        std::vector<UVariable> mArgs;
 
         UFInstanceContent(); // The default constructor is disabled.
 
@@ -68,7 +68,7 @@ class UFInstanceContent
          * @param _uf The underlying function of the uninterpreted function instance to construct.
          * @param _args The arguments of the uninterpreted function instance to construct.
          */
-        explicit UFInstanceContent( const UninterpretedFunction& _uf, std::vector<UIVariable>&& _args ):
+        explicit UFInstanceContent( const UninterpretedFunction& _uf, std::vector<UVariable>&& _args ):
             mUninterpretedFunction( _uf ),
             mArgs( std::move( _args ) )
         {}
@@ -78,7 +78,7 @@ class UFInstanceContent
          * @param _uf The underlying function of the uninterpreted function instance to construct.
          * @param _args The arguments of the uninterpreted function instance to construct.
          */
-        explicit UFInstanceContent( const UninterpretedFunction& _uf, const std::vector<UIVariable>& _args ):
+        explicit UFInstanceContent( const UninterpretedFunction& _uf, const std::vector<UVariable>& _args ):
             mUninterpretedFunction( _uf ),
             mArgs( _args )
         {}
@@ -98,7 +98,7 @@ class UFInstanceContent
         /**
          * @return The arguments of the uninterpreted function instance.
          */
-        const std::vector<UIVariable>& args() const
+        const std::vector<UVariable>& args() const
         {
             return mArgs;
         }
@@ -159,7 +159,7 @@ public:
      */
     size_t operator()( const smtrat::UFInstanceContent& _ufun ) const 
     {
-        hash<smtrat::UIVariable> h;
+        hash<smtrat::UVariable> h;
         size_t result = hash<smtrat::UninterpretedFunction>()( _ufun.uninterpretedFunction() );
         for( auto& arg : _ufun.args() )
         {
@@ -227,7 +227,7 @@ class UFInstancesManager : public carl::Singleton<UFInstancesManager>
          * @param _ufi An uninterpreted function instance.
          * @return The arguments of the given uninterpreted function instance.
          */
-        const std::vector<UIVariable>& getArgs( const UFInstance& _ufi ) const
+        const std::vector<UVariable>& getArgs( const UFInstance& _ufi ) const
         {
             assert( _ufi.id() != 0 );
             assert( _ufi.id() < mUFInstances.size() );
@@ -248,7 +248,7 @@ class UFInstancesManager : public carl::Singleton<UFInstancesManager>
          * @param _args The arguments of the uninterpreted function instance to get.
          * @return The resulting uninterpreted function instance.
          */
-        UFInstance newUFInstance( const UninterpretedFunction& _uf, std::vector<UIVariable>&& _args )
+        UFInstance newUFInstance( const UninterpretedFunction& _uf, std::vector<UVariable>&& _args )
         {
             UFInstanceContent* result = new UFInstanceContent( _uf, std::move( _args ) );
             assert( argsCorrect( *result ) );
@@ -261,7 +261,7 @@ class UFInstancesManager : public carl::Singleton<UFInstancesManager>
          * @param _args The arguments of the uninterpreted function instance to get.
          * @return The resulting uninterpreted function instance.
          */
-        UFInstance newUFInstance( const UninterpretedFunction& _uf, const std::vector<UIVariable>& _args )
+        UFInstance newUFInstance( const UninterpretedFunction& _uf, const std::vector<UVariable>& _args )
         {
             UFInstanceContent* result = new UFInstanceContent( _uf, _args );
             assert( argsCorrect( *result ) );
@@ -280,7 +280,7 @@ class UFInstancesManager : public carl::Singleton<UFInstancesManager>
  * @param _args The arguments of the uninterpreted function instance to get.
  * @return The resulting uninterpreted function instance.
  */
-inline UFInstance newUFInstance( const UninterpretedFunction& _uf, std::vector<UIVariable>&& _args )
+inline UFInstance newUFInstance( const UninterpretedFunction& _uf, std::vector<UVariable>&& _args )
 {
     return UFInstancesManager::getInstance().newUFInstance( _uf, std::move( _args ) );
 }
@@ -291,7 +291,7 @@ inline UFInstance newUFInstance( const UninterpretedFunction& _uf, std::vector<U
  * @param _args The arguments of the uninterpreted function instance to get.
  * @return The resulting uninterpreted function instance.
  */
-inline UFInstance newUFInstance( const UninterpretedFunction& _uf, const std::vector<UIVariable>& _args )
+inline UFInstance newUFInstance( const UninterpretedFunction& _uf, const std::vector<UVariable>& _args )
 {
     return UFInstancesManager::getInstance().newUFInstance( _uf, _args );
 }

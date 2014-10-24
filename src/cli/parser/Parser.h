@@ -62,7 +62,7 @@ public:
 	
 	DeclaredSymbolParser<carl::Variable> var_bool;
 	DeclaredSymbolParser<carl::Variable> var_theory;
-	DeclaredSymbolParser<UIVariable> var_uninterpreted;
+	DeclaredSymbolParser<UVariable> var_uninterpreted;
 	
 	DeclaredSymbolParser<const Formula*> bind_bool;
 	DeclaredSymbolParser<Polynomial> bind_theory;

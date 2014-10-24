@@ -261,14 +261,14 @@ namespace smtrat
                 return createFormula( _type, std::move( _subformulas ) );
             }
 
-			const Formula* newEquality( const UIEquality::Arg& lhs, const UIEquality::Arg& rhs)
+			const Formula* newEquality( const UEquality::Arg& _lhs, const UEquality::Arg& _rhs, bool _negated )
 			{
-				return addFormulaToPool(new Formula(UIEquality(lhs, rhs)));
+				return addFormulaToPool( new Formula( UEquality( _lhs, _rhs, _negated ) ) );
 			}
 
-			const Formula* newFormula( UIEquality&& eq)
+			const Formula* newFormula( UEquality&& eq )
 			{
-				return addFormulaToPool(new Formula(std::move(eq)));
+				return addFormulaToPool( new Formula( std::move( eq ) ) );
 			}
             
             template<typename ArgType>
@@ -351,7 +351,7 @@ namespace smtrat
     
     const Formula* newFormula( Type _type, PointerSet<Formula>&& _subformulas );
 
-	const Formula* newEquality( const UIEquality::Arg& lhs, const UIEquality::Arg& rhs );
+	const Formula* newEquality( const UEquality::Arg& _lhs, const UEquality::Arg& _rhs, bool _negated );
 
-	const Formula* newFormula( UIEquality&& eq );
+	const Formula* newFormula( UEquality&& eq );
 }    // namespace smtrat

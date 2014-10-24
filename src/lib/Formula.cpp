@@ -85,9 +85,9 @@ namespace smtrat
         }
     }
 
-    Formula::Formula( UIEquality&& _ueq ):
+    Formula::Formula( UEquality&& _ueq ):
         mDeducted( false ),
-        mHash( std::hash<UIEquality>()( _ueq ) ),
+        mHash( std::hash<UEquality>()( _ueq ) ),
         mId( 0 ),
         mActivity( 0 ),
         mDifficulty( 0 ),
@@ -940,7 +940,13 @@ namespace smtrat
             case BOOL:
                 return this;
             case UEQ:
-                return this;
+                if( _keepConstraint )
+                    return this;
+                else
+                {
+                    const UEquality& ueq = mpSubformula->uequality();
+                    return newEquality( ueq.lhs(), ueq.rhs(), !ueq.negated() );
+                }
             case CONSTRAINT:
             {
                 const Constraint* constraint = mpSubformula->pConstraint();

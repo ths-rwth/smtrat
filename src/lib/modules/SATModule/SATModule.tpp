@@ -564,7 +564,8 @@ namespace smtrat
                 else // content->getType() == UEQ
                 {
                     constraint = content;
-                    invertedConstraint = negated ? _formula : newNegation( _formula );
+                    const UEquality& ueq = content->uequality();
+                    invertedConstraint = newEquality( ueq.lhs(), ueq.rhs(), !ueq.negated() );
                 }
                 Var constraintAbstraction = newVar( !preferredToTSolver, true, act );
                 // map the abstraction variable to the abstraction information for the constraint and it's negation
@@ -596,18 +597,12 @@ namespace smtrat
                 Lit litPositive = mkLit( constraintAbstraction, false );
                 vector<Lit> litsA;
                 litsA.push_back( litPositive );
-                if( content->getType() == CONSTRAINT )
-                {
-                    mConstraintLiteralMap.insert( make_pair( newNegation( invertedConstraint ), litsA ) );
-                }
+                mConstraintLiteralMap.insert( make_pair( newNegation( invertedConstraint ), litsA ) );
                 mConstraintLiteralMap.insert( make_pair( constraint, move( litsA ) ) );
                 Lit litNegative = mkLit( constraintAbstraction, true );
                 vector<Lit> litsB;
                 litsB.push_back( litNegative );
-                if( content->getType() == CONSTRAINT )
-                {
-                    mConstraintLiteralMap.insert( make_pair( negated ? _formula : newNegation( constraint ), litsB ) );
-                }
+                mConstraintLiteralMap.insert( make_pair( negated ? _formula : newNegation( constraint ), litsB ) );
                 mConstraintLiteralMap.insert( make_pair( invertedConstraint, move( litsB ) ) );
                 if( Settings::apply_valid_substitutions && content->getType() == CONSTRAINT )
                 {

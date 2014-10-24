@@ -37,7 +37,7 @@ namespace smtrat
        return UFInstancesManager::getInstance().getUninterpretedFunction( *this );
     }
 
-    const vector<UIVariable>& UFInstance::args() const
+    const vector<UVariable>& UFInstance::args() const
     {
        return UFInstancesManager::getInstance().getArgs( *this );
     }

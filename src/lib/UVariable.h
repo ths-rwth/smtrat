@@ -19,7 +19,7 @@
  *
  */
 /**
- * @file UIVariable.h
+ * @file UVariable.h
  * @author Florian Corzilius
  * @since 2014-10-20
  * @version 2014-10-22
@@ -36,7 +36,7 @@ namespace smtrat
     /**
      * Implements an uninterpreted variable.
      */
-    class UIVariable
+    class UVariable
     {
         private:
             
@@ -52,10 +52,10 @@ namespace smtrat
 			 * Default constructor.
 			 * The resulting object will not be a valid variable, but a dummy object.
              */
-            UIVariable(): mVar(carl::Variable::NO_VARIABLE) {
+            UVariable(): mVar(carl::Variable::NO_VARIABLE) {
 			}
 
-			UIVariable( carl::Variable::Arg _var):
+			UVariable( carl::Variable::Arg _var):
                 mVar( _var ),
 				mDomain( SortManager::getInstance().interpretedSort(_var.getType()) )
             {
@@ -66,7 +66,7 @@ namespace smtrat
              * @param _var The carl::variable of the uninterpreted variable to construct.
              * @param _domain The domain of the uninterpreted variable to construct.
              */
-            UIVariable( carl::Variable::Arg _var, Sort _domain ):
+            UVariable( carl::Variable::Arg _var, Sort _domain ):
                 mVar( _var ),
                 mDomain( _domain )
             {}
@@ -91,7 +91,7 @@ namespace smtrat
              * @param _uvar The uninterpreted variable to compare with.
              * @return true, if this and the given uninterpreted variable are equal.
              */
-            bool operator==( const UIVariable& _uvar ) const
+            bool operator==( const UVariable& _uvar ) const
             {
                 return mVar == _uvar();
             }
@@ -100,7 +100,7 @@ namespace smtrat
              * @param _uvar The uninterpreted variable to compare with.
              * @return true, if this uninterpreted variable is less than the given one.
              */
-            bool operator<( const UIVariable& _uvar ) const
+            bool operator<( const UVariable& _uvar ) const
             {
                 return mVar < _uvar();
             }
@@ -111,7 +111,7 @@ namespace smtrat
              * @param _uvar The uninterpreted variable to print.
              * @return The output stream after printing the given uninterpreted variable on it.
              */
-            friend std::ostream& operator<<( std::ostream& _os, const UIVariable& _uvar )
+            friend std::ostream& operator<<( std::ostream& _os, const UVariable& _uvar )
             {
                 return (_os << _uvar());
             }
@@ -124,14 +124,14 @@ namespace std
      * Implements std::hash for uninterpreted variables.
      */
     template<>
-    struct hash<smtrat::UIVariable>
+    struct hash<smtrat::UVariable>
     {
     public:
         /**
          * @param _uvar The uninterpreted variable to get the hash for.
          * @return The hash of the given uninterpreted variable.
          */
-        size_t operator()( const smtrat::UIVariable& _uvar ) const 
+        size_t operator()( const smtrat::UVariable& _uvar ) const 
         {
             return hash<carl::Variable>()( _uvar() ) ;
         }

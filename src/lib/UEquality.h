@@ -19,7 +19,7 @@
  *
  */
 /**
- * @file UIEquality.h
+ * @file UEquality.h
  * @author Gereon Kremer <gereon.kremer@cs.rwth-aachen.de>
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  * @since 2014-10-20
@@ -29,7 +29,7 @@
 #pragma once
 
 #include <boost/variant.hpp>
-#include "UIVariable.h"
+#include "UVariable.h"
 #include "UFInstance.h"
 
 namespace smtrat
@@ -40,11 +40,11 @@ namespace smtrat
      *     two uninterpreted variables,
      *     or an uninterpreted function instance and an uninterpreted variable. 
      */
-    class UIEquality
+    class UEquality
     {
         public:
             /// The type of the left and right-hand side of an uninterpreted equality.
-            typedef boost::variant<UIVariable, UFInstance> Arg;
+            typedef boost::variant<UVariable, UFInstance> Arg;
 
         private:
 
@@ -57,7 +57,7 @@ namespace smtrat
                  * @param An uninterpreted variable.
                  * @return true
                  */
-                bool operator()(const UIVariable&) const
+                bool operator()(const UVariable&) const
                 {
                     return true;
                 }
@@ -81,7 +81,7 @@ namespace smtrat
                  * @param An uninterpreted variable.
                  * @return false
                  */
-                bool operator()(const UIVariable&) const
+                bool operator()(const UVariable&) const
                 {
                     return true;
                 }
@@ -98,6 +98,8 @@ namespace smtrat
 
             // Member.
 
+            /// A flag indicating whether this equality shall hold (if being false) or its negation (if being true), hence the inequality, shall hold.
+            bool mNegated;
             /// The left-hand side of this uninterpreted equality.
             Arg mLhs;
             /// The right-hand side of this uninterpreted equality.
@@ -105,9 +107,16 @@ namespace smtrat
 
         public:
             
-            UIEquality(); // No default constructor.
+            UEquality(); // No default constructor.
             
-			UIEquality( const Arg& _uvarA, const Arg& _uvarB ):
+			/**
+             * Constructs an uninterpreted equality.
+             * @param _negated true, if the negation of this equality shall hold, which means that it is actually an inequality.
+             * @param _uvarA An uninterpreted variable, which is going to be the left-hand side of this uninterpreted equality.
+             * @param _uvarB An uninterpreted variable, which is going to be the right-hand side of this uninterpreted equality.
+             */
+            UEquality( const Arg& _uvarA, const Arg& _uvarB, bool _negated ):
+                mNegated( _negated ),
 				mLhs( _uvarA ),
 				mRhs( _uvarB )
 			{
@@ -119,10 +128,12 @@ namespace smtrat
 
             /**
              * Constructs an uninterpreted equality.
+             * @param _negated true, if the negation of this equality shall hold, which means that it is actually an inequality.
              * @param _uvarA An uninterpreted variable, which is going to be the left-hand side of this uninterpreted equality.
-             * @param _uvarBAn uninterpreted variable, which is going to be the right-hand side of this uninterpreted equality.
+             * @param _uvarB An uninterpreted variable, which is going to be the right-hand side of this uninterpreted equality.
              */
-            UIEquality( const UIVariable& _uvarA, const UIVariable& _uvarB ):
+            UEquality( const UVariable& _uvarA, const UVariable& _uvarB, bool _negated ):
+                mNegated( _negated ),
                 mLhs( _uvarA ),
                 mRhs( _uvarB )
             {
@@ -131,10 +142,12 @@ namespace smtrat
             
             /**
              * Constructs an uninterpreted equality.
+             * @param _negated true, if the negation of this equality shall hold, which means that it is actually an inequality.
              * @param _uvar An uninterpreted variable, which is going to be the left-hand side of this uninterpreted equality.
              * @param _ufun An uninterpreted function instance, which is going to be the right-hand side of this uninterpreted equality.
              */
-            UIEquality( const UIVariable& _uvar, const UFInstance& _ufun ):
+            UEquality( const UVariable& _uvar, const UFInstance& _ufun, bool _negated ):
+                mNegated( _negated ),
                 mLhs( _uvar ),
                 mRhs( _ufun )
             {
@@ -143,10 +156,12 @@ namespace smtrat
             
             /**
              * Constructs an uninterpreted equality.
+             * @param _negated true, if the negation of this equality shall hold, which means that it is actually an inequality.
              * @param _ufun An uninterpreted function instance, which is going to be the left-hand side of this uninterpreted equality.
              * @param _uvar An uninterpreted variable, which is going to be the right-hand side of this uninterpreted equality.
              */
-            UIEquality( const UFInstance& _ufun, const UIVariable& _uvar ):
+            UEquality( const UFInstance& _ufun, const UVariable& _uvar, bool _negated ):
+                mNegated( _negated ),
                 mLhs( _ufun ),
                 mRhs( _uvar )
             {
@@ -155,14 +170,40 @@ namespace smtrat
             
             /**
              * Constructs an uninterpreted equality.
+             * @param _negated true, if the negation of this equality shall hold, which means that it is actually an inequality.
              * @param _ufunA An uninterpreted function instance, which is going to be the left-hand side of this uninterpreted equality.
              * @param _ufunB An uninterpreted function instance, which is going to be the right-hand side of this uninterpreted equality.
              */
-            UIEquality( const UFInstance& _ufunA, const UFInstance& _ufunB ):
+            UEquality( const UFInstance& _ufunA, const UFInstance& _ufunB, bool _negated ):
+                mNegated( _negated ),
                 mLhs( _ufunA ),
                 mRhs( _ufunB )
             {
                 assert( _ufunA.uninterpretedFunction().codomain() == _ufunB.uninterpretedFunction().codomain() );
+            }
+            
+            /**
+             * @return true, if the negation of this equation shall hold, that is, it is actually an inequality.
+             */
+            bool negated() const
+            {
+                return mNegated;
+            }
+            
+            /**
+             * @return The left-hand side of this equality.
+             */
+            const Arg& lhs() const
+            {
+                return mLhs;
+            }
+            
+            /**
+             * @return The right-hand side of this equality.
+             */
+            const Arg& rhs() const
+            {
+                return mRhs;
             }
 
             /**
@@ -200,17 +241,17 @@ namespace smtrat
             /**
              * @return The left-hand side, which must be an uninterpreted variable.
              */
-            const UIVariable& lhsAsUV() const 
+            const UVariable& lhsAsUV() const 
             {
-                return boost::get<UIVariable>(mLhs);
+                return boost::get<UVariable>(mLhs);
             }
 
             /**
              * @return The right-hand side, which must be an uninterpreted variable.
              */
-            const UIVariable& rhsAsUV() const 
+            const UVariable& rhsAsUV() const 
             {
-                return boost::get<UIVariable>(mRhs);
+                return boost::get<UVariable>(mRhs);
             }
 
             /**
@@ -233,8 +274,10 @@ namespace smtrat
              * @param _ueq The uninterpreted equality to compare with.
              * @return true, if this and the given equality instance are equal.
              */
-            bool operator==( const UIEquality& _ueq ) const
+            bool operator==( const UEquality& _ueq ) const
             {
+                if( mNegated != _ueq.negated() )
+                    return false;
                 if( lhsIsUV() != _ueq.lhsIsUV() )
                 {
                     return false;
@@ -271,8 +314,12 @@ namespace smtrat
              * @param _ueq The uninterpreted equality to compare with.
              * @return true, if this uninterpreted equality is less than the given one.
              */
-            bool operator<( const UIEquality& _ueq ) const
+            bool operator<( const UEquality& _ueq ) const
             {
+                if( !mNegated && _ueq.negated() )
+                    return true;
+                if( mNegated && !_ueq.negated() )
+                    return false;
                 if( lhsIsUV() && !_ueq.lhsIsUV() )
                 {
                     return true;
@@ -330,9 +377,12 @@ namespace smtrat
              * @param _uvar The uninterpreted equality to print.
              * @return The output stream after printing the given uninterpreted equality on it.
              */
-            friend std::ostream& operator<<( std::ostream& _os, const UIEquality& _ueq )
+            friend std::ostream& operator<<( std::ostream& _os, const UEquality& _ueq )
             {
-                _os << "(= ";
+                if( _ueq.negated() )
+                    _os << "(!= ";
+                else
+                    _os << "(= ";
                 if( _ueq.lhsIsUV() )
                 {
                     _os << _ueq.lhsAsUV();
@@ -362,17 +412,17 @@ namespace std
      * Implements std::hash for uninterpreted equalities.
      */
     template<>
-    struct hash<smtrat::UIEquality>
+    struct hash<smtrat::UEquality>
     {
     public:
         /**
          * @param _ueq The uninterpreted equality to get the hash for.
          * @return The hash of the given uninterpreted equality.
          */
-        size_t operator()( const smtrat::UIEquality& _ueq ) const 
+        size_t operator()( const smtrat::UEquality& _ueq ) const 
         {
-            size_t result = _ueq.lhsIsUV() ? std::hash<smtrat::UIVariable>()( _ueq.lhsAsUV() ) : std::hash<smtrat::UFInstance>()( _ueq.lhsAsUF() );
-            result ^= _ueq.rhsIsUV() ? std::hash<smtrat::UIVariable>()( _ueq.rhsAsUV() ) : std::hash<smtrat::UFInstance>()( _ueq.rhsAsUF() );
+            size_t result = _ueq.lhsIsUV() ? std::hash<smtrat::UVariable>()( _ueq.lhsAsUV() ) : std::hash<smtrat::UFInstance>()( _ueq.lhsAsUF() );
+            result ^= _ueq.rhsIsUV() ? std::hash<smtrat::UVariable>()( _ueq.rhsAsUV() ) : std::hash<smtrat::UFInstance>()( _ueq.rhsAsUF() );
             return result;
         }
     };
