@@ -463,7 +463,7 @@ namespace smtrat
                 ok = false;
                 return CRef_Undef;
             default:
-                assert( _formula->getType() == CONSTRAINT || _formula->getType() == BOOL );
+                assert( _formula->getType() == CONSTRAINT || _formula->getType() == BOOL || _formula->getType() == UEQ );
                 vec<Lit> learned_clause;
                 learned_clause.push( getLiteral( _formula, _type == NORMAL_CLAUSE ? _formula : NULL ) );
                 return addClause( learned_clause, _type ) ? (_type == NORMAL_CLAUSE ? clauses.last() : learnts.last() ) : CRef_Undef;
