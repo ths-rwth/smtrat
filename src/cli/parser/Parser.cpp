@@ -53,10 +53,17 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 	
 	fun_definition = symbol[px::bind(&SMTLIBParser::pushScope, px::ref(*this)), qi::_a = qi::_1] > "(" > 
 		*(sortedVar[px::push_back(qi::_b, px::bind(&SMTLIBParser::addVariableBinding, px::ref(*this), qi::_1))]) 
-		> ")" > (sort > (formula | polynomial))[px::bind(&SMTLIBParser::defineFun, px::ref(*this), qi::_a, qi::_b, qi::_1, qi::_2)];
+		> ")" > (sort > fun_argument)[px::bind(&SMTLIBParser::defineFun, px::ref(*this), qi::_a, qi::_b, qi::_1, qi::_2)];
 	fun_definition.name("function definition");
 	
-	fun_arguments = *(formula | polynomial | uninterpreted);
+	uninterpreted = (
+			var_uninterpreted[qi::_val = qi::_1]
+		|	(qi::lit("(") >> funmap_uf >> fun_arguments >> qi::lit(")"))[qi::_val = px::bind(&SMTLIBParser::applyUninterpretedFunction, px::ref(*this), qi::_1, qi::_2)]
+	);
+	uninterpreted.name("uninterpreted argument");
+	fun_argument = (formula | polynomial | uninterpreted);
+	fun_argument.name("function argument");
+	fun_arguments = *(fun_argument);
 	fun_arguments.name("function arguments");
 	
 	cmd = "(" > (
@@ -83,11 +90,6 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 	);
 	cmd.name("command");
 
-	uninterpreted = (
-			(qi::lit("(") >> funmap_uf >> fun_arguments >> qi::lit(")"))[qi::_val = px::bind(&SMTLIBParser::applyUninterpretedFunction, px::ref(*this), qi::_1, qi::_2)]
-		|	var_uninterpreted
-	);
-	uninterpreted.name("uninterpreted function call");
 
 	formula = 
 			(bind_bool >> boundary)[qi::_val = qi::_1]
@@ -217,31 +219,43 @@ void SMTLIBParser::declareConst(const std::string& name, const Sort& sort) {
 void SMTLIBParser::declareFun(const std::string& name, const std::vector<Sort>& args, const Sort& sort) {
 	if (this->handler->printInstruction()) handler->regular() << "(declare-fun " << name << " () " << sort << ")" << std::endl;
 	assert(this->isSymbolFree(name));
-	assert(args.size() == 0);
 	switch (TypeOfTerm::get(sort)) {
 	case ExpressionType::BOOLEAN: {
-		if (this->var_bool.sym.find(name) != nullptr) handler->warn() << "a boolean variable with name '" << name << "' has already been defined.";
-		carl::Variable var = newBooleanVariable(name, true);
-		this->var_bool.sym.add(name, var);
-		callHandler(&InstructionHandler::declareFun, var);
+		if (args.size() == 0) {
+			carl::Variable var = newBooleanVariable(name, true);
+			this->var_bool.sym.add(name, var);
+			callHandler(&InstructionHandler::declareFun, var);
+		} else {
+			this->funmap_ufbool.add(name, newUninterpretedFunction(name, args, sort));
+		}
 		break;
 	}
 	case ExpressionType::THEORY: {
-		if (this->var_theory.sym.find(name) != nullptr) handler->warn() << "a theory variable with name '" << name << "' has already been defined.";
-		carl::Variable var = newArithmeticVariable(name, SortManager::getInstance().interpretedType(sort), true);
-		this->var_theory.sym.add(name, var);
-		callHandler(&InstructionHandler::declareFun, var);
+		if (args.size() == 0) {
+			carl::Variable var = newArithmeticVariable(name, SortManager::getInstance().interpretedType(sort), true);
+			this->var_theory.sym.add(name, var);
+			callHandler(&InstructionHandler::declareFun, var);
+		} else {
+			this->funmap_uftheory.add(name, newUninterpretedFunction(name, args, sort));
+		}
 		break;
 	}
 	case ExpressionType::UNINTERPRETED: {
-		if (this->var_uninterpreted.sym.find(name) != nullptr) handler->warn() << "a variable of uninterpreted type with name '" << name << "' has already been defined.";
-		carl::Variable var = newVariable(name, carl::VariableType::VT_UNINTERPRETED);
-		this->var_uninterpreted.sym.add(name, UIVariable(var, sort));
-		callHandler(&InstructionHandler::declareFun, var);
+		if (args.size() == 0) {
+			carl::Variable var = newVariable(name, carl::VariableType::VT_UNINTERPRETED);
+			auto v = UIVariable(var, sort);
+			this->var_uninterpreted.sym.add(name, v);
+			std::cout << "Registering " << name << " -> " << v << std::endl;
+			callHandler(&InstructionHandler::declareFun, var);
+		} else {
+			auto uf = newUninterpretedFunction(name, args, sort);
+			std::cout << "Registering " << uf << std::endl;
+			this->funmap_uf.add(name, uf);
+		}
 		break;
 	}
 	default:
-		handler->error() << "Only variables of a defined type are allowed!";
+		handler->error() << "Only functions of with a defined return type are allowed!";
 	}
 }
 void SMTLIBParser::declareSort(const std::string& name, const unsigned& arity) {
@@ -251,7 +265,7 @@ void SMTLIBParser::declareSort(const std::string& name, const unsigned& arity) {
 	}
 	callHandler(&InstructionHandler::declareSort, name, arity);
 }
-void SMTLIBParser::defineFun(const std::string& name, const std::vector<carl::Variable>& args, const Sort& sort, const boost::variant<const Formula*, Polynomial>& term) {
+void SMTLIBParser::defineFun(const std::string& name, const std::vector<carl::Variable>& args, const Sort& sort, const Argument& term) {
 	if (this->handler->printInstruction()) handler->regular() << "(define-fun " << name << " () " << term << ")" << std::endl;
 	this->popScope();
 	switch (TypeOfTerm::get(sort)) {
@@ -602,6 +616,8 @@ UFInstance SMTLIBParser::applyUninterpretedFunction(const UninterpretedFunction&
 			carl::Variable tmp = newAuxiliaryRealVariable();
 			vars.push_back(UIVariable(tmp));
 			mUninterpretedEqualities.insert(newFormula(newConstraint(*p - tmp, Relation::EQ)));
+		} else if (UIVariable* uv = boost::get<UIVariable>(&v)) {
+			vars.push_back(*uv);
 		} else if (UFInstance* uf = boost::get<UFInstance>(&v)) {
 			carl::Variable tmp = newAuxiliaryUninterpretedVariable();
 			vars.push_back(UIVariable(tmp));
