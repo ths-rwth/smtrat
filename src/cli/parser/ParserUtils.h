@@ -345,7 +345,6 @@ struct SortParser : public qi::grammar<Iterator, Sort(), Skipper> {
 	}
 
 	Sort mkSort(const std::string& name) {
-		std::cout << "newSort(" << name << ")" << std::endl;
 		return newSort(name);
 	}
 	Sort mkSort(const std::string& name, const std::vector<Sort>& parameters) {
