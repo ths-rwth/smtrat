@@ -837,7 +837,7 @@ namespace smtrat
         mVariablesInAssumptionToCheck.insert( _label );
     }
 
-    void Module::addAssumptionToCheck( const set<const Constraint*>& _constraints, bool _consistent, const string& _label )
+    void Module::addAssumptionToCheck( const PointerSet<Constraint>& _constraints, bool _consistent, const string& _label )
     {
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");

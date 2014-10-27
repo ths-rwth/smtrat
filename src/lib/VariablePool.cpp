@@ -122,7 +122,7 @@ namespace smtrat
         return newBooleanVariable( out.str() );;
     }
 	
-	carl::Variable VariablePool::newAuxiliaryUninterpretedVariable( const std::string& _externalPrefix )
+    carl::Variable VariablePool::newAuxiliaryUninterpretedVariable( const std::string& _externalPrefix )
     {
         stringstream out;
         UNINTERPRETED_VAR_LOCK
@@ -204,22 +204,22 @@ namespace smtrat
         return VariablePool::getInstance().newAuxiliaryBooleanVariable();
     }
 	
-	carl::Variable newAuxiliaryUninterpretedVariable()
+    carl::Variable newAuxiliaryUninterpretedVariable()
     {
         return VariablePool::getInstance().newAuxiliaryUninterpretedVariable();
     }
 
-	carl::Variable newAuxiliaryVariable(carl::VariableType type)
-	{
-		switch (type) {
-			case carl::VariableType::VT_REAL: return newAuxiliaryRealVariable();
-			case carl::VariableType::VT_INT: return newAuxiliaryIntVariable();
-			case carl::VariableType::VT_BOOL: return newAuxiliaryBooleanVariable();
-			default:
-				assert(false);
-		}
-		return newAuxiliaryBooleanVariable();
-	}
+    carl::Variable newAuxiliaryVariable(carl::VariableType type)
+    {
+            switch (type) {
+                    case carl::VariableType::VT_REAL: return newAuxiliaryRealVariable();
+                    case carl::VariableType::VT_INT: return newAuxiliaryIntVariable();
+                    case carl::VariableType::VT_BOOL: return newAuxiliaryBooleanVariable();
+                    default:
+                            assert(false);
+            }
+            return newAuxiliaryBooleanVariable();
+    }
 
 }    // namespace smtrat
 

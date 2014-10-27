@@ -1435,7 +1435,7 @@ namespace smtrat
         bool                   splitOccurred = false;
 
         // check if derivative is already calculated
-        if(_selection->derivative() == 0)
+        if(_selection->derivative().isZero())
             _selection->calcDerivative();
 
         const Polynomial               constr     = _selection->rhs();
@@ -1736,7 +1736,7 @@ namespace smtrat
         bool splitOccurred = false;
 
         // check if derivative is already calculated
-        if(_selection->derivative() == 0)
+        if(_selection->derivative().isZero())
             _selection->calcDerivative();
 
         const Polynomial               constr     = _selection->rhs();

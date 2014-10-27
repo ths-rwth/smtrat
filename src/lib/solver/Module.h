@@ -500,7 +500,7 @@ namespace smtrat
              *               or its sub-procedure).
              * @see Module::storeAssumptionsToCheck
              */
-            static void addAssumptionToCheck( const std::set<const Constraint*>& _constraints, bool _consistent, const std::string& _label );
+            static void addAssumptionToCheck( const PointerSet<Constraint>& _constraints, bool _consistent, const std::string& _label );
             
             /**
              * Prints the collected assumptions in the assumption vector into _filename with an appropriate smt2 

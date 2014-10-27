@@ -2020,7 +2020,7 @@ namespace smtrat
                             #ifdef SMTRAT_DEVOPTION_Validation
                             if( validationSettings->logTCalls() )
                             {
-                                set<const smtrat::Constraint*> constraints = set<const smtrat::Constraint*>();
+                                smtrat::PointerSet<smtrat::Constraint> constraints;
                                 for( auto cond = conflict.begin(); cond != conflict.end(); ++cond )
                                     constraints.insert( (**cond).pConstraint() );
                                 smtrat::Module::addAssumptionToCheck( constraints, false, moduleName( (*backend)->type() ) + "_infeasible_subset" );
