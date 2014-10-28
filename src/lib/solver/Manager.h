@@ -173,22 +173,6 @@ namespace smtrat
                 mpPassedFormula->updateProperties();
                 return mpPrimaryBackend->isConsistent();
             }
-
-            /**
-             * Removes the formula at the given position in the conjunction of formulas,
-             * which will be considered for the next satisfiability check.
-             * @param _subformula The position of the formula to remove.
-             * @return An iterator to the formula after the position of the just removed
-             *          formula. If the removed formula has been the last element, the 
-             *          end of the conjunction of formulas, which will be considered for the 
-             *          next satisfiability check is returned.
-             */
-            ModuleInput::iterator remove( ModuleInput::iterator _subformula )
-            {
-                assert( _subformula != mpPassedFormula->end() );
-                mpPrimaryBackend->removeSubformula( _subformula );
-                return mpPassedFormula->erase( _subformula );
-            }
             
             /**
              * Pushes a backtrack point to the stack of backtrack points.
@@ -254,6 +238,16 @@ namespace smtrat
             {
                 mpPrimaryBackend->updateModel();
                 return mpPrimaryBackend->model();
+            }
+            
+            /**
+             * Returns the lemmas/tautologies which were made during the last solving provoked by check(). These lemmas
+             * can be used in the same manner as infeasible subsets are used.
+             * @return The lemmas/tautologies made during solving.
+             */
+            std::vector<const Formula*> lemmas() const
+            {
+                return mpPrimaryBackend->deductions();
             }
 
             /**
@@ -387,6 +381,22 @@ namespace smtrat
             }
             
         protected:
+
+            /**
+             * Removes the formula at the given position in the conjunction of formulas,
+             * which will be considered for the next satisfiability check.
+             * @param _subformula The position of the formula to remove.
+             * @return An iterator to the formula after the position of the just removed
+             *          formula. If the removed formula has been the last element, the 
+             *          end of the conjunction of formulas, which will be considered for the 
+             *          next satisfiability check is returned.
+             */
+            ModuleInput::iterator remove( ModuleInput::iterator _subformula )
+            {
+                assert( _subformula != mpPassedFormula->end() );
+                mpPrimaryBackend->removeSubformula( _subformula );
+                return mpPassedFormula->erase( _subformula );
+            }
 
             /**
              * @return A reference to the graph representing the solving strategy.
