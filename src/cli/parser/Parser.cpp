@@ -78,6 +78,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 		|	(qi::lit("get-assertions") > ")")[px::bind(&SMTLIBParser::getAssertions, px::ref(*this))]
 		|	(qi::lit("get-assignment") > ")")[px::bind(&SMTLIBParser::getAssignment, px::ref(*this))]
 		|	(qi::lit("get-info") > keyword > ")")[px::bind(&SMTLIBParser::getInfo, px::ref(*this), qi::_1)]
+		|	(qi::lit("get-model") > ")")[px::bind(&SMTLIBParser::getAssignment, px::ref(*this))]
 		|	(qi::lit("get-option") > keyword > ")")[px::bind(&SMTLIBParser::getOption, px::ref(*this), qi::_1)]
 		|	(qi::lit("get-proof") > ")")[px::bind(&SMTLIBParser::getProof, px::ref(*this))]
 		|	(qi::lit("get-unsat-core") > ")")[px::bind(&SMTLIBParser::getUnsatCore, px::ref(*this))]
