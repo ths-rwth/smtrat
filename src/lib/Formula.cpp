@@ -423,6 +423,14 @@ namespace smtrat
                 return 2;
                 break;
             }
+			case UEQ:
+			{
+				UEquality eq = mUIEquality;
+				// get sortvalue for lhs and rhs
+				// check eq.negated() <=> sv(lhs) != sv(rhs)
+				return 2;
+				break;
+			}
             default:
             {
                 assert( false );
