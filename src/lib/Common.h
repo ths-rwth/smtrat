@@ -42,6 +42,8 @@
 #include "carl/io/streamingOperators.h"
 #include "carl/util/Common.h"
 #include "carl/formula/FormulaPool.h"
+#include "carl/formula/UFManager.h"
+#include "carl/formula/UFInstanceManager.h"
 
 namespace smtrat
 {

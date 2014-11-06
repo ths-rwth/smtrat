@@ -57,7 +57,7 @@ public:
 	
 	DeclaredSymbolParser<carl::Variable> var_bool;
 	DeclaredSymbolParser<carl::Variable> var_theory;
-	DeclaredSymbolParser<UVariable> var_uninterpreted;
+	DeclaredSymbolParser<carl::UVariable> var_uninterpreted;
 	
 	DeclaredSymbolParser<FormulaT> bind_bool;
 	DeclaredSymbolParser<Poly> bind_theory;
@@ -84,7 +84,7 @@ public:
 	// Variables
 	rule<carl::Variable> var;
 	rule<carl::Variable> quantifiedVar;
-	rule<std::pair<std::string, Sort>> sortedVar;
+	rule<std::pair<std::string, carl::Sort>> sortedVar;
 	rule<Attribute> attribute;
 	
 	rule<AttributeMandatoryValue> value;
@@ -95,9 +95,9 @@ public:
 	// Custom functions
 	qi::symbols<char, BooleanFunction> funmap_bool;
 	qi::symbols<char, TheoryFunction> funmap_theory;
-	qi::symbols<char, UninterpretedFunction> funmap_ufbool;
-	qi::symbols<char, UninterpretedFunction> funmap_uftheory;
-	qi::symbols<char, UninterpretedFunction> funmap_uf;
+	qi::symbols<char, carl::UninterpretedFunction> funmap_ufbool;
+	qi::symbols<char, carl::UninterpretedFunction> funmap_uftheory;
+	qi::symbols<char, carl::UninterpretedFunction> funmap_uf;
 	qi::rule<Iterator, Skipper, qi::locals<std::string, std::vector<carl::Variable>>> fun_definition;
 
 	rule<Argument> fun_argument;
@@ -129,13 +129,13 @@ public:
 	bool parse(std::istream& in, const std::string& filename);
 
 protected:
-	void add(const FormulaT& f);
+	void add(FormulaT& f);
 	void check();
-	void declareConst(const std::string&, const Sort&);
-	void declareFun(const std::string& name, const std::vector<Sort>& args, const Sort& sort);
+	void declareConst(const std::string&, const carl::Sort&);
+	void declareFun(const std::string& name, const std::vector<carl::Sort>& args, const carl::Sort& sort);
 	void declareSort(const std::string&, const unsigned&);
-	void defineFun(const std::string&, const std::vector<carl::Variable>&, const Sort&, const Argument&);
-	void defineSort(const std::string&, const std::vector<std::string>&, const Sort&);
+	void defineFun(const std::string&, const std::vector<carl::Variable>&, const carl::Sort&, const Argument&);
+	void defineSort(const std::string&, const std::vector<std::string>&, const carl::Sort&);
 	void exit();
 	void getAssertions();
 	void getAssignment();
@@ -214,26 +214,26 @@ private:
 		mScopeStack.top().restore(*this);
 		mScopeStack.pop();
 	}
-	FormulaT mkConstraint(const Poly&, const Poly&, Relation);
+	FormulaT mkConstraint(const Poly&, const Poly&, carl::Relation);
 	Poly mkIteInExpr(const FormulaT& _condition, Poly& _then, Poly& _else);
 	FormulaT mkFormula(carl::FormulaType _type, std::set<FormulaT>& _subformulas);
 	FormulaT mkUFEquality(const UninterpretedType& lhs, const UninterpretedType& rhs);
 	
 	carl::Variable addQuantifiedVariable(const std::string& _name, const boost::optional<carl::VariableType>& type);
-	carl::Variable addVariableBinding(const std::pair<std::string, Sort>&);
+	carl::Variable addVariableBinding(const std::pair<std::string, carl::Sort>&);
 	void addTheoryBinding(std::string& _varName, Poly& _polynomial);
 	void addBooleanBinding(std::string&, const FormulaT&);
 
-	bool checkArguments(const std::string& name, const std::vector<carl::Variable>& types, const Arguments& args, std::map<carl::Variable, const FormulaT&>& boolAssignments, std::map<carl::Variable, Poly>& theoryAssignments);
+	bool checkArguments(const std::string& name, const std::vector<carl::Variable>& types, const Arguments& args, std::map<carl::Variable, const FormulaT>& boolAssignments, std::map<carl::Variable, Poly>& theoryAssignments);
 	FormulaT applyBooleanFunction(const BooleanFunction& f, const Arguments& args);
-	FormulaT applyUninterpretedBooleanFunction(const UninterpretedFunction& f, const Arguments& args);
+	FormulaT applyUninterpretedBooleanFunction(const carl::UninterpretedFunction& f, const Arguments& args);
 	Poly applyTheoryFunction(const TheoryFunction& f, const Arguments& args);
-	Poly applyUninterpretedTheoryFunction(const UninterpretedFunction& f, const Arguments& args);
-	UFInstance applyUninterpretedFunction(const UninterpretedFunction& f, const Arguments& args);
+	Poly applyUninterpretedTheoryFunction(const carl::UninterpretedFunction& f, const Arguments& args);
+	carl::UFInstance applyUninterpretedFunction(const carl::UninterpretedFunction& f, const Arguments& args);
 
 	void setSortParameters(const std::vector<std::string>& params) {
 		for (auto p: params) {
-			sort.parameters.add(p, newSort(p));
+			sort.parameters.add(p, carl::newSort(p));
 		}
 	}
 

@@ -705,7 +705,7 @@ namespace smtrat
                 {
                     if( !rPassedFormula().contains( abstr.constraint ) )
                     {
-                        cout << "does not contain  " << *abstr.constraint << endl;
+                        cout << "does not contain  " << abstr.constraint << endl;
                         return false;
                     }
                 }

@@ -174,7 +174,7 @@ public:
 	virtual void check() = 0;
 	virtual void declareFun(const carl::Variable&) = 0;
 	virtual void declareSort(const std::string&, const unsigned&) = 0;
-	virtual void defineSort(const std::string&, const std::vector<std::string>&, const Sort&) = 0;
+	virtual void defineSort(const std::string&, const std::vector<std::string>&, const carl::Sort&) = 0;
 	virtual void exit() = 0;
 	virtual void getAssertions() = 0;
 	virtual void getAssignment() = 0;
@@ -328,7 +328,7 @@ struct DeclaredSymbolParser : public qi::grammar<Iterator, T(), Skipper> {
 	qi::symbols<char, T> sym;
 };
 
-struct SortParser : public qi::grammar<Iterator, Sort(), Skipper> {
+struct SortParser : public qi::grammar<Iterator, carl::Sort(), Skipper> {
 	SortParser(): SortParser::base_type(sort, "sort") {
 		sort =
 				simpleSort[qi::_val = qi::_1]
@@ -342,10 +342,10 @@ struct SortParser : public qi::grammar<Iterator, Sort(), Skipper> {
 		simpleSort.add("Real", carl::SortManager::getInstance().interpretedSort("Real", carl::VariableType::VT_REAL));
 	}
 
-	Sort mkSort(const std::string& name) {
+	carl::Sort mkSort(const std::string& name) {
 		return carl::newSort(name);
 	}
-	Sort mkSort(const std::string& name, const std::vector<Sort>& parameters) {
+	carl::Sort mkSort(const std::string& name, const std::vector<carl::Sort>& parameters) {
 		return carl::newSort(name, parameters);
 	}
 
@@ -361,7 +361,7 @@ struct StringParser : public qi::grammar<Iterator, std::string(), Skipper> {
 	qi::rule<Iterator, std::string(), Skipper> main;
 };
 
-struct RelationParser : public qi::symbols<char, Relation> {
+struct RelationParser : public qi::symbols<char, carl::Relation> {
 	RelationParser();
 };
 

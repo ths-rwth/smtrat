@@ -50,12 +50,12 @@ StringParser::StringParser() : StringParser::base_type(main, "string") {
 }
 
 RelationParser::RelationParser() {
-	add("=", Relation::EQ);
-	add("<=", Relation::LEQ);
-	add(">=", Relation::GEQ);
-	add("<", Relation::LESS);
-	add(">", Relation::GREATER);
-	add("<>", Relation::NEQ);
+	add("=", carl::Relation::EQ);
+	add("<=", carl::Relation::LEQ);
+	add(">=", carl::Relation::GEQ);
+	add("<", carl::Relation::LESS);
+	add(">", carl::Relation::GREATER);
+	add("<>", carl::Relation::NEQ);
 }
 
 TheoryOpParser::TheoryOpParser() {
@@ -72,11 +72,11 @@ DomainParser::DomainParser() {
 }
 
 BooleanOpParser::BooleanOpParser() {
-	add("and", smtrat::AND);
-	add("or", smtrat::OR);
-	add("xor", smtrat::XOR);
-	add("iff", smtrat::IFF);
-	add("=", smtrat::IFF);
+	add("and", carl::FormulaType::AND);
+	add("or", carl::FormulaType::OR);
+	add("xor", carl::FormulaType::XOR);
+	add("iff", carl::FormulaType::IFF);
+	add("=", carl::FormulaType::IFF);
 }
 
 LogicParser::LogicParser() {
