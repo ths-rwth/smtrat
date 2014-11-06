@@ -705,7 +705,7 @@ namespace smtrat
         // The first two terms are not constant.
         if( termA != _constraintA->lhs().rend() && !(*termA)->isConstant() && termB != _constraintB->lhs().rend() && !(*termB)->isConstant() )
         {
-            if( *(*termA)->monomial() != *(*termB)->monomial() ) return 0;
+            if( (*termA)->monomial() != (*termB)->monomial() ) return 0;
             // Find an appropriate g.
             Rational termAcoeffAbs = cln::abs( (*termA)->coeff() ); // TODO: use some method of carl instead of cln::abs
             Rational termBcoeffAbs = cln::abs( (*termB)->coeff() );
@@ -728,7 +728,7 @@ namespace smtrat
             ++termB;
             while( termA != _constraintA->lhs().rend() && !(*termA)->isConstant() && termB != _constraintB->lhs().rend() && !(*termB)->isConstant() )
             {
-                if( *(*termA)->monomial() != *(*termB)->monomial() ) return 0;
+                if( (*termA)->monomial() != (*termB)->monomial() ) return 0;
                 else if( termACoeffGreater )
                 {
                     if( (*termA)->coeff() != g * (*termB)->coeff() ) return 0;
