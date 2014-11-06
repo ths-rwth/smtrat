@@ -10,7 +10,7 @@
 
 #include <list>
 #include <vector>
-#include "Formula.h"
+#include "../Common.h"
 #include <map>
 
 namespace smtrat 
@@ -29,9 +29,9 @@ namespace smtrat
 
     struct ConstraintNode 
     {
-        const Constraint* constraint;
-        Formula::const_iterator posInReceivedFormula;
-        Formula::iterator posInPassedFormula;
+        const ConstraintT* constraint;
+        FormulaT::const_iterator posInReceivedFormula;
+        FormulaT::iterator posInPassedFormula;
         std::list<VariableNode*> adjacencyList;
     };
 
@@ -45,13 +45,13 @@ namespace smtrat
         
     public:
         VariableConstraintGraph( );
-        std::list<ConstraintNode*> addConstraint(const Constraint* constraint,Formula::const_iterator origin, Formula::iterator pos);
-        std::list<ConstraintNode*> updateConstraintNode(ConstraintNode* node, Formula::iterator pos);
-        bool removeConstraint(std::list<ConstraintNode*>::iterator, Formula::const_iterator end);
+        std::list<ConstraintNode*> addConstraint(const ConstraintT* constraint,FormulaT::const_iterator origin, FormulaT::iterator pos);
+        std::list<ConstraintNode*> updateConstraintNode(ConstraintNode* node, FormulaT::iterator pos);
+        bool removeConstraint(std::list<ConstraintNode*>::iterator, FormulaT::const_iterator end);
         
         std::list<ConstraintNode*>::iterator last()  { return --mConstraintNodes.end(); }
         
-        std::list<Formula::iterator> findIrrelevantConstraints(Formula::iterator end);
+        std::list<FormulaT::iterator> findIrrelevantConstraints(FormulaT::iterator end);
         
         void print(); 
         virtual ~VariableConstraintGraph( ) {}

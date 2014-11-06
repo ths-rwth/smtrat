@@ -7,8 +7,7 @@
 
 #pragma once
 
-#include "../../Constraint.h"
-#include "../../Formula.h"
+#include "../../Common.h"
 #include "../LRAModule/LRAModule.h"
 #include <carl/numbers/numbers.h>
 
@@ -22,14 +21,14 @@ namespace smtrat
         * @param _expr Expression, which is checked
         * @return true, if expression is linear
         */
-        bool isLinear( const Constraint* _constr, const Polynomial& _expr, std::vector<Polynomial>& _tempMonomes );
+        bool isLinear( const ConstraintT* _constr, const Poly& _expr, std::vector<Poly>& _tempMonomes );
         
         /**
         * Creates a new constraint from an existing interval
         * @param _interval
         * @return pair <lowerBoundConstraint*, upperBoundConstraint*>
         */
-        std::pair<const Constraint*, const Constraint*> intervalToConstraint( carl::Variable::Arg _var, const smtrat::DoubleInterval _interval );
+        std::pair<const ConstraintT*, const ConstraintT*> intervalToConstraint( carl::Variable::Arg _var, const smtrat::DoubleInterval _interval );
         
         /**
         * Checks mIntervals if it contains an empty interval.

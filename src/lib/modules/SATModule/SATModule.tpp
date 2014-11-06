@@ -57,6 +57,7 @@
 
 using namespace std;
 using namespace Minisat;
+using namespace carl;
 
 namespace smtrat
 {
@@ -155,8 +156,8 @@ namespace smtrat
     {
         while( mBooleanConstraintMap.size() > 0 )
         {
-            vector<PointerSet<Formula>>* toDelA = mBooleanConstraintMap.last().first.origins;
-            vector<PointerSet<Formula>>* toDelB = mBooleanConstraintMap.last().second.origins;
+            vector<std::set<FormulaT>>* toDelA = mBooleanConstraintMap.last().first.origins;
+            vector<std::set<FormulaT>>* toDelB = mBooleanConstraintMap.last().second.origins;
             mBooleanConstraintMap.pop();
             delete toDelA;
             delete toDelB;
@@ -170,11 +171,11 @@ namespace smtrat
     bool SATModule<Settings>::assertSubformula( ModuleInput::const_iterator _subformula )
     {
         Module::assertSubformula( _subformula );
-        if( PROP_IS_A_CLAUSE <= _subformula->formula().properties() )
+        if( carl::PROP_IS_A_CLAUSE <= _subformula->formula().properties() )
         {
-            if (mFormulaClauseMap.find( _subformula->pFormula() ) == mFormulaClauseMap.end())
+            if (mFormulaClauseMap.find( _subformula->formula() ) == mFormulaClauseMap.end())
             {
-                mFormulaClauseMap[_subformula->pFormula()] = addClause( _subformula->pFormula(), false );
+                mFormulaClauseMap[_subformula->formula()] = addClause( _subformula->formula(), false );
             }
         }
         if( !ok )
@@ -185,7 +186,7 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::removeSubformula( ModuleInput::const_iterator _subformula )
     {
-        FormulaClauseMap::iterator iter = mFormulaClauseMap.find( _subformula->pFormula() );
+        FormulaClauseMap::iterator iter = mFormulaClauseMap.find( _subformula->formula() );
         if( iter != mFormulaClauseMap.end() )
         {
             if( iter->second != CRef_Undef )
@@ -224,7 +225,7 @@ namespace smtrat
     template<class Settings>
     Answer SATModule<Settings>::isConsistent()
     {
-        if( PROP_IS_IN_CNF <= rReceivedFormula().properties() )
+        if( carl::PROP_IS_IN_CNF <= rReceivedFormula().properties() )
         {
             if( !Settings::stop_search_after_first_unknown )
             {
@@ -340,7 +341,7 @@ namespace smtrat
         assert( !ok );
         mInfeasibleSubsets.clear();
         // Set the infeasible subset to the set of all clauses.
-        PointerSet<Formula> infeasibleSubset;
+        std::set<FormulaT> infeasibleSubset;
 //        if( mpReceivedFormula->isConstraintConjunction() )
 //        {
 //            getInfeasibleSubsets();
@@ -351,7 +352,7 @@ namespace smtrat
             // TODO: compute a better infeasible subset
             for( auto subformula = rReceivedFormula().begin(); subformula != rReceivedFormula().end(); ++subformula )
             {
-                infeasibleSubset.insert( subformula->pFormula() );
+                infeasibleSubset.insert( subformula->formula() );
             }
 //        }
         mInfeasibleSubsets.push_back( infeasibleSubset );
@@ -376,14 +377,14 @@ namespace smtrat
     }
 
     template<class Settings>
-    CRef SATModule<Settings>::addFormula( const Formula* _formula, unsigned _type )
+    CRef SATModule<Settings>::addFormula( const FormulaT& _formula, unsigned _type )
     {
         assert( _type < 2 );
-        const Formula* formulaInCnf = _formula->toCNF( true, _type == NORMAL_CLAUSE );
-        if( formulaInCnf->getType() == AND )
+        FormulaT formulaInCnf = _formula.toCNF( true, _type == NORMAL_CLAUSE );
+        if( formulaInCnf.getType() == FormulaType::AND )
         {
             CRef c = CRef_Undef;
-            for( Formula::const_iterator clause = formulaInCnf->begin(); clause != formulaInCnf->end(); ++clause )
+            for( FormulaT::const_iterator clause = formulaInCnf.begin(); clause != formulaInCnf.end(); ++clause )
             {
                 CRef ct = addClause( *clause, _type );
                 if( c == CRef_Undef && ct != CRef_Undef ) c = ct;
@@ -392,109 +393,109 @@ namespace smtrat
         }
         else
         {
-            assert( formulaInCnf->getType() == OR );
+            assert( formulaInCnf.getType() == FormulaType::OR );
             return addClause( formulaInCnf, _type );
         }
     }
 
     template<class Settings>
-    CRef SATModule<Settings>::addClause( const Formula* _formula, unsigned _type )
+    CRef SATModule<Settings>::addClause( const FormulaT& _formula, unsigned _type )
     {
-        assert( _formula->propertyHolds( PROP_IS_A_CLAUSE ) );
-        switch( _formula->getType() )
+        assert( _formula.propertyHolds( carl::PROP_IS_A_CLAUSE ) );
+        switch( _formula.getType() )
         {
-            case OR:
+            case FormulaType::OR:
             {
-                assert( _formula->size() > 1 );
+                assert( _formula.size() > 1 );
                 vec<Lit> clauseLits;
-                for( const Formula* subformula : _formula->subformulas() )
+                for( const FormulaT& subformula : _formula.subformulas() )
                 {
-                    switch( subformula->getType() )
+                    switch( subformula.getType() )
                     {
-                        assert( subformula->propertyHolds( PROP_IS_A_LITERAL ) );
-                        case NOT:
+                        assert( subformula.propertyHolds( carl::PROP_IS_A_LITERAL ) );
+                        case FormulaType::NOT:
                         {
-                            const Formula& subsubformula = *subformula->back();
+                            const FormulaT& subsubformula = subformula.back();
                             switch( subsubformula.getType() )
                             {
-                                case TTRUE:
+                                case FormulaType::TRUE:
                                     break;
-                                case FFALSE:
+                                case FormulaType::FALSE:
                                     return CRef_Undef;
                                 default:
-                                    assert( subsubformula.getType() == CONSTRAINT || subsubformula.getType() == BOOL || subsubformula.getType() == UEQ );
-                                    clauseLits.push( getLiteral( subformula, _type == NORMAL_CLAUSE ? _formula : NULL ) );
+                                    assert( subsubformula.getType() == FormulaType::CONSTRAINT || subsubformula.getType() == FormulaType::BOOL || subsubformula.getType() == FormulaType::UEQ );
+                                    clauseLits.push( getLiteral( subformula, _type == NORMAL_CLAUSE ? _formula : FormulaT( FormulaType::TRUE ) ) );
                             }
                             break;
                         }
-                        case TTRUE:
+                        case FormulaType::TRUE:
                             return CRef_Undef;
-                        case FFALSE:
+                        case FormulaType::FALSE:
                             break;
                         default:
-                            assert( subformula->getType() == CONSTRAINT || subformula->getType() == BOOL || subformula->getType() == UEQ );
-                            clauseLits.push( getLiteral( subformula, _type == NORMAL_CLAUSE ? _formula : NULL ) );
+                            assert( subformula.getType() == FormulaType::CONSTRAINT || subformula.getType() == FormulaType::BOOL || subformula.getType() == FormulaType::UEQ );
+                            clauseLits.push( getLiteral( subformula, _type == NORMAL_CLAUSE ? _formula : FormulaT( FormulaType::TRUE ) ) );
                             break;
                     }
                 }
                 return addClause( clauseLits, _type ) ? (_type == NORMAL_CLAUSE ? clauses.last() : learnts.last() ) : CRef_Undef;
             }
-            case NOT:
+            case FormulaType::NOT:
             {
-                assert( _formula->propertyHolds( PROP_IS_A_LITERAL ) );
-                const Formula& subformula = *_formula->back();
+                assert( _formula.propertyHolds( carl::PROP_IS_A_LITERAL ) );
+                const FormulaT& subformula = _formula.back();
                 switch( subformula.getType() )
                 {
-                    case TTRUE:
+                    case FormulaType::TRUE:
                         ok = false;
                         return CRef_Undef;
-                    case FFALSE:
+                    case FormulaType::FALSE:
                         return CRef_Undef;
                     default:
-                        assert( subformula.getType() == CONSTRAINT || subformula.getType() == BOOL || subformula.getType() == UEQ );
+                        assert( subformula.getType() == FormulaType::CONSTRAINT || subformula.getType() == FormulaType::BOOL || subformula.getType() == FormulaType::UEQ );
                         vec<Lit> learned_clause;
-                        learned_clause.push( getLiteral( _formula, _type == NORMAL_CLAUSE ? _formula : NULL ) );
+                        learned_clause.push( getLiteral( _formula, _type == NORMAL_CLAUSE ? _formula : FormulaT( FormulaType::TRUE ) ) );
                         return addClause( learned_clause, _type ) ? (_type == NORMAL_CLAUSE ? clauses.last() : learnts.last() ) : CRef_Undef;
                 }
             }
-            case TTRUE:
+            case FormulaType::TRUE:
                 return CRef_Undef;
-            case FFALSE:
+            case FormulaType::FALSE:
                 ok = false;
                 return CRef_Undef;
             default:
-                assert( _formula->getType() == CONSTRAINT || _formula->getType() == BOOL || _formula->getType() == UEQ );
+                assert( _formula.getType() == FormulaType::CONSTRAINT || _formula.getType() == FormulaType::BOOL || _formula.getType() == FormulaType::UEQ );
                 vec<Lit> learned_clause;
-                learned_clause.push( getLiteral( _formula, _type == NORMAL_CLAUSE ? _formula : NULL ) );
+                learned_clause.push( getLiteral( _formula, _type == NORMAL_CLAUSE ? _formula : FormulaT( FormulaType::TRUE ) ) );
                 return addClause( learned_clause, _type ) ? (_type == NORMAL_CLAUSE ? clauses.last() : learnts.last() ) : CRef_Undef;
         }
     }
 
     template<class Settings>
-    Lit SATModule<Settings>::getLiteral( const Formula* _formula, const Formula* _origin )
+    Lit SATModule<Settings>::getLiteral( const FormulaT& _formula, const FormulaT& _origin )
     {
-        assert( _formula->propertyHolds( PROP_IS_A_LITERAL ) );
-        bool negated = _formula->getType() == NOT;
-        const Formula* content = negated ? _formula->pSubformula() : _formula;
-        if( content->getType() == BOOL )
+        assert( _formula.propertyHolds( carl::PROP_IS_A_LITERAL ) );
+        bool negated = _formula.getType() == FormulaType::NOT;
+        const FormulaT& content = negated ? _formula.subformula() : _formula;
+        if( content.getType() == FormulaType::BOOL )
         {
             Lit l = lit_Undef;
-            BooleanVarMap::iterator booleanVarPair = mBooleanVarMap.find(content->boolean());
+            BooleanVarMap::iterator booleanVarPair = mBooleanVarMap.find(content.boolean());
             if( booleanVarPair != mBooleanVarMap.end() )
             {
                 l = mkLit( booleanVarPair->second, negated );
             }
             else
             {
-                Var var = newVar( true, true, content->activity() );
-                mBooleanVarMap[content->boolean()] = var;
+                Var var = newVar( true, true, content.activity() );
+                mBooleanVarMap[content.boolean()] = var;
                 mBooleanConstraintMap.push( make_pair( Abstraction( passedFormulaEnd() ), Abstraction( passedFormulaEnd() ) ) );
                 l = mkLit( var, negated );
             }
-            if( _origin != NULL )
+            if( !_origin.isTrue() )
             {
                 Abstraction& abstr = negated ? mBooleanConstraintMap[var(l)].second : mBooleanConstraintMap[var(l)].first;
-                PointerSet<Formula> originsSet;
+                std::set<FormulaT> originsSet;
                 originsSet.insert( _origin );
                 abstr.origins->push_back( std::move( originsSet ) );
             }
@@ -502,8 +503,8 @@ namespace smtrat
         }
         else
         {
-            assert( content->getType() == CONSTRAINT || content->getType() == UEQ );
-            double act = fabs( _formula->activity() );
+            assert( content.getType() == FormulaType::CONSTRAINT || content.getType() == FormulaType::UEQ );
+            double act = fabs( _formula.activity() );
             bool preferredToTSolver = false; //(_formula.activity()<0)
             ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( _formula );
             if( constraintLiteralPair != mConstraintLiteralMap.end() )
@@ -514,9 +515,9 @@ namespace smtrat
                 // add the origin
                 auto& abstrPair = mBooleanConstraintMap[var(constraintLiteralPair->second.front())];
                 Abstraction& abstr = sign(constraintLiteralPair->second.front()) ? abstrPair.second : abstrPair.first;
-                if( _origin != NULL || !negated )
+                if( !_origin.isTrue() || !negated )
                 {
-                    PointerSet<Formula> originsSet;
+                    std::set<FormulaT> originsSet;
                     originsSet.insert( _origin );
                     assert( abstr.origins->empty() || std::find( abstr.origins->begin(), abstr.origins->end(), originsSet ) == abstr.origins->end() );
                     if( !abstr.consistencyRelevant )
@@ -530,7 +531,7 @@ namespace smtrat
                         }
                         abstr.consistencyRelevant = true;
                     }
-                    if( _origin != NULL )
+                    if( !_origin.isTrue() )
                     {
                         abstr.origins->push_back( std::move( originsSet ) );
                     }
@@ -543,37 +544,37 @@ namespace smtrat
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 if( preferredToTSolver ) mpStatistics->initialTrue();
                 #endif
-                const Formula* constraint = NULL;
-                const Formula* invertedConstraint = NULL;
-                if( content->getType() == CONSTRAINT )
+                FormulaT constraint;
+                FormulaT invertedConstraint;
+                if( content.getType() == FormulaType::CONSTRAINT )
                 {
                     if( mVarReplacements.empty() )
                     {
                         constraint = content;
-                        const Constraint& cons = content->constraint();
-                        invertedConstraint = newFormula( newConstraint( cons.lhs(), Constraint::invertRelation( cons.relation() ) ) );
+                        const ConstraintT& cons = content.constraint();
+                        invertedConstraint = FormulaT( cons.lhs(), ConstraintT::invertRelation( cons.relation() ) );
                     }
                     else
                     {
-                        const Constraint& cons = content->constraint();
-                        Polynomial constraintLhs = cons.lhs().substitute( mVarReplacements );
-                        constraint = newFormula( newConstraint( constraintLhs, cons.relation() ) );
-                        invertedConstraint = newFormula( newConstraint( constraintLhs, Constraint::invertRelation( cons.relation() ) ) );
+                        const ConstraintT& cons = content.constraint();
+                        Poly constraintLhs = cons.lhs().substitute( mVarReplacements );
+                        constraint = FormulaT( constraintLhs, cons.relation() );
+                        invertedConstraint = FormulaT( constraintLhs, ConstraintT::invertRelation( cons.relation() ) );
                     }
                 }
-                else // content->getType() == UEQ
+                else // content.getType() == FormulaType::UEQ
                 {
                     constraint = content;
-                    const UEquality& ueq = content->uequality();
-                    invertedConstraint = newEquality( ueq.lhs(), ueq.rhs(), !ueq.negated() );
+                    const UEquality& ueq = content.uequality();
+                    invertedConstraint = FormulaT( ueq.lhs(), ueq.rhs(), !ueq.negated() );
                 }
                 Var constraintAbstraction = newVar( !preferredToTSolver, true, act );
                 // map the abstraction variable to the abstraction information for the constraint and it's negation
                 mBooleanConstraintMap.push( make_pair( Abstraction( passedFormulaEnd(), constraint ), Abstraction( passedFormulaEnd(), invertedConstraint ) ) );
                 // add the constraint and its negation to the constraints to inform backends about
-                if( _origin != NULL )
+                if( !_origin.isTrue() )
                 {
-                    PointerSet<Formula> originsSet;
+                    std::set<FormulaT> originsSet;
                     originsSet.insert( _origin );
                     if( negated )
                     {
@@ -597,17 +598,17 @@ namespace smtrat
                 Lit litPositive = mkLit( constraintAbstraction, false );
                 vector<Lit> litsA;
                 litsA.push_back( litPositive );
-                mConstraintLiteralMap.insert( make_pair( newNegation( invertedConstraint ), litsA ) );
+                mConstraintLiteralMap.insert( make_pair( FormulaT( FormulaType::NOT, invertedConstraint ), litsA ) );
                 mConstraintLiteralMap.insert( make_pair( constraint, move( litsA ) ) );
                 Lit litNegative = mkLit( constraintAbstraction, true );
                 vector<Lit> litsB;
                 litsB.push_back( litNegative );
-                mConstraintLiteralMap.insert( make_pair( negated ? _formula : newNegation( constraint ), litsB ) );
+                mConstraintLiteralMap.insert( make_pair( negated ? _formula : FormulaT( FormulaType::NOT, constraint ), litsB ) );
                 mConstraintLiteralMap.insert( make_pair( invertedConstraint, move( litsB ) ) );
-                if( Settings::apply_valid_substitutions && content->getType() == CONSTRAINT )
+                if( Settings::apply_valid_substitutions && content.getType() == FormulaType::CONSTRAINT )
                 {
                     // map each variable occurring in the constraint (and hence its negation) to both of these constraints
-                    for( carl::Variable::Arg var : constraint->constraint().variables() )
+                    for( carl::Variable::Arg var : constraint.constraint().variables() )
                     {
                         mVarOccurrences[var].insert( constraint );
                         mVarOccurrences[var].insert( invertedConstraint );
@@ -670,7 +671,7 @@ namespace smtrat
     {
         if( _abstr.updateInfo < 0 )
         {
-            assert( _abstr.constraint != NULL );
+            assert( !_abstr.constraint.isTrue() );
             if( _abstr.position != rPassedFormula().end() )
             {
                 if( removeOrigins( _abstr.position, *_abstr.origins ).second )
@@ -682,9 +683,9 @@ namespace smtrat
         }
         else if( _abstr.updateInfo > 0 )
         {
-            assert( _abstr.constraint != NULL );
-            _abstr.constraint->setDeducted( _abstr.isDeduction );
-            assert( _abstr.constraint->getType() == UEQ || _abstr.constraint->constraint().isConsistent() == 2 );
+            assert( !_abstr.constraint.isTrue() );
+            _abstr.constraint.setDeducted( _abstr.isDeduction );
+            assert( _abstr.constraint.getType() == FormulaType::UEQ || _abstr.constraint.constraint().isConsistent() == 2 );
             auto res = addSubformulaToPassedFormula( _abstr.constraint, *_abstr.origins );
             _abstr.position = res.first;
             mChangedPassedFormula = true;
@@ -700,7 +701,7 @@ namespace smtrat
             if( assigns[k] != l_Undef )
             {
                 const Abstraction& abstr = assigns[k] == l_False ? mBooleanConstraintMap[k].second : mBooleanConstraintMap[k].first;
-                if( abstr.constraint != NULL && abstr.consistencyRelevant && (abstr.constraint->getType() == UEQ || abstr.constraint->constraint().isConsistent() != 1)) 
+                if( !abstr.constraint.isTrue() && abstr.consistencyRelevant && (abstr.constraint.getType() == FormulaType::UEQ || abstr.constraint.constraint().isConsistent() != 1)) 
                 {
                     if( !rPassedFormula().contains( abstr.constraint ) )
                     {
@@ -712,11 +713,11 @@ namespace smtrat
         }
         for( auto subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
         {
-            auto iter = mConstraintLiteralMap.find( subformula->pFormula() );
+            auto iter = mConstraintLiteralMap.find( subformula->formula() );
             assert( iter != mConstraintLiteralMap.end() );
             if( value( iter->second.front() ) != l_True )
             {
-                cout << "should not contain  " << *iter->first << endl;
+                cout << "should not contain  " << iter->first << endl;
                 return false;
             }
         }
@@ -1163,8 +1164,8 @@ SetWatches:
         {
             if( value( c[i] ) == l_True )
                 return true;
-            const Formula* constraint = sign( c[i] ) ? mBooleanConstraintMap[var(c[i])].second.constraint : mBooleanConstraintMap[var(c[i])].first.constraint;
-            if( constraint != NULL && (constraint->getType() == UEQ || constraint->constraint().isConsistent() == 1))
+            const FormulaT& constraint = sign( c[i] ) ? mBooleanConstraintMap[var(c[i])].second.constraint : mBooleanConstraintMap[var(c[i])].first.constraint;
+            if( !constraint.isTrue() && (constraint.getType() == FormulaType::UEQ || constraint.constraint().isConsistent() == 1))
                 return true;
         }
         return false;
@@ -1187,7 +1188,7 @@ SetWatches:
                     if( abstr.updateInfo >=0 && --abstr.updateInfo < 0 )
                         mChangedBooleans.push_back( x );
                 }
-                else if( abstr.constraint != NULL ) abstr.updateInfo = 0;
+                else if( !abstr.constraint.isTrue() ) abstr.updateInfo = 0;
                 assigns[x]  = l_Undef;
                 if( (phase_saving > 1 || (phase_saving == 1)) && c > trail_lim.last() )
                     polarity[x] = sign( trail[c] );
@@ -1359,7 +1360,7 @@ SetWatches:
                 {
                     for( auto subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
                     {
-                        ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( subformula->pFormula() );
+                        ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( subformula->formula() );
                         assert( constraintLiteralPair != mConstraintLiteralMap.end() );
                         Lit lit = mkLit( var( constraintLiteralPair->second.front() ), !sign( constraintLiteralPair->second.front() ) );
                         learnt_clause.push( lit );
@@ -1746,7 +1747,7 @@ SetWatches:
         assert( value( p ) == l_Undef );
         assigns[var( p )] = lbool( !sign( p ) );
         Abstraction& abstr = sign( p ) ? mBooleanConstraintMap[var( p )].second : mBooleanConstraintMap[var( p )].first;
-        if( abstr.constraint != NULL && abstr.consistencyRelevant && (abstr.constraint->getType() == UEQ || abstr.constraint->constraint().isConsistent() != 1)) 
+        if( !abstr.constraint.isTrue() && abstr.consistencyRelevant && (abstr.constraint.getType() == FormulaType::UEQ || abstr.constraint.constraint().isConsistent() != 1)) 
         {
             if( ++abstr.updateInfo > 0 )
                 mChangedBooleans.push_back( var( p ) );
@@ -1756,7 +1757,7 @@ SetWatches:
         if( Settings::allow_theory_propagation && Settings::detect_deductions )
         {
             // Check whether the lit is a deduction via a learned clause.
-            if( from != CRef_Undef && ca[from].type() == DEDUCTED_CLAUSE && !sign( p ) && abstr.constraint != NULL  )
+            if( from != CRef_Undef && ca[from].type() == DEDUCTED_CLAUSE && !sign( p ) && !abstr.constraint.isTrue()  )
             {
                 Clause& c           = ca[from];
                 bool    isDeduction = true;
@@ -2039,17 +2040,17 @@ NextClause:
         print();
         #endif
         // Consider all constraints which have to hold according to decision level 0
-        const Formula* addedConstraint = NULL;
+        FormulaT addedConstraint;
         carl::Variable varToSubstitute = carl::Variable::NO_VARIABLE;
-        Polynomial substitutionTerm;
-        Formula::ConstraintBounds constraintBoundsAnd;
+        Poly substitutionTerm;
+        FormulaT::ConstraintBounds constraintBoundsAnd;
         for( int i = 0; i < mBooleanConstraintMap.size(); ++i )
         {
             if( assigns[i] == l_Undef ) continue;
             Abstraction& abstr = assigns[i] == l_True ? mBooleanConstraintMap[i].first : mBooleanConstraintMap[i].second;
-            if( abstr.constraint != NULL && abstr.constraint->getType() == CONSTRAINT )
+            if( !abstr.constraint.isTrue() && abstr.constraint.getType() == FormulaType::CONSTRAINT )
             {
-                const Constraint& constr = abstr.constraint->constraint();
+                const ConstraintT& constr = abstr.constraint.constraint();
                 unsigned constraintConsistency = constr.isConsistent();
                 if( constraintConsistency == 0 )
                 {
@@ -2057,12 +2058,12 @@ NextClause:
                 }
                 else if( constraintConsistency == 2 )
                 {
-                    addedConstraint = Formula::addConstraintBound( constraintBoundsAnd, abstr.constraint, true );
-                    if( addedConstraint == NULL )
+                    addedConstraint = FormulaT::addConstraintBound( constraintBoundsAnd, abstr.constraint, true );
+                    if( addedConstraint.isFalse() )
                     {
                         ok = false;
                     }
-                    else if( addedConstraint->constraint().getSubstitution( varToSubstitute, substitutionTerm ) )
+                    else if( addedConstraint.constraint().getSubstitution( varToSubstitute, substitutionTerm ) )
                     {
                         break;
                     }
@@ -2071,7 +2072,7 @@ NextClause:
         }
         while( !constraintBoundsAnd.empty() )
         {
-            const Polynomial* toDel = constraintBoundsAnd.begin()->first;
+            const Poly* toDel = constraintBoundsAnd.begin()->first;
             constraintBoundsAnd.erase( constraintBoundsAnd.begin() );
             delete toDel;
         }
@@ -2085,12 +2086,12 @@ NextClause:
         #endif
         auto elimVarOccs = mVarOccurrences.find( varToSubstitute );
         assert( elimVarOccs != mVarOccurrences.end() );
-        for( const Formula* cons : elimVarOccs->second )
+        for( const FormulaT& cons : elimVarOccs->second )
         {
             #ifdef DEBUG_SAT_APPLY_VALID_SUBS
-            cout << "  replace in " << *cons << std::endl;
+            cout << "  replace in " << cons << std::endl;
             #endif
-            const Formula* subResult = newFormula( newConstraint( cons->constraint().lhs().substitute( varToSubstitute, substitutionTerm ), cons->constraint().relation() ) );
+            FormulaT subResult = FormulaT( cons.constraint().lhs().substitute( varToSubstitute, substitutionTerm ), cons.constraint().relation() );
             #ifdef DEBUG_SAT_APPLY_VALID_SUBS
             cout << "    results in " << *subResult << endl;
             #endif
@@ -2112,14 +2113,14 @@ NextClause:
     }
     
     template<class Settings>
-    void SATModule<Settings>::replaceConstraint( const Formula* _toReplace, const Formula* _replaceBy )
+    void SATModule<Settings>::replaceConstraint( const FormulaT& _toReplace, const FormulaT& _replaceBy )
     {
-        assert( _toReplace->getType() == CONSTRAINT );
-        assert( _replaceBy->getType() == CONSTRAINT );
+        assert( _toReplace.getType() == FormulaType::CONSTRAINT );
+        assert( _replaceBy.getType() == FormulaType::CONSTRAINT );
         auto consLitPair = mConstraintLiteralMap.find( _toReplace );
         bool negativeLiteral = sign( consLitPair->second.front() );
         assert( consLitPair != mConstraintLiteralMap.end() );
-        if( _replaceBy->constraint().isConsistent() == 0 )
+        if( _replaceBy.constraint().isConsistent() == 0 )
         {
             // applying the substitution to this constraint leads to conflict
             if( assigns[ var( consLitPair->second.front() ) ] == l_Undef )
@@ -2144,10 +2145,10 @@ NextClause:
                 #endif
                 auto negConsLitPair = consLitPair;
                 ++negConsLitPair;
-                assert( (negConsLitPair->first->getType() == FFALSE && consLitPair->first->getType() == TTRUE) 
-                        || (negConsLitPair->first->getType() == NOT && negConsLitPair->first->pSubformula() == consLitPair->first) );
+                assert( (negConsLitPair->first.getType() == FormulaType::FALSE && consLitPair->first.getType() == FormulaType::TRUE) 
+                        || (negConsLitPair->first.getType() == FormulaType::NOT && negConsLitPair->first.subformula() == consLitPair->first) );
                 mConstraintLiteralMap[_replaceBy] = consLitPair->second;
-                mConstraintLiteralMap[newNegation( _replaceBy )] = negConsLitPair->second;
+                mConstraintLiteralMap[FormulaT( FormulaType::NOT, _replaceBy )] = negConsLitPair->second;
                 if( negativeLiteral )
                 {
                     if( mBooleanConstraintMap[var( consLitPair->second.front() )].second.consistencyRelevant )
@@ -2158,7 +2159,7 @@ NextClause:
                     if( mBooleanConstraintMap[var( consLitPair->second.front() )].first.consistencyRelevant )
                         informBackends( _replaceBy ); 
                 }
-                for( auto var = _replaceBy->constraint().variables().begin(); var != _replaceBy->constraint().variables().end(); ++var )
+                for( auto var = _replaceBy.constraint().variables().begin(); var != _replaceBy.constraint().variables().end(); ++var )
                 {
                     mVarOccurrences[*var].insert( _replaceBy );
                 }
@@ -2184,7 +2185,7 @@ NextClause:
                     Abstraction& abstrB = sign( iter->second.front() ) ? mBooleanConstraintMap[var( iter->second.front() )].second : mBooleanConstraintMap[var( iter->second.front() )].first;
                     if( !abstrB.consistencyRelevant )
                     {
-                        assert( abstrB.constraint != NULL );
+                        assert( !abstrB.constraint.isTrue() );
                         informBackends( abstrB.constraint );
                     }
                     abstrB.origins->insert( abstrB.origins->end(), abstrA.origins->begin(), abstrA.origins->end() );
@@ -2194,12 +2195,12 @@ NextClause:
                 iter->second.insert( iter->second.end(), consLitPair->second.begin(), consLitPair->second.end() );
                 auto iterB = iter;
                 ++iterB;
-                assert( (iterB->first->getType() == FFALSE && iter->first->getType() == TTRUE) 
-                        || (iterB->first->getType() == NOT && iterB->first->pSubformula() == iter->first) );
+                assert( (iterB->first.getType() == FormulaType::FALSE && iter->first.getType() == FormulaType::TRUE) 
+                        || (iterB->first.getType() == NOT && iterB->first.subformula() == iter->first) );
                 auto iterC = consLitPair;
                 ++iterC;
-                assert( (iterC->first->getType() == FFALSE && consLitPair->first->getType() == TTRUE) 
-                        || (iterC->first->getType() == NOT && iterC->first->pSubformula() == consLitPair->first) );
+                assert( (iterC->first.getType() == FormulaType::FALSE && consLitPair->first.getType() == FormulaType::TRUE) 
+                        || (iterC->first.getType() == FormulaType::NOT && iterC->first.subformula() == consLitPair->first) );
                 iterB->second.insert( iterB->second.end(), iterC->second.begin(), iterC->second.end() );
                 if( assigns[var(consLitPair->second.front())] != l_Undef && assigns[var(iter->second.front())] == l_Undef )
                 {
@@ -2247,7 +2248,7 @@ NextClause:
                 #endif
                 if( maybeStillInPassedFormula && removeOrigins( abstr.position, *abstr.origins ).second )
                     maybeStillInPassedFormula = false;
-                if( _replaceBy->constraint().isConsistent() == 2 )
+                if( _replaceBy.constraint().isConsistent() == 2 )
                 {
                     abstr.constraint = _replaceBy;
                     abstr.position = passedFormulaEnd();
@@ -2274,7 +2275,7 @@ NextClause:
                 cout << __LINE__ << endl;
                 #endif
                 abstr.constraint = _replaceBy;
-                if( _replaceBy->constraint().isConsistent() != 2 )
+                if( _replaceBy.constraint().isConsistent() != 2 )
                 {
                     abstr.updateInfo = 0;
                 }
@@ -2291,20 +2292,20 @@ NextClause:
         {
             // Learn the deductions.
             (*backend)->updateDeductions();
-            for( const Formula* deduction : (*backend)->deductions() )
+            for( const FormulaT& deduction : (*backend)->deductions() )
             {
-                if( deduction->getType() != TTRUE )
+                if( deduction.getType() != FormulaType::TRUE )
                 {
                     deductionsLearned = true;
                     #ifdef SMTRAT_DEVOPTION_Validation
                     if( validationSettings->logLemmata() )
                     {
-                        addAssumptionToCheck( newNegation( deduction ), false, moduleName( (*backend)->type() ) + "_lemma" );
+                        addAssumptionToCheck( FormulaT( FormulaType::NOT, deduction ), false, moduleName( (*backend)->type() ) + "_lemma" );
                     }
                     #endif
                     #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
                     cout << "Learned a theory deduction from a backend module!" << endl;
-                    cout << deduction->toString( false, 0, "", true, true, true ) << endl;
+                    cout << deduction.toString( false, 0, "", true, true, true ) << endl;
                     #endif
                     addFormula( deduction, DEDUCTED_CLAUSE );
                 }
@@ -2559,7 +2560,7 @@ NextClause:
         _out << _init << " ConstraintLiteralMap" << endl;
         for( ConstraintLiteralsMap::const_iterator clPair = mConstraintLiteralMap.begin(); clPair != mConstraintLiteralMap.end(); ++clPair )
         {
-            _out << _init << "    " << clPair->first->toString() << "  ->  [";
+            _out << _init << "    " << clPair->first.toString() << "  ->  [";
             for( auto litIter = clPair->second.begin(); litIter != clPair->second.end(); ++litIter )
             {
                 _out << " ";
@@ -2776,8 +2777,8 @@ NextClause:
         for( auto varOccPair = mVarOccurrences.begin(); varOccPair != mVarOccurrences.end(); ++varOccPair )
         {
             _out << _init << varOccPair->first << " in {";
-            for( const Formula* cons : varOccPair->second )
-                _out << "  " << *cons;
+            for( const FormulaT& cons : varOccPair->second )
+                _out << "  " << cons;
             _out << "  }" << endl;
         }
     }

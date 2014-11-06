@@ -37,7 +37,7 @@
 //#define PREPROCESSING_DEVELOP_MODE
 
 namespace smtrat {
-PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+PreprocessingModule::PreprocessingModule( ModuleType _type, const FormulaT* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager )
     {
 
@@ -59,7 +59,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
      *
      * @return true
      */
-    bool PreprocessingModule::assertSubformula( Formula::const_iterator _subformula )
+    bool PreprocessingModule::assertSubformula( FormulaT::const_iterator _subformula )
     {
         Module::assertSubformula( _subformula );
         return true;
@@ -72,10 +72,10 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
     {
         //mpReceivedFormula->print();
 
-        Formula::const_iterator receivedSubformula = firstUncheckedReceivedSubformula();
+        FormulaT::const_iterator receivedSubformula = firstUncheckedReceivedSubformula();
         while( receivedSubformula != mpReceivedFormula->end() )
         {
-            Formula* afterProductSplitting = new Formula( **receivedSubformula );
+            FormulaT* afterProductSplitting = new FormulaT( **receivedSubformula );
             // Inequations are transformed.
             rewritePotentialInequalities( afterProductSplitting );
             #ifdef ADDLINEARDEDUCTIONS
@@ -86,7 +86,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             #endif
             // Add the currently considered formula of the received constraint as clauses
             // to the passed formula.
-            Formula::toCNF( *afterProductSplitting, false );
+            FormulaT::toCNF( *afterProductSplitting, false );
             // Estimate the difficulty bottum up for the formula.
             setDifficulty(afterProductSplitting,false);
 
@@ -133,7 +133,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
      *
      * @param _subformula The sub formula of the received formula to remove.
      */
-    void PreprocessingModule::removeSubformula( Formula::const_iterator _subformula )
+    void PreprocessingModule::removeSubformula( FormulaT::const_iterator _subformula )
     {
         Module::removeSubformula( _subformula );
     }
@@ -143,19 +143,19 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
      * @param formula
      * @param invert
      */
-    void PreprocessingModule::rewritePotentialInequalities( Formula* formula, bool invert )
+    void PreprocessingModule::rewritePotentialInequalities( FormulaT* formula, bool invert )
     {
         if( formula->getType() == NOT )
         {
             assert( formula->subformulas().size() == 1 );
-            Formula* subformula = formula->subformulas().front();
+            FormulaT* subformula = formula->subformulas().front();
             if(subformula->isBooleanCombination())
             {
                 rewritePotentialInequalities(subformula, !invert);
             }
             else if(subformula->getType() == CONSTRAINT)
             {
-                const Constraint* constraint = subformula->pConstraint();
+                const ConstraintT* constraint = subformula->pConstraint();
                 // Since we are considering a not, invert is in fact "inverted" ;-)
                 if(!invert)
                 {
@@ -164,30 +164,30 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                     {
                         case CR_EQ:
                         {
-                            formula->copyAndDelete( new Formula( OR ));
-                            formula->addSubformula( new Formula( newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
-                            formula->addSubformula( new Formula( newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
+                            formula->copyAndDelete( new FormulaT( OR ));
+                            formula->addSubformula( new FormulaT( newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
+                            formula->addSubformula( new FormulaT( newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
                             return;
                         }
                         case CR_LEQ:
                         {
-                            formula->copyAndDelete( new Formula( newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
+                            formula->copyAndDelete( new FormulaT( newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
                             return;
                         }
                         case CR_LESS:
                         {
                             #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
-                            formula->copyAndDelete( new Formula( OR ));
-                            formula->addSubformula( new Formula( newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
-                            formula->addSubformula( new Formula( newConstraint( -constraint->lhs(), CR_EQ, constraint->variables() )));
+                            formula->copyAndDelete( new FormulaT( OR ));
+                            formula->addSubformula( new FormulaT( newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
+                            formula->addSubformula( new FormulaT( newConstraint( -constraint->lhs(), CR_EQ, constraint->variables() )));
                             #else
-                            formula->copyAndDelete( new Formula( newConstraint( -constraint->lhs(), CR_LEQ, constraint->variables() )));
+                            formula->copyAndDelete( new FormulaT( newConstraint( -constraint->lhs(), CR_LEQ, constraint->variables() )));
                             #endif
                             return;
                         }
                         case CR_NEQ:
                         {
-                            formula->copyAndDelete( new Formula( newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
+                            formula->copyAndDelete( new FormulaT( newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
                             return;
                         }
                         default:
@@ -208,9 +208,9 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                         }
                         case CR_LEQ:
                         {
-                            subformula->copyAndDelete( new Formula( OR ));
-                            subformula->addSubformula( new Formula( newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
-                            subformula->addSubformula( new Formula( newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
+                            subformula->copyAndDelete( new FormulaT( OR ));
+                            subformula->addSubformula( new FormulaT( newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
+                            subformula->addSubformula( new FormulaT( newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
                             return;
                         }
                         case CR_LESS:
@@ -220,9 +220,9 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                         }
                         case CR_NEQ:
                         {
-                            subformula->copyAndDelete( new Formula( OR ));
-                            subformula->addSubformula( new Formula( newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
-                            subformula->addSubformula( new Formula( newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
+                            subformula->copyAndDelete( new FormulaT( OR ));
+                            subformula->addSubformula( new FormulaT( newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
+                            subformula->addSubformula( new FormulaT( newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
                             return;
                         }
                         default:
@@ -237,7 +237,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         }
         else if( formula->getType() == OR || formula->getType() == AND || formula->getType() == XOR || formula->getType() == IFF  )
         {
-            for( std::list<Formula*>::const_iterator it = formula->subformulas().begin(); it != formula->subformulas().end(); ++it )
+            for( std::list<FormulaT*>::const_iterator it = formula->subformulas().begin(); it != formula->subformulas().end(); ++it )
             {
                 rewritePotentialInequalities(*it, invert);
             }
@@ -246,7 +246,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         else if( formula->getType() == CONSTRAINT )
         {
             formula->print();
-            const Constraint* constraint = formula->pConstraint();
+            const ConstraintT* constraint = formula->pConstraint();
 
             switch( constraint->relation() )
             {
@@ -256,9 +256,9 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 }
                 case CR_LEQ:
                 {
-                    Formula* phi = new Formula(OR );
-                    phi->addSubformula( new Formula( newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
-                    phi->addSubformula( new Formula( newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
+                    FormulaT* phi = new FormulaT(OR );
+                    phi->addSubformula( new FormulaT( newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
+                    phi->addSubformula( new FormulaT( newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
                     formula->pFather()->addSubformula(phi);
                     formula->father().print();
                     formula->pFather()->erase(formula);
@@ -270,9 +270,9 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 }
                 case CR_NEQ:
                 {
-                    formula->copyAndDelete( new Formula( OR ));
-                    formula->addSubformula( new Formula( newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
-                    formula->addSubformula( new Formula( newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
+                    formula->copyAndDelete( new FormulaT( OR ));
+                    formula->addSubformula( new FormulaT( newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
+                    formula->addSubformula( new FormulaT( newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
                     return;
                 }
                 default:
@@ -288,7 +288,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
 
     }
 
-    void PreprocessingModule::setDifficulty(Formula* formula, bool invert)
+    void PreprocessingModule::setDifficulty(FormulaT* formula, bool invert)
     {
         if( formula->getType() == NOT )
         {
@@ -301,7 +301,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             double maxdifficulty = 0;
             double sumdifficulty = 0;
             double subformulaDifficulty = 0;
-            for( std::list<Formula*>::const_iterator it = formula->subformulas().begin(); it != formula->subformulas().end(); ++it )
+            for( std::list<FormulaT*>::const_iterator it = formula->subformulas().begin(); it != formula->subformulas().end(); ++it )
             {
                 setDifficulty(*it, invert);
                 subformulaDifficulty = (*it)->difficulty();
@@ -316,7 +316,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         else if( (formula->getType() == OR && !invert) || (formula->getType() == AND && invert) )
         {
             double difficulty = 2000000; // TODO enter bound here.
-            for( std::list<Formula*>::const_iterator it = formula->subformulas().begin(); it != formula->subformulas().end(); ++it )
+            for( std::list<FormulaT*>::const_iterator it = formula->subformulas().begin(); it != formula->subformulas().end(); ++it )
             {
                 setDifficulty(*it, invert);
                 if( (*it)->difficulty() < difficulty )
@@ -346,7 +346,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         }
         else if( formula->getType() == CONSTRAINT )
         {
-            const Constraint* constraint = formula->pConstraint();
+            const ConstraintT* constraint = formula->pConstraint();
             double difficulty;
             if( constraint->isLinear() )
             {
@@ -374,12 +374,12 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
     void PreprocessingModule::assignActivitiesToPassedFormula()
     {
         double globalMaxDifficulty = 0;
-        for( std::list<Formula*>::const_iterator it = mpPassedFormula->subformulas().begin(); it != mpPassedFormula->subformulas().end(); ++it )
+        for( std::list<FormulaT*>::const_iterator it = mpPassedFormula->subformulas().begin(); it != mpPassedFormula->subformulas().end(); ++it )
         {
             if((*it)->getType() != OR) continue;
             else
             {
-                for( std::list<Formula*>::const_iterator jt = (*it)->subformulas().begin(); jt != (*it)->subformulas().end(); ++jt )
+                for( std::list<FormulaT*>::const_iterator jt = (*it)->subformulas().begin(); jt != (*it)->subformulas().end(); ++jt )
                 {
                     if( (*jt)->difficulty() > globalMaxDifficulty )
                     {
@@ -389,17 +389,17 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             }
         }
 
-        for( std::list<Formula*>::const_iterator it = mpPassedFormula->subformulas().begin(); it != mpPassedFormula->subformulas().end(); ++it )
+        for( std::list<FormulaT*>::const_iterator it = mpPassedFormula->subformulas().begin(); it != mpPassedFormula->subformulas().end(); ++it )
         {
             if((*it)->getType() != OR) continue;
             else
             {
-                for( std::list<Formula*>::const_iterator jt = (*it)->subformulas().begin(); jt != (*it)->subformulas().end(); ++jt )
+                for( std::list<FormulaT*>::const_iterator jt = (*it)->subformulas().begin(); jt != (*it)->subformulas().end(); ++jt )
                 {
                     // Special treatment for identities.
                     if( (*jt)->getType() == CONSTRAINT )
                     {
-                        const Constraint* constraint = (*jt)->pConstraint();
+                        const ConstraintT* constraint = (*jt)->pConstraint();
 
                         if(constraint->relation() == CR_EQ && constraint->isLinear() && constraint->numMonomials() <= 20)
                         {
@@ -437,14 +437,14 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
      * If the are nonlinear, we try to find linear equations which can be deduced from this and add them to the formula.
      * @param formula
      */
-    void PreprocessingModule::addLinearDeductions(Formula* formula)
+    void PreprocessingModule::addLinearDeductions(FormulaT* formula)
     {
         assert(formula->getType() == AND);
-        for( std::list<Formula*>::const_iterator it = formula->subformulas().begin(); it != formula->subformulas().end(); ++it )
+        for( std::list<FormulaT*>::const_iterator it = formula->subformulas().begin(); it != formula->subformulas().end(); ++it )
         {
             if((*it)->getType() == CONSTRAINT)
             {
-                const Constraint* constraint = (*it)->pConstraint();
+                const ConstraintT* constraint = (*it)->pConstraint();
                 // If we already have a linear equation, we are not going to extract other linear equations from it
                 if( constraint->isLinear() )
                 {
@@ -489,7 +489,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                     if(constPart == (GiNaC::numeric)0 ) continue;
 
                     if(degree > 2) continue;
-                    Formula* deduction = new Formula(OR);
+                    FormulaT* deduction = new FormulaT(OR);
 
                     switch(constraint->relation())
                     {
@@ -539,14 +539,14 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
 
     }
 
-    void PreprocessingModule::addUpperBounds(Formula* formula, const GiNaC::symtab& symbols, GiNaC::numeric boundary, bool strict  ) const
+    void PreprocessingModule::addUpperBounds(FormulaT* formula, const GiNaC::symtab& symbols, GiNaC::numeric boundary, bool strict  ) const
     {
         for(GiNaC::symtab::const_iterator it = symbols.begin(); it != symbols.end(); ++it )
         {
            GiNaC::ex lhs(it->second - boundary);
            GiNaC::symtab sym;
            sym.insert(*it);
-           const Constraint* constraint = newConstraint( lhs, (strict ? CR_LESS : CR_LEQ), sym );
+           const ConstraintT* constraint = newConstraint( lhs, (strict ? CR_LESS : CR_LEQ), sym );
            formula->addSubformula(constraint);
         }
     }

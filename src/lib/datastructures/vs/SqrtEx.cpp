@@ -41,7 +41,7 @@ namespace vs
         mRadicand( smtrat::ZERO_RATIONAL )
     {}
 
-    SqrtEx::SqrtEx( const smtrat::Polynomial& _poly ):
+    SqrtEx::SqrtEx( const smtrat::Poly& _poly ):
         mConstantPart( _poly ),
         mFactor( smtrat::ZERO_RATIONAL ),
         mDenominator( smtrat::ONE_RATIONAL ),
@@ -50,7 +50,7 @@ namespace vs
         normalize();
     }
 
-    SqrtEx::SqrtEx( const smtrat::Polynomial& _constantPart, const smtrat::Polynomial& _factor, const smtrat::Polynomial& _denominator, const smtrat::Polynomial& _radicand ):
+    SqrtEx::SqrtEx( const smtrat::Poly& _constantPart, const smtrat::Poly& _factor, const smtrat::Poly& _denominator, const smtrat::Poly& _radicand ):
         mConstantPart( _constantPart ),
         mFactor( _radicand.isZero() ? _radicand : _factor ),
         mDenominator( (mFactor.isZero() && _constantPart.isZero()) ? smtrat::ONE_POLYNOMIAL : _denominator ),
@@ -98,7 +98,7 @@ namespace vs
             delete sqrtResult;
         }
         #ifdef USE_GINAC
-        smtrat::Polynomial gcdA;
+        smtrat::Poly gcdA;
         if( mFactor.isZero() )
         {
             gcdA = mConstantPart;
@@ -191,7 +191,7 @@ namespace vs
         return *this;
     }
 
-    SqrtEx& SqrtEx::operator=( const smtrat::Polynomial& _poly )
+    SqrtEx& SqrtEx::operator=( const smtrat::Poly& _poly )
     {
         mConstantPart = _poly;
         mFactor       = smtrat::ZERO_POLYNOMIAL;
@@ -298,17 +298,17 @@ namespace vs
     
     bool SqrtEx::evaluate( smtrat::Rational& _result, const smtrat::EvalRationalMap& _evalMap, int _rounding ) const
     {
-        smtrat::Polynomial radicandEvaluated = radicand().substitute( _evalMap );
+        smtrat::Poly radicandEvaluated = radicand().substitute( _evalMap );
         assert( radicandEvaluated.isConstant() );
         smtrat::Rational radicandValue = radicandEvaluated.constantPart();
         assert( radicandValue >= 0 );
-        smtrat::Polynomial factorEvaluated = factor().substitute( _evalMap );
+        smtrat::Poly factorEvaluated = factor().substitute( _evalMap );
         assert( factorEvaluated.isConstant() );
         smtrat::Rational factorValue = factorEvaluated.constantPart();
-        smtrat::Polynomial constantPartEvaluated = constantPart().substitute( _evalMap );
+        smtrat::Poly constantPartEvaluated = constantPart().substitute( _evalMap );
         assert( constantPartEvaluated.isConstant() );
         smtrat::Rational constantPartValue = constantPartEvaluated.constantPart();
-        smtrat::Polynomial denomEvaluated = denominator().substitute( _evalMap );
+        smtrat::Poly denomEvaluated = denominator().substitute( _evalMap );
         assert( denomEvaluated.isConstant() );
         smtrat::Rational denomValue = denomEvaluated.constantPart();
         // Check whether the resulting assignment is integer.
@@ -362,7 +362,7 @@ namespace vs
         return rounded;
     }
 
-    SqrtEx SqrtEx::subBySqrtEx( const smtrat::Polynomial& _substituteIn, const carl::Variable& _varToSubstitute, const SqrtEx& _substituteBy )
+    SqrtEx SqrtEx::subBySqrtEx( const smtrat::Poly& _substituteIn, const carl::Variable& _varToSubstitute, const SqrtEx& _substituteBy )
     {
         if( !_substituteIn.has( _varToSubstitute ) )
             return SqrtEx( _substituteIn );
@@ -378,12 +378,12 @@ namespace vs
          *      ----------------------------------------------
          *                           s^n
          */
-        smtrat::VarInfo varInfo = _substituteIn.getVarInfo<true>( _varToSubstitute );
-        const map<unsigned, smtrat::Polynomial>& coeffs = varInfo.coeffs();
+        smtrat::VarPolyInfo varInfo = _substituteIn.getVarInfo<true>( _varToSubstitute );
+        const map<unsigned, smtrat::Poly>& coeffs = varInfo.coeffs();
         // Calculate the s^k:   (0<=k<=n)
         auto coeff = coeffs.begin();
         unsigned lastDegree = varInfo.maxDegree();
-        vector<smtrat::Polynomial> sk;
+        vector<smtrat::Poly> sk;
         sk.push_back( smtrat::ONE_POLYNOMIAL );
         for( unsigned i = 1; i <= lastDegree; ++i )
         {
@@ -391,9 +391,9 @@ namespace vs
             sk.push_back( sk.back() * _substituteBy.denominator() );
         }
         // Calculate the constant part and factor of the square root of (q+r*sqrt{t})^k 
-        vector<smtrat::Polynomial> qk;
+        vector<smtrat::Poly> qk;
         qk.push_back( _substituteBy.constantPart() );
-        vector<smtrat::Polynomial> rk;
+        vector<smtrat::Poly> rk;
         rk.push_back( _substituteBy.factor() );
         // Let (q+r*sqrt{t})^l be (q'+r'*sqrt{t}) 
         // then (q+r*sqrt{t})^l+1  =  (q'+r'*sqrt{t}) * (q+r*sqrt{t})  =  ( q'*q+r'*r't  +  (q'*r+r'*q) * sqrt{t} )
@@ -405,8 +405,8 @@ namespace vs
             rk.push_back( rk.back() * _substituteBy.constantPart()  + qk.at( i - 1 ) * _substituteBy.factor() );
         }
         // Calculate the result:
-        smtrat::Polynomial resFactor = smtrat::ZERO_POLYNOMIAL;
-        smtrat::Polynomial resConstantPart = smtrat::ZERO_POLYNOMIAL;
+        smtrat::Poly resFactor = smtrat::ZERO_POLYNOMIAL;
+        smtrat::Poly resConstantPart = smtrat::ZERO_POLYNOMIAL;
         if( coeff->first == 0 )
         {
             resConstantPart += sk.back() * coeff->second;

@@ -32,7 +32,6 @@
 
 //#define CCPRINTORIGINS
 
-#include "../../Formula.h"
 //#include "ContractionCandidateManager.h"
 #include "../../Common.h"
 
@@ -52,14 +51,14 @@ namespace smtrat
              * Members:
              */
 //            const Constraint* mConstraint;
-            const Polynomial          mRhs;
-            const Constraint*         mConstraint;
+            const Poly          mRhs;
+            const ConstraintT*         mConstraint;
             Contractor<carl::SimpleNewton>&  mContractor;
             
             carl::Variable            mLhs;
             carl::Variable            mDerivationVar;
-            Polynomial                mDerivative;
-            PointerSet<Formula>       mOrigin;
+            Poly                mDerivative;
+            std::set<FormulaT>       mOrigin;
             unsigned    mId;
             bool        mIsLinear;
             bool        mDerived;
@@ -78,7 +77,7 @@ namespace smtrat
              * Constructors:
              */
 
-            ContractionCandidate( const ContractionCandidate& _original );
+            ContractionCandidate( const ContractionCandidate& _original ) = delete;
 //            :
 //            mRhs(_original.rhs()),
 //            mConstraint(_original.constraint()),
@@ -96,7 +95,7 @@ namespace smtrat
 //                mOrigin.insert(_original.origin().begin(), _original.origin().end());
 //            }
 
-            ContractionCandidate( carl::Variable _lhs, const Polynomial _rhs, const Constraint* _constraint, carl::Variable _derivationVar, Contractor<carl::SimpleNewton>& _contractor, const Formula* _origin, unsigned _id ):
+            ContractionCandidate( carl::Variable _lhs, const Poly _rhs, const ConstraintT* _constraint, carl::Variable _derivationVar, Contractor<carl::SimpleNewton>& _contractor, const FormulaT& _origin, unsigned _id ):
             mRhs(_rhs),
             mConstraint(_constraint),
             mContractor(_contractor),
@@ -118,7 +117,7 @@ namespace smtrat
              * @param _constraint
              * @param _derivationVar
              */
-            ContractionCandidate( carl::Variable _lhs, const Polynomial _rhs, const Constraint* _constraint, carl::Variable _derivationVar, Contractor<carl::SimpleNewton>& _contractor, unsigned _id ):
+            ContractionCandidate( carl::Variable _lhs, const Poly _rhs, const ConstraintT* _constraint, carl::Variable _derivationVar, Contractor<carl::SimpleNewton>& _contractor, unsigned _id ):
             mRhs(_rhs),
             mConstraint(_constraint),
             mContractor(_contractor),
@@ -145,12 +144,12 @@ namespace smtrat
              * Functions:
              */
 
-            const Polynomial& rhs() const
+            const Poly& rhs() const
             {
                 return mRhs;
             }
             
-            const Constraint* constraint() const
+            const ConstraintT* constraint() const
             {
                 return mConstraint;
             }
@@ -170,7 +169,7 @@ namespace smtrat
                 return mDerivationVar;
             }
 
-            const Polynomial& derivative() const
+            const Poly& derivative() const
             {
                 return mDerivative;
             }
@@ -180,28 +179,28 @@ namespace smtrat
                 return mLhs;
             }
 
-            const PointerSet<Formula>& origin() const
+            const std::set<FormulaT>& origin() const
             {
                 return mOrigin;
             }
 
-            PointerSet<Formula>& rOrigin()
+            std::set<FormulaT>& rOrigin()
             {
                 return mOrigin;
             }
 
-            void addOrigin( const Formula* _origin )
+            void addOrigin( const FormulaT& _origin )
             {
-                assert(_origin->getType() == CONSTRAINT);
+                assert(_origin.getType() == carl::FormulaType::CONSTRAINT);
                 mOrigin.insert(_origin);
             }
 
-            void removeOrigin( const Formula* _origin )
+            void removeOrigin( const FormulaT& _origin )
             {
                 mOrigin.erase(_origin);
             }
 
-            bool hasOrigin( const Formula* _origin ) const
+            bool hasOrigin( const FormulaT& _origin ) const
             {
                 return ( mOrigin.find(_origin) != mOrigin.end() );
             }

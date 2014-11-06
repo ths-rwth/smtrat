@@ -96,7 +96,7 @@ protected:
     /** A workaround to associate equalities in the passed formula originating from the gb
      * (in contrast to those which originate from simplified formulae)
      */
-    PointerSet<Formula> mGbEqualities;
+    std::set<FormulaT> mGbEqualities;
 
 public:
     GroebnerModule( ModuleType _type, const ModuleInput* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
@@ -108,13 +108,13 @@ public:
 	
 
 protected:
-    bool constraintByGB( smtrat::Relation cr );
+    bool constraintByGB( carl::Relation cr );
     
     void pushBacktrackPoint( ModuleInput::const_iterator btpoint );
     void popBacktrackPoint( ModuleInput::const_iterator btpoint );
     bool saveState( );
 
-    PointerSet<Formula> generateReasons( const carl::BitVector& reasons );
+    std::set<FormulaT> generateReasons( const carl::BitVector& reasons );
     void passGB( );
     
     void knownConstraintDeduction( const std::list<std::pair<carl::BitVector, carl::BitVector> >& deductions );
@@ -136,7 +136,7 @@ protected:
     void removeReceivedFormulaFromNewInequalities( ModuleInput::const_iterator _formula );
     void removeSubformulaFromPassedFormula( ModuleInput::iterator _formula );
 
-	GBPolynomial rewriteVariable(const GBPolynomial&, const carl::Variable&, const Term&, const BitVector&);
+	GBPolynomial rewriteVariable(const GBPolynomial&, const carl::Variable&, const TermT&, const BitVector&);
     bool validityCheck( );
 public:
     void printStateHistory( );

@@ -18,9 +18,7 @@
 #include <boost/spirit/include/phoenix_operator.hpp>
 
 #include "../../lib/Common.h"
-#include "../../lib/Formula.h"
 #include "../../lib/datastructures/VariantMap.h"
-#include "../../lib/SortManager.h"
 #include "ParserTypes.h"
 
 #include "carl/core/logging.h"
@@ -48,11 +46,11 @@ std::ostream& operator<<(std::ostream& os, const qi::symbols<char, T>& sym) {
 }
 
 struct TypeOfTerm : public boost::static_visitor<ExpressionType> {
-	ExpressionType operator()(const Formula*) const { return ExpressionType::BOOLEAN; }
-	ExpressionType operator()(const UFInstance&) const { return ExpressionType::UNINTERPRETED; }
-	ExpressionType operator()(const UVariable&) const { return ExpressionType::UNINTERPRETED; }
+	ExpressionType operator()(const FormulaT&) const { return ExpressionType::BOOLEAN; }
+	ExpressionType operator()(const carl::UFInstance&) const { return ExpressionType::UNINTERPRETED; }
+	ExpressionType operator()(const carl::UVariable&) const { return ExpressionType::UNINTERPRETED; }
 	ExpressionType operator()(const UninterpretedType&) const { return ExpressionType::UNINTERPRETED; }
-	ExpressionType operator()(const Polynomial&) const { return ExpressionType::THEORY; }
+	ExpressionType operator()(const Poly&) const { return ExpressionType::THEORY; }
 	ExpressionType operator()(const carl::Variable& v) const { return (*this)(v.getType()); }
 	ExpressionType operator()(const carl::VariableType& v) const {
 		switch (v) {
@@ -64,8 +62,8 @@ struct TypeOfTerm : public boost::static_visitor<ExpressionType> {
 				return ExpressionType::THEORY;
 		}
 	}
-	ExpressionType operator()(const Sort& v) const {
-		if (SortManager::getInstance().isInterpreted(v)) return (*this)(SortManager::getInstance().interpretedType(v));
+	ExpressionType operator()(const carl::Sort& v) const {
+		if (carl::SortManager::getInstance().isInterpreted(v)) return (*this)(carl::SortManager::getInstance().interpretedType(v));
 		else return ExpressionType::UNINTERPRETED;
 	}
 	template<typename T>
@@ -172,7 +170,7 @@ public:
 	OutputWrapper info() {
 		return OutputWrapper(mRegular, "(info \"", "\")\n");
 	}
-	virtual void add(const Formula* f) = 0;
+	virtual void add(const FormulaT& f) = 0;
 	virtual void check() = 0;
 	virtual void declareFun(const carl::Variable&) = 0;
 	virtual void declareSort(const std::string&, const unsigned&) = 0;
@@ -339,22 +337,22 @@ struct SortParser : public qi::grammar<Iterator, Sort(), Skipper> {
 			|	("(" >> identifier >> +sort >> ")")[qi::_val = px::bind(&SortParser::mkSort, px::ref(*this), qi::_1, qi::_2)]
 		;
 		sort.name("sort");
-		simpleSort.add("Bool", SortManager::getInstance().interpretedSort("Bool", carl::VariableType::VT_BOOL));
-		simpleSort.add("Int", SortManager::getInstance().interpretedSort("Int", carl::VariableType::VT_INT));
-		simpleSort.add("Real", SortManager::getInstance().interpretedSort("Real", carl::VariableType::VT_REAL));
+		simpleSort.add("Bool", carl::SortManager::getInstance().interpretedSort("Bool", carl::VariableType::VT_BOOL));
+		simpleSort.add("Int", carl::SortManager::getInstance().interpretedSort("Int", carl::VariableType::VT_INT));
+		simpleSort.add("Real", carl::SortManager::getInstance().interpretedSort("Real", carl::VariableType::VT_REAL));
 	}
 
 	Sort mkSort(const std::string& name) {
-		return newSort(name);
+		return carl::newSort(name);
 	}
 	Sort mkSort(const std::string& name, const std::vector<Sort>& parameters) {
-		return newSort(name, parameters);
+		return carl::newSort(name, parameters);
 	}
 
 	IdentifierParser identifier;
-	qi::symbols<char, Sort> simpleSort;
-	qi::symbols<char, Sort> parameters;
-	qi::rule<Iterator, Sort(), Skipper> sort;
+	qi::symbols<char, carl::Sort> simpleSort;
+	qi::symbols<char, carl::Sort> parameters;
+	qi::rule<Iterator, carl::Sort(), Skipper> sort;
 };
 
 struct StringParser : public qi::grammar<Iterator, std::string(), Skipper> {
@@ -370,7 +368,7 @@ struct RelationParser : public qi::symbols<char, Relation> {
 enum TheoryOperation : unsigned { ADD, SUB, MUL, DIV };
 enum BooleanOperation : unsigned { AND, OR, XOR, IFF };
 
-struct TheoryOpParser : public qi::symbols<char, Polynomial::ConstructorOperation> {
+struct TheoryOpParser : public qi::symbols<char, Poly::ConstructorOperation> {
 	TheoryOpParser();
 };
 
@@ -378,7 +376,7 @@ struct DomainParser : public qi::symbols<char, carl::VariableType> {
 	DomainParser();
 };
 
-struct BooleanOpParser : public qi::symbols<char, smtrat::Type> {
+struct BooleanOpParser : public qi::symbols<char, carl::FormulaType> {
 	BooleanOpParser();
 };
 

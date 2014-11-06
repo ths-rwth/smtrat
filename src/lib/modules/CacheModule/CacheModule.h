@@ -80,12 +80,12 @@ namespace cachemodule
             TCallCache mCallCache;
 
             cachemodule::TCall mActualTCall;
-            std::list<Formula::const_iterator> addingQueue;
+            std::list<FormulaT::const_iterator> addingQueue;
         public:
             /**
              * Constructors:
              */
-            CacheModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            CacheModule( ModuleType _type, const FormulaT* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             /**
              * Destructor:
@@ -97,9 +97,9 @@ namespace cachemodule
              */
 
             // Interfaces.
-            bool assertSubformula( Formula::const_iterator );
+            bool assertSubformula( FormulaT::const_iterator );
             Answer isConsistent();
-            void removeSubformula( Formula::const_iterator );
+            void removeSubformula( FormulaT::const_iterator );
 
             bool callCacheLookup();
             void callCacheSave();

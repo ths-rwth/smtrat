@@ -31,7 +31,7 @@
 #define VARIABLE_H
 
 #include "ContractionCandidate.h"
-#include "../../Formula.h"
+#include "../../Common.h"
 #include "../LRAModule/LRAModule.h"
 #include <assert.h>
 
@@ -71,8 +71,8 @@ namespace icp
             // interval Bound generation
             std::pair<Updated,Updated>         mBoundsSet; // internal, external
             std::pair<Updated,Updated>         mUpdated; // internal, external
-            const smtrat::Formula*             mInternalLeftBound;
-            const smtrat::Formula*             mInternalRightBound;
+            smtrat::FormulaT             mInternalLeftBound;
+            smtrat::FormulaT             mInternalRightBound;
             ModuleInput::iterator              mExternalLeftBound;
             ModuleInput::iterator              mExternalRightBound;
             ModuleInput::iterator              mDefaultPosition;
@@ -98,8 +98,8 @@ namespace icp
                 mLinear( true ),
                 mIntervalPos( _intervalPos ),
                 mUpdated( std::make_pair(Updated::NONE,Updated::NONE) ),
-                mInternalLeftBound( NULL ),
-                mInternalRightBound( NULL ),
+                mInternalLeftBound( FormulaT( carl::FormulaType::TRUE ) ),
+                mInternalRightBound( FormulaT( carl::FormulaType::TRUE ) ),
                 mExternalLeftBound( _defaultPosition ),
                 mExternalRightBound( _defaultPosition ),
                 mDefaultPosition( _defaultPosition )
@@ -236,12 +236,12 @@ namespace icp
                 return mUpdated.second;
             }
             
-            const smtrat::Formula* internalLeftBound() const
+            const smtrat::FormulaT& internalLeftBound() const
             {
                 return mInternalLeftBound;
             }
             
-            const smtrat::Formula* internalRightBound() const
+            const smtrat::FormulaT& internalRightBound() const
             {
                 return mInternalRightBound;
             }
@@ -256,12 +256,12 @@ namespace icp
                 return mExternalRightBound;
             }
             
-            void setInternalLeftBound( const smtrat::Formula* _left )
+            void setInternalLeftBound( const smtrat::FormulaT& _left )
             {
                 mInternalLeftBound = _left;
             }
             
-            void setInternalRightBound( const smtrat::Formula* _right )
+            void setInternalRightBound( const smtrat::FormulaT& _right )
             {
                 mInternalRightBound = _right;
             }
@@ -278,9 +278,9 @@ namespace icp
             
             Updated isInternalBoundsSet() const
             {
-                if( mInternalLeftBound != NULL )
+                if( !mInternalLeftBound.isTrue() )
                 {
-                    if( mInternalRightBound != NULL )
+                    if( !mInternalRightBound.isTrue() )
                         return Updated::BOTH;
                     return Updated::LEFT;
                 }

@@ -28,6 +28,7 @@
 #include "ModuleInput.h"
 
 using namespace std;
+using namespace carl;
 
 // Main smtrat namespace.
 namespace smtrat
@@ -50,7 +51,7 @@ namespace smtrat
         return result;
     }
         
-    ModuleInput::iterator ModuleInput::find( const Formula* _formula )
+    ModuleInput::iterator ModuleInput::find( const FormulaT& _formula )
     {
         #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
         auto res = mFormulaPositionMap.find( _formula );
@@ -67,7 +68,7 @@ namespace smtrat
         #endif
     }
 
-    ModuleInput::const_iterator ModuleInput::find( const Formula* _formula ) const
+    ModuleInput::const_iterator ModuleInput::find( const FormulaT& _formula ) const
     {
         #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
         auto res = mFormulaPositionMap.find( _formula );
@@ -85,7 +86,7 @@ namespace smtrat
     }
 
     #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
-    ModuleInput::iterator ModuleInput::find( const_iterator, const Formula* _formula )
+    ModuleInput::iterator ModuleInput::find( const_iterator, const FormulaT& _formula )
     {
         auto res = mFormulaPositionMap.find( _formula );
         if( res == mFormulaPositionMap.end() )
@@ -98,14 +99,14 @@ namespace smtrat
         }
     }
     #else
-    ModuleInput::iterator ModuleInput::find( const_iterator _hint, const Formula* _formula )
+    ModuleInput::iterator ModuleInput::find( const_iterator _hint, const FormulaT& _formula )
     {
         return std::find( _hint, end(), _formula );
     }
     #endif
 
     #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
-    ModuleInput::const_iterator ModuleInput::find( const_iterator, const Formula* _formula ) const
+    ModuleInput::const_iterator ModuleInput::find( const_iterator, const FormulaT& _formula ) const
     {
         auto res = mFormulaPositionMap.find( _formula );
         if( res == mFormulaPositionMap.end() )
@@ -118,7 +119,7 @@ namespace smtrat
         }
     }
     #else
-    ModuleInput::const_iterator ModuleInput::find( const_iterator _hint, const Formula* _formula ) const
+    ModuleInput::const_iterator ModuleInput::find( const_iterator _hint, const FormulaT& _formula ) const
     {
         return std::find( _hint, end(), _formula );
     }
@@ -129,12 +130,12 @@ namespace smtrat
         assert( _formula != end() );
         assert( _formula->origins().empty() );
         #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
-        mFormulaPositionMap.erase( _formula->pFormula() );
+        mFormulaPositionMap.erase( _formula->formula() );
         #endif
         return super::erase( _formula );
     }
 
-    bool ModuleInput::removeOrigin( iterator _formula, const Formula* _origin )
+    bool ModuleInput::removeOrigin( iterator _formula, const FormulaT& _origin )
     {
         assert( _formula != end() );
         auto& origs = _formula->rOrigins();
@@ -154,7 +155,7 @@ namespace smtrat
         return origs.empty();
     }
 
-    bool ModuleInput::removeOrigins( iterator _formula, const vector<PointerSet<Formula>>& _origins )
+    bool ModuleInput::removeOrigins( iterator _formula, const vector<set<FormulaT>>& _origins )
     {
         assert( _formula != end() );
         for( auto origsIter = _origins.begin(); origsIter != _origins.end(); ++origsIter )
@@ -167,7 +168,7 @@ namespace smtrat
         return _formula->origins().empty();
     }
 
-    bool ModuleInput::removeOrigins( iterator _formula, const PointerSet<Formula>& _origins )
+    bool ModuleInput::removeOrigins( iterator _formula, const set<FormulaT>& _origins )
     {
         assert( _formula != end() );
         auto& origs = _formula->rOrigins();
@@ -226,12 +227,12 @@ namespace smtrat
         }
     }
     
-    pair<ModuleInput::iterator,bool> ModuleInput::add( const Formula* _formula, PointerSet<Formula>&& _origins )
+    pair<ModuleInput::iterator,bool> ModuleInput::add( const FormulaT& _formula, set<FormulaT>&& _origins )
     {
         iterator iter = find( _formula );
         if( iter == end() )
         {
-            vector<PointerSet<Formula>> vecOfOrigs;
+            vector<set<FormulaT>> vecOfOrigs;
             vecOfOrigs.emplace_back( move( _origins ) );
             emplace_back( _formula, move( vecOfOrigs ) );
             iterator pos = --end();
@@ -247,7 +248,7 @@ namespace smtrat
         }
     }
 
-    pair<ModuleInput::iterator,bool> ModuleInput::add( const Formula* _formula, vector<PointerSet<Formula>>&& _origins )
+    pair<ModuleInput::iterator,bool> ModuleInput::add( const FormulaT& _formula, vector<set<FormulaT>>&& _origins )
     {
         iterator iter = find( _formula );
         if( iter == end() )
@@ -268,7 +269,7 @@ namespace smtrat
         }
     }
     
-    void annotateFormula( const Formula*, const vector<parser::Attribute>& )
+    void annotateFormula( const FormulaT&, const vector<parser::Attribute>& )
     {
     }
 } // namespace smtrat

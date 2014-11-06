@@ -10,6 +10,5 @@
 #include "../../Common.h"
 #include "carl/core/Term.h"
 
-typedef carl::Term<smtrat::Rational> Term;
 typedef carl::BitVector BitVector;
 

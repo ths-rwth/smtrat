@@ -34,7 +34,7 @@
 //#define VS_PRINT_ANSWERS
 //#define VS_LOG_INTERMEDIATE_STEPS
 
-#include "../../Constraint.h"
+#include "../../Common.h"
 #include "Substitute.h"
 #include "State.h"
 #include "VSSettings.h"
@@ -49,7 +49,7 @@ namespace smtrat
         private:
 
             // Type and object definitions.
-            typedef std::map<const Formula* const, const vs::Condition*>    FormulaConditionMap;
+            typedef std::map<FormulaT, const vs::Condition*>    FormulaConditionMap;
             typedef std::vector<std::pair<carl::Variable,carl::Variable>>   VarNamePairVector;
 
             // Members.
@@ -60,7 +60,7 @@ namespace smtrat
             size_t                      mStepCounter;
             #endif
             vs::State*                  mpStateTree;
-            Variables                   mAllVariables;
+            carl::Variables             mAllVariables;
             FormulaConditionMap         mFormulaConditionMap;
             vs::ValuationMap            mRanking;
             mutable VarNamePairVector   mVariableVector;
@@ -78,7 +78,7 @@ namespace smtrat
             Answer isConsistent();
             void removeSubformula( ModuleInput::const_iterator );
             void updateModel() const;
-            double rateCall( const PointerSet<Formula>& ) const;
+            double rateCall( const std::set<FormulaT>& ) const;
 
             // Printing methods.
             void printAll( const std::string& = "", std::ostream& = std::cout ) const;
@@ -110,7 +110,7 @@ namespace smtrat
             bool removeStateFromRanking( vs::State& );
             void removeStatesFromRanking( vs::State& );
             bool checkRanking() const;
-            PointerSet<Formula> getReasons( const std::set<const vs::Condition*>& _conditions ) const;
+            std::set<FormulaT> getReasons( const std::set<const vs::Condition*>& _conditions ) const;
             void updateInfeasibleSubset( bool = false );
             EvalRationalMap getIntervalAssignment( const vs::State* _state ) const;
             bool solutionInDomain();

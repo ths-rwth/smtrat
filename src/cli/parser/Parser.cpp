@@ -5,11 +5,6 @@
 #include <limits>
 #include <set>
 
-#include "../../lib/ConstraintPool.h"
-#include "../../lib/Formula.h"
-#include "../../lib/UFInstancesManager.h"
-#include "../../lib/UFManager.h"
-#include "lib/FormulaPool.h"
 #include "carl/util/debug.h"
 
 namespace smtrat {
@@ -168,21 +163,21 @@ bool SMTLIBParser::parse(std::istream& in, const std::string&) {
 	return qi::phrase_parse(begin, end, main, skipper);
 }
 
-void SMTLIBParser::add(const Formula* f) {
+void SMTLIBParser::add(const FormulaT& f) {
 	if (this->handler->printInstruction()) handler->regular() << "(assert " << *f << ")" << std::endl;
 	assert(f != nullptr);
 	if (!mTheoryIteBindings.empty()) {
 		// There have been theory ite expressions within this formula.
 		// We add the formulas from mTheoryIteBindings to the formula.
 		mTheoryIteBindings.insert(f);
-		f = newFormula(smtrat::AND, std::move(mTheoryIteBindings));
+		f = newFormula(carl::FormulaType::AND, std::move(mTheoryIteBindings));
 		mTheoryIteBindings.clear();
 	}
 	if (!mUninterpretedEqualities.empty()) {
 		// There have been uninterpreted expressions within this formula.
 		// We add the formulas from mUninterpretedExpressions to the formula.
 		mUninterpretedEqualities.insert(f);
-		f = newFormula(smtrat::AND, std::move(mUninterpretedEqualities));
+		f = newFormula(carl::FormulaType::AND, std::move(mUninterpretedEqualities));
 		mUninterpretedEqualities.clear();
 	}
 	
@@ -276,9 +271,9 @@ void SMTLIBParser::defineFun(const std::string& name, const std::vector<carl::Va
 			return;
 		}
 		if (args.size() == 0) {
-			this->bind_bool.sym.add(name, boost::get<const Formula*>(term));
+			this->bind_bool.sym.add(name, boost::get<FormulaT>(term));
 		} else {
-			this->funmap_bool.add(name, std::make_tuple(name, args, boost::get<const Formula*>(term)));
+			this->funmap_bool.add(name, std::make_tuple(name, args, boost::get<FormulaT>(term)));
 		}
 		break;
 	case ExpressionType::THEORY:
@@ -293,9 +288,9 @@ void SMTLIBParser::defineFun(const std::string& name, const std::vector<carl::Va
 			}
 		}
 		if (args.size() == 0) {
-			this->bind_theory.sym.add(name, boost::get<Polynomial>(term));
+			this->bind_theory.sym.add(name, boost::get<Poly>(term));
 		} else {
-			this->funmap_theory.add(name, std::make_tuple(name, args, boost::get<Polynomial>(term)));
+			this->funmap_theory.add(name, std::make_tuple(name, args, boost::get<Poly>(term)));
 		}
 		break;
 	case ExpressionType::UNINTERPRETED:
@@ -375,8 +370,8 @@ void SMTLIBParser::setOption(const Attribute& option) {
 
 #if 1
 
-const Formula* SMTLIBParser::mkConstraint(const Polynomial& lhs, const Polynomial& rhs, Relation rel) {
-	Polynomial p = lhs - rhs;
+FormulaT SMTLIBParser::mkConstraint(const Poly& lhs, const Poly& rhs, carl::Relation rel) {
+	Poly p = lhs - rhs;
 	std::set<carl::Variable> pVars = p.gatherVariables();
 	std::vector<carl::Variable> vars;
 	while (!pVars.empty()) {
@@ -391,18 +386,18 @@ const Formula* SMTLIBParser::mkConstraint(const Polynomial& lhs, const Polynomia
 	std::size_t n = vars.size();
 	if (n == 0) {
 		// There are no ITEs.
-		const Constraint* cons = newConstraint(p, rel);
+		const ConstraintT* cons = newConstraint(p, rel);
 		return newFormula(cons);
 	} else if (n < 4) {
 		// There are only a few ITEs, hence we expand them here directly to 2^n cases.
 		// 2^n Polynomials with values substituted.
-		std::vector<Polynomial> polys({p});
+		std::vector<Poly> polys({p});
 		// 2^n Formulas collecting the conditions.
-		std::vector<PointerSet<Formula>> conds(1 << n);
+		std::vector<std::set<FormulaT>> conds(1 << n);
 		unsigned repeat = 1 << (n-1);
 		for (auto v: vars) {
 			auto t = this->mTheoryItes[v];
-			std::vector<Polynomial> ptmp;
+			std::vector<Poly> ptmp;
 			for (auto& p: polys) {
 				// Substitute both possibilities for this ITE.
 				ptmp.push_back(p.substitute(v, std::get<1>(t)));
@@ -410,7 +405,7 @@ const Formula* SMTLIBParser::mkConstraint(const Polynomial& lhs, const Polynomia
 			}
 			std::swap(polys, ptmp);
 			// Add the conditions at the appropriate positions.
-			const Formula* f[2]= { std::get<0>(t), newNegation(std::get<0>(t)) };
+			FormulaT f[2]= { std::get<0>(t), newNegation(std::get<0>(t)) };
 			for (size_t i = 0; i < (size_t)(1 << n); i++) {
 				conds[i].insert(f[0]);
 				if ((i+1) % repeat == 0) std::swap(f[0], f[1]);
@@ -418,7 +413,7 @@ const Formula* SMTLIBParser::mkConstraint(const Polynomial& lhs, const Polynomia
 			repeat /= 2;
 		}
 		// Now combine everything: (and (=> (and conditions) constraint) ...)
-		PointerSet<Formula> subs;
+		std::set<FormulaT> subs;
 		for (unsigned i = 0; i < polys.size(); i++) {
 			subs.insert(newImplication(newFormula(Type::AND, conds[i]), newFormula(newConstraint(polys[i], rel))));
 		}
@@ -428,18 +423,18 @@ const Formula* SMTLIBParser::mkConstraint(const Polynomial& lhs, const Polynomia
 		// There are many ITEs, we keep the auxiliary variables.
 		for (auto v: vars) {
 			auto t = this->mTheoryItes[v];
-			const Formula* consThen = newFormula(newConstraint(Polynomial(v) - std::get<1>(t), Relation::EQ));
-			const Formula* consElse = newFormula(newConstraint(Polynomial(v) - std::get<2>(t), Relation::EQ));
+			FormulaT consThen = newFormula(newConstraint(Poly(v) - std::get<1>(t), carl::Relation::EQ));
+			FormulaT consElse = newFormula(newConstraint(Poly(v) - std::get<2>(t), carl::Relation::EQ));
 
 			mTheoryIteBindings.emplace(newImplication(std::get<0>(t), consThen));
 			mTheoryIteBindings.emplace(newImplication(newNegation(std::get<0>(t)), consElse));
 		}
-		const Constraint* cons = newConstraint(p, rel);
+		const ConstraintT* cons = newConstraint(p, rel);
 		return newFormula(cons);
 	}
 }
 
-Polynomial SMTLIBParser::mkIteInExpr(const Formula* _condition, Polynomial& _then, Polynomial& _else) {
+Poly SMTLIBParser::mkIteInExpr(const FormulaT& _condition, Poly& _then, Poly& _else) {
 	
 	if (_then == _else) return _then;
 	if (_condition == falseFormula()) return _else;
@@ -448,17 +443,17 @@ Polynomial SMTLIBParser::mkIteInExpr(const Formula* _condition, Polynomial& _the
 	carl::Variable auxVar = (mLogic == Logic::QF_LIA || mLogic == Logic::QF_NIA) ? newAuxiliaryIntVariable() : newAuxiliaryRealVariable();
 
 	mTheoryItes[auxVar] = std::make_tuple(_condition, _then, _else);
-	return Polynomial(auxVar);
+	return Poly(auxVar);
 }
 
 #else
 
-const Formula* SMTLIBParser::mkConstraint(const Polynomial& lhs, const Polynomial& rhs, Relation rel) {
+FormulaT SMTLIBParser::mkConstraint(const Poly& lhs, const Poly& rhs, carl::Relation rel) {
 	const Constraint* cons = newConstraint(lhs-rhs, rel);
 	return newFormula(cons);
 }
 
-Polynomial SMTLIBParser::mkIteInExpr(const Formula* _condition, Polynomial& _then, Polynomial& _else) {
+Poly SMTLIBParser::mkIteInExpr(const FormulaT& _condition, Poly& _then, Poly& _else) {
 	
 	if (_then == _else) return _then;
 	if (_condition == falseFormula()) return _else;
@@ -466,19 +461,19 @@ Polynomial SMTLIBParser::mkIteInExpr(const Formula* _condition, Polynomial& _the
 	
 	carl::Variable auxVar = (mLogic == Logic::QF_LIA || mLogic == Logic::QF_NIA) ? newAuxiliaryIntVariable() : newAuxiliaryRealVariable();
 
-	const Formula* consThen = mkConstraint(Polynomial(auxVar), _then, Relation::EQ);
-	const Formula* consElse = mkConstraint(Polynomial(auxVar), _else, Relation::EQ);
+	FormulaT consThen = mkConstraint(Poly(auxVar), _then, carl::Relation::EQ);
+	FormulaT consElse = mkConstraint(Poly(auxVar), _else, carl::Relation::EQ);
 
 	mTheoryIteBindings.emplace(newImplication(_condition, consThen));
 	mTheoryIteBindings.emplace(newImplication(newNegation(_condition), consElse));
-	return Polynomial(auxVar);
+	return Poly(auxVar);
 }
 
 #endif
 
-const smtrat::Formula* SMTLIBParser::mkFormula( smtrat::Type type, PointerSet<Formula>& _subformulas )
+FormulaT SMTLIBParser::mkFormula( carl::FormulaType type, std::set<FormulaT>& _subformulas )
 {
-	assert(type == smtrat::AND || type == smtrat::OR || type == smtrat::XOR || type == smtrat::IFF);
+	assert(type == carl::FormulaType::AND || type == carl::FormulaType::OR || type == carl::FormulaType::XOR || type == carl::FormulaType::IFF);
 	return newFormula(type, _subformulas);
 }
 
@@ -533,7 +528,7 @@ carl::Variable SMTLIBParser::addVariableBinding(const std::pair<std::string, Sor
 	}
 	case ExpressionType::THEORY: {
 		carl::Variable v = carl::VariablePool::getInstance().getFreshVariable(b.first, SortManager::getInstance().interpretedType(b.second));
-		bind_theory.sym.add(b.first, Polynomial(v));
+		bind_theory.sym.add(b.first, Poly(v));
 		return v;
 	}
 	case ExpressionType::UNINTERPRETED:
@@ -546,17 +541,17 @@ carl::Variable SMTLIBParser::addVariableBinding(const std::pair<std::string, Sor
 	}
 }
 
-void SMTLIBParser::addTheoryBinding(std::string& _varName, Polynomial& _polynomial) {
+void SMTLIBParser::addTheoryBinding(std::string& _varName, Poly& _polynomial) {
 	assert(this->isSymbolFree(_varName));
 	bind_theory.sym.add(_varName, _polynomial);
 }
 
-void SMTLIBParser::addBooleanBinding(std::string& _varName, const Formula* _formula) {
+void SMTLIBParser::addBooleanBinding(std::string& _varName, const FormulaT& _formula) {
 	assert(this->isSymbolFree(_varName));
 	bind_bool.sym.add(_varName, _formula);
 }
 
-bool SMTLIBParser::checkArguments(const std::string& name, const std::vector<carl::Variable>& types, const Arguments& args, std::map<carl::Variable, const Formula*>& boolAssignments, std::map<carl::Variable, Polynomial>& theoryAssignments) {
+bool SMTLIBParser::checkArguments(const std::string& name, const std::vector<carl::Variable>& types, const Arguments& args, std::map<carl::Variable, FormulaT>& boolAssignments, std::map<carl::Variable, Poly>& theoryAssignments) {
 	if (types.size() != args.size()) {
 		this->handler->error() << "The number of arguments for \"" << name << "\" does not match its declaration.";
 		return false;
@@ -568,55 +563,55 @@ bool SMTLIBParser::checkArguments(const std::string& name, const std::vector<car
 			return false;
 		}
 		if (type == ExpressionType::BOOLEAN) {
-			boolAssignments[types[id]] = boost::get<const Formula*>(args[id]);
+			boolAssignments[types[id]] = boost::get<FormulaT>(args[id]);
 		} else {
-			theoryAssignments[types[id]] = boost::get<Polynomial>(args[id]);
+			theoryAssignments[types[id]] = boost::get<Poly>(args[id]);
 		}
 	}
 	return true;
 }
 
-const smtrat::Formula* SMTLIBParser::applyBooleanFunction(const BooleanFunction& f, const Arguments& args) {
-	std::map<carl::Variable, const Formula*> boolAssignments;
-	std::map<carl::Variable, Polynomial> theoryAssignments;
+FormulaT SMTLIBParser::applyBooleanFunction(const BooleanFunction& f, const Arguments& args) {
+	std::map<carl::Variable, FormulaT> boolAssignments;
+	std::map<carl::Variable, Poly> theoryAssignments;
 	if (!checkArguments(std::get<0>(f), std::get<1>(f), args, boolAssignments, theoryAssignments)) {
 		return nullptr;
 	}
 	return std::get<2>(f)->substitute(boolAssignments, theoryAssignments);
 }
-const smtrat::Formula* SMTLIBParser::applyUninterpretedBooleanFunction(const UninterpretedFunction& f, const Arguments& args) {
+FormulaT SMTLIBParser::applyUninterpretedBooleanFunction(const UninterpretedFunction& f, const Arguments& args) {
 	carl::Variable v = newAuxiliaryBooleanVariable();
 	mUninterpretedEqualities.insert(newFormula(std::move(UEquality(UVariable(v), applyUninterpretedFunction(f, args), false))));
 	return newBoolean(v);
 }
-Polynomial SMTLIBParser::applyTheoryFunction(const TheoryFunction& f, const Arguments& args) {
-	std::map<carl::Variable, const Formula*> boolAssignments;
-	std::map<carl::Variable, Polynomial> theoryAssignments;
+Poly SMTLIBParser::applyTheoryFunction(const TheoryFunction& f, const Arguments& args) {
+	std::map<carl::Variable, FormulaT> boolAssignments;
+	std::map<carl::Variable, Poly> theoryAssignments;
 	if (!checkArguments(std::get<0>(f), std::get<1>(f), args, boolAssignments, theoryAssignments)) {
-		return smtrat::Polynomial();
+		return smtrat::Poly();
 	}
 	return std::get<2>(f).substitute(theoryAssignments);
 }
 
-Polynomial SMTLIBParser::applyUninterpretedTheoryFunction(const UninterpretedFunction& f, const Arguments& args) {
+Poly SMTLIBParser::applyUninterpretedTheoryFunction(const UninterpretedFunction& f, const Arguments& args) {
 	assert(SortManager::getInstance().isInterpreted(f.codomain()));
 	
 	carl::Variable v = newAuxiliaryVariable(SortManager::getInstance().interpretedType(f.codomain()));
 	mUninterpretedEqualities.insert(newFormula(std::move(UEquality(UVariable(v), applyUninterpretedFunction(f, args), false))));
-	return Polynomial(v);
+	return Poly(v);
 }
 
 UFInstance SMTLIBParser::applyUninterpretedFunction(const UninterpretedFunction& f, const Arguments& args) {
 	std::vector<UVariable> vars;
 	for (auto v: args) {
-		if (const Formula** f = boost::get<const Formula*>(&v)) {
+		if (FormulaT* f = boost::get<FormulaT>(&v)) {
 			carl::Variable tmp = newAuxiliaryBooleanVariable();
 			vars.push_back(UVariable(tmp));
 			mUninterpretedEqualities.insert(newFormula(Type::AND, newBoolean(tmp), *f));
-		} else if (Polynomial* p = boost::get<Polynomial>(&v)) {
+		} else if (Poly* p = boost::get<Poly>(&v)) {
 			carl::Variable tmp = newAuxiliaryRealVariable();
 			vars.push_back(UVariable(tmp));
-			mUninterpretedEqualities.insert(newFormula(newConstraint(*p - tmp, Relation::EQ)));
+			mUninterpretedEqualities.insert(newFormula(newConstraint(*p - tmp, carl::Relation::EQ)));
 		} else if (UVariable* uv = boost::get<UVariable>(&v)) {
 			vars.push_back(*uv);
 		} else if (UFInstance* uf = boost::get<UFInstance>(&v)) {

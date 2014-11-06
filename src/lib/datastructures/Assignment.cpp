@@ -62,7 +62,7 @@ namespace smtrat
         return result;
     }
     
-    unsigned satisfies( const Model& _assignment, const Formula* _formula )
+    unsigned satisfies( const Model& _assignment, const FormulaT* _formula )
     {
         EvalRationalMap rationalAssigns;
         if( getRationalAssignmentsFromModel( _assignment, rationalAssigns ) )

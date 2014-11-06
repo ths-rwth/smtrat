@@ -14,7 +14,7 @@
 namespace smtrat{
     class VariableRewriteRule {
     public:
-        VariableRewriteRule(unsigned varNr, const Term& term, const carl::BitVector& reasons ) 
+        VariableRewriteRule(unsigned varNr, const TermT& term, const carl::BitVector& reasons ) 
 		: mVarNr(varNr), mTerm(term), mReasons(reasons)
         {
             
@@ -28,7 +28,7 @@ namespace smtrat{
         /// Rewrite a variable (identified by this number)
         unsigned mVarNr;
         /// Rewrite with this term
-        Term mTerm;
+        TermT mTerm;
         /// Based on this origins
         carl::BitVector mReasons;
     };

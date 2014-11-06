@@ -19,37 +19,10 @@ endif()
 # Core library
 # # # # # # # # # # #
 set(lib_core_src
-    Formula.cpp
-    Constraint.cpp
-    ConstraintPool.cpp
-    FormulaPool.cpp
-    Sort.cpp
-    SortManager.cpp
-    UninterpretedFunction.cpp
-    UFInstance.cpp
-    UFInstancesManager.cpp
-    UFManager.cpp
-    VariablePool.cpp
 )
 
 set(lib_core_headers
-    Condition.h
-    Formula.h
     Common.h
-    Constraint.h
-    ConstraintPool.h
-    FormulaPool.h
-    VariablePool.h
-    smtrat.h
-    Sort.h
-    SortManager.h
-    UEquality.h
-    UVariable.h
-    UninterpretedFunction.h
-    UFInstance.h
-    UFInstancesManager.h
-    UFManager.h
-    UninterpretedVariable.h
 )
 
 # Include modules

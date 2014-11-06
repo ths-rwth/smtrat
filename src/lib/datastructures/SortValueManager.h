@@ -38,6 +38,8 @@
 #include "SortValue.h"
 #include "../Common.h"
 
+using namespace carl;
+
 namespace smtrat
 {
 
@@ -53,7 +55,7 @@ class SortValueManager : public carl::Singleton<SortValueManager>
         // Members.
 
         /// Stores for each sort the latest instantiated sort value.
-        FastMap<Sort, SortValue::IDType> mSortValueIDMap;
+        FastMap<carl::Sort, SortValue::IDType> mSortValueIDMap;
 
         /**
          * Constructs a sort value manager.
@@ -69,7 +71,7 @@ class SortValueManager : public carl::Singleton<SortValueManager>
          * @param _sort The sort to create a new value for.
          * @return The resulting sort value.
          */
-        SortValue newSortValue( const Sort& _sort );
+        SortValue newSortValue( const carl::Sort& _sort );
 };
 
 /**
@@ -77,7 +79,7 @@ class SortValueManager : public carl::Singleton<SortValueManager>
  * @param _sort The sort to create a new value for.
  * @return The resulting sort value.
  */
-inline SortValue newSortValue( const Sort& _sort )
+inline SortValue newSortValue( const carl::Sort& _sort )
 {
     return SortValueManager::getInstance().newSortValue( _sort );
 }

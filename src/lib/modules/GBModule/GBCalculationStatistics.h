@@ -13,7 +13,7 @@
 #include <map>
 #include <iostream>
 
-#include "../../Constraint.h"
+#include "../../Common.h"
 #include "../../utilities/stats/Statistics.h"
 
 #include "carl/groebner/gb-buchberger/BuchbergerStats.h"

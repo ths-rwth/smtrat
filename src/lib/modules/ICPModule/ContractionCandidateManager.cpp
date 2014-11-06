@@ -41,16 +41,16 @@ namespace smtrat
     }
     
     ContractionCandidate* ContractionCandidateManager::createCandidate (carl::Variable _lhs, 
-                                                                        const Polynomial _rhs,
-                                                                        const Constraint* _constraint,
+                                                                        const Poly _rhs,
+                                                                        const ConstraintT* _constraint,
                                                                         carl::Variable _derivationVar,
                                                                         Contractor<carl::SimpleNewton>& _contractor,
-                                                                        const Formula* _origin )
+                                                                        const FormulaT& _origin )
     {
         ContractionCandidate* tmp;
         
         // Todo: Is it better to make the replacement here instead of outside?
-        if ( _origin == NULL )
+        if ( _origin.isTrue() )
         {
             tmp = new ContractionCandidate(_lhs, _rhs, _constraint, _derivationVar, _contractor, mCurrentId);
         }

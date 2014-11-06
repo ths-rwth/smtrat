@@ -82,11 +82,11 @@ namespace smtrat
          * @return a pointer to the created contraction candidate
          */
         ContractionCandidate* createCandidate ( carl::Variable _lhs,
-                                                const Polynomial _rhs,
-                                                const Constraint* _constraint,
+                                                const Poly _rhs,
+                                                const ConstraintT* _constraint,
                                                 carl::Variable _derivationVar,
                                                 Contractor<carl::SimpleNewton>& _contractor,
-                                                const Formula* _origin = NULL );
+                                                const FormulaT& _origin );
         
         /**
          * Returns the id of the given contraction candidate

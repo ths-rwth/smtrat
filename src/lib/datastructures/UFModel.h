@@ -31,7 +31,6 @@
 #include <utility>
 #include "../Common.h"
 #include "SortValue.h"
-#include "../UninterpretedFunction.h"
 
 namespace smtrat
 {
@@ -42,10 +41,10 @@ namespace smtrat
 class UFModel : private std::map<std::vector<SortValue>,SortValue>
 {
 	private:
-		UninterpretedFunction uf;
+		carl::UninterpretedFunction uf;
     public:
         
-        UFModel(const UninterpretedFunction& uf):
+        UFModel(const carl::UninterpretedFunction& uf):
             std::map<std::vector<SortValue>,SortValue>(), uf(uf)
         {}
         

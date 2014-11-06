@@ -34,34 +34,19 @@ namespace smtrat
     namespace lra
     {
         template<typename T1, typename T2>
-        Bound<T1, T2>::Bound():
-            mDeduced( false ),
-            mType( UPPER ),
-            mLimit( NULL ),
-            mVar( NULL ),
-            mpAsConstraint( NULL ),
-            mpInfo( NULL )
-        {
-            mpOrigins = new std::vector<PointerSet<Formula> >();
-            PointerSet<Formula> originSet = PointerSet<Formula>();
-            originSet.insert( NULL );
-            mpOrigins->push_back( originSet );
-        }
-
-        template<typename T1, typename T2>
-        Bound<T1, T2>::Bound( const Value<T1>* const _limit, Variable<T1, T2>* const _var, Type _type, const smtrat::Formula* _constraint, Bound<T1, T2>::Info* _boundInfo, bool _deduced ):
+        Bound<T1, T2>::Bound( const Value<T1>* const _limit, Variable<T1, T2>* const _var, Type _type, const smtrat::FormulaT& _constraint, Bound<T1, T2>::Info* _boundInfo, bool _deduced ):
             mDeduced( _deduced ),
             mType( _type ),
             mLimit( _limit ),
             mVar( _var ),
-            mpAsConstraint( _constraint ),
+            mAsConstraint( _constraint ),
             mpInfo( _boundInfo )
         {
-            mpOrigins = new std::vector<PointerSet<Formula> >();
+            mpOrigins = new std::vector<std::set<FormulaT> >();
             if( _limit == NULL )
             {
-                PointerSet<Formula> originSet = PointerSet<Formula>();
-                originSet.insert( NULL );
+                std::set<FormulaT> originSet;
+                originSet.insert( smtrat::FormulaT( carl::FormulaType::TRUE ) );
                 mpOrigins->push_back( originSet );
             }
         }
@@ -269,10 +254,10 @@ namespace smtrat
             else
             {
                 limit().print();
-                if( _withOrigins && mpAsConstraint != NULL )
-                    _out << "  from  " << *mpAsConstraint;
-                if( _withOrigins && mpInfo->neqRepresentation != NULL )
-                    _out << " [" << *mpInfo->neqRepresentation << "]";
+                if( _withOrigins )
+                    _out << "  from  " << mAsConstraint;
+                if( _withOrigins )
+                    _out << " [" << mpInfo->neqRepresentation << "]";
             }
             if( mDeduced ) _out << " (deduced) ";
             if( _withOrigins )
@@ -283,14 +268,7 @@ namespace smtrat
                     _out << "{ ";
                     for( auto origin = originSet->begin(); origin != originSet->end(); ++origin )
                     {
-                        if( *origin != NULL )
-                        {
-                            _out << **origin << " ";
-                        }
-                        else
-                        {
-                            _out << "NULL ";
-                        }
+                        _out << *origin << " ";
                     }
                     _out << "} ";
                 }

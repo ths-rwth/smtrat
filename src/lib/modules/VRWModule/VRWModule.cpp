@@ -36,7 +36,7 @@ namespace smtrat {
 
 using namespace vrw;
 
-    VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+    VRWModule::VRWModule( ModuleType _type, const FormulaT* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager )
     {
 
@@ -58,7 +58,7 @@ using namespace vrw;
      *
      * @return true
      */
-    bool VRWModule::assertSubformula( Formula::const_iterator _subformula )
+    bool VRWModule::assertSubformula( FormulaT::const_iterator _subformula )
     {
         #ifdef SMTRAT_VRW_DEBUGOUTPUT
         std::cout << "assert vrw " << **_subformula << "(" << *_subformula << ")" << std::endl;
@@ -75,7 +75,7 @@ using namespace vrw;
             readd.insert(readd.end(), addAsWell.begin(), addAsWell.end() );
         }
         std::list<ConstraintNode*>::iterator node = mMatchingGraph.last();
-        mConstraintPositions.insert(std::pair<Formula::const_iterator, std::list<ConstraintNode*>::iterator>(_subformula, node));
+        mConstraintPositions.insert(std::pair<FormulaT::const_iterator, std::list<ConstraintNode*>::iterator>(_subformula, node));
 
         return true;
     }
@@ -85,11 +85,11 @@ using namespace vrw;
      */
     Answer VRWModule::isConsistent()
     {
-        std::list<std::pair<Formula::iterator, bool> > notNecessary;
+        std::list<std::pair<FormulaT::iterator, bool> > notNecessary;
         do
         {
             notNecessary = mMatchingGraph.findIrrelevantConstraints(mpPassedFormula->end());
-            for(std::list<std::pair<Formula::iterator, bool> >::const_iterator it = notNecessary.begin(); it != notNecessary.end(); ++it)
+            for(std::list<std::pair<FormulaT::iterator, bool> >::const_iterator it = notNecessary.begin(); it != notNecessary.end(); ++it)
             {
                 removeSubformulaFromPassedFormula( it->first, it->second, !it->second);
                 assert(it->first != mpPassedFormula->end());
@@ -120,7 +120,7 @@ using namespace vrw;
      *
      * @param _subformula The sub formula of the received formula to remove.
      */
-    void VRWModule::removeSubformula( Formula::const_iterator _subformula )
+    void VRWModule::removeSubformula( FormulaT::const_iterator _subformula )
     {
         assert(mConstraintPositions.find(_subformula) != mConstraintPositions.end());
         #ifdef SMTRAT_VRW_DEBUGOUTPUT
@@ -129,7 +129,7 @@ using namespace vrw;
         //print();
         //printConstraintPositions();
         //mMatchingGraph.print();
-        Formula::iterator passedFormula = (*mConstraintPositions[_subformula])->posInPassedFormula;
+        FormulaT::iterator passedFormula = (*mConstraintPositions[_subformula])->posInPassedFormula;
         mMatchingGraph.removeConstraint( mConstraintPositions[_subformula], mpPassedFormula->end() );
         mConstraintPositions.erase(_subformula);
         clearReceivedFormula(_subformula, passedFormula);

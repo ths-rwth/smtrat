@@ -33,6 +33,7 @@
 #define SMTRAT_MODULEFACTORY_H
 
 #include "../modules/ModuleType.h"
+#include "../Common.h"
 #include <atomic>
 
 namespace smtrat
@@ -41,7 +42,6 @@ namespace smtrat
     class Manager;
     class Module;
     class ModuleInput;
-    class Formula;
 
     typedef std::vector< std::atomic_bool* > Conditionals;
 

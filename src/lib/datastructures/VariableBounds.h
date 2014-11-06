@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../Formula.h"
+#include "../Common.h"
 #include <iomanip>
 
 namespace smtrat
@@ -54,7 +54,7 @@ namespace smtrat
                 /// The variable for which the bound is declared.
                 Variable<T>* const mpVariable;
                 /// A set of origins of the bound, e.g., x-3<0 is the origin of the bound <3.
-                std::set<const T*>* const mpOrigins; // Here, we cannot use the PointerSet, which falls back on the comparison operator
+                std::set<T>* const mpOrigins; // Here, we cannot use the carl::PointerSet, which falls back on the comparison operator
                                                      // of T, as we must ensure to store for every pointer to T one origin.
                 
             public:
@@ -183,7 +183,7 @@ namespace smtrat
                  * @return true, if this has activated this bound;
                  *          false, if the bound was already active before.
                  */
-                bool activate( const T* _origin ) const
+                bool activate( const T& _origin ) const
                 {
                     mpOrigins->insert( _origin );
                     return mpOrigins->size() == 1;
@@ -195,7 +195,7 @@ namespace smtrat
                  * @return true, if this has deactivated this bound;
                  *          false, if the bound was already inactive before.
                  */
-                bool deactivate( const T* _origin ) const
+                bool deactivate( const T& _origin ) const
                 {
                     assert( mpOrigins->find( _origin ) != mpOrigins->end() );
                     mpOrigins->erase( _origin );
@@ -205,7 +205,7 @@ namespace smtrat
                 /**
                  * @return A constant reference to the set of origins of this bound.
                  */
-                const std::set<const T*>& origins() const
+                const std::set<T>& origins() const
                 {
                     return *mpOrigins;
                 }
@@ -276,7 +276,7 @@ namespace smtrat
                  * @param _limit
                  * @return The added bound.
                  */
-                const Bound<T>* addBound( const Constraint* _constraint, const carl::Variable& _var, const T* _origin );
+                const Bound<T>* addBound( const ConstraintT* _constraint, const carl::Variable& _var, const T& _origin );
                 
                 /**
                  * Updates the infimum and supremum of this variable.
@@ -376,9 +376,9 @@ namespace smtrat
         {
             public:
                 /// A map from Constraint pointers to Bound pointers.
-                typedef PointerMap<Constraint,const Bound<T>*> ConstraintBoundMap;
+                typedef carl::PointerMap<ConstraintT,const Bound<T>*> ConstraintBoundMap;
                 /// A hash-map from arithmetic variables to variables managing the bounds.
-                typedef FastMap<carl::Variable, Variable<T>*>  VariableMap;
+                typedef carl::FastMap<carl::Variable, Variable<T>*>  VariableMap;
             private:
                 /// A pointer to one of the conflicting variables (its supremum is smaller than its infimum)
                 /// or NULL if there is no conflict.
@@ -389,14 +389,14 @@ namespace smtrat
                 ConstraintBoundMap*   mpConstraintBoundMap;
                 /// The stored exact interval map representing the currently tightest bounds.
                 /// Note, that it is updated on demand.
-                mutable EvalIntervalMap       mEvalIntervalMap;
+                mutable EvalRationalIntervalMap       mEvalIntervalMap;
                 /// The stored double interval map representing the currently tightest bounds.
                 /// Note, that it is updated on demand.
                 mutable EvalDoubleIntervalMap mDoubleIntervalMap;
                 /// Stores the constraints which cannot be used to infer a bound for a variable.
-                FastPointerSet<Constraint> mNonBoundConstraints;
+                carl::PointerSet<ConstraintT> mNonBoundConstraints;
                 /// Stores deductions which this variable bounds manager has detected.
-                mutable std::unordered_set<std::vector<const Constraint* >> mBoundDeductions;
+                mutable std::unordered_set<std::vector<const ConstraintT* >> mBoundDeductions;
             public:
                 /**
                  * Constructs a variable bounds manager.
@@ -415,7 +415,7 @@ namespace smtrat
                  * @return true, if the variable bounds have been changed;
                  *          false, otherwise.
                  */
-                bool addBound( const Constraint* _constraint, const T* _origin );
+                bool addBound( const ConstraintT* _constraint, const T& _origin );
                 
                 /**
                  * Removes all effects the given constraint has on the variable bounds.
@@ -425,7 +425,7 @@ namespace smtrat
                  *          1, if the constraint was a (not the strictest) bound;
                  *          0, otherwise.
                  */
-                unsigned removeBound( const Constraint* _constraint, const T* _origin );
+                unsigned removeBound( const ConstraintT* _constraint, const T& _origin );
                 
                 /**
                  * Removes all effects the given constraint has on the variable bounds.
@@ -436,20 +436,20 @@ namespace smtrat
                  *          1, if the constraint was a (not the strictest) bound;
                  *          0, otherwise.
                  */
-                unsigned removeBound( const Constraint* _constraint, const T* _origin, carl::Variable*& _changedVariable );
+                unsigned removeBound( const ConstraintT* _constraint, const T& _origin, carl::Variable*& _changedVariable );
                 
                 /**
                  * Creates an evalintervalmap corresponding to the variable bounds.
                  * @return The variable bounds as an evalintervalmap.
                  */
-                const EvalIntervalMap& getEvalIntervalMap() const;
+                const EvalRationalIntervalMap& getEvalIntervalMap() const;
                 
                 /**
                  * Creates an interval corresponding to the variable bounds of the given variable.
                  * @param _var The variable to compute the variable bounds as interval for.
                  * @return The variable bounds as an interval.
                  */
-                const Interval& getInterval( const carl::Variable& _var ) const;
+                const RationalInterval& getInterval( const carl::Variable& _var ) const;
                 
                 /**
                  * Creates an interval map corresponding to the variable bounds.
@@ -468,42 +468,24 @@ namespace smtrat
                  * @param _var The variable to get origins of the bounds for.
                  * @return The origin constraints of the supremum and infimum of the given variable.
                  */
-                PointerSet<T> getOriginsOfBounds( const carl::Variable& _var ) const;
+                std::set<T> getOriginsOfBounds( const carl::Variable& _var ) const;
                 
                 /**
                  * @param _variables The variables to get origins of the bounds for.
                  * @return The origin constraints of the supremum and infimum of the given variables.
                  */
-                PointerSet<T> getOriginsOfBounds( const Variables& _variables ) const;
+                std::set<T> getOriginsOfBounds( const carl::Variables& _variables ) const;
                 
                 /**
                  * Collect the origins to the supremums and infimums of all variables.
                  * @return A set of origins corresponding to the supremums and infimums of all variables.
                  */
-                PointerSet<T> getOriginsOfBounds() const;
-                
-                /**
-                 * @param _var The variable to get origins of the bounds for.
-                 * @return The origin constraints of the supremum and infimum of the given variable.
-                 */
-                std::set<const T*> getOriginsOfBoundsWithMultiples( const carl::Variable& _var ) const;
-                
-                /**
-                 * @param _variables The variables to get origins of the bounds for.
-                 * @return The origin constraints of the supremum and infimum of the given variables.
-                 */
-                std::set<const T*> getOriginsOfBoundsWithMultiples( const Variables& _variables ) const;
-                
-                /**
-                 * Collect the origins to the supremums and infimums of all variables.
-                 * @return A set of origins corresponding to the supremums and infimums of all variables.
-                 */
-                std::set<const T*> getOriginsOfBoundsWithMultiples() const;
+                std::set<T> getOriginsOfBounds() const;
                 
                 /**
                  * @return The deductions which this variable bounds manager has detected.
                  */
-                std::vector<std::pair<std::vector< const Constraint* >, const Constraint* >> getBoundDeductions() const;
+                std::vector<std::pair<std::vector< const ConstraintT* >, const ConstraintT* >> getBoundDeductions() const;
                 
                 /**
                  * Prints the variable bounds.
@@ -525,11 +507,11 @@ namespace smtrat
                 /**
                  * @return The origins which cause the conflict. This method can only be called, if there is a conflict.
                  */
-                PointerSet<T> getConflict() const
+                std::set<T> getConflict() const
                 {
                     assert( isConflicting() );
                     assert( !mpConflictingVariable->infimum().isInfinite() && !mpConflictingVariable->supremum().isInfinite() );
-                    PointerSet<T> conflict;
+                    std::set<T> conflict;
                     conflict.insert( *mpConflictingVariable->infimum().origins().begin() );
                     conflict.insert( *mpConflictingVariable->supremum().origins().begin() );
                     return conflict;

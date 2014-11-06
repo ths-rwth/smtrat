@@ -54,18 +54,18 @@ namespace smtrat
             /// The bipartite graph matching constraints and their variables
             vrw::VariableConstraintGraph mMatchingGraph;
             /// mapping received constraint -> node in the graph
-            std::map<Formula::const_iterator, std::list<vrw::ConstraintNode*>::iterator, dereference_compare> mConstraintPositions;
+            std::map<FormulaT::const_iterator, std::list<vrw::ConstraintNode*>::iterator, dereference_compare> mConstraintPositions;
 
         public:
-            VRWModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            VRWModule( ModuleType _type, const FormulaT* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             virtual ~VRWModule();
 
 
             // Interfaces.
-            bool assertSubformula( Formula::const_iterator );
+            bool assertSubformula( FormulaT::const_iterator );
             Answer isConsistent();
-            void removeSubformula( Formula::const_iterator );
+            void removeSubformula( FormulaT::const_iterator );
 
             void printConstraintPositions();
     };

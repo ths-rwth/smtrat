@@ -33,10 +33,10 @@ namespace smtrat
         typedef typename Settings::MultivariateIdeal Ideal;
     public:
         typedef typename std::pair<unsigned, Polynomial> CellEntry;
-        typedef typename std::tuple<ModuleInput::iterator, smtrat::Relation, std::list<CellEntry> > RowEntry;
+        typedef typename std::tuple<ModuleInput::iterator, carl::Relation, std::list<CellEntry> > RowEntry;
         typedef typename std::map<ModuleInput::const_iterator, RowEntry, ModuleInput::IteratorCompare> Rows;
         typedef typename std::pair<ModuleInput::const_iterator, RowEntry> Row;
-        typedef typename std::map<carl::Variable, std::pair<Term, carl::BitVector> > RewriteRules;
+        typedef typename std::map<carl::Variable, std::pair<TermT, carl::BitVector> > RewriteRules;
 
 
     protected:

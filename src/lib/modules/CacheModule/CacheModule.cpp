@@ -36,7 +36,7 @@ using namespace smtrat::cachemodule;
 
 namespace smtrat
 {
-    CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+    CacheModule::CacheModule( ModuleType _type, const FormulaT* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager )
     {}
 
@@ -56,7 +56,7 @@ namespace smtrat
      *
      * @return true
      */
-    bool CacheModule::assertSubformula( Formula::const_iterator _subformula )
+    bool CacheModule::assertSubformula( FormulaT::const_iterator _subformula )
     {
         Module::assertSubformula( _subformula );
         addReceivedSubformulaToPassedFormula(_subformula);
@@ -95,7 +95,7 @@ namespace smtrat
      *
      * @param _subformula The sub formula of the received formula to remove.
      */
-    void CacheModule::removeSubformula( Formula::const_iterator _subformula )
+    void CacheModule::removeSubformula( FormulaT::const_iterator _subformula )
     {
         --(mActualTCall.nrConstraints);
         assert(mActualTCall.passedConstraints.getBit((*_subformula)->pConstraint()->id()) == true);

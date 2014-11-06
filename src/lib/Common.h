@@ -40,6 +40,8 @@
 #include "carl/interval/IntervalEvaluation.h"
 #include "carl/interval/Contraction.h"
 #include "carl/io/streamingOperators.h"
+#include "carl/util/Common.h"
+#include "carl/formula/FormulaPool.h"
 
 namespace smtrat
 {
@@ -65,112 +67,36 @@ namespace smtrat
     ///An enum with the possible answer a Module can give
     enum Answer { True = 0, False = 1, Unknown = 2 };
     
-    // Structures.
-    
-    template<typename T> 
-    struct pointerEqual
-    {
-        bool operator()( const T* _argA, const T* _argB ) const
-        {
-            return (*_argA)==(*_argB);
-        }
-    };
-    
-    template<typename T> 
-    struct pointerEqualWithNull
-    {
-        bool operator()( const T* _argA, const T* _argB ) const
-        {
-            if( _argA == NULL || _argB == NULL )
-                return _argA == _argB;
-            return (*_argA)==(*_argB);
-        }
-    };
-    
-    template<typename T> 
-    struct pointerLess
-    {
-        bool operator()( const T* _argA, const T* _argB ) const
-        {
-            return (*_argA)<(*_argB);
-        }
-    };
-
-    template<typename T> 
-    struct pointerHash
-    {
-        size_t operator()( const T* _arg ) const
-        {
-            return std::hash<T>()( *_arg );
-        }
-    };
-
-    template<typename T> 
-    struct pointerHashWithNull
-    {
-        size_t operator()( const T* _arg ) const
-        {
-            if( _arg == NULL )
-                return 0;
-            return std::hash<T>()( *_arg );
-        }
-    };
-    
     // Further type definitions.
 
     typedef cln::cl_RA Rational;
     
-    typedef carl::MultivariatePolynomial<Rational> Polynomial;
+    typedef carl::Term<Rational> TermT;
     
-    typedef std::map<carl::Variable, Rational> EvalRationalMap;
+    typedef carl::MultivariatePolynomial<Rational> Poly;
     
-    typedef carl::Interval<Rational> Interval;
+    typedef carl::Constraint<Poly> ConstraintT;
     
-    typedef std::map<carl::Variable, Interval> EvalIntervalMap;
+    typedef carl::Formula<Poly> FormulaT;
+    
+    typedef carl::EvaluationMap<Rational> EvalRationalMap;
+    
+    typedef carl::Interval<Rational> RationalInterval;
+    
+    typedef carl::EvaluationMap<RationalInterval> EvalRationalIntervalMap;
 
     typedef carl::Interval<double> DoubleInterval;
     
-    typedef std::map<carl::Variable, DoubleInterval> EvalDoubleIntervalMap;
+    typedef carl::EvaluationMap<DoubleInterval> EvalDoubleIntervalMap;
     
-    typedef carl::VariableInformation<true, Polynomial> VarInfo;
+    typedef carl::VarInfo<Poly> VarPolyInfo;
     
-    typedef std::map<carl::Variable, VarInfo> VarInfoMap;
-    
-    typedef std::set<carl::Variable> Variables;
-
-	typedef std::vector<Variables> QuantifiedVariables;
-    
-    template<typename T> 
-    using PointerSet = std::set<const T*, pointerLess<T>>;
-    
-    template<typename T> 
-    using PointerMultiSet = std::multiset<const T*, pointerLess<T>>;
-    
-    template<typename T1,typename T2> 
-    using PointerMap = std::map<const T1*, T2, pointerLess<T1>>;
-    
-    template<typename T> 
-    using FastSet = std::unordered_set<const T, std::hash<T>>;
-    
-    template<typename T1,typename T2> 
-    using FastMap = std::unordered_map<const T1, T2, std::hash<T1>>;
-    
-    template<typename T> 
-    using FastPointerSet = std::unordered_set<const T*, pointerHash<T>, pointerEqual<T>>;
-    
-    template<typename T1,typename T2> 
-    using FastPointerMap = std::unordered_map<const T1*, T2, pointerHash<T1>, pointerEqual<T1>>;
-    
-    template<typename T> 
-    using FastPointerSetB = std::unordered_set<const T*, pointerHashWithNull<T>, pointerEqualWithNull<T>>;
-    
-    template<typename T1,typename T2> 
-    using FastPointerMapB = std::unordered_map<const T1*, T2, pointerHashWithNull<T1>, pointerEqualWithNull<T1>>;
-    
-    typedef FastMap<Polynomial,unsigned> Factorization;
+    typedef carl::VarInfoMap<Poly> VarPolyInfoMap;
     
     template<template<typename> class Operator>
-    using Contractor = carl::Contraction<Operator, Polynomial>;
+    using Contractor = carl::Contraction<Operator, Poly>;
+    
+    typedef carl::FastMap<Poly,unsigned> Factorization;
     
     // Constants.
     ///@todo move static variables to own cpp
@@ -180,11 +106,11 @@ namespace smtrat
     
     static const Rational MINUS_ONE_RATIONAL = Rational( -1 );
     
-    static const Polynomial ZERO_POLYNOMIAL = Polynomial( ZERO_RATIONAL );
+    static const Poly ZERO_POLYNOMIAL = Poly( ZERO_RATIONAL );
     
-    static const Polynomial ONE_POLYNOMIAL = Polynomial( ONE_RATIONAL );
+    static const Poly ONE_POLYNOMIAL = Poly( ONE_RATIONAL );
     
-    static const Polynomial MINUS_ONE_POLYNOMIAL = Polynomial( MINUS_ONE_RATIONAL );
+    static const Poly MINUS_ONE_POLYNOMIAL = Poly( MINUS_ONE_RATIONAL );
     
     static const unsigned MAX_DEGREE_FOR_FACTORIZATION = 6;
     
@@ -197,8 +123,6 @@ namespace smtrat
     // Macros.
     
     #define ANSWER_TO_STRING(_ans) (_ans == True ? "True" : (_ans == False ? "False" : (_ans == Unknown ? "Unknown" : "Undefined")))
-
-    #define CIRCULAR_SHIFT(_intType, _value, _shift) ((_value << _shift) | (_value >> (sizeof(_intType)*8 - _shift)))
     
 }    // namespace smtrat
 

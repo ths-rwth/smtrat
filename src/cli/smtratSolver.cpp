@@ -44,7 +44,7 @@
 
 
 #include "parser/Parser.h"
-#include "../lib/Sort.h"
+#include "../lib/Common.h"
 
 class Executor : public smtrat::parser::InstructionHandler {
 	CMakeStrategySolver* solver;
@@ -52,7 +52,7 @@ class Executor : public smtrat::parser::InstructionHandler {
 public:
 	smtrat::Answer lastAnswer;
 	Executor(CMakeStrategySolver* solver) : smtrat::parser::InstructionHandler(), solver(solver) {}
-	void add(const smtrat::Formula* f) {
+	void add(const smtrat::FormulaT& f) {
 		this->solver->add(f);
 	}
 	void check() {
@@ -99,7 +99,7 @@ public:
 	void declareSort(const std::string&, const unsigned&) {
 		//error() << "(declare-sort <name> <arity>) is not implemented.";
 	}
-	void defineSort(const std::string&, const std::vector<std::string>&, const smtrat::Sort&) {
+	void defineSort(const std::string&, const std::vector<std::string>&, const carl::Sort&) {
 		//error() << "(define-sort <name> <sort>) is not implemented.";
 	}
 	void exit() {

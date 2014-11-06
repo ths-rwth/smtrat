@@ -31,7 +31,7 @@ using namespace std;
 
 namespace vs
 {
-    Condition::Condition( const smtrat::Constraint* _cons, size_t _val, bool _flag, const set<const Condition*>& _oConds, bool _rAdded ):
+    Condition::Condition( const smtrat::ConstraintT* _cons, size_t _val, bool _flag, const set<const Condition*>& _oConds, bool _rAdded ):
         mFlag( _flag ),
         mRecentlyAdded( _rAdded ),
         mValuation( _val ),
@@ -67,7 +67,7 @@ namespace vs
     {
         if( !constraint().hasVariable( _consideredVariable ) )
             return 0;
-        const smtrat::VarInfo& varInfo = constraint().varInfo( _consideredVariable );
+        const smtrat::VarPolyInfo& varInfo = constraint().varInfo( _consideredVariable );
         double maximum = 0;
         if( _maxNumberOfVars < 4 )
             maximum = 16;
@@ -77,22 +77,22 @@ namespace vs
         double relationSymbolWeight = 0;
         switch( mpConstraint->relation() )
         {
-            case smtrat::Relation::EQ:
+            case carl::Relation::EQ:
                 relationSymbolWeight += 1;
                 break;
-            case smtrat::Relation::GEQ:
+            case carl::Relation::GEQ:
                 relationSymbolWeight += 2;
                 break;
-            case smtrat::Relation::LEQ:
+            case carl::Relation::LEQ:
                 relationSymbolWeight += 2;
                 break;
-            case smtrat::Relation::LESS:
+            case carl::Relation::LESS:
                 relationSymbolWeight += 4;
                 break;
-            case smtrat::Relation::GREATER:
+            case carl::Relation::GREATER:
                 relationSymbolWeight += 4;
                 break;
-            case smtrat::Relation::NEQ:
+            case carl::Relation::NEQ:
                 relationSymbolWeight += 3;
                 break;
             default:
@@ -107,7 +107,7 @@ namespace vs
         unsigned lCoeffWeightB = 2;
         if( degreeWeight <= 1 )
         {
-            smtrat::Polynomial coeff = mpConstraint->coefficient( _consideredVariable, varInfo.maxDegree() );
+            smtrat::Poly coeff = mpConstraint->coefficient( _consideredVariable, varInfo.maxDegree() );
             if( coeff.isConstant() )
             {
                 if( _consideredVariable.getType() == carl::VariableType::VT_INT && (coeff == smtrat::ONE_POLYNOMIAL || coeff == smtrat::MINUS_ONE_POLYNOMIAL) )
@@ -181,14 +181,14 @@ namespace vs
             if( allOtherMonomialsPos || allOtherMonomialsNeg )
             {
                 otherMonomialsPositiveWeight = 1;
-                if( constraint().relation() == smtrat::Relation::EQ )
+                if( constraint().relation() == carl::Relation::EQ )
                     finitlyManySolutionsWeight = 1;
             }
         }
         double weightFactorTmp = maximum;
 //        cout << "valuate " << *mpConstraint << " for " << _consideredVariable << endl;
 //        cout << "finitlyManySolutionsWeight = " << finitlyManySolutionsWeight << endl;
-//        cout << "wtfweight = " << (_preferEquation ? ((constraint().relation() == smtrat::Relation::EQ || degreeWeight <= 2) ? 1 : 2) : (degreeWeight <= 2 ? 1 : 2)) << endl;
+//        cout << "wtfweight = " << (_preferEquation ? ((constraint().relation() == carl::Relation::EQ || degreeWeight <= 2) ? 1 : 2) : (degreeWeight <= 2 ? 1 : 2)) << endl;
 //        cout << "relationSymbolWeight = " << relationSymbolWeight << endl;
 //        cout << "univariateWeight = " << (degreeWeight <= 2 && numberOfVariableWeight == 1 ? 1 : 2) << endl;
 //        cout << "degreeWeight = " << degreeWeight << endl;
@@ -202,7 +202,7 @@ namespace vs
 //        cout << "otherMonomialsPositiveWeight = " << otherMonomialsPositiveWeight << endl;
         double result = finitlyManySolutionsWeight;
         if( _preferEquation )
-            result += ((constraint().relation() == smtrat::Relation::EQ || degreeWeight <= 2) ? 1 : 2)/weightFactorTmp;
+            result += ((constraint().relation() == carl::Relation::EQ || degreeWeight <= 2) ? 1 : 2)/weightFactorTmp;
         else
             result += (degreeWeight <= 2 ? 1 : 2)/weightFactorTmp;
         weightFactorTmp *= maximum;

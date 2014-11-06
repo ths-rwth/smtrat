@@ -25,8 +25,6 @@
  * @version 2013-02-05
  */
 
-#include "../ConstraintPool.h"
-
 namespace smtrat
 {
     namespace vb
@@ -36,7 +34,7 @@ namespace smtrat
             mType( _type ),
             mpLimit( _limit ),
             mpVariable( _variable ),
-            mpOrigins( new std::set<const T*>() )
+            mpOrigins( new std::set<T>() )
         {
             if( _limit == NULL )
                 mpOrigins->insert( NULL );
@@ -201,16 +199,16 @@ namespace smtrat
 
 		
         template<typename T>
-        const Bound<T>* Variable<T>::addBound( const Constraint* _constraint, const carl::Variable& _var, const T* _origin )
+        const Bound<T>* Variable<T>::addBound( const ConstraintT* _constraint, const carl::Variable& _var, const T& _origin )
         {
             assert( _constraint->variables().size() == 1 );
             if( _constraint->maxDegree( _var ) == 1 )
             {
                 const Rational& coeff = _constraint->lhs().lterm()->coeff();
-                Relation rel = _constraint->relation();
+                carl::Relation rel = _constraint->relation();
                 Rational* limit = new Rational( -_constraint->constantPart()/coeff );
                 std::pair< typename Variable<T>::BoundSet::iterator, bool> result;
-                if( rel == Relation::EQ )
+                if( rel == carl::Relation::EQ )
                 {
                     Bound<T>* newBound = new Bound<T>( limit, this, Bound<T>::EQUAL_BOUND );
                     result = mUpperbounds.insert( newBound );
@@ -219,28 +217,28 @@ namespace smtrat
                     else
                         mLowerbounds.insert( newBound );
                 }
-                else if( ( rel == Relation::GEQ && coeff < 0 ) || ( rel == Relation::LEQ && coeff > 0 ) )
+                else if( ( rel == carl::Relation::GEQ && coeff < 0 ) || ( rel == carl::Relation::LEQ && coeff > 0 ) )
                 {
                     Bound<T>* newBound = new Bound<T>( limit, this, Bound<T>::WEAK_UPPER_BOUND );
                     result = mUpperbounds.insert( newBound );
                     if( !result.second )
                         delete newBound;
                 }
-                else if( ( rel == Relation::LEQ && coeff < 0 ) || ( rel == Relation::GEQ && coeff > 0 ) )
+                else if( ( rel == carl::Relation::LEQ && coeff < 0 ) || ( rel == carl::Relation::GEQ && coeff > 0 ) )
                 {
                     Bound<T>* newBound = new Bound<T>( limit, this, Bound<T>::WEAK_LOWER_BOUND );
                     result = mLowerbounds.insert( newBound );
                     if( !result.second )
                         delete newBound;
                 }
-                else if( ( rel == Relation::GREATER && coeff < 0 ) || ( rel == Relation::LESS && coeff > 0 ) )
+                else if( ( rel == carl::Relation::GREATER && coeff < 0 ) || ( rel == carl::Relation::LESS && coeff > 0 ) )
                 {
                     Bound<T>* newBound = new Bound<T>( limit, this, Bound<T>::STRICT_UPPER_BOUND );
                     result = mUpperbounds.insert( newBound );
                     if( !result.second )
                         delete newBound;
                 }
-                else if( ( rel == Relation::LESS && coeff < 0 ) || ( rel == Relation::GREATER && coeff > 0 ) )
+                else if( ( rel == carl::Relation::LESS && coeff < 0 ) || ( rel == carl::Relation::GREATER && coeff > 0 ) )
                 {
                     Bound<T>* newBound = new Bound<T>( limit, this, Bound<T>::STRICT_LOWER_BOUND );
                     result = mLowerbounds.insert( newBound );
@@ -324,9 +322,9 @@ namespace smtrat
 
 		
         template<typename T>
-        bool VariableBounds<T>::addBound( const Constraint* _constraint, const T* _origin )
+        bool VariableBounds<T>::addBound( const ConstraintT* _constraint, const T& _origin )
         {
-            if( _constraint->relation() != Relation::NEQ )
+            if( _constraint->relation() != carl::Relation::NEQ )
             {
                 const carl::Variable& var = *_constraint->variables().begin();
                 if( _constraint->variables().size() == 1 && _constraint->maxDegree( var ) == 1 )
@@ -357,7 +355,7 @@ namespace smtrat
                             (*mpVariableMap)[var] = variable;
                             bound = variable->addBound( _constraint, var, _origin );
                         }
-                        mpConstraintBoundMap->insert( std::pair< const Constraint*, const Bound<T>* >( _constraint, bound ) );
+                        mpConstraintBoundMap->insert( std::pair< const ConstraintT*, const Bound<T>* >( _constraint, bound ) );
                         if( variable->updateBounds( *bound ) )
                             mpConflictingVariable = bound->pVariable();
                     }
@@ -390,9 +388,9 @@ namespace smtrat
 
 		
         template<typename T>
-        unsigned VariableBounds<T>::removeBound( const Constraint* _constraint, const T* _origin )
+        unsigned VariableBounds<T>::removeBound( const ConstraintT* _constraint, const T& _origin )
         {
-            if( _constraint->relation() != Relation::NEQ )
+            if( _constraint->relation() != carl::Relation::NEQ )
             {
                 const carl::Variable& var = *_constraint->variables().begin();
                 if( _constraint->variables().size() == 1 && _constraint->maxDegree( var ) == 1 )
@@ -418,9 +416,9 @@ namespace smtrat
         }
 
         template<typename T>
-        unsigned VariableBounds<T>::removeBound( const Constraint* _constraint, const T* _origin, carl::Variable*& _changedVariable )
+        unsigned VariableBounds<T>::removeBound( const ConstraintT* _constraint, const T& _origin, carl::Variable*& _changedVariable )
         {
-            if( _constraint->relation() != Relation::NEQ )
+            if( _constraint->relation() != carl::Relation::NEQ )
             {
                 const carl::Variable& var = *_constraint->variables().begin();
                 if( _constraint->variables().size() == 1 && _constraint->maxDegree( var ) == 1 )
@@ -450,7 +448,7 @@ namespace smtrat
         #define CONVERT_BOUND(type, namesp) (type != Bound<T>::WEAK_UPPER_BOUND && type != Bound<T>::WEAK_LOWER_BOUND && type != Bound<T>::EQUAL_BOUND ) ? namesp::STRICT : namesp::WEAK
 
         template<typename T>
-        const smtrat::EvalIntervalMap& VariableBounds<T>::getEvalIntervalMap() const
+        const smtrat::EvalRationalIntervalMap& VariableBounds<T>::getEvalIntervalMap() const
         {
             assert( mpConflictingVariable == NULL );
             for( auto varVarPair = mpVariableMap->begin(); varVarPair != mpVariableMap->end(); ++varVarPair )
@@ -482,7 +480,7 @@ namespace smtrat
                         upperBoundType = CONVERT_BOUND( var.supremum().type(), carl::BoundType );
                         upperBoundValue = var.supremum().limit();
                     }
-                    mEvalIntervalMap[varVarPair->first] = Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
+                    mEvalIntervalMap[varVarPair->first] = RationalInterval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
                     var.exactIntervalHasBeenUpdated();
                 }
             }
@@ -491,7 +489,7 @@ namespace smtrat
 		
 		
         template<typename T>
-        const Interval& VariableBounds<T>::getInterval( const carl::Variable& _var ) const
+        const RationalInterval& VariableBounds<T>::getInterval( const carl::Variable& _var ) const
         {
             assert( mpConflictingVariable == NULL );
             typename VariableMap::iterator varVarPair = mpVariableMap->find( _var );
@@ -523,7 +521,7 @@ namespace smtrat
                     upperBoundType = CONVERT_BOUND( var.supremum().type(), carl::BoundType );
                     upperBoundValue = var.supremum().limit();
                 }
-                mEvalIntervalMap[_var] = Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
+                mEvalIntervalMap[_var] = RationalInterval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
                 var.exactIntervalHasBeenUpdated();
             }
             return mEvalIntervalMap[_var];
@@ -611,9 +609,9 @@ namespace smtrat
         }
 
         template<typename T>
-        PointerSet<T> VariableBounds<T>::getOriginsOfBounds( const carl::Variable& _var ) const
+        std::set<T> VariableBounds<T>::getOriginsOfBounds( const carl::Variable& _var ) const
         {
-            PointerSet<T> originsOfBounds;
+            std::set<T> originsOfBounds;
             auto varVarPair = mpVariableMap->find( _var );
             assert( varVarPair != mpVariableMap->end() );
             if( !varVarPair->second->infimum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->infimum().origins().begin() );
@@ -622,9 +620,9 @@ namespace smtrat
         }
 
         template<typename T>
-        PointerSet<T> VariableBounds<T>::getOriginsOfBounds( const Variables& _variables ) const
+        std::set<T> VariableBounds<T>::getOriginsOfBounds( const carl::Variables& _variables ) const
         {
-            PointerSet<T> originsOfBounds;
+            std::set<T> originsOfBounds;
             for( auto var = _variables.begin(); var != _variables.end(); ++var )
             {
                 auto varVarPair = mpVariableMap->find( *var );
@@ -636,47 +634,9 @@ namespace smtrat
         }
 		
         template<typename T>
-        PointerSet<T> VariableBounds<T>::getOriginsOfBounds() const
+        std::set<T> VariableBounds<T>::getOriginsOfBounds() const
         {
-            PointerSet<T> originsOfBounds;
-            for( auto varVarPair = mpVariableMap->begin(); varVarPair != mpVariableMap->end(); ++varVarPair )
-            {
-                const Variable<T>& var = *varVarPair->second;
-                if( !var.infimum().isInfinite() ) originsOfBounds.insert( *var.infimum().origins().begin() );
-                if( !var.supremum().isInfinite() ) originsOfBounds.insert( *var.supremum().origins().begin() );
-            }
-            return originsOfBounds;
-        }
-
-        template<typename T>
-        std::set<const T*> VariableBounds<T>::getOriginsOfBoundsWithMultiples( const carl::Variable& _var ) const
-        {
-            std::set<const T*> originsOfBounds;
-            auto varVarPair = mpVariableMap->find( _var );
-            assert( varVarPair != mpVariableMap->end() );
-            if( !varVarPair->second->infimum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->infimum().origins().begin() );
-            if( !varVarPair->second->supremum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->supremum().origins().begin() );
-            return originsOfBounds;
-        }
-
-        template<typename T>
-        std::set<const T*> VariableBounds<T>::getOriginsOfBoundsWithMultiples( const Variables& _variables ) const
-        {
-            std::set<const T*> originsOfBounds;
-            for( auto var = _variables.begin(); var != _variables.end(); ++var )
-            {
-                auto varVarPair = mpVariableMap->find( *var );
-                assert( varVarPair != mpVariableMap->end() );
-                if( !varVarPair->second->infimum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->infimum().origins().begin() );
-                if( !varVarPair->second->supremum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->supremum().origins().begin() );
-            }
-            return originsOfBounds;
-        }
-		
-        template<typename T>
-        std::set<const T*> VariableBounds<T>::getOriginsOfBoundsWithMultiples() const
-        {
-            std::set<const T*> originsOfBounds;
+            std::set<T> originsOfBounds;
             for( auto varVarPair = mpVariableMap->begin(); varVarPair != mpVariableMap->end(); ++varVarPair )
             {
                 const Variable<T>& var = *varVarPair->second;
@@ -687,15 +647,15 @@ namespace smtrat
         }
         
         template<typename T>
-        std::vector<std::pair<std::vector< const Constraint* >, const Constraint* >> VariableBounds<T>::getBoundDeductions() const
+        std::vector<std::pair<std::vector< const ConstraintT* >, const ConstraintT* >> VariableBounds<T>::getBoundDeductions() const
         {
-            std::vector<std::pair<std::vector< const Constraint* >, const Constraint* >> result = std::vector<std::pair<std::vector< const Constraint* >, const Constraint* >>();   
+            std::vector<std::pair<std::vector< const ConstraintT* >, const ConstraintT* >> result = std::vector<std::pair<std::vector< const ConstraintT* >, const ConstraintT* >>();   
             for( auto cons = mNonBoundConstraints.begin(); cons != mNonBoundConstraints.end(); ++cons )
             {
-                assert( (*cons)->relation() != Relation::NEQ );
-                std::vector< const Constraint* > boundConstraints;
-                Variables boundedVars;
-                Variables notBoundedVars;
+                assert( (*cons)->relation() != carl::Relation::NEQ );
+                std::vector< const ConstraintT* > boundConstraints;
+                carl::Variables boundedVars;
+                carl::Variables notBoundedVars;
                 for( auto carlVar = (*cons)->variables().begin(); carlVar != (*cons)->variables().end(); ++carlVar )
                 {
                     const Variable<T>& var = *(mpVariableMap->find( *carlVar )->second);
@@ -720,7 +680,7 @@ namespace smtrat
                 }
                 if( boundedVars.size() == 0 || notBoundedVars.size() > 1 || (*cons)->maxDegree( *notBoundedVars.begin() ) > 1 )
                     continue;
-                EvalIntervalMap bounds = getEvalIntervalMap();
+                EvalRationalIntervalMap bounds = getEvalIntervalMap();
                 boundConstraints.push_back( *cons );
                 if( mBoundDeductions.find( boundConstraints ) == mBoundDeductions.end() )
                 {
@@ -734,14 +694,14 @@ namespace smtrat
 //                        std::cout << "with the bounds: " << std::endl;
 //                        for( auto bcons = boundConstraints.begin(); bcons != boundConstraints.end(); ++bcons )
 //                            std::cout << (**bcons) << std::endl;
-                        Polynomial varCoeff = (*cons)->coefficient( var, 1 );
+                        Poly varCoeff = (*cons)->coefficient( var, 1 );
                         assert( !varCoeff.isZero() );
-                        Interval varCoeffEvaluated = carl::IntervalEvaluation::evaluate( varCoeff, bounds );
-                        Polynomial remainder = (*cons)->lhs() - (varCoeff * var);
-                        Interval remainderEvaluated = carl::IntervalEvaluation::evaluate( remainder, bounds ).inverse();
+                        RationalInterval varCoeffEvaluated = carl::IntervalEvaluation::evaluate( varCoeff, bounds );
+                        Poly remainder = (*cons)->lhs() - (varCoeff * var);
+                        RationalInterval remainderEvaluated = carl::IntervalEvaluation::evaluate( remainder, bounds ).inverse();
                         
-                        Interval newBoundsA;
-                        Interval newBoundsB;
+                        RationalInterval newBoundsA;
+                        RationalInterval newBoundsB;
                         if( remainderEvaluated.div_ext( varCoeffEvaluated, newBoundsA, newBoundsB ) )
                         {
 //                            std::cout << "case a: " << newBoundsA << " and " << newBoundsB << std::endl;
@@ -764,47 +724,47 @@ namespace smtrat
                                 if( lt != carl::BoundType::INFTY ) lb = newBoundsB.lower();
                                 if( rt != carl::BoundType::INFTY ) rb = newBoundsA.upper();
                             }
-                            if( (*cons)->relation() == Relation::EQ )
+                            if( (*cons)->relation() == carl::Relation::EQ )
                             {
                                 if( newBoundsA.lowerBoundType() != carl::BoundType::INFTY )
                                 {
-                                    Polynomial boundLhs = Polynomial( var ) - newBoundsA.lower();
-                                    Relation boundRel = newBoundsA.lowerBoundType() == carl::BoundType::STRICT ? Relation::LEQ : Relation::LESS;
-                                    const Constraint* newBoundConstraint = newConstraint( boundLhs, boundRel );
+                                    Poly boundLhs = Poly( var ) - newBoundsA.lower();
+                                    carl::Relation boundRel = newBoundsA.lowerBoundType() == carl::BoundType::STRICT ? carl::Relation::LEQ : carl::Relation::LESS;
+                                    const ConstraintT* newBoundConstraint = newConstraint( boundLhs, boundRel );
 //                                    std::cout << "it follows: " << *newBoundConstraint << std::endl;
-                                    result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
+                                    result.push_back( std::pair<std::vector< const ConstraintT* >, const ConstraintT* >( boundConstraints, newBoundConstraint ) );
                                 }
                                 if( newBoundsB.upperBoundType() != carl::BoundType::INFTY )
                                 {
-                                    Polynomial boundLhs = Polynomial( var ) - newBoundsB.upper();
-                                    Relation boundRel = newBoundsA.upperBoundType() == carl::BoundType::STRICT ? Relation::LEQ : Relation::LESS;
-                                    const Constraint* newBoundConstraint = newConstraint( boundLhs, boundRel );
+                                    Poly boundLhs = Poly( var ) - newBoundsB.upper();
+                                    carl::Relation boundRel = newBoundsA.upperBoundType() == carl::BoundType::STRICT ? carl::Relation::LEQ : carl::Relation::LESS;
+                                    const ConstraintT* newBoundConstraint = newConstraint( boundLhs, boundRel );
 //                                    std::cout << "it follows: " << *newBoundConstraint << std::endl;
-                                    result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
+                                    result.push_back( std::pair<std::vector< const ConstraintT* >, const ConstraintT* >( boundConstraints, newBoundConstraint ) );
                                 }
                             }
                         }
                         else
                         {
-                            if( !varCoeffEvaluated.contains( ZERO_RATIONAL ) || (*cons)->relation() == Relation::EQ )
+                            if( !varCoeffEvaluated.contains( ZERO_RATIONAL ) || (*cons)->relation() == carl::Relation::EQ )
                             {
 //                                std::cout << "case b: " << newBoundsA << std::endl;
-                                Relation rel = (*cons)->relation();
+                                carl::Relation rel = (*cons)->relation();
                                 if( varCoeffEvaluated.sgn() == carl::Sign::NEGATIVE )
                                 {
                                     switch( rel )
                                     {
-                                        case Relation::LEQ:
-                                            rel = Relation::GEQ;
+                                        case carl::Relation::LEQ:
+                                            rel = carl::Relation::GEQ;
                                             break;
-                                        case Relation::GEQ:
-                                            rel = Relation::LEQ;
+                                        case carl::Relation::GEQ:
+                                            rel = carl::Relation::LEQ;
                                             break;
-                                        case Relation::LESS:
-                                            rel = Relation::GREATER;
+                                        case carl::Relation::LESS:
+                                            rel = carl::Relation::GREATER;
                                             break;
-                                        case Relation::GREATER:
-                                            rel = Relation::LESS;
+                                        case carl::Relation::GREATER:
+                                            rel = carl::Relation::LESS;
                                             break;
                                         default:
                                             break;
@@ -812,28 +772,28 @@ namespace smtrat
                                 }
                                 if( newBoundsA.lowerBoundType() != carl::BoundType::INFTY )
                                 {
-                                    if( rel == Relation::EQ || rel == Relation::GEQ || rel == Relation::GREATER )
+                                    if( rel == carl::Relation::EQ || rel == carl::Relation::GEQ || rel == carl::Relation::GREATER )
                                     {
-                                        Polynomial boundLhs = Polynomial( var ) - newBoundsA.lower();
-                                        Relation boundRel = Relation::GEQ;
-                                        if( newBoundsA.lowerBoundType() == carl::BoundType::STRICT || rel == Relation::GREATER )
-                                            boundRel = Relation::GREATER;
-                                        const Constraint* newBoundConstraint = newConstraint( boundLhs, boundRel );
+                                        Poly boundLhs = Poly( var ) - newBoundsA.lower();
+                                        carl::Relation boundRel = carl::Relation::GEQ;
+                                        if( newBoundsA.lowerBoundType() == carl::BoundType::STRICT || rel == carl::Relation::GREATER )
+                                            boundRel = carl::Relation::GREATER;
+                                        const ConstraintT* newBoundConstraint = newConstraint( boundLhs, boundRel );
 //                                        std::cout << "it follows: " << *newBoundConstraint << std::endl;
-                                        result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
+                                        result.push_back( std::pair<std::vector< const ConstraintT* >, const ConstraintT* >( boundConstraints, newBoundConstraint ) );
                                     }
                                 }
                                 if( newBoundsA.upperBoundType() != carl::BoundType::INFTY )
                                 {
-                                    if( rel == Relation::EQ || rel == Relation::LEQ || rel == Relation::LESS )
+                                    if( rel == carl::Relation::EQ || rel == carl::Relation::LEQ || rel == carl::Relation::LESS )
                                     {
-                                        Polynomial boundLhs = Polynomial( var ) - newBoundsA.upper();
-                                        Relation boundRel = Relation::LEQ;
-                                        if( newBoundsA.upperBoundType() == carl::BoundType::STRICT || rel == Relation::LESS )
-                                            boundRel = Relation::LESS;
-                                        const Constraint* newBoundConstraint = newConstraint( boundLhs, boundRel );
+                                        Poly boundLhs = Poly( var ) - newBoundsA.upper();
+                                        carl::Relation boundRel = carl::Relation::LEQ;
+                                        if( newBoundsA.upperBoundType() == carl::BoundType::STRICT || rel == carl::Relation::LESS )
+                                            boundRel = carl::Relation::LESS;
+                                        const ConstraintT* newBoundConstraint = newConstraint( boundLhs, boundRel );
 //                                        std::cout << "it follows: " << *newBoundConstraint << std::endl;
-                                        result.push_back( std::pair<std::vector< const Constraint* >, const Constraint* >( boundConstraints, newBoundConstraint ) );
+                                        result.push_back( std::pair<std::vector< const ConstraintT* >, const ConstraintT* >( boundConstraints, newBoundConstraint ) );
                                     }
                                 }
                             }

@@ -25,7 +25,7 @@
 
 #include "../config.h"
 #ifdef SMTRAT_DEVOPTION_Statistics
-#include "../Formula.h"
+#include "../Common.h"
 #include "../utilities/stats/Statistics.h"
 
 namespace smtrat
@@ -36,12 +36,12 @@ namespace smtrat
          // Override Statistics::collect.
          void collect()
          {
-            Statistics::addKeyValuePair( "boolean_variables", variablePool().numberOfBooleanVariables() );
-            Statistics::addKeyValuePair( "real_variables", variablePool().numberOfRealVariables() );
-            Statistics::addKeyValuePair( "integer_variables", variablePool().numberOfIntVariables() );
-            Statistics::addKeyValuePair( "constraints", constraintPool().size() );
-            Statistics::addKeyValuePair( "non-linear_constraints", constraintPool().nrNonLinearConstraints() );
-            Statistics::addKeyValuePair( "maximal_degree", constraintPool().maxDegree() );
+            Statistics::addKeyValuePair( "boolean_variables", carl::variablePool().numberOfBooleanVariables() );
+            Statistics::addKeyValuePair( "real_variables", carl::variablePool().numberOfRealVariables() );
+            Statistics::addKeyValuePair( "integer_variables", carl::variablePool().numberOfIntVariables() );
+            Statistics::addKeyValuePair( "constraints", carl::constraintPool<Poly>().size() );
+            Statistics::addKeyValuePair( "non-linear_constraints", carl::constraintPool<Poly>().nrNonLinearConstraints() );
+            Statistics::addKeyValuePair( "maximal_degree", carl::constraintPool<Poly>().maxDegree() );
          }
 
         GeneralStatistics() : Statistics("General", this)

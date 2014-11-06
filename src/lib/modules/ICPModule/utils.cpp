@@ -13,14 +13,14 @@ namespace smtrat
 {
     namespace icp
     {   
-        std::pair<const Constraint*, const Constraint*> intervalToConstraint( carl::Variable::Arg _var, const smtrat::DoubleInterval _interval )
+        std::pair<const ConstraintT*, const ConstraintT*> intervalToConstraint( carl::Variable::Arg _var, const smtrat::DoubleInterval _interval )
         {
             // left:
             Rational           bound  = carl::rationalize<Rational>( _interval.lower() );
             
-            Polynomial leftEx = Polynomial(_var) - Polynomial(bound);
+            Poly leftEx = Poly(_var) - Poly(bound);
             
-            const Constraint* leftTmp;
+            const ConstraintT* leftTmp;
             switch( _interval.lowerBoundType() )
             {
                 case carl::BoundType::STRICT:
@@ -37,9 +37,9 @@ namespace smtrat
 
             // right:
             bound = carl::rationalize<Rational>( _interval.upper() );
-            Polynomial rightEx = Polynomial(_var) - Polynomial(bound);
+            Poly rightEx = Poly(_var) - Poly(bound);
             
-            const Constraint* rightTmp;
+            const ConstraintT* rightTmp;
             switch( _interval.upperBoundType() )
             {
                 case carl::BoundType::STRICT:

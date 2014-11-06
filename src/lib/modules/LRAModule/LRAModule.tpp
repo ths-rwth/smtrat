@@ -33,6 +33,7 @@
 
 using namespace std;
 using namespace smtrat::lra;
+using namespace carl;
 
 namespace smtrat
 {
@@ -66,15 +67,15 @@ namespace smtrat
     }
 
     template<class Settings>
-    bool LRAModule<Settings>::inform( const Formula* _constraint )
+    bool LRAModule<Settings>::inform( const FormulaT& _constraint )
     {
         #ifdef DEBUG_LRA_MODULE
         cout << "LRAModule::inform  " << "inform about " << *_constraint << endl;
         #endif
         Module::inform( _constraint );
-        if( _constraint->getType() == CONSTRAINT )
+        if( _constraint.getType() == FormulaType::CONSTRAINT )
         {
-            const Constraint& constraint = _constraint->constraint();
+            const ConstraintT& constraint = _constraint.constraint();
             if( !constraint.lhs().isConstant() && constraint.lhs().isLinear() )
             {
                 bool elementInserted = mLinearConstraints.insert( _constraint ).second;
@@ -92,15 +93,15 @@ namespace smtrat
     bool LRAModule<Settings>::assertSubformula( ModuleInput::const_iterator _subformula )
     {
         #ifdef DEBUG_LRA_MODULE
-        cout << "LRAModule::assertSubformula  " << "add " << _subformula->formula() << "(" << _subformula->pFormula() << ")" << endl;
+        cout << "LRAModule::assertSubformula  " << "add " << _subformula->formula() << "(" << _subformula->formula() << ")" << endl;
         #endif
         Module::assertSubformula( _subformula );
         switch( _subformula->formula().getType() )
         {
-            case FFALSE:
+            case FormulaType::FALSE:
             {
-                PointerSet<Formula> infSubSet;
-                infSubSet.insert( _subformula->pFormula() );
+                set<FormulaT> infSubSet;
+                infSubSet.insert( _subformula->formula() );
                 mInfeasibleSubsets.push_back( infSubSet );
                 foundAnswer( False );
                 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -108,14 +109,14 @@ namespace smtrat
                 #endif
                 return false;
             }
-            case TTRUE:
+            case FormulaType::TRUE:
             {
                 return true;
             }
-            case CONSTRAINT:
+            case FormulaType::CONSTRAINT:
             {
-                const Formula* formula = _subformula->pFormula();
-                const Constraint& constraint  = formula->constraint();
+                const FormulaT& formula = _subformula->formula();
+                const ConstraintT& constraint  = formula.constraint();
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 mpStatistics->add( constraint );
                 #endif
@@ -136,11 +137,11 @@ namespace smtrat
                             assert( constrBoundIter != mTableau.constraintToBound().end() );
                             const vector< const LRABound* >* bounds = constrBoundIter->second;
                             assert( bounds != NULL );
-                            PointerSet<Formula> originSet;
+                            set<FormulaT> originSet;
                             originSet.insert( formula );
                             activateBound( *bounds->begin(), originSet );
 
-                            if( (*bounds->begin())->neqRepresentation() != NULL )
+                            if( !(*bounds->begin())->neqRepresentation().isTrue() )
                             {
                                 auto pos = mActiveUnresolvedNEQConstraints.find( (*bounds->begin())->neqRepresentation() );
                                 if( pos != mActiveUnresolvedNEQConstraints.end() )
@@ -171,7 +172,7 @@ namespace smtrat
                                 Context context = Context();
                                 context.origin = formula;
                                 context.position = passedFormulaEnd();
-                                mActiveResolvedNEQConstraints.insert( pair< const Formula*, Context >( formula, context ) );
+                                mActiveResolvedNEQConstraints.insert( pair< FormulaT, Context >( formula, context ) );
                                 bool leqBoundActive = (*bounds)[1]->isActive();
                                 if( leqBoundActive || (*bounds)[2]->isActive() )
                                 {
@@ -183,7 +184,7 @@ namespace smtrat
                                 Context context = Context();
                                 context.origin = formula;
                                 context.position = addSubformulaToPassedFormula( formula, formula ).first;
-                                mActiveUnresolvedNEQConstraints.insert( pair< const Formula*, Context >( formula, context ) );
+                                mActiveUnresolvedNEQConstraints.insert( pair< FormulaT, Context >( formula, context ) );
                             }
                         }
                     }
@@ -205,14 +206,14 @@ namespace smtrat
     void LRAModule<Settings>::removeSubformula( ModuleInput::const_iterator _subformula )
     {
         #ifdef DEBUG_LRA_MODULE
-        cout << "remove " << _subformula->formula() << "(" << _subformula->pFormula() << ")" << endl;
+        cout << "remove " << _subformula->formula() << "(" << _subformula->formula() << ")" << endl;
         #endif
-        const Formula& formula = _subformula->formula();
-        if( formula.getType() == CONSTRAINT )
+        const FormulaT& formula = _subformula->formula();
+        if( formula.getType() == FormulaType::CONSTRAINT )
         {
             // Remove the mapping of the constraint to the sub-formula in the received formula
-            const Constraint& constraint = formula.constraint();
-            const Formula* pformula = _subformula->pFormula();
+            const ConstraintT& constraint = formula.constraint();
+            const FormulaT& pformula = _subformula->formula();
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->remove( constraint );
             #endif
@@ -249,7 +250,7 @@ namespace smtrat
                             }
                             if( (*bound)->origins().empty() )
                             {
-                                if( (*bound)->neqRepresentation() != NULL )
+                                if( !(*bound)->neqRepresentation().isTrue() )
                                 {
                                     auto constrBoundIterB = mTableau.constraintToBound().find( (*bound)->neqRepresentation() );
                                     assert( constrBoundIterB != mTableau.constraintToBound().end() );
@@ -428,7 +429,7 @@ namespace smtrat
                             if( !probablyLooping( newBasicVar->expression(), ratAss ) )
                             {
                                 assert( newBasicVar->assignment().deltaPart() == 0 );
-                                PointerSet<Formula> premises;
+                                set<FormulaT> premises;
                                 mTableau.collect_premises( newBasicVar, premises );                
                                 branchAt( newBasicVar->expression(), ratAss, premises );
                                 goto Return;
@@ -446,7 +447,7 @@ namespace smtrat
                     // Learn all bounds which have been deduced during the pivoting process.
                     while( !mTableau.rNewLearnedBounds().empty() )
                     {
-                        PointerSet<Formula> originSet;
+                        set<FormulaT> originSet;
                         typename LRATableau::LearnedBound& learnedBound = mTableau.rNewLearnedBounds().back()->second;
                         mTableau.rNewLearnedBounds().pop_back();
                         vector<const LRABound*>& bounds = learnedBound.premise;
@@ -473,7 +474,7 @@ namespace smtrat
                         #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
                         if( learnedBound.newBound != NULL )
                         {
-                            const Formula* newConstraint = learnedBound.newBound->pAsConstraint();
+                            const FormulaT& newConstraint = learnedBound.newBound->asConstraint();
                             addConstraintToInform( newConstraint );
                             mLinearConstraints.insert( newConstraint );
                             vector< const LRABound* >* boundVector = new vector< const LRABound* >();
@@ -499,7 +500,7 @@ namespace smtrat
                 if( Settings::one_conflict_reason )
                 {
                     vector< const LRABound* > conflict = mTableau.getConflict( pivotingElement.first );
-                    PointerSet<Formula> infSubSet;
+                    set<FormulaT> infSubSet;
                     for( auto bound = conflict.begin(); bound != conflict.end(); ++bound )
                     {
                         assert( (*bound)->isActive() );
@@ -512,7 +513,7 @@ namespace smtrat
                     vector< set< const LRABound* > > conflictingBounds = mTableau.getConflictsFrom( pivotingElement.first );
                     for( auto conflict = conflictingBounds.begin(); conflict != conflictingBounds.end(); ++conflict )
                     {
-                        PointerSet<Formula> infSubSet;
+                        set<FormulaT> infSubSet;
                         for( auto bound = conflict->begin(); bound != conflict->end(); ++bound )
                         {
                             assert( (*bound)->isActive() );
@@ -550,7 +551,7 @@ Return:
                 EvalRationalMap ass = getRationalModel();
                 for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
                 {
-                    unsigned consistency = iter->first->satisfiedBy( ass );
+                    unsigned consistency = iter->first.satisfiedBy( ass );
                     assert( consistency != 2 );
                     if( consistency == 0 )
                     {
@@ -582,7 +583,7 @@ Return:
                 EvalRationalMap rationalAssignment = getRationalModel();
                 for( auto ratAss = rationalAssignment.begin(); ratAss != rationalAssignment.end(); ++ratAss )
                 {
-                    Polynomial value = Polynomial( ratAss->second );
+                    Poly value = Poly( ratAss->second );
                     Assignment assignment = vs::SqrtEx(value);
                     mModel.insert(mModel.end(), std::make_pair(ratAss->first, assignment));
                 }
@@ -605,9 +606,9 @@ Return:
     }
 
     template<class Settings>
-    EvalIntervalMap LRAModule<Settings>::getVariableBounds() const
+    EvalRationalIntervalMap LRAModule<Settings>::getVariableBounds() const
     {
-        EvalIntervalMap result = EvalIntervalMap();
+        EvalRationalIntervalMap result = EvalRationalIntervalMap();
         for( auto iter = mTableau.originalVars().begin(); iter != mTableau.originalVars().end(); ++iter )
         {
             const LRAVariable& var = *iter->second;
@@ -635,8 +636,8 @@ Return:
                 upperBoundType = var.supremum().isWeak() ? carl::BoundType::WEAK : carl::BoundType::STRICT;
                 upperBoundValue = var.supremum().limit().mainPart();
             }
-            Interval interval = Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
-            result.insert( pair< carl::Variable, Interval >( iter->first, interval ) );
+            RationalInterval interval = RationalInterval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
+            result.insert( pair< carl::Variable, RationalInterval >( iter->first, interval ) );
         }
         return result;
     }
@@ -647,18 +648,18 @@ Return:
     {
         for( auto iter = mTableau.rLearnedLowerBounds().begin(); iter != mTableau.rLearnedLowerBounds().end(); ++iter )
         {
-            PointerSet<Formula> subformulas;
+            set<FormulaT> subformulas;
             for( auto bound = iter->second.premise.begin(); bound != iter->second.premise.end(); ++bound )
             {
                 auto originIterB = (*bound)->origins().begin()->begin();
                 while( originIterB != (*bound)->origins().begin()->end() )
                 {
-                    subformulas.insert( newNegation( newFormula( (*originIterB)->pConstraint() ) ) );
+                    subformulas.insert( FormulaT( FormulaType::NOT, FormulaT( (*originIterB)->pConstraint() ) ) );
                     ++originIterB;
                 }
             }
-            subformulas.insert( iter->second.nextWeakerBound->pAsConstraint() );
-            addDeduction( newFormula( OR, subformulas ) );
+            subformulas.insert( iter->second.nextWeakerBound->asConstraint() );
+            addDeduction( FormulaT( OR, subformulas ) );
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->addRefinement();
             mpStatistics->addDeduction();
@@ -667,18 +668,18 @@ Return:
         mTableau.rLearnedLowerBounds().clear();
         for( auto iter = mTableau.rLearnedUpperBounds().begin(); iter != mTableau.rLearnedUpperBounds().end(); ++iter )
         {
-            PointerSet<Formula> subformulas;
+            set<FormulaT> subformulas;
             for( auto bound = iter->second.premise.begin(); bound != iter->second.premise.end(); ++bound )
             {
                 auto originIterB = (*bound)->origins().begin()->begin();
                 while( originIterB != (*bound)->origins().begin()->end() )
                 {
-                    subformulas.insert( newNegation( newFormula( (*originIterB)->pConstraint() ) ) );
+                    subformulas.insert( FormulaT( FormulaType::NOT, FormulaT( (*originIterB)->pConstraint() ) ) );
                     ++originIterB;
                 }
             }
-            subformulas.insert( iter->second.nextWeakerBound->pAsConstraint() );
-            addDeduction( newFormula( OR, subformulas ) );
+            subformulas.insert( iter->second.nextWeakerBound->asConstraint() );
+            addDeduction( FormulaT( OR, subformulas ) );
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->addRefinement();
             mpStatistics->addDeduction();
@@ -696,7 +697,7 @@ Return:
             const LRABound& bound = *mBoundCandidatesToPass.back();
             if( bound.pInfo()->updated > 0 )
             {
-                bound.pInfo()->position = addSubformulaToPassedFormula( bound.pAsConstraint(), bound.origins() ).first;
+                bound.pInfo()->position = addSubformulaToPassedFormula( bound.asConstraint(), bound.origins() ).first;
                 bound.pInfo()->updated = 0;
             }
             else if( bound.pInfo()->updated < 0 )
@@ -725,7 +726,7 @@ Return:
             // Check whether the assignment satisfies the non linear constraints.
             for( auto constraint = mNonlinearConstraints.begin(); constraint != mNonlinearConstraints.end(); ++constraint )
             {
-                if( (*constraint)->satisfiedBy( assignments ) != 1 )
+                if( constraint->satisfiedBy( assignments ) != 1 )
                 {
                     return false;
                 }
@@ -736,7 +737,7 @@ Return:
     }
 
     template<class Settings>
-    void LRAModule<Settings>::activateBound( const LRABound* _bound, const PointerSet<Formula>& _formulas )
+    void LRAModule<Settings>::activateBound( const LRABound* _bound, const set<FormulaT>& _formulas )
     {
         if( mStrongestBoundsRemoved )
         {
@@ -768,7 +769,7 @@ Return:
         {
             if( inf > bound.limit() && !bound.deduced() )
             {
-                PointerSet<Formula> infsubset;
+                set<FormulaT> infsubset;
                 infsubset.insert( bound.pOrigins()->begin()->begin(), bound.pOrigins()->begin()->end() );
                 infsubset.insert( inf.pOrigins()->back().begin(), inf.pOrigins()->back().end() );
                 mInfeasibleSubsets.push_back( infsubset );
@@ -784,7 +785,7 @@ Return:
         {
             if( sup < bound.limit() && !bound.deduced() )
             {
-                PointerSet<Formula> infsubset;
+                set<FormulaT> infsubset;
                 infsubset.insert( bound.pOrigins()->begin()->begin(), bound.pOrigins()->begin()->end() );
                 infsubset.insert( sup.pOrigins()->back().begin(), sup.pOrigins()->back().end() );
                 mInfeasibleSubsets.push_back( infsubset );
@@ -804,10 +805,10 @@ Return:
     }
     
     template<class Settings>
-    void LRAModule<Settings>::activateStrictBound( const Formula* _neqOrigin, const LRABound& _weakBound, const LRABound* _strictBound )
+    void LRAModule<Settings>::activateStrictBound( const FormulaT& _neqOrigin, const LRABound& _weakBound, const LRABound* _strictBound )
     {
-        PointerSet<Formula> involvedConstraints;
-        PointerSet<Formula> originSet;
+        set<FormulaT> involvedConstraints;
+        set<FormulaT> originSet;
         originSet.insert( _neqOrigin );
         auto iter = _weakBound.origins().begin();
         assert( iter != _weakBound.origins().end() );
@@ -817,14 +818,14 @@ Return:
         ++iter;
         while( iter != _weakBound.origins().end() )
         {
-            PointerSet<Formula> originSetB;
+            set<FormulaT> originSetB;
             originSetB.insert( _neqOrigin );
             originSetB.insert( iter->begin(), iter->end() );
             involvedConstraints.insert( iter->begin(), iter->end() );
             _strictBound->pOrigins()->push_back( std::move( originSetB ) );
             ++iter;
         }
-        for( const Formula* fconstraint : involvedConstraints )
+        for( const FormulaT& fconstraint : involvedConstraints )
         {
             auto constrBoundIter = mTableau.rConstraintToBound().find( fconstraint );
             assert( constrBoundIter != mTableau.constraintToBound().end() );
@@ -834,7 +835,7 @@ Return:
     }
 
     template<class Settings>
-    void LRAModule<Settings>::setBound( const Formula* _constraint )
+    void LRAModule<Settings>::setBound( const FormulaT& _constraint )
     {
         if( Settings::simple_conflicts_and_propagation_on_demand )
         {
@@ -847,7 +848,7 @@ Return:
             {
                 if( Settings::simple_theory_propagation )
                 {
-                    addSimpleBoundDeduction( retValue.first, true, _constraint->constraint().relation() == Relation::NEQ );
+                    addSimpleBoundDeduction( retValue.first, true, _constraint.constraint().relation() == Relation::NEQ );
                 }
                 if( Settings::simple_conflict_search )
                 {
@@ -877,10 +878,10 @@ Return:
                 {
                     if( _exhaustively && (*currentBound)->pInfo()->exists )
                     {
-                        PointerSet<Formula> subformulas;
-                        subformulas.insert( newNegation( (*currentBound)->pAsConstraint() ) );
-                        subformulas.insert( _boundNeq ? _bound->neqRepresentation() : _bound->pAsConstraint() );
-                        addDeduction( newFormula( OR, subformulas ) );
+                        set<FormulaT> subformulas;
+                        subformulas.insert( FormulaT( FormulaType::NOT, (*currentBound)->asConstraint() ) );
+                        subformulas.insert( _boundNeq ? _bound->neqRepresentation() : _bound->asConstraint() );
+                        addDeduction( FormulaT( OR, subformulas ) );
                         #ifdef SMTRAT_DEVOPTION_Statistics
                         mpStatistics->addDeduction();
                         #endif
@@ -895,10 +896,10 @@ Return:
                 {
                     if( (*currentBound)->pInfo()->exists && (*currentBound)->type() != LRABound::Type::EQUAL )
                     {
-                        PointerSet<Formula> subformulas;
-                        subformulas.insert( newNegation( _bound->pAsConstraint() ) );
-                        subformulas.insert( (*currentBound)->pAsConstraint() );
-                        addDeduction( newFormula( OR, subformulas ) );
+                        set<FormulaT> subformulas;
+                        subformulas.insert( FormulaT( FormulaType::NOT, _bound->asConstraint() ) );
+                        subformulas.insert( (*currentBound)->asConstraint() );
+                        addDeduction( FormulaT( OR, subformulas ) );
                         #ifdef SMTRAT_DEVOPTION_Statistics
                         mpStatistics->addDeduction();
                         #endif
@@ -923,10 +924,10 @@ Return:
                 {
                     if( (*currentBound)->pInfo()->exists && (*currentBound)->type() != LRABound::Type::EQUAL )
                     {
-                        PointerSet<Formula> subformulas;
-                        subformulas.insert( newNegation( _bound->pAsConstraint() ) );
-                        subformulas.insert( (*currentBound)->pAsConstraint() );
-                        addDeduction( newFormula( OR, subformulas ) );
+                        set<FormulaT> subformulas;
+                        subformulas.insert( FormulaT( FormulaType::NOT, _bound->asConstraint() ) );
+                        subformulas.insert( (*currentBound)->asConstraint() );
+                        addDeduction( FormulaT( OR, subformulas ) );
                         #ifdef SMTRAT_DEVOPTION_Statistics
                         mpStatistics->addDeduction();
                         #endif
@@ -942,10 +943,10 @@ Return:
                 {
                     if( (*currentBound)->pInfo()->exists )
                     {
-                        PointerSet<Formula> subformulas;
-                        subformulas.insert( newNegation( (*currentBound)->pAsConstraint() ) );
-                        subformulas.insert( _boundNeq ? _bound->neqRepresentation() : _bound->pAsConstraint() );
-                        addDeduction( newFormula( OR, subformulas ) );
+                        set<FormulaT> subformulas;
+                        subformulas.insert( FormulaT( FormulaType::NOT, (*currentBound)->asConstraint() ) );
+                        subformulas.insert( _boundNeq ? _bound->neqRepresentation() : _bound->asConstraint() );
+                        addDeduction( FormulaT( OR, subformulas ) );
                         #ifdef SMTRAT_DEVOPTION_Statistics
                         mpStatistics->addDeduction();
                         #endif
@@ -959,10 +960,10 @@ Return:
     template<class Settings>
     void LRAModule<Settings>::addSimpleBoundConflict( const LRABound& _caseA, const LRABound& _caseB, bool _caseBneq )
     {
-        PointerSet<Formula> subformulas;
-        subformulas.insert( newNegation( _caseA.pAsConstraint() ) );
-        subformulas.insert( newNegation( _caseBneq ? _caseB.neqRepresentation() : _caseB.pAsConstraint() ) );
-        addDeduction( newFormula( OR, subformulas ) );
+        set<FormulaT> subformulas;
+        subformulas.insert( FormulaT( FormulaType::NOT, _caseA.asConstraint() ) );
+        subformulas.insert( FormulaT( FormulaType::NOT, _caseBneq ? _caseB.neqRepresentation() : _caseB.asConstraint() ) );
+        addDeduction( FormulaT( OR, subformulas ) );
         #ifdef SMTRAT_DEVOPTION_Statistics
         mpStatistics->addDeduction();
         #endif
@@ -977,16 +978,16 @@ Return:
             const LRABound::BoundSet& lbounds = _bound.variable().lowerbounds();
             for( auto lbound = lbounds.rbegin(); lbound != --lbounds.rend(); ++lbound )
             {
-                if( **lbound > _bound.limit() && (*lbound)->pAsConstraint() != NULL )
+                if( **lbound > _bound.limit() && !(*lbound)->asConstraint().isTrue() )
                 {
-                    if( (*lbound)->neqRepresentation() != NULL )
+                    if( !(*lbound)->neqRepresentation().isTrue() )
                     {
                         if( _bound.type() == LRABound::EQUAL && (*lbound)->limit().mainPart() == _bound.limit().mainPart() )
                         {
                             addSimpleBoundConflict( _bound, **lbound, true );
                         }
                     }
-                    else if( _bound.neqRepresentation() != NULL )
+                    else if( !_bound.neqRepresentation().isTrue() )
                     {
                         if( (*lbound)->type() == LRABound::EQUAL && (*lbound)->limit().mainPart() == _bound.limit().mainPart() )
                         {
@@ -1009,16 +1010,16 @@ Return:
             const LRABound::BoundSet& ubounds = _bound.variable().upperbounds();
             for( auto ubound = ubounds.begin(); ubound != --ubounds.end(); ++ubound )
             {
-                if( **ubound < _bound.limit() && (*ubound)->pAsConstraint() != NULL )
+                if( **ubound < _bound.limit() && !(*ubound)->asConstraint().isTrue() )
                 {
-                    if( (*ubound)->neqRepresentation() != NULL )
+                    if( !(*ubound)->neqRepresentation().isTrue() )
                     {
                         if( _bound.type() == LRABound::EQUAL && (*ubound)->limit().mainPart() == _bound.limit().mainPart() )
                         {
                             addSimpleBoundConflict( _bound, **ubound, true );
                         }
                     }
-                    else if( _bound.neqRepresentation() != NULL )
+                    else if( !_bound.neqRepresentation().isTrue() )
                     {
                         if( (*ubound)->type() == LRABound::EQUAL && (*ubound)->limit().mainPart() == _bound.limit().mainPart() )
                         {
@@ -1044,7 +1045,7 @@ Return:
         if( !mInitialized )
         {
             mInitialized = true;
-            for( const Formula* constraint : mLinearConstraints )
+            for( const FormulaT& constraint : mLinearConstraints )
             {
                 setBound( constraint );
             }
@@ -1072,11 +1073,11 @@ Return:
                 if( !carl::isInteger( ass ) )
                 {
                     all_int = false;
-                    const Polynomial* gomory_poly = mTableau.gomoryCut(ass, basicVar);
+                    const Poly* gomory_poly = mTableau.gomoryCut(ass, basicVar);
                     if( *gomory_poly != ZERO_POLYNOMIAL )
                     { 
-                        const Constraint* gomory_constr = newConstraint( *gomory_poly , Relation::GEQ );
-                        const Constraint* neg_gomory_constr = newConstraint( *gomory_poly - (*gomory_poly).evaluate( rMap_ ), Relation::LESS );
+                        const ConstraintT* gomory_constr = newConstraint<Poly>( *gomory_poly , Relation::GEQ );
+                        const ConstraintT* neg_gomory_constr = newConstraint<Poly>( *gomory_poly - (*gomory_poly).evaluate( rMap_ ), Relation::LESS );
                         //std::cout << *gomory_constr << endl;
                         assert( !gomory_constr->satisfiedBy( rMap_ ) );
                         assert( !neg_gomory_constr->satisfiedBy( rMap_ ) );
@@ -1086,15 +1087,15 @@ Return:
                         PointerSet<Formula> premise;
                         for( const Formula* pre : subformulas )
                         {
-                            premise.insert( newNegation( pre ) );
+                            premise.insert( FormulaT( FormulaType::NOT, pre ) );
                         }
                         */
-                        const Formula* gomory_formula = newFormula( gomory_constr );
-                        const Formula* neg_gomory_formula = newFormula( neg_gomory_constr );
-                        PointerSet<Formula> subformulas;
+                        FormulaT gomory_formula = FormulaT( gomory_constr );
+                        FormulaT neg_gomory_formula = FormulaT( neg_gomory_constr );
+                        set<FormulaT> subformulas;
                         subformulas.insert( gomory_formula );
                         subformulas.insert( neg_gomory_formula );
-                        const Formula* branch_formula = newFormula( OR, std::move( subformulas ) );
+                        FormulaT branch_formula = FormulaT( OR, std::move( subformulas ) );
                         //premise.insert( gomory_formula );
                         addDeduction( branch_formula );
                     } 
@@ -1145,7 +1146,7 @@ Return:
         size_t i=0;
         for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
         {
-            dc_Tableau.newNonbasicVariable( new Polynomial( (*mTableau.columns().at(i)).expression() ), true );
+            dc_Tableau.newNonbasicVariable( new Poly( (*mTableau.columns().at(i)).expression() ), true );
             ++i;
         } 
         size_t numRows = mTableau.rows().size();
@@ -1154,12 +1155,12 @@ Return:
         #ifdef LRA_NO_DIVISION
         vector<LRAEntryType> lcm_rows;
         #endif
-        std::vector< const Constraint* > DC_Matrix = std::vector< const Constraint* >();
+        std::vector< const ConstraintT* > DC_Matrix = std::vector< const ConstraintT* >();
         for( size_t i = 0; i < numRows; ++i )
         {
             std::vector<std::pair<size_t,LRAEntryType>> nonbasicindex_coefficient = std::vector<std::pair<size_t,LRAEntryType>>();
             LRAEntryType lcmOfCoeffDenoms = 1;
-            const Constraint* dc_constraint = mTableau.isDefining( i, nonbasicindex_coefficient,  lcmOfCoeffDenoms, max_value );
+            const ConstraintT* dc_constraint = mTableau.isDefining( i, nonbasicindex_coefficient,  lcmOfCoeffDenoms, max_value );
             if( dc_constraint != NULL  )
             {      
                 LRAVariable* new_var = dc_Tableau.newBasicVariable( nonbasicindex_coefficient, (*mTableau.rows().at(i)).expression(), (*mTableau.rows().at(i)).factor(),dc_constraint->integerValued() );
@@ -1209,7 +1210,7 @@ Return:
             dc_Tableau.calculate_hermite_normalform( diagonals_ref, full_rank );
             if( !full_rank )
             {
-                branchAt( Polynomial( var->first ), (Rational)map_iterator->second );
+                branchAt( Poly( var->first ), (Rational)map_iterator->second );
                 return true;
             }
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
@@ -1224,7 +1225,7 @@ Return:
             cout << "Inverted matrix:" << endl;
             dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
             #endif 
-            Polynomial* cut_from_proof = new Polynomial();
+            Poly* cut_from_proof = new Poly();
             for( size_t i = 0; i < dc_positions.size(); ++i )
             {
                 LRAEntryType upper_lower_bound;
@@ -1241,22 +1242,22 @@ Return:
                     {
                         bound_add = 0;
                     }
-                    const smtrat::Constraint* cut_constraint = newConstraint( *cut_from_proof - (Rational)carl::floor((Rational)upper_lower_bound) , Relation::LEQ );
-                    const smtrat::Constraint* cut_constraint2 = newConstraint( *cut_from_proof - ((Rational)carl::floor((Rational)upper_lower_bound)+bound_add) , Relation::GEQ );
+                    const smtrat::ConstraintT* cut_constraint = newConstraint<Poly>( *cut_from_proof - (Rational)carl::floor((Rational)upper_lower_bound) , Relation::LEQ );
+                    const smtrat::ConstraintT* cut_constraint2 = newConstraint<Poly>( *cut_from_proof - ((Rational)carl::floor((Rational)upper_lower_bound)+bound_add) , Relation::GEQ );
                     // Construct and add (p<=I-1 or p>=I))
-                    const Formula* cons1 = newFormula( cut_constraint );
-                    cons1->setActivity( -numeric_limits<double>::infinity() );
-                    const Formula* cons2 = newFormula( cut_constraint2 );
-                    cons2->setActivity( -numeric_limits<double>::infinity() );
-                    PointerSet<Formula> subformulasA;
+                    FormulaT cons1 = FormulaT( cut_constraint );
+                    cons1.setActivity( -numeric_limits<double>::infinity() );
+                    FormulaT cons2 = FormulaT( cut_constraint2 );
+                    cons2.setActivity( -numeric_limits<double>::infinity() );
+                    set<FormulaT> subformulasA;
                     subformulasA.insert( cons1 );
                     subformulasA.insert( cons2 );
-                    addDeduction( newFormula( OR, std::move( subformulasA ) ) );   
+                    addDeduction( FormulaT( OR, std::move( subformulasA ) ) );   
                     // (not(p<=I-1) or not(p>=I))
-                    PointerSet<Formula> subformulasB;
-                    subformulasB.insert( newNegation( cons1 ) );
-                    subformulasB.insert( newNegation( cons2 ) );
-                    addDeduction( newFormula( OR, std::move( subformulasB ) ) );
+                    set<FormulaT> subformulasB;
+                    subformulasB.insert( FormulaT( FormulaType::NOT, cons1 ) );
+                    subformulasB.insert( FormulaT( FormulaType::NOT, cons2 ) );
+                    addDeduction( FormulaT( OR, std::move( subformulasB ) ) );
                     #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                     cout << "After adding proof of unsatisfiability:" << endl;
                     mTableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
@@ -1274,7 +1275,7 @@ Return:
         cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
         cout << "Branch at: " << var->first << endl;
         #endif
-        branchAt( Polynomial( var->first ), (Rational)map_iterator->second );
+        branchAt( Poly( var->first ), (Rational)map_iterator->second );
         return true;
     }
 
@@ -1481,7 +1482,7 @@ Return:
     {
         for( auto slackVar : mTableau.slackVars() )
         {
-            Polynomial tmp = slackVar.first->substitute( _assignment );
+            Poly tmp = slackVar.first->substitute( _assignment );
             assert( tmp.isConstant() );
             LRABoundType slackVarAssignment = slackVar.second->assignment().mainPart() + slackVar.second->assignment().deltaPart() * _delta;
             if( !(tmp == (Rational) slackVarAssignment) )

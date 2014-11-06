@@ -16,7 +16,7 @@ namespace smtrat
 
         }
 
-        GroebnerModuleState( const typename Settings::Groebner& basisCalculation, const std::map<carl::Variable, std::pair<Term, carl::BitVector> >& rewrites ) :
+        GroebnerModuleState( const typename Settings::Groebner& basisCalculation, const std::map<carl::Variable, std::pair<TermT, carl::BitVector> >& rewrites ) :
         mBasis( basisCalculation ), mRewrites(rewrites)
         {
         }
@@ -26,7 +26,7 @@ namespace smtrat
             return mBasis;
         }
 
-        const std::map<carl::Variable, std::pair<Term, carl::BitVector> >& getRewriteRules() const
+        const std::map<carl::Variable, std::pair<TermT, carl::BitVector> >& getRewriteRules() const
         {
             return mRewrites;
         }
@@ -34,6 +34,6 @@ namespace smtrat
     protected:
         ///The state of the basis
         const typename Settings::Groebner mBasis;
-        const std::map<carl::Variable, std::pair<Term, carl::BitVector> > mRewrites;
+        const std::map<carl::Variable, std::pair<TermT, carl::BitVector> > mRewrites;
     };
 }

@@ -10,7 +10,7 @@
 
 #include <list>
 #include <vector>
-#include "../../Formula.h"
+#include "../../Common.h"
 #include <map>
 
 namespace smtrat 
@@ -34,9 +34,9 @@ namespace vrw
 
     struct ConstraintNode 
     {
-        const Constraint* constraint;
-        Formula::const_iterator posInReceivedFormula;
-        Formula::iterator posInPassedFormula;
+        const ConstraintT* constraint;
+        FormulaT::const_iterator posInReceivedFormula;
+        FormulaT::iterator posInPassedFormula;
         std::list<VariableNode*> adjacencyList;
         bool unasserted;
     };
@@ -51,16 +51,16 @@ namespace vrw
         
     public:
         VariableConstraintGraph( );
-        std::list<ConstraintNode*> addConstraint(const Constraint* constraint,Formula::const_iterator origin, Formula::iterator pos);
-        std::list<ConstraintNode*> updateConstraintNode(ConstraintNode* node, Formula::iterator pos);
-        bool removeConstraint(std::list<ConstraintNode*>::iterator, Formula::const_iterator end);
+        std::list<ConstraintNode*> addConstraint(const ConstraintT* constraint,FormulaT::const_iterator origin, FormulaT::iterator pos);
+        std::list<ConstraintNode*> updateConstraintNode(ConstraintNode* node, FormulaT::iterator pos);
+        bool removeConstraint(std::list<ConstraintNode*>::iterator, FormulaT::const_iterator end);
         void assertConstraints();
         
         
         std::list<ConstraintNode*>::iterator last()  { return --mConstraintNodes.end(); }
         
-        std::list<std::pair<Formula::iterator, bool> > findIrrelevantConstraints(Formula::iterator end);
-        std::list<std::pair<Formula::iterator, bool> > findPurelyLinearComponents(Formula::iterator end);
+        std::list<std::pair<FormulaT::iterator, bool> > findIrrelevantConstraints(FormulaT::iterator end);
+        std::list<std::pair<FormulaT::iterator, bool> > findPurelyLinearComponents(FormulaT::iterator end);
         void print(); 
         virtual ~VariableConstraintGraph( ) {}
     private:

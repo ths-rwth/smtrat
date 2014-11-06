@@ -59,10 +59,10 @@ RelationParser::RelationParser() {
 }
 
 TheoryOpParser::TheoryOpParser() {
-	add("+", Polynomial::ConstructorOperation::ADD);
-	add("-", Polynomial::ConstructorOperation::SUB);
-	add("*", Polynomial::ConstructorOperation::MUL);
-	add("/", Polynomial::ConstructorOperation::DIV);
+	add("+", Poly::ConstructorOperation::ADD);
+	add("-", Poly::ConstructorOperation::SUB);
+	add("*", Poly::ConstructorOperation::MUL);
+	add("/", Poly::ConstructorOperation::DIV);
 }
 
 DomainParser::DomainParser() {

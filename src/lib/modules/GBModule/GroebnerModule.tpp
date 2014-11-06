@@ -81,12 +81,12 @@ template<class Settings>
 bool GroebnerModule<Settings>::assertSubformula( ModuleInput::const_iterator _formula )
 {
     Module::assertSubformula( _formula );
-    if( _formula->formula().getType() != smtrat::Type::CONSTRAINT )
+    if( _formula->formula().getType() != carl::FormulaType::CONSTRAINT )
     {
         return true;
     }
 
-    const Constraint& constraint = _formula->formula().constraint( );
+    const ConstraintT& constraint = _formula->formula().constraint( );
     
 
     #ifdef SMTRAT_DEVOPTION_Statistics
@@ -100,11 +100,11 @@ bool GroebnerModule<Settings>::assertSubformula( ModuleInput::const_iterator _fo
 }
 
 template<class Settings>
-bool GroebnerModule<Settings>::constraintByGB(smtrat::Relation cr)
+bool GroebnerModule<Settings>::constraintByGB(carl::Relation cr)
 {
-    return ((cr == smtrat::Relation::EQ) ||
+    return ((cr == carl::Relation::EQ) ||
             (Settings::transformIntoEqualities == ALL_INEQUALITIES) ||
-            (Settings::transformIntoEqualities == ONLY_NONSTRICT && (cr == smtrat::Relation::GEQ || cr ==  smtrat::Relation::LEQ) ));
+            (Settings::transformIntoEqualities == ONLY_NONSTRICT && (cr == carl::Relation::GEQ || cr ==  carl::Relation::LEQ) ));
 }
 
 /**
@@ -114,7 +114,7 @@ bool GroebnerModule<Settings>::constraintByGB(smtrat::Relation cr)
 template<class Settings>
 void GroebnerModule<Settings>::processNewConstraint(ModuleInput::const_iterator _formula)
 {
-    const Constraint& constraint = _formula->formula().constraint( );
+    const ConstraintT& constraint = _formula->formula().constraint( );
     bool toGb = constraintByGB(constraint.relation());
 
     if( toGb )
@@ -137,7 +137,7 @@ void GroebnerModule<Settings>::handleConstraintToGBQueue(ModuleInput::const_iter
     pushBacktrackPoint( _formula );
     // Equalities do not need to be transformed, so we add them directly.
 	GBPolynomial newPol;
-    if(_formula->formula().constraint( ).relation() ==  smtrat::Relation::EQ)
+    if(_formula->formula().constraint( ).relation() ==  carl::Relation::EQ)
     {
 		newPol = GBPolynomial (_formula->formula().constraint().lhs());
     }
@@ -146,7 +146,7 @@ void GroebnerModule<Settings>::handleConstraintToGBQueue(ModuleInput::const_iter
 		newPol = transformIntoEquality( _formula );
         
     }
-	newPol.setReasons(mBacktrackPoints.size() - 1);
+	newPol.setReasons((unsigned)(mBacktrackPoints.size() - 1));
 	mBasis.addPolynomial( newPol );
     saveState( );
 
@@ -171,7 +171,7 @@ void GroebnerModule<Settings>::handleConstraintNotToGB(ModuleInput::const_iterat
     else if( Settings::checkInequalities == ALWAYS )
     {
         mNewInequalities.push_back( mInequalities.InsertReceivedFormula( _formula ) );
-        // assert((mNewInequalities.back()->first)->formula()->constraint().relation() !=  smtrat::Relation::EQ); TODO: ???
+        // assert((mNewInequalities.back()->first)->formula()->constraint().relation() !=  carl::Relation::EQ); TODO: ???
     }
     else
     {
@@ -288,7 +288,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
                 assert( witness.isZero( ) );
             }
             #endif
-            mInfeasibleSubsets.push_back( PointerSet<Formula>() );
+            mInfeasibleSubsets.push_back( std::set<FormulaT>() );
             // The equalities we used for the basis-computation are the infeasible subset
 
 			assert(!Settings::getReasonsForInfeasibility || !witness.getReasons().empty());
@@ -298,21 +298,21 @@ Answer GroebnerModule<Settings>::isConsistent( )
             for( ++it; it != mBacktrackPoints.end( ); ++it )
             {
                 assert(it != mBacktrackPoints.end());
-                assert( (*it)->formula().getType( ) == smtrat::Type::CONSTRAINT );
-                assert( Settings::transformIntoEqualities != NO_INEQUALITIES || (*it)->formula().constraint( ).relation( ) ==  smtrat::Relation::EQ );
+                assert( (*it)->formula().getType( ) == carl::FormulaType::CONSTRAINT );
+                assert( Settings::transformIntoEqualities != NO_INEQUALITIES || (*it)->formula().constraint( ).relation( ) ==  carl::Relation::EQ );
 
                 if( Settings::getReasonsForInfeasibility )
                 {
 					
                     if( origIt.get( ) )
                     {
-                        mInfeasibleSubsets.back( ).insert( (*it)->pFormula() );
+                        mInfeasibleSubsets.back( ).insert( (*it)->formula() );
                     }
                     origIt++;
                 }
                 else
                 {
-                    mInfeasibleSubsets.back( ).insert( (*it)->pFormula() );
+                    mInfeasibleSubsets.back( ).insert( (*it)->formula() );
                 }
             }
 
@@ -348,8 +348,8 @@ Answer GroebnerModule<Settings>::isConsistent( )
             // TODO: Do not use rPassedFormulaBegin, which should be disabled
             for( ModuleInput::iterator i = passedFormulaBegin( ); i != rPassedFormula().end( ); )
             {
-                assert( i->formula().getType( ) == smtrat::Type::CONSTRAINT );
-                if( mGbEqualities.count(i->pFormula()) == 1 )
+                assert( i->formula().getType( ) == carl::FormulaType::CONSTRAINT );
+                if( mGbEqualities.count(i->formula()) == 1 )
                 {
                     i = super::eraseSubformulaFromPassedFormula( i );
                 }
@@ -416,10 +416,10 @@ bool GroebnerModule<Settings>::iterativeVariableRewriting()
 
     // The parameters of the new rule.
     carl::Variable ruleVar = carl::Variable::NO_VARIABLE;
-    Term ruleTerm;
+    TermT ruleTerm;
     carl::BitVector ruleReasons;
 
-    std::map<carl::Variable, std::pair<Term, carl::BitVector> >& rewrites = mRewriteRules;
+    std::map<carl::Variable, std::pair<TermT, carl::BitVector> >& rewrites = mRewriteRules;
 	typename Settings::Groebner basis;
 
     while(newRuleFound)
@@ -442,7 +442,7 @@ bool GroebnerModule<Settings>::iterativeVariableRewriting()
             {
                 //TODO optimization, this variable does not appear in the gb.
                 ruleVar = it->lterm()->getSingleVariable();
-                ruleTerm = Term(Rational(0));
+                ruleTerm = TermT(Rational(0));
                 ruleReasons = it->getReasons();
                 newRuleFound = true;
             }
@@ -473,7 +473,7 @@ bool GroebnerModule<Settings>::iterativeVariableRewriting()
                     else
                     {
                         // learned a rule.
-                        Term* ruleTermTmp = it->lterm()->divideBy(-it->trailingTerm()->coeff());
+                        TermT* ruleTermTmp = it->lterm()->divideBy(-it->trailingTerm()->coeff());
 						ruleTerm = *ruleTermTmp;
 						delete ruleTermTmp;
                         ruleReasons = it->getReasons();
@@ -495,7 +495,7 @@ bool GroebnerModule<Settings>::iterativeVariableRewriting()
         if(newRuleFound)
         {
             gbUpdate = true;
-            rewrites.insert(std::pair<carl::Variable, std::pair<Term, carl::BitVector> >(ruleVar, std::pair<Term, BitVector>(ruleTerm, ruleReasons ) ) );
+            rewrites.insert(std::pair<carl::Variable, std::pair<TermT, carl::BitVector> >(ruleVar, std::pair<TermT, BitVector>(ruleTerm, ruleReasons ) ) );
 
             std::list<GBPolynomial> resultingGb;
             basis.reset();
@@ -517,7 +517,7 @@ bool GroebnerModule<Settings>::iterativeVariableRewriting()
                 polynomials = basis.listBasisPolynomials();
             }
 
-            for( std::map<carl::Variable, std::pair<Term, BitVector> >::iterator it = rewrites.begin(); it != rewrites.end(); ++it )
+            for( std::map<carl::Variable, std::pair<TermT, BitVector> >::iterator it = rewrites.begin(); it != rewrites.end(); ++it )
             {
 				/// TODO fix this
                 //std::pair<Term, bool> reducedRule = it->second.first.rewriteVariables(ruleVar, ruleTerm);
@@ -551,7 +551,7 @@ bool GroebnerModule<Settings>::iterativeVariableRewriting()
         for(unsigned exponent = 3; exponent <= 17; ++(++exponent) )
         {
             // Construct x^exp
-            Term t(Rational(1), *it, exponent);
+            TermT t(Rational(1), *it, exponent);
             GBPolynomial reduce(t);
 
             // reduce x^exp
@@ -607,19 +607,19 @@ void GroebnerModule<Settings>::knownConstraintDeduction(const std::list<std::pai
         // if the bitvector is not empty, there is a theory deduction
         if( Settings::addTheoryDeductions == ALL_CONSTRAINTS && !it->second.empty() )
         {
-            PointerSet<Formula> subformulas;
-            PointerSet<Formula> deduced( generateReasons( it->first ));
+            std::set<FormulaT> subformulas;
+            std::set<FormulaT> deduced( generateReasons( it->first ));
             // When this kind of deduction is greater than one, we would have to determine wich of them is really the deduced one.
             if( deduced.size() > 1 ) continue;
-            PointerSet<Formula> originals( generateReasons( it->second ));
-            PointerSet<Formula> originalsWithoutDeduced;
+            std::set<FormulaT> originals( generateReasons( it->second ));
+            std::set<FormulaT> originalsWithoutDeduced;
 
             std::set_difference(originals.begin(), originals.end(), deduced.begin(), deduced.end(), std::inserter(originalsWithoutDeduced, originalsWithoutDeduced.end()));
 
 
             for( auto jt =  originalsWithoutDeduced.begin(); jt != originalsWithoutDeduced.end(); ++jt )
             {
-                subformulas.insert( newNegation( *jt ) );
+                subformulas.insert( FormulaT( carl::FormulaType::NOT, *jt ) );
             }
 
             for( auto jt =  deduced.begin(); jt != deduced.end(); ++jt )
@@ -627,7 +627,7 @@ void GroebnerModule<Settings>::knownConstraintDeduction(const std::list<std::pai
                 subformulas.insert( *jt );
             }
 
-            addDeduction( newFormula( OR, subformulas ) );
+            addDeduction( FormulaT( carl::FormulaType::OR, subformulas ) );
             //deduction->print();
             #ifdef SMTRAT_DEVOPTION_Statistics
             mStats->DeducedEquality();
@@ -652,7 +652,7 @@ void GroebnerModule<Settings>::newConstraintDeduction( )
 template<class Settings>
 void GroebnerModule<Settings>::removeSubformula( ModuleInput::const_iterator _formula )
 {
-    if(_formula->formula().getType() !=  smtrat::Type::CONSTRAINT) {
+    if(_formula->formula().getType() !=  carl::FormulaType::CONSTRAINT) {
         super::removeSubformula( _formula );
         return;
     }
@@ -701,7 +701,7 @@ void GroebnerModule<Settings>::removeReceivedFormulaFromNewInequalities( ModuleI
 template<class Settings>
 void GroebnerModule<Settings>::pushBacktrackPoint( ModuleInput::const_iterator btpoint )
 {
-    assert( mBacktrackPoints.empty( ) || btpoint->formula().getType( ) ==  smtrat::Type::CONSTRAINT );
+    assert( mBacktrackPoints.empty( ) || btpoint->formula().getType( ) ==  carl::FormulaType::CONSTRAINT );
     assert( mBacktrackPoints.size( ) == mStateHistory.size( ) );
 
     // We save the current level
@@ -713,7 +713,7 @@ void GroebnerModule<Settings>::pushBacktrackPoint( ModuleInput::const_iterator b
     if( mStateHistory.empty() )
     {
         // there are no variable rewrite rules, so we can only push our current basis and empty rewrites
-        mStateHistory.emplace_back( mBasis, std::map<carl::Variable, std::pair<Term, carl::BitVector> >() );
+        mStateHistory.emplace_back( mBasis, std::map<carl::Variable, std::pair<TermT, carl::BitVector> >() );
     }
     else
     {
@@ -805,7 +805,7 @@ template<class Settings>
 typename Settings::Polynomial GroebnerModule<Settings>::callGroebnerToSDP( const Ideal& gb ) 
 {
     using namespace reallynull;
-    Polynomial witness;
+    Poly witness;
     std::cout << "NSS..?" << std::flush;
 
     std::set<unsigned> variables;
@@ -859,23 +859,23 @@ typename GroebnerModule<Settings>::GBPolynomial GroebnerModule<Settings>::transf
     // Modify to reflect inequalities.
     switch( constraint->formula().constraint( ).relation( ) )
     {
-    case smtrat::Relation::GEQ:
-        result = result + Term( -1, var, 2 );
+    case carl::Relation::GEQ:
+        result = result + TermT( -1, var, 2 );
         break;
-    case smtrat::Relation::LEQ:
-        result = result + Term( 1, var, 2 );
+    case carl::Relation::LEQ:
+        result = result + TermT( 1, var, 2 );
         break;
-    case smtrat::Relation::GREATER:
-        result = result * Term( 1, var, 2 );
-        result = result + Term( -1 );
+    case carl::Relation::GREATER:
+        result = result * TermT( 1, var, 2 );
+        result = result + TermT( -1 );
         break;
-    case smtrat::Relation::LESS:
-        result = result * Term( 1, var, 2 );
-        result = result + Term( 1 );
+    case carl::Relation::LESS:
+        result = result * TermT( 1, var, 2 );
+        result = result + TermT( 1 );
         break;
-    case smtrat::Relation::NEQ:
-        result = result * Term( 1, var, 1);
-        result = result + Term( 1 );
+    case carl::Relation::NEQ:
+        result = result * TermT( 1, var, 1);
+        result = result + TermT( 1 );
         break;
     default:
         assert( false );
@@ -911,7 +911,7 @@ void GroebnerModule<Settings>::passGB( )
     // Declare a set of reason sets.
     vec_set_const_pFormula originals;
     // And a reason set in it.
-    originals.push_back( PointerSet<Formula>() );
+    originals.push_back( std::set<FormulaT>() );
     
     if( !Settings::passWithMinimalReasons )
     {
@@ -922,7 +922,7 @@ void GroebnerModule<Settings>::passGB( )
             // Add the constraint if it is of a type that it was handled by the gb.
             if( constraintByGB(it->formula().constraint( ).relation( )) )
             {
-                originals.front( ).insert( it->pFormula() );
+                originals.front( ).insert( it->formula() );
             }
         }
 		assert(!originals.front().empty());
@@ -945,9 +945,9 @@ void GroebnerModule<Settings>::passGB( )
         // We use the originals set calculated before as reason set. 
         // TODO: replace "constraintPool().variables()" by a smaller approximations
         // of the variables contained in "simplIt->toEx( )"
-        auto res = addSubformulaToPassedFormula( newFormula( newConstraint( smtrat::Polynomial(*simplIt), smtrat::Relation::EQ ) ), originals );
+        auto res = addSubformulaToPassedFormula( FormulaT( smtrat::Poly(*simplIt), carl::Relation::EQ ), originals );
         if( res.second )
-            mGbEqualities.insert(res.first->pFormula());
+            mGbEqualities.insert(res.first->formula());
     }
 }
 
@@ -957,27 +957,27 @@ void GroebnerModule<Settings>::passGB( )
  * @return The reason set.
  */
 template<class Settings>
-PointerSet<Formula> GroebnerModule<Settings>::generateReasons( const carl::BitVector& reasons )
+std::set<FormulaT> GroebnerModule<Settings>::generateReasons( const carl::BitVector& reasons )
 {
     if(reasons.empty())
     {
-        return PointerSet<Formula>();
+        return std::set<FormulaT>();
     }
     
     carl::BitVector::const_iterator origIt = reasons.begin( );
 	origIt++;
-    PointerSet<Formula> origins;
+    std::set<FormulaT> origins;
 
     auto it = mBacktrackPoints.begin( );
     for( ++it; it != mBacktrackPoints.end( ); ++it )
     {
-        assert( (*it)->formula().getType( ) == smtrat::Type::CONSTRAINT );
-        assert( Settings::transformIntoEqualities != NO_INEQUALITIES || (*it)->formula().constraint( ).relation( ) == smtrat::Relation::EQ );
+        assert( (*it)->formula().getType( ) == carl::FormulaType::CONSTRAINT );
+        assert( Settings::transformIntoEqualities != NO_INEQUALITIES || (*it)->formula().constraint( ).relation( ) == carl::Relation::EQ );
         // If the corresponding entry in the reason vector is set,
         // we add the polynomial.
         if( origIt.get( ) )
         {
-            origins.insert( (*it)->pFormula() );
+            origins.insert( (*it)->formula() );
         }
         origIt++;
     }

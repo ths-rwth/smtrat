@@ -50,7 +50,7 @@ namespace smtrat
 
         public:
 
-            PreprocessingModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            PreprocessingModule( ModuleType _type, const FormulaT* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             /**
              * Destructor:
@@ -62,16 +62,16 @@ namespace smtrat
              */
 
             // Interfaces.
-            bool assertSubformula( Formula::const_iterator );
+            bool assertSubformula( FormulaT::const_iterator );
             Answer isConsistent();
-            void removeSubformula( Formula::const_iterator );
+            void removeSubformula( FormulaT::const_iterator );
 
         protected:
-            void setDifficulty( Formula* formula, bool invert = false );
-            void rewritePotentialInequalities( Formula* formula, bool invert = false );
+            void setDifficulty( FormulaT* formula, bool invert = false );
+            void rewritePotentialInequalities( FormulaT* formula, bool invert = false );
             void assignActivitiesToPassedFormula();
-            void addLinearDeductions( Formula* formula );
-            void addUpperBounds( Formula* formula, const GiNaC::symtab& symbols, GiNaC::numeric boundary, bool strict ) const;
+            void addLinearDeductions( FormulaT* formula );
+            void addUpperBounds( FormulaT* formula, const GiNaC::symtab& symbols, GiNaC::numeric boundary, bool strict ) const;
             GiNaC::numeric determineUpperBounds( unsigned degree, const GiNaC::numeric& constPart ) const;
     };
 

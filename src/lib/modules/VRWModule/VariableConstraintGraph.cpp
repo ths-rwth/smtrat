@@ -25,7 +25,7 @@ namespace vrw
      * @param pos The iterator in the passed formula
      * @return A list of constraints which have to be reconsidered, as they have a variable which is not "single" anymore.
      */
-    std::list<ConstraintNode*> VariableConstraintGraph::addConstraint(const Constraint* constraint, Formula::const_iterator origin, Formula::iterator pos) 
+    std::list<ConstraintNode*> VariableConstraintGraph::addConstraint(const ConstraintT* constraint, FormulaT::const_iterator origin, FormulaT::iterator pos) 
     {
         std::list<ConstraintNode*> readd;
         // Insert and set;
@@ -70,7 +70,7 @@ namespace vrw
      * @param pos The position in the passed formula where it can be found now.
      * @return A list of constraints which have to be reconsidered, as they have a variable which is not "single" anymore.
      */
-    std::list<ConstraintNode*> VariableConstraintGraph::updateConstraintNode(ConstraintNode* node, Formula::iterator pos) 
+    std::list<ConstraintNode*> VariableConstraintGraph::updateConstraintNode(ConstraintNode* node, FormulaT::iterator pos) 
     {
         std::list<ConstraintNode*> readd;
         node->posInPassedFormula = pos;
@@ -104,7 +104,7 @@ namespace vrw
      * @param end An iterator to passedFormula->end
      * @return Whether the formula has to be removed.
      */
-    bool VariableConstraintGraph::removeConstraint(std::list<ConstraintNode*>::iterator constraintNode , Formula::const_iterator end )
+    bool VariableConstraintGraph::removeConstraint(std::list<ConstraintNode*>::iterator constraintNode , FormulaT::const_iterator end )
     {
         bool nothingChanges = false;
         // If constraint is already not passed
@@ -134,9 +134,9 @@ namespace vrw
      * @param end An iterator to passedFormula->end
      * @return 
      */
-    std::list<std::pair<Formula::iterator, bool> > VariableConstraintGraph::findIrrelevantConstraints(Formula::iterator end)
+    std::list<std::pair<FormulaT::iterator, bool> > VariableConstraintGraph::findIrrelevantConstraints(FormulaT::iterator end)
     {
-        std::list<std::pair<Formula::iterator, bool> > irrelevantConstraints;
+        std::list<std::pair<FormulaT::iterator, bool> > irrelevantConstraints;
         for(std::map<std::string, VariableNode*>::const_iterator itVar = mVariableNodes.begin(); itVar != mVariableNodes.end(); ++itVar)
         {
             VariableNode* varNode = itVar->second;
@@ -144,13 +144,13 @@ namespace vrw
             {
                 ConstraintNode* constraintNode = varNode->adjacencyList.begin()->second;
                 if(constraintNode->posInPassedFormula == end) continue;
-                VarInfo varInfo(constraintNode->constraint->varInfo(varNode->variable));
+                VarPolyInfo varInfo(constraintNode->constraint->varInfo(varNode->variable));
                 // the variable should occur only once and with an odd degree.
                 if( varInfo.occurences == 1 && varInfo.maxDegree%2 == 1)
                 {
                     // as the variable occurs only once the max and mindegree are assumed to be equal.
                     assert(varInfo.maxDegree == varInfo.minDegree);
-                    irrelevantConstraints.push_back(std::pair<Formula::iterator, bool>(constraintNode->posInPassedFormula, constraintNode->unasserted) );
+                    irrelevantConstraints.push_back(std::pair<FormulaT::iterator, bool>(constraintNode->posInPassedFormula, constraintNode->unasserted) );
                     constraintNode->posInPassedFormula = end;
                     
                     // Remove all the links from the variable to the node

@@ -27,10 +27,9 @@
 
 #pragma once
 
+#include "../../Common.h"
 #include "Substitution.h"
 #include <bitset>
-#include "../../ConstraintPool.h"
-#include "../../FormulaPool.h"
 
 /**
  * The maximal number of splits performed, if the left-hand side of a constraints is a product of 
@@ -48,7 +47,7 @@ namespace vs
 {
     
     /// a vector of constraints
-    typedef std::vector< const smtrat::Constraint* > ConstraintVector;
+    typedef std::vector< const smtrat::ConstraintT* > ConstraintVector;
     /// a vector of vectors of constraints
     typedef std::vector<ConstraintVector> DisjunctionOfConstraintConjunctions;
 
@@ -130,7 +129,7 @@ namespace vs
      * @param _conflictingVars
      * @param _solutionSpace
      */
-    void simplify( DisjunctionOfConstraintConjunctions&, smtrat::Variables&, const smtrat::EvalDoubleIntervalMap& );
+    void simplify( DisjunctionOfConstraintConjunctions&, carl::Variables&, const smtrat::EvalDoubleIntervalMap& );
     
     /**
      * Splits all constraints in the given disjunction of conjunctions of constraints having a non-trivial 
@@ -163,7 +162,7 @@ namespace vs
      * @return The resulting disjunction of conjunctions of constraints, which is semantically equivalent to
      *          the given constraint.
      */
-    DisjunctionOfConstraintConjunctions splitProducts( const smtrat::Constraint*, bool = false );
+    DisjunctionOfConstraintConjunctions splitProducts( const smtrat::ConstraintT*, bool = false );
     
     /**
      * For a given constraint f_1*...*f_n ~ 0 this method computes all combinations of constraints
@@ -174,7 +173,7 @@ namespace vs
      * @param _constraint A pointer to the constraint to split this way.
      * @return The resulting combinations.
      */
-    DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::Constraint* );
+    DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::ConstraintT* );
     
     /**
      * @param _length The maximal length of the bit strings with odd parity to compute.
@@ -203,7 +202,7 @@ namespace vs
      *                 Note, that this hinders a combinatorial blow up.
      *          true, otherwise.
      */
-    bool substitute( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions&, bool _accordingPaper, smtrat::Variables&, const smtrat::EvalDoubleIntervalMap& );
+    bool substitute( const smtrat::ConstraintT*, const Substitution&, DisjunctionOfConstraintConjunctions&, bool _accordingPaper, carl::Variables&, const smtrat::EvalDoubleIntervalMap& );
     
     /**
      * Applies a substitution of a variable to a term, which is not minus infinity nor a to an square root expression plus an infinitesimal.
@@ -217,7 +216,7 @@ namespace vs
      *                               container.
      * @param _solutionSpace The solution space in form of double intervals of the variables occurring in the given constraint.
      */
-    bool substituteNormal( const smtrat::Constraint* _cons, const Substitution& _subs, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper, smtrat::Variables& _conflictingVariables, const smtrat::EvalDoubleIntervalMap& _solutionSpace );
+    bool substituteNormal( const smtrat::ConstraintT* _cons, const Substitution& _subs, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper, carl::Variables& _conflictingVariables, const smtrat::EvalDoubleIntervalMap& _solutionSpace );
     
     /**
      * Sub-method of substituteNormalSqrt, where applying the substitution led to a term
@@ -235,7 +234,7 @@ namespace vs
      *                        for real algebra - the quadratic case and beyond." by Volker Weispfenning (true) or in an adapted way which omits a higher
      *                        degree in the result by splitting the result in more cases (false).
      */
-    bool substituteNormalSqrtEq( const smtrat::Polynomial& _radicand, const smtrat::Polynomial& _q, const smtrat::Polynomial& _r, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
+    bool substituteNormalSqrtEq( const smtrat::Poly& _radicand, const smtrat::Poly& _q, const smtrat::Poly& _r, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
     
     /**
      * Sub-method of substituteNormalSqrt, where applying the substitution led to a term
@@ -253,7 +252,7 @@ namespace vs
      *                        for real algebra - the quadratic case and beyond." by Volker Weispfenning (true) or in an adapted way which omits a higher
      *                        degree in the result by splitting the result in more cases (false).
      */
-    bool substituteNormalSqrtNeq( const smtrat::Polynomial& _radicand, const smtrat::Polynomial& _q, const smtrat::Polynomial& _r, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
+    bool substituteNormalSqrtNeq( const smtrat::Poly& _radicand, const smtrat::Poly& _q, const smtrat::Poly& _r, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
     
     /**
      * Sub-method of substituteNormalSqrt, where applying the substitution led to a term
@@ -272,7 +271,7 @@ namespace vs
      *                        for real algebra - the quadratic case and beyond." by Volker Weispfenning (true) or in an adapted way which omits a higher
      *                        degree in the result by splitting the result in more cases (false).
      */
-    bool substituteNormalSqrtLess( const smtrat::Polynomial& _radicand, const smtrat::Polynomial& _q, const smtrat::Polynomial& _r, const smtrat::Polynomial& _s, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
+    bool substituteNormalSqrtLess( const smtrat::Poly& _radicand, const smtrat::Poly& _q, const smtrat::Poly& _r, const smtrat::Poly& _s, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
     
     /**
      * Sub-method of substituteNormalSqrt, where applying the substitution led to a term
@@ -291,7 +290,7 @@ namespace vs
      *                        for real algebra - the quadratic case and beyond." by Volker Weispfenning (true) or in an adapted way which omits a higher
      *                        degree in the result by splitting the result in more cases (false).
      */
-    bool substituteNormalSqrtLeq( const smtrat::Polynomial& _radicand, const smtrat::Polynomial& _q, const smtrat::Polynomial& _r, const smtrat::Polynomial& _s, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
+    bool substituteNormalSqrtLeq( const smtrat::Poly& _radicand, const smtrat::Poly& _q, const smtrat::Poly& _r, const smtrat::Poly& _s, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper );
     
     /**
      * Applies the given substitution to the given constraint, where the substitution
@@ -309,7 +308,7 @@ namespace vs
      *                               container.
      * @param _solutionSpace The solution space in form of double intervals of the variables occurring in the given constraint.
      */
-    bool substitutePlusEps( const smtrat::Constraint* _cons, const Substitution& _subs, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper, smtrat::Variables& _conflictingVariables, const smtrat::EvalDoubleIntervalMap& _solutionSpace );
+    bool substitutePlusEps( const smtrat::ConstraintT* _cons, const Substitution& _subs, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper, carl::Variables& _conflictingVariables, const smtrat::EvalDoubleIntervalMap& _solutionSpace );
     
     /**
      * Sub-method of substituteEps, where one of the gradients in the
@@ -326,7 +325,7 @@ namespace vs
      *                               container.
      * @param _solutionSpace The solution space in form of double intervals of the variables occurring in the given constraint.
      */
-    bool substituteEpsGradients( const smtrat::Constraint* _cons, const Substitution& _subs, const smtrat::Relation _relation, DisjunctionOfConstraintConjunctions&, bool _accordingPaper, smtrat::Variables& _conflictingVariables, const smtrat::EvalDoubleIntervalMap& _solutionSpace );
+    bool substituteEpsGradients( const smtrat::ConstraintT* _cons, const Substitution& _subs, const carl::Relation _relation, DisjunctionOfConstraintConjunctions&, bool _accordingPaper, carl::Variables& _conflictingVariables, const smtrat::EvalDoubleIntervalMap& _solutionSpace );
     
     /**
      * Applies the given substitution to the given constraint, where the substitution
@@ -340,7 +339,7 @@ namespace vs
      *                               container.
      * @param _solutionSpace The solution space in form of double intervals of the variables occurring in the given constraint.
      */
-    void substituteInf( const smtrat::Constraint* _cons, const Substitution& _subs, DisjunctionOfConstraintConjunctions& _result, smtrat::Variables& _conflictingVariables, const smtrat::EvalDoubleIntervalMap& _solutionSpace );
+    void substituteInf( const smtrat::ConstraintT* _cons, const Substitution& _subs, DisjunctionOfConstraintConjunctions& _result, carl::Variables& _conflictingVariables, const smtrat::EvalDoubleIntervalMap& _solutionSpace );
     
     /**
      * Applies the given substitution to the given constraint, where the substitution
@@ -351,7 +350,7 @@ namespace vs
      * @param _subs   The substitution to apply.
      * @param _result The vector, in which to store the results of this substitution. It is semantically a disjunction of conjunctions of constraints.
      */
-    void substituteInfLessGreater( const smtrat::Constraint* _cons, const Substitution& _subs, DisjunctionOfConstraintConjunctions& _result );
+    void substituteInfLessGreater( const smtrat::ConstraintT* _cons, const Substitution& _subs, DisjunctionOfConstraintConjunctions& _result );
     
     /**
      * Deals with the case, that the left hand side of the constraint to substitute is
@@ -361,7 +360,7 @@ namespace vs
      * @param _subs   The substitution to apply.
      * @param _result The vector, in which to store the results of this substitution. It is semantically a disjunction of conjunctions of constraints.
      */
-    void substituteTrivialCase( const smtrat::Constraint* _cons, const Substitution& _subs, DisjunctionOfConstraintConjunctions& _result );
+    void substituteTrivialCase( const smtrat::ConstraintT* _cons, const Substitution& _subs, DisjunctionOfConstraintConjunctions& _result );
     
     /**
      * Deals with the case, that the left hand side of the constraint to substitute is
@@ -371,7 +370,7 @@ namespace vs
      * @param _subs   The substitution to apply.
      * @param _result The vector, in which to store the results of this substitution. It is semantically a disjunction of conjunctions of constraints.
      */
-    void substituteNotTrivialCase( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );
+    void substituteNotTrivialCase( const smtrat::ConstraintT*, const Substitution&, DisjunctionOfConstraintConjunctions& );
     
 }    // end namspace vs
 

@@ -45,10 +45,7 @@
 #include "QuantifierManager.h"
 
 namespace smtrat
-{
-    // Forward declaration to speed up compile-time.
-    class Constraint;
-    
+{   
     /**
      * Base class for solvers. This is the interface to the user.
      **/
@@ -62,7 +59,7 @@ namespace smtrat
             /// the constraints so far passed to the primary backend
             ModuleInput* mpPassedFormula;
             /// The propositions of the passed formula.
-            Condition mPropositions;
+            carl::Condition mPropositions;
             /// the backtrack points
             std::vector< ModuleInput::iterator > mBacktrackPoints;
             /// all generated instances of modules
@@ -127,7 +124,7 @@ namespace smtrat
              *          the constraint itself is inconsistent;
              *          true, otherwise.
              */
-            bool inform( const Formula* _constraint )
+            bool inform( const FormulaT& _constraint )
             {
                 return mpPrimaryBackend->inform( _constraint );
             }
@@ -139,7 +136,7 @@ namespace smtrat
              * @return false, if it is easy to decide whether adding this formula creates a conflict;
              *          true, otherwise.
              */
-            bool add( const Formula* _subformula )
+            bool add( const FormulaT& _subformula )
             {
                 auto res = mpPassedFormula->add( _subformula );
                 if( res.second )
@@ -245,7 +242,7 @@ namespace smtrat
              * can be used in the same manner as infeasible subsets are used.
              * @return The lemmas/tautologies made during solving.
              */
-            std::vector<const Formula*> lemmas() const
+            std::vector<FormulaT> lemmas() const
             {
                 return mpPrimaryBackend->deductions();
             }
@@ -335,14 +332,14 @@ namespace smtrat
             /**
              * @return A constant reference to the variables, which are bound by a quantifier.
              */
-			const QuantifiedVariables& quantifiedVariables() const {
+			const carl::QuantifiedVariables& quantifiedVariables() const {
 				return mQuantifierManager.quantifiers();
 			}
 
 			/**
              * @return A reference to the variables, which are bound by a quantifier.
              */
-			QuantifiedVariables& quantifiedVariables() {
+			carl::QuantifiedVariables& quantifiedVariables() {
 				return mQuantifierManager.quantifiers();
 			}
 

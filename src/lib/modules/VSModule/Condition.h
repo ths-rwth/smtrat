@@ -30,7 +30,7 @@
 #pragma once
 
 #include <set>
-#include "../../Formula.h"
+#include "../../Common.h"
 
 namespace vs
 {
@@ -48,14 +48,14 @@ namespace vs
             mutable bool                   mFlag;
             mutable bool                   mRecentlyAdded;
             mutable size_t                 mValuation;
-            const smtrat::Constraint*      mpConstraint;
+            const smtrat::ConstraintT*      mpConstraint;
             std::set<const Condition*>*    mpOriginalConditions;
             
 
         public:
 
             // Constructors:
-            Condition( const smtrat::Constraint*, size_t = 0, bool = false, const std::set<const Condition*>& = std::set<const Condition*>(), bool = false );
+            Condition( const smtrat::ConstraintT*, size_t = 0, bool = false, const std::set<const Condition*>& = std::set<const Condition*>(), bool = false );
             Condition( const Condition& );
 
             // Destructor:
@@ -92,12 +92,12 @@ namespace vs
                 return mValuation;
             }
 
-            const smtrat::Constraint& constraint() const
+            const smtrat::ConstraintT& constraint() const
             {
                 return *mpConstraint;
             }
 
-            const smtrat::Constraint* pConstraint() const
+            const smtrat::ConstraintT* pConstraint() const
             {
                 return mpConstraint;
             }

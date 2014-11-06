@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include "../../Common.h"
 #include "Condition.h"
 #include "../../datastructures/vs/SqrtEx.h"
 
@@ -49,11 +50,11 @@ namespace vs
             /// The type.
             Type mType;
             /// The variables occurring in the term to substitute for.
-            mutable smtrat::Variables* mpTermVariables;
+            mutable carl::Variables* mpTermVariables;
             /// The conditions from which this substitution has been originated. (e.g. [x -> 2] could have had the origins {x-2<=0, x^2-4=0})
             std::set<const Condition*>* mpOriginalConditions;
             /// The side conditions, which have to hold to make this substitution valid. (e.g. [x -> 1/a] has the side condition {a!=0})
-            smtrat::PointerSet<smtrat::Constraint> mSideCondition;
+            carl::PointerSet<smtrat::ConstraintT> mSideCondition;
 
         public:
 
@@ -64,7 +65,7 @@ namespace vs
              * @param _oConditions The original conditions of the substitution to construct.
              * @param _sideCondition The side conditions of the substitution to construct.
              */
-            Substitution( const carl::Variable& _variable, const Type& _type, const std::set<const Condition*>& _oConditions, const smtrat::PointerSet<smtrat::Constraint>& _sideCondition = smtrat::PointerSet<smtrat::Constraint>() );
+            Substitution( const carl::Variable& _variable, const Type& _type, const std::set<const Condition*>& _oConditions, const carl::PointerSet<smtrat::ConstraintT>& _sideCondition = carl::PointerSet<smtrat::ConstraintT>() );
             
             /**
              * Constructs a substitution with a square root term to map to.
@@ -74,7 +75,7 @@ namespace vs
              * @param _oConditions The original conditions of the substitution to construct.
              * @param _sideCondition The side conditions of the substitution to construct.
              */
-            Substitution( const carl::Variable&, const SqrtEx& _term, const Type& _type, const std::set<const Condition*>& _oConditions, const smtrat::PointerSet<smtrat::Constraint>& _sideCondition = smtrat::PointerSet<smtrat::Constraint>() );
+            Substitution( const carl::Variable&, const SqrtEx& _term, const Type& _type, const std::set<const Condition*>& _oConditions, const carl::PointerSet<smtrat::ConstraintT>& _sideCondition = carl::PointerSet<smtrat::ConstraintT>() );
             
             /**
              * Copy constructor.
@@ -109,7 +110,7 @@ namespace vs
             void setTerm( const smtrat::Rational& _value )
             {
                 assert( mType == Type::MINUS_INFINITY );
-                *mpTerm = SqrtEx( smtrat::Polynomial( _value ) );
+                *mpTerm = SqrtEx( smtrat::Poly( _value ) );
                 mType = Type::NORMAL;
             }
 
@@ -148,7 +149,7 @@ namespace vs
             /**
              * @return A constant reference to the side condition of this substitution.
              */
-            const smtrat::PointerSet<smtrat::Constraint>& sideCondition() const
+            const carl::PointerSet<smtrat::ConstraintT>& sideCondition() const
             {
                 return mSideCondition;
             }
@@ -156,11 +157,11 @@ namespace vs
             /**
              * @return A constant reference to the variables occurring in the substitution term.
              */
-            const smtrat::Variables& termVariables() const
+            const carl::Variables& termVariables() const
             {
                 if( mpTermVariables == NULL )
                 {
-                    mpTermVariables = new smtrat::Variables();
+                    mpTermVariables = new carl::Variables();
                     mpTerm->constantPart().gatherVariables( *mpTermVariables );
                     mpTerm->factor().gatherVariables( *mpTermVariables );
                     mpTerm->denominator().gatherVariables( *mpTermVariables );
@@ -250,6 +251,6 @@ namespace vs
     };
     
     template<typename T> 
-    using SubstitutionFastPointerMap = std::unordered_map<const smtrat::Polynomial*, T, substitutionPointerHash, substitutionPointerEqual>;
+    using SubstitutionFastPointerMap = std::unordered_map<const smtrat::Poly*, T, substitutionPointerHash, substitutionPointerEqual>;
 }
 

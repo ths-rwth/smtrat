@@ -37,13 +37,13 @@ namespace vs
     {
         private:
             /// The constant part c of this square root expression (c + f * sqrt(r))/d.
-            smtrat::Polynomial mConstantPart;
+            smtrat::Poly mConstantPart;
             /// The factor f of this square root expression (c + f * sqrt(r))/d.
-            smtrat::Polynomial mFactor;
+            smtrat::Poly mFactor;
             /// The denominator d of this square root expression (c + f * sqrt(r))/d.
-            smtrat::Polynomial mDenominator;
+            smtrat::Poly mDenominator;
             /// The radicand r of this square root expression (c + f * sqrt(r))/d.
-            smtrat::Polynomial mRadicand;
+            smtrat::Poly mRadicand;
 
         public:
             /**
@@ -55,7 +55,7 @@ namespace vs
              * Constructs a square root expression from a polynomial p leading to (p + 0 * sqrt( 0 )) / 1
              * @param _poly The polynomial to construct a square root expression for.
              */
-            SqrtEx( const smtrat::Polynomial& _poly );
+            SqrtEx( const smtrat::Poly& _poly );
             
             /**
              * Constructs a square root expression from given constant part, factor, denominator and radicand.
@@ -64,7 +64,7 @@ namespace vs
              * @param _denominator The denominator of the square root expression to construct.
              * @param _radicand The radicand of the square root expression to construct.
              */
-            SqrtEx( const smtrat::Polynomial& _constantPart , const smtrat::Polynomial& _factor, const smtrat::Polynomial& _denominator, const smtrat::Polynomial& _radicand );
+            SqrtEx( const smtrat::Poly& _constantPart , const smtrat::Poly& _factor, const smtrat::Poly& _denominator, const smtrat::Poly& _radicand );
             
             /**
              * Copy constructor.
@@ -80,7 +80,7 @@ namespace vs
             /**
              * @return A constant reference to the constant part of this square root expression.
              */
-            const smtrat::Polynomial& constantPart() const
+            const smtrat::Poly& constantPart() const
             {
                 return mConstantPart;
             }
@@ -88,7 +88,7 @@ namespace vs
             /**
              * @return A constant reference to the factor of this square root expression.
              */
-            const smtrat::Polynomial& factor() const
+            const smtrat::Poly& factor() const
             {
                 return mFactor;
             }
@@ -96,7 +96,7 @@ namespace vs
             /**
              * @return A constant reference to the denominator of this square root expression.
              */
-            const smtrat::Polynomial& denominator() const
+            const smtrat::Poly& denominator() const
             {
                 return mDenominator;
             }
@@ -104,7 +104,7 @@ namespace vs
             /**
              * @return A constant reference to the radicand of this square root expression.
              */
-            const smtrat::Polynomial& radicand() const
+            const smtrat::Poly& radicand() const
             {
                 return mRadicand;
             }
@@ -115,7 +115,7 @@ namespace vs
              */
             bool hasSqrt() const
             {
-                return mFactor != smtrat::Polynomial( smtrat::Rational( 0 ) );
+                return mFactor != smtrat::Poly( smtrat::Rational( 0 ) );
             }
 
             /**
@@ -165,7 +165,7 @@ namespace vs
              * @param _poly A polynomial, which gets the new content of this square root expression.
              * @return A reference to this object.
              */
-            SqrtEx& operator=( const smtrat::Polynomial& _poly );
+            SqrtEx& operator=( const smtrat::Poly& _poly );
             
             /**
              * @param _summandA  First summand.
@@ -221,7 +221,7 @@ namespace vs
              * @param _substituteBy The square root expression by which the variable gets substituted.
              * @return The resulting square root expression.
              */
-            static SqrtEx subBySqrtEx( const smtrat::Polynomial& _substituteIn, const carl::Variable& _varToSubstitute, const SqrtEx& _substituteBy );
+            static SqrtEx subBySqrtEx( const smtrat::Poly& _substituteIn, const carl::Variable& _varToSubstitute, const SqrtEx& _substituteBy );
     };
 }    // end namspace vs
 
@@ -240,7 +240,7 @@ namespace std
          */
         size_t operator()( const vs::SqrtEx& _sqrtEx ) const 
         {
-            return ((hash<smtrat::Polynomial>()(_sqrtEx.radicand()) ^ hash<smtrat::Polynomial>()(_sqrtEx.denominator())) ^ hash<smtrat::Polynomial>()(_sqrtEx.factor())) ^ hash<smtrat::Polynomial>()(_sqrtEx.constantPart());
+            return ((hash<smtrat::Poly>()(_sqrtEx.radicand()) ^ hash<smtrat::Poly>()(_sqrtEx.denominator())) ^ hash<smtrat::Poly>()(_sqrtEx.factor())) ^ hash<smtrat::Poly>()(_sqrtEx.constantPart());
         }
     };
 } // namespace std

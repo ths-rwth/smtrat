@@ -195,7 +195,7 @@ namespace vs
         return false;
     }
 
-    bool State::substitutionApplicable( const smtrat::Constraint& _constraint ) const
+    bool State::substitutionApplicable( const smtrat::ConstraintT& _constraint ) const
     {
         if( !isRoot() )
             if( _constraint.variables().find( substitution().variable() ) != _constraint.variables().end() )
@@ -254,7 +254,7 @@ namespace vs
     bool State::occursInEquation( const carl::Variable& _variable ) const
     {
         for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
-            if( (*cond)->constraint().relation() == smtrat::Relation::EQ && (*cond)->constraint().hasVariable( _variable ) )
+            if( (*cond)->constraint().relation() == carl::Relation::EQ && (*cond)->constraint().hasVariable( _variable ) )
                 return true;
         return false;
     }
@@ -272,7 +272,7 @@ namespace vs
         }
     }
 
-    void State::variables( smtrat::Variables& _variables ) const
+    void State::variables( carl::Variables& _variables ) const
     {
         for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
             _variables.insert( (**cond).constraint().variables().begin(), (**cond).constraint().variables().end() );
@@ -429,7 +429,7 @@ namespace vs
         return !(*_bestCondition).flag();
     }
 
-    ConditionList::iterator State::constraintExists( const smtrat::Constraint& _constraint )
+    ConditionList::iterator State::constraintExists( const smtrat::ConstraintT& _constraint )
     {
         for( auto cond = rConditions().begin(); cond != conditions().end(); ++cond )
             if( (**cond).constraint() == _constraint )
@@ -598,7 +598,7 @@ namespace vs
                 {
                     const Condition* condA = *iterA;
                     const Condition* condB = *iterB;
-                    signed strongProp = smtrat::Constraint::compare( condA->pConstraint(), condB->pConstraint() );
+                    signed strongProp = smtrat::ConstraintT::compare( condA->pConstraint(), condB->pConstraint() );
                     // If the two conditions have the same solution space.
                     if( strongProp == 2 )
                     {
@@ -622,41 +622,41 @@ namespace vs
                     // If it is easy to give a condition whose solution space is the intersection of the solution spaces of cond1 and cond2.
                     else if( strongProp == -3 )
                     {
-                        const smtrat::Constraint& constraintA = condA->constraint();
-                        const smtrat::Constraint& constraintB = condB->constraint();
-                        const smtrat::Constraint* nConstraint = NULL;
+                        const smtrat::ConstraintT& constraintA = condA->constraint();
+                        const smtrat::ConstraintT& constraintB = condB->constraint();
+                        const smtrat::ConstraintT* nConstraint = NULL;
                         size_t nValuation = 0;
                         bool nFlag = false;
-                        if( (constraintA.relation() == smtrat::Relation::GEQ && constraintB.relation() == smtrat::Relation::GEQ)
-                                || (constraintA.relation() == smtrat::Relation::GEQ && constraintB.relation() == smtrat::Relation::LEQ)
-                                || (constraintA.relation() == smtrat::Relation::LEQ && constraintB.relation() == smtrat::Relation::GEQ)
-                                || (constraintA.relation() == smtrat::Relation::LEQ && constraintB.relation() == smtrat::Relation::LEQ) )
+                        if( (constraintA.relation() == carl::Relation::GEQ && constraintB.relation() == carl::Relation::GEQ)
+                                || (constraintA.relation() == carl::Relation::GEQ && constraintB.relation() == carl::Relation::LEQ)
+                                || (constraintA.relation() == carl::Relation::LEQ && constraintB.relation() == carl::Relation::GEQ)
+                                || (constraintA.relation() == carl::Relation::LEQ && constraintB.relation() == carl::Relation::LEQ) )
                         {
-                            nConstraint = smtrat::newConstraint( constraintB.lhs(), smtrat::Relation::EQ );
+                            nConstraint = carl::newConstraint<smtrat::Poly>( constraintB.lhs(), carl::Relation::EQ );
                             nValuation = condB->valuation();
                             nFlag = condB->flag();
                         }
-                        else if( (constraintA.relation() == smtrat::Relation::NEQ && constraintB.relation() == smtrat::Relation::GEQ) )
+                        else if( (constraintA.relation() == carl::Relation::NEQ && constraintB.relation() == carl::Relation::GEQ) )
                         {
-                            nConstraint = smtrat::newConstraint( constraintB.lhs(), smtrat::Relation::GREATER );
+                            nConstraint = carl::newConstraint<smtrat::Poly>( constraintB.lhs(), carl::Relation::GREATER );
                             nValuation = condB->valuation();
                             nFlag = condB->flag();
                         }
-                        else if( (constraintA.relation() == smtrat::Relation::GEQ && constraintB.relation() == smtrat::Relation::NEQ) )
+                        else if( (constraintA.relation() == carl::Relation::GEQ && constraintB.relation() == carl::Relation::NEQ) )
                         {
-                            nConstraint = smtrat::newConstraint( constraintA.lhs(), smtrat::Relation::GREATER );
+                            nConstraint = carl::newConstraint<smtrat::Poly>( constraintA.lhs(), carl::Relation::GREATER );
                             nValuation = condA->valuation();
                             nFlag = condA->flag();
                         }
-                        else if( (constraintA.relation() == smtrat::Relation::NEQ && constraintB.relation() == smtrat::Relation::LEQ) )
+                        else if( (constraintA.relation() == carl::Relation::NEQ && constraintB.relation() == carl::Relation::LEQ) )
                         {
-                            nConstraint = smtrat::newConstraint( constraintB.lhs(), smtrat::Relation::LESS );
+                            nConstraint = carl::newConstraint<smtrat::Poly>( constraintB.lhs(), carl::Relation::LESS );
                             nValuation = condB->valuation();
                             nFlag = condB->flag();
                         }
-                        else if( (constraintA.relation() == smtrat::Relation::LEQ && constraintB.relation() == smtrat::Relation::NEQ) )
+                        else if( (constraintA.relation() == carl::Relation::LEQ && constraintB.relation() == carl::Relation::NEQ) )
                         {
-                            nConstraint = smtrat::newConstraint( constraintA.lhs(), smtrat::Relation::LESS );
+                            nConstraint = carl::newConstraint<smtrat::Poly>( constraintA.lhs(), carl::Relation::LESS );
                             nValuation = condA->valuation();
                             nFlag = condA->flag();
                         }
@@ -1090,7 +1090,7 @@ namespace vs
         }
     }
 
-    bool State::initIndex( const smtrat::Variables& _allVariables, bool _preferEquation )
+    bool State::initIndex( const carl::Variables& _allVariables, bool _preferEquation )
     {
         mTryToRefreshIndex = false;
         if( conditions().empty() )
@@ -1188,7 +1188,7 @@ namespace vs
         return false;
     }
 
-    void State::addCondition( const smtrat::Constraint* _constraint, const set<const Condition*>& _originalConditions, size_t _valutation, bool _recentlyAdded, ValuationMap& _ranking )
+    void State::addCondition( const smtrat::ConstraintT* _constraint, const set<const Condition*>& _originalConditions, size_t _valutation, bool _recentlyAdded, ValuationMap& _ranking )
     {
         // Check if the constraint is variable-free and consistent. If so, discard it.
         unsigned constraintConsistency = _constraint->isConsistent();
@@ -1743,10 +1743,10 @@ namespace vs
                 }
             }
             State* state = new State( this, _substitution, mpVariableBounds != NULL );
-            const smtrat::PointerSet<smtrat::Constraint>& sideConds = _substitution.sideCondition();
+            const carl::PointerSet<smtrat::ConstraintT>& sideConds = _substitution.sideCondition();
             for( auto sideCond = sideConds.begin(); sideCond != sideConds.end(); ++sideCond )
             {
-                if( _substitution.variable().getType() != carl::VariableType::VT_INT || (*sideCond)->relation() != smtrat::Relation::NEQ )
+                if( _substitution.variable().getType() != carl::VariableType::VT_INT || (*sideCond)->relation() != carl::Relation::NEQ )
                 {
                     std::vector<DisjunctionOfConditionConjunctions> subResults;
                     subResults.push_back( DisjunctionOfConditionConjunctions() );
@@ -1757,19 +1757,19 @@ namespace vs
                 }
                 else
                 {
-                    const smtrat::Constraint* denomPos = smtrat::newConstraint( (*sideCond)->lhs(), smtrat::Relation::GREATER );
-                    const smtrat::Constraint* denomNeg = smtrat::newConstraint( (*sideCond)->lhs(), smtrat::Relation::LESS );
-                    assert( denomPos != smtrat::constraintPool().inconsistentConstraint() || denomNeg != smtrat::constraintPool().inconsistentConstraint() );
+                    const smtrat::ConstraintT* denomPos = carl::newConstraint<smtrat::Poly>( (*sideCond)->lhs(), carl::Relation::GREATER );
+                    const smtrat::ConstraintT* denomNeg = carl::newConstraint<smtrat::Poly>( (*sideCond)->lhs(), carl::Relation::LESS );
+                    assert( denomPos != carl::constraintPool<smtrat::Poly>().inconsistentConstraint() || denomNeg != carl::constraintPool<smtrat::Poly>().inconsistentConstraint() );
                     // add (p<0 or p>0) to the substitution results, with the constraint being p!=0
-                    if( denomPos != smtrat::constraintPool().consistentConstraint() && denomNeg != smtrat::constraintPool().consistentConstraint() )
+                    if( denomPos != carl::constraintPool<smtrat::Poly>().consistentConstraint() && denomNeg != carl::constraintPool<smtrat::Poly>().consistentConstraint() )
                     {
                         DisjunctionOfConditionConjunctions cases;
-                        if( denomPos != smtrat::constraintPool().inconsistentConstraint() )
+                        if( denomPos != carl::constraintPool<smtrat::Poly>().inconsistentConstraint() )
                         {
                             cases.push_back( ConditionList() );
                             cases.back().push_back( new vs::Condition( denomPos, state->treeDepth(), false, _substitution.originalConditions(), false ) );
                         }
-                        if( denomNeg != smtrat::constraintPool().inconsistentConstraint() )
+                        if( denomNeg != carl::constraintPool<smtrat::Poly>().inconsistentConstraint() )
                         {
                             cases.push_back( ConditionList() );
                             cases.back().push_back( new vs::Condition( denomNeg, state->treeDepth(), false, _substitution.originalConditions(), false ) );
@@ -1823,19 +1823,19 @@ namespace vs
 
     void State::updateBackendCallValuation()
     {
-        smtrat::Variables occuringVars = smtrat::Variables();
-        set<smtrat::Relation> relationSymbols = set<smtrat::Relation>();
+        carl::Variables occuringVars = carl::Variables();
+        set<carl::Relation> relationSymbols = set<carl::Relation>();
         for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
         {
             occuringVars.insert( (*cond)->constraint().variables().begin(), (*cond)->constraint().variables().end() );
             relationSymbols.insert( (*cond)->constraint().relation() );
         }
         mBackendCallValuation = 300000*occuringVars.size();
-        if( relationSymbols.find( smtrat::Relation::EQ ) != relationSymbols.end() )
+        if( relationSymbols.find( carl::Relation::EQ ) != relationSymbols.end() )
         {
             mBackendCallValuation += 200000;
         }
-        else if( relationSymbols.find( smtrat::Relation::LEQ ) != relationSymbols.end() || relationSymbols.find( smtrat::Relation::GEQ ) != relationSymbols.end() )
+        else if( relationSymbols.find( carl::Relation::LEQ ) != relationSymbols.end() || relationSymbols.find( carl::Relation::GEQ ) != relationSymbols.end() )
         {
             mBackendCallValuation += 100000;
         }
@@ -1864,15 +1864,15 @@ namespace vs
             }
             coveringSet( confSets, covSet, treeDepth() );
             #ifdef VS_LOG_INFSUBSETS
-            set< const smtrat::Constraint* > constraints = set< const smtrat::Constraint* >();
+            set< const smtrat::ConstraintT* > constraints = set< const smtrat::ConstraintT* >();
             for( auto cond = covSet.begin(); cond != covSet.end(); ++cond )
                 constraints.insert( (**cond).pConstraint() );
             smtrat::Module::addAssumptionToCheck( constraints, false, "VSModule_IS_1" );
             #endif
             // Get the original conditions to the covering set.
             set<const Condition*> coverSetOConds;
-            bool sideConditionIsPartOfConflict = !_checkConflictForSideCondition || (pOriginalCondition() == NULL || originalCondition().constraint().relation() != smtrat::Relation::EQ);
-            const smtrat::PointerSet<smtrat::Constraint>& subsSideConds = substitution().sideCondition();
+            bool sideConditionIsPartOfConflict = !_checkConflictForSideCondition || (pOriginalCondition() == NULL || originalCondition().constraint().relation() != carl::Relation::EQ);
+            const carl::PointerSet<smtrat::ConstraintT>& subsSideConds = substitution().sideCondition();
             for( auto cond = covSet.begin(); cond != covSet.end(); ++cond )
             {
                 // Add the original conditions of the condition to the conflict set.
@@ -2086,7 +2086,7 @@ namespace vs
                 result.push_back( smtrat::DoubleInterval::unboundedInterval() );
             else
             {
-                set<const Condition*> conflictBounds = father().variableBounds().getOriginsOfBoundsWithMultiples( substitution().variable() );
+                set<const Condition*> conflictBounds = father().variableBounds().getOriginsOfBounds( substitution().variable() );
                 _conflictReason.insert( conflictBounds.begin(), conflictBounds.end() );
             }
             return result;
@@ -2097,7 +2097,7 @@ namespace vs
                 result.push_back( smtrat::DoubleInterval::unboundedInterval() );
             else
             {
-                set<const Condition*> conflictBounds = father().variableBounds().getOriginsOfBoundsWithMultiples( substitution().variable() );
+                set<const Condition*> conflictBounds = father().variableBounds().getOriginsOfBounds( substitution().variable() );
                 assert( !conflictBounds.empty() );
                 _conflictReason.insert( conflictBounds.begin(), conflictBounds.end() );
             }
@@ -2165,9 +2165,9 @@ namespace vs
             }
             if( result.empty() )
             {
-                smtrat::Variables conflictVars = substitution().termVariables();
+                carl::Variables conflictVars = substitution().termVariables();
                 conflictVars.insert( substitution().variable() );
-                set<const Condition*> conflictBounds = father().variableBounds().getOriginsOfBoundsWithMultiples( conflictVars );
+                set<const Condition*> conflictBounds = father().variableBounds().getOriginsOfBounds( conflictVars );
                 _conflictReason.insert( conflictBounds.begin(), conflictBounds.end() );
                 _conflictReason.insert( substitution().originalConditions().begin(), substitution().originalConditions().end() );
             }
@@ -2181,7 +2181,7 @@ namespace vs
         cout << __func__ << ":  " << _condition->constraint() << endl;
         #endif
         assert( index() != carl::Variable::NO_VARIABLE );
-        const smtrat::Constraint& cons = _condition->constraint();
+        const smtrat::ConstraintT& cons = _condition->constraint();
         smtrat::EvalDoubleIntervalMap intervals = smtrat::EvalDoubleIntervalMap();
         if( cons.lhs().isUnivariate() )
         {
@@ -2199,8 +2199,8 @@ namespace vs
         }
         else
             intervals = variableBounds().getIntervalMap();
-        smtrat::Relation rel = cons.relation();
-        if( rel == smtrat::Relation::GREATER || rel == smtrat::Relation::LESS || rel == smtrat::Relation::NEQ )
+        carl::Relation rel = cons.relation();
+        if( rel == carl::Relation::GREATER || rel == carl::Relation::LESS || rel == carl::Relation::NEQ )
         {
             auto indexDomain = intervals.find( index() );
             if( indexDomain->second.lowerBoundType() == carl::BoundType::STRICT )
@@ -2220,7 +2220,7 @@ namespace vs
                 list<carl::UnivariatePolynomial<smtrat::Rational>> seq = rup.standardSturmSequence();
                 smtrat::Rational leftBound = cln::rationalize( cln::cl_F( intervals.begin()->second.lower() ) );
                 smtrat::Rational rightBound = cln::rationalize( cln::cl_F( intervals.begin()->second.upper() ) );
-                smtrat::Interval interv( leftBound, carl::BoundType::WEAK, rightBound, carl::BoundType::WEAK );
+                smtrat::RationalInterval interv( leftBound, carl::BoundType::WEAK, rightBound, carl::BoundType::WEAK );
                 int numberOfRoots = carl::UnivariatePolynomial<smtrat::Rational>::countRealRoots( seq, interv );
                 assert( index() != carl::Variable::NO_VARIABLE );
                 smtrat::Rational imageOfLeftBound = rup.evaluate( leftBound );
@@ -2242,25 +2242,25 @@ namespace vs
                 bool constraintInconsistent = false;
                 if( numberOfRoots == 0 )
                 {
-                    if( cons.relation() == smtrat::Relation::EQ )
+                    if( cons.relation() == carl::Relation::EQ )
                         constraintInconsistent = true;
-                    else if( imageOfLeftBound > 0 && (cons.relation() == smtrat::Relation::LESS || cons.relation() == smtrat::Relation::LEQ) )
+                    else if( imageOfLeftBound > 0 && (cons.relation() == carl::Relation::LESS || cons.relation() == carl::Relation::LEQ) )
                         constraintInconsistent = true;
-                    else if( imageOfLeftBound < 0 && (cons.relation() == smtrat::Relation::GREATER || cons.relation() == smtrat::Relation::GEQ) )
+                    else if( imageOfLeftBound < 0 && (cons.relation() == carl::Relation::GREATER || cons.relation() == carl::Relation::GEQ) )
                         constraintInconsistent = true;
                 }
                 else if( numberOfRoots == 1 )
                 {
-                    if( imageOfLeftBound > smtrat::ZERO_RATIONAL && imageOfRightBound > smtrat::ZERO_RATIONAL && cons.relation() == smtrat::Relation::LESS )
+                    if( imageOfLeftBound > smtrat::ZERO_RATIONAL && imageOfRightBound > smtrat::ZERO_RATIONAL && cons.relation() == carl::Relation::LESS )
                         constraintInconsistent = true;
-                    if( imageOfLeftBound < smtrat::ZERO_RATIONAL && imageOfRightBound < smtrat::ZERO_RATIONAL && cons.relation() == smtrat::Relation::GREATER )
+                    if( imageOfLeftBound < smtrat::ZERO_RATIONAL && imageOfRightBound < smtrat::ZERO_RATIONAL && cons.relation() == carl::Relation::GREATER )
                         constraintInconsistent = true;
                 }
                 if( constraintInconsistent )
                 {
                     set<const Condition*> origins;
                     origins.insert( _condition );
-                    set<const Condition*> conflictingBounds = variableBounds().getOriginsOfBoundsWithMultiples( index() );
+                    set<const Condition*> conflictingBounds = variableBounds().getOriginsOfBounds( index() );
                     origins.insert( conflictingBounds.begin(), conflictingBounds.end() );
                     ConditionSetSet conflicts = ConditionSetSet();
                     conflicts.insert( origins );
@@ -2288,26 +2288,26 @@ namespace vs
             }
         }
         bool constraintInconsistent = false;
-        if( cons.relation() == smtrat::Relation::EQ )
+        if( cons.relation() == carl::Relation::EQ )
             constraintInconsistent = true;
-        else if( solutionSpace.lower() > 0 && cons.relation() == smtrat::Relation::LEQ )
+        else if( solutionSpace.lower() > 0 && cons.relation() == carl::Relation::LEQ )
             constraintInconsistent = true;
-        else if( solutionSpace.upper() < 0 && cons.relation() == smtrat::Relation::GEQ )
+        else if( solutionSpace.upper() < 0 && cons.relation() == carl::Relation::GEQ )
             constraintInconsistent = true;
-        else if( solutionSpace.lower() >= 0 && cons.relation() == smtrat::Relation::LESS )
+        else if( solutionSpace.lower() >= 0 && cons.relation() == carl::Relation::LESS )
             constraintInconsistent = true;
-        else if( solutionSpace.upper() <= 0 && cons.relation() == smtrat::Relation::GREATER )
+        else if( solutionSpace.upper() <= 0 && cons.relation() == carl::Relation::GREATER )
             constraintInconsistent = true;
         set<const Condition*> origins;
         origins.insert( _condition );
-        set<const Condition*> conflictingBounds = variableBounds().getOriginsOfBoundsWithMultiples( cons.variables() );
+        set<const Condition*> conflictingBounds = variableBounds().getOriginsOfBounds( cons.variables() );
         origins.insert( conflictingBounds.begin(), conflictingBounds.end() );
         ConditionSetSet conflicts = ConditionSetSet();
         conflicts.insert( origins );
         Substitution* sub = NULL;
         if( !constraintInconsistent )
         {
-            smtrat::PointerSet<smtrat::Constraint> constraints = smtrat::PointerSet<smtrat::Constraint>();
+            carl::PointerSet<smtrat::ConstraintT> constraints = carl::PointerSet<smtrat::ConstraintT>();
             constraints.insert( _condition->pConstraint() );
             set<const Condition*> subsOrigins;
             subsOrigins.insert( _condition );

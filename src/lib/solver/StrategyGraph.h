@@ -32,17 +32,17 @@
 
 #include <vector>
 
-#include "../Formula.h"
+#include "../Common.h"
 #include "ThreadPool.h"
 #include "../modules/ModuleType.h"
 
 namespace smtrat
 {
-    typedef bool (*ConditionEvaluation)( Condition );
+    typedef bool (*ConditionEvaluation)( carl::Condition );
 
-    static inline bool isCondition( Condition _condition )
+    static inline bool isCondition( carl::Condition _condition )
     {
-        return PROP_TRUE <= _condition;
+        return carl::PROP_TRUE <= _condition;
     }
 
     class StrategyGraph
@@ -167,7 +167,7 @@ namespace smtrat
             // Backends and back links must be added by priority, i.e. starting with highest priority (lowest value)
             size_t addBackend( size_t, ModuleType, ConditionEvaluation = isCondition );
             void addBacklink( size_t, size_t, ConditionEvaluation = isCondition );
-            std::vector< std::pair< thread_priority, ModuleType > > getNextModuleTypes( size_t, Condition );
+            std::vector< std::pair< thread_priority, ModuleType > > getNextModuleTypes( size_t, carl::Condition );
 
 // To be deleted
 //            void tmpPrint();

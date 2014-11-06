@@ -81,11 +81,11 @@ namespace vs
         // Internal type definitions.
         enum Type{ TEST_CANDIDATE_TO_GENERATE, SUBSTITUTION_TO_APPLY, COMBINE_SUBRESULTS };
         
-        typedef smtrat::FastPointerMapB<Substitution,ConditionSetSetSet> ConflictSets;
+        typedef carl::FastPointerMapB<Substitution,ConditionSetSetSet> ConflictSets;
         typedef std::vector< std::pair< ConditionList, bool > > 		 SubstitutionResult;
         typedef std::vector< SubstitutionResult > 						 SubstitutionResults;   
         typedef std::vector< std::pair< unsigned, unsigned > >           SubResultCombination;
-        typedef smtrat::vb::VariableBounds< Condition >                  VariableBoundsCond;
+        typedef smtrat::vb::VariableBounds<const Condition*>                  VariableBoundsCond;
     private:
         
         // Members:
@@ -707,7 +707,7 @@ namespace vs
          * @return true, if the substitution can be applied;
          *          false, otherwise.
          */
-        bool substitutionApplicable( const smtrat::Constraint& _constraint ) const;
+        bool substitutionApplicable( const smtrat::ConstraintT& _constraint ) const;
         
         /**
          * Checks whether a condition exists, which was not involved in an elimination step.
@@ -755,7 +755,7 @@ namespace vs
          * Finds the variables, which occur in this state.
          * @param _variables The variables which occur in this state.
          */
-        void variables( smtrat::Variables& _variables ) const;
+        void variables( carl::Variables& _variables ) const;
         
         /**
          * Determines the number of nodes in the tree with this state as root.
@@ -811,7 +811,7 @@ namespace vs
          * @return An iterator to the condition, which involves the constraint or an iterator
          *          to the end of the vector of conditions of this state.
          */
-        ConditionList::iterator	constraintExists( const smtrat::Constraint& _constraint );
+        ConditionList::iterator	constraintExists( const smtrat::ConstraintT& _constraint );
 
         /**
          * Cleans up all conditions in this state according to comparison between the corresponding constraints.
@@ -912,7 +912,7 @@ namespace vs
          * @param _allVariables All globally known variables.
          * @param _preferEquation A flag that indicates to prefer equations in the heuristics of this method.
          */
-        bool initIndex( const smtrat::Variables& _allVariables, bool _preferEquation );
+        bool initIndex( const carl::Variables& _allVariables, bool _preferEquation );
         
         /**
          * Adds a constraint to the conditions of this state.
@@ -922,7 +922,7 @@ namespace vs
          * @param _recentlyAdded Is the condition a recently added one.
          * @sideeffect The state can obtain a new condition.
          */
-        void addCondition( const smtrat::Constraint* _constraint, const std::set<const Condition*>& _originalConditions, size_t _valutation, bool _recentlyAdded, ValuationMap& _ranking );
+        void addCondition( const smtrat::ConstraintT* _constraint, const std::set<const Condition*>& _originalConditions, size_t _valutation, bool _recentlyAdded, ValuationMap& _ranking );
             
         /**
          * Checks whether no condition in this state points to a deleted condition.

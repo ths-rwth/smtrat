@@ -41,14 +41,14 @@ namespace smtrat
             RedAns mOutput;
 
         public:
-            ReduceModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            ReduceModule( ModuleType _type, const FormulaT* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             ~ReduceModule();
 
             // Main interfaces.
-            bool inform( const Formula* );
-            bool assertSubformula( Formula::const_iterator );
-            void removeSubformula( Formula::const_iterator );
+            bool inform( const FormulaT* );
+            bool assertSubformula( FormulaT::const_iterator );
+            void removeSubformula( FormulaT::const_iterator );
             void updateModel();
             Answer isConsistent();
     };

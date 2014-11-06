@@ -110,7 +110,7 @@ namespace smtrat
     }
 
     // Returns module types ordered by priority, highest priority (lowest value) first
-    vector< pair< thread_priority, ModuleType > > StrategyGraph::getNextModuleTypes( size_t _from, Condition _condition )
+    vector< pair< thread_priority, ModuleType > > StrategyGraph::getNextModuleTypes( size_t _from, carl::Condition _condition )
     {
         vector< pair< thread_priority, ModuleType > > result = vector< pair< thread_priority, ModuleType > >();
         const vector<Edge>& edges = mStrategyGraph[ _from ]->edgeList();

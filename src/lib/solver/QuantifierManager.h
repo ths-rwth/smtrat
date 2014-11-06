@@ -7,7 +7,6 @@
 #include <set>
 
 #include "../Common.h"
-#include "../Formula.h"
 
 #pragma once
 
@@ -16,7 +15,7 @@ namespace smtrat {
 class QuantifierManager {
 private:
     /// The quantified variables.
-	QuantifiedVariables mData;
+	carl::QuantifiedVariables mData;
 
 	/**
 	 * Calculates the intersection of two sets a and b and checks if this intersection is not empty.
@@ -46,7 +45,7 @@ public:
      * @param eliminable Set of eliminable variables.
      * @return Type of quantification. Can only be EXISTS or FORALL.
      */
-	Type eliminable(const Variables& variables, Variables& eliminable) const {
+	carl::FormulaType eliminable(const carl::Variables& variables, carl::Variables& eliminable) const {
 		// Start with an empty set.
 		eliminable.clear();
 		// Iterate over all levels, starting with the deepest one.
@@ -60,7 +59,7 @@ public:
 					// Check if any of the variables occurs at the following level.
 					if (intersect(mData[lvl-2], variables, tmp)) {
 						// If so, return.
-						return (lvl % 2 == 1) ? Type::EXISTS : Type::FORALL;
+						return (lvl % 2 == 1) ? carl::FormulaType::EXISTS : carl::FormulaType::FORALL;
 					}
 					// We can also include the next level.
 					intersect(mData[lvl-3], variables, eliminable);
@@ -68,7 +67,7 @@ public:
 			}
 		}
 		// If the variables did not occur at all, we just return anything.
-		return Type::EXISTS;
+		return carl::FormulaType::EXISTS;
 	}
 
 	/**
@@ -84,14 +83,14 @@ public:
     /**
      * @return A constant reference to the quantified variables.
      */
-	const QuantifiedVariables& quantifiers() const {
+	const carl::QuantifiedVariables& quantifiers() const {
 		return mData;
 	}
 
     /**
      * @return A reference to the quantified variables.
      */
-	QuantifiedVariables& quantifiers() {
+	carl::QuantifiedVariables& quantifiers() {
 		return mData;
 	}
 
@@ -108,7 +107,7 @@ public:
 	 * @return New extended variable order.
 	 */
 	template<typename Ordering = std::less<carl::Variable>>
-	std::vector<carl::Variable> extendVariableOrder(const Variables& vars, const std::vector<carl::Variable>& order, bool rebuildOrder = true, const Ordering& ordering = Ordering()) {
+	std::vector<carl::Variable> extendVariableOrder(const carl::Variables& vars, const std::vector<carl::Variable>& order, bool rebuildOrder = true, const Ordering& ordering = Ordering()) {
 		std::vector<carl::Variable> result;
 		auto orderIt = order.begin();
 		std::set<carl::Variable, Ordering> v(ordering);

@@ -29,6 +29,7 @@
 #include "CNFerModule.h"
 
 using namespace std;
+using namespace carl;
 
 namespace smtrat
 {
@@ -56,30 +57,30 @@ namespace smtrat
 //            const Formula* formulaQF = (*receivedSubformula)->toQF(mpManager->quantifiedVariables());
 //            const Formula* formulaToAssertInCnf = formulaQF->toCNF( true );
 //            cout << (**receivedSubformula) << endl;
-            const Formula* formulaToAssertInCnf = receivedSubformula->formula().toCNF( true, true );
-            if( formulaToAssertInCnf->getType() == TTRUE )
+            FormulaT formulaToAssertInCnf = receivedSubformula->formula().toCNF( true, true );
+            if( formulaToAssertInCnf.getType() == TRUE )
             {
                 // No need to add it.
             }
-            else if( formulaToAssertInCnf->getType() == FFALSE )
+            else if( formulaToAssertInCnf.getType() == FALSE )
             {
-                PointerSet<Formula> reason;
-                reason.insert( receivedSubformula->pFormula() );
+                set<FormulaT> reason;
+                reason.insert( receivedSubformula->formula() );
                 mInfeasibleSubsets.push_back( reason );
                 return foundAnswer( False );
             }
             else
             {
-                if( formulaToAssertInCnf->getType() == AND )
+                if( formulaToAssertInCnf.getType() == AND )
                 {
-                    for( const Formula* subFormula : formulaToAssertInCnf->subformulas()  )
+                    for( const FormulaT& subFormula : formulaToAssertInCnf.subformulas()  )
                     {
-                        addSubformulaToPassedFormula( subFormula, receivedSubformula->pFormula() );
+                        addSubformulaToPassedFormula( subFormula, receivedSubformula->formula() );
                     }
                 }
                 else
                 {
-                    addSubformulaToPassedFormula( formulaToAssertInCnf, receivedSubformula->pFormula() );
+                    addSubformulaToPassedFormula( formulaToAssertInCnf, receivedSubformula->formula() );
                 }
             }
             ++receivedSubformula;

@@ -60,7 +60,7 @@ namespace smtrat
     class Manager;
 
     /// A vector of sets of formula pointers.
-    typedef std::vector<PointerSet<Formula>> vec_set_const_pFormula;
+    typedef std::vector<std::set<FormulaT>> vec_set_const_pFormula;
     /// A vector of atomic bool pointers.
     typedef std::vector<std::atomic_bool*> Conditionals;
     
@@ -70,7 +70,7 @@ namespace smtrat
     struct Branching
     {
         /// The polynomial to branch at.
-        Polynomial mPolynomial;
+        Poly mPolynomial;
         /// The value to branch the polynomial at.
         Rational mValue;
         /// The number of repetitions of the branching.
@@ -86,7 +86,7 @@ namespace smtrat
          * @param _polynomial The polynomial to branch at.
          * @param _value The value to branch the polynomial at.
          */
-        Branching( const Polynomial& _polynomial, const Rational& _value ):
+        Branching( const Poly& _polynomial, const Rational& _value ):
             mPolynomial( _polynomial ),
             mValue( _value ),
             mRepetitions( 1 ),
@@ -140,13 +140,13 @@ namespace smtrat
             /// The backends of this module which have been used.
             std::vector<Module*> mAllBackends;
             /// Stores the deductions/lemmas being valid formulas this module or its backends made.
-            std::vector<const Formula*> mDeductions;
+            std::vector<FormulaT> mDeductions;
             /// Stores the position of the first sub-formula in the passed formula, which has not yet been considered for a consistency check of the backends.
             ModuleInput::iterator mFirstSubformulaToPass;
             /// Stores the constraints which the backends must be informed about.
-            PointerSet<Formula> mConstraintsToInform;
+            std::set<FormulaT> mConstraintsToInform;
             /// Stores the position of the first constraint of which no backend has been informed about.
-            PointerSet<Formula> mInformedConstraints;
+            std::set<FormulaT> mInformedConstraints;
             /// Stores the position of the first (by this module) unchecked sub-formula of the received formula.
             ModuleInput::const_iterator mFirstUncheckedReceivedSubformula;
             /// Counter used for the generation of the smt2 files to check for smaller muses.
@@ -195,7 +195,7 @@ namespace smtrat
              * @return false, if it can be easily decided whether the given constraint is inconsistent;
              *          true, otherwise.
              */
-            virtual bool inform( const Formula* );
+            virtual bool inform( const FormulaT& );
             
             /**
              * Informs all backends about the so far encountered constraints, which have not yet been communicated.
@@ -362,7 +362,7 @@ namespace smtrat
             /**
              * @return The constraints which the backends must be informed about.
              */
-            const PointerSet<Formula>& constraintsToInform() const
+            const std::set<FormulaT>& constraintsToInform() const
             {
                 return mConstraintsToInform;
             }
@@ -370,7 +370,7 @@ namespace smtrat
             /**
              * @return The position of the first constraint of which no backend has been informed about.
              */
-            const PointerSet<Formula>& informedConstraints() const
+            const std::set<FormulaT>& informedConstraints() const
             {
                 return mInformedConstraints;
             }
@@ -379,7 +379,7 @@ namespace smtrat
              * Stores a deduction/lemma being a valid formula.
              * @param _deduction The eduction/lemma to store.
              */
-            void addDeduction( const Formula* _deduction )
+            void addDeduction( const FormulaT& _deduction )
             {
                 mDeductions.push_back( _deduction );
             }
@@ -395,7 +395,7 @@ namespace smtrat
             /**
              * @return A constant reference to the deductions/lemmas being valid formulas this module or its backends made.
              */
-            const std::vector<const Formula*>& deductions() const
+            const std::vector<FormulaT>& deductions() const
             {
                 return mDeductions;
             }
@@ -403,7 +403,7 @@ namespace smtrat
             /**
              * @return A reference to the deductions/lemmas being valid formulas this module or its backends made.
              */
-            std::vector<const Formula*>& rDeductions()
+            std::vector<FormulaT>& rDeductions()
             {
                 return mDeductions;
             }
@@ -465,7 +465,7 @@ namespace smtrat
              *               or its sub-procedure).
              * @see Module::storeAssumptionsToCheck
              */
-            static void addAssumptionToCheck( const Formula* _formula, bool _consistent, const std::string& _label );
+            static void addAssumptionToCheck( const FormulaT& _formula, bool _consistent, const std::string& _label );
             
             /**
              * Add a formula to the assumption vector and its predetermined consistency status.
@@ -489,7 +489,7 @@ namespace smtrat
              *               or its sub-procedure).
              * @see Module::storeAssumptionsToCheck
              */
-            static void addAssumptionToCheck( const PointerSet<Formula>& _formulas, bool _consistent, const std::string& _label );
+            static void addAssumptionToCheck( const std::set<FormulaT>& _formulas, bool _consistent, const std::string& _label );
             /**
              * Add a conjunction of _constraints to the assumption vector and its predetermined consistency status.
              * @param _constraints The constraints, whose conjunction should be consistent/inconsistent.
@@ -500,7 +500,7 @@ namespace smtrat
              *               or its sub-procedure).
              * @see Module::storeAssumptionsToCheck
              */
-            static void addAssumptionToCheck( const PointerSet<Constraint>& _constraints, bool _consistent, const std::string& _label );
+            static void addAssumptionToCheck( const carl::PointerSet<ConstraintT>& _constraints, bool _consistent, const std::string& _label );
             
             /**
              * Prints the collected assumptions in the assumption vector into _filename with an appropriate smt2 
@@ -573,7 +573,7 @@ namespace smtrat
              * @param _formula The passed formula to set the origins for.
              * @param _origins A set of formulas in the received formula of this module.
              */
-            void addOrigin( ModuleInput::iterator _formula, const PointerSet<Formula>& _origin )
+            void addOrigin( ModuleInput::iterator _formula, const std::set<FormulaT>& _origin )
             {
                 assert( _formula != mpPassedFormula->end() );
                 _formula->rOrigins().push_back( _origin );
@@ -596,13 +596,13 @@ namespace smtrat
              * @param _formula The position of a formula in the passed formulas.
              * @return The origins of the passed formula at the given position.
              */
-            const PointerSet<Formula>& getOrigins( ModuleInput::const_iterator _formula ) const
+            const std::set<FormulaT>& getOrigins( ModuleInput::const_iterator _formula ) const
             {
                 assert( _formula != mpPassedFormula->end() );
                 return _formula->origins().front();
             }
             
-            std::pair<ModuleInput::iterator,bool> removeOrigin( ModuleInput::iterator _formula, const Formula* _origin )
+            std::pair<ModuleInput::iterator,bool> removeOrigin( ModuleInput::iterator _formula, const FormulaT& _origin )
             {
                 if( mpPassedFormula->removeOrigin( _formula, _origin ) )
                 {
@@ -611,7 +611,7 @@ namespace smtrat
                 return std::make_pair( _formula, false );
             }
             
-            std::pair<ModuleInput::iterator,bool> removeOrigins( ModuleInput::iterator _formula, const PointerSet<Formula>& _origins )
+            std::pair<ModuleInput::iterator,bool> removeOrigins( ModuleInput::iterator _formula, const std::set<FormulaT>& _origins )
             {
                 if( mpPassedFormula->removeOrigins( _formula, _origins ) )
                 {
@@ -633,7 +633,7 @@ namespace smtrat
              * Informs all backends of this module about the given constraint.
              * @param _constraint The constraint to inform about.
              */
-            void informBackends( const Formula* _constraint )
+            void informBackends( const FormulaT& _constraint )
             {
                 for( Module* module : mAllBackends )
                 {
@@ -654,7 +654,7 @@ namespace smtrat
              * freshly generated backend.
              * @param _constraint The constraint to add.
              */
-           void addConstraintToInform( const Formula* const _constraint );
+           void addConstraintToInform( const FormulaT& _constraint );
             
             /**
              * Copies the given sub-formula of the received formula to the passed formula. Note, that
@@ -670,7 +670,7 @@ namespace smtrat
              * @param _origins The link of the formula to add to the passed formula to sub-formulas 
              *         of the received formulas, which are responsible for its occurrence
              */
-            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const Formula* _formula, const vec_set_const_pFormula& _origins );
+            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, const vec_set_const_pFormula& _origins );
             
             /**
              * Adds the given formula to the passed formula.
@@ -678,7 +678,7 @@ namespace smtrat
              * @param _origins The link of the formula to add to the passed formula to sub-formulas 
              *         of the received formulas, which are responsible for its occurrence
              */
-            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const Formula* _formula, vec_set_const_pFormula&& _origins );
+            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, vec_set_const_pFormula&& _origins );
             
             /**
              * Adds the given formula to the passed formula.
@@ -686,7 +686,7 @@ namespace smtrat
              * @param _origin The sub-formula of the received formula being responsible for the
              *        occurrence of the formula to add to the passed formula.
              */
-            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const Formula* _formula, const Formula* _origin );
+            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, const FormulaT& _origin );
             
             /**
              * Copies the infeasible subsets of the passed formula
@@ -754,7 +754,7 @@ namespace smtrat
              * @return true, if this branching is probably part of an infinite loop of branchings;
              *         false, otherwise.
              */
-            static bool probablyLooping( const Polynomial& _branchingPolynomial, const Rational& _branchingValue );
+            static bool probablyLooping( const Poly& _branchingPolynomial, const Rational& _branchingValue );
             
             /**
              * Adds a deductions which provoke a branching for the given variable at the given value,
@@ -770,7 +770,7 @@ namespace smtrat
              *                      false, if the given variable should be less than the given value or
              *                             or greater or equal than the given value.
              */
-            void branchAt( const Polynomial& _polynomial, const Rational& _value, const PointerSet<Formula>& = PointerSet<Formula>(), bool _leftCaseWeak = true );
+            void branchAt( const Poly& _polynomial, const Rational& _value, const std::set<FormulaT>& = std::set<FormulaT>(), bool _leftCaseWeak = true );
             
             /**
              * Adds the following lemmas for the given constraint p!=0
@@ -780,7 +780,7 @@ namespace smtrat
              *
              * @param _unequalConstraint A constraint having the relation symbol !=.
              */
-            void splitUnequalConstraint( const Formula* );
+            void splitUnequalConstraint( const FormulaT& );
             
             /**
              * @return false, if the current model of this module does not satisfy the current given formula;

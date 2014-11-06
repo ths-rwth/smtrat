@@ -125,23 +125,23 @@ namespace smtrat
                  * The constraint corresponding to this abstraction. It is NULL, if the literal for which we 
                  * store this abstraction does actually not belong to an abstraction.
                  */
-                const Formula* constraint;
+                FormulaT constraint;
                 
                 // The origins of this constraint. Usually it is its own origin, but the origins can be extended during solving.
-                std::vector<PointerSet<Formula>>* origins;
+                std::vector<std::set<FormulaT>>* origins;
                 
                 /**
                  * Constructs abstraction information, for a literal which does actually not belong to an abstraction.
                  * @param _position The end of the passed formula of this module.
                  * @param _constraint The constraint to abstract.
                  */
-                Abstraction( ModuleInput::iterator _position, const Formula* _constraint = NULL ):
+                Abstraction( ModuleInput::iterator _position, const FormulaT& _constraint = NULL ):
                     consistencyRelevant( false ),
                     isDeduction( true ),
                     updateInfo( 0 ),
                     position( _position ),
                     constraint( _constraint ),
-                    origins( new std::vector<PointerSet<Formula>>() )
+                    origins( new std::vector<std::set<FormulaT>>() )
                 {}
             };
 
@@ -213,7 +213,7 @@ namespace smtrat
              * Maps the constraints occurring in the SAT module to their abstractions. We store a vector of literals
              * for each constraints, which is only used in the optimization, which applies valid substitutions.
              */
-            typedef PointerMap<Formula, std::vector<Minisat::Lit>> ConstraintLiteralsMap;
+            typedef std::map<FormulaT, std::vector<Minisat::Lit>> ConstraintLiteralsMap; // @todo use hashing if possible
             
             /// Maps the Boolean variables to their corresponding Minisat variable.
             typedef std::map<const carl::Variable, Minisat::Var> BooleanVarMap;
@@ -225,7 +225,7 @@ namespace smtrat
             typedef Minisat::vec<std::pair<Abstraction,Abstraction>> BooleanConstraintMap;
             
             /// Maps the clauses in the received formula to the corresponding Minisat clause.
-            typedef std::map<const Formula*, Minisat::CRef> FormulaClauseMap;
+            typedef std::map<FormulaT, Minisat::CRef> FormulaClauseMap;
             
             /// A vector of vectors of literals representing a vector of clauses.
             typedef std::vector<std::vector<Minisat::Lit>> ClauseVector;
@@ -393,11 +393,11 @@ namespace smtrat
             /// Stores all clauses in which the activities have been changed.
             std::vector<Minisat::CRef> mChangedActivities;
             /// Maps arithmetic variables to the constraints they occur in (only used by the valid-substitutions optimization).
-            std::map<carl::Variable,PointerSet<Formula>> mVarOccurrences;
+            std::map<carl::Variable,std::set<FormulaT>> mVarOccurrences;
             /// Maps Minisat variables to the clauses they occur in (only used by the valid-substitutions optimization).
             std::vector<std::set<Minisat::CRef>> mVarClausesMap;
             /// Maps the arithmetic variables to the terms they have been replaced by a valid substitution (only used by the valid-substitutions optimization).
-            std::map<carl::Variable,Polynomial> mVarReplacements;
+            std::map<carl::Variable,Poly> mVarReplacements;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
             SATModuleStatistics* mpStatistics;
@@ -429,7 +429,7 @@ namespace smtrat
              * @return false, if the it can be determined that the constraint itself is conflicting;
              *         true,  otherwise.
              */
-            bool inform( const Formula* )
+            bool inform( const FormulaT& )
             {
                 return true;
             }
@@ -596,7 +596,7 @@ namespace smtrat
              * @param _toReplace
              * @param _replaceBy
              */
-            void replaceConstraint( const Formula* _toReplace, const Formula* _replaceBy );
+            void replaceConstraint( const FormulaT& _toReplace, const FormulaT& _replaceBy );
             
             /**
              * Adds the clause of the given type with the given literals to the clauses managed by Minisat.
@@ -1212,7 +1212,7 @@ namespace smtrat
              * @param _formula The formula to add clauses for.
              * @return The reference to the first clause which has been added.
              */
-            Minisat::CRef addFormula( const Formula*, unsigned _type );
+            Minisat::CRef addFormula( const FormulaT&, unsigned _type );
             
             /**
              * Adds the Boolean abstraction of the given formula being a clause to the SAT solver.
@@ -1220,7 +1220,7 @@ namespace smtrat
              *                  formula is expected to be a clause.
              * @return The reference to the added clause, if any has been added; otherwise CRef_Undef.
              */
-            Minisat::CRef addClause( const Formula*, unsigned _type = 0 );
+            Minisat::CRef addClause( const FormulaT&, unsigned _type = 0 );
             
             /**
              * Creates the literal belonging to the formula being the first argument. 
@@ -1229,7 +1229,7 @@ namespace smtrat
              * @param _fromReceived true, if the literal stems from a received clause.
              * @return The created literal.
              */
-            Minisat::Lit getLiteral( const Formula* _formula, const Formula* _origin );
+            Minisat::Lit getLiteral( const FormulaT& _formula, const FormulaT& _origin );
             
             /**
              * Adapts the passed formula according to the current assignment within the SAT solver.

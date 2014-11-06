@@ -27,7 +27,7 @@
 #include <map>
 #include <iostream>
 
-#include "../../Constraint.h"
+#include "../../Common.h"
 #include "../../utilities/stats/Statistics.h"
 
 namespace smtrat {
@@ -80,18 +80,18 @@ class GroebnerModuleStats : public Statistics
      /**
       * Count the kind of constraint which was added 
       */
-     void constraintAdded(smtrat::Relation relation) {
+     void constraintAdded(carl::Relation relation) {
          switch(relation) {
-             case smtrat::Relation::EQ:
+             case carl::Relation::EQ:
              EqualityAdded();
              break;
-         case smtrat::Relation::GEQ:
-         case smtrat::Relation::LEQ:
+         case carl::Relation::GEQ:
+         case carl::Relation::LEQ:
              NonStrictInequalityAdded();
              break;
-         case smtrat::Relation::NEQ:
-         case smtrat::Relation::GREATER:
-         case smtrat::Relation::LESS:
+         case carl::Relation::NEQ:
+         case carl::Relation::GREATER:
+         case carl::Relation::LESS:
              StrictInequalityAdded();
              break;
          }
@@ -100,18 +100,18 @@ class GroebnerModuleStats : public Statistics
        /**
       * Count the kind of constraint which was added 
       */
-     void constraintRemoved(smtrat::Relation relation) {
+     void constraintRemoved(carl::Relation relation) {
          switch(relation) {
-         case smtrat::Relation::EQ:
+         case carl::Relation::EQ:
              EqualityRemoved();
              break;
-         case smtrat::Relation::GEQ:
-         case smtrat::Relation::LEQ:
+         case carl::Relation::GEQ:
+         case carl::Relation::LEQ:
              NonStrictInequalityRemoved();
              break;
-         case smtrat::Relation::NEQ:
-         case smtrat::Relation::GREATER:
-         case smtrat::Relation::LESS:
+         case carl::Relation::NEQ:
+         case carl::Relation::GREATER:
+         case carl::Relation::LESS:
              StrictInequalityRemoved();
              break;
          }

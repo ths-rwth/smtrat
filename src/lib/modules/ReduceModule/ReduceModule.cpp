@@ -35,7 +35,7 @@ namespace smtrat
      * Constructors.
      */
 
-    ReduceModule::ReduceModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+    ReduceModule::ReduceModule( ModuleType _type, const FormulaT* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager )
     {
         mProcess = RedProc_new( REDUCE );
@@ -68,7 +68,7 @@ namespace smtrat
      * @return False, if the it can be determined that the constraint itself is conflicting;
      *          True,  otherwise.
      */
-    bool ReduceModule::inform( const Formula* _constraint )
+    bool ReduceModule::inform( const FormulaT* _constraint )
     {
         Module::inform( _constraint ); // This must be invoked at the beginning of this method.
         // Your code.
@@ -82,7 +82,7 @@ namespace smtrat
      * @return False, if it is easy to decide whether the subformula at the given position is unsatisfiable;
      *          True,  otherwise.
      */
-    bool ReduceModule::assertSubformula( Formula::const_iterator _subformula )
+    bool ReduceModule::assertSubformula( FormulaT::const_iterator _subformula )
     {
         Module::assertSubformula( _subformula ); // This must be invoked at the beginning of this method.
         // Your code.
@@ -95,7 +95,7 @@ namespace smtrat
      *
      * @param _subformula The position of the subformula to remove.
      */
-    void ReduceModule::removeSubformula( Formula::const_iterator _subformula )
+    void ReduceModule::removeSubformula( FormulaT::const_iterator _subformula )
     {
         // Your code.
         Module::removeSubformula( _subformula ); // This must be invoked at the end of this method.
@@ -140,8 +140,8 @@ namespace smtrat
             RedAns_delete(mOutput);
 //            std::cout << "  -->  False" << std::endl;
             // Set the infeasible subset to the set of all clauses.
-            std::set<const Formula*> infeasibleSubset = std::set<const Formula*>();
-            for( Formula::const_iterator subformula = mpReceivedFormula->begin(); subformula != mpReceivedFormula->end(); ++subformula )
+            std::set<const FormulaT*> infeasibleSubset = std::set<const FormulaT*>();
+            for( FormulaT::const_iterator subformula = mpReceivedFormula->begin(); subformula != mpReceivedFormula->end(); ++subformula )
             {
                 infeasibleSubset.insert( *subformula );
             }

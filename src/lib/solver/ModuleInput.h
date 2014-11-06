@@ -32,8 +32,7 @@
 #include <vector>
 #include <set>
 #include <iterator>
-#include "../ConstraintPool.h"
-#include "../FormulaPool.h"
+#include "../Common.h"
 #include "../datastructures/Assignment.h"
 #include "../../cli/parser/ParserTypes.h"
 #include "../config.h"
@@ -48,9 +47,9 @@ namespace smtrat
         // Member
         
         /// The formula.
-        const Formula* mpFormula;
+        FormulaT mFormula;
         /// The formulas origins.
-        std::vector<PointerSet<Formula>> mOrigins;
+        std::vector<std::set<FormulaT>> mOrigins;
         
     public:
         
@@ -60,8 +59,8 @@ namespace smtrat
          * Constructs a formula with empty origins.
          * @param _formula The formula of the formula with origins to construct.
          */
-        FormulaWithOrigins( const Formula* _formula ):
-            mpFormula( _formula ),
+        FormulaWithOrigins( const FormulaT& _formula ):
+            mFormula( _formula ),
             mOrigins()
         {}
         
@@ -70,8 +69,8 @@ namespace smtrat
          * @param _formula The formula of the formula with origins to construct.
          * @param _origins The origins of the formula with origins to construct.
          */
-        FormulaWithOrigins( const Formula* _formula, const std::vector<PointerSet<Formula>>& _origins ):
-            mpFormula( _formula ),
+        FormulaWithOrigins( const FormulaT& _formula, const std::vector<std::set<FormulaT>>& _origins ):
+            mFormula( _formula ),
             mOrigins( _origins )
         {}
         
@@ -80,8 +79,8 @@ namespace smtrat
          * @param _formula The formula of the formula with origins to construct.
          * @param _origins The origins of the formula with origins to construct.
          */
-        FormulaWithOrigins( const Formula* _formula, std::vector<PointerSet<Formula>>&& _origins ):
-            mpFormula( _formula ),
+        FormulaWithOrigins( const FormulaT& _formula, std::vector<std::set<FormulaT>>&& _origins ):
+            mFormula( _formula ),
             mOrigins( std::move( _origins ) )
         {}
         
@@ -110,25 +109,17 @@ namespace smtrat
         }
         
         /**
-         * @return A pointer to the formula.
-         */
-        const Formula* pFormula() const
-        {
-            return mpFormula;
-        }
-        
-        /**
          * @return A constant reference to the formula.
          */
-        const Formula& formula() const
+        const FormulaT& formula() const
         {
-            return *mpFormula;
+            return mFormula;
         }
         
         /**
          * @return A constant reference to the origins.
          */
-        const std::vector<PointerSet<Formula>>& origins() const
+        const std::vector<std::set<FormulaT>>& origins() const
         {
             return mOrigins;
         }
@@ -136,7 +127,7 @@ namespace smtrat
         /**
          * @return A reference to the origins.
          */
-        std::vector<PointerSet<Formula>>& rOrigins()
+        std::vector<std::set<FormulaT>>& rOrigins()
         {
             return mOrigins;
         }
@@ -172,9 +163,9 @@ namespace smtrat
         
         // Member.
         /// Store some properties about the conjunction of the stored formulas.
-        mutable Condition mProperties;
+        mutable carl::Condition mProperties;
         #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
-        FastPointerMap<Formula,iterator> mFormulaPositionMap;
+        carl::FastMap<FormulaT,iterator> mFormulaPositionMap;
         #endif
 
     public:
@@ -196,7 +187,7 @@ namespace smtrat
         /**
          * @return All known properties of the underlying formula of this module input.
          */
-        const Condition& properties() const
+        const carl::Condition& properties() const
         {
             updateProperties();
             return mProperties;
@@ -208,8 +199,8 @@ namespace smtrat
          */
         bool isConstraintConjunction() const
         {
-            if( PROP_IS_PURE_CONJUNCTION <= mProperties )
-                return !(PROP_CONTAINS_BOOLEAN <= mProperties) && !(PROP_CONTAINS_UNINTERPRETED_EQUATIONS <= mProperties);
+            if( carl::PROP_IS_PURE_CONJUNCTION <= mProperties )
+                return !(carl::PROP_CONTAINS_BOOLEAN <= mProperties) && !(carl::PROP_CONTAINS_UNINTERPRETED_EQUATIONS <= mProperties);
             else
                 return false;
         }
@@ -220,7 +211,7 @@ namespace smtrat
          */
         bool isRealConstraintConjunction() const
         {
-            return isConstraintConjunction() && !(PROP_CONTAINS_INTEGER_VALUED_VARS <= mProperties);
+            return isConstraintConjunction() && !(carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= mProperties);
         }
 
         /**
@@ -229,7 +220,7 @@ namespace smtrat
          */
         bool isIntegerConstraintConjunction() const
         {
-            return isConstraintConjunction() && !(PROP_CONTAINS_REAL_VALUED_VARS <= mProperties);
+            return isConstraintConjunction() && !(carl::PROP_CONTAINS_REAL_VALUED_VARS <= mProperties);
         }
         
         /**
@@ -287,20 +278,20 @@ namespace smtrat
             return super::size();
         }
         
-        iterator find( const Formula* _formula );
+        iterator find( const FormulaT& _formula );
         
-        const_iterator find( const Formula* _formula ) const;
+        const_iterator find( const FormulaT& _formula ) const;
         
-        iterator find( const_iterator _hint, const Formula* _formula );
+        iterator find( const_iterator _hint, const FormulaT& _formula );
         
-        const_iterator find( const_iterator _hint, const Formula* _formula ) const;
+        const_iterator find( const_iterator _hint, const FormulaT& _formula ) const;
         
         /**
          * @param _subformula The formula for which to check whether it is one of the stored formulas.
          * @return true, if the given formula is one of the stored formulas;
          *         false, otherwise.
          */
-        bool contains( const Formula* _subformula ) const
+        bool contains( const FormulaT& _subformula ) const
         {
             #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
             return mFormulaPositionMap.find( _subformula ) != mFormulaPositionMap.end();
@@ -318,7 +309,7 @@ namespace smtrat
          * Collects all real valued variables occurring in this formula.
          * @param _realVars The container to collect the real valued variables in.
          */
-        void realValuedVars( Variables& _realVars ) const
+        void realValuedVars( carl::Variables& _realVars ) const
         {
             for( const FormulaWithOrigins& fwo : *this )
                 fwo.formula().realValuedVars( _realVars );
@@ -328,7 +319,7 @@ namespace smtrat
          * Collects all integer valued variables occurring in this formula.
          * @param _intVars The container to collect the integer valued variables in.
          */
-        void integerValuedVars( Variables& _intVars ) const
+        void integerValuedVars( carl::Variables& _intVars ) const
         {
             for( const FormulaWithOrigins& fwo : *this )
                 fwo.formula().integerValuedVars( _intVars );
@@ -338,7 +329,7 @@ namespace smtrat
          * Collects all arithmetic variables occurring in this formula.
          * @param _arithmeticVars The container to collect the arithmetic variables in.
          */
-        void arithmeticVars( Variables& _arithmeticVars ) const
+        void arithmeticVars( carl::Variables& _arithmeticVars ) const
         {
             for( const FormulaWithOrigins& fwo : *this )
                 fwo.formula().arithmeticVars( _arithmeticVars );
@@ -348,7 +339,7 @@ namespace smtrat
          * Collects all Boolean variables occurring in this formula.
          * @param _booleanVars The container to collect the Boolean variables in.
          */
-        void booleanVars( Variables& _booleanVars ) const
+        void booleanVars( carl::Variables& _booleanVars ) const
         {
             for( const FormulaWithOrigins& fwo : *this )
                 fwo.formula().booleanVars( _booleanVars );
@@ -381,41 +372,41 @@ namespace smtrat
         
         iterator erase( iterator _formula );
         
-        bool removeOrigin( iterator _formula, const Formula* _origin );
+        bool removeOrigin( iterator _formula, const FormulaT& _origin );
         
-        bool removeOrigins( iterator _formula, const std::vector<PointerSet<Formula>>& _origins );
+        bool removeOrigins( iterator _formula, const std::vector<std::set<FormulaT>>& _origins );
         
-        bool removeOrigins( iterator _formula, const PointerSet<Formula>& _origins );
+        bool removeOrigins( iterator _formula, const std::set<FormulaT>& _origins );
         
-        std::pair<iterator,bool> add( const Formula* _formula )
+        std::pair<iterator,bool> add( const FormulaT& _formula )
         {
-            PointerSet<Formula> origins;
+            std::set<FormulaT> origins;
             return add( _formula, std::move( origins ) );
         }
         
-        std::pair<iterator,bool> add( const Formula* _formula, const Formula* _origin )
+        std::pair<iterator,bool> add( const FormulaT& _formula, const FormulaT& _origin )
         {
-            PointerSet<Formula> origins;
+            std::set<FormulaT> origins;
             origins.insert( _origin );
             return add( _formula, std::move( origins ) );
         }
         
-        std::pair<iterator,bool> add( const Formula* _formula, const PointerSet<Formula>& _origins )
+        std::pair<iterator,bool> add( const FormulaT& _formula, const std::set<FormulaT>& _origins )
         {
-            PointerSet<Formula> originsCopy( _origins );
+            std::set<FormulaT> originsCopy( _origins );
             return add( _formula, std::move( originsCopy ) );
         }
         
-        std::pair<iterator,bool> add( const Formula* _formula, const std::vector<PointerSet<Formula>>& _origins )
+        std::pair<iterator,bool> add( const FormulaT& _formula, const std::vector<std::set<FormulaT>>& _origins )
         {
-            std::vector<PointerSet<Formula>> originsCopy( _origins );
+            std::vector<std::set<FormulaT>> originsCopy( _origins );
             return add( _formula, std::move( originsCopy ) );
         }
         
-        std::pair<iterator,bool> add( const Formula* _formula, PointerSet<Formula>&& _origins );
+        std::pair<iterator,bool> add( const FormulaT& _formula, std::set<FormulaT>&& _origins );
         
-        std::pair<iterator,bool> add( const Formula* _formula, std::vector<PointerSet<Formula>>&& _origins );
+        std::pair<iterator,bool> add( const FormulaT& _formula, std::vector<std::set<FormulaT>>&& _origins );
     };
     
-    void annotateFormula( const Formula*, const std::vector<parser::Attribute>& );
+    void annotateFormula( const FormulaT&, const std::vector<parser::Attribute>& );
 }    // namespace smtrat

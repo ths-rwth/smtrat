@@ -30,7 +30,7 @@ using namespace std;
 
 namespace vs
 {
-    Substitution::Substitution( const carl::Variable& _variable, const Type& _type, const set<const Condition*>& _oConditions, const smtrat::PointerSet<smtrat::Constraint>& _sideCondition ):
+    Substitution::Substitution( const carl::Variable& _variable, const Type& _type, const set<const Condition*>& _oConditions, const carl::PointerSet<smtrat::ConstraintT>& _sideCondition ):
         mVariable( _variable ),
         mpTerm( new SqrtEx() ),
         mType( _type ),
@@ -39,7 +39,7 @@ namespace vs
         mSideCondition( _sideCondition )
     {}
 
-    Substitution::Substitution( const carl::Variable& _variable, const SqrtEx& _term, const Type& _type, const set<const Condition*>& _oConditions, const smtrat::PointerSet<smtrat::Constraint>& _sideCondition ):
+    Substitution::Substitution( const carl::Variable& _variable, const SqrtEx& _term, const Type& _type, const set<const Condition*>& _oConditions, const carl::PointerSet<smtrat::ConstraintT>& _sideCondition ):
         mVariable( _variable ),
         mpTerm( new SqrtEx( _term ) ),
         mType( _type ),
@@ -52,7 +52,7 @@ namespace vs
         mVariable( _sub.variable() ),
         mpTerm( new SqrtEx( _sub.term() ) ),
         mType( _sub.type() ),
-        mpTermVariables( _sub.mpTermVariables == NULL ? NULL : new smtrat::Variables( *_sub.mpTermVariables ) ),
+        mpTermVariables( _sub.mpTermVariables == NULL ? NULL : new carl::Variables( *_sub.mpTermVariables ) ),
         mpOriginalConditions( new set<const Condition*>( _sub.originalConditions() ) ),
         mSideCondition( _sub.sideCondition() )
     {}

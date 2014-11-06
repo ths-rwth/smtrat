@@ -28,7 +28,7 @@
 #pragma once
 
 #include "Value.h"
-#include "../../Formula.h"
+#include "../../Common.h"
 #include "../../solver/ModuleInput.h"
 #include <stddef.h>
 #include <set>
@@ -57,7 +57,7 @@ namespace smtrat
             enum Type{ LOWER, UPPER, EQUAL };
 
             /// A set of pointer to bounds.
-            typedef smtrat::PointerSet<Bound<T1, T2>> BoundSet;
+            typedef carl::PointerSet<Bound<T1, T2>> BoundSet;
 
             /**
              * Stores some additional information for a bound.
@@ -75,7 +75,7 @@ namespace smtrat
                  */
                 ModuleInput::iterator position;
                 /// If this bound corresponds to a constraint being p<0 or p>0 for a polynomial p, we store here the constraint p!=0.
-                const smtrat::Formula* neqRepresentation;
+                smtrat::FormulaT neqRepresentation;
                 /**
                  * A flag which is only false, if this bound has been created for a constraint having != as 
                  * relation symbol, i.e. p!=0, and not yet for the constraint p<0 or p>0.
@@ -94,9 +94,9 @@ namespace smtrat
                 ///
                 Variable<T1, T2>* const mVar;
                 ///
-                const smtrat::Formula* mpAsConstraint;
+                smtrat::FormulaT mAsConstraint;
                 ///
-                std::vector<PointerSet<Formula> >* mpOrigins;
+                std::vector<std::set<FormulaT> >* mpOrigins;
                 ///
                 Info* mpInfo;
 
@@ -104,7 +104,7 @@ namespace smtrat
                 /**
                  * 
                  */
-                Bound();
+                Bound() = delete;
                 
                 /**
                  * 
@@ -115,7 +115,7 @@ namespace smtrat
                  * @param _boundInfo
                  * @param _deduced
                  */
-                Bound( const Value<T1>* const _limit, Variable<T1, T2>* const _var, Type _type, const smtrat::Formula* _constraint, Bound<T1, T2>::Info* _boundInfo = NULL, bool _deduced = false );
+                Bound( const Value<T1>* const _limit, Variable<T1, T2>* const _var, Type _type, const smtrat::FormulaT& _constraint, Bound<T1, T2>::Info* _boundInfo = NULL, bool _deduced = false );
                 
                 /**
                  * 
@@ -297,15 +297,15 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                const smtrat::Formula* pAsConstraint() const
+                const smtrat::FormulaT& asConstraint() const
                 {
-                    return mpAsConstraint;
+                    return mAsConstraint;
                 }
                 
                 /**
                  * @return 
                  */
-                const smtrat::Formula* neqRepresentation() const
+                const smtrat::FormulaT& neqRepresentation() const
                 {
                     return mpInfo->neqRepresentation;
                 }
@@ -314,10 +314,10 @@ namespace smtrat
                  * 
                  * @param _constraint
                  */
-                void setNeqRepresentation( const smtrat::Formula* _constraint ) const
+                void setNeqRepresentation( const smtrat::FormulaT& _constraint ) const
                 {
-                    assert( _constraint->getType() == smtrat::CONSTRAINT && _constraint->constraint().relation() == smtrat::Relation::NEQ );
-                    if( mpInfo->neqRepresentation == NULL )
+                    assert( _constraint.getType() == carl::FormulaType::CONSTRAINT && _constraint.constraint().relation() == carl::Relation::NEQ );
+                    if( mpInfo->neqRepresentation.isTrue() )
                     {
                         mpInfo->neqRepresentation = _constraint;
                     }
@@ -334,7 +334,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                std::vector<PointerSet<Formula> >* pOrigins() const
+                std::vector<std::set<FormulaT> >* pOrigins() const
                 {
                     return mpOrigins;
                 }
@@ -342,7 +342,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                const std::vector<PointerSet<Formula> >& origins() const
+                const std::vector<std::set<FormulaT> >& origins() const
                 {
                     return *mpOrigins;
                 }

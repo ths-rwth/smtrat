@@ -45,6 +45,7 @@
 //#define DEBUG_MODULE_CALLS_IN_SMTLIB
 
 using namespace std;
+using namespace carl;
 
 // Main smtrat namespace.
 namespace smtrat
@@ -137,7 +138,7 @@ namespace smtrat
         #endif
     }
 
-    bool Module::inform( const Formula* _constraint )
+    bool Module::inform( const FormulaT& _constraint )
     {
         #ifdef MODULE_VERBOSE
         cout << __func__ << " in " << this << " with name " << moduleName( mType ) << ": " << *_constraint << endl;
@@ -166,7 +167,7 @@ namespace smtrat
     {
         #ifdef MODULE_VERBOSE
         cout << __func__ << " in " << this << " with name " << moduleName( mType ) << ":" << endl << endl;
-        cout << " " << _receivedSubformula->formula() << " [" << _receivedSubformula->pFormula() << "]" << endl << endl;
+        cout << " " << _receivedSubformula->formula() << endl << endl;
         #endif
         if( mFirstUncheckedReceivedSubformula == mpReceivedFormula->end() )
         {
@@ -179,7 +180,7 @@ namespace smtrat
     {
         #ifdef MODULE_VERBOSE
         cout << __func__ << " in " << this << " with name " << moduleName( mType ) << ":" << endl << endl;
-        cout << " " << _receivedSubformula->formula() << " [" << _receivedSubformula->pFormula() << "]" << endl << endl;
+        cout << " " << _receivedSubformula->formula() << endl << endl;
         #endif
         if( mFirstUncheckedReceivedSubformula == _receivedSubformula )
             ++mFirstUncheckedReceivedSubformula;
@@ -189,7 +190,7 @@ namespace smtrat
         while( passedSubformula != mpPassedFormula->end() )
         {
             // Remove the received formula from the set of origins.
-            if( mpPassedFormula->removeOrigin( passedSubformula, _receivedSubformula->pFormula() ) )
+            if( mpPassedFormula->removeOrigin( passedSubformula, _receivedSubformula->formula() ) )
             {
                 passedSubformula = mpPassedFormula->erase( passedSubformula );
             }
@@ -202,7 +203,7 @@ namespace smtrat
         vec_set_const_pFormula::iterator infSubSet = mInfeasibleSubsets.begin();
         while( infSubSet != mInfeasibleSubsets.end() )
         {
-            PointerSet<Formula>::iterator infSubformula = infSubSet->begin();
+            set<FormulaT>::iterator infSubformula = infSubSet->begin();
             while( infSubformula != infSubSet->end() )
             {
                 if( *infSubformula == *_receivedSubformula )
@@ -259,10 +260,10 @@ namespace smtrat
     
     pair<ModuleInput::iterator,bool> Module::addReceivedSubformulaToPassedFormula( ModuleInput::const_iterator _subformula )
     {
-        return addSubformulaToPassedFormula( _subformula->pFormula(), _subformula->pFormula() );
+        return addSubformulaToPassedFormula( _subformula->formula(), _subformula->formula() );
     }
 
-    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const Formula* _formula, const vec_set_const_pFormula& _origins )
+    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, const vec_set_const_pFormula& _origins )
     {
         assert( mpReceivedFormula->size() != UINT_MAX );
         auto res = mpPassedFormula->add( _formula, _origins );
@@ -275,7 +276,7 @@ namespace smtrat
         return res;
     }
 
-    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const Formula* _formula, vec_set_const_pFormula&& _origins )
+    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, vec_set_const_pFormula&& _origins )
     {
         assert( mpReceivedFormula->size() != UINT_MAX );
         auto res = mpPassedFormula->add( _formula, std::move( _origins ) );
@@ -288,7 +289,7 @@ namespace smtrat
         return res;
     }
 
-    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const Formula* _formula, const Formula* _origin )
+    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, const FormulaT& _origin )
     {
         assert( mpReceivedFormula->size() != UINT_MAX );
         auto res = mpPassedFormula->add( _formula, _origin );
@@ -303,14 +304,14 @@ namespace smtrat
 
     vec_set_const_pFormula Module::merge( const vec_set_const_pFormula& _vecSetA, const vec_set_const_pFormula& _vecSetB ) const
     {
-        vec_set_const_pFormula result = vec_set_const_pFormula();
+        vec_set_const_pFormula result;
         vec_set_const_pFormula::const_iterator originSetA = _vecSetA.begin();
         while( originSetA != _vecSetA.end() )
         {
             vec_set_const_pFormula::const_iterator originSetB = _vecSetB.begin();
             while( originSetB != _vecSetB.end() )
             {
-                result.push_back( PointerSet<Formula>( originSetA->begin(), originSetA->end() ) );
+                result.push_back( set<FormulaT>( originSetA->begin(), originSetA->end() ) );
                 result.back().insert( originSetB->begin(), originSetB->end() );
                 ++originSetB;
             }
@@ -319,7 +320,7 @@ namespace smtrat
         return result;
     }
     
-    bool Module::probablyLooping( const Polynomial& _branchingPolynomial, const Rational& _branchingValue )
+    bool Module::probablyLooping( const Poly& _branchingPolynomial, const Rational& _branchingValue )
     {
         assert( _branchingPolynomial.constantPart() == 0 );
         auto iter = mLastBranches.begin();
@@ -369,11 +370,11 @@ namespace smtrat
         return false;
     }
     
-    void Module::branchAt( const Polynomial& _polynomial, const Rational& _value, const PointerSet<Formula>& _premise, bool _leftCaseWeak )
+    void Module::branchAt( const Poly& _polynomial, const Rational& _value, const set<FormulaT>& _premise, bool _leftCaseWeak )
     {
         assert( !_polynomial.hasConstantTerm() );
-        const Constraint* constraintA = NULL;
-        const Constraint* constraintB = NULL;
+        const ConstraintT* constraintA = NULL;
+        const ConstraintT* constraintB = NULL;
         bool onlyIntegerValuedVariables = true;
         Variables vars;
         _polynomial.gatherVariables( vars );
@@ -389,78 +390,78 @@ namespace smtrat
         if( onlyIntegerValuedVariables )
         {
             Rational bound = carl::floor( _value );
-            Polynomial leqLhs = _polynomial - bound;
-            constraintA = newConstraint( leqLhs, Relation::LEQ );
+            Poly leqLhs = _polynomial - bound;
+            constraintA = newConstraint<Poly>( leqLhs, Relation::LEQ );
             ++bound;
-            Polynomial geqLhs = _polynomial - bound;
-            constraintB = newConstraint( geqLhs, Relation::GEQ );
+            Poly geqLhs = _polynomial - bound;
+            constraintB = newConstraint<Poly>( geqLhs, Relation::GEQ );
             #ifdef MODULE_VERBOSE_INTEGERS
             cout << "[" << moduleName(type()) << "]  branch at  " << *constraintA << "  and  " << *constraintB << endl;
             #endif
         }
         else
         {   
-            Polynomial constraintLhs = _polynomial - _value;
+            Poly constraintLhs = _polynomial - _value;
             if( _leftCaseWeak )
             {
-                constraintA = newConstraint( constraintLhs, Relation::LEQ );
-                constraintB = newConstraint( constraintLhs, Relation::GREATER );
+                constraintA = newConstraint<Poly>( constraintLhs, Relation::LEQ );
+                constraintB = newConstraint<Poly>( constraintLhs, Relation::GREATER );
             }
             else
             {
-                constraintA = newConstraint( constraintLhs, Relation::LESS );
-                constraintB = newConstraint( constraintLhs, Relation::GEQ );   
+                constraintA = newConstraint<Poly>( constraintLhs, Relation::LESS );
+                constraintB = newConstraint<Poly>( constraintLhs, Relation::GEQ );   
             }
         }
         // (p<=I-1 or p>=I)
-        PointerSet<Formula> subformulasA;
-        for( const Formula* pre : _premise )
+        set<FormulaT> subformulasA;
+        for( const FormulaT& pre : _premise )
         {
             assert( find( mpReceivedFormula->begin(), mpReceivedFormula->end(), pre ) != mpReceivedFormula->end() );
-            subformulasA.insert( newNegation( pre ) );
+            subformulasA.insert( FormulaT( FormulaType::NOT, pre ) );
         }
-        const Formula* consA = newFormula( constraintA );
-        consA->setActivity( -numeric_limits<double>::infinity() );
-        const Formula* consB = newFormula( constraintB );
-        consB->setActivity( -numeric_limits<double>::infinity() );
+        FormulaT consA = FormulaT( constraintA );
+        consA.setActivity( -numeric_limits<double>::infinity() );
+        FormulaT consB = FormulaT( constraintB );
+        consB.setActivity( -numeric_limits<double>::infinity() );
         subformulasA.insert( consA );
         subformulasA.insert( consB );
-        const Formula* dedA = newFormula( OR, std::move( subformulasA ) );
+        FormulaT dedA = FormulaT( FormulaType::OR, std::move( subformulasA ) );
         addDeduction( dedA );
         // (not(x<=I-1) or not(x>=I))
-        PointerSet<Formula> subformulasB;
-        for( const Formula* pre : _premise )
+        set<FormulaT> subformulasB;
+        for( const FormulaT& pre : _premise )
         {
             assert( find( mpReceivedFormula->begin(), mpReceivedFormula->end(), pre ) != mpReceivedFormula->end() );
-            subformulasB.insert( newNegation( pre ) );
+            subformulasB.insert( FormulaT( FormulaType::NOT, pre ) );
         }
-        subformulasB.insert( newNegation( consA ) );
-        subformulasB.insert( newNegation( consB ) );
-        const Formula* deduction = newFormula( OR, std::move( subformulasB ) );
+        subformulasB.insert( FormulaT( FormulaType::NOT, consA ) );
+        subformulasB.insert( FormulaT( FormulaType::NOT, consB ) );
+        FormulaT deduction = FormulaT( FormulaType::OR, std::move( subformulasB ) );
         addDeduction( deduction );
     }
     
-    void Module::splitUnequalConstraint( const Formula* _unequalConstraint )
+    void Module::splitUnequalConstraint( const FormulaT& _unequalConstraint )
     {
-        assert( _unequalConstraint->getType() == CONSTRAINT );
-        assert( _unequalConstraint->constraint().relation() == Relation::NEQ );
-        const Polynomial& lhs = _unequalConstraint->constraint().lhs();
-        const Formula* lessConstraint = newFormula( newConstraint( lhs, Relation::LESS ) );
-        const Formula* notLessConstraint = newNegation( lessConstraint );
-        const Formula* greaterConstraint = newFormula( newConstraint( lhs, Relation::GREATER ) );
-        const Formula* notGreaterConstraint = newNegation( greaterConstraint );
+        assert( _unequalConstraint.getType() == CONSTRAINT );
+        assert( _unequalConstraint.constraint().relation() == Relation::NEQ );
+        const Poly& lhs = _unequalConstraint.constraint().lhs();
+        FormulaT lessConstraint = FormulaT( lhs, Relation::LESS );
+        FormulaT notLessConstraint = FormulaT( FormulaType::NOT, lessConstraint );
+        FormulaT greaterConstraint = FormulaT( lhs, Relation::GREATER );
+        FormulaT notGreaterConstraint = FormulaT( FormulaType::NOT, greaterConstraint );
         // (not p!=0 or p<0 or p>0)
-        PointerSet<Formula> subformulas;
-        subformulas.insert( newNegation( _unequalConstraint ) );
+        set<FormulaT> subformulas;
+        subformulas.insert( FormulaT( FormulaType::NOT, _unequalConstraint ) );
         subformulas.insert( lessConstraint );
         subformulas.insert( greaterConstraint );
-        addDeduction( newFormula( OR, std::move( subformulas ) ) );
+        addDeduction( FormulaT( FormulaType::OR, std::move( subformulas ) ) );
         // (not p<0 or p!=0)
-        addDeduction( newFormula( OR, notLessConstraint, _unequalConstraint ) );
+        addDeduction( FormulaT( FormulaType::OR, notLessConstraint, _unequalConstraint ) );
         // (not p>0 or p!=0)
-        addDeduction( newFormula( OR, notGreaterConstraint, _unequalConstraint ) );
+        addDeduction( FormulaT( FormulaType::OR, notGreaterConstraint, _unequalConstraint ) );
         // (not p>0 or not p<0)
-        addDeduction( newFormula( OR, notGreaterConstraint, notLessConstraint ) );
+        addDeduction( FormulaT( FormulaType::OR, notGreaterConstraint, notLessConstraint ) );
     }
     
     unsigned Module::checkModel() const
@@ -524,7 +525,7 @@ namespace smtrat
 
     vec_set_const_pFormula Module::getInfeasibleSubsets( const Module& _backend ) const
     {
-        vec_set_const_pFormula result = vec_set_const_pFormula();
+        vec_set_const_pFormula result;
         const vec_set_const_pFormula& backendsInfsubsets = _backend.infeasibleSubsets();
         assert( !backendsInfsubsets.empty() );
         for( vec_set_const_pFormula::const_iterator infSubSet = backendsInfsubsets.begin(); infSubSet != backendsInfsubsets.end(); ++infSubSet )
@@ -536,8 +537,8 @@ namespace smtrat
                 addAssumptionToCheck( *infSubSet, false, moduleName( _backend.type() ) + "_infeasible_subset" );
             }
             #endif
-            result.push_back( PointerSet<Formula>() );
-            for( PointerSet<Formula>::const_iterator cons = infSubSet->begin(); cons != infSubSet->end(); ++cons )
+            result.push_back( set<FormulaT>() );
+            for( set<FormulaT>::const_iterator cons = infSubSet->begin(); cons != infSubSet->end(); ++cons )
             {
                 ModuleInput::const_iterator posInReceived = mpPassedFormula->find( *cons );
                 assert( posInReceived != mpReceivedFormula->end() );
@@ -558,7 +559,7 @@ namespace smtrat
                 }
                 assert( smallestOriginSet != formOrigins.end() );
                 // Add its formulas to the infeasible subset.
-                for( PointerSet<Formula>::const_iterator originFormula = smallestOriginSet->begin(); originFormula != smallestOriginSet->end();
+                for( set<FormulaT>::const_iterator originFormula = smallestOriginSet->begin(); originFormula != smallestOriginSet->end();
                         ++originFormula )
                 {
                     result.back().insert( *originFormula );
@@ -758,7 +759,7 @@ namespace smtrat
         return _answer;
     }
 
-    void Module::addConstraintToInform( const Formula* const constraint )
+    void Module::addConstraintToInform( const FormulaT& constraint )
     {
         // We can give the hint that this constraint will probably be inserted in the end of this container,
         // as it is compared by an id which gets incremented every time a new constraint is constructed.
@@ -777,7 +778,7 @@ namespace smtrat
                 #ifdef SMTRAT_DEVOPTION_Validation
                 if( validationSettings->logLemmata() )
                 {
-                    addAssumptionToCheck( newNegation( (*module)->rDeductions().back() ), false, moduleName( (*module)->type() ) + "_lemma" );
+                    addAssumptionToCheck( FormulaT( FormulaType::NOT, (*module)->rDeductions().back() ), false, moduleName( (*module)->type() ) + "_lemma" );
                 }
                 #endif
                 (*module)->rDeductions().pop_back();
@@ -785,7 +786,7 @@ namespace smtrat
         }
     }
 
-    void Module::addAssumptionToCheck( const Formula* _formula, bool _consistent, const string& _label )
+    void Module::addAssumptionToCheck( const FormulaT& _formula, bool _consistent, const string& _label )
     {
         string assumption = "";
         #ifdef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
@@ -794,7 +795,7 @@ namespace smtrat
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
         assumption += "(assert (and ";
         #endif
-        assumption += _formula->toString( false, 1, "", true, false, true );
+        assumption += _formula.toString( false, 1, "", true, false, true );
         #ifdef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
         assumption += ")\n";
         #else
@@ -822,13 +823,13 @@ namespace smtrat
         mVariablesInAssumptionToCheck.insert( _label );
     }
 
-    void Module::addAssumptionToCheck( const PointerSet<Formula>& _formulas, bool _consistent, const string& _label )
+    void Module::addAssumptionToCheck( const set<FormulaT>& _formulas, bool _consistent, const string& _label )
     {
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
         assumption += "(assert (and";
         for( auto formula = _formulas.begin(); formula != _formulas.end(); ++formula )
-            assumption += " " + (*formula)->toString( false, 1, "", true, false, true );
+            assumption += " " + formula->toString( false, 1, "", true, false, true );
         assumption += " " + _label;
         assumption += "))\n";
         assumption += "(get-assertions)\n";
@@ -837,7 +838,7 @@ namespace smtrat
         mVariablesInAssumptionToCheck.insert( _label );
     }
 
-    void Module::addAssumptionToCheck( const PointerSet<Constraint>& _constraints, bool _consistent, const string& _label )
+    void Module::addAssumptionToCheck( const PointerSet<ConstraintT>& _constraints, bool _consistent, const string& _label )
     {
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
@@ -945,7 +946,7 @@ namespace smtrat
                 for( auto it = _infsubset->begin(); it != _infsubset->end(); ++it )
                 {
                     if( bitvector & 1 )
-                        assumption += " " + (*it)->toString();
+                        assumption += " " + it->toString();
                     bitvector >>= 1;
                 }
                 assumption += "))\n";
@@ -984,9 +985,6 @@ namespace smtrat
             _out << _initiation << "  ";
             // bool _withActivity, unsigned _resolveUnequal, const string _init, bool _oneline, bool _infix, bool _friendlyNames
             _out << setw( 30 ) << form->formula().toString( false, 0, "", true, true, true );
-            stringstream out;
-            out << "  [" << form->pFormula() << "]";
-            _out << setw( 15 ) << out.str();
             if( form->formula().deducted() ) _out << " deducted";
             _out << endl;
         }
@@ -999,9 +997,6 @@ namespace smtrat
         {
             _out << _initiation << "  ";
             _out << setw( 30 ) << form->formula().toString( false, 0, "", true, true, true );
-            stringstream out;
-            out << "  [" << form->pFormula() << "]" << " from " << "(";
-            _out << setw( 22 ) << out.str();
             for( auto oSubformulas = form->origins().begin(); oSubformulas != form->origins().end(); ++oSubformulas )
             {
                 _out << " {";
@@ -1023,7 +1018,7 @@ namespace smtrat
                 _out << endl << _initiation << "    ";
             _out << " {";
             for( auto infSubFormula = infSubSet->begin(); infSubFormula != infSubSet->end(); ++infSubFormula )
-                _out << " " << (*infSubFormula)->toString( false, 0, "", true, true, true ) << endl;
+                _out << " " << infSubFormula->toString( false, 0, "", true, true, true ) << endl;
             _out << " }";
         }
         _out << " }" << endl;

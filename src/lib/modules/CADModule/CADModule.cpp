@@ -98,7 +98,7 @@ namespace smtrat
 		GiNaC::symtab allVariables = mpReceivedFormula->constraintPool().realVariables();
 		for( GiNaC::symtab::const_iterator i = allVariables.begin(); i != allVariables.end(); ++i )
 			variables.push_front( GiNaC::ex_to<symbol>( i->second ) );
-		std::forward_list<Polynomial> polynomials = std::forward_list<Polynomial>( );
+		std::forward_list<Poly> polynomials = std::forward_list<Poly>( );
 		for( fcs_const_iterator i = mpReceivedFormula->constraintPool().begin(); i != mpReceivedFormula->constraintPool().end(); ++i )
 			polynomials.push_front( (*i)->lhs() );
 		mCAD = CAD( {}, CAD::orderVariablesGreeedily( variables.begin(), variables.end(), polynomials.begin(), polynomials.end() ), _conditionals, setting );
@@ -145,25 +145,25 @@ namespace smtrat
 		LOG_FUNC("smtrat.cad", _subformula->formula());
 		Module::assertSubformula(_subformula);
 		switch (_subformula->formula().getType()) {
-		case TTRUE: 
+                    case carl::FormulaType::TRUE: 
 			return true;
-		case FFALSE: {
+                    case carl::FormulaType::FALSE: {
 			this->hasFalse = true;
-			PointerSet<Formula> infSubSet;
-			infSubSet.insert(_subformula->pFormula());
+			std::set<FormulaT> infSubSet;
+			infSubSet.insert(_subformula->formula());
 			mInfeasibleSubsets.push_back(infSubSet);
 			foundAnswer(False);
 			return false;
-		}
-		case CONSTRAINT: {
+                    }
+                    case carl::FormulaType::CONSTRAINT: {
 			if (this->hasFalse) {
-				this->subformulaQueue.insert(_subformula->pFormula());
+				this->subformulaQueue.insert(_subformula->formula());
 				return false;
 			} else {
-				return this->addConstraintFormula(_subformula->pFormula());
+				return this->addConstraintFormula(_subformula->formula());
 			}
-		}
-		default:
+                    }
+                    default:
 			LOGMSG_ERROR("smtrat.cad", "Asserted " << _subformula->formula());
 			assert(false);
 			return true;
@@ -224,11 +224,11 @@ namespace smtrat
 			#endif
 			#ifdef SMTRAT_CAD_DISABLE_MIS
 			// construct a trivial infeasible subset
-			PointerSet<Formula> boundConstraints = mVariableBounds.getOriginsOfBounds();
-			mInfeasibleSubsets.push_back( PointerSet<Formula>() );
+			std::set<FormulaT> boundConstraints = mVariableBounds.getOriginsOfBounds();
+			mInfeasibleSubsets.push_back( std::set<FormulaT>() );
 			for (auto i:mConstraintsMap)
 			{
-				mInfeasibleSubsets.back().insert( *i.first );
+				mInfeasibleSubsets.back().insert( i.first );
 			}
 			mInfeasibleSubsets.back().insert( boundConstraints.begin(), boundConstraints.end() );
 			#else
@@ -256,10 +256,10 @@ namespace smtrat
 				
 			vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics(g);
 
-			PointerSet<Formula> boundConstraints = mVariableBounds.getOriginsOfBounds();
+			std::set<FormulaT> boundConstraints = mVariableBounds.getOriginsOfBounds();
 			for (auto i: infeasibleSubsets) {
 				LOGMSG_DEBUG("smtrat.cad", "Infeasible:");
-				for (auto j: i) LOGMSG_DEBUG("smtrat.cad", "\t" << *j);
+				for (auto j: i) LOGMSG_DEBUG("smtrat.cad", "\t" << j);
 				mInfeasibleSubsets.push_back(i);
 				mInfeasibleSubsets.back().insert(boundConstraints.begin(), boundConstraints.end());
 			}
@@ -286,7 +286,7 @@ namespace smtrat
 			for (unsigned d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
 				auto r = this->mRealAlgebraicSolution[d]->branchingPoint();
 				if (!carl::isInteger(r)) {
-					branchAt(Polynomial(vars[d]), r);
+					branchAt(Poly(vars[d]), r);
 					return foundAnswer(Unknown);
 				}
 			}
@@ -297,23 +297,23 @@ namespace smtrat
 	void CADModule::removeSubformula(ModuleInput::const_iterator _subformula)
 	{
 		switch (_subformula->formula().getType()) {
-		case TTRUE:
+                    case carl::FormulaType::TRUE:
 			Module::removeSubformula(_subformula);
 			return;
-		case FFALSE:
+                    case carl::FormulaType::FALSE:
 			this->hasFalse = false;
 			Module::removeSubformula(_subformula);
 			return;
-		case CONSTRAINT: {
-			auto it = this->subformulaQueue.find(_subformula->pFormula());
+                    case carl::FormulaType::CONSTRAINT: {
+			auto it = this->subformulaQueue.find(_subformula->formula());
 			if (it != this->subformulaQueue.end()) {
 				this->subformulaQueue.erase(it);
 				return;
 			}
 
-			mVariableBounds.removeBound(_subformula->formula().pConstraint(), _subformula->pFormula());
+			mVariableBounds.removeBound(_subformula->formula().pConstraint(), _subformula->formula());
 
-			ConstraintIndexMap::iterator constraintIt = mConstraintsMap.find(_subformula->pFormula());
+			ConstraintIndexMap::iterator constraintIt = mConstraintsMap.find(_subformula->formula());
 			if (constraintIt == mConstraintsMap.end())
 				return; // there is nothing to remove
 			carl::cad::Constraint<smtrat::Rational> constraint = mConstraints[constraintIt->second];
@@ -399,16 +399,16 @@ namespace smtrat
 	// Auxiliary methods //
 	///////////////////////
 	
-	bool CADModule::addConstraintFormula(const Formula* f) {
-		assert(f->getType() == CONSTRAINT);
-		mVariableBounds.addBound(f->pConstraint(), f);
+	bool CADModule::addConstraintFormula(const FormulaT& f) {
+		assert(f.getType() == carl::FormulaType::CONSTRAINT);
+		mVariableBounds.addBound(f.pConstraint(), f);
 		// add the constraint to the local list of constraints and memorize the index/constraint assignment if the constraint is not present already
 		if (mConstraintsMap.find(f) != mConstraintsMap.end())
 			return true;	// the exact constraint was already considered
-		carl::cad::Constraint<smtrat::Rational> constraint = convertConstraint(f->constraint());
+		carl::cad::Constraint<smtrat::Rational> constraint = convertConstraint(f.constraint());
 		mConstraints.push_back(constraint);
 		mConstraintsMap[f] = (unsigned)(mConstraints.size() - 1);
-		mCAD.addPolynomial(Polynomial(constraint.getPolynomial()), constraint.getVariables());
+		mCAD.addPolynomial(Poly(constraint.getPolynomial()), constraint.getVariables());
 		mConflictGraph.addConstraintVertex(); // increases constraint index internally what corresponds to adding a new constraint node with index mConstraints.size()-1
 
 		return solverState() != False;
@@ -419,7 +419,7 @@ namespace smtrat
 	 * @param c constraint of the SMT-RAT
 	 * @return constraint of GiNaCRA
 	 */
-	inline const carl::cad::Constraint<smtrat::Rational> CADModule::convertConstraint( const smtrat::Constraint& c )
+	inline const carl::cad::Constraint<smtrat::Rational> CADModule::convertConstraint( const smtrat::ConstraintT& c )
 	{
 		// convert the constraints variable
 		std::vector<carl::Variable> variables;
@@ -429,23 +429,23 @@ namespace smtrat
 		carl::Sign signForConstraint = carl::Sign::ZERO;
 		bool cadConstraintNegated = false;
 		switch (c.relation()) {
-			case Relation::EQ: 
+			case carl::Relation::EQ: 
 				break;
-			case Relation::LEQ:
+			case carl::Relation::LEQ:
 				signForConstraint	= carl::Sign::POSITIVE;
 				cadConstraintNegated = true;
 				break;
-			case Relation::GEQ:
+			case carl::Relation::GEQ:
 				signForConstraint	= carl::Sign::NEGATIVE;
 				cadConstraintNegated = true;
 				break;
-			case Relation::LESS:
+			case carl::Relation::LESS:
 				signForConstraint = carl::Sign::NEGATIVE;
 				break;
-			case Relation::GREATER:
+			case carl::Relation::GREATER:
 				signForConstraint = carl::Sign::POSITIVE;
 				break;
-			case Relation::NEQ:
+			case carl::Relation::NEQ:
 				cadConstraintNegated = true;
 				break;
 			default: assert(false);
@@ -458,25 +458,25 @@ namespace smtrat
 	 * @param c constraint of the GiNaCRA
 	 * @return constraint of SMT-RAT
 	 */
-	inline const Constraint* CADModule::convertConstraint( const carl::cad::Constraint<smtrat::Rational>& c )
+	inline const ConstraintT* CADModule::convertConstraint( const carl::cad::Constraint<smtrat::Rational>& c )
 	{
-		Relation relation = Relation::EQ;
+		carl::Relation relation = carl::Relation::EQ;
 		switch (c.getSign()) {
 			case carl::Sign::POSITIVE:
-				if (c.isNegated()) relation = Relation::LEQ;
-				else relation = Relation::GREATER;
+				if (c.isNegated()) relation = carl::Relation::LEQ;
+				else relation = carl::Relation::GREATER;
 				break;
 			case carl::Sign::ZERO:
-				if (c.isNegated()) relation = Relation::NEQ;
-				else relation = Relation::EQ;
+				if (c.isNegated()) relation = carl::Relation::NEQ;
+				else relation = carl::Relation::EQ;
 				break;
 			case carl::Sign::NEGATIVE:
-				if (c.isNegated()) relation = Relation::GEQ;
-				else relation = Relation::LESS;
+				if (c.isNegated()) relation = carl::Relation::GEQ;
+				else relation = carl::Relation::LESS;
 				break;
 			default: assert(false);
 		}
-		return newConstraint(Polynomial(c.getPolynomial()), relation);
+		return newConstraint(Poly(c.getPolynomial()), relation);
 	}
 
 	/**
@@ -493,7 +493,7 @@ namespace smtrat
 	inline vec_set_const_pFormula CADModule::extractMinimalInfeasibleSubsets_GreedyHeuristics( ConflictGraph& conflictGraph )
 	{
 		// initialize MIS with the last constraint
-		vec_set_const_pFormula mis = vec_set_const_pFormula(1, PointerSet<Formula>());
+		vec_set_const_pFormula mis = vec_set_const_pFormula(1, std::set<FormulaT>());
 		mis.front().insert(getConstraintAt((unsigned)(mConstraints.size() - 1)));	// the last constraint is assumed to be always in the MIS
 		if (mConstraints.size() > 1) {
 			// construct set cover by greedy heuristic
@@ -520,14 +520,15 @@ namespace smtrat
 	 * @param index
 	 * @return
 	 */
-	inline const Formula* CADModule::getConstraintAt(unsigned index) {
+	inline const FormulaT& CADModule::getConstraintAt(unsigned index) {
 		LOGMSG_TRACE("smtrat.cad", "get " << index << " from " << mConstraintsMap);
-		for (auto i: mConstraintsMap) {
+                // @todo: Use some other map here.
+		for (auto& i: mConstraintsMap) {
 			if (i.second == index) // found the entry in the constraint map
 				return i.first;
 		}
 		assert(false);	// The given index should match an input constraint!
-		return nullptr;
+		return mConstraintsMap.begin()->first;
 	}
 
 	/**

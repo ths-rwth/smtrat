@@ -64,18 +64,18 @@ namespace smtrat
             struct Context
             {
                 /// The formula in the received formula.
-                const Formula* origin;
+                FormulaT origin;
                 /// The position of this formula in the passed formula.
                 ModuleInput::iterator position;
             };
             /// Maps an original variable to it's corresponding LRAModule variable.
             typedef std::map<carl::Variable, LRAVariable*> VarVariableMap;
             /// Maps a linear polynomial to it's corresponding LRAModule variable.
-            typedef FastPointerMap<Polynomial, LRAVariable*> ExVariableMap;
+            typedef carl::FastPointerMap<Poly, LRAVariable*> ExVariableMap;
             /// Maps constraint to the bounds it represents (e.g., equations represent two bounds)
-            typedef FastPointerMap<Formula, std::vector<const LRABound*>*> ConstraintBoundsMap;
+            typedef carl::FastMap<FormulaT, std::vector<const LRABound*>*> ConstraintBoundsMap;
             /// Stores the position of a received formula in the passed formula.
-            typedef FastPointerMap<Formula, Context> ConstraintContextMap;
+            typedef carl::FastMap<FormulaT, Context> ConstraintContextMap;
             /// The tableau which is the main data structure maintained by the LRAModule responsible for the pivoting steps.
             typedef lra::Tableau<typename Settings::Tableau_settings, LRABoundType, LRAEntryType> LRATableau;
 
@@ -96,9 +96,9 @@ namespace smtrat
              */
             LRATableau mTableau;
             /// Stores all linear constraints of which this module has been once informed.
-            PointerSet<Formula> mLinearConstraints;
+            std::set<FormulaT> mLinearConstraints;
             /// Stores all non-linear constraints which are currently added (by assertSubformula) to this module.
-            PointerSet<Formula> mNonlinearConstraints;
+            std::set<FormulaT> mNonlinearConstraints;
             /**
              * Those constraints p!=0, which are added to this module (part of the received formula), which 
              * are resolved by a constraints as p<0, p<=0, p>=0 or p>0.
@@ -120,7 +120,7 @@ namespace smtrat
              * Stores all set of constraints which have already led to defining constraint matrices. 
              * As the computation of these matrices is rather expensive, we try to omit this if possible.
              */
-            std::set< std::vector< const Constraint* > > mProcessedDCMatrices;
+            std::set< std::vector< const ConstraintT* > > mProcessedDCMatrices;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores the yet collected statistics of this LRAModule.
             LRAModuleStatistics* mpStatistics;
@@ -152,7 +152,7 @@ namespace smtrat
              * @return false, if the it can be determined that the constraint itself is conflicting;
              *         true,  otherwise.
              */
-            bool inform( const Formula* _constraint );
+            bool inform( const FormulaT& _constraint );
             
             /**
              * Initializes the tableau according to all linear constraints, of which this module has been informed.
@@ -198,7 +198,7 @@ namespace smtrat
              * Returns the bounds of the variables as intervals.
              * @return The bounds of the variables as intervals.
              */
-            EvalIntervalMap getVariableBounds() const;
+            EvalRationalIntervalMap getVariableBounds() const;
 
             /**
              * Prints all linear constraints.
@@ -269,7 +269,7 @@ namespace smtrat
              * @param _constraint The constraint to get the slack variable for.
              * @return The slack variable constructed for the linear polynomial without the constant part in the given constraint.
              */
-            const LRAVariable* getSlackVariable( const Formula* _constraint ) const
+            const LRAVariable* getSlackVariable( const FormulaT& _constraint ) const
             {
                 ConstraintBoundsMap::const_iterator iter = mTableau.constraintToBound().find( _constraint );
                 assert( iter != mTableau.constraintToBound().end() );
@@ -305,7 +305,7 @@ namespace smtrat
              * @param _bound The bound to activate.
              * @param _formulas The constraints which form this bound.
              */
-            void activateBound( const LRABound* _bound, const PointerSet<Formula>& _formulas );
+            void activateBound( const LRABound* _bound, const std::set<FormulaT>& _formulas );
             
             /**
              * Activates a strict bound as a result of the two constraints p!=0 and p<=0 resp. p>=0.
@@ -313,13 +313,13 @@ namespace smtrat
              * @param _weakBound The bound corresponding to either a constraint with <= resp. >= as relation symbol.
              * @param _strictBound The bound to activate corresponding to either a constraint with < or > as relation symbol.
              */
-            void activateStrictBound( const Formula* _neqOrigin, const LRABound& _weakBound, const LRABound* _strictBound );
+            void activateStrictBound( const FormulaT& _neqOrigin, const LRABound& _weakBound, const LRABound* _strictBound );
             
             /**
              * Creates a bound corresponding to the given constraint.
              * @param _constraint The constraint corresponding to the bound to create.
              */
-            void setBound( const Formula* _constraint );
+            void setBound( const FormulaT& _constraint );
             
             /**
              * Adds simple deduction being lemmas of the form (=> c_1 c_2) with, e.g. c_1 being p>=1 and c_2 being p>0.

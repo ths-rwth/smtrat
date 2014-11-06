@@ -29,7 +29,7 @@
 
 #include <iostream>
 #include <utility>
-#include "../Sort.h"
+#include "../Common.h"
 
 namespace smtrat
 {
@@ -49,7 +49,7 @@ class SortValue
         // Members.
 
         /// The sort defining the domain in which this value is.
-        Sort mSort;
+        carl::Sort mSort;
         /// A unique id to identify this sort in the sort value manager.
         IDType mId;
         
@@ -57,7 +57,7 @@ class SortValue
          * Constructs a sort value.
          * @param _id The id of the sort value to construct.
          */
-        explicit SortValue( const Sort& _sort, IDType _id ):
+        explicit SortValue( const carl::Sort& _sort, IDType _id ):
             mSort( _sort ),
             mId( _id )
         {}
@@ -81,7 +81,7 @@ class SortValue
         /**
          * @return The sort of this value.
          */
-        const Sort& sort() const
+        const carl::Sort& sort() const
         {
             return mSort;
         }
@@ -132,7 +132,7 @@ namespace std
          */
         size_t operator()( const smtrat::SortValue& _sortValue ) const 
         {
-            return (size_t) _sortValue.id() ^ hash<smtrat::Sort>()( _sortValue.sort() );
+            return (size_t) _sortValue.id() ^ hash<carl::Sort>()( _sortValue.sort() );
         }
     };
 }

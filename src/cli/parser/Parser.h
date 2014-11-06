@@ -26,12 +26,7 @@
 #include <boost/spirit/include/phoenix_statement.hpp>
 
 #include "../../lib/Common.h"
-#include "../../lib/ConstraintPool.h"
-#include "../../lib/Formula.h"
-#include "../../lib/FormulaPool.h"
 #include "../../lib/solver/ModuleInput.h"
-#include "../../lib/SortManager.h"
-#include "../../lib/UFInstance.h"
 #include "ParserUtils.h"
 #include "ParserTypes.h"
 
@@ -64,8 +59,8 @@ public:
 	DeclaredSymbolParser<carl::Variable> var_theory;
 	DeclaredSymbolParser<UVariable> var_uninterpreted;
 	
-	DeclaredSymbolParser<const Formula*> bind_bool;
-	DeclaredSymbolParser<Polynomial> bind_theory;
+	DeclaredSymbolParser<FormulaT> bind_bool;
+	DeclaredSymbolParser<Poly> bind_theory;
 	
 	// Basic rules
 	Skipper skipper;
@@ -112,18 +107,18 @@ public:
 	rule<> cmd;
 	
 	// Formula
-	rule<const Formula*> formula;
-	rule<const Formula*> formula_op;
-	rule<PointerSet<Formula>> formula_list;
+	rule<FormulaT> formula;
+	rule<FormulaT> formula_op;
+	rule<std::set<FormulaT>> formula_list;
 
 	rule<UninterpretedType> uninterpreted;
 
 	// Polynomial
-	rule<Polynomial> polynomial;
-	rule<std::pair<Polynomial::ConstructorOperation, std::vector<Polynomial>>> polynomial_op;
-	rule<Polynomial> polynomial_ite;
-	rule<Polynomial> polynomial_fun;
-	rule<Polynomial> polynomial_uf;
+	rule<Poly> polynomial;
+	rule<std::pair<Poly::ConstructorOperation, std::vector<Poly>>> polynomial_op;
+	rule<Poly> polynomial_ite;
+	rule<Poly> polynomial_fun;
+	rule<Poly> polynomial_uf;
 	// Main rule
 	rule<> main;
 	
@@ -134,7 +129,7 @@ public:
 	bool parse(std::istream& in, const std::string& filename);
 
 protected:
-	void add(const Formula* f);
+	void add(const FormulaT& f);
 	void check();
 	void declareConst(const std::string&, const Sort&);
 	void declareFun(const std::string& name, const std::vector<Sort>& args, const Sort& sort);
@@ -166,16 +161,16 @@ protected:
 	
 private:
 	smtrat::Logic mLogic;
-	PointerSet<Formula> mTheoryIteBindings;
-	PointerSet<Formula> mUninterpretedEqualities;
-	std::map<carl::Variable, std::tuple<const Formula*, Polynomial, Polynomial>> mTheoryItes;
+	std::set<FormulaT> mTheoryIteBindings;
+	std::set<FormulaT> mUninterpretedEqualities;
+	std::map<carl::Variable, std::tuple<FormulaT, Poly, Poly>> mTheoryItes;
 
 	struct Scope {
 	private:
 		qi::symbols<char, carl::Variable> var_bool;
 		qi::symbols<char, carl::Variable> var_theory;
-		qi::symbols<char, const Formula*> bind_bool;
-		qi::symbols<char, Polynomial> bind_theory;
+		qi::symbols<char, FormulaT> bind_bool;
+		qi::symbols<char, Poly> bind_theory;
 	public:
 		Scope(const SMTLIBParser& parser)
 		{
@@ -219,21 +214,21 @@ private:
 		mScopeStack.top().restore(*this);
 		mScopeStack.pop();
 	}
-	const Formula* mkConstraint(const Polynomial&, const Polynomial&, Relation);
-	Polynomial mkIteInExpr(const Formula* _condition, Polynomial& _then, Polynomial& _else);
-	const Formula* mkFormula(Type _type, PointerSet<Formula>& _subformulas);
-	const Formula* mkUFEquality(const UninterpretedType& lhs, const UninterpretedType& rhs);
+	FormulaT mkConstraint(const Poly&, const Poly&, Relation);
+	Poly mkIteInExpr(const FormulaT& _condition, Poly& _then, Poly& _else);
+	FormulaT mkFormula(carl::FormulaType _type, std::set<FormulaT>& _subformulas);
+	FormulaT mkUFEquality(const UninterpretedType& lhs, const UninterpretedType& rhs);
 	
 	carl::Variable addQuantifiedVariable(const std::string& _name, const boost::optional<carl::VariableType>& type);
 	carl::Variable addVariableBinding(const std::pair<std::string, Sort>&);
-	void addTheoryBinding(std::string& _varName, Polynomial& _polynomial);
-	void addBooleanBinding(std::string&, const Formula*);
+	void addTheoryBinding(std::string& _varName, Poly& _polynomial);
+	void addBooleanBinding(std::string&, const FormulaT&);
 
-	bool checkArguments(const std::string& name, const std::vector<carl::Variable>& types, const Arguments& args, std::map<carl::Variable, const Formula*>& boolAssignments, std::map<carl::Variable, Polynomial>& theoryAssignments);
-	const smtrat::Formula* applyBooleanFunction(const BooleanFunction& f, const Arguments& args);
-	const smtrat::Formula* applyUninterpretedBooleanFunction(const UninterpretedFunction& f, const Arguments& args);
-	Polynomial applyTheoryFunction(const TheoryFunction& f, const Arguments& args);
-	Polynomial applyUninterpretedTheoryFunction(const UninterpretedFunction& f, const Arguments& args);
+	bool checkArguments(const std::string& name, const std::vector<carl::Variable>& types, const Arguments& args, std::map<carl::Variable, const FormulaT&>& boolAssignments, std::map<carl::Variable, Poly>& theoryAssignments);
+	FormulaT applyBooleanFunction(const BooleanFunction& f, const Arguments& args);
+	FormulaT applyUninterpretedBooleanFunction(const UninterpretedFunction& f, const Arguments& args);
+	Poly applyTheoryFunction(const TheoryFunction& f, const Arguments& args);
+	Poly applyUninterpretedTheoryFunction(const UninterpretedFunction& f, const Arguments& args);
 	UFInstance applyUninterpretedFunction(const UninterpretedFunction& f, const Arguments& args);
 
 	void setSortParameters(const std::vector<std::string>& params) {

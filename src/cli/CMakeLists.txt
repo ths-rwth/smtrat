@@ -49,9 +49,6 @@ set_target_properties( smtratSolver PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_
 
 add_library( smtlibParser
 	${CMAKE_SOURCE_DIR}/src/cli/smtratSolver.cpp
-	${CMAKE_SOURCE_DIR}/src/lib/Formula.cpp
-	${CMAKE_SOURCE_DIR}/src/lib/ConstraintPool.cpp
-	${CMAKE_SOURCE_DIR}/src/lib/Constraint.cpp
 )
 
 # add linking libraries. This is an over-approximation.

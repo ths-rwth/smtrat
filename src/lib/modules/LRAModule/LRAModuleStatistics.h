@@ -83,11 +83,11 @@ namespace smtrat
             mAllChecksSizes += _formula.size();
         }
         
-        void add( const Constraint& )
+        void add( const ConstraintT& )
         {
         }
         
-        void remove( const Constraint& )
+        void remove( const ConstraintT& )
         {
         }
         

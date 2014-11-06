@@ -38,6 +38,7 @@
 #include <cln/cln.h>
 
 using namespace std;
+using namespace carl;
 
 namespace smtrat
 {
@@ -69,9 +70,9 @@ namespace smtrat
         mGeneratedModules.push_back( mpPrimaryBackend );
         mpModuleFactories = new map<const ModuleType, ModuleFactory*>();
         // inform it about all constraints
-        typedef void (*Func)( Module*, const Formula* );
-        Func f = [] ( Module* _module, const Formula* _constraint ) { _module->inform( _constraint ); };
-        FormulaPool::getInstance().forallDo<Module>( f, mpPrimaryBackend );
+        typedef void (*Func)( Module*, const FormulaT& );
+        Func f = [] ( Module* _module, const FormulaT& _constraint ) { _module->inform( _constraint ); };
+        FormulaPool<Poly>::getInstance().forallDo<Module>( f, mpPrimaryBackend );
     }
 
     // Destructor.
@@ -151,16 +152,16 @@ namespace smtrat
         _out << "(";
         if( !mpPrimaryBackend->infeasibleSubsets().empty() )
         {
-            const PointerSet<Formula>& infSubSet = *mpPrimaryBackend->infeasibleSubsets().begin();
+            const set<FormulaT>& infSubSet = *mpPrimaryBackend->infeasibleSubsets().begin();
             if( infSubSet.size() == 1 )
             {
-                _out << **infSubSet.begin();
+                _out << *infSubSet.begin();
             }
             else
             {
                 for( auto subFormula = infSubSet.begin(); subFormula != infSubSet.end(); ++subFormula )
                 {
-                    _out << **subFormula << endl;
+                    _out << *subFormula << endl;
                 }
             }
         }

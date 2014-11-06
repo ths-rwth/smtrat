@@ -13,12 +13,12 @@ namespace smtrat
 {
 	namespace groebner
 	{	
-		typedef std::map<carl::Variable, std::pair<Term, carl::BitVector> > RewriteRules;
+		typedef std::map<carl::Variable, std::pair<TermT, carl::BitVector> > RewriteRules;
 		
 		template<typename Polynomial>
 		static Polynomial rewritePolynomial(const Polynomial& inputPolynomial, const RewriteRules& rules)
 		{
-			std::map<carl::Variable, Term> substitutions;
+			std::map<carl::Variable, TermT> substitutions;
 
 			std::set<carl::Variable> vars;
 			carl::BitVector resultingReasons;

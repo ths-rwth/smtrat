@@ -56,7 +56,7 @@ namespace smtrat
         public Module
     {
         template<template<typename> class Operator>
-        using Contractor = carl::Contraction<Operator, Polynomial>;
+        using Contractor = carl::Contraction<Operator, Poly>;
         
         public:
 
@@ -74,18 +74,18 @@ namespace smtrat
             
             struct formulaPtrComp
             {
-                bool operator ()(const Formula* _lhs, const Formula* _rhs ) const
+                bool operator ()(const FormulaT& _lhs, const FormulaT& _rhs ) const
                 {
-                    assert(_lhs->getType() == CONSTRAINT);
-                    assert(_rhs->getType() == CONSTRAINT);
-                    return _lhs->constraint().id() < _rhs->constraint().id();
+                    assert(_lhs.getType() == carl::FormulaType::CONSTRAINT);
+                    assert(_rhs.getType() == carl::FormulaType::CONSTRAINT);
+                    return _lhs.constraint().id() < _rhs.constraint().id();
                 }
             };
             
             struct linearVariable
             {
-                const Formula*                           constraint;
-                const Constraint*                        origin;
+                FormulaT                           constraint;
+                const ConstraintT*                        origin;
             };
 
             struct weights
@@ -94,7 +94,7 @@ namespace smtrat
                 double                     weight;
             };
 
-            typedef FastPointerMap<Polynomial*, weights>                                WeightMap;
+            typedef FastPointerMap<Poly*, weights>                                WeightMap;
 
         private:
 
@@ -105,18 +105,18 @@ namespace smtrat
             std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> mActiveNonlinearConstraints; // nonlinear candidates considered
             std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> mActiveLinearConstraints; // linear candidates considered
             std::map<const LRAVariable*, ContractionCandidates>                 mLinearConstraints; // all linear candidates
-            std::map<const Constraint*, ContractionCandidates>                  mNonlinearConstraints; // all nonlinear candidates
+            std::map<const ConstraintT*, ContractionCandidates>                  mNonlinearConstraints; // all nonlinear candidates
             
             std::map<carl::Variable, icp::IcpVariable*>                                   mVariables; // list of occurring variables
             EvalDoubleIntervalMap                                                               mIntervals; // actual intervals relevant for contraction
             EvalRationalMap                                                                     mFoundSolution;
             std::set<std::pair<double, unsigned>, comp>                                         mIcpRelevantCandidates; // candidates considered for contraction 
             
-            FastPointerMap<Formula,const Formula*>                                              mLinearizations; // linearized constraint -> original constraint
-            FastPointerMap<Formula,const Formula*>                                              mDeLinearizations; // linearized constraint -> original constraint
-            FastMap<Polynomial, carl::Variable>                                                 mVariableLinearizations; // monome -> variable
-            std::map<carl::Variable, Polynomial>                                                mSubstitutions; // variable -> monome/variable
-            FastMap<Polynomial, Contractor<carl::SimpleNewton>>                                 mContractors;
+            FastMap<FormulaT,FormulaT>                                              mLinearizations; // linearized constraint -> original constraint
+            FastMap<FormulaT,FormulaT>                                              mDeLinearizations; // linearized constraint -> original constraint
+            FastMap<Poly, carl::Variable>                                                 mVariableLinearizations; // monome -> variable
+            std::map<carl::Variable, Poly>                                                mSubstitutions; // variable -> monome/variable
+            FastMap<Poly, Contractor<carl::SimpleNewton>>                                 mContractors;
             
             //#ifdef BOXMANAGEMENT
             icp::HistoryNode*                                                                   mHistoryRoot; // Root-Node of the state-tree
@@ -128,11 +128,11 @@ namespace smtrat
             RuntimeSettings*                                                                    mLraRuntimeSettings;
             LRAModule<LRASettings1>                                                             mLRA; // internal LRA module
             
-            std::set<const Constraint*>                                                         mCenterConstraints; // keeps actual centerConstaints for deletion
-            PointerSet<Formula>                                                                 mCreatedDeductions; // keeps pointers to the created deductions for deletion
+            std::set<const ConstraintT*>                                                         mCenterConstraints; // keeps actual centerConstaints for deletion
+            std::set<FormulaT>                                                                 mCreatedDeductions; // keeps pointers to the created deductions for deletion
             icp::ContractionCandidate*                                                          mLastCandidate; // the last applied candidate
             #ifndef BOXMANAGEMENT
-            std::queue<PointerSet<Formula> >                                                    mBoxStorage; // keeps the box before contraction
+            std::queue<std::set<FormulaT> >                                                    mBoxStorage; // keeps the box before contraction
             #endif
             bool                                                                                mIsIcpInitialized; // initialized ICPModule?
             unsigned                                                                            mCurrentId; // keeps the currentId of the state nodes
@@ -144,7 +144,7 @@ namespace smtrat
             std::fstream                                                                        icpLog;
             #endif
             #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
-            const Formula*                                                                      mCheckContraction;
+            FormulaT                                                                      mCheckContraction;
             #endif
             int                                                                                 mCountBackendCalls;
 
@@ -166,7 +166,7 @@ namespace smtrat
             ~ICPModule();
 
             // Interfaces.
-            bool inform( const Formula* );
+            bool inform( const FormulaT& );
             bool assertSubformula( ModuleInput::const_iterator );
             void removeSubformula( ModuleInput::const_iterator );
             Answer isConsistent();
@@ -189,7 +189,7 @@ namespace smtrat
              * @param _splitOccurred
              * @return 
              */
-            void addConstraint( const Formula* _formula );
+            void addConstraint( const FormulaT& _formula );
             
             /**
              * 
@@ -204,13 +204,13 @@ namespace smtrat
              * 
              * @param _formula
              */
-            void activateNonlinearConstraint( const Formula* _formula );
+            void activateNonlinearConstraint( const FormulaT& _formula );
             
             /**
              * 
              * @param _formula
              */
-            void activateLinearConstraint( const Formula* _formula, const Formula* _origin );
+            void activateLinearConstraint( const FormulaT& _formula, const FormulaT& _origin );
             
             /**
              * Performs a consistency check on the linearization of the received constraints.
@@ -236,14 +236,14 @@ namespace smtrat
             /**
              * Creates the non-linear contraction candidates from all items in mTemporaryMonomes and empties mTemporaryMonomes.
              */
-            Polynomial createNonlinearCCs( const Constraint* _constraint, const std::vector<Polynomial>& _tempMonomes );
+            Poly createNonlinearCCs( const ConstraintT* _constraint, const std::vector<Poly>& _tempMonomes );
 
             /**
              * Creates the linear contraction candidates corresponding to the given linear constraint.
              * @param _constraint
              * @param _origin
              */
-            void createLinearCCs( const Formula* _constraint, const Formula* _origin );
+            void createLinearCCs( const FormulaT& _constraint, const FormulaT& _origin );
             
             /**
              * Initiates weights for contractions   
@@ -319,13 +319,13 @@ namespace smtrat
              * 
              * @return 
              */
-            PointerSet<Formula> createPremiseDeductions();
+            std::set<FormulaT> createPremiseDeductions();
             
             /**
              * 
              * @return 
              */
-            PointerSet<Formula> createBoxFormula();
+            std::set<FormulaT> createBoxFormula();
                         
             /**
              * Checks if there is a need for a split and manages the splitting and branching in the
@@ -387,26 +387,26 @@ namespace smtrat
              * @param _reasons
              * @return 
              */
-            PointerSet<Formula> variableReasonHull( icp::set_icpVariable& _reasons );
+            std::set<FormulaT> variableReasonHull( icp::set_icpVariable& _reasons );
             
             /**
              * Compute hull of defining origins for set of constraints.
              * @param _map
              * @return 
              */
-            PointerSet<Formula> constraintReasonHull( const std::set<const Constraint*>& _reasons );
+            std::set<FormulaT> constraintReasonHull( const std::set<const ConstraintT*>& _reasons );
             
             
             /**
              * creates constraints for the actual bounds of the original variables.
              * @return 
              */
-            PointerSet<Formula> createConstraintsFromBounds( const EvalDoubleIntervalMap& _map );
+            std::set<FormulaT> createConstraintsFromBounds( const EvalDoubleIntervalMap& _map );
             
             /**
              * Parses obtained deductions from the LRA module and maps them to original constraints or introduces new ones.
              */
-            const Formula* transformDeductions( const Formula* _deduction );
+            FormulaT transformDeductions( const FormulaT& _deduction );
             
             /**
              * Sets the own infeasible subset according to the infeasible subset of the internal lra module.
@@ -437,7 +437,7 @@ namespace smtrat
             /**
              * generates and sets the infeasible subset
              */
-            PointerSet<Formula> collectReasons( icp::HistoryNode* _node );
+            std::set<FormulaT> collectReasons( icp::HistoryNode* _node );
             //#endif
             
             bool intervalsEmpty( bool _original = false) const;
