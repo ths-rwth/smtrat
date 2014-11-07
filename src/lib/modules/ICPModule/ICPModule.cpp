@@ -720,7 +720,7 @@ namespace smtrat
             writeBox();
             #endif
             #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
-            FormulaT* negatedContraction = new FormulaT(*mpReceivedFormula);
+            FormulaT negatedContraction = FormulaT( *mpReceivedFormula );
             GiNaCRA::evaldoubleintervalmap tmp = GiNaCRA::evaldoubleintervalmap();
             for ( auto constraintIt = mIntervals.begin(); constraintIt != mIntervals.end(); ++constraintIt )
                 tmp.insert((*constraintIt));

@@ -365,6 +365,14 @@ namespace smtrat
             return result;
         }
         
+        explicit operator FormulaT() const
+        {
+            std::set<FormulaT> subFormulas;
+            for( auto& fwo : *this )
+                subFormulas.insert( fwo.formula() );
+            return FormulaT( carl::FormulaType::AND, subFormulas );
+        }
+        
 //        friend std::ostream& operator<<( std::ostream& _out, const ModuleInput& _mi )
 //        {
 //            return _out << _mi.toString()

@@ -107,9 +107,9 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 			|	((qi::lit("implies") | "=>") > formula > formula)[qi::_val = px::construct<smtrat::FormulaT>(carl::FormulaType::IMPLIES, qi::_1, qi::_2)]
 			|	(qi::lit("let")[px::bind(&SMTLIBParser::pushScope, px::ref(*this))]
 				> ("(" > bindlist > ")" > formula)[px::bind(&SMTLIBParser::popScope, px::ref(*this)), qi::_val = qi::_1])
-			|	(qi::lit("exists")[px::bind(&SMTLIBParser::pushScope, px::ref(*this))] > "(" > *quantifiedVar > ")" > formula)[qi::_val = px::bind(&carl::newQuantifier, EXISTS, qi::_1, qi::_2), px::bind(&SMTLIBParser::popScope, px::ref(*this))]
-			|	(qi::lit("forall")[px::bind(&SMTLIBParser::pushScope, px::ref(*this))] > "(" > *quantifiedVar > ")" > formula)[qi::_val = px::bind(&carl::newQuantifier, FORALL, qi::_1, qi::_2), px::bind(&SMTLIBParser::popScope, px::ref(*this))]
-			|	("ite" >> (formula >> formula >> formula)[qi::_val = px::context<smtrat::FormulaT>(carl::FormulaType::ITE, qi::_1, qi::_2, qi::_3)])
+			|	(qi::lit("exists")[px::bind(&SMTLIBParser::pushScope, px::ref(*this))] > "(" > *quantifiedVar > ")" > formula)[qi::_val = px::construct<smtrat::FormulaT>(carl::FormulaType::EXISTS, std::move(qi::_1), qi::_2), px::bind(&SMTLIBParser::popScope, px::ref(*this))]
+			|	(qi::lit("forall")[px::bind(&SMTLIBParser::pushScope, px::ref(*this))] > "(" > *quantifiedVar > ")" > formula)[qi::_val = px::construct<smtrat::FormulaT>(carl::FormulaType::FORALL, std::move(qi::_1), qi::_2), px::bind(&SMTLIBParser::popScope, px::ref(*this))]
+			|	("ite" >> (formula >> formula >> formula)[qi::_val = px::construct<smtrat::FormulaT>(carl::FormulaType::ITE, qi::_1, qi::_2, qi::_3)])
 			|	(("!" > formula > *attribute)[px::bind(&annotateFormula, qi::_1, qi::_2), qi::_val = qi::_1])
 			|	((funmap_bool >> fun_arguments)[qi::_val = px::bind(&SMTLIBParser::applyBooleanFunction, px::ref(*this), qi::_1, qi::_2)])
 			|	((funmap_ufbool >> fun_arguments)[qi::_val = px::bind(&SMTLIBParser::applyUninterpretedBooleanFunction, px::ref(*this), qi::_1, qi::_2)])
@@ -549,7 +549,7 @@ void SMTLIBParser::addBooleanBinding(std::string& _varName, const FormulaT& _for
 	bind_bool.sym.add(_varName, _formula);
 }
 
-bool SMTLIBParser::checkArguments(const std::string& name, const std::vector<carl::Variable>& types, const Arguments& args, std::map<carl::Variable, const FormulaT>& boolAssignments, std::map<carl::Variable, Poly>& theoryAssignments) {
+bool SMTLIBParser::checkArguments(const std::string& name, const std::vector<carl::Variable>& types, const Arguments& args, std::map<carl::Variable, FormulaT>& boolAssignments, std::map<carl::Variable, Poly>& theoryAssignments) {
 	if (types.size() != args.size()) {
 		this->handler->error() << "The number of arguments for \"" << name << "\" does not match its declaration.";
 		return false;
@@ -570,12 +570,12 @@ bool SMTLIBParser::checkArguments(const std::string& name, const std::vector<car
 }
 
 FormulaT SMTLIBParser::applyBooleanFunction(const BooleanFunction& f, const Arguments& args) {
-	std::map<carl::Variable, const FormulaT> boolAssignments;
+	std::map<carl::Variable, FormulaT> boolAssignments;
 	std::map<carl::Variable, Poly> theoryAssignments;
 	if (!checkArguments(std::get<0>(f), std::get<1>(f), args, boolAssignments, theoryAssignments)) {
 		return nullptr;
 	}
-	return std::get<2>(f)->substitute(boolAssignments, theoryAssignments);
+	return std::get<2>(f).substitute(boolAssignments, theoryAssignments);
 }
 FormulaT SMTLIBParser::applyUninterpretedBooleanFunction(const carl::UninterpretedFunction& f, const Arguments& args) {
 	carl::Variable v = carl::newAuxiliaryBooleanVariable();
@@ -583,7 +583,7 @@ FormulaT SMTLIBParser::applyUninterpretedBooleanFunction(const carl::Uninterpret
 	return FormulaT(v);
 }
 Poly SMTLIBParser::applyTheoryFunction(const TheoryFunction& f, const Arguments& args) {
-	std::map<carl::Variable, const FormulaT> boolAssignments;
+	std::map<carl::Variable, FormulaT> boolAssignments;
 	std::map<carl::Variable, Poly> theoryAssignments;
 	if (!checkArguments(std::get<0>(f), std::get<1>(f), args, boolAssignments, theoryAssignments)) {
 		return smtrat::Poly();

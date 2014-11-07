@@ -253,7 +253,7 @@ struct SuccessHandlerPtr {
 		p.lastrule.str("");
 		p.lastrule << rule.name();
 		p.lastentity.str("");
-		p.lastentity << *entity;
+		p.lastentity << entity;
 		auto line_end = std::find(b, e, '\n');
 		std::cout << p.lastrule.str() << ": " << p.lastentity.str() << "\n\t" << std::string(b, line_end) << std::endl;
 	}

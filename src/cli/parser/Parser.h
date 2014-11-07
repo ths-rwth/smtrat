@@ -224,7 +224,7 @@ private:
 	void addTheoryBinding(std::string& _varName, Poly& _polynomial);
 	void addBooleanBinding(std::string&, const FormulaT&);
 
-	bool checkArguments(const std::string& name, const std::vector<carl::Variable>& types, const Arguments& args, std::map<carl::Variable, const FormulaT>& boolAssignments, std::map<carl::Variable, Poly>& theoryAssignments);
+	bool checkArguments(const std::string& name, const std::vector<carl::Variable>& types, const Arguments& args, std::map<carl::Variable, FormulaT>& boolAssignments, std::map<carl::Variable, Poly>& theoryAssignments);
 	FormulaT applyBooleanFunction(const BooleanFunction& f, const Arguments& args);
 	FormulaT applyUninterpretedBooleanFunction(const carl::UninterpretedFunction& f, const Arguments& args);
 	Poly applyTheoryFunction(const TheoryFunction& f, const Arguments& args);

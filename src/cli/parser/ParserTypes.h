@@ -52,10 +52,10 @@ typedef PositionIteratorType Iterator;
 
 
 typedef boost::variant<carl::UVariable, carl::UFInstance> UninterpretedType;
-typedef boost::variant<const FormulaT*, Poly, carl::UVariable, carl::UFInstance> Argument;
+typedef boost::variant<FormulaT, Poly, carl::UVariable, carl::UFInstance> Argument;
 typedef std::vector<Argument> Arguments;
 
-typedef std::tuple<std::string, std::vector<carl::Variable>, const FormulaT*> BooleanFunction;
+typedef std::tuple<std::string, std::vector<carl::Variable>, FormulaT> BooleanFunction;
 typedef std::tuple<std::string, std::vector<carl::Variable>, Poly> TheoryFunction;
 
 }

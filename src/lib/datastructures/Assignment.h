@@ -218,5 +218,5 @@ namespace smtrat
      *         1, if this formula is satisfied by the given assignment;
      *         2, otherwise.
      */
-    unsigned satisfies( const Model& _assignment, const FormulaT* _formula );
+    unsigned satisfies( const Model& _assignment, const FormulaT& _formula );
 }
