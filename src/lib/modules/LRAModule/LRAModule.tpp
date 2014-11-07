@@ -583,7 +583,7 @@ Return:
                 for( auto ratAss = rationalAssignment.begin(); ratAss != rationalAssignment.end(); ++ratAss )
                 {
                     Polynomial value = Polynomial( ratAss->second );
-                    Assignment assignment = vs::SqrtEx(value);
+                    ModelValue assignment = vs::SqrtEx(value);
                     mModel.insert(mModel.end(), std::make_pair(ratAss->first, assignment));
                 }
             }

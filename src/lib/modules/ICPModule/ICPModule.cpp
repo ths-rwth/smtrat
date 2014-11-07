@@ -1169,8 +1169,8 @@ namespace smtrat
             }
             else
             {
-                assert( mVariableLinearizations.find(Polynomial(*(*monomialIt)->monomial())) != mVariableLinearizations.end() );
-                linearizedConstraint += (*monomialIt)->coeff() * (*mVariableLinearizations.find( Polynomial(*(*monomialIt)->monomial() ))).second;
+                assert( mVariableLinearizations.find(Polynomial((*monomialIt)->monomial())) != mVariableLinearizations.end() );
+                linearizedConstraint += (*monomialIt)->coeff() * (*mVariableLinearizations.find( Polynomial((*monomialIt)->monomial() ))).second;
             }
         }
         mNonlinearConstraints.insert( pair<const Constraint*, ContractionCandidates>( _constraint, ccs ) );
@@ -1707,7 +1707,7 @@ namespace smtrat
                     if(  varIt != mVariables.end() && (*varIt).second->isOriginal() )
                     {
                         Polynomial value = Polynomial( assignmentIt->second );
-                        Assignment assignment = vs::SqrtEx(value);
+                        ModelValue assignment = vs::SqrtEx(value);
                         mModel.insert(std::make_pair(assignmentIt->first, assignment));
                     }
                 }
@@ -1720,7 +1720,7 @@ namespace smtrat
                     if(  varIt != mVariables.end() && (*varIt).second->isOriginal() )
                     {
                         Polynomial value = Polynomial( assignmentIt->second );
-                        Assignment assignment = vs::SqrtEx(value);
+                        ModelValue assignment = vs::SqrtEx(value);
                         mModel.insert( std::make_pair( assignmentIt->first, assignment ) );
                     }
                 }
