@@ -57,7 +57,7 @@ namespace smtrat
 //            const Formula* formulaQF = (*receivedSubformula)->toQF(mpManager->quantifiedVariables());
 //            const Formula* formulaToAssertInCnf = formulaQF->toCNF( true );
 //            cout << (**receivedSubformula) << endl;
-            FormulaT formulaToAssertInCnf = receivedSubformula->formula().toCNF( true, true );
+            FormulaT formulaToAssertInCnf = receivedSubformula->formula().toCNF( true, true, false );
             if( formulaToAssertInCnf.getType() == TRUE )
             {
                 // No need to add it.

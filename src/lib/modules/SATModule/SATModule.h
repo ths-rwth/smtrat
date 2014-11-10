@@ -125,7 +125,7 @@ namespace smtrat
                  * The constraint corresponding to this abstraction. It is NULL, if the literal for which we 
                  * store this abstraction does actually not belong to an abstraction.
                  */
-                FormulaT constraint;
+                FormulaT reabstraction;
                 
                 // The origins of this constraint. Usually it is its own origin, but the origins can be extended during solving.
                 std::vector<std::set<FormulaT>>* origins;
@@ -135,12 +135,12 @@ namespace smtrat
                  * @param _position The end of the passed formula of this module.
                  * @param _constraint The constraint to abstract.
                  */
-                Abstraction( ModuleInput::iterator _position, const FormulaT& _constraint ):
+                Abstraction( ModuleInput::iterator _position, const FormulaT& _reabstraction ):
                     consistencyRelevant( false ),
                     isDeduction( true ),
                     updateInfo( 0 ),
                     position( _position ),
-                    constraint( _constraint ),
+                    reabstraction( _reabstraction ),
                     origins( new std::vector<std::set<FormulaT>>() )
                 {}
             };

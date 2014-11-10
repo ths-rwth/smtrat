@@ -489,7 +489,11 @@ namespace smtrat
             {
                 Var var = newVar( true, true, content.activity() );
                 mBooleanVarMap[content.boolean()] = var;
-                mBooleanConstraintMap.push( make_pair( Abstraction( passedFormulaEnd(), FormulaT( carl::FormulaType::TRUE ) ), Abstraction( passedFormulaEnd(), FormulaT( carl::FormulaType::TRUE ) ) ) );
+                std::set<FormulaT> originsSet;
+                originsSet.insert( _origin );
+                mBooleanConstraintMap.push( make_pair( 
+                    Abstraction( passedFormulaEnd(), content ), 
+                    Abstraction( passedFormulaEnd(), negated ? _formula : FormulaT( FormulaType::NOT, _formula ) ) ) );
                 l = mkLit( var, negated );
             }
             if( !_origin.isTrue() )
@@ -522,7 +526,7 @@ namespace smtrat
                     assert( abstr.origins->empty() || std::find( abstr.origins->begin(), abstr.origins->end(), originsSet ) == abstr.origins->end() );
                     if( !abstr.consistencyRelevant )
                     {
-                        addConstraintToInform( abstr.constraint );
+                        addConstraintToInform( abstr.reabstraction );
                         if( (sign(constraintLiteralPair->second.front()) && assigns[var( constraintLiteralPair->second.front() )] == l_False)
                             || (!sign(constraintLiteralPair->second.front()) && assigns[var( constraintLiteralPair->second.front() )] == l_True) )
                         {
@@ -671,7 +675,7 @@ namespace smtrat
     {
         if( _abstr.updateInfo < 0 )
         {
-            assert( !_abstr.constraint.isTrue() );
+            assert( !_abstr.reabstraction.isTrue() );
             if( _abstr.position != rPassedFormula().end() )
             {
                 if( removeOrigins( _abstr.position, *_abstr.origins ).second )
@@ -683,10 +687,10 @@ namespace smtrat
         }
         else if( _abstr.updateInfo > 0 )
         {
-            assert( !_abstr.constraint.isTrue() );
-            _abstr.constraint.setDeducted( _abstr.isDeduction );
-            assert( _abstr.constraint.getType() == FormulaType::UEQ || _abstr.constraint.constraint().isConsistent() == 2 );
-            auto res = addSubformulaToPassedFormula( _abstr.constraint, *_abstr.origins );
+            assert( !_abstr.reabstraction.isTrue() );
+            _abstr.reabstraction.setDeducted( _abstr.isDeduction );
+            assert( _abstr.reabstraction.getType() == FormulaType::UEQ || (_abstr.reabstraction.getType() == FormulaType::CONSTRAINT && _abstr.reabstraction.constraint().isConsistent() == 2) );
+            auto res = addSubformulaToPassedFormula( _abstr.reabstraction, *_abstr.origins );
             _abstr.position = res.first;
             mChangedPassedFormula = true;
         }
@@ -701,11 +705,11 @@ namespace smtrat
             if( assigns[k] != l_Undef )
             {
                 const Abstraction& abstr = assigns[k] == l_False ? mBooleanConstraintMap[k].second : mBooleanConstraintMap[k].first;
-                if( !abstr.constraint.isTrue() && abstr.consistencyRelevant && (abstr.constraint.getType() == FormulaType::UEQ || abstr.constraint.constraint().isConsistent() != 1)) 
+                if( !abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (abstr.reabstraction.getType() == FormulaType::UEQ || abstr.reabstraction.constraint().isConsistent() != 1)) 
                 {
-                    if( !rPassedFormula().contains( abstr.constraint ) )
+                    if( !rPassedFormula().contains( abstr.reabstraction ) )
                     {
-                        cout << "does not contain  " << abstr.constraint << endl;
+                        cout << "does not contain  " << abstr.reabstraction << endl;
                         return false;
                     }
                 }
@@ -1164,8 +1168,8 @@ SetWatches:
         {
             if( value( c[i] ) == l_True )
                 return true;
-            const FormulaT& constraint = sign( c[i] ) ? mBooleanConstraintMap[var(c[i])].second.constraint : mBooleanConstraintMap[var(c[i])].first.constraint;
-            if( !constraint.isTrue() && (constraint.getType() == FormulaType::UEQ || constraint.constraint().isConsistent() == 1))
+            const FormulaT& reabstraction = sign( c[i] ) ? mBooleanConstraintMap[var(c[i])].second.reabstraction : mBooleanConstraintMap[var(c[i])].first.reabstraction;
+            if( reabstraction.isTrue() )
                 return true;
         }
         return false;
@@ -1188,7 +1192,7 @@ SetWatches:
                     if( abstr.updateInfo >=0 && --abstr.updateInfo < 0 )
                         mChangedBooleans.push_back( x );
                 }
-                else if( !abstr.constraint.isTrue() ) abstr.updateInfo = 0;
+                else if( abstr.consistencyRelevant ) abstr.updateInfo = 0;
                 assigns[x]  = l_Undef;
                 if( (phase_saving > 1 || (phase_saving == 1)) && c > trail_lim.last() )
                     polarity[x] = sign( trail[c] );
@@ -1747,7 +1751,7 @@ SetWatches:
         assert( value( p ) == l_Undef );
         assigns[var( p )] = lbool( !sign( p ) );
         Abstraction& abstr = sign( p ) ? mBooleanConstraintMap[var( p )].second : mBooleanConstraintMap[var( p )].first;
-        if( !abstr.constraint.isTrue() && abstr.consistencyRelevant && (abstr.constraint.getType() == FormulaType::UEQ || abstr.constraint.constraint().isConsistent() != 1)) 
+        if( !abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (abstr.reabstraction.getType() == FormulaType::UEQ || abstr.reabstraction.constraint().isConsistent() != 1)) 
         {
             if( ++abstr.updateInfo > 0 )
                 mChangedBooleans.push_back( var( p ) );
@@ -1757,7 +1761,7 @@ SetWatches:
         if( Settings::allow_theory_propagation && Settings::detect_deductions )
         {
             // Check whether the lit is a deduction via a learned clause.
-            if( from != CRef_Undef && ca[from].type() == DEDUCTED_CLAUSE && !sign( p ) && !abstr.constraint.isTrue()  )
+            if( from != CRef_Undef && ca[from].type() == DEDUCTED_CLAUSE && !sign( p ) && abstr.consistencyRelevant  )
             {
                 Clause& c           = ca[from];
                 bool    isDeduction = true;
@@ -2048,9 +2052,9 @@ NextClause:
         {
             if( assigns[i] == l_Undef ) continue;
             Abstraction& abstr = assigns[i] == l_True ? mBooleanConstraintMap[i].first : mBooleanConstraintMap[i].second;
-            if( !abstr.constraint.isTrue() && abstr.constraint.getType() == FormulaType::CONSTRAINT )
+            if( abstr.reabstraction.getType() == FormulaType::CONSTRAINT )
             {
-                const ConstraintT& constr = abstr.constraint.constraint();
+                const ConstraintT& constr = abstr.reabstraction.constraint();
                 unsigned constraintConsistency = constr.isConsistent();
                 if( constraintConsistency == 0 )
                 {
@@ -2058,7 +2062,7 @@ NextClause:
                 }
                 else if( constraintConsistency == 2 )
                 {
-                    addedConstraint = FormulaT::addConstraintBound( constraintBoundsAnd, abstr.constraint, true );
+                    addedConstraint = FormulaT::addConstraintBound( constraintBoundsAnd, abstr.reabstraction, true );
                     if( addedConstraint.isFalse() )
                     {
                         ok = false;
@@ -2185,8 +2189,7 @@ NextClause:
                     Abstraction& abstrB = sign( iter->second.front() ) ? mBooleanConstraintMap[var( iter->second.front() )].second : mBooleanConstraintMap[var( iter->second.front() )].first;
                     if( !abstrB.consistencyRelevant )
                     {
-                        assert( !abstrB.constraint.isTrue() );
-                        informBackends( abstrB.constraint );
+                        informBackends( abstrB.reabstraction );
                     }
                     abstrB.origins->insert( abstrB.origins->end(), abstrA.origins->begin(), abstrA.origins->end() );
                     abstrB.consistencyRelevant = true;
@@ -2250,7 +2253,7 @@ NextClause:
                     maybeStillInPassedFormula = false;
                 if( _replaceBy.constraint().isConsistent() == 2 )
                 {
-                    abstr.constraint = _replaceBy;
+                    abstr.reabstraction = _replaceBy;
                     abstr.position = passedFormulaEnd();
                     if( abstr.updateInfo <= 0 )
                         if( ++abstr.updateInfo > 0 )
@@ -2264,7 +2267,7 @@ NextClause:
                     #ifdef DEBUG_SAT_APPLY_VALID_SUBS
                     cout << __LINE__ << endl;
                     #endif
-                    abstr.constraint = NULL;
+                    abstr.reabstraction = NULL;
                     abstr.position = passedFormulaEnd();
                     abstr.updateInfo = 0;
                 }
@@ -2274,7 +2277,7 @@ NextClause:
                 #ifdef DEBUG_SAT_APPLY_VALID_SUBS
                 cout << __LINE__ << endl;
                 #endif
-                abstr.constraint = _replaceBy;
+                abstr.reabstraction = _replaceBy;
                 if( _replaceBy.constraint().isConsistent() != 2 )
                 {
                     abstr.updateInfo = 0;

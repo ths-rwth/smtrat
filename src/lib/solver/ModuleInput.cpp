@@ -50,6 +50,26 @@ namespace smtrat
         }
         return result;
     }
+    
+    unsigned ModuleInput::satisfiedBy( const Model& _assignment ) const
+    {
+        EvalRationalMap rationalAssigns;
+        getRationalAssignmentsFromModel( _assignment, rationalAssigns );
+        unsigned result = 1;
+        for( const FormulaWithOrigins& fwo : *this )
+        {
+            switch( satisfies( _assignment, rationalAssigns, fwo.formula() ) )
+            {
+                case 0:
+                    return 0;
+                case 1:
+                    break;
+                default:
+                    if( result != 2 ) result = 2;
+            }
+        }
+        return result;
+    }
         
     ModuleInput::iterator ModuleInput::find( const FormulaT& _formula )
     {

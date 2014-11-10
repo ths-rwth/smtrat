@@ -230,14 +230,7 @@ namespace smtrat
          *         2, if it cannot be determined cheaply, whether the given model conflicts or satisfies 
          *            the conjunction of the stored formulas.
          */
-        unsigned satisfiedBy( const Model& _assignment ) const
-        {
-            EvalRationalMap rationalAssigns;
-            if( getRationalAssignmentsFromModel( _assignment, rationalAssigns ) )
-                return satisfiedBy( rationalAssigns );
-            else
-                return 2; // TODO: Check also models having square roots as value.
-        }
+        unsigned satisfiedBy( const Model& _assignment ) const;
         
         /**
          * @param _assignment The assignment to check conjunction of the stored formulas against.
