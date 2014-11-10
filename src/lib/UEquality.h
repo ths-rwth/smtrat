@@ -83,7 +83,7 @@ namespace smtrat
                  */
                 bool operator()(const UVariable&) const
                 {
-                    return true;
+                    return false;
                 }
                 
                 /**
@@ -92,7 +92,7 @@ namespace smtrat
                  */
                 bool operator()(const UFInstance&) const 
                 {
-                    return false;
+                    return true;
                 }
             };
 
