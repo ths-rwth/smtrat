@@ -339,7 +339,11 @@ namespace smtrat
                     rhsResult = sv.id();
                 }
                 // check eq.negated() <=> sv(lhs) != sv(rhs)
-                return eq.negated() ? lhsResult != rhsResult : lhsResult == rhsResult;
+				if (eq.negated()) {
+					return (lhsResult != rhsResult) ? 1 : 0;
+				} else {
+					return (lhsResult == rhsResult) ? 1 : 0;
+				}
             }
             default:
             {
