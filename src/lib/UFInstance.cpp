@@ -22,7 +22,7 @@
  * @file UFInstance.cpp
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  * @since 2014-10-22
- * @version 2014-10-23
+ * @version 2014-11-10
  */
 
 #include "UFInstance.h"
@@ -40,6 +40,13 @@ namespace smtrat
     const vector<UVariable>& UFInstance::args() const
     {
        return UFInstancesManager::getInstance().getArgs( *this );
+    }
+    
+    std::string UFInstance::toString( bool _infix, bool _friendlyNames ) const
+    {
+        std::stringstream ss;
+        UFInstancesManager::getInstance().print( ss, *this, _infix, _friendlyNames );
+        return ss.str();
     }
     
     ostream& operator<<( ostream& _out, const UFInstance& _ufic )

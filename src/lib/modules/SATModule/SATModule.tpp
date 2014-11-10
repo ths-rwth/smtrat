@@ -42,7 +42,7 @@
  * @file SATModule.tpp
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  * @since 2012-01-18
- * @version 2014-10-02
+ * @version 2014-11-10
  */
 
 #include "SATModule.h"
@@ -1164,7 +1164,7 @@ SetWatches:
             if( value( c[i] ) == l_True )
                 return true;
             const Formula* constraint = sign( c[i] ) ? mBooleanConstraintMap[var(c[i])].second.constraint : mBooleanConstraintMap[var(c[i])].first.constraint;
-            if( constraint != NULL && (constraint->getType() == UEQ || constraint->constraint().isConsistent() == 1))
+            if( constraint != NULL && constraint->isTrue() )
                 return true;
         }
         return false;

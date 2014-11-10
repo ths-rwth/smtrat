@@ -22,7 +22,7 @@
  * @file UVariable.h
  * @author Florian Corzilius
  * @since 2014-10-20
- * @version 2014-10-22
+ * @version 2014-11-10
  */
 
 #pragma once
@@ -30,6 +30,7 @@
 #include "Common.h"
 #include "Sort.h"
 #include "SortManager.h"
+#include "VariablePool.h"
 
 namespace smtrat
 {
@@ -103,6 +104,14 @@ namespace smtrat
             bool operator<( const UVariable& _uvar ) const
             {
                 return mVar < _uvar();
+            }
+            
+            /**
+             * @return The string representation of this uninterpreted variable.
+             */
+            std::string toString( bool _friendlyNames ) const
+            {
+                return variablePool().getVariableName( mVar, _friendlyNames );
             }
             
             /**

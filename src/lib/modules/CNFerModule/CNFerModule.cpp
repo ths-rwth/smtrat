@@ -21,8 +21,8 @@
 /*
  * File:   CNFerModule.cpp
  * Author: Florian Corzilius
- *
- * Created on 02. May 2012, 20:53
+ * @since:   2012-05-02
+ * @version: 2014-11-10
  */
 
 #include "../../solver/Manager.h"
@@ -56,7 +56,7 @@ namespace smtrat
 //            const Formula* formulaQF = (*receivedSubformula)->toQF(mpManager->quantifiedVariables());
 //            const Formula* formulaToAssertInCnf = formulaQF->toCNF( true );
 //            cout << (**receivedSubformula) << endl;
-            const Formula* formulaToAssertInCnf = receivedSubformula->formula().toCNF( true, true );
+            const Formula* formulaToAssertInCnf = receivedSubformula->formula().toCNF( true, true, false );
             if( formulaToAssertInCnf->getType() == TTRUE )
             {
                 // No need to add it.
