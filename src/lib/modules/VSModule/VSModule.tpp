@@ -756,7 +756,7 @@ namespace smtrat
             while( !state->isRoot() )
             {
                 const Substitution& sub = state->substitution();
-                Assignment ass;
+                ModelValue ass;
                 if( sub.type() == Substitution::MINUS_INFINITY )
                     ass = SqrtEx( Poly( mVariableVector.at( state->treeDepth()-1 ).first ) );
                 else
@@ -785,7 +785,7 @@ namespace smtrat
             // real domain, we leave at as a parameter, and, if it has the integer domain we assign 0 to it.
             for( auto var = allVarsInRoot.begin(); var != allVarsInRoot.end(); ++var )
             {
-                Assignment ass;
+                ModelValue ass;
                 ass = SqrtEx( var->getType() == carl::VariableType::VT_INT ? ZERO_POLYNOMIAL : Poly( *var ) );
                 // Note, that this assignment won't take effect if the variable got an assignment by a backend module.
                 mModel.insert(std::make_pair(*var, ass));

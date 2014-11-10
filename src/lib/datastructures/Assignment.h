@@ -40,12 +40,139 @@
 namespace smtrat
 {
 
+    class ModelVariable : public boost::variant<carl::Variable,carl::UninterpretedFunction>
+    {
+        /**
+         * Base type we are deriving from.
+         */
+        typedef boost::variant<carl::Variable,carl::UninterpretedFunction> Super;
+        
+    public:
+        /**
+         * Default constructor.
+         */
+        ModelVariable(): Super()
+        {}
+
+        /**
+         * Initializes the ModelVariable from some valid type of the underlying variant.
+         */
+        template<typename T>
+        ModelVariable(const T& _t): Super(_t)
+        {}
+
+        /**
+         * Assign some value to the underlying variant.
+         * @param t Some value.
+         * @return *this.
+         */
+        template<typename T>
+        ModelVariable& operator=( const T& _t )
+        {
+            Super::operator=(_t);
+            return *this;
+        }
+        
+        /**
+         * @return true, if the stored value is a variable.
+         */
+        bool isVariable() const
+        {
+            return type() == typeid(carl::Variable);
+        }
+        
+        /**
+         * @return true, if the stored value is a function.
+         */
+        bool isFunction() const
+        {
+            return type() == typeid(carl::UninterpretedFunction);
+        }
+        
+        /**
+         * @return The stored value as a variable.
+         */
+        carl::Variable::Arg asVariable() const
+        {
+            assert( isVariable() );
+            return boost::get<carl::Variable>(*this);
+        }
+        
+        /**
+         * @return The stored value as a function.
+         */
+        const carl::UninterpretedFunction& asFunction() const
+        {
+            assert( isFunction() );
+            return boost::get<carl::UninterpretedFunction>(*this);
+        }
+        
+        /**
+         * @return true, if the first argument is a variable and the second is a function 
+         *                or if both are variables and the first is smaller (lower id)
+         *                or if both are function and the first smaller (lower id).
+         */
+        bool operator<( const ModelVariable& _mvar ) const
+        {
+            if( isVariable() && _mvar.isFunction() )
+                return true;
+            if( isFunction() && _mvar.isVariable() )
+                return false;
+            if( isFunction() && _mvar.isFunction() )
+                return asFunction() < _mvar.asFunction();
+            return asVariable() < _mvar.asVariable();
+        }
+        
+        /**
+         * @return true, if the first and the second are either both variables or both functions 
+         *               and in the first case the variables are equal (equal ids)
+         *                or in the second case the functions are equal (equal ids).
+         */
+        bool operator==( const ModelVariable& _mvar ) const
+        {
+            if( isVariable() != _mvar.isVariable() )
+                return false;
+            if( isFunction() )
+                return asFunction() == _mvar.asFunction();
+            return asVariable() == _mvar.asVariable();
+        }
+    };
+
+    /**
+     * @return true, if the first argument is a variable and the second is a function 
+     *                or if both are variables and the first is smaller (lower id)
+     *                or if both are function and the first smaller (lower id).
+     */
+    bool operator<( const ModelVariable& _mvar, const carl::Variable& _var );
+    
+    /**
+     * @return true, if the first argument is a variable and the second is a function 
+     *                or if both are variables and the first is smaller (lower id)
+     *                or if both are function and the first smaller (lower id).
+     */
+    bool operator<( const carl::Variable& _var, const ModelVariable& _mvar );
+    
+
+    /**
+     * @return true, if the first argument is a variable and the second is a function 
+     *                or if both are variables and the first is smaller (lower id)
+     *                or if both are function and the first smaller (lower id).
+     */
+    bool operator<( const ModelVariable& _mvar, const carl::UninterpretedFunction& _uf );
+    
+    /**
+     * @return true, if the first argument is a variable and the second is a function 
+     *                or if both are variables and the first is smaller (lower id)
+     *                or if both are function and the first smaller (lower id).
+     */
+    bool operator<( const carl::UninterpretedFunction& _uf, const ModelVariable& _mvar );
+    
     /**
      * This class represents some value that is assigned to some variable.
      * It is implemented as subclass of a boost::variant.
      * Possible value types are bool, vs::SqrtEx and carl::RealAlgebraicNumberPtr.
      */
-    class Assignment: public boost::variant<bool, vs::SqrtEx, carl::RealAlgebraicNumberPtr<smtrat::Rational>, SortValue, UFModel>
+    class ModelValue : public boost::variant<bool, vs::SqrtEx, carl::RealAlgebraicNumberPtr<smtrat::Rational>, SortValue, UFModel>
     {
         /**
          * Base type we are deriving from.
@@ -56,14 +183,14 @@ namespace smtrat
         /**
          * Default constructor.
          */
-        Assignment(): Super()
+        ModelValue(): Super()
         {}
 
         /**
          * Initializes the Assignment from some valid type of the underlying variant.
          */
         template<typename T>
-        Assignment(const T& _t): Super(_t)
+        ModelValue(const T& _t): Super(_t)
         {}
 
         /**
@@ -72,7 +199,7 @@ namespace smtrat
          * @return *this.
          */
         template<typename T>
-        Assignment& operator=( const T& _t )
+        ModelValue& operator=( const T& _t )
         {
             Super::operator=(_t);
             return *this;
@@ -88,27 +215,27 @@ namespace smtrat
          * @param _ass Another Assignment.
          * @return *this == a.
          */
-        bool operator==( const Assignment& _ass )
+        bool operator==( const ModelValue& _mval ) const
         {
-            if( isBool() && _ass.isBool() )
+            if( isBool() && _mval.isBool() )
             {
-                return asBool() == _ass.asBool();
+                return asBool() == _mval.asBool();
             }
-            else if( isSqrtEx() && _ass.isSqrtEx() )
+            else if( isSqrtEx() && _mval.isSqrtEx() )
             {
-                return asSqrtEx() == _ass.asSqrtEx();
+                return asSqrtEx() == _mval.asSqrtEx();
             } 
-            else if( isRAN() & _ass.isRAN() )
+            else if( isRAN() & _mval.isRAN() )
             {
-                return std::equal_to<carl::RealAlgebraicNumberPtr<smtrat::Rational>>()(asRAN(), _ass.asRAN());
+                return std::equal_to<carl::RealAlgebraicNumberPtr<smtrat::Rational>>()(asRAN(), _mval.asRAN());
             }
-            else if( isSortValue() & _ass.isSortValue() )
+            else if( isSortValue() & _mval.isSortValue() )
             {
-                return asSortValue() == _ass.asSortValue();
+                return asSortValue() == _mval.asSortValue();
             }
-            else if( isUFModel() & _ass.isUFModel() )
+            else if( isUFModel() & _mval.isUFModel() )
             {
-                return asUFModel() == _ass.asUFModel();
+                return asUFModel() == _mval.asUFModel();
             }
             return false;
         }
@@ -197,9 +324,9 @@ namespace smtrat
             return boost::get<UFModel>(*this);
         }
     };
-
+    
     /// Data type for a assignment assigning a variable, represented as a string, a real algebraic number, represented as a string.
-    typedef std::map<const carl::Variable, Assignment> Model;
+    typedef std::map<ModelVariable,ModelValue> Model;
     
     /**
      * Obtains all assignments which can be transformed to rationals and stores them in the passed map.
@@ -208,8 +335,6 @@ namespace smtrat
      * @return true, if the entire model could be transformed to rational assignments. (not possible if, e.g., sqrt is contained)
      */
     bool getRationalAssignmentsFromModel( const Model& _model, EvalRationalMap& _rationalAssigns );
-    
-    
             
     /**
      * @param _assignment The assignment for which to check whether the given formula is satisfied by it.
@@ -219,4 +344,16 @@ namespace smtrat
      *         2, otherwise.
      */
     unsigned satisfies( const Model& _assignment, const FormulaT& _formula );
+    
+    bool isPartOf( const EvalRationalMap& _assignment, const Model& _model );
+    
+    /**
+     * @param _model The assignment for which to check whether the given formula is satisfied by it.
+     * @param _assignment The map to store the rational assignments in.
+     * @param _formula The formula to be satisfied.
+     * @return 0, if this formula is violated by the given assignment;
+     *         1, if this formula is satisfied by the given assignment;
+     *         2, otherwise.
+     */
+    unsigned satisfies( const Model& _model, const EvalRationalMap& _assignment, const FormulaT& _formula );
 }

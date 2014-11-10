@@ -377,7 +377,7 @@ namespace smtrat
 			// bound-independent part of the model
 			std::vector<carl::Variable> vars(mCAD.getVariables());
 			for (unsigned varID = 0; varID < vars.size(); ++varID) {
-				Assignment ass = mRealAlgebraicSolution[varID];
+				ModelValue ass = mRealAlgebraicSolution[varID];
 				mModel.insert(std::make_pair(vars[varID], ass));
 			}
 			// bounds for variables which were not handled in the solution point
@@ -388,7 +388,7 @@ namespace smtrat
 					vars.erase(v); // shall never be found again
 				} else {
 					// variable not handled by CAD, use the midpoint of the bounding interval for the assignment
-					Assignment ass = b.second.center();
+					ModelValue ass = b.second.center();
 					mModel.insert(std::make_pair(b.first, ass));
 				}
 			}

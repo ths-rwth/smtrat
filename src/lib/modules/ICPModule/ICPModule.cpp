@@ -1708,7 +1708,7 @@ namespace smtrat
                     if(  varIt != mVariables.end() && (*varIt).second->isOriginal() )
                     {
                         Poly value = Poly( assignmentIt->second );
-                        Assignment assignment = vs::SqrtEx(value);
+                        ModelValue assignment = vs::SqrtEx(value);
                         mModel.insert(std::make_pair(assignmentIt->first, assignment));
                     }
                 }
@@ -1721,7 +1721,7 @@ namespace smtrat
                     if(  varIt != mVariables.end() && (*varIt).second->isOriginal() )
                     {
                         Poly value = Poly( assignmentIt->second );
-                        Assignment assignment = vs::SqrtEx(value);
+                        ModelValue assignment = vs::SqrtEx(value);
                         mModel.insert( std::make_pair( assignmentIt->first, assignment ) );
                     }
                 }
