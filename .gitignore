@@ -1,6 +1,7 @@
 /build/**
 /nbproject/
 **/config.h
+**/CompileInfo.cpp
 /src/lib/modules/ModuleType.h
 /src/lib/modules/ModuleType.cpp
 /src/lib/modules/MODULETYPES.txt
