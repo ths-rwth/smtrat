@@ -222,7 +222,7 @@ namespace smtrat
              * Maps each Minisat variable to a pair of Abstractions, one contains the abstraction information of the literal
              * being the variable and one contains the abstraction information of the literal being the variables negation.
              */
-            typedef Minisat::vec<std::pair<Abstraction,Abstraction>> BooleanConstraintMap;
+            typedef Minisat::vec<std::pair<Abstraction*,Abstraction*>> BooleanConstraintMap;
             
             /// Maps the clauses in the received formula to the corresponding Minisat clause.
             typedef std::map<FormulaT, Minisat::CRef> FormulaClauseMap;
