@@ -25,7 +25,7 @@
  * @author Ulrich Loup
  * @author Sebastian Junges
  * @since 2012-02-09
- * @version 2013-10-21
+ * @version 2014-11-10
  */
 
 
@@ -669,6 +669,10 @@ namespace smtrat
         }
         else if( mType == CONSTRAINT )
             return (_init + mpConstraint->toString( _resolveUnequal, _infix, _friendlyNames ) + activity);
+        else if( mType == UEQ )
+        {
+            return (_init + mUIEquality.toString( _infix, _friendlyNames ) + activity);
+        }
         else if( isAtom() )
             return (_init + FormulaTypeToString( mType ) + activity);
         else if( mType == NOT )
@@ -764,12 +768,6 @@ namespace smtrat
             result += this->mpQuantifierContent->mpFormula->toString(_withActivity, _resolveUnequal, _init, _oneline, _infix, _friendlyNames);
             result += ")";
             return result;
-        }
-		else if( mType == UEQ )
-        {
-            std::stringstream ss;
-			ss << this->mUIEquality;
-			return ss.str();
         }
         assert( mType == AND || mType == OR || mType == IFF || mType == XOR );
         string stringOfType = FormulaTypeToString( mType );
@@ -1171,7 +1169,7 @@ namespace smtrat
         return res;
     }
 
-    const Formula* Formula::toCNF( bool _keepConstraints, bool _simplifyConstraintCombinations ) const
+    const Formula* Formula::toCNF( bool _keepConstraints, bool _simplifyConstraintCombinations, bool _tseitinWithEquivalence ) const
     {
         if( !_simplifyConstraintCombinations && propertyHolds( PROP_IS_IN_CNF ) )
         {
@@ -1445,11 +1443,14 @@ namespace smtrat
                                 }
                                 for( const Formula* subsubformula : tmpSubSubformulas )
                                     subformulasToTransformTmp.push_back( newFormula( OR, iter.first->second->second, subsubformula ) );
-                                PointerSet<Formula> tmpSubformulas;
-                                tmpSubformulas.insert( iter.first->second->first );
-                                for( const Formula* subsubformula : tmpSubSubformulas )
-                                    tmpSubformulas.insert( newNegation( subsubformula ) );
-                                subformulasToTransformTmp.push_back( newFormula( OR, tmpSubformulas ) );
+                                if( _tseitinWithEquivalence )
+                                {
+                                    PointerSet<Formula> tmpSubformulas;
+                                    tmpSubformulas.insert( iter.first->second->first );
+                                    for( const Formula* subsubformula : tmpSubSubformulas )
+                                        tmpSubformulas.insert( newNegation( subsubformula ) );
+                                    subformulasToTransformTmp.push_back( newFormula( OR, tmpSubformulas ) );
+                                }
                                 subsubformulas.insert( iter.first->second->first );
                                 break;
                             }
@@ -1550,13 +1551,24 @@ namespace smtrat
             }
         }
         if( _simplifyConstraintCombinations && swapConstraintBounds( constraintBoundsAnd, resultSubformulas, true ) )
+        {
             goto ReturnFalse;
+        }
         if( resultSubformulas.empty() )
-            return trueFormula();
+        {
+            const Formula* result = trueFormula();
+            return result;
+        }
         else if( resultSubformulas.size() == 1 )
-            return *resultSubformulas.begin();
+        {
+            const Formula* result = *resultSubformulas.begin();
+            return result;
+        }
         else
-            return newFormula( AND, move( resultSubformulas ) );
+        {
+            const Formula* result = newFormula( AND, move( resultSubformulas ) );
+            return result;
+        }
         ReturnFalse:
             while( !tseitinVars.empty() ) // TODO: why only here?
             {
@@ -1564,7 +1576,8 @@ namespace smtrat
                 tseitinVars.erase( tseitinVars.begin() );
                 delete toDel;
             }
-            return falseFormula();
+            const Formula* result = falseFormula();
+            return result;
     }
             
     const Formula* Formula::substitute( const map<carl::Variable, const Formula*>& _booleanSubstitutions, const map<carl::Variable, Polynomial>& _arithmeticSubstitutions ) const

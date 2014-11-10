@@ -22,7 +22,7 @@
  * @file UFInstance.h
  * @author Florian Corzilius
  * @since 2014-10-20
- * @version 2014-10-23
+ * @version 2014-11-10
  */
 
 #pragma once
@@ -110,6 +110,11 @@ namespace smtrat
             {
                 return mId < _ufun.id();
             }
+            
+            /**
+             * @return The string representation of this uninterpreted function instance.
+             */
+            std::string toString( bool _infix, bool _friendlyNames ) const;
             
             /**
              * Prints the given uninterpreted function instance on the given output stream.

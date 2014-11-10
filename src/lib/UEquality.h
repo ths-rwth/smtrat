@@ -23,7 +23,7 @@
  * @author Gereon Kremer <gereon.kremer@cs.rwth-aachen.de>
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  * @since 2014-10-20
- * @version 2014-10-22
+ * @version 2014-11-10
  */
 
 #pragma once
@@ -369,6 +369,43 @@ namespace smtrat
                     return rhsAsUF() < _ueq.rhsAsUF();
                 }
                 return false;
+            }
+            
+            std::string toString( bool _infix, bool _friendlyNames ) const
+            {
+                std::string result = "";
+                if( !_infix )
+                {
+                    if( negated() )
+                        result += "(!= ";
+                    else
+                        result += "(= ";
+                }
+                if( lhsIsUV() )
+                {
+                    result += lhsAsUV().toString( _friendlyNames );
+                }
+                else
+                {
+                    result += lhsAsUF().toString( _infix, _friendlyNames );
+                }
+                if( _infix )
+                    result += (negated() ? "!=" : "=");
+                else
+                    result += " ";
+                if( rhsIsUV() )
+                {
+                    result += rhsAsUV().toString( _friendlyNames );
+                }
+                else
+                {
+                    result += rhsAsUF().toString( _infix, _friendlyNames );
+                }
+                if( !_infix )
+                {
+                    result += ")";
+                }
+                return result;
             }
             
             /**

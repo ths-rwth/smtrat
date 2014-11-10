@@ -22,7 +22,7 @@
  * @file ModuleInput.cpp
  *
  * @author   Florian Corzilius
- * @version: 2014-05-16
+ * @version: 2014-11-10
  */
 
 #include "ModuleInput.h"
@@ -38,6 +38,26 @@ namespace smtrat
         for( const FormulaWithOrigins& fwo : *this )
         {
             switch( fwo.formula().satisfiedBy( _assignment ) )
+            {
+                case 0:
+                    return 0;
+                case 1:
+                    break;
+                default:
+                    if( result != 2 ) result = 2;
+            }
+        }
+        return result;
+    }
+    
+    unsigned ModuleInput::satisfiedBy( const Model& _assignment ) const
+    {
+        EvalRationalMap rationalAssigns;
+        getRationalAssignmentsFromModel( _assignment, rationalAssigns );
+        unsigned result = 1;
+        for( const FormulaWithOrigins& fwo : *this )
+        {
+            switch( satisfies( _assignment, rationalAssigns, fwo.formula() ) )
             {
                 case 0:
                     return 0;

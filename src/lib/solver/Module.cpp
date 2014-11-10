@@ -26,7 +26,7 @@
  * @author   Sebastian Junges
  * @author   Henrik Schmitz
  * @since:   2012-01-18
- * @version: 2013-01-11
+ * @version: 2014-11-10
  */
 
 #include <fstream>
@@ -469,7 +469,11 @@ namespace smtrat
     unsigned Module::checkModel() const
     {
         this->updateModel();
-        return mpReceivedFormula->satisfiedBy( mModel );
+//        printReceivedFormula();
+//        printModel();
+        unsigned test = mpReceivedFormula->satisfiedBy( mModel );
+//        std::cout << "results in " << test << std::endl;
+        return test;
     }
 
     void Module::getInfeasibleSubsets()

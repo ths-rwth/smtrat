@@ -25,7 +25,7 @@
  * @author Ulrich Loup
  * @author Sebastian Junges
  * @since 2012-02-09
- * @version 2013-10-21
+ * @version 2014-11-10
  */
 
 #ifndef SMTRAT_FORMULA_H
@@ -36,7 +36,7 @@
 #include <set>
 #include <boost/dynamic_bitset.hpp>
 #include "Condition.h"
-#include "Constraint.h"
+#include "ConstraintPool.h"
 #include "UEquality.h"
 
 namespace smtrat
@@ -301,6 +301,22 @@ namespace smtrat
             Type getType() const
             {
                 return mType;
+            }
+            
+            /**
+             * @return true, if the formula represents TRUE.
+             */
+            bool isTrue() const
+            {
+                return mType == TTRUE || (mType == CONSTRAINT && mpConstraint == constraintPool().consistentConstraint());
+            }
+            
+            /**
+             * @return true, if the formula represents FALSE.
+             */
+            bool isFalse() const
+            {
+                return mType == FFALSE || (mType == CONSTRAINT && mpConstraint == constraintPool().consistentConstraint());
             }
             
             /**
@@ -880,8 +896,13 @@ namespace smtrat
              * @param _keepConstraints A flag indicating whether to keep the constraints as they are, or to
              *                          resolve constraints p!=0 to (or p<0 p>0) and to resolve negations in
              *                          front of constraints, e.g., (not p<0) gets p>=0.
+             * @param _simplifyConstraintCombinations A flag, which is true, if simplifications shall be applied to conjunctions
+             *                                        disjunctions of constraints.
+             * @param _tseitinWithEquivalence A flag, which is true, if variables, which are introduced by the tseitin encoding
+             *                                are set to be equivalent to the formula they represent. Otherwise, they imply the formula,
+             *                                which is also valid, as the current formula context is in NNF.
              */
-            const Formula* toCNF( bool _keepConstraints = true, bool _simplifyConstraintCombinations = false ) const;
+            const Formula* toCNF( bool _keepConstraints = true, bool _simplifyConstraintCombinations = false, bool _tseitinWithEquivalence = true ) const;
             
             /**
              * Substitutes all occurrences of the given arithmetic variables in this formula by the given polynomials.

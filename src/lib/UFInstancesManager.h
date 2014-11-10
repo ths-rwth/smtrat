@@ -22,7 +22,7 @@
  * @file UFInstancesManager.h
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  * @since 2014-10-22
- * @version 2014-10-23
+ * @version 2014-11-10
  */
 
 #pragma once
@@ -240,7 +240,7 @@ class UFInstancesManager : public carl::Singleton<UFInstancesManager>
          * @param  _ufi The uninterpreted function instance to print.
          * @return The output stream after printing the given uninterpreted function instance on it.
          */
-        std::ostream& print( std::ostream& _out, const UFInstance& _ufi ) const;
+        std::ostream& print( std::ostream& _out, const UFInstance& _ufi, bool _infix = false, bool _friendlyNames = true ) const;
         
         /**
          * Gets the uninterpreted function instance with the given name, domain, arguments and codomain.
