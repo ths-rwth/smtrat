@@ -40,7 +40,7 @@
 #include "ModuleFactory.h"
 
 // Flag activating some informative and not exaggerated output about module calls.
-//#define MODULE_VERBOSE
+#define MODULE_VERBOSE
 //#define MODULE_VERBOSE_INTEGERS
 //#define DEBUG_MODULE_CALLS_IN_SMTLIB
 
@@ -141,7 +141,7 @@ namespace smtrat
     bool Module::inform( const FormulaT& _constraint )
     {
         #ifdef MODULE_VERBOSE
-        cout << __func__ << " in " << this << " with name " << moduleName( mType ) << ": " << *_constraint << endl;
+        cout << __func__ << " in " << this << " with name " << moduleName( mType ) << ": " << _constraint << endl;
         #endif
         addConstraintToInform( _constraint );
         return true;

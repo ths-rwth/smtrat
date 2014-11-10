@@ -135,7 +135,7 @@ namespace smtrat
                  * @param _position The end of the passed formula of this module.
                  * @param _constraint The constraint to abstract.
                  */
-                Abstraction( ModuleInput::iterator _position, const FormulaT& _constraint = NULL ):
+                Abstraction( ModuleInput::iterator _position, const FormulaT& _constraint ):
                     consistencyRelevant( false ),
                     isDeduction( true ),
                     updateInfo( 0 ),

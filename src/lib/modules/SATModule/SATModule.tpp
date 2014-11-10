@@ -489,7 +489,7 @@ namespace smtrat
             {
                 Var var = newVar( true, true, content.activity() );
                 mBooleanVarMap[content.boolean()] = var;
-                mBooleanConstraintMap.push( make_pair( Abstraction( passedFormulaEnd() ), Abstraction( passedFormulaEnd() ) ) );
+                mBooleanConstraintMap.push( make_pair( Abstraction( passedFormulaEnd(), FormulaT( carl::FormulaType::TRUE ) ), Abstraction( passedFormulaEnd(), FormulaT( carl::FormulaType::TRUE ) ) ) );
                 l = mkLit( var, negated );
             }
             if( !_origin.isTrue() )
