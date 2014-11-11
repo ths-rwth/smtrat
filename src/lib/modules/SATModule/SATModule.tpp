@@ -2599,16 +2599,10 @@ NextClause:
         _out << _init << " BooleanConstraintMap" << endl;
         for( int k = 0; k < mBooleanConstraintMap.size(); ++k )
         {
-            if( mBooleanConstraintMap[k].first.constraint != NULL )
-            {
-                _out << _init << "   " << k << "  ->  " << *mBooleanConstraintMap[k].first.constraint;
-                _out << "  (" << setw( 7 ) << activity[k] << ") [" << mBooleanConstraintMap[k].first.updateInfo << "]" << endl;
-            }
-            if( mBooleanConstraintMap[k].second.constraint != NULL )
-            {
-                _out << _init << "  ~" << k << "  ->  " << *mBooleanConstraintMap[k].second.constraint;
-                _out << "  (" << setw( 7 ) << activity[k] << ") [" << mBooleanConstraintMap[k].second.updateInfo << "]" << endl;
-            }
+            _out << _init << "   " << k << "  ->  " << mBooleanConstraintMap[k].first->reabstraction;
+            _out << "  (" << setw( 7 ) << activity[k] << ") [" << mBooleanConstraintMap[k].first->updateInfo << "]" << endl;
+            _out << _init << "  ~" << k << "  ->  " << mBooleanConstraintMap[k].second->reabstraction;
+            _out << "  (" << setw( 7 ) << activity[k] << ") [" << mBooleanConstraintMap[k].second->updateInfo << "]" << endl;
         }
     }
 
@@ -2724,16 +2718,16 @@ NextClause:
             {
                 _out << "l_True";
                 // if it is not a Boolean variable
-                if( mBooleanConstraintMap[pos].first.constraint != NULL && mBooleanConstraintMap[pos].first.consistencyRelevant )
-                    _out << "   ( " << *mBooleanConstraintMap[pos].first.constraint << " )";
+                if( mBooleanConstraintMap[pos].first->consistencyRelevant )
+                    _out << "   ( " << mBooleanConstraintMap[pos].first->reabstraction << " )";
                 _out << endl;
             }
             else if( assigns[pos] == l_False )
             {
                 _out << "l_False";
                 // if it is not a Boolean variable
-                if( mBooleanConstraintMap[pos].second.constraint != NULL && mBooleanConstraintMap[pos].second.consistencyRelevant )
-                    _out << "   ( " << *mBooleanConstraintMap[pos].second.constraint << " )";
+                if( mBooleanConstraintMap[pos].second->consistencyRelevant )
+                    _out << "   ( " << mBooleanConstraintMap[pos].second->reabstraction << " )";
                 _out << endl;
             }
             else
@@ -2765,15 +2759,15 @@ NextClause:
             tmpStream << (sign( trail[pos] ) ? "-" : "") << var( trail[pos] );
             _out << setw( 6 ) << tmpStream.str() << " @ " << level;
             // if it is not a Boolean variable
-            if( assigns[var(trail[pos])] == l_True && mBooleanConstraintMap[var(trail[pos])].first.constraint != NULL && mBooleanConstraintMap[var(trail[pos])].first.consistencyRelevant  )
+            if( assigns[var(trail[pos])] == l_True && mBooleanConstraintMap[var(trail[pos])].first->consistencyRelevant  )
             {
-                _out << "   ( " << *mBooleanConstraintMap[var(trail[pos])].first.constraint << " )";
-                _out << " [" << mBooleanConstraintMap[var(trail[pos])].first.updateInfo << "]";
+                _out << "   ( " << mBooleanConstraintMap[var(trail[pos])].first->reabstraction << " )";
+                _out << " [" << mBooleanConstraintMap[var(trail[pos])].first->updateInfo << "]";
             }
-            else if( assigns[var(trail[pos])] == l_False && mBooleanConstraintMap[var(trail[pos])].second.constraint != NULL && mBooleanConstraintMap[var(trail[pos])].second.consistencyRelevant  )
+            else if( assigns[var(trail[pos])] == l_False && mBooleanConstraintMap[var(trail[pos])].second->consistencyRelevant  )
             {
-                _out << "   ( " << *mBooleanConstraintMap[var(trail[pos])].second.constraint << " )";
-                _out << " [" << mBooleanConstraintMap[var(trail[pos])].second.updateInfo << "]";
+                _out << "   ( " << mBooleanConstraintMap[var(trail[pos])].second->reabstraction << " )";
+                _out << " [" << mBooleanConstraintMap[var(trail[pos])].second->updateInfo << "]";
             }
             _out << endl;
         }
