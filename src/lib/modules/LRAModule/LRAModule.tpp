@@ -1523,7 +1523,7 @@ Return:
         _out << _init << "Linear constraints:" << endl;
         for( auto iter = mLinearConstraints.begin(); iter != mLinearConstraints.end(); ++iter )
         {
-            _out << _init << "   " << (*iter)->toString() << endl;
+            _out << _init << "   " << iter->toString() << endl;
         }
     }
 
@@ -1533,7 +1533,7 @@ Return:
         _out << _init << "Nonlinear constraints:" << endl;
         for( auto iter = mNonlinearConstraints.begin(); iter != mNonlinearConstraints.end(); ++iter )
         {
-            _out << _init << "   " << (*iter)->toString() << endl;
+            _out << _init << "   " << iter->toString() << endl;
         }
     }
 

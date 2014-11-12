@@ -2134,7 +2134,7 @@ namespace smtrat
         for( auto cond = mFormulaConditionMap.begin(); cond != mFormulaConditionMap.end(); ++cond )
         {
             _out << _init << "    ";
-            _out << cond->first->toString( false, 0, "", true, true, true );
+            _out << cond->first.toString( false, 0, "", true, true, true );
             _out << " <-> ";
             cond->second->print( _out );
             _out << endl;
