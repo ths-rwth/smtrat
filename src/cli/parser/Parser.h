@@ -61,6 +61,7 @@ public:
 	
 	DeclaredSymbolParser<FormulaT> bind_bool;
 	DeclaredSymbolParser<Poly> bind_theory;
+	DeclaredSymbolParser<UninterpretedType> bind_uninterpreted;
 	
 	// Basic rules
 	Skipper skipper;
@@ -221,8 +222,9 @@ private:
 	
 	carl::Variable addQuantifiedVariable(const std::string& _name, const boost::optional<carl::VariableType>& type);
 	carl::Variable addVariableBinding(const std::pair<std::string, carl::Sort>&);
-	void addTheoryBinding(std::string& _varName, Poly& _polynomial);
+	void addTheoryBinding(std::string& _varName, Poly&);
 	void addBooleanBinding(std::string&, const FormulaT&);
+	void addUninterpretedBinding(std::string&, const UninterpretedType&);
 
 	bool checkArguments(const std::string& name, const std::vector<carl::Variable>& types, const Arguments& args, std::map<carl::Variable, FormulaT>& boolAssignments, std::map<carl::Variable, Poly>& theoryAssignments);
 	FormulaT applyBooleanFunction(const BooleanFunction& f, const Arguments& args);

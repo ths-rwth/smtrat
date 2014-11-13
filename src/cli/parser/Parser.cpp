@@ -43,6 +43,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 	binding = symbol[qi::_a = qi::_1] > (
 			polynomial[px::bind(&SMTLIBParser::addTheoryBinding, px::ref(*this), qi::_a, qi::_1)]
 		|	formula[px::bind(&SMTLIBParser::addBooleanBinding, px::ref(*this), qi::_a, qi::_1)]
+		|	uninterpreted[px::bind(&SMTLIBParser::addUninterpretedBinding, px::ref(*this), qi::_a, qi::_1)]
 	);
 	binding.name("binding");
 	
@@ -53,6 +54,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 	
 	uninterpreted = (
 			var_uninterpreted[qi::_val = qi::_1]
+		|	bind_uninterpreted[qi::_val = qi::_1]
 		|	(qi::lit("(") >> funmap_uf >> fun_arguments >> qi::lit(")"))[qi::_val = px::bind(&SMTLIBParser::applyUninterpretedFunction, px::ref(*this), qi::_1, qi::_2)]
 	);
 	uninterpreted.name("uninterpreted argument");
@@ -547,6 +549,11 @@ void SMTLIBParser::addTheoryBinding(std::string& _varName, Poly& _polynomial) {
 void SMTLIBParser::addBooleanBinding(std::string& _varName, const FormulaT& _formula) {
 	assert(this->isSymbolFree(_varName));
 	bind_bool.sym.add(_varName, _formula);
+}
+
+void SMTLIBParser::addUninterpretedBinding(std::string& _varName, const UninterpretedType& _uninterpreted) {
+	assert(this->isSymbolFree(_varName));
+	bind_uninterpreted.sym.add(_varName, _uninterpreted);
 }
 
 bool SMTLIBParser::checkArguments(const std::string& name, const std::vector<carl::Variable>& types, const Arguments& args, std::map<carl::Variable, FormulaT>& boolAssignments, std::map<carl::Variable, Poly>& theoryAssignments) {
