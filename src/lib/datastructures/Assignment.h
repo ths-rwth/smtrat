@@ -40,12 +40,12 @@
 namespace smtrat
 {
 
-    class ModelVariable : public boost::variant<carl::Variable,carl::UninterpretedFunction>
+    class ModelVariable : public boost::variant<carl::Variable,carl::UVariable,carl::UninterpretedFunction>
     {
         /**
          * Base type we are deriving from.
          */
-        typedef boost::variant<carl::Variable,carl::UninterpretedFunction> Super;
+        typedef boost::variant<carl::Variable,carl::UVariable,carl::UninterpretedFunction> Super;
         
     public:
         /**
@@ -82,6 +82,14 @@ namespace smtrat
         }
         
         /**
+         * @return true, if the stored value is a variable.
+         */
+        bool isUVariable() const
+        {
+            return type() == typeid(carl::UVariable);
+        }
+        
+        /**
          * @return true, if the stored value is a function.
          */
         bool isFunction() const
@@ -96,6 +104,15 @@ namespace smtrat
         {
             assert( isVariable() );
             return boost::get<carl::Variable>(*this);
+        }
+        
+        /**
+         * @return The stored value as a variable.
+         */
+        const carl::UVariable& asUVariable() const
+        {
+            assert( isUVariable() );
+            return boost::get<carl::UVariable>(*this);
         }
         
         /**
@@ -114,13 +131,21 @@ namespace smtrat
          */
         bool operator<( const ModelVariable& _mvar ) const
         {
-            if( isVariable() && _mvar.isFunction() )
+           if( isVariable() )
+            {
+                if( _mvar.isVariable() ) return asVariable() < _mvar.asVariable();
                 return true;
-            if( isFunction() && _mvar.isVariable() )
-                return false;
-            if( isFunction() && _mvar.isFunction() )
-                return asFunction() < _mvar.asFunction();
-            return asVariable() < _mvar.asVariable();
+            }
+            if( isUVariable() )
+            {
+                if( _mvar.isVariable() ) return false;
+                if( _mvar.isFunction() ) return true;
+                assert( isUVariable() );
+                return asUVariable() < _mvar.asUVariable();
+            }
+            assert( isFunction() );
+            if( _mvar.isFunction() ) return asFunction() < _mvar.asFunction();
+            return false;
         }
         
         /**
@@ -130,11 +155,20 @@ namespace smtrat
          */
         bool operator==( const ModelVariable& _mvar ) const
         {
-            if( isVariable() != _mvar.isVariable() )
+            if( isVariable() )
+            {
+                if( _mvar.isVariable() ) return asVariable() == _mvar.asVariable();
                 return false;
-            if( isFunction() )
+            }
+            if( isUVariable() )
+            {
+                if( _mvar.isUVariable() ) return asUVariable() == _mvar.asUVariable();
+                return false;
+            }
+            assert( isFunction() );
+            if( _mvar.isFunction() )
                 return asFunction() == _mvar.asFunction();
-            return asVariable() == _mvar.asVariable();
+            return false;
         }
     };
 
@@ -152,6 +186,19 @@ namespace smtrat
      */
     bool operator<( const carl::Variable& _var, const ModelVariable& _mvar );
     
+    /**
+     * @return true, if the first argument is a variable and the second is a function 
+     *                or if both are variables and the first is smaller (lower id)
+     *                or if both are function and the first smaller (lower id).
+     */
+    bool operator<( const ModelVariable& _mvar, const carl::UVariable& _var );
+    
+    /**
+     * @return true, if the first argument is a variable and the second is a function 
+     *                or if both are variables and the first is smaller (lower id)
+     *                or if both are function and the first smaller (lower id).
+     */
+    bool operator<( const carl::UVariable& _var, const ModelVariable& _mvar );
 
     /**
      * @return true, if the first argument is a variable and the second is a function 

@@ -43,6 +43,20 @@ namespace smtrat
         return true;
     }
     
+    bool operator<( const ModelVariable& _mvar, const carl::UVariable& _uv )
+    {
+        if( _mvar.isUVariable() )
+            return _mvar.asUVariable() < _uv;
+        return !_mvar.isFunction();
+    }
+    
+    bool operator<( const carl::UVariable& _uv, const ModelVariable& _mvar )
+    {
+        if( _mvar.isUVariable() )
+            return _uv < _mvar.asUVariable();
+        return _mvar.isFunction();
+    }
+    
     bool operator<( const ModelVariable& _mvar, const carl::UninterpretedFunction& _uf )
     {
         if( _mvar.isFunction() )
@@ -282,7 +296,7 @@ namespace smtrat
                 // get sortvalue for lhs and rhs
                 if( eq.lhsIsUV() )
                 {
-                    auto iter = _model.find( eq.lhsAsUV()() );
+                    auto iter = _model.find( eq.lhsAsUV() );
                     if( iter == _model.end() )
                         return 2;
                     assert( iter->second.isSortValue() );
@@ -311,7 +325,7 @@ namespace smtrat
                 }
                 if( eq.rhsIsUV() )
                 {
-                    auto iter = _model.find( eq.rhsAsUV()() );
+                    auto iter = _model.find( eq.rhsAsUV() );
                     if( iter == _model.end() )
                         return 2;
                     assert( iter->second.isSortValue() );
