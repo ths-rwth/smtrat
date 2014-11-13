@@ -156,9 +156,9 @@ namespace smtrat
             mUpperbounds( Variable<T>::BoundSet() ),
             mLowerbounds( Variable<T>::BoundSet() )
         {
-            mUpperbounds.insert( new Bound<T>( NULL, this, Bound<T>::STRICT_UPPER_BOUND ) );
+            mUpperbounds.insert( new Bound<T>( nullptr, this, Bound<T>::STRICT_UPPER_BOUND ) );
             mpSupremum = *mUpperbounds.begin();
-            mLowerbounds.insert( new Bound<T>( NULL, this, Bound<T>::STRICT_LOWER_BOUND ) );
+            mLowerbounds.insert( new Bound<T>( nullptr, this, Bound<T>::STRICT_LOWER_BOUND ) );
             mpInfimum = *mLowerbounds.begin();
         }
 
