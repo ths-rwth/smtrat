@@ -36,8 +36,8 @@ namespace smtrat
             mpVariable( _variable ),
             mpOrigins( new std::set<T>() )
         {
-            if( _limit == nullptr )
-                mpOrigins->insert( nullptr );
+            if( _limit == NULL )
+                mpOrigins->insert( T() );
         }
 
         template<typename T>
