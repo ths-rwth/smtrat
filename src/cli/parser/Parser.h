@@ -66,6 +66,7 @@ public:
 	
 	DeclaredSymbolParser<const Formula*> bind_bool;
 	DeclaredSymbolParser<Polynomial> bind_theory;
+	DeclaredSymbolParser<UninterpretedType> bind_uninterpreted;
 	
 	// Basic rules
 	Skipper skipper;
@@ -228,6 +229,7 @@ private:
 	carl::Variable addVariableBinding(const std::pair<std::string, Sort>&);
 	void addTheoryBinding(std::string& _varName, Polynomial& _polynomial);
 	void addBooleanBinding(std::string&, const Formula*);
+	void addUninterpretedBinding(std::string&, const UninterpretedType&);
 
 	bool checkArguments(const std::string& name, const std::vector<carl::Variable>& types, const Arguments& args, std::map<carl::Variable, const Formula*>& boolAssignments, std::map<carl::Variable, Polynomial>& theoryAssignments);
 	const smtrat::Formula* applyBooleanFunction(const BooleanFunction& f, const Arguments& args);
