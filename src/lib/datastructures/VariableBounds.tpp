@@ -37,7 +37,7 @@ namespace smtrat
             mpOrigins( new std::set<T>() )
         {
             if( _limit == NULL )
-                mpOrigins->insert( NULL );
+                mpOrigins->insert( T() );
         }
 
         template<typename T>
