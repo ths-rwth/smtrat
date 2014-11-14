@@ -1627,8 +1627,8 @@ namespace smtrat
             return;
         }
         // Determine the minimum covering sets of the conflict sets, i.e. the infeasible subsets of the root.
-        ConditionSetSet minCoverSets = ConditionSetSet();
-        ConditionSetSetSet confSets  = ConditionSetSetSet();
+        ConditionSetSet minCoverSets;
+        ConditionSetSetSet confSets;
         State::ConflictSets::iterator nullConfSet = mpStateTree->rConflictSets().find( NULL );
         if( nullConfSet != mpStateTree->rConflictSets().end() && !_includeInconsistentTestCandidates )
             confSets.insert( nullConfSet->second.begin(), nullConfSet->second.end() );
