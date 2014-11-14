@@ -27,11 +27,11 @@
 
 \input{generalframework}
 
-\input{embeddingats}
+\input{embedding}
 
 \input{implementingamodul}
 
-\input{composingats}
+\input{composingasolver}
 
 
 \end{document}
