@@ -1627,8 +1627,8 @@ namespace smtrat
             return;
         }
         // Determine the minimum covering sets of the conflict sets, i.e. the infeasible subsets of the root.
-        ConditionSetSet minCoverSets = ConditionSetSet();
-        ConditionSetSetSet confSets  = ConditionSetSetSet();
+        ConditionSetSet minCoverSets;
+        ConditionSetSetSet confSets;
         State::ConflictSets::iterator nullConfSet = mpStateTree->rConflictSets().find( NULL );
         if( nullConfSet != mpStateTree->rConflictSets().end() && !_includeInconsistentTestCandidates )
             confSets.insert( nullConfSet->second.begin(), nullConfSet->second.end() );
@@ -1639,11 +1639,21 @@ namespace smtrat
         assert( !minCoverSets.empty() );
         // Change the globally stored infeasible subset to the smaller one.
         mInfeasibleSubsets.clear();
+//        std::cout << rReceivedFormula().size() << " input constraints:" << std::endl << "{" << std::endl;
+//        for( auto iter = rReceivedFormula().begin(); iter != rReceivedFormula().end(); ++iter )
+//            std::cout << "   " << iter->formula() << std::endl;
+//        std::cout << "}" << std::endl;
+//        std::cout << std::endl << "Infeasible subsets:" << std::endl;
         for( auto minCoverSet = minCoverSets.begin(); minCoverSet != minCoverSets.end(); ++minCoverSet )
         {
             assert( !minCoverSet->empty() );
             mInfeasibleSubsets.push_back( getReasons( *minCoverSet ) );
+//            std::cout << "{" << std::endl;
+//            for( const Formula* f : mInfeasibleSubsets.back() )
+//                std::cout << "   " << *f << std::endl;
+//            std::cout << "} with size " << mInfeasibleSubsets.back().size() << std::endl;
         }
+//        std::cout << std::endl << std::endl;
         assert( !mInfeasibleSubsets.empty() );
         assert( !mInfeasibleSubsets.back().empty() );
     }

@@ -191,7 +191,7 @@ namespace smtrat
             // Remove the received formula from the set of origins.
             if( mpPassedFormula->removeOrigin( passedSubformula, _receivedSubformula->pFormula() ) )
             {
-                passedSubformula = mpPassedFormula->erase( passedSubformula );
+                passedSubformula = eraseSubformulaFromPassedFormula( passedSubformula );
             }
             else
             {
@@ -202,15 +202,11 @@ namespace smtrat
         vec_set_const_pFormula::iterator infSubSet = mInfeasibleSubsets.begin();
         while( infSubSet != mInfeasibleSubsets.end() )
         {
-            PointerSet<Formula>::iterator infSubformula = infSubSet->begin();
-            while( infSubformula != infSubSet->end() )
-            {
-                if( *infSubformula == *_receivedSubformula )
-                    break;
-                ++infSubformula;
-            }
+            PointerSet<Formula>::iterator infSubformula = infSubSet->find(_receivedSubformula->pFormula());
             if( infSubformula != infSubSet->end() )
+            {
                 infSubSet = mInfeasibleSubsets.erase( infSubSet );
+            }
             else
                 ++infSubSet;
         }
@@ -469,10 +465,7 @@ namespace smtrat
     unsigned Module::checkModel() const
     {
         this->updateModel();
-//        printReceivedFormula();
-//        printModel();
         unsigned test = mpReceivedFormula->satisfiedBy( mModel );
-//        std::cout << "results in " << test << std::endl;
         return test;
     }
 
@@ -913,7 +906,9 @@ namespace smtrat
             for( auto subFormula : infSubset )
             {
                 if( !mpReceivedFormula->contains( subFormula ) )
+                {
                     return false;
+                }
             }
         }
         return true;
