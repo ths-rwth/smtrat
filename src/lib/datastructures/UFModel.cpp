@@ -109,17 +109,17 @@ namespace smtrat
         _out << "(define-fun " << _ufm.uf.name() << " (";
 		// Print function signature
 		std::size_t id = 1;
-		for (auto arg: _ufm.uf.domain()) {
+		for (const auto& arg: _ufm.uf.domain()) {
 			if (id > 1) _out << " ";
 			_out << "(x!" << id << " " << arg << ")";
 			id++;
 		}
 		_out << ") " << _ufm.uf.codomain() << " ";
 		// Print implementation
-		for (auto instance: _ufm) {
+		for (const auto& instance: _ufm) {
 			_out << "(ite (and ";
 			std::size_t id = 1;
-			for (auto param: instance.first) {
+			for (const auto& param: instance.first) {
 				if (id > 0) _out << " ";
 				_out << "(= x!" << id << " " << param << ")";
 				id++;
@@ -127,7 +127,7 @@ namespace smtrat
 			_out << ") " << instance.second << " ";
 		}
 		_out << _ufm.begin()->second;
-		for (auto inst: _ufm) _out << ")";
+		for (const auto& inst: _ufm) _out << ")";
 		_out << ")";
 		return _out;
     }

@@ -1047,7 +1047,7 @@ namespace smtrat
                 else
                 {
                     assert( ass->first.isFunction() );
-                    _out << ass->second << endl;
+                    _out << ass->second.asUFModel() << endl;
                 }
             }
             _out << ")" << endl;
