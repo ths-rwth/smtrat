@@ -53,7 +53,7 @@ class UFModel : private std::map<std::vector<SortValue>,SortValue>
          * @param _sortValue The mode of an uninterpreted function to copy.
          */
         UFModel( const UFModel& _ufm ):
-            std::map<std::vector<SortValue>,SortValue>( _ufm )
+            std::map<std::vector<SortValue>,SortValue>( _ufm ), uf(_ufm.uf)
         {}
 
         bool extend( const std::vector<SortValue>& _args, const SortValue& _value );
