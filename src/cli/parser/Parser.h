@@ -247,6 +247,9 @@ private:
 	void clearSortParameters() {
 		sort.parameters.clear();
 	}
+	void errorMessage(const std::string& msg) {
+		std::cerr << "Parser error: " << msg << std::endl;
+	}
 		
 public:
 	std::stringstream lastrule;
