@@ -40,4 +40,8 @@ namespace smtrat
         }
         return SortValue( _sort, res.first->second );
     }
+	SortValue SortValueManager::defaultSortValue( const Sort& _sort )
+	{
+		return SortValue( _sort, 0 );
+	}
 }
