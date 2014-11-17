@@ -27,31 +27,32 @@
 
 #include "UFModel.h"
 
-using namespace std;
+#include "SortValueManager.h"
+#include "../UFManager.h"
 
 namespace smtrat
 {   
-    bool UFModel::extend( const vector<SortValue>& _args, const SortValue& _value )
+    bool UFModel::extend( const std::vector<SortValue>& _args, const SortValue& _value )
     {
         auto ret = emplace( _args, _value );
         assert( ret.second || ret.first->second == _value ); // Checks if the same arguments are not tried to map to different values.
         return ret.second; // Mainly because of not getting a warning, but maybe some needs this return value.
     }
     
-    SortValue UFModel::get( const vector<SortValue>& _args ) const
+    SortValue UFModel::get( const std::vector<SortValue>& _args ) const
     {
-        auto iter = find( _args );
+        auto iter = this->find( _args );
         if( iter != end() )
         {
             return iter->second;
         }
-        return SortValue();
+		return defaultSortValue(UFManager::getInstance().getCodomain(uf));
     }
     
     size_t UFModel::getHash() const
     {
-        hash<SortValue> h;
-        size_t result = 0;
+        std::hash<SortValue> h;
+        std::size_t result = 0;
         for( auto& instance : *this )
         {
             // perform a circular shift by 5 bits.
@@ -103,7 +104,7 @@ namespace smtrat
         return iterA == end() && iterB != _ufm.end();
     }
     
-    ostream& operator<<( ostream& _out, const UFModel& _ufm )
+    std::ostream& operator<<( std::ostream& _out, const UFModel& _ufm )
     {   
 		assert(!_ufm.empty());
         _out << "(define-fun " << _ufm.uf.name() << " (";
