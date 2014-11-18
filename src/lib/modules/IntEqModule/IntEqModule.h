@@ -59,14 +59,11 @@ namespace smtrat
              */
             SubstitutionOrigins get_Substitutions() const;
             /**
-             * Substitutes all occurences of var by to_be_substituted in the polynomial poly
-             * @param var The variable that shall be substituted
-             * @param to_be_substituted The polynomial that substitutes var
-             * @param poly The polynomial on which the substitution takes place 
-             * @return The resulting polynomial
+             * @param origins 
+             * @return The index of the smallest element of origins
              */
-            Polynomial substitute_var_poly(carl::Variable& var, Rational coeff, Polynomial& to_be_substituted, const Polynomial& poly);
-
+            size_t determine_smallest_origin( vector<PointerSet<Formula>>& origins ) const;
+            
         public:
             IntEqModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 

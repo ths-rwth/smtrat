@@ -8,6 +8,7 @@
 #ifndef STRATEGIES_H
 #define	STRATEGIES_H
 
+#include "IntEqStrategy.h"
 #include "Verit_Backend.h"
 #include "StrategyOne.h"
 #include "NRATSolver.h"
