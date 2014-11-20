@@ -438,42 +438,42 @@ bool GroebnerModule<Settings>::iterativeVariableRewriting()
 
         for(typename std::list<GBPolynomial>::iterator it = polynomials.begin(); it != polynomials.end();)
         {
-            if( it->nrTerms() == 1 && it->lterm()->tdeg()==1 )
+            if( it->nrTerms() == 1 && it->lterm().tdeg()==1 )
             {
                 //TODO optimization, this variable does not appear in the gb.
-                ruleVar = it->lterm()->getSingleVariable();
+                ruleVar = it->lterm().getSingleVariable();
                 ruleTerm = TermT(Rational(0));
                 ruleReasons = it->getReasons();
                 newRuleFound = true;
             }
             else if( it->nrTerms() == 2 )
             {
-                if(it->lterm()->tdeg() == 1 )
+                if(it->lterm().tdeg() == 1 )
                 {
-                    ruleVar = it->lterm()->getSingleVariable();
-                    if( it->trailingTerm()->has(ruleVar) )
+                    ruleVar = it->lterm().getSingleVariable();
+                    if( it->trailingTerm().has(ruleVar) )
                     {
                         // TODO deduce a factorisation.
                     }
                     else
                     {
                         // learned a rule.
-                        ruleTerm = -(*it->trailingTerm());
+                        ruleTerm = -(it->trailingTerm());
                         ruleReasons = it->getReasons();
                         newRuleFound = true;
                     }
                 }
-                else if(it->trailingTerm()->tdeg() == 1 )
+                else if(it->trailingTerm().tdeg() == 1 )
                 {
-                    ruleVar = it->trailingTerm()->getSingleVariable();
-                    if( it->lterm()->has(ruleVar) )
+                    ruleVar = it->trailingTerm().getSingleVariable();
+                    if( it->lterm().has(ruleVar) )
                     {
                         // TODO deduce a factorisation
                     }
                     else
                     {
                         // learned a rule.
-                        TermT* ruleTermTmp = it->lterm()->divideBy(-it->trailingTerm()->coeff());
+                        TermT* ruleTermTmp = it->lterm().divideBy(-it->trailingTerm().coeff());
 						ruleTerm = *ruleTermTmp;
 						delete ruleTermTmp;
                         ruleReasons = it->getReasons();

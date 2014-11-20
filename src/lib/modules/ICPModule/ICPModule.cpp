@@ -1164,14 +1164,14 @@ namespace smtrat
         }
         for( auto monomialIt = _constraint->lhs().begin(); monomialIt != _constraint->lhs().end(); ++monomialIt )
         {
-            if( (*monomialIt)->monomial() == NULL || (*monomialIt)->monomial()->isAtMostLinear() )
+            if( (monomialIt)->monomial() == NULL || (monomialIt)->monomial()->isAtMostLinear() )
             {
-                linearizedConstraint += **monomialIt;
+                linearizedConstraint += *monomialIt;
             }
             else
             {
-                assert( mVariableLinearizations.find(Poly((*monomialIt)->monomial())) != mVariableLinearizations.end() );
-                linearizedConstraint += (*monomialIt)->coeff() * (*mVariableLinearizations.find( Poly((*monomialIt)->monomial() ))).second;
+                assert( mVariableLinearizations.find(Poly((monomialIt)->monomial())) != mVariableLinearizations.end() );
+                linearizedConstraint += (monomialIt)->coeff() * (*mVariableLinearizations.find( Poly((monomialIt)->monomial() ))).second;
             }
         }
         mNonlinearConstraints.insert( pair<const ConstraintT*, ContractionCandidates>( _constraint, ccs ) );

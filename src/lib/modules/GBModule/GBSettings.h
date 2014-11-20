@@ -516,7 +516,7 @@ namespace smtrat
 	struct decidePassingPolynomial {
         template<typename O, typename P>
 		static bool evaluate (const carl::MultivariatePolynomial<Rational, O, P>& original, const carl::MultivariatePolynomial<Rational, O, P>& reduced) {
-			return (original.lterm()->tdeg() >= reduced.lterm()->tdeg() && original.nrTerms() > reduced.nrTerms() );
+			return (original.lterm().tdeg() >= reduced.lterm().tdeg() && original.nrTerms() > reduced.nrTerms() );
 		}
 	};
     

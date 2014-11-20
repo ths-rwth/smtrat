@@ -28,7 +28,6 @@
 
 #include "VSModule.h"
 
-using namespace std;
 using namespace vs;
 
 //#define VS_DEBUG
@@ -99,10 +98,10 @@ namespace smtrat
                     && constraint->relation() == Relation::NEQ )
                 {
                     ConditionList condVectorA;
-                    condVectorA.push_back( new vs::Condition( newConstraint<Poly>( constraint->lhs(), Relation::LESS ), 0, false, oConds ) );
+                    condVectorA.push_back( new vs::Condition( newConstraint<Poly>( constraint->lhs(), carl::Relation::LESS ), 0, false, oConds ) );
                     subResult.push_back( condVectorA );
                     ConditionList condVectorB;
-                    condVectorB.push_back( new vs::Condition( newConstraint<Poly>( constraint->lhs(), Relation::GREATER ), 0, false, oConds ) );
+                    condVectorB.push_back( new vs::Condition( newConstraint<Poly>( constraint->lhs(), carl::Relation::GREATER ), 0, false, oConds ) );
                     subResult.push_back( condVectorB );
                 }
                 else
