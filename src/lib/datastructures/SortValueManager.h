@@ -53,7 +53,7 @@ class SortValueManager : public carl::Singleton<SortValueManager>
         // Members.
 
         /// Stores for each sort the latest instantiated sort value.
-        FastMap<carl::Sort, SortValue::IDType> mSortValueIDMap;
+        carl::FastMap<carl::Sort, SortValue::IDType> mSortValueIDMap;
 
         /**
          * Constructs a sort value manager.

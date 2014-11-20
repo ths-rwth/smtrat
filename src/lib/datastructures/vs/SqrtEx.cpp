@@ -57,7 +57,7 @@ namespace vs
         mRadicand( _factor.isZero() ? _factor : _radicand )
     {
         assert( !_denominator.isZero() );
-        assert( !_radicand.isConstant() || _radicand.isZero() || smtrat::ZERO_RATIONAL <= _radicand.trailingTerm()->coeff() );
+        assert( !_radicand.isConstant() || _radicand.isZero() || smtrat::ZERO_RATIONAL <= _radicand.trailingTerm().coeff() );
         normalize();
     }
 

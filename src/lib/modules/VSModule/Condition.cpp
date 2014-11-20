@@ -144,9 +144,9 @@ namespace vs
             bool allOtherMonomialsNeg = true;
             for( auto term = mpConstraint->lhs().begin(); term != mpConstraint->lhs().end(); ++term )
             {
-                if( (*term)->has( _consideredVariable ) )
+                if( term->has( _consideredVariable ) )
                 {
-                    if( (*term)->getNrVariables() > 1 )
+                    if( term->getNrVariables() > 1 )
                     {
                         allOtherMonomialsPos = false;
                         allOtherMonomialsNeg = false;
@@ -155,7 +155,7 @@ namespace vs
                 }
                 else
                 {
-                    carl::Definiteness defin = (*term)->definiteness();
+                    carl::Definiteness defin = term->definiteness();
                     if( defin == carl::Definiteness::NON )
                     {
                         allOtherMonomialsPos = false;

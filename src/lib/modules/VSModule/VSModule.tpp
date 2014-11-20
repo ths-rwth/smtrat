@@ -1722,15 +1722,15 @@ namespace smtrat
                                 partialVarSolutions[*var] = varSolutions[*var];
                                 Poly subPolyPartiallySubstituted = substitutionPoly.substitute( partialVarSolutions );
                                 auto term = subPolyPartiallySubstituted.rbegin();
-                                assert( !(*term)->isConstant() && carl::isInteger( (*term)->coeff() ) );
-                                Rational g = carl::abs( (*term)->coeff() );
+                                assert( !term->isConstant() && carl::isInteger( term->coeff() ) );
+                                Rational g = carl::abs( term->coeff() );
                                 ++term;
                                 for( ; term != subPolyPartiallySubstituted.rend(); ++term )
                                 {
-                                    if( !(*term)->isConstant() )
+                                    if( !term->isConstant() )
                                     {
-                                        assert( carl::isInteger( (*term)->coeff() ) );
-                                        g = carl::gcd( carl::getNum( g ), carl::getNum( carl::abs( (*term)->coeff() ) ) );
+                                        assert( carl::isInteger( term->coeff() ) );
+                                        g = carl::gcd( carl::getNum( g ), carl::getNum( carl::abs( term->coeff() ) ) );
                                     }
                                 }
                                 assert( g > ZERO_RATIONAL );

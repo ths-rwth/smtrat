@@ -187,9 +187,9 @@ namespace smtrat
             {
                 auto term = constraint.lhs().begin();
                 for( ; term != constraint.lhs().end(); ++term )
-                    if( !(*term)->isConstant() ) break;
-				carl::Variable var = (*term)->monomial()->begin()->first;
-                T1 primCoeff = T1( (*term)->coeff() );
+                    if( !term->isConstant() ) break;
+				carl::Variable var = term->monomial()->begin()->first;
+                T1 primCoeff = T1( term->coeff() );
                 negative = (primCoeff < T1( 0 ));
                 boundValue = T1( -constraint.constantPart() )/primCoeff;
                 typename std::map<carl::Variable, Variable<T1, T2>*>::iterator basicIter = mOriginalVars.find( var );
@@ -208,7 +208,7 @@ namespace smtrat
             else
             {
                 T1 constantPart = T1( constraint.constantPart() );
-                negative = (constraint.lhs().lterm()->coeff() < T1( 0 ));
+                negative = (constraint.lhs().lterm().coeff() < T1( 0 ));
                 Poly* linearPart;
                 if( negative )
                     linearPart = new Poly( -constraint.lhs() + (Rational)constantPart );
@@ -356,9 +356,9 @@ namespace smtrat
             Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), _poly, mDefaultBoundPosition, _isInteger );
             for( auto term = _poly->begin(); term != _poly->end(); ++term )
             {
-                assert( !(*term)->isConstant() );
-                assert( carl::isInteger( (*term)->coeff() ) );
-				carl::Variable var = (*term)->monomial()->begin()->first;
+                assert( !term->isConstant() );
+                assert( carl::isInteger( term->coeff() ) );
+				carl::Variable var = term->monomial()->begin()->first;
                 Variable<T1, T2>* nonBasic;
                 auto nonBasicIter = _originalVars.find( var );
                 if( _originalVars.end() == nonBasicIter )
@@ -371,7 +371,7 @@ namespace smtrat
                 {
                     nonBasic = nonBasicIter->second;
                 }
-                mNonActiveBasics.front().emplace_back( nonBasic, T2( carl::getNum( (*term)->coeff() ) ) );
+                mNonActiveBasics.front().emplace_back( nonBasic, T2( carl::getNum( term->coeff() ) ) );
             }
             return var;
         }
@@ -2919,11 +2919,11 @@ namespace smtrat
                 auto iter = (*sum).begin();
                 while( iter != (*sum).end() )
                 {
-                    if( (*(*iter)).coeff() > max_value*gcd_row )
+                    if( (*iter).coeff() > max_value*gcd_row )
                     {
                         return NULL;                        
                     }
-                    (*(*iter)).divideBy((Rational)gcd_row);
+                    (*iter).divideBy((Rational)gcd_row);
                     ++iter;
                 }
                 lower = (Rational)carl::getNum((Rational)result.mainPart())/(Rational)gcd_row;
