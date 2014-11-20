@@ -127,7 +127,7 @@ namespace smtrat
 			_out << ") " << instance.second << " ";
 		}
 		_out << _ufm.begin()->second;
-		for (const auto& inst: _ufm) _out << ")";
+		for (std::size_t i = 0; i < _ufm.size(); i++) _out << ")";
 		_out << ")";
 		return _out;
     }
