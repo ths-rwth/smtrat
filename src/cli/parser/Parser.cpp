@@ -104,7 +104,8 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 				((op_bool >> formula_list)[qi::_val = px::bind(&SMTLIBParser::mkFormula, px::ref(*this), qi::_1, qi::_2)])
 			|	(relation >> polynomial >> polynomial)[qi::_val = px::bind(&SMTLIBParser::mkConstraint, px::ref(*this), qi::_2, qi::_3, qi::_1)]
 			|	((qi::lit("=") >> uninterpreted >> uninterpreted)[qi::_val = px::construct<smtrat::FormulaT>(qi::_1, qi::_2, false)])
-			|	(qi::lit("as")[qi::_pass = false] > symbol > symbol)
+			|	(qi::lit("as")[px::bind(&SMTLIBParser::errorMessage, px::ref(*this), "\"as\" is not supported."), qi::_pass = false] > symbol > symbol)
+			|	(qi::lit("distinct")[px::bind(&SMTLIBParser::errorMessage, px::ref(*this), "\"distinct\" is not supported."),qi::_pass = false] > +formula)
 			|	(qi::lit("not") > formula[qi::_val = px::construct<smtrat::FormulaT>(carl::FormulaType::NOT, qi::_1)])
 			|	((qi::lit("implies") | "=>") > formula > formula)[qi::_val = px::construct<smtrat::FormulaT>(carl::FormulaType::IMPLIES, qi::_1, qi::_2)]
 			|	(qi::lit("let")[px::bind(&SMTLIBParser::pushScope, px::ref(*this))]
@@ -621,7 +622,7 @@ carl::UFInstance SMTLIBParser::applyUninterpretedFunction(const carl::Uninterpre
 			vars.push_back(*uv);
 		} else if (carl::UFInstance* uf = boost::get<carl::UFInstance>(&v)) {
 			carl::Variable tmp = carl::newAuxiliaryUninterpretedVariable();
-			vars.push_back(carl::UVariable(tmp));
+			vars.push_back(carl::UVariable(tmp, uf->uninterpretedFunction().codomain()));
 			mUninterpretedEqualities.insert(FormulaT(std::move(carl::UEquality(vars.back(), *uf, false))));
 		}
 	}

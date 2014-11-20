@@ -38,8 +38,6 @@
 #include "SortValue.h"
 #include "../Common.h"
 
-using namespace carl;
-
 namespace smtrat
 {
 
@@ -72,6 +70,12 @@ class SortValueManager : public carl::Singleton<SortValueManager>
          * @return The resulting sort value.
          */
         SortValue newSortValue( const carl::Sort& _sort );
+	/**
+	 * Returns the default value for the given sort.
+	 * @param _sort The sort to return the default value for.
+	 * @return The resulting sort value.
+	 */
+	SortValue defaultSortValue( const carl::Sort& _sort );
 };
 
 /**
@@ -82,6 +86,10 @@ class SortValueManager : public carl::Singleton<SortValueManager>
 inline SortValue newSortValue( const carl::Sort& _sort )
 {
     return SortValueManager::getInstance().newSortValue( _sort );
+}
+inline SortValue defaultSortValue( const carl::Sort& _sort )
+{
+    return SortValueManager::getInstance().defaultSortValue( _sort );
 }
 
 }
