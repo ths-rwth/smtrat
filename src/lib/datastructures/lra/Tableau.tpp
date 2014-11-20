@@ -2923,9 +2923,9 @@ namespace smtrat
                     {
                         return NULL;                        
                     }
-                    (*iter).divideBy((Rational)gcd_row);
                     ++iter;
                 }
+				(*sum) /= (Rational)gcd_row;
                 lower = (Rational)carl::getNum((Rational)result.mainPart())/(Rational)gcd_row;
                 #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                 std::cout << "Numerator: " << carl::getNum((Rational)result.mainPart()) << std::endl;

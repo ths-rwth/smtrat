@@ -473,9 +473,7 @@ bool GroebnerModule<Settings>::iterativeVariableRewriting()
                     else
                     {
                         // learned a rule.
-                        TermT* ruleTermTmp = it->lterm().divideBy(-it->trailingTerm().coeff());
-						ruleTerm = *ruleTermTmp;
-						delete ruleTermTmp;
+						it->lterm().divide(-it->trailingTerm().coeff(), ruleTerm);
                         ruleReasons = it->getReasons();
                         newRuleFound = true;
                     }
