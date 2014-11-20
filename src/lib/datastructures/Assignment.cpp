@@ -26,6 +26,7 @@
  */
 
 #include "Assignment.h"
+#include "SortValueManager.h"
 
 namespace smtrat
 {
@@ -319,7 +320,7 @@ namespace smtrat
                         inst.push_back( iterB->second.asSortValue() );
                     }
                     SortValue sv = ufm.get( inst );
-                    if( sv == SortValue() )
+                    if( sv == defaultSortValue( sv.sort() ) )
                         return 2;
                     lhsResult = sv.id();
                 }
@@ -348,7 +349,7 @@ namespace smtrat
                         inst.push_back( iterB->second.asSortValue() );
                     }
                     SortValue sv = ufm.get( inst );
-                    if( sv == SortValue() )
+                    if( sv == defaultSortValue( sv.sort() ) )
                         return 2;
                     rhsResult = sv.id();
                 }
