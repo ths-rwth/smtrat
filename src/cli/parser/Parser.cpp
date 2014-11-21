@@ -581,7 +581,7 @@ FormulaT SMTLIBParser::applyBooleanFunction(const BooleanFunction& f, const Argu
 	std::map<carl::Variable, FormulaT> boolAssignments;
 	std::map<carl::Variable, Poly> theoryAssignments;
 	if (!checkArguments(std::get<0>(f), std::get<1>(f), args, boolAssignments, theoryAssignments)) {
-		return nullptr;
+		return FormulaT();
 	}
 	return std::get<2>(f).substitute(boolAssignments, theoryAssignments);
 }

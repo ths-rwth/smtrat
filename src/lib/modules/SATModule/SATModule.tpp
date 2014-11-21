@@ -804,7 +804,7 @@ namespace smtrat
         }
         if( add_tmp.size() == 1 )
         {
-            // Do not store the clause as it is of size one and implies a assignment directly
+            // Do not store the clause as it is of size one and implies an assignment directly
             cancelUntil( 0 );
             if( value( add_tmp[0] ) == l_Undef )
             {
@@ -2257,7 +2257,8 @@ NextClause:
                 #endif
                 if( maybeStillInPassedFormula && removeOrigins( abstr.position, *abstr.origins ).second )
                     maybeStillInPassedFormula = false;
-                if( _replaceBy.constraint().isConsistent() == 2 )
+                unsigned replacedByConsistency = _replaceBy.constraint().isConsistent();
+                if( replacedByConsistency == 2 )
                 {
                     abstr.reabstraction = _replaceBy;
                     abstr.position = passedFormulaEnd();
@@ -2273,7 +2274,7 @@ NextClause:
                     #ifdef DEBUG_SAT_APPLY_VALID_SUBS
                     cout << __LINE__ << endl;
                     #endif
-                    abstr.reabstraction = NULL;
+                    abstr.reabstraction = replacedByConsistency == 1 ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE );
                     abstr.position = passedFormulaEnd();
                     abstr.updateInfo = 0;
                 }
