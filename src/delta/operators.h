@@ -94,10 +94,27 @@ NodeChangeSet constant(const Node& n) {
 	if (n.name == "") return res;
 	if (n.brackets) return res;
 	if (n.name == "0" || n.name == "1" || n.name == "true" || n.name == "false") return res;
+	if (n.name == "Bool" || n.name == "Int" || n.name == "Real") return res;
 	res.emplace_back("0", false);
 	res.emplace_back("1", false);
 	res.emplace_back("true", false);
 	res.emplace_back("false", false);
+	return res;
+}
+
+/**
+ * Node operator that eliminated let expressions.
+ * @param n Node.
+ * @return A set of replacements.
+ */
+NodeChangeSet letExpression(const Node& n) {
+	NodeChangeSet res;
+	if (n.name != "let") return res;
+	Node cur = n.children[1];
+	for (const auto& v: n.children[0].children) {
+		cur = cur.clone(v.name, &v.children[0]);
+	}
+	res.push_back(cur);
 	return res;
 }
 
