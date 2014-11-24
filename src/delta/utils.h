@@ -118,7 +118,7 @@ public:
 		this->total = total;
 		this->progress = progress;
 		unsigned size = progress*30 / total;
-		if (size == ((progress-1)*30 / total)) return;
+		if ((size == ((progress-1)*30 / total)) && (progress % 5 != 0)) return;
 		if (progress > 0) std::cout << CLEARLINE;
 		std::cout << "[" << std::string(size, '=') << std::string(30 - size, ' ') << "] (" << progress << " / " << total << ")" << std::endl;
 	}
