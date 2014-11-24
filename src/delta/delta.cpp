@@ -44,6 +44,9 @@ int main(int argc, char* argv[]) {
 	std::cout << "Calculating original exit code..." << std::endl;
 	delta::Checker c(s.as<std::string>("solver"), s.as<unsigned>("timeout"), input);
 	std::cout << BGREEN << "Original exit code is " << c.expectedCode() << END << std::endl;
+	if (c.expectedCode() == 137) {
+		std::cout << BRED << "This exit code might be a timeout!" << END << std::endl;
+	}
 	if (s.has("verbose")) {
 		std::cout << "Original (" << n.complexity() << " nodes):" << std::endl << n << std::endl;
 	}
