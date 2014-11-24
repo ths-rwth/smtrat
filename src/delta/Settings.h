@@ -50,6 +50,7 @@ public:
 			("no-children", "Disable replacement by children")
 			("no-constants", "Disable replacement by constants")
 			("no-numbers", "Disable simplification of numbers")
+			("no-lets", "Disable elimination of let expressions")
 			("no-removal", "Disable removal")
 		;
 		desc.add(finetuning).add(operators);
