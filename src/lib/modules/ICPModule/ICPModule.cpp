@@ -2875,7 +2875,7 @@ namespace smtrat
         {
             //should not happen
             assert(false);
-            return NULL;
+            return FormulaT( carl::FormulaType::TRUE );
         }
     }
     
