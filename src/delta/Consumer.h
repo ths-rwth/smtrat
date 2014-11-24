@@ -85,7 +85,8 @@ public:
 	void consume(const Node& n, const std::string& message) {
 		if (hasResult()) return;
 		jobcount++;
-		while (jobcount - progress > 100) {
+		while (jobcount - progress > std::thread::hardware_concurrency()) {
+			wait();
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 		}
 		jobs.push(std::async(std::launch::async, &Consumer::performCheck, this, n, message));

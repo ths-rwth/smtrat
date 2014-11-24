@@ -112,8 +112,27 @@ struct Node {
      */
 	Node clone(const Node* from, const Node* to) const {
 		std::vector<Node> newChildren;
-		for (auto& c: children) {
+		for (const auto& c: children) {
 			if (&c == from) {
+				if (to != nullptr) newChildren.push_back(*to);
+			} else {
+				newChildren.push_back(c.clone(from, to));
+			}
+		}
+		return Node(std::make_tuple(name, newChildren, brackets));
+	}
+
+	/**
+	 * Clone this node recursively.
+	 * If a node with name `from` without children is enountered, replace it with `to`.
+	 * @param from Node name to replace.
+	 * @param to Node to replace with.
+	 * @return Cloned node.
+	 */
+	Node clone(const std::string& from, const Node* to) const {
+		std::vector<Node> newChildren;
+		for (const auto& c: children) {
+			if (c.children.size() == 0 &&  c.name == from) {
 				if (to != nullptr) newChildren.push_back(*to);
 			} else {
 				newChildren.push_back(c.clone(from, to));
