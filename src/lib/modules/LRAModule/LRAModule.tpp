@@ -70,7 +70,7 @@ namespace smtrat
     bool LRAModule<Settings>::inform( const FormulaT& _constraint )
     {
         #ifdef DEBUG_LRA_MODULE
-        cout << "LRAModule::inform  " << "inform about " << *_constraint << endl;
+        cout << "LRAModule::inform  " << "inform about " << _constraint << endl;
         #endif
         Module::inform( _constraint );
         if( _constraint.getType() == FormulaType::CONSTRAINT )
@@ -93,7 +93,7 @@ namespace smtrat
     bool LRAModule<Settings>::assertSubformula( ModuleInput::const_iterator _subformula )
     {
         #ifdef DEBUG_LRA_MODULE
-        cout << "LRAModule::assertSubformula  " << "add " << _subformula->formula() << "(" << _subformula->formula() << ")" << endl;
+        cout << "LRAModule::assertSubformula  " << "add " << _subformula->formula() << endl;
         #endif
         Module::assertSubformula( _subformula );
         switch( _subformula->formula().getType() )
