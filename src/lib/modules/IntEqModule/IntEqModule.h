@@ -32,8 +32,8 @@
 #include <stdio.h>
 namespace smtrat
 {
-    typedef std::map<Formula,vector<std::set<Formula>>> FormulaOrigins;
-    typedef std::map<std::pair<carl::Variable, Polynomial>,vector<std::set<Formula>>> SubstitutionOrigins;
+    typedef std::map<FormulaT,vector<std::set<FormulaT>>> FormulaOrigins;
+    typedef std::map<std::pair<carl::Variable, Polynomial>,vector<std::set<FormulaT>>> SubstitutionOrigins;
     
     /**
      * A module which checks whether the equations contained in the received formula 
@@ -46,9 +46,9 @@ namespace smtrat
             // Stores the equations of the received constraints and their origins
             FormulaOrigins mProc_Constraints; 
             // Stores the calculated substitutions
-            std::map<carl::Variable, Polynomial>  mSubstitutions;
+            std::map<carl::Variable, Poly>  mSubstitutions;
             // Stores the origins of the calculated substitutions
-            std::map<carl::Variable, vector<PointerSet<Formula>>> mVariables;
+            std::map<carl::Variable, vector<std::set<FormulaT>>> mVariables;
             
             
             /**
@@ -59,7 +59,7 @@ namespace smtrat
              * @param origins 
              * @return The index of the smallest element of origins
              */
-            size_t determine_smallest_origin( vector<PointerSet<Formula>>& origins ) const;
+            size_t determine_smallest_origin( vector<std::set<FormulaT>>& origins ) const;
             
         public:
             IntEqModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
@@ -74,7 +74,7 @@ namespace smtrat
              * @return false, if it can be easily decided whether the given constraint is inconsistent;
              *          true, otherwise.
              */
-            bool inform( const Formula* _constraint );
+            bool inform( const FormulaT& _constraint );
             /**
              * Informs all backends about the so far encountered constraints, which have not yet been communicated.
              * This method must not and will not be called more than once and only before the first runBackends call.
