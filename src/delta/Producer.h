@@ -32,6 +32,8 @@ class Producer {
 	Settings settings;
 	/// Verbose flag.
 	bool verbose;
+	/// Interrupt flat.
+	mutable bool interrupted;
 public:
 	/**
 	 * Create a new manager that uses the given checker.
@@ -39,13 +41,17 @@ public:
 	 * @param settings Settings object.
 	 */
 	Producer(const Checker& checker, const Settings& settings):
-		consumer(settings.as<std::string>("temp-file"), checker), settings(settings)
+		consumer(settings.as<std::string>("temp-file"), checker), settings(settings), interrupted(false)
 	{
 		if (!settings.has("no-constants")) operators.emplace_back(&constant, "Replaced variable ", " by constant ", ".");
 		if (!settings.has("no-children")) operators.emplace_back(&children, "Replaced ", " by child ", ".");
 		if (!settings.has("no-numbers")) operators.emplace_back(&number, "Replaced number ", " by ", ".");
 		if (!settings.has("no-lets")) operators.emplace_back(&letExpression, "Eliminated ", " by ", ".");
 		verbose = settings.has("verbose");
+	}
+
+	void interrupt() const {
+		interrupted = true;
 	}
 	
 	/**
@@ -70,6 +76,10 @@ public:
 				std::cout << std::endl << BRED << "No further simplifications found." << END << std::endl;
 				return i;
 			}
+			if (interrupted) {
+				std::cout << std::endl << "Terminating due to interruption." << std::endl;
+				return i;
+			}
 		}
 	}
 private:
@@ -81,7 +91,7 @@ private:
 	void dfs(const Node& root, const Node* n) {
 		if (consumer.hasResult()) return;
 		progress();
-		process(root, n);
+		process(root, *n);
 		for (const auto& child: n->children) {
 			if (child.immutable()) continue;
 			dfs(root, &child);
@@ -97,7 +107,7 @@ private:
 		while (!q.empty()) {
 			if (consumer.hasResult()) return;
 			progress();
-			process(root, q.front());
+			process(root, *q.front());
 			for (const auto& child: q.front()->children) {
 				if (child.immutable()) continue;
 				q.push(&child);
@@ -112,17 +122,16 @@ private:
 	 * @param n Node that is currently processed.
 	 * @param progress Current progress.
 	 */
-	void process(const Node& root, const Node* n) {
-		for (auto& child: n->children) {
-			if (child.immutable()) continue;
-			if (!settings.has("no-removal")) {
-				consumer.consume(root.clone(&child, nullptr), String() << "Removed \"" << child.repr(verbose) << "\"");
-			}
-			for (auto op: operators) {
-				auto changes = std::get<0>(op)(child);
-				for (auto& c: changes) {
-					consumer.consume(root.clone(&child, &c), String() << std::get<1>(op) << "\"" << child.repr(verbose) << "\"" << std::get<2>(op) << "\"" << c.repr(verbose) << "\"" << std::get<3>(op));
-				}
+	void process(const Node& root, const Node& n) {
+		if (n.immutable()) return;
+		if (&root == &n) return;
+		if (!settings.has("no-removal")) {
+			consumer.consume(root.clone(&n, nullptr), String() << "Removed \"" << n.repr(verbose) << "\"");
+		}
+		for (auto op: operators) {
+			auto changes = std::get<0>(op)(n);
+			for (auto& c: changes) {
+				consumer.consume(root.clone(&n, &c), String() << std::get<1>(op) << "\"" << n.repr(verbose) << "\"" << std::get<2>(op) << "\"" << c.repr(verbose) << "\"" << std::get<3>(op));
 			}
 		}
 	}
