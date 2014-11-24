@@ -111,6 +111,7 @@ struct Node {
      * @return Cloned node.
      */
 	Node clone(const Node* from, const Node* to) const {
+		if (this == from) return *to;
 		std::vector<Node> newChildren;
 		for (const auto& c: children) {
 			if (&c == from) {
@@ -130,6 +131,7 @@ struct Node {
 	 * @return Cloned node.
 	 */
 	Node clone(const std::string& from, const Node* to) const {
+		if (children.size() == 0 && name == from) return *to;
 		std::vector<Node> newChildren;
 		for (const auto& c: children) {
 			if (c.children.size() == 0 &&  c.name == from) {
