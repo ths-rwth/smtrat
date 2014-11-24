@@ -4,6 +4,7 @@
  */
 
 #include <chrono>
+#include <csignal>
 #include <fstream>
 #include <iostream>
 
@@ -16,7 +17,17 @@ namespace bpo = boost::program_options;
 typedef std::chrono::system_clock Clock;
 typedef std::chrono::seconds seconds;
 
+const delta::Producer* producerPtr = nullptr;
+
+void handle_SIGINT(int) {
+	if (producerPtr != nullptr) {
+		producerPtr->interrupt();
+		std::cout << std::endl << "Stopping after this iteration." << std::endl << std::endl;
+	}
+}
+
 int main(int argc, char* argv[]) {
+	std::signal(SIGINT, &handle_SIGINT);
 	auto start = Clock::now();
 	
 	// Load settings.
@@ -39,6 +50,7 @@ int main(int argc, char* argv[]) {
 
 	// Perform simplications.
 	delta::Producer producer(c, s);
+	producerPtr = &producer;
 	unsigned iterations = producer(n);
 
 	// Print result and store to file.
