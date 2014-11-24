@@ -207,14 +207,14 @@ namespace smtrat
             }
             else
             {
-                T1 constantPart = T1( constraint.constantPart() );
+                T1 constantPart( constraint.constantPart() );
                 negative = (constraint.lhs().lterm().coeff() < T1( 0 ));
                 Poly* linearPart;
                 if( negative )
                     linearPart = new Poly( -constraint.lhs() + (Rational)constantPart );
                 else
                     linearPart = new Poly( constraint.lhs() - (Rational)constantPart );
-                T1 cf = T1( linearPart->coprimeFactor() );
+                T1 cf( linearPart->coprimeFactor() );
                 assert( cf > 0 );
                 constantPart *= cf;
                 (*linearPart) *= cf;
@@ -2096,7 +2096,10 @@ namespace smtrat
             #else
             sumOfNonbasics += (*mRows[_rowNumber]->pExpression()) * smtrat::MINUS_ONE_POLYNOMIAL;
             #endif
-            if( !sumOfNonbasics.isZero() ) return false;
+            if( !sumOfNonbasics.isZero() ) 
+            {
+                return false;
+            }
             return true;
         }
         
