@@ -170,21 +170,27 @@ private:
 	private:
 		qi::symbols<char, carl::Variable> var_bool;
 		qi::symbols<char, carl::Variable> var_theory;
+		qi::symbols<char, carl::UVariable> var_uninterpreted;
 		qi::symbols<char, FormulaT> bind_bool;
 		qi::symbols<char, Poly> bind_theory;
+		qi::symbols<char, UninterpretedType> bind_uninterpreted;
 	public:
 		Scope(const SMTLIBParser& parser)
 		{
-			var_bool = parser.var_bool.sym;
-			var_theory = parser.var_theory.sym;
-			bind_bool = parser.bind_bool.sym;
-			bind_theory = parser.bind_theory.sym;
+			this->var_bool = parser.var_bool.sym;
+			this->var_theory = parser.var_theory.sym;
+			this->var_uninterpreted = parser.var_uninterpreted.sym;
+			this->bind_bool = parser.bind_bool.sym;
+			this->bind_theory = parser.bind_theory.sym;
+			this->bind_uninterpreted = parser.bind_uninterpreted.sym;
 		}
 		void restore(SMTLIBParser& parser) {
 			parser.var_bool.sym = this->var_bool;
 			parser.var_theory.sym = this->var_theory;
+			parser.var_uninterpreted.sym = this->var_uninterpreted;
 			parser.bind_bool.sym = this->bind_bool;
 			parser.bind_theory.sym = this->bind_theory;
+			parser.bind_uninterpreted.sym = this->bind_uninterpreted;
 		}
 	};
 
@@ -198,6 +204,7 @@ private:
 		else if (this->var_uninterpreted.sym.find(name) != nullptr) out << "'" << name << "' has already been defined as an uninterpreted variable.";
 		else if (this->bind_bool.sym.find(name) != nullptr) out << "'" << name << "' has already been defined as a boolean binding.";
 		else if (this->bind_theory.sym.find(name) != nullptr) out << "'" << name << "' has already been defined as a theory binding.";
+		else if (this->bind_uninterpreted.sym.find(name) != nullptr) out << "'" << name << "' has already been defined as an uninterpreted binding.";
 		else if (this->funmap_bool.find(name) != nullptr) out << "'" << name << "' has already been defined as a boolean function.";
 		else if (this->funmap_theory.find(name) != nullptr) out << "'" << name << "' has already been defined as a theory funtion.";
 		else if (this->funmap_ufbool.find(name) != nullptr) out << "'" << name << "' has already been defined as an uninterpreted function of boolean return type.";
