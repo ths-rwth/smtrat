@@ -83,22 +83,44 @@ namespace smtrat
         }            
         if( _subformula->formula().constraint().relation() == Relation::EQ )
         {
+            // Do substitutions that have already been determined and update origins accordingly
+            vector<std::set<FormulaT>> origins;
+            std::set<FormulaT> origin;
+            origin.insert( _subformula->formula() );
+            origins.push_back( origin );
+            const Constraint<Poly>& constr = _subformula->formula().constraint();
+            Poly new_poly = constr.lhs();
+            auto iter_subs = mSubstitutions.begin();
+            while( iter_subs != mSubstitutions.end() )
+            {
+                new_poly = new_poly.substitute( (iter_subs)->first, (iter_subs)->second );
+                auto iter_var = mVariables.find( (iter_subs)->first );
+                assert( iter_var != mVariables.end() );
+                origins = merge( origins, iter_var->second );
+                ++iter_subs;
+            }
+            const FormulaT newEq = FormulaT( carl::newConstraint( new_poly, carl::Relation::EQ ) );
+            // Return False if the newly obtained constraint is unsatisfiable
+            if( newEq.isFalse() )
+            {
+                mInfeasibleSubsets.push_back( *origins.begin() );
+                return false;                
+            }
+            if( newEq.isTrue() )
+            {
+                return true;
+            }
             #ifdef DEBUG_IntEqModule
             cout << "Assert: " << _subformula->formula().constraint() << endl;
             #endif
             std::map<FormulaT,vector<std::set<FormulaT>>>::iterator iter = mProc_Constraints.find( _subformula->formula() );
-            std::set<FormulaT> origin;
             if( iter != mProc_Constraints.end() )
             {
-                origin.insert( iter->first );
                 (iter->second).push_back( origin );
             }
             else
             {
-                origin.insert( _subformula->formula() );
-                vector<std::set<FormulaT>> origins;
-                origins.push_back( origin );
-                mProc_Constraints.emplace( _subformula->formula(), origins );
+                mProc_Constraints.emplace( newEq, origins );
             }    
         }
         return true;
