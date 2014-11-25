@@ -8,10 +8,20 @@
 #include <algorithm>
 #include <cctype>
 #include <functional>
-#include <regex>
 #include <sstream>
 #include <utility>
 #include <vector>
+
+#define USE_BOOST_REGEX
+#ifdef USE_BOOST_REGEX
+#include <boost/regex.hpp>
+using boost::regex;
+using boost::regex_match;
+#else
+#include <regex>
+using std::regex;
+using std::regex_match;
+#endif
 
 #include "Node.h"
 #include "utils.h"
@@ -50,15 +60,15 @@ NodeChangeSet number(const Node& n) {
 	NodeChangeSet res;
 
 	// Not a number
-	if (!std::regex_match(n.name, std::regex("[0-9]*\\.?[0-9]*"))) return res;
+	if (!regex_match(n.name, regex("[0-9]*\\.?[0-9]*"))) return res;
 
 	// Handle trailing dot -> remove dot
-	if (std::regex_match(n.name, std::regex("[0-9]+\\."))) {
+	if (regex_match(n.name, regex("[0-9]+\\."))) {
 		res.emplace_back(n.name.substr(0, n.name.size()-1), false);
 		return res;
 	}
 	// Handle simple numbers -> remove last digits
-	if (std::regex_match(n.name, std::regex("[0-9]+"))) {
+	if (regex_match(n.name, regex("[0-9]+"))) {
 		for (unsigned i = 1; i < n.name.size(); i++) {
 			res.emplace_back(n.name.substr(0, i), false);
 		}
@@ -66,13 +76,13 @@ NodeChangeSet number(const Node& n) {
 	}
 
 	// Handle degenerated floating points -> add zero in front
-	if (std::regex_match(n.name, std::regex("\\.[0-9]+"))) {
+	if (regex_match(n.name, regex("\\.[0-9]+"))) {
 		res.emplace_back("0" + n.name, false);
 		return res;
 	}
 
 	// Handle floating points -> remove decimal places
-	if (std::regex_match(n.name, std::regex("[0-9]+\\.[0-9]+"))) {
+	if (regex_match(n.name, regex("[0-9]+\\.[0-9]+"))) {
 		std::size_t pos = n.name.find('.');
 		res.emplace_back(n.name.substr(0, pos), false);
 		for (std::size_t i = pos + 2; i < n.name.size(); i++) {
