@@ -167,7 +167,7 @@ namespace smtrat\n\
              * @return false, if it can be easily decided whether the given constraint is inconsistent;\n\
              *          true, otherwise.\n\
              */\n\
-            bool inform( const Formula* _constraint );\n\n\
+            bool inform( const FormulaT& _constraint );\n\n\
             /**\n\
              * Informs all backends about the so far encountered constraints, which have not yet been communicated.\n\
              * This method must not and will not be called more than once and only before the first runBackends call.\n\
@@ -240,7 +240,7 @@ namespace smtrat\n\
     {}\n\
 \n\
 \n'+templatePrefix+'\
-    bool '+m+templateInst+'::inform( const Formula* _constraint )\n\
+    bool '+m+templateInst+'::inform( const FormulaT& _constraint )\n\
     {\n\
         Module::inform( _constraint ); // This must be invoked at the beginning of this method.\n\
         // Your code.\n\
