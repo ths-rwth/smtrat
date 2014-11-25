@@ -12,7 +12,8 @@
 #include <utility>
 #include <vector>
 
-#define USE_BOOST_REGEX
+#include "config.h"
+
 #ifdef USE_BOOST_REGEX
 #include <boost/regex.hpp>
 using boost::regex;
