@@ -90,7 +90,7 @@ namespace smtrat
                 mIDCounter = 0;
                 std::set<const vs::Condition*> oConds;
                 oConds.insert( condition );
-                vector<DisjunctionOfConditionConjunctions> subResults;
+                std::vector<DisjunctionOfConditionConjunctions> subResults;
                 DisjunctionOfConditionConjunctions subResult;
 
                 if( Settings::int_constraints_allowed && Settings::split_neq_constraints
@@ -193,7 +193,7 @@ namespace smtrat
             {
                 std::set<const vs::Condition*> oConds = std::set<const vs::Condition*>();
                 oConds.insert( iter->second );
-                vector<DisjunctionOfConditionConjunctions> subResults = vector<DisjunctionOfConditionConjunctions>();
+                std::vector<DisjunctionOfConditionConjunctions> subResults = std::vector<DisjunctionOfConditionConjunctions>();
                 DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
                 ConditionList condVector;
                 condVector.push_back( new vs::Condition( iter->first.pConstraint(), 0, false, oConds ) );
@@ -258,7 +258,7 @@ namespace smtrat
         {
             if( !mpStateTree->variableBounds().isConflicting() )
             {
-                vector<pair<vector<const ConstraintT*>, const ConstraintT*>> bDeds = mpStateTree->variableBounds().getBoundDeductions();
+                std::vector<pair<vector<const ConstraintT*>, const ConstraintT*>> bDeds = mpStateTree->variableBounds().getBoundDeductions();
                 for( auto bDed = bDeds.begin(); bDed != bDeds.end(); ++bDed )
                 {
                     std::set<FormulaT> subformulas;
@@ -512,7 +512,7 @@ namespace smtrat
                                                     for( auto cond : currentState->conditions() )
                                                         oConditions.insert( cond );
                                                     Substitution sub = Substitution( currentState->index(), Substitution::MINUS_INFINITY, oConditions );
-                                                    vector<State*> addedChildren = currentState->addChild( sub );
+                                                    std::vector<State*> addedChildren = currentState->addChild( sub );
                                                     if( !addedChildren.empty() )
                                                     {
                                                         // Add its valuation to the current ranking.
@@ -746,7 +746,7 @@ namespace smtrat
                 stringstream outB;
                 outB << "eps_" << id() << "_" << i;
                 carl::Variable epsVar( carl::newAuxiliaryRealVariable( outB.str() ) );
-                mVariableVector.push_back( pair<carl::Variable,carl::Variable>( minfVar, epsVar ) );
+                mVariableVector.push_back( std::pair<carl::Variable,carl::Variable>( minfVar, epsVar ) );
             }
             assert( !mRanking.empty() );
             carl::Variables allVarsInRoot;
@@ -854,7 +854,7 @@ namespace smtrat
             // Determine the substitution type: normal or +epsilon
             bool weakConstraint = (relation == carl::Relation::EQ || relation == carl::Relation::LEQ || relation == carl::Relation::GEQ);
             Substitution::Type subType = weakConstraint ? Substitution::NORMAL : Substitution::PLUS_EPSILON;
-            vector< Poly > factors = vector< Poly >();
+            std::vector< Poly > factors = std::vector< Poly >();
             carl::PointerSet<ConstraintT> sideConditions;
             if( Settings::elimination_with_factorization && constraint->hasFactorization() )
             {
@@ -883,7 +883,7 @@ namespace smtrat
                 cout << "Eliminate for " << *factor << endl;
                 #endif
                 VarPolyInfo varInfo = factor->getVarInfo<true>( _eliminationVar );
-                const map<unsigned, Poly>& coeffs = varInfo.coeffs();
+                const std::map<unsigned, Poly>& coeffs = varInfo.coeffs();
                 assert( !coeffs.empty() );
                 // Generate test candidates for the chosen variable considering the chosen constraint.
                 switch( coeffs.rbegin()->first )
@@ -913,7 +913,7 @@ namespace smtrat
                                 sideCond.insert( cons );
                             SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, coeffs.rbegin()->second, ZERO_POLYNOMIAL );
                             Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
-                            vector<State*> addedChildren = _currentState->addChild( sub );
+                            std::vector<State*> addedChildren = _currentState->addChild( sub );
                             if( !addedChildren.empty() )
                             {
                                 if( relation == carl::Relation::EQ && !_currentState->children().back()->hasSubstitutionResults() )
@@ -960,7 +960,7 @@ namespace smtrat
                                     sideCond.insert( cons12 );
                                 SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, linearCoeff, ZERO_POLYNOMIAL );
                                 Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
-                                vector<State*> addedChildren = _currentState->addChild( sub );
+                                std::vector<State*> addedChildren = _currentState->addChild( sub );
                                 if( !addedChildren.empty() )
                                 {
                                     if( relation == carl::Relation::EQ && !_currentState->children().back()->hasSubstitutionResults() )
@@ -996,7 +996,7 @@ namespace smtrat
                                 // Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b+sqrt(b^2-4ac))/2a]):
                                 SqrtEx sqExA = SqrtEx( -linearCoeff, ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
                                 Substitution subA = Substitution( _eliminationVar, sqExA, subType, oConditions, sideCond );
-                                vector<State*> addedChildrenA = _currentState->addChild( subA );
+                                std::vector<State*> addedChildrenA = _currentState->addChild( subA );
                                 if( !addedChildrenA.empty() )
                                 {
                                     if( relation == carl::Relation::EQ && !_currentState->children().back()->hasSubstitutionResults() )
@@ -1018,7 +1018,7 @@ namespace smtrat
                                 // Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b-sqrt(b^2-4ac))/2a]):
                                 SqrtEx sqExB = SqrtEx( -linearCoeff, MINUS_ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
                                 Substitution subB = Substitution( _eliminationVar, sqExB, subType, oConditions, sideCond );
-                                vector<State*> addedChildrenB = _currentState->addChild( subB );
+                                std::vector<State*> addedChildrenB = _currentState->addChild( subB );
                                 if( !addedChildrenB.empty() )
                                 {
                                     if( relation == carl::Relation::EQ && !_currentState->children().back()->hasSubstitutionResults() )
@@ -1061,7 +1061,7 @@ namespace smtrat
             {
                 // Create state ( Conditions, [x -> -infinity]):
                 Substitution sub = Substitution( _eliminationVar, Substitution::MINUS_INFINITY, oConditions );
-                vector<State*> addedChildren = _currentState->addChild( sub );
+                std::vector<State*> addedChildren = _currentState->addChild( sub );
                 if( !addedChildren.empty() )
                 {
                     // Add its valuation to the current ranking.
@@ -1083,7 +1083,7 @@ namespace smtrat
             {
                 // Create state ( Conditions, [x -> -infinity]):
                 Substitution sub = Substitution( _eliminationVar, Substitution::PLUS_INFINITY, oConditions );
-                vector<State*> addedChildren = _currentState->addChild( sub );
+                std::vector<State*> addedChildren = _currentState->addChild( sub );
                 if( !addedChildren.empty() )
                 {
                     // Add its valuation to the current ranking.
@@ -1149,7 +1149,7 @@ namespace smtrat
          * the results of a single substitution. These results can be considered as a disjunction of
          * conjunctions of constraints.
          */
-        vector<DisjunctionOfConditionConjunctions> allSubResults;
+        std::vector<DisjunctionOfConditionConjunctions> allSubResults;
         // The substitution to apply.
         assert( !_currentState->isRoot() );
         const Substitution& currentSubs = _currentState->substitution();
@@ -1489,7 +1489,7 @@ namespace smtrat
                 _state->rID() = mIDCounter;
             }
             _state->updateValuation();
-            UnsignedTriple key = UnsignedTriple( _state->valuation(), pair< size_t, size_t> ( _state->id(), _state->backendCallValuation() ) );
+            UnsignedTriple key = UnsignedTriple( _state->valuation(), std::pair< size_t, size_t> ( _state->id(), _state->backendCallValuation() ) );
             if( (mRanking.insert( ValStatePair( key, _state ) )).second == false )
             {
                 cout << "Warning: Could not insert. Entry already exists.";
@@ -1536,7 +1536,7 @@ namespace smtrat
     template<class Settings>
     bool VSModule<Settings>::removeStateFromRanking( State& _state )
     {
-        UnsignedTriple key = UnsignedTriple( _state.valuation(), pair< unsigned, unsigned> ( _state.id(), _state.backendCallValuation() ) );
+        UnsignedTriple key = UnsignedTriple( _state.valuation(), std::pair< unsigned, unsigned> ( _state.id(), _state.backendCallValuation() ) );
         auto valDTPair = mRanking.find( key );
         if( valDTPair != mRanking.end() )
         {
@@ -1686,7 +1686,7 @@ namespace smtrat
         assert( solverState() != False );
         if( !mRanking.empty() )
         {
-            vector<carl::Variable> varOrder;
+            std::vector<carl::Variable> varOrder;
             State* currentState = mRanking.begin()->second;
             while( !currentState->isRoot() )
             {
@@ -1761,7 +1761,7 @@ namespace smtrat
                                 const Substitution& currSub = currentState->substitution();
                                 SqrtEx t = SqrtEx( Poly( cln::floor1( evaluatedSubTerm ) + 1 ) );
                                 Substitution newSub = Substitution( currSub.variable(), t, Substitution::Type::NORMAL, currSub.originalConditions() );
-                                vector<State*> addedChildren = currentState->rFather().addChild( newSub );
+                                std::vector<State*> addedChildren = currentState->rFather().addChild( newSub );
                                 if( !addedChildren.empty() )
                                 {
                                     // Add its valuation to the current ranking.
@@ -1807,7 +1807,7 @@ namespace smtrat
         {
             // First we construct all possible combinations of combining all single sets of each set of sets.
             // Store for each set an iterator.
-            vector<ConditionSetSet::iterator> conditionSetSetIters = vector<ConditionSetSet::iterator>();
+            std::vector<ConditionSetSet::iterator> conditionSetSetIters = std::vector<ConditionSetSet::iterator>();
             for( auto conflictSet = _conflictSets.begin(); conflictSet != _conflictSets.end(); ++conflictSet )
             {
                 conditionSetSetIters.push_back( (*conflictSet).begin() );
@@ -1815,7 +1815,7 @@ namespace smtrat
                 assert( conditionSetSetIters.back() != (*conflictSet).end() );
             }
             ConditionSetSetSet::iterator conflictSet;
-            vector<ConditionSetSet::iterator>::iterator conditionSet;
+            std::vector<ConditionSetSet::iterator>::iterator conditionSet;
             // Find all covering sets by forming the union of all combinations.
             bool lastCombinationReached = false;
             while( !lastCombinationReached )
@@ -1906,23 +1906,23 @@ namespace smtrat
                     case carl::Relation::GEQ:
                     {
                         const ConstraintT* strictVersion = carl::newConstraint<Poly>( constraint->lhs(), carl::Relation::GREATER );
-                        constraintsToCheck.insert( pair< const ConstraintT*, const vs::Condition*>( strictVersion, *cond ) );
+                        constraintsToCheck.insert( std::pair< const ConstraintT*, const vs::Condition*>( strictVersion, *cond ) );
                         break;
                     }
                     case carl::Relation::LEQ:
                     {
                         const ConstraintT* strictVersion = carl::newConstraint<Poly>( constraint->lhs(), carl::Relation::LESS );
-                        constraintsToCheck.insert( pair< const ConstraintT*, const vs::Condition*>( strictVersion, *cond ) );
+                        constraintsToCheck.insert( std::pair< const ConstraintT*, const vs::Condition*>( strictVersion, *cond ) );
                         break;
                     }
                     default:
                     {
-                        constraintsToCheck.insert( pair< const ConstraintT*, const vs::Condition*>( constraint, *cond ) );
+                        constraintsToCheck.insert( std::pair< const ConstraintT*, const vs::Condition*>( constraint, *cond ) );
                     }
                 }
             }
             else
-                constraintsToCheck.insert( pair< const ConstraintT*, const vs::Condition*>( (*cond)->pConstraint(), *cond ) );
+                constraintsToCheck.insert( std::pair< const ConstraintT*, const vs::Condition*>( (*cond)->pConstraint(), *cond ) );
         }
         if( constraintsToCheck.empty() ) return false;
         /*
@@ -1955,7 +1955,7 @@ namespace smtrat
             FormulaT formula = FormulaT( iter->first );
             _formulaCondMap[formula] = iter->second;
             addConstraintToInform( formula );
-            addSubformulaToPassedFormula( formula, move( origins ) );
+            addSubformulaToPassedFormula( formula, std::move( origins ) );
         }
         return changedPassedFormula;
     }
@@ -1994,7 +1994,7 @@ namespace smtrat
                 * Get the conflict sets formed by the infeasible subsets in the backend.
                 */
                 ConditionSetSet conflictSet = ConditionSetSet();
-                vector<Module*>::const_iterator backend = usedBackends().begin();
+                std::vector<Module*>::const_iterator backend = usedBackends().begin();
                 while( backend != usedBackends().end() )
                 {
                     if( !(*backend)->infeasibleSubsets().empty() )
@@ -2093,7 +2093,7 @@ namespace smtrat
     {
         if( !_state.conditions().empty() )
         {
-            set<const smtrat::ConstraintT*> constraints = set<const smtrat::ConstraintT*>();
+            std::set<const smtrat::ConstraintT*> constraints;
             for( auto cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
                 constraints.insert( (**cond).pConstraint() );
             smtrat::Module::addAssumptionToCheck( constraints, _assumption, _description );

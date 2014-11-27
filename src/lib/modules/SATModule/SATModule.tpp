@@ -55,7 +55,6 @@
 //#define SATMODULE_WITH_CALL_NUMBER
 //#define WITH_PROGRESS_ESTIMATION
 
-using namespace std;
 using namespace Minisat;
 
 namespace smtrat
@@ -156,9 +155,9 @@ namespace smtrat
         while( mBooleanConstraintMap.size() > 0 )
         {
             Abstraction*& abstrAToDel = mBooleanConstraintMap.last().first;
-            vector<std::set<FormulaT>>* toDelA = abstrAToDel->origins;
+            std::vector<std::set<FormulaT>>* toDelA = abstrAToDel->origins;
             Abstraction*& abstrBToDel = mBooleanConstraintMap.last().second;
-            vector<std::set<FormulaT>>* toDelB = abstrBToDel->origins;
+            std::vector<std::set<FormulaT>>* toDelB = abstrBToDel->origins;
             mBooleanConstraintMap.pop();
             delete abstrAToDel;
             delete abstrBToDel;
@@ -496,7 +495,7 @@ namespace smtrat
                 mBooleanVarMap[content.boolean()] = var;
                 std::set<FormulaT> originsSet;
                 originsSet.insert( _origin );
-                mBooleanConstraintMap.push( make_pair( 
+                mBooleanConstraintMap.push( std::make_pair( 
                     new Abstraction( passedFormulaEnd(), content ), 
                     new Abstraction( passedFormulaEnd(), negated ? _formula : FormulaT( carl::FormulaType::NOT, _formula ) ) ) );
                 l = mkLit( var, negated );
@@ -579,7 +578,7 @@ namespace smtrat
                 }
                 Var constraintAbstraction = newVar( !preferredToTSolver, true, act );
                 // map the abstraction variable to the abstraction information for the constraint and it's negation
-                mBooleanConstraintMap.push( make_pair( new Abstraction( passedFormulaEnd(), constraint ), new Abstraction( passedFormulaEnd(), invertedConstraint ) ) );
+                mBooleanConstraintMap.push( std::make_pair( new Abstraction( passedFormulaEnd(), constraint ), new Abstraction( passedFormulaEnd(), invertedConstraint ) ) );
                 // add the constraint and its negation to the constraints to inform backends about
                 if( !_origin.isTrue() )
                 {
@@ -605,15 +604,15 @@ namespace smtrat
                 }
                 // create a literal for the constraint and its negation
                 Lit litPositive = mkLit( constraintAbstraction, false );
-                vector<Lit> litsA;
+                std::vector<Lit> litsA;
                 litsA.push_back( litPositive );
-                mConstraintLiteralMap.insert( make_pair( FormulaT( carl::FormulaType::NOT, invertedConstraint ), litsA ) );
-                mConstraintLiteralMap.insert( make_pair( constraint, move( litsA ) ) );
+                mConstraintLiteralMap.insert( std::make_pair( FormulaT( carl::FormulaType::NOT, invertedConstraint ), litsA ) );
+                mConstraintLiteralMap.insert( std::make_pair( constraint, std::move( litsA ) ) );
                 Lit litNegative = mkLit( constraintAbstraction, true );
-                vector<Lit> litsB;
+                std::vector<Lit> litsB;
                 litsB.push_back( litNegative );
-                mConstraintLiteralMap.insert( make_pair( negated ? _formula : FormulaT( carl::FormulaType::NOT, constraint ), litsB ) );
-                mConstraintLiteralMap.insert( make_pair( invertedConstraint, move( litsB ) ) );
+                mConstraintLiteralMap.insert( std::make_pair( negated ? _formula : FormulaT( carl::FormulaType::NOT, constraint ), litsB ) );
+                mConstraintLiteralMap.insert( std::make_pair( invertedConstraint, std::move( litsB ) ) );
                 if( Settings::apply_valid_substitutions && content.getType() == carl::FormulaType::CONSTRAINT )
                 {
                     // map each variable occurring in the constraint (and hence its negation) to both of these constraints
@@ -748,7 +747,7 @@ namespace smtrat
         decision.push();
         trail.capacity( v + 1 );
         setDecisionVar( v, dvar );
-        mVarClausesMap.push_back( std::move( set<CRef>() ) );
+        mVarClausesMap.push_back( std::move( std::set<CRef>() ) );
         return v;
     }
 
@@ -759,7 +758,7 @@ namespace smtrat
         {
             // Do not add multiple deductions
             // TODO: maybe remove this
-            vector<int> clause;
+            std::vector<int> clause;
             clause.reserve( (size_t)_clause.size() );
             for( int i = 0; i < _clause.size(); ++i )
                 clause.push_back( _clause[i].x );
@@ -1934,10 +1933,10 @@ NextClause:
         assert( decisionLevel() == 0 );
         assert( var( _var ) != var( _by ) );
         setDecisionVar( var( _var ), false );
-        set<CRef>& varClauses = mVarClausesMap[(size_t)var(_var)];
+        std::set<CRef>& varClauses = mVarClausesMap[(size_t)var(_var)];
         int removedClauses = 0;
         int removedLearnts = 0;
-        for( set<CRef>::iterator crIter = varClauses.begin(); crIter != varClauses.end(); )
+        for( std::set<CRef>::iterator crIter = varClauses.begin(); crIter != varClauses.end(); )
         {
             #ifdef DEBUG_SAT_REPLACE_VARIABLE
             cout << "Consider clause with number " << *crIter << endl;
@@ -2296,7 +2295,7 @@ NextClause:
     bool SATModule<Settings>::processLemmas()
     {
         bool deductionsLearned = false;
-        vector<Module*>::const_iterator backend = usedBackends().begin();
+        std::vector<Module*>::const_iterator backend = usedBackends().begin();
         while( backend != usedBackends().end() )
         {
             // Learn the deductions.
@@ -2332,7 +2331,7 @@ NextClause:
         int lowestLevel = decisionLevel()+1;
         int numOfLowLevelLiterals = 0;
 //        int learntsSizeBefore = learnts.size();
-        vector<Module*>::const_iterator backend = usedBackends().begin();
+        std::vector<Module*>::const_iterator backend = usedBackends().begin();
         while( backend != usedBackends().end() )
         {
             const vec_set_const_pFormula& infSubsets = (*backend)->infeasibleSubsets();
@@ -2463,9 +2462,9 @@ NextClause:
             // variable to clauses mapping:
             for( size_t pos = 0; pos < mVarClausesMap.size(); ++pos )
             {
-                set<CRef> toInsert;
-                set<CRef>& cls = mVarClausesMap[pos];
-                for( set<CRef>::iterator crIter = cls.begin(); crIter != cls.end(); )
+                std::set<CRef> toInsert;
+                std::set<CRef>& cls = mVarClausesMap[pos];
+                for( std::set<CRef>::iterator crIter = cls.begin(); crIter != cls.end(); )
                 {
                     CRef cr = *crIter;
                     ca.reloc( cr, to );
