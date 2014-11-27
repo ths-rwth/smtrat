@@ -244,11 +244,9 @@ void SMTLIBParser::declareFun(const std::string& name, const std::vector<carl::S
 			carl::Variable var = carl::newVariable(name, carl::VariableType::VT_UNINTERPRETED);
 			auto v = carl::UVariable(var, sort);
 			this->var_uninterpreted.sym.add(name, v);
-			std::cout << "Registering " << name << " -> " << v << std::endl;
 			callHandler(&InstructionHandler::declareFun, var);
 		} else {
 			auto uf = carl::newUninterpretedFunction(name, args, sort);
-			std::cout << "Registering " << uf << std::endl;
 			this->funmap_uf.add(name, uf);
 		}
 		break;
