@@ -22,7 +22,7 @@
  * File:   VSModule.cpp
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  * @since 2010-05-11
- * @version 2013-06-20
+ * @version 2014-11-27
  */
 
 
@@ -65,13 +65,6 @@ namespace smtrat
         delete mpStateTree;
     }
 
-    /**
-     * Adds a constraint to the so far received constraints.
-     *
-     * @param _subformula The position of the constraint within the received constraints.
-     * @return false, if a conflict is detected;
-     *          true, otherwise.
-     */
     template<class Settings>
     bool VSModule<Settings>::assertSubformula( ModuleInput::const_iterator _subformula )
     {
@@ -133,11 +126,6 @@ namespace smtrat
         return true;
     }
 
-    /**
-     * Removes a constraint of the so far received constraints.
-     *
-     * @param _subformula The position of the constraint within the received constraints.
-     */
     template<class Settings>
     void VSModule<Settings>::removeSubformula( ModuleInput::const_iterator _subformula )
     {
@@ -168,13 +156,6 @@ namespace smtrat
         assert( checkRanking() );
     }
 
-    /**
-     * Checks the consistency of the so far received constraints.
-     *
-     * @return True,    if the so far received constraints are consistent;
-     *         False,   if the so far received constraints are inconsistent;
-     *         Unknown, if this module cannot determine whether the so far received constraints are consistent or not.
-     */
     template<class Settings>
     Answer VSModule<Settings>::isConsistent()
     {
@@ -715,10 +696,6 @@ namespace smtrat
         #ifdef VS_LOG_INTERMEDIATE_STEPS
         if( mpStateTree->conflictSets().empty() ) logConditions( *mpStateTree, false, "Intermediate_conflict_of_VSModule" );
         #endif
-//        if( mpStateTree->conflictSets().empty() )
-//        {
-//            exit( 7771 );
-//        }
         assert( !mpStateTree->conflictSets().empty() );
         updateInfeasibleSubset();
         #ifdef VS_DEBUG
@@ -727,9 +704,6 @@ namespace smtrat
         return foundAnswer( False );
     }
 
-    /**
-     * Updates the model, if the received formula was found to be satisfiable by this module.
-     */
     template<class Settings>
     void VSModule<Settings>::updateModel() const
     {
@@ -793,12 +767,6 @@ namespace smtrat
     }
     
     template<class Settings>
-    double VSModule<Settings>::rateCall( const std::set<FormulaT>& ) const
-    {
-        return 1;
-    }
-    
-    template<class Settings>
     Answer VSModule<Settings>::consistencyTrue()
     {
         #ifdef VS_LOG_INTERMEDIATE_STEPS
@@ -813,20 +781,6 @@ namespace smtrat
         return foundAnswer( True );
     }
 
-    /**
-     * Eliminates the given variable by finding test candidates of the constraint of the given
-     * condition. All this happens in the state _currentState.
-     *
-     * @param _currentState   The currently considered state.
-     * @param _eliminationVar The substitution to apply.
-     * @param _condition      The condition with the constraint, in which should be substituted.
-     *
-     * @sideeffect: For each test candidate a new child of the currently considered state
-     *              is generated. The solved constraint in the currently considered
-     *              state is now labeled by true, which means, that the constraint
-     *              already served to eliminate for the respective variable in this
-     *              state.
-     */
     template<class Settings>
     void VSModule<Settings>::eliminate( State* _currentState, const carl::Variable& _eliminationVar, const vs::Condition* _condition )
     {
@@ -1130,17 +1084,6 @@ namespace smtrat
         addStateToRanking( _currentState );
     }
 
-    /**
-     * Applies the substitution of _currentState to the given conditions.
-     *
-     * @param _currentState     The currently considered state.
-     * @param _conditions       The conditions to which the substitution in this state
-     *                          shall be applied. Note that these conditions are always
-     *                          a subset of the condition vector in the father of this
-     *                          state.
-     *
-     * @sideeffect: The result is stored in the substitution result of the given state.
-     */
     template<class Settings>
     bool VSModule<Settings>::substituteAll( State* _currentState, ConditionList& _conditions )
     {
@@ -1336,11 +1279,6 @@ namespace smtrat
         return !anySubstitutionFailed;
     }
 
-    /**
-     * Applies the substitution of the given state to all conditions, which were recently added to it.
-     *
-     * @param _currentState The currently considered state.
-     */
     template<class Settings>
     void VSModule<Settings>::propagateNewConditions( State* _currentState )
     {
@@ -1467,11 +1405,6 @@ namespace smtrat
         _currentState->rHasRecentlyAddedConditions() = false;
     }
     
-    /**
-     * Inserts a state in the ranking.
-     *
-     * @param _state The states, which will be inserted.
-     */
     template<class Settings>
     void VSModule<Settings>::addStateToRanking( State* _state )
     {
@@ -1498,11 +1431,6 @@ namespace smtrat
         }
     }
 
-    /**
-     * Inserts a state and all its successors in the ranking.
-     *
-     * @param _state The root of the states, which will be inserted.
-     */
     template<class Settings>
     void VSModule<Settings>::addStatesToRanking( State* _state )
     {
@@ -1512,10 +1440,6 @@ namespace smtrat
                 addStatesToRanking( *dt );
     }
 
-    /**
-     * Inserts all states with too high degree conditions being the given state or any of its successors in the ranking.
-     * @param _state The root of the states, which will be inserted if they have too high degree conditions.
-     */
     template<class Settings>
     void VSModule<Settings>::insertTooHighDegreeStatesInRanking( State* _state )
     {
@@ -1526,13 +1450,6 @@ namespace smtrat
                 insertTooHighDegreeStatesInRanking( *dt );
     }
 
-    /**
-     * Removes a state from the ranking.
-     *
-     * @param _state The states, which will be erased of the ranking.
-     *
-     * @return  True, if the state was in the ranking.
-     */
     template<class Settings>
     bool VSModule<Settings>::removeStateFromRanking( State& _state )
     {
@@ -1548,11 +1465,6 @@ namespace smtrat
             return false;
     }
 
-    /**
-     * Removes a state and its successors from the ranking.
-     *
-     * @param _state The root of the states, which will be erased of the ranking.
-     */
     template<class Settings>
     void VSModule<Settings>::removeStatesFromRanking( State& _state )
     {
@@ -1611,9 +1523,6 @@ namespace smtrat
         return result;
     }
     
-    /**
-     * Updates the infeasible subset.
-     */
     template<class Settings>
     void VSModule<Settings>::updateInfeasibleSubset( bool _includeInconsistentTestCandidates )
     {
@@ -1789,17 +1698,6 @@ namespace smtrat
         return true;
     }
 
-    /**
-     * Finds all minimum covering sets of a vector of sets of sets. A minimum covering set
-     * fulfills the following properties:
-     *
-     *          1.) It covers in each set of sets at least one of its sets.
-     *          2.) If you delete any element of the minimum covering set, the
-     *              first property does not hold anymore.
-     *
-     * @param _conflictSets     The vector of sets of sets, for which the method finds all minimum covering sets.
-     * @param _minCovSets   The resulting minimum covering sets.
-     */
     template<class Settings>
     void VSModule<Settings>::allMinimumCoveringSets( const ConditionSetSetSet& _conflictSets, ConditionSetSet& _minCovSets )
     {
@@ -1884,12 +1782,6 @@ namespace smtrat
         }
     }
 
-    /**
-     * Adapts the passed formula according to the conditions of the currently considered state.
-     *
-     * @return  true,   if the passed formula has been changed;
-     *          false,  otherwise.
-     */
     template<class Settings>
     bool VSModule<Settings>::adaptPassedFormula( const State& _state, FormulaConditionMap& _formulaCondMap )
     {
@@ -1960,15 +1852,6 @@ namespace smtrat
         return changedPassedFormula;
     }
 
-    /**
-     * Run the backend solvers on the conditions of the given state.
-     *
-     * @param _state    The state to check the conditions of.
-     *
-     * @return  True,    if the conditions are consistent and there is no unfinished ancestor;
-     *          False,   if the conditions are inconsistent;
-     *          Unknown, if the theory solver cannot give an answer for these conditons.
-     */
     template<class Settings>
     Answer VSModule<Settings>::runBackendSolvers( State* _state )
     {
@@ -2066,7 +1949,6 @@ namespace smtrat
         }
     }
 
-    #ifdef VS_LOG_INTERMEDIATE_STEPS
     /**
      * Checks the correctness of the symbolic assignment given by the path from the root
      * state to the satisfying state.
@@ -2085,28 +1967,18 @@ namespace smtrat
         }
     }
 
-    /**
-     * Checks whether the set of conditions is is consistent/inconsistent.
-     */
     template<class Settings>
     void VSModule<Settings>::logConditions( const State& _state, bool _assumption, const string& _description ) const
     {
         if( !_state.conditions().empty() )
         {
-            std::set<const smtrat::ConstraintT*> constraints;
+            carl::PointerSet<smtrat::ConstraintT> constraints;
             for( auto cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
                 constraints.insert( (**cond).pConstraint() );
             smtrat::Module::addAssumptionToCheck( constraints, _assumption, _description );
         }
     }
-    #endif
 
-    /**
-     * Prints the history to the output stream.
-     *
-     * @param _init The beginning of each row.
-     * @param _out The output stream where the history should be printed.
-     */
     template<class Settings>
     void VSModule<Settings>::printAll( const string& _init, ostream& _out ) const
     {
@@ -2121,12 +1993,6 @@ namespace smtrat
         mpStateTree->print( _init + "   ", _out );
     }
 
-    /**
-     * Prints the history to the output stream.
-     *
-     * @param _init The beginning of each row.
-     * @param _out The output stream where the history should be printed.
-     */
     template<class Settings>
     void VSModule<Settings>::printFormulaConditionMap( const string& _init, ostream& _out ) const
     {
@@ -2140,12 +2006,6 @@ namespace smtrat
         }
     }
 
-    /**
-     * Prints the history to the output stream.
-     *
-     * @param _init The beginning of each row.
-     * @param _out The output stream where the history should be printed.
-     */
     template<class Settings>
     void VSModule<Settings>::printRanking( const string& _init, ostream& _out ) const
     {
@@ -2153,12 +2013,6 @@ namespace smtrat
             (*(*valDTPair).second).printAlone( _init + "   ", _out );
     }
 
-    /**
-     * Prints the answer if existent.
-     *
-     * @param _init The beginning of each row.
-     * @param _out The output stream where the answer should be printed.
-     */
     template<class Settings>
     void VSModule<Settings>::printAnswer( const string& _init, ostream& _out ) const
     {
