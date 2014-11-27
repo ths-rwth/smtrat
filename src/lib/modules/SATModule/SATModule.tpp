@@ -2204,7 +2204,7 @@ NextClause:
                 auto iterB = iter;
                 ++iterB;
                 assert( (iterB->first.getType() == carl::FormulaType::FALSE && iter->first.getType() == carl::FormulaType::TRUE) 
-                        || (iterB->first.getType() == NOT && iterB->first.subformula() == iter->first) );
+                        || (iterB->first.getType() == carl::FormulaType::NOT && iterB->first.subformula() == iter->first) );
                 auto iterC = consLitPair;
                 ++iterC;
                 assert( (iterC->first.getType() == carl::FormulaType::FALSE && consLitPair->first.getType() == carl::FormulaType::TRUE) 
