@@ -218,6 +218,7 @@ namespace smtrat
                 assert( cf > 0 );
                 constantPart *= cf;
                 (*linearPart) *= cf;
+//                linearPart->makeOrdered();
                 boundValue = (negative ? constantPart : -constantPart);
                 typename carl::FastPointerMap<Poly, Variable<T1, T2>*>::iterator slackIter = mSlackVars.find( linearPart );
                 if( slackIter == mSlackVars.end() )
@@ -390,9 +391,7 @@ namespace smtrat
                 ++iter;
             }          
             mNonActiveBasics.push_front( nonbasicvar_coefficient ); 
-            smtrat::Poly* ppoly = new Poly();
-            *ppoly = poly;
-            Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), ppoly, mDefaultBoundPosition, isInteger );            
+            Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), new Poly( poly ), mDefaultBoundPosition, isInteger );            
             T2& factor = var->rFactor();
             factor = leading_coeff;
             return var;
