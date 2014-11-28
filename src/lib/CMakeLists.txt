@@ -92,16 +92,7 @@ set(lib_solver_src
         solver/CompileInfo.cpp
 )
 
-set(lib_utilities_headers
-	utilities/stats/Statistics.h
-	utilities/stats/CollectStatistics.h
-	utilities/stats/StatisticSettings.h
-)
-
-set(lib_utilities_src
-	utilities/stats/CollectStatistics.cpp
-	utilities/stats/StatisticSettings.cpp
-)
+add_subdirectory(utilities)
 
 set(lib_${PROJECT_NAME}_SRCS
     ${lib_core_src}
