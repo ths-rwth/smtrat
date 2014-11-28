@@ -59,8 +59,8 @@ namespace smtrat
     {
         Module::inform( _constraint ); // This must be invoked at the beginning of this method.
         // Your code.
-	const Constraint<Poly>& constraint = _constraint.constraint(); 
-        return constraint.isConsistent() != 0;
+	const smtrat::ConstraintT* constraint = _constraint.pConstraint(); 
+        return constraint->isConsistent() != 0;
     }
 
     template<class Settings>
@@ -81,15 +81,15 @@ namespace smtrat
             mInfeasibleSubsets.push_back( infSubSet );
             return false;            
         }            
-        if( _subformula->formula().constraint().relation() == Relation::EQ )
+        if( _subformula->formula().constraint().relation() == carl::Relation::EQ )
         {
             // Do substitutions that have already been determined and update origins accordingly
             vector<std::set<FormulaT>> origins;
             std::set<FormulaT> origin;
             origin.insert( _subformula->formula() );
             origins.push_back( origin );
-            const Constraint<Poly>& constr = _subformula->formula().constraint();
-            Poly new_poly = constr.lhs();
+            const smtrat::ConstraintT* constr = _subformula->formula().pConstraint();
+            Poly new_poly = constr->lhs();
             auto iter_subs = mSubstitutions.begin();
             while( iter_subs != mSubstitutions.end() )
             {
@@ -133,7 +133,7 @@ namespace smtrat
          * in the latter containing the element that has to be deleted. Delete a processed 
          * constraint if the corresponding vector is empty 
          */
-        if( _subformula->formula().constraint().relation() == Relation::EQ )
+        if( _subformula->formula().constraint().relation() == carl::Relation::EQ )
         {
             #ifdef DEBUG_IntEqModule
             cout << "Remove: " << _subformula->formula().constraint() << endl;
@@ -218,7 +218,7 @@ namespace smtrat
              * and determine the coefficient of the latter with 
              * the smallest absolute value
              */
-            const Constraint<Poly>* curr_constr = mProc_Constraints.begin()->first.pConstraint();
+            const smtrat::ConstraintT* curr_constr = mProc_Constraints.begin()->first.pConstraint();
             if( mProc_Constraints.begin()->first.isFalse() )
             {
                 size_t i = determine_smallest_origin( mProc_Constraints.begin()->second );
@@ -413,7 +413,7 @@ namespace smtrat
         // and ignoring the equations
         while( iter_formula != rReceivedFormula().end() )
         {
-            if( (*iter_formula).formula().constraint().relation() != Relation::EQ )
+            if( (*iter_formula).formula().constraint().relation() != carl::Relation::EQ )
             {
                 #ifdef DEBUG_IntEqModule
                 cout << "Substitute in: " << (*iter_formula).formula().constraint().lhs() << endl;
@@ -424,8 +424,8 @@ namespace smtrat
                     ++iter_subs_help;
                 }
                 #endif
-                const Constraint<Poly>& constr = (*iter_formula).formula().constraint();
-                Poly new_poly = constr.lhs();
+                const smtrat::ConstraintT* constr = (*iter_formula).formula().pConstraint();
+                Poly new_poly = constr->lhs();
                 auto iter_subs = mSubstitutions.begin();
                 while( iter_subs != mSubstitutions.end() )
                 {
@@ -443,8 +443,8 @@ namespace smtrat
                 auto iter_var = mSubstitutions.begin();
                 while( iter_var != mSubstitutions.end() )
                 {
-                    auto coeff_iter = constr.lhs().begin();
-                    while( coeff_iter != constr.lhs().end() )
+                    auto coeff_iter = constr->lhs().begin();
+                    while( coeff_iter != constr->lhs().end() )
                     {
                         if( !(*coeff_iter).isConstant() )
                         {
@@ -478,7 +478,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    SubstitutionOrigins IntEqModule<Settings>::get_Substitutions() const
+    std::map<carl::Variable, Poly> IntEqModule<Settings>::get_Substitutions() const
     {
         return mSubstitutions;
     }

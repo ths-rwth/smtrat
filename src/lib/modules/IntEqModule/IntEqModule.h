@@ -33,8 +33,7 @@
 namespace smtrat
 {
     typedef std::map<FormulaT,vector<std::set<FormulaT>>> FormulaOrigins;
-    typedef std::map<std::pair<carl::Variable, Polynomial>,vector<std::set<FormulaT>>> SubstitutionOrigins;
-    
+        
     /**
      * A module which checks whether the equations contained in the received formula 
      * have an integer solution.
@@ -54,7 +53,7 @@ namespace smtrat
             /**
              * @return Member mSubstitutions
              */
-            SubstitutionOrigins get_Substitutions() const;
+            std::map<carl::Variable, Poly> get_Substitutions() const;
             /**
              * @param origins 
              * @return The index of the smallest element of origins
