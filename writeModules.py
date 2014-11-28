@@ -172,7 +172,7 @@ namespace smtrat\n\
              * Informs all backends about the so far encountered constraints, which have not yet been communicated.\n\
              * This method must not and will not be called more than once and only before the first runBackends call.\n\
              */\n\
-			void init();\n\n\
+	    void init();\n\n\
             /**\n\
              * The module has to take the given sub-formula of the received formula into account.\n\
              *\n\
@@ -244,8 +244,8 @@ namespace smtrat\n\
     {\n\
         Module::inform( _constraint ); // This must be invoked at the beginning of this method.\n\
         // Your code.\n\
-	    const Constraint& constraint = _constraint->constraint(); \n\
-        return constraint.isConsistent() != 0;\n\
+	const smtrat::ConstraintT* constraint = _constraint.pConstraint(); 
+        return constraint->isConsistent() != 0;
     }\n\
 \n'+templatePrefix+'\
     void '+m+templateInst+'::init()\n\
