@@ -39,6 +39,9 @@
 #include "../lib/config.h"
 #include "../lib/solver/CompileInfo.h"
 
+#include "carl/util/CMakeOptions.h"
+#include "../lib/utilities/CMakeOptions.h"
+
 namespace smtrat
 {
 
@@ -111,6 +114,15 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
                 printHelp();
                 exit(SMTRAT_EXIT_SUCCESS);
             }
+			else if(optionName == "cmake")
+			{
+				std::cout << "CMake options used for CArL:" << std::endl;
+				carl::printCMakeOptions(std::cout);
+				std::cout << std::endl;
+				std::cout << "CMake options used for SMT-RAT:" << std::endl;
+				smtrat::printCMakeOptions(std::cout);
+				std::cout << std::endl;
+			}
             else if(optionName == "warranty") 
             {
                 printWarranty();
@@ -202,6 +214,7 @@ void RuntimeSettingsManager::printHelp() const
     // Print help for the global options.
     std::cout << "Global options:" << std::endl;
     std::cout << "\t --help \t\t prints this help." << std::endl;
+	std::cout << "\t --cmake \t\t print cmake options." << std::endl;
     std::cout << "\t --warranty \t\t prints the warranty." << std::endl;
     std::cout << "\t --toc  \t\t\t prints the terms of condition" << std::endl;
     std::cout << "\t --info \t\t\t prints information about the binary" << std::endl;
