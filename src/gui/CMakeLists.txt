@@ -21,6 +21,10 @@ set( DOLLAR "$" )
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/build.xml.in ${CMAKE_CURRENT_BINARY_DIR}/build.xml )
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/help.html.in ${CMAKE_CURRENT_BINARY_DIR}/help.html )
 
+# write config.h
+#######################
+configure_file( ${CMAKE_SOURCE_DIR}/src/gui/config.txt.in ${CMAKE_SOURCE_DIR}/src/gui/config.txt )
+
 # use ant to build the gui
 add_custom_target( build-gui ALL ant 
                    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/build.xml
