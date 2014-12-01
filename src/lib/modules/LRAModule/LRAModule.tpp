@@ -167,10 +167,8 @@ namespace smtrat
                             const std::vector< const LRABound* >* bounds = constrBoundIter->second;
                             if( (*bounds)[0]->isActive() || (*bounds)[1]->isActive() || (*bounds)[2]->isActive() || (*bounds)[3]->isActive() )
                             {
-                                Context context = Context();
-                                context.origin = formula;
-                                context.position = passedFormulaEnd();
-                                mActiveResolvedNEQConstraints.insert( std::pair< FormulaT, Context >( formula, context ) );
+                                Context context( formula, passedFormulaEnd() );
+                                mActiveResolvedNEQConstraints.insert( std::pair< FormulaT, Context >( formula, std::move(context) ) );
                                 bool leqBoundActive = (*bounds)[1]->isActive();
                                 if( leqBoundActive || (*bounds)[2]->isActive() )
                                 {
@@ -179,10 +177,8 @@ namespace smtrat
                             }
                             else
                             {
-                                Context context = Context();
-                                context.origin = formula;
-                                context.position = addSubformulaToPassedFormula( formula, formula ).first;
-                                mActiveUnresolvedNEQConstraints.insert( std::pair< FormulaT, Context >( formula, context ) );
+                                Context context( formula, addSubformulaToPassedFormula( formula, formula ).first );
+                                mActiveUnresolvedNEQConstraints.insert( std::pair< FormulaT, Context >( formula, std::move(context) ) );
                             }
                         }
                     }
