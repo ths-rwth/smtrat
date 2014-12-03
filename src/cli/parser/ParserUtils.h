@@ -273,13 +273,13 @@ struct ErrorHandler {
 		std::string input(where, line_end);
 		
 		std::cerr << std::endl;
-		LOGMSG_ERROR("smtrat.parser", "Parsing error at " << spirit::get_line(where) << ":" << spirit::get_column(line_start, where));
+		SMTRAT_LOG_ERROR("smtrat.parser", "Parsing error at " << spirit::get_line(where) << ":" << spirit::get_column(line_start, where));
 		if (p.lastrule.str().size() > 0) {
-			LOGMSG_ERROR("smtrat.parser", "after parsing rule " << p.lastrule.str() << ": " << p.lastentity.str());
+			SMTRAT_LOG_ERROR("smtrat.parser", "after parsing rule " << p.lastrule.str() << ": " << p.lastentity.str());
 		}
-		LOGMSG_ERROR("smtrat.parser", "expected" << std::endl << "\t" << what.tag << ": " << what);
-		LOGMSG_ERROR("smtrat.parser", "but got" << std::endl << "\t" << input);
-		LOGMSG_ERROR("smtrat.parser", "in line " << spirit::get_line(where) << std::endl << "\t" << line);
+		SMTRAT_LOG_ERROR("smtrat.parser", "expected" << std::endl << "\t" << what.tag << ": " << what);
+		SMTRAT_LOG_ERROR("smtrat.parser", "but got" << std::endl << "\t" << input);
+		SMTRAT_LOG_ERROR("smtrat.parser", "in line " << spirit::get_line(where) << std::endl << "\t" << line);
 		return qi::fail;
 	}
 };

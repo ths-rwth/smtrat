@@ -115,18 +115,18 @@ namespace smtrat
 		mCAD.alterSetting(setting);
 		#endif
 
-		LOGMSG_TRACE("smtrat.cad", "Initial CAD setting:" << std::endl << setting);
+		SMTRAT_LOG_TRACE("smtrat.cad", "Initial CAD setting:" << std::endl << setting);
 		#ifdef SMTRAT_CAD_GENERIC_SETTING
-		LOGMSG_TRACE("smtrat.cad", "SMTRAT_CAD_GENERIC_SETTING set");
+		SMTRAT_LOG_TRACE("smtrat.cad", "SMTRAT_CAD_GENERIC_SETTING set");
 		#endif
 		#ifdef SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
-		LOGMSG_TRACE("smtrat.cad", "SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION set");
+		SMTRAT_LOG_TRACE("smtrat.cad", "SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION set");
 		#endif
 		#ifdef SMTRAT_CAD_DISABLE_SMT
-		LOGMSG_TRACE("smtrat.cad", "SMTRAT_CAD_DISABLE_SMT set");
+		SMTRAT_LOG_TRACE("smtrat.cad", "SMTRAT_CAD_DISABLE_SMT set");
 		#endif
 		#ifdef SMTRAT_CAD_DISABLE_MIS
-		LOGMSG_TRACE("smtrat.cad", "SMTRAT_CAD_DISABLE_MIS set");
+		SMTRAT_LOG_TRACE("smtrat.cad", "SMTRAT_CAD_DISABLE_MIS set");
 		#endif
 	}
 
@@ -142,7 +142,7 @@ namespace smtrat
 	 */
 	bool CADModule::assertSubformula(ModuleInput::const_iterator _subformula)
 	{
-		LOG_FUNC("smtrat.cad", _subformula->formula());
+		SMTRAT_LOG_FUNC("smtrat.cad", _subformula->formula());
 		Module::assertSubformula(_subformula);
 		switch (_subformula->formula().getType()) {
                     case carl::FormulaType::TRUE: 
@@ -164,7 +164,7 @@ namespace smtrat
 			}
                     }
                     default:
-			LOGMSG_ERROR("smtrat.cad", "Asserted " << _subformula->formula());
+			SMTRAT_LOG_ERROR("smtrat.cad", "Asserted " << _subformula->formula());
 			assert(false);
 			return true;
 		}
@@ -250,16 +250,18 @@ namespace smtrat
 				g.removeConstraintVertex(mConstraints.size() - 1);
 			#endif
 			
-			LOGMSG_DEBUG("smtrat.cad", "Input: " << mConstraints);
-			for (auto j: mConstraints) LOGMSG_DEBUG("smtrat.cad", "\t" << j);
-			LOGMSG_DEBUG("smtrat.cad", "Bounds: " << mVariableBounds);
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Input: " << mConstraints);
+			for (auto j: mConstraints) SMTRAT_LOG_DEBUG("smtrat.cad", "\t" << j);
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Bounds: " << mVariableBounds);
 				
 			vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics(g);
 
 			std::set<FormulaT> boundConstraints = mVariableBounds.getOriginsOfBounds();
 			for (auto i: infeasibleSubsets) {
-				LOGMSG_DEBUG("smtrat.cad", "Infeasible:");
-				for (auto j: i) LOGMSG_DEBUG("smtrat.cad", "\t" << j);
+                #ifdef LOGGING_CARL
+				SMTRAT_LOG_DEBUG("smtrat.cad", "Infeasible:");
+				for (auto j: i) SMTRAT_LOG_DEBUG("smtrat.cad", "\t" << j);
+                #endif
 				mInfeasibleSubsets.push_back(i);
 				mInfeasibleSubsets.back().insert(boundConstraints.begin(), boundConstraints.end());
 			}
@@ -271,14 +273,14 @@ namespace smtrat
 			mRealAlgebraicSolution = carl::RealAlgebraicPoint<smtrat::Rational>();
 			return foundAnswer(False);
 		}
-		LOGMSG_TRACE("smtrat.cad", "#Samples: " << mCAD.samples().size());
-		LOGMSG_TRACE("smtrat.cad", "Elimination sets:");
+		SMTRAT_LOG_TRACE("smtrat.cad", "#Samples: " << mCAD.samples().size());
+		SMTRAT_LOG_TRACE("smtrat.cad", "Elimination sets:");
 		for (unsigned i = 0; i != mCAD.getEliminationSets().size(); ++i) {
-			LOGMSG_TRACE("smtrat.cad", "\tLevel " << i << " (" << mCAD.getEliminationSet(i).size() << "): " << mCAD.getEliminationSet(i));
+			SMTRAT_LOG_TRACE("smtrat.cad", "\tLevel " << i << " (" << mCAD.getEliminationSet(i).size() << "): " << mCAD.getEliminationSet(i));
 		}
-		LOGMSG_TRACE("smtrat.cad", "Result: true");
-		LOGMSG_TRACE("smtrat.cad", "CAD complete: " << mCAD.isComplete());
-		LOGMSG_TRACE("smtrat.cad", "Solution point: " << mRealAlgebraicSolution);
+		SMTRAT_LOG_TRACE("smtrat.cad", "Result: true");
+		SMTRAT_LOG_TRACE("smtrat.cad", "CAD complete: " << mCAD.isComplete());
+		SMTRAT_LOG_TRACE("smtrat.cad", "Solution point: " << mRealAlgebraicSolution);
 		mInfeasibleSubsets.clear();
 		if (rReceivedFormula().isIntegerConstraintConjunction()) {
 			// Check whether the found assignment is integer.
@@ -318,14 +320,14 @@ namespace smtrat
 				return; // there is nothing to remove
 			carl::cad::Constraint<smtrat::Rational> constraint = mConstraints[constraintIt->second];
 
-			LOGMSG_TRACE("smtrat.cad", "---- Constraint removal (before) ----");
-			LOGMSG_TRACE("smtrat.cad", "Elimination sets:");
+			SMTRAT_LOG_TRACE("smtrat.cad", "---- Constraint removal (before) ----");
+			SMTRAT_LOG_TRACE("smtrat.cad", "Elimination sets:");
 			for (unsigned i = 0; i != mCAD.getEliminationSets().size(); ++i) {
-				LOGMSG_TRACE("smtrat.cad", "\tLevel " << i << " (" << mCAD.getEliminationSet(i).size() << "): " << mCAD.getEliminationSet(i));
+				SMTRAT_LOG_TRACE("smtrat.cad", "\tLevel " << i << " (" << mCAD.getEliminationSet(i).size() << "): " << mCAD.getEliminationSet(i));
 			}
-			LOGMSG_TRACE("smtrat.cad", "#Samples: " << mCAD.samples().size());
-			LOGMSG_TRACE("smtrat.cad", "-----------------------------------------");
-			LOGMSG_TRACE("smtrat.cad", "Removing " << constraint << "...");
+			SMTRAT_LOG_TRACE("smtrat.cad", "#Samples: " << mCAD.samples().size());
+			SMTRAT_LOG_TRACE("smtrat.cad", "-----------------------------------------");
+			SMTRAT_LOG_TRACE("smtrat.cad", "Removing " << constraint << "...");
 
 			unsigned constraintIndex = constraintIt->second;
 			// remove the constraint in mConstraintsMap
@@ -350,14 +352,14 @@ namespace smtrat
 			if (doDelete) // no other constraint claims the polynomial, hence remove it from the list and the cad
 				mCAD.removePolynomial(constraint.getPolynomial());
 
-			LOGMSG_TRACE("smtrat.cad", "---- Constraint removal (afterwards) ----");
-			LOGMSG_TRACE("smtrat.cad", "New constraint set: " << mConstraints);
-			LOGMSG_TRACE("smtrat.cad", "Elimination sets:");
+			SMTRAT_LOG_TRACE("smtrat.cad", "---- Constraint removal (afterwards) ----");
+			SMTRAT_LOG_TRACE("smtrat.cad", "New constraint set: " << mConstraints);
+			SMTRAT_LOG_TRACE("smtrat.cad", "Elimination sets:");
 			for (unsigned i = 0; i != mCAD.getEliminationSets().size(); ++i) {
-				LOGMSG_TRACE("smtrat.cad", "\tLevel " << i << " (" << mCAD.getEliminationSet(i).size() << "): " << mCAD.getEliminationSet(i));
+				SMTRAT_LOG_TRACE("smtrat.cad", "\tLevel " << i << " (" << mCAD.getEliminationSet(i).size() << "): " << mCAD.getEliminationSet(i));
 			}
-			LOGMSG_TRACE("smtrat.cad", "#Samples: " << mCAD.samples().size());
-			LOGMSG_TRACE("smtrat.cad", "-----------------------------------------");
+			SMTRAT_LOG_TRACE("smtrat.cad", "#Samples: " << mCAD.samples().size());
+			SMTRAT_LOG_TRACE("smtrat.cad", "-----------------------------------------");
 
 			Module::removeSubformula(_subformula);
 			return;
@@ -504,7 +506,7 @@ namespace smtrat
 				setCover.push_back(vertex);
 				// remove coverage information of v from conflictGraph
 				conflictGraph.invertConflictingVertices(vertex);
-				LOGMSG_TRACE("smtrat.cad", "Conflict graph after removal of " << vertex << ": " << endl << conflictGraph);
+				SMTRAT_LOG_TRACE("smtrat.cad", "Conflict graph after removal of " << vertex << ": " << endl << conflictGraph);
 				// get the new vertex with the biggest number of adjacent solution point vertices
 				vertex = conflictGraph.maxDegreeVertex();
 			}
@@ -521,7 +523,7 @@ namespace smtrat
 	 * @return
 	 */
 	inline const FormulaT& CADModule::getConstraintAt(unsigned index) {
-		LOGMSG_TRACE("smtrat.cad", "get " << index << " from " << mConstraintsMap);
+		SMTRAT_LOG_TRACE("smtrat.cad", "get " << index << " from " << mConstraintsMap);
                 // @todo: Use some other map here.
 		for (auto& i: mConstraintsMap) {
 			if (i.second == index) // found the entry in the constraint map
@@ -537,7 +539,7 @@ namespace smtrat
 	 * @param decrement
 	 */
 	inline void CADModule::updateConstraintMap(unsigned index, bool decrement) {
-		LOGMSG_TRACE("smtrat.cad", "updating " << index << " from " << mConstraintsMap);
+		SMTRAT_LOG_TRACE("smtrat.cad", "updating " << index << " from " << mConstraintsMap);
 		if (decrement) {
 			for (auto& i: mConstraintsMap) {
 				if (i.second > index) i.second--;
@@ -547,7 +549,7 @@ namespace smtrat
 				if (i.second > index) i.second++;
 			}
 		}
-		LOGMSG_TRACE("smtrat.cad", "now: " << mConstraintsMap);
+		SMTRAT_LOG_TRACE("smtrat.cad", "now: " << mConstraintsMap);
 	}
 
 }	// namespace smtrat

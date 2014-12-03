@@ -198,15 +198,13 @@ void printTimings(smtrat::Manager* solver)
 int main( int argc, char* argv[] )
 {   
 #ifdef LOGGING
-#ifdef LOGGING_CARL
 	carl::logging::logger().configure("smtrat", "smtrat.log");
 	carl::logging::logger().filter("smtrat")
 		("smtrat", carl::logging::LogLevel::LVL_INFO)
 		("smtrat.cad", carl::logging::LogLevel::LVL_TRACE)
 	;
 #endif
-#endif
-	LOGMSG_INFO("smtrat", "Starting smtrat.");
+	SMTRAT_LOG_INFO("smtrat", "Starting smtrat.");
     // This variable will hold the input file.
     std::string pathToInputFile = "";
 

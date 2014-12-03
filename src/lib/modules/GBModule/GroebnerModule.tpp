@@ -86,10 +86,8 @@ bool GroebnerModule<Settings>::assertSubformula( ModuleInput::const_iterator _fo
         return true;
     }
 
-    const ConstraintT& constraint = _formula->formula().constraint( );
-    
-
     #ifdef SMTRAT_DEVOPTION_Statistics
+    const ConstraintT& constraint = _formula->formula().constraint( );
     mStats->constraintAdded(constraint.relation());
     #endif
 
