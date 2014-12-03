@@ -30,14 +30,15 @@
  * @version 2013-04-23
  */
 
+#include <iostream>
+#include <boost/filesystem/path.hpp>
+#include <signal.h>
+
+#include "logging.h"
 #include "Benchmark.h"
 #include "Tool.h"
 #include "Node.h"
 #include "Settings.h"
-
-#include <iostream>
-#include <boost/filesystem/path.hpp>
-#include <signal.h>
 
 #include "carl/formula/Formula.h"
 
@@ -295,7 +296,7 @@ bool initApplication(int argc, char** argv, vector<Benchmark*>& _benchmarks, Sta
  */
 void handleSignal(int)
 {
-	BenchmarkTool::OStream << std::endl << "User abort!" << std::endl << std::endl;
+	BENCHMAX_LOG_WARN("benchmax", "User abort!");
 	while(!BenchmarkTool::Nodes->empty())
 	{
 		Node* toDelete = BenchmarkTool::Nodes->back();
@@ -321,9 +322,8 @@ int main(int argc, char** argv)
 
 	std::signal(SIGINT, &handleSignal);
 
-	if(benchmarks.empty())
-	{
-		BenchmarkTool::OStream << "Error: No benchmarks were found." << endl;
+	if(benchmarks.empty()) {
+		BENCHMAX_LOG_FATAL("benchmax", "No benchmarks were found.");
 		return 0;
 	}
 	

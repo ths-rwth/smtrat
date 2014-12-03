@@ -11,7 +11,7 @@
 #include "SshWaitSocket.h"
 #include <sstream>
 
-#include "BenchmarkTool.h"
+#include "../BenchmarkTool.h"
 
 /**
  */

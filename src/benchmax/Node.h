@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "SshConnection.h"
+#include "ssh/SshConnection.h"
 #include "Benchmark.h"
 
 #include <boost/filesystem.hpp>

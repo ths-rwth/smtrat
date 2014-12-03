@@ -14,7 +14,7 @@
 #include <libssh2.h>
 #include <libssh2_sftp.h>
 #include "SshWaitSocket.h"
-#include "BenchmarkTool.h"
+#include "../BenchmarkTool.h"
 #include <fstream>
 
 class SFTPDownloader

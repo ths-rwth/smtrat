@@ -11,8 +11,7 @@
  * @version 28-11-2012
  */
 
-#ifndef SSHCONNECTION_H
-#define SSHCONNECTION_H
+#pragma once
 
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -20,6 +19,8 @@
 #include <libssh2.h>
 #include "SshChannel.h"
 #include "SFTPDownloader.h"
+
+#include "../logging.h"
 
 struct Sessiondata
 {
@@ -136,20 +137,20 @@ class SshConnection:
 		* @param pw The password
 		* @return true iff the connection is established (or already was established)
 		*/
-		int buildConnection(const char* IP, unsigned short PortNumber, const std::string& user, const std::string& pw)
+		int buildConnection(const char* hostname, unsigned short port, const std::string& user, const std::string& password)
 		{
 			if(mConnectionEstablished)
 				return true;
 			if(mBlocked)
 				return false;
-			BenchmarkTool::OStream << "Connecting with " << IP << ":" << PortNumber << ".." << std::endl;
+			BENCHMAX_LOG_INFO("benchmark.ssh", "Connecting with " << hostname << ":" << port << " ...");
 			/* Connect to SSH server */
 			sin.sin_family	  = AF_INET;
-			sin.sin_port = htons(PortNumber);
-			sin.sin_addr.s_addr = inet_addr(IP);
+			sin.sin_port = htons(port);
+			sin.sin_addr.s_addr = inet_addr(hostname);
 			if(connect(mSocket, (struct sockaddr*)(&sin), sizeof(struct sockaddr_in)) != 0)
 			{
-				fprintf(stderr, "failed to connect!\n");
+				BENCHMAX_LOG_ERROR("benchmax.ssh", "Failed to connect!");
 				return -1;
 			}
 
@@ -178,10 +179,10 @@ class SshConnection:
 					auth_pw |= 4;
 				}
 				// Authentification with password.
-				BenchmarkTool::OStream << "User: " << user << " Password: " << pw << std::endl;
+				BenchmarkTool::OStream << "User: " << user << " Password: " << password << std::endl;
 				if(auth_pw & 1)
 				{
-					int retval = libssh2_userauth_password(session, user.c_str(), pw.c_str());
+					int retval = libssh2_userauth_password(session, user.c_str(), password.c_str());
 					if(retval == LIBSSH2_ERROR_AUTHENTICATION_FAILED)
 					{
 						BenchmarkTool::OStream << "Authentification failed." << std::endl;
@@ -202,7 +203,7 @@ class SshConnection:
 				}
 				else if(auth_pw & 4)
 				{
-					sesdata.password = pw;
+					sesdata.password = password;
 					if(libssh2_userauth_keyboard_interactive(session, user.c_str(), &kbd_callback))
 					{
 						BenchmarkTool::OStream << "\tAuthentication by keyboard-interactive failed!\n";
@@ -356,5 +357,3 @@ class SshConnection:
 			}
 		}
 };
-
-#endif   /* SSHCONNECTION_H */
