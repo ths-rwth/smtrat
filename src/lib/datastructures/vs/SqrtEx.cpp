@@ -27,7 +27,7 @@
 
 #include "SqrtEx.h"
 #ifdef USE_GINAC
-#include "carl/converter/GinacConverter.h"
+#include "carl/converter/OldGinacConverter.h"
 #endif
 
 namespace vs
