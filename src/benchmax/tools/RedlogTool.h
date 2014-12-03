@@ -7,10 +7,11 @@
  *
  */
 
-#ifndef REDLOGTOOL_H
-#define REDLOGTOOL_H
+#pragma once
 
 #include "../Tool.h"
+
+namespace benchmax {
 
 enum RedlogMode { RLCAD, RLQE };
 
@@ -32,4 +33,4 @@ class RedlogTool:
 
 };
 
-#endif   /* REDLOGTOOL_H */
+}

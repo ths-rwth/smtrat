@@ -6,10 +6,11 @@
  *
  */
 
-#ifndef Z3TOOL_H
-#define Z3TOOL_H
+#pragma once
 
 #include "../Tool.h"
+
+namespace benchmax {
 
 class Z3Tool:
     public Tool
@@ -21,4 +22,4 @@ class Z3Tool:
 
 };
 
-#endif   /* Z3TOOL_H */
+}

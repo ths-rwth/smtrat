@@ -17,6 +17,8 @@
 #include "BenchmarkStatus.h"
 #include "Smt2Input.h"
 
+namespace benchmax {
+
 namespace fs = boost:: filesystem;
 
 enum ToolInterface
@@ -190,3 +192,5 @@ class Tool
 };
 
 Tool* createTool(ToolInterface interface, const std::string& pathToTool);
+
+}

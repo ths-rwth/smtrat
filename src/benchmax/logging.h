@@ -8,6 +8,12 @@
 #include "config.h"
 #include <carl/core/carlLogging.h>
 
+namespace benchmax {
+
+	using carl::operator<<;
+
+}
+
 #if defined LOGGING
 	#define BENCHMAX_LOG_FATAL(channel, msg) __CARL_LOG_FATAL(channel, msg)
 	#define BENCHMAX_LOG_ERROR(channel, msg) __CARL_LOG_ERROR(channel, msg)

@@ -5,12 +5,12 @@
  * Created on September 25, 2012, 12:10 PM
  */
 
-#ifndef BENCHMARKTOOL_H
-#define BENCHMARKTOOL_H
+#pragma once
 
 #include "Tool.h"
 #include <iostream>
 
+namespace benchmax {
 class Node;
 
 struct BenchmarkTool
@@ -25,7 +25,6 @@ struct BenchmarkTool
 	static bool				UseStats;
 	static bool				ProduceLatex;
 	static std::string		 ExitMessage;
-	static std::ostream		OStream;
 	static std::string		 PathOfBenchmarkTool;
 	static std::string		 WrongResultPath;
 	static std::vector<Node*>* Nodes;
@@ -33,4 +32,4 @@ struct BenchmarkTool
 	static unsigned			Memout;
 };
 
-#endif   /* TOOL_H */
+}

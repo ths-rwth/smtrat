@@ -154,17 +154,17 @@ class SshConnection:
 				return -1;
 			}
 
-			BenchmarkTool::OStream << "Handshaking.." << std::endl;
+			BENCHMAX_LOG_WARN("benchmax.ssh", "Handshaking.");
 			int rc = libssh2_session_handshake(session, mSocket);
 			if(0 > rc)
 			{
-				BenchmarkTool::OStream << "..failed (return code=" << rc << ")" << std::endl;
+				BENCHMAX_LOG_ERROR("benchmax.ssh", "Handshaking failed (return code = " << rc << ")");
 			}
 
 			char* userauthlist = libssh2_userauth_list(session, user.c_str(), (unsigned)user.length());
 			if(libssh2_userauth_authenticated(session) != 1)
 			{
-				BenchmarkTool::OStream << "Authentication methods: " << userauthlist << std::endl;
+				BENCHMAX_LOG_DEBUG("benchmax.ssh", "Authentication methods: " << userauthlist);
 				int auth_pw = 0;
 				if(strstr(userauthlist, "password") != NULL)
 				{
@@ -179,25 +179,25 @@ class SshConnection:
 					auth_pw |= 4;
 				}
 				// Authentification with password.
-				BenchmarkTool::OStream << "User: " << user << " Password: " << password << std::endl;
+				BENCHMAX_LOG_DEBUG("benchmax.ssh", "Authenticating with user = " << user << " and password.");
 				if(auth_pw & 1)
 				{
 					int retval = libssh2_userauth_password(session, user.c_str(), password.c_str());
 					if(retval == LIBSSH2_ERROR_AUTHENTICATION_FAILED)
 					{
-						BenchmarkTool::OStream << "Authentification failed." << std::endl;
+						BENCHMAX_LOG_ERROR("benchmax.ssh", "Authentication failed.");
 						mBlocked = true;
 						return 0;
 					}
 					else if(retval == 0)
 					{
 						mConnectionEstablished = true;
-						BenchmarkTool::OStream << "Connection established" << std::endl;
+						BENCHMAX_LOG_DEBUG("benchmax.ssh", "Connection established.");
 						return 1;
 					}
 					else
 					{
-						BenchmarkTool::OStream << "General ssh auth. error" << std::endl;
+						BENCHMAX_LOG_FATAL("benchmax.ssh", "Unhandled shh authentication error: " << retval);
 						exit(1);
 					}
 				}
@@ -206,7 +206,7 @@ class SshConnection:
 					sesdata.password = password;
 					if(libssh2_userauth_keyboard_interactive(session, user.c_str(), &kbd_callback))
 					{
-						BenchmarkTool::OStream << "\tAuthentication by keyboard-interactive failed!\n";
+						BENCHMAX_LOG_ERROR("benchmax.ssh", "Authentication by keyboard-interactive failed!");
 						mBlocked = true;
 					}
 					else
@@ -218,7 +218,7 @@ class SshConnection:
 			}
 			else
 			{
-				BenchmarkTool::OStream << "Authentification succeeded without password" << std::endl;
+				BENCHMAX_LOG_DEBUG("benchmax.ssh", "Authentication succeeded without password.");
 				mConnectionEstablished = true;
 			}
 			return 1;
@@ -231,7 +231,7 @@ class SshConnection:
 		*/
 		void remoteCall(const std::string& cmd)
 		{
-			BenchmarkTool::OStream << "Remote call: " << cmd << std::endl;
+			BENCHMAX_LOG_INFO("benchmax.ssh", "Remote call: " << cmd);
 			SshChannel* channel = mIdleChannels.back();
 			channel->openChannel(session);
 			channel->setBlocking(false);
@@ -265,12 +265,12 @@ class SshConnection:
 			return mDownloader.download(wait);
 		}
 
-		void printActiveRemoteCalls(std::ostream& _out, const std::string& _init = "") const
+		void logActiveRemoteCalls() const
 		{
 			for(std::map<SshChannel* const , const std::string>::const_iterator channel = mActiveChannels.begin(); channel != mActiveChannels.end();
 					++channel)
 			{
-				_out << _init << channel->second << std::endl << std::endl;
+				BENCHMAX_LOG_DEBUG("benchmax.ssh", "Active call: " << channel->second);
 			}
 		}
 
@@ -324,7 +324,7 @@ class SshConnection:
 
 		void cancel()
 		{
-			BenchmarkTool::OStream << "Cancelling .. " << std::endl;
+			BENCHMAX_LOG_INFO("benchmax.ssh", "Cancelling...");
 			SshChannel* channel;
 			if(!mIdleChannels.empty())
 			{
@@ -345,7 +345,7 @@ class SshConnection:
 			std::map<SshChannel* const , const std::string>::iterator it = mActiveChannels.begin();
 			while(it != mActiveChannels.end())
 			{
-				BenchmarkTool::OStream << "Remote call: " << it->second << std::endl;
+				BENCHMAX_LOG_INFO("benchmax.ssh", "Remote call: " << it->second);
 				SshChannel* channel = it->first;
 				channel->openChannel(session);
 				channel->setBlocking(false);

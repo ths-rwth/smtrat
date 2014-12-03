@@ -12,6 +12,8 @@
 #include "QepcadTool.h"
 #include "../BenchmarkTool.h"
 
+namespace benchmax {
+
 using std::string;
 using std::unordered_map;
 
@@ -68,3 +70,5 @@ bool QepcadTool::convertInput(Smt2Input* input)
 	return true;
 }
 #endif
+
+}

@@ -1,6 +1,8 @@
 
 #include "BenchmarkStatus.h"
 
+namespace benchmax {
+
 BenchmarkStatus benchmarkStatusFromParser(int parserStatus)
 {
 	switch(parserStatus)
@@ -67,4 +69,5 @@ std::string benchmarkResultToString(BenchmarkResult result)
 			std::cerr << "Invalid result type" << std::endl;
 			return "";
 	}
+}
 }

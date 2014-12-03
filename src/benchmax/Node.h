@@ -14,6 +14,8 @@
 
 namespace fs =boost:: filesystem;
 
+namespace benchmax {
+
 /**
  * Class which represents another computer.
  */
@@ -166,3 +168,5 @@ class Node
 			mSsh.restartActiveCalls();
 		}
 };
+
+}

@@ -6,10 +6,11 @@
  *
  */
 
-#ifndef ISATTOOL_H
-#define ISATTOOL_H
+#pragma once
 
 #include "../Tool.h"
+
+namespace benchmax {
 
 class IsatTool:
     public Tool
@@ -21,4 +22,4 @@ class IsatTool:
 
 };
 
-#endif   /* ISATTOOL_H */
+}

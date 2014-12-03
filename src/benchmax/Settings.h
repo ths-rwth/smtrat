@@ -32,7 +32,8 @@ public:
 			("verbose,v", po::bool_switch(&verbose), "display comprehensive output")
 			("quiet", po::bool_switch(&quiet), "display only final output")
 			("mute", po::bool_switch(&mute), "prevent all output except for possible LaTeX output")
-			("disclaimer", "show the conditions and warranty disclaimer")
+			("copyright", "show the copyright")
+			("disclaimer", "show the warranty disclaimer")
 		;
 		toolOptions.add_options()
 			("latex,l", po::bool_switch(&BenchmarkTool::ProduceLatex), "output a LaTeX table with all results at the end")

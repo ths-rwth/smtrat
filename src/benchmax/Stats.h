@@ -10,6 +10,8 @@
 
 #include "carl/formula/Formula.h"
 
+namespace benchmax {
+
 using carl::Formula;
 
 class Stats
@@ -62,3 +64,5 @@ class Stats
 		static void callComposeProcessor();
 
 };
+
+}

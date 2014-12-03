@@ -6,6 +6,8 @@
 #include "tools/RedlogTool.h"
 #include "tools/QepcadTool.h"
 
+namespace benchmax {
+
 Tool* createTool(ToolInterface interface, const std::string& pathToTool)
 {
 	switch(interface)
@@ -48,4 +50,6 @@ BenchmarkResult Tool::extractAnswerFromOutput(const std::string& relevantOutput,
 		return BR_SAT;
 	}
 	return BR_NORESULT;
+}
+
 }

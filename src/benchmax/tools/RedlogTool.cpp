@@ -12,6 +12,8 @@
 #include "RedlogTool.h"
 #include "../BenchmarkTool.h"
 
+namespace benchmax {
+
 ToolInterface redlogModeToToolInterface(RedlogMode mode)
 {
 	switch(mode)
@@ -67,3 +69,5 @@ bool RedlogTool::convertInput(Smt2Input* input)
 	return true;
 }
 #endif
+
+}

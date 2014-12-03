@@ -29,8 +29,7 @@
  * @version 2013-04-14
  */
 
-#ifndef SMTRAT_BENCHMARK_H
-#define SMTRAT_BENCHMARK_H
+#pragma once
 
 #include <cstdlib>
 #include <stdio.h>
@@ -87,6 +86,8 @@ namespace boost
 }
 typedef std::pair<std::string, std::string> doublestring;
 typedef std::list<fs::path>				 pathlist;
+
+namespace benchmax {
 
 struct FilterFileExtensions
 {
@@ -253,4 +254,4 @@ class Benchmark
 
 };
 
-#endif   /* SMTRAT_BENCHMARK_H */
+}

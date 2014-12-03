@@ -8,6 +8,10 @@
 
 #include "IsatTool.h"
 
+namespace benchmax {
+
 IsatTool::IsatTool(const std::string& pathToTool):
     Tool(TI_ISAT, pathToTool, ".hys")
 {}
+
+}

@@ -117,7 +117,7 @@ class SFTPDownloader
 					else
 					{
 						if(rc != LIBSSH2_ERROR_EAGAIN)
-							BenchmarkTool::OStream << "Error reading data (rc=" << rc << ")\n";
+							BENCHMAX_LOG_ERROR("benchmax.ssh", "Error reading data (return code = " << rc << ")");
 					}
 
 				}
@@ -162,7 +162,7 @@ class SFTPDownloader
 					{
 						if(ret != LIBSSH2_ERROR_EAGAIN)
 						{
-							BenchmarkTool::OStream << "Error removing file << " << mRemoteFile << " (rc=" << ret << ")" << std::endl;
+							BENCHMAX_LOG_ERROR("benchmax.ssh", "Error removing file " << mRemoteFile << " (return code = " << ret << ")");
 						}
 					}
 				}

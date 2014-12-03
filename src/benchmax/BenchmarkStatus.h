@@ -5,10 +5,11 @@
  *
  */
 
-#ifndef BENCHMARKSTATUS_H
-#define BENCHMARKSTATUS_H
+#pragma once
 
 #include <iostream>
+
+namespace benchmax {
 
 enum BenchmarkStatus
 {
@@ -28,4 +29,4 @@ std::string benchmarkResultToString(BenchmarkResult result);
 
 enum ValidationResult { NOTVALIDATED = -1, FOUNDERROR = 1, OKAY = 0 };
 
-#endif   /* BENCHMARKSTATUS_H */
+}

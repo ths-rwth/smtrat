@@ -13,7 +13,9 @@
 #include <assert.h>
 #include <boost/filesystem.hpp>
 
-namespace fs =boost:: filesystem;
+namespace benchmax {
+
+namespace fs = boost:: filesystem;
 
 Stats::Stats(const std::string& _file, Type _type):
 	mType(_type),
@@ -434,4 +436,6 @@ void Stats::callComposeProcessor(const std::string& io)
 void Stats::callComposeProcessor()
 {
 	callComposeProcessor(std::string(BenchmarkTool::OutputDirectory + BenchmarkTool::StatsXMLFile));
+}
+
 }

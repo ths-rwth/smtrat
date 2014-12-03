@@ -4,14 +4,15 @@
  * @created 28/11/2012
  */
 
-#ifndef SSHCHANNEL_H
-#define SSHCHANNEL_H
+#pragma once
 
-#include <libssh2.h>
-#include "SshWaitSocket.h"
 #include <sstream>
+#include <libssh2.h>
+
+#include "SshWaitSocket.h"
 
 #include "../BenchmarkTool.h"
+#include "../logging.h"
 
 /**
  */
@@ -40,7 +41,7 @@ class SshChannel
 		{
 			if(mChannel != NULL)
 			{
-				BenchmarkTool::OStream << "Channel still exists" << std::endl;
+				BENCHMAX_LOG_ERROR("benchmax.ssh", "Channel is still open.");
 			}
 			mSession = session;
 			while((mChannel = libssh2_channel_open_session(mSession)) == NULL
@@ -78,7 +79,7 @@ class SshChannel
 			}
 			if(rc == 0)
 			{
-				BenchmarkTool::OStream << "Command send" << std::endl;
+				BENCHMAX_LOG_DEBUG("benchmax.ssh", "Sent command \"" << command << "\".");
 				return true;
 			}
 			else
@@ -108,7 +109,7 @@ class SshChannel
 					{
 						response_stream.write(buffer, rc);
 						// temporarily output response for debugging.
-						BenchmarkTool::OStream << "Response: " << response_stream.str() << std::endl;
+						BENCHMAX_LOG_DEBUG("benchmax.ssh", "Response: " << response_stream.str());
 					}
 					else if(rc == 0)
 					{
@@ -116,9 +117,9 @@ class SshChannel
 					}
 					else
 					{
-						if(rc != LIBSSH2_ERROR_EAGAIN)
-							/* no need to output this for the EAGAIN case */
-							fprintf(stderr, "libssh2_channel_read returned %ld\n", rc);
+						if (rc != LIBSSH2_ERROR_EAGAIN) {
+							BENCHMAX_LOG_ERROR("benchmax.ssh", "libssh2_channel_read failed (return code = " << rc << ")");
+						}
 					}
 				}
 				while(rc > 0);
@@ -137,7 +138,7 @@ class SshChannel
 					break;
 				}
 			}
-			std::size_t result = response_stream.str().find(BenchmarkTool::ExitMessage);
+			std::size_t result = response_stream.str().find(benchmax::BenchmarkTool::ExitMessage);
 			// if the exit message was found, we return true
 			if(result != std::string::npos)
 				return true;
@@ -149,7 +150,7 @@ class SshChannel
 		 */
 		int closeChannel()
 		{
-			BenchmarkTool::OStream << "Closing channel.. " << std::endl;
+			BENCHMAX_LOG_DEBUG("benchmax.ssh", "Closing channel.");
 			int   rc;
 			int   exitcode = 1;
 			char* exitsignal = (char*)"none";
@@ -163,10 +164,11 @@ class SshChannel
 				libssh2_channel_get_exit_signal(mChannel, &exitsignal, NULL, NULL, NULL, NULL, NULL);
 			}
 
-			if(exitsignal)
-				fprintf(stderr, "\nGot signal: %s\n", exitsignal);
-			else
-				BenchmarkTool::OStream << "EXIT: " << exitcode << std::endl;
+			if(exitsignal) {
+				BENCHMAX_LOG_WARN("benchmax.ssh", "Got signal " << exitsignal);
+			} else {
+				BENCHMAX_LOG_INFO("benchmax.ssh", "Clean exit: " << exitsignal);
+			}
 
 			libssh2_channel_free(mChannel);
 
@@ -176,5 +178,3 @@ class SshChannel
 
 		}
 };
-
-#endif   /* SSHCHANNEL_H */

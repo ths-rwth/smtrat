@@ -7,10 +7,11 @@
  *
  */
 
-#ifndef QEPCADTOOL_H
-#define QEPCADTOOL_H
+#pragma once
 
 #include "../Tool.h"
+
+namespace benchmax {
 
 class QepcadTool:
 	public Tool
@@ -26,4 +27,4 @@ class QepcadTool:
 
 };
 
-#endif   /* QEPCADTOOL_H */
+}

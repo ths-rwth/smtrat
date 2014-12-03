@@ -8,6 +8,10 @@
 
 #include "Z3Tool.h"
 
+namespace benchmax {
+
 Z3Tool::Z3Tool(const std::string& pathToTool):
     Tool(TI_Z3, pathToTool, ".smt2")
 {}
+
+}

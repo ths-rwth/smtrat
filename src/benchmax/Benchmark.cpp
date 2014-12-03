@@ -35,6 +35,7 @@
 #include "BenchmarkStatus.h"
 #include "config.h"
 #include "Smt2Input.h"
+#include "logging.h"
 
 namespace dt =boost:: date_time;
 namespace pt =boost:: posix_time;
@@ -45,6 +46,8 @@ namespace ch =boost:: chrono;
 using std::endl;
 using std::string;
 using carl::Formula;
+
+namespace benchmax {
 
 /**
  *
@@ -120,21 +123,6 @@ Benchmark::Benchmark(const string& path,
 Benchmark::~Benchmark(){}
 
 /**
- * TODO not good, move this outside std.
- * @param out
- * @param rhs
- * @return
- */
-namespace std
-{
-	ostream& operator <<(ostream& out, const pair<const string, const doublestring>& rhs)
-	{
-		out << rhs.first << ": " << rhs.second.second << "(" << rhs.second.first << ")";
-		return out;
-	}
-}
-
-/**
  *
  * @param _nrOfExamples
  * @return
@@ -180,8 +168,7 @@ int Benchmark::run()
 		// Print some info about the file to be handled next
 		if(!mQuiet)
 		{
-			BenchmarkTool::OStream << "\r(" << currFileCount << "/" << mFilesList.size() << ")";
-			BenchmarkTool::OStream.flush();
+			BENCHMAX_LOG_INFO("benchmax", "Progress: " << currFileCount << "/" << mFilesList.size());
 		}
 
 		// Get an internal representation of the input.
@@ -224,8 +211,8 @@ int Benchmark::run()
 
 		if(!mQuiet)
 		{
-			BenchmarkTool::OStream << "Returned: " << benchmarkResultToString(answer) << std::endl;
-			BenchmarkTool::OStream << "**** The test took " << runningTime << " msec *********" << std::endl;
+			BENCHMAX_LOG_INFO("benchmax", "Returned: " << benchmarkResultToString(answer));
+			BENCHMAX_LOG_INFO("benchmax", "**** The test took " << runningTime << " msec *********");
 		}
 
 		processResult(answer, status, runningTime, pathToFile, assToCheckFileName);
@@ -255,8 +242,7 @@ int Benchmark::parseDirectory()
 				mFilesList.sort();
 				if(mVerbose)
 				{
-					BenchmarkTool::OStream << p << " is a directory containing:\n";
-					std::copy(mFilesList.begin(), mFilesList.end(), std::ostream_iterator<fs::path>(BenchmarkTool::OStream, "\n"));
+					BENCHMAX_LOG_DEBUG("benchmax", p << " is a directory containing " << mFilesList);
 				}
 			}
 			// Not a directory, so (we assume?) it is a file.
@@ -265,13 +251,11 @@ int Benchmark::parseDirectory()
 				mFilesList.push_back(p);
 			}
 		}
-		else if(!mMute)
-			BenchmarkTool::OStream << p << " does not exist\n";
+		else BENCHMAX_LOG_WARN("benchmax", p << " does not exist.");
 	}
 	catch(const fs::filesystem_error& ex)
 	{
-		if(!mMute)
-			BenchmarkTool::OStream << ex.what() << '\n';
+		BENCHMAX_LOG_ERROR("benchmax", "Filesystem error: " << ex.what());
 		return 1;
 	}
 	return 0;
@@ -339,11 +323,7 @@ ValidationResult Benchmark::validateResult(const std::string& inputFile, const s
 	// Now we make the system call.
 	FILE* pipe = popen( call.str().c_str(), "r" );
 	
-	if(!mQuiet)
-	{
-		BenchmarkTool::OStream << "Validating..";
-		BenchmarkTool::OStream.flush();
-	}
+	BENCHMAX_LOG_INFO("benchmax", "Validating...");
 	
 	// Get file content.v
 	string searchPattern = "error";
@@ -373,8 +353,7 @@ ValidationResult Benchmark::validateResult(const std::string& inputFile, const s
 	{
 		valResult = FOUNDERROR;
 		//errors occurred
-		if(!mQuiet)
-			BenchmarkTool::OStream << "Houston, we have a problem." << endl;
+		BENCHMAX_LOG_ERROR("benchmax", "Validation hit an error.");
 		//move assumptionsfile and benchmarkfile
 		fs::path newloc = fs::path(BenchmarkTool::WrongResultPath);
 		if(!fs::is_directory(newloc))
@@ -396,8 +375,7 @@ ValidationResult Benchmark::validateResult(const std::string& inputFile, const s
 	else
 	{
 		valResult = OKAY;
-		if(!mQuiet)
-			BenchmarkTool::OStream << "ok." << endl;
+		BENCHMAX_LOG_INFO("benchmax", "Validation ok.");
 	}
 	fs::remove(fs::path(validationFile));
 	return valResult;
@@ -565,14 +543,11 @@ void Benchmark::processResult(BenchmarkResult answer,
  */
 void Benchmark::printSettings() const
 {
-	if(mQuiet)
-		return;
-	BenchmarkTool::OStream << "+-" << std::endl;
-	BenchmarkTool::OStream << "| Benchmark: " << benchmarkName() << std::endl;
-	BenchmarkTool::OStream << "| Timeout: " << mTimeout << " seconds" << std::endl;
-	BenchmarkTool::OStream << "| Solver: " << solverName() << std::endl;
-	BenchmarkTool::OStream << "+-" << std::endl;
-	BenchmarkTool::OStream << std::endl;
+	BENCHMAX_LOG_INFO("benchmax", "+-");
+	BENCHMAX_LOG_INFO("benchmax", "| Benchmark: " << benchmarkName());
+	BENCHMAX_LOG_INFO("benchmax", "| Timeout: " << mTimeout << " seconds");
+	BENCHMAX_LOG_INFO("benchmax", "| Solver: " << solverName());
+	BENCHMAX_LOG_INFO("benchmax", "+-");
 }
 
 /**
@@ -580,14 +555,12 @@ void Benchmark::printSettings() const
  */
 void Benchmark::printResults() const
 {
-	if(mMute)
-		return;
-	BenchmarkTool::OStream << std::endl;
-	BenchmarkTool::OStream << "**************************************************" << std::endl;
-	BenchmarkTool::OStream << "Result: " << solverName() << " solved " << mNrSolved << " out of " << benchmarkCount() << std::endl;
-	BenchmarkTool::OStream << "sat instances: " << mNrSatSolved << "/" << mNrSatInstances << ", unsat instances: " << mNrUnsatSolved << "/"
-						   << mNrUnsatInstances << std::endl;
-	BenchmarkTool::OStream << "Accumulated time: " << mAccumulatedTime << " msec" << std::endl;
-	std::copy(mResults.begin(), mResults.end(), std::ostream_iterator<std::pair<string, doublestring> >(BenchmarkTool::OStream, "\n"));
-	BenchmarkTool::OStream << "**************************************************" << endl << std::endl;
+	BENCHMAX_LOG_INFO("benchmax", "**************************************************");
+	BENCHMAX_LOG_INFO("benchmax", "Result: " << solverName() << " solved " << mNrSolved << " out of " << benchmarkCount());
+	BENCHMAX_LOG_INFO("benchmax", "sat instances: " << mNrSatSolved << "/" << mNrSatInstances << ", unsat instances: " << mNrUnsatSolved << "/" << mNrUnsatInstances);
+	BENCHMAX_LOG_INFO("benchmax", "Accumulated time: " << mAccumulatedTime << " msec");
+	BENCHMAX_LOG_INFO("benchmax", "Results: " << mResults);
+	BENCHMAX_LOG_INFO("benchmax", "**************************************************");
+}
+
 }

@@ -6,10 +6,11 @@
  *
  */
 
-#ifndef SMTRATSOLVERTOOL_H
-#define SMTRATSOLVERTOOL_H
+#pragma once
 
 #include "../Tool.h"
+
+namespace benchmax {
 
 class SmtratSolverTool:
     public Tool
@@ -22,4 +23,4 @@ class SmtratSolverTool:
 
 };
 
-#endif   /* SMTRATSOLVERTOOL_H */
+}
