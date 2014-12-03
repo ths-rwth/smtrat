@@ -379,7 +379,7 @@ namespace smtrat
                 */
                 #endif
                 vector<std::set<FormulaT>> origins_new = merge( origins, constr_iter->second );
-                std::map<FormulaT,vector<std::set<FormulaT>>>::iterator iter = mProc_Constraints.find( newEq );
+                FormulaOrigins::iterator iter = mProc_Constraints.find( newEq );
                 if( iter != mProc_Constraints.end() )
                 {
                     iter->second.insert( iter->second.begin(), origins_new.begin(), origins_new.end() );
@@ -475,12 +475,6 @@ namespace smtrat
             getInfeasibleSubsets();
         }
         return ans;
-    }
-    
-    template<class Settings>
-    std::map<carl::Variable, Poly> IntEqModule<Settings>::get_Substitutions() const
-    {
-        return mSubstitutions;
     }
     
     template<class Settings>
