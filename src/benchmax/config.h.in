@@ -1,0 +1,1 @@
+#cmakedefine BENCHMAX_USE_SMTPARSER
