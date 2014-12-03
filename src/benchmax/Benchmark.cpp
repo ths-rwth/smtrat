@@ -31,11 +31,11 @@
  */
 
 #include "Benchmark.h"
-#include "BenchmarkTool.h"
 #include "BenchmarkStatus.h"
 #include "config.h"
 #include "Smt2Input.h"
 #include "logging.h"
+#include "Settings.h"
 
 namespace dt =boost:: date_time;
 namespace pt =boost:: posix_time;
@@ -54,7 +54,8 @@ namespace benchmax {
  */
 Benchmark::Benchmark():
 	mPathToDirectory(""),
-	mTool(NULL),
+	mTool(nullptr),
+	mValidationTool(nullptr),
 	mTimeout(150),
 	mMemout(1000),
 	mFilesList(),
@@ -88,8 +89,9 @@ Benchmark::Benchmark():
  */
 Benchmark::Benchmark(const string& path,
 					 Tool* tool,
-					 unsigned timeout,
-					 unsigned memory,
+					 Tool* validationTool,
+					 std::size_t timeout,
+					 std::size_t memory,
 					 bool verbose,
 					 bool quiet,
 					 bool mute,
@@ -97,6 +99,7 @@ Benchmark::Benchmark(const string& path,
 					 Stats* const _stats):
 	mPathToDirectory(path),
 	mTool(tool),
+	mValidationTool(validationTool),
 	mTimeout(timeout),
 	mMemout(memory),
 	mNrSolved(0),
@@ -192,7 +195,7 @@ int Benchmark::run()
 		// In case we use validation, we have to construct the validation file path.
 		// And inform the tool about it.
 		string assToCheckFileName = "";
-		if(BenchmarkTool::ValidationTool != NULL)
+		if(mValidationTool != nullptr)
 		{
 			assToCheckFileName = validationFilePath(pathToFile);
 			mTool->setValidationFilePath(assToCheckFileName);
@@ -318,7 +321,7 @@ ValidationResult Benchmark::validateResult(const std::string& inputFile, const s
 	// We limit the time and memory usage.
 	call << "ulimit -S -t " << mTimeout << " && ulimit -S -v " << (mMemout * 1000);
 	// And append the call to the tool.
-	call << " && " << BenchmarkTool::ValidationTool->path() << " " << validationFile << " ";
+	call << " && " << mValidationTool->path() << " " << validationFile << " ";
 
 	// Now we make the system call.
 	FILE* pipe = popen( call.str().c_str(), "r" );
@@ -355,7 +358,7 @@ ValidationResult Benchmark::validateResult(const std::string& inputFile, const s
 		//errors occurred
 		BENCHMAX_LOG_ERROR("benchmax", "Validation hit an error.");
 		//move assumptionsfile and benchmarkfile
-		fs::path newloc = fs::path(BenchmarkTool::WrongResultPath);
+		fs::path newloc = fs::path(Settings::WrongResultPath);
 		if(!fs::is_directory(newloc))
 		{
 			fs::create_directories(newloc);
@@ -366,7 +369,7 @@ ValidationResult Benchmark::validateResult(const std::string& inputFile, const s
 			fs::create_directories(newloc);
 		}
 
-		fs::path assumploc(BenchmarkTool::WrongResultPath + "wrong_results_" + solverName() + "_" + mTimeStamp + "/");
+		fs::path assumploc(Settings::WrongResultPath + "wrong_results_" + solverName() + "_" + mTimeStamp + "/");
 
 		assumploc /= "assumptions_" + inputFile;
 
@@ -492,7 +495,7 @@ void Benchmark::processResult(BenchmarkResult answer,
 	{
 		// Solver terminates without problems.
 		// We might validate intermediate steps of the solver.
-		if(BenchmarkTool::ValidationTool != NULL)
+		if(mValidationTool != nullptr)
 		{
 			valResult = validateResult(pathToFile.filename().string(), pathToValidationFile);
 		}

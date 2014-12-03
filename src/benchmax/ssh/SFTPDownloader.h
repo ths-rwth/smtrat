@@ -8,13 +8,11 @@
  * http://www.libssh2.org/examples/sftp_nonblock.html
  */
 
-#ifndef SFTPDOWNLOADER_H
-#define SFTPDOWNLOADER_H
+#pragma once
 
 #include <libssh2.h>
 #include <libssh2_sftp.h>
 #include "SshWaitSocket.h"
-#include "../BenchmarkTool.h"
 #include <fstream>
 
 class SFTPDownloader
@@ -171,5 +169,3 @@ class SFTPDownloader
 			}
 		}
 };
-
-#endif   /* SFTPDOWNLOADER_H */

@@ -111,8 +111,9 @@ class Benchmark
 
 	std::string										mPathToDirectory;
 	Tool*											  mTool;
-	unsigned										   mTimeout;
-	unsigned										   mMemout;
+	Tool*											  mValidationTool;
+	std::size_t										   mTimeout;
+	std::size_t										   mMemout;
 	pathlist										   mFilesList;
 	pathlist::iterator								 mNextInstanceToTry;
 	std::vector<std::pair<std::string, doublestring> > mResults;
@@ -136,9 +137,11 @@ class Benchmark
 		///////////////////////
 
 		Benchmark();
-		Benchmark(const std::string&, Tool*, unsigned, unsigned, bool, bool, bool, bool, Stats* const );
+		Benchmark(const std::string&, Tool*, Tool*, std::size_t, std::size_t, bool, bool, bool, bool, Stats* const );
 		~Benchmark();
 
+		
+		
 		///////////////
 		// Selectors //
 		///////////////
@@ -212,12 +215,12 @@ class Benchmark
 			return mTool;
 		}
 
-		unsigned timeout() const
+		std::size_t timeout() const
 		{
 			return mTimeout;
 		}
 
-		unsigned memout() const
+		std::size_t memout() const
 		{
 			return mMemout;
 		}

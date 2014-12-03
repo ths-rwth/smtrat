@@ -7,18 +7,12 @@
  */
 
 #include "smtratSolverTool.h"
-#include "../BenchmarkTool.h"
 
 namespace benchmax {
 
 SmtratSolverTool::SmtratSolverTool(const std::string& pathToTool):
     Tool(TI_SMTRAT, pathToTool, ".smt2")
 {
-    if(BenchmarkTool::UseStats && BenchmarkTool::Nodes->empty())
-    { // only for local stats file, remote is generated with special id
-        addArgument("--stats:exportXml=" + BenchmarkTool::OutputDirectory + BenchmarkTool::StatsXMLFile);
-    }
-
 }
 
 std::string SmtratSolverTool::getCallToTool(const std::string& extraArguments)

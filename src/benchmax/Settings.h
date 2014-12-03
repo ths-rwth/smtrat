@@ -5,9 +5,13 @@
 
 #pragma once
 
+#include <fstream>
 #include <boost/program_options.hpp>
 
 namespace benchmax {
+
+class Node;
+class Tool;
 
 namespace po = boost:: program_options;
 
@@ -36,28 +40,28 @@ public:
 			("disclaimer", "show the warranty disclaimer")
 		;
 		toolOptions.add_options()
-			("latex,l", po::bool_switch(&BenchmarkTool::ProduceLatex), "output a LaTeX table with all results at the end")
-			("stats,s", po::bool_switch(&BenchmarkTool::UseStats), "run solver with statistics")
-			("output-dir,o", po::value<string>(&outputDir), "output directory")
-			("compose,c", po::value<std::vector<string> >(&composeFiles), "Compose a list of stats files together")
+			("latex,l", po::bool_switch(&ProduceLatex), "output a LaTeX table with all results at the end")
+			("stats,s", po::bool_switch(&UseStats), "run solver with statistics")
+			("output-dir,o", po::value<std::string>(&outputDir), "output directory")
+			("compose,c", po::value<std::vector<std::string> >(&composeFiles), "Compose a list of stats files together")
 		;
 		
 		benchmarkOptions.add_options()
-			("include-directory,D", po::value<vector<string> >(&pathes), "path to look for benchmarks (several are possible)")
-			("timeout,T", po::value<unsigned>(&BenchmarkTool::Timeout), "timeout for all competing solvers in seconds (standard: 150 sec)")
-			("memory,M", po::value<unsigned>(&BenchmarkTool::Memout), "memory limit for all competing solvers in mega bytes (standard: 1000 MB)")
-			("validation,V", po::value<string>(&validationtool), "tool to check assumptions")
-			("wrong-result-path,W", po::value<string>(&wrongResultsDir), "path to the directory to store the wrong results")
-			("node,N", po::value<vector<string> >(&nodes), "remote blades")
-			("stats-xml-file,X", po::value<string>(&statsXMLFile), "path to the xml-file where the statistics are stored")
+			("include-directory,D", po::value<std::vector<std::string>>(&pathes), "path to look for benchmarks (several are possible)")
+			("timeout,T", po::value<std::size_t>(&timeLimit)->default_value(150), "timeout for all competing solvers in seconds (standard: 150 sec)")
+			("memory,M", po::value<std::size_t>(&memoryLimit)->default_value(1024), "memory limit for all competing solvers in mega bytes (standard: 1024 MB)")
+			("validation,V", po::value<std::string>(&validationtoolpath), "tool to check assumptions")
+			("wrong-result-path,W", po::value<std::string>(&WrongResultPath)->default_value("wrong_result/"), "path to the directory to store the wrong results")
+			("node,N", po::value<std::vector<std::string>>(&nodes), "remote blades")
+			("stats-xml-file,X", po::value<std::string>(&StatsXMLFile)->default_value("stats.xml"), "path to the xml-file where the statistics are stored")
 		;
 		solverOptions.add_options()
-			("smtrat,S", po::value<vector<string> >(&smtratapps), "an SMT-LIB 2.0 solver with SMT-RAT interface (multiple are possible)")
-			("z3,Z", po::value<vector<string> >(&z3apps), "an SMT-LIB 2.0 solver with z3 interface (multiple are possible)")
-			("isat,I", po::value<vector<string> >(&isatapps), "an .Hys solver with isat interface (multiple are possible)")
-			("redlog_rlqe,R", po::value<vector<string> >(&redlog_rlqeapps), "Redlog solvers calling rlqe")
-			("redlog_rlcad,C", po::value<vector<string> >(&redlog_rlcadapps), "Redlog solvers calling rlcad")
-			("qepcad,Q", po::value<vector<string> >(&qepcadapps), "the tool QEPCAD B")
+			("smtrat,S", po::value<std::vector<std::string>>(&smtratapps), "an SMT-LIB 2.0 solver with SMT-RAT interface (multiple are possible)")
+			("z3,Z", po::value<std::vector<std::string>>(&z3apps), "an SMT-LIB 2.0 solver with z3 interface (multiple are possible)")
+			("isat,I", po::value<std::vector<std::string>>(&isatapps), "an .Hys solver with isat interface (multiple are possible)")
+			("redlog_rlqe,R", po::value<std::vector<std::string>>(&redlog_rlqeapps), "Redlog solvers calling rlqe")
+			("redlog_rlcad,C", po::value<std::vector<std::string>>(&redlog_rlcadapps), "Redlog solvers calling rlcad")
+			("qepcad,Q", po::value<std::vector<std::string>>(&qepcadapps), "the tool QEPCAD B")
 		;
 		// commandline options
 		desc_cmdline.add(coreOptions).add(toolOptions).add(benchmarkOptions).add(solverOptions);
@@ -71,28 +75,42 @@ public:
 		po::store(po::parse_config_file(inifile, desc_file), vm);
 
 		po::notify(vm);
+		WrongResultPath = outputDir + WrongResultPath;
+		RemoteOutputDirectory = "/scratch/";
 	}
 	
 	bool has(const std::string& s) const {
 		return vm.count(s);
 	}
 
+	// Options
 	bool verbose = false;
 	bool quiet = false;
 	bool mute = false;
-	std::string validationtool;
-	std::string outputDir;
-	std::string wrongResultsDir;
-	std::string statsXMLFile;
-	std::vector<std::string> pathes;
-	std::vector<std::string> smtratapps;
-	std::vector<std::string> z3apps;
-	std::vector<std::string> isatapps;
-	std::vector<std::string> redlog_rlqeapps;
-	std::vector<std::string> redlog_rlcadapps;
-	std::vector<std::string> qepcadapps;
-	std::vector<std::string> nodes;
-	std::vector<std::string> composeFiles;
+	static bool ProduceLatex;
+	static bool UseStats;
+	static std::size_t memoryLimit;
+	static std::size_t timeLimit;
+	static std::string validationtoolpath;
+	static std::string outputDir;
+	static std::string WrongResultPath;
+	static std::string StatsXMLFile;
+	static std::string RemoteOutputDirectory;
+	static std::string PathOfBenchmarkTool;
+	static Tool* ValidationTool;
+	static std::vector<Node*> Nodes;
+	static std::vector<std::string> pathes;
+	static std::vector<std::string> smtratapps;
+	static std::vector<std::string> z3apps;
+	static std::vector<std::string> isatapps;
+	static std::vector<std::string> redlog_rlqeapps;
+	static std::vector<std::string> redlog_rlcadapps;
+	static std::vector<std::string> qepcadapps;
+	static std::vector<std::string> nodes;
+	static std::vector<std::string> composeFiles;
+	
+	// Constants
+	static const std::string ExitMessage;
 	
 	friend std::ostream& operator<<(std::ostream& os, const Settings& s) {
 		os << s.desc_cmdline << std::endl;

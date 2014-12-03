@@ -10,7 +10,6 @@
 #include <fstream>
 #include <carl/formula/Formula.h>
 #include "RedlogTool.h"
-#include "../BenchmarkTool.h"
 
 namespace benchmax {
 

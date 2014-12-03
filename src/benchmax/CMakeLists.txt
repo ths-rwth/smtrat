@@ -5,8 +5,8 @@ configure_file( ${CMAKE_SOURCE_DIR}/src/benchmax/config.h.in ${CMAKE_SOURCE_DIR}
 add_subdirectory(ssh)
 add_subdirectory(tools)
 
-add_executable( benchmax benchmax.cpp Benchmark.h BenchmarkTool.h Tool.h Benchmark.cpp BenchmarkTool.cpp Stats.cpp
-			Tool.cpp Smt2Input.cpp BenchmarkStatus.cpp ${ssh_sources} ${tool_sources})
+add_executable( benchmax benchmax.cpp Benchmark.h Tool.h Benchmark.cpp Stats.cpp
+			Settings.cpp Tool.cpp Smt2Input.cpp BenchmarkStatus.cpp ${ssh_sources} ${tool_sources})
 include_directories(${carl_INCLUDE_DIR})
 if(${STATICLIB_SWITCH} STREQUAL "ON")
   set_target_properties( benchmax PROPERTIES LINK_SEARCH_END_STATIC TRUE )

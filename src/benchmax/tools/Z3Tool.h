@@ -12,14 +12,9 @@
 
 namespace benchmax {
 
-class Z3Tool:
-    public Tool
-{
+class Z3Tool: public Tool {
     public:
-        Z3Tool(const std::string& pathToTool);
-
-    private:
-
+        Z3Tool(const std::string& pathToTool): Tool(TI_Z3, pathToTool, ".smt2") {}
 };
 
 }

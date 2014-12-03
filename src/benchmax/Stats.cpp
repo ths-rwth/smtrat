@@ -7,11 +7,11 @@
  */
 
 #include "Stats.h"
-#include "BenchmarkTool.h"
 #include <iostream>
 #include <fstream>
 #include <assert.h>
 #include <boost/filesystem.hpp>
+#include "Settings.h"
 
 namespace benchmax {
 
@@ -157,7 +157,7 @@ void Stats::addInputStat(const std::string& _name, int _value)
 	addInputStat(_name, out.str());
 }
 
-void Stats::addRun(const std::string& _solver, unsigned _timeout)
+void Stats::addRun(const std::string& _solver, std::size_t _timeout)
 {
 	assert(mType == BENCHMARK_RESULT);
 	assert(mCollectingBenchmarkFiles == 1);
@@ -403,15 +403,15 @@ void Stats::createLatexCompose(const std::string& _fileName)
 
 void Stats::composeStats(const std::vector<std::string>& files)
 {
-	Stats* stats = new Stats(BenchmarkTool::StatsXMLFile, STATS_COLLECTION);
+	Stats* stats = new Stats(Settings::StatsXMLFile, STATS_COLLECTION);
 	for(std::vector<std::string>::const_iterator it = files.begin(); it != files.end(); ++it)
 	{
 		stats->addStat(*it);
 	}
 	delete stats;
-	createStatsCompose(BenchmarkTool::OutputDirectory + "statsCompose.xsl");
+	createStatsCompose(Settings::outputDir + "statsCompose.xsl");
 	callComposeProcessor();
-	fs::remove(fs::path(BenchmarkTool::OutputDirectory + "statsCompose.xsl"));
+	fs::remove(fs::path(Settings::outputDir + "statsCompose.xsl"));
 }
 
 /**
@@ -419,23 +419,23 @@ void Stats::composeStats(const std::vector<std::string>& files)
  */
 void Stats::callComposeProcessor(const std::string& io)
 {
-	system(std::string("xsltproc -o " + BenchmarkTool::OutputDirectory + "stats.xml.tmp " + BenchmarkTool::OutputDirectory + "statsCompose.xsl "
+	system(std::string("xsltproc -o " + Settings::outputDir + "stats.xml.tmp " + Settings::outputDir + "statsCompose.xsl "
 					   + io).c_str());
-	system(std::string("xsltproc -o " + io + " " + BenchmarkTool::OutputDirectory + "statsCompose.xsl " + BenchmarkTool::OutputDirectory
+	system(std::string("xsltproc -o " + io + " " + Settings::outputDir + "statsCompose.xsl " + Settings::outputDir
 					   + "stats.xml.tmp").c_str());
-	fs::remove(fs::path(BenchmarkTool::OutputDirectory + "stats.xml.tmp"));
-	if(BenchmarkTool::ProduceLatex)
+	fs::remove(fs::path(Settings::outputDir + "stats.xml.tmp"));
+	if(Settings::ProduceLatex)
 	{
-		createLatexCompose(BenchmarkTool::OutputDirectory + "latexCompose.xsl");
-		system(std::string("xsltproc -o " + BenchmarkTool::OutputDirectory + "results.tex " + BenchmarkTool::OutputDirectory + "latexCompose.xsl "
-						   + BenchmarkTool::StatsXMLFile).c_str());
-		fs::remove(fs::path(BenchmarkTool::OutputDirectory + "latexCompose.xsl"));
+		createLatexCompose(Settings::outputDir + "latexCompose.xsl");
+		system(std::string("xsltproc -o " + Settings::outputDir + "results.tex " + Settings::outputDir + "latexCompose.xsl "
+						   + Settings::StatsXMLFile).c_str());
+		fs::remove(fs::path(Settings::outputDir + "latexCompose.xsl"));
 	}
 }
 
 void Stats::callComposeProcessor()
 {
-	callComposeProcessor(std::string(BenchmarkTool::OutputDirectory + BenchmarkTool::StatsXMLFile));
+	callComposeProcessor(std::string(Settings::outputDir + Settings::StatsXMLFile));
 }
 
 }

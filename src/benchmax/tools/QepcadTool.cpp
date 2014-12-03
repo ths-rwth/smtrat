@@ -10,7 +10,6 @@
 #include <fstream>
 #include <carl/formula/Formula.h>
 #include "QepcadTool.h"
-#include "../BenchmarkTool.h"
 
 namespace benchmax {
 

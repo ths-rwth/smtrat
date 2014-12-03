@@ -52,9 +52,9 @@ using std::regex;
 using std::regex_match;
 #endif
 
-using benchmax::BenchmarkTool;
 using benchmax::Tool;
 using benchmax::Stats;
+using benchmax::Settings;
 
 namespace po = boost:: program_options;
 
@@ -144,16 +144,13 @@ void checkPathCorrectness(std::string& _path)
 	}
 }
 
-bool initApplication(int argc, char** argv, std::vector<benchmax::Benchmark*>& _benchmarks, Stats*& _stats, std::vector<Tool*>& _tools)
+bool initApplication(const benchmax::Settings& s, std::vector<benchmax::Benchmark*>& _benchmarks, Stats*& _stats, std::vector<Tool*>& _tools)
 {
-	benchmax::Settings s(argc, argv);
 
 	// add the remote nodes
-	for (const auto& node: s.nodes) {
-		BenchmarkTool::Nodes->push_back(getNode(node));
+	for (const auto& node: Settings::nodes) {
+		Settings::Nodes.push_back(getNode(node));
 	}
-	
-	BenchmarkTool::PathOfBenchmarkTool = fs::system_complete(fs::path(argv[0])).native();
 
 	if(s.has("help")) {
 		std::cout << s;
@@ -170,47 +167,32 @@ bool initApplication(int argc, char** argv, std::vector<benchmax::Benchmark*>& _
 		Stats::composeStats(s.composeFiles);
 		return false;
 	}
-	else if(BenchmarkTool::ProduceLatex)
+	else if(Settings::ProduceLatex)
 	{
-		Stats::createStatsCompose(BenchmarkTool::OutputDirectory + "latexCompose.xsl");
+		Stats::createStatsCompose(Settings::outputDir + "latexCompose.xsl");
 		system(
-		std::string("xsltproc -o " + BenchmarkTool::OutputDirectory + "results.tex " + BenchmarkTool::OutputDirectory + "latexCompose.xsl "
-					+ BenchmarkTool::StatsXMLFile).c_str());
-		fs::remove(fs::path(BenchmarkTool::OutputDirectory + "latexCompose.xsl"));
+		std::string("xsltproc -o " + Settings::outputDir + "results.tex " + Settings::outputDir + "latexCompose.xsl "
+					+ Settings::StatsXMLFile).c_str());
+		fs::remove(fs::path(Settings::outputDir + "latexCompose.xsl"));
 	}
 
-	if(s.validationtool != "")
+	if(Settings::outputDir != "")
 	{
-		BenchmarkTool::ValidationTool = createTool(benchmax::TI_Z3, s.validationtool);
-	}
-
-	if(s.outputDir != "")
-	{
-		fs::path oloc = fs::path(s.outputDir);
+		fs::path oloc = fs::path(Settings::outputDir);
 		if(!fs::exists(oloc) ||!fs::is_directory(oloc))
 		{
 			BENCHMAX_LOG_FATAL("benchmax", "Output directory does not exist: " << oloc);
 			exit(0);
 		}
-		BenchmarkTool::OutputDirectory = s.outputDir;
 	}
 
-	if(s.wrongResultsDir == "")
-	{
-		BenchmarkTool::WrongResultPath = BenchmarkTool::OutputDirectory + "wrong_results/";
-	}
-	
-	if(s.statsXMLFile != "")
-	{
-		BenchmarkTool::StatsXMLFile = s.statsXMLFile;
-	}
 	if (!s.mute) {
 		printWelcome();
 	}
 
 	// Check the correctness of the given paths and correct them if necessary
-	checkPathCorrectness(BenchmarkTool::WrongResultPath);
-	checkPathCorrectness(BenchmarkTool::OutputDirectory);
+	checkPathCorrectness(Settings::WrongResultPath);
+	checkPathCorrectness(Settings::outputDir);
 	
 	// add the different applications to the list of tools, with the appropriate interface.
 	addToTools(s.smtratapps, benchmax::TI_SMTRAT, _tools);
@@ -221,9 +203,9 @@ bool initApplication(int argc, char** argv, std::vector<benchmax::Benchmark*>& _
 	addToTools(s.qepcadapps, benchmax::TI_QEPCAD, _tools);
 
 	// Collect all used solvers in the statisticsfile.
-	_stats = new Stats(BenchmarkTool::OutputDirectory + BenchmarkTool::StatsXMLFile,
-					   (!BenchmarkTool::Nodes->empty() ? Stats::STATS_COLLECTION : Stats::BENCHMARK_RESULT));
-	if(BenchmarkTool::Nodes->empty())
+	_stats = new Stats(Settings::outputDir + Settings::StatsXMLFile,
+					   (!Settings::Nodes.empty() ? Stats::STATS_COLLECTION : Stats::BENCHMARK_RESULT));
+	if(Settings::Nodes.empty())
 	{
 		for (const auto& tool: _tools) {
 			_stats->addSolver(fs::path(tool->path()).filename().generic_string());
@@ -236,8 +218,8 @@ bool initApplication(int argc, char** argv, std::vector<benchmax::Benchmark*>& _
 		if (fs::exists(path)) {
 			for (const auto& tool: _tools) {
 				_benchmarks.push_back(
-				new benchmax::Benchmark(path.generic_string(), tool, BenchmarkTool::Timeout, BenchmarkTool::Memout, s.verbose, s.quiet, s.mute,
-							  BenchmarkTool::ProduceLatex, _stats));
+				new benchmax::Benchmark(path.generic_string(), tool, Settings::ValidationTool, s.timeLimit, s.memoryLimit, s.verbose, s.quiet, s.mute,
+							  Settings::ProduceLatex, _stats));
 			}
 		} else {
 			BENCHMAX_LOG_WARN("benchmax", "Benchmark path " << p << " does not exist.");
@@ -253,11 +235,11 @@ bool initApplication(int argc, char** argv, std::vector<benchmax::Benchmark*>& _
 void handleSignal(int)
 {
 	BENCHMAX_LOG_WARN("benchmax", "User abort!");
-	while(!BenchmarkTool::Nodes->empty())
+	while(!Settings::Nodes.empty())
 	{
-		benchmax::Node* toDelete = BenchmarkTool::Nodes->back();
+		benchmax::Node* toDelete = Settings::Nodes.back();
 		toDelete->cancel();
-		BenchmarkTool::Nodes->pop_back();
+		Settings::Nodes.pop_back();
 		delete toDelete;
 	}
 	exit(-1);
@@ -268,11 +250,17 @@ void handleSignal(int)
  */
 int main(int argc, char** argv)
 {
+	benchmax::Settings s(argc, argv);
+	Settings::PathOfBenchmarkTool = fs::system_complete(fs::path(argv[0])).native();
+	if (Settings::validationtoolpath != "") {
+		Settings::ValidationTool = createTool(benchmax::TI_Z3, Settings::validationtoolpath);
+	}
+
 	// init benchmarks
 	std::vector<benchmax::Benchmark*> benchmarks;
 	Stats* stats = NULL;
 	std::vector<Tool*> tools;
-	if (!initApplication(argc, argv, benchmarks, stats, tools)) {
+	if (!initApplication(s, benchmarks, stats, tools)) {
 		return 0;
 	}
 
@@ -287,7 +275,7 @@ int main(int argc, char** argv)
 	std::map<std::pair<std::string, std::string>, benchmax::Benchmark*> table;	// table mapping <benchmark,solver> -> result
 	std::set<std::string> benchmarkSet, solverSet;
 
-	if(!BenchmarkTool::Nodes->empty()) {
+	if(!Settings::Nodes.empty()) {
 		// libssh is needed.
 		int rc = libssh2_init(0);
 		if (rc != 0) {
@@ -299,7 +287,7 @@ int main(int argc, char** argv)
 	/*
 	 * Main loop.
 	 */
-	if(BenchmarkTool::Nodes->empty())
+	if(Settings::Nodes.empty())
 	{
 		for (const auto& benchmark: benchmarks)
 		{
@@ -316,15 +304,15 @@ int main(int argc, char** argv)
 			}
 		}
 
-		if(BenchmarkTool::ValidationTool != NULL)
+		if(Settings::ValidationTool != nullptr)
 		{
-			std::string wrongResultPath = BenchmarkTool::WrongResultPath.substr(0, BenchmarkTool::WrongResultPath.size() - 1);
+			std::string wrongResultPath = Settings::WrongResultPath.substr(0, Settings::WrongResultPath.size() - 1);
 			fs::path path(wrongResultPath);
 			if(fs::exists(path))
 			{
 				std::string tarCall = std::string("tar zcfP " + wrongResultPath + ".tgz " + wrongResultPath);
 				system(tarCall.c_str());
-				fs::remove_all(fs::path(BenchmarkTool::WrongResultPath));
+				fs::remove_all(fs::path(Settings::WrongResultPath));
 			}
 		}
 	}
@@ -332,7 +320,7 @@ int main(int argc, char** argv)
 	{
 		int						  nrOfCalls		= 0;
 		std::vector<benchmax::Benchmark*>::iterator currentBenchmark = benchmarks.begin();
-		std::vector<benchmax::Node*>::iterator	  currentNode	  = BenchmarkTool::Nodes->begin();
+		std::vector<benchmax::Node*>::iterator	  currentNode	  = Settings::Nodes.begin();
 		if(currentBenchmark != benchmarks.end())
 			(*currentBenchmark)->printSettings();
 		while(currentBenchmark != benchmarks.end())
@@ -344,8 +332,8 @@ int main(int argc, char** argv)
 					break;
 				(*currentBenchmark)->printSettings();
 			}
-			if(currentNode == BenchmarkTool::Nodes->end())
-				currentNode = BenchmarkTool::Nodes->begin();
+			if(currentNode == Settings::Nodes.end())
+				currentNode = Settings::Nodes.begin();
 			if(!(*currentNode)->connected())
 			{
 				(*currentNode)->createSSHconnection();
@@ -372,14 +360,14 @@ int main(int argc, char** argv)
 		while(!allNodesEntirelyIdle)
 		{
 			allNodesEntirelyIdle = true;
-			std::vector<benchmax::Node*>::iterator currentNode = BenchmarkTool::Nodes->begin();
-			while(currentNode != BenchmarkTool::Nodes->end())
+			std::vector<benchmax::Node*>::iterator currentNode = Settings::Nodes.begin();
+			while(currentNode != Settings::Nodes.end())
 			{
 				(*currentNode)->updateResponses();
 				if(!(*currentNode)->idle())
 				{
 					allNodesEntirelyIdle = false;
-					if(waitedTime > (BenchmarkTool::Timeout * NUMBER_OF_EXAMPLES_TO_SOLVE))
+					if(waitedTime > (s.timeLimit * NUMBER_OF_EXAMPLES_TO_SOLVE))
 					{
 						BENCHMAX_LOG_INFO("benchmax", "Waiting for call...");
 						(*currentNode)->sshConnection().logActiveRemoteCalls();
@@ -394,42 +382,42 @@ int main(int argc, char** argv)
 		}
 
 		// Download files.
-		for(std::vector<benchmax::Node*>::const_iterator currentNode = BenchmarkTool::Nodes->begin(); currentNode != BenchmarkTool::Nodes->end(); ++currentNode)
+		for(std::vector<benchmax::Node*>::const_iterator currentNode = Settings::Nodes.begin(); currentNode != Settings::Nodes.end(); ++currentNode)
 		{
 			for(std::vector<std::string>::const_iterator jobId = (*currentNode)->jobIds().begin(); jobId != (*currentNode)->jobIds().end(); ++jobId)
 			{
 				std::stringstream out;
 				out << *jobId;
 				(*currentNode)->downloadFile(
-				BenchmarkTool::RemoteOutputDirectory + "stats_" + *jobId + ".xml", BenchmarkTool::OutputDirectory + "stats_" + *jobId + ".xml");
-				if(BenchmarkTool::ValidationTool != NULL)
+				Settings::RemoteOutputDirectory + "stats_" + *jobId + ".xml", Settings::outputDir + "stats_" + *jobId + ".xml");
+				if(Settings::ValidationTool != nullptr)
 				{
-					fs::path newloc = fs::path(BenchmarkTool::WrongResultPath);
+					fs::path newloc = fs::path(Settings::WrongResultPath);
 					if(!fs::is_directory(newloc))
 					{
 						fs::create_directories(newloc);
 					}
 					(*currentNode)->downloadFile(
-					BenchmarkTool::RemoteOutputDirectory + "wrong_results_" + *jobId + ".tgz",
-					BenchmarkTool::WrongResultPath + "wrong_results_" + *jobId + ".tgz");
+					Settings::RemoteOutputDirectory + "wrong_results_" + *jobId + ".tgz",
+					Settings::WrongResultPath + "wrong_results_" + *jobId + ".tgz");
 				}
-				fs::path newloc = fs::path(BenchmarkTool::OutputDirectory + "benchmark_output/");
+				fs::path newloc = fs::path(Settings::outputDir + "benchmark_output/");
 				if(!fs::is_directory(newloc))
 				{
 					fs::create_directories(newloc);
 				}
 				(*currentNode)->downloadFile(
-				BenchmarkTool::RemoteOutputDirectory + "benchmark_" + *jobId + ".out",
-				BenchmarkTool::OutputDirectory + "benchmark_output/benchmark_" + *jobId + ".out");
+				Settings::RemoteOutputDirectory + "benchmark_" + *jobId + ".out",
+				Settings::outputDir + "benchmark_output/benchmark_" + *jobId + ".out");
 				stats->addStat("stats_" + *jobId + ".xml");
 
 			}
 		}
 	}
 
-	if(!BenchmarkTool::Nodes->empty())
+	if(!Settings::Nodes.empty())
 	{
-		stats->createStatsCompose(BenchmarkTool::OutputDirectory + "statsCompose.xsl");
+		stats->createStatsCompose(Settings::outputDir + "statsCompose.xsl");
 		delete stats;
 		Stats::callComposeProcessor();
 	}
@@ -451,16 +439,16 @@ int main(int argc, char** argv)
 		tools.pop_back();
 		delete toDelete;
 	}
-	while(!BenchmarkTool::Nodes->empty())
+	while(!Settings::Nodes.empty())
 	{
-		benchmax::Node* toDelete = BenchmarkTool::Nodes->back();
-		BenchmarkTool::Nodes->pop_back();
+		benchmax::Node* toDelete = Settings::Nodes.back();
+		Settings::Nodes.pop_back();
 		delete toDelete;
 	}
 
 	// Necessary output message (DO NOT REMOVE IT)
-	std::cout << BenchmarkTool::ExitMessage << std::endl;
-	if(!BenchmarkTool::Nodes->empty())
+	std::cout << Settings::ExitMessage << std::endl;
+	if(!Settings::Nodes.empty())
 	{
 		libssh2_exit();
 	}

@@ -7,10 +7,12 @@
 
 #pragma once
 
+#include <boost/filesystem.hpp>
+
 #include "ssh/SshConnection.h"
 #include "Benchmark.h"
+#include "Settings.h"
 
-#include <boost/filesystem.hpp>
 
 namespace fs =boost:: filesystem;
 
@@ -93,22 +95,22 @@ class Node
 				//assert(benchmarks.size() > 0);
 				std::stringstream command;
 				mJobIds.push_back(callID);
-				command << BenchmarkTool::PathOfBenchmarkTool << " -T " << benchmark.timeout() << " -M " << benchmark.memout() << " ";
-				command << "-f " << BenchmarkTool::RemoteOutputDirectory << "benchmark_" << callID << ".out ";
-				command << "-o " << BenchmarkTool::RemoteOutputDirectory << " ";
+				command << Settings::PathOfBenchmarkTool << " -T " << benchmark.timeout() << " -M " << benchmark.memout() << " ";
+				command << "-f " << Settings::RemoteOutputDirectory << "benchmark_" << callID << ".out ";
+				command << "-o " << Settings::RemoteOutputDirectory << " ";
 				command << "-X stats_" << callID << ".xml ";
-				if(BenchmarkTool::UseStats)
+				if(Settings::UseStats)
 				{
 					command << "-s ";
 				}
-				if(BenchmarkTool::ValidationTool != NULL)
+				if(Settings::ValidationTool != NULL)
 				{
-					command << "-W " << BenchmarkTool::RemoteOutputDirectory << "wrong_results_" << callID << "/ ";
-					command << "-V " << BenchmarkTool::ValidationTool->path() << " ";
+					command << "-W " << Settings::RemoteOutputDirectory << "wrong_results_" << callID << "/ ";
+					command << "-V " << Settings::ValidationTool->path() << " ";
 				}
 				command << benchmark.tool()->interfaceToCommandString() << " " << benchmark.tool()->path() << benchmark.tool()->arguments('@');
-//				if(BenchmarkTool::UseStats)
-//					command << "@--stats:exportXml=" << BenchmarkTool::RemoteOutputDirectory << "stats_" << callID << ".xml ";
+//				if(Settings::UseStats)
+//					command << "@--stats:exportXml=" << Settings::RemoteOutputDirectory << "stats_" << callID << ".xml ";
 				command << " ";
 				for(std::list<fs::path>::const_iterator file = benchmarks.begin(); file != benchmarks.end(); ++file)
 				{

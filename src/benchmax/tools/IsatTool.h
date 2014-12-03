@@ -12,14 +12,9 @@
 
 namespace benchmax {
 
-class IsatTool:
-    public Tool
-{
+class IsatTool: public Tool {
     public:
-        IsatTool(const std::string& pathToTool);
-
-    private:
-
+        IsatTool(const std::string& pathToTool): Tool(TI_ISAT, pathToTool, ".hys") {}
 };
 
 }

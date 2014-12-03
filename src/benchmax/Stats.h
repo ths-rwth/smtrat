@@ -51,7 +51,7 @@ class Stats
 		void addBenchmarkFile(const std::string&);
 		void addInputStat(const std::string&, const std::string&);
 		void addInputStat(const std::string&, int);
-		void addRun(const std::string&, unsigned);
+		void addRun(const std::string&, std::size_t);
 		void addRunTimeStat(const std::string&, const std::string&);
 		void addResult(const std::string&, const std::string&, const std::string&);
 		void addResult(const std::string&, bool);

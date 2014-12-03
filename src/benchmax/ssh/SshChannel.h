@@ -11,7 +11,7 @@
 
 #include "SshWaitSocket.h"
 
-#include "../BenchmarkTool.h"
+#include "../Settings.h"
 #include "../logging.h"
 
 /**
@@ -138,7 +138,7 @@ class SshChannel
 					break;
 				}
 			}
-			std::size_t result = response_stream.str().find(benchmax::BenchmarkTool::ExitMessage);
+			std::size_t result = response_stream.str().find(benchmax::Settings::ExitMessage);
 			// if the exit message was found, we return true
 			if(result != std::string::npos)
 				return true;
