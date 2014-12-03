@@ -1,3 +1,5 @@
+#include <boost/operators.hpp>
+
 #include "Settings.h"
 
 namespace benchmax {
@@ -12,8 +14,7 @@ namespace benchmax {
 	std::string Settings::StatsXMLFile;
 	std::string Settings::RemoteOutputDirectory;
 	std::string Settings::PathOfBenchmarkTool;
-	Tool* Settings::ValidationTool = nullptr;
-	std::vector<Node*> Settings::Nodes;
+	boost::optional<Tool> Settings::ValidationTool;
 	std::vector<std::string> Settings::pathes;
 	std::vector<std::string> Settings::smtratapps;
 	std::vector<std::string> Settings::z3apps;

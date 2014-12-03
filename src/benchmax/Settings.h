@@ -6,12 +6,15 @@
 #pragma once
 
 #include <fstream>
+#include <memory>
+#include <boost/optional.hpp>
 #include <boost/program_options.hpp>
+
+#include "Tool.h"
 
 namespace benchmax {
 
 class Node;
-class Tool;
 
 namespace po = boost:: program_options;
 
@@ -77,6 +80,9 @@ public:
 		po::notify(vm);
 		WrongResultPath = outputDir + WrongResultPath;
 		RemoteOutputDirectory = "/scratch/";
+		if (validationtoolpath != "") {
+			ValidationTool.emplace(createTool(benchmax::TI_Z3, validationtoolpath));
+		}
 	}
 	
 	bool has(const std::string& s) const {
@@ -97,8 +103,7 @@ public:
 	static std::string StatsXMLFile;
 	static std::string RemoteOutputDirectory;
 	static std::string PathOfBenchmarkTool;
-	static Tool* ValidationTool;
-	static std::vector<Node*> Nodes;
+	static boost::optional<Tool> ValidationTool;
 	static std::vector<std::string> pathes;
 	static std::vector<std::string> smtratapps;
 	static std::vector<std::string> z3apps;

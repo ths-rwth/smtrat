@@ -31,10 +31,10 @@ class Smt2Input;
 class Tool
 {
 	private:
-		const ToolInterface	  mInterface;
-		const std::string		mPath;
+		ToolInterface	  mInterface;
+		std::string		mPath;
 		std::vector<std::string> mArguments;
-		const std::string		mExpectedSuffix;
+		std::string		mExpectedSuffix;
 
 	protected:
 		/// If empty, no validation.
@@ -50,6 +50,24 @@ class Tool
 
 	public:
 		virtual ~Tool(){}
+		
+		Tool(const Tool& t):
+			mInterface(t.mInterface),
+			mPath(t.mPath),
+			mArguments(t.mArguments),
+			mExpectedSuffix(t.mExpectedSuffix),
+			mValidationFilePath(t.mValidationFilePath),
+			mFilePath(t.mFilePath)
+		{}
+		Tool& operator=(const Tool& t) {
+			mInterface = t.mInterface;
+			mPath = t.mPath;
+			mArguments = t.mArguments;
+			mExpectedSuffix = t.mExpectedSuffix;
+			mValidationFilePath = t.mValidationFilePath;
+			mFilePath = t.mFilePath;
+			return *this;
+		}
 
 		/**
 		 * 
@@ -68,7 +86,7 @@ class Tool
 		 *						  are inserted before the filepath comes. 
 		 * @return The string which encodes the call
 		 */
-		virtual std::string getCallToTool(const std::string& extraArguments = "")
+		virtual std::string getCallToTool(const std::string& extraArguments = "") const
 		{
 			return mPath + " " + arguments(' ') + " " + extraArguments + " " + mFilePath.string();
 		}
@@ -79,7 +97,7 @@ class Tool
 		 * @param output
 		 * @return 
 		 */
-		virtual BenchmarkResult getAnswer(const std::string& output)
+		virtual BenchmarkResult getAnswer(const std::string& output) const
 		{
 			return extractAnswerFromOutput(output);
 		}
@@ -89,7 +107,7 @@ class Tool
 		 * encode the input for the tool
 		 * @return string for this extension, typically starting with a dot.
 		 */
-		std::string expectedFileExtension()
+		std::string expectedFileExtension() const
 		{
 			return mExpectedSuffix;
 		}
@@ -188,9 +206,9 @@ class Tool
 		BenchmarkResult extractAnswerFromOutput(const std::string& relevantOutput,
 												const std::string& satIdentifier = "sat",
 												const std::string& unsatIdentifier = "unsat",
-												const std::string& unknownIdentifier = "unknown");
+												const std::string& unknownIdentifier = "unknown") const;
 };
 
-Tool* createTool(ToolInterface interface, const std::string& pathToTool);
+Tool createTool(ToolInterface interface, const std::string& pathToTool);
 
 }

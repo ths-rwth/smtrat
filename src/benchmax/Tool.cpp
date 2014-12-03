@@ -8,22 +8,22 @@
 
 namespace benchmax {
 
-Tool* createTool(ToolInterface interface, const std::string& pathToTool)
+Tool createTool(ToolInterface interface, const std::string& pathToTool)
 {
 	switch(interface)
 	{
 		case TI_SMTRAT:
-			return new SmtratSolverTool(pathToTool);
+			return SmtratSolverTool(pathToTool);
 		case TI_Z3:
-			return new Z3Tool(pathToTool);
+			return Z3Tool(pathToTool);
 		case TI_ISAT:
-			return new IsatTool(pathToTool);
+			return IsatTool(pathToTool);
 		case TI_REDLOG_RLCAD:
-			return new RedlogTool(pathToTool, RLCAD);
+			return RedlogTool(pathToTool, RLCAD);
 		case TI_REDLOG_RLQE:
-			return new RedlogTool(pathToTool, RLQE);
+			return RedlogTool(pathToTool, RLQE);
 		case TI_QEPCAD:
-			return new QepcadTool(pathToTool);
+			return QepcadTool(pathToTool);
 		default:
 			throw std::runtime_error("Unknown tool interface.");
 	}
@@ -32,7 +32,7 @@ Tool* createTool(ToolInterface interface, const std::string& pathToTool)
 BenchmarkResult Tool::extractAnswerFromOutput(const std::string& relevantOutput,
 											  const std::string& satIdentifier,
 											  const std::string& unsatIdentifier,
-											  const std::string& unknownIdentifier)
+											  const std::string& unknownIdentifier) const
 {
 	if(unknownIdentifier != "" && relevantOutput.find(unknownIdentifier) != std::string::npos)
 	{

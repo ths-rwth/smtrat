@@ -110,8 +110,7 @@ class Benchmark
 	/////////////
 
 	std::string										mPathToDirectory;
-	Tool*											  mTool;
-	Tool*											  mValidationTool;
+	Tool											  mTool;
 	std::size_t										   mTimeout;
 	std::size_t										   mMemout;
 	pathlist										   mFilesList;
@@ -136,8 +135,8 @@ class Benchmark
 		// Con-/Destructors  //
 		///////////////////////
 
-		Benchmark();
-		Benchmark(const std::string&, Tool*, Tool*, std::size_t, std::size_t, bool, bool, bool, bool, Stats* const );
+		//Benchmark();
+		Benchmark(const std::string&, const Tool&, std::size_t, std::size_t, bool, bool, bool, bool, Stats* const );
 		~Benchmark();
 
 		
@@ -207,10 +206,10 @@ class Benchmark
 
 		std::string solverName() const
 		{
-			return fs::path(mTool->path()).filename().generic_string();
+			return fs::path(mTool.path()).filename().generic_string();
 		}
 
-		Tool* tool() const
+		Tool tool() const
 		{
 			return mTool;
 		}

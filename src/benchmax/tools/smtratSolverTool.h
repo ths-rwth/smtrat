@@ -17,7 +17,7 @@ class SmtratSolverTool:
 {
     public:
         SmtratSolverTool(const std::string& pathToTool);
-        virtual std::string getCallToTool(const std::string& extraArguments = "");
+        virtual std::string getCallToTool(const std::string& extraArguments = "") const;
 
     private:
 

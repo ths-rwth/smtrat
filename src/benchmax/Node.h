@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <memory>
 #include <boost/filesystem.hpp>
 
 #include "ssh/SshConnection.h"
@@ -14,7 +15,7 @@
 #include "Settings.h"
 
 
-namespace fs =boost:: filesystem;
+namespace fs = boost:: filesystem;
 
 namespace benchmax {
 
@@ -51,6 +52,17 @@ class Node
 			mNrCores(nrCores),
 			mPort(port),
 			mSsh(nrCores)
+		{}
+		
+		Node(Node&& n):
+			mNodeName(std::move(n.mNodeName)),
+			mUsername(std::move(n.mUsername)),
+			mPassword(std::move(n.mPassword)),
+			mNrCores(std::move(n.mNrCores)),
+			mPort(std::move(n.mPort)),
+			mCallNr(std::move(n.mCallNr)),
+			mSsh(std::move(n.mSsh)),
+			mJobIds(std::move(n.mJobIds))
 		{}
 
 		/**
@@ -108,7 +120,7 @@ class Node
 					command << "-W " << Settings::RemoteOutputDirectory << "wrong_results_" << callID << "/ ";
 					command << "-V " << Settings::ValidationTool->path() << " ";
 				}
-				command << benchmark.tool()->interfaceToCommandString() << " " << benchmark.tool()->path() << benchmark.tool()->arguments('@');
+				command << benchmark.tool().interfaceToCommandString() << " " << benchmark.tool().path() << benchmark.tool().arguments('@');
 //				if(Settings::UseStats)
 //					command << "@--stats:exportXml=" << Settings::RemoteOutputDirectory << "stats_" << callID << ".xml ";
 				command << " ";

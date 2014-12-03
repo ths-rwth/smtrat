@@ -15,7 +15,7 @@ SmtratSolverTool::SmtratSolverTool(const std::string& pathToTool):
 {
 }
 
-std::string SmtratSolverTool::getCallToTool(const std::string& extraArguments)
+std::string SmtratSolverTool::getCallToTool(const std::string& extraArguments) const
 {
     if(mValidationFilePath != "")
     {

@@ -34,6 +34,16 @@ class SFTPDownloader
 			mDestinationPath("default.tmp"),
 			mRemove(false)
 		{}
+		SFTPDownloader(SFTPDownloader&& d):
+			mSocket(d.mSocket),
+			mSession(d.mSession),
+			mSftpSession(d.mSftpSession),
+			mSftpHandle(d.mSftpHandle),
+			response_stream(d.response_stream.str()),
+			mRemoteFile(std::move(d.mRemoteFile)),
+			mDestinationPath(std::move(d.mDestinationPath)),
+			mRemove(d.mRemove)
+		{}
 
 		void setDestination(const std::string& destination)
 		{

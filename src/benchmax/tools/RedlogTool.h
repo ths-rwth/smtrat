@@ -23,8 +23,8 @@ class RedlogTool:
 
     public:
         RedlogTool(const std::string& pathToTool, RedlogMode mode);
-        virtual std::string getCallToTool(const std::string& extraArguments = "");
-        virtual BenchmarkResult getAnswer(const std::string& output);
+        virtual std::string getCallToTool(const std::string& extraArguments = "") const;
+        virtual BenchmarkResult getAnswer(const std::string& output) const;
         #ifdef BENCHMAX_USE_SMTPARSER
         virtual bool convertInput(Smt2Input* input);
         #endif

@@ -52,10 +52,10 @@ namespace benchmax {
 /**
  *
  */
+	/*
 Benchmark::Benchmark():
 	mPathToDirectory(""),
 	mTool(nullptr),
-	mValidationTool(nullptr),
 	mTimeout(150),
 	mMemout(1000),
 	mFilesList(),
@@ -74,7 +74,7 @@ Benchmark::Benchmark():
 	mTimeStamp("")
 {
 	mNextInstanceToTry = mFilesList.begin();
-}
+}*/
 
 /**
  *
@@ -88,8 +88,7 @@ Benchmark::Benchmark():
  * @param _stats
  */
 Benchmark::Benchmark(const string& path,
-					 Tool* tool,
-					 Tool* validationTool,
+					 const Tool& tool,
 					 std::size_t timeout,
 					 std::size_t memory,
 					 bool verbose,
@@ -99,7 +98,6 @@ Benchmark::Benchmark(const string& path,
 					 Stats* const _stats):
 	mPathToDirectory(path),
 	mTool(tool),
-	mValidationTool(validationTool),
 	mTimeout(timeout),
 	mMemout(memory),
 	mNrSolved(0),
@@ -167,7 +165,7 @@ int Benchmark::run()
 		// Open in the stats a section for this benchmarkfile.
 		mStats->addBenchmarkFile(pathToFile.stem().generic_string());
 		// Tell the tool which file we are going to handle.
-		mTool->setFile(pathToFile);
+		mTool.setFile(pathToFile);
 		// Print some info about the file to be handled next
 		if(!mQuiet)
 		{
@@ -195,10 +193,10 @@ int Benchmark::run()
 		// In case we use validation, we have to construct the validation file path.
 		// And inform the tool about it.
 		string assToCheckFileName = "";
-		if(mValidationTool != nullptr)
+		if(Settings::ValidationTool != nullptr)
 		{
 			assToCheckFileName = validationFilePath(pathToFile);
-			mTool->setValidationFilePath(assToCheckFileName);
+			mTool.setValidationFilePath(assToCheckFileName);
 		}
 
 		// Here, we open the run-specific part of the xml. Now the tool can write more info there.
@@ -240,7 +238,7 @@ int Benchmark::parseDirectory()
 			{
 				std::copy(fs::directory_iterator(p), fs::directory_iterator(), back_inserter(mFilesList));
 				// Remove all files but those with the right extension.
-				FilterFileExtensions filter = FilterFileExtensions(mTool->expectedFileExtension());
+				FilterFileExtensions filter = FilterFileExtensions(mTool.expectedFileExtension());
 				mFilesList.remove_if(filter);
 				mFilesList.sort();
 				if(mVerbose)
@@ -280,7 +278,7 @@ void Benchmark::systemCall(std::string& callOutput, std::size_t& runningtime, in
 	// We limit the time and memory usage.
 	call << "ulimit -S -t " << mTimeout << " && ulimit -S -v " << (mMemout * 1000);
 	// And append the call to the tool.
-	call << " && " << mTool->getCallToTool() << " ";
+	call << " && " << mTool.getCallToTool() << " ";
 
 	//	std::cout << call.str() << std::endl;
 	// Start a timer.
@@ -321,7 +319,7 @@ ValidationResult Benchmark::validateResult(const std::string& inputFile, const s
 	// We limit the time and memory usage.
 	call << "ulimit -S -t " << mTimeout << " && ulimit -S -v " << (mMemout * 1000);
 	// And append the call to the tool.
-	call << " && " << mValidationTool->path() << " " << validationFile << " ";
+	call << " && " << Settings::ValidationTool->path() << " " << validationFile << " ";
 
 	// Now we make the system call.
 	FILE* pipe = popen( call.str().c_str(), "r" );
@@ -432,7 +430,7 @@ BenchmarkResult Benchmark::obtainResult(const std::string& output, std::size_t r
 		return BR_UNEXPECTEDERROR;
 	}
 	// Case 3C: Tool related output should give more information.
-	BenchmarkResult result = mTool->getAnswer(output);
+	BenchmarkResult result = mTool.getAnswer(output);
 	// if we have a known status for the input,
 	// we check if the result is not wrong.
 	if((result == BR_SAT && status == BS_UNSAT) || (result == BR_UNSAT && status == BS_SAT))
@@ -495,7 +493,7 @@ void Benchmark::processResult(BenchmarkResult answer,
 	{
 		// Solver terminates without problems.
 		// We might validate intermediate steps of the solver.
-		if(mValidationTool != nullptr)
+		if(Settings::ValidationTool != nullptr)
 		{
 			valResult = validateResult(pathToFile.filename().string(), pathToValidationFile);
 		}

@@ -96,6 +96,19 @@ class SshConnection:
 				mIdleChannels.push_back(new SshChannel(mSocket));
 			}
 		}
+			
+		SshConnection(SshConnection&& s):
+			sesdata(std::move(s.sesdata)),
+			mSocket(s.mSocket),
+			session(s.session),
+			mBlocked(s.mBlocked),
+			mConnectionEstablished(s.mConnectionEstablished),
+			mActiveChannels(std::move(s.mActiveChannels)),
+			mIdleChannels(std::move(s.mIdleChannels)),
+			sin(std::move(s.sin)),
+			mDownloader(std::move(s.mDownloader)),
+			mNrOfChannels(s.mNrOfChannels)
+		{}
 
 		virtual ~SshConnection()
 		{

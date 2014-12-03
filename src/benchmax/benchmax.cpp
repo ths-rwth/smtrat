@@ -58,9 +58,9 @@ using benchmax::Settings;
 
 namespace po = boost:: program_options;
 
-const string COPYRIGHT =
+const std::string COPYRIGHT =
 	"Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Sebastian Junges, Erika Abraham\r\nThis program comes with ABSOLUTELY NO WARRANTY.\r\nThis is free software, and you are welcome to redistribute it \r\nunder certain conditions; use the command line argument --disclaimer in order to get the conditions and warranty disclaimer.";
-const string WARRANTY =
+const std::string WARRANTY =
 	"THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM “AS IS” WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU. SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION.";
 const unsigned NUMBER_OF_EXAMPLES_TO_SOLVE = 6;
 
@@ -80,7 +80,7 @@ void printDisclaimer()
 	std::cout << WARRANTY << std::endl;
 }
 
-void addToTools(const std::vector<std::string>& pathes, benchmax::ToolInterface interface, std::vector<Tool*>& tools)
+void addToTools(const std::vector<std::string>& pathes, benchmax::ToolInterface interface, std::vector<Tool>& tools)
 {
 	for (const auto& p: pathes) {
 		regex r("([^ ]+)(?: ([^ ]+))*");
@@ -98,7 +98,7 @@ void addToTools(const std::vector<std::string>& pathes, benchmax::ToolInterface 
 			}
 			tools.push_back(createTool(interface, matches[1]));
 			for (std::size_t i = 2; i < matches.size(); i++) {
-				tools.back()->addArgument(matches[i]);
+				tools.back().addArgument(matches[i]);
 			}
 		}
 	}
@@ -109,7 +109,7 @@ void addToTools(const std::vector<std::string>& pathes, benchmax::ToolInterface 
  * @param _nodeAsString
  * @return 
  */
-benchmax::Node* getNode(const string& _nodeAsString)
+benchmax::Node getNode(const string& _nodeAsString)
 {
 	regex noderegex("([^:]+):([^@]+)@([^:@]+)(?::(\\d+))?(?:@(\\d+))?");
 	std::smatch matches;
@@ -127,11 +127,11 @@ benchmax::Node* getNode(const string& _nodeAsString)
 			BENCHMAX_LOG_ERROR("benchmax", "\tPort: " << matches[4]);
 			BENCHMAX_LOG_ERROR("benchmax", "\tCores: " << matches[5]);
 		}
-		return new benchmax::Node(hostname, username, password, (unsigned short)cores, (unsigned short)port);
+		return benchmax::Node(hostname, username, password, (unsigned short)cores, (unsigned short)port);
 	} else {
 		BENCHMAX_LOG_ERROR("benchmax", "Invalid format for node specification. Use the following format:");
 		BENCHMAX_LOG_ERROR("benchmax", "\t<user>:<password>@<hostname>[:<port = 22>][@<cores = 1>]");
-		return nullptr;
+		exit(1);
 	}
 }
 
@@ -144,12 +144,12 @@ void checkPathCorrectness(std::string& _path)
 	}
 }
 
-bool initApplication(const benchmax::Settings& s, std::vector<benchmax::Benchmark*>& _benchmarks, Stats*& _stats, std::vector<Tool*>& _tools)
+bool initApplication(const benchmax::Settings& s, std::vector<benchmax::Node>& nodes, std::vector<benchmax::Benchmark*>& _benchmarks, Stats*& _stats, std::vector<Tool>& _tools)
 {
 
 	// add the remote nodes
 	for (const auto& node: Settings::nodes) {
-		Settings::Nodes.push_back(getNode(node));
+		nodes.push_back(getNode(node));
 	}
 
 	if(s.has("help")) {
@@ -204,11 +204,11 @@ bool initApplication(const benchmax::Settings& s, std::vector<benchmax::Benchmar
 
 	// Collect all used solvers in the statisticsfile.
 	_stats = new Stats(Settings::outputDir + Settings::StatsXMLFile,
-					   (!Settings::Nodes.empty() ? Stats::STATS_COLLECTION : Stats::BENCHMARK_RESULT));
-	if(Settings::Nodes.empty())
+					   (!nodes.empty() ? Stats::STATS_COLLECTION : Stats::BENCHMARK_RESULT));
+	if(nodes.empty())
 	{
 		for (const auto& tool: _tools) {
-			_stats->addSolver(fs::path(tool->path()).filename().generic_string());
+			_stats->addSolver(fs::path(tool.path()).filename().generic_string());
 		}
 	}
 
@@ -218,7 +218,7 @@ bool initApplication(const benchmax::Settings& s, std::vector<benchmax::Benchmar
 		if (fs::exists(path)) {
 			for (const auto& tool: _tools) {
 				_benchmarks.push_back(
-				new benchmax::Benchmark(path.generic_string(), tool, Settings::ValidationTool, s.timeLimit, s.memoryLimit, s.verbose, s.quiet, s.mute,
+				new benchmax::Benchmark(path.generic_string(), tool, s.timeLimit, s.memoryLimit, s.verbose, s.quiet, s.mute,
 							  Settings::ProduceLatex, _stats));
 			}
 		} else {
@@ -235,13 +235,6 @@ bool initApplication(const benchmax::Settings& s, std::vector<benchmax::Benchmar
 void handleSignal(int)
 {
 	BENCHMAX_LOG_WARN("benchmax", "User abort!");
-	while(!Settings::Nodes.empty())
-	{
-		benchmax::Node* toDelete = Settings::Nodes.back();
-		toDelete->cancel();
-		Settings::Nodes.pop_back();
-		delete toDelete;
-	}
 	exit(-1);
 }
 
@@ -250,21 +243,19 @@ void handleSignal(int)
  */
 int main(int argc, char** argv)
 {
+	std::signal(SIGINT, &handleSignal);
+	
 	benchmax::Settings s(argc, argv);
 	Settings::PathOfBenchmarkTool = fs::system_complete(fs::path(argv[0])).native();
-	if (Settings::validationtoolpath != "") {
-		Settings::ValidationTool = createTool(benchmax::TI_Z3, Settings::validationtoolpath);
-	}
 
 	// init benchmarks
 	std::vector<benchmax::Benchmark*> benchmarks;
+	std::vector<benchmax::Node> nodes;
 	Stats* stats = NULL;
-	std::vector<Tool*> tools;
-	if (!initApplication(s, benchmarks, stats, tools)) {
+	std::vector<Tool> tools;
+	if (!initApplication(s, nodes, benchmarks, stats, tools)) {
 		return 0;
 	}
-
-	std::signal(SIGINT, &handleSignal);
 
 	if(benchmarks.empty()) {
 		BENCHMAX_LOG_FATAL("benchmax", "No benchmarks were found.");
@@ -275,7 +266,7 @@ int main(int argc, char** argv)
 	std::map<std::pair<std::string, std::string>, benchmax::Benchmark*> table;	// table mapping <benchmark,solver> -> result
 	std::set<std::string> benchmarkSet, solverSet;
 
-	if(!Settings::Nodes.empty()) {
+	if(!nodes.empty()) {
 		// libssh is needed.
 		int rc = libssh2_init(0);
 		if (rc != 0) {
@@ -287,7 +278,7 @@ int main(int argc, char** argv)
 	/*
 	 * Main loop.
 	 */
-	if(Settings::Nodes.empty())
+	if(nodes.empty())
 	{
 		for (const auto& benchmark: benchmarks)
 		{
@@ -320,7 +311,7 @@ int main(int argc, char** argv)
 	{
 		int						  nrOfCalls		= 0;
 		std::vector<benchmax::Benchmark*>::iterator currentBenchmark = benchmarks.begin();
-		std::vector<benchmax::Node*>::iterator	  currentNode	  = Settings::Nodes.begin();
+		std::vector<benchmax::Node>::iterator	  currentNode = nodes.begin();
 		if(currentBenchmark != benchmarks.end())
 			(*currentBenchmark)->printSettings();
 		while(currentBenchmark != benchmarks.end())
@@ -332,20 +323,20 @@ int main(int argc, char** argv)
 					break;
 				(*currentBenchmark)->printSettings();
 			}
-			if(currentNode == Settings::Nodes.end())
-				currentNode = Settings::Nodes.begin();
-			if(!(*currentNode)->connected())
+			if(currentNode == nodes.end())
+				currentNode = nodes.begin();
+			if(!(*currentNode).connected())
 			{
-				(*currentNode)->createSSHconnection();
+				(*currentNode).createSSHconnection();
 			}
 
-			(*currentNode)->updateResponses();
+			(*currentNode).updateResponses();
 
-			if((*currentNode)->freeCores() > 0)
+			if((*currentNode).freeCores() > 0)
 			{
 				stringstream tmpStream;
 				tmpStream << ++nrOfCalls;
-				(*currentNode)->assignAndExecuteBenchmarks(**currentBenchmark, NUMBER_OF_EXAMPLES_TO_SOLVE, tmpStream.str());
+				(*currentNode).assignAndExecuteBenchmarks(**currentBenchmark, NUMBER_OF_EXAMPLES_TO_SOLVE, tmpStream.str());
 			}
 			++currentNode;
 			usleep(100000);	// 100 milliseconds (0.1 seconds);
@@ -360,17 +351,17 @@ int main(int argc, char** argv)
 		while(!allNodesEntirelyIdle)
 		{
 			allNodesEntirelyIdle = true;
-			std::vector<benchmax::Node*>::iterator currentNode = Settings::Nodes.begin();
-			while(currentNode != Settings::Nodes.end())
+			std::vector<benchmax::Node>::iterator currentNode = nodes.begin();
+			while(currentNode != nodes.end())
 			{
-				(*currentNode)->updateResponses();
-				if(!(*currentNode)->idle())
+				(*currentNode).updateResponses();
+				if(!(*currentNode).idle())
 				{
 					allNodesEntirelyIdle = false;
 					if(waitedTime > (s.timeLimit * NUMBER_OF_EXAMPLES_TO_SOLVE))
 					{
 						BENCHMAX_LOG_INFO("benchmax", "Waiting for call...");
-						(*currentNode)->sshConnection().logActiveRemoteCalls();
+						(*currentNode).sshConnection().logActiveRemoteCalls();
 						waitedTime = 0;
 					}
 					break;
@@ -382,13 +373,13 @@ int main(int argc, char** argv)
 		}
 
 		// Download files.
-		for(std::vector<benchmax::Node*>::const_iterator currentNode = Settings::Nodes.begin(); currentNode != Settings::Nodes.end(); ++currentNode)
+		for(std::vector<benchmax::Node>::iterator currentNode = nodes.begin(); currentNode != nodes.end(); ++currentNode)
 		{
-			for(std::vector<std::string>::const_iterator jobId = (*currentNode)->jobIds().begin(); jobId != (*currentNode)->jobIds().end(); ++jobId)
+			for(std::vector<std::string>::const_iterator jobId = (*currentNode).jobIds().begin(); jobId != (*currentNode).jobIds().end(); ++jobId)
 			{
 				std::stringstream out;
 				out << *jobId;
-				(*currentNode)->downloadFile(
+				(*currentNode).downloadFile(
 				Settings::RemoteOutputDirectory + "stats_" + *jobId + ".xml", Settings::outputDir + "stats_" + *jobId + ".xml");
 				if(Settings::ValidationTool != nullptr)
 				{
@@ -397,7 +388,7 @@ int main(int argc, char** argv)
 					{
 						fs::create_directories(newloc);
 					}
-					(*currentNode)->downloadFile(
+					(*currentNode).downloadFile(
 					Settings::RemoteOutputDirectory + "wrong_results_" + *jobId + ".tgz",
 					Settings::WrongResultPath + "wrong_results_" + *jobId + ".tgz");
 				}
@@ -406,7 +397,7 @@ int main(int argc, char** argv)
 				{
 					fs::create_directories(newloc);
 				}
-				(*currentNode)->downloadFile(
+				(*currentNode).downloadFile(
 				Settings::RemoteOutputDirectory + "benchmark_" + *jobId + ".out",
 				Settings::outputDir + "benchmark_output/benchmark_" + *jobId + ".out");
 				stats->addStat("stats_" + *jobId + ".xml");
@@ -415,7 +406,7 @@ int main(int argc, char** argv)
 		}
 	}
 
-	if(!Settings::Nodes.empty())
+	if(!nodes.empty())
 	{
 		stats->createStatsCompose(Settings::outputDir + "statsCompose.xsl");
 		delete stats;
@@ -433,24 +424,9 @@ int main(int argc, char** argv)
 		benchmarks.pop_back();
 		delete toDelete;
 	}
-	while(!tools.empty())
-	{
-		Tool* toDelete = tools.back();
-		tools.pop_back();
-		delete toDelete;
-	}
-	while(!Settings::Nodes.empty())
-	{
-		benchmax::Node* toDelete = Settings::Nodes.back();
-		Settings::Nodes.pop_back();
-		delete toDelete;
-	}
 
 	// Necessary output message (DO NOT REMOVE IT)
 	std::cout << Settings::ExitMessage << std::endl;
-	if(!Settings::Nodes.empty())
-	{
-		libssh2_exit();
-	}
+	libssh2_exit();
 	return 0;
 }

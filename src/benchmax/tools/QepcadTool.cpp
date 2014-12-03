@@ -20,12 +20,12 @@ QepcadTool::QepcadTool(const std::string& pathToTool):
 	Tool(TI_QEPCAD, pathToTool, ".smt2")
 {}
 
-std::string QepcadTool::getCallToTool(const std::string& extraArguments)
+std::string QepcadTool::getCallToTool(const std::string& extraArguments) const
 {
 	return Tool::getCallToTool(extraArguments + " < ");
 }
 
-BenchmarkResult QepcadTool::getAnswer(const std::string& output)
+BenchmarkResult QepcadTool::getAnswer(const std::string& output) const
 {
 	return extractAnswerFromOutput(output, "TRUE", "FALSE", "UNKNOWN"); // the "UNKNOWN" case never happens
 }

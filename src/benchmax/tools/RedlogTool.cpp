@@ -31,12 +31,12 @@ RedlogTool::RedlogTool(const std::string& pathToTool, RedlogMode mode):
 	mMode(mode)
 {}
 
-std::string RedlogTool::getCallToTool(const std::string& extraArguments)
+std::string RedlogTool::getCallToTool(const std::string& extraArguments) const
 {
 	return Tool::getCallToTool(extraArguments + " < ");
 }
 
-BenchmarkResult RedlogTool::getAnswer(const std::string& output)
+BenchmarkResult RedlogTool::getAnswer(const std::string& output) const
 {
 	return extractAnswerFromOutput(output, "true", "false", "unknown"); // the "unknown" case never happens
 }
