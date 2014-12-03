@@ -49,11 +49,6 @@ namespace smtrat
             // Stores the origins of the calculated substitutions
             std::map<carl::Variable, vector<std::set<FormulaT>>> mVariables;
             
-            
-            /**
-             * @return Member mSubstitutions
-             */
-            std::map<carl::Variable, Poly> get_Substitutions() const;
             /**
              * @param origins 
              * @return The index of the smallest element of origins

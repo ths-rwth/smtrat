@@ -20,7 +20,7 @@
  */
 /**
  * @file FouMoModule.h
- * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ * @author Dustin Huetter <dustin.huetter@rwth-aachen.de>
  *
  * @version 2014-12-01
  * Created on 2014-12-01.
@@ -33,12 +33,36 @@
 #include "FouMoSettings.h"
 namespace smtrat
 {
+    
+    typedef std::map<FormulaT,vector<std::set<FormulaT>>> FormulaOrigins;
+    typedef std::map<carl::Variable,std::pair<std::vector<FormulaT>,std::vector<FormulaT>>> VariableUpperLower;
+    
+    /**
+     * A module which applies the Fourier-Motzkin algorithm.
+     */ 
     template<typename Settings>
     class FouMoModule : public Module
     {
         private:
-            // Members.
-
+            // Stores the current inequalities
+            FormulaOrigins mProc_Constraints;
+            
+            /**
+             * @param curr_constraints Contains the constraints for which a possibly good
+             *                         variable is chosen
+             * @param var_corr_constr  Contains the chosen variable and the indices of the
+             *                         constraints for the elimination step
+             */
+            void gather_upper_lower( FormulaOrigins& curr_constraints, VariableUpperLower& var_corr_constr );
+            
+            /**
+             * @param upper_constr Pointer to the constraint corresponding to an upper bound of corr_var          *                         variable is chosen
+             * @param lower_constr Pointer to the constraint corresponding to a lower bound of corr_var
+             * @param corr_var     Variable that shall be eliminated
+             * @return             Pointer to the constraint resulting from the combination
+             */
+            const smtrat::ConstraintT* combine_upper_lower( const smtrat::ConstraintT* upper_constr, const smtrat::ConstraintT* lower_Constr, carl::Variable& corr_var );
+            
         public:
             FouMoModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
