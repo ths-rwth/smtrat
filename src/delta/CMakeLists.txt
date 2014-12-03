@@ -6,10 +6,10 @@ add_executable( delta
 	delta.cpp
 )
 
-target_link_libraries( delta boost_program_options )
+target_link_libraries( delta boost_program_options pthread )
 
 if(USE_BOOST_REGEX)
-	target_link_libraries( delta boost_program_options boost_regex )
+	target_link_libraries( delta boost_regex )
 endif()
 
 set_target_properties( delta PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
