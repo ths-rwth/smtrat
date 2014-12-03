@@ -1,0 +1,31 @@
+/**
+ * @file  BenchmarkStatus.h
+ * @author Sebastian Junges
+ *
+ *
+ */
+
+#ifndef BENCHMARKSTATUS_H
+#define BENCHMARKSTATUS_H
+
+#include <iostream>
+
+enum BenchmarkStatus
+{
+	BS_SAT = 0, BS_UNSAT = 1, BS_UNKNOWN = 2, BS_INVALID = -1
+};
+
+BenchmarkStatus benchmarkStatusFromParser(int parserStatus);
+std::string benchmarkStatusToString(BenchmarkStatus status);
+
+enum BenchmarkResult
+{
+	BR_SAT = 0, BR_UNSAT = 1, BR_UNKNOWN = 2, BR_INVALID = -1, BR_TIMEOUT = 3, BR_MEMOUT = 4, BR_WRONG = 5, BR_ABORT = 6, BR_SEGFAULT = 7,
+	BR_SOLVERERROR = 8, BR_UNEXPECTEDERROR = 9, BR_NORESULT = 100
+};
+
+std::string benchmarkResultToString(BenchmarkResult result);
+
+enum ValidationResult { NOTVALIDATED = -1, FOUNDERROR = 1, OKAY = 0 };
+
+#endif   /* BENCHMARKSTATUS_H */
