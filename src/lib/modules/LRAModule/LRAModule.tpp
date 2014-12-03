@@ -167,10 +167,8 @@ namespace smtrat
                             const std::vector< const LRABound* >* bounds = constrBoundIter->second;
                             if( (*bounds)[0]->isActive() || (*bounds)[1]->isActive() || (*bounds)[2]->isActive() || (*bounds)[3]->isActive() )
                             {
-                                Context context = Context();
-                                context.origin = formula;
-                                context.position = passedFormulaEnd();
-                                mActiveResolvedNEQConstraints.insert( std::pair< FormulaT, Context >( formula, context ) );
+                                Context context( formula, passedFormulaEnd() );
+                                mActiveResolvedNEQConstraints.insert( std::pair< FormulaT, Context >( formula, std::move(context) ) );
                                 bool leqBoundActive = (*bounds)[1]->isActive();
                                 if( leqBoundActive || (*bounds)[2]->isActive() )
                                 {
@@ -179,10 +177,8 @@ namespace smtrat
                             }
                             else
                             {
-                                Context context = Context();
-                                context.origin = formula;
-                                context.position = addSubformulaToPassedFormula( formula, formula ).first;
-                                mActiveUnresolvedNEQConstraints.insert( std::pair< FormulaT, Context >( formula, context ) );
+                                Context context( formula, addSubformulaToPassedFormula( formula, formula ).first );
+                                mActiveUnresolvedNEQConstraints.insert( std::pair< FormulaT, Context >( formula, std::move(context) ) );
                             }
                         }
                     }
@@ -204,7 +200,7 @@ namespace smtrat
     void LRAModule<Settings>::removeSubformula( ModuleInput::const_iterator _subformula )
     {
         #ifdef DEBUG_LRA_MODULE
-        cout << "remove " << _subformula->formula() << "(" << _subformula->formula() << ")" << endl;
+        cout << "remove " << _subformula->formula() << endl;
         #endif
         const FormulaT& formula = _subformula->formula();
         if( formula.getType() == carl::FormulaType::CONSTRAINT )
@@ -248,8 +244,11 @@ namespace smtrat
                             }
                             if( (*bound)->origins().empty() )
                             {
+//                                std::cout << __func__ << ":" << __LINE__ << std::endl;
+//                                std::cout << (*bound)->neqRepresentation() << std::endl;
                                 if( !(*bound)->neqRepresentation().isTrue() )
                                 {
+//                                    std::cout << __func__ << ":" << __LINE__ << ": " << formula << std::endl;
                                     auto constrBoundIterB = mTableau.constraintToBound().find( (*bound)->neqRepresentation() );
                                     assert( constrBoundIterB != mTableau.constraintToBound().end() );
                                     const std::vector< const LRABound* >* uebounds = constrBoundIterB->second;
@@ -257,9 +256,11 @@ namespace smtrat
                                     assert( uebounds->size() >= 4 );
                                     if( !(*uebounds)[0]->isActive() && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive() && !(*uebounds)[3]->isActive() )
                                     {
+//                                        std::cout << __func__ << ":" << __LINE__ << std::endl;
                                         auto pos = mActiveResolvedNEQConstraints.find( (*bound)->neqRepresentation() );
                                         if( pos != mActiveResolvedNEQConstraints.end() )
                                         {
+//                                            std::cout << __func__ << ":" << __LINE__ << std::endl;
                                             auto entry = mActiveUnresolvedNEQConstraints.insert( *pos );
                                             mActiveResolvedNEQConstraints.erase( pos );
                                             entry.first->second.position = addSubformulaToPassedFormula( entry.first->first, entry.first->second.origin ).first;
@@ -558,6 +559,7 @@ Return:
                         break;
                     }
                 }
+//                if( !( result != True || assignmentCorrect() ) ) { std::cout << "Error!" << std::endl; exit( 7771 ); }
                 assert( result != True || assignmentCorrect() );
             }
         }

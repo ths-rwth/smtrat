@@ -258,8 +258,10 @@ namespace smtrat
 
 			std::set<FormulaT> boundConstraints = mVariableBounds.getOriginsOfBounds();
 			for (auto i: infeasibleSubsets) {
+                #ifdef LOGGING_CARL
 				LOGMSG_DEBUG("smtrat.cad", "Infeasible:");
 				for (auto j: i) LOGMSG_DEBUG("smtrat.cad", "\t" << j);
+                #endif
 				mInfeasibleSubsets.push_back(i);
 				mInfeasibleSubsets.back().insert(boundConstraints.begin(), boundConstraints.end());
 			}
