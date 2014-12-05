@@ -1197,6 +1197,10 @@ SetWatches:
                         mChangedBooleans.push_back( x );
                 }
                 else if( abstr.consistencyRelevant ) abstr.updateInfo = 0;
+                if( Settings::allow_theory_propagation && Settings::detect_deductions )
+                {
+                    abstr.isDeduction = false;
+                }
                 assigns[x]  = l_Undef;
                 if( (phase_saving > 1 || (phase_saving == 1)) && c > trail_lim.last() )
                     polarity[x] = sign( trail[c] );
