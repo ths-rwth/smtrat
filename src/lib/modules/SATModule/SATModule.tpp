@@ -692,10 +692,10 @@ namespace smtrat
         else if( _abstr.updateInfo > 0 )
         {
             assert( !_abstr.reabstraction.isTrue() );
-            _abstr.reabstraction.setDeducted( _abstr.isDeduction );
             assert( _abstr.reabstraction.getType() == carl::FormulaType::UEQ || (_abstr.reabstraction.getType() == carl::FormulaType::CONSTRAINT && _abstr.reabstraction.constraint().isConsistent() == 2) );
             auto res = addSubformulaToPassedFormula( _abstr.reabstraction, *_abstr.origins );
             _abstr.position = res.first;
+            _abstr.position->setDeducted( _abstr.isDeduction );
             mChangedPassedFormula = true;
         }
         _abstr.updateInfo = 0;

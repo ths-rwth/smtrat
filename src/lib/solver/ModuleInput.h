@@ -50,6 +50,9 @@ namespace smtrat
         FormulaT mFormula;
         /// The formulas origins.
         std::vector<std::set<FormulaT>> mOrigins;
+        /// The deduction flag, which indicates, that this formula g is a direct sub-formula of
+        /// a conjunction of formulas (and g f_1 .. f_n), and, that (implies (and f_1 .. f_n) g) holds.
+        mutable bool mDeducted;
         
     public:
         
@@ -61,7 +64,8 @@ namespace smtrat
          */
         FormulaWithOrigins( const FormulaT& _formula ):
             mFormula( _formula ),
-            mOrigins()
+            mOrigins(),
+            mDeducted( false )
         {}
         
         /**
@@ -71,7 +75,8 @@ namespace smtrat
          */
         FormulaWithOrigins( const FormulaT& _formula, const std::vector<std::set<FormulaT>>& _origins ):
             mFormula( _formula ),
-            mOrigins( _origins )
+            mOrigins( _origins ),
+            mDeducted( false )
         {}
         
         /**
@@ -81,7 +86,8 @@ namespace smtrat
          */
         FormulaWithOrigins( const FormulaT& _formula, std::vector<std::set<FormulaT>>&& _origins ):
             mFormula( _formula ),
-            mOrigins( std::move( _origins ) )
+            mOrigins( std::move( _origins ) ),
+            mDeducted( false )
         {}
         
         FormulaWithOrigins( const FormulaWithOrigins& ); // Copy constructor disabled.
@@ -130,6 +136,24 @@ namespace smtrat
         std::vector<std::set<FormulaT>>& rOrigins()
         {
             return mOrigins;
+        }
+
+        /**
+         * Sets the deduction flag to the given value.
+         * @param _deducted The value to set the deduction flag to.
+         */
+        void setDeducted( bool _deducted ) const
+        {
+            mDeducted = _deducted;
+        }
+
+        /**
+         * @return The deduction flag, which indicates, that this formula g is a direct sub-formula of
+         *          a conjunction of formulas (and g f_1 .. f_n), and, that (implies (and f_1 .. f_n) g) holds.
+         */
+        bool deducted() const
+        {
+            return mDeducted;
         }
     };
     

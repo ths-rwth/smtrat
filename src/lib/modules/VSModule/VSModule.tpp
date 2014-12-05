@@ -1590,8 +1590,24 @@ namespace smtrat
     }
     
     template<class Settings>
+    bool VSModule<Settings>::sideConditionsSatisfied( const vs::Substitution& _substitution, const EvalRationalMap& _assignment )
+    {
+        for( const ConstraintT* sideC : _substitution.sideCondition() )
+        {
+            unsigned sideCisConsistent = sideC->satisfiedBy( _assignment );
+            assert( sideCisConsistent != 2 );
+            if( sideCisConsistent == 0 )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    template<class Settings>
     bool VSModule<Settings>::solutionInDomain()
     {
+//        std::cout << __func__ << std::endl;
         assert( solverState() != False );
         if( !mRanking.empty() )
         {
@@ -1599,6 +1615,7 @@ namespace smtrat
             State* currentState = mRanking.begin()->second;
             while( !currentState->isRoot() )
             {
+//                currentState->printAlone();
                 if( currentState->substitution().variable().getType() == carl::VariableType::VT_INT )
                 {
                     if( Settings::branch_and_bound && (currentState->substitution().type() == Substitution::MINUS_INFINITY || currentState->substitution().type() == Substitution::PLUS_INFINITY ) )
@@ -1627,34 +1644,49 @@ namespace smtrat
                             for( auto var = varOrder.rbegin(); var != varOrder.rend(); ++var )
                             {
                                 assert( varSolutions.find( *var ) != varSolutions.end() );
+//                                std::cout << "check if origin  " << substitutionPoly << "  has integer zeros under the assignment" << std::endl;
                                 partialVarSolutions[*var] = varSolutions[*var];
+//                                for( const auto& pvs : partialVarSolutions )
+//                                    std::cout << "      " << pvs.first << " -> " << pvs.second << std::endl;
+//                                std::cout << "check first if side conditions of test candidate are fulfilled:" << std::endl;
                                 Poly subPolyPartiallySubstituted = substitutionPoly.substitute( partialVarSolutions );
+//                                std::cout << "   results in " << subPolyPartiallySubstituted << std::endl;
                                 auto term = subPolyPartiallySubstituted.rbegin();
-                                assert( !term->isConstant() && carl::isInteger( term->coeff() ) );
-                                Rational g = carl::abs( term->coeff() );
-                                ++term;
-                                for( ; term != subPolyPartiallySubstituted.rend(); ++term )
+                                if( term != subPolyPartiallySubstituted.rend() )
                                 {
-                                    if( !term->isConstant() )
+//                                    std::cout << "   check if the gcd of the coefficients divides the constant part:" << std::endl;
+                                    assert( !term->isConstant() && carl::isInteger( term->coeff() ) );
+                                    Rational g = carl::abs( term->coeff() );
+                                    ++term;
+                                    for( ; term != subPolyPartiallySubstituted.rend(); ++term )
                                     {
-                                        assert( carl::isInteger( term->coeff() ) );
-                                        g = carl::gcd( carl::getNum( g ), carl::getNum( carl::abs( term->coeff() ) ) );
+                                        if( !term->isConstant() )
+                                        {
+                                            assert( carl::isInteger( term->coeff() ) );
+                                            g = carl::gcd( carl::getNum( g ), carl::getNum( carl::abs( term->coeff() ) ) );
+                                        }
                                     }
-                                }
-                                assert( g > ZERO_RATIONAL );
-                                if( carl::mod( carl::getNum( subPolyPartiallySubstituted.constantPart() ), carl::getNum( g ) ) != 0 )
-                                {
-                                    Poly branchEx = ((subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * (1 / g));
-                                    Rational branchValue = subPolyPartiallySubstituted.constantPart() * (1 / g);
-                                    branchAt( branchEx, branchValue, getReasons( currentState->substitution().originalConditions() ) );
-                                    return false;
+                                    assert( g > ZERO_RATIONAL );
+//                                    std::cout << "   " << carl::getNum( subPolyPartiallySubstituted.constantPart() ) << " mod " << carl::getNum( g ) << " == " << carl::mod( carl::getNum( subPolyPartiallySubstituted.constantPart() ), carl::getNum( g ) ) << std::endl; 
+                                    if( carl::mod( carl::getNum( subPolyPartiallySubstituted.constantPart() ), carl::getNum( g ) ) != 0 )
+                                    {
+                                        Poly branchEx = ((subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * (1 / g));
+                                        Rational branchValue = subPolyPartiallySubstituted.constantPart() * (1 / g);
+                                        branchAt( branchEx, branchValue, getReasons( currentState->substitution().originalConditions() ) );
+                                        return false;
+                                    }
                                 }
                             }
                         }
                         // Insert the (integer!) assignments of the other variables.
                         const SqrtEx& subTerm = currentState->substitution().term();
+                        assert( sideConditionsSatisfied( currentState->substitution(), varSolutions ) );
                         Rational evaluatedSubTerm;
+//                        std::cout << "replace variable in  " << subTerm << "  by" << std::endl;
+//                        for( const auto& vs : varSolutions )
+//                            std::cout << "   " << vs.first << " -> " << vs.second << std::endl;
                         bool assIsInteger = subTerm.evaluate( evaluatedSubTerm, varSolutions, -1 );
+//                        std::cout << "results in " << evaluatedSubTerm << std::endl;
                         assIsInteger &= carl::isInteger( evaluatedSubTerm );
                         if( !assIsInteger )
                         {
