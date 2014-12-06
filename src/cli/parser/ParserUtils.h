@@ -20,6 +20,7 @@
 #include "../../lib/Common.h"
 #include "../../lib/datastructures/VariantMap.h"
 #include "ParserTypes.h"
+#include "UtilityParser.h"
 
 #include "carl/core/logging.h"
 
@@ -284,130 +285,5 @@ struct ErrorHandler {
 	}
 };
 
-
-struct RationalPolicies : qi::ureal_policies<smtrat::Rational> {
-	template <typename It, typename Attr>
-	static bool parse_nan(It&, It const&, Attr&) { return false; }
-	template <typename It, typename Attr>
-	static bool parse_inf(It&, It const&, Attr&) { return false; }
-};
-
-struct Skipper : public qi::grammar<Iterator> {
-	Skipper();
-	qi::rule<Iterator> main;
-};
-
-struct SymbolParser : public qi::grammar<Iterator, std::string(), Skipper> {
-	SymbolParser();
-	qi::rule<Iterator, std::string(), Skipper> main;
-	qi::rule<Iterator, std::string(), Skipper> quoted;
-	qi::rule<Iterator, std::string(), Skipper> simple;
-};
-
-struct KeywordParser : public qi::grammar<Iterator, std::string(), Skipper> {
-	KeywordParser();
-	qi::rule<Iterator, std::string(), Skipper> main;
-};
-
-struct IdentifierParser : public qi::grammar<Iterator, std::string(), Skipper> {
-	IdentifierParser();
-	SymbolParser symbol;
-	qi::uint_parser<Rational,10,1,-1> numeral;
-	qi::rule<Iterator, std::string(), Skipper> main;
-	qi::rule<Iterator, std::string(), Skipper> indexed;
-	std::string buildIdentifier(const std::string& name, const std::vector<Rational>& nums) const;
-};
-
-template<typename T>
-struct DeclaredSymbolParser : public qi::grammar<Iterator, T(), Skipper> {
-	DeclaredSymbolParser(): DeclaredSymbolParser::base_type(main, "declared symbol") {
-		main = (qi::lit('|') >> sym >> qi::lit('|')) | sym;
-		main.name("declared symbol");
-	}
-	qi::rule<Iterator, T(), Skipper> main;
-	qi::symbols<char, T> sym;
-};
-
-struct SortParser : public qi::grammar<Iterator, carl::Sort(), Skipper> {
-	SortParser(): SortParser::base_type(sort, "sort") {
-		sort =
-				simpleSort[qi::_val = qi::_1]
-			|	parameters[qi::_val = qi::_1]
-			|	identifier[qi::_val = px::bind(&SortParser::mkSort, px::ref(*this), qi::_1)]
-			|	("(" >> identifier >> +sort >> ")")[qi::_val = px::bind(&SortParser::mkSort, px::ref(*this), qi::_1, qi::_2)]
-		;
-		sort.name("sort");
-		simpleSort.add("Bool", carl::SortManager::getInstance().interpretedSort("Bool", carl::VariableType::VT_BOOL));
-		simpleSort.add("Int", carl::SortManager::getInstance().interpretedSort("Int", carl::VariableType::VT_INT));
-		simpleSort.add("Real", carl::SortManager::getInstance().interpretedSort("Real", carl::VariableType::VT_REAL));
-	}
-
-	carl::Sort mkSort(const std::string& name) {
-		return carl::newSort(name);
-	}
-	carl::Sort mkSort(const std::string& name, const std::vector<carl::Sort>& parameters) {
-		return carl::newSort(name, parameters);
-	}
-
-	IdentifierParser identifier;
-	qi::symbols<char, carl::Sort> simpleSort;
-	qi::symbols<char, carl::Sort> parameters;
-	qi::rule<Iterator, carl::Sort(), Skipper> sort;
-};
-
-struct StringParser : public qi::grammar<Iterator, std::string(), Skipper> {
-	StringParser();
-	qi::symbols<char, char> escapes;
-	qi::rule<Iterator, std::string(), Skipper> main;
-};
-
-struct RelationParser : public qi::symbols<char, carl::Relation> {
-	RelationParser();
-};
-
-enum TheoryOperation : unsigned { ADD, SUB, MUL, DIV };
-enum BooleanOperation : unsigned { AND, OR, XOR, IFF };
-
-struct TheoryOpParser : public qi::symbols<char, Poly::ConstructorOperation> {
-	TheoryOpParser();
-};
-
-struct DomainParser : public qi::symbols<char, carl::VariableType> {
-	DomainParser();
-};
-
-struct BooleanOpParser : public qi::symbols<char, carl::FormulaType> {
-	BooleanOpParser();
-};
-
-struct LogicParser : public qi::symbols<char, smtrat::Logic> {
-	LogicParser();
-};
-
-struct IntegralParser : public qi::grammar<Iterator, Rational(), Skipper> {
-	IntegralParser() : IntegralParser::base_type(integral, "integral") {
-		integral = ("#b" > binary) | numeral | ("#x" > hexadecimal);
-		integral.name("integral number");
-	}
-	qi::rule<Iterator, Rational(), Skipper> integral;
-	qi::uint_parser<Rational,2,1,-1> binary;
-	qi::uint_parser<Rational,10,1,-1> numeral;
-	qi::uint_parser<Rational,16,1,-1> hexadecimal;
-};
-
-struct DecimalParser : qi::real_parser<Rational, RationalPolicies> {};
-
 }
 }
-
-namespace boost { namespace spirit { namespace traits { 
-	template<> inline void scale(int exp, smtrat::Rational& r) {
-		if (exp >= 0)
-			r *= carl::pow(smtrat::Rational(10), (unsigned)exp);
-		else
-			r /= carl::pow(smtrat::Rational(10), (unsigned)(-exp));
-	}
-	template<> inline bool is_equal_to_one(const smtrat::Rational& value) {
-        return value == 1;
-    }
-}}}
