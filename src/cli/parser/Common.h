@@ -32,4 +32,5 @@ namespace smtrat {
 #define SMTRAT_LOG_ERROR(...)
 #else
 #include "../../lib/Common.h"
+#include "../../lib/solver/ModuleInput.h"
 #endif
