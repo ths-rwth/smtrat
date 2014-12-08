@@ -692,10 +692,10 @@ namespace smtrat
         else if( _abstr.updateInfo > 0 )
         {
             assert( !_abstr.reabstraction.isTrue() );
-            _abstr.reabstraction.setDeducted( _abstr.isDeduction );
             assert( _abstr.reabstraction.getType() == carl::FormulaType::UEQ || (_abstr.reabstraction.getType() == carl::FormulaType::CONSTRAINT && _abstr.reabstraction.constraint().isConsistent() == 2) );
             auto res = addSubformulaToPassedFormula( _abstr.reabstraction, *_abstr.origins );
             _abstr.position = res.first;
+            _abstr.position->setDeducted( _abstr.isDeduction );
             mChangedPassedFormula = true;
         }
         _abstr.updateInfo = 0;
@@ -1197,6 +1197,10 @@ SetWatches:
                         mChangedBooleans.push_back( x );
                 }
                 else if( abstr.consistencyRelevant ) abstr.updateInfo = 0;
+                if( Settings::allow_theory_propagation && Settings::detect_deductions )
+                {
+                    abstr.isDeduction = false;
+                }
                 assigns[x]  = l_Undef;
                 if( (phase_saving > 1 || (phase_saving == 1)) && c > trail_lim.last() )
                     polarity[x] = sign( trail[c] );

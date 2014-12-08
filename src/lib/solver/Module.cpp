@@ -988,7 +988,7 @@ namespace smtrat
             _out << _initiation << "  ";
             // bool _withActivity, unsigned _resolveUnequal, const string _init, bool _oneline, bool _infix, bool _friendlyNames
             _out << setw( 30 ) << form->formula().toString( false, 0, "", true, true, true );
-            if( form->formula().deducted() ) _out << " deducted";
+            if( form->deducted() ) _out << " deducted";
             _out << endl;
         }
     }
