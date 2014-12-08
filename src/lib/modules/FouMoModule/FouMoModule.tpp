@@ -99,6 +99,10 @@ namespace smtrat
     {
         if( _subformula->formula().constraint().relation() == carl::Relation::LEQ || _subformula->formula().constraint().relation() == carl::Relation::GEQ )
         {
+            /* Iterate through the processed constraints and delete all corresponding sets 
+             * in the latter containing the element that has to be deleted. Delete a processed 
+             * constraint if the corresponding vector is empty 
+             */
             #ifdef DEBUG_FouMoModule
             cout << "Remove: " << _subformula->formula().constraint() << endl;
             #endif
@@ -120,6 +124,44 @@ namespace smtrat
                     mProc_Constraints.erase( iter_formula );
                 }
                 ++iter_formula;
+            }
+            // Do the same for the datastructure of the deleted constraints 
+            auto iter_constr = mDeleted_Constraints.begin();
+            while( iter_constr != mDeleted_Constraints.end() )
+            {
+                auto iter_upper = iter_constr->second.first.begin();
+                while( iter_upper != iter_constr->second.first.end() )
+                {
+                    auto iter_set_upper = iter_upper->second.begin();
+                    while( iter_set_upper != iter_upper->second.end() )
+                    {
+                        auto iter_help_upper = iter_set_upper->find( _subformula->formula() ); 
+                        if( iter_help_upper != iter_set_upper->end() )
+                        {
+                            iter_set_upper->erase( iter_help_upper );
+                        }
+                        ++iter_set_upper;
+                    }
+                    /*
+                    if( iter_formula->second.empty() )
+                    {
+                        mProc_Constraints.erase( iter_formula );
+                    }
+                    */
+                    ++iter_upper;
+                }
+                auto iter_lower = iter_constr->second.second.begin();
+                while( iter_lower != iter_constr->second.second.end() )
+                {
+                    auto iter_set_lower = iter_lower->second.begin();
+                    while( iter_set_lower != iter_lower->second.end() )
+                    {
+                        // TO-DO: Move on here
+                        ++iter_set_lower;
+                    }
+                    ++iter_lower;
+                }
+                ++iter_constr;
             }
         }    
         Module::removeSubformula( _subformula ); 
@@ -148,7 +190,7 @@ namespace smtrat
             return True;
         }
         // Choose the variable to eliminate based on the information provided by var_corr_constr
-        carl::Variable best_var; //var_corr_constr.begin()->first;
+        carl::Variable best_var = var_corr_constr.begin()->first;
         // Store how the amount of constraints will change after the elimination
         Rational delta_constr = var_corr_constr.begin()->second.first.size()*(var_corr_constr.begin()->second.second.size()-1)-var_corr_constr.begin()->second.second.size();
         auto iter_var = var_corr_constr.begin();
@@ -166,17 +208,25 @@ namespace smtrat
         // Apply one step of the Fourier-Motzkin algorithm by eliminating best_var
         auto iter_help = var_corr_constr.find( best_var );
         assert( iter_help != var_corr_constr.end() );
-        //auto iter_upper = iter_help->second.first.begin();
-        //auto iter_lower = iter_help->second.second.begin();
-        while( true )//iter_upper != iter_help->second.first.end() )
+        auto iter_upper = iter_help->second.first.begin();
+        auto iter_lower = iter_help->second.second.begin();
+        while( iter_upper != iter_help->second.first.end() )
         {
-            while( true )//iter_lower != iter_help->second.second.end() )
+            while( iter_lower != iter_help->second.second.end() )
             {
-                //const smtrat::ConstraintT* new_constr = combine_upper_lower( mProc_Constraints.at( *iter_lower ), , best_var );
-                //vector<std::set<FormulaT>> origins_new = merge( );
-                //++iter_lower;
+                FormulaT new_formula = combine_upper_lower( iter_upper->first.pConstraint(), iter_lower->first.pConstraint(), best_var );
+                vector<std::set<FormulaT>> origins_new = merge( iter_upper->second, iter_lower->second );
+                if( new_formula.isFalse() )
+                {
+                    size_t i = determine_smallest_origin( origins_new );
+                    std::set<FormulaT> infSubSet;
+                    infSubSet = origins_new.at(i);
+                    mInfeasibleSubsets.push_back( infSubSet );
+                    return foundAnswer( False );
+                }
+                ++iter_lower;
             }
-            //++iter_upper;
+            ++iter_upper;
         }
         return Unknown;
     }
@@ -198,29 +248,31 @@ namespace smtrat
                 {
                     carl::Variable var_help = iter_poly->getSingleVariable();
                     auto iter_help = var_corr_constr.find( var_help );
-                    if( iter_help ==  var_corr_constr.end() )
+                    if( iter_help == var_corr_constr.end() )
                     {
-                        std::vector<FormulaOrigins> upper;
-                        std::vector<FormulaOrigins> lower;
-                        FormulaOrigins lower_help;
+                        std::vector<SingleFormulaOrigins> upper;
+                        std::vector<SingleFormulaOrigins> lower;
                         if( iter_poly->coeff() > 0 )
                         {
-                            FormulaOrigins upper_help;
-                            upper_help.insert( std::make_pair( iter_constr->first, iter_constr->second ) );
+                            SingleFormulaOrigins upper_help;
+                            upper_help.first = iter_constr->first;
+                            upper_help.second = iter_constr->second;
                             upper.push_back( upper_help );
                         }
                         else
                         {
-                            FormulaOrigins lower_help;
-                            lower_help.insert( std::make_pair( iter_constr->first, iter_constr->second ) );
+                            SingleFormulaOrigins lower_help;
+                            lower_help.first = iter_constr->first;
+                            lower_help.second = iter_constr->second;
                             lower.push_back( lower_help );
                         }
                         var_corr_constr.insert( std::make_pair( var_help, std::make_pair( upper, lower ) ) );                        
                     }
                     else
                     {
-                        FormulaOrigins help;
-                        help.insert( std::make_pair( iter_constr->first, iter_constr->second ) );
+                        SingleFormulaOrigins help;
+                        help.first = iter_constr->first;
+                        help.second = iter_constr->second;
                         if( iter_poly->coeff() > 0 )
                         {
                             iter_help->second.first.push_back( help );
@@ -238,9 +290,9 @@ namespace smtrat
     }
     
     template<class Settings>
-    const smtrat::ConstraintT* FouMoModule<Settings>::combine_upper_lower(const smtrat::ConstraintT* upper_constr, const smtrat::ConstraintT* lower_constr, carl::Variable& corr_var)
+    FormulaT FouMoModule<Settings>::combine_upper_lower(const smtrat::ConstraintT* upper_constr, const smtrat::ConstraintT* lower_constr, carl::Variable& corr_var)
     {
-        const smtrat::ConstraintT* combined_constr;
+        FormulaT combined_formula;
         Poly upper_poly = upper_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
         Poly lower_poly = lower_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
         if( upper_constr->relation() == carl::Relation::GEQ )
@@ -248,12 +300,12 @@ namespace smtrat
             if( lower_constr->relation() == carl::Relation::GEQ )  
             {
                 lower_poly *= -1;
-                combined_constr = carl::newConstraint( lower_poly - upper_poly, carl::Relation::LEQ );                
+                combined_formula = FormulaT ( carl::newConstraint( lower_poly - upper_poly, carl::Relation::LEQ ) );                
             }
             else
             {
                 assert( lower_constr->relation() == carl::Relation::LEQ );
-                combined_constr = carl::newConstraint( lower_poly - upper_poly, carl::Relation::LEQ );
+                combined_formula = FormulaT( carl::newConstraint( lower_poly - upper_poly, carl::Relation::LEQ ) );
             }
         }
         else
@@ -263,15 +315,15 @@ namespace smtrat
             {
                 lower_poly *= -1;
                 upper_poly *= -1;
-                combined_constr = carl::newConstraint( lower_poly - upper_poly, carl::Relation::LEQ );                
+                combined_formula = FormulaT( carl::newConstraint( lower_poly - upper_poly, carl::Relation::LEQ ) );                
             }
             else
             {
                 assert( lower_constr->relation() == carl::Relation::LEQ );
                 upper_poly *= -1;
-                combined_constr = carl::newConstraint( lower_poly - upper_poly, carl::Relation::LEQ );
+                combined_formula = FormulaT( carl::newConstraint( lower_poly - upper_poly, carl::Relation::LEQ ) );
             }
         }
-        return combined_constr;        
+        return combined_formula;        
     }
 }

@@ -747,6 +747,12 @@ namespace smtrat
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
             
             /**
+             * @param origins A vector of sets of origins.
+             * @return The index of the smallest (regarding the size of the sets) element of origins
+             */
+            size_t determine_smallest_origin( std::vector<std::set<FormulaT>>& origins ) const;
+            
+            /**
              * Checks whether given the current branching value and branching variable/polynomial it is (highly) probable that
              * this branching is part of an infinite loop of branchings.
              * @param _branchingPolynomial The polynomial to branch at (in most branching strategies this is just a variable).

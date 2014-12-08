@@ -33,10 +33,10 @@
 #include "FouMoSettings.h"
 namespace smtrat
 {
-    
+ 
+    typedef std::pair<FormulaT,vector<std::set<FormulaT>>> SingleFormulaOrigins;
     typedef std::map<FormulaT,vector<std::set<FormulaT>>> FormulaOrigins;
-    typedef std::map<carl::Variable,std::pair<std::vector<FormulaOrigins>,std::vector<FormulaOrigins>>> VariableUpperLower;
-    
+    typedef std::map<carl::Variable,std::pair<std::vector<SingleFormulaOrigins>,std::vector<SingleFormulaOrigins>>> VariableUpperLower;
     /**
      * A module which applies the Fourier-Motzkin algorithm.
      */ 
@@ -64,7 +64,7 @@ namespace smtrat
              * @param corr_var     Variable that shall be eliminated
              * @return             Pointer to the constraint resulting from the combination
              */
-            const smtrat::ConstraintT* combine_upper_lower( const smtrat::ConstraintT* upper_constr, const smtrat::ConstraintT* lower_Constr, carl::Variable& corr_var );
+            FormulaT combine_upper_lower( const smtrat::ConstraintT* upper_constr, const smtrat::ConstraintT* lower_Constr, carl::Variable& corr_var );
             
         public:
             FouMoModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );

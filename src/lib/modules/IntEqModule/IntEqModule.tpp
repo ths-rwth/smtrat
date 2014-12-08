@@ -128,12 +128,12 @@ namespace smtrat
     template<class Settings>
     void IntEqModule<Settings>::removeSubformula( ModuleInput::const_iterator _subformula )
     {
-        /* Iterate through the processed constraints and delete all corresponding sets 
-         * in the latter containing the element that has to be deleted. Delete a processed 
-         * constraint if the corresponding vector is empty 
-         */
         if( _subformula->formula().constraint().relation() == carl::Relation::EQ )
         {
+            /* Iterate through the processed constraints and delete all corresponding sets 
+             * in the latter containing the element that has to be deleted. Delete a processed 
+             * constraint if the corresponding vector is empty 
+             */
             #ifdef DEBUG_IntEqModule
             cout << "Remove: " << _subformula->formula().constraint() << endl;
             #endif
@@ -156,7 +156,7 @@ namespace smtrat
                 }
                 ++iter_formula;
             }            
-            /* Do the same for the substitution data structure(s) */ 
+            // Do the same for the substitution data structure(s)
             auto iter_substitutions = mVariables.begin();
             while( iter_substitutions != mVariables.end() )
             {
@@ -474,26 +474,5 @@ namespace smtrat
             getInfeasibleSubsets();
         }
         return ans;
-    }
-    
-    template<class Settings>
-    size_t IntEqModule<Settings>::determine_smallest_origin(vector<std::set<FormulaT> >& origins) const
-    {
-        assert( !origins.empty() );
-        auto iter = origins.begin();
-        size_t size_min = (*iter).size();
-        ++iter;
-        size_t index_min = 0, i = 0;
-        while( iter != origins.end() )
-        {
-            if( (*iter).size() < size_min  )
-            {
-                size_min = (*iter).size();
-                index_min = i;
-            }
-            ++i;
-            ++iter;
-        }
-        return index_min;
     }
 }    
