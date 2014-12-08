@@ -38,10 +38,10 @@ namespace smtrat
 
     template<class Settings>
     FouMoModule<Settings>::FouMoModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-        Module( _type, _formula, _conditionals, _manager ) 
-    {
-        mProc_Constraints = FormulaOrigins();
-    }
+        Module( _type, _formula, _conditionals, _manager ),
+        mProc_Constraints(),
+        mDeleted_Constraints()    
+    { }
 
     /**
      * Destructor.
@@ -141,7 +141,7 @@ namespace smtrat
         // Collect for every variable the information in which constraint it has as an upper
         // respectively a lower bound and store it in var_corr_constr
         VariableUpperLower var_corr_constr;
-        //gather_upper_lower( mProc_Constraints, var_corr_constr );
+        gather_upper_lower( mProc_Constraints, var_corr_constr );
         if( var_corr_constr.empty() )
         {
             // TO-DO Distinction between LRA and LIA
@@ -200,27 +200,34 @@ namespace smtrat
                     auto iter_help = var_corr_constr.find( var_help );
                     if( iter_help ==  var_corr_constr.end() )
                     {
-                        std::vector<size_t> upper = std::vector<size_t>();
-                        std::vector<size_t> lower = std::vector<size_t>();
+                        std::vector<FormulaOrigins> upper;
+                        std::vector<FormulaOrigins> lower;
+                        FormulaOrigins lower_help;
                         if( iter_poly->coeff() > 0 )
                         {
-                            //upper.push_back( &(*iter_constr) );
+                            FormulaOrigins upper_help;
+                            upper_help.insert( std::make_pair( iter_constr->first, iter_constr->second ) );
+                            upper.push_back( upper_help );
                         }
                         else
                         {
-                            //lower.push_back( &(*iter_constr) );
+                            FormulaOrigins lower_help;
+                            lower_help.insert( std::make_pair( iter_constr->first, iter_constr->second ) );
+                            lower.push_back( lower_help );
                         }
-                        //var_corr_constr.insert( std::make_pair( var_help, std::make_pair( upper, lower ) ) );                        
+                        var_corr_constr.insert( std::make_pair( var_help, std::make_pair( upper, lower ) ) );                        
                     }
                     else
                     {
+                        FormulaOrigins help;
+                        help.insert( std::make_pair( iter_constr->first, iter_constr->second ) );
                         if( iter_poly->coeff() > 0 )
                         {
-                            //iter_help->second.first.push_back( &(*iter_constr) );
+                            iter_help->second.first.push_back( help );
                         }
                         else
                         {
-                            //iter_help->second.second.push_back( &(*iter_constr) );
+                            iter_help->second.second.push_back( help );
                         }                        
                     }
                 }
