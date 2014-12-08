@@ -25,8 +25,7 @@
 #include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/spirit/include/phoenix_statement.hpp>
 
-#include "../../lib/Common.h"
-#include "../../lib/solver/ModuleInput.h"
+#include "Common.h"
 #include "ParserUtils.h"
 #include "ParserTypes.h"
 
@@ -35,7 +34,6 @@
 #include "UtilityParser.h"
 #include "UninterpretedParser.h"
 
-#include "../../lib/logging.h"
 #include "ParserState.h"
 #include "FunctionArgumentParser.h"
 #include "FormulaParser.h"

@@ -7,7 +7,6 @@
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/phoenix_stl.hpp>
 
-#include "../../lib/Common.h"
 #include "FormulaParser.h"
 #include "PolynomialParser.h"
 #include "UninterpretedParser.h"

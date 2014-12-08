@@ -17,8 +17,8 @@
 #include <boost/spirit/include/phoenix_bind.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 
-#include "../../lib/Common.h"
-#include "../../lib/datastructures/VariantMap.h"
+#include "Common.h"
+#include "VariantMap.h"
 #include "ParserTypes.h"
 #include "UtilityParser.h"
 

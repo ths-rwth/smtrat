@@ -9,7 +9,7 @@
 #include <boost/spirit/include/phoenix_operator.hpp>
 
 
-#include "../../lib/Common.h"
+#include "Common.h"
 #include "ParserTypes.h"
 #include "NumberParser.h"
 

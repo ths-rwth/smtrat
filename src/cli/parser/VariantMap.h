@@ -5,8 +5,9 @@
 
 #pragma once
 
-#include <cxxabi.h>
 #include <boost/variant.hpp>
+#include <cxxabi.h>
+#include <map>
 
 namespace smtrat {
 

@@ -7,9 +7,6 @@
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/phoenix_stl.hpp>
 
-#include "../../lib/Common.h"
-#include "../../lib/solver/ModuleInput.h"
-
 namespace smtrat {
 namespace parser {
 

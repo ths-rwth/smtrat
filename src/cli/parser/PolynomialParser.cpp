@@ -6,8 +6,6 @@
 #include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 
-#include "../../lib/Common.h"
-
 #include "FormulaParser.h"
 
 namespace smtrat {

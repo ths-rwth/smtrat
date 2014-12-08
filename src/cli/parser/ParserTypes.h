@@ -14,7 +14,7 @@
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/support_line_pos_iterator.hpp>
 
-#include "../../lib/Common.h"
+#include "Common.h"
 
 namespace smtrat {
 
