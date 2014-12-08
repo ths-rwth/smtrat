@@ -184,6 +184,9 @@ namespace smtrat
             void updateInfeasibleSubset( bool _includeInconsistentTestCandidates = false );
             
             EvalRationalMap getIntervalAssignment( const vs::State* _state ) const;
+            
+            bool sideConditionsSatisfied( const vs::Substitution& _substitution, const EvalRationalMap& _assignment );
+            
             bool solutionInDomain();
             
             /**
