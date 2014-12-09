@@ -336,7 +336,7 @@ namespace smtrat
     void FouMoModule<Settings>::gather_upper_lower( FormulaOrigins& curr_constraints, VariableUpperLower& var_corr_constr )
     {
         // Iterate over the passed constraints to store which variables have upper respectively
-        // lower bounds according to the Fourier-Motzkin algorith
+        // lower bounds according to the Fourier-Motzkin algorithm
         auto iter_constr = curr_constraints.begin();
         while( iter_constr != curr_constraints.end() )
         {
