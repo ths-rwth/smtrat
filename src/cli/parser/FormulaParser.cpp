@@ -10,14 +10,13 @@
 namespace smtrat {
 namespace parser {
 
-FormulaParser::FormulaParser(ParserState* state):
-	FormulaParser::base_type(formula, "formula"), 
-	uninterpreted(state, this),
-	polynomial(state, this, &uninterpreted),
+FormulaParser::FormulaParser(ParserState* _state):
+	FormulaParser::base_type(formula, "formula"),
+	state(_state),
+	uninterpreted(_state, this),
+	polynomial(_state, this, &uninterpreted),
 	fun_argument(this, &uninterpreted, &polynomial)
 {
-	this->state = state;
-	
 	binding = symbol[qi::_a = qi::_1] > (
 			polynomial[px::bind(&ParserState::addTheoryBinding, px::ref(state), qi::_a, qi::_1)]
 		|	formula[px::bind(&ParserState::addBooleanBinding, px::ref(state), qi::_a, qi::_1)]

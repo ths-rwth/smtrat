@@ -11,10 +11,9 @@
 namespace smtrat {
 namespace parser {
 
-	PolynomialParser::PolynomialParser(ParserState* state, FormulaParser* formulaPtr, UninterpretedParser* uninterpreted):
+	PolynomialParser::PolynomialParser(ParserState* _state, FormulaParser* formulaPtr, UninterpretedParser* uninterpreted):
 		PolynomialParser::base_type(polynomial, "polynomial"),
-		state(state),
-		formulaPtr(formulaPtr),
+		state(_state),
 		fun_argument(formulaPtr, uninterpreted, this)
 	{
 		polynomial_op = op_theory >> +polynomial;

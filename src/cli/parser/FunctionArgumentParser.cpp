@@ -15,10 +15,7 @@ namespace smtrat {
 namespace parser {
 
 FunctionArgumentParser::FunctionArgumentParser(FormulaParser* formulaPtr, UninterpretedParser* uninterpretedPtr, PolynomialParser* polynomialPtr):
-	FunctionArgumentParser::base_type(main, "argument"), 
-	formula(formulaPtr),
-	uninterpreted(uninterpretedPtr),
-	polynomial(polynomialPtr)
+	FunctionArgumentParser::base_type(main, "argument")
 {
 	main = *formulaPtr | *uninterpretedPtr | *polynomialPtr;
 }

@@ -22,11 +22,12 @@ namespace parser {
 	struct UninterpretedParser: public qi::grammar<Iterator, UninterpretedType(), Skipper> {
 		UninterpretedParser(ParserState* state, FormulaParser* formula);
 	private:
+		ParserState* state;
+
 		qi::rule<Iterator, UninterpretedType(), Skipper> uninterpreted;
 		
 		PolynomialParser polynomial;
 		FunctionArgumentParser fun_argument;
-		ParserState* state;
 	};
 	
 }

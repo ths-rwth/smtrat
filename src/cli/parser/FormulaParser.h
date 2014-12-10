@@ -21,6 +21,8 @@ namespace parser {
 struct FormulaParser: public qi::grammar<Iterator, FormulaT(), Skipper> {
 	FormulaParser(ParserState* state);
 private:
+	ParserState* state;
+
 	FormulaT mkFormula(carl::FormulaType _type, std::set<FormulaT>& _subformulas);
 	FormulaT mkConstraint(const Poly&, const Poly&, carl::Relation);
 
@@ -42,7 +44,6 @@ private:
 	qi::rule<Iterator, FormulaT(), Skipper> formula_op;
 	qi::rule<Iterator, std::set<FormulaT>(), Skipper> formula_list;	
 	
-	ParserState* state;
 };
 	
 }

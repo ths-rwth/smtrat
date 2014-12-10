@@ -20,9 +20,6 @@ struct UninterpretedParser;
 struct FunctionArgumentParser: public qi::grammar<Iterator, Argument(), Skipper> {
 	FunctionArgumentParser(FormulaParser* formula, UninterpretedParser* uninterpreted, PolynomialParser* polynomial);
 private:
-	FormulaParser* formula;
-	UninterpretedParser* uninterpreted;
-	PolynomialParser* polynomial;
 	qi::rule<Iterator, Argument(), Skipper> main;
 };
 	

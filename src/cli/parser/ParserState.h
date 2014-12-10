@@ -39,9 +39,6 @@ namespace parser {
 				state.bind_uninterpreted.sym = this->bind_uninterpreted;
 			}
 		};
-		friend std::ostream& operator<<(std::ostream& os, const Scope&) {
-			return os << "Scope";
-		}
 
 		DeclaredSymbolParser<carl::Variable> var_bool;
 		DeclaredSymbolParser<carl::Variable> var_theory;
@@ -75,7 +72,6 @@ namespace parser {
 		
 		void pushScope() {
 			assert(this != nullptr);
-			std::cout << "ScopeStack: " << mScopeStack << std::endl;
 			mScopeStack.emplace(*this);
 		}
 		void popScope() {
