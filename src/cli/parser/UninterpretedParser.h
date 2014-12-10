@@ -10,7 +10,6 @@
 
 #include "Common.h"
 #include "UtilityParser.h"
-#include "NumberParser.h"
 #include "ParserState.h"
 #include "FunctionArgumentParser.h"
 #include "PolynomialParser.h"
@@ -22,7 +21,7 @@ namespace parser {
 	
 	struct UninterpretedParser: public qi::grammar<Iterator, UninterpretedType(), Skipper> {
 		UninterpretedParser(ParserState* state, FormulaParser* formula);
-		
+	private:
 		qi::rule<Iterator, UninterpretedType(), Skipper> uninterpreted;
 		
 		PolynomialParser polynomial;

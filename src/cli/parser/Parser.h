@@ -67,22 +67,17 @@ public:
 	Skipper skipper;
 	KeywordParser keyword;
 	SymbolParser symbol;
-	DomainParser domain;
 	LogicParser logic;
 	SortParser sort;
 	
 	// Numbers
 	qi::uint_parser<unsigned,10,1,-1> numeral;
 	
-	// Variables
-	rule<carl::Variable> var;
 	rule<std::pair<std::string, carl::Sort>> sortedVar;
 	AttributeParser attribute;
 	
 	// Custom functions
 	qi::rule<Iterator, Skipper, qi::locals<std::string, std::vector<carl::Variable>>> fun_definition;
-
-	rule<Arguments> fun_arguments;
 
 	// Commands	
 	rule<> cmd;
@@ -136,19 +131,6 @@ protected:
 	}
 	
 private:
-	
-	carl::Variable addQuantifiedVariable(const std::string& _name, const boost::optional<carl::VariableType>& type);
-	carl::Variable addVariableBinding(const std::pair<std::string, carl::Sort>&);
-	
-	void setSortParameters(const std::vector<std::string>& params) {
-		for (auto p: params) {
-			sort.parameters.add(p, carl::newSort(p));
-		}
-	}
-
-	void clearSortParameters() {
-		sort.parameters.clear();
-	}
 	void errorMessage(const std::string& msg) {
 		std::cerr << "Parser error: " << msg << std::endl;
 	}

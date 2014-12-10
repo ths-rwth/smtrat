@@ -10,7 +10,6 @@
 
 #include "Common.h"
 #include "UtilityParser.h"
-#include "NumberParser.h"
 #include "ParserState.h"
 #include "PolynomialParser.h"
 #include "UninterpretedParser.h"
@@ -21,17 +20,10 @@ namespace parser {
 	
 struct FormulaParser: public qi::grammar<Iterator, FormulaT(), Skipper> {
 	FormulaParser(ParserState* state);
-	
+private:
 	FormulaT mkFormula(carl::FormulaType _type, std::set<FormulaT>& _subformulas);
 	FormulaT mkConstraint(const Poly&, const Poly&, carl::Relation);
-	carl::Variable addQuantifiedVariable(const std::string& _name, const boost::optional<carl::VariableType>& type);
-	void addTheoryBinding(std::string& _varName, Poly&);
-	void addBooleanBinding(std::string&, const FormulaT&);
-	void addUninterpretedBinding(std::string&, const UninterpretedType&);
-	FormulaT applyBooleanFunction(const BooleanFunction& f, const Arguments& args);
-	FormulaT applyUninterpretedBooleanFunction(const carl::UninterpretedFunction& f, const Arguments& args);
-	carl::UFInstance applyUninterpretedFunction(const carl::UninterpretedFunction& f, const Arguments& args);
-	
+
 	BoundaryParser boundary;
 	SymbolParser symbol;
 	BooleanOpParser op_bool;

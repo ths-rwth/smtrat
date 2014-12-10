@@ -22,6 +22,7 @@ struct RationalPolicies : qi::ureal_policies<smtrat::Rational> {
 
 struct IntegralParser : public qi::grammar<Iterator, Rational(), Skipper> {
     IntegralParser();
+private:
     qi::rule<Iterator, Rational(), Skipper> integral;
     qi::uint_parser<Rational,2,1,-1> binary;
     qi::uint_parser<Rational,10,1,-1> numeral;

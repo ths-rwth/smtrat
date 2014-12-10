@@ -1,7 +1,6 @@
 #include "UtilityParser.h"
 
 #include <boost/spirit/include/phoenix_bind.hpp>
-#include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 
@@ -76,8 +75,6 @@ SymbolParser::SymbolParser() : SymbolParser::base_type(main, "symbol") {
 IdentifierParser::IdentifierParser() : KeywordParser::base_type(main, "identifier") {
     main = symbol | indexed;
     main.name("identifier");
-    // should return <symbol>|n,...,n
-    //indexed = qi::lit("(") >> qi::lit("_") >> symbol >> qi::attr("|") >> numeral >> *(qi::attr(",") >> numeral) >> qi::lit(")");
     indexed = (qi::lit("(") >> qi::lit("_") >> symbol >> +numeral >> qi::lit(")"))[qi::_val = px::bind(&IdentifierParser::buildIdentifier, px::ref(*this), qi::_1, qi::_2)];
     indexed.name("indexed symbol");
 }
@@ -88,6 +85,14 @@ std::string IdentifierParser::buildIdentifier(const std::string& name, const std
     ss << name << "|" << nums.front();
     for (unsigned i = 1; i < nums.size(); i++) ss << "," << nums[i];
     return ss.str();
+}
+
+ValueParser::ValueParser(): ValueParser::base_type(main, "value") {
+	main = qi::bool_ | symbol | string | decimal | integral;
+}
+
+AttributeParser::AttributeParser(): AttributeParser::base_type(main, "attribute") {
+	main = (keyword > -value)[qi::_val = px::construct<Attribute>(qi::_1, qi::_2)];
 }
 
 }

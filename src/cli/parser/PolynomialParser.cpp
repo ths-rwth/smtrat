@@ -19,11 +19,11 @@ namespace parser {
 	{
 		polynomial_op = op_theory >> +polynomial;
 		polynomial_op.name("polynomial operation");
-		polynomial_ite = qi::lit("ite") >> (formula() >> polynomial >> polynomial)[qi::_val = px::bind(&PolynomialParser::mkIteInExpr, px::ref(*this), qi::_1, qi::_2, qi::_3)];
+		polynomial_ite = qi::lit("ite") >> (*formulaPtr >> polynomial >> polynomial)[qi::_val = px::bind(&PolynomialParser::mkIteInExpr, px::ref(*this), qi::_1, qi::_2, qi::_3)];
 		polynomial_ite.name("polynomial if-then-else");
-		polynomial_fun = (state->funmap_theory >> *fun_argument)[qi::_val = px::bind(&PolynomialParser::applyTheoryFunction, px::ref(*this), qi::_1, qi::_2)];
+		polynomial_fun = (state->funmap_theory >> *fun_argument)[qi::_val = px::bind(&ParserState::applyTheoryFunction, px::ref(state), qi::_1, qi::_2)];
 		polynomial_fun.name("theory function");
-		polynomial_uf = (state->funmap_uftheory >> *fun_argument)[qi::_val = px::bind(&PolynomialParser::applyUninterpretedTheoryFunction, px::ref(*this), qi::_1, qi::_2)];
+		polynomial_uf = (state->funmap_uftheory >> *fun_argument)[qi::_val = px::bind(&ParserState::applyUninterpretedTheoryFunction, px::ref(state), qi::_1, qi::_2)];
 		polynomial_uf.name("uninterpreted theory function");
 		polynomial =
 				(state->bind_theory >> boundary)
@@ -37,23 +37,6 @@ namespace parser {
 				|	polynomial_uf
 			) >> ")")
 		;
-	}
-	
-	Poly PolynomialParser::applyTheoryFunction(const TheoryFunction& f, const Arguments& args) {
-		std::map<carl::Variable, FormulaT> boolAssignments;
-		std::map<carl::Variable, Poly> theoryAssignments;
-		if (!state->checkArguments(std::get<0>(f), std::get<1>(f), args, boolAssignments, theoryAssignments)) {
-			return smtrat::Poly();
-		}
-		return std::get<2>(f).substitute(theoryAssignments);
-	}
-
-	Poly PolynomialParser::applyUninterpretedTheoryFunction(const carl::UninterpretedFunction& f, const Arguments& args) {
-		assert(carl::SortManager::getInstance().isInterpreted(f.codomain()));
-
-		carl::Variable v = carl::newAuxiliaryVariable(carl::SortManager::getInstance().interpretedType(f.codomain()));
-		state->mUninterpretedEqualities.insert(FormulaT(std::move(carl::UEquality(carl::UVariable(v), state->applyUninterpretedFunction(f, args), false))));
-		return Poly(v);
 	}
 	
 	Poly PolynomialParser::mkIteInExpr(const FormulaT& _condition, Poly& _then, Poly& _else) {

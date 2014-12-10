@@ -23,10 +23,9 @@ struct FormulaParser;
 	
 struct PolynomialParser: public qi::grammar<Iterator, Poly(), Skipper> {
 	PolynomialParser(ParserState* state, FormulaParser* formulaPtr, UninterpretedParser* uninterpreted);
-	Poly applyTheoryFunction(const TheoryFunction& f, const Arguments& args);
-	Poly applyUninterpretedTheoryFunction(const carl::UninterpretedFunction& f, const Arguments& args);
+private:
 	Poly mkIteInExpr(const FormulaT& _condition, Poly& _then, Poly& _else);
-	
+
 	BoundaryParser boundary;
 	TheoryOpParser op_theory;
 	IntegralParser integral;
@@ -41,7 +40,6 @@ struct PolynomialParser: public qi::grammar<Iterator, Poly(), Skipper> {
 	ParserState* state;
 	FormulaParser* formulaPtr;
 	FunctionArgumentParser fun_argument;
-	FormulaParser& formula() { return *formulaPtr; }
 };
 	
 }

@@ -4,7 +4,6 @@
 #include <boost/spirit/include/qi.hpp>
 
 #include "Common.h"
-#include "ParserTypes.h"
 #include "UtilityParser.h"
 
 namespace smtrat {
@@ -16,9 +15,10 @@ namespace px = boost::phoenix;
 
 struct SortParser : public qi::grammar<Iterator, carl::Sort(), Skipper> {
     SortParser();
-    carl::Sort mkSort(const std::string& name);
-    carl::Sort mkSort(const std::string& name, const std::vector<carl::Sort>& parameters);
-
+	
+	void setParameters(const std::vector<std::string>& params);
+	void clearParameters();
+private:
     IdentifierParser identifier;
     qi::symbols<char, carl::Sort> simpleSort;
     qi::symbols<char, carl::Sort> parameters;

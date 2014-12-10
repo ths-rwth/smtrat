@@ -36,6 +36,7 @@ add_executable( smtratSolver
 	${CMAKE_SOURCE_DIR}/src/cli/parser/UtilityParser.cpp
 	${CMAKE_SOURCE_DIR}/src/cli/parser/SortParser.cpp
 	${CMAKE_SOURCE_DIR}/src/cli/parser/NumberParser.cpp
+	${CMAKE_SOURCE_DIR}/src/cli/parser/ParserState.cpp
 	${CMAKE_SOURCE_DIR}/src/cli/parser/PolynomialParser.cpp
 	${CMAKE_SOURCE_DIR}/src/cli/parser/FormulaParser.cpp
 	${CMAKE_SOURCE_DIR}/src/cli/parser/FunctionArgumentParser.cpp

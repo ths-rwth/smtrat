@@ -19,20 +19,14 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 	polynomial(state, &formula, &uninterpreted),
 	fun_argument(&formula, &uninterpreted, &polynomial)
 {
-	var = state->var_bool | state->var_theory;
-	var.name("variable");
-
 	sortedVar = "(" >> symbol >> sort >> ")";
 	sortedVar.name("sorted variable");
 	
 	fun_definition = symbol[px::bind(&ParserState::pushScope, px::ref(state)), qi::_a = qi::_1] > "(" > 
-		*(sortedVar[px::push_back(qi::_b, px::bind(&SMTLIBParser::addVariableBinding, px::ref(*this), qi::_1))]) 
+		*(sortedVar[px::push_back(qi::_b, px::bind(&ParserState::addVariableBinding, px::ref(state), qi::_1))]) 
 		> ")" > (sort > fun_argument)[px::bind(&SMTLIBParser::defineFun, px::ref(*this), qi::_a, qi::_b, qi::_1, qi::_2)];
 	fun_definition.name("function definition");
-	
-	fun_arguments = *fun_argument;
-	fun_arguments.name("function arguments");
-	
+		
 	cmd = "(" > (
 			(qi::lit("assert") > formula > ")")[px::bind(&SMTLIBParser::add, px::ref(*this), qi::_1)]
 		|	(qi::lit("check-sat") > ")")[px::bind(&SMTLIBParser::check, px::ref(*this))]
@@ -40,7 +34,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 		|	(qi::lit("declare-fun") > symbol > "(" > *sort > ")" > sort > ")")[px::bind(&SMTLIBParser::declareFun, px::ref(*this), qi::_1, qi::_2, qi::_3)]
 		|	(qi::lit("declare-sort") > symbol > numeral > ")")[px::bind(&SMTLIBParser::declareSort, px::ref(*this), qi::_1, qi::_2)]
 		|	(qi::lit("define-fun") > fun_definition > ")")
-		|	(qi::lit("define-sort") > symbol > "(" > (*symbol)[px::bind(&SMTLIBParser::setSortParameters, px::ref(*this), qi::_1)] > ")" > sort > ")")[px::bind(&SMTLIBParser::defineSort, px::ref(*this), qi::_1, qi::_2, qi::_3)]
+		|	(qi::lit("define-sort") > symbol > "(" > (*symbol)[px::bind(&SortParser::setParameters, px::ref(sort), qi::_1)] > ")" > sort > ")")[px::bind(&SMTLIBParser::defineSort, px::ref(*this), qi::_1, qi::_2, qi::_3)]
 		|	(qi::lit("exit") > ")")[px::bind(&SMTLIBParser::exit, px::ref(*this))]
 		|	(qi::lit("get-assertions") > ")")[px::bind(&SMTLIBParser::getAssertions, px::ref(*this))]
 		|	(qi::lit("get-assignment") > ")")[px::bind(&SMTLIBParser::getAssignment, px::ref(*this))]
@@ -49,7 +43,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 		|	(qi::lit("get-option") > keyword > ")")[px::bind(&SMTLIBParser::getOption, px::ref(*this), qi::_1)]
 		|	(qi::lit("get-proof") > ")")[px::bind(&SMTLIBParser::getProof, px::ref(*this))]
 		|	(qi::lit("get-unsat-core") > ")")[px::bind(&SMTLIBParser::getUnsatCore, px::ref(*this))]
-		|	(qi::lit("get-value") > *var > ")")[px::bind(&SMTLIBParser::getValue, px::ref(*this), qi::_1)]
+		|	(qi::lit("get-value") > *(state->var_bool | state->var_theory) > ")")[px::bind(&SMTLIBParser::getValue, px::ref(*this), qi::_1)]
 		|	(qi::lit("pop") > (numeral | qi::attr((unsigned)1)) > ")")[px::bind(&SMTLIBParser::pop, px::ref(*this), qi::_1)]
 		|	(qi::lit("push") > (numeral | qi::attr((unsigned)1)) > ")")[px::bind(&SMTLIBParser::push, px::ref(*this), qi::_1)]
 		|	(qi::lit("set-info") > attribute > ")")[px::bind(&SMTLIBParser::setInfo, px::ref(*this), qi::_1)]
@@ -63,15 +57,9 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 
 	qi::on_error<qi::fail>(main, errorHandler(px::ref(*this), qi::_1, qi::_2, qi::_3, qi::_4));
 
-	/*if (debug) {
-		qi::on_success(bindlist, successHandler(px::ref(*this), px::ref(bindlist), qi::_val, qi::_1, qi::_2));
-		qi::on_success(polynomial, successHandler(px::ref(*this), px::ref(polynomial), qi::_val, qi::_1, qi::_2));
-		qi::on_success(polynomial_op, successHandler(px::ref(*this), px::ref(polynomial_op), qi::_val, qi::_1, qi::_2));
-		qi::on_success(formula, successHandlerPtr(px::ref(*this), px::ref(formula), qi::_val, qi::_1, qi::_2));
-		qi::on_success(formula_op, successHandlerPtr(px::ref(*this), px::ref(formula_op), qi::_val, qi::_1, qi::_2));
-		qi::on_success(cmd, successHandler(px::ref(*this), px::ref(cmd), qi::_val, qi::_1, qi::_2));
+	if (debug) {
 		qi::on_success(main, successHandler(px::ref(*this), px::ref(main), qi::_val, qi::_1, qi::_2));
-	}*/
+	}
 }
 
 bool SMTLIBParser::parse(std::istream& in, const std::string&) {
@@ -112,23 +100,23 @@ void SMTLIBParser::declareConst(const std::string& name, const carl::Sort& sort)
 	assert(state->isSymbolFree(name));
 	switch (TypeOfTerm::get(sort)) {
 	case ExpressionType::BOOLEAN: {
-		if (state->var_bool.sym.find(name) != nullptr) handler->warn() << "a boolean variable with name '" << name << "' has already been defined.";
+		if (state->var_bool.sym.find(name) != nullptr) SMTRAT_LOG_WARN("smtrat.parser", "A boolean variable with name '" << name << "' has already been defined.");
 		carl::Variable var = carl::newBooleanVariable(name, true);
 		state->var_bool.sym.add(name, var);
 		break;
 	}
 	case ExpressionType::THEORY: {
-		if (state->var_theory.sym.find(name) != nullptr) handler->warn() << "a theory variable with name '" << name << "' has already been defined.";
+		if (state->var_theory.sym.find(name) != nullptr) SMTRAT_LOG_WARN("smtrat.parser", "A theory variable with name '" << name << "' has already been defined.");
 		carl::Variable var = carl::newArithmeticVariable(name, carl::SortManager::getInstance().interpretedType(sort), true);
 		state->var_theory.sym.add(name, var);
 		break;
 	}
 	case ExpressionType::UNINTERPRETED: {
-		state->handler->error() << "Only variables of type \"Bool\", \"Int\" or \"Real\" are allowed!";
+		SMTRAT_LOG_ERROR("smtrat.parser", "Only variables of type \"Bool\", \"Int\" or \"Real\" are allowed!");
 		break;
 	}
 	default:
-		state->handler->error() << "Only variables of type \"Bool\", \"Int\" or \"Real\" are allowed!";
+		SMTRAT_LOG_ERROR("smtrat.parser", "Only variables of type \"Bool\", \"Int\" or \"Real\" are allowed!");
 	}
 	//callHandler(&InstructionHandler::declareConst, name, sort);
 }
@@ -169,13 +157,13 @@ void SMTLIBParser::declareFun(const std::string& name, const std::vector<carl::S
 		break;
 	}
 	default:
-		handler->error() << "Only functions of with a defined return type are allowed!";
+		SMTRAT_LOG_ERROR("smtrat.parser", "Only functions of with a defined return type are allowed!");
 	}
 }
 void SMTLIBParser::declareSort(const std::string& name, const unsigned& arity) {
 	if (state->handler->printInstruction()) handler->regular() << "(declare-sort " << name << " " << arity << ")" << std::endl;
 	if (!carl::SortManager::getInstance().declare(name, arity)) {
-		state->handler->error() << "A sort " << name << " with arity " << arity << " has already been declared.";
+		SMTRAT_LOG_ERROR("smtrat.parser", "A sort " << name << " with arity " << arity << " has already been declared.");
 	}
 	callHandler(&InstructionHandler::declareSort, name, arity);
 }
@@ -185,7 +173,7 @@ void SMTLIBParser::defineFun(const std::string& name, const std::vector<carl::Va
 	switch (TypeOfTerm::get(sort)) {
 	case ExpressionType::BOOLEAN:
 		if (TypeOfTerm::get(term) != ExpressionType::BOOLEAN) {
-			state->handler->error() << "The return type of \"" << name << "\" was given as Bool, but the parsed expression is a polynomial.";
+			SMTRAT_LOG_ERROR("smtrat.parser", "The return type of \"" << name << "\" was given as Bool, but the parsed expression is a polynomial.");
 			return;
 		}
 		if (args.size() == 0) {
@@ -196,12 +184,12 @@ void SMTLIBParser::defineFun(const std::string& name, const std::vector<carl::Va
 		break;
 	case ExpressionType::THEORY:
 		if (TypeOfTerm::get(term) != ExpressionType::THEORY) {
-			state->handler->error() << "The return type of \"" << name << "\" was given as a theory type, but the parsed expression is a formula.";
+			SMTRAT_LOG_ERROR("smtrat.parser", "The return type of \"" << name << "\" was given as a theory type, but the parsed expression is a formula.");
 			return;
 		}
 		for (const carl::Variable& v: args) {
 			if (TypeOfTerm::get(v) != ExpressionType::THEORY) {
-				state->handler->error() << "The argument " << carl::VariablePool::getInstance().getName(v) << " of " << name << " is Bool. For theory functions, only theory arguments are supported.";
+				SMTRAT_LOG_ERROR("smtrat.parser", "The argument " << carl::VariablePool::getInstance().getName(v) << " of " << name << " is Bool. For theory functions, only theory arguments are supported.");
 				return;
 			}
 		}
@@ -212,19 +200,19 @@ void SMTLIBParser::defineFun(const std::string& name, const std::vector<carl::Va
 		}
 		break;
 	case ExpressionType::UNINTERPRETED:
-		state->handler->error() << "Functions of uninterpreted type are not allowed!";
+		SMTRAT_LOG_ERROR("smtrat.parser", "Functions of uninterpreted type are not allowed!");
 		break;
 	default:
-		state->handler->error() << "Unsupported function return type.";
+		SMTRAT_LOG_ERROR("smtrat.parser", "Unsupported function return type.");
 	}
 
 	//callHandler(&InstructionHandler::defineFun, name, args, sort, term);
 }
 void SMTLIBParser::defineSort(const std::string& name, const std::vector<std::string>& args, const carl::Sort& sort) {
-	clearSortParameters();
+	this->sort.clearParameters();
 	if (state->handler->printInstruction()) handler->regular() << "(define-sort " << name << " () " << sort << ")" << std::endl;
 	if (!carl::SortManager::getInstance().define(name, args, sort)) {
-		state->handler->error() << "A sort " << name << " has already been defined.";
+		SMTRAT_LOG_ERROR("smtrat.parser", "A sort " << name << " has already been defined.");
 	}
 	callHandler(&InstructionHandler::defineSort, name, args, sort);
 }
@@ -284,70 +272,6 @@ void SMTLIBParser::setLogic(const smtrat::Logic& l) {
 void SMTLIBParser::setOption(const Attribute& option) {
 	if (state->handler->printInstruction()) handler->regular() << "(set-option " << option << ")" << std::endl;
 	callHandler(&InstructionHandler::setOption, option);
-}
-
-carl::Variable SMTLIBParser::addQuantifiedVariable(const std::string& _name, const boost::optional<carl::VariableType>& type) {
-	std::string name = _name;
-	for (unsigned id = 1; !state->isSymbolFree(name, false); id++) {
-		name = _name + "_q" + std::to_string(id);
-	}
-	if (type.is_initialized()) {
-		switch (TypeOfTerm::get(type.get())) {
-			case ExpressionType::BOOLEAN: {
-				carl::Variable v = carl::newBooleanVariable(name);
-				state->var_bool.sym.remove(_name);
-				state->var_bool.sym.add(_name, v);
-				return v;
-			}
-			case ExpressionType::THEORY: {
-				carl::Variable v = carl::newArithmeticVariable(name, type.get());
-				state->var_theory.sym.remove(_name);
-				state->var_theory.sym.add(_name, v);
-				return v;
-			}
-			default: { // case ExpressionType::UNINTERPRETED
-				state->handler->error() << "Tried to quantify over an uninterpreted type.";
-				assert(false);
-				return carl::Variable::NO_VARIABLE;
-			}
-		}
-	} else if (state->var_bool.sym.find(_name) != nullptr) {
-		carl::Variable v = carl::newBooleanVariable(name);
-		state->var_bool.sym.remove(_name);
-		state->var_bool.sym.add(_name, v);
-		return v;
-	} else if (state->var_theory.sym.find(_name) != nullptr) {
-		carl::Variable v = carl::newArithmeticVariable(name, state->var_theory.sym.at(_name).getType());
-		state->var_theory.sym.remove(_name);
-		state->var_theory.sym.add(_name, v);
-		return v;
-	} else {
-		state->handler->error() << "Tried to quantify <" << _name << "> but no type could be inferred.";
-		return carl::Variable::NO_VARIABLE;
-	}
-}
-
-carl::Variable SMTLIBParser::addVariableBinding(const std::pair<std::string, carl::Sort>& b) {
-	assert(state->isSymbolFree(b.first));
-	switch (TypeOfTerm::get(b.second)) {
-	case ExpressionType::BOOLEAN: {
-		carl::Variable v = carl::VariablePool::getInstance().getFreshVariable(b.first, carl::VariableType::VT_BOOL);
-		state->bind_bool.sym.add(b.first, FormulaT(v));
-		return v;
-	}
-	case ExpressionType::THEORY: {
-		carl::Variable v = carl::VariablePool::getInstance().getFreshVariable(b.first, carl::SortManager::getInstance().interpretedType(b.second));
-		state->bind_theory.sym.add(b.first, Poly(v));
-		return v;
-	}
-	case ExpressionType::UNINTERPRETED:
-		state->handler->error() << "Tried to bind a uninterpreted variable.";
-		return carl::Variable::NO_VARIABLE;
-		break;
-	default:
-		assert(false);
-		return carl::Variable::NO_VARIABLE;
-	}
 }
 
 }
