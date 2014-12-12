@@ -38,12 +38,11 @@ namespace smtrat
 
     template<class Settings>
     IntEqModule<Settings>::IntEqModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-        Module( _type, _formula, _conditionals, _manager )  
-    { 
-        mProc_Constraints = FormulaOrigins();
-        mSubstitutions = std::map<carl::Variable, Poly>();
-        mVariables = std::map<carl::Variable, vector<std::set<FormulaT>>>();
-    }
+        Module( _type, _formula, _conditionals, _manager ),
+        mProc_Constraints(),
+        mSubstitutions(),
+        mVariables()    
+    { }
 
     /**
      * Destructor.
@@ -78,7 +77,7 @@ namespace smtrat
             #endif
             std::set<FormulaT> infSubSet;
             infSubSet.insert( _subformula->formula() );
-            mInfeasibleSubsets.push_back( infSubSet );
+            mInfeasibleSubsets.push_back( std::move( infSubSet ) );
             return false;            
         }            
         if( _subformula->formula().constraint().relation() == carl::Relation::EQ )
@@ -89,17 +88,17 @@ namespace smtrat
             origin.insert( _subformula->formula() );
             origins.push_back( origin );
             const smtrat::ConstraintT* constr = _subformula->formula().pConstraint();
-            Poly new_poly = constr->lhs();
+            Poly new_poly(constr->lhs());
             auto iter_subs = mSubstitutions.begin();
             while( iter_subs != mSubstitutions.end() )
             {
                 new_poly = new_poly.substitute( (iter_subs)->first, (iter_subs)->second );
                 auto iter_var = mVariables.find( (iter_subs)->first );
                 assert( iter_var != mVariables.end() );
-                origins = merge( origins, iter_var->second );
+                origins = std::move( merge( origins, iter_var->second ) );
                 ++iter_subs;
             }
-            const FormulaT newEq = FormulaT( carl::newConstraint( new_poly, carl::Relation::EQ ) );
+            FormulaT newEq( carl::newConstraint( new_poly, carl::Relation::EQ ) );
             // Return False if the newly obtained constraint is unsatisfiable
             if( newEq.isFalse() )
             {
@@ -129,12 +128,12 @@ namespace smtrat
     template<class Settings>
     void IntEqModule<Settings>::removeSubformula( ModuleInput::const_iterator _subformula )
     {
-        /* Iterate through the processed constraints and delete all corresponding sets 
-         * in the latter containing the element that has to be deleted. Delete a processed 
-         * constraint if the corresponding vector is empty 
-         */
         if( _subformula->formula().constraint().relation() == carl::Relation::EQ )
         {
+            /* Iterate through the processed constraints and delete all corresponding sets 
+             * in the latter containing the element that has to be deleted. Delete a processed 
+             * constraint if the corresponding vector is empty 
+             */
             #ifdef DEBUG_IntEqModule
             cout << "Remove: " << _subformula->formula().constraint() << endl;
             #endif
@@ -157,7 +156,7 @@ namespace smtrat
                 }
                 ++iter_formula;
             }            
-            /* Do the same for the substitution data structure(s) */ 
+            // Do the same for the substitution data structure(s)
             auto iter_substitutions = mVariables.begin();
             while( iter_substitutions != mVariables.end() )
             {
@@ -189,11 +188,11 @@ namespace smtrat
     {
         mModel.clear();
         if( solverState() == True )
-        {
+        {    
             auto iter_subs = mSubstitutions.begin();
             while( iter_subs != mSubstitutions.end() )
             {
-                mModel.insert(mModel.end(), std::make_pair(iter_subs->first, iter_subs->second) );
+                mModel.insert( mModel.end(), std::make_pair(iter_subs->first, iter_subs->second) );
                 ++iter_subs;
             }
         }
@@ -346,7 +345,7 @@ namespace smtrat
             std::pair<carl::Variable, Poly>* new_pair = new std::pair<carl::Variable, Poly>(corr_var, *temp );
             mSubstitutions.insert( *new_pair );
             mVariables.emplace( new_pair->first, origins );
-            FormulaOrigins temp_proc_constraints = FormulaOrigins();
+            FormulaOrigins temp_proc_constraints;
             constr_iter = mProc_Constraints.begin();
             while( constr_iter != mProc_Constraints.end() )
             {
@@ -359,7 +358,7 @@ namespace smtrat
                 cout << "After substitution: " << new_poly << endl;
                 #endif
                 std::set<FormulaT> origin;
-                const FormulaT newEq = FormulaT( carl::newConstraint( new_poly, carl::Relation::EQ ) );
+                FormulaT newEq = FormulaT( carl::newConstraint( new_poly, carl::Relation::EQ ) );
                 #ifdef DEBUG_IntEqModule
                 /*
                 assert( !origins.empty() );
@@ -460,7 +459,7 @@ namespace smtrat
                     }
                     ++iter_var;                   
                 }      
-                const FormulaT formula_passed = FormulaT( carl::newConstraint( new_poly, (*iter_formula).formula().constraint().relation() ) );                
+                FormulaT formula_passed( carl::newConstraint( new_poly, (*iter_formula).formula().constraint().relation() ) );                
                 addConstraintToInform( formula_passed );
                 addSubformulaToPassedFormula( formula_passed, origins );    
             }
@@ -475,26 +474,5 @@ namespace smtrat
             getInfeasibleSubsets();
         }
         return ans;
-    }
-    
-    template<class Settings>
-    size_t IntEqModule<Settings>::determine_smallest_origin(vector<std::set<FormulaT> >& origins) const
-    {
-        assert( !origins.empty() );
-        auto iter = origins.begin();
-        size_t size_min = (*iter).size();
-        ++iter;
-        size_t index_min = 0, i = 0;
-        while( iter != origins.end() )
-        {
-            if( (*iter).size() < size_min  )
-            {
-                size_min = (*iter).size();
-                index_min = i;
-            }
-            ++i;
-            ++iter;
-        }
-        return index_min;
     }
 }    

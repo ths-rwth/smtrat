@@ -33,10 +33,10 @@
 #include "FouMoSettings.h"
 namespace smtrat
 {
-    
+ 
+    typedef std::pair<FormulaT,vector<std::set<FormulaT>>> SingleFormulaOrigins;
     typedef std::map<FormulaT,vector<std::set<FormulaT>>> FormulaOrigins;
-    typedef std::map<carl::Variable,std::pair<std::vector<FormulaT>,std::vector<FormulaT>>> VariableUpperLower;
-    
+    typedef std::map<carl::Variable,std::pair<std::vector<SingleFormulaOrigins>,std::vector<SingleFormulaOrigins>>> VariableUpperLower;
     /**
      * A module which applies the Fourier-Motzkin algorithm.
      */ 
@@ -46,12 +46,17 @@ namespace smtrat
         private:
             // Stores the current inequalities
             FormulaOrigins mProc_Constraints;
+            // Stores the order in which the variables were eliminated
+            std::vector<carl::Variable> mElim_Order;
+            // Stores the deleted constraints, just as they worked as an upper respectively lower
+            // bound when eliminating the corresponding variable. The variables and their corresponding
+            // upper/lower constraints are saved in the order given by mElim_Order
+            VariableUpperLower mDeleted_Constraints;
             
             /**
              * @param curr_constraints Contains the constraints for which a possibly good
              *                         variable is chosen
-             * @param var_corr_constr  Contains the chosen variable and the indices of the
-             *                         constraints for the elimination step
+             * @param var_corr_constr  Contains the chosen variable and the constraints for the elimination step
              */
             void gather_upper_lower( FormulaOrigins& curr_constraints, VariableUpperLower& var_corr_constr );
             
@@ -61,7 +66,7 @@ namespace smtrat
              * @param corr_var     Variable that shall be eliminated
              * @return             Pointer to the constraint resulting from the combination
              */
-            const smtrat::ConstraintT* combine_upper_lower( const smtrat::ConstraintT* upper_constr, const smtrat::ConstraintT* lower_Constr, carl::Variable& corr_var );
+            FormulaT combine_upper_lower( const smtrat::ConstraintT* upper_constr, const smtrat::ConstraintT* lower_Constr, carl::Variable& corr_var );
             
         public:
             FouMoModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );

@@ -323,6 +323,26 @@ namespace smtrat
         return result;
     }
     
+    size_t Module::determine_smallest_origin( std::vector<std::set<FormulaT> >& origins) const
+    {
+        assert( !origins.empty() );
+        auto iter = origins.begin();
+        size_t size_min = (*iter).size();
+        ++iter;
+        size_t index_min = 0, i = 0;
+        while( iter != origins.end() )
+        {
+            if( (*iter).size() < size_min  )
+            {
+                size_min = (*iter).size();
+                index_min = i;
+            }
+            ++i;
+            ++iter;
+        }
+        return index_min;
+    }
+    
     bool Module::probablyLooping( const Poly& _branchingPolynomial, const Rational& _branchingValue )
     {
         assert( _branchingPolynomial.constantPart() == 0 );

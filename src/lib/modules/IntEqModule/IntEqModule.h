@@ -49,12 +49,6 @@ namespace smtrat
             // Stores the origins of the calculated substitutions
             std::map<carl::Variable, vector<std::set<FormulaT>>> mVariables;
             
-            /**
-             * @param origins 
-             * @return The index of the smallest element of origins
-             */
-            size_t determine_smallest_origin( vector<std::set<FormulaT>>& origins ) const;
-            
         public:
             IntEqModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
             ~IntEqModule();
