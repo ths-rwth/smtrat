@@ -85,8 +85,6 @@ namespace smtrat
         {
             // Apply the Fourier-Motzkin elimination steps for the subformula to be asserted
             auto iter_var = mElim_Order.begin();
-            bool upper = false;
-            bool lower = false;
             vector<std::set<FormulaT>> origins;
             std::set<FormulaT> origin;
             origin.insert( _subformula->formula() );
@@ -95,73 +93,107 @@ namespace smtrat
             temp_constr.insert( std::make_pair( _subformula->formula(), origins ) );
             while( iter_var != mElim_Order.end() )
             {
-                auto iter_poly = _subformula->formula().constraint().lhs().begin();
-                while( iter_poly != _subformula->formula().constraint().lhs().end() )
+                // Do the eliminations that would have been made when the newly asserted subformula
+                // would have been part of the initially asserted constraints
+                auto iter_help = mDeleted_Constraints.at( *iter_var );      
+                auto iter_temp = temp_constr.begin();
+                FormulaOrigins derived_constr;
+                std::set<std::pair<FormulaT, bool>> to_be_deleted;
+                while( iter_temp != temp_constr.end() )
                 {
-                    if( !iter_poly->isConstant() )
+                    auto iter_poly = iter_temp->first.constraint().lhs().begin();
+                    while( iter_poly != iter_temp->first.constraint().lhs().end() )
                     {
-                        if( iter_poly->getSingleVariable() == *iter_var )
+                        if( !iter_poly->isConstant() )
                         {
-                            if( ( iter_poly->coeff() > 0 && _subformula->formula().constraint().relation() == carl::Relation::GEQ ) 
-                            || ( iter_poly->coeff() < 0 &&  _subformula->formula().constraint().relation() == carl::Relation::LEQ ) )
+                            if( iter_poly->getSingleVariable() == *iter_var )
                             {
-                                upper = true;  
-                                break;
-                            }
-                            else
-                            {
-                                lower = true;
+                                if( ( iter_poly->coeff() > 0 && _subformula->formula().constraint().relation() == carl::Relation::LEQ ) 
+                                || ( iter_poly->coeff() < 0 &&  _subformula->formula().constraint().relation() == carl::Relation::GEQ ) )
+                                {
+                                    // The current considered constraint that iter_temp points to acts acts as an upper bound
+                                    // regarding the currently considered variable
+                                    auto iter_lower = iter_help.second.begin();
+                                    // Combine the current considered constraint with all lower bound constraints
+                                    // regarding the currently considered variable
+                                    while( iter_lower != iter_help.second.end() )
+                                    {
+                                        FormulaT new_formula = combine_upper_lower( iter_temp->first.pConstraint(), iter_lower->first.pConstraint(), *iter_var );                                                                                                                       
+                                        to_be_deleted.insert( std::make_pair( iter_temp->first, true) );
+                                        vector<std::set<FormulaT>> origins_new = merge( iter_temp->second, iter_lower->second );
+                                        if( new_formula.isFalse() )
+                                        {
+                                            size_t i = determine_smallest_origin( origins_new );
+                                            std::set<FormulaT> infSubSet;
+                                            infSubSet = origins_new.at(i);
+                                            mInfeasibleSubsets.push_back( infSubSet );
+                                            return false;
+                                        }
+                                        else
+                                        {
+                                            derived_constr.insert( std::make_pair( new_formula, origins_new ) );
+                                        }
+                                        ++iter_lower;
+                                    }
+                                    break;
+                                }
+                                else
+                                {
+                                    // The current considered constraint that iter_temp points to acts acts as a lower bound.
+                                    // Do everything analogously compared to the contrary case.
+                                    auto iter_upper = iter_help.first.begin(); 
+                                    while( iter_upper != iter_help.first.end() )
+                                    {
+                                        FormulaT new_formula = combine_upper_lower( iter_temp->first.pConstraint(), iter_upper->first.pConstraint(), *iter_var );                                                                                                                       
+                                        to_be_deleted.insert( std::make_pair( iter_temp->first, false) );
+                                        vector<std::set<FormulaT>> origins_new = merge( iter_temp->second, iter_upper->second );
+                                        if( new_formula.isFalse() )
+                                        {
+                                            size_t i = determine_smallest_origin( origins_new );
+                                            std::set<FormulaT> infSubSet;
+                                            infSubSet = origins_new.at(i);
+                                            mInfeasibleSubsets.push_back( infSubSet );
+                                            return false;
+                                        }
+                                        else
+                                        {
+                                            temp_constr.insert( std::make_pair( new_formula, origins_new ) );
+                                        }
+                                        ++iter_upper;
+                                    }    
+                                }
                                 break;
                             }
                         }    
-                    }                        
-                    ++iter_poly;
-                }
-                auto iter_help = mDeleted_Constraints.at( *iter_var );
-                if( upper )
-                {
-                    auto iter_lower = iter_help.second.begin();
-                    while( iter_lower != iter_help.second.end() )
-                    {
-                        auto iter_temp = temp_constr.begin();
-                        while( iter_temp != temp_constr.end() )
-                        {
-                            auto iter_poly = iter_temp->first.constraint().lhs().begin();
-                            while( iter_poly != iter_temp->first.constraint().lhs().end() )
-                            {
-                                if( !iter_poly->isConstant() )
-                                {
-                                    if( iter_poly->getSingleVariable() == *iter_var )
-                                    {
-                                        FormulaT new_formula = combine_upper_lower( iter_temp->first.pConstraint(), iter_lower->first.pConstraint(), *iter_var );                                                                                                                       
-                                        // Create origins and add to mDeleted_Constraints
-                                        temp_constr.erase( iter_temp );
-                                    }
-                                }    
-                                ++iter_poly;
-                            }
-                            ++iter_temp;
-                        }
-                        ++iter_lower;                        
+                        ++iter_poly;
                     }
+                    ++iter_temp;
                 }
-                else if( lower )
+                auto iter_deleted = to_be_deleted.begin();
+                while( iter_deleted != to_be_deleted.end() )
                 {
-                    auto iter_upper = iter_help.first.begin(); 
-                    while( iter_upper != iter_help.first.end() )
+                    assert( temp_constr.find( iter_deleted->first ) != temp_constr.end() );
+                    auto iter_help = mDeleted_Constraints.find( *iter_var );
+                    assert( iter_help != mDeleted_Constraints.end() );
+                    if( iter_deleted->second )
                     {
-                        // TO-DO Do as above
-                        ++iter_upper;                        
+                        auto iter_origins = temp_constr.find( iter_deleted->first );
+                        assert( iter_origins != temp_constr.end() );
+                        iter_help->second.first.push_back( std::make_pair( iter_deleted->first, iter_origins->second ) );
                     }
+                    else
+                    {
+                        auto iter_origins = temp_constr.find( iter_deleted->first );
+                        assert( iter_origins != temp_constr.end() );
+                        iter_help->second.second.push_back( std::make_pair( iter_deleted->first, iter_origins->second ) );                        
+                    }
+                    temp_constr.erase( iter_deleted->first );
+                    ++iter_deleted;
                 }
+                temp_constr.insert( derived_constr.begin(), derived_constr.end() );
                 ++iter_var;
             }
-            // TO-DO ...
-            FormulaOrigins::iterator iter = mProc_Constraints.find( _subformula->formula() );
-            if( iter == mProc_Constraints.end() )
-            {
-                mProc_Constraints.emplace( _subformula->formula(), origins );
-            }            
+            mProc_Constraints.insert( temp_constr.begin(), temp_constr.end() );
         }
         return true;
     }
@@ -226,8 +258,16 @@ namespace smtrat
                     auto iter_set_lower = iter_lower->second.begin();
                     while( iter_set_lower != iter_lower->second.end() )
                     {
-                        // TO-DO: Move on here
+                        auto iter_help_lower = iter_set_lower->find( _subformula->formula() ); 
+                        if( iter_help_lower != iter_set_lower->end() )
+                        {
+                            iter_set_lower->erase( iter_help_lower );
+                        }
                         ++iter_set_lower;
+                    }
+                    if( iter_lower->second.empty() )
+                    {
+                        iter_var->second.second.erase( iter_upper );
                     }
                     ++iter_lower;
                 }
@@ -250,86 +290,88 @@ namespace smtrat
     template<class Settings>
     Answer FouMoModule<Settings>::isConsistent()
     {
-        // Collect for every variable the information in which constraint it has as an upper
-        // respectively a lower bound and store it in var_corr_constr
-        VariableUpperLower var_corr_constr;
-        gather_upper_lower( mProc_Constraints, var_corr_constr );
-        if( var_corr_constr.empty() )
+        // Iterate until the right result is found
+        while( true )
         {
-            // TO-DO Distinction between LRA and LIA
-            return foundAnswer( True );
-        }
-        // Choose the variable to eliminate based on the information provided by var_corr_constr
-        carl::Variable best_var = var_corr_constr.begin()->first;
-        mElim_Order.push_back( best_var );
-        // Store how the amount of constraints will change after the elimination
-        Rational delta_constr = var_corr_constr.begin()->second.first.size()*(var_corr_constr.begin()->second.second.size()-1)-var_corr_constr.begin()->second.second.size();
-        auto iter_var = var_corr_constr.begin();
-        ++iter_var;
-        while( iter_var != var_corr_constr.end() )
-        {
-            Rational delta_temp = iter_var->second.first.size()*(iter_var->second.second.size()-1)-iter_var->second.second.size();
-            if( delta_temp < delta_constr )
+            // Collect for every variable the information in which constraint it has as an upper
+            // respectively a lower bound and store it in var_corr_constr
+            VariableUpperLower var_corr_constr;
+            gather_upper_lower( mProc_Constraints, var_corr_constr );
+            if( var_corr_constr.empty() ) // Right condition?
             {
-                delta_constr = delta_temp;
-                best_var = iter_var->first;
+                // TO-DO Distinction between LRA and LIA
+                return foundAnswer( True );
             }
-            ++iter_var;    
-        }
-        // Apply one step of the Fourier-Motzkin algorithm by eliminating best_var
-        auto iter_help = var_corr_constr.find( best_var );
-        assert( iter_help != var_corr_constr.end() );
-        auto iter_upper = iter_help->second.first.begin();
-        auto iter_lower = iter_help->second.second.begin();
-        //std::pair<std::vector<SingleFormulaOrigins>,std::vector<SingleFormulaOrigins>> pair_dummy;
-        while( iter_upper != iter_help->second.first.end() )
-        {
+            // Choose the variable to eliminate based on the information provided by var_corr_constr
+            carl::Variable best_var = var_corr_constr.begin()->first;
+            // Store how the amount of constraints will change after the elimination
+            Rational delta_constr = var_corr_constr.begin()->second.first.size()*(var_corr_constr.begin()->second.second.size()-1)-var_corr_constr.begin()->second.second.size();
+            auto iter_var = var_corr_constr.begin();
+            ++iter_var;
+            while( iter_var != var_corr_constr.end() )
+            {
+                Rational delta_temp = iter_var->second.first.size()*(iter_var->second.second.size()-1)-iter_var->second.second.size();
+                if( delta_temp < delta_constr )
+                {
+                    delta_constr = delta_temp;
+                    best_var = iter_var->first;
+                }
+                ++iter_var;    
+            }
+            mElim_Order.push_back( best_var );
+            // Apply one step of the Fourier-Motzkin algorithm by eliminating best_var
+            auto iter_help = var_corr_constr.find( best_var );
+            assert( iter_help != var_corr_constr.end() );
+            auto iter_upper = iter_help->second.first.begin();
+            auto iter_lower = iter_help->second.second.begin();
+            while( iter_upper != iter_help->second.first.end() )
+            {
+                while( iter_lower != iter_help->second.second.end() )
+                {
+                    FormulaT new_formula = combine_upper_lower( iter_upper->first.pConstraint(), iter_lower->first.pConstraint(), best_var );
+                    vector<std::set<FormulaT>> origins_new = merge( iter_upper->second, iter_lower->second );
+                    if( new_formula.isFalse() )
+                    {
+                        size_t i = determine_smallest_origin( origins_new );
+                        std::set<FormulaT> infSubSet;
+                        infSubSet = origins_new.at(i);
+                        mInfeasibleSubsets.push_back( infSubSet );
+                        return foundAnswer( False );
+                    }
+                    else
+                    {
+                        mProc_Constraints.insert( std::make_pair( new_formula, origins_new ) );
+                    }
+                    ++iter_lower;
+                }
+                ++iter_upper;
+            }
+            // Add the constraints that were used for the elimination to the data structure for 
+            // the deleted constraints and delete them from the vector of processed constraints.
+            mDeleted_Constraints.insert( std::make_pair( best_var, std::pair<std::vector<SingleFormulaOrigins>,std::vector<SingleFormulaOrigins>>() ) );
+            iter_upper = iter_help->second.first.begin();
+            while( iter_upper != iter_help->second.first.end() )
+            {
+                auto iter_delete = mProc_Constraints.find( iter_upper->first );
+                assert( iter_delete != mProc_Constraints.end() );
+                auto iter_add = mDeleted_Constraints.find( best_var );
+                assert( iter_add != mDeleted_Constraints.end() );
+                iter_add->second.first.push_back( *iter_delete );
+                mProc_Constraints.erase( iter_delete );
+                ++iter_upper;
+            }
+            iter_lower = iter_help->second.second.begin();
             while( iter_lower != iter_help->second.second.end() )
             {
-                FormulaT new_formula = combine_upper_lower( iter_upper->first.pConstraint(), iter_lower->first.pConstraint(), best_var );
-                vector<std::set<FormulaT>> origins_new = merge( iter_upper->second, iter_lower->second );
-                if( new_formula.isFalse() )
-                {
-                    size_t i = determine_smallest_origin( origins_new );
-                    std::set<FormulaT> infSubSet;
-                    infSubSet = origins_new.at(i);
-                    mInfeasibleSubsets.push_back( infSubSet );
-                    return foundAnswer( False );
-                }
-                else
-                {
-                    mProc_Constraints.insert( std::make_pair( new_formula, origins_new ) );
-                }
+                auto iter_delete = mProc_Constraints.find( iter_lower->first );
+                assert( iter_delete != mProc_Constraints.end() );
+                auto iter_add = mDeleted_Constraints.find( best_var );
+                assert( iter_add != mDeleted_Constraints.end() );
+                iter_add->second.second.push_back( *iter_delete );
+                mProc_Constraints.erase( iter_delete );
                 ++iter_lower;
             }
-            ++iter_upper;
-        }
-        // Add the constraints that were used for the elimination to the data structure for 
-        // the deleted constraints and delete them from the vector of processed constraints.
-        mDeleted_Constraints.insert( std::make_pair( best_var, std::pair<std::vector<SingleFormulaOrigins>,std::vector<SingleFormulaOrigins>>() ) );
-        iter_upper = iter_help->second.first.begin();
-        while( iter_upper != iter_help->second.first.end() )
-        {
-            auto iter_delete = mProc_Constraints.find( iter_upper->first );
-            assert( iter_delete != mProc_Constraints.end() );
-            auto iter_add = mDeleted_Constraints.find( best_var );
-            assert( iter_add != mDeleted_Constraints.end() );
-            iter_add->second.first.push_back( *iter_delete );
-            mProc_Constraints.erase( iter_delete );
-            ++iter_upper;
-        }
-        iter_lower = iter_help->second.second.begin();
-        while( iter_lower != iter_help->second.second.end() )
-        {
-            auto iter_delete = mProc_Constraints.find( iter_lower->first );
-            assert( iter_delete != mProc_Constraints.end() );
-            auto iter_add = mDeleted_Constraints.find( best_var );
-            assert( iter_add != mDeleted_Constraints.end() );
-            iter_add->second.second.push_back( *iter_delete );
-            mProc_Constraints.erase( iter_delete );
-            ++iter_lower;
-        }
-        return Unknown;
+        }    
     }
     
     template<class Settings>
@@ -351,8 +393,8 @@ namespace smtrat
                     {
                         std::vector<SingleFormulaOrigins> upper;
                         std::vector<SingleFormulaOrigins> lower;
-                        if( ( iter_poly->coeff() > 0 && iter_constr->first.pConstraint()->relation() == carl::Relation::GEQ ) 
-                            || ( iter_poly->coeff() < 0 &&  iter_constr->first.pConstraint()->relation() == carl::Relation::LEQ ) )
+                        if( ( iter_poly->coeff() > 0 && iter_constr->first.pConstraint()->relation() == carl::Relation::LEQ ) 
+                            || ( iter_poly->coeff() < 0 &&  iter_constr->first.pConstraint()->relation() == carl::Relation::GEQ ) )
                         {
                             SingleFormulaOrigins upper_help;
                             upper_help.first = iter_constr->first;
@@ -373,8 +415,8 @@ namespace smtrat
                         SingleFormulaOrigins help;
                         help.first = iter_constr->first;
                         help.second = iter_constr->second;
-                        if( ( iter_poly->coeff() > 0 && iter_constr->first.pConstraint()->relation() == carl::Relation::GEQ ) 
-                            || ( iter_poly->coeff() < 0 &&  iter_constr->first.pConstraint()->relation() == carl::Relation::LEQ ) )
+                        if( ( iter_poly->coeff() > 0 && iter_constr->first.pConstraint()->relation() == carl::Relation::LEQ ) 
+                            || ( iter_poly->coeff() < 0 &&  iter_constr->first.pConstraint()->relation() == carl::Relation::GEQ ) )
                         {
                             iter_help->second.first.push_back( help );
                         }
@@ -394,6 +436,7 @@ namespace smtrat
     FormulaT FouMoModule<Settings>::combine_upper_lower(const smtrat::ConstraintT* upper_constr, const smtrat::ConstraintT* lower_constr, carl::Variable& corr_var)
     {
         FormulaT combined_formula;
+        // TO-DO Normalization
         Poly upper_poly = upper_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
         Poly lower_poly = lower_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
         if( upper_constr->relation() == carl::Relation::GEQ )
