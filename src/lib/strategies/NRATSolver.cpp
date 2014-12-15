@@ -51,6 +51,9 @@ namespace smtrat
         #ifdef SMTRAT_ENABLE_IntEqModule
         position = addBackendIntoStrategyGraph( position, MT_IntEqModule );
         #endif
+        #ifdef SMTRAT_ENABLE_FouMoModule
+        position = addBackendIntoStrategyGraph( position, MT_FouMoModule );
+        #endif
         #ifdef SMTRAT_ENABLE_LRAModule
         position = addBackendIntoStrategyGraph( position, MT_LRAModule );
         #endif

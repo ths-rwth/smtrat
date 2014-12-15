@@ -28,7 +28,7 @@
 
 #include "FouMoModule.h"
 
-//#define DEBUG_FouMoModule
+#define DEBUG_FouMoModule
 # define Iterative_Deletion
 
 namespace smtrat
@@ -290,16 +290,38 @@ namespace smtrat
     template<class Settings>
     Answer FouMoModule<Settings>::isConsistent()
     {
+        #ifdef DEBUG_FouMoModule
+        cout << "Apply the Fourier-Motzkin-Algorithm" << endl;
+        #endif
         // Iterate until the right result is found
         while( true )
         {
             // Collect for every variable the information in which constraint it has as an upper
             // respectively a lower bound and store it in var_corr_constr
             VariableUpperLower var_corr_constr;
+            #ifdef DEBUG_FouMoModule
+            cout << "Processed Constraints" << endl;
+            auto iter_PC = mProc_Constraints.begin();
+            while( iter_PC != mProc_Constraints.end() )
+            {
+                cout << iter_PC->first.constraint() << endl;
+                ++iter_PC;
+            }
+            cout << "Deleted_Constraints" << endl;
+            auto iter_DC = mDeleted_Constraints.begin();
+            while( iter_DC != mDeleted_Constraints.end() )
+            {
+                //
+                ++iter_DC;
+            }
+            #endif
             gather_upper_lower( mProc_Constraints, var_corr_constr );
             if( var_corr_constr.empty() ) // Right condition?
             {
                 // TO-DO Distinction between LRA and LIA
+                #ifdef DEBUG_FouMoModule
+                cout << "No elimination necessary anymore" << endl;
+                #endif
                 return foundAnswer( True );
             }
             // Choose the variable to eliminate based on the information provided by var_corr_constr
@@ -318,6 +340,9 @@ namespace smtrat
                 }
                 ++iter_var;    
             }
+            #ifdef DEBUG_FouMoModule
+            cout << "The 'best' variable is:" << best_var << endl;
+            #endif
             mElim_Order.push_back( best_var );
             // Apply one step of the Fourier-Motzkin algorithm by eliminating best_var
             auto iter_help = var_corr_constr.find( best_var );
@@ -329,6 +354,11 @@ namespace smtrat
                 while( iter_lower != iter_help->second.second.end() )
                 {
                     FormulaT new_formula = combine_upper_lower( iter_upper->first.pConstraint(), iter_lower->first.pConstraint(), best_var );
+                    #ifdef DEBUG_FouMoModule
+                    cout << "Combine 'upper' constraint: " << iter_upper->first.constraint() << endl;
+                    cout << "with 'lower' constraint: " << iter_lower->first.constraint() << endl;
+                    cout << "and obtain: " << new_formula.constraint() << endl;
+                    #endif
                     vector<std::set<FormulaT>> origins_new = merge( iter_upper->second, iter_lower->second );
                     if( new_formula.isFalse() )
                     {
@@ -436,20 +466,53 @@ namespace smtrat
     FormulaT FouMoModule<Settings>::combine_upper_lower(const smtrat::ConstraintT* upper_constr, const smtrat::ConstraintT* lower_constr, carl::Variable& corr_var)
     {
         FormulaT combined_formula;
-        // TO-DO Normalization
+        Rational coeff_upper;
+        auto iter_poly_upper = upper_constr->lhs().begin();
+        while( iter_poly_upper != upper_constr->lhs().end() )
+        {
+            if( !iter_poly_upper->isConstant() )
+            {
+                if( iter_poly_upper->getSingleVariable() == corr_var )
+                {
+                    coeff_upper = iter_poly_upper->coeff();
+                    break;
+                }                                
+            }
+            ++iter_poly_upper;
+        }
+        Rational coeff_lower;
+        auto iter_poly_lower = lower_constr->lhs().begin();
+        while( iter_poly_lower != lower_constr->lhs().end() )
+        {
+            if( !iter_poly_lower->isConstant() )
+            {
+                if( iter_poly_lower->getSingleVariable() == corr_var )
+                {
+                    coeff_lower = iter_poly_lower->coeff(); 
+                    break;
+                }                                
+            }
+            ++iter_poly_lower;
+        }
         Poly upper_poly = upper_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
         Poly lower_poly = lower_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
+        #ifdef DEBUG_FouMoModule
+        cout << "Normalized upper: " << coeff_lower*upper_poly << endl;
+        cout << "Normalized lower: " << coeff_upper*lower_poly << endl;
+        #endif
         if( upper_constr->relation() == carl::Relation::GEQ )
         {
             if( lower_constr->relation() == carl::Relation::GEQ )  
             {
+                upper_poly *= -1;
                 lower_poly *= -1;
-                combined_formula = FormulaT ( carl::newConstraint( lower_poly - upper_poly, carl::Relation::LEQ ) );                
+                combined_formula = FormulaT ( carl::newConstraint( coeff_upper*lower_poly - coeff_lower*upper_poly, carl::Relation::LEQ ) );                
             }
             else
             {
                 assert( lower_constr->relation() == carl::Relation::LEQ );
-                combined_formula = FormulaT( carl::newConstraint( lower_poly - upper_poly, carl::Relation::LEQ ) );
+                upper_poly *= -1;
+                combined_formula = FormulaT( carl::newConstraint( coeff_upper*lower_poly - coeff_lower*upper_poly, carl::Relation::LEQ ) );
             }
         }
         else
@@ -458,14 +521,15 @@ namespace smtrat
             if( lower_constr->relation() == carl::Relation::GEQ )  
             {
                 lower_poly *= -1;
-                upper_poly *= -1;
-                combined_formula = FormulaT( carl::newConstraint( lower_poly - upper_poly, carl::Relation::LEQ ) );                
+                combined_formula = FormulaT( carl::newConstraint( coeff_upper*lower_poly - coeff_lower*upper_poly, carl::Relation::LEQ ) );                
             }
             else
             {
                 assert( lower_constr->relation() == carl::Relation::LEQ );
-                upper_poly *= -1;
-                combined_formula = FormulaT( carl::newConstraint( lower_poly - upper_poly, carl::Relation::LEQ ) );
+                #ifdef DEBUG_FouMoModule
+                cout << "Less-Less: " << coeff_upper*lower_poly - coeff_lower*upper_poly << endl;
+                #endif
+                combined_formula = FormulaT( carl::newConstraint( coeff_upper*lower_poly - coeff_lower*upper_poly, carl::Relation::LEQ ) );
             }
         }
         return combined_formula;        
