@@ -29,7 +29,7 @@
 #include "FouMoModule.h"
 
 #define DEBUG_FouMoModule
-# define Iterative_Deletion
+#define Integer_Mode
 
 namespace smtrat
 {
@@ -70,6 +70,9 @@ namespace smtrat
     template<class Settings>
     bool FouMoModule<Settings>::assertSubformula( ModuleInput::const_iterator _subformula )
     {
+        #ifdef DEBUG_FouMoModule
+        cout << "Assert: " << _subformula->formula().constraint()<< endl;
+        #endif
         Module::assertSubformula( _subformula ); // This must be invoked at the beginning of this method.
         if( _subformula->formula().isFalse() )
         {
@@ -84,6 +87,9 @@ namespace smtrat
         if( _subformula->formula().constraint().relation() == carl::Relation::LEQ || _subformula->formula().constraint().relation() == carl::Relation::GEQ )
         {
             // Apply the Fourier-Motzkin elimination steps for the subformula to be asserted
+            #ifdef DEBUG_FouMoModule
+            cout << "Do the eliminations for the newly asserted subformula!" << endl;
+            #endif
             auto iter_var = mElim_Order.begin();
             vector<std::set<FormulaT>> origins;
             std::set<FormulaT> origin;
@@ -95,7 +101,10 @@ namespace smtrat
             {
                 // Do the eliminations that would have been made when the newly asserted subformula
                 // would have been part of the initially asserted constraints
-                auto iter_help = mDeleted_Constraints.at( *iter_var );      
+                auto iter_help = mDeleted_Constraints.at( *iter_var );  
+                #ifdef DEBUG_FouMoModule
+                cout << "Current variable to be eliminated: " << *iter_var << endl;
+                #endif
                 auto iter_temp = temp_constr.begin();
                 FormulaOrigins derived_constr;
                 std::set<std::pair<FormulaT, bool>> to_be_deleted;
@@ -119,10 +128,18 @@ namespace smtrat
                                     while( iter_lower != iter_help.second.end() )
                                     {
                                         FormulaT new_formula = combine_upper_lower( iter_temp->first.pConstraint(), iter_lower->first.pConstraint(), *iter_var );                                                                                                                       
+                                        #ifdef DEBUG_FouMoModule
+                                        cout << "Combine 'upper' constraint: " << iter_temp->first.constraint() << endl;
+                                        cout << "with 'lower' constraint: " << iter_lower->first.constraint() << endl;
+                                        cout << "and obtain: " << new_formula.constraint() << endl;
+                                        #endif
                                         to_be_deleted.insert( std::make_pair( iter_temp->first, true) );
                                         vector<std::set<FormulaT>> origins_new = merge( iter_temp->second, iter_lower->second );
                                         if( new_formula.isFalse() )
                                         {
+                                            #ifdef DEBUG_FouMoModule
+                                            cout << "The obtained formula is unsatisfiable" << endl;
+                                            #endif
                                             size_t i = determine_smallest_origin( origins_new );
                                             std::set<FormulaT> infSubSet;
                                             infSubSet = origins_new.at(i);
@@ -145,10 +162,18 @@ namespace smtrat
                                     while( iter_upper != iter_help.first.end() )
                                     {
                                         FormulaT new_formula = combine_upper_lower( iter_temp->first.pConstraint(), iter_upper->first.pConstraint(), *iter_var );                                                                                                                       
+                                        #ifdef DEBUG_FouMoModule
+                                        cout << "Combine 'upper' constraint: " << iter_upper->first.constraint() << endl;
+                                        cout << "with 'lower' constraint: " << iter_temp->first.constraint() << endl;
+                                        cout << "and obtain: " << new_formula.constraint() << endl;
+                                        #endif
                                         to_be_deleted.insert( std::make_pair( iter_temp->first, false) );
                                         vector<std::set<FormulaT>> origins_new = merge( iter_temp->second, iter_upper->second );
                                         if( new_formula.isFalse() )
                                         {
+                                            #ifdef DEBUG_FouMoModule
+                                            cout << "The obtained formula is unsatisfiable" << endl;
+                                            #endif
                                             size_t i = determine_smallest_origin( origins_new );
                                             std::set<FormulaT> infSubSet;
                                             infSubSet = origins_new.at(i);
@@ -195,6 +220,7 @@ namespace smtrat
             }
             mProc_Constraints.insert( temp_constr.begin(), temp_constr.end() );
         }
+        std::cout << "End of Assertion" << endl;
         return true;
     }
 
@@ -273,7 +299,7 @@ namespace smtrat
                 }
                 ++iter_var;
             }
-        }    
+        } 
         Module::removeSubformula( _subformula ); 
     }
 
@@ -299,6 +325,7 @@ namespace smtrat
             // Collect for every variable the information in which constraint it has as an upper
             // respectively a lower bound and store it in var_corr_constr
             VariableUpperLower var_corr_constr;
+            gather_upper_lower( mProc_Constraints, var_corr_constr );
             #ifdef DEBUG_FouMoModule
             cout << "Processed Constraints" << endl;
             auto iter_PC = mProc_Constraints.begin();
@@ -311,21 +338,30 @@ namespace smtrat
             auto iter_DC = mDeleted_Constraints.begin();
             while( iter_DC != mDeleted_Constraints.end() )
             {
-                //
                 ++iter_DC;
             }
             #endif
-            gather_upper_lower( mProc_Constraints, var_corr_constr );
-            if( var_corr_constr.empty() ) // Right condition?
+            if( var_corr_constr.empty() ) 
             {
-                // TO-DO Distinction between LRA and LIA
                 #ifdef DEBUG_FouMoModule
-                cout << "No elimination necessary anymore" << endl;
+                cout << "Run Backends!" << endl;
                 #endif
-                return foundAnswer( True );
+                auto iter_recv = rReceivedFormula().begin();
+                while( iter_recv != rReceivedFormula().end() )
+                {
+                    addReceivedSubformulaToPassedFormula( iter_recv );
+                    ++iter_recv;
+                }
+                Answer ans = runBackends();
+                if( ans == False )
+                {
+                    getInfeasibleSubsets();
+                }
+                return ans;
             }
             // Choose the variable to eliminate based on the information provided by var_corr_constr
             carl::Variable best_var = var_corr_constr.begin()->first;
+            Rational corr_coeff;
             // Store how the amount of constraints will change after the elimination
             Rational delta_constr = var_corr_constr.begin()->second.first.size()*(var_corr_constr.begin()->second.second.size()-1)-var_corr_constr.begin()->second.second.size();
             auto iter_var = var_corr_constr.begin();
@@ -353,15 +389,37 @@ namespace smtrat
             {
                 while( iter_lower != iter_help->second.second.end() )
                 {
+                    vector<std::set<FormulaT>> origins_new = merge( iter_upper->second, iter_lower->second );
+                    #ifdef Integer_Mode
+                    // TO-DO think about this condition
+                    if( var_corr_constr.size() == 1 )
+                    {
+                        // Check whether there is an integer between the corresponding lower/upper bound.
+                        // If not, return false.
+                        if( carl::ceil( iter_lower->first.constraint().lhs().constantPart() ) > -1*iter_upper->first.constraint().lhs().constantPart() ) 
+                        {
+                            #ifdef DEBUG_FouMoModule
+                            cout << "There is no integer between the lower and the upper bound!" << endl;
+                            #endif
+                            size_t i = determine_smallest_origin( origins_new );
+                            std::set<FormulaT> infSubSet;
+                            infSubSet = origins_new.at(i);
+                            mInfeasibleSubsets.push_back( infSubSet );
+                            return foundAnswer( False );
+                        }
+                    }
+                    #endif
                     FormulaT new_formula = combine_upper_lower( iter_upper->first.pConstraint(), iter_lower->first.pConstraint(), best_var );
                     #ifdef DEBUG_FouMoModule
                     cout << "Combine 'upper' constraint: " << iter_upper->first.constraint() << endl;
                     cout << "with 'lower' constraint: " << iter_lower->first.constraint() << endl;
                     cout << "and obtain: " << new_formula.constraint() << endl;
                     #endif
-                    vector<std::set<FormulaT>> origins_new = merge( iter_upper->second, iter_lower->second );
                     if( new_formula.isFalse() )
                     {
+                        #ifdef DEBUG_FouMoModule
+                        cout << "The obtained formula is unsatisfiable" << endl;
+                        #endif
                         size_t i = determine_smallest_origin( origins_new );
                         std::set<FormulaT> infSubSet;
                         infSubSet = origins_new.at(i);
@@ -376,6 +434,26 @@ namespace smtrat
                 }
                 ++iter_upper;
             }
+            #ifdef Integer_Mode
+            if( var_corr_constr.size() == 1 )
+            {
+                #ifdef DEBUG_FouMoModule
+                cout << "Run Backends!" << endl;
+                #endif
+                auto iter_recv = rReceivedFormula().begin();
+                while( iter_recv != rReceivedFormula().end() )
+                {
+                    addReceivedSubformulaToPassedFormula( iter_recv );
+                    ++iter_recv;
+                }
+                Answer ans = runBackends();
+                if( ans == False )
+                {
+                    getInfeasibleSubsets();
+                }
+                return ans;
+            }
+            #endif
             // Add the constraints that were used for the elimination to the data structure for 
             // the deleted constraints and delete them from the vector of processed constraints.
             mDeleted_Constraints.insert( std::make_pair( best_var, std::pair<std::vector<SingleFormulaOrigins>,std::vector<SingleFormulaOrigins>>() ) );
@@ -460,6 +538,17 @@ namespace smtrat
             }
             ++iter_constr;
         }
+        // Remove those variables that do not have each at least on upper and 
+        // one lower bound
+        auto iter_var = var_corr_constr.begin();
+        while( iter_var != var_corr_constr.end() )
+        {
+            if( iter_var->second.first.empty() || iter_var->second.second.empty() )
+            {
+                var_corr_constr.erase( iter_var );
+            }
+            ++iter_var;
+        }
     }
     
     template<class Settings>
@@ -496,10 +585,6 @@ namespace smtrat
         }
         Poly upper_poly = upper_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
         Poly lower_poly = lower_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
-        #ifdef DEBUG_FouMoModule
-        cout << "Normalized upper: " << coeff_lower*upper_poly << endl;
-        cout << "Normalized lower: " << coeff_upper*lower_poly << endl;
-        #endif
         if( upper_constr->relation() == carl::Relation::GEQ )
         {
             if( lower_constr->relation() == carl::Relation::GEQ )  
@@ -526,9 +611,6 @@ namespace smtrat
             else
             {
                 assert( lower_constr->relation() == carl::Relation::LEQ );
-                #ifdef DEBUG_FouMoModule
-                cout << "Less-Less: " << coeff_upper*lower_poly - coeff_lower*upper_poly << endl;
-                #endif
                 combined_formula = FormulaT( carl::newConstraint( coeff_upper*lower_poly - coeff_lower*upper_poly, carl::Relation::LEQ ) );
             }
         }
