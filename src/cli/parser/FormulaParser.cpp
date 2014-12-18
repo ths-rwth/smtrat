@@ -1,6 +1,7 @@
 #include "FormulaParser.h"
 
 #include <boost/fusion/include/std_pair.hpp>
+#include <boost/phoenix.hpp>
 #include <boost/spirit/include/phoenix_bind.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_object.hpp>
