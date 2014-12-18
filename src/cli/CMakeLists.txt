@@ -33,6 +33,14 @@ configure_file( ${CMAKE_SOURCE_DIR}/src/cli/config.h.in ${CMAKE_SOURCE_DIR}/src/
 add_executable( smtratSolver
 	${CMAKE_SOURCE_DIR}/src/cli/parser/Parser.cpp
 	${CMAKE_SOURCE_DIR}/src/cli/parser/ParserUtils.cpp
+	${CMAKE_SOURCE_DIR}/src/cli/parser/UtilityParser.cpp
+	${CMAKE_SOURCE_DIR}/src/cli/parser/SortParser.cpp
+	${CMAKE_SOURCE_DIR}/src/cli/parser/NumberParser.cpp
+	${CMAKE_SOURCE_DIR}/src/cli/parser/ParserState.cpp
+	${CMAKE_SOURCE_DIR}/src/cli/parser/PolynomialParser.cpp
+	${CMAKE_SOURCE_DIR}/src/cli/parser/FormulaParser.cpp
+	${CMAKE_SOURCE_DIR}/src/cli/parser/FunctionArgumentParser.cpp
+	${CMAKE_SOURCE_DIR}/src/cli/parser/UninterpretedParser.cpp
 	smtratSolver.cpp
 	RuntimeSettingsManager.cpp
 )

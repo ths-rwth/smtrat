@@ -14,7 +14,7 @@
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/support_line_pos_iterator.hpp>
 
-#include "../../lib/Common.h"
+#include "Common.h"
 
 namespace smtrat {
 
@@ -57,6 +57,15 @@ typedef std::vector<Argument> Arguments;
 
 typedef std::tuple<std::string, std::vector<carl::Variable>, FormulaT> BooleanFunction;
 typedef std::tuple<std::string, std::vector<carl::Variable>, Poly> TheoryFunction;
+
+
+
+struct Skipper: public boost::spirit::qi::grammar<Iterator> {
+	Skipper(): Skipper::base_type(main, "skipper") {
+		main = (boost::spirit::qi::space | boost::spirit::qi::lit(";") >> *(boost::spirit::qi::char_ - boost::spirit::qi::eol) >> boost::spirit::qi::eol);
+	};
+    boost::spirit::qi::rule<Iterator> main;
+};
 
 }
 }
