@@ -25,7 +25,6 @@ BooleanOpParser::BooleanOpParser() {
     add("or", carl::FormulaType::OR);
     add("xor", carl::FormulaType::XOR);
     add("iff", carl::FormulaType::IFF);
-    add("=", carl::FormulaType::IFF);
 }
 
 LogicParser::LogicParser() {
@@ -37,7 +36,6 @@ LogicParser::LogicParser() {
 }
 
 RelationParser::RelationParser() {
-    add("=", carl::Relation::EQ);
     add("<=", carl::Relation::LEQ);
     add(">=", carl::Relation::GEQ);
     add("<", carl::Relation::LESS);

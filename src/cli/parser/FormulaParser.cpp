@@ -41,11 +41,11 @@ FormulaParser::FormulaParser(ParserState* _state):
 	formula_list = +formula;
 	formula_list.name("formula list");
 	formula_op =
-				((op_bool >> formula_list)[qi::_val = px::bind(&FormulaParser::mkFormula, px::ref(*this), qi::_1, qi::_2)])
+				((qi::lit("=") >> +fun_argument)[qi::_val = px::bind(&FormulaParser::mkEquality, px::ref(*this), qi::_1)])
+			|	((op_bool >> formula_list)[qi::_val = px::bind(&FormulaParser::mkFormula, px::ref(*this), qi::_1, qi::_2)])
 			|	(relation >> polynomial >> polynomial)[qi::_val = px::bind(&FormulaParser::mkConstraint, px::ref(*this), qi::_2, qi::_3, qi::_1)]
-			|	((qi::lit("=") >> uninterpreted >> uninterpreted)[qi::_val = px::construct<smtrat::FormulaT>(qi::_1, qi::_2, false)])
 			|	(qi::lit("as")[px::bind(&ParserState::errorMessage, px::ref(state), "\"as\" is not supported."), qi::_pass = false] > symbol > symbol)
-			|	(qi::lit("distinct")[px::bind(&ParserState::errorMessage, px::ref(state), "\"distinct\" is not supported."),qi::_pass = false] > +formula)
+			|	(qi::lit("distinct") >> +fun_argument)[qi::_val = px::bind(&FormulaParser::mkDistinct, px::ref(*this), qi::_1)]
 			|	(qi::lit("not") > formula[qi::_val = px::construct<smtrat::FormulaT>(carl::FormulaType::NOT, qi::_1)])
 			|	((qi::lit("implies") | "=>") > formula > formula)[qi::_val = px::construct<smtrat::FormulaT>(carl::FormulaType::IMPLIES, qi::_1, qi::_2)]
 			|	(qi::lit("let")[px::bind(&ParserState::pushScope, px::ref(state))]
@@ -128,5 +128,58 @@ FormulaT FormulaParser::mkConstraint(const Poly& lhs, const Poly& rhs, carl::Rel
 		return FormulaT(p, rel);
 	}
 }
+
+class EqualityGenerator: public boost::static_visitor<FormulaT> {
+private:
+	bool negate;
+public:
+	EqualityGenerator(bool negate): negate(negate) {}
+	FormulaT operator()(const FormulaT& lhs, const FormulaT& rhs) {
+		if (negate) return FormulaT(carl::FormulaType::XOR, lhs, rhs);
+		else return FormulaT(carl::FormulaType::IFF, lhs, rhs);
+	}
+	FormulaT operator()(const Poly& lhs, const Poly& rhs) {
+		if (negate) return FormulaT(newConstraint(lhs - rhs, carl::Relation::NEQ));
+		else return FormulaT(newConstraint(lhs - rhs, carl::Relation::EQ));
+	}
+	FormulaT operator()(const carl::UVariable& lhs, const carl::UVariable& rhs) {
+		return FormulaT(lhs, rhs, negate);
+	}
+	FormulaT operator()(const carl::UVariable& lhs, const carl::UFInstance& rhs) {
+		return FormulaT(lhs, rhs, negate);
+	}
+	FormulaT operator()(const carl::UFInstance& lhs, const carl::UVariable& rhs) {
+		return FormulaT(lhs, rhs, negate);
+	}
+	FormulaT operator()(const carl::UFInstance& lhs, const carl::UFInstance& rhs) {
+		return FormulaT(lhs, rhs, negate);
+	}
+	template<typename U, typename V>
+	FormulaT operator()(const U& u, const V& v) {
+		SMTRAT_LOG_ERROR("smtrat.parser", "Comparing two expressions that are not comparable: " << u << " == " << v);
+		return FormulaT();
+	}
+};
+
+FormulaT FormulaParser::mkEquality(const Arguments& args) {
+	std::set<FormulaT> subformulas;
+	EqualityGenerator eg(false);
+	for (std::size_t i = 0; i < args.size() - 1; i++) {
+		subformulas.insert(boost::apply_visitor(eg, args[i], args[i+1]));
+	}
+	return FormulaT(carl::FormulaType::AND, subformulas);
+}
+
+FormulaT FormulaParser::mkDistinct(const Arguments& args) {
+	std::set<FormulaT> subformulas;
+	EqualityGenerator eg(true);
+	for (std::size_t i = 0; i < args.size() - 1; i++) {
+		for (std::size_t j = i + 1; j < args.size(); j++) {
+			subformulas.insert(boost::apply_visitor(eg, args[i], args[j]));
+		}
+	}
+	return FormulaT(carl::FormulaType::AND, subformulas);
+}
+
 }
 }
