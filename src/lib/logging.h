@@ -6,9 +6,9 @@
 #pragma once
 
 #include "config.h"
-#include <carl/core/carlLogging.h>
 
 #if defined LOGGING
+	#include <carl/core/carlLogging.h>
 	#define SMTRAT_LOG_FATAL(channel, msg) __CARL_LOG_FATAL(channel, msg)
 	#define SMTRAT_LOG_ERROR(channel, msg) __CARL_LOG_ERROR(channel, msg)
 	#define SMTRAT_LOG_WARN(channel, msg) __CARL_LOG_WARN(channel, msg)
