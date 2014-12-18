@@ -38,7 +38,6 @@
 #include <cln/cln.h>
 
 using namespace std;
-using namespace carl;
 
 namespace smtrat
 {
@@ -46,7 +45,7 @@ namespace smtrat
     // Constructor.
     
     Manager::Manager():
-        mPrimaryBackendFoundAnswer( vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
+        mPrimaryBackendFoundAnswer( std::vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
         mpPassedFormula( new ModuleInput() ),
         mBacktrackPoints(),
         mGeneratedModules(),
@@ -54,7 +53,7 @@ namespace smtrat
         mpPrimaryBackend( new Module( MT_Module, mpPassedFormula, mPrimaryBackendFoundAnswer, this ) ),
         mStrategyGraph(),
         mDebugOutputChannel( cout.rdbuf() ),
-        mLogic( Logic::UNDEFINED )
+        mLogic( carl::Logic::UNDEFINED )
         #ifdef SMTRAT_DEVOPTION_Statistics
         ,
         mpStatistics( new GeneralStatistics() )
@@ -72,7 +71,7 @@ namespace smtrat
         // inform it about all constraints
         typedef void (*Func)( Module*, const FormulaT& );
         Func f = [] ( Module* _module, const FormulaT& _constraint ) { _module->inform( _constraint ); };
-        FormulaPool<Poly>::getInstance().forallDo<Module>( f, mpPrimaryBackend );
+        carl::FormulaPool<Poly>::getInstance().forallDo<Module>( f, mpPrimaryBackend );
     }
 
     // Destructor.
@@ -152,7 +151,7 @@ namespace smtrat
         _out << "(";
         if( !mpPrimaryBackend->infeasibleSubsets().empty() )
         {
-            const set<FormulaT>& infSubSet = *mpPrimaryBackend->infeasibleSubsets().begin();
+            const std::set<FormulaT>& infSubSet = *mpPrimaryBackend->infeasibleSubsets().begin();
             if( infSubSet.size() == 1 )
             {
                 _out << *infSubSet.begin();
@@ -173,17 +172,17 @@ namespace smtrat
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         std::lock_guard<std::mutex> lock( mBackendsMutex );
         #endif
-        vector<Module*>  backends;
-        vector<Module*>& allBackends = mBackendsOfModules[_requiredBy];
+        std::vector<Module*>  backends;
+        std::vector<Module*>& allBackends = mBackendsOfModules[_requiredBy];
         /*
          * Get the types of the modules, which the given module needs to call to solve its passedFormula.
          */
-        vector< pair< thread_priority, ModuleType > > backendValues = mStrategyGraph.getNextModuleTypes( _requiredBy->threadPriority().second, _requiredBy->pPassedFormula()->properties() );
+        std::vector< std::pair< thread_priority, ModuleType > > backendValues = mStrategyGraph.getNextModuleTypes( _requiredBy->threadPriority().second, _requiredBy->pPassedFormula()->properties() );
         for( auto iter = backendValues.begin(); iter != backendValues.end(); ++iter )
         {
             assert( iter->second != _requiredBy->type() );
             // If for this module type an instance already exists, we just add it to the modules to return.
-            vector<Module*>::iterator backend = allBackends.begin();
+            std::vector<Module*>::iterator backend = allBackends.begin();
             while( backend != allBackends.end() )
             {
                 if( (*backend)->threadPriority() == iter->first )
