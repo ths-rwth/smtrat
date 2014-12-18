@@ -25,6 +25,8 @@ private:
 
 	FormulaT mkFormula(carl::FormulaType _type, std::set<FormulaT>& _subformulas);
 	FormulaT mkConstraint(const Poly&, const Poly&, carl::Relation);
+	FormulaT mkEquality(const Arguments& args);
+	FormulaT mkDistinct(const Arguments& args);
 
 	BoundaryParser boundary;
 	SymbolParser symbol;
