@@ -30,6 +30,7 @@
 
 #define DEBUG_FouMoModule
 #define Integer_Mode
+#define Allow_Deletion
 
 namespace smtrat
 {
@@ -99,12 +100,13 @@ namespace smtrat
             temp_constr.insert( std::make_pair( _subformula->formula(), origins ) );
             while( iter_var != mElim_Order.end() )
             {
-                // Do the eliminations that would have been made when the newly asserted subformula
-                // would have been part of the initially asserted constraints
-                auto iter_help = mDeleted_Constraints.at( *iter_var );  
                 #ifdef DEBUG_FouMoModule
                 cout << "Current variable to be eliminated: " << *iter_var << endl;
                 #endif
+                // Do the eliminations that would have been made when the newly asserted subformula
+                // would have been part of the initially asserted constraints
+                auto iter_help = mDeleted_Constraints.find( *iter_var ); 
+                assert( iter_help != mDeleted_Constraints.end() );
                 auto iter_temp = temp_constr.begin();
                 FormulaOrigins derived_constr;
                 std::set<std::pair<FormulaT, bool>> to_be_deleted;
@@ -117,15 +119,15 @@ namespace smtrat
                         {
                             if( iter_poly->getSingleVariable() == *iter_var )
                             {
-                                if( ( iter_poly->coeff() > 0 && _subformula->formula().constraint().relation() == carl::Relation::LEQ ) 
-                                || ( iter_poly->coeff() < 0 &&  _subformula->formula().constraint().relation() == carl::Relation::GEQ ) )
+                                if( ( iter_poly->coeff() > 0 && iter_temp->first.constraint().relation() == carl::Relation::LEQ ) 
+                                || ( iter_poly->coeff() < 0 &&  iter_temp->first.constraint().relation() == carl::Relation::GEQ ) )
                                 {
                                     // The current considered constraint that iter_temp points to acts acts as an upper bound
                                     // regarding the currently considered variable
-                                    auto iter_lower = iter_help.second.begin();
+                                    auto iter_lower = iter_help->second.second.begin();
                                     // Combine the current considered constraint with all lower bound constraints
                                     // regarding the currently considered variable
-                                    while( iter_lower != iter_help.second.end() )
+                                    while( iter_lower != iter_help->second.second.end() )
                                     {
                                         FormulaT new_formula = combine_upper_lower( iter_temp->first.pConstraint(), iter_lower->first.pConstraint(), *iter_var );                                                                                                                       
                                         #ifdef DEBUG_FouMoModule
@@ -158,8 +160,8 @@ namespace smtrat
                                 {
                                     // The current considered constraint that iter_temp points to acts acts as a lower bound.
                                     // Do everything analogously compared to the contrary case.
-                                    auto iter_upper = iter_help.first.begin(); 
-                                    while( iter_upper != iter_help.first.end() )
+                                    auto iter_upper = iter_help->second.first.begin(); 
+                                    while( iter_upper != iter_help->second.first.end() )
                                     {
                                         FormulaT new_formula = combine_upper_lower( iter_temp->first.pConstraint(), iter_upper->first.pConstraint(), *iter_var );                                                                                                                       
                                         #ifdef DEBUG_FouMoModule
@@ -255,7 +257,7 @@ namespace smtrat
                 }
                 ++iter_formula;
             }
-            // Do the same for the datastructure of the deleted constraints 
+            // Do the same for the data structure of the deleted constraints 
             auto iter_var = mDeleted_Constraints.begin();
             while( iter_var != mDeleted_Constraints.end() )
             {
@@ -346,18 +348,7 @@ namespace smtrat
                 #ifdef DEBUG_FouMoModule
                 cout << "Run Backends!" << endl;
                 #endif
-                auto iter_recv = rReceivedFormula().begin();
-                while( iter_recv != rReceivedFormula().end() )
-                {
-                    addReceivedSubformulaToPassedFormula( iter_recv );
-                    ++iter_recv;
-                }
-                Answer ans = runBackends();
-                if( ans == False )
-                {
-                    getInfeasibleSubsets();
-                }
-                return ans;
+                return callBackends();
             }
             // Choose the variable to eliminate based on the information provided by var_corr_constr
             carl::Variable best_var = var_corr_constr.begin()->first;
@@ -379,7 +370,6 @@ namespace smtrat
             #ifdef DEBUG_FouMoModule
             cout << "The 'best' variable is:" << best_var << endl;
             #endif
-            mElim_Order.push_back( best_var );
             // Apply one step of the Fourier-Motzkin algorithm by eliminating best_var
             auto iter_help = var_corr_constr.find( best_var );
             assert( iter_help != var_corr_constr.end() );
@@ -391,6 +381,7 @@ namespace smtrat
                 {
                     vector<std::set<FormulaT>> origins_new = merge( iter_upper->second, iter_lower->second );
                     #ifdef Integer_Mode
+                    /*
                     // TO-DO think about this condition
                     if( var_corr_constr.size() == 1 )
                     {
@@ -408,6 +399,7 @@ namespace smtrat
                             return foundAnswer( False );
                         }
                     }
+                    */
                     #endif
                     FormulaT new_formula = combine_upper_lower( iter_upper->first.pConstraint(), iter_lower->first.pConstraint(), best_var );
                     #ifdef DEBUG_FouMoModule
@@ -434,26 +426,7 @@ namespace smtrat
                 }
                 ++iter_upper;
             }
-            #ifdef Integer_Mode
-            if( var_corr_constr.size() == 1 )
-            {
-                #ifdef DEBUG_FouMoModule
-                cout << "Run Backends!" << endl;
-                #endif
-                auto iter_recv = rReceivedFormula().begin();
-                while( iter_recv != rReceivedFormula().end() )
-                {
-                    addReceivedSubformulaToPassedFormula( iter_recv );
-                    ++iter_recv;
-                }
-                Answer ans = runBackends();
-                if( ans == False )
-                {
-                    getInfeasibleSubsets();
-                }
-                return ans;
-            }
-            #endif
+            mElim_Order.push_back( best_var );
             // Add the constraints that were used for the elimination to the data structure for 
             // the deleted constraints and delete them from the vector of processed constraints.
             mDeleted_Constraints.insert( std::make_pair( best_var, std::pair<std::vector<SingleFormulaOrigins>,std::vector<SingleFormulaOrigins>>() ) );
@@ -479,6 +452,15 @@ namespace smtrat
                 mProc_Constraints.erase( iter_delete );
                 ++iter_lower;
             }
+            #ifdef Integer_Mode
+            if( var_corr_constr.size() == 1 )
+            {
+                #ifdef DEBUG_FouMoModule
+                cout << "Run Backends!" << endl;
+                #endif
+                return callBackends();
+            }
+            #endif
         }    
     }
     
@@ -538,6 +520,7 @@ namespace smtrat
             }
             ++iter_constr;
         }
+        #ifdef Allow_Deletion
         // Remove those variables that do not have each at least on upper and 
         // one lower bound
         auto iter_var = var_corr_constr.begin();
@@ -549,6 +532,7 @@ namespace smtrat
             }
             ++iter_var;
         }
+        #endif
     }
     
     template<class Settings>
@@ -589,15 +573,13 @@ namespace smtrat
         {
             if( lower_constr->relation() == carl::Relation::GEQ )  
             {
-                upper_poly *= -1;
-                lower_poly *= -1;
-                combined_formula = FormulaT ( carl::newConstraint( coeff_upper*lower_poly - coeff_lower*upper_poly, carl::Relation::LEQ ) );                
+                lower_poly *= -1;       
+                combined_formula = FormulaT ( carl::newConstraint( (Rational)-1*coeff_upper*lower_poly - coeff_lower*upper_poly, carl::Relation::LEQ ) );                
             }
             else
             {
                 assert( lower_constr->relation() == carl::Relation::LEQ );
-                upper_poly *= -1;
-                combined_formula = FormulaT( carl::newConstraint( coeff_upper*lower_poly - coeff_lower*upper_poly, carl::Relation::LEQ ) );
+                combined_formula = FormulaT( carl::newConstraint( (Rational)-1*coeff_upper*lower_poly - (Rational)-1*coeff_lower*upper_poly, carl::Relation::LEQ ) );
             }
         }
         else
@@ -606,14 +588,33 @@ namespace smtrat
             if( lower_constr->relation() == carl::Relation::GEQ )  
             {
                 lower_poly *= -1;
+                upper_poly *= -1;
                 combined_formula = FormulaT( carl::newConstraint( coeff_upper*lower_poly - coeff_lower*upper_poly, carl::Relation::LEQ ) );                
             }
             else
             {
                 assert( lower_constr->relation() == carl::Relation::LEQ );
-                combined_formula = FormulaT( carl::newConstraint( coeff_upper*lower_poly - coeff_lower*upper_poly, carl::Relation::LEQ ) );
+                upper_poly *= -1;
+                combined_formula = FormulaT( carl::newConstraint( coeff_upper*lower_poly - (Rational)-1*coeff_lower*upper_poly, carl::Relation::LEQ ) );
             }
         }
         return combined_formula;        
+    }
+    
+    template<class Settings>
+    Answer FouMoModule<Settings>::callBackends()
+    {
+        auto iter_recv = rReceivedFormula().begin();
+        while( iter_recv != rReceivedFormula().end() )
+        {
+            addReceivedSubformulaToPassedFormula( iter_recv );
+            ++iter_recv;
+        }
+        Answer ans = runBackends();
+        if( ans == False )
+        {
+            getInfeasibleSubsets();
+        }
+        return ans;        
     }
 }
