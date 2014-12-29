@@ -163,7 +163,7 @@ namespace smtrat
                                     auto iter_upper = iter_help->second.first.begin(); 
                                     while( iter_upper != iter_help->second.first.end() )
                                     {
-                                        FormulaT new_formula = combine_upper_lower( iter_temp->first.pConstraint(), iter_upper->first.pConstraint(), *iter_var );                                                                                                                       
+                                        FormulaT new_formula = combine_upper_lower( iter_upper->first.pConstraint(), iter_temp->first.pConstraint(), *iter_var );                                                                                                                       
                                         #ifdef DEBUG_FouMoModule
                                         cout << "Combine 'upper' constraint: " << iter_upper->first.constraint() << endl;
                                         cout << "with 'lower' constraint: " << iter_temp->first.constraint() << endl;
@@ -295,7 +295,7 @@ namespace smtrat
                     }
                     if( iter_lower->second.empty() )
                     {
-                        iter_var->second.second.erase( iter_upper );
+                        iter_var->second.second.erase( iter_lower );
                     }
                     ++iter_lower;
                 }
@@ -520,7 +520,7 @@ namespace smtrat
             }
             ++iter_constr;
         }
-        #ifdef Allow_Deletion
+        #ifndef Allow_Deletion
         // Remove those variables that do not have each at least on upper and 
         // one lower bound
         auto iter_var = var_corr_constr.begin();
@@ -594,8 +594,8 @@ namespace smtrat
             else
             {
                 assert( lower_constr->relation() == carl::Relation::LEQ );
-                upper_poly *= -1;
-                combined_formula = FormulaT( carl::newConstraint( coeff_upper*lower_poly - (Rational)-1*coeff_lower*upper_poly, carl::Relation::LEQ ) );
+                //upper_poly *= -1;  
+                combined_formula = FormulaT( carl::newConstraint( coeff_upper*lower_poly + (Rational)-1*coeff_lower*upper_poly, carl::Relation::LEQ ) );
             }
         }
         return combined_formula;        
