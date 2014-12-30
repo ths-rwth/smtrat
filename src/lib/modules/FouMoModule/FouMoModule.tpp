@@ -82,7 +82,7 @@ namespace smtrat
             #endif
             std::set<FormulaT> infSubSet;
             infSubSet.insert( _subformula->formula() );
-            mInfeasibleSubsets.push_back( infSubSet );
+            mInfeasibleSubsets.push_back( std::move( infSubSet ) );
             return false;            
         }
         if( _subformula->formula().constraint().relation() == carl::Relation::LEQ || _subformula->formula().constraint().relation() == carl::Relation::GEQ )
@@ -95,9 +95,9 @@ namespace smtrat
             vector<std::set<FormulaT>> origins;
             std::set<FormulaT> origin;
             origin.insert( _subformula->formula() );
-            origins.push_back( origin );
+            origins.push_back( std::move( origin ) );
             FormulaOrigins temp_constr;
-            temp_constr.insert( std::make_pair( _subformula->formula(), origins ) );
+            temp_constr.insert( std::move( std::make_pair( _subformula->formula(), origins ) ) );
             while( iter_var != mElim_Order.end() )
             {
                 #ifdef DEBUG_FouMoModule
@@ -129,14 +129,14 @@ namespace smtrat
                                     // regarding the currently considered variable
                                     while( iter_lower != iter_help->second.second.end() )
                                     {
-                                        FormulaT new_formula = combine_upper_lower( iter_temp->first.pConstraint(), iter_lower->first.pConstraint(), *iter_var );                                                                                                                       
+                                        FormulaT new_formula = std::move( combine_upper_lower( iter_temp->first.pConstraint(), iter_lower->first.pConstraint(), *iter_var ) );                                                                                                                       
                                         #ifdef DEBUG_FouMoModule
                                         cout << "Combine 'upper' constraint: " << iter_temp->first.constraint() << endl;
                                         cout << "with 'lower' constraint: " << iter_lower->first.constraint() << endl;
                                         cout << "and obtain: " << new_formula.constraint() << endl;
                                         #endif
-                                        to_be_deleted.insert( std::make_pair( iter_temp->first, true) );
-                                        vector<std::set<FormulaT>> origins_new = merge( iter_temp->second, iter_lower->second );
+                                        to_be_deleted.insert( std::move( std::make_pair( iter_temp->first, true) ) );
+                                        vector<std::set<FormulaT>> origins_new = std::move( merge( iter_temp->second, iter_lower->second ) );
                                         if( new_formula.isFalse() )
                                         {
                                             #ifdef DEBUG_FouMoModule
@@ -145,12 +145,12 @@ namespace smtrat
                                             size_t i = determine_smallest_origin( origins_new );
                                             std::set<FormulaT> infSubSet;
                                             infSubSet = origins_new.at(i);
-                                            mInfeasibleSubsets.push_back( infSubSet );
+                                            mInfeasibleSubsets.push_back( std::move( infSubSet ) );
                                             return false;
                                         }
                                         else
                                         {
-                                            derived_constr.insert( std::make_pair( new_formula, origins_new ) );
+                                            derived_constr.insert( std::move( std::make_pair( new_formula, origins_new ) ) );
                                         }
                                         ++iter_lower;
                                     }
@@ -163,14 +163,14 @@ namespace smtrat
                                     auto iter_upper = iter_help->second.first.begin(); 
                                     while( iter_upper != iter_help->second.first.end() )
                                     {
-                                        FormulaT new_formula = combine_upper_lower( iter_upper->first.pConstraint(), iter_temp->first.pConstraint(), *iter_var );                                                                                                                       
+                                        FormulaT new_formula = std::move( combine_upper_lower( iter_upper->first.pConstraint(), iter_temp->first.pConstraint(), *iter_var ) );                                                                                                                       
                                         #ifdef DEBUG_FouMoModule
                                         cout << "Combine 'upper' constraint: " << iter_upper->first.constraint() << endl;
                                         cout << "with 'lower' constraint: " << iter_temp->first.constraint() << endl;
                                         cout << "and obtain: " << new_formula.constraint() << endl;
                                         #endif
-                                        to_be_deleted.insert( std::make_pair( iter_temp->first, false) );
-                                        vector<std::set<FormulaT>> origins_new = merge( iter_temp->second, iter_upper->second );
+                                        to_be_deleted.insert( std::move( std::make_pair( iter_temp->first, false) ) );
+                                        vector<std::set<FormulaT>> origins_new = std::move( merge( iter_temp->second, iter_upper->second ) );
                                         if( new_formula.isFalse() )
                                         {
                                             #ifdef DEBUG_FouMoModule
@@ -179,12 +179,12 @@ namespace smtrat
                                             size_t i = determine_smallest_origin( origins_new );
                                             std::set<FormulaT> infSubSet;
                                             infSubSet = origins_new.at(i);
-                                            mInfeasibleSubsets.push_back( infSubSet );
+                                            mInfeasibleSubsets.push_back( std::move( infSubSet ) );
                                             return false;
                                         }
                                         else
                                         {
-                                            temp_constr.insert( std::make_pair( new_formula, origins_new ) );
+                                            temp_constr.insert( std::move( std::make_pair( new_formula, origins_new ) ) );
                                         }
                                         ++iter_upper;
                                     }    
@@ -206,13 +206,13 @@ namespace smtrat
                     {
                         auto iter_origins = temp_constr.find( iter_deleted->first );
                         assert( iter_origins != temp_constr.end() );
-                        iter_help->second.first.push_back( std::make_pair( iter_deleted->first, iter_origins->second ) );
+                        iter_help->second.first.push_back( std::move( std::make_pair( iter_deleted->first, iter_origins->second ) ) );
                     }
                     else
                     {
                         auto iter_origins = temp_constr.find( iter_deleted->first );
                         assert( iter_origins != temp_constr.end() );
-                        iter_help->second.second.push_back( std::make_pair( iter_deleted->first, iter_origins->second ) );                        
+                        iter_help->second.second.push_back( std::move( std::make_pair( iter_deleted->first, iter_origins->second ) ) );                        
                     }
                     temp_constr.erase( iter_deleted->first );
                     ++iter_deleted;
@@ -379,7 +379,7 @@ namespace smtrat
             {
                 while( iter_lower != iter_help->second.second.end() )
                 {
-                    vector<std::set<FormulaT>> origins_new = merge( iter_upper->second, iter_lower->second );
+                    vector<std::set<FormulaT>> origins_new = std::move( merge( iter_upper->second, iter_lower->second ) );
                     #ifdef Integer_Mode
                     /*
                     // TO-DO think about this condition
@@ -401,7 +401,7 @@ namespace smtrat
                     }
                     */
                     #endif
-                    FormulaT new_formula = combine_upper_lower( iter_upper->first.pConstraint(), iter_lower->first.pConstraint(), best_var );
+                    FormulaT new_formula = std::move( combine_upper_lower( iter_upper->first.pConstraint(), iter_lower->first.pConstraint(), best_var ) );
                     #ifdef DEBUG_FouMoModule
                     cout << "Combine 'upper' constraint: " << iter_upper->first.constraint() << endl;
                     cout << "with 'lower' constraint: " << iter_lower->first.constraint() << endl;
@@ -415,12 +415,12 @@ namespace smtrat
                         size_t i = determine_smallest_origin( origins_new );
                         std::set<FormulaT> infSubSet;
                         infSubSet = origins_new.at(i);
-                        mInfeasibleSubsets.push_back( infSubSet );
+                        mInfeasibleSubsets.push_back( std::move( infSubSet ) );
                         return foundAnswer( False );
                     }
                     else
                     {
-                        mProc_Constraints.insert( std::make_pair( new_formula, origins_new ) );
+                        mProc_Constraints.insert( std::move( std::make_pair( new_formula, origins_new ) ) );
                     }
                     ++iter_lower;
                 }
@@ -429,7 +429,7 @@ namespace smtrat
             mElim_Order.push_back( best_var );
             // Add the constraints that were used for the elimination to the data structure for 
             // the deleted constraints and delete them from the vector of processed constraints.
-            mDeleted_Constraints.insert( std::make_pair( best_var, std::pair<std::vector<SingleFormulaOrigins>,std::vector<SingleFormulaOrigins>>() ) );
+            mDeleted_Constraints.insert( std::move( std::make_pair( best_var, std::pair<std::vector<SingleFormulaOrigins>,std::vector<SingleFormulaOrigins>>() ) ) );
             iter_upper = iter_help->second.first.begin();
             while( iter_upper != iter_help->second.first.end() )
             {
@@ -489,16 +489,16 @@ namespace smtrat
                             SingleFormulaOrigins upper_help;
                             upper_help.first = iter_constr->first;
                             upper_help.second = iter_constr->second;
-                            upper.push_back( upper_help );
+                            upper.push_back( std::move( upper_help ) );
                         }
                         else
                         {
                             SingleFormulaOrigins lower_help;
                             lower_help.first = iter_constr->first;
                             lower_help.second = iter_constr->second;
-                            lower.push_back( lower_help );
+                            lower.push_back( std::move( lower_help ) );
                         }
-                        var_corr_constr.insert( std::make_pair( var_help, std::make_pair( upper, lower ) ) );                        
+                        var_corr_constr.insert( std::move( std::make_pair( var_help, std::move( std::make_pair( upper, lower ) ) ) ) );                        
                     }
                     else
                     {
@@ -508,11 +508,11 @@ namespace smtrat
                         if( ( iter_poly->coeff() > 0 && iter_constr->first.pConstraint()->relation() == carl::Relation::LEQ ) 
                             || ( iter_poly->coeff() < 0 &&  iter_constr->first.pConstraint()->relation() == carl::Relation::GEQ ) )
                         {
-                            iter_help->second.first.push_back( help );
+                            iter_help->second.first.push_back( std::move( help ) );
                         }
                         else
                         {
-                            iter_help->second.second.push_back( help );
+                            iter_help->second.second.push_back( std::move( help ) );
                         }                        
                     }
                 }
