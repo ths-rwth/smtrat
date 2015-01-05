@@ -43,7 +43,7 @@ namespace parser {
 		if (_condition == FormulaT(carl::FormulaType::FALSE)) return _else;
 		if (_condition == FormulaT(carl::FormulaType::TRUE)) return _then;
 
-		carl::Variable auxVar = (state->mLogic == Logic::QF_LIA || state->mLogic == Logic::QF_NIA) ? carl::newAuxiliaryIntVariable() : carl::newAuxiliaryRealVariable();
+		carl::Variable auxVar = (state->mLogic == Logic::QF_LIA || state->mLogic == Logic::QF_NIA) ? carl::freshIntegerVariable() : carl::freshRealVariable();
 
 		state->mTheoryItes[auxVar] = std::make_tuple(_condition, _then, _else);
 		return Poly(auxVar);

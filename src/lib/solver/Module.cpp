@@ -899,16 +899,15 @@ namespace smtrat
                 #endif
                 smtlibFile << "(set-info :smt-lib-version 2.0)\n";
                 // Add all real-valued variables.
-                Variables allVariables = variablePool().arithmeticVariables();
-                for( auto var = allVariables.begin(); var != allVariables.end(); ++var )
-                {
-                    if( !(_manager.logic() == Logic::QF_NIA || _manager.logic() == Logic::QF_LIA) || var->getType() == carl::VariableType::VT_INT)
-                        smtlibFile << "(declare-fun " << *var << " () " << var->getType() << ")\n";
-                }
-                // Add all Boolean variables.
-                Variables allBooleans = variablePool().booleanVariables();
-                for( auto var = allBooleans.begin(); var != allBooleans.end(); ++var )
-                    smtlibFile << "(declare-fun " << *var << " () Bool)\n";
+				for (std::size_t varID = 1; varID <= carl::VariablePool::getInstance().nrVariables(carl::VariableType::VT_BOOL); varID++) {
+					smtlibFile << "(declare-fun " << carl::Variable(varID, carl::VariableType::VT_BOOL) << " () " << carl::VariableType::VT_BOOL << ")\n";
+				}
+				for (std::size_t varID = 1; varID <= carl::VariablePool::getInstance().nrVariables(carl::VariableType::VT_REAL); varID++) {
+					smtlibFile << "(declare-fun " << carl::Variable(varID, carl::VariableType::VT_REAL) << " () " << carl::VariableType::VT_REAL << ")\n";
+				}
+				for (std::size_t varID = 1; varID <= carl::VariablePool::getInstance().nrVariables(carl::VariableType::VT_INT); varID++) {
+					smtlibFile << "(declare-fun " << carl::Variable(varID, carl::VariableType::VT_INT) << " () " << carl::VariableType::VT_INT << ")\n";
+				}
                 #ifndef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
                 // Add module name variables.
                 for( auto invMod = Module::mVariablesInAssumptionToCheck.begin(); invMod != Module::mVariablesInAssumptionToCheck.end(); ++invMod )
@@ -960,9 +959,9 @@ namespace smtrat
                 smtlibFile << "(set-option :interactive-mode true)\n";
                 smtlibFile << "(set-info :smt-lib-version 2.0)\n";
                 // Add all real-valued variables.
-                Variables allVars = variablePool().arithmeticVariables();
-                for( auto var = allVars.begin(); var != allVars.end(); ++var )
-                    smtlibFile << "(declare-fun " << *var << " () Real)\n";
+				for (std::size_t varID = 1; varID <= carl::VariablePool::getInstance().nrVariables(carl::VariableType::VT_REAL); varID++) {
+					smtlibFile << "(declare-fun " << carl::Variable(varID, carl::VariableType::VT_REAL) << " () " << carl::VariableType::VT_REAL << ")\n";
+				}
                 string assumption = "";
                 assumption += "(set-info :status sat)\n";
                 assumption += "(assert (and ";

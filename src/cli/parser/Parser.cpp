@@ -101,13 +101,13 @@ void SMTLIBParser::declareConst(const std::string& name, const carl::Sort& sort)
 	switch (TypeOfTerm::get(sort)) {
 	case ExpressionType::BOOLEAN: {
 		if (state->var_bool.sym.find(name) != nullptr) SMTRAT_LOG_WARN("smtrat.parser", "A boolean variable with name '" << name << "' has already been defined.");
-		carl::Variable var = carl::newBooleanVariable(name, true);
+		carl::Variable var = carl::freshBooleanVariable(name);
 		state->var_bool.sym.add(name, var);
 		break;
 	}
 	case ExpressionType::THEORY: {
 		if (state->var_theory.sym.find(name) != nullptr) SMTRAT_LOG_WARN("smtrat.parser", "A theory variable with name '" << name << "' has already been defined.");
-		carl::Variable var = carl::newArithmeticVariable(name, carl::SortManager::getInstance().interpretedType(sort), true);
+		carl::Variable var = carl::freshVariable(name, carl::SortManager::getInstance().interpretedType(sort));
 		state->var_theory.sym.add(name, var);
 		break;
 	}
@@ -126,7 +126,7 @@ void SMTLIBParser::declareFun(const std::string& name, const std::vector<carl::S
 	switch (TypeOfTerm::get(sort)) {
 	case ExpressionType::BOOLEAN: {
 		if (args.size() == 0) {
-			carl::Variable var = carl::newBooleanVariable(name, true);
+			carl::Variable var = carl::freshBooleanVariable(name);
 			state->var_bool.sym.add(name, var);
 			callHandler(&InstructionHandler::declareFun, var);
 		} else {
@@ -136,7 +136,7 @@ void SMTLIBParser::declareFun(const std::string& name, const std::vector<carl::S
 	}
 	case ExpressionType::THEORY: {
 		if (args.size() == 0) {
-			carl::Variable var = carl::newArithmeticVariable(name, carl::SortManager::getInstance().interpretedType(sort), true);
+			carl::Variable var = carl::freshVariable(name, carl::SortManager::getInstance().interpretedType(sort));
 			state->var_theory.sym.add(name, var);
 			callHandler(&InstructionHandler::declareFun, var);
 		} else {
@@ -146,7 +146,7 @@ void SMTLIBParser::declareFun(const std::string& name, const std::vector<carl::S
 	}
 	case ExpressionType::UNINTERPRETED: {
 		if (args.size() == 0) {
-			carl::Variable var = carl::newVariable(name, carl::VariableType::VT_UNINTERPRETED);
+			carl::Variable var = carl::freshVariable(name, carl::VariableType::VT_UNINTERPRETED);
 			auto v = carl::UVariable(var, sort);
 			state->var_uninterpreted.sym.add(name, v);
 			callHandler(&InstructionHandler::declareFun, var);

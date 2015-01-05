@@ -46,7 +46,7 @@ namespace smtrat
         mNonlinearConstraints(),
         mActiveResolvedNEQConstraints(),
         mActiveUnresolvedNEQConstraints(),
-        mDelta( carl::newAuxiliaryRealVariable( "delta_" + to_string( id() ) ) ),
+        mDelta( carl::freshRealVariable( "delta_" + to_string( id() ) ) ),
         mBoundCandidatesToPass()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
