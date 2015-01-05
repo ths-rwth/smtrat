@@ -29,8 +29,10 @@
 #include "FouMoModule.h"
 
 #define DEBUG_FouMoModule
-#define Integer_Mode
+
 #define Allow_Deletion
+#define Integer_Mode
+#define Threshold 20
 
 namespace smtrat
 {
@@ -355,6 +357,13 @@ namespace smtrat
             Rational corr_coeff;
             // Store how the amount of constraints will change after the elimination
             Rational delta_constr = var_corr_constr.begin()->second.first.size()*(var_corr_constr.begin()->second.second.size()-1)-var_corr_constr.begin()->second.second.size();
+            if( delta_constr > Threshold )
+            {
+                #ifdef DEBUG_FouMoModule
+                cout << "Run Backends because Threshold is exceeded!" << endl;
+                #endif
+                return callBackends();                
+            }
             auto iter_var = var_corr_constr.begin();
             ++iter_var;
             while( iter_var != var_corr_constr.end() )
