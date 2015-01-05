@@ -88,7 +88,7 @@ namespace smtrat
             origin.insert( _subformula->formula() );
             origins.push_back( origin );
             const smtrat::ConstraintT* constr = _subformula->formula().pConstraint();
-            Poly new_poly(constr->lhs());
+            Poly new_poly( constr->lhs() );
             auto iter_subs = mSubstitutions.begin();
             while( iter_subs != mSubstitutions.end() )
             {
@@ -223,7 +223,7 @@ namespace smtrat
                 size_t i = determine_smallest_origin( mProc_Constraints.begin()->second );
                 std::set<FormulaT> infSubSet;
                 infSubSet = mProc_Constraints.begin()->second.at(i);
-                mInfeasibleSubsets.push_back( infSubSet );
+                mInfeasibleSubsets.push_back( std::move( infSubSet ) );
                 return foundAnswer( False );
             }
             #ifdef DEBUG_IntEqModule
@@ -377,7 +377,7 @@ namespace smtrat
                 }
                 */
                 #endif
-                vector<std::set<FormulaT>> origins_new = merge( origins, constr_iter->second );
+                vector<std::set<FormulaT>> origins_new = std::move( merge( origins, constr_iter->second ) );
                 FormulaOrigins::iterator iter = mProc_Constraints.find( newEq );
                 if( iter != mProc_Constraints.end() )
                 {
@@ -396,7 +396,7 @@ namespace smtrat
                     size_t i = determine_smallest_origin( origins_new );
                     std::set<FormulaT> infSubSet;
                     infSubSet = origins_new.at(i);
-                    mInfeasibleSubsets.push_back( infSubSet );
+                    mInfeasibleSubsets.push_back( std::move( infSubSet ) );
                     return foundAnswer( False );
                 }
                 ++constr_iter;
@@ -438,7 +438,7 @@ namespace smtrat
                 vector<std::set<FormulaT>> origins;
                 std::set<FormulaT> origin;
                 origin.insert( (*iter_formula).formula() );
-                origins.push_back( origin );
+                origins.push_back( std::move( origin ) );
                 auto iter_var = mSubstitutions.begin();
                 while( iter_var != mSubstitutions.end() )
                 {
@@ -451,7 +451,7 @@ namespace smtrat
                             {
                                 auto iter_help = mVariables.find( (*iter_var).first );
                                 assert( iter_help != mVariables.end() );
-                                origins = merge( origins, iter_help->second  );
+                                origins = std::move( merge( origins, iter_help->second  ) );
                                 break;
                             }
                         }    
