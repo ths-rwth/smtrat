@@ -62,17 +62,17 @@ carl::UFInstance ParserState::applyUninterpretedFunction(const carl::Uninterpret
 	std::vector<carl::UVariable> vars;
 	for (auto v: args) {
 		if (FormulaT* f = boost::get<FormulaT>(&v)) {
-			carl::Variable tmp = carl::newAuxiliaryBooleanVariable();
+			carl::Variable tmp = carl::freshBooleanVariable();
 			vars.push_back(carl::UVariable(tmp));
 			mUninterpretedEqualities.insert(FormulaT(carl::FormulaType::AND, FormulaT(tmp), *f));
 		} else if (Poly* p = boost::get<Poly>(&v)) {
-			carl::Variable tmp = carl::newAuxiliaryRealVariable();
+			carl::Variable tmp = carl::freshRealVariable();
 			vars.push_back(carl::UVariable(tmp));
 			mUninterpretedEqualities.insert(FormulaT(*p - tmp, carl::Relation::EQ));
 		} else if (carl::UVariable* uv = boost::get<carl::UVariable>(&v)) {
 			vars.push_back(*uv);
 		} else if (carl::UFInstance* uf = boost::get<carl::UFInstance>(&v)) {
-			carl::Variable tmp = carl::newAuxiliaryUninterpretedVariable();
+			carl::Variable tmp = carl::freshUninterpretedVariable();
 			vars.push_back(carl::UVariable(tmp, uf->uninterpretedFunction().codomain()));
 			mUninterpretedEqualities.insert(FormulaT(std::move(carl::UEquality(vars.back(), *uf, false))));
 		}
@@ -80,14 +80,14 @@ carl::UFInstance ParserState::applyUninterpretedFunction(const carl::Uninterpret
 	return carl::newUFInstance(f, vars);
 }
 FormulaT ParserState::applyUninterpretedBooleanFunction(const carl::UninterpretedFunction& f, const Arguments& args) {
-	carl::Variable v = carl::newAuxiliaryBooleanVariable();
+	carl::Variable v = carl::freshBooleanVariable();
 	mUninterpretedEqualities.insert(FormulaT(std::move(carl::UEquality(carl::UVariable(v), applyUninterpretedFunction(f, args), false))));
 	return FormulaT(v);
 }
 Poly ParserState::applyUninterpretedTheoryFunction(const carl::UninterpretedFunction& f, const Arguments& args) {
 	assert(carl::SortManager::getInstance().isInterpreted(f.codomain()));
 
-	carl::Variable v = carl::newAuxiliaryVariable(carl::SortManager::getInstance().interpretedType(f.codomain()));
+	carl::Variable v = carl::freshVariable(carl::SortManager::getInstance().interpretedType(f.codomain()));
 	mUninterpretedEqualities.insert(FormulaT(std::move(carl::UEquality(carl::UVariable(v), applyUninterpretedFunction(f, args), false))));
 	return Poly(v);
 }
@@ -138,13 +138,13 @@ carl::Variable ParserState::addQuantifiedVariable(const std::string& _name, cons
 	if (type.is_initialized()) {
 		switch (TypeOfTerm::get(type.get())) {
 			case ExpressionType::BOOLEAN: {
-				carl::Variable v = carl::newBooleanVariable(name);
+				carl::Variable v = carl::freshBooleanVariable(name);
 				var_bool.sym.remove(_name);
 				var_bool.sym.add(_name, v);
 				return v;
 			}
 			case ExpressionType::THEORY: {
-				carl::Variable v = carl::newArithmeticVariable(name, type.get());
+				carl::Variable v = carl::freshVariable(name, type.get());
 				var_theory.sym.remove(_name);
 				var_theory.sym.add(_name, v);
 				return v;
@@ -156,12 +156,12 @@ carl::Variable ParserState::addQuantifiedVariable(const std::string& _name, cons
 			}
 		}
 	} else if (var_bool.sym.find(_name) != nullptr) {
-		carl::Variable v = carl::newBooleanVariable(name);
+		carl::Variable v = carl::freshBooleanVariable(name);
 		var_bool.sym.remove(_name);
 		var_bool.sym.add(_name, v);
 		return v;
 	} else if (var_theory.sym.find(_name) != nullptr) {
-		carl::Variable v = carl::newArithmeticVariable(name, var_theory.sym.at(_name).getType());
+		carl::Variable v = carl::freshVariable(name, var_theory.sym.at(_name).getType());
 		var_theory.sym.remove(_name);
 		var_theory.sym.add(_name, v);
 		return v;
