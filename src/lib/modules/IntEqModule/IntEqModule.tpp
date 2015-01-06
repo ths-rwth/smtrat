@@ -334,7 +334,7 @@ namespace smtrat
                     }
                     ++iter_coeff;
                 }
-                carl::Variable fresh_var = newAuxiliaryVariable( carl::VariableType::VT_INT );  
+                carl::Variable fresh_var = carl::freshVariable( carl::VariableType::VT_INT );  
                 *temp += fresh_var;
             }
             // Substitute the reformulation of the found variable for all occurences
