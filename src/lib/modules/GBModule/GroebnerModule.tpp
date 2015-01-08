@@ -925,7 +925,7 @@ void GroebnerModule<Settings>::passGB( )
     }
 
     // We extract the current polynomials from the Groebner Basis.
-    std::vector<GBPolynomial> simplified = mBasis.getBasisPolynomials();
+    const std::vector<GBPolynomial>& simplified = mBasis.getBasisPolynomials();
     // For each polynomial in this Groebner basis, 
     for( typename std::vector<GBPolynomial>::const_iterator simplIt = simplified.begin( ); simplIt != simplified.end( ); ++simplIt )
     {
