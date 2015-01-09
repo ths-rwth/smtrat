@@ -33,7 +33,7 @@
 using namespace std;
 using namespace carl;
 
-#define ICP_MODULE_DEBUG_0
+//#define ICP_MODULE_DEBUG_0
 //#define ICP_MODULE_DEBUG_1
 #define ICP_CONSIDER_WIDTH
 //#define ICP_SIMPLE_VALIDATION
@@ -803,6 +803,7 @@ namespace smtrat
                 // only add nonlinear CCs as linear CCs should only be used once
                 if ( !candidate->isLinear() )
                 {
+					// TODO: Improve - no need to add irrelevant candidates (see below)
                     addCandidateToRelevant(candidate);
                 }
 
@@ -2425,7 +2426,7 @@ namespace smtrat
     bool ICPModule::checkBoxAgainstLinearFeasibleRegion()
     {
         std::set<FormulaT> addedBoundaries = createConstraintsFromBounds(mIntervals);
-        for( auto formulaIt = addedBoundaries.begin(); formulaIt != addedBoundaries.end(); ++formulaIt )
+        for( auto formulaIt = addedBoundaries.begin(); formulaIt != addedBoundaries.end();  )
         {
             auto res = mValidationFormula->add( *formulaIt );
             if( res.second )
@@ -2433,12 +2434,17 @@ namespace smtrat
                 assert( res.first == mValidationFormula->end() );
                 mLRA.inform( *formulaIt );
                 mLRA.assertSubformula( res.first );
+				++formulaIt;
             }
+			else
+			{
+				formulaIt = addedBoundaries.erase(formulaIt);
+			}
         }
         mValidationFormula->updateProperties();
         Answer boxCheck = mLRA.isConsistent();
         #ifdef ICP_MODULE_DEBUG_0
-        cout << "Boxcheck: " << boxCheck << endl;
+        cout << "Boxcheck: " << ANSWER_TO_STRING(boxCheck) << endl;
         #endif
         #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
         if ( boxCheck == False )
