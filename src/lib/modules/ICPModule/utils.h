@@ -16,12 +16,11 @@ namespace smtrat
     namespace icp
     {
         /**
-        * Determines, if the given expression is linear
-        * @param _constr Needed to associate linearization with constraint
-        * @param _expr Expression, which is checked
-        * @return true, if expression is linear
-        */
-        bool isLinear( const ConstraintT* _constr, const Poly& _expr, std::vector<Poly>& _tempMonomes );
+         * Obtains the non-linear monomials of the given polynomial.
+         * @param _expr The polynomial to obtain the non-linear monomials for.
+         * @return The non-linear monomials.
+         */
+        std::vector<Poly> getNonlinearMonomials( const Poly& _expr );
         
         /**
         * Creates a new constraint from an existing interval
