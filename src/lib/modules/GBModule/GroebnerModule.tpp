@@ -85,6 +85,7 @@ bool GroebnerModule<Settings>::assertSubformula( ModuleInput::const_iterator _fo
     {
         return true;
     }
+    assert(!_formula->formula().constraint().lhs().isConstant());
 
     #ifdef SMTRAT_DEVOPTION_Statistics
     const ConstraintT& constraint = _formula->formula().constraint( );
@@ -338,7 +339,6 @@ Answer GroebnerModule<Settings>::isConsistent( )
             }
         }
         assert( mInfeasibleSubsets.empty( ) );
-
 
         // When passing a gb, first remove last and then pass current gb.
         if( Settings::passGB )
@@ -939,6 +939,7 @@ void GroebnerModule<Settings>::passGB( )
         assert(!originals.front().empty());
         // We now add polynomial = 0 as a constraint to the passed formula.
         // We use the originals set calculated before as reason set.
+        assert(!simplIt->isConstant());
         auto res = addSubformulaToPassedFormula( FormulaT( smtrat::Poly(*simplIt), carl::Relation::EQ ), originals );
         if( res.second )
             mGbEqualities.insert(res.first->formula());
