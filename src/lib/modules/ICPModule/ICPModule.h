@@ -94,7 +94,7 @@ namespace smtrat
                 double                     weight;
             };
 
-            typedef FastPointerMap<Poly*, weights>                              WeightMap;
+            typedef carl::FastPointerMap<Poly*, weights>                              WeightMap;
 
         private:
 
@@ -112,11 +112,11 @@ namespace smtrat
             EvalRationalMap                                                                     mFoundSolution;
             std::set<std::pair<double, unsigned>, comp>                                         mIcpRelevantCandidates; // candidates considered for contraction 
             
-            FastMap<FormulaT,FormulaT>                                              mLinearizations; // linearized constraint -> original constraint
-            FastMap<FormulaT,FormulaT>                                              mDeLinearizations; // linearized constraint -> original constraint
-            FastMap<Poly, carl::Variable>                                                 mVariableLinearizations; // monome -> variable
+            carl::FastMap<FormulaT,FormulaT>                                              mLinearizations; // linearized constraint -> original constraint
+            carl::FastMap<FormulaT,FormulaT>                                              mDeLinearizations; // linearized constraint -> original constraint
+            carl::FastMap<Poly, carl::Variable>                                                 mVariableLinearizations; // monome -> variable
             std::map<carl::Variable, Poly>                                                mSubstitutions; // variable -> monome/variable
-            FastMap<Poly, Contractor<carl::SimpleNewton>>                                 mContractors;
+            carl::FastMap<Poly, Contractor<carl::SimpleNewton>>                                 mContractors;
             
             //#ifdef BOXMANAGEMENT
             icp::HistoryNode*                                                                   mHistoryRoot; // Root-Node of the state-tree
