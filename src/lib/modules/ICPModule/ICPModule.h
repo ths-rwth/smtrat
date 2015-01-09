@@ -94,7 +94,7 @@ namespace smtrat
                 double                     weight;
             };
 
-            typedef FastPointerMap<Poly*, weights>                                WeightMap;
+            typedef FastPointerMap<Poly*, weights>                              WeightMap;
 
         private:
 
