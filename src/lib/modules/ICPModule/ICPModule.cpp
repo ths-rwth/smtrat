@@ -716,7 +716,7 @@ namespace smtrat
             #endif
             #ifdef ICP_MODULE_DEBUG_0
             cout << "********************** [ICP] Contraction **********************" << endl;
-            cout << "Subtree size: " << mHistoryRoot->sizeSubtree() << endl;
+            //cout << "Subtree size: " << mHistoryRoot->sizeSubtree() << endl;
             mHistoryActual->print();
             #endif
             #ifdef ICP_BOXLOG
@@ -754,7 +754,6 @@ namespace smtrat
 
                 icp::ContractionCandidate* candidate = chooseContractionCandidate();
                 assert(candidate != NULL);
-                candidate->calcDerivative();
                 relativeContraction = -1;
                 absoluteContraction = 0;
                 _splitOccurred = contraction( candidate, relativeContraction, absoluteContraction );
@@ -1373,7 +1372,7 @@ namespace smtrat
         if( iter != mIcpRelevantCandidates.end() )
         {
             #ifdef ICP_MODULE_DEBUG_0
-            cout << "remove from relevant candidates due to diameter: " << (*_candidate).rhs() << endl;
+            cout << "remove from relevant candidates: " << (*_candidate).rhs() << endl;
             cout << "   id: " << (*_candidate).id() << " , Diameter: " << mIntervals[(*_candidate).derivationVar()].diameter() << endl;
             #endif
             mIcpRelevantCandidates.erase(iter);
@@ -1425,8 +1424,9 @@ namespace smtrat
             assert( cc != NULL );
             if( cc->isActive() )//&& mIntervals[mCandidateManager->getInstance()->getCandidate((*candidateIt).second)->derivationVar()].diameter() != 0 )
             {
+				cc->calcDerivative();
                 #ifdef ICP_MODULE_DEBUG_0
-                cout << "Chose Candidate: ";
+                cout << "Choose Candidate: ";
                 cc->print();
                 cout << endl;
                 #endif

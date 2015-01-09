@@ -148,7 +148,6 @@ namespace smtrat
     ModuleInput::iterator ModuleInput::erase( iterator _formula )
     {
         assert( _formula != end() );
-        assert( _formula->origins().empty() );
         #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
         mFormulaPositionMap.erase( _formula->formula() );
         #endif
