@@ -100,13 +100,17 @@ void SMTLIBParser::declareConst(const std::string& name, const carl::Sort& sort)
 	assert(state->isSymbolFree(name));
 	switch (TypeOfTerm::get(sort)) {
 	case ExpressionType::BOOLEAN: {
-		if (state->var_bool.sym.find(name) != nullptr) SMTRAT_LOG_WARN("smtrat.parser", "A boolean variable with name '" << name << "' has already been defined.");
+		if (state->var_bool.sym.find(name) != nullptr) {
+			SMTRAT_LOG_WARN("smtrat.parser", "A boolean variable with name '" << name << "' has already been defined.");
+		}
 		carl::Variable var = carl::freshBooleanVariable(name);
 		state->var_bool.sym.add(name, var);
 		break;
 	}
 	case ExpressionType::THEORY: {
-		if (state->var_theory.sym.find(name) != nullptr) SMTRAT_LOG_WARN("smtrat.parser", "A theory variable with name '" << name << "' has already been defined.");
+		if (state->var_theory.sym.find(name) != nullptr) {
+			SMTRAT_LOG_WARN("smtrat.parser", "A theory variable with name '" << name << "' has already been defined.");
+		}
 		carl::Variable var = carl::freshVariable(name, carl::SortManager::getInstance().interpretedType(sort));
 		state->var_theory.sym.add(name, var);
 		break;
