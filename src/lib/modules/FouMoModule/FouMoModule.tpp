@@ -29,8 +29,10 @@
 #include "FouMoModule.h"
 
 #define DEBUG_FouMoModule
-#define Integer_Mode
+
 #define Allow_Deletion
+#define Integer_Mode
+//#define Threshold 20
 
 namespace smtrat
 {
@@ -85,7 +87,7 @@ namespace smtrat
             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
             return false;            
         }
-        if( _subformula->formula().constraint().relation() == carl::Relation::LEQ || _subformula->formula().constraint().relation() == carl::Relation::GEQ )
+        if( _subformula->formula().constraint().relation() == carl::Relation::LEQ ) // || _subformula->formula().constraint().relation() == carl::Relation::GEQ )
         {
             // Apply the Fourier-Motzkin elimination steps for the subformula to be asserted
             #ifdef DEBUG_FouMoModule
@@ -119,8 +121,8 @@ namespace smtrat
                         {
                             if( iter_poly->getSingleVariable() == *iter_var )
                             {
-                                if( ( iter_poly->coeff() > 0 && iter_temp->first.constraint().relation() == carl::Relation::LEQ ) 
-                                || ( iter_poly->coeff() < 0 &&  iter_temp->first.constraint().relation() == carl::Relation::GEQ ) )
+                                if( ( iter_poly->coeff() > 0 && iter_temp->first.constraint().relation() == carl::Relation::LEQ ) ) 
+                                // || ( iter_poly->coeff() < 0 &&  iter_temp->first.constraint().relation() == carl::Relation::GEQ ) )
                                 {
                                     // The current considered constraint that iter_temp points to acts acts as an upper bound
                                     // regarding the currently considered variable
@@ -311,10 +313,56 @@ namespace smtrat
         mModel.clear();
         if( solverState() == True )
         {
-            // Your code.
+            VariableUpperLower constr_backtracking = mDeleted_Constraints;
+            auto iter_elim = mElim_Order.end();
+            // Iterate backwards through the variables that have been eliminated
+            while( iter_elim != mElim_Order.begin() )
+            {
+                auto iter_var = constr_backtracking.find( *(mElim_Order.end()) );
+                assert( iter_var != constr_backtracking.end() );
+                auto iter_model = mModel.begin();
+                // Insert the substitutions that have been determined in previous iterations
+                while( iter_model != mModel.end() )
+                {
+                    auto iter_constr_upper = iter_var->second.first.begin();
+                    while( iter_constr_upper != iter_var->second.first.end() )
+                    {
+                        // Move on here!
+                    }                    
+                    // Determine new substitution for this level
+                    FormulaT atomic_formula_upper = iter_var->second.first.begin()->first;
+                    FormulaT atomic_formula_lower = iter_var->second.second.begin()->first;
+                    Poly to_be_substituted_upper = atomic_formula_upper.constraint().lhs();
+                    auto iter_poly_upper = atomic_formula_upper.constraint().lhs().begin();
+                    while( iter_poly_upper != atomic_formula_upper.constraint().lhs().end() )
+                    {
+                        if( !iter_poly_upper->isConstant() )
+                        {
+                            if( iter_poly_upper->getSingleVariable() == iter_var->first )
+                            {
+                                if( iter_poly_upper->coeff() > 0 )
+                                {
+                                    to_be_substituted_upper.substitute( iter_var->first, ZERO_POLYNOMIAL );
+                                    ModelValue assignment = to_be_substituted_upper;
+                                    mModel.insert( mModel.end(), std::make_pair( iter_var->first, assignment  ) );
+                                }
+                                else
+                                {
+                                    to_be_substituted_upper.substitute( iter_var->first, ZERO_POLYNOMIAL );
+                                    to_be_substituted_upper *= -1;
+                                    ModelValue assignment = to_be_substituted_upper;
+                                    mModel.insert( mModel.end(), std::make_pair( iter_var->first, assignment  ) );                            
+                                }
+                            }
+                        }
+                    }
+                    ++iter_model;
+                }
+                --iter_elim;    
+            }
         }
     }
-
+            
     template<class Settings>
     Answer FouMoModule<Settings>::isConsistent()
     {
@@ -345,16 +393,27 @@ namespace smtrat
             #endif
             if( var_corr_constr.empty() ) 
             {
+                // Derive a (integer) solution by backtracking through the steps of Fourier-Motzkin
+                #ifndef Integer_Mode
+                updateModel();
+                #endif
                 #ifdef DEBUG_FouMoModule
                 cout << "Run Backends!" << endl;
                 #endif
-                return callBackends();
+                return call_backends();
             }
             // Choose the variable to eliminate based on the information provided by var_corr_constr
             carl::Variable best_var = var_corr_constr.begin()->first;
             Rational corr_coeff;
             // Store how the amount of constraints will change after the elimination
             Rational delta_constr = var_corr_constr.begin()->second.first.size()*(var_corr_constr.begin()->second.second.size()-1)-var_corr_constr.begin()->second.second.size();
+            if( false ) //delta_constr > Threshold )
+            {
+                #ifdef DEBUG_FouMoModule
+                cout << "Run Backends because Threshold is exceeded!" << endl;
+                #endif
+                return call_backends();                
+            }
             auto iter_var = var_corr_constr.begin();
             ++iter_var;
             while( iter_var != var_corr_constr.end() )
@@ -452,15 +511,15 @@ namespace smtrat
                 mProc_Constraints.erase( iter_delete );
                 ++iter_lower;
             }
-            #ifdef Integer_Mode
+            /*#ifdef Integer_Mode
             if( var_corr_constr.size() == 1 )
             {
                 #ifdef DEBUG_FouMoModule
                 cout << "Run Backends!" << endl;
                 #endif
-                return callBackends();
+                return call_backends();
             }
-            #endif
+            #endif*/
         }    
     }
     
@@ -483,8 +542,8 @@ namespace smtrat
                     {
                         std::vector<SingleFormulaOrigins> upper;
                         std::vector<SingleFormulaOrigins> lower;
-                        if( ( iter_poly->coeff() > 0 && iter_constr->first.pConstraint()->relation() == carl::Relation::LEQ ) 
-                            || ( iter_poly->coeff() < 0 &&  iter_constr->first.pConstraint()->relation() == carl::Relation::GEQ ) )
+                        if( ( iter_poly->coeff() > 0 && iter_constr->first.pConstraint()->relation() == carl::Relation::LEQ ) ) 
+                            // || ( iter_poly->coeff() < 0 &&  iter_constr->first.pConstraint()->relation() == carl::Relation::GEQ ) )
                         {
                             SingleFormulaOrigins upper_help;
                             upper_help.first = iter_constr->first;
@@ -505,8 +564,8 @@ namespace smtrat
                         SingleFormulaOrigins help;
                         help.first = iter_constr->first;
                         help.second = iter_constr->second;
-                        if( ( iter_poly->coeff() > 0 && iter_constr->first.pConstraint()->relation() == carl::Relation::LEQ ) 
-                            || ( iter_poly->coeff() < 0 &&  iter_constr->first.pConstraint()->relation() == carl::Relation::GEQ ) )
+                        if( ( iter_poly->coeff() > 0 && iter_constr->first.pConstraint()->relation() == carl::Relation::LEQ ) ) 
+                            //|| ( iter_poly->coeff() < 0 &&  iter_constr->first.pConstraint()->relation() == carl::Relation::GEQ ) )
                         {
                             iter_help->second.first.push_back( std::move( help ) );
                         }
@@ -569,6 +628,7 @@ namespace smtrat
         }
         Poly upper_poly = upper_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
         Poly lower_poly = lower_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
+        /*
         if( upper_constr->relation() == carl::Relation::GEQ )
         {
             if( lower_constr->relation() == carl::Relation::GEQ )  
@@ -581,9 +641,9 @@ namespace smtrat
                 assert( lower_constr->relation() == carl::Relation::LEQ );
                 combined_formula = FormulaT( carl::newConstraint( (Rational)-1*coeff_upper*lower_poly - (Rational)-1*coeff_lower*upper_poly, carl::Relation::LEQ ) );
             }
-        }
+        } 
         else
-        {
+        {        
             assert( upper_constr->relation() == carl::Relation::LEQ );
             if( lower_constr->relation() == carl::Relation::GEQ )  
             {
@@ -593,16 +653,15 @@ namespace smtrat
             }
             else
             {
-                assert( lower_constr->relation() == carl::Relation::LEQ );
-                //upper_poly *= -1;  
-                combined_formula = FormulaT( carl::newConstraint( coeff_upper*lower_poly + (Rational)-1*coeff_lower*upper_poly, carl::Relation::LEQ ) );
-            }
-        }
+        */
+        assert( lower_constr->relation() == carl::Relation::LEQ );
+        //upper_poly *= -1;  
+        combined_formula = FormulaT( carl::newConstraint( coeff_upper*lower_poly + (Rational)-1*coeff_lower*upper_poly, carl::Relation::LEQ ) );
         return combined_formula;        
     }
     
     template<class Settings>
-    Answer FouMoModule<Settings>::callBackends()
+    Answer FouMoModule<Settings>::call_backends()
     {
         auto iter_recv = rReceivedFormula().begin();
         while( iter_recv != rReceivedFormula().end() )

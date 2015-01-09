@@ -349,7 +349,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
                 assert( i->formula().getType( ) == carl::FormulaType::CONSTRAINT );
                 if( mGbEqualities.count(i->formula()) == 1 )
                 {
-                    i = super::eraseSubformulaFromPassedFormula( i );
+                    i = super::eraseSubformulaFromPassedFormula( i, true );
                 }
                 else
                 {
@@ -925,7 +925,7 @@ void GroebnerModule<Settings>::passGB( )
     }
 
     // We extract the current polynomials from the Groebner Basis.
-    std::vector<GBPolynomial> simplified = mBasis.getBasisPolynomials();
+    const std::vector<GBPolynomial>& simplified = mBasis.getBasisPolynomials();
     // For each polynomial in this Groebner basis, 
     for( typename std::vector<GBPolynomial>::const_iterator simplIt = simplified.begin( ); simplIt != simplified.end( ); ++simplIt )
     {
@@ -938,9 +938,7 @@ void GroebnerModule<Settings>::passGB( )
         // The reason set may never be empty.
         assert(!originals.front().empty());
         // We now add polynomial = 0 as a constraint to the passed formula.
-        // We use the originals set calculated before as reason set. 
-        // TODO: replace "constraintPool().variables()" by a smaller approximations
-        // of the variables contained in "simplIt->toEx( )"
+        // We use the originals set calculated before as reason set.
         auto res = addSubformulaToPassedFormula( FormulaT( smtrat::Poly(*simplIt), carl::Relation::EQ ), originals );
         if( res.second )
             mGbEqualities.insert(res.first->formula());
@@ -1018,7 +1016,7 @@ bool GroebnerModule<Settings>::validityCheck( )
 template<class Settings>
 void GroebnerModule<Settings>::removeSubformulaFromPassedFormula( ModuleInput::iterator _formula )
 {
-    super::eraseSubformulaFromPassedFormula( _formula );
+    super::eraseSubformulaFromPassedFormula( _formula, true );
 }
 
 

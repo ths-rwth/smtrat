@@ -88,7 +88,11 @@ namespace smtrat
                         if( std::get < 0 > (it->second) != mModule->rPassedFormula().end( ) )
                         {
                             // we can of course only remove something which is in the formula
-                            mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
+                            
+                            // TODO (from Florian): this should only be the temporary solution; either we store the originals in the GBModule or
+                            // we find a different solution for this in the module class itself
+                            mModule->removeOrigins( std::get < 0 > (it->second), mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() ) );
+//                            mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
                         }
                         if( Settings::passInequalities == FULL_REDUCED || (Settings::passInequalities == FULL_REDUCED_IF && pass) )
                         {
@@ -280,7 +284,11 @@ namespace smtrat
                 if( satisfied )
                 {
                     // remove the last formula
-                    mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
+                    
+                    // TODO (from Florian): this should only be the temporary solution; either we store the originals in the GBModule or
+                    // we find a different solution for this in the module class itself
+                    mModule->removeOrigins( std::get < 0 > (it->second), mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() ) ); 
+//                    mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
 
                     std::get < 2 > (it->second).push_back( CellEntry( mBtnumber, reduced ) );
                     std::set<FormulaT> originals( mModule->generateReasons( reduced.getReasons( ) ) );
@@ -332,7 +340,11 @@ namespace smtrat
                 if( Settings::passInequalities == FULL_REDUCED || (Settings::passInequalities == FULL_REDUCED_IF && pass) )
                 {
                     //remove the last one
-                    mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
+                    
+                    // TODO (from Florian): this should only be the temporary solution; either we store the originals in the GBModule or
+                    // we find a different solution for this in the module class itself
+                    mModule->removeOrigins( std::get < 0 > (it->second), mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() ) ); 
+//                    mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
                 }
                 //add a new cell
                 std::get < 2 > (it->second).push_back( CellEntry( mBtnumber, reduced ) );

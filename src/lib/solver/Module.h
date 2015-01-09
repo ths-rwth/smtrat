@@ -720,9 +720,10 @@ namespace smtrat
              * Removes everything related to the sub-formula to remove from the passed formula in the backends of this module.
              * Afterwards the sub-formula is removed from the passed formula.
              * @param _subformula The sub-formula to remove from the passed formula.
+             * @param _ignoreOrigins True, if the sub-formula shall be removed regardless of its origins (should only be applied with expertise).
              * @return 
              */
-            ModuleInput::iterator eraseSubformulaFromPassedFormula( ModuleInput::iterator _subformula );
+            ModuleInput::iterator eraseSubformulaFromPassedFormula( ModuleInput::iterator _subformula, bool _ignoreOrigins = false );
             
             /**
              * Get the infeasible subsets the given backend provides. Note, that an infeasible subset

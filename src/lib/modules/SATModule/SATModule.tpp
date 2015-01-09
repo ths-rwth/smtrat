@@ -1324,6 +1324,17 @@ SetWatches:
                     }
                 }
             }
+            if( deductionsLearned )
+            {
+                if( decisionLevel() == 0 )
+                {
+                    qhead = 0;
+                }
+                else
+                {
+                    qhead = trail_lim[decisionLevel()-1];
+                }
+            }
         }
         return confl;
     }

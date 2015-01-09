@@ -52,6 +52,7 @@ namespace smtrat
             // bound when eliminating the corresponding variable. The variables and their corresponding
             // upper/lower constraints are saved in the order given by mElim_Order
             VariableUpperLower mDeleted_Constraints;
+            // Stores an atomic formula for backtracking            
             
             /**
              * @param curr_constraints Contains the constraints for which a possibly good
@@ -68,7 +69,7 @@ namespace smtrat
              */
             FormulaT combine_upper_lower( const smtrat::ConstraintT* upper_constr, const smtrat::ConstraintT* lower_Constr, carl::Variable& corr_var );
             
-            Answer callBackends();
+            Answer call_backends();
             
         public:
             FouMoModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
