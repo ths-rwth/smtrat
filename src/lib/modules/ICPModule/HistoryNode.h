@@ -654,10 +654,12 @@ namespace smtrat
                  */
                 int sizeSubtree() const
                 {
-                    if( this->isLeaf() )
-                        return 1;
-                    else
-                        return mLeftChild->sizeSubtree() + mRightChild->sizeSubtree() + 1;
+					int size = 1;
+                    if (mLeftChild != NULL)
+                        size += mLeftChild->sizeSubtree();
+					if (mRightChild != NULL)
+						size += mRightChild->sizeSubtree();
+					return size;
                 }
                 
                 void reset()
