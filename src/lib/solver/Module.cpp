@@ -717,8 +717,12 @@ namespace smtrat
         return result;
     }
 
-    ModuleInput::iterator Module::eraseSubformulaFromPassedFormula( ModuleInput::iterator _subformula )
+    ModuleInput::iterator Module::eraseSubformulaFromPassedFormula( ModuleInput::iterator _subformula, bool _ignoreOrigins )
     {
+        if( _ignoreOrigins )
+        {
+            _subformula->rOrigins().clear();
+        }
         assert( _subformula->origins().empty() );
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         int timers = stopAllTimers();
