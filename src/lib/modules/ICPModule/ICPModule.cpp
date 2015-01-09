@@ -133,6 +133,7 @@ namespace smtrat
 
     bool ICPModule::assertSubformula( ModuleInput::const_iterator _formula )
     {
+        Module::assertSubformula( _formula );
         switch( _formula->formula().getType() )
         {
             case FormulaType::FALSE:
@@ -180,8 +181,8 @@ namespace smtrat
                 #endif
                 if( !_formula->formula().constraint().isBound() )
                 {
+                    // TODO: here or somewhere later in isConsistent: remove constraints from passed formula which are implied by the current box
                     addSubformulaToPassedFormula( _formula->formula(), _formula->formula() );
-                    Module::assertSubformula( _formula );
                 }
 
                 // activate associated nonlinear contraction candidates
@@ -201,7 +202,9 @@ namespace smtrat
                     #ifdef ICP_MODULE_DEBUG_0
                     cout << "[mLRA] Assert bound constraint: " << replacementPtr << endl;
                     #endif
-                    if( res.second && !mLRA.assertSubformula( res.first ) )
+                    // If the constraint has not yet been part of the lramodule's received formula, assert it. If the
+                    // lramodule already detects inconsistency, process its infeasible subsets.
+                    if( res.second && !mLRA.assertSubformula( res.first ) ) 
                     {
                         remapAndSetLraInfeasibleSubsets();
                         assert( !mInfeasibleSubsets.empty() );
@@ -431,7 +434,7 @@ namespace smtrat
         auto linearization = mLinearizations.find( _formula );
         if( linearization == mLinearizations.end() ) // If this constraint has not been added before
         {
-            const Poly constr = constraint.lhs();
+            const Poly& constr = constraint.lhs();
             // add original variables to substitution mapping
             for( auto var = constraint.variables().begin(); var != constraint.variables().end(); ++var )
             {
@@ -453,10 +456,11 @@ namespace smtrat
             else
             {
                 assert( mLinearizations.find( _formula ) == mLinearizations.end() );
-                vector<Poly> temporaryMonomes;
+                vector<Poly> temporaryMonomes = icp::getNonlinearMonomials( constr );
                 assert( !temporaryMonomes.empty() );
                 Poly lhs = createNonlinearCCs( _formula.pConstraint(), temporaryMonomes );
                 linearFormula = FormulaT( lhs, constraint.relation() );
+                assert( linearFormula.constraint().lhs().isLinear() );
                 #ifdef ICP_MODULE_DEBUG_0
                 cout << "linearize constraint to   " << linearFormula.constraint() << endl;
                 #endif
@@ -473,7 +477,6 @@ namespace smtrat
             #ifdef ICP_MODULE_DEBUG_0
             cout << "[mLRA] inform: " << linearizedConstraint << endl;
             #endif
-            assert( linearizedConstraint.lhs().isLinear() );
             
             if( !linearizedConstraint.isBound() )
             {
@@ -481,6 +484,7 @@ namespace smtrat
             }
             
             // set the lra variables for the icp variables regarding variables (introduced and original ones)
+            // TODO: Refactor this last part - it seems to be too complicated
             for( auto var = linearizedConstraint.variables().begin(); var != linearizedConstraint.variables().end(); ++var )
             {
                 auto iter = mVariables.find( *var );
@@ -1106,7 +1110,7 @@ namespace smtrat
         for( auto& monom : _tempMonomes )
         {
             auto iter = mVariableLinearizations.find( monom );
-            if( iter == mVariableLinearizations.end() )
+            if( iter == mVariableLinearizations.end() ) // no linearization yet
             {
                 // create mLinearzations entry
                 Variables variables;
@@ -1133,6 +1137,7 @@ namespace smtrat
                 const Poly rhs = monom - newVar;
                 for( auto varIndex = variables.begin(); varIndex != variables.end(); ++varIndex )
                 {
+                    // create a contraction candidate for each variable in the monomial
                     if( mContractors.find(rhs) == mContractors.end() )
                     {
                         mContractors.insert(std::make_pair(rhs, Contractor<carl::SimpleNewton>(rhs)));
@@ -1159,9 +1164,11 @@ namespace smtrat
                 #endif
                 auto iterB = mVariables.find( iter->second );
                 assert( iterB != mVariables.end() );
+                // insert already created CCs into the current list of CCs
                 ccs.insert( iterB->second->candidates().begin(), iterB->second->candidates().end() );
             }
         }
+        // Construct the linearization
         for( auto monomialIt = _constraint->lhs().begin(); monomialIt != _constraint->lhs().end(); ++monomialIt )
         {
             if( (monomialIt)->monomial() == NULL || (monomialIt)->monomial()->isAtMostLinear() )

@@ -12,7 +12,23 @@
 namespace smtrat
 {
     namespace icp
-    {   
+    {
+        std::vector<Poly> getNonlinearMonomials( const Poly& _expr )
+        {
+            std::vector<Poly> result;
+            for( auto termIt = _expr.begin(); termIt != _expr.end(); ++termIt )
+            {
+                if( termIt->monomial() )
+                {
+                    if( !termIt->monomial()->isLinear() )
+                    {
+                        result.emplace_back( termIt->monomial() );
+                    }
+                }
+            }
+            return result;
+        }
+    
         std::pair<const ConstraintT*, const ConstraintT*> intervalToConstraint( carl::Variable::Arg _var, const smtrat::DoubleInterval _interval )
         {
             // left:
