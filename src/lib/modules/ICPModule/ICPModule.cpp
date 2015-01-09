@@ -33,7 +33,7 @@
 using namespace std;
 using namespace carl;
 
-//#define ICP_MODULE_DEBUG_0
+#define ICP_MODULE_DEBUG_0
 //#define ICP_MODULE_DEBUG_1
 #define ICP_CONSIDER_WIDTH
 //#define ICP_SIMPLE_VALIDATION
@@ -1669,13 +1669,16 @@ namespace smtrat
                 }
                 if( takeLower && takeUpper )
                 {
-                    value = varIntervalIt->second.sample();
+					if(varIntervalIt->second.isPointInterval())
+						value = varIntervalIt->second.lower();
+					else
+						value = varIntervalIt->second.sample(false);
                 }
                 else if( takeLower )
                 {
                     if( varIntervalIt->second.lowerBoundType() == BoundType::INFTY )
                     {
-                        value = varIntervalIt->second.upperBoundType() == BoundType::WEAK ? varIntervalIt->second.upper() : -std::nextafter( varIntervalIt->second.upper(), INFINITY );
+                        value = varIntervalIt->second.upperBoundType() == BoundType::WEAK ? varIntervalIt->second.upper() : std::nextafter( varIntervalIt->second.upper(), -INFINITY );
                     }
                     else
                     {
@@ -1690,11 +1693,12 @@ namespace smtrat
                     }
                     else
                     {
-                        value = varIntervalIt->second.upperBoundType() == BoundType::WEAK ? varIntervalIt->second.upper() : -std::nextafter( varIntervalIt->second.upper(), INFINITY );
+                        value = varIntervalIt->second.upperBoundType() == BoundType::WEAK ? varIntervalIt->second.upper() : std::nextafter( varIntervalIt->second.upper(), -INFINITY );
                     }
                 }
             }
-            assert( varIntervalIt->second.contains( value ) );
+			std::cout << setprecision(100) << varIntervalIt->second << ", " << value << std::endl;
+            assert( varIntervalIt->second.contains( value ));
             assignments.insert( std::make_pair(varIt->first, value) );
             ++varIntervalIt;
         }
