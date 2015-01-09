@@ -20,6 +20,7 @@ namespace parser {
 	
 struct FormulaParser: public qi::grammar<Iterator, FormulaT(), Skipper> {
 	FormulaParser(ParserState* state);
+	friend class EqualityGenerator;
 private:
 	ParserState* state;
 

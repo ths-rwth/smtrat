@@ -133,15 +133,16 @@ FormulaT FormulaParser::mkConstraint(const Poly& lhs, const Poly& rhs, carl::Rel
 class EqualityGenerator: public boost::static_visitor<FormulaT> {
 private:
 	bool negate;
+	FormulaParser* parser;
 public:
-	EqualityGenerator(bool negate): negate(negate) {}
+	EqualityGenerator(bool negate, FormulaParser* parser): negate(negate), parser(parser) {}
 	FormulaT operator()(const FormulaT& lhs, const FormulaT& rhs) {
 		if (negate) return FormulaT(carl::FormulaType::XOR, lhs, rhs);
 		else return FormulaT(carl::FormulaType::IFF, lhs, rhs);
 	}
 	FormulaT operator()(const Poly& lhs, const Poly& rhs) {
-		if (negate) return FormulaT(newConstraint(lhs - rhs, carl::Relation::NEQ));
-		else return FormulaT(newConstraint(lhs - rhs, carl::Relation::EQ));
+		if (negate) return FormulaT(parser->mkConstraint(lhs, rhs, carl::Relation::NEQ));
+		else return FormulaT(parser->mkConstraint(lhs, rhs, carl::Relation::EQ));
 	}
 	FormulaT operator()(const carl::UVariable& lhs, const carl::UVariable& rhs) {
 		return FormulaT(lhs, rhs, negate);
@@ -164,7 +165,7 @@ public:
 
 FormulaT FormulaParser::mkEquality(const Arguments& args) {
 	std::set<FormulaT> subformulas;
-	EqualityGenerator eg(false);
+	EqualityGenerator eg(false, this);
 	for (std::size_t i = 0; i < args.size() - 1; i++) {
 		subformulas.insert(boost::apply_visitor(eg, args[i], args[i+1]));
 	}
@@ -173,7 +174,7 @@ FormulaT FormulaParser::mkEquality(const Arguments& args) {
 
 FormulaT FormulaParser::mkDistinct(const Arguments& args) {
 	std::set<FormulaT> subformulas;
-	EqualityGenerator eg(true);
+	EqualityGenerator eg(true, this);
 	for (std::size_t i = 0; i < args.size() - 1; i++) {
 		for (std::size_t j = i + 1; j < args.size(); j++) {
 			subformulas.insert(boost::apply_visitor(eg, args[i], args[j]));
