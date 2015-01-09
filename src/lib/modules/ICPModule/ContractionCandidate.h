@@ -78,6 +78,7 @@ namespace smtrat
              */
 
             ContractionCandidate( const ContractionCandidate& _original ) = delete;
+			ContractionCandidate( ) = delete;
 //            :
 //            mRhs(_original.rhs()),
 //            mConstraint(_original.constraint()),

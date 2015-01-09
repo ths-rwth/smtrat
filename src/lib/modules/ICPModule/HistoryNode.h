@@ -298,7 +298,7 @@ namespace smtrat
                     if(!_addOnlyConstraint)
                     {
                         // also add all variables contained in the constraint to stateInfeasibleVariables
-                        for( Variables::const_iterator variableIt = _constraint->variables().begin(); variableIt != _constraint->variables().end(); ++variableIt )
+                        for( auto variableIt = _constraint->variables().begin(); variableIt != _constraint->variables().end(); ++variableIt )
                         {
                             if(mVariableReasons.find(*variableIt) != mVariableReasons.end())
                             {
@@ -378,7 +378,7 @@ namespace smtrat
                     bool inserted = mReasons.at( _variable ).insert( _reason ).second;
                     if( inserted )
                     {
-                        for( Variables::const_iterator varIt = _reason->variables().begin(); varIt != _reason->variables().end(); ++varIt )
+                        for( auto varIt = _reason->variables().begin(); varIt != _reason->variables().end(); ++varIt )
                         {
                             if( mReasons.find(*varIt) == mReasons.end() )
                                 mReasons[*varIt] = std::set<const ConstraintT*>();
@@ -654,10 +654,12 @@ namespace smtrat
                  */
                 int sizeSubtree() const
                 {
-                    if( this->isLeaf() )
-                        return 1;
-                    else
-                        return mLeftChild->sizeSubtree() + mRightChild->sizeSubtree() + 1;
+					int size = 1;
+                    if (mLeftChild != NULL)
+                        size += mLeftChild->sizeSubtree();
+					if (mRightChild != NULL)
+						size += mRightChild->sizeSubtree();
+					return size;
                 }
                 
                 void reset()
