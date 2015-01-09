@@ -51,8 +51,9 @@ namespace smtrat
             // Stores the deleted constraints, just as they worked as an upper respectively lower
             // bound when eliminating the corresponding variable. The variables and their corresponding
             // upper/lower constraints are saved in the order given by mElim_Order
-            VariableUpperLower mDeleted_Constraints;
-            // Stores an atomic formula for backtracking            
+            VariableUpperLower mDeleted_Constraints;  
+            // Stores constructed assignments for the occuring variables when a solution was found
+            std::map<carl::Variable, Rational> mVarAss;
             
             /**
              * @param curr_constraints Contains the constraints for which a possibly good
@@ -68,6 +69,8 @@ namespace smtrat
              * @return             Pointer to the constraint resulting from the combination
              */
             FormulaT combine_upper_lower( const smtrat::ConstraintT* upper_constr, const smtrat::ConstraintT* lower_Constr, carl::Variable& corr_var );
+            
+            bool construct_solution();
             
             Answer call_backends();
             

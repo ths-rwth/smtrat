@@ -12,7 +12,23 @@
 namespace smtrat
 {
     namespace icp
-    {   
+    {
+        std::vector<Poly> getNonlinearMonomials( const Poly& _expr )
+        {
+            std::vector<Poly> result;
+            for( auto termIt = _expr.begin(); termIt != _expr.end(); ++termIt )
+            {
+                if( termIt->monomial() )
+                {
+                    if( !termIt->monomial()->isLinear() )
+                    {
+                        result.emplace_back( termIt->monomial() );
+                    }
+                }
+            }
+            return result;
+        }
+    
         std::pair<const ConstraintT*, const ConstraintT*> intervalToConstraint( carl::Variable::Arg _var, const smtrat::DoubleInterval _interval )
         {
             // left:
@@ -25,11 +41,11 @@ namespace smtrat
             {
                 case carl::BoundType::STRICT:
 //                    leftTmp = Formula::newBound(_var, smtrat::Relation::CR_GREATER, bound);
-                    leftTmp = newConstraint(leftEx, Relation::GREATER);
+                    leftTmp = newConstraint(leftEx, carl::Relation::GREATER);
                     break;
                 case carl::BoundType::WEAK:
 //                    leftTmp = Formula::newBound(_var, smtrat::Relation::CR_GEQ, bound);
-                    leftTmp = newConstraint(leftEx, Relation::GEQ);
+                    leftTmp = newConstraint(leftEx, carl::Relation::GEQ);
                     break;
                 default:
                     leftTmp = NULL;
@@ -43,11 +59,11 @@ namespace smtrat
             switch( _interval.upperBoundType() )
             {
                 case carl::BoundType::STRICT:
-                    rightTmp = newConstraint(rightEx, Relation::LESS);
+                    rightTmp = newConstraint(rightEx, carl::Relation::LESS);
 //                    rightTmp = Formula::newBound( _var, smtrat::Relation::CR_LESS, bound );
                     break;
                 case carl::BoundType::WEAK:
-                    rightTmp = newConstraint(rightEx, Relation::LEQ);
+                    rightTmp = newConstraint(rightEx, carl::Relation::LEQ);
 //                    rightTmp = Formula::newBound( _var, smtrat::Relation::CR_LEQ, bound );
                     break;
                 default:

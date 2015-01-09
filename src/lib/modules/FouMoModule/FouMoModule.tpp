@@ -45,7 +45,8 @@ namespace smtrat
         Module( _type, _formula, _conditionals, _manager ),
         mProc_Constraints(),
         mElim_Order(),    
-        mDeleted_Constraints()    
+        mDeleted_Constraints(),
+        mVarAss()    
     { }
 
     /**
@@ -313,52 +314,12 @@ namespace smtrat
         mModel.clear();
         if( solverState() == True )
         {
-            VariableUpperLower constr_backtracking = mDeleted_Constraints;
-            auto iter_elim = mElim_Order.end();
-            // Iterate backwards through the variables that have been eliminated
-            while( iter_elim != mElim_Order.begin() )
+            auto iter_ass = mVarAss.begin();
+            while( iter_ass != mVarAss.end() )
             {
-                auto iter_var = constr_backtracking.find( *(mElim_Order.end()) );
-                assert( iter_var != constr_backtracking.end() );
-                auto iter_model = mModel.begin();
-                // Insert the substitutions that have been determined in previous iterations
-                while( iter_model != mModel.end() )
-                {
-                    auto iter_constr_upper = iter_var->second.first.begin();
-                    while( iter_constr_upper != iter_var->second.first.end() )
-                    {
-                        // Move on here!
-                    }                    
-                    // Determine new substitution for this level
-                    FormulaT atomic_formula_upper = iter_var->second.first.begin()->first;
-                    FormulaT atomic_formula_lower = iter_var->second.second.begin()->first;
-                    Poly to_be_substituted_upper = atomic_formula_upper.constraint().lhs();
-                    auto iter_poly_upper = atomic_formula_upper.constraint().lhs().begin();
-                    while( iter_poly_upper != atomic_formula_upper.constraint().lhs().end() )
-                    {
-                        if( !iter_poly_upper->isConstant() )
-                        {
-                            if( iter_poly_upper->getSingleVariable() == iter_var->first )
-                            {
-                                if( iter_poly_upper->coeff() > 0 )
-                                {
-                                    to_be_substituted_upper.substitute( iter_var->first, ZERO_POLYNOMIAL );
-                                    ModelValue assignment = to_be_substituted_upper;
-                                    mModel.insert( mModel.end(), std::make_pair( iter_var->first, assignment  ) );
-                                }
-                                else
-                                {
-                                    to_be_substituted_upper.substitute( iter_var->first, ZERO_POLYNOMIAL );
-                                    to_be_substituted_upper *= -1;
-                                    ModelValue assignment = to_be_substituted_upper;
-                                    mModel.insert( mModel.end(), std::make_pair( iter_var->first, assignment  ) );                            
-                                }
-                            }
-                        }
-                    }
-                    ++iter_model;
-                }
-                --iter_elim;    
+                ModelValue ass = vs::SqrtEx( (Poly)iter_ass->second );
+                mModel.insert( std::make_pair( iter_ass->first, ass ) );
+                ++iter_ass;
             }
         }
     }
@@ -384,23 +345,37 @@ namespace smtrat
                 cout << iter_PC->first.constraint() << endl;
                 ++iter_PC;
             }
-            cout << "Deleted_Constraints" << endl;
-            auto iter_DC = mDeleted_Constraints.begin();
-            while( iter_DC != mDeleted_Constraints.end() )
-            {
-                ++iter_DC;
-            }
             #endif
             if( var_corr_constr.empty() ) 
             {
-                // Derive a (integer) solution by backtracking through the steps of Fourier-Motzkin
-                #ifndef Integer_Mode
-                updateModel();
-                #endif
-                #ifdef DEBUG_FouMoModule
-                cout << "Run Backends!" << endl;
-                #endif
-                return call_backends();
+                // Try to derive a (integer) solution by backtracking through the steps of Fourier-Motzkin
+                if( construct_solution() )
+                {
+                    #ifdef DEBUG_FouMoModule
+                    cout << "Found a valid solution: " << endl;
+                    auto iter_sol = mVarAss.begin();
+                    while( iter_sol != mVarAss.end() )
+                    {
+                        cout << iter_sol->first << ": " << iter_sol->second << endl;
+                        ++iter_sol;
+                    }
+                    cout << "For the constraints: " << endl;
+                    auto iter_con = rReceivedFormula().begin();
+                    while( iter_con != rReceivedFormula().end() )
+                    {
+                        cout << iter_con->formula().constraint() << endl;
+                        ++iter_con;
+                    }
+                    #endif
+                    return foundAnswer( True );
+                }
+                else
+                {
+                    #ifdef DEBUG_FouMoModule
+                    cout << "Run Backends!" << endl;
+                    #endif
+                    return call_backends();
+                }    
             }
             // Choose the variable to eliminate based on the information provided by var_corr_constr
             carl::Variable best_var = var_corr_constr.begin()->first;
@@ -658,6 +633,142 @@ namespace smtrat
         //upper_poly *= -1;  
         combined_formula = FormulaT( carl::newConstraint( coeff_upper*lower_poly + (Rational)-1*coeff_lower*upper_poly, carl::Relation::LEQ ) );
         return combined_formula;        
+    }
+    
+    template<class Settings>
+    bool FouMoModule<Settings>::construct_solution()
+    {
+        VariableUpperLower constr_backtracking = mDeleted_Constraints;
+        auto iter_elim = mElim_Order.end();
+        --iter_elim;
+        mVarAss = std::map<carl::Variable, Rational>();
+        // Iterate backwards through the variables that have been eliminated
+        while( true )
+        {
+            auto iter_var = constr_backtracking.find( *iter_elim );
+            assert( iter_var != constr_backtracking.end() );
+            // Begin with the 'upper constraints'
+            bool first_iter_upper = true;
+            Rational lowest_upper;
+            std::pair< carl::Variable, Rational > var_pair_upper;
+            FormulaT atomic_formula_upper;
+            Poly to_be_substituted_upper;
+            auto iter_constr_upper = iter_var->second.first.begin();
+            while( iter_constr_upper != iter_var->second.first.end() )
+            {
+                // Do the substitutions that have been determined in previous iterations
+                // and determine the lowest upper bound in the current level
+                atomic_formula_upper = iter_constr_upper->first;
+                to_be_substituted_upper = atomic_formula_upper.constraint().lhs();
+                auto iter_poly_upper = atomic_formula_upper.constraint().lhs().begin();
+                while( iter_poly_upper != atomic_formula_upper.constraint().lhs().end() )
+                {
+                    if( !iter_poly_upper->isConstant() )
+                    {
+                        if( mVarAss.find( iter_poly_upper->getSingleVariable() ) != mVarAss.end() )
+                        {
+                            to_be_substituted_upper.substitute( iter_poly_upper->getSingleVariable(), (Poly)mVarAss.at( iter_poly_upper->getSingleVariable() ) );
+                        }
+                    }
+                    ++iter_poly_upper;
+                }
+                if( first_iter_upper )
+                {
+                    first_iter_upper = false;
+                    #ifdef Integer_Mode
+                    lowest_upper = carl::floor( -to_be_substituted_upper.constantPart() );
+                    #else
+                    lowest_upper = -to_be_substituted_upper.constantPart();
+                    #endif
+                }
+                else
+                {
+                    #ifdef Integer_Mode
+                    if( carl::floor( -to_be_substituted_upper.constantPart() ) > lowest_upper )
+                    {
+                        lowest_upper = carl::floor( -to_be_substituted_upper.constantPart() );
+                    }
+                    #else
+                    if( -to_be_substituted_upper.constantPart() > lowest_upper )
+                    {
+                        lowest_upper = -to_be_substituted_upper.constantPart();
+                    }
+                    #endif
+                }
+                ++iter_constr_upper;    
+            }
+            // Proceed with the 'lower constraints'
+            bool first_iter_lower = true;
+            Rational highest_lower;
+            FormulaT atomic_formula_lower;
+            Poly to_be_substituted_lower;
+            auto iter_constr_lower = iter_var->second.second.begin();
+            while( iter_constr_lower != iter_var->second.second.end() )
+            {
+                // Do the substitutions that have been determined in previous iterations
+                // and determine the highest lower bound in the current level
+                atomic_formula_lower = iter_constr_lower->first;
+                to_be_substituted_lower = atomic_formula_lower.constraint().lhs();
+                auto iter_poly_lower = atomic_formula_lower.constraint().lhs().begin();
+                while( iter_poly_lower != atomic_formula_lower.constraint().lhs().end() )
+                {
+                    if( !iter_poly_lower->isConstant() )
+                    {
+                        if( mVarAss.find( iter_poly_lower->getSingleVariable() ) != mVarAss.end() )
+                        {
+                            to_be_substituted_lower.substitute( iter_var->first, (Poly)mVarAss.at( iter_poly_lower->getSingleVariable() ) );
+                        }
+                    }
+                    ++iter_poly_lower;
+                }
+                if( first_iter_lower )
+                {
+                    first_iter_lower = false;
+                    #ifdef Integer_Mode
+                    highest_lower = carl::ceil( to_be_substituted_lower.constantPart() );
+                    #else
+                    highest_lower = to_be_substituted_lower.constantPart();
+                    #endif
+                }
+                else
+                {
+                    #ifdef Integer_Mode
+                    if( carl::ceil( to_be_substituted_lower.constantPart() ) < highest_lower )
+                    {
+                        highest_lower = carl::ceil( to_be_substituted_lower.constantPart() );
+                    }
+                    #else 
+                    if( to_be_substituted_lower.constantPart() < highest_lower )
+                    {
+                        highest_lower = to_be_substituted_upper.constantPart();
+                    }
+                    #endif
+                }
+                ++iter_constr_lower;    
+            }
+            if( highest_lower > lowest_upper )
+            {
+                return false;
+            }
+            // Insert one of the found bounds into mVarAss
+            mVarAss.insert( std::make_pair( *iter_elim, highest_lower ) );
+            if( iter_elim == mElim_Order.begin() )
+            {
+                break;
+            }
+            --iter_elim;    
+        }
+        // Check whether the obtained solution is correct
+        auto iter_constr = rReceivedFormula().begin();
+        while( iter_constr != rReceivedFormula().end() )
+        {
+            if( !iter_constr->formula().constraint().satisfiedBy( mVarAss ) )
+            {
+                return false;
+            }
+            ++iter_constr;
+        }
+        return true;
     }
     
     template<class Settings>
