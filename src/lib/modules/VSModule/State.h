@@ -717,6 +717,13 @@ namespace vs
         bool hasNoninvolvedCondition() const;
         
         /**
+         * @param A condition, which is one of the currently considered constraints to check for satisfiability.
+         * @return true, if all test candidates provided by the given condition are no solution of the currently considered 
+         *          conjunction of constraints to check for satisfiability.
+         */
+        bool allTestCandidatesInvalidated( const Condition* _condition ) const;
+        
+        /**
          * Checks whether a child exists, which has no ID (!=0).
          * @return true, if there exists a child with ID (!=0);
          *          false, otherwise.

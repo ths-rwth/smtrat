@@ -520,7 +520,7 @@ namespace vs
                 }
                 else
                 {
-                    if( fmod( _cons->maxDegree( _subs.variable() ), 2.0 ) != 0.0 )
+                    if( _subs.term().denominator().totalDegree() != 0 && fmod( sub.denominator().totalDegree()/_subs.term().denominator().totalDegree(), 2.0 ) != 0.0 )
                     {
                         // Add conjunction (sub.denominator()>0 and sub.constantPart() </>/<=/>= 0) to the substitution result.
                         _result.push_back( ConstraintVector() );
@@ -562,7 +562,7 @@ namespace vs
             else
             {
                 smtrat::Poly s = smtrat::ONE_POLYNOMIAL;
-                if( fmod( _cons->maxDegree( _subs.variable() ), 2.0 ) != 0.0 )
+                if( _subs.term().denominator().totalDegree() != 0 && fmod( sub.denominator().totalDegree()/_subs.term().denominator().totalDegree(), 2.0 ) != 0.0 )
                     s = sub.denominator();
                 switch( _cons->relation() )
                 {

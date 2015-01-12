@@ -1324,6 +1324,8 @@ SetWatches:
                     }
                 }
             }
+            // If a lemma has been added set qhead to first assignment of last decision level in order to force propagation on the unit clauses
+            // containing the corresponding literals
             if( deductionsLearned )
             {
                 if( decisionLevel() == 0 )

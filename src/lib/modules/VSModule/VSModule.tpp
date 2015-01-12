@@ -1817,12 +1817,14 @@ namespace smtrat
     template<class Settings>
     bool VSModule<Settings>::adaptPassedFormula( const State& _state, FormulaConditionMap& _formulaCondMap )
     {
+        if( _state.conditions().empty() ) return false;
         bool changedPassedFormula = false;
         // Collect the constraints to check.
         carl::PointerMap<ConstraintT,const vs::Condition*> constraintsToCheck;
         for( auto cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
         {
-            if( (*cond)->flag() )
+            // Optimization: If the zeros of the polynomial in a weak inequality have already been checked pass the strict version.
+            if( _state.allTestCandidatesInvalidated( *cond ) )
             {
                 const ConstraintT* constraint = (*cond)->pConstraint();
                 switch( constraint->relation() )
@@ -1848,7 +1850,6 @@ namespace smtrat
             else
                 constraintsToCheck.insert( std::pair< const ConstraintT*, const vs::Condition*>( (*cond)->pConstraint(), *cond ) );
         }
-        if( constraintsToCheck.empty() ) return false;
         /*
          * Remove the constraints from the constraints to check, which are already in the passed formula
          * and remove the sub formulas (constraints) in the passed formula, which do not occur in the
@@ -1893,7 +1894,7 @@ namespace smtrat
         Answer result = runBackends();
         #ifdef VS_DEBUG
         cout << "Ask backend      : ";
-        cout << passedFormula().toString();
+        printPassedFormula();
         cout << endl;
         cout << "Answer           : " << ( result == True ? "True" : ( result == False ? "False" : "Unknown" ) ) << endl;
         #endif
@@ -1923,7 +1924,7 @@ namespace smtrat
                             for( auto subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                             {
                                 #ifdef VS_DEBUG
-                                cout << "  " << (*subformula)->constraint();
+                                cout << "  " << *subformula;
                                 #endif
                                 auto fcPair = formulaToConditions.find( *subformula );
                                 assert( fcPair != formulaToConditions.end() );
