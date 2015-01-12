@@ -101,13 +101,14 @@ namespace smtrat
                             originals.front( ).insert( it->first->formula() );
                             // we update the reference to the passed formula again
                             std::get < 0 > (it->second) = mModule->addSubformulaToPassedFormula( FormulaT( smtrat::Poly(std::get<2>(it->second).back().second), std::get<1>(it->second) ), originals ).first;
-
+                            std::cout << __func__ << ":" << __LINE__ << std::get < 0 > (it->second)->formula() << std::endl;
                         }
                         else
                         {
                             assert( Settings::passInequalities == FULL_REDUCED_IF );
                             // we pass the original one and update the reference to the passed formula again
                             std::get < 0 > (it->second) = mModule->addReceivedSubformulaToPassedFormula( it->first ).first;
+                            std::cout << __func__ << ":" << __LINE__ << std::get < 0 > (it->second)->formula() << std::endl;
                         }
                     }
                     break;
@@ -350,15 +351,40 @@ namespace smtrat
                 std::get < 2 > (it->second).push_back( CellEntry( mBtnumber, reduced ) );
                 if( Settings::passInequalities == FULL_REDUCED || (Settings::passInequalities == FULL_REDUCED_IF && pass) )
                 {
-                    // get the reason set for the reduced polynomial
-                    std::vector<std::set<FormulaT> > originals;
-                    originals.push_back( mModule->generateReasons( reduced.getReasons( ) ) );
-                    originals.front( ).insert( it->first->formula() );
+                    FormulaT redResult = FormulaT( smtrat::Poly(reduced), relation );
+                    switch( redResult.getType() )
+                    {
+                        case carl::FormulaType::TRUE:
+                        {
+                            break;
+                        }
+                        case carl::FormulaType::FALSE:
+                        {
+                            std::set<FormulaT> infeasibleSubset( mModule->generateReasons( reduced.getReasons( ) ) );
+                            infeasibleSubset.insert( it->first->formula() );
+                            #ifdef SMTRAT_DEVOPTION_Statistics
+                            mStats->EffectivenessOfConflicts(infeasibleSubset.size()/mModule->rReceivedFormula().size());
+                            #endif //SMTRAT_DEVOPTION_Statistics
+                            mModule->mInfeasibleSubsets.push_back( infeasibleSubset );
+                            if( Settings::withInfeasibleSubset == RETURN_DIRECTLY )
+                            {
+                                return false;
+                            }
+                            break;
+                        }
+                        default:
+                        {
+                            assert( redResult.getType() == carl::FormulaType::CONSTRAINT );// get the reason set for the reduced polynomial
+                            std::vector<std::set<FormulaT> > originals;
+                            originals.push_back( mModule->generateReasons( reduced.getReasons( ) ) );
+                            originals.front( ).insert( it->first->formula() );
 
-                    //pass the result
-                    //TODO: replace "Formula::constraintPool().variables()" by a smaller approximations of the variables contained in "reduced.toEx( )"
-                    // and set the pointer to the passed formula accordingly.
-                    std::get < 0 > (it->second) = mModule->addSubformulaToPassedFormula( FormulaT( smtrat::Poly(reduced), relation ), originals ).first;
+                            //pass the result
+                            //TODO: replace "Formula::constraintPool().variables()" by a smaller approximations of the variables contained in "reduced.toEx( )"
+                            // and set the pointer to the passed formula accordingly.
+                            std::get < 0 > (it->second) = mModule->addSubformulaToPassedFormula( redResult, originals ).first;
+                        }
+                    }
                 }
                 // new constraint learning
                 // If the original constraint is nonlinear

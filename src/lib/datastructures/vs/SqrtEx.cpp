@@ -74,17 +74,12 @@ namespace vs
     void SqrtEx::normalize()
     {
 //        cout << endl << __func__ << ": " << *this << endl;
-        if( radicand().isConstant() && !radicand().isZero() ) 
+        smtrat::Poly sqrtOfRadicand;
+        if( mRadicand.sqrt( sqrtOfRadicand ) )
         {
-            smtrat::Rational absOfLCoeff = abs( radicand().lcoeff() );
-            smtrat::Rational* sqrtResult = new smtrat::Rational();
-            if( cln::sqrtp( absOfLCoeff, sqrtResult ) )
-            {
-                mConstantPart += mFactor * (*sqrtResult);
-                mFactor = smtrat::ZERO_POLYNOMIAL;
-                mRadicand = smtrat::ZERO_POLYNOMIAL;
-            }
-            delete sqrtResult;
+            mConstantPart += mFactor * sqrtOfRadicand;
+            mFactor = smtrat::ZERO_POLYNOMIAL;
+            mRadicand = smtrat::ZERO_POLYNOMIAL;
         }
         else if( !radicand().isZero() )
         {

@@ -215,6 +215,18 @@ namespace vs
         }
         return false;
     }
+    
+    bool State::allTestCandidatesInvalidated( const Condition* _condition ) const
+    {
+        if( !_condition->flag() || tooHighDegreeConditions().find( _condition ) != tooHighDegreeConditions().end() )
+            return false;
+        for( const State* child : children() )
+        {
+            if( child->substitution().originalConditions().find( _condition ) != child->substitution().originalConditions().end() && !child->isInconsistent() )
+                return false;
+        }
+        return true;
+    }
 
     bool State::hasChildWithID() const
     {
@@ -1864,7 +1876,7 @@ namespace vs
             }
             coveringSet( confSets, covSet, treeDepth() );
             #ifdef VS_LOG_INFSUBSETS
-            set< const smtrat::ConstraintT* > constraints = set< const smtrat::ConstraintT* >();
+            carl::PointerSet<smtrat::ConstraintT> constraints;
             for( auto cond = covSet.begin(); cond != covSet.end(); ++cond )
                 constraints.insert( (**cond).pConstraint() );
             smtrat::Module::addAssumptionToCheck( constraints, false, "VSModule_IS_1" );

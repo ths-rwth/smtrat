@@ -672,17 +672,32 @@ namespace smtrat
                     }
                     ++iter_poly_upper;
                 }
+                // The remaining variables that are unequal to the current considered one
+                // are assigned to zero.
+                iter_poly_upper = to_be_substituted_upper.begin();
+                while( iter_poly_upper != to_be_substituted_upper.end() )
+                {
+                    if( !iter_poly_upper->isConstant() )
+                    {
+                        if( iter_poly_upper->getSingleVariable() != *iter_elim )
+                        {
+                            mVarAss.insert( std::make_pair( iter_poly_upper->getSingleVariable(), 0 ) );
+                            to_be_substituted_upper.substitute( iter_poly_upper->getSingleVariable(), ZERO_POLYNOMIAL );            
+                        }
+                    }    
+                    ++iter_poly_upper;
+                }
                 if( first_iter_upper )
                 {
-                    first_iter_upper = false;
+                    first_iter_upper = false;                       
                     #ifdef Integer_Mode
                     lowest_upper = carl::floor( -to_be_substituted_upper.constantPart() );
                     #else
                     lowest_upper = -to_be_substituted_upper.constantPart();
-                    #endif
+                    #endif                        
                 }
                 else
-                {
+                {                    
                     #ifdef Integer_Mode
                     if( carl::floor( -to_be_substituted_upper.constantPart() ) > lowest_upper )
                     {
@@ -721,6 +736,21 @@ namespace smtrat
                     }
                     ++iter_poly_lower;
                 }
+                // The remaining variables that are unequal to the current considered one
+                // are assigned to zero.
+                iter_poly_lower = to_be_substituted_lower.begin();
+                while( iter_poly_lower != to_be_substituted_lower.end() )
+                {
+                    if( !iter_poly_lower->isConstant() )
+                    {
+                        if( iter_poly_lower->getSingleVariable() != *iter_elim )
+                        {
+                            mVarAss.insert( std::make_pair( iter_poly_lower->getSingleVariable(), 0 ) );
+                            to_be_substituted_lower.substitute( iter_poly_lower->getSingleVariable(), ZERO_POLYNOMIAL );
+                        }
+                    }    
+                    ++iter_poly_lower;
+                }
                 if( first_iter_lower )
                 {
                     first_iter_lower = false;
@@ -748,6 +778,9 @@ namespace smtrat
             }
             if( highest_lower > lowest_upper )
             {
+                #ifdef DEBUG_FouMoModule
+                cout << "Highest lower bound is bigger than the lowest upper bound!" << endl;
+                #endif
                 return false;
             }
             // Insert one of the found bounds into mVarAss
@@ -764,6 +797,9 @@ namespace smtrat
         {
             if( !iter_constr->formula().constraint().satisfiedBy( mVarAss ) )
             {
+                #ifdef DEBUG_FouMoModule
+                cout << "The obtained solution is not correct!" << endl;
+                #endif
                 return false;
             }
             ++iter_constr;
