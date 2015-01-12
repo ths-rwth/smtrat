@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+
+function defCXX {
+	export CC="$1"
+	export CXX="$2"
+}
+
+git clone https://github.com/nafur/carl.git
+cd carl
+source .travis.setup
+source .travis.build
+cd ../
+
+
+if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
+
+	function install {
+		sudo apt-get -qq install --force-yes $*
+	}
+
+	sudo add-apt-repository -y ppa:kalakris/cmake
+	sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+	sudo add-apt-repository -y "deb http://llvm.org/apt/precise/ llvm-toolchain-precise-3.4 main" 
+	sudo add-apt-repository -y "deb http://llvm.org/apt/precise/ llvm-toolchain-precise-3.5 main" 
+	sudo apt-get -qq update
+
+	install cmake libboost-dev libcln-dev libeigen3-dev libgtest-dev
+
+	if [[ ${USE} == "g++-4.8" ]]; then
+		install gcc-4.8 g++-4.8
+		defCXX gcc-4.8 g++-4.8
+	elif [[ ${USE} == "g++-4.9" ]]; then
+		install gcc-4.9 g++-4.9
+		defCXX gcc-4.9 g++-4.9
+	elif [[ ${USE} == "clang++-3.3" ]]; then
+		install clang-3.3
+		defCXX clang clang++
+	elif [[ ${USE} == "clang++-3.4" ]]; then
+		install clang-3.4
+		defCXX clang-3.4 clang++-3.4
+	elif [[ ${USE} == "clang++-3.5" ]]; then
+		install clang-3.5
+		defCXX clang-3.5 clang++-3.5
+	fi
+
+elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
+
+	function install {
+		brew install $*
+	}
+
+	brew update --quiet
+	brew install cln eigen 
+
+	if [[ ${USE} == "g++-4.8" ]]; then
+		echo "g++-4.8 is not supported"
+		#install gcc-4.8 g++-4.8
+		#defCXX gcc-4.8 g++-4.8
+	elif [[ ${USE} == "g++-4.9" ]]; then
+		install gcc
+		defCXX gcc-4.9 g++-4.9
+	elif [[ ${USE} == "clang++-3.3" ]]; then
+		echo "clang++-3.3 is not supported"
+		#install clang-3.3
+		#defCXX clang-3.3 clang++-3.3
+	elif [[ ${USE} == "clang++-3.4" ]]; then
+		echo "clang++-3.4 is not supported"
+		#install clang-3.4
+		#defCXX clang-3.4 clang++-3.4
+	elif [[ ${USE} == "clang++-3.5" ]]; then
+		install llvm
+		defCXX clang clang++
+	fi
+
+fi
+
