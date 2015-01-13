@@ -480,7 +480,7 @@ namespace smtrat
             
             if( !linearizedConstraint.isBound() )
             {
-                createLinearCCs( linearFormula, _formula );
+                createLinearCCs( linearFormula );
             }
             
             // set the lra variables for the icp variables regarding variables (introduced and original ones)
@@ -1143,7 +1143,7 @@ namespace smtrat
                         mContractors.insert(std::make_pair(rhs, Contractor<carl::SimpleNewton>(rhs)));
                     }
                     const ConstraintT* tmp = newConstraint<Poly>( rhs, Relation::EQ );
-                    icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmp, *varIndex, mContractors.at( rhs ), FormulaT( FormulaType::TRUE ) );
+                    icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmp, *varIndex, mContractors.at( rhs ) );
                     ccs.insert( ccs.end(), tmpCandidate );
                     tmpCandidate->setNonlinear();
                     auto tmpIcpVar = mVariables.find( newVar );
@@ -1152,7 +1152,7 @@ namespace smtrat
                 }
                 // add one candidate for the replacement variable
                 const ConstraintT* tmp = newConstraint<Poly>( rhs, Relation::EQ );
-                icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmp, newVar, mContractors.at( rhs ), FormulaT( FormulaType::TRUE ) );
+                icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmp, newVar, mContractors.at( rhs ) );
                 tmpCandidate->setNonlinear();
                 icpVar->addCandidate( tmpCandidate );
                 ccs.insert( ccs.end(), tmpCandidate );
@@ -1185,7 +1185,7 @@ namespace smtrat
         return linearizedConstraint;
     }
     
-    void ICPModule::createLinearCCs( const FormulaT& _constraint, const FormulaT& _origin )
+    void ICPModule::createLinearCCs( const FormulaT& _constraint)
     {
         assert( _constraint.getType() == FormulaType::CONSTRAINT );
         assert( _constraint.constraint().lhs().isLinear() );
@@ -1221,7 +1221,7 @@ namespace smtrat
             // Create candidates for every possible variable:
             for( auto var = variables.begin(); var != variables.end(); ++var )
             {   
-                icp::ContractionCandidate* newCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmpConstr, *var, iter->second, _origin );
+                icp::ContractionCandidate* newCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmpConstr, *var, iter->second );
 
                 // ensure that the created candidate is set as linear
                 newCandidate->setLinear();
@@ -1887,6 +1887,7 @@ namespace smtrat
     {
         // collect applied contractions
         std::set<FormulaT> contractions = mHistoryActual->appliedConstraints();
+		
         // collect original box
 //        assert( mBoxStorage.size() == 1 );
         std::set<FormulaT> box = mBoxStorage.front();
@@ -2021,6 +2022,7 @@ namespace smtrat
 //                exit( 7771 );
 //            }
             //assert( !probablyLooping( Polynomial( variable ), bound ) );
+
             Module::branchAt( Poly( variable ), bound, splitPremise, false );
             #ifdef ICP_MODULE_DEBUG_0
             cout << "force split on " << variable << " at " << bound << "!" << endl << endl;
@@ -2458,7 +2460,6 @@ namespace smtrat
             auto res = mValidationFormula->add( *formulaIt );
             if( res.second )
             {
-                assert( res.first == mValidationFormula->end() );
                 mLRA.inform( *formulaIt );
                 mLRA.assertSubformula( res.first );
 				++formulaIt;
@@ -2673,9 +2674,6 @@ namespace smtrat
 
     void ICPModule::pushBoundsToPassedFormula()
     {
-        std::cout << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$" << std::endl;
-        printIntervals();
-        print();
         Variables originalRealVariables;
         rReceivedFormula().realValuedVars( originalRealVariables );
         for( std::map<carl::Variable, icp::IcpVariable*>::iterator iter = mVariables.begin(); iter != mVariables.end(); ++iter )
@@ -2708,28 +2706,22 @@ namespace smtrat
                             default:
                                 break;
                         }
-                        std::cout << leftTmp << std::endl;
-                        std::cout << __func__ << ":" << __LINE__ << std::endl;
                         if( icpVar.externalLeftBound() != passedFormulaEnd() )
                         {
-                            std::cout << __func__ << ":" << __LINE__ << std::endl;
                             Module::eraseSubformulaFromPassedFormula( icpVar.externalLeftBound(), true );
                         }
                         if ( leftTmp.isTrue() )
                         {
-                            std::cout << __func__ << ":" << __LINE__ << std::endl;
                             icpVar.setExternalLeftBound( passedFormulaEnd() );
                         }
                         else
                         {
-                            std::cout << __func__ << ":" << __LINE__ << std::endl;
                             addConstraintToInform( leftTmp );
                             vec_set_const_pFormula origins;
                             origins.push_back( std::set<FormulaT>() );
                             auto res = addSubformulaToPassedFormula( leftTmp, std::move( origins ) );
                             if( res.second )
                             {
-                                std::cout << __func__ << ":" << __LINE__ << std::endl;
                                 icpVar.setExternalLeftBound( res.first );
                             }
                         }
@@ -2752,28 +2744,22 @@ namespace smtrat
                             default:
                                 break;
                         }
-                        std::cout << rightTmp << std::endl;
-                        std::cout << __func__ << ":" << __LINE__ << std::endl;
                         if( icpVar.externalRightBound() != passedFormulaEnd() )
                         {
-                            std::cout << __func__ << ":" << __LINE__ << std::endl;
                             Module::eraseSubformulaFromPassedFormula( icpVar.externalRightBound(), true );
                         }
                         if( rightTmp.isTrue() )
                         {
-                            std::cout << __func__ << ":" << __LINE__ << std::endl;
                             icpVar.setExternalRightBound( passedFormulaEnd() );
                         }
                         else
                         {
-                            std::cout << __func__ << ":" << __LINE__ << std::endl;
                             addConstraintToInform( rightTmp );
                             vec_set_const_pFormula origins;
                             origins.push_back( std::set<FormulaT>() );
                             auto res = addSubformulaToPassedFormula( rightTmp, origins );
                             if( res.second )
                             {
-                                std::cout << __func__ << ":" << __LINE__ << std::endl;
                                 icpVar.setExternalRightBound( res.first );
                             }
                         }
@@ -2782,8 +2768,6 @@ namespace smtrat
                 }
             }
         }
-        print();
-        std::cout << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$" << std::endl;
     }
     
     std::set<FormulaT> ICPModule::variableReasonHull( icp::set_icpVariable& _reasons )
