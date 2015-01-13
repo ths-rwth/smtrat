@@ -254,7 +254,7 @@ namespace smtrat
              * @param _constraint
              * @param _origin
              */
-            void createLinearCCs( const FormulaT& _constraint, const FormulaT& _origin );
+            void createLinearCCs( const FormulaT& _constraint );
             
             /**
              * Initiates weights for contractions   

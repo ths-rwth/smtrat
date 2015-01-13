@@ -85,8 +85,7 @@ namespace smtrat
                                                 const Poly _rhs,
                                                 const ConstraintT* _constraint,
                                                 carl::Variable _derivationVar,
-                                                Contractor<carl::SimpleNewton>& _contractor,
-                                                const FormulaT& _origin );
+                                                Contractor<carl::SimpleNewton>& _contractor );
         
         /**
          * Returns the id of the given contraction candidate
