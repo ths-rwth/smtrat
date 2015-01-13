@@ -192,7 +192,7 @@ namespace smtrat
             // Remove the received formula from the set of origins.
             if( mpPassedFormula->removeOrigin( passedSubformula, _receivedSubformula->formula() ) )
             {
-                passedSubformula = eraseSubformulaFromPassedFormula( passedSubformula );
+                passedSubformula = this->eraseSubformulaFromPassedFormula( passedSubformula );
             }
             else
             {

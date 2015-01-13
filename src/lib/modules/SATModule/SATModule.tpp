@@ -762,7 +762,7 @@ namespace smtrat
             clause.reserve( (size_t)_clause.size() );
             for( int i = 0; i < _clause.size(); ++i )
                 clause.push_back( _clause[i].x );
-            if( !mLearntDeductions.insert( clause ).second )
+            if( !mLearntDeductions.insert( clause ).second ) // TODO: update this when forgetting clauses
             {
                 return false;
             }

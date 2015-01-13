@@ -33,7 +33,7 @@
 using namespace std;
 using namespace carl;
 
-#define ICP_MODULE_DEBUG_0
+//#define ICP_MODULE_DEBUG_0
 //#define ICP_MODULE_DEBUG_1
 #define ICP_CONSIDER_WIDTH
 //#define ICP_SIMPLE_VALIDATION
@@ -1566,7 +1566,9 @@ namespace smtrat
             }
             //assert( !probablyLooping( Polynomial( variable ), bound ) );
             Module::branchAt( Poly( variable ), bound, splitPremise, true );
+            #ifdef ICP_MODULE_DEBUG_0
             cout << "division causes split on " << variable << " at " << bound << "!" << endl << endl;
+            #endif
 #endif
             // TODO: Shouldn't it be the average of both contractions?
             _relativeContraction = (originalDiameter - resultB.diameter()) / originalDiameter;
@@ -1669,10 +1671,10 @@ namespace smtrat
                 }
                 if( takeLower && takeUpper )
                 {
-					if(varIntervalIt->second.isPointInterval())
-						value = varIntervalIt->second.lower();
-					else
-						value = varIntervalIt->second.sample(false);
+                    if(varIntervalIt->second.isPointInterval())
+                            value = varIntervalIt->second.lower();
+                    else
+                            value = varIntervalIt->second.sample(false);
                 }
                 else if( takeLower )
                 {
@@ -1697,7 +1699,6 @@ namespace smtrat
                     }
                 }
             }
-			std::cout << setprecision(100) << varIntervalIt->second << ", " << value << std::endl;
             assert( varIntervalIt->second.contains( value ));
             assignments.insert( std::make_pair(varIt->first, value) );
             ++varIntervalIt;
@@ -1739,6 +1740,27 @@ namespace smtrat
                 }
             }
         }
+    }
+    
+    ModuleInput::iterator ICPModule::eraseSubformulaFromPassedFormula( ModuleInput::iterator _subformula, bool _ignoreOrigins )
+    {
+        for( std::map<carl::Variable, icp::IcpVariable*>::iterator iter = mVariables.begin(); iter != mVariables.end(); ++iter )
+        {
+            icp::IcpVariable& icpVar = *iter->second;
+            assert( icpVar.externalLeftBound() == passedFormulaEnd() || icpVar.externalLeftBound() != icpVar.externalRightBound() );
+            if( icpVar.externalLeftBound() == _subformula )
+            {
+                icpVar.setExternalLeftBound( passedFormulaEnd() );
+                break;
+            }
+            else if( icpVar.externalRightBound() == _subformula )
+            {
+                icpVar.setExternalRightBound( passedFormulaEnd() );
+                break;
+            }
+        }
+        auto res = Module::eraseSubformulaFromPassedFormula( _subformula, _ignoreOrigins );
+        return res;
     }
     
     void ICPModule::tryContraction( icp::ContractionCandidate* _selection, double& _relativeContraction, const EvalDoubleIntervalMap& _intervals )
@@ -2683,7 +2705,7 @@ namespace smtrat
                                 break;
                         }
                         if( icpVar.externalLeftBound() != passedFormulaEnd() )
-                            eraseSubformulaFromPassedFormula( icpVar.externalLeftBound() );
+                            Module::eraseSubformulaFromPassedFormula( icpVar.externalLeftBound(), true );
                         if ( leftTmp.isTrue() )
                         {
                             icpVar.setExternalLeftBound( passedFormulaEnd() );
@@ -2719,7 +2741,7 @@ namespace smtrat
                                 break;
                         }
                         if( icpVar.externalRightBound() != passedFormulaEnd() )
-                            eraseSubformulaFromPassedFormula( icpVar.externalRightBound() );
+                            Module::eraseSubformulaFromPassedFormula( icpVar.externalRightBound(), true );
                         if( rightTmp.isTrue() )
                         {
                             icpVar.setExternalRightBound( passedFormulaEnd() );
