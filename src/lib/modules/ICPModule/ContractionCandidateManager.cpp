@@ -44,20 +44,9 @@ namespace smtrat
                                                                         const Poly _rhs,
                                                                         const ConstraintT* _constraint,
                                                                         carl::Variable _derivationVar,
-                                                                        Contractor<carl::SimpleNewton>& _contractor,
-                                                                        const FormulaT& _origin )
+                                                                        Contractor<carl::SimpleNewton>& _contractor)
     {
-        ContractionCandidate* tmp;
-        
-        // Todo: Is it better to make the replacement here instead of outside?
-        if ( _origin.isTrue() )
-        {
-            tmp = new ContractionCandidate(_lhs, _rhs, _constraint, _derivationVar, _contractor, mCurrentId);
-        }
-        else
-        {
-            tmp = new ContractionCandidate(_lhs, _rhs, _constraint, _derivationVar, _contractor, _origin, mCurrentId);    
-        }
+        ContractionCandidate* tmp = new ContractionCandidate(_lhs, _rhs, _constraint, _derivationVar, _contractor, mCurrentId);
         
         assert( mCurrentId == mCandidates.size() + 1 );
         mCandidates.push_back( tmp );
