@@ -27,7 +27,7 @@ matrix:
 before_install:
   - cd installation && source setup_travis.sh && cd ../
 
-script: mkdir build && cd build/ && cmake -D DEVELOPER=ON ../ && make -j4 && cd ../
+script: mkdir build && cd build/ && cmake -D DEVELOPER=ON ../ && make -j1 && cd ../
 
 notifications:
   email:
