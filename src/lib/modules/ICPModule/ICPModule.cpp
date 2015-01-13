@@ -480,7 +480,7 @@ namespace smtrat
             
             if( !linearizedConstraint.isBound() )
             {
-                createLinearCCs( linearFormula, _formula );
+                createLinearCCs( linearFormula );
             }
             
             // set the lra variables for the icp variables regarding variables (introduced and original ones)
@@ -1143,7 +1143,7 @@ namespace smtrat
                         mContractors.insert(std::make_pair(rhs, Contractor<carl::SimpleNewton>(rhs)));
                     }
                     const ConstraintT* tmp = newConstraint<Poly>( rhs, Relation::EQ );
-                    icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmp, *varIndex, mContractors.at( rhs ), FormulaT( FormulaType::TRUE ) );
+                    icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmp, *varIndex, mContractors.at( rhs ) );
                     ccs.insert( ccs.end(), tmpCandidate );
                     tmpCandidate->setNonlinear();
                     auto tmpIcpVar = mVariables.find( newVar );
@@ -1152,7 +1152,7 @@ namespace smtrat
                 }
                 // add one candidate for the replacement variable
                 const ConstraintT* tmp = newConstraint<Poly>( rhs, Relation::EQ );
-                icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmp, newVar, mContractors.at( rhs ), FormulaT( FormulaType::TRUE ) );
+                icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmp, newVar, mContractors.at( rhs ) );
                 tmpCandidate->setNonlinear();
                 icpVar->addCandidate( tmpCandidate );
                 ccs.insert( ccs.end(), tmpCandidate );
@@ -1185,7 +1185,7 @@ namespace smtrat
         return linearizedConstraint;
     }
     
-    void ICPModule::createLinearCCs( const FormulaT& _constraint, const FormulaT& _origin )
+    void ICPModule::createLinearCCs( const FormulaT& _constraint)
     {
         assert( _constraint.getType() == FormulaType::CONSTRAINT );
         assert( _constraint.constraint().lhs().isLinear() );
@@ -1221,7 +1221,7 @@ namespace smtrat
             // Create candidates for every possible variable:
             for( auto var = variables.begin(); var != variables.end(); ++var )
             {   
-                icp::ContractionCandidate* newCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmpConstr, *var, iter->second, _origin );
+                icp::ContractionCandidate* newCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmpConstr, *var, iter->second );
 
                 // ensure that the created candidate is set as linear
                 newCandidate->setLinear();
@@ -1887,6 +1887,10 @@ namespace smtrat
     {
         // collect applied contractions
         std::set<FormulaT> contractions = mHistoryActual->appliedConstraints();
+		
+		for(auto& constraint : contractions)
+			std::cout << __func__ << " applied contraction: " << constraint << std::endl;
+		
         // collect original box
 //        assert( mBoxStorage.size() == 1 );
         std::set<FormulaT> box = mBoxStorage.front();
@@ -2021,6 +2025,16 @@ namespace smtrat
 //                exit( 7771 );
 //            }
             //assert( !probablyLooping( Polynomial( variable ), bound ) );
+			std::cout << __func__ << " Splitpremise: " <<  std::endl;
+			for(auto& formula : splitPremise){
+				std::cout << formula << std::endl;
+				assert(pReceivedFormula()->find(formula) != pReceivedFormula()->end());
+			}
+			
+			std::cout << __func__ << " Received formula: " << std::endl;
+			printReceivedFormula();
+			
+			
             Module::branchAt( Poly( variable ), bound, splitPremise, false );
             #ifdef ICP_MODULE_DEBUG_0
             cout << "force split on " << variable << " at " << bound << "!" << endl << endl;
@@ -2458,7 +2472,6 @@ namespace smtrat
             auto res = mValidationFormula->add( *formulaIt );
             if( res.second )
             {
-                assert( res.first == mValidationFormula->end() );
                 mLRA.inform( *formulaIt );
                 mLRA.assertSubformula( res.first );
 				++formulaIt;
