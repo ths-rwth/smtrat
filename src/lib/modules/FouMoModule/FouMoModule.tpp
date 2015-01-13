@@ -265,42 +265,56 @@ namespace smtrat
             while( iter_var != mDeleted_Constraints.end() )
             {
                 auto iter_upper = iter_var->second.first.begin();
+                bool formula_deleted;
+                unsigned delete_count;
                 while( iter_upper != iter_var->second.first.end() )
                 {
+                    delete_count = 0;
+                    formula_deleted = false;
                     auto iter_set_upper = iter_upper->second.begin();
                     while( iter_set_upper != iter_upper->second.end() )
                     {
                         auto iter_help_upper = iter_set_upper->find( _subformula->formula() ); 
                         if( iter_help_upper != iter_set_upper->end() )
                         {
-                            iter_set_upper->erase( iter_help_upper );
+                            ++delete_count;
                         }
                         ++iter_set_upper;
                     }
-                    if( iter_upper->second.empty() )
+                    if( iter_upper->second.size() == delete_count  )
                     {
-                        iter_var->second.first.erase( iter_upper );
+                        formula_deleted = true;
+                        iter_upper = iter_var->second.first.erase( iter_upper );
                     }
-                    ++iter_upper;
+                    if( !formula_deleted )
+                    {
+                        ++iter_upper;
+                    }    
                 }
                 auto iter_lower = iter_var->second.second.begin();
                 while( iter_lower != iter_var->second.second.end() )
                 {
+                    delete_count = 0;
+                    formula_deleted = false;
                     auto iter_set_lower = iter_lower->second.begin();
                     while( iter_set_lower != iter_lower->second.end() )
                     {
                         auto iter_help_lower = iter_set_lower->find( _subformula->formula() ); 
                         if( iter_help_lower != iter_set_lower->end() )
                         {
-                            iter_set_lower->erase( iter_help_lower );
+                            ++delete_count;
                         }
                         ++iter_set_lower;
                     }
-                    if( iter_lower->second.empty() )
+                    if( iter_lower->second.size() == delete_count )
                     {
-                        iter_var->second.second.erase( iter_lower );
+                        formula_deleted = true;
+                        iter_lower = iter_var->second.second.erase( iter_lower );
                     }
-                    ++iter_lower;
+                    if( !formula_deleted )
+                    {
+                        ++iter_lower;
+                    }    
                 }
                 ++iter_var;
             }
