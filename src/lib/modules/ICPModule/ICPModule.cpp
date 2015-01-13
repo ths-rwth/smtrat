@@ -2025,16 +2025,7 @@ namespace smtrat
 //                exit( 7771 );
 //            }
             //assert( !probablyLooping( Polynomial( variable ), bound ) );
-			std::cout << __func__ << " Splitpremise: " <<  std::endl;
-			for(auto& formula : splitPremise){
-				std::cout << formula << std::endl;
-				assert(pReceivedFormula()->find(formula) != pReceivedFormula()->end());
-			}
-			
-			std::cout << __func__ << " Received formula: " << std::endl;
-			printReceivedFormula();
-			
-			
+
             Module::branchAt( Poly( variable ), bound, splitPremise, false );
             #ifdef ICP_MODULE_DEBUG_0
             cout << "force split on " << variable << " at " << bound << "!" << endl << endl;
