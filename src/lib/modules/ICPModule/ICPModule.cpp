@@ -2673,9 +2673,6 @@ namespace smtrat
 
     void ICPModule::pushBoundsToPassedFormula()
     {
-        std::cout << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$" << std::endl;
-        printIntervals();
-        print();
         Variables originalRealVariables;
         rReceivedFormula().realValuedVars( originalRealVariables );
         for( std::map<carl::Variable, icp::IcpVariable*>::iterator iter = mVariables.begin(); iter != mVariables.end(); ++iter )
@@ -2708,28 +2705,22 @@ namespace smtrat
                             default:
                                 break;
                         }
-                        std::cout << leftTmp << std::endl;
-                        std::cout << __func__ << ":" << __LINE__ << std::endl;
                         if( icpVar.externalLeftBound() != passedFormulaEnd() )
                         {
-                            std::cout << __func__ << ":" << __LINE__ << std::endl;
                             Module::eraseSubformulaFromPassedFormula( icpVar.externalLeftBound(), true );
                         }
                         if ( leftTmp.isTrue() )
                         {
-                            std::cout << __func__ << ":" << __LINE__ << std::endl;
                             icpVar.setExternalLeftBound( passedFormulaEnd() );
                         }
                         else
                         {
-                            std::cout << __func__ << ":" << __LINE__ << std::endl;
                             addConstraintToInform( leftTmp );
                             vec_set_const_pFormula origins;
                             origins.push_back( std::set<FormulaT>() );
                             auto res = addSubformulaToPassedFormula( leftTmp, std::move( origins ) );
                             if( res.second )
                             {
-                                std::cout << __func__ << ":" << __LINE__ << std::endl;
                                 icpVar.setExternalLeftBound( res.first );
                             }
                         }
@@ -2752,28 +2743,22 @@ namespace smtrat
                             default:
                                 break;
                         }
-                        std::cout << rightTmp << std::endl;
-                        std::cout << __func__ << ":" << __LINE__ << std::endl;
                         if( icpVar.externalRightBound() != passedFormulaEnd() )
                         {
-                            std::cout << __func__ << ":" << __LINE__ << std::endl;
                             Module::eraseSubformulaFromPassedFormula( icpVar.externalRightBound(), true );
                         }
                         if( rightTmp.isTrue() )
                         {
-                            std::cout << __func__ << ":" << __LINE__ << std::endl;
                             icpVar.setExternalRightBound( passedFormulaEnd() );
                         }
                         else
                         {
-                            std::cout << __func__ << ":" << __LINE__ << std::endl;
                             addConstraintToInform( rightTmp );
                             vec_set_const_pFormula origins;
                             origins.push_back( std::set<FormulaT>() );
                             auto res = addSubformulaToPassedFormula( rightTmp, origins );
                             if( res.second )
                             {
-                                std::cout << __func__ << ":" << __LINE__ << std::endl;
                                 icpVar.setExternalRightBound( res.first );
                             }
                         }
@@ -2782,8 +2767,6 @@ namespace smtrat
                 }
             }
         }
-        print();
-        std::cout << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$" << std::endl;
     }
     
     std::set<FormulaT> ICPModule::variableReasonHull( icp::set_icpVariable& _reasons )
