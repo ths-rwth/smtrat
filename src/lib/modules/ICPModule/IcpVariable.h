@@ -221,6 +221,11 @@ namespace icp
                 mUpdated = std::make_pair( mUpdated.first, Updated::NONE );
             }
             
+            void setExternalModified()
+            {
+                mUpdated = std::make_pair( mUpdated.first, Updated::BOTH );
+            }
+            
             void setInternalUnmodified()
             {
                 mUpdated = std::make_pair( Updated::NONE, mUpdated.second );
