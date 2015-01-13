@@ -1888,9 +1888,6 @@ namespace smtrat
         // collect applied contractions
         std::set<FormulaT> contractions = mHistoryActual->appliedConstraints();
 		
-		for(auto& constraint : contractions)
-			std::cout << __func__ << " applied contraction: " << constraint << std::endl;
-		
         // collect original box
 //        assert( mBoxStorage.size() == 1 );
         std::set<FormulaT> box = mBoxStorage.front();
