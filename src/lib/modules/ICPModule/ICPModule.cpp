@@ -33,8 +33,8 @@
 using namespace std;
 using namespace carl;
 
-//#define ICP_MODULE_DEBUG_0
-//#define ICP_MODULE_DEBUG_1
+#define ICP_MODULE_DEBUG_0
+#define ICP_MODULE_DEBUG_1
 #define ICP_CONSIDER_WIDTH
 //#define ICP_SIMPLE_VALIDATION
 #define ICP_PROLONG_CONTRACTION
@@ -164,14 +164,14 @@ namespace smtrat
                     while( !mLRA.deductions().empty() )
                     {
                         #ifdef ICP_MODULE_DEBUG_1
-                        cout << "Create deduction for: " << mLRA.deductions().back()->toString(false,0,"",true,true,true ) << endl;
+                        cout << "Create deduction for: " << mLRA.deductions().back().toString(false,0,"",true,true,true ) << endl;
                         #endif
                         FormulaT deduction = transformDeductions( mLRA.deductions().back() );
                         mCreatedDeductions.insert(deduction);
                         mLRA.rDeductions().pop_back();
                         addDeduction(deduction);
                         #ifdef ICP_MODULE_DEBUG_1
-                        cout << "Passed deduction: " << deduction->toString(false,0,"",true,true,true ) << endl;
+                        cout << "Passed deduction: " << deduction.toString(false,0,"",true,true,true ) << endl;
                         #endif
                     }
                     mIsIcpInitialized = true;
@@ -601,7 +601,7 @@ namespace smtrat
         while( !mLRA.deductions().empty() )
         {
             #ifdef ICP_MODULE_DEBUG_1
-            cout << "Create deduction for: " << *mLRA.deductions().back() << endl;
+            cout << "Create deduction for: " << mLRA.deductions().back() << endl;
             #endif
             FormulaT deduction = transformDeductions(mLRA.deductions().back());
             mLRA.rDeductions().pop_back();
@@ -1461,7 +1461,7 @@ namespace smtrat
         {
             #ifdef ICP_MODULE_DEBUG_0
             #ifdef ICP_MODULE_DEBUG_1   
-            cout << "Split occured: " << resultB << " and " << resultA << endl;
+            cout << "Split occured: " << resultA << " and " << resultB << endl;
             #else
             cout << "Split occured" << endl;
             #endif
@@ -1557,6 +1557,7 @@ namespace smtrat
 
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
             assert(resultA.upperBoundType() != BoundType::INFTY );
+			std::cout << __func__ << " resultA.upper(): " << resultA.upper() << std::endl;
             Rational bound = carl::rationalize<Rational>( resultA.upper() );
 //            if( probablyLooping( Poly( variable ), bound ) )
 //            {
@@ -1565,7 +1566,7 @@ namespace smtrat
 //                exit( 7771 );
 //            }
             //assert( !probablyLooping( Polynomial( variable ), bound ) );
-            Module::branchAt( Poly( variable ), bound, splitPremise, true );
+            Module::branchAt( Poly( variable ), bound, splitPremise, false );
             #ifdef ICP_MODULE_DEBUG_0
             cout << "division causes split on " << variable << " at " << bound << "!" << endl << endl;
             #endif
@@ -2865,7 +2866,7 @@ namespace smtrat
                             (*pos).second->setInternalRightBound(rightBound);
                             addedBoundaries.insert(rightBound);
                             #ifdef ICP_MODULE_DEBUG_1
-                            cout << "Created upper boundary constraint: " << *rightBound << endl;
+                            cout << "Created upper boundary constraint: " << rightBound << endl;
                             #endif
                         }
                         if( boundaries.first != NULL && 
@@ -2876,7 +2877,7 @@ namespace smtrat
                             (*pos).second->setInternalLeftBound(leftBound);
                             addedBoundaries.insert(leftBound);
                             #ifdef ICP_MODULE_DEBUG_1
-                            cout << "Created lower boundary constraint: " << *leftBound << endl;
+                            cout << "Created lower boundary constraint: " << leftBound << endl;
                             #endif
                         }
                     }
