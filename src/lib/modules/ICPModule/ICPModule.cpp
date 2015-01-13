@@ -1888,9 +1888,6 @@ namespace smtrat
         // collect applied contractions
         std::set<FormulaT> contractions = mHistoryActual->appliedConstraints();
 		
-		for(auto& constraint : contractions)
-			std::cout << __func__ << " applied contraction: " << constraint << std::endl;
-		
         // collect original box
 //        assert( mBoxStorage.size() == 1 );
         std::set<FormulaT> box = mBoxStorage.front();
@@ -2025,16 +2022,7 @@ namespace smtrat
 //                exit( 7771 );
 //            }
             //assert( !probablyLooping( Polynomial( variable ), bound ) );
-			std::cout << __func__ << " Splitpremise: " <<  std::endl;
-			for(auto& formula : splitPremise){
-				std::cout << formula << std::endl;
-				assert(pReceivedFormula()->find(formula) != pReceivedFormula()->end());
-			}
-			
-			std::cout << __func__ << " Received formula: " << std::endl;
-			printReceivedFormula();
-			
-			
+
             Module::branchAt( Poly( variable ), bound, splitPremise, false );
             #ifdef ICP_MODULE_DEBUG_0
             cout << "force split on " << variable << " at " << bound << "!" << endl << endl;
