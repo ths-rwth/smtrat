@@ -25,7 +25,7 @@ matrix:
       env: USE=clang++-3.4
 
 before_install:
-  - source ./.travis.setup
+  - cd installation && source setup_travis.sh && cd ../
 
 script: mkdir build && cd build/ && cmake -D DEVELOPER=ON ../ && make -j4 && cd ../
 
