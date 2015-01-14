@@ -29,7 +29,7 @@
 
 //#define VS_STATISTICS
 //#define VS_PRINT_ANSWERS
-#define VS_LOG_INTERMEDIATE_STEPS
+//#define VS_LOG_INTERMEDIATE_STEPS
 
 #include "../../Common.h"
 #include "Substitute.h"
