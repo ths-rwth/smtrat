@@ -287,7 +287,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
                 assert( witness.isZero( ) );
             }
             #endif
-            mInfeasibleSubsets.push_back( std::set<FormulaT>() );
+            mInfeasibleSubsets.push_back( FormulasT() );
             // The equalities we used for the basis-computation are the infeasible subset
 
 			assert(!Settings::getReasonsForInfeasibility || !witness.getReasons().empty());
@@ -603,12 +603,12 @@ void GroebnerModule<Settings>::knownConstraintDeduction(const std::list<std::pai
         // if the bitvector is not empty, there is a theory deduction
         if( Settings::addTheoryDeductions == ALL_CONSTRAINTS && !it->second.empty() )
         {
-            std::set<FormulaT> subformulas;
-            std::set<FormulaT> deduced( generateReasons( it->first ));
+            FormulasT subformulas;
+            FormulasT deduced( generateReasons( it->first ));
             // When this kind of deduction is greater than one, we would have to determine wich of them is really the deduced one.
             if( deduced.size() > 1 ) continue;
-            std::set<FormulaT> originals( generateReasons( it->second ));
-            std::set<FormulaT> originalsWithoutDeduced;
+            FormulasT originals( generateReasons( it->second ));
+            FormulasT originalsWithoutDeduced;
 
             std::set_difference(originals.begin(), originals.end(), deduced.begin(), deduced.end(), std::inserter(originalsWithoutDeduced, originalsWithoutDeduced.end()));
 
@@ -905,9 +905,9 @@ void GroebnerModule<Settings>::passGB( )
     assert( Settings::passGB );
     
     // Declare a set of reason sets.
-    vec_set_const_pFormula originals;
+    std::vector<FormulasT> originals;
     // And a reason set in it.
-    originals.push_back( std::set<FormulaT>() );
+    originals.push_back( FormulasT() );
     
     if( !Settings::passWithMinimalReasons )
     {
@@ -952,16 +952,16 @@ void GroebnerModule<Settings>::passGB( )
  * @return The reason set.
  */
 template<class Settings>
-std::set<FormulaT> GroebnerModule<Settings>::generateReasons( const carl::BitVector& reasons )
+FormulasT GroebnerModule<Settings>::generateReasons( const carl::BitVector& reasons )
 {
     if(reasons.empty())
     {
-        return std::set<FormulaT>();
+        return FormulasT();
     }
     
     carl::BitVector::const_iterator origIt = reasons.begin( );
 	origIt++;
-    std::set<FormulaT> origins;
+    FormulasT origins;
 
     auto it = mBacktrackPoints.begin( );
     for( ++it; it != mBacktrackPoints.end( ); ++it )

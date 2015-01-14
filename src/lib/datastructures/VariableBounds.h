@@ -54,7 +54,7 @@ namespace smtrat
                 /// The variable for which the bound is declared.
                 Variable<T>* const mpVariable;
                 /// A set of origins of the bound, e.g., x-3<0 is the origin of the bound <3.
-                std::set<T>* const mpOrigins; // Here, we cannot use the carl::PointerSet, which falls back on the comparison operator
+                std::set<T,carl::less<T,false>>* const mpOrigins; // Here, we cannot use the carl::PointerSet, which falls back on the comparison operator
                                                      // of T, as we must ensure to store for every pointer to T one origin.
                 
             public:
@@ -185,6 +185,7 @@ namespace smtrat
                  */
                 bool activate( const T& _origin ) const
                 {
+                    assert(mpOrigins->find(_origin) == mpOrigins->end());
                     mpOrigins->insert( _origin );
                     return mpOrigins->size() == 1;
                 }
@@ -205,7 +206,7 @@ namespace smtrat
                 /**
                  * @return A constant reference to the set of origins of this bound.
                  */
-                const std::set<T>& origins() const
+                const std::set<T,carl::less<T,false>>& origins() const
                 {
                     return *mpOrigins;
                 }
@@ -468,19 +469,19 @@ namespace smtrat
                  * @param _var The variable to get origins of the bounds for.
                  * @return The origin constraints of the supremum and infimum of the given variable.
                  */
-                std::set<T> getOriginsOfBounds( const carl::Variable& _var ) const;
+                std::set<T,carl::less<T,false>> getOriginsOfBounds( const carl::Variable& _var ) const;
                 
                 /**
                  * @param _variables The variables to get origins of the bounds for.
                  * @return The origin constraints of the supremum and infimum of the given variables.
                  */
-                std::set<T> getOriginsOfBounds( const carl::Variables& _variables ) const;
+                std::set<T,carl::less<T,false>> getOriginsOfBounds( const carl::Variables& _variables ) const;
                 
                 /**
                  * Collect the origins to the supremums and infimums of all variables.
                  * @return A set of origins corresponding to the supremums and infimums of all variables.
                  */
-                std::set<T> getOriginsOfBounds() const;
+                std::set<T,carl::less<T,false>> getOriginsOfBounds() const;
                 
                 /**
                  * @return The deductions which this variable bounds manager has detected.
@@ -507,11 +508,11 @@ namespace smtrat
                 /**
                  * @return The origins which cause the conflict. This method can only be called, if there is a conflict.
                  */
-                std::set<T> getConflict() const
+                std::set<T,carl::less<T,false>> getConflict() const
                 {
                     assert( isConflicting() );
                     assert( !mpConflictingVariable->infimum().isInfinite() && !mpConflictingVariable->supremum().isInfinite() );
-                    std::set<T> conflict;
+                    std::set<T,carl::less<T,false>> conflict;
                     conflict.insert( *mpConflictingVariable->infimum().origins().begin() );
                     conflict.insert( *mpConflictingVariable->supremum().origins().begin() );
                     return conflict;

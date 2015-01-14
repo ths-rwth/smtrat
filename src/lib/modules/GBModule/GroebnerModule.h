@@ -96,7 +96,7 @@ protected:
     /** A workaround to associate equalities in the passed formula originating from the gb
      * (in contrast to those which originate from simplified formulae)
      */
-    std::set<FormulaT> mGbEqualities;
+    FormulasT mGbEqualities;
 
 public:
     GroebnerModule( ModuleType _type, const ModuleInput* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
@@ -114,7 +114,7 @@ protected:
     void popBacktrackPoint( ModuleInput::const_iterator btpoint );
     bool saveState( );
 
-    std::set<FormulaT> generateReasons( const carl::BitVector& reasons );
+    FormulasT generateReasons( const carl::BitVector& reasons );
     void passGB( );
     
     void knownConstraintDeduction( const std::list<std::pair<carl::BitVector, carl::BitVector> >& deductions );

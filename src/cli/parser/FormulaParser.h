@@ -24,7 +24,7 @@ struct FormulaParser: public qi::grammar<Iterator, FormulaT(), Skipper> {
 private:
 	ParserState* state;
 
-	FormulaT mkFormula(carl::FormulaType _type, std::set<FormulaT>& _subformulas);
+	FormulaT mkFormula(carl::FormulaType _type, FormulasT& _subformulas);
 	FormulaT mkConstraint(const Poly&, const Poly&, carl::Relation);
 	FormulaT mkEquality(const Arguments& args);
 	FormulaT mkDistinct(const Arguments& args);
@@ -45,7 +45,7 @@ private:
 	
 	qi::rule<Iterator, FormulaT(), Skipper> formula;
 	qi::rule<Iterator, FormulaT(), Skipper> formula_op;
-	qi::rule<Iterator, std::set<FormulaT>(), Skipper> formula_list;	
+	qi::rule<Iterator, FormulasT(), Skipper> formula_list;	
 	
 };
 	

@@ -61,7 +61,7 @@ FormulaParser::FormulaParser(ParserState* _state):
 	formula_op.name("formula operation");
 }
 
-FormulaT FormulaParser::mkFormula( carl::FormulaType type, std::set<FormulaT>& _subformulas )
+FormulaT FormulaParser::mkFormula( carl::FormulaType type, FormulasT& _subformulas )
 {
 	assert(type == carl::FormulaType::AND || type == carl::FormulaType::OR || type == carl::FormulaType::XOR || type == carl::FormulaType::IFF);
 	return FormulaT(type, _subformulas);
@@ -90,7 +90,7 @@ FormulaT FormulaParser::mkConstraint(const Poly& lhs, const Poly& rhs, carl::Rel
 		// 2^n Polynomials with values substituted.
 		std::vector<Poly> polys({p});
 		// 2^n Formulas collecting the conditions.
-		std::vector<std::set<FormulaT>> conds(1 << n);
+		std::vector<FormulasT> conds(1 << n);
 		unsigned repeat = 1 << (n-1);
 		for (auto v: vars) {
 			auto t = state->mTheoryItes[v];
@@ -110,7 +110,7 @@ FormulaT FormulaParser::mkConstraint(const Poly& lhs, const Poly& rhs, carl::Rel
 			repeat /= 2;
 		}
 		// Now combine everything: (and (=> (and conditions) constraint) ...)
-		std::set<FormulaT> subs;
+		FormulasT subs;
 		for (unsigned i = 0; i < polys.size(); i++) {
 			subs.insert(FormulaT(carl::FormulaType::IMPLIES, FormulaT(carl::FormulaType::AND, conds[i]), FormulaT(polys[i], rel)));
 		}
@@ -164,7 +164,7 @@ public:
 };
 
 FormulaT FormulaParser::mkEquality(const Arguments& args) {
-	std::set<FormulaT> subformulas;
+	FormulasT subformulas;
 	EqualityGenerator eg(false, this);
 	for (std::size_t i = 0; i < args.size() - 1; i++) {
 		subformulas.insert(boost::apply_visitor(eg, args[i], args[i+1]));
@@ -173,7 +173,7 @@ FormulaT FormulaParser::mkEquality(const Arguments& args) {
 }
 
 FormulaT FormulaParser::mkDistinct(const Arguments& args) {
-	std::set<FormulaT> subformulas;
+	FormulasT subformulas;
 	EqualityGenerator eg(true, this);
 	for (std::size_t i = 0; i < args.size() - 1; i++) {
 		for (std::size_t j = i + 1; j < args.size(); j++) {

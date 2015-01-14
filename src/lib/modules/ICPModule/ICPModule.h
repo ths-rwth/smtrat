@@ -129,10 +129,10 @@ namespace smtrat
             LRAModule<LRASettings1>                                                             mLRA; // internal LRA module
             
             std::set<const ConstraintT*>                                                         mCenterConstraints; // keeps actual centerConstaints for deletion
-            std::set<FormulaT>                                                                 mCreatedDeductions; // keeps pointers to the created deductions for deletion
+            FormulasT                                                                 mCreatedDeductions; // keeps pointers to the created deductions for deletion
             icp::ContractionCandidate*                                                          mLastCandidate; // the last applied candidate
             #ifndef BOXMANAGEMENT
-            std::queue<std::set<FormulaT> >                                                    mBoxStorage; // keeps the box before contraction
+            std::queue<FormulasT >                                                    mBoxStorage; // keeps the box before contraction
             #endif
             bool                                                                                mIsIcpInitialized; // initialized ICPModule?
             unsigned                                                                            mCurrentId; // keeps the currentId of the state nodes
@@ -330,13 +330,13 @@ namespace smtrat
              * 
              * @return 
              */
-            std::set<FormulaT> createPremiseDeductions();
+            FormulasT createPremiseDeductions();
             
             /**
              * 
              * @return 
              */
-            std::set<FormulaT> createBoxFormula();
+            FormulasT createBoxFormula();
                         
             /**
              * Checks if there is a need for a split and manages the splitting and branching in the
@@ -366,7 +366,7 @@ namespace smtrat
              * @param _candidates
              * @return 
              */
-            bool updateIcpRelevantCandidates( const vec_set_const_pFormula& _infSubsetsInLinearization );
+            bool updateIcpRelevantCandidates( const std::vector<FormulasT>& _infSubsetsInLinearization );
             
             /**
              * Removes all centerconstraints from the validation formula - needed before adding actual centerconstraints
@@ -398,21 +398,21 @@ namespace smtrat
              * @param _reasons
              * @return 
              */
-            std::set<FormulaT> variableReasonHull( icp::set_icpVariable& _reasons );
+            FormulasT variableReasonHull( icp::set_icpVariable& _reasons );
             
             /**
              * Compute hull of defining origins for set of constraints.
              * @param _map
              * @return 
              */
-            std::set<FormulaT> constraintReasonHull( const std::set<const ConstraintT*>& _reasons );
+            FormulasT constraintReasonHull( const std::set<const ConstraintT*>& _reasons );
             
             
             /**
              * creates constraints for the actual bounds of the original variables.
              * @return 
              */
-            std::set<FormulaT> createConstraintsFromBounds( const EvalDoubleIntervalMap& _map );
+            FormulasT createConstraintsFromBounds( const EvalDoubleIntervalMap& _map );
             
             /**
              * Parses obtained deductions from the LRA module and maps them to original constraints or introduces new ones.
@@ -448,7 +448,7 @@ namespace smtrat
             /**
              * generates and sets the infeasible subset
              */
-            std::set<FormulaT> collectReasons( icp::HistoryNode* _node );
+            FormulasT collectReasons( icp::HistoryNode* _node );
             //#endif
             
             bool intervalsEmpty( bool _original = false) const;

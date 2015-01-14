@@ -139,7 +139,7 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
-        void Tableau<Settings,T1,T2>::activateBound( const Bound<T1,T2>* _bound, const std::set<smtrat::FormulaT>& _formulas )
+        void Tableau<Settings,T1,T2>::activateBound( const Bound<T1,T2>* _bound, const FormulasT& _formulas )
         {
             _bound->pOrigins()->push_back( _formulas );
             const Variable<T1,T2>& var = _bound->variable();
@@ -172,7 +172,7 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
-        std::pair<const Bound<T1,T2>*, bool> Tableau<Settings,T1,T2>::newBound( const smtrat::FormulaT& _constraint )
+        std::pair<const Bound<T1,T2>*, bool> Tableau<Settings,T1,T2>::newBound( const FormulaT& _constraint )
         {
             auto ctbIter = mConstraintToBound.find( _constraint );
             if( ctbIter != mConstraintToBound.end() )
@@ -294,7 +294,7 @@ namespace smtrat
                 }
                 case carl::Relation::NEQ:
                 {
-                    smtrat::FormulaT constraintLess = smtrat::FormulaT( carl::newConstraint<smtrat::Poly>( constraint.lhs(), carl::Relation::LESS ) );
+                    FormulaT constraintLess = FormulaT( carl::newConstraint<Poly>( constraint.lhs(), carl::Relation::LESS ) );
                     Value<T1>* valueA = constraint.integerValued() ? new Value<T1>( boundValue - T1( 1 ) ) : new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
                     result = negative ? newVar->addLowerBound( valueA, mDefaultBoundPosition, constraintLess ) : newVar->addUpperBound( valueA, mDefaultBoundPosition, constraintLess );
                     std::vector< const Bound<T1,T2>* >* boundVectorLess = new std::vector< const Bound<T1,T2>* >();
@@ -305,7 +305,7 @@ namespace smtrat
                     std::vector< const Bound<T1,T2>* >* boundVectorB = new std::vector< const Bound<T1,T2>* >();
                     boundVectorB->push_back( result.first );
                     
-                    smtrat::FormulaT constraintLeq = smtrat::FormulaT( carl::newConstraint<smtrat::Poly>( constraint.lhs(), carl::Relation::LEQ ) );
+                    FormulaT constraintLeq = FormulaT( carl::newConstraint<Poly>( constraint.lhs(), carl::Relation::LEQ ) );
                     Value<T1>* valueB = new Value<T1>( boundValue );
                     result = negative ? newVar->addLowerBound( valueB, mDefaultBoundPosition, constraintLeq ) : newVar->addUpperBound( valueB, mDefaultBoundPosition, constraintLeq );
                     std::vector< const Bound<T1,T2>* >* boundVectorLeq = new std::vector< const Bound<T1,T2>* >();
@@ -315,7 +315,7 @@ namespace smtrat
                     
                     boundVectorB->push_back( result.first );
                     
-                    smtrat::FormulaT constraintGeq = smtrat::FormulaT( carl::newConstraint<smtrat::Poly>( constraint.lhs(), carl::Relation::GEQ ) );
+                    FormulaT constraintGeq = FormulaT( carl::newConstraint<Poly>( constraint.lhs(), carl::Relation::GEQ ) );
                     Value<T1>* valueC = new Value<T1>( boundValue );
                     result = negative ? newVar->addUpperBound( valueC, mDefaultBoundPosition, constraintGeq ) : newVar->addLowerBound( valueC, mDefaultBoundPosition, constraintGeq );
                     std::vector< const Bound<T1,T2>* >* boundVectorGeq = new std::vector< const Bound<T1,T2>* >();
@@ -325,7 +325,7 @@ namespace smtrat
                     
                     boundVectorB->push_back( result.first );
                     
-                    smtrat::FormulaT constraintGreater = smtrat::FormulaT( carl::newConstraint<smtrat::Poly>( constraint.lhs(), carl::Relation::GREATER ) );
+                    FormulaT constraintGreater = FormulaT( carl::newConstraint<Poly>( constraint.lhs(), carl::Relation::GREATER ) );
                     Value<T1>* valueD = constraint.integerValued() ? new Value<T1>( boundValue + T1( 1 ) ) : new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
                     result = negative ? newVar->addUpperBound( valueD, mDefaultBoundPosition, constraintGreater ) : newVar->addLowerBound( valueD, mDefaultBoundPosition, constraintGreater );
                     std::vector< const Bound<T1,T2>* >* boundVectorGreater = new std::vector< const Bound<T1,T2>* >();
@@ -343,7 +343,7 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
-        Variable<T1, T2>* Tableau<Settings,T1,T2>::newNonbasicVariable( const smtrat::Poly* _poly, bool _isInteger )
+        Variable<T1, T2>* Tableau<Settings,T1,T2>::newNonbasicVariable( const Poly* _poly, bool _isInteger )
         {
             Variable<T1, T2>* var = new Variable<T1, T2>( mWidth++, _poly, mDefaultBoundPosition, _isInteger );
             mColumns.push_back( var );
@@ -351,7 +351,7 @@ namespace smtrat
         }
 
         template<class Settings, typename T1, typename T2>
-        Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( const smtrat::Poly* _poly, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars, bool _isInteger )
+        Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( const Poly* _poly, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars, bool _isInteger )
         {
             mNonActiveBasics.emplace_front();
             Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), _poly, mDefaultBoundPosition, _isInteger );
@@ -378,7 +378,7 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
-        Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, const smtrat::Poly& poly, T2 leading_coeff, bool isInteger )
+        Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, const Poly& poly, T2 leading_coeff, bool isInteger )
         {
             std::list<std::pair<Variable<T1,T2>*,T2>> nonbasicvar_coefficient = std::list<std::pair<Variable<T1,T2>*,T2>>();            
             auto iter = nonbasicindex_coefficient.begin();
@@ -606,9 +606,9 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
-        smtrat::EvalRationalMap Tableau<Settings,T1,T2>::getRationalAssignment() const
+        EvalRationalMap Tableau<Settings,T1,T2>::getRationalAssignment() const
         {
-            smtrat::EvalRationalMap result;
+            EvalRationalMap result;
             T1 minDelta = -1;
             T1 curDelta = 0;
             Variable<T1,T2>* variable = NULL;
@@ -1763,12 +1763,12 @@ namespace smtrat
                         #endif
                         {
                             #ifdef LRA_NO_DIVISION
-                            smtrat::Poly lhs = (*ubound)->variable().expression()*(Rational)rowFactor - (Rational)newlimit->mainPart();
+                            Poly lhs = (*ubound)->variable().expression()*(Rational)rowFactor - (Rational)newlimit->mainPart();
                             #else
-                            smtrat::Poly lhs = (*ubound)->variable().expression() - (Rational)newlimit->mainPart();
+                            Poly lhs = (*ubound)->variable().expression() - (Rational)newlimit->mainPart();
                             #endif
                             carl::Relation rel = newlimit->deltaPart() != 0 ? carl::Relation::LESS : carl::Relation::LEQ;
-                            smtrat::FormulaT constraint = smtrat::FormulaT( carl::newConstraint<smtrat::Poly>( lhs, rel ) );
+                            FormulaT constraint = FormulaT( carl::newConstraint<Poly>( lhs, rel ) );
                             learnedBound.newBound = basicVar.addUpperBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                         }
                         else
@@ -1853,12 +1853,12 @@ namespace smtrat
                         #endif
                         {
                             #ifdef LRA_NO_DIVISION
-                            smtrat::Poly lhs = (*lbound)->variable().expression()*(Rational)rowFactor - (Rational)newlimit->mainPart();
+                            Poly lhs = (*lbound)->variable().expression()*(Rational)rowFactor - (Rational)newlimit->mainPart();
                             #else
-                            smtrat::Poly lhs = (*lbound)->variable().expression() - (Rational)newlimit->mainPart();
+                            Poly lhs = (*lbound)->variable().expression() - (Rational)newlimit->mainPart();
                             #endif
                             carl::Relation rel = newlimit->deltaPart() != 0 ? carl::Relation::GREATER : carl::Relation::GEQ;
-                            smtrat::FormulaT constraint = smtrat::FormulaT( carl::newConstraint<smtrat::Poly>( lhs, rel ) );
+                            FormulaT constraint = FormulaT( carl::newConstraint<Poly>( lhs, rel ) );
                             learnedBound.newBound = basicVar.addLowerBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                         }
                         else
@@ -1943,7 +1943,7 @@ namespace smtrat
 //        #define LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
         
         template<class Settings, typename T1, typename T2>
-        typename std::map<carl::Variable, Variable<T1,T2>*>::iterator Tableau<Settings,T1,T2>::substitute( carl::Variable::Arg _var, const smtrat::Poly& _term )
+        typename std::map<carl::Variable, Variable<T1,T2>*>::iterator Tableau<Settings,T1,T2>::substitute( carl::Variable::Arg _var, const Poly& _term )
         {
             #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
             std::cout << __func__ << "  " << _var << " -> " << _term << std::endl;
@@ -1951,7 +1951,7 @@ namespace smtrat
             #endif
             assert( mNonActiveBasics.empty() ); // This makes removing lra-variables far easier and must be assured before invoking this method.
             std::set<Variable<T1,T2>*> slackVarsToRemove;
-            std::map<smtrat::FormulaT,std::set<smtrat::FormulaT>> constraintToAdd;
+            std::map<FormulaT,FormulasT> constraintToAdd;
             auto iter = mConstraintToBound.begin();
             while( iter != mConstraintToBound.end() )
             {
@@ -1967,14 +1967,14 @@ namespace smtrat
                     #endif
                     assert( iter->second->front()->pVariable()->isBasic() ); // This makes removing lra-variables far easier and must be assured before invoking this method.
                     slackVarsToRemove.insert( iter->second->front()->pVariable() );
-                    smtrat::FormulaT cons = smtrat::FormulaT( carl::newConstraint<smtrat::Poly>( constraint.lhs().substitute( _var, _term ), constraint.relation() ) );
+                    FormulaT cons = FormulaT( carl::newConstraint<Poly>( constraint.lhs().substitute( _var, _term ), constraint.relation() ) );
                     if( cons.constraint().isConsistent() == 2 )
                     {
                         #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
                         std::cout << "add constraint " << *cons << std::endl;
                         #endif
-                        std::set<smtrat::FormulaT> origins;
-                        constraintToAdd.insert( std::pair<smtrat::FormulaT,std::set<smtrat::FormulaT>>( cons, origins ) );
+                        FormulasT origins;
+                        constraintToAdd.insert( std::pair<FormulaT,FormulasT>( cons, origins ) );
                     }
                     iter = mConstraintToBound.erase( iter );
                 }
@@ -2076,11 +2076,11 @@ namespace smtrat
             if( mRows[_rowNumber] == NULL ) return false;
             if( _rowNumber != mRows[_rowNumber]->position() ) return false;
             size_t numOfRowElements = 0;
-            smtrat::Poly sumOfNonbasics = smtrat::ZERO_POLYNOMIAL;
+            Poly sumOfNonbasics = ZERO_POLYNOMIAL;
             Iterator rowEntry = Iterator( mRows[_rowNumber]->startEntry(), mpEntries );
             while( !rowEntry.hEnd( false ) )
             {
-                sumOfNonbasics += (*((*rowEntry).columnVar()->pExpression())) * smtrat::Poly( (*rowEntry).content() );
+                sumOfNonbasics += (*((*rowEntry).columnVar()->pExpression())) * Poly( (*rowEntry).content() );
                 ++numOfRowElements;
                 rowEntry.hMove( false );
             }
@@ -2089,11 +2089,11 @@ namespace smtrat
             {
                 return false;
             }
-            sumOfNonbasics += (*((*rowEntry).columnVar()->pExpression())) * smtrat::Poly( (*rowEntry).content() );
+            sumOfNonbasics += (*((*rowEntry).columnVar()->pExpression())) * Poly( (*rowEntry).content() );
             #ifdef LRA_NO_DIVISION
-            sumOfNonbasics += (*mRows[_rowNumber]->pExpression()) * smtrat::Poly( mRows[_rowNumber]->factor() ) * smtrat::MINUS_ONE_POLYNOMIAL;
+            sumOfNonbasics += (*mRows[_rowNumber]->pExpression()) * Poly( mRows[_rowNumber]->factor() ) * MINUS_ONE_POLYNOMIAL;
             #else
-            sumOfNonbasics += (*mRows[_rowNumber]->pExpression()) * smtrat::MINUS_ONE_POLYNOMIAL;
+            sumOfNonbasics += (*mRows[_rowNumber]->pExpression()) * MINUS_ONE_POLYNOMIAL;
             #endif
             if( !sumOfNonbasics.isZero() ) 
             {
@@ -2103,7 +2103,7 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
-        const smtrat::ConstraintT* Tableau<Settings,T1,T2>::isDefining( size_t row_index, std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, T2 lcm, T2& max_value ) const
+        const ConstraintT* Tableau<Settings,T1,T2>::isDefining( size_t row_index, std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, T2 lcm, T2& max_value ) const
         {
             const Variable<T1, T2>& basic_var = *mRows.at(row_index);
             basic_var.expression();
@@ -2155,7 +2155,7 @@ namespace smtrat
                 {
                     dc_poly = dc_poly - (Rational)(basic_var.infimum().limit().mainPart());
                 }
-                const smtrat::ConstraintT* dc_constraint = newConstraint( dc_poly, carl::Relation::EQ );
+                const ConstraintT* dc_constraint = newConstraint( dc_poly, carl::Relation::EQ );
                 return dc_constraint;
             }
             else
@@ -2853,7 +2853,7 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
-        smtrat::Poly* Tableau<Settings,T1,T2>::create_cut_from_proof( Tableau<Settings,T1,T2>& Inverted_Tableau, Tableau<Settings,T1,T2>& DC_Tableau, size_t row_index, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions, T2& lower, T2& max_value )
+        Poly* Tableau<Settings,T1,T2>::create_cut_from_proof( Tableau<Settings,T1,T2>& Inverted_Tableau, Tableau<Settings,T1,T2>& DC_Tableau, size_t row_index, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions, T2& lower, T2& max_value )
         {
             Value<T1> result = T2(0);
             assert( mRows.size() > row_index );
@@ -2953,7 +2953,7 @@ namespace smtrat
         };
 
         template<class Settings, typename T1, typename T2>
-        const smtrat::Poly* Tableau<Settings,T1,T2>::gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar )
+        const Poly* Tableau<Settings,T1,T2>::gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar )
         {
             Poly* sum = new Poly();
             *sum = ZERO_POLYNOMIAL; 
@@ -3094,7 +3094,7 @@ namespace smtrat
             #ifdef LRA_DEBUG_GOMORY_CUT
             std::cout << "sum = " << sum << std::endl;
             #endif
-            //const smtrat::Constraint* gomory_constr = newConstraint( *sum , carl::Relation::GEQ );
+            //const Constraint* gomory_constr = newConstraint( *sum , carl::Relation::GEQ );
             //newBound(gomory_constr);
             // TODO: check whether there is already a basic variable with this polynomial (psum, cf. LRAModule::initialize(..)) 
             return sum;
@@ -3120,7 +3120,7 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
-        void Tableau<Settings,T1,T2>::collect_premises( const Variable<T1,T2>* _rowVar, std::set<smtrat::FormulaT>& premises )
+        void Tableau<Settings,T1,T2>::collect_premises( const Variable<T1,T2>* _rowVar, FormulasT& premises )
         {
             Iterator row_iterator = Iterator( _rowVar->startEntry(), mpEntries );  
             while( true )
@@ -3128,12 +3128,12 @@ namespace smtrat
                 const Variable<T1, T2>& nonBasicVar = *(*row_iterator).columnVar();
                 if( nonBasicVar.infimum() == nonBasicVar.assignment() )
                 {
-                    const std::set<smtrat::FormulaT>& origs = (*row_iterator).columnVar()->infimum().origins().front();
+                    const FormulasT& origs = (*row_iterator).columnVar()->infimum().origins().front();
                     premises.insert( origs.begin(), origs.end() );                        
                 }
                 else if( nonBasicVar.supremum() == nonBasicVar.assignment() )
                 {
-                    const std::set<smtrat::FormulaT>& origs = (*row_iterator).columnVar()->supremum().origins().front();
+                    const FormulasT& origs = (*row_iterator).columnVar()->supremum().origins().front();
                     premises.insert( origs.begin(), origs.end() );                                               
                 }
                 if( !row_iterator.hEnd( false ) )
