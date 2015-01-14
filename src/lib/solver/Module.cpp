@@ -200,10 +200,10 @@ namespace smtrat
             }
         }
         // Delete all infeasible subsets in which the constraint to delete occurs.
-        vec_set_const_pFormula::iterator infSubSet = mInfeasibleSubsets.begin();
+        std::vector<FormulasT>::iterator infSubSet = mInfeasibleSubsets.begin();
         while( infSubSet != mInfeasibleSubsets.end() )
         {
-            set<FormulaT>::iterator infSubformula = infSubSet->begin();
+            FormulasT::iterator infSubformula = infSubSet->begin();
             while( infSubformula != infSubSet->end() )
             {
                 if( *infSubformula == *_receivedSubformula )
@@ -266,7 +266,7 @@ namespace smtrat
         return addSubformulaToPassedFormula( _subformula->formula(), _subformula->formula() );
     }
 
-    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, const vec_set_const_pFormula& _origins )
+    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, const std::vector<FormulasT>& _origins )
     {
         assert( mpReceivedFormula->size() != UINT_MAX );
         auto res = mpPassedFormula->add( _formula, _origins );
@@ -279,7 +279,7 @@ namespace smtrat
         return res;
     }
 
-    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, vec_set_const_pFormula&& _origins )
+    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, std::vector<FormulasT>&& _origins )
     {
         assert( mpReceivedFormula->size() != UINT_MAX );
         auto res = mpPassedFormula->add( _formula, std::move( _origins ) );
@@ -305,16 +305,16 @@ namespace smtrat
         return res;
     }
 
-    vec_set_const_pFormula Module::merge( const vec_set_const_pFormula& _vecSetA, const vec_set_const_pFormula& _vecSetB ) const
+    std::vector<FormulasT> Module::merge( const std::vector<FormulasT>& _vecSetA, const std::vector<FormulasT>& _vecSetB ) const
     {
-        vec_set_const_pFormula result;
-        vec_set_const_pFormula::const_iterator originSetA = _vecSetA.begin();
+        std::vector<FormulasT> result;
+        std::vector<FormulasT>::const_iterator originSetA = _vecSetA.begin();
         while( originSetA != _vecSetA.end() )
         {
-            vec_set_const_pFormula::const_iterator originSetB = _vecSetB.begin();
+            std::vector<FormulasT>::const_iterator originSetB = _vecSetB.begin();
             while( originSetB != _vecSetB.end() )
             {
-                result.push_back( set<FormulaT>( originSetA->begin(), originSetA->end() ) );
+                result.push_back( FormulasT( originSetA->begin(), originSetA->end() ) );
                 result.back().insert( originSetB->begin(), originSetB->end() );
                 ++originSetB;
             }
@@ -323,7 +323,7 @@ namespace smtrat
         return result;
     }
     
-    size_t Module::determine_smallest_origin( std::vector<std::set<FormulaT> >& origins) const
+    size_t Module::determine_smallest_origin( std::vector<FormulasT>& origins) const
     {
         assert( !origins.empty() );
         auto iter = origins.begin();
@@ -393,7 +393,7 @@ namespace smtrat
         return false;
     }
     
-    void Module::branchAt( const Poly& _polynomial, const Rational& _value, const set<FormulaT>& _premise, bool _leftCaseWeak )
+    void Module::branchAt( const Poly& _polynomial, const Rational& _value, const FormulasT& _premise, bool _leftCaseWeak )
     {
         assert( !_polynomial.hasConstantTerm() );
         const ConstraintT* constraintA = NULL;
@@ -437,7 +437,7 @@ namespace smtrat
             }
         }
         // (p<=I-1 or p>=I)
-        set<FormulaT> subformulasA;
+        FormulasT subformulasA;
         for( const FormulaT& pre : _premise )
         {
             assert( find( mpReceivedFormula->begin(), mpReceivedFormula->end(), pre ) != mpReceivedFormula->end() );
@@ -452,7 +452,7 @@ namespace smtrat
         FormulaT dedA = FormulaT( FormulaType::OR, std::move( subformulasA ) );
         addDeduction( dedA );
         // (not(x<=I-1) or not(x>=I))
-        set<FormulaT> subformulasB;
+        FormulasT subformulasB;
         for( const FormulaT& pre : _premise )
         {
             assert( find( mpReceivedFormula->begin(), mpReceivedFormula->end(), pre ) != mpReceivedFormula->end() );
@@ -474,7 +474,7 @@ namespace smtrat
         FormulaT greaterConstraint = FormulaT( lhs, Relation::GREATER );
         FormulaT notGreaterConstraint = FormulaT( FormulaType::NOT, greaterConstraint );
         // (not p!=0 or p<0 or p>0)
-        set<FormulaT> subformulas;
+        FormulasT subformulas;
         subformulas.insert( FormulaT( FormulaType::NOT, _unequalConstraint ) );
         subformulas.insert( lessConstraint );
         subformulas.insert( greaterConstraint );
@@ -500,7 +500,7 @@ namespace smtrat
         {
             if( !(*backend)->infeasibleSubsets().empty() )
             {
-                vec_set_const_pFormula infsubsets = getInfeasibleSubsets( **backend );
+                std::vector<FormulasT> infsubsets = getInfeasibleSubsets( **backend );
                 mInfeasibleSubsets.insert( mInfeasibleSubsets.end(), infsubsets.begin(), infsubsets.end() );
                 // return;
             }
@@ -546,12 +546,12 @@ namespace smtrat
         }
     }
 
-    vec_set_const_pFormula Module::getInfeasibleSubsets( const Module& _backend ) const
+    std::vector<FormulasT> Module::getInfeasibleSubsets( const Module& _backend ) const
     {
-        vec_set_const_pFormula result;
-        const vec_set_const_pFormula& backendsInfsubsets = _backend.infeasibleSubsets();
+        std::vector<FormulasT> result;
+        const std::vector<FormulasT>& backendsInfsubsets = _backend.infeasibleSubsets();
         assert( !backendsInfsubsets.empty() );
-        for( vec_set_const_pFormula::const_iterator infSubSet = backendsInfsubsets.begin(); infSubSet != backendsInfsubsets.end(); ++infSubSet )
+        for( std::vector<FormulasT>::const_iterator infSubSet = backendsInfsubsets.begin(); infSubSet != backendsInfsubsets.end(); ++infSubSet )
         {
             assert( !infSubSet->empty() );
             #ifdef SMTRAT_DEVOPTION_Validation
@@ -560,15 +560,15 @@ namespace smtrat
                 addAssumptionToCheck( *infSubSet, false, moduleName( _backend.type() ) + "_infeasible_subset" );
             }
             #endif
-            result.push_back( set<FormulaT>() );
-            for( set<FormulaT>::const_iterator cons = infSubSet->begin(); cons != infSubSet->end(); ++cons )
+            result.push_back( FormulasT() );
+            for( FormulasT::const_iterator cons = infSubSet->begin(); cons != infSubSet->end(); ++cons )
             {
                 ModuleInput::const_iterator posInReceived = mpPassedFormula->find( *cons );
                 assert( posInReceived != mpReceivedFormula->end() );
-                const vec_set_const_pFormula& formOrigins = posInReceived->origins();
+                const std::vector<FormulasT>& formOrigins = posInReceived->origins();
                 // Find the smallest set of origins.
-                vec_set_const_pFormula::const_iterator smallestOriginSet = formOrigins.begin();
-                vec_set_const_pFormula::const_iterator originSet = formOrigins.begin();
+                std::vector<FormulasT>::const_iterator smallestOriginSet = formOrigins.begin();
+                std::vector<FormulasT>::const_iterator originSet = formOrigins.begin();
                 while( originSet != formOrigins.end() )
                 {
                     if( originSet->size() == 1 )
@@ -582,7 +582,7 @@ namespace smtrat
                 }
                 assert( smallestOriginSet != formOrigins.end() );
                 // Add its formulas to the infeasible subset.
-                for( set<FormulaT>::const_iterator originFormula = smallestOriginSet->begin(); originFormula != smallestOriginSet->end();
+                for( FormulasT::const_iterator originFormula = smallestOriginSet->begin(); originFormula != smallestOriginSet->end();
                         ++originFormula )
                 {
                     result.back().insert( *originFormula );
@@ -850,7 +850,7 @@ namespace smtrat
         mVariablesInAssumptionToCheck.insert( _label );
     }
 
-    void Module::addAssumptionToCheck( const set<FormulaT>& _formulas, bool _consistent, const string& _label )
+    void Module::addAssumptionToCheck( const FormulasT& _formulas, bool _consistent, const string& _label )
     {
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
@@ -939,7 +939,7 @@ namespace smtrat
         return true;
     }
     
-    void Module::checkInfSubsetForMinimality( vec_set_const_pFormula::const_iterator _infsubset, const string& _filename, unsigned _maxSizeDifference ) const
+    void Module::checkInfSubsetForMinimality( std::vector<FormulasT>::const_iterator _infsubset, const string& _filename, unsigned _maxSizeDifference ) const
     {
         stringstream filename;
         filename << _filename << "_" << moduleName(mType) << "_" << mSmallerMusesCheckCounter << ".smt2";

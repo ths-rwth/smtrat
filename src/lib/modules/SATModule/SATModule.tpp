@@ -155,9 +155,9 @@ namespace smtrat
         while( mBooleanConstraintMap.size() > 0 )
         {
             Abstraction*& abstrAToDel = mBooleanConstraintMap.last().first;
-            std::vector<std::set<FormulaT>>* toDelA = abstrAToDel->origins;
+            std::vector<FormulasT>* toDelA = abstrAToDel->origins;
             Abstraction*& abstrBToDel = mBooleanConstraintMap.last().second;
-            std::vector<std::set<FormulaT>>* toDelB = abstrBToDel->origins;
+            std::vector<FormulasT>* toDelB = abstrBToDel->origins;
             mBooleanConstraintMap.pop();
             delete abstrAToDel;
             delete abstrBToDel;
@@ -345,7 +345,7 @@ namespace smtrat
         assert( !ok );
         mInfeasibleSubsets.clear();
         // Set the infeasible subset to the set of all clauses.
-        std::set<FormulaT> infeasibleSubset;
+        FormulasT infeasibleSubset;
 //        if( mpReceivedFormula->isConstraintConjunction() )
 //        {
 //            getInfeasibleSubsets();
@@ -493,7 +493,7 @@ namespace smtrat
             {
                 Var var = newVar( true, true, content.activity() );
                 mBooleanVarMap[content.boolean()] = var;
-                std::set<FormulaT> originsSet;
+                FormulasT originsSet;
                 originsSet.insert( _origin );
                 mBooleanConstraintMap.push( std::make_pair( 
                     new Abstraction( passedFormulaEnd(), content ), 
@@ -503,7 +503,7 @@ namespace smtrat
             if( !_origin.isTrue() )
             {
                 Abstraction& abstr = negated ? *mBooleanConstraintMap[var(l)].second : *mBooleanConstraintMap[var(l)].first;
-                std::set<FormulaT> originsSet;
+                FormulasT originsSet;
                 originsSet.insert( _origin );
                 abstr.origins->push_back( std::move( originsSet ) );
             }
@@ -525,7 +525,7 @@ namespace smtrat
                 Abstraction& abstr = sign(constraintLiteralPair->second.front()) ? *abstrPair.second : *abstrPair.first;
                 if( !_origin.isTrue() || !negated )
                 {
-                    std::set<FormulaT> originsSet;
+                    FormulasT originsSet;
                     originsSet.insert( _origin );
                     assert( abstr.origins->empty() || std::find( abstr.origins->begin(), abstr.origins->end(), originsSet ) == abstr.origins->end() );
                     if( !abstr.consistencyRelevant )
@@ -582,7 +582,7 @@ namespace smtrat
                 // add the constraint and its negation to the constraints to inform backends about
                 if( !_origin.isTrue() )
                 {
-                    std::set<FormulaT> originsSet;
+                    FormulasT originsSet;
                     originsSet.insert( _origin );
                     if( negated )
                     {
@@ -2351,7 +2351,7 @@ NextClause:
         std::vector<Module*>::const_iterator backend = usedBackends().begin();
         while( backend != usedBackends().end() )
         {
-            const vec_set_const_pFormula& infSubsets = (*backend)->infeasibleSubsets();
+            const std::vector<FormulasT>& infSubsets = (*backend)->infeasibleSubsets();
             assert( (*backend)->solverState() != False || !infSubsets.empty() );
             for( auto infsubset = infSubsets.begin(); infsubset != infSubsets.end(); ++infsubset )
             {

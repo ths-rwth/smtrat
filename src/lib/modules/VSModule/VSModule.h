@@ -27,12 +27,9 @@
 
 #pragma once
 
-#define VS_INCREMENTAL
-#define VS_INFEASIBLE_SUBSET_GENERATION
-
 //#define VS_STATISTICS
 //#define VS_PRINT_ANSWERS
-//#define VS_LOG_INTERMEDIATE_STEPS
+#define VS_LOG_INTERMEDIATE_STEPS
 
 #include "../../Common.h"
 #include "Substitute.h"
@@ -175,7 +172,7 @@ namespace smtrat
             
             bool checkRanking() const;
             
-            std::set<FormulaT> getReasons( const std::set<const vs::Condition*>& _conditions ) const;
+            FormulasT getReasons( const carl::PointerSet<vs::Condition>& _conditions ) const;
             
             /**
              * 

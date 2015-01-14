@@ -149,7 +149,7 @@ namespace smtrat
 			return true;
                     case carl::FormulaType::FALSE: {
 			this->hasFalse = true;
-			std::set<FormulaT> infSubSet;
+			FormulasT infSubSet;
 			infSubSet.insert(_subformula->formula());
 			mInfeasibleSubsets.push_back(infSubSet);
 			foundAnswer(False);
@@ -224,8 +224,8 @@ namespace smtrat
 			#endif
 			#ifdef SMTRAT_CAD_DISABLE_MIS
 			// construct a trivial infeasible subset
-			std::set<FormulaT> boundConstraints = mVariableBounds.getOriginsOfBounds();
-			mInfeasibleSubsets.push_back( std::set<FormulaT>() );
+			FormulasT boundConstraints = mVariableBounds.getOriginsOfBounds();
+			mInfeasibleSubsets.push_back( FormulasT() );
 			for (auto i:mConstraintsMap)
 			{
 				mInfeasibleSubsets.back().insert( i.first );
@@ -254,9 +254,9 @@ namespace smtrat
 			for (auto j: mConstraints) SMTRAT_LOG_DEBUG("smtrat.cad", "\t" << j);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Bounds: " << mVariableBounds);
 				
-			vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics(g);
+			std::vector<FormulasT> infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics(g);
 
-			std::set<FormulaT> boundConstraints = mVariableBounds.getOriginsOfBounds();
+			FormulasT boundConstraints = mVariableBounds.getOriginsOfBounds();
 			for (auto i: infeasibleSubsets) {
                 #ifdef LOGGING_CARL
 				SMTRAT_LOG_DEBUG("smtrat.cad", "Infeasible:");
@@ -492,10 +492,10 @@ namespace smtrat
 	 * @param conflictGraph the conflict graph is destroyed during the computation
 	 * @return an infeasible subset of the current set of constraints
 	 */
-	inline vec_set_const_pFormula CADModule::extractMinimalInfeasibleSubsets_GreedyHeuristics( ConflictGraph& conflictGraph )
+	inline std::vector<FormulasT> CADModule::extractMinimalInfeasibleSubsets_GreedyHeuristics( ConflictGraph& conflictGraph )
 	{
 		// initialize MIS with the last constraint
-		vec_set_const_pFormula mis = vec_set_const_pFormula(1, std::set<FormulaT>());
+		std::vector<FormulasT> mis = std::vector<FormulasT>(1, FormulasT());
 		mis.front().insert(getConstraintAt((unsigned)(mConstraints.size() - 1)));	// the last constraint is assumed to be always in the MIS
 		if (mConstraints.size() > 1) {
 			// construct set cover by greedy heuristic

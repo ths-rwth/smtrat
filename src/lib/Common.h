@@ -81,6 +81,8 @@ namespace smtrat
     
     typedef carl::Formula<Poly> FormulaT;
     
+    typedef carl::Formulas<Poly> FormulasT;
+    
     typedef carl::EvaluationMap<Rational> EvalRationalMap;
     
     typedef carl::Interval<Rational> RationalInterval;

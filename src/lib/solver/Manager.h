@@ -207,7 +207,7 @@ namespace smtrat
              * Note, that the conjunction of the so far added formulas must be inconsistent to
              * receive an infeasible subset.
              */
-            const vec_set_const_pFormula& infeasibleSubsets() const
+            const std::vector<FormulasT>& infeasibleSubsets() const
             {
                 return mpPrimaryBackend->infeasibleSubsets();
             }

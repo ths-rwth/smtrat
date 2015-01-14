@@ -30,7 +30,7 @@
 
 using namespace vs;
 
-//#define VS_DEBUG
+#define VS_DEBUG
 //#define VS_MODULE_VERBOSE_INTEGERS
 //#define VS_TERMINATION_INVARIANCE
 
@@ -81,7 +81,7 @@ namespace smtrat
             {
                 removeStatesFromRanking( *mpStateTree );
                 mIDCounter = 0;
-                std::set<const vs::Condition*> oConds;
+                carl::PointerSet<vs::Condition> oConds;
                 oConds.insert( condition );
                 std::vector<DisjunctionOfConditionConjunctions> subResults;
                 DisjunctionOfConditionConjunctions subResult;
@@ -115,7 +115,7 @@ namespace smtrat
             removeStatesFromRanking( *mpStateTree );
             mIDCounter = 0;
             mInfeasibleSubsets.clear();
-            mInfeasibleSubsets.push_back( std::set<FormulaT>() );
+            mInfeasibleSubsets.push_back( FormulasT() );
             mInfeasibleSubsets.back().insert( _subformula->formula() );
             mInconsistentConstraintAdded = true;
             foundAnswer( False );
@@ -139,7 +139,7 @@ namespace smtrat
             {
                 removeStatesFromRanking( *mpStateTree );
                 mpStateTree->rSubResultsSimplified() = false;
-                std::set<const vs::Condition*> condsToDelete;
+                carl::PointerSet<vs::Condition> condsToDelete;
                 condsToDelete.insert( condToDelete );
                 mpStateTree->deleteOrigins( condsToDelete, mRanking );
                 mpStateTree->rType() = State::COMBINE_SUBRESULTS;
@@ -172,7 +172,7 @@ namespace smtrat
             mpStateTree = new State( Settings::use_variable_bounds );
             for( auto iter = mFormulaConditionMap.begin(); iter != mFormulaConditionMap.end(); ++iter )
             {
-                std::set<const vs::Condition*> oConds = std::set<const vs::Condition*>();
+                carl::PointerSet<vs::Condition> oConds;
                 oConds.insert( iter->second );
                 std::vector<DisjunctionOfConditionConjunctions> subResults = std::vector<DisjunctionOfConditionConjunctions>();
                 DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
@@ -242,7 +242,7 @@ namespace smtrat
                 std::vector<pair<vector<const ConstraintT*>, const ConstraintT*>> bDeds = mpStateTree->variableBounds().getBoundDeductions();
                 for( auto bDed = bDeds.begin(); bDed != bDeds.end(); ++bDed )
                 {
-                    std::set<FormulaT> subformulas;
+                    FormulasT subformulas;
                     for( auto cons = bDed->first.begin(); cons != bDed->first.end(); ++cons )
                     {
                         subformulas.insert( FormulaT( carl::FormulaType::NOT, FormulaT( *cons ) ) ); // @todo store formulas and do not generate a formula here
@@ -489,7 +489,7 @@ namespace smtrat
                                                 if( !Settings::use_variable_bounds || currentState->variableBounds().getDoubleInterval( currentState->index() ).lowerBoundType() == carl::BoundType::INFTY )
                                                 {
                                                     // Create state ( Conditions, [x -> -infinity]):
-                                                    std::set<const vs::Condition*> oConditions = std::set<const vs::Condition*>();
+                                                    carl::PointerSet<vs::Condition> oConditions;
                                                     for( auto cond : currentState->conditions() )
                                                         oConditions.insert( cond );
                                                     Substitution sub = Substitution( currentState->index(), Substitution::MINUS_INFINITY, oConditions );
@@ -789,7 +789,7 @@ namespace smtrat
         assert( _condition->constraint().hasVariable( _eliminationVar ) );
         bool generatedTestCandidateBeingASolution = false;
         unsigned numberOfAddedChildren = 0;
-        std::set<const vs::Condition*> oConditions = std::set<const vs::Condition*>();
+        carl::PointerSet<vs::Condition> oConditions;
         oConditions.insert( _condition );
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
         if( !Settings::use_variable_bounds || _currentState->hasRootsInVariableBounds( _condition, Settings::sturm_sequence_for_root_check ) )
@@ -1071,8 +1071,8 @@ namespace smtrat
             _currentState->updateIntTestCandidates();
             if( numberOfAddedChildren == 0 )
             {
-                ConditionSetSet conflictSet = ConditionSetSet();
-                std::set<const vs::Condition*> condSet  = std::set<const vs::Condition*>();
+                ConditionSetSet conflictSet;
+                carl::PointerSet<vs::Condition> condSet;
                 condSet.insert( _condition );
                 conflictSet.insert( condSet );
                 _currentState->addConflicts( NULL, conflictSet );
@@ -1139,12 +1139,12 @@ namespace smtrat
                 if( subResult.empty() )
                 {
                     anySubstitutionFailed = true;
-                    std::set<const vs::Condition*> condSet;
+                    carl::PointerSet<vs::Condition> condSet;
                     condSet.insert( *cond );
                     if( _currentState->pOriginalCondition() != NULL )
                         condSet.insert( _currentState->pOriginalCondition() );
                     #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                    std::set<const vs::Condition*> conflictingBounds = _currentState->father().variableBounds().getOriginsOfBounds( conflVars );
+                    carl::PointerSet<vs::Condition> conflictingBounds = _currentState->father().variableBounds().getOriginsOfBounds( conflVars );
                     condSet.insert( conflictingBounds.begin(), conflictingBounds.end() );
                     #endif
                     conflictSet.insert( condSet );
@@ -1485,13 +1485,13 @@ namespace smtrat
     }
 
     template<class Settings>
-    std::set<FormulaT> VSModule<Settings>::getReasons( const std::set<const vs::Condition*>& _conditions ) const
+    FormulasT VSModule<Settings>::getReasons( const carl::PointerSet<vs::Condition>& _conditions ) const
     {
-        std::set<FormulaT> result;
+        FormulasT result;
         if( _conditions.empty() ) return result;
         // Get the original conditions of the root of the root state leading to the given set of conditions.
-        std::set<const vs::Condition*> conds = _conditions;
-        std::set<const vs::Condition*> oConds;
+        carl::PointerSet<vs::Condition> conds = _conditions;
+        carl::PointerSet<vs::Condition> oConds;
         while( !(*conds.begin())->originalConditions().empty() )
         {
             for( auto cond = conds.begin(); cond != conds.end(); ++cond )
@@ -1529,7 +1529,7 @@ namespace smtrat
         if( !Settings::infeasible_subset_generation )
         {
             // Set the infeasible subset to the set of all received constraints.
-            mInfeasibleSubsets.push_back( std::set<FormulaT>() );
+            mInfeasibleSubsets.push_back( FormulasT() );
             for( auto cons = rReceivedFormula().begin(); cons != rReceivedFormula().end(); ++cons )
                 mInfeasibleSubsets.back().insert( cons->formula() );
             return;
@@ -1751,7 +1751,7 @@ namespace smtrat
             while( !lastCombinationReached )
             {
                 // Create a new combination of vectors.
-                std::set<const vs::Condition*> coveringSet = std::set<const vs::Condition*>();
+                carl::PointerSet<vs::Condition> coveringSet;
                 bool previousIteratorIncreased = false;
                 // For each set of sets in the vector of sets of sets, choose a set in it. We combine
                 // these sets by forming their union and store it as a covering set.
@@ -1875,7 +1875,7 @@ namespace smtrat
         for( auto iter = constraintsToCheck.begin(); iter != constraintsToCheck.end(); ++iter )
         {
             changedPassedFormula = true;
-            vec_set_const_pFormula origins;
+            std::vector<FormulasT> origins;
             // @todo store formula and do not generate a new formula every time
             FormulaT formula = FormulaT( iter->first );
             _formulaCondMap[formula] = iter->second;
@@ -1917,7 +1917,7 @@ namespace smtrat
                     {
                         for( auto infsubset = (*backend)->infeasibleSubsets().begin(); infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
                         {
-                            std::set<const vs::Condition*> conflict = std::set<const vs::Condition*>();
+                            carl::PointerSet<vs::Condition> conflict;
                             #ifdef VS_DEBUG
                             cout << "Infeasible Subset: {";
                             #endif

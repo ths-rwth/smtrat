@@ -174,7 +174,7 @@ namespace smtrat
         return origs.empty();
     }
 
-    bool ModuleInput::removeOrigins( iterator _formula, const vector<set<FormulaT>>& _origins )
+    bool ModuleInput::removeOrigins( iterator _formula, const std::vector<FormulasT>& _origins )
     {
         assert( _formula != end() );
         for( auto origsIter = _origins.begin(); origsIter != _origins.end(); ++origsIter )
@@ -187,7 +187,7 @@ namespace smtrat
         return _formula->origins().empty();
     }
 
-    bool ModuleInput::removeOrigins( iterator _formula, const set<FormulaT>& _origins )
+    bool ModuleInput::removeOrigins( iterator _formula, const FormulasT& _origins )
     {
         assert( _formula != end() );
         auto& origs = _formula->rOrigins();
@@ -246,12 +246,12 @@ namespace smtrat
         }
     }
     
-    pair<ModuleInput::iterator,bool> ModuleInput::add( const FormulaT& _formula, set<FormulaT>&& _origins )
+    pair<ModuleInput::iterator,bool> ModuleInput::add( const FormulaT& _formula, FormulasT&& _origins )
     {
         iterator iter = find( _formula );
         if( iter == end() )
         {
-            vector<set<FormulaT>> vecOfOrigs;
+            std::vector<FormulasT> vecOfOrigs;
             vecOfOrigs.emplace_back( move( _origins ) );
             emplace_back( _formula, move( vecOfOrigs ) );
             iterator pos = --end();
@@ -267,7 +267,7 @@ namespace smtrat
         }
     }
 
-    pair<ModuleInput::iterator,bool> ModuleInput::add( const FormulaT& _formula, vector<set<FormulaT>>&& _origins )
+    pair<ModuleInput::iterator,bool> ModuleInput::add( const FormulaT& _formula, std::vector<FormulasT>&& _origins )
     {
         iterator iter = find( _formula );
         if( iter == end() )

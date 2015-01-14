@@ -48,14 +48,14 @@ namespace vs
             mutable bool                   mFlag;
             mutable bool                   mRecentlyAdded;
             mutable size_t                 mValuation;
-            const smtrat::ConstraintT*      mpConstraint;
-            std::set<const Condition*>*    mpOriginalConditions;
+            const smtrat::ConstraintT*     mpConstraint;
+            carl::PointerSet<Condition>*   mpOriginalConditions;
             
 
         public:
 
             // Constructors:
-            Condition( const smtrat::ConstraintT*, size_t = 0, bool = false, const std::set<const Condition*>& = std::set<const Condition*>(), bool = false );
+            Condition( const smtrat::ConstraintT*, size_t = 0, bool = false, const carl::PointerSet<Condition>& = carl::PointerSet<Condition>(), bool = false );
             Condition( const Condition& );
 
             // Destructor:
@@ -102,12 +102,12 @@ namespace vs
                 return mpConstraint;
             }
 
-            std::set<const Condition*>* pOriginalConditions() const
+            carl::PointerSet<Condition>* pOriginalConditions() const
             {
                 return mpOriginalConditions;
             }
 
-            const std::set<const Condition*>& originalConditions() const
+            const carl::PointerSet<Condition>& originalConditions() const
             {
                 return *mpOriginalConditions;
             }

@@ -34,7 +34,7 @@ namespace smtrat
             mType( _type ),
             mpLimit( _limit ),
             mpVariable( _variable ),
-            mpOrigins( new std::set<T>() )
+            mpOrigins( new std::set<T,carl::less<T,false>>() )
         {
             if( _limit == NULL )
                 mpOrigins->insert( T() );
@@ -609,9 +609,9 @@ namespace smtrat
         }
 
         template<typename T>
-        std::set<T> VariableBounds<T>::getOriginsOfBounds( const carl::Variable& _var ) const
+        std::set<T,carl::less<T,false>> VariableBounds<T>::getOriginsOfBounds( const carl::Variable& _var ) const
         {
-            std::set<T> originsOfBounds;
+            std::set<T,carl::less<T,false>> originsOfBounds;
             auto varVarPair = mpVariableMap->find( _var );
             assert( varVarPair != mpVariableMap->end() );
             if( !varVarPair->second->infimum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->infimum().origins().begin() );
@@ -620,9 +620,9 @@ namespace smtrat
         }
 
         template<typename T>
-        std::set<T> VariableBounds<T>::getOriginsOfBounds( const carl::Variables& _variables ) const
+        std::set<T,carl::less<T,false>> VariableBounds<T>::getOriginsOfBounds( const carl::Variables& _variables ) const
         {
-            std::set<T> originsOfBounds;
+            std::set<T,carl::less<T,false>> originsOfBounds;
             for( auto var = _variables.begin(); var != _variables.end(); ++var )
             {
                 auto varVarPair = mpVariableMap->find( *var );
@@ -634,9 +634,9 @@ namespace smtrat
         }
 		
         template<typename T>
-        std::set<T> VariableBounds<T>::getOriginsOfBounds() const
+        std::set<T,carl::less<T,false>> VariableBounds<T>::getOriginsOfBounds() const
         {
-            std::set<T> originsOfBounds;
+            std::set<T,carl::less<T,false>> originsOfBounds;
             for( auto varVarPair = mpVariableMap->begin(); varVarPair != mpVariableMap->end(); ++varVarPair )
             {
                 const Variable<T>& var = *varVarPair->second;

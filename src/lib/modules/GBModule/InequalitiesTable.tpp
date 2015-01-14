@@ -96,7 +96,7 @@ namespace smtrat
                         }
                         if( Settings::passInequalities == FULL_REDUCED || (Settings::passInequalities == FULL_REDUCED_IF && pass) )
                         {
-                            std::vector<std::set<FormulaT> > originals;
+                            std::vector<FormulasT > originals;
                             originals.push_back( mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() ));
                             originals.front( ).insert( it->first->formula() );
                             // we update the reference to the passed formula again
@@ -292,12 +292,12 @@ namespace smtrat
 //                    mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
 
                     std::get < 2 > (it->second).push_back( CellEntry( mBtnumber, reduced ) );
-                    std::set<FormulaT> originals( mModule->generateReasons( reduced.getReasons( ) ) );
+                    FormulasT originals( mModule->generateReasons( reduced.getReasons( ) ) );
 
                     std::get < 0 > (it->second) = mModule->passedFormulaEnd( );
                     if( Settings::addTheoryDeductions != NO_CONSTRAINTS )
                     {
-                        std::set<FormulaT> subformulas;
+                        FormulasT subformulas;
                         for( auto jt = originals.begin(); jt != originals.end(); ++jt )
                         {
                             subformulas.insert( FormulaT( carl::FormulaType::NOT, *jt ) );
@@ -318,7 +318,7 @@ namespace smtrat
                 else // we have a conflict
                 {
 
-                    std::set<FormulaT> infeasibleSubset( mModule->generateReasons( reduced.getReasons( ) ) );
+                    FormulasT infeasibleSubset( mModule->generateReasons( reduced.getReasons( ) ) );
                     infeasibleSubset.insert( it->first->formula() );
                     #ifdef SMTRAT_DEVOPTION_Statistics
                     mStats->EffectivenessOfConflicts(infeasibleSubset.size()/mModule->rReceivedFormula().size());
@@ -360,7 +360,7 @@ namespace smtrat
                         }
                         case carl::FormulaType::FALSE:
                         {
-                            std::set<FormulaT> infeasibleSubset( mModule->generateReasons( reduced.getReasons( ) ) );
+                            FormulasT infeasibleSubset( mModule->generateReasons( reduced.getReasons( ) ) );
                             infeasibleSubset.insert( it->first->formula() );
                             #ifdef SMTRAT_DEVOPTION_Statistics
                             mStats->EffectivenessOfConflicts(infeasibleSubset.size()/mModule->rReceivedFormula().size());
@@ -375,7 +375,7 @@ namespace smtrat
                         default:
                         {
                             assert( redResult.getType() == carl::FormulaType::CONSTRAINT );// get the reason set for the reduced polynomial
-                            std::vector<std::set<FormulaT> > originals;
+                            std::vector<FormulasT > originals;
                             originals.push_back( mModule->generateReasons( reduced.getReasons( ) ) );
                             originals.front( ).insert( it->first->formula() );
 
@@ -394,8 +394,8 @@ namespace smtrat
                     if( reduced.isLinear() )
                     {
                         // get the reason set for the reduced polynomial
-                        std::set<FormulaT> subformulas;
-                        std::vector<std::set<FormulaT> > originals;
+                        FormulasT subformulas;
+                        std::vector<FormulasT > originals;
                         originals.push_back( mModule->generateReasons( reduced.getOrigins( ).getBitVector( ) ) );
 
                         for( auto jt =  originals.front().begin(); jt != originals.front().end(); ++jt )
