@@ -2581,25 +2581,6 @@ namespace vs
 
     size_t State::coveringSet( const ConditionSetSetSet& _conflictSets, carl::PointerSet<Condition>& _coveringSet, unsigned _currentTreeDepth )
     {
-        std::cout << __func__ << " of the sets:" << std::endl;
-        for( auto conflictSet = _conflictSets.begin(); conflictSet != _conflictSets.end(); ++conflictSet )
-        {
-            std::cout << "{";
-            for( auto conditionSet = conflictSet->begin(); conditionSet != conflictSet->end(); ++conditionSet )
-            {
-                if( conditionSet != conflictSet->begin() )
-                    std::cout << " ";
-                std::cout << " {";
-                
-                for( auto condition = conditionSet->begin(); condition != conditionSet->end(); ++condition )
-                {
-                    std::cout << " ";
-                    (*condition)->print();
-                }
-                std::cout << "}" << std::endl;
-            }
-            std::cout << "}" << std::endl;
-        }
         // Greatest tree depth of the original conditions of the conditions in the covering set.
         size_t greatestTreeDepth = 0;
         for( auto conflictSet = _conflictSets.begin(); conflictSet != _conflictSets.end(); ++conflictSet )
