@@ -50,7 +50,7 @@ namespace cachemodule
     struct TCallResponse
     {
         Answer answer;
-        vec_set_const_pFormula infSubsets;
+        std::vector<FormulasT> infSubsets;
     };
 
     struct TCallHash

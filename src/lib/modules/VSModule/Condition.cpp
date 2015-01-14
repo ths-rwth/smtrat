@@ -31,12 +31,12 @@ using namespace std;
 
 namespace vs
 {
-    Condition::Condition( const smtrat::ConstraintT* _cons, size_t _val, bool _flag, const set<const Condition*>& _oConds, bool _rAdded ):
+    Condition::Condition( const smtrat::ConstraintT* _cons, size_t _val, bool _flag, const carl::PointerSet<Condition>& _oConds, bool _rAdded ):
         mFlag( _flag ),
         mRecentlyAdded( _rAdded ),
         mValuation( _val ),
         mpConstraint( _cons ),
-        mpOriginalConditions( new set<const Condition*>( _oConds ) )
+        mpOriginalConditions( new carl::PointerSet<Condition>( _oConds ) )
     {}
 
     Condition::Condition( const Condition& _cond ):
@@ -44,7 +44,7 @@ namespace vs
         mRecentlyAdded( false ),
         mValuation( _cond.valuation() ),
         mpConstraint( _cond.pConstraint() ),
-        mpOriginalConditions( new set<const Condition*>( _cond.originalConditions() ) )
+        mpOriginalConditions( new carl::PointerSet<Condition>( _cond.originalConditions() ) )
     {}
 
     Condition::~Condition()
@@ -238,7 +238,7 @@ namespace vs
      */
     bool Condition::operator==( const Condition& _condition ) const
     {
-        return (*mpConstraint) == _condition.constraint();
+        return (*mpConstraint) == _condition.constraint() && (*mpOriginalConditions) == _condition.originalConditions();
     }
 
     /**
@@ -251,7 +251,7 @@ namespace vs
      */
     bool Condition::operator<( const Condition& _condition ) const
     {
-        return (*mpConstraint) < _condition.constraint();
+        return (*mpConstraint) < _condition.constraint() || ((*mpConstraint) == _condition.constraint() && (*mpOriginalConditions) < _condition.originalConditions());
     }
 
     /**

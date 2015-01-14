@@ -86,7 +86,7 @@ namespace smtrat
 		 * If false has been asserted, new formulas are stored in this list until false is removed.
 		 * This prevents unnecessary add() and remove() operation on the CAD object.
 		 */
-		std::set<FormulaT> subformulaQueue;
+		FormulasT subformulaQueue;
 		/// Maps the received formulas to indices within mConstraints.
 		ConstraintIndexMap mConstraintsMap;
 		
@@ -115,7 +115,7 @@ namespace smtrat
 			bool addConstraintFormula(const FormulaT& f);
             const carl::cad::Constraint<smtrat::Rational> convertConstraint(const ConstraintT&);
             const ConstraintT* convertConstraint(const carl::cad::Constraint<smtrat::Rational>&);
-            vec_set_const_pFormula extractMinimalInfeasibleSubsets_GreedyHeuristics(carl::cad::ConflictGraph& conflictGraph);
+            std::vector<FormulasT> extractMinimalInfeasibleSubsets_GreedyHeuristics(carl::cad::ConflictGraph& conflictGraph);
             const FormulaT& getConstraintAt(unsigned index);
             void updateConstraintMap(unsigned index, bool decrement = true);
 #ifdef SMTRAT_DEVOPTION_Statistics

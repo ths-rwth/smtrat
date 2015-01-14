@@ -34,7 +34,7 @@ namespace smtrat
     namespace lra
     {
         template<typename T1, typename T2>
-        Bound<T1, T2>::Bound( const Value<T1>* const _limit, Variable<T1, T2>* const _var, Type _type, const smtrat::FormulaT& _constraint, Bound<T1, T2>::Info* _boundInfo, bool _deduced ):
+        Bound<T1, T2>::Bound( const Value<T1>* const _limit, Variable<T1, T2>* const _var, Type _type, const FormulaT& _constraint, Bound<T1, T2>::Info* _boundInfo, bool _deduced ):
             mDeduced( _deduced ),
             mType( _type ),
             mLimit( _limit ),
@@ -42,11 +42,11 @@ namespace smtrat
             mAsConstraint( _constraint ),
             mpInfo( _boundInfo )
         {
-            mpOrigins = new std::vector<std::set<FormulaT> >();
+            mpOrigins = new std::vector<FormulasT >();
             if( _limit == NULL )
             {
-                std::set<FormulaT> originSet;
-                originSet.insert( smtrat::FormulaT( carl::FormulaType::TRUE ) );
+                FormulasT originSet;
+                originSet.insert( FormulaT( carl::FormulaType::TRUE ) );
                 mpOrigins->push_back( originSet );
             }
         }

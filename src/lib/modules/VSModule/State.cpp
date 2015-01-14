@@ -35,7 +35,7 @@
 //#define VS_DEBUG_LOCAL_CONFLICT_SEARCH
 //#define VS_DEBUG_ROOTS_CHECK
 
-//#define VS_LOG_INFSUBSETS
+#define VS_LOG_INFSUBSETS
 
 using namespace std;
 
@@ -65,7 +65,7 @@ namespace vs
         mpConditions( new ConditionList() ),
         mpConflictSets( new ConflictSets() ),
         mpChildren( new std::list< State* >() ),
-        mpTooHighDegreeConditions( new set<const Condition*>() ),
+        mpTooHighDegreeConditions( new carl::PointerSet<Condition>() ),
         mpVariableBounds( _withVariableBounds ? new VariableBoundsCond() : NULL ),
         mpInfinityChild( NULL ),
         mMinIntTestCanidate( smtrat::ONE_RATIONAL ),
@@ -97,7 +97,7 @@ namespace vs
         mpConditions( new ConditionList() ),
         mpConflictSets( new ConflictSets() ),
         mpChildren( new std::list< State* >() ),
-        mpTooHighDegreeConditions( new set<const Condition*>() ),
+        mpTooHighDegreeConditions( new carl::PointerSet<Condition>() ),
         mpVariableBounds( _withVariableBounds ? new VariableBoundsCond() : NULL ),
         mpInfinityChild( NULL ),
         mMinIntTestCanidate( smtrat::ONE_RATIONAL ),
@@ -599,7 +599,7 @@ namespace vs
     {
         if( _conditionVectorToSimplify.size() > 1 )
         {
-            set<const Condition*> redundantConditionSet;
+            carl::PointerSet<Condition> redundantConditionSet;
             auto iterA = _conditionVectorToSimplify.begin();
             // Check all condition combinations.
             while( iterA != _conditionVectorToSimplify.end() )
@@ -620,7 +620,7 @@ namespace vs
                             // If we have to choose which original conditions to take, choose those, which have been created earlier.
                             if( condB->valuation() < condA->valuation() )
                             {
-                                *condA->pOriginalConditions() = set<const Condition*>( condB->originalConditions() );
+                                *condA->pOriginalConditions() = carl::PointerSet<Condition>( condB->originalConditions() );
                                 condA->rValuation()          = condB->valuation();
                             }
                         }
@@ -679,7 +679,7 @@ namespace vs
                         {
                             if( _stateConditions )
                             {
-                                set<const Condition*> oConds = condB->originalConditions();
+                                carl::PointerSet<Condition> oConds = condB->originalConditions();
                                 oConds.insert( condA->originalConditions().begin(), condA->originalConditions().end() );
                                 addCondition( nConstraint, oConds, nValuation, true, _ranking );
                             }
@@ -694,7 +694,7 @@ namespace vs
                         }
                         else if( nConstraint->isConsistent() == 0 )
                         {
-                            set<const Condition*> condSet;
+                            carl::PointerSet<Condition> condSet;
                             condSet.insert( condA );
                             condSet.insert( condB );
                             _conflictSet.insert( condSet );
@@ -706,7 +706,7 @@ namespace vs
                     // If it is easy to decide that cond1 and cond2 are conflicting.
                     else if( strongProp == -2 || strongProp == -4 )
                     {
-                        set<const Condition*> condSet;
+                        carl::PointerSet<Condition> condSet;
                         condSet.insert( condA );
                         condSet.insert( condB );
                         _conflictSet.insert( condSet );
@@ -1022,7 +1022,7 @@ namespace vs
             if( !simplify( newCombination, conflictingConditionPairs, _ranking ) )
                 rInconsistent() = true;
             // Delete the conditions of this combination, which do already occur in the considered conditions of this state.
-            set<const Condition*> condsToDelete;
+            carl::PointerSet<Condition> condsToDelete;
             auto cond = rConditions().begin();
             while( cond != conditions().end() )
             {
@@ -1040,7 +1040,7 @@ namespace vs
                             // If we have to choose which original conditions to take, choose those, which have been created earlier.
                             if( (**newCond).valuation() < (**cond).valuation() )
                             {
-                                *(**cond).pOriginalConditions() = set<const Condition*>( (**newCond).originalConditions() );
+                                *(**cond).pOriginalConditions() = carl::PointerSet<Condition>( (**newCond).originalConditions() );
                                 (**cond).rValuation()          = (**newCond).valuation();
                             }
                         }
@@ -1200,7 +1200,7 @@ namespace vs
         return false;
     }
 
-    void State::addCondition( const smtrat::ConstraintT* _constraint, const set<const Condition*>& _originalConditions, size_t _valutation, bool _recentlyAdded, ValuationMap& _ranking )
+    void State::addCondition( const smtrat::ConstraintT* _constraint, const carl::PointerSet<Condition>& _originalConditions, size_t _valutation, bool _recentlyAdded, ValuationMap& _ranking )
     {
         // Check if the constraint is variable-free and consistent. If so, discard it.
         unsigned constraintConsistency = _constraint->isConsistent();
@@ -1306,7 +1306,7 @@ namespace vs
         return true;
     }
 
-    int State::deleteOrigins( set<const Condition*>& _originsToDelete, ValuationMap& _ranking )
+    int State::deleteOrigins( carl::PointerSet<Condition>& _originsToDelete, ValuationMap& _ranking )
     {
         if( _originsToDelete.empty() ) return 1;
         if( !isRoot() )
@@ -1335,8 +1335,8 @@ namespace vs
         // Remove conditions from the currently considered condition vector, which are originated by any of the given origins.
         bool conditionDeleted = false;
         bool recentlyAddedConditionLeft = false;
-        set<const Condition*> deletedConditions;
-        set<const Condition*> originsToRemove;
+        carl::PointerSet<Condition> deletedConditions;
+        carl::PointerSet<Condition> originsToRemove;
         for( auto originToDelete = _originsToDelete.begin(); originToDelete != _originsToDelete.end(); ++originToDelete )
         {
             auto condition = rConditions().begin();
@@ -1405,7 +1405,7 @@ namespace vs
         return 1;
     }
 
-    void State::deleteConditions( set<const Condition*>& _conditionsToDelete, ValuationMap& _ranking )
+    void State::deleteConditions( carl::PointerSet<Condition>& _conditionsToDelete, ValuationMap& _ranking )
     {
         if( _conditionsToDelete.empty() ) return;
         // Delete the conditions to delete from the set of conditions with too high degree to
@@ -1418,7 +1418,7 @@ namespace vs
         bool conditionDeleted = false;
         bool recentlyAddedConditionLeft = false;
         vector<const Condition* > condsToDelete;
-        set<const Condition*> originsToRemove;
+        carl::PointerSet<Condition> originsToRemove;
         for( auto cond = rConditions().begin(); cond != conditions().end(); )
         {
             // Delete the condition from the vector this state considers.
@@ -1476,7 +1476,7 @@ namespace vs
         mTryToRefreshIndex = true;
     }
 
-    void State::deleteOriginsFromChildren( set<const Condition*>& _originsToDelete, ValuationMap& _ranking )
+    void State::deleteOriginsFromChildren( carl::PointerSet<Condition>& _originsToDelete, ValuationMap& _ranking )
     {
         bool childWithIntTcDeleted = false;
         auto child = rChildren().begin();
@@ -1508,7 +1508,7 @@ namespace vs
             updateIntTestCandidates();
     }
 
-    void State::deleteOriginsFromConflictSets( set<const Condition*>& _originsToDelete, bool _originsAreCurrentConditions )
+    void State::deleteOriginsFromConflictSets( carl::PointerSet<Condition>& _originsToDelete, bool _originsAreCurrentConditions )
     {
         auto conflictSet = mpConflictSets->begin();
         while( conflictSet != mpConflictSets->end() )
@@ -1522,7 +1522,7 @@ namespace vs
                 auto condSet = condSetSet->begin();
                 while( condSet != condSetSet->end() )
                 {
-                    set<const Condition*> updatedCondSet;
+                    carl::PointerSet<Condition> updatedCondSet;
                     auto cond = condSet->begin();
                     bool condToDelOccured = false;
                     while( cond != condSet->end() )
@@ -1635,7 +1635,7 @@ namespace vs
         }
     }
 
-    void State::deleteOriginsFromSubstitutionResults( set<const Condition*>& _originsToDelete )
+    void State::deleteOriginsFromSubstitutionResults( carl::PointerSet<Condition>& _originsToDelete )
     {
         if( hasSubstitutionResults() )
         {
@@ -1668,7 +1668,7 @@ namespace vs
                             oCond = (**cond).pOriginalConditions()->begin();
                             while( oCond != (**cond).originalConditions().end() )
                             {
-                                set<const Condition*> oConds;
+                                carl::PointerSet<Condition> oConds;
                                 oConds.insert( *oCond );
                                 conditionsToAdd.push_back( new Condition( (**oCond).pConstraint(), (**cond).valuation(), false, oConds ) );
                                 ++oCond;
@@ -1864,11 +1864,13 @@ namespace vs
         if( index().getType() != carl::VariableType::VT_INT || !mpConflictSets->empty() )
         {
             // Determine a covering set of the conflict sets.
-            set<const Condition*> covSet;
-            ConditionSetSetSet confSets = ConditionSetSetSet();
+            carl::PointerSet<Condition> covSet;
+            ConditionSetSetSet confSets;
             auto nullConfSet = rConflictSets().find( NULL );
             if( nullConfSet != conflictSets().end() && !_includeInconsistentTestCandidates )
+            {
                 confSets.insert( nullConfSet->second.begin(), nullConfSet->second.end() );
+            }
             else
             {
                 for( auto confSet = rConflictSets().begin(); confSet != conflictSets().end(); ++confSet )
@@ -1882,7 +1884,7 @@ namespace vs
             smtrat::Module::addAssumptionToCheck( constraints, false, "VSModule_IS_1" );
             #endif
             // Get the original conditions to the covering set.
-            set<const Condition*> coverSetOConds;
+            carl::PointerSet<Condition> coverSetOConds;
             bool sideConditionIsPartOfConflict = !_checkConflictForSideCondition || (pOriginalCondition() == NULL || originalCondition().constraint().relation() != carl::Relation::EQ);
             const carl::PointerSet<smtrat::ConstraintT>& subsSideConds = substitution().sideCondition();
             for( auto cond = covSet.begin(); cond != covSet.end(); ++cond )
@@ -1979,7 +1981,7 @@ namespace vs
         #endif
         // Construct the local conflict consisting of all of the currently considered conditions,
         // which have been considered for test candidate construction.
-        set<const Condition*> localConflictSet;
+        carl::PointerSet<Condition> localConflictSet;
         for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
         {
             if( (*cond)->flag() ) localConflictSet.insert( *cond );
@@ -1992,7 +1994,7 @@ namespace vs
             cout << (*iter)->constraint() << " ";
         cout << "}" << endl;
         #endif
-        set<const Condition*> infSubset;
+        carl::PointerSet<Condition> infSubset;
         bool containsConflictToCover = false;
         for( auto conflict = conflictSets().begin(); conflict != conflictSets().end(); ++conflict )
         {
@@ -2075,7 +2077,7 @@ namespace vs
             cout << ">>> Check test candidate  " << substitution() << "  against:" << endl;
             father().variableBounds().print( cout, ">>>    " );
             #endif
-            set<const Condition*> conflict;
+            carl::PointerSet<Condition> conflict;
             vector< smtrat::DoubleInterval > solutionSpaces = solutionSpace( conflict );
             if( solutionSpaces.empty() )
             {
@@ -2088,7 +2090,7 @@ namespace vs
         return true;
     }
 
-    vector< smtrat::DoubleInterval > State::solutionSpace( set<const Condition*>& _conflictReason ) const
+    vector< smtrat::DoubleInterval > State::solutionSpace( carl::PointerSet<Condition>& _conflictReason ) const
     {
         vector< smtrat::DoubleInterval > result;
         assert( !isRoot() );
@@ -2098,7 +2100,7 @@ namespace vs
                 result.push_back( smtrat::DoubleInterval::unboundedInterval() );
             else
             {
-                set<const Condition*> conflictBounds = father().variableBounds().getOriginsOfBounds( substitution().variable() );
+                carl::PointerSet<Condition> conflictBounds = father().variableBounds().getOriginsOfBounds( substitution().variable() );
                 _conflictReason.insert( conflictBounds.begin(), conflictBounds.end() );
             }
             return result;
@@ -2109,7 +2111,7 @@ namespace vs
                 result.push_back( smtrat::DoubleInterval::unboundedInterval() );
             else
             {
-                set<const Condition*> conflictBounds = father().variableBounds().getOriginsOfBounds( substitution().variable() );
+                carl::PointerSet<Condition> conflictBounds = father().variableBounds().getOriginsOfBounds( substitution().variable() );
                 assert( !conflictBounds.empty() );
                 _conflictReason.insert( conflictBounds.begin(), conflictBounds.end() );
             }
@@ -2179,7 +2181,7 @@ namespace vs
             {
                 carl::Variables conflictVars = substitution().termVariables();
                 conflictVars.insert( substitution().variable() );
-                set<const Condition*> conflictBounds = father().variableBounds().getOriginsOfBounds( conflictVars );
+                carl::PointerSet<Condition> conflictBounds = father().variableBounds().getOriginsOfBounds( conflictVars );
                 _conflictReason.insert( conflictBounds.begin(), conflictBounds.end() );
                 _conflictReason.insert( substitution().originalConditions().begin(), substitution().originalConditions().end() );
             }
@@ -2270,9 +2272,9 @@ namespace vs
                 }
                 if( constraintInconsistent )
                 {
-                    set<const Condition*> origins;
+                    carl::PointerSet<Condition> origins;
                     origins.insert( _condition );
-                    set<const Condition*> conflictingBounds = variableBounds().getOriginsOfBounds( index() );
+                    carl::PointerSet<Condition> conflictingBounds = variableBounds().getOriginsOfBounds( index() );
                     origins.insert( conflictingBounds.begin(), conflictingBounds.end() );
                     ConditionSetSet conflicts = ConditionSetSet();
                     conflicts.insert( origins );
@@ -2310,9 +2312,9 @@ namespace vs
             constraintInconsistent = true;
         else if( solutionSpace.upper() <= 0 && cons.relation() == carl::Relation::GREATER )
             constraintInconsistent = true;
-        set<const Condition*> origins;
+        carl::PointerSet<Condition> origins;
         origins.insert( _condition );
-        set<const Condition*> conflictingBounds = variableBounds().getOriginsOfBounds( cons.variables() );
+        carl::PointerSet<Condition> conflictingBounds = variableBounds().getOriginsOfBounds( cons.variables() );
         origins.insert( conflictingBounds.begin(), conflictingBounds.end() );
         ConditionSetSet conflicts = ConditionSetSet();
         conflicts.insert( origins );
@@ -2321,7 +2323,7 @@ namespace vs
         {
             carl::PointerSet<smtrat::ConstraintT> constraints = carl::PointerSet<smtrat::ConstraintT>();
             constraints.insert( _condition->pConstraint() );
-            set<const Condition*> subsOrigins;
+            carl::PointerSet<Condition> subsOrigins;
             subsOrigins.insert( _condition );
             sub = new Substitution( index(), Substitution::INVALID, subsOrigins, constraints );
         }
@@ -2577,7 +2579,7 @@ namespace vs
         }
     }
 
-    size_t State::coveringSet( const ConditionSetSetSet& _conflictSets, set<const Condition*>& _coveringSet, unsigned _currentTreeDepth )
+    size_t State::coveringSet( const ConditionSetSetSet& _conflictSets, carl::PointerSet<Condition>& _coveringSet, unsigned _currentTreeDepth )
     {
         // Greatest tree depth of the original conditions of the conditions in the covering set.
         size_t greatestTreeDepth = 0;

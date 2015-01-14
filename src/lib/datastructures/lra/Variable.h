@@ -77,7 +77,7 @@ namespace smtrat
                 ///
                 const Bound<T1, T2>* mpInfimum;
                 ///
-                const smtrat::Poly* mExpression;
+                const Poly* mExpression;
                 ///
                 Value<T1> mAssignment;
                 ///
@@ -95,7 +95,7 @@ namespace smtrat
                  * @param _defaultBoundPosition
                  * @param _isInteger
                  */
-                Variable( size_t _position, const smtrat::Poly* _expression, ModuleInput::iterator _defaultBoundPosition, bool _isInteger );
+                Variable( size_t _position, const Poly* _expression, ModuleInput::iterator _defaultBoundPosition, bool _isInteger );
                 
                 /**
                  * 
@@ -104,7 +104,7 @@ namespace smtrat
                  * @param _defaultBoundPosition
                  * @param _isInteger
                  */
-                Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator _positionInNonActives, const smtrat::Poly* _expression, ModuleInput::iterator _defaultBoundPosition, bool _isInteger );
+                Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator _positionInNonActives, const Poly* _expression, ModuleInput::iterator _defaultBoundPosition, bool _isInteger );
                 
                 /**
                  * 
@@ -389,7 +389,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                const smtrat::Poly* pExpression() const
+                const Poly* pExpression() const
                 {
                     return mExpression;
                 }
@@ -397,7 +397,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                const smtrat::Poly& expression() const
+                const Poly& expression() const
                 {
                     return *mExpression;
                 }
@@ -425,9 +425,9 @@ namespace smtrat
                  * @param _ass
                  * @return 
                  */
-                unsigned isSatisfiedBy( const smtrat::EvalRationalMap& _ass ) const
+                unsigned isSatisfiedBy( const EvalRationalMap& _ass ) const
                 {
-                    smtrat::Poly polyTmp = mExpression->substitute( _ass );
+                    Poly polyTmp = mExpression->substitute( _ass );
                     if( polyTmp.isConstant() )
                         return (*mpInfimum) <= polyTmp.constantPart() && (*mpSupremum) >= polyTmp.constantPart();
                     return 2;
@@ -467,7 +467,7 @@ namespace smtrat
                  * @param _deduced
                  * @return 
                  */
-                std::pair<const Bound<T1, T2>*, bool> addUpperBound( Value<T1>* const _val, ModuleInput::iterator _position, const smtrat::FormulaT& _constraint, bool _deduced = false );
+                std::pair<const Bound<T1, T2>*, bool> addUpperBound( Value<T1>* const _val, ModuleInput::iterator _position, const FormulaT& _constraint, bool _deduced = false );
                 
                 /**
                  * 
@@ -477,7 +477,7 @@ namespace smtrat
                  * @param _deduced
                  * @return 
                  */
-                std::pair<const Bound<T1, T2>*, bool> addLowerBound( Value<T1>* const _val, ModuleInput::iterator _position, const smtrat::FormulaT& _constraint, bool _deduced = false );
+                std::pair<const Bound<T1, T2>*, bool> addLowerBound( Value<T1>* const _val, ModuleInput::iterator _position, const FormulaT& _constraint, bool _deduced = false );
                 
                 /**
                  * 
@@ -486,7 +486,7 @@ namespace smtrat
                  * @param _constraint
                  * @return 
                  */
-                std::pair<const Bound<T1, T2>*, bool> addEqualBound( Value<T1>* const _val, ModuleInput::iterator _position, const smtrat::FormulaT& _constraint );
+                std::pair<const Bound<T1, T2>*, bool> addEqualBound( Value<T1>* const _val, ModuleInput::iterator _position, const FormulaT& _constraint );
                 
                 /**
                  * 
@@ -506,7 +506,7 @@ namespace smtrat
                  * 
                  * @return 
                  */
-                std::set<smtrat::FormulaT> getDefiningOrigins() const;
+                FormulasT getDefiningOrigins() const;
 
                 /**
                  * 

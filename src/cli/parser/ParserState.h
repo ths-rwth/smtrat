@@ -55,8 +55,8 @@ namespace parser {
 		qi::symbols<char, carl::UninterpretedFunction> funmap_uf;
 	
 		smtrat::Logic mLogic;
-		std::set<FormulaT> mTheoryIteBindings;
-		std::set<FormulaT> mUninterpretedEqualities;
+		FormulasT mTheoryIteBindings;
+		FormulasT mUninterpretedEqualities;
 		std::map<carl::Variable, std::tuple<FormulaT, Poly, Poly>> mTheoryItes;
 		
 		InstructionHandler* handler;

@@ -265,7 +265,7 @@ namespace smtrat
                 ///
                 carl::FastPointerMap<Poly, Variable<T1,T2>*> mSlackVars;
                 ///
-                carl::FastMap<smtrat::FormulaT, std::vector<const Bound<T1, T2>*>*> mConstraintToBound;
+                carl::FastMap<FormulaT, std::vector<const Bound<T1, T2>*>*> mConstraintToBound;
                 ///
                 std::map<Variable<T1,T2>*, LearnedBound> mLearnedLowerBounds;
                 ///
@@ -459,7 +459,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                const carl::FastMap<smtrat::FormulaT, std::vector<const Bound<T1, T2>*>*>& constraintToBound() const
+                const carl::FastMap<FormulaT, std::vector<const Bound<T1, T2>*>*>& constraintToBound() const
                 {
                     return mConstraintToBound;
                 }
@@ -467,7 +467,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                carl::FastMap<smtrat::FormulaT, std::vector<const Bound<T1, T2>*>*>& rConstraintToBound()
+                carl::FastMap<FormulaT, std::vector<const Bound<T1, T2>*>*>& rConstraintToBound()
                 {
                     return mConstraintToBound;
                 }
@@ -515,7 +515,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                smtrat::FormulaT::const_iterator defaultBoundPosition() const
+                FormulaT::const_iterator defaultBoundPosition() const
                 {
                     return mDefaultBoundPosition;
                 }
@@ -538,14 +538,14 @@ namespace smtrat
                  * @param _constraint
                  * @return 
                  */
-                std::pair<const Bound<T1,T2>*, bool> newBound( const smtrat::FormulaT& _constraint );
+                std::pair<const Bound<T1,T2>*, bool> newBound( const FormulaT& _constraint );
                 
                 /**
                  * 
                  * @param _bound
                  * @param _formulas
                  */
-                void activateBound( const Bound<T1,T2>* _bound, const std::set<smtrat::FormulaT>& _formulas );
+                void activateBound( const Bound<T1,T2>* _bound, const FormulasT& _formulas );
                 
                 /**
                  * 
@@ -553,7 +553,7 @@ namespace smtrat
                  * @param _isInteger
                  * @return 
                  */
-                Variable<T1, T2>* newNonbasicVariable( const smtrat::Poly* _poly, bool _isInteger );
+                Variable<T1, T2>* newNonbasicVariable( const Poly* _poly, bool _isInteger );
                 
                 /**
                  * 
@@ -562,14 +562,14 @@ namespace smtrat
                  * @param _isInteger
                  * @return 
                  */
-                Variable<T1, T2>* newBasicVariable( const smtrat::Poly* _poly, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars, bool _isInteger );
+                Variable<T1, T2>* newBasicVariable( const Poly* _poly, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars, bool _isInteger );
                 
                 /**
                  * 
                  * @param nonbasic_coefficient_list
                  * @return 
                  */
-                Variable<T1, T2>* newBasicVariable( std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, const smtrat::Poly& poly, T2 leading_coeff, bool isInteger );
+                Variable<T1, T2>* newBasicVariable( std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, const Poly& poly, T2 leading_coeff, bool isInteger );
                 
                 /**
                  * g
@@ -597,7 +597,7 @@ namespace smtrat
                  * 
                  * @return 
                  */
-                smtrat::EvalRationalMap getRationalAssignment() const;
+                EvalRationalMap getRationalAssignment() const;
                 
                 /**
                  * 
@@ -706,7 +706,7 @@ namespace smtrat
                  * @param _term
                  * @return 
                  */
-                typename std::map<carl::Variable, Variable<T1, T2>*>::iterator substitute( carl::Variable::Arg _var, const smtrat::Poly& _term );
+                typename std::map<carl::Variable, Variable<T1, T2>*>::iterator substitute( carl::Variable::Arg _var, const Poly& _term );
                 
                 /**
                  * 
@@ -744,7 +744,7 @@ namespace smtrat
                  * @return true, if the constraint is a defining constraint
                  *         false, otherwise   
                  */
-                const smtrat::ConstraintT* isDefining( size_t row_index, std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient_list, T2 lcm, T2& max_value ) const;
+                const ConstraintT* isDefining( size_t row_index, std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient_list, T2 lcm, T2& max_value ) const;
                 
                 /**
                  * Checks whether the row with index row_index is defining. 
@@ -838,7 +838,7 @@ namespace smtrat
                  * @return the valid proof,    if the proof can be constructed.
                  *         NULL,               otherwise.   
                  */
-                smtrat::Poly* create_cut_from_proof( Tableau<Settings,T1,T2>& Inverted_Tableau, Tableau<Settings,T1,T2>& DC_Tableau, size_t row_index, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions, T2& lower, T2& max_value );
+                Poly* create_cut_from_proof( Tableau<Settings,T1,T2>& Inverted_Tableau, Tableau<Settings,T1,T2>& DC_Tableau, size_t row_index, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions, T2& lower, T2& max_value );
 
                 /**
                  * Creates a constraint referring to Gomory Cuts, if possible. 
@@ -847,7 +847,7 @@ namespace smtrat
                  * @return NULL,    if the cut can´t be constructed;
                  *         otherwise the valid constraint is returned.   
                  */
-                const smtrat::Poly* gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar );
+                const Poly* gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar );
                 
                 /**
                  * @param _rowVar
@@ -860,7 +860,7 @@ namespace smtrat
                  * @param _rowVar
                  * @param premises
                  */
-                void collect_premises( const Variable<T1,T2>* _rowVar, std::set<smtrat::FormulaT>& premises );
+                void collect_premises( const Variable<T1,T2>* _rowVar, FormulasT& premises );
                 
                 /**
                  * 

@@ -138,7 +138,7 @@ namespace smtrat
         {
             case FormulaType::FALSE:
             {
-                std::set<FormulaT> infSubSet;
+                FormulasT infSubSet;
                 infSubSet.insert( _formula->formula() );
                 mInfeasibleSubsets.push_back( infSubSet );
                 mFoundSolution.clear();
@@ -710,7 +710,7 @@ namespace smtrat
                 assert(mVariables.count(*variablesIt) > 0);
                 icpVariables.insert( (*(mVariables.find(*variablesIt))).second );
             }
-            std::set<FormulaT> box = variableReasonHull(icpVariables);
+            FormulasT box = variableReasonHull(icpVariables);
             mBoxStorage.push(box);
 //            cout << "ADD TO BOX!" << endl;
             #endif
@@ -729,7 +729,7 @@ namespace smtrat
             for ( auto constraintIt = mIntervals.begin(); constraintIt != mIntervals.end(); ++constraintIt )
                 tmp.insert((*constraintIt));
 
-            std::set<FormulaT> boundaryConstraints = createConstraintsFromBounds(tmp);
+            FormulasT boundaryConstraints = createConstraintsFromBounds(tmp);
             for ( auto boundaryConstraint = boundaryConstraints.begin(); boundaryConstraint != boundaryConstraints.end(); ++boundaryConstraint )
                 negatedContraction->addSubformula(*boundaryConstraint);
             #endif
@@ -747,7 +747,7 @@ namespace smtrat
                 for ( auto constraintIt = mIntervals.begin(); constraintIt != mIntervals.end(); ++constraintIt )
                     tmp.insert((*constraintIt));
 
-                std::set<FormulaT> boundaryConstraints = createConstraintsFromBounds(tmp);
+                FormulasT boundaryConstraints = createConstraintsFromBounds(tmp);
                 for ( auto boundaryConstraint = boundaryConstraints.begin(); boundaryConstraint != boundaryConstraints.end(); ++boundaryConstraint )
                     mCheckContraction->addSubformula(*boundaryConstraint);
                 #endif
@@ -764,7 +764,7 @@ namespace smtrat
                     for ( auto constraintIt = mIntervals.begin(); constraintIt != mIntervals.end(); ++constraintIt )
                         tmp.insert((*constraintIt));
 
-                    std::set<FormulaT> contractedBox = createConstraintsFromBounds(tmp);
+                    FormulasT contractedBox = createConstraintsFromBounds(tmp);
                     FormulaT* negBox = new FormulaT(NOT);
                     FormulaT* boxConjunction = new FormulaT(AND);
                     for ( auto formulaIt = contractedBox.begin(); formulaIt != contractedBox.end(); ++formulaIt )
@@ -916,7 +916,7 @@ namespace smtrat
                 for ( auto constraintIt = mIntervals.begin(); constraintIt != mIntervals.end(); ++constraintIt )
                     tmp.insert((*constraintIt));
 
-                std::set<FormulaT> contractedBox = createConstraintsFromBounds(tmp);
+                FormulasT contractedBox = createConstraintsFromBounds(tmp);
                 FormulaT* negConstraint = new FormulaT(NOT);
                 FormulaT* conjunction = new FormulaT(AND);
                 for ( auto formulaIt = contractedBox.begin(); formulaIt != contractedBox.end(); ++formulaIt )
@@ -984,7 +984,7 @@ namespace smtrat
         {
             assert(infeasibleSubsets().empty());
             #ifndef BOXMANAGEMENT
-            std::set<FormulaT> contractionConstraints = this->createPremiseDeductions();
+            FormulasT contractionConstraints = this->createPremiseDeductions();
             vector<Module*>::const_iterator backend = usedBackends().begin();
             while( backend != usedBackends().end() )
             {
@@ -994,7 +994,7 @@ namespace smtrat
                 #endif
                 for( auto infsubset = (*backend)->infeasibleSubsets().begin(); infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
                 {
-                    std::set<FormulaT> newInfSubset;
+                    FormulasT newInfSubset;
                     for( auto subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                     {
                         if( !subformula->constraint().isBound() )
@@ -1014,7 +1014,7 @@ namespace smtrat
             while( backend != usedBackends().end() )
             {
                 assert( !(*backend)->infeasibleSubsets().empty() );
-                for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->infeasibleSubsets().begin();
+                for( std::vector<FormulasT>::const_iterator infsubset = (*backend)->infeasibleSubsets().begin();
                         infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
                 {
                     for( auto subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
@@ -1042,7 +1042,7 @@ namespace smtrat
                         {
                             if (mInfeasibleSubsets.empty())
                             {
-                                std::set<FormulaT> infeasibleSubset;
+                                FormulasT infeasibleSubset;
                                 infeasibleSubset.insert(*subformula);
                                 mInfeasibleSubsets.insert(mInfeasibleSubsets.begin(), infeasibleSubset);
                             }
@@ -1485,7 +1485,7 @@ namespace smtrat
             }
 
             #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
-            std::set<FormulaT> partialBox = createConstraintsFromBounds(tmpRight);
+            FormulasT partialBox = createConstraintsFromBounds(tmpRight);
             FormulaT* negBox = new FormulaT(NOT);
             FormulaT* boxConjunction = new FormulaT(AND);
             for ( auto formulaIt = partialBox.begin(); formulaIt != partialBox.end(); ++formulaIt )
@@ -1537,19 +1537,19 @@ namespace smtrat
             mIntervals[variable] = resultB;
 #else
             /// create prequesites: ((oldBox AND CCs) -> newBox) in CNF: (oldBox OR CCs) OR newBox 
-            std::set<FormulaT> subformulas;
-            std::set<FormulaT> splitPremise = createPremiseDeductions();
+            FormulasT subformulas;
+            FormulasT splitPremise = createPremiseDeductions();
             for( const FormulaT& subformula : splitPremise )
                 subformulas.insert( FormulaT( FormulaType::NOT, subformula ) );
             // construct new box
-            std::set<FormulaT> boxFormulas = createBoxFormula();
+            FormulasT boxFormulas = createBoxFormula();
             // push deduction
             if( boxFormulas.size() > 1 )
             {
                 auto lastFormula = --boxFormulas.end();
                 for( auto iter = boxFormulas.begin(); iter != lastFormula; ++iter )
                 {
-                    std::set<FormulaT> subformulasTmp = subformulas;
+                    FormulasT subformulasTmp = subformulas;
                     subformulasTmp.insert( *iter );
                     addDeduction( FormulaT( OR, subformulas ) );
                 }
@@ -1883,24 +1883,23 @@ namespace smtrat
         return impact;
     }
 
-    std::set<FormulaT> ICPModule::createPremiseDeductions()
+    FormulasT ICPModule::createPremiseDeductions()
     {
         // collect applied contractions
-        std::set<FormulaT> contractions = mHistoryActual->appliedConstraints();
-		
+        FormulasT contractions = mHistoryActual->appliedConstraints();
         // collect original box
 //        assert( mBoxStorage.size() == 1 );
-        std::set<FormulaT> box = mBoxStorage.front();
+        FormulasT box = mBoxStorage.front();
         contractions.insert( box.begin(), box.end() );
         mBoxStorage.pop();
         return contractions;
     }
     
-    std::set<FormulaT> ICPModule::createBoxFormula()
+    FormulasT ICPModule::createBoxFormula()
     {
         Variables originalRealVariables;
         rReceivedFormula().realValuedVars(originalRealVariables);
-        std::set<FormulaT> subformulas;
+        FormulasT subformulas;
         for( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
         {
             if( originalRealVariables.find( (*intervalIt).first ) != originalRealVariables.end() )
@@ -2000,10 +1999,10 @@ namespace smtrat
         {
             #ifndef BOXMANAGEMENT
             // create prequesites: ((oldBox AND CCs) -> newBox) in CNF: (oldBox OR CCs) OR newBox 
-            std::set<FormulaT> splitPremise = createPremiseDeductions();
+            FormulasT splitPremise = createPremiseDeductions();
             if( _contractionApplied )
             {
-                std::set<FormulaT> subformulas;
+                FormulasT subformulas;
                 for( auto formulaIt = splitPremise.begin(); formulaIt != splitPremise.end(); ++formulaIt )
                     subformulas.insert( FormulaT( FormulaType::NOT, *formulaIt ) );
                 // construct new box
@@ -2139,7 +2138,7 @@ namespace smtrat
 
 //    bool ICPModule::validateSolution( bool& _newConstraintAdded )
 //    {
-//        vec_set_const_pFormula failedConstraints;
+//        std::vector<FormulasT> failedConstraints;
 //        PointerSet<Formula> currentInfSet;
 //        _newConstraintAdded = false;
 //        #ifdef ICP_MODULE_DEBUG_0
@@ -2365,7 +2364,7 @@ namespace smtrat
 //        #endif
 //    }
 //    
-//    bool ICPModule::updateIcpRelevantCandidates( const vec_set_const_pFormula& _infSubsetsInLinearization )
+//    bool ICPModule::updateIcpRelevantCandidates( const std::vector<FormulasT>& _infSubsetsInLinearization )
 //    {
 //        bool newConstraintAdded = false;
 //        ContractionCandidates candidates;
@@ -2454,7 +2453,7 @@ namespace smtrat
     
     bool ICPModule::checkBoxAgainstLinearFeasibleRegion()
     {
-        std::set<FormulaT> addedBoundaries = createConstraintsFromBounds(mIntervals);
+        FormulasT addedBoundaries = createConstraintsFromBounds(mIntervals);
         for( auto formulaIt = addedBoundaries.begin(); formulaIt != addedBoundaries.end();  )
         {
             auto res = mValidationFormula->add( *formulaIt );
@@ -2484,7 +2483,7 @@ namespace smtrat
         assert( boxCheck != Unknown );
         if( boxCheck != True )
         {
-            vec_set_const_pFormula tmpSet = mLRA.infeasibleSubsets();
+            std::vector<FormulasT> tmpSet = mLRA.infeasibleSubsets();
             for ( auto infSetIt = tmpSet.begin(); infSetIt != tmpSet.end(); ++infSetIt )
             {
                 for ( auto formulaIt = (*infSetIt).begin(); formulaIt != (*infSetIt).end(); ++formulaIt )
@@ -2717,8 +2716,8 @@ namespace smtrat
                         else
                         {
                             addConstraintToInform( leftTmp );
-                            vec_set_const_pFormula origins;
-                            origins.push_back( std::set<FormulaT>() );
+                            std::vector<FormulasT> origins;
+                            origins.push_back( FormulasT() );
                             auto res = addSubformulaToPassedFormula( leftTmp, std::move( origins ) );
                             if( res.second )
                             {
@@ -2755,8 +2754,8 @@ namespace smtrat
                         else
                         {
                             addConstraintToInform( rightTmp );
-                            vec_set_const_pFormula origins;
-                            origins.push_back( std::set<FormulaT>() );
+                            std::vector<FormulasT> origins;
+                            origins.push_back( FormulasT() );
                             auto res = addSubformulaToPassedFormula( rightTmp, origins );
                             if( res.second )
                             {
@@ -2770,14 +2769,14 @@ namespace smtrat
         }
     }
     
-    std::set<FormulaT> ICPModule::variableReasonHull( icp::set_icpVariable& _reasons )
+    FormulasT ICPModule::variableReasonHull( icp::set_icpVariable& _reasons )
     {
-        std::set<FormulaT> reasons;
+        FormulasT reasons;
         for( auto variableIt = _reasons.begin(); variableIt != _reasons.end(); ++variableIt )
         {
             if ((*variableIt)->lraVar() != NULL)
             {
-                std::set<FormulaT> definingOrigins = (*variableIt)->lraVar()->getDefiningOrigins();
+                FormulasT definingOrigins = (*variableIt)->lraVar()->getDefiningOrigins();
                 for( auto formulaIt = definingOrigins.begin(); formulaIt != definingOrigins.end(); ++formulaIt )
                 {
                     // cout << "Defining origin: " << **formulaIt << " FOR " << *(*variableIt) << endl;
@@ -2817,9 +2816,9 @@ namespace smtrat
         return reasons;
     }
     
-    std::set<FormulaT> ICPModule::constraintReasonHull( const std::set<const ConstraintT*>& _reasons )
+    FormulasT ICPModule::constraintReasonHull( const std::set<const ConstraintT*>& _reasons )
     {
-        std::set<FormulaT> reasons;
+        FormulasT reasons;
         for ( auto constraintIt = _reasons.begin(); constraintIt != _reasons.end(); ++constraintIt )
         {
             for ( auto formulaIt = rReceivedFormula().begin(); formulaIt != rReceivedFormula().end(); ++formulaIt )
@@ -2834,9 +2833,9 @@ namespace smtrat
         return reasons;
     }
     
-    std::set<FormulaT> ICPModule::createConstraintsFromBounds( const EvalDoubleIntervalMap& _map )
+    FormulasT ICPModule::createConstraintsFromBounds( const EvalDoubleIntervalMap& _map )
     {
-        std::set<FormulaT> addedBoundaries;
+        FormulasT addedBoundaries;
         Variables originalRealVariables;
         rReceivedFormula().realValuedVars(originalRealVariables);
         for ( auto variablesIt = originalRealVariables.begin(); variablesIt != originalRealVariables.end(); ++variablesIt )
@@ -2907,7 +2906,7 @@ namespace smtrat
         }
         else if( _deduction.isBooleanCombination() )
         {
-            std::set<FormulaT> subformulas;
+            FormulasT subformulas;
             for( const FormulaT& subformula : _deduction.subformulas() )
             {
                 subformulas.insert( transformDeductions( subformula ) );
@@ -2926,10 +2925,10 @@ namespace smtrat
     
     void ICPModule::remapAndSetLraInfeasibleSubsets()
     {
-        vec_set_const_pFormula tmpSet = mLRA.infeasibleSubsets();
+        std::vector<FormulasT> tmpSet = mLRA.infeasibleSubsets();
         for ( auto infSetIt = tmpSet.begin(); infSetIt != tmpSet.end(); ++infSetIt )
         {
-            std::set<FormulaT> newSet;
+            FormulasT newSet;
             for ( auto formulaIt = (*infSetIt).begin(); formulaIt != (*infSetIt).end(); ++formulaIt )
             {
                 auto delinIt = mDeLinearizations.find(*formulaIt);
@@ -3008,7 +3007,7 @@ namespace smtrat
         return NULL;
     }
     
-    std::set<FormulaT> ICPModule::collectReasons( icp::HistoryNode* _node )
+    FormulasT ICPModule::collectReasons( icp::HistoryNode* _node )
     {
         icp::set_icpVariable variables = _node->rStateInfeasibleVariables();
         for( auto varIt = variables.begin(); varIt != variables.end(); ++varIt )
@@ -3016,8 +3015,8 @@ namespace smtrat
             // cout << "Collect Hull for " << (*varIt)->var().get_name() << endl;
             _node->variableHull((*varIt)->var(), variables);
         }
-        std::set<FormulaT> reasons = variableReasonHull(variables);
-        std::set<FormulaT> constraintReasons = constraintReasonHull(_node->rStateInfeasibleConstraints());
+        FormulasT reasons = variableReasonHull(variables);
+        FormulasT constraintReasons = constraintReasonHull(_node->rStateInfeasibleConstraints());
         reasons.insert(constraintReasons.begin(), constraintReasons.end());
         return reasons;
     }

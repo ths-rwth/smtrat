@@ -59,8 +59,6 @@ namespace smtrat
 {
     class Manager;
 
-    /// A vector of sets of formula pointers.
-    typedef std::vector<std::set<FormulaT>> vec_set_const_pFormula;
     /// A vector of atomic bool pointers.
     typedef std::vector<std::atomic_bool*> Conditionals;
     
@@ -122,7 +120,7 @@ namespace smtrat
             ModuleInput* mpPassedFormula;
         protected:
             /// Stores the infeasible subsets.
-            vec_set_const_pFormula mInfeasibleSubsets;
+            std::vector<FormulasT> mInfeasibleSubsets;
             /// A reference to the manager.
             Manager* const mpManager;
             /// Stores the assignment of the current satisfiable result, if existent.
@@ -144,9 +142,9 @@ namespace smtrat
             /// Stores the position of the first sub-formula in the passed formula, which has not yet been considered for a consistency check of the backends.
             ModuleInput::iterator mFirstSubformulaToPass;
             /// Stores the constraints which the backends must be informed about.
-            std::set<FormulaT> mConstraintsToInform;
+            FormulasT mConstraintsToInform;
             /// Stores the position of the first constraint of which no backend has been informed about.
-            std::set<FormulaT> mInformedConstraints;
+            FormulasT mInformedConstraints;
             /// Stores the position of the first (by this module) unchecked sub-formula of the received formula.
             ModuleInput::const_iterator mFirstUncheckedReceivedSubformula;
             /// Counter used for the generation of the smt2 files to check for smaller muses.
@@ -338,7 +336,7 @@ namespace smtrat
              * @return The infeasible subsets of the set of received formulas (empty, if this module has not
              *          detected unsatisfiability of the conjunction of received formulas.
              */
-            inline const vec_set_const_pFormula& infeasibleSubsets() const
+            inline const std::vector<FormulasT>& infeasibleSubsets() const
             {
                 return mInfeasibleSubsets;
             }
@@ -362,7 +360,7 @@ namespace smtrat
             /**
              * @return The constraints which the backends must be informed about.
              */
-            const std::set<FormulaT>& constraintsToInform() const
+            const FormulasT& constraintsToInform() const
             {
                 return mConstraintsToInform;
             }
@@ -370,7 +368,7 @@ namespace smtrat
             /**
              * @return The position of the first constraint of which no backend has been informed about.
              */
-            const std::set<FormulaT>& informedConstraints() const
+            const FormulasT& informedConstraints() const
             {
                 return mInformedConstraints;
             }
@@ -489,7 +487,7 @@ namespace smtrat
              *               or its sub-procedure).
              * @see Module::storeAssumptionsToCheck
              */
-            static void addAssumptionToCheck( const std::set<FormulaT>& _formulas, bool _consistent, const std::string& _label );
+            static void addAssumptionToCheck( const FormulasT& _formulas, bool _consistent, const std::string& _label );
             /**
              * Add a conjunction of _constraints to the assumption vector and its predetermined consistency status.
              * @param _constraints The constraints, whose conjunction should be consistent/inconsistent.
@@ -522,7 +520,7 @@ namespace smtrat
              * @param _filename The name of the file to store the infeasible subsets in order to be able to check their infeasibility.
              * @param _maxSizeDifference The maximal difference between the sizes of the subsets compared to the size of the infeasible subset.
              */
-            void checkInfSubsetForMinimality( vec_set_const_pFormula::const_iterator _infsubset, const std::string& _filename = "smaller_muses", unsigned _maxSizeDifference = 1 ) const;
+            void checkInfSubsetForMinimality( std::vector<FormulasT>::const_iterator _infsubset, const std::string& _filename = "smaller_muses", unsigned _maxSizeDifference = 1 ) const;
 
         protected:
 
@@ -573,7 +571,7 @@ namespace smtrat
              * @param _formula The passed formula to set the origins for.
              * @param _origins A set of formulas in the received formula of this module.
              */
-            void addOrigin( ModuleInput::iterator _formula, const std::set<FormulaT>& _origin )
+            void addOrigin( ModuleInput::iterator _formula, const FormulasT& _origin )
             {
                 assert( _formula != mpPassedFormula->end() );
                 _formula->rOrigins().push_back( _origin );
@@ -584,7 +582,7 @@ namespace smtrat
              * @param _formula The passed formula to set the origins for.
              * @param _origins A vector of sets of formulas in the received formula of this module.
              */
-            void addOrigins( ModuleInput::iterator _formula, vec_set_const_pFormula& _origins )
+            void addOrigins( ModuleInput::iterator _formula, std::vector<FormulasT>& _origins )
             {
                 assert( _formula != mpPassedFormula->end() );
                 auto& origs = _formula->rOrigins();
@@ -596,7 +594,7 @@ namespace smtrat
              * @param _formula The position of a formula in the passed formulas.
              * @return The origins of the passed formula at the given position.
              */
-            const std::set<FormulaT>& getOrigins( ModuleInput::const_iterator _formula ) const
+            const FormulasT& getOrigins( ModuleInput::const_iterator _formula ) const
             {
                 assert( _formula != mpPassedFormula->end() );
                 return _formula->origins().front();
@@ -611,7 +609,7 @@ namespace smtrat
                 return std::make_pair( _formula, false );
             }
             
-            std::pair<ModuleInput::iterator,bool> removeOrigins( ModuleInput::iterator _formula, const std::set<FormulaT>& _origins )
+            std::pair<ModuleInput::iterator,bool> removeOrigins( ModuleInput::iterator _formula, const FormulasT& _origins )
             {
                 if( mpPassedFormula->removeOrigins( _formula, _origins ) )
                 {
@@ -620,7 +618,7 @@ namespace smtrat
                 return std::make_pair( _formula, false );
             }
             
-            std::pair<ModuleInput::iterator,bool> removeOrigins( ModuleInput::iterator _formula, const vec_set_const_pFormula& _origins )
+            std::pair<ModuleInput::iterator,bool> removeOrigins( ModuleInput::iterator _formula, const std::vector<FormulasT>& _origins )
             {
                 if( mpPassedFormula->removeOrigins( _formula, _origins ) )
                 {
@@ -670,7 +668,7 @@ namespace smtrat
              * @param _origins The link of the formula to add to the passed formula to sub-formulas 
              *         of the received formulas, which are responsible for its occurrence
              */
-            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, const vec_set_const_pFormula& _origins );
+            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, const std::vector<FormulasT>& _origins );
             
             /**
              * Adds the given formula to the passed formula.
@@ -678,7 +676,7 @@ namespace smtrat
              * @param _origins The link of the formula to add to the passed formula to sub-formulas 
              *         of the received formulas, which are responsible for its occurrence
              */
-            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, vec_set_const_pFormula&& _origins );
+            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, std::vector<FormulasT>&& _origins );
             
             /**
              * Adds the given formula to the passed formula.
@@ -733,7 +731,7 @@ namespace smtrat
              * @param _backend The backend from which to obtain the infeasible subsets.
              * @return The infeasible subsets the given backend provides.
              */
-            vec_set_const_pFormula getInfeasibleSubsets( const Module& _backend ) const;
+            std::vector<FormulasT> getInfeasibleSubsets( const Module& _backend ) const;
             
             /**
              * Merges the two vectors of sets into the first one.
@@ -745,13 +743,13 @@ namespace smtrat
              *
              * @result The vector being the two given vectors merged.
              */
-            vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
+            std::vector<FormulasT> merge( const std::vector<FormulasT>&, const std::vector<FormulasT>& ) const;
             
             /**
              * @param origins A vector of sets of origins.
              * @return The index of the smallest (regarding the size of the sets) element of origins
              */
-            size_t determine_smallest_origin( std::vector<std::set<FormulaT>>& origins ) const;
+            size_t determine_smallest_origin( std::vector<FormulasT>& origins ) const;
             
             /**
              * Checks whether given the current branching value and branching variable/polynomial it is (highly) probable that
@@ -777,7 +775,7 @@ namespace smtrat
              *                      false, if the given variable should be less than the given value or
              *                             or greater or equal than the given value.
              */
-            void branchAt( const Poly& _polynomial, const Rational& _value, const std::set<FormulaT>& = std::set<FormulaT>(), bool _leftCaseWeak = true );
+            void branchAt( const Poly& _polynomial, const Rational& _value, const FormulasT& = FormulasT(), bool _leftCaseWeak = true );
             
             /**
              * Adds the following lemmas for the given constraint p!=0

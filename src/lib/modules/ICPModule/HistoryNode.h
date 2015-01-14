@@ -248,9 +248,9 @@ namespace smtrat
                     return mAppliedContractions;
                 }
                 
-                std::set<FormulaT> appliedConstraints()
+                FormulasT appliedConstraints()
                 {
-                    std::set<FormulaT> appliedConstraints;
+                    FormulasT appliedConstraints;
                     for( std::set<const ContractionCandidate*>::iterator candidateIt = mAppliedContractions.begin(); candidateIt != mAppliedContractions.end(); ++candidateIt )
                     {
                         for( auto originIt = (*candidateIt)->origin().begin(); originIt != (*candidateIt)->origin().end(); ++originIt )
@@ -394,7 +394,7 @@ namespace smtrat
                         addReason( _variable, (*reasonsIt) );
                 }
 
-                void addReasons( carl::Variable::Arg _variable, const std::set<FormulaT>& _origins )
+                void addReasons( carl::Variable::Arg _variable, const FormulasT& _origins )
                 {
                     assert( mReasons.find( _variable ) != mReasons.end() );
                     bool                               contained = false;
