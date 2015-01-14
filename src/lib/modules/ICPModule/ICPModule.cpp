@@ -33,7 +33,7 @@
 using namespace std;
 using namespace carl;
 
-#define ICP_MODULE_DEBUG_0
+//#define ICP_MODULE_DEBUG_0
 //#define ICP_MODULE_DEBUG_1
 #define ICP_CONSIDER_WIDTH
 //#define ICP_SIMPLE_VALIDATION
@@ -480,7 +480,7 @@ namespace smtrat
             
             if( !linearizedConstraint.isBound() )
             {
-                createLinearCCs( linearFormula, _formula );
+                createLinearCCs( linearFormula );
             }
             
             // set the lra variables for the icp variables regarding variables (introduced and original ones)
@@ -1143,7 +1143,7 @@ namespace smtrat
                         mContractors.insert(std::make_pair(rhs, Contractor<carl::SimpleNewton>(rhs)));
                     }
                     const ConstraintT* tmp = newConstraint<Poly>( rhs, Relation::EQ );
-                    icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmp, *varIndex, mContractors.at( rhs ), FormulaT( FormulaType::TRUE ) );
+                    icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmp, *varIndex, mContractors.at( rhs ) );
                     ccs.insert( ccs.end(), tmpCandidate );
                     tmpCandidate->setNonlinear();
                     auto tmpIcpVar = mVariables.find( newVar );
@@ -1152,7 +1152,7 @@ namespace smtrat
                 }
                 // add one candidate for the replacement variable
                 const ConstraintT* tmp = newConstraint<Poly>( rhs, Relation::EQ );
-                icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmp, newVar, mContractors.at( rhs ), FormulaT( FormulaType::TRUE ) );
+                icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmp, newVar, mContractors.at( rhs ) );
                 tmpCandidate->setNonlinear();
                 icpVar->addCandidate( tmpCandidate );
                 ccs.insert( ccs.end(), tmpCandidate );
@@ -1185,7 +1185,7 @@ namespace smtrat
         return linearizedConstraint;
     }
     
-    void ICPModule::createLinearCCs( const FormulaT& _constraint, const FormulaT& _origin )
+    void ICPModule::createLinearCCs( const FormulaT& _constraint)
     {
         assert( _constraint.getType() == FormulaType::CONSTRAINT );
         assert( _constraint.constraint().lhs().isLinear() );
@@ -1221,7 +1221,7 @@ namespace smtrat
             // Create candidates for every possible variable:
             for( auto var = variables.begin(); var != variables.end(); ++var )
             {   
-                icp::ContractionCandidate* newCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmpConstr, *var, iter->second, _origin );
+                icp::ContractionCandidate* newCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmpConstr, *var, iter->second );
 
                 // ensure that the created candidate is set as linear
                 newCandidate->setLinear();
@@ -1558,15 +1558,17 @@ namespace smtrat
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
             assert(resultA.upperBoundType() != BoundType::INFTY );
             Rational bound = carl::rationalize<Rational>( resultA.upper() );
-            if( probablyLooping( Poly( variable ), bound ) )
-            {
-                cout << "probably looping!" << endl;
-                Module::storeAssumptionsToCheck( *mpManager );
-                exit( 7771 );
-            }
+//            if( probablyLooping( Poly( variable ), bound ) )
+//            {
+//                cout << "probably looping!" << endl;
+//                Module::storeAssumptionsToCheck( *mpManager );
+//                exit( 7771 );
+//            }
             //assert( !probablyLooping( Polynomial( variable ), bound ) );
             Module::branchAt( Poly( variable ), bound, splitPremise, true );
+            #ifdef ICP_MODULE_DEBUG_0
             cout << "division causes split on " << variable << " at " << bound << "!" << endl << endl;
+            #endif
 #endif
             // TODO: Shouldn't it be the average of both contractions?
             _relativeContraction = (originalDiameter - resultB.diameter()) / originalDiameter;
@@ -1669,10 +1671,10 @@ namespace smtrat
                 }
                 if( takeLower && takeUpper )
                 {
-					if(varIntervalIt->second.isPointInterval())
-						value = varIntervalIt->second.lower();
-					else
-						value = varIntervalIt->second.sample(false);
+                    if(varIntervalIt->second.isPointInterval())
+                            value = varIntervalIt->second.lower();
+                    else
+                            value = varIntervalIt->second.sample(false);
                 }
                 else if( takeLower )
                 {
@@ -1697,7 +1699,6 @@ namespace smtrat
                     }
                 }
             }
-			std::cout << setprecision(100) << varIntervalIt->second << ", " << value << std::endl;
             assert( varIntervalIt->second.contains( value ));
             assignments.insert( std::make_pair(varIt->first, value) );
             ++varIntervalIt;
@@ -1739,6 +1740,28 @@ namespace smtrat
                 }
             }
         }
+    }
+    
+    ModuleInput::iterator ICPModule::eraseSubformulaFromPassedFormula( ModuleInput::iterator _subformula, bool _ignoreOrigins )
+    {
+        for( std::map<carl::Variable, icp::IcpVariable*>::iterator iter = mVariables.begin(); iter != mVariables.end(); ++iter )
+        {
+            icp::IcpVariable& icpVar = *iter->second;
+            assert( icpVar.externalLeftBound() == passedFormulaEnd() || icpVar.externalLeftBound() != icpVar.externalRightBound() );
+            if( icpVar.externalLeftBound() == _subformula )
+            {
+                icpVar.setExternalLeftBound( passedFormulaEnd() );
+                break;
+            }
+            else if( icpVar.externalRightBound() == _subformula )
+            {
+                icpVar.setExternalRightBound( passedFormulaEnd() );
+                icpVar.setExternalModified();
+                break;
+            }
+        }
+        auto res = Module::eraseSubformulaFromPassedFormula( _subformula, _ignoreOrigins );
+        return res;
     }
     
     void ICPModule::tryContraction( icp::ContractionCandidate* _selection, double& _relativeContraction, const EvalDoubleIntervalMap& _intervals )
@@ -1991,13 +2014,14 @@ namespace smtrat
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
             Rational bound = carl::rationalize<Rational>( mIntervals.at(variable).sample( false ) );
             
-            if( probablyLooping( Poly( variable ), bound ) )
-            {
-                cout << "probably looping!" << endl;
-                Module::storeAssumptionsToCheck( *mpManager );
-                exit( 7771 );
-            }
+//            if( probablyLooping( Poly( variable ), bound ) )
+//            {
+//                cout << "probably looping!" << endl;
+//                Module::storeAssumptionsToCheck( *mpManager );
+//                exit( 7771 );
+//            }
             //assert( !probablyLooping( Polynomial( variable ), bound ) );
+
             Module::branchAt( Poly( variable ), bound, splitPremise, false );
             #ifdef ICP_MODULE_DEBUG_0
             cout << "force split on " << variable << " at " << bound << "!" << endl << endl;
@@ -2435,7 +2459,6 @@ namespace smtrat
             auto res = mValidationFormula->add( *formulaIt );
             if( res.second )
             {
-                assert( res.first == mValidationFormula->end() );
                 mLRA.inform( *formulaIt );
                 mLRA.assertSubformula( res.first );
 				++formulaIt;
@@ -2683,7 +2706,9 @@ namespace smtrat
                                 break;
                         }
                         if( icpVar.externalLeftBound() != passedFormulaEnd() )
-                            eraseSubformulaFromPassedFormula( icpVar.externalLeftBound() );
+                        {
+                            Module::eraseSubformulaFromPassedFormula( icpVar.externalLeftBound(), true );
+                        }
                         if ( leftTmp.isTrue() )
                         {
                             icpVar.setExternalLeftBound( passedFormulaEnd() );
@@ -2719,7 +2744,9 @@ namespace smtrat
                                 break;
                         }
                         if( icpVar.externalRightBound() != passedFormulaEnd() )
-                            eraseSubformulaFromPassedFormula( icpVar.externalRightBound() );
+                        {
+                            Module::eraseSubformulaFromPassedFormula( icpVar.externalRightBound(), true );
+                        }
                         if( rightTmp.isTrue() )
                         {
                             icpVar.setExternalRightBound( passedFormulaEnd() );

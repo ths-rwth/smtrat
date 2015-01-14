@@ -31,7 +31,7 @@
 #define DEBUG_FouMoModule
 
 #define Allow_Deletion
-#define Integer_Mode
+//#define Integer_Mode
 //#define Threshold 20
 
 namespace smtrat
@@ -265,42 +265,56 @@ namespace smtrat
             while( iter_var != mDeleted_Constraints.end() )
             {
                 auto iter_upper = iter_var->second.first.begin();
+                bool formula_deleted;
+                unsigned delete_count;
                 while( iter_upper != iter_var->second.first.end() )
                 {
+                    delete_count = 0;
+                    formula_deleted = false;
                     auto iter_set_upper = iter_upper->second.begin();
                     while( iter_set_upper != iter_upper->second.end() )
                     {
                         auto iter_help_upper = iter_set_upper->find( _subformula->formula() ); 
                         if( iter_help_upper != iter_set_upper->end() )
                         {
-                            iter_set_upper->erase( iter_help_upper );
+                            ++delete_count;
                         }
                         ++iter_set_upper;
                     }
-                    if( iter_upper->second.empty() )
+                    if( iter_upper->second.size() == delete_count )
                     {
-                        iter_var->second.first.erase( iter_upper );
+                        formula_deleted = true;
+                        iter_upper = iter_var->second.first.erase( iter_upper );
                     }
-                    ++iter_upper;
+                    if( !formula_deleted )
+                    {
+                        ++iter_upper;
+                    }    
                 }
                 auto iter_lower = iter_var->second.second.begin();
                 while( iter_lower != iter_var->second.second.end() )
                 {
+                    delete_count = 0;
+                    formula_deleted = false;
                     auto iter_set_lower = iter_lower->second.begin();
                     while( iter_set_lower != iter_lower->second.end() )
                     {
                         auto iter_help_lower = iter_set_lower->find( _subformula->formula() ); 
                         if( iter_help_lower != iter_set_lower->end() )
                         {
-                            iter_set_lower->erase( iter_help_lower );
+                            ++delete_count;
                         }
                         ++iter_set_lower;
                     }
-                    if( iter_lower->second.empty() )
+                    if( iter_lower->second.size() == delete_count )
                     {
-                        iter_var->second.second.erase( iter_lower );
+                        formula_deleted = true;
+                        iter_lower = iter_var->second.second.erase( iter_lower );
                     }
-                    ++iter_lower;
+                    if( !formula_deleted )
+                    {
+                        ++iter_lower;
+                    }    
                 }
                 ++iter_var;
             }
@@ -352,13 +366,7 @@ namespace smtrat
                 if( construct_solution() )
                 {
                     #ifdef DEBUG_FouMoModule
-                    cout << "Found a valid solution: " << endl;
-                    auto iter_sol = mVarAss.begin();
-                    while( iter_sol != mVarAss.end() )
-                    {
-                        cout << iter_sol->first << ": " << iter_sol->second << endl;
-                        ++iter_sol;
-                    }
+                    cout << "Found a valid solution!" << endl;
                     cout << "For the constraints: " << endl;
                     auto iter_con = rReceivedFormula().begin();
                     while( iter_con != rReceivedFormula().end() )
@@ -646,9 +654,12 @@ namespace smtrat
         while( true )
         {
             auto iter_var = constr_backtracking.find( *iter_elim );
+            #ifdef DEBUG_FouMoModule
+            cout << "Reconstruct value for: " << *iter_elim << endl;
+            #endif
             assert( iter_var != constr_backtracking.end() );
             // Begin with the 'upper constraints'
-            bool first_iter_upper = true;
+            bool first_iter_upper = true, at_least_one_upper = false;
             Rational lowest_upper;
             std::pair< carl::Variable, Rational > var_pair_upper;
             FormulaT atomic_formula_upper;
@@ -656,6 +667,10 @@ namespace smtrat
             auto iter_constr_upper = iter_var->second.first.begin();
             while( iter_constr_upper != iter_var->second.first.end() )
             {
+                #ifdef DEBUG_FouMoModule
+                cout << "Upper constraint: " << iter_constr_upper->first.constraint() << endl;
+                #endif
+                at_least_one_upper = true;
                 // Do the substitutions that have been determined in previous iterations
                 // and determine the lowest upper bound in the current level
                 atomic_formula_upper = iter_constr_upper->first;
@@ -666,14 +681,18 @@ namespace smtrat
                     if( !iter_poly_upper->isConstant() )
                     {
                         if( mVarAss.find( iter_poly_upper->getSingleVariable() ) != mVarAss.end() )
-                        {
-                            to_be_substituted_upper.substitute( iter_poly_upper->getSingleVariable(), (Poly)mVarAss.at( iter_poly_upper->getSingleVariable() ) );
+                        {                                                        
+                            to_be_substituted_upper = to_be_substituted_upper.substitute( iter_poly_upper->getSingleVariable(), (Poly)mVarAss[ iter_poly_upper->getSingleVariable() ] );
                         }
                     }
                     ++iter_poly_upper;
                 }
+                #ifdef DEBUG_FouMoModule
+                cout << "Remaining polynomial: " << to_be_substituted_upper << endl;
+                #endif
                 // The remaining variables that are unequal to the current considered one
                 // are assigned to zero.
+                Rational coeff_upper;
                 iter_poly_upper = to_be_substituted_upper.begin();
                 while( iter_poly_upper != to_be_substituted_upper.end() )
                 {
@@ -681,45 +700,61 @@ namespace smtrat
                     {
                         if( iter_poly_upper->getSingleVariable() != *iter_elim )
                         {
-                            mVarAss.insert( std::make_pair( iter_poly_upper->getSingleVariable(), 0 ) );
-                            to_be_substituted_upper.substitute( iter_poly_upper->getSingleVariable(), ZERO_POLYNOMIAL );            
+                            #ifdef DEBUG_FouMoModule
+                            cout << "Set to zero: " << iter_poly_upper->getSingleVariable() << endl;
+                            #endif
+                            //mVarAss.insert( std::make_pair( iter_poly_upper->getSingleVariable(), 0 ) );
+                            mVarAss[ iter_poly_upper->getSingleVariable() ] = 0;
+                            //to_be_substituted_upper = to_be_substituted_upper.substitute( iter_poly_upper->getSingleVariable(), ZERO_POLYNOMIAL );            
+                        }
+                        else
+                        {
+                            coeff_upper = iter_poly_upper->coeff();
+                            #ifdef DEBUG_FouMoModule
+                            cout << "Coefficient: " << iter_poly_upper->coeff() << endl;
+                            #endif
                         }
                     }    
                     ++iter_poly_upper;
                 }
+                to_be_substituted_upper = to_be_substituted_upper.substitute( mVarAss ); 
                 if( first_iter_upper )
                 {
                     first_iter_upper = false;                       
                     #ifdef Integer_Mode
-                    lowest_upper = carl::floor( -to_be_substituted_upper.constantPart() );
+                    lowest_upper = carl::floor( -to_be_substituted_upper.constantPart()/coeff_upper );
                     #else
-                    lowest_upper = -to_be_substituted_upper.constantPart();
+                    lowest_upper = -to_be_substituted_upper.constantPart()/coeff_upper;
                     #endif                        
                 }
                 else
                 {                    
                     #ifdef Integer_Mode
-                    if( carl::floor( -to_be_substituted_upper.constantPart() ) > lowest_upper )
+                    if( carl::floor( -to_be_substituted_upper.constantPart()/coeff_upper ) < lowest_upper )
                     {
-                        lowest_upper = carl::floor( -to_be_substituted_upper.constantPart() );
+                        lowest_upper = carl::floor( -to_be_substituted_upper.constantPart()/coeff_upper );
                     }
                     #else
-                    if( -to_be_substituted_upper.constantPart() > lowest_upper )
+                    if( -to_be_substituted_upper.constantPart()/coeff_upper < lowest_upper )
                     {
-                        lowest_upper = -to_be_substituted_upper.constantPart();
+                        lowest_upper = -to_be_substituted_upper.constantPart()/coeff_upper;
                     }
                     #endif
                 }
                 ++iter_constr_upper;    
             }
             // Proceed with the 'lower constraints'
-            bool first_iter_lower = true;
+            bool first_iter_lower = true, at_least_one_lower = false;
             Rational highest_lower;
             FormulaT atomic_formula_lower;
             Poly to_be_substituted_lower;
             auto iter_constr_lower = iter_var->second.second.begin();
             while( iter_constr_lower != iter_var->second.second.end() )
             {
+                #ifdef DEBUG_FouMoModule
+                cout << "Lower constraint: " << iter_constr_lower->first.constraint() << endl;
+                #endif
+                at_least_one_lower = true;
                 // Do the substitutions that have been determined in previous iterations
                 // and determine the highest lower bound in the current level
                 atomic_formula_lower = iter_constr_lower->first;
@@ -731,13 +766,17 @@ namespace smtrat
                     {
                         if( mVarAss.find( iter_poly_lower->getSingleVariable() ) != mVarAss.end() )
                         {
-                            to_be_substituted_lower.substitute( iter_var->first, (Poly)mVarAss.at( iter_poly_lower->getSingleVariable() ) );
+                            to_be_substituted_lower = to_be_substituted_lower.substitute( iter_var->first, (Poly)mVarAss.at( iter_poly_lower->getSingleVariable() ) );
                         }
                     }
                     ++iter_poly_lower;
                 }
+                #ifdef DEBUG_FouMoModule
+                cout << "Remaining polynomial: " << to_be_substituted_lower << endl;
+                #endif
                 // The remaining variables that are unequal to the current considered one
                 // are assigned to zero.
+                Rational coeff_lower;
                 iter_poly_lower = to_be_substituted_lower.begin();
                 while( iter_poly_lower != to_be_substituted_lower.end() )
                 {
@@ -745,52 +784,88 @@ namespace smtrat
                     {
                         if( iter_poly_lower->getSingleVariable() != *iter_elim )
                         {
-                            mVarAss.insert( std::make_pair( iter_poly_lower->getSingleVariable(), 0 ) );
-                            to_be_substituted_lower.substitute( iter_poly_lower->getSingleVariable(), ZERO_POLYNOMIAL );
+                            #ifdef DEBUG_FouMoModule
+                            cout << "Set to zero: " << iter_poly_lower->getSingleVariable() << endl;
+                            #endif
+                            //mVarAss.insert( std::make_pair( iter_poly_lower->getSingleVariable(), 0 ) );
+                            mVarAss[ iter_poly_lower->getSingleVariable() ] = 0;
+                            //to_be_substituted_lower = to_be_substituted_lower.substitute( iter_poly_lower->getSingleVariable(), ZERO_POLYNOMIAL );
+                        }
+                        else
+                        {
+                            coeff_lower = -iter_poly_lower->coeff();
+                            #ifdef DEBUG_FouMoModule
+                            cout << "Coeff: " << -iter_poly_lower->coeff() << endl;
+                            #endif
                         }
                     }    
                     ++iter_poly_lower;
                 }
+                to_be_substituted_lower = to_be_substituted_lower.substitute( mVarAss ); 
                 if( first_iter_lower )
                 {
                     first_iter_lower = false;
                     #ifdef Integer_Mode
-                    highest_lower = carl::ceil( to_be_substituted_lower.constantPart() );
+                    highest_lower = carl::ceil( to_be_substituted_lower.constantPart()/coeff_lower );
                     #else
-                    highest_lower = to_be_substituted_lower.constantPart();
+                    highest_lower = to_be_substituted_lower.constantPart()/coeff_lower;
                     #endif
                 }
                 else
                 {
                     #ifdef Integer_Mode
-                    if( carl::ceil( to_be_substituted_lower.constantPart() ) < highest_lower )
+                    if( carl::ceil( to_be_substituted_lower.constantPart()/coeff_lower ) > highest_lower )
                     {
-                        highest_lower = carl::ceil( to_be_substituted_lower.constantPart() );
+                        highest_lower = carl::ceil( to_be_substituted_lower.constantPart()/coeff_lower );
                     }
                     #else 
-                    if( to_be_substituted_lower.constantPart() < highest_lower )
+                    if( to_be_substituted_lower.constantPart()/coeff_lower > highest_lower )
                     {
-                        highest_lower = to_be_substituted_upper.constantPart();
+                        highest_lower = to_be_substituted_upper.constantPart()/coeff_lower;
                     }
                     #endif
                 }
                 ++iter_constr_lower;    
             }
-            if( highest_lower > lowest_upper )
+            #ifdef Integer_Mode
+            if( ( at_least_one_lower && at_least_one_upper ) && highest_lower > lowest_upper )
             {
                 #ifdef DEBUG_FouMoModule
                 cout << "Highest lower bound is bigger than the lowest upper bound!" << endl;
                 #endif
                 return false;
             }
+            #endif
             // Insert one of the found bounds into mVarAss
-            mVarAss.insert( std::make_pair( *iter_elim, highest_lower ) );
+            //mVarAss.insert( std::make_pair( *iter_elim, highest_lower ) );
+            if( at_least_one_lower )
+            {
+                #ifdef DEBUG_FouMoModule
+                cout << "Set: " << *iter_elim << " to: " << highest_lower << endl;
+                #endif
+                mVarAss[ *iter_elim ] = highest_lower;
+            }
+            else
+            {
+                #ifdef DEBUG_FouMoModule
+                cout << "Set: " << *iter_elim << " to: " << lowest_upper << endl;
+                #endif
+                mVarAss[ *iter_elim ] = lowest_upper;
+            }
             if( iter_elim == mElim_Order.begin() )
             {
                 break;
             }
             --iter_elim;    
         }
+        #ifdef DEBUG_FouMoModule
+        auto iter_sol = mVarAss.begin();
+        while( iter_sol != mVarAss.end() )
+        {
+            cout << iter_sol->first << ": " << iter_sol->second << endl;
+            ++iter_sol;
+        }
+        #endif
         // Check whether the obtained solution is correct
         auto iter_constr = rReceivedFormula().begin();
         while( iter_constr != rReceivedFormula().end() )

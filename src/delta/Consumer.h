@@ -51,11 +51,14 @@ private:
      * @param message Message, if check is successful.
      */
 	void performCheck(const Node& n, const std::string& message) {
-		progress++;
-		if (hasResult()) return;
+		if (hasResult()) {
+			progress++;
+			return;
+		}
 		std::string tmp = temp.get();
 		bool res = checker(n, tmp);
 		temp.put(tmp);
+		progress++;
 		if (res) {
 			std::lock_guard<std::mutex> guard(resultMutex);
 			if (!found) result = std::make_pair(n, message);
@@ -84,11 +87,12 @@ public:
      */
 	void consume(const Node& n, const std::string& message) {
 		if (hasResult()) return;
-		jobcount++;
-		while (jobcount - progress > std::thread::hardware_concurrency()) {
+		while (jobcount - progress >= std::thread::hardware_concurrency()) {
 			wait();
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 		}
+		if (hasResult()) return;
+		jobcount++;
 		jobs.push(std::async(std::launch::async, &Consumer::performCheck, this, n, message));
 	}
 	/**
