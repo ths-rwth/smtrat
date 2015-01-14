@@ -35,6 +35,7 @@
 #include "Substitute.h"
 #include "State.h"
 #include "VSSettings.h"
+#include "IDAllocator.h"
 #include "../../solver/Module.h"
 #include "../../solver/RuntimeSettings.h"
 
@@ -62,8 +63,13 @@ namespace smtrat
             /// 
             size_t mStepCounter;
             #endif
+            /// Id allocator for the conditions.
+            vs::IDAllocator* mpConditionIdAllocator;
+            ///
             vs::State* mpStateTree;
+            ///
             carl::Variables mAllVariables;
+            ///
             FormulaConditionMap mFormulaConditionMap;
             /// The order for all states, in which they shall be processed. The first state in this map is processed first.
             vs::ValuationMap mRanking;

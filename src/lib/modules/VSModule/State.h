@@ -30,6 +30,7 @@
 #include <limits.h>
 #include "config.h"
 #include "Substitution.h"
+#include "IDAllocator.h"
 #include "../../datastructures/VariableBounds.h"
 #ifdef SMTRAT_VS_VARIABLEBOUNDS
 #define SMTRAT_VS_VARIABLEBOUNDS_B
@@ -85,7 +86,7 @@ namespace vs
         typedef std::vector< std::pair< ConditionList, bool > > 		 SubstitutionResult;
         typedef std::vector< SubstitutionResult > 						 SubstitutionResults;   
         typedef std::vector< std::pair< unsigned, unsigned > >           SubResultCombination;
-        typedef smtrat::vb::VariableBounds<const Condition*>                  VariableBoundsCond;
+        typedef smtrat::vb::VariableBounds<const Condition*>             VariableBoundsCond;
     private:
         
         // Members:
@@ -176,6 +177,8 @@ namespace vs
         smtrat::Rational      mMaxIntTestCanidate;
         ///
         size_t                mCurrentIntRange;
+        ///
+        IDAllocator*          mpConditionIdAllocator;
         
     public:
         
@@ -184,7 +187,7 @@ namespace vs
          * tree which is going to be formed when applying the satisfiability check based on virtual substitution.
          * @param _withVariableBounds A flag that indicates whether to use optimizations based on variable bounds.
          */
-        State( bool _withVariableBounds );
+        State( IDAllocator* _conditionIdAllocator, bool _withVariableBounds );
         
         /**
          * Constructs a state being a child of the given state and containing the given substitution, which maps
@@ -193,7 +196,9 @@ namespace vs
          * @param _substitution The substitution of the state to be constructed.
          * @param _withVariableBounds A flag that indicates whether to use optimizations based on variable bounds.
          */
-        State( State* const _father, const Substitution& _substitution, bool _withVariableBounds );
+        State( State* const _father, const Substitution& _substitution, IDAllocator* _conditionIdAllocator, bool _withVariableBounds );
+        
+        State( const State& ) = delete;
 
         /**
          * Destructor.

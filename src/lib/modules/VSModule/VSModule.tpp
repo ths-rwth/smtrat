@@ -27,6 +27,7 @@
 
 
 #include "VSModule.h"
+#include "IDAllocator.h"
 
 using namespace vs;
 
@@ -45,7 +46,8 @@ namespace smtrat
         #ifdef VS_STATISTICS
         mStepCounter( 0 ),
         #endif
-        mpStateTree( new State( Settings::use_variable_bounds ) ),
+        mpConditionIdAllocator(new IDAllocator() ),
+        mpStateTree( new State( mpConditionIdAllocator, Settings::use_variable_bounds ) ),
         mAllVariables(),
         mFormulaConditionMap(),
         mRanking(),
@@ -59,10 +61,12 @@ namespace smtrat
         {
             const vs::Condition* pRecCond = mFormulaConditionMap.begin()->second;
             mFormulaConditionMap.erase( mFormulaConditionMap.begin() );
+            mpConditionIdAllocator->free( pRecCond->getId() );
             delete pRecCond;
             pRecCond = NULL;
         }
         delete mpStateTree;
+        delete mpConditionIdAllocator;
     }
 
     template<class Settings>
@@ -72,7 +76,7 @@ namespace smtrat
         if( _subformula->formula().getType() == carl::FormulaType::CONSTRAINT )
         {
             const ConstraintT* constraint = _subformula->formula().pConstraint();
-            const vs::Condition* condition = new vs::Condition( constraint );
+            const vs::Condition* condition = new vs::Condition( constraint, mpConditionIdAllocator->getId() );
             mFormulaConditionMap[_subformula->formula()] = condition;
             assert( constraint->isConsistent() == 2 );
             for( auto var = constraint->variables().begin(); var != constraint->variables().end(); ++var )
@@ -91,16 +95,16 @@ namespace smtrat
                     && constraint->relation() == carl::Relation::NEQ )
                 {
                     ConditionList condVectorA;
-                    condVectorA.push_back( new vs::Condition( carl::newConstraint<Poly>( constraint->lhs(), carl::Relation::LESS ), 0, false, oConds ) );
+                    condVectorA.push_back( new vs::Condition( carl::newConstraint<Poly>( constraint->lhs(), carl::Relation::LESS ), mpConditionIdAllocator->getId(), 0, false, oConds ) );
                     subResult.push_back( condVectorA );
                     ConditionList condVectorB;
-                    condVectorB.push_back( new vs::Condition( carl::newConstraint<Poly>( constraint->lhs(), carl::Relation::GREATER ), 0, false, oConds ) );
+                    condVectorB.push_back( new vs::Condition( carl::newConstraint<Poly>( constraint->lhs(), carl::Relation::GREATER ), mpConditionIdAllocator->getId(), 0, false, oConds ) );
                     subResult.push_back( condVectorB );
                 }
                 else
                 {
                     ConditionList condVector;
-                    condVector.push_back( new vs::Condition( constraint, 0, false, oConds ) );
+                    condVector.push_back( new vs::Condition( constraint, mpConditionIdAllocator->getId(), 0, false, oConds ) );
                     subResult.push_back( condVector );
                 }
                 subResults.push_back( subResult );
@@ -148,6 +152,7 @@ namespace smtrat
                 insertTooHighDegreeStatesInRanking( mpStateTree );
             }
             mFormulaConditionMap.erase( formulaConditionPair );
+            mpConditionIdAllocator->free( condToDelete->getId() );
             delete condToDelete;
             condToDelete = NULL;
             mConditionsChanged = true;
@@ -169,7 +174,7 @@ namespace smtrat
         {
             removeStatesFromRanking( *mpStateTree );
             delete mpStateTree;
-            mpStateTree = new State( Settings::use_variable_bounds );
+            mpStateTree = new State( mpConditionIdAllocator, Settings::use_variable_bounds );
             for( auto iter = mFormulaConditionMap.begin(); iter != mFormulaConditionMap.end(); ++iter )
             {
                 carl::PointerSet<vs::Condition> oConds;
@@ -177,7 +182,7 @@ namespace smtrat
                 std::vector<DisjunctionOfConditionConjunctions> subResults = std::vector<DisjunctionOfConditionConjunctions>();
                 DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
                 ConditionList condVector;
-                condVector.push_back( new vs::Condition( iter->first.pConstraint(), 0, false, oConds ) );
+                condVector.push_back( new vs::Condition( iter->first.pConstraint(), mpConditionIdAllocator->getId(), 0, false, oConds ) );
                 subResult.push_back( condVector );
                 subResults.push_back( subResult );
                 mpStateTree->addSubstitutionResults( subResults );
@@ -1125,7 +1130,7 @@ namespace smtrat
             {
                 if( !anySubstitutionFailed )
                 {
-                    oldConditions.push_back( new vs::Condition( currentConstraint, (**cond).valuation() ) );
+                    oldConditions.push_back( new vs::Condition( currentConstraint, mpConditionIdAllocator->getId(), (**cond).valuation() ) );
                     oldConditions.back()->pOriginalConditions()->insert( *cond );
                 }
             }
@@ -1133,10 +1138,10 @@ namespace smtrat
             {
                 DisjunctionOfConstraintConjunctions subResult;
                 carl::Variables conflVars;
-                if( !substitute( currentConstraint, currentSubs, subResult, Settings::virtual_substitution_according_paper, conflVars, solBox ) )
-                    allSubstitutionsApplied = false;
+                bool substitutionCouldBeApplied = substitute( currentConstraint, currentSubs, subResult, Settings::virtual_substitution_according_paper, conflVars, solBox );
+                allSubstitutionsApplied &= substitutionCouldBeApplied;
                 // Create the the conditions according to the just created constraint prototypes.
-                if( subResult.empty() )
+                if( substitutionCouldBeApplied && subResult.empty() )
                 {
                     anySubstitutionFailed = true;
                     carl::PointerSet<vs::Condition> condSet;
@@ -1161,7 +1166,7 @@ namespace smtrat
                             ConditionList& currentConjunction = currentDisjunction.back();
                             for( auto cons = consConj->begin(); cons != consConj->end(); ++cons )
                             {
-                                currentConjunction.push_back( new vs::Condition( *cons, _currentState->treeDepth() ) );
+                                currentConjunction.push_back( new vs::Condition( *cons, mpConditionIdAllocator->getId(), _currentState->treeDepth() ) );
                                 currentConjunction.back()->pOriginalConditions()->insert( *cond );
                             }
                         }
@@ -1199,6 +1204,7 @@ namespace smtrat
                 #ifdef SMTRAT_VS_VARIABLEBOUNDS
                 _currentState->rVariableBounds().removeBound( pCond->pConstraint(), pCond );
                 #endif
+                mpConditionIdAllocator->free( pCond->getId() );
                 delete pCond;
                 pCond = NULL;
             }
@@ -1238,6 +1244,7 @@ namespace smtrat
                         #ifdef SMTRAT_VS_VARIABLEBOUNDS
                         _currentState->rVariableBounds().removeBound( pCond->pConstraint(), pCond );
                         #endif
+                        mpConditionIdAllocator->free( pCond->getId() );
                         delete pCond;
                         pCond = NULL;
                     }
@@ -1257,6 +1264,7 @@ namespace smtrat
             {
                 const vs::Condition* rpCond = oldConditions.back();
                 oldConditions.pop_back();
+                mpConditionIdAllocator->free( rpCond->getId() );
                 delete rpCond;
                 rpCond = NULL;
             }
@@ -1268,6 +1276,7 @@ namespace smtrat
                     {
                         const vs::Condition* rpCond = allSubResults.back().back().back();
                         allSubResults.back().back().pop_back();
+                        mpConditionIdAllocator->free( rpCond->getId() );
                         delete rpCond;
                         rpCond = NULL;
                     }

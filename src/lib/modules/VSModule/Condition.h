@@ -48,6 +48,7 @@ namespace vs
             mutable bool                   mFlag;
             mutable bool                   mRecentlyAdded;
             mutable size_t                 mValuation;
+            size_t                         mId;
             const smtrat::ConstraintT*     mpConstraint;
             carl::PointerSet<Condition>*   mpOriginalConditions;
             
@@ -55,8 +56,9 @@ namespace vs
         public:
 
             // Constructors:
-            Condition( const smtrat::ConstraintT*, size_t = 0, bool = false, const carl::PointerSet<Condition>& = carl::PointerSet<Condition>(), bool = false );
-            Condition( const Condition& );
+            Condition( const smtrat::ConstraintT*, size_t _id, size_t = 0, bool = false, const carl::PointerSet<Condition>& = carl::PointerSet<Condition>(), bool = false );
+            Condition( const Condition&, size_t _id );
+            Condition( const Condition& ) = delete;
 
             // Destructor:
             ~Condition();
@@ -90,6 +92,11 @@ namespace vs
             size_t valuation() const
             {
                 return mValuation;
+            }
+
+            size_t getId() const
+            {
+                return mId;
             }
 
             const smtrat::ConstraintT& constraint() const
