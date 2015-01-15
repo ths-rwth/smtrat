@@ -1551,7 +1551,7 @@ namespace smtrat
                 {
                     FormulasT subformulasTmp = subformulas;
                     subformulasTmp.insert( *iter );
-                    addDeduction( FormulaT( OR, subformulas ) );
+                    addDeduction( FormulaT( OR, subformulasTmp ) );
                 }
             }
 

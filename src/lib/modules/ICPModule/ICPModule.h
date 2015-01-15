@@ -453,6 +453,44 @@ namespace smtrat
             
             bool intervalsEmpty( bool _original = false) const;
             
+            bool contractionCandidatesHaveLegalOrigins() const
+            {
+                for( auto& lcCCs : mLinearConstraints )
+                {
+                    if( !contractionCandidatesHaveLegalOrigins( lcCCs.second ) )
+                        return false;
+                }
+                for( auto& ncCCs : mNonlinearConstraints )
+                {
+                    if( !contractionCandidatesHaveLegalOrigins( ncCCs.second ) )
+                        return false;
+                }
+                return true;
+            }
+            
+            bool contractionCandidatesHaveLegalOrigins( const ContractionCandidates& _ccs ) const
+            {
+                for( auto& cc : _ccs )
+                {
+                    if( !contractionCandidateHasLegalOrigins( *cc ) )
+                        return false;
+                }
+                return true;
+            }
+            
+            bool contractionCandidateHasLegalOrigins( const icp::ContractionCandidate& _cc ) const
+            {
+                for( auto& f : _cc.origin() )
+                {
+                    if( !rReceivedFormula().contains( f ) )
+                    {
+                        std::cout << f << std::endl;
+                        return false;
+                    }
+                }
+                return true;
+            }
+            
             #ifdef ICP_BOXLOG
             /**
              * Writes actual box to file. Note that the file has to be open.

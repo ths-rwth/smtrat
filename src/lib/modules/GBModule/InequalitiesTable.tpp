@@ -520,7 +520,7 @@ namespace smtrat
         for( auto it = mReducedInequalities.begin( ); it != mReducedInequalities.end( ); ++it )
         {
             typename std::list<CellEntry>::const_iterator listEnd = std::get < 2 > (it->second).end( );
-            os << *(it->first) << " -> " << *(std::get < 0 > (it->second)) << std::endl;
+            os << it->first->formula() << " -> " << std::get<0>(it->second)->formula() << std::endl;
             for(typename std::list<CellEntry>::const_iterator jt = std::get < 2 > (it->second).begin( ); jt != listEnd; ++jt )
             {
                 os << "\t(" << jt->first << ") " << jt->second << " [";
