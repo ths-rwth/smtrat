@@ -75,7 +75,7 @@ namespace smtrat
                  */
                 ModuleInput::iterator position;
                 /// If this bound corresponds to a constraint being p<0 or p>0 for a polynomial p, we store here the constraint p!=0.
-                smtrat::FormulaT neqRepresentation;
+                FormulaT neqRepresentation;
                 /**
                  * A flag which is only false, if this bound has been created for a constraint having != as 
                  * relation symbol, i.e. p!=0, and not yet for the constraint p<0 or p>0.
@@ -94,9 +94,9 @@ namespace smtrat
                 ///
                 Variable<T1, T2>* const mVar;
                 ///
-                smtrat::FormulaT mAsConstraint;
+                FormulaT mAsConstraint;
                 ///
-                std::vector<std::set<FormulaT> >* mpOrigins;
+                std::vector<FormulasT >* mpOrigins;
                 ///
                 Info* mpInfo;
 
@@ -115,7 +115,7 @@ namespace smtrat
                  * @param _boundInfo
                  * @param _deduced
                  */
-                Bound( const Value<T1>* const _limit, Variable<T1, T2>* const _var, Type _type, const smtrat::FormulaT& _constraint, Bound<T1, T2>::Info* _boundInfo = NULL, bool _deduced = false );
+                Bound( const Value<T1>* const _limit, Variable<T1, T2>* const _var, Type _type, const FormulaT& _constraint, Bound<T1, T2>::Info* _boundInfo = NULL, bool _deduced = false );
                 
                 /**
                  * 
@@ -297,7 +297,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                const smtrat::FormulaT& asConstraint() const
+                const FormulaT& asConstraint() const
                 {
                     return mAsConstraint;
                 }
@@ -305,7 +305,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                const smtrat::FormulaT& neqRepresentation() const
+                const FormulaT& neqRepresentation() const
                 {
                     return mpInfo->neqRepresentation;
                 }
@@ -314,7 +314,7 @@ namespace smtrat
                  * 
                  * @param _constraint
                  */
-                void setNeqRepresentation( const smtrat::FormulaT& _constraint ) const
+                void setNeqRepresentation( const FormulaT& _constraint ) const
                 {
                     assert( _constraint.getType() == carl::FormulaType::CONSTRAINT && _constraint.constraint().relation() == carl::Relation::NEQ );
                     if( mpInfo->neqRepresentation.isTrue() )
@@ -334,7 +334,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                std::vector<std::set<FormulaT> >* pOrigins() const
+                std::vector<FormulasT >* pOrigins() const
                 {
                     return mpOrigins;
                 }
@@ -342,7 +342,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                const std::vector<std::set<FormulaT> >& origins() const
+                const std::vector<FormulasT >& origins() const
                 {
                     return *mpOrigins;
                 }

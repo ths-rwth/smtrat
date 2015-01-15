@@ -41,6 +41,7 @@
 
 namespace smtrat
 {
+    
     /// Stores a formula along with its origins.
     class FormulaWithOrigins
     {
@@ -49,7 +50,7 @@ namespace smtrat
         /// The formula.
         FormulaT mFormula;
         /// The formulas origins.
-        std::vector<std::set<FormulaT>> mOrigins;
+        std::vector<FormulasT> mOrigins;
         /// The deduction flag, which indicates, that this formula g is a direct sub-formula of
         /// a conjunction of formulas (and g f_1 .. f_n), and, that (implies (and f_1 .. f_n) g) holds.
         mutable bool mDeducted;
@@ -73,7 +74,7 @@ namespace smtrat
          * @param _formula The formula of the formula with origins to construct.
          * @param _origins The origins of the formula with origins to construct.
          */
-        FormulaWithOrigins( const FormulaT& _formula, const std::vector<std::set<FormulaT>>& _origins ):
+        FormulaWithOrigins( const FormulaT& _formula, const std::vector<FormulasT>& _origins ):
             mFormula( _formula ),
             mOrigins( _origins ),
             mDeducted( false )
@@ -84,7 +85,7 @@ namespace smtrat
          * @param _formula The formula of the formula with origins to construct.
          * @param _origins The origins of the formula with origins to construct.
          */
-        FormulaWithOrigins( const FormulaT& _formula, std::vector<std::set<FormulaT>>&& _origins ):
+        FormulaWithOrigins( const FormulaT& _formula, std::vector<FormulasT>&& _origins ):
             mFormula( _formula ),
             mOrigins( std::move( _origins ) ),
             mDeducted( false )
@@ -125,7 +126,7 @@ namespace smtrat
         /**
          * @return A constant reference to the origins.
          */
-        const std::vector<std::set<FormulaT>>& origins() const
+        const std::vector<FormulasT>& origins() const
         {
             return mOrigins;
         }
@@ -133,7 +134,7 @@ namespace smtrat
         /**
          * @return A reference to the origins.
          */
-        std::vector<std::set<FormulaT>>& rOrigins()
+        std::vector<FormulasT>& rOrigins()
         {
             return mOrigins;
         }
@@ -384,7 +385,7 @@ namespace smtrat
         
         explicit operator FormulaT() const
         {
-            std::set<FormulaT> subFormulas;
+            FormulasT subFormulas;
             for( auto& fwo : *this )
                 subFormulas.insert( fwo.formula() );
             return FormulaT( carl::FormulaType::AND, subFormulas );
@@ -399,38 +400,38 @@ namespace smtrat
         
         bool removeOrigin( iterator _formula, const FormulaT& _origin );
         
-        bool removeOrigins( iterator _formula, const std::vector<std::set<FormulaT>>& _origins );
+        bool removeOrigins( iterator _formula, const std::vector<FormulasT>& _origins );
         
-        bool removeOrigins( iterator _formula, const std::set<FormulaT>& _origins );
+        bool removeOrigins( iterator _formula, const FormulasT& _origins );
         
         std::pair<iterator,bool> add( const FormulaT& _formula )
         {
-            std::set<FormulaT> origins;
+            FormulasT origins;
             return add( _formula, std::move( origins ) );
         }
         
         std::pair<iterator,bool> add( const FormulaT& _formula, const FormulaT& _origin )
         {
-            std::set<FormulaT> origins;
+            FormulasT origins;
             origins.insert( _origin );
             return add( _formula, std::move( origins ) );
         }
         
-        std::pair<iterator,bool> add( const FormulaT& _formula, const std::set<FormulaT>& _origins )
+        std::pair<iterator,bool> add( const FormulaT& _formula, const FormulasT& _origins )
         {
-            std::set<FormulaT> originsCopy( _origins );
+            FormulasT originsCopy( _origins );
             return add( _formula, std::move( originsCopy ) );
         }
         
-        std::pair<iterator,bool> add( const FormulaT& _formula, const std::vector<std::set<FormulaT>>& _origins )
+        std::pair<iterator,bool> add( const FormulaT& _formula, const std::vector<FormulasT>& _origins )
         {
-            std::vector<std::set<FormulaT>> originsCopy( _origins );
+            std::vector<FormulasT> originsCopy( _origins );
             return add( _formula, std::move( originsCopy ) );
         }
         
-        std::pair<iterator,bool> add( const FormulaT& _formula, std::set<FormulaT>&& _origins );
+        std::pair<iterator,bool> add( const FormulaT& _formula, FormulasT&& _origins );
         
-        std::pair<iterator,bool> add( const FormulaT& _formula, std::vector<std::set<FormulaT>>&& _origins );
+        std::pair<iterator,bool> add( const FormulaT& _formula, std::vector<FormulasT>&& _origins );
     };
     
     void annotateFormula( const FormulaT&, const std::vector<parser::Attribute>& );

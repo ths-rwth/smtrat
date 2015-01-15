@@ -101,9 +101,9 @@ namespace smtrat
              */
             LRATableau mTableau;
             /// Stores all linear constraints of which this module has been once informed.
-            std::set<FormulaT> mLinearConstraints;
+            FormulasT mLinearConstraints;
             /// Stores all non-linear constraints which are currently added (by assertSubformula) to this module.
-            std::set<FormulaT> mNonlinearConstraints;
+            FormulasT mNonlinearConstraints;
             /**
              * Those constraints p!=0, which are added to this module (part of the received formula), which 
              * are resolved by a constraints as p<0, p<=0, p>=0 or p>0.
@@ -310,7 +310,7 @@ namespace smtrat
              * @param _bound The bound to activate.
              * @param _formulas The constraints which form this bound.
              */
-            void activateBound( const LRABound* _bound, const std::set<FormulaT>& _formulas );
+            void activateBound( const LRABound* _bound, const FormulasT& _formulas );
             
             /**
              * Activates a strict bound as a result of the two constraints p!=0 and p<=0 resp. p>=0.

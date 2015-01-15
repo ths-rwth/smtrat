@@ -58,7 +58,7 @@ namespace smtrat
             carl::Variable            mLhs;
             carl::Variable            mDerivationVar;
             Poly                mDerivative;
-            std::set<FormulaT>       mOrigin;
+            FormulasT       mOrigin;
             unsigned    mId;
             bool        mIsLinear;
             bool        mDerived;
@@ -180,12 +180,12 @@ namespace smtrat
                 return mLhs;
             }
 
-            const std::set<FormulaT>& origin() const
+            const FormulasT& origin() const
             {
                 return mOrigin;
             }
 
-            std::set<FormulaT>& rOrigin()
+            FormulasT& rOrigin()
             {
                 return mOrigin;
             }

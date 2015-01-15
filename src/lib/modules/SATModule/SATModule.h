@@ -128,7 +128,7 @@ namespace smtrat
                 FormulaT reabstraction;
                 
                 // The origins of this constraint. Usually it is its own origin, but the origins can be extended during solving.
-                std::vector<std::set<FormulaT>>* origins;
+                std::vector<FormulasT>* origins;
                 
                 /**
                  * Constructs abstraction information, for a literal which does actually not belong to an abstraction.
@@ -141,7 +141,7 @@ namespace smtrat
                     updateInfo( 0 ),
                     position( _position ),
                     reabstraction( _reabstraction ),
-                    origins( new std::vector<std::set<FormulaT>>() )
+                    origins( new std::vector<FormulasT>() )
                 {}
             };
 
@@ -393,7 +393,7 @@ namespace smtrat
             /// Stores all clauses in which the activities have been changed.
             std::vector<Minisat::CRef> mChangedActivities;
             /// Maps arithmetic variables to the constraints they occur in (only used by the valid-substitutions optimization).
-            std::map<carl::Variable,std::set<FormulaT>> mVarOccurrences;
+            std::map<carl::Variable,FormulasT> mVarOccurrences;
             /// Maps Minisat variables to the clauses they occur in (only used by the valid-substitutions optimization).
             std::vector<std::set<Minisat::CRef>> mVarClausesMap;
             /// Maps the arithmetic variables to the terms they have been replaced by a valid substitution (only used by the valid-substitutions optimization).
