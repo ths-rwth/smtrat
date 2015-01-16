@@ -430,7 +430,55 @@ namespace smtrat
                     Poly polyTmp = mExpression->substitute( _ass );
                     if( polyTmp.isConstant() )
                         return (*mpInfimum) <= polyTmp.constantPart() && (*mpSupremum) >= polyTmp.constantPart();
+					for( auto& lb : mLowerbounds )
+					{
+						unsigned neqSatisfied = lb->neqRepresentation().satisfiedBy( _ass );
+						assert( neqSatisfied != 2 );
+						if( neqSatisfied == 0 )
+							return 0;
+					}
+					for( auto& ub : mUpperbounds )
+					{
+						unsigned neqSatisfied = ub->neqRepresentation().satisfiedBy( _ass );
+						assert( neqSatisfied != 2 );
+						if( neqSatisfied == 0 )
+							return 0;
+					}
                     return 2;
+                }
+				
+				/**
+                 * 
+                 * @param _ass
+                 * @return 
+                 */
+                FormulaT inConflictWith( const EvalRationalMap& _ass ) const
+                {
+                    Poly polyTmp = mExpression->substitute( _ass );
+					assert( polyTmp.isConstant() );
+                    
+					if( (*mpInfimum) > polyTmp.constantPart() )
+						return mpInfimum->asConstraint();
+					else if ( (*mpSupremum) < polyTmp.constantPart() )
+						return mpSupremum->asConstraint();
+					else
+					{
+						for( auto& lb : mLowerbounds )
+						{
+							unsigned neqSatisfied = lb->neqRepresentation().satisfiedBy( _ass );
+							assert( neqSatisfied != 2 );
+							if( neqSatisfied == 0 )
+								return lb->neqRepresentation();
+						}
+						for( auto& ub : mUpperbounds )
+						{
+							unsigned neqSatisfied = ub->neqRepresentation().satisfiedBy( _ass );
+							assert( neqSatisfied != 2 );
+							if( neqSatisfied == 0 )
+								return ub->neqRepresentation();
+						}
+						return FormulaT( carl::FormulaType::TRUE );
+					}
                 }
 
                 /**

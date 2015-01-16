@@ -106,6 +106,7 @@ namespace smtrat
             std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> mActiveLinearConstraints; // linear candidates considered
             std::map<const LRAVariable*, ContractionCandidates>                 mLinearConstraints; // all linear candidates
             std::map<const ConstraintT*, ContractionCandidates>                  mNonlinearConstraints; // all nonlinear candidates
+			FormulasT															mNotEqualConstraints;
             
             std::map<carl::Variable, icp::IcpVariable*>                                   mVariables; // list of occurring variables
             EvalDoubleIntervalMap                                                               mIntervals; // actual intervals relevant for contraction
@@ -230,6 +231,12 @@ namespace smtrat
              *         false, otherwise.
              */
             bool initialLinearCheck( Answer& _answer );
+			
+			/**
+			 * 
+             * @return 
+             */
+			bool checkNotEqualConstraints();
             
             /**
              * 
