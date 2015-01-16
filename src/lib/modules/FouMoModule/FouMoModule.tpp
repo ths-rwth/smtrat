@@ -83,7 +83,7 @@ namespace smtrat
             #ifdef DEBUG_FouMoModule
             cout << "Asserted formula: " << _subformula->formula().constraint() << "is false" << endl;
             #endif
-            std::set<FormulaT> infSubSet;
+            FormulasT infSubSet;
             infSubSet.insert( _subformula->formula() );
             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
             return false;            
@@ -95,8 +95,8 @@ namespace smtrat
             cout << "Do the eliminations for the newly asserted subformula!" << endl;
             #endif
             auto iter_var = mElim_Order.begin();
-            vector<std::set<FormulaT>> origins;
-            std::set<FormulaT> origin;
+            vector<FormulasT> origins;
+            FormulasT origin;
             origin.insert( _subformula->formula() );
             origins.push_back( std::move( origin ) );
             FormulaOrigins temp_constr;
@@ -139,14 +139,14 @@ namespace smtrat
                                         cout << "and obtain: " << new_formula.constraint() << endl;
                                         #endif
                                         to_be_deleted.insert( std::move( std::make_pair( iter_temp->first, true) ) );
-                                        vector<std::set<FormulaT>> origins_new = std::move( merge( iter_temp->second, iter_lower->second ) );
+                                        vector<FormulasT> origins_new = std::move( merge( iter_temp->second, iter_lower->second ) );
                                         if( new_formula.isFalse() )
                                         {
                                             #ifdef DEBUG_FouMoModule
                                             cout << "The obtained formula is unsatisfiable" << endl;
                                             #endif
                                             size_t i = determine_smallest_origin( origins_new );
-                                            std::set<FormulaT> infSubSet;
+                                            FormulasT infSubSet;
                                             infSubSet = origins_new.at(i);
                                             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
                                             return false;
@@ -173,14 +173,14 @@ namespace smtrat
                                         cout << "and obtain: " << new_formula.constraint() << endl;
                                         #endif
                                         to_be_deleted.insert( std::move( std::make_pair( iter_temp->first, false) ) );
-                                        vector<std::set<FormulaT>> origins_new = std::move( merge( iter_temp->second, iter_upper->second ) );
+                                        vector<FormulasT> origins_new = std::move( merge( iter_temp->second, iter_upper->second ) );
                                         if( new_formula.isFalse() )
                                         {
                                             #ifdef DEBUG_FouMoModule
                                             cout << "The obtained formula is unsatisfiable" << endl;
                                             #endif
                                             size_t i = determine_smallest_origin( origins_new );
-                                            std::set<FormulaT> infSubSet;
+                                            FormulasT infSubSet;
                                             infSubSet = origins_new.at(i);
                                             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
                                             return false;
@@ -421,7 +421,7 @@ namespace smtrat
             {
                 while( iter_lower != iter_help->second.second.end() )
                 {
-                    vector<std::set<FormulaT>> origins_new = std::move( merge( iter_upper->second, iter_lower->second ) );
+                    vector<FormulasT> origins_new = std::move( merge( iter_upper->second, iter_lower->second ) );
                     #ifdef Integer_Mode
                     /*
                     // TO-DO think about this condition
@@ -435,7 +435,7 @@ namespace smtrat
                             cout << "There is no integer between the lower and the upper bound!" << endl;
                             #endif
                             size_t i = determine_smallest_origin( origins_new );
-                            std::set<FormulaT> infSubSet;
+                            FormulasT infSubSet;
                             infSubSet = origins_new.at(i);
                             mInfeasibleSubsets.push_back( infSubSet );
                             return foundAnswer( False );
@@ -455,7 +455,7 @@ namespace smtrat
                         cout << "The obtained formula is unsatisfiable" << endl;
                         #endif
                         size_t i = determine_smallest_origin( origins_new );
-                        std::set<FormulaT> infSubSet;
+                        FormulasT infSubSet;
                         infSubSet = origins_new.at(i);
                         mInfeasibleSubsets.push_back( std::move( infSubSet ) );
                         return foundAnswer( False );
@@ -766,7 +766,7 @@ namespace smtrat
                     {
                         if( mVarAss.find( iter_poly_lower->getSingleVariable() ) != mVarAss.end() )
                         {
-                            to_be_substituted_lower = to_be_substituted_lower.substitute( iter_var->first, (Poly)mVarAss.at( iter_poly_lower->getSingleVariable() ) );
+                            to_be_substituted_lower = to_be_substituted_lower.substitute( iter_poly_lower->getSingleVariable(), (Poly)mVarAss.at( iter_poly_lower->getSingleVariable() ) );
                         }
                     }
                     ++iter_poly_lower;

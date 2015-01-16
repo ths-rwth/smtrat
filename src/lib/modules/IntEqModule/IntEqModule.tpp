@@ -75,7 +75,7 @@ namespace smtrat
             #ifdef DEBUG_IntEqModule
             cout << "Asserted formula: " << _subformula->formula().constraint() << "is false" << endl;
             #endif
-            std::set<FormulaT> infSubSet;
+            FormulasT infSubSet;
             infSubSet.insert( _subformula->formula() );
             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
             return false;            
@@ -83,8 +83,8 @@ namespace smtrat
         if( _subformula->formula().constraint().relation() == carl::Relation::EQ )
         {
             // Do substitutions that have already been determined and update origins accordingly
-            vector<std::set<FormulaT>> origins;
-            std::set<FormulaT> origin;
+            vector<FormulasT> origins;
+            FormulasT origin;
             origin.insert( _subformula->formula() );
             origins.push_back( origin );
             const smtrat::ConstraintT* constr = _subformula->formula().pConstraint();
@@ -112,7 +112,7 @@ namespace smtrat
             #ifdef DEBUG_IntEqModule
             cout << "Assert: " << _subformula->formula().constraint() << endl;
             #endif
-            std::map<FormulaT,vector<std::set<FormulaT>>>::iterator iter = mProc_Constraints.find( _subformula->formula() );
+            std::map<FormulaT,vector<FormulasT>>::iterator iter = mProc_Constraints.find( _subformula->formula() );
             if( iter != mProc_Constraints.end() )
             {
                 (iter->second).push_back( origin );
@@ -221,7 +221,7 @@ namespace smtrat
             if( mProc_Constraints.begin()->first.isFalse() )
             {
                 size_t i = determine_smallest_origin( mProc_Constraints.begin()->second );
-                std::set<FormulaT> infSubSet;
+                FormulasT infSubSet;
                 infSubSet = mProc_Constraints.begin()->second.at(i);
                 mInfeasibleSubsets.push_back( std::move( infSubSet ) );
                 return foundAnswer( False );
@@ -229,7 +229,7 @@ namespace smtrat
             #ifdef DEBUG_IntEqModule
             cout << mProc_Constraints.begin()->first.constraint() << " was chosen." << endl;
             #endif
-            vector<std::set<FormulaT>> origins = mProc_Constraints.begin()->second;
+            vector<FormulasT> origins = mProc_Constraints.begin()->second;
             auto iter_coeff = (curr_constr->lhs()).begin();
             Rational smallest_abs_value = carl::abs((*iter_coeff).coeff());
             carl::Variable corr_var;
@@ -357,7 +357,6 @@ namespace smtrat
                 #ifdef DEBUG_IntEqModule
                 cout << "After substitution: " << new_poly << endl;
                 #endif
-                std::set<FormulaT> origin;
                 FormulaT newEq = FormulaT( carl::newConstraint( new_poly, carl::Relation::EQ ) );
                 #ifdef DEBUG_IntEqModule
                 /*
@@ -377,7 +376,7 @@ namespace smtrat
                 }
                 */
                 #endif
-                vector<std::set<FormulaT>> origins_new = std::move( merge( origins, constr_iter->second ) );
+                vector<FormulasT> origins_new = std::move( merge( origins, constr_iter->second ) );
                 FormulaOrigins::iterator iter = mProc_Constraints.find( newEq );
                 if( iter != mProc_Constraints.end() )
                 {
@@ -394,7 +393,7 @@ namespace smtrat
                     cout << "Constraint is invalid!" << new_poly << endl;
                     #endif
                     size_t i = determine_smallest_origin( origins_new );
-                    std::set<FormulaT> infSubSet;
+                    FormulasT infSubSet;
                     infSubSet = origins_new.at(i);
                     mInfeasibleSubsets.push_back( std::move( infSubSet ) );
                     return foundAnswer( False );
@@ -435,8 +434,8 @@ namespace smtrat
                 #ifdef DEBUG_IntEqModule
                 cout << "After substitution: " << new_poly << endl;
                 #endif
-                vector<std::set<FormulaT>> origins;
-                std::set<FormulaT> origin;
+                vector<FormulasT> origins;
+                FormulasT origin;
                 origin.insert( (*iter_formula).formula() );
                 origins.push_back( std::move( origin ) );
                 auto iter_var = mSubstitutions.begin();
