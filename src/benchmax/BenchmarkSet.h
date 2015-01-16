@@ -55,6 +55,7 @@
 #include "Stats.h"
 #include "Tool.h"
 #include "BenchmarkStatus.h"
+#include "Settings.h"
 
 namespace ch = boost::chrono;
 namespace fs = boost::filesystem;
@@ -85,7 +86,6 @@ namespace boost
 	}
 }
 typedef std::pair<std::string, std::string> doublestring;
-typedef std::list<fs::path>				 pathlist;
 
 namespace benchmax {
 
@@ -103,31 +103,25 @@ struct FilterFileExtensions
 	}
 };
 
-class Benchmark
+class BenchmarkSet
 {
 	/////////////
 	// Members //
 	/////////////
 
-	std::string										mPathToDirectory;
-	Tool											  mTool;
-	std::size_t										   mTimeout;
-	std::size_t										   mMemout;
-	pathlist										   mFilesList;
-	pathlist::iterator								 mNextInstanceToTry;
-	std::vector<std::pair<std::string, doublestring> > mResults;
+	fs::path mPathToDirectory;
+	std::list<fs::path> mFilesList;
+	std::list<fs::path>::iterator mNextInstanceToTry;
+	std::vector<std::pair<std::string, doublestring>> mResults;
 	std::size_t mNrSolved;
 	std::size_t mNrSatSolved;
 	std::size_t mNrUnsatSolved;
 	std::size_t mNrSatInstances;
 	std::size_t mNrUnsatInstances;
 	std::size_t mAccumulatedTime;
-	bool											   mVerbose;
-	bool											   mQuiet;
-	bool											   mMute;
-	bool											   mProduceLaTeX;
-	Stats											  * const mStats;
-	std::string										mTimeStamp;
+	bool mProduceLaTeX;
+	Stats* const mStats;
+	std::string mTimeStamp;
 
 	public:
 
@@ -136,8 +130,8 @@ class Benchmark
 		///////////////////////
 
 		//Benchmark();
-		Benchmark(const std::string&, const Tool&, std::size_t, std::size_t, bool, bool, bool, bool, Stats* const );
-		~Benchmark();
+		BenchmarkSet(const fs::path&, bool, Stats* const );
+		~BenchmarkSet();
 
 		
 		
@@ -149,17 +143,6 @@ class Benchmark
 		{
 			return mProduceLaTeX;
 		}
-
-		bool mute() const
-		{
-			return mMute;
-		}
-
-		bool quiet() const
-		{
-			return mQuiet;
-		}
-
 		std::size_t benchmarkCount() const
 		{
 			return mFilesList.size();
@@ -204,54 +187,25 @@ class Benchmark
 
 		}
 
-		std::string solverName() const
-		{
-			return fs::path(mTool.path()).filename().generic_string();
-		}
-
-		Tool tool() const
-		{
-			return mTool;
-		}
-
-		std::size_t timeout() const
-		{
-			return mTimeout;
-		}
-
-		std::size_t memout() const
-		{
-			return mMemout;
-		}
-
-		std::string validationFilePath(const fs::path& pathToFile)
-		{
-			return "assumptions_" + solverName() + "_" + pathToFile.filename().string();
-		}
-
 		/////////////
 		// Methods //
 		/////////////
 
 		std::list<fs::path> pop(unsigned _nrOfExamples);
 		int run();
+		
+		std::list<fs::path>::const_iterator begin() const {
+			return mFilesList.begin();
+		}
+		std::list<fs::path>::const_iterator end() const {
+			return mFilesList.end();
+		}
 
 		void printSettings() const;
 		void printResults() const;
 
 	protected:
 		int parseDirectory();
-		void systemCall(std::string& output, std::size_t& runningtime, int& returnValue);
-		BenchmarkResult obtainResult(const std::string& output, std::size_t runningtime, int returnValue, BenchmarkStatus status);
-		ValidationResult validateResult(const std::string& inputFile, const std::string& validationFile);
-		#ifdef BENCHMAX_USE_SMTPARSER
-		BenchmarkStatus readSMT2Input(const fs::path& pathToFile);
-		#endif
-		void processResult(BenchmarkResult answer,
-						   BenchmarkStatus status,
-						   std::size_t runningTime,
-						   const fs::path& pathToFile,
-						   const std::string& pathToValidationFile);
 		void createTimestamp();
 
 };

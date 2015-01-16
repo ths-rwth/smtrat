@@ -1,22 +1,20 @@
 option( BENCHMAX_USE_SMTPARSER "Use parser for smtlib files." OFF )
+option( BENCHMAX_LOGGING "Use logging in benchmax. Strongly encouraged!" ON )
 
 configure_file( ${CMAKE_SOURCE_DIR}/src/benchmax/config.h.in ${CMAKE_SOURCE_DIR}/src/benchmax/config.h )
 
+add_subdirectory(backends)
 add_subdirectory(ssh)
 add_subdirectory(tools)
 
-add_executable( benchmax benchmax.cpp Benchmark.h Tool.h Benchmark.cpp Stats.cpp
-			Settings.cpp Tool.cpp Smt2Input.cpp BenchmarkStatus.cpp ${ssh_sources} ${tool_sources})
+add_executable( benchmax benchmax.cpp BenchmarkSet.h Tool.h BenchmarkSet.cpp Stats.cpp
+			Settings.cpp Tool.cpp Smt2Input.cpp BenchmarkStatus.cpp ${backends_sources} ${ssh_sources} ${tool_sources})
 include_directories(${carl_INCLUDE_DIR})
-if(${STATICLIB_SWITCH} STREQUAL "ON")
-  set_target_properties( benchmax PROPERTIES LINK_SEARCH_END_STATIC TRUE )
-  set_target_properties( benchmax PROPERTIES LINK_SEARCH_START_STATIC TRUE )
-endif()
 
 if(${STATICLIB_SWITCH} STREQUAL "ON")
-	target_link_libraries( benchmax ssh2 ssl crypto dl z pthread boost_program_options boost_filesystem boost_system boost_chrono rt smtlibParser ${GINAC_LIBRARY} ${CLN_LIBRARY} ${GMP_LIBRARY} )
+	target_link_libraries( benchmax ssh2 ssl crypto dl z pthread boost_program_options boost_filesystem boost_system boost_chrono smtlibParser ${libraries} )
 else()
-	target_link_libraries( benchmax ssh2 pthread boost_program_options boost_filesystem  boost_system boost_chrono rt smtlibParser ${GINAC_LIBRARY} ${CLN_LIBRARY} ${GMP_LIBRARY} )
+	target_link_libraries( benchmax ssh2 pthread boost_program_options boost_filesystem  boost_system boost_chrono smtlibParser ${libaraties} )
 endif()
 
 # stripping

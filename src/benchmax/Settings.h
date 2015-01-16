@@ -23,14 +23,19 @@ private:
     po::variables_map vm;
 	po::options_description coreOptions;
 	po::options_description toolOptions;
+	po::options_description backendOptions;
+	po::options_description backendOptions_SSH;
 	po::options_description benchmarkOptions;
 	po::options_description solverOptions;
+	
 	po::options_description desc_cmdline;
 	po::options_description desc_file;
 public:
 	Settings(int argc, char** argv):
 		coreOptions("Core options"),
 		toolOptions("Tool options"),
+		backendOptions("Backend options"),
+		backendOptions_SSH("SSH backend options (if backend = \"SSH\")"),
 		benchmarkOptions("Benchmark options"),
 		solverOptions("Solver options")
 	{
@@ -48,6 +53,13 @@ public:
 			("output-dir,o", po::value<std::string>(&outputDir), "output directory")
 			("compose,c", po::value<std::vector<std::string> >(&composeFiles), "Compose a list of stats files together")
 		;
+		backendOptions.add_options()
+			("backend,b", po::value<std::string>(&backend), "Backend to be used. Possible values: \"condor\", \"local\", \"ssh\".")
+		;
+		backendOptions_SSH.add_options()
+			("node,N", po::value<std::vector<std::string>>(&nodes), "remote blades")
+		;
+		backendOptions.add(backendOptions_SSH);
 		
 		benchmarkOptions.add_options()
 			("include-directory,D", po::value<std::vector<std::string>>(&pathes), "path to look for benchmarks (several are possible)")
@@ -55,8 +67,8 @@ public:
 			("memory,M", po::value<std::size_t>(&memoryLimit)->default_value(1024), "memory limit for all competing solvers in mega bytes (standard: 1024 MB)")
 			("validation,V", po::value<std::string>(&validationtoolpath), "tool to check assumptions")
 			("wrong-result-path,W", po::value<std::string>(&WrongResultPath)->default_value("wrong_result/"), "path to the directory to store the wrong results")
-			("node,N", po::value<std::vector<std::string>>(&nodes), "remote blades")
 			("stats-xml-file,X", po::value<std::string>(&StatsXMLFile)->default_value("stats.xml"), "path to the xml-file where the statistics are stored")
+			("output-file,f", po::value<std::string>(&outputFile), "output file")
 		;
 		solverOptions.add_options()
 			("smtrat,S", po::value<std::vector<std::string>>(&smtratapps), "an SMT-LIB 2.0 solver with SMT-RAT interface (multiple are possible)")
@@ -67,10 +79,10 @@ public:
 			("qepcad,Q", po::value<std::vector<std::string>>(&qepcadapps), "the tool QEPCAD B")
 		;
 		// commandline options
-		desc_cmdline.add(coreOptions).add(toolOptions).add(benchmarkOptions).add(solverOptions);
+		desc_cmdline.add(coreOptions).add(toolOptions).add(backendOptions).add(benchmarkOptions).add(solverOptions);
 
 		// external file
-		desc_file.add(coreOptions).add(toolOptions).add(benchmarkOptions).add(solverOptions);
+		desc_file.add(coreOptions).add(toolOptions).add(backendOptions).add(benchmarkOptions).add(solverOptions);
 		
 		// parse variables
 		po::store(po::parse_command_line(argc, argv, desc_cmdline), vm);
@@ -97,12 +109,14 @@ public:
 	static bool UseStats;
 	static std::size_t memoryLimit;
 	static std::size_t timeLimit;
+	static std::string backend;
 	static std::string validationtoolpath;
 	static std::string outputDir;
 	static std::string WrongResultPath;
 	static std::string StatsXMLFile;
 	static std::string RemoteOutputDirectory;
 	static std::string PathOfBenchmarkTool;
+	static std::string outputFile;
 	static boost::optional<Tool> ValidationTool;
 	static std::vector<std::string> pathes;
 	static std::vector<std::string> smtratapps;

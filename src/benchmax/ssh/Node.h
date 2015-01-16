@@ -10,9 +10,9 @@
 #include <memory>
 #include <boost/filesystem.hpp>
 
-#include "ssh/SshConnection.h"
-#include "Benchmark.h"
-#include "Settings.h"
+#include "SshConnection.h"
+#include "../BenchmarkSet.h"
+#include "../Settings.h"
 
 
 namespace fs = boost:: filesystem;
@@ -99,7 +99,7 @@ class Node
 		/**
 		 *
 		 */
-		bool assignAndExecuteBenchmarks(Benchmark& benchmark, unsigned nrOfInstances, const std::string& callID)
+		bool assignAndExecuteBenchmarks(BenchmarkSet& benchmark, const Tool& tool, unsigned nrOfInstances, const std::string& callID)
 		{
 			if(connected() && freeCores() > 0)
 			{
@@ -107,7 +107,7 @@ class Node
 				//assert(benchmarks.size() > 0);
 				std::stringstream command;
 				mJobIds.push_back(callID);
-				command << Settings::PathOfBenchmarkTool << " -T " << benchmark.timeout() << " -M " << benchmark.memout() << " ";
+				command << Settings::PathOfBenchmarkTool << " -T " << Settings::timeLimit << " -M " << Settings::memoryLimit << " ";
 				command << "-f " << Settings::RemoteOutputDirectory << "benchmark_" << callID << ".out ";
 				command << "-o " << Settings::RemoteOutputDirectory << " ";
 				command << "-X stats_" << callID << ".xml ";
@@ -120,21 +120,13 @@ class Node
 					command << "-W " << Settings::RemoteOutputDirectory << "wrong_results_" << callID << "/ ";
 					command << "-V " << Settings::ValidationTool->path() << " ";
 				}
-				command << benchmark.tool().interfaceToCommandString() << " " << benchmark.tool().path() << benchmark.tool().arguments('@');
+				command << tool.interfaceToCommandString() << " " << tool.path() << tool.arguments('@');
 //				if(Settings::UseStats)
 //					command << "@--stats:exportXml=" << Settings::RemoteOutputDirectory << "stats_" << callID << ".xml ";
 				command << " ";
 				for(std::list<fs::path>::const_iterator file = benchmarks.begin(); file != benchmarks.end(); ++file)
 				{
 					command << "-D " << file->generic_string() << " ";
-				}
-				if(benchmark.mute())
-				{
-					command << "-m ";
-				}
-				else if(benchmark.quiet())
-				{
-					command << "-q ";
 				}
 				mSsh.remoteCall(command.str());
 				return true;

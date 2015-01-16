@@ -19,6 +19,14 @@ enum BenchmarkStatus
 BenchmarkStatus benchmarkStatusFromParser(int parserStatus);
 std::string benchmarkStatusToString(BenchmarkStatus status);
 
+struct BenchmarkResults {
+	int exitCode;
+	std::size_t time;
+	std::size_t memory;
+	std::string stdout;
+	std::string stderr;
+};
+
 enum BenchmarkResult
 {
 	BR_SAT = 0, BR_UNSAT = 1, BR_UNKNOWN = 2, BR_INVALID = -1, BR_TIMEOUT = 3, BR_MEMOUT = 4, BR_WRONG = 5, BR_ABORT = 6, BR_SEGFAULT = 7,
