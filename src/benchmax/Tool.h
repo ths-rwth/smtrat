@@ -28,8 +28,28 @@ enum ToolInterface
 
 class Smt2Input;
 
-class Tool
-{
+class Tool {
+protected:
+	fs::path mBinary;
+public:
+	std::string getCommandline(const fs::path& file) const {
+		return mBinary.native() + " " + file.native();
+	}
+	std::string getCommandline(const fs::path& file, const std::string& localBinary) const {
+		return localBinary + " " + file.native();
+	}
+		
+	virtual bool canHandle(const fs::path&) const {
+		return false;
+	}
+	
+	friend bool operator<(const Tool& lhs, const Tool& rhs) {
+		return lhs.mBinary < rhs.mBinary;
+	}
+	
+	
+	
+	
 	private:
 		ToolInterface	  mInterface;
 		std::string		mPath;

@@ -84,7 +84,7 @@ class SshConnection:
 
 		SshConnection(unsigned nrChannels = 0):
 			sesdata(),
-			mSocket(socket(AF_INET, SOCK_STREAM, 0)),
+			mSocket(-1),
 			session(libssh2_session_init_ex(NULL, NULL, NULL, &sesdata)),
 			mBlocked(false),
 			mConnectionEstablished(false),
@@ -156,14 +156,33 @@ class SshConnection:
 				return true;
 			if(mBlocked)
 				return false;
-			BENCHMAX_LOG_INFO("benchmark.ssh", "Connecting with " << hostname << ":" << port << " ...");
+			BENCHMAX_LOG_WARN("benchmark.ssh", "Connecting with " << hostname << ":" << port << " ...");
 			/* Connect to SSH server */
-			sin.sin_family	  = AF_INET;
+			mSocket = socket(AF_INET, SOCK_STREAM, 0);
+			sin.sin_family = AF_INET;
 			sin.sin_port = htons(port);
 			sin.sin_addr.s_addr = inet_addr(hostname);
+			BENCHMAX_LOG_WARN("benchmax.ssh", "s_addr = " << sin.sin_addr.s_addr);
 			if(connect(mSocket, (struct sockaddr*)(&sin), sizeof(struct sockaddr_in)) != 0)
 			{
-				BENCHMAX_LOG_ERROR("benchmax.ssh", "Failed to connect!");
+				BENCHMAX_LOG_ERROR("benchmax.ssh", "Failed to connect! errno = " << errno);
+				switch (errno) {
+					case EACCES: BENCHMAX_LOG_ERROR("benchmax.ssh", "This is EACCES"); break;
+					case EPERM: BENCHMAX_LOG_ERROR("benchmax.ssh", "This is EPERM"); break;
+					case EADDRINUSE: BENCHMAX_LOG_ERROR("benchmax.ssh", "This is EADDRINUSE"); break;
+					case EAFNOSUPPORT: BENCHMAX_LOG_ERROR("benchmax.ssh", "This is EAFNOSUPPORT"); break;
+					case EAGAIN: BENCHMAX_LOG_ERROR("benchmax.ssh", "This is EAGAIN"); break;
+					case EALREADY: BENCHMAX_LOG_ERROR("benchmax.ssh", "This is EALREADY"); break;
+					case EBADF: BENCHMAX_LOG_ERROR("benchmax.ssh", "This is EBADF"); break;
+					case ECONNREFUSED: BENCHMAX_LOG_ERROR("benchmax.ssh", "This is ECONNREFUSED"); break;
+					case EFAULT: BENCHMAX_LOG_ERROR("benchmax.ssh", "This is EFAULT"); break;
+					case EINPROGRESS: BENCHMAX_LOG_ERROR("benchmax.ssh", "This is EINPROGRESS"); break;
+					case EINTR: BENCHMAX_LOG_ERROR("benchmax.ssh", "This is EINTR"); break;
+					case EISCONN: BENCHMAX_LOG_ERROR("benchmax.ssh", "This is EISCONN"); break;
+					case ENETUNREACH: BENCHMAX_LOG_ERROR("benchmax.ssh", "This is ENETUNREACH"); break;
+					case ENOTSOCK: BENCHMAX_LOG_ERROR("benchmax.ssh", "This is ENOTSOCK"); break;
+					case ETIMEDOUT: BENCHMAX_LOG_ERROR("benchmax.ssh", "This is ETIMEDOUT"); break;
+				}
 				return -1;
 			}
 

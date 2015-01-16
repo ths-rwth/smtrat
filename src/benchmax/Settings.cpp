@@ -8,12 +8,14 @@ namespace benchmax {
 	bool Settings::ProduceLatex;
 	std::size_t Settings::memoryLimit;
 	std::size_t Settings::timeLimit;
+	std::string Settings::backend;
 	std::string Settings::validationtoolpath;
 	std::string Settings::outputDir;
 	std::string Settings::WrongResultPath;
 	std::string Settings::StatsXMLFile;
 	std::string Settings::RemoteOutputDirectory;
 	std::string Settings::PathOfBenchmarkTool;
+	std::string Settings::outputFile;
 	boost::optional<Tool> Settings::ValidationTool;
 	std::vector<std::string> Settings::pathes;
 	std::vector<std::string> Settings::smtratapps;

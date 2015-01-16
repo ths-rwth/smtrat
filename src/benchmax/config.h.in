@@ -1,2 +1,2 @@
 #cmakedefine BENCHMAX_USE_SMTPARSER
-#cmakedefine LOGGING
+#cmakedefine BENCHMAX_LOGGING

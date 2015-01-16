@@ -35,10 +35,14 @@
 #include <signal.h>
 
 #include "logging.h"
-#include "Benchmark.h"
+#include "BenchmarkSet.h"
 #include "Tool.h"
-#include "Node.h"
 #include "Settings.h"
+
+#include "backends/BackendData.h"
+#include "backends/CondorBackend.h"
+#include "backends/LocalBackend.h"
+#include "backends/SSHBackend.h"
 
 #include "carl/formula/Formula.h"
 
@@ -62,7 +66,6 @@ const std::string COPYRIGHT =
 	"Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Sebastian Junges, Erika Abraham\r\nThis program comes with ABSOLUTELY NO WARRANTY.\r\nThis is free software, and you are welcome to redistribute it \r\nunder certain conditions; use the command line argument --disclaimer in order to get the conditions and warranty disclaimer.";
 const std::string WARRANTY =
 	"THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM “AS IS” WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU. SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION.";
-const unsigned NUMBER_OF_EXAMPLES_TO_SOLVE = 6;
 
 void printWelcome()
 {
@@ -104,37 +107,6 @@ void addToTools(const std::vector<std::string>& pathes, benchmax::ToolInterface 
 	}
 }
 
-/**
- * Parses a node identifier of the format `server[:port]@[numberOfCores]@user@password`
- * @param _nodeAsString
- * @return 
- */
-benchmax::Node getNode(const string& _nodeAsString)
-{
-	regex noderegex("([^:]+):([^@]+)@([^:@]+)(?::(\\d+))?(?:@(\\d+))?");
-	std::smatch matches;
-	if (regex_match(_nodeAsString, matches, noderegex)) {
-		std::string username = matches[1];
-		std::string password = matches[2];
-		std::string hostname = matches[3];
-		unsigned long port = 22;
-		unsigned long cores = 1;
-		try {
-			if (matches[4] != "") port = std::stoul(matches[4]);
-			if (matches[5] != "") cores = std::stoul(matches[5]);
-		} catch (std::out_of_range) {
-			BENCHMAX_LOG_ERROR("benchmax", "Value for port or number of cores is out of range.");
-			BENCHMAX_LOG_ERROR("benchmax", "\tPort: " << matches[4]);
-			BENCHMAX_LOG_ERROR("benchmax", "\tCores: " << matches[5]);
-		}
-		return benchmax::Node(hostname, username, password, (unsigned short)cores, (unsigned short)port);
-	} else {
-		BENCHMAX_LOG_ERROR("benchmax", "Invalid format for node specification. Use the following format:");
-		BENCHMAX_LOG_ERROR("benchmax", "\t<user>:<password>@<hostname>[:<port = 22>][@<cores = 1>]");
-		exit(1);
-	}
-}
-
 void checkPathCorrectness(std::string& _path)
 {
 	if(!_path.empty())
@@ -144,13 +116,9 @@ void checkPathCorrectness(std::string& _path)
 	}
 }
 
-bool initApplication(const benchmax::Settings& s, std::vector<benchmax::Node>& nodes, std::vector<benchmax::Benchmark*>& _benchmarks, Stats*& _stats, std::vector<Tool>& _tools)
+bool initApplication(const benchmax::Settings& s, std::vector<benchmax::BenchmarkSet*>& _benchmarks, Stats*& _stats, std::vector<Tool>& _tools)
 {
 
-	// add the remote nodes
-	for (const auto& node: Settings::nodes) {
-		nodes.push_back(getNode(node));
-	}
 
 	if(s.has("help")) {
 		std::cout << s;
@@ -160,8 +128,10 @@ bool initApplication(const benchmax::Settings& s, std::vector<benchmax::Node>& n
 		printDisclaimer();
 		return false;
 	}
+	carl::logging::logger().configure("stdout", std::cout);
 	carl::logging::logger().filter("stdout")
-		("benchmax", carl::logging::LogLevel::LVL_DEBUG)
+		("benchmax", carl::logging::LogLevel::LVL_INFO)
+		("benchmax.ssh", carl::logging::LogLevel::LVL_INFO)
 	;
 	if(s.has("compose")) {
 		Stats::composeStats(s.composeFiles);
@@ -204,8 +174,8 @@ bool initApplication(const benchmax::Settings& s, std::vector<benchmax::Node>& n
 
 	// Collect all used solvers in the statisticsfile.
 	_stats = new Stats(Settings::outputDir + Settings::StatsXMLFile,
-					   (!nodes.empty() ? Stats::STATS_COLLECTION : Stats::BENCHMARK_RESULT));
-	if(nodes.empty())
+					   (!Settings::nodes.empty() ? Stats::STATS_COLLECTION : Stats::BENCHMARK_RESULT));
+	if (Settings::nodes.empty())
 	{
 		for (const auto& tool: _tools) {
 			_stats->addSolver(fs::path(tool.path()).filename().generic_string());
@@ -217,15 +187,27 @@ bool initApplication(const benchmax::Settings& s, std::vector<benchmax::Node>& n
 		fs::path path(p);
 		if (fs::exists(path)) {
 			for (const auto& tool: _tools) {
-				_benchmarks.push_back(
-				new benchmax::Benchmark(path.generic_string(), tool, s.timeLimit, s.memoryLimit, s.verbose, s.quiet, s.mute,
-							  Settings::ProduceLatex, _stats));
+				_benchmarks.push_back(new benchmax::BenchmarkSet(path.generic_string(), tool, Settings::ProduceLatex, _stats));
 			}
 		} else {
 			BENCHMAX_LOG_WARN("benchmax", "Benchmark path " << p << " does not exist.");
 		}
 	}
 	return true;
+}
+
+void loadTools(benchmax::Backend& backend) {
+	
+}
+void loadBenchmarks(benchmax::Backend& backend) {
+	for (const auto& p: Settings::pathes) {
+		fs::path path(p);
+		if (fs::exists(path)) {
+			backend.addBenchmark(benchmax::BenchmarkSet(path, Settings::ProduceLatex, _stats))
+		} else {
+			BENCHMAX_LOG_WARN("benchmax", "Benchmark path " << p << " does not exist.");
+		}
+	}
 }
 
 /**
@@ -248,185 +230,39 @@ int main(int argc, char** argv)
 	benchmax::Settings s(argc, argv);
 	Settings::PathOfBenchmarkTool = fs::system_complete(fs::path(argv[0])).native();
 
-	// init benchmarks
-	std::vector<benchmax::Benchmark*> benchmarks;
-	std::vector<benchmax::Node> nodes;
-	Stats* stats = NULL;
+	benchmax::BackendData data;
+	
+	// init benchmark
 	std::vector<Tool> tools;
-	if (!initApplication(s, nodes, benchmarks, stats, tools)) {
+	if (!initApplication(s, data.benchmarks, data.stats, tools)) {
 		return 0;
 	}
 
-	if(benchmarks.empty()) {
+	if(data.benchmarks.empty()) {
 		BENCHMAX_LOG_FATAL("benchmax", "No benchmarks were found.");
 		return 0;
 	}
-	
-	// run benchmarks
-	std::map<std::pair<std::string, std::string>, benchmax::Benchmark*> table;	// table mapping <benchmark,solver> -> result
-	std::set<std::string> benchmarkSet, solverSet;
-
-	if(!nodes.empty()) {
+	if (Settings::backend == "condor") {
+		BENCHMAX_LOG_INFO("benchmax", "Using condor backend.");
+		benchmax::CondorBackend backend(&data);
+		backend.run();
+	} else if (Settings::backend == "local") {
+		BENCHMAX_LOG_INFO("benchmax", "Using local backend.");
+		benchmax::LocalBackend backend;
+		backend.run();
+	} else if (Settings::backend == "ssh") {
+		BENCHMAX_LOG_INFO("benchmax", "Using ssh backend.");
 		// libssh is needed.
-		int rc = libssh2_init(0);
-		if (rc != 0) {
-			BENCHMAX_LOG_FATAL("benchmax", "Failed to initialize libssh2 (return code " << rc << ")");
-			exit(1);
-		}
-	}
-
-	/*
-	 * Main loop.
-	 */
-	if(nodes.empty())
-	{
-		for (const auto& benchmark: benchmarks)
-		{
-			benchmark->printSettings();
-			benchmark->run();
-			BENCHMAX_LOG_DEBUG("benchmax", "Benchmark " << benchmark->benchmarkName() << " done!");
-			benchmark->printResults();
-			if(benchmark->produceLaTeX())
-			{
-				string benchmarkString = benchmark->benchmarkName() + " (" + boost::lexical_cast<string>(benchmark->benchmarkCount()) + ")";
-				table[pair<string, string>(benchmarkString, benchmark->solverName())] = benchmark;
-				benchmarkSet.insert(benchmarkString);
-				solverSet.insert(benchmark->solverName());
-			}
-		}
-
-		if(Settings::ValidationTool != nullptr)
-		{
-			std::string wrongResultPath = Settings::WrongResultPath.substr(0, Settings::WrongResultPath.size() - 1);
-			fs::path path(wrongResultPath);
-			if(fs::exists(path))
-			{
-				std::string tarCall = std::string("tar zcfP " + wrongResultPath + ".tgz " + wrongResultPath);
-				system(tarCall.c_str());
-				fs::remove_all(fs::path(Settings::WrongResultPath));
-			}
-		}
-	}
-	else
-	{
-		int						  nrOfCalls		= 0;
-		std::vector<benchmax::Benchmark*>::iterator currentBenchmark = benchmarks.begin();
-		std::vector<benchmax::Node>::iterator	  currentNode = nodes.begin();
-		if(currentBenchmark != benchmarks.end())
-			(*currentBenchmark)->printSettings();
-		while(currentBenchmark != benchmarks.end())
-		{
-			if((*currentBenchmark)->done())
-			{
-				++currentBenchmark;
-				if(currentBenchmark == benchmarks.end())
-					break;
-				(*currentBenchmark)->printSettings();
-			}
-			if(currentNode == nodes.end())
-				currentNode = nodes.begin();
-			if(!(*currentNode).connected())
-			{
-				(*currentNode).createSSHconnection();
-			}
-
-			(*currentNode).updateResponses();
-
-			if((*currentNode).freeCores() > 0)
-			{
-				stringstream tmpStream;
-				tmpStream << ++nrOfCalls;
-				(*currentNode).assignAndExecuteBenchmarks(**currentBenchmark, NUMBER_OF_EXAMPLES_TO_SOLVE, tmpStream.str());
-			}
-			++currentNode;
-			usleep(100000);	// 100 milliseconds (0.1 seconds);
-		}
-
-		unsigned waitedTime = 0;
-		//		unsigned numberOfTries = 0;
-		// Wait until all nodes have finished.
-		BENCHMAX_LOG_INFO("benchmax", "All scheduled!");
-		bool allNodesEntirelyIdle = false;
-		BENCHMAX_LOG_INFO("benchmax", "Waiting for calls...");
-		while(!allNodesEntirelyIdle)
-		{
-			allNodesEntirelyIdle = true;
-			std::vector<benchmax::Node>::iterator currentNode = nodes.begin();
-			while(currentNode != nodes.end())
-			{
-				(*currentNode).updateResponses();
-				if(!(*currentNode).idle())
-				{
-					allNodesEntirelyIdle = false;
-					if(waitedTime > (s.timeLimit * NUMBER_OF_EXAMPLES_TO_SOLVE))
-					{
-						BENCHMAX_LOG_INFO("benchmax", "Waiting for call...");
-						(*currentNode).sshConnection().logActiveRemoteCalls();
-						waitedTime = 0;
-					}
-					break;
-				}
-				++currentNode;
-			}
-			sleep(1);
-			++waitedTime;
-		}
-
-		// Download files.
-		for(std::vector<benchmax::Node>::iterator currentNode = nodes.begin(); currentNode != nodes.end(); ++currentNode)
-		{
-			for(std::vector<std::string>::const_iterator jobId = (*currentNode).jobIds().begin(); jobId != (*currentNode).jobIds().end(); ++jobId)
-			{
-				std::stringstream out;
-				out << *jobId;
-				(*currentNode).downloadFile(
-				Settings::RemoteOutputDirectory + "stats_" + *jobId + ".xml", Settings::outputDir + "stats_" + *jobId + ".xml");
-				if(Settings::ValidationTool != nullptr)
-				{
-					fs::path newloc = fs::path(Settings::WrongResultPath);
-					if(!fs::is_directory(newloc))
-					{
-						fs::create_directories(newloc);
-					}
-					(*currentNode).downloadFile(
-					Settings::RemoteOutputDirectory + "wrong_results_" + *jobId + ".tgz",
-					Settings::WrongResultPath + "wrong_results_" + *jobId + ".tgz");
-				}
-				fs::path newloc = fs::path(Settings::outputDir + "benchmark_output/");
-				if(!fs::is_directory(newloc))
-				{
-					fs::create_directories(newloc);
-				}
-				(*currentNode).downloadFile(
-				Settings::RemoteOutputDirectory + "benchmark_" + *jobId + ".out",
-				Settings::outputDir + "benchmark_output/benchmark_" + *jobId + ".out");
-				stats->addStat("stats_" + *jobId + ".xml");
-
-			}
-		}
-	}
-
-	if(!nodes.empty())
-	{
-		stats->createStatsCompose(Settings::outputDir + "statsCompose.xsl");
-		delete stats;
+		benchmax::SSHBackend backend(&data);
+		backend.run();
+		
+		data.stats->createStatsCompose(Settings::outputDir + "statsCompose.xsl");
 		Stats::callComposeProcessor();
-	}
-	else
-	{
-		delete stats;
-	}
-
-	// Delete everything and finish.
-	while(!benchmarks.empty())
-	{
-		benchmax::Benchmark* toDelete = benchmarks.back();
-		benchmarks.pop_back();
-		delete toDelete;
+		// Necessary output message (DO NOT REMOVE IT)
+		std::cout << Settings::ExitMessage << std::endl;
+	} else {
+		BENCHMAX_LOG_ERROR("benchmax", "Invalid backend \"" << Settings::backend << "\".");
 	}
 
-	// Necessary output message (DO NOT REMOVE IT)
-	std::cout << Settings::ExitMessage << std::endl;
-	libssh2_exit();
 	return 0;
 }
