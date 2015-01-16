@@ -88,7 +88,7 @@ namespace smtrat
             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
             return false;            
         }
-        if( _subformula->formula().constraint().relation() == carl::Relation::LEQ ) // || _subformula->formula().constraint().relation() == carl::Relation::GEQ )
+        if( _subformula->formula().constraint().relation() == carl::Relation::LEQ )
         {
             // Apply the Fourier-Motzkin elimination steps for the subformula to be asserted
             #ifdef DEBUG_FouMoModule
@@ -123,7 +123,6 @@ namespace smtrat
                             if( iter_poly->getSingleVariable() == *iter_var )
                             {
                                 if( ( iter_poly->coeff() > 0 && iter_temp->first.constraint().relation() == carl::Relation::LEQ ) ) 
-                                // || ( iter_poly->coeff() < 0 &&  iter_temp->first.constraint().relation() == carl::Relation::GEQ ) )
                                 {
                                     // The current considered constraint that iter_temp points to acts acts as an upper bound
                                     // regarding the currently considered variable
@@ -232,7 +231,7 @@ namespace smtrat
     template<class Settings>
     void FouMoModule<Settings>::removeSubformula( ModuleInput::const_iterator _subformula )
     {
-        if( _subformula->formula().constraint().relation() == carl::Relation::LEQ || _subformula->formula().constraint().relation() == carl::Relation::GEQ )
+        if( _subformula->formula().constraint().relation() == carl::Relation::LEQ )
         {
             /* Iterate through the processed constraints and delete all corresponding sets 
              * in the latter containing the element that has to be deleted. Delete a processed 
@@ -525,8 +524,7 @@ namespace smtrat
                     {
                         std::vector<SingleFormulaOrigins> upper;
                         std::vector<SingleFormulaOrigins> lower;
-                        if( ( iter_poly->coeff() > 0 && iter_constr->first.pConstraint()->relation() == carl::Relation::LEQ ) ) 
-                            // || ( iter_poly->coeff() < 0 &&  iter_constr->first.pConstraint()->relation() == carl::Relation::GEQ ) )
+                        if( ( iter_poly->coeff() > 0 && iter_constr->first.pConstraint()->relation() == carl::Relation::LEQ ) )
                         {
                             SingleFormulaOrigins upper_help;
                             upper_help.first = iter_constr->first;
@@ -548,7 +546,6 @@ namespace smtrat
                         help.first = iter_constr->first;
                         help.second = iter_constr->second;
                         if( ( iter_poly->coeff() > 0 && iter_constr->first.pConstraint()->relation() == carl::Relation::LEQ ) ) 
-                            //|| ( iter_poly->coeff() < 0 &&  iter_constr->first.pConstraint()->relation() == carl::Relation::GEQ ) )
                         {
                             iter_help->second.first.push_back( std::move( help ) );
                         }
@@ -611,34 +608,7 @@ namespace smtrat
         }
         Poly upper_poly = upper_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
         Poly lower_poly = lower_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
-        /*
-        if( upper_constr->relation() == carl::Relation::GEQ )
-        {
-            if( lower_constr->relation() == carl::Relation::GEQ )  
-            {
-                lower_poly *= -1;       
-                combined_formula = FormulaT ( carl::newConstraint( (Rational)-1*coeff_upper*lower_poly - coeff_lower*upper_poly, carl::Relation::LEQ ) );                
-            }
-            else
-            {
-                assert( lower_constr->relation() == carl::Relation::LEQ );
-                combined_formula = FormulaT( carl::newConstraint( (Rational)-1*coeff_upper*lower_poly - (Rational)-1*coeff_lower*upper_poly, carl::Relation::LEQ ) );
-            }
-        } 
-        else
-        {        
-            assert( upper_constr->relation() == carl::Relation::LEQ );
-            if( lower_constr->relation() == carl::Relation::GEQ )  
-            {
-                lower_poly *= -1;
-                upper_poly *= -1;
-                combined_formula = FormulaT( carl::newConstraint( coeff_upper*lower_poly - coeff_lower*upper_poly, carl::Relation::LEQ ) );                
-            }
-            else
-            {
-        */
         assert( lower_constr->relation() == carl::Relation::LEQ );
-        //upper_poly *= -1;  
         combined_formula = FormulaT( carl::newConstraint( coeff_upper*lower_poly + (Rational)-1*coeff_lower*upper_poly, carl::Relation::LEQ ) );
         return combined_formula;        
     }
