@@ -185,6 +185,7 @@ namespace smtrat
                  */
                 bool activate( const T& _origin ) const
                 {
+                    assert(mpOrigins->find(_origin) == mpOrigins->end());
                     mpOrigins->insert( _origin );
                     return mpOrigins->size() == 1;
                 }

@@ -107,7 +107,9 @@ namespace vs
             gcdA = carl::ginacGcd( mConstantPart, mFactor );
         }
         gcdA = carl::ginacGcd( gcdA, mDenominator );
-        if( !(gcdA == smtrat::ONE_POLYNOMIAL) )
+        // Make sure that the polynomial to divide by cannot be negative, otherwise the sign of the square
+        // root expression could change.
+        if( !(gcdA == smtrat::ONE_POLYNOMIAL) && gcdA.definiteness() == carl::Definiteness::POSITIVE_SEMI )
         {
             if( !mConstantPart.isZero() )
             {

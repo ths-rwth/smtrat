@@ -31,18 +31,20 @@ using namespace std;
 
 namespace vs
 {
-    Condition::Condition( const smtrat::ConstraintT* _cons, size_t _val, bool _flag, const carl::PointerSet<Condition>& _oConds, bool _rAdded ):
+    Condition::Condition( const smtrat::ConstraintT* _cons, size_t _id, size_t _val, bool _flag, const carl::PointerSet<Condition>& _oConds, bool _rAdded ):
         mFlag( _flag ),
         mRecentlyAdded( _rAdded ),
         mValuation( _val ),
+        mId( _id ),
         mpConstraint( _cons ),
         mpOriginalConditions( new carl::PointerSet<Condition>( _oConds ) )
     {}
 
-    Condition::Condition( const Condition& _cond ):
+    Condition::Condition( const Condition& _cond, size_t _id ):
         mFlag( _cond.flag() ),
         mRecentlyAdded( false ),
         mValuation( _cond.valuation() ),
+        mId( _id ),
         mpConstraint( _cond.pConstraint() ),
         mpOriginalConditions( new carl::PointerSet<Condition>( _cond.originalConditions() ) )
     {}
@@ -238,7 +240,7 @@ namespace vs
      */
     bool Condition::operator==( const Condition& _condition ) const
     {
-        return (*mpConstraint) == _condition.constraint() && (*mpOriginalConditions) == _condition.originalConditions();
+        return mId == _condition.getId();
     }
 
     /**
@@ -251,7 +253,7 @@ namespace vs
      */
     bool Condition::operator<( const Condition& _condition ) const
     {
-        return (*mpConstraint) < _condition.constraint() || ((*mpConstraint) == _condition.constraint() && (*mpOriginalConditions) < _condition.originalConditions());
+        return mId < _condition.getId();
     }
 
     /**
@@ -262,7 +264,7 @@ namespace vs
     void Condition::print( std::ostream& _out ) const
     {
         _out << constraint().toString( 0, true, true );
-        _out << " [" << this << "]";
+        _out << " [" << mId << "]";
         _out << "   ";
         if( flag() )
             _out << "(true, ";
@@ -281,7 +283,7 @@ namespace vs
             {
                 if( oCond != originalConditions().begin() )
                     _out << ", ";
-                _out << "[" << *oCond << "]";
+                _out << "[" << (*oCond)->getId() << "]";
             }
             _out << " }";
         }

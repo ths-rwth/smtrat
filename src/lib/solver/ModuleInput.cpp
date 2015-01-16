@@ -161,14 +161,13 @@ namespace smtrat
         auto iter = origs.begin();
         while( iter != origs.end() )
         {
-            iter->erase( _origin );
-            if( iter->empty() )
+            if( iter->erase( _origin ) == 0 )
             {
-                iter = origs.erase( iter );
+                ++iter;
             }
             else
             {
-                ++iter;
+                iter = origs.erase( iter );
             }
         }
         return origs.empty();

@@ -451,7 +451,7 @@ namespace smtrat
         subformulasA.insert( consB );
         FormulaT dedA = FormulaT( FormulaType::OR, std::move( subformulasA ) );
         addDeduction( dedA );
-        // (not(x<=I-1) or not(x>=I))
+        // (not(p<=I-1) or not(p>=I))
         FormulasT subformulasB;
         for( const FormulaT& pre : _premise )
         {
@@ -678,6 +678,8 @@ namespace smtrat
                 while( module != mUsedBackends.end() && result == Unknown )
                 {
                     #ifdef MODULE_VERBOSE
+                    cout << endl << "Call from module " << moduleName( this->type() ) << endl;
+                    this->print( cout, " ");
                     cout << endl << "Call to module " << moduleName( (*module)->type() ) << endl;
                     (*module)->print( cout, " ");
                     #endif
@@ -687,8 +689,8 @@ namespace smtrat
                     #endif
                     #ifdef DEBUG_MODULE_CALLS_IN_SMTLIB
                     cout << "(assert (and";
-                    for( auto subformula : *mpPassedFormula )
-                        cout << " " << subformula->toString( false, true );
+                    for( auto& subformula : *mpPassedFormula )
+                        cout << " " << subformula.formula().toString( false, true );
                     cout << "))\n";
                     #endif
                     result = (*module)->isConsistent();
