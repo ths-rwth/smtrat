@@ -49,8 +49,7 @@ using carl::Formula;
 namespace benchmax {
 
 BenchmarkSet::BenchmarkSet(const fs::path& path,
-					 bool latex,
-					 Stats* const _stats):
+					 bool latex):
 	mPathToDirectory(path),
 	mFilesList(),
 	mNrSolved(0),
@@ -60,7 +59,6 @@ BenchmarkSet::BenchmarkSet(const fs::path& path,
 	mNrUnsatInstances(0),
 	mAccumulatedTime(0),
 	mProduceLaTeX(latex),
-	mStats(_stats),
 	mTimeStamp("")
 {
 	parseDirectory();

@@ -120,7 +120,6 @@ class BenchmarkSet
 	std::size_t mNrUnsatInstances;
 	std::size_t mAccumulatedTime;
 	bool mProduceLaTeX;
-	Stats* const mStats;
 	std::string mTimeStamp;
 
 	public:
@@ -130,7 +129,7 @@ class BenchmarkSet
 		///////////////////////
 
 		//Benchmark();
-		BenchmarkSet(const fs::path&, bool, Stats* const );
+		BenchmarkSet(const fs::path&, bool);
 		~BenchmarkSet();
 
 		
