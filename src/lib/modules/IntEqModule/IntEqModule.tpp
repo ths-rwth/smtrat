@@ -460,7 +460,7 @@ namespace smtrat
                 }      
                 FormulaT formula_passed( carl::newConstraint( new_poly, (*iter_formula).formula().constraint().relation() ) );                
                 addConstraintToInform( formula_passed );
-                addSubformulaToPassedFormula( formula_passed, origins );    
+                //addSubformulaToPassedFormula( formula_passed, origins );    
             }
             ++iter_formula;
         }
