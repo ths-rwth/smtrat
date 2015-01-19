@@ -89,16 +89,13 @@ namespace smtrat
                         {
                             // we can of course only remove something which is in the formula
                             
-                            // TODO (from Florian): this should only be the temporary solution; either we store the originals in the GBModule or
-                            // we find a different solution for this in the module class itself
-                            mModule->removeOrigins( std::get < 0 > (it->second), mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() ) );
+                            // TODO (from Florian): store the reasons formula somewhere, such that we only construct it if the reasons vector has been changed
+                            mModule->removeOrigin( std::get < 0 > (it->second), FormulaT( carl::FormulaType::AND, mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() ) ) );
 //                            mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
                         }
                         if( Settings::passInequalities == FULL_REDUCED || (Settings::passInequalities == FULL_REDUCED_IF && pass) )
                         {
-                            std::vector<FormulasT > originals;
-                            originals.push_back( mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() ));
-                            originals.front( ).insert( it->first->formula() );
+                            FormulaT originals = FormulaT( carl::FormulaType::AND, mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() ));
                             // we update the reference to the passed formula again
                             std::get < 0 > (it->second) = mModule->addSubformulaToPassedFormula( FormulaT( smtrat::Poly(std::get<2>(it->second).back().second), std::get<1>(it->second) ), originals ).first;
                             std::cout << __func__ << ":" << __LINE__ << std::get < 0 > (it->second)->formula() << std::endl;
@@ -286,13 +283,12 @@ namespace smtrat
                 {
                     // remove the last formula
                     
-                    // TODO (from Florian): this should only be the temporary solution; either we store the originals in the GBModule or
-                    // we find a different solution for this in the module class itself
-                    mModule->removeOrigins( std::get < 0 > (it->second), mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() ) ); 
+                    // TODO (from Florian): store the reasons formula somewhere, such that we only construct it if the reasons vector has been changed
+                    mModule->removeOrigin( std::get < 0 > (it->second), FormulaT( carl::FormulaType::AND, mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() ) ) ); 
 //                    mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
 
                     std::get < 2 > (it->second).push_back( CellEntry( mBtnumber, reduced ) );
-                    FormulasT originals( mModule->generateReasons( reduced.getReasons( ) ) );
+                    FormulasT originals = mModule->generateReasons( reduced.getReasons( ) );
 
                     std::get < 0 > (it->second) = mModule->passedFormulaEnd( );
                     if( Settings::addTheoryDeductions != NO_CONSTRAINTS )
@@ -342,9 +338,8 @@ namespace smtrat
                 {
                     //remove the last one
                     
-                    // TODO (from Florian): this should only be the temporary solution; either we store the originals in the GBModule or
-                    // we find a different solution for this in the module class itself
-                    mModule->removeOrigins( std::get < 0 > (it->second), mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() ) ); 
+                    // TODO (from Florian): store the reasons formula somewhere, such that we only construct it if the reasons vector has been changed
+                    mModule->removeOrigin( std::get < 0 > (it->second), FormulaT( carl::FormulaType::AND, mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() ) ) ); 
 //                    mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
                 }
                 //add a new cell
@@ -375,14 +370,13 @@ namespace smtrat
                         default:
                         {
                             assert( redResult.getType() == carl::FormulaType::CONSTRAINT );// get the reason set for the reduced polynomial
-                            std::vector<FormulasT > originals;
-                            originals.push_back( mModule->generateReasons( reduced.getReasons( ) ) );
-                            originals.front( ).insert( it->first->formula() );
+                            FormulasT originals = mModule->generateReasons( reduced.getReasons( ) );
+                            originals.insert( it->first->formula() );
 
                             //pass the result
                             //TODO: replace "Formula::constraintPool().variables()" by a smaller approximations of the variables contained in "reduced.toEx( )"
                             // and set the pointer to the passed formula accordingly.
-                            std::get < 0 > (it->second) = mModule->addSubformulaToPassedFormula( redResult, originals ).first;
+                            std::get < 0 > (it->second) = mModule->addSubformulaToPassedFormula( redResult, FormulaT( carl::FormulaType::AND, originals ) ).first;
                         }
                     }
                 }
