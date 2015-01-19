@@ -241,11 +241,11 @@ namespace smtrat
             FormulasT result;
             if( !infimum().isInfinite() )
             {
-                result.insert( infimum().origins().front().begin(), infimum().origins().front().end() );
+                result.insert( infimum().origins().front() );
             }
             if( !supremum().isInfinite() )
             {
-                result.insert( supremum().origins().front().begin(), supremum().origins().front().end() );
+                result.insert( supremum().origins().front() );
             }
             return result;
         }

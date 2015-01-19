@@ -2811,7 +2811,10 @@ namespace smtrat
         {
             if ((*variableIt)->lraVar() != NULL)
             {
-                FormulasT definingOrigins = (*variableIt)->lraVar()->getDefiningOrigins();
+                FormulasT definingOriginsTmp = (*variableIt)->lraVar()->getDefiningOrigins();
+                FormulasT definingOrigins;
+                for( auto& f : definingOriginsTmp )
+                    collectOrigins( f, definingOrigins );
                 for( auto formulaIt = definingOrigins.begin(); formulaIt != definingOrigins.end(); ++formulaIt )
                 {
                     // cout << "Defining origin: " << **formulaIt << " FOR " << *(*variableIt) << endl;
