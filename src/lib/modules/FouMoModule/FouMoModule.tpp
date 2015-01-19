@@ -83,20 +83,20 @@ namespace smtrat
             #ifdef DEBUG_FouMoModule
             cout << "Asserted formula: " << _subformula->formula().constraint() << "is false" << endl;
             #endif
-            std::set<FormulaT> infSubSet;
+            FormulasT infSubSet;
             infSubSet.insert( _subformula->formula() );
             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
             return false;            
         }
-        if( _subformula->formula().constraint().relation() == carl::Relation::LEQ ) // || _subformula->formula().constraint().relation() == carl::Relation::GEQ )
+        if( _subformula->formula().constraint().relation() == carl::Relation::LEQ )
         {
             // Apply the Fourier-Motzkin elimination steps for the subformula to be asserted
             #ifdef DEBUG_FouMoModule
             cout << "Do the eliminations for the newly asserted subformula!" << endl;
             #endif
             auto iter_var = mElim_Order.begin();
-            vector<std::set<FormulaT>> origins;
-            std::set<FormulaT> origin;
+            vector<FormulasT> origins;
+            FormulasT origin;
             origin.insert( _subformula->formula() );
             origins.push_back( std::move( origin ) );
             FormulaOrigins temp_constr;
@@ -122,9 +122,9 @@ namespace smtrat
                         {
                             if( iter_poly->getSingleVariable() == *iter_var )
                             {
-                                if( ( iter_poly->coeff() > 0 && iter_temp->first.constraint().relation() == carl::Relation::LEQ ) ) 
-                                // || ( iter_poly->coeff() < 0 &&  iter_temp->first.constraint().relation() == carl::Relation::GEQ ) )
+                                if( iter_poly->coeff() > 0 ) 
                                 {
+                                    to_be_deleted.insert( std::move( std::make_pair( iter_temp->first, true) ) );
                                     // The current considered constraint that iter_temp points to acts acts as an upper bound
                                     // regarding the currently considered variable
                                     auto iter_lower = iter_help->second.second.begin();
@@ -138,15 +138,14 @@ namespace smtrat
                                         cout << "with 'lower' constraint: " << iter_lower->first.constraint() << endl;
                                         cout << "and obtain: " << new_formula.constraint() << endl;
                                         #endif
-                                        to_be_deleted.insert( std::move( std::make_pair( iter_temp->first, true) ) );
-                                        vector<std::set<FormulaT>> origins_new = std::move( merge( iter_temp->second, iter_lower->second ) );
+                                        vector<FormulasT> origins_new = std::move( merge( iter_temp->second, iter_lower->second ) );
                                         if( new_formula.isFalse() )
                                         {
                                             #ifdef DEBUG_FouMoModule
                                             cout << "The obtained formula is unsatisfiable" << endl;
                                             #endif
                                             size_t i = determine_smallest_origin( origins_new );
-                                            std::set<FormulaT> infSubSet;
+                                            FormulasT infSubSet;
                                             infSubSet = origins_new.at(i);
                                             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
                                             return false;
@@ -161,6 +160,7 @@ namespace smtrat
                                 }
                                 else
                                 {
+                                    to_be_deleted.insert( std::move( std::make_pair( iter_temp->first, false) ) );
                                     // The current considered constraint that iter_temp points to acts acts as a lower bound.
                                     // Do everything analogously compared to the contrary case.
                                     auto iter_upper = iter_help->second.first.begin(); 
@@ -172,22 +172,21 @@ namespace smtrat
                                         cout << "with 'lower' constraint: " << iter_temp->first.constraint() << endl;
                                         cout << "and obtain: " << new_formula.constraint() << endl;
                                         #endif
-                                        to_be_deleted.insert( std::move( std::make_pair( iter_temp->first, false) ) );
-                                        vector<std::set<FormulaT>> origins_new = std::move( merge( iter_temp->second, iter_upper->second ) );
+                                        vector<FormulasT> origins_new = std::move( merge( iter_temp->second, iter_upper->second ) );
                                         if( new_formula.isFalse() )
                                         {
                                             #ifdef DEBUG_FouMoModule
                                             cout << "The obtained formula is unsatisfiable" << endl;
                                             #endif
                                             size_t i = determine_smallest_origin( origins_new );
-                                            std::set<FormulaT> infSubSet;
+                                            FormulasT infSubSet;
                                             infSubSet = origins_new.at(i);
                                             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
                                             return false;
                                         }
                                         else
                                         {
-                                            temp_constr.insert( std::move( std::make_pair( new_formula, origins_new ) ) );
+                                            derived_constr.insert( std::move( std::make_pair( new_formula, origins_new ) ) );
                                         }
                                         ++iter_upper;
                                     }    
@@ -232,7 +231,7 @@ namespace smtrat
     template<class Settings>
     void FouMoModule<Settings>::removeSubformula( ModuleInput::const_iterator _subformula )
     {
-        if( _subformula->formula().constraint().relation() == carl::Relation::LEQ || _subformula->formula().constraint().relation() == carl::Relation::GEQ )
+        if( _subformula->formula().constraint().relation() == carl::Relation::LEQ )
         {
             /* Iterate through the processed constraints and delete all corresponding sets 
              * in the latter containing the element that has to be deleted. Delete a processed 
@@ -415,13 +414,14 @@ namespace smtrat
             // Apply one step of the Fourier-Motzkin algorithm by eliminating best_var
             auto iter_help = var_corr_constr.find( best_var );
             assert( iter_help != var_corr_constr.end() );
+            FormulaT new_formula;
             auto iter_upper = iter_help->second.first.begin();
             auto iter_lower = iter_help->second.second.begin();
             while( iter_upper != iter_help->second.first.end() )
             {
                 while( iter_lower != iter_help->second.second.end() )
                 {
-                    vector<std::set<FormulaT>> origins_new = std::move( merge( iter_upper->second, iter_lower->second ) );
+                    vector<FormulasT> origins_new = std::move( merge( iter_upper->second, iter_lower->second ) );
                     #ifdef Integer_Mode
                     /*
                     // TO-DO think about this condition
@@ -435,7 +435,7 @@ namespace smtrat
                             cout << "There is no integer between the lower and the upper bound!" << endl;
                             #endif
                             size_t i = determine_smallest_origin( origins_new );
-                            std::set<FormulaT> infSubSet;
+                            FormulasT infSubSet;
                             infSubSet = origins_new.at(i);
                             mInfeasibleSubsets.push_back( infSubSet );
                             return foundAnswer( False );
@@ -443,7 +443,7 @@ namespace smtrat
                     }
                     */
                     #endif
-                    FormulaT new_formula = std::move( combine_upper_lower( iter_upper->first.pConstraint(), iter_lower->first.pConstraint(), best_var ) );
+                    new_formula = std::move( combine_upper_lower( iter_upper->first.pConstraint(), iter_lower->first.pConstraint(), best_var ) );
                     #ifdef DEBUG_FouMoModule
                     cout << "Combine 'upper' constraint: " << iter_upper->first.constraint() << endl;
                     cout << "with 'lower' constraint: " << iter_lower->first.constraint() << endl;
@@ -455,7 +455,7 @@ namespace smtrat
                         cout << "The obtained formula is unsatisfiable" << endl;
                         #endif
                         size_t i = determine_smallest_origin( origins_new );
-                        std::set<FormulaT> infSubSet;
+                        FormulasT infSubSet;
                         infSubSet = origins_new.at(i);
                         mInfeasibleSubsets.push_back( std::move( infSubSet ) );
                         return foundAnswer( False );
@@ -477,6 +477,9 @@ namespace smtrat
             {
                 auto iter_delete = mProc_Constraints.find( iter_upper->first );
                 assert( iter_delete != mProc_Constraints.end() );
+                #ifdef DEBUG_FouMoModule
+                cout << "Delete from mProc_Constraints and add to mDeleted_Constraints: " << iter_delete->first << endl;
+                #endif
                 auto iter_add = mDeleted_Constraints.find( best_var );
                 assert( iter_add != mDeleted_Constraints.end() );
                 iter_add->second.first.push_back( *iter_delete );
@@ -488,21 +491,15 @@ namespace smtrat
             {
                 auto iter_delete = mProc_Constraints.find( iter_lower->first );
                 assert( iter_delete != mProc_Constraints.end() );
+                #ifdef DEBUG_FouMoModule
+                cout << "Delete from mProc_Constraints and add to mDeleted_Constraints: " << iter_delete->first << endl;
+                #endif
                 auto iter_add = mDeleted_Constraints.find( best_var );
                 assert( iter_add != mDeleted_Constraints.end() );
                 iter_add->second.second.push_back( *iter_delete );
                 mProc_Constraints.erase( iter_delete );
                 ++iter_lower;
             }
-            /*#ifdef Integer_Mode
-            if( var_corr_constr.size() == 1 )
-            {
-                #ifdef DEBUG_FouMoModule
-                cout << "Run Backends!" << endl;
-                #endif
-                return call_backends();
-            }
-            #endif*/
         }    
     }
     
@@ -525,8 +522,7 @@ namespace smtrat
                     {
                         std::vector<SingleFormulaOrigins> upper;
                         std::vector<SingleFormulaOrigins> lower;
-                        if( ( iter_poly->coeff() > 0 && iter_constr->first.pConstraint()->relation() == carl::Relation::LEQ ) ) 
-                            // || ( iter_poly->coeff() < 0 &&  iter_constr->first.pConstraint()->relation() == carl::Relation::GEQ ) )
+                        if( ( iter_poly->coeff() > 0 && iter_constr->first.pConstraint()->relation() == carl::Relation::LEQ ) )
                         {
                             SingleFormulaOrigins upper_help;
                             upper_help.first = iter_constr->first;
@@ -548,7 +544,6 @@ namespace smtrat
                         help.first = iter_constr->first;
                         help.second = iter_constr->second;
                         if( ( iter_poly->coeff() > 0 && iter_constr->first.pConstraint()->relation() == carl::Relation::LEQ ) ) 
-                            //|| ( iter_poly->coeff() < 0 &&  iter_constr->first.pConstraint()->relation() == carl::Relation::GEQ ) )
                         {
                             iter_help->second.first.push_back( std::move( help ) );
                         }
@@ -611,34 +606,7 @@ namespace smtrat
         }
         Poly upper_poly = upper_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
         Poly lower_poly = lower_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
-        /*
-        if( upper_constr->relation() == carl::Relation::GEQ )
-        {
-            if( lower_constr->relation() == carl::Relation::GEQ )  
-            {
-                lower_poly *= -1;       
-                combined_formula = FormulaT ( carl::newConstraint( (Rational)-1*coeff_upper*lower_poly - coeff_lower*upper_poly, carl::Relation::LEQ ) );                
-            }
-            else
-            {
-                assert( lower_constr->relation() == carl::Relation::LEQ );
-                combined_formula = FormulaT( carl::newConstraint( (Rational)-1*coeff_upper*lower_poly - (Rational)-1*coeff_lower*upper_poly, carl::Relation::LEQ ) );
-            }
-        } 
-        else
-        {        
-            assert( upper_constr->relation() == carl::Relation::LEQ );
-            if( lower_constr->relation() == carl::Relation::GEQ )  
-            {
-                lower_poly *= -1;
-                upper_poly *= -1;
-                combined_formula = FormulaT( carl::newConstraint( coeff_upper*lower_poly - coeff_lower*upper_poly, carl::Relation::LEQ ) );                
-            }
-            else
-            {
-        */
         assert( lower_constr->relation() == carl::Relation::LEQ );
-        //upper_poly *= -1;  
         combined_formula = FormulaT( carl::newConstraint( coeff_upper*lower_poly + (Rational)-1*coeff_lower*upper_poly, carl::Relation::LEQ ) );
         return combined_formula;        
     }
@@ -703,9 +671,7 @@ namespace smtrat
                             #ifdef DEBUG_FouMoModule
                             cout << "Set to zero: " << iter_poly_upper->getSingleVariable() << endl;
                             #endif
-                            //mVarAss.insert( std::make_pair( iter_poly_upper->getSingleVariable(), 0 ) );
-                            mVarAss[ iter_poly_upper->getSingleVariable() ] = 0;
-                            //to_be_substituted_upper = to_be_substituted_upper.substitute( iter_poly_upper->getSingleVariable(), ZERO_POLYNOMIAL );            
+                            mVarAss[ iter_poly_upper->getSingleVariable() ] = 0;         
                         }
                         else
                         {
@@ -725,7 +691,7 @@ namespace smtrat
                     lowest_upper = carl::floor( -to_be_substituted_upper.constantPart()/coeff_upper );
                     #else
                     lowest_upper = -to_be_substituted_upper.constantPart()/coeff_upper;
-                    #endif                        
+                    #endif
                 }
                 else
                 {                    
@@ -766,7 +732,7 @@ namespace smtrat
                     {
                         if( mVarAss.find( iter_poly_lower->getSingleVariable() ) != mVarAss.end() )
                         {
-                            to_be_substituted_lower = to_be_substituted_lower.substitute( iter_var->first, (Poly)mVarAss.at( iter_poly_lower->getSingleVariable() ) );
+                            to_be_substituted_lower = to_be_substituted_lower.substitute( iter_poly_lower->getSingleVariable(), (Poly)mVarAss.at( iter_poly_lower->getSingleVariable() ) );
                         }
                     }
                     ++iter_poly_lower;
@@ -787,15 +753,13 @@ namespace smtrat
                             #ifdef DEBUG_FouMoModule
                             cout << "Set to zero: " << iter_poly_lower->getSingleVariable() << endl;
                             #endif
-                            //mVarAss.insert( std::make_pair( iter_poly_lower->getSingleVariable(), 0 ) );
-                            mVarAss[ iter_poly_lower->getSingleVariable() ] = 0;
-                            //to_be_substituted_lower = to_be_substituted_lower.substitute( iter_poly_lower->getSingleVariable(), ZERO_POLYNOMIAL );
+                            mVarAss[ iter_poly_lower->getSingleVariable() ] = 0;                            
                         }
                         else
                         {
                             coeff_lower = -iter_poly_lower->coeff();
                             #ifdef DEBUG_FouMoModule
-                            cout << "Coeff: " << -iter_poly_lower->coeff() << endl;
+                            cout << "Coeff: " << coeff_lower << endl;
                             #endif
                         }
                     }    
@@ -821,7 +785,7 @@ namespace smtrat
                     #else 
                     if( to_be_substituted_lower.constantPart()/coeff_lower > highest_lower )
                     {
-                        highest_lower = to_be_substituted_upper.constantPart()/coeff_lower;
+                        highest_lower = to_be_substituted_lower.constantPart()/coeff_lower;
                     }
                     #endif
                 }
@@ -837,7 +801,7 @@ namespace smtrat
             }
             #endif
             // Insert one of the found bounds into mVarAss
-            //mVarAss.insert( std::make_pair( *iter_elim, highest_lower ) );
+            assert( at_least_one_lower || at_least_one_upper );
             if( at_least_one_lower )
             {
                 #ifdef DEBUG_FouMoModule
@@ -845,7 +809,7 @@ namespace smtrat
                 #endif
                 mVarAss[ *iter_elim ] = highest_lower;
             }
-            else
+            else if( at_least_one_upper )
             {
                 #ifdef DEBUG_FouMoModule
                 cout << "Set: " << *iter_elim << " to: " << lowest_upper << endl;
