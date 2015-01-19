@@ -90,11 +90,6 @@ struct Node {
      */
 	bool immutable() const {
 		if (name == "set-logic") return true;
-		if (name == "set-info") {
-			if (children.size() > 0) {
-				if (children[0].name == ":status") return true;
-			}
-		}
 		return false;
 	}
 	/**

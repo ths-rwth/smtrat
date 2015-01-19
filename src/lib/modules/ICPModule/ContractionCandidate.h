@@ -52,7 +52,7 @@ namespace smtrat
              */
 //            const Constraint* mConstraint;
             const Poly          mRhs;
-            const ConstraintT*         mConstraint;
+            const ConstraintT*         mConstraint; // Todo: Do not save constraints but formulae instead
             Contractor<carl::SimpleNewton>&  mContractor;
             
             carl::Variable            mLhs;

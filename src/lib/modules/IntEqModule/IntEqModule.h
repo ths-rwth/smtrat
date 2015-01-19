@@ -32,7 +32,7 @@
 #include <stdio.h>
 namespace smtrat
 {
-    typedef std::map<FormulaT,vector<std::set<FormulaT>>> FormulaOrigins;
+    typedef std::map<FormulaT,vector<FormulasT>> FormulaOrigins;
         
     /**
      * A module which checks whether the equations contained in the received formula 
@@ -47,7 +47,7 @@ namespace smtrat
             // Stores the calculated substitutions
             std::map<carl::Variable, Poly>  mSubstitutions;
             // Stores the origins of the calculated substitutions
-            std::map<carl::Variable, vector<std::set<FormulaT>>> mVariables;
+            std::map<carl::Variable, vector<FormulasT>> mVariables;
             
         public:
             IntEqModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );

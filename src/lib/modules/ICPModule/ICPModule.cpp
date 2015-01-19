@@ -50,6 +50,7 @@ namespace smtrat
         mActiveLinearConstraints(),
         mLinearConstraints(),
         mNonlinearConstraints(),
+		mNotEqualConstraints(),
         mVariables(),
         mIntervals(),
         mIcpRelevantCandidates(),
@@ -122,7 +123,7 @@ namespace smtrat
 
             unsigned constraintConsistency = constraint.isConsistent();
 
-            if( constraintConsistency == 2 )
+            if( constraintConsistency == 2 && _constraint.constraint().relation() != carl::Relation::NEQ )
             {
                 addConstraint( _constraint );
             }
@@ -164,18 +165,25 @@ namespace smtrat
                     while( !mLRA.deductions().empty() )
                     {
                         #ifdef ICP_MODULE_DEBUG_1
-                        cout << "Create deduction for: " << mLRA.deductions().back()->toString(false,0,"",true,true,true ) << endl;
+                        cout << "Create deduction for: " << mLRA.deductions().back().toString(false,0,"",true,true,true ) << endl;
                         #endif
                         FormulaT deduction = transformDeductions( mLRA.deductions().back() );
                         mCreatedDeductions.insert(deduction);
                         mLRA.rDeductions().pop_back();
                         addDeduction(deduction);
                         #ifdef ICP_MODULE_DEBUG_1
-                        cout << "Passed deduction: " << deduction->toString(false,0,"",true,true,true ) << endl;
+                        cout << "Passed deduction: " << deduction.toString(false,0,"",true,true,true ) << endl;
                         #endif
                     }
                     mIsIcpInitialized = true;
                 }
+				// Handle Not Equal separate
+				if( constr.relation() == carl::Relation::NEQ ) {
+					mNotEqualConstraints.insert(_formula->formula());
+					addReceivedSubformulaToPassedFormula(_formula);
+					return true;
+				}
+				
                 #ifdef ICP_MODULE_DEBUG_0
                 cout << "[ICP] Assertion: " << constr << endl;
                 #endif
@@ -204,7 +212,7 @@ namespace smtrat
                     #endif
                     // If the constraint has not yet been part of the lramodule's received formula, assert it. If the
                     // lramodule already detects inconsistency, process its infeasible subsets.
-                    if( res.second && !mLRA.assertSubformula( res.first ) ) 
+					if( res.second && !mLRA.assertSubformula( res.first ) ) 
                     {
                         remapAndSetLraInfeasibleSubsets();
                         assert( !mInfeasibleSubsets.empty() );
@@ -235,6 +243,13 @@ namespace smtrat
         cout << "[ICP] Remove Formula " << *constr << endl;
         #endif
         assert( constr->isConsistent() == 2 );
+		
+		if( constr->relation() == carl::Relation::NEQ ) {
+			mNotEqualConstraints.erase(_formula->formula());
+			Module::removeSubformula( _formula );
+			return;
+		}
+			
         // is it nonlinear?
         auto iter = mNonlinearConstraints.find( constr );
         if( iter != mNonlinearConstraints.end() )
@@ -268,6 +283,7 @@ namespace smtrat
         auto iterB = mLinearConstraints.find( slackvariable );
         if( iterB != mLinearConstraints.end() )
         {
+			mLRA.print();
             #ifdef ICP_MODULE_DEBUG_0
             cout << "Linear." << endl;
             #endif
@@ -290,7 +306,7 @@ namespace smtrat
         // remove constraint from mLRA module
         auto replacementIt = mLinearizations.find( _formula->formula() );
         assert( replacementIt != mLinearizations.end() );
-        auto validationFormulaIt = mValidationFormula->find( replacementIt->first );
+        auto validationFormulaIt = mValidationFormula->find( replacementIt->second );
         if( validationFormulaIt != mValidationFormula->end() )
         {
             #ifdef ICP_MODULE_DEBUG_0
@@ -316,7 +332,10 @@ namespace smtrat
             #ifdef ICP_MODULE_DEBUG_0
             cout << "Found solution still feasible." << endl;
             #endif
-            return foundAnswer( True );
+			if( checkNotEqualConstraints() )
+				return foundAnswer( True );
+			else
+				return foundAnswer( Unknown );
         }
         mIsBackendCalled = false;
 
@@ -330,6 +349,12 @@ namespace smtrat
         Answer lraAnswer = Unknown;
         if( initialLinearCheck( lraAnswer ) )
         {
+			if( lraAnswer == True ) {
+				if( checkNotEqualConstraints() )
+					return foundAnswer( True );
+				else
+					return foundAnswer( Unknown );
+			}
             return foundAnswer( lraAnswer );
         }
             
@@ -395,7 +420,10 @@ namespace smtrat
                 #endif
                 if( tryTestPoints() )
                 {
-                    return foundAnswer( True );
+					if( checkNotEqualConstraints() )
+						return foundAnswer( True );
+					else
+						return foundAnswer( Unknown );
                 }
                 else
                 {
@@ -601,7 +629,7 @@ namespace smtrat
         while( !mLRA.deductions().empty() )
         {
             #ifdef ICP_MODULE_DEBUG_1
-            cout << "Create deduction for: " << *mLRA.deductions().back() << endl;
+            cout << "Create deduction for: " << mLRA.deductions().back() << endl;
             #endif
             FormulaT deduction = transformDeductions(mLRA.deductions().back());
             mLRA.rDeductions().pop_back();
@@ -689,6 +717,16 @@ namespace smtrat
         }
     }
     
+	bool ICPModule::checkNotEqualConstraints() {
+		for( auto& constraint : mNotEqualConstraints ) {
+			if( constraint.satisfiedBy(mFoundSolution) == 0 ) {
+				splitUnequalConstraint(constraint);
+				return false;
+			}
+		}
+		return true;
+	}
+	
     bool ICPModule::contractCurrentBox( bool& _splitOccurred )
     {
         bool invalidBox = false;
@@ -1078,7 +1116,7 @@ namespace smtrat
                 cout << "InfSet of Backend contained bound, Chose new box: " << endl;
                 #endif
                 if( !chooseBox() )
-                    return foundAnswer(False);
+                    return False;
             }
             else
             {
@@ -1461,7 +1499,7 @@ namespace smtrat
         {
             #ifdef ICP_MODULE_DEBUG_0
             #ifdef ICP_MODULE_DEBUG_1   
-            cout << "Split occured: " << resultB << " and " << resultA << endl;
+            cout << "Split occured: " << resultA << " and " << resultB << endl;
             #else
             cout << "Split occured" << endl;
             #endif
@@ -1557,6 +1595,7 @@ namespace smtrat
 
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
             assert(resultA.upperBoundType() != BoundType::INFTY );
+			std::cout << __func__ << " resultA.upper(): " << resultA.upper() << std::endl;
             Rational bound = carl::rationalize<Rational>( resultA.upper() );
 //            if( probablyLooping( Poly( variable ), bound ) )
 //            {
@@ -1565,7 +1604,7 @@ namespace smtrat
 //                exit( 7771 );
 //            }
             //assert( !probablyLooping( Polynomial( variable ), bound ) );
-            Module::branchAt( Poly( variable ), bound, splitPremise, true );
+            Module::branchAt( Poly( variable ), bound, splitPremise, false );
             #ifdef ICP_MODULE_DEBUG_0
             cout << "division causes split on " << variable << " at " << bound << "!" << endl << endl;
             #endif
@@ -2099,7 +2138,7 @@ namespace smtrat
             assert( isSatisfied != 2 );
             if( isSatisfied == 0 )
             {
-                candidates.insert( iter->second.begin(), iter->second.end() );
+					candidates.insert( iter->second.begin(), iter->second.end() );
             }
         }
         for( auto candidate = mActiveNonlinearConstraints.begin(); candidate != mActiveNonlinearConstraints.end(); ++candidate )
@@ -2109,7 +2148,7 @@ namespace smtrat
             if( isSatisfied == 0 )
             {
                 testSuccessful = false;
-            }
+			}
         }
         // if a change has happened we need to restart at the latest point possible
         if( !candidates.empty() )
@@ -2860,7 +2899,7 @@ namespace smtrat
                             (*pos).second->setInternalRightBound(rightBound);
                             addedBoundaries.insert(rightBound);
                             #ifdef ICP_MODULE_DEBUG_1
-                            cout << "Created upper boundary constraint: " << *rightBound << endl;
+                            cout << "Created upper boundary constraint: " << rightBound << endl;
                             #endif
                         }
                         if( boundaries.first != NULL && 
@@ -2871,7 +2910,7 @@ namespace smtrat
                             (*pos).second->setInternalLeftBound(leftBound);
                             addedBoundaries.insert(leftBound);
                             #ifdef ICP_MODULE_DEBUG_1
-                            cout << "Created lower boundary constraint: " << *leftBound << endl;
+                            cout << "Created lower boundary constraint: " << leftBound << endl;
                             #endif
                         }
                     }
@@ -2928,7 +2967,7 @@ namespace smtrat
             for ( auto formulaIt = (*infSetIt).begin(); formulaIt != (*infSetIt).end(); ++formulaIt )
             {
                 auto delinIt = mDeLinearizations.find(*formulaIt);
-                assert( delinIt != mDeLinearizations.end() ); 
+                assert( delinIt != mDeLinearizations.end() );
                 assert( std::find( rReceivedFormula().begin(), rReceivedFormula().end(), delinIt->second ) != rReceivedFormula().end());
                 newSet.insert( delinIt->second );
             }
