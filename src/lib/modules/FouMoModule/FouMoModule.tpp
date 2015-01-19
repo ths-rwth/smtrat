@@ -28,7 +28,7 @@
 
 #include "FouMoModule.h"
 
-#define DEBUG_FouMoModule
+//#define DEBUG_FouMoModule
 
 #define Allow_Deletion
 #define Integer_Mode
@@ -224,7 +224,6 @@ namespace smtrat
             }
             mProc_Constraints.insert( temp_constr.begin(), temp_constr.end() );
         }
-        std::cout << "End of Assertion" << endl;
         return true;
     }
 
