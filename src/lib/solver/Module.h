@@ -451,6 +451,15 @@ namespace smtrat
              * Stores all deductions of any backend of this module in its own deduction vector.
              */
             void updateDeductions();
+            
+            /**
+             * Collects the formulas in the given formula, which are part of the received formula. If the given formula directly
+             * occurs in the received formula, it is inserted into the given set. Otherwise, the given formula must be of 
+             * type AND and all its sub-formulas part of the received formula. Hence, they will be added to the given set.
+             * @param _origin The formula from which to collect the formulas being sub-formulas of the received formula (origins).
+             * @param _originSet The set in which to store the origins.
+             */
+            void collectOrigins( const FormulaT& _origin, FormulasT& _originSet ) const;
 
             // Methods for debugging purposes.
             /**
@@ -571,22 +580,9 @@ namespace smtrat
              * @param _formula The passed formula to set the origins for.
              * @param _origins A set of formulas in the received formula of this module.
              */
-            void addOrigin( ModuleInput::iterator _formula, const FormulasT& _origin )
+            void addOrigin( ModuleInput::iterator _formula, const FormulaT& _origin )
             {
-                assert( _formula != mpPassedFormula->end() );
-                _formula->rOrigins().push_back( _origin );
-            }
-
-            /**
-             * Adds the given sets of formulas in the received formula to the origins of the given passed formula.
-             * @param _formula The passed formula to set the origins for.
-             * @param _origins A vector of sets of formulas in the received formula of this module.
-             */
-            void addOrigins( ModuleInput::iterator _formula, std::vector<FormulasT>& _origins )
-            {
-                assert( _formula != mpPassedFormula->end() );
-                auto& origs = _formula->rOrigins();
-                origs.insert( origs.end(), _origins.begin(), _origins.end() );
+                mpPassedFormula->addOrigin( _formula, _origin );
             }
             
             /**
@@ -594,7 +590,7 @@ namespace smtrat
              * @param _formula The position of a formula in the passed formulas.
              * @return The origins of the passed formula at the given position.
              */
-            const FormulasT& getOrigins( ModuleInput::const_iterator _formula ) const
+            const FormulaT& getOrigins( ModuleInput::const_iterator _formula ) const
             {
                 assert( _formula != mpPassedFormula->end() );
                 return _formula->origins().front();
@@ -603,24 +599,6 @@ namespace smtrat
             std::pair<ModuleInput::iterator,bool> removeOrigin( ModuleInput::iterator _formula, const FormulaT& _origin )
             {
                 if( mpPassedFormula->removeOrigin( _formula, _origin ) )
-                {
-                    return std::make_pair( eraseSubformulaFromPassedFormula( _formula ), true );
-                }
-                return std::make_pair( _formula, false );
-            }
-            
-            std::pair<ModuleInput::iterator,bool> removeOrigins( ModuleInput::iterator _formula, const FormulasT& _origins )
-            {
-                if( mpPassedFormula->removeOrigins( _formula, _origins ) )
-                {
-                    return std::make_pair( eraseSubformulaFromPassedFormula( _formula ), true );
-                }
-                return std::make_pair( _formula, false );
-            }
-            
-            std::pair<ModuleInput::iterator,bool> removeOrigins( ModuleInput::iterator _formula, const std::vector<FormulasT>& _origins )
-            {
-                if( mpPassedFormula->removeOrigins( _formula, _origins ) )
                 {
                     return std::make_pair( eraseSubformulaFromPassedFormula( _formula ), true );
                 }
@@ -662,13 +640,14 @@ namespace smtrat
              */
             std::pair<ModuleInput::iterator,bool> addReceivedSubformulaToPassedFormula( ModuleInput::const_iterator _subformula );
             
+            bool originInReceivedFormula( const FormulaT& _origin ) const;
+            
             /**
-             * Adds the given formula to the passed formula.
+             * Adds the given formula to the passed formula with no origin. Note that in the next call of this module's removeSubformula, 
+             * all formulas in the passed formula without origins will be removed.
              * @param _formula The formula to add to the passed formula.
-             * @param _origins The link of the formula to add to the passed formula to sub-formulas 
-             *         of the received formulas, which are responsible for its occurrence
              */
-            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, const std::vector<FormulasT>& _origins );
+            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula );
             
             /**
              * Adds the given formula to the passed formula.
@@ -676,7 +655,7 @@ namespace smtrat
              * @param _origins The link of the formula to add to the passed formula to sub-formulas 
              *         of the received formulas, which are responsible for its occurrence
              */
-            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, std::vector<FormulasT>&& _origins );
+            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins );
             
             /**
              * Adds the given formula to the passed formula.

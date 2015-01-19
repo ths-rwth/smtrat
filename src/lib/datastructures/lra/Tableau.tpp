@@ -139,9 +139,9 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
-        void Tableau<Settings,T1,T2>::activateBound( const Bound<T1,T2>* _bound, const FormulasT& _formulas )
+        void Tableau<Settings,T1,T2>::activateBound( const Bound<T1,T2>* _bound, const FormulaT& _formula )
         {
-            _bound->pOrigins()->push_back( _formulas );
+            _bound->pOrigins()->push_back( _formula );
             const Variable<T1,T2>& var = _bound->variable();
             if( !var.isActive() && var.isBasic() && !var.isOriginal() )
                 activateBasicVar( _bound->pVariable() );
@@ -3122,19 +3122,17 @@ namespace smtrat
         template<class Settings, typename T1, typename T2>
         void Tableau<Settings,T1,T2>::collect_premises( const Variable<T1,T2>* _rowVar, FormulasT& premises )
         {
-            Iterator row_iterator = Iterator( _rowVar->startEntry(), mpEntries );  
+            Iterator row_iterator = Iterator( _rowVar->startEntry(), mpEntries );
             while( true )
             {
                 const Variable<T1, T2>& nonBasicVar = *(*row_iterator).columnVar();
                 if( nonBasicVar.infimum() == nonBasicVar.assignment() )
                 {
-                    const FormulasT& origs = (*row_iterator).columnVar()->infimum().origins().front();
-                    premises.insert( origs.begin(), origs.end() );                        
+                    premises.insert( (*row_iterator).columnVar()->infimum().origins().front() );
                 }
                 else if( nonBasicVar.supremum() == nonBasicVar.assignment() )
                 {
-                    const FormulasT& origs = (*row_iterator).columnVar()->supremum().origins().front();
-                    premises.insert( origs.begin(), origs.end() );                                               
+                    premises.insert( (*row_iterator).columnVar()->supremum().origins().front() );
                 }
                 if( !row_iterator.hEnd( false ) )
                 {

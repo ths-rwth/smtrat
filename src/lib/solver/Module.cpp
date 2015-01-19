@@ -231,7 +231,7 @@ namespace smtrat
     list<std::vector<carl::Variable>> Module::getModelEqualities() const
     {
         list<std::vector<carl::Variable>> res;
-        for( auto it : this->mModel )
+        for( auto& it : this->mModel )
         {
             if( it.first.isVariable() )
             {
@@ -263,10 +263,24 @@ namespace smtrat
     
     pair<ModuleInput::iterator,bool> Module::addReceivedSubformulaToPassedFormula( ModuleInput::const_iterator _subformula )
     {
+        assert( mpReceivedFormula->contains( _subformula->formula() ) );
         return addSubformulaToPassedFormula( _subformula->formula(), _subformula->formula() );
     }
+    
+    std::pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula )
+    {
+        assert( mpReceivedFormula->size() != UINT_MAX );
+        auto res = mpPassedFormula->add( _formula );
+        if( res.second )
+        {
+            assert( res.first == --mpPassedFormula->end() );
+            if( mFirstSubformulaToPass == mpPassedFormula->end() )
+                mFirstSubformulaToPass = res.first;
+        }
+        return res;
+    }
 
-    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, const std::vector<FormulasT>& _origins )
+    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins )
     {
         assert( mpReceivedFormula->size() != UINT_MAX );
         auto res = mpPassedFormula->add( _formula, _origins );
@@ -278,23 +292,35 @@ namespace smtrat
         }
         return res;
     }
-
-    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, std::vector<FormulasT>&& _origins )
+    
+    bool Module::originInReceivedFormula( const FormulaT& _origin ) const
     {
-        assert( mpReceivedFormula->size() != UINT_MAX );
-        auto res = mpPassedFormula->add( _formula, std::move( _origins ) );
-        if( res.second )
+        if( mpReceivedFormula->contains( _origin ) )
+            return true;
+        if( _origin.getType() == carl::FormulaType::AND )
         {
-            assert( res.first == --mpPassedFormula->end() );
-            if( mFirstSubformulaToPass == mpPassedFormula->end() )
-                mFirstSubformulaToPass = res.first;
+            FormulasT subFormulasInRF;
+            for( auto fwo = mpReceivedFormula->begin();  fwo != mpReceivedFormula->end(); ++fwo )
+            {
+                const FormulaT& subform = fwo->formula();
+                if( subform.getType() == carl::FormulaType::AND )
+                    subFormulasInRF.insert( subform.subformulas().begin(), subform.subformulas().end() );
+                else
+                    subFormulasInRF.insert( subform );
+            }
+            for( auto& f : _origin.subformulas() )
+            {
+                if( subFormulasInRF.find( f ) == subFormulasInRF.end() )
+                    return false;
+            }
+            return true;
         }
-        return res;
+        return false;
     }
 
     pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, const FormulaT& _origin )
     {
-        assert( mpReceivedFormula->size() != UINT_MAX );
+        assert( originInReceivedFormula( _origin ) );
         auto res = mpPassedFormula->add( _formula, _origin );
         if( res.second )
         {
@@ -401,7 +427,7 @@ namespace smtrat
         bool onlyIntegerValuedVariables = true;
         Variables vars;
         _polynomial.gatherVariables( vars );
-        for( auto var : vars )
+        for( auto& var : vars )
         {
             if( var.getType() != carl::VariableType::VT_INT )
             {
@@ -560,33 +586,29 @@ namespace smtrat
                 addAssumptionToCheck( *infSubSet, false, moduleName( _backend.type() ) + "_infeasible_subset" );
             }
             #endif
-            result.push_back( FormulasT() );
+            result.emplace_back();
             for( FormulasT::const_iterator cons = infSubSet->begin(); cons != infSubSet->end(); ++cons )
             {
                 ModuleInput::const_iterator posInReceived = mpPassedFormula->find( *cons );
                 assert( posInReceived != mpReceivedFormula->end() );
-                const std::vector<FormulasT>& formOrigins = posInReceived->origins();
+                const std::vector<FormulaT>& formOrigins = posInReceived->origins();
                 // Find the smallest set of origins.
-                std::vector<FormulasT>::const_iterator smallestOriginSet = formOrigins.begin();
-                std::vector<FormulasT>::const_iterator originSet = formOrigins.begin();
-                while( originSet != formOrigins.end() )
+                std::vector<FormulaT>::const_iterator smallestOrigin = formOrigins.begin();
+                std::vector<FormulaT>::const_iterator origin = formOrigins.begin();
+                while( origin != formOrigins.end() )
                 {
-                    if( originSet->size() == 1 )
+                    if( origin->size() == 1 )
                     {
-                        smallestOriginSet = originSet;
+                        smallestOrigin = origin;
                         break;
                     }
-                    else if( originSet->size() < smallestOriginSet->size() )
-                        smallestOriginSet = originSet;
-                    ++originSet;
+                    else if( origin->size() < smallestOrigin->size() )
+                        smallestOrigin = origin;
+                    ++origin;
                 }
-                assert( smallestOriginSet != formOrigins.end() );
+                assert( smallestOrigin != formOrigins.end() );
                 // Add its formulas to the infeasible subset.
-                for( FormulasT::const_iterator originFormula = smallestOriginSet->begin(); originFormula != smallestOriginSet->end();
-                        ++originFormula )
-                {
-                    result.back().insert( *originFormula );
-                }
+                collectOrigins( *smallestOrigin, result.back() );
             }
         }
         return result;
@@ -723,9 +745,9 @@ namespace smtrat
     {
         if( _ignoreOrigins )
         {
-            _subformula->rOrigins().clear();
+            mpPassedFormula->clearOrigins( _subformula );
         }
-        assert( _subformula->origins().empty() );
+        assert( !_subformula->hasOrigins() );
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         int timers = stopAllTimers();
         #endif
@@ -811,6 +833,23 @@ namespace smtrat
                 }
                 #endif
                 (*module)->rDeductions().pop_back();
+            }
+        }
+    }
+    
+    void Module::collectOrigins( const FormulaT& _origin, FormulasT& _originSet ) const
+    {
+        if( mpReceivedFormula->contains( _origin ) )
+        {
+            _originSet.insert( _origin );
+        }
+        else
+        {
+            assert( _origin.getType() == carl::FormulaType::AND );
+            for( auto& subformula : _origin.subformulas() )
+            {
+                assert( mpReceivedFormula->contains( subformula ) );
+                _originSet.insert( subformula );
             }
         }
     }
@@ -930,12 +969,14 @@ namespace smtrat
     bool Module::hasValidInfeasibleSubset() const
     {
         if( mInfeasibleSubsets.empty() ) return false;
-        for( auto infSubset : mInfeasibleSubsets )
+        for( auto& infSubset : mInfeasibleSubsets )
         {
-            for( auto subFormula : infSubset )
+            for( auto& subFormula : infSubset )
             {
                 if( !mpReceivedFormula->contains( subFormula ) )
+                {
                     return false;
+                }
             }
         }
         return true;
@@ -1027,10 +1068,7 @@ namespace smtrat
             _out << setw( 30 ) << form->formula().toString( false, 0, "", true, true, true );
             for( auto oSubformulas = form->origins().begin(); oSubformulas != form->origins().end(); ++oSubformulas )
             {
-                _out << " {";
-                for( auto oSubformula = oSubformulas->begin(); oSubformula != oSubformulas->end(); ++oSubformula )
-                    _out << " [" << *oSubformula << "]";
-                _out << " }";
+                _out << " {" << oSubformulas->toString( false, 0, "", true, true, true ) << " }";
             }
             _out << " )" << endl;
         }

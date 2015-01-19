@@ -543,9 +543,9 @@ namespace smtrat
                 /**
                  * 
                  * @param _bound
-                 * @param _formulas
+                 * @param _formula
                  */
-                void activateBound( const Bound<T1,T2>* _bound, const FormulasT& _formulas );
+                void activateBound( const Bound<T1,T2>* _bound, const FormulaT& _formula );
                 
                 /**
                  * 

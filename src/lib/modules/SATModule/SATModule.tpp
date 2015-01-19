@@ -155,16 +155,12 @@ namespace smtrat
         while( mBooleanConstraintMap.size() > 0 )
         {
             Abstraction*& abstrAToDel = mBooleanConstraintMap.last().first;
-            std::vector<FormulasT>* toDelA = abstrAToDel->origins;
             Abstraction*& abstrBToDel = mBooleanConstraintMap.last().second;
-            std::vector<FormulasT>* toDelB = abstrBToDel->origins;
             mBooleanConstraintMap.pop();
             delete abstrAToDel;
             delete abstrBToDel;
             abstrAToDel = nullptr;
             abstrBToDel = nullptr;
-            delete toDelA;
-            delete toDelB;
         }
         #ifdef SMTRAT_DEVOPTION_Statistics
         delete mpStatistics;
@@ -493,8 +489,6 @@ namespace smtrat
             {
                 Var var = newVar( true, true, content.activity() );
                 mBooleanVarMap[content.boolean()] = var;
-                FormulasT originsSet;
-                originsSet.insert( _origin );
                 mBooleanConstraintMap.push( std::make_pair( 
                     new Abstraction( passedFormulaEnd(), content ), 
                     new Abstraction( passedFormulaEnd(), negated ? _formula : FormulaT( carl::FormulaType::NOT, _formula ) ) ) );
@@ -503,9 +497,11 @@ namespace smtrat
             if( !_origin.isTrue() )
             {
                 Abstraction& abstr = negated ? *mBooleanConstraintMap[var(l)].second : *mBooleanConstraintMap[var(l)].first;
-                FormulasT originsSet;
-                originsSet.insert( _origin );
-                abstr.origins->push_back( std::move( originsSet ) );
+                if( abstr.origins == nullptr )
+                {
+                    abstr.origins = std::shared_ptr<std::vector<FormulaT>>( new std::vector<FormulaT>() );
+                }
+                abstr.origins->push_back( _origin );
             }
             return l;
         }
@@ -525,9 +521,7 @@ namespace smtrat
                 Abstraction& abstr = sign(constraintLiteralPair->second.front()) ? *abstrPair.second : *abstrPair.first;
                 if( !_origin.isTrue() || !negated )
                 {
-                    FormulasT originsSet;
-                    originsSet.insert( _origin );
-                    assert( abstr.origins->empty() || std::find( abstr.origins->begin(), abstr.origins->end(), originsSet ) == abstr.origins->end() );
+                    assert( abstr.origins == nullptr || std::find( abstr.origins->begin(), abstr.origins->end(), _origin ) == abstr.origins->end() );
                     if( !abstr.consistencyRelevant )
                     {
                         addConstraintToInform( abstr.reabstraction );
@@ -541,7 +535,11 @@ namespace smtrat
                     }
                     if( !_origin.isTrue() )
                     {
-                        abstr.origins->push_back( std::move( originsSet ) );
+                        if( abstr.origins == nullptr )
+                        {
+                            abstr.origins = std::shared_ptr<std::vector<FormulaT>>( new std::vector<FormulaT>() );
+                        }
+                        abstr.origins->push_back( _origin );
                     }
                 }
                 return constraintLiteralPair->second.front();
@@ -582,18 +580,21 @@ namespace smtrat
                 // add the constraint and its negation to the constraints to inform backends about
                 if( !_origin.isTrue() )
                 {
-                    FormulasT originsSet;
-                    originsSet.insert( _origin );
+                    Abstraction& abstr = negated ? *mBooleanConstraintMap.last().second : *mBooleanConstraintMap.last().first;
+                    if( abstr.origins == nullptr )
+                    {
+                        abstr.origins = std::shared_ptr<std::vector<FormulaT>>( new std::vector<FormulaT>() );
+                    }
                     if( negated )
                     {
-                        mBooleanConstraintMap.last().second->origins->push_back( std::move( originsSet ) );
-                        mBooleanConstraintMap.last().second->consistencyRelevant = true;
+                        abstr.origins->push_back( _origin );
+                        abstr.consistencyRelevant = true;
                         addConstraintToInform( invertedConstraint );
                     }
                     else
                     {
-                        mBooleanConstraintMap.last().first->origins->push_back( std::move( originsSet ) );
-                        mBooleanConstraintMap.last().first->consistencyRelevant = true;
+                        abstr.origins->push_back( _origin );
+                        abstr.consistencyRelevant = true;
                         addConstraintToInform( constraint );
                     }
                 }
@@ -682,18 +683,16 @@ namespace smtrat
             assert( !_abstr.reabstraction.isTrue() );
             if( _abstr.position != rPassedFormula().end() )
             {
-                if( removeOrigins( _abstr.position, *_abstr.origins ).second )
-                {
-                    _abstr.position = passedFormulaEnd();
-                    mChangedPassedFormula = true;
-                }
+                eraseSubformulaFromPassedFormula( _abstr.position, true );
+                _abstr.position = passedFormulaEnd();
+                mChangedPassedFormula = true;
             }
         }
         else if( _abstr.updateInfo > 0 )
         {
             assert( !_abstr.reabstraction.isTrue() );
             assert( _abstr.reabstraction.getType() == carl::FormulaType::UEQ || (_abstr.reabstraction.getType() == carl::FormulaType::CONSTRAINT && _abstr.reabstraction.constraint().isConsistent() == 2) );
-            auto res = addSubformulaToPassedFormula( _abstr.reabstraction, *_abstr.origins );
+            auto res = addSubformulaToPassedFormula( _abstr.reabstraction, _abstr.origins );
             _abstr.position = res.first;
             _abstr.position->setDeducted( _abstr.isDeduction );
             mChangedPassedFormula = true;
@@ -2205,12 +2204,16 @@ NextClause:
                 rebuildOrderHeap();
                 
                 Abstraction& abstrA = sign( consLitPair->second.front() ) ? *mBooleanConstraintMap[var( consLitPair->second.front() )].second : *mBooleanConstraintMap[var( consLitPair->second.front() )].first;
-                if( !abstrA.origins->empty() )
+                if( abstrA.origins != nullptr )
                 {
                     Abstraction& abstrB = sign( iter->second.front() ) ? *mBooleanConstraintMap[var( iter->second.front() )].second : *mBooleanConstraintMap[var( iter->second.front() )].first;
                     if( !abstrB.consistencyRelevant )
                     {
                         informBackends( abstrB.reabstraction );
+                    }
+                    if( abstrB.origins == nullptr )
+                    {
+                        abstrB.origins = std::shared_ptr<std::vector<FormulaT>>( new std::vector<FormulaT>() );
                     }
                     abstrB.origins->insert( abstrB.origins->end(), abstrA.origins->begin(), abstrA.origins->end() );
                     abstrB.consistencyRelevant = true;
@@ -2258,7 +2261,6 @@ NextClause:
                 }
             }
         }
-        bool maybeStillInPassedFormula = true;
         for( auto litIter = consLitPair->second.begin(); litIter != consLitPair->second.end(); ++litIter )
         {
             #ifdef DEBUG_SAT_APPLY_VALID_SUBS
@@ -2270,8 +2272,7 @@ NextClause:
                 #ifdef DEBUG_SAT_APPLY_VALID_SUBS
                 cout << __LINE__ << endl;
                 #endif
-                if( maybeStillInPassedFormula && removeOrigins( abstr.position, *abstr.origins ).second )
-                    maybeStillInPassedFormula = false;
+                eraseSubformulaFromPassedFormula( abstr.position, true );
                 unsigned replacedByConsistency = _replaceBy.constraint().isConsistent();
                 if( replacedByConsistency == 2 )
                 {

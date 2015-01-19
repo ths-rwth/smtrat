@@ -135,9 +135,7 @@ namespace smtrat
                             assert( constrBoundIter != mTableau.constraintToBound().end() );
                             const std::vector< const LRABound* >* bounds = constrBoundIter->second;
                             assert( bounds != NULL );
-                            FormulasT originSet;
-                            originSet.insert( formula );
-                            activateBound( *bounds->begin(), originSet );
+                            activateBound( *bounds->begin(), formula );
 
                             if( !(*bounds->begin())->neqRepresentation().isTrue() )
                             {
@@ -227,19 +225,24 @@ namespace smtrat
                     {
                         if( !(*bound)->origins().empty() )
                         {
-                            auto originSet = (*bound)->pOrigins()->begin();
+                            auto origin = (*bound)->pOrigins()->begin();
                             bool mainOriginRemains = true;
-                            while( originSet != (*bound)->origins().end() )
+                            while( origin != (*bound)->origins().end() )
                             {
-                                if( originSet->find( pformula ) != originSet->end() && (mainOriginRemains || originSet->size() > 1) )
+                                if( origin->getType() == carl::FormulaType::AND && origin->contains( pformula ) )
                                 {
-                                    originSet = (*bound)->pOrigins()->erase( originSet );
+                                    origin = (*bound)->pOrigins()->erase( origin );
+                                }
+                                else if( mainOriginRemains && *origin == pformula )
+                                {
+                                    assert( origin->getType() == carl::FormulaType::CONSTRAINT );
+                                    origin = (*bound)->pOrigins()->erase( origin );
                                     // ensures that only one main origin is removed, in the case that a formula is contained more than once in the module input
-                                    if( originSet->size() == 1 ) mainOriginRemains = false; 
+                                    mainOriginRemains = false; 
                                 }
                                 else
                                 {
-                                    ++originSet;
+                                    ++origin;
                                 }
                             }
                             if( (*bound)->origins().empty() )
@@ -429,8 +432,13 @@ namespace smtrat
                             {
                                 assert( newBasicVar->assignment().deltaPart() == 0 );
                                 FormulasT premises;
-                                mTableau.collect_premises( newBasicVar, premises );                
-                                branchAt( newBasicVar->expression(), ratAss, premises );
+                                mTableau.collect_premises( newBasicVar, premises );
+                                FormulasT premisesOrigins;
+                                for( auto& pf : premises )
+                                {
+                                    collectOrigins( pf, premisesOrigins );
+                                }
+                                branchAt( newBasicVar->expression(), ratAss, premisesOrigins );
                                 goto Return;
                             }
                         }
@@ -452,24 +460,36 @@ namespace smtrat
                         std::vector<const LRABound*>& bounds = learnedBound.premise;
                         for( auto bound = bounds.begin(); bound != bounds.end(); ++bound )
                         {
-                            assert( !(*bound)->origins().empty() );
-                            originSet.insert( (*bound)->origins().begin()->begin(), (*bound)->origins().begin()->end() );
-                            for( auto origin = (*bound)->origins().begin()->begin(); origin != (*bound)->origins().begin()->end(); ++origin )
+                            const FormulaT& boundOrigins = *(*bound)->origins().begin(); 
+                            if( boundOrigins.getType() == carl::FormulaType::AND )
                             {
-                                assert( *origin != NULL );
-//                                if( *origin != NULL )
-//                                {
-                                auto constrBoundIter = mTableau.rConstraintToBound().find( *origin );
+                                originSet.insert( boundOrigins.subformulas().begin(), boundOrigins.subformulas().end() );
+                                for( auto origin = boundOrigins.subformulas().begin(); origin != boundOrigins.subformulas().end(); ++origin )
+                                {
+                                    auto constrBoundIter = mTableau.rConstraintToBound().find( boundOrigins );
+                                    assert( constrBoundIter != mTableau.constraintToBound().end() );
+                                    std::vector< const LRABound* >* constraintToBounds = constrBoundIter->second;
+                                    constraintToBounds->push_back( learnedBound.nextWeakerBound );
+                                    #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
+                                    if( learnedBound.newBound != NULL ) constraintToBounds->push_back( learnedBound.newBound );
+                                    #endif
+                                }
+                            }
+                            else
+                            {
+                                assert( boundOrigins.getType() == carl::FormulaType::CONSTRAINT );
+                                originSet.insert( boundOrigins );
+                                auto constrBoundIter = mTableau.rConstraintToBound().find( boundOrigins );
                                 assert( constrBoundIter != mTableau.constraintToBound().end() );
                                 std::vector< const LRABound* >* constraintToBounds = constrBoundIter->second;
                                 constraintToBounds->push_back( learnedBound.nextWeakerBound );
                                 #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
                                 if( learnedBound.newBound != NULL ) constraintToBounds->push_back( learnedBound.newBound );
                                 #endif
-//                                }
                             }
                         }
-                        activateBound( learnedBound.nextWeakerBound, originSet );
+                        FormulaT origin = FormulaT( carl::FormulaType::AND, originSet );
+                        activateBound( learnedBound.nextWeakerBound, origin );
                         #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
                         if( learnedBound.newBound != NULL )
                         {
@@ -479,7 +499,7 @@ namespace smtrat
                             std::vector< const LRABound* >* boundVector = new std::vector< const LRABound* >();
                             boundVector->push_back( learnedBound.newBound );
                             mConstraintToBound[newConstraint] = boundVector;
-                            activateBound( learnedBound.newBound, originSet );
+                            activateBound( learnedBound.newBound, origin );
                         }
                         #endif
                     }
@@ -503,7 +523,7 @@ namespace smtrat
                     for( auto bound = conflict.begin(); bound != conflict.end(); ++bound )
                     {
                         assert( (*bound)->isActive() );
-                        infSubSet.insert( (*bound)->pOrigins()->begin()->begin(), (*bound)->pOrigins()->begin()->end() );
+                        collectOrigins( *(*bound)->origins().begin(), infSubSet );
                     }
                     mInfeasibleSubsets.push_back( infSubSet );
                 }
@@ -516,7 +536,7 @@ namespace smtrat
                         for( auto bound = conflict->begin(); bound != conflict->end(); ++bound )
                         {
                             assert( (*bound)->isActive() );
-                            infSubSet.insert( (*bound)->pOrigins()->begin()->begin(), (*bound)->pOrigins()->begin()->end() );
+                            collectOrigins( *(*bound)->origins().begin(), infSubSet );
                         }
                         mInfeasibleSubsets.push_back( infSubSet );
                     }
@@ -651,11 +671,19 @@ Return:
             FormulasT subformulas;
             for( auto bound = iter->second.premise.begin(); bound != iter->second.premise.end(); ++bound )
             {
-                auto originIterB = (*bound)->origins().begin()->begin();
-                while( originIterB != (*bound)->origins().begin()->end() )
+                const FormulaT& origin = *(*bound)->origins().begin();
+                if( origin.getType() == carl::VariableType::AND )
                 {
-                    subformulas.insert( FormulaT( carl::FormulaType::NOT, FormulaT( (*originIterB)->pConstraint() ) ) );
-                    ++originIterB;
+                    for( auto& subformula : origin.subformulas() )
+                    {
+                        assert( subformula.getType() == carl::VariableType::CONSTRAINT );
+                        subformulas.insert( FormulaT( carl::FormulaType::NOT, subformula ) );
+                    }
+                }
+                else
+                {
+                    assert( origin.getType() == carl::VariableType::CONSTRAINT );
+                    subformulas.insert( FormulaT( carl::FormulaType::NOT, origin ) )
                 }
             }
             subformulas.insert( iter->second.nextWeakerBound->asConstraint() );
@@ -671,11 +699,19 @@ Return:
             FormulasT subformulas;
             for( auto bound = iter->second.premise.begin(); bound != iter->second.premise.end(); ++bound )
             {
-                auto originIterB = (*bound)->origins().begin()->begin();
-                while( originIterB != (*bound)->origins().begin()->end() )
+                const FormulaT& origin = *(*bound)->origins().begin();
+                if( origin.getType() == carl::VariableType::AND )
                 {
-                    subformulas.insert( FormulaT( carl::FormulaType::NOT, FormulaT( (*originIterB)->pConstraint() ) ) );
-                    ++originIterB;
+                    for( auto& subformula : origin.subformulas() )
+                    {
+                        assert( subformula.getType() == carl::VariableType::CONSTRAINT );
+                        subformulas.insert( FormulaT( carl::FormulaType::NOT, subformula ) );
+                    }
+                }
+                else
+                {
+                    assert( origin.getType() == carl::VariableType::CONSTRAINT );
+                    subformulas.insert( FormulaT( carl::FormulaType::NOT, origin ) )
                 }
             }
             subformulas.insert( iter->second.nextWeakerBound->asConstraint() );
@@ -697,16 +733,14 @@ Return:
             const LRABound& bound = *mBoundCandidatesToPass.back();
             if( bound.pInfo()->updated > 0 )
             {
-                bound.pInfo()->position = addSubformulaToPassedFormula( bound.asConstraint(), bound.origins() ).first;
+                bound.pInfo()->position = addSubformulaToPassedFormula( bound.asConstraint(), bound.pOrigins() ).first;
                 bound.pInfo()->updated = 0;
             }
             else if( bound.pInfo()->updated < 0 )
             {
-                if( removeOrigins( bound.pInfo()->position, bound.origins() ).second )
-                {
-                    bound.pInfo()->position = passedFormulaEnd();
-                    bound.pInfo()->updated = 0;
-                }
+                eraseSubformulaFromPassedFormula( bound.pInfo()->position );
+                bound.pInfo()->position = passedFormulaEnd();
+                bound.pInfo()->updated = 0;
             }
             mBoundCandidatesToPass.pop_back();
         }
@@ -737,7 +771,7 @@ Return:
     }
 
     template<class Settings>
-    void LRAModule<Settings>::activateBound( const LRABound* _bound, const FormulasT& _formulas )
+    void LRAModule<Settings>::activateBound( const LRABound* _bound, const FormulaT& _formula )
     {
         if( mStrongestBoundsRemoved )
         {
@@ -757,21 +791,21 @@ Return:
         }
         // If the bounds constraint has already been passed to the backend, add the given formulas to it's origins
         if( _bound->pInfo()->position != passedFormulaEnd() )
-            addOrigin( _bound->pInfo()->position, _formulas );
+            addOrigin( _bound->pInfo()->position, _formula );
         const LRAVariable& var = _bound->variable();
         const LRABound* psup = var.pSupremum();
         const LRABound& sup = *psup;
         const LRABound* pinf = var.pInfimum();
         const LRABound& inf = *pinf;
         const LRABound& bound = *_bound;
-        mTableau.activateBound( _bound, _formulas );
+        mTableau.activateBound( _bound, _formula );
         if( bound.isUpperBound() )
         {
             if( inf > bound.limit() && !bound.deduced() )
             {
                 FormulasT infsubset;
-                infsubset.insert( bound.pOrigins()->begin()->begin(), bound.pOrigins()->begin()->end() );
-                infsubset.insert( inf.pOrigins()->back().begin(), inf.pOrigins()->back().end() );
+                collectOrigins( *bound.origins().begin(), infsubset );
+                collectOrigins( inf.pOrigins()->back(), infsubset );
                 mInfeasibleSubsets.push_back( infsubset );
             }
             if( sup > bound )
@@ -786,8 +820,8 @@ Return:
             if( sup < bound.limit() && !bound.deduced() )
             {
                 FormulasT infsubset;
-                infsubset.insert( bound.pOrigins()->begin()->begin(), bound.pOrigins()->begin()->end() );
-                infsubset.insert( sup.pOrigins()->back().begin(), sup.pOrigins()->back().end() );
+                collectOrigins( *bound.origins().begin(), infsubset );
+                collectOrigins( sup.pOrigins()->back(), infsubset );
                 mInfeasibleSubsets.push_back( infsubset );
             }
             if( inf < bound )
@@ -812,17 +846,37 @@ Return:
         originSet.insert( _neqOrigin );
         auto iter = _weakBound.origins().begin();
         assert( iter != _weakBound.origins().end() );
-        originSet.insert( iter->begin(), iter->end() );
-        involvedConstraints.insert( iter->begin(), iter->end() );
-        activateBound( _strictBound, originSet );
+        if( iter->getType() == carl::FormulaType::AND )
+        {
+            originSet.insert( iter->subformulas().begin(), iter->subformulas().end() );
+            involvedConstraints.insert( iter->subformulas().begin(), iter->subformulas().end() );
+        }
+        else
+        {
+            assert( iter->getType() == carl::FormulaType::CONSTRAINT );
+            originSet.insert( *iter );
+            involvedConstraints.insert( *iter );
+        }
+        FormulaT origin = FormulaT( carl::FormulaType::AND, originSet );
+        activateBound( _strictBound, origin );
         ++iter;
         while( iter != _weakBound.origins().end() )
         {
             FormulasT originSetB;
             originSetB.insert( _neqOrigin );
-            originSetB.insert( iter->begin(), iter->end() );
-            involvedConstraints.insert( iter->begin(), iter->end() );
-            _strictBound->pOrigins()->push_back( std::move( originSetB ) );
+            if( iter->getType() == carl::FormulaType::AND )
+            {
+                originSetB.insert( iter->subformulas().begin(), iter->subformulas().end() );
+                involvedConstraints.insert( iter->subformulas().begin(), iter->subformulas().end() );
+            }
+            else
+            {
+                assert( iter->getType() == carl::FormulaType::CONSTRAINT );
+                originSetB.insert( *iter );
+                involvedConstraints.insert( *iter );
+            }
+            FormulaT originB = FormulaT( carl::FormulaType::AND, originSet );
+            _strictBound->pOrigins()->push_back( originB );
             ++iter;
         }
         for( const FormulaT& fconstraint : involvedConstraints )
@@ -1082,10 +1136,15 @@ Return:
                         assert( !gomory_constr->satisfiedBy( rMap_ ) );
                         assert( !neg_gomory_constr->satisfiedBy( rMap_ ) );
                         /*
-                        PointerSet<Formula> subformulas; 
+                        FormulasT subformulas; 
                         mTableau.collect_premises( basicVar, subformulas );
-                        PointerSet<Formula> premise;
-                        for( const Formula* pre : subformulas )
+                        FormulasT premisesOrigins;
+                        for( auto& pf : subformulas )
+                        {
+                            collectOrigins( pf, premisesOrigins );
+                        }
+                        FormulasT premise;
+                        for( const Formula* pre : premisesOrigins )
                         {
                             premise.insert( FormulaT( carl::FormulaType::NOT, pre ) );
                         }
@@ -1355,8 +1414,13 @@ Return:
             {
                 return maybeGomoryCut( branch_var->second, ass_ );
             }
-            //PointerSet<Formula> premises;
-            //mTableau.collect_premises( branch_var->second , premises  );                
+//            FormulasT premises;
+//            mTableau.collect_premises( branch_var->second , premises  ); 
+//            FormulasT premisesOrigins;
+//            for( auto& pf : premises )
+//            {
+//                collectOrigins( pf, premisesOrigins );
+//            }
             branchAt( branch_var->second->expression(), ass_ );
             return true;
         }
@@ -1398,8 +1462,13 @@ Return:
             {
                 return maybeGomoryCut( branch_var->second, ass_ );
             }
-            //PointerSet<Formula> premises;
-            //mTableau.collect_premises( branch_var->second , premises  );                
+//            FormulasT premises;
+//            mTableau.collect_premises( branch_var->second , premises  );
+//            FormulasT premisesOrigins;
+//            for( auto& pf : premises )
+//            {
+//                collectOrigins( pf, premisesOrigins );
+//            }            
             branchAt( branch_var->second->expression(), ass_ );
             return true;         
         }
@@ -1441,8 +1510,13 @@ Return:
             {
                 return maybeGomoryCut( branch_var->second, ass_ );
             }
-            //PointerSet<Formula> premises;
-            //mTableau.collect_premises( branch_var->second , premises  ); 
+//            FormulasT premises;
+//            mTableau.collect_premises( branch_var->second , premises  ); 
+//            FormulasT premisesOrigins;
+//            for( auto& pf : premises )
+//            {
+//                collectOrigins( pf, premisesOrigins );
+//            }
             branchAt( branch_var->second->expression(), ass_ );
             return true;
         }
@@ -1467,8 +1541,13 @@ Return:
                 {
                     return maybeGomoryCut( var->second, ass );
                 }
-                //PointerSet<Formula> premises;
-                //mTableau.collect_premises( var->second, premises  ); 
+//                FormulasT premises;
+//                mTableau.collect_premises( var->second, premises  ); 
+//                FormulasT premisesOrigins;
+//                for( auto& pf : premises )
+//                {
+//                    collectOrigins( pf, premisesOrigins );
+//                }
                 branchAt( var->second->expression(), ass );
                 return true;           
             }
