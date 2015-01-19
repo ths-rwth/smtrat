@@ -805,7 +805,7 @@ Return:
             {
                 FormulasT infsubset;
                 collectOrigins( *bound.origins().begin(), infsubset );
-                collectOrigins( *inf.pOrigins()->back().begin(), infsubset );
+                collectOrigins( inf.pOrigins()->back(), infsubset );
                 mInfeasibleSubsets.push_back( infsubset );
             }
             if( sup > bound )
@@ -821,7 +821,7 @@ Return:
             {
                 FormulasT infsubset;
                 collectOrigins( *bound.origins().begin(), infsubset );
-                collectOrigins( *sup.pOrigins()->back().begin(), infsubset );
+                collectOrigins( sup.pOrigins()->back(), infsubset );
                 mInfeasibleSubsets.push_back( infsubset );
             }
             if( inf < bound )
