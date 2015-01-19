@@ -31,7 +31,7 @@
 #define DEBUG_FouMoModule
 
 #define Allow_Deletion
-//#define Integer_Mode
+#define Integer_Mode
 //#define Threshold 20
 
 namespace smtrat
@@ -419,6 +419,7 @@ namespace smtrat
             auto iter_lower = iter_help->second.second.begin();
             while( iter_upper != iter_help->second.first.end() )
             {
+                iter_lower = iter_help->second.second.begin();
                 while( iter_lower != iter_help->second.second.end() )
                 {
                     vector<FormulasT> origins_new = std::move( merge( iter_upper->second, iter_lower->second ) );
