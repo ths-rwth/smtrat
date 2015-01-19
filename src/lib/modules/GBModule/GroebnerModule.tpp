@@ -905,9 +905,7 @@ void GroebnerModule<Settings>::passGB( )
     assert( Settings::passGB );
     
     // Declare a set of reason sets.
-    std::vector<FormulasT> originals;
-    // And a reason set in it.
-    originals.push_back( FormulasT() );
+    FormulasT originals;
     
     if( !Settings::passWithMinimalReasons )
     {
@@ -918,10 +916,10 @@ void GroebnerModule<Settings>::passGB( )
             // Add the constraint if it is of a type that it was handled by the gb.
             if( constraintByGB(it->formula().constraint( ).relation( )) )
             {
-                originals.front( ).insert( it->formula() );
+                originals.insert( it->formula() );
             }
         }
-		assert(!originals.front().empty());
+		assert(!originals.empty());
     }
 
     // We extract the current polynomials from the Groebner Basis.
@@ -933,14 +931,14 @@ void GroebnerModule<Settings>::passGB( )
         {
 			assert(!simplIt->getReasons().empty( ));
             // We calculate the reason set for this polynomial in the GB.
-            originals.front() = generateReasons( simplIt->getReasons() );
+            originals = generateReasons( simplIt->getReasons() );
         }
         // The reason set may never be empty.
-        assert(!originals.front().empty());
+        assert(!originals.empty());
         // We now add polynomial = 0 as a constraint to the passed formula.
         // We use the originals set calculated before as reason set.
         assert(!simplIt->isConstant());
-        auto res = addSubformulaToPassedFormula( FormulaT( smtrat::Poly(*simplIt), carl::Relation::EQ ), originals );
+        auto res = addSubformulaToPassedFormula( FormulaT( smtrat::Poly(*simplIt), carl::Relation::EQ ), FormulaT( carl::FormulaType::AND, originals ) );
         if( res.second )
             mGbEqualities.insert(res.first->formula());
     }
