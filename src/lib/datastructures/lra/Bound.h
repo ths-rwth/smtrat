@@ -96,7 +96,7 @@ namespace smtrat
                 ///
                 FormulaT mAsConstraint;
                 ///
-                std::vector<FormulasT >* mpOrigins;
+                std::shared_ptr<std::vector<FormulaT>> mpOrigins;
                 ///
                 Info* mpInfo;
 
@@ -334,7 +334,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                std::vector<FormulasT >* pOrigins() const
+                const std::shared_ptr<std::vector<FormulaT>>& pOrigins() const
                 {
                     return mpOrigins;
                 }
@@ -342,7 +342,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                const std::vector<FormulasT >& origins() const
+                const std::vector<FormulaT>& origins() const
                 {
                     return *mpOrigins;
                 }

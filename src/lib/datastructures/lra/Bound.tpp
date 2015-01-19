@@ -42,12 +42,10 @@ namespace smtrat
             mAsConstraint( _constraint ),
             mpInfo( _boundInfo )
         {
-            mpOrigins = new std::vector<FormulasT >();
+            mpOrigins = std::shared_ptr<std::vector<FormulaT>>(new std::vector<FormulaT>());
             if( _limit == NULL )
             {
-                FormulasT originSet;
-                originSet.insert( FormulaT( carl::FormulaType::TRUE ) );
-                mpOrigins->push_back( originSet );
+                mpOrigins->push_back( FormulaT( carl::FormulaType::TRUE ) );
             }
         }
 
@@ -55,7 +53,6 @@ namespace smtrat
         Bound<T1, T2>::~Bound()
         {
             delete mpInfo;
-            delete mpOrigins;
             delete mLimit;
         }
 

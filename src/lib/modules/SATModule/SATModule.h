@@ -128,7 +128,7 @@ namespace smtrat
                 FormulaT reabstraction;
                 
                 // The origins of this constraint. Usually it is its own origin, but the origins can be extended during solving.
-                std::vector<FormulasT>* origins;
+                std::shared_ptr<std::vector<FormulaT>> origins;
                 
                 /**
                  * Constructs abstraction information, for a literal which does actually not belong to an abstraction.
@@ -141,8 +141,10 @@ namespace smtrat
                     updateInfo( 0 ),
                     position( _position ),
                     reabstraction( _reabstraction ),
-                    origins( new std::vector<FormulasT>() )
+                    origins( nullptr )
                 {}
+                
+                Abstraction( const Abstraction& ) = delete;
             };
 
             /// [Minisat related code.]

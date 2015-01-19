@@ -35,6 +35,8 @@
 #include "LRASettings.h"
 #include <stdio.h>
 
+//#define LRA_REFINEMENT
+
 namespace smtrat
 {
     /// Number type of the underlying value of a bound of a variable within the LRAModule.
@@ -308,9 +310,9 @@ namespace smtrat
              * Activate the given bound and update the supremum, the infimum and the assignment of
              * variable to which the bound belongs.
              * @param _bound The bound to activate.
-             * @param _formulas The constraints which form this bound.
+             * @param _formula The constraints which form this bound.
              */
-            void activateBound( const LRABound* _bound, const FormulasT& _formulas );
+            void activateBound( const LRABound* _bound, const FormulaT& _formula );
             
             /**
              * Activates a strict bound as a result of the two constraints p!=0 and p<=0 resp. p>=0.

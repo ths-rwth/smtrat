@@ -2716,9 +2716,7 @@ namespace smtrat
                         else
                         {
                             addConstraintToInform( leftTmp );
-                            std::vector<FormulasT> origins;
-                            origins.push_back( FormulasT() );
-                            auto res = addSubformulaToPassedFormula( leftTmp, std::move( origins ) );
+                            auto res = addSubformulaToPassedFormula( leftTmp );
                             if( res.second )
                             {
                                 icpVar.setExternalLeftBound( res.first );
@@ -2754,9 +2752,7 @@ namespace smtrat
                         else
                         {
                             addConstraintToInform( rightTmp );
-                            std::vector<FormulasT> origins;
-                            origins.push_back( FormulasT() );
-                            auto res = addSubformulaToPassedFormula( rightTmp, origins );
+                            auto res = addSubformulaToPassedFormula( rightTmp );
                             if( res.second )
                             {
                                 icpVar.setExternalRightBound( res.first );

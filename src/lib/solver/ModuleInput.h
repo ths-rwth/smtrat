@@ -37,20 +37,18 @@
 #include "../../cli/parser/ParserTypes.h"
 #include "../config.h"
 
-#define MODULE_INPUT_USE_HASHING_FOR_FIND
-
 namespace smtrat
 {
-    
     /// Stores a formula along with its origins.
     class FormulaWithOrigins
     {
+        friend class ModuleInput;
         // Member
         
         /// The formula.
         FormulaT mFormula;
         /// The formulas origins.
-        std::vector<FormulasT> mOrigins;
+        std::shared_ptr<std::vector<FormulaT>> mOrigins;
         /// The deduction flag, which indicates, that this formula g is a direct sub-formula of
         /// a conjunction of formulas (and g f_1 .. f_n), and, that (implies (and f_1 .. f_n) g) holds.
         mutable bool mDeducted;
@@ -65,7 +63,7 @@ namespace smtrat
          */
         FormulaWithOrigins( const FormulaT& _formula ):
             mFormula( _formula ),
-            mOrigins(),
+            mOrigins(nullptr),
             mDeducted( false )
         {}
         
@@ -74,20 +72,9 @@ namespace smtrat
          * @param _formula The formula of the formula with origins to construct.
          * @param _origins The origins of the formula with origins to construct.
          */
-        FormulaWithOrigins( const FormulaT& _formula, const std::vector<FormulasT>& _origins ):
+        FormulaWithOrigins( const FormulaT& _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins ):
             mFormula( _formula ),
             mOrigins( _origins ),
-            mDeducted( false )
-        {}
-        
-        /**
-         * Constructs a formula with the given origins.
-         * @param _formula The formula of the formula with origins to construct.
-         * @param _origins The origins of the formula with origins to construct.
-         */
-        FormulaWithOrigins( const FormulaT& _formula, std::vector<FormulasT>&& _origins ):
-            mFormula( _formula ),
-            mOrigins( std::move( _origins ) ),
             mDeducted( false )
         {}
         
@@ -124,19 +111,19 @@ namespace smtrat
         }
         
         /**
-         * @return A constant reference to the origins.
+         * @return true, if this sub-formula of the module input has origins.
          */
-        const std::vector<FormulasT>& origins() const
+        bool hasOrigins() const
         {
-            return mOrigins;
+            return mOrigins != nullptr;
         }
         
         /**
-         * @return A reference to the origins.
+         * @return A constant reference to the origins.
          */
-        std::vector<FormulasT>& rOrigins()
+        const std::vector<FormulaT>& origins() const
         {
-            return mOrigins;
+            return *mOrigins;
         }
 
         /**
@@ -189,9 +176,8 @@ namespace smtrat
         // Member.
         /// Store some properties about the conjunction of the stored formulas.
         mutable carl::Condition mProperties;
-        #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
+        /// Maps all formulas occurring (in the origins) at pos i in this module input to i. This is for a faster access.
         carl::FastMap<FormulaT,iterator> mFormulaPositionMap;
-        #endif
 
     public:
             
@@ -200,11 +186,8 @@ namespace smtrat
          */
         ModuleInput(): 
             std::list<FormulaWithOrigins>(),
-            mProperties()
-            #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
-            ,
+            mProperties(),
             mFormulaPositionMap()
-            #endif
         {}
         
         // Methods.
@@ -311,11 +294,7 @@ namespace smtrat
          */
         bool contains( const FormulaT& _subformula ) const
         {
-            #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
             return mFormulaPositionMap.find( _subformula ) != mFormulaPositionMap.end();
-            #else
-            return std::find( begin(), end(), _subformula ) != end();
-            #endif
         }
         
         /**
@@ -391,6 +370,16 @@ namespace smtrat
             return FormulaT( carl::FormulaType::AND, subFormulas );
         }
         
+        void addOrigin( iterator _formula, const FormulaT& _origin )
+        {
+            assert( _formula != end() );
+            if( !_formula->hasOrigins() )
+            {
+                _formula->mOrigins = std::shared_ptr<std::vector<FormulaT>>( new std::vector<FormulaT>() );
+            }
+            _formula->mOrigins->push_back( _origin );
+        }
+        
 //        friend std::ostream& operator<<( std::ostream& _out, const ModuleInput& _mi )
 //        {
 //            return _out << _mi.toString()
@@ -398,40 +387,33 @@ namespace smtrat
         
         iterator erase( iterator _formula );
         
+        void clearOrigins( iterator _formula )
+        {
+            assert( _formula != end() );
+            if( _formula->hasOrigins() )
+            {
+                _formula->mOrigins = nullptr;
+            }
+        }
+        
         bool removeOrigin( iterator _formula, const FormulaT& _origin );
-        
-        bool removeOrigins( iterator _formula, const std::vector<FormulasT>& _origins );
-        
-        bool removeOrigins( iterator _formula, const FormulasT& _origins );
         
         std::pair<iterator,bool> add( const FormulaT& _formula )
         {
-            FormulasT origins;
-            return add( _formula, std::move( origins ) );
+            iterator iter = find( _formula );
+            if( iter == end() )
+            {
+                emplace_back( _formula );
+                iterator pos = --end(); // TODO: maybe use reverse iterator for not decrementing here
+                mFormulaPositionMap[_formula] = pos;
+                return make_pair( pos, true );
+            }
+            return make_pair( iter, false );
         }
         
-        std::pair<iterator,bool> add( const FormulaT& _formula, const FormulaT& _origin )
-        {
-            FormulasT origins;
-            origins.insert( _origin );
-            return add( _formula, std::move( origins ) );
-        }
+        std::pair<iterator,bool> add( const FormulaT& _formula, const FormulaT& _origins );
         
-        std::pair<iterator,bool> add( const FormulaT& _formula, const FormulasT& _origins )
-        {
-            FormulasT originsCopy( _origins );
-            return add( _formula, std::move( originsCopy ) );
-        }
-        
-        std::pair<iterator,bool> add( const FormulaT& _formula, const std::vector<FormulasT>& _origins )
-        {
-            std::vector<FormulasT> originsCopy( _origins );
-            return add( _formula, std::move( originsCopy ) );
-        }
-        
-        std::pair<iterator,bool> add( const FormulaT& _formula, FormulasT&& _origins );
-        
-        std::pair<iterator,bool> add( const FormulaT& _formula, std::vector<FormulasT>&& _origins );
+        std::pair<iterator,bool> add( const FormulaT& _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins );
     };
     
     void annotateFormula( const FormulaT&, const std::vector<parser::Attribute>& );

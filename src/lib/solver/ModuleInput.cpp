@@ -73,7 +73,6 @@ namespace smtrat
         
     ModuleInput::iterator ModuleInput::find( const FormulaT& _formula )
     {
-        #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
         auto res = mFormulaPositionMap.find( _formula );
         if( res == mFormulaPositionMap.end() )
         {
@@ -83,14 +82,10 @@ namespace smtrat
         {
             return res->second;
         }
-        #else
-        return find( begin(), end(), _formula );
-        #endif
     }
 
     ModuleInput::const_iterator ModuleInput::find( const FormulaT& _formula ) const
     {
-        #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
         auto res = mFormulaPositionMap.find( _formula );
         if( res == mFormulaPositionMap.end() )
         {
@@ -100,12 +95,8 @@ namespace smtrat
         {
             return res->second;
         }
-        #else
-        return std::find( begin(), end(), _formula );
-        #endif
     }
 
-    #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
     ModuleInput::iterator ModuleInput::find( const_iterator, const FormulaT& _formula )
     {
         auto res = mFormulaPositionMap.find( _formula );
@@ -118,14 +109,7 @@ namespace smtrat
             return res->second;
         }
     }
-    #else
-    ModuleInput::iterator ModuleInput::find( const_iterator _hint, const FormulaT& _formula )
-    {
-        return std::find( _hint, end(), _formula );
-    }
-    #endif
 
-    #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
     ModuleInput::const_iterator ModuleInput::find( const_iterator, const FormulaT& _formula ) const
     {
         auto res = mFormulaPositionMap.find( _formula );
@@ -138,81 +122,23 @@ namespace smtrat
             return res->second;
         }
     }
-    #else
-    ModuleInput::const_iterator ModuleInput::find( const_iterator _hint, const FormulaT& _formula ) const
-    {
-        return std::find( _hint, end(), _formula );
-    }
-    #endif
     
     ModuleInput::iterator ModuleInput::erase( iterator _formula )
     {
         assert( _formula != end() );
-        #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
         mFormulaPositionMap.erase( _formula->formula() );
-        #endif
         return super::erase( _formula );
     }
-
+    
     bool ModuleInput::removeOrigin( iterator _formula, const FormulaT& _origin )
     {
         assert( _formula != end() );
-        auto& origs = _formula->rOrigins();
+        if( !_formula->hasOrigins() ) return true;
+        auto& origs = *_formula->mOrigins;
         auto iter = origs.begin();
         while( iter != origs.end() )
         {
-            if( iter->erase( _origin ) == 0 )
-            {
-                ++iter;
-            }
-            else
-            {
-                iter = origs.erase( iter );
-            }
-        }
-        return origs.empty();
-    }
-
-    bool ModuleInput::removeOrigins( iterator _formula, const std::vector<FormulasT>& _origins )
-    {
-        assert( _formula != end() );
-        for( auto origsIter = _origins.begin(); origsIter != _origins.end(); ++origsIter )
-        {
-            if( removeOrigins( _formula, *origsIter ) )
-            {
-                return true;
-            }
-        }
-        return _formula->origins().empty();
-    }
-
-    bool ModuleInput::removeOrigins( iterator _formula, const FormulasT& _origins )
-    {
-        assert( _formula != end() );
-        auto& origs = _formula->rOrigins();
-        auto iter = origs.begin();
-        while( iter != origs.end() )
-        {
-            auto formulaAIter = iter->begin();
-            auto formulaBIter = _origins.begin();
-            while( formulaAIter != iter->end() && formulaBIter != _origins.end() )
-            {
-                if( iter->value_comp()( *formulaAIter, *formulaBIter ) )
-                {
-                    ++formulaAIter;
-                }
-                else if( iter->value_comp()( *formulaBIter, *formulaAIter ) )
-                {
-                    ++formulaBIter;
-                }
-                else
-                {
-                    formulaAIter = iter->erase( formulaAIter );
-                    ++formulaBIter;
-                }
-            }
-//                iter->erase( _origins.begin(), _origins.end() ); // TODO: Why does erase not work here?
-            if( iter->empty() )
+            if( *iter == _origin || iter->contains( _origin ) )
             {
                 iter = origs.erase( iter );
             }
@@ -221,7 +147,12 @@ namespace smtrat
                 ++iter;
             }
         }
-        return origs.empty();
+        if( origs.empty() )
+        {
+            _formula->mOrigins = nullptr;
+            return true;
+        }
+        return false;
     }
     
     void ModuleInput::updateProperties() const
@@ -245,44 +176,52 @@ namespace smtrat
         }
     }
     
-    pair<ModuleInput::iterator,bool> ModuleInput::add( const FormulaT& _formula, FormulasT&& _origins )
+    pair<ModuleInput::iterator,bool> ModuleInput::add( const FormulaT& _formula, const FormulaT& _origin )
     {
         iterator iter = find( _formula );
         if( iter == end() )
         {
-            std::vector<FormulasT> vecOfOrigs;
-            vecOfOrigs.emplace_back( move( _origins ) );
-            emplace_back( _formula, move( vecOfOrigs ) );
+            std::shared_ptr<std::vector<FormulaT>> vecOfOrigs = std::shared_ptr<std::vector<FormulaT>>( new std::vector<FormulaT>() );
+            vecOfOrigs->push_back( _origin );
+            emplace_back( _formula, std::move( vecOfOrigs ) );
             iterator pos = --end();
-            #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
             mFormulaPositionMap.insert( make_pair( _formula, pos ) );
-            #endif
             return make_pair( pos, true );
         }
         else
         {
-            iter->rOrigins().emplace_back( move( _origins ) );
+            if( !iter->hasOrigins() )
+            {
+                iter->mOrigins = std::shared_ptr<std::vector<FormulaT>>( new std::vector<FormulaT>() );
+            }
+            iter->mOrigins->push_back( _origin );
             return make_pair( iter, false );
         }
     }
 
-    pair<ModuleInput::iterator,bool> ModuleInput::add( const FormulaT& _formula, std::vector<FormulasT>&& _origins )
+    pair<ModuleInput::iterator,bool> ModuleInput::add( const FormulaT& _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins )
     {
         iterator iter = find( _formula );
         if( iter == end() )
         {
-            emplace_back( _formula, move( _origins ) );
+            emplace_back( _formula, _origins );
             iterator pos = --end();
-            #ifdef MODULE_INPUT_USE_HASHING_FOR_FIND
             mFormulaPositionMap.insert( make_pair( _formula, pos ) );
-            #endif
             return make_pair( pos, true );
         }
         else
         {
-            auto& origs = iter->rOrigins();
-            origs.reserve( origs.size() + _origins.size() );
-            origs.insert( origs.end(), make_move_iterator( _origins.begin() ), make_move_iterator( _origins.end() ) );
+            assert( !iter->hasOrigins() );
+//            if( iter->hasOrigins() )
+//            {
+//                auto& origs = iter->mOrigins;
+//                origs.reserve( origs.size() + _origins.size() );
+//                origs.insert( origs.end(), make_move_iterator( _origins.begin() ), make_move_iterator( _origins.end() ) );
+//            }
+//            else
+//            {
+                iter->mOrigins = _origins;
+//            }
             return make_pair( iter, false );
         }
     }

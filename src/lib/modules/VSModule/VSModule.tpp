@@ -1884,12 +1884,11 @@ namespace smtrat
         for( auto iter = constraintsToCheck.begin(); iter != constraintsToCheck.end(); ++iter )
         {
             changedPassedFormula = true;
-            std::vector<FormulasT> origins;
             // @todo store formula and do not generate a new formula every time
             FormulaT formula = FormulaT( iter->first );
             _formulaCondMap[formula] = iter->second;
             addConstraintToInform( formula );
-            addSubformulaToPassedFormula( formula, std::move( origins ) );
+            addSubformulaToPassedFormula( formula );
         }
         return changedPassedFormula;
     }

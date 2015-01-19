@@ -442,17 +442,35 @@ namespace smtrat
                     int counter = 0;
                     if( !mpInfimum->isInfinite() )
                     {
-                        for( const FormulaT& form : mpInfimum->pOrigins()->front() )
+                        if( mpInfimum->pOrigins()->front().getType() == carl::FormulaType::AND )
                         {
-                            mConflictActivity += form.activity();
+                            for( const FormulaT& form : mpInfimum->pOrigins()->front().subformulas() )
+                            {
+                                mConflictActivity += form.activity();
+                                ++counter;
+                            }
+                        }
+                        else
+                        {
+                            assert( mpInfimum->pOrigins()->front().getType() == carl::FormulaType::CONSTRAINT );
+                            mConflictActivity += mpInfimum->pOrigins()->front().activity();
                             ++counter;
                         }
                     }
                     if( !mpSupremum->isInfinite() )
                     {
-                        for( const FormulaT& form : mpSupremum->pOrigins()->front() )
+                        if( mpSupremum->pOrigins()->front().getType() == carl::FormulaType::AND )
                         {
-                            mConflictActivity += form.activity();
+                            for( const FormulaT& form : mpSupremum->pOrigins()->front().subformulas() )
+                            {
+                                mConflictActivity += form.activity();
+                                ++counter;
+                            }
+                        }
+                        else
+                        {
+                            assert( mpSupremum->pOrigins()->front().getType() == carl::FormulaType::CONSTRAINT );
+                            mConflictActivity += mpSupremum->pOrigins()->front().activity();
                             ++counter;
                         }
                     }
