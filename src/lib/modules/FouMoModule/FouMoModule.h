@@ -46,6 +46,8 @@ namespace smtrat
         private:
             // Stores the current inequalities
             FormulaOrigins mProc_Constraints;
+            // Stores the equalities
+            FormulaOrigins mEqualities;
             // Stores the order in which the variables were eliminated
             std::vector<carl::Variable> mElim_Order;
             // Stores the deleted constraints, just as they worked as an upper respectively lower
