@@ -28,7 +28,7 @@
 
 #include "FouMoModule.h"
 
-//#define DEBUG_FouMoModule
+#define DEBUG_FouMoModule
 
 #define Allow_Deletion
 #define Integer_Mode
@@ -44,6 +44,7 @@ namespace smtrat
     FouMoModule<Settings>::FouMoModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         mProc_Constraints(),
+        mEqualities(),    
         mElim_Order(),    
         mDeleted_Constraints(),
         mVarAss()    
@@ -88,7 +89,7 @@ namespace smtrat
             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
             return false;            
         }
-        if( _subformula->formula().constraint().relation() == carl::Relation::LEQ )
+        else if( _subformula->formula().constraint().relation() == carl::Relation::LEQ )
         {
             // Apply the Fourier-Motzkin elimination steps for the subformula to be asserted
             #ifdef DEBUG_FouMoModule
@@ -224,6 +225,14 @@ namespace smtrat
             }
             mProc_Constraints.insert( temp_constr.begin(), temp_constr.end() );
         }
+        else if( _subformula->formula().constraint().relation() == carl::Relation::EQ )
+        {
+            vector<FormulasT> origins;
+            FormulasT origin;
+            origin.insert( _subformula->formula() );
+            origins.push_back( origin );
+            mEqualities.emplace( _subformula->formula(), origins );
+        }
         return true;
     }
 
@@ -317,6 +326,31 @@ namespace smtrat
                 ++iter_var;
             }
         } 
+        else if( _subformula->formula().constraint().relation() == carl::Relation::EQ )
+        {
+            #ifdef DEBUG_FouMoModule
+            cout << "Remove: " << _subformula->formula().constraint() << endl;
+            #endif
+            auto iter_formula = mEqualities.begin();
+            while( iter_formula != mEqualities.end() )
+            {
+                auto iter_origins = (iter_formula->second).begin();
+                while( iter_origins !=  (iter_formula->second).end() )
+                {
+                    auto iter_set = iter_origins->find( _subformula->formula() ); 
+                    if( iter_set != iter_origins->end() )
+                    {
+                        iter_origins->erase( iter_set );
+                    }
+                    ++iter_origins;
+                }
+                if( iter_formula->second.empty() )
+                {
+                    mEqualities.erase( iter_formula );
+                }
+                ++iter_formula;
+            }   
+        }
         Module::removeSubformula( _subformula ); 
     }
 
@@ -801,7 +835,7 @@ namespace smtrat
             }
             #endif
             // Insert one of the found bounds into mVarAss
-            assert( at_least_one_lower || at_least_one_upper );
+            //assert( at_least_one_lower || at_least_one_upper );
             if( at_least_one_lower )
             {
                 #ifdef DEBUG_FouMoModule
@@ -830,6 +864,32 @@ namespace smtrat
             ++iter_sol;
         }
         #endif
+        // Obtain possible missed assignments in asserted equations
+        auto iter_eq = mEqualities.begin();
+        while( iter_eq != mEqualities.end() )
+        {
+            Poly constr_poly = iter_eq->first.constraint().lhs();
+            constr_poly = constr_poly.substitute( mVarAss );
+            auto iter_poly = constr_poly.begin();
+            bool found_var = true;
+            while( iter_poly != constr_poly.end() )
+            {
+                if( !iter_poly->isConstant() )
+                {
+                    if( !found_var )
+                    {
+                        found_var = true;
+                        mVarAss[ iter_poly->getSingleVariable() ] = -constr_poly.constantPart();                       
+                    }
+                    else
+                    {
+                        mVarAss[ iter_poly->getSingleVariable() ] = 0;                        
+                    }
+                }
+                ++iter_poly;
+            }
+            ++iter_eq;
+        }
         // Check whether the obtained solution is correct
         auto iter_constr = rReceivedFormula().begin();
         while( iter_constr != rReceivedFormula().end() )
