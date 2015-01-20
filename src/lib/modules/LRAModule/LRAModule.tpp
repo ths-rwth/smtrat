@@ -738,7 +738,7 @@ Return:
             }
             else if( bound.pInfo()->updated < 0 )
             {
-                eraseSubformulaFromPassedFormula( bound.pInfo()->position );
+                eraseSubformulaFromPassedFormula( bound.pInfo()->position, true );
                 bound.pInfo()->position = passedFormulaEnd();
                 bound.pInfo()->updated = 0;
             }
