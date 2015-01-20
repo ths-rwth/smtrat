@@ -260,14 +260,9 @@ namespace smtrat
             if( _withOrigins )
             {
                 _out << "  ( ";
-                for( auto originSet = origins().begin(); originSet != origins().end(); ++originSet )
+                for( auto origin = origins().begin(); origin != origins().end(); ++origin )
                 {
-                    _out << "{ ";
-                    for( auto origin = originSet->begin(); origin != originSet->end(); ++origin )
-                    {
-                        _out << *origin << " ";
-                    }
-                    _out << "} ";
+                    _out << *origin << " ";
                 }
                 _out << ")";
             }
