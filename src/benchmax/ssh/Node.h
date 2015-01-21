@@ -99,7 +99,7 @@ class Node
 		/**
 		 *
 		 */
-		bool assignAndExecuteBenchmarks(BenchmarkSet& benchmark, const Tool& tool, unsigned nrOfInstances, const std::string& callID)
+		bool assignAndExecuteBenchmarks(BenchmarkSet& benchmark, unsigned nrOfInstances, const std::string& callID)
 		{
 			if(connected() && freeCores() > 0)
 			{
@@ -120,7 +120,7 @@ class Node
 					command << "-W " << Settings::RemoteOutputDirectory << "wrong_results_" << callID << "/ ";
 					command << "-V " << Settings::ValidationTool->path() << " ";
 				}
-				command << tool.interfaceToCommandString() << " " << tool.path() << tool.arguments('@');
+				//command << tool.interfaceToCommandString() << " " << tool.path() << tool.arguments('@');
 //				if(Settings::UseStats)
 //					command << "@--stats:exportXml=" << Settings::RemoteOutputDirectory << "stats_" << callID << ".xml ";
 				command << " ";
