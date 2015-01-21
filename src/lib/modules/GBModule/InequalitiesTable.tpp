@@ -90,22 +90,42 @@ namespace smtrat
                             // we can of course only remove something which is in the formula
                             
                             // TODO (from Florian): store the reasons formula somewhere, such that we only construct it if the reasons vector has been changed
-                            mModule->removeOrigin( std::get < 0 > (it->second), FormulaT( carl::FormulaType::AND, mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() ) ) );
+                            FormulasT subformulas = mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() );
+                            subformulas.insert( it->first->formula() );
+                            FormulaT origin = FormulaT( carl::FormulaType::AND, subformulas );
+                            mModule->removeOrigin( std::get < 0 > (it->second), origin ); 
 //                            mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
                         }
                         if( Settings::passInequalities == FULL_REDUCED || (Settings::passInequalities == FULL_REDUCED_IF && pass) )
                         {
-                            FormulaT originals = FormulaT( carl::FormulaType::AND, mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() ));
-                            // we update the reference to the passed formula again
-                            std::get < 0 > (it->second) = mModule->addSubformulaToPassedFormula( FormulaT( smtrat::Poly(std::get<2>(it->second).back().second), std::get<1>(it->second) ), originals ).first;
-                            std::cout << __func__ << ":" << __LINE__ << std::get < 0 > (it->second)->formula() << std::endl;
+                            const carl::BitVector& reasons = std::get<2>(it->second).back( ).second.getReasons();
+                            if( reasons.empty() )
+                            {
+                                std::get < 0 > (it->second) = mModule->addReceivedSubformulaToPassedFormula( it->first ).first;
+                            }
+                            else
+                            {
+                                FormulaT simplifiedConstraint = FormulaT( smtrat::Poly(std::get<2>(it->second).back().second), std::get<1>(it->second) );
+                                assert( simplifiedConstraint.getType() != carl::FormulaType::FALSE );
+                                if( simplifiedConstraint.getType() == carl::FormulaType::TRUE )
+                                {
+                                    std::get < 0 > (it->second) = mModule->passedFormulaEnd();
+                                }
+                                else
+                                {
+                                    FormulasT sformulas = mModule->generateReasons(reasons);
+                                    sformulas.insert( it->first->formula() );
+                                    FormulaT originals = FormulaT( carl::FormulaType::AND, sformulas);
+                                    // we update the reference to the passed formula again
+                                    std::get < 0 > (it->second) = mModule->addSubformulaToPassedFormula( simplifiedConstraint, originals ).first;
+                                }
+                            }
                         }
                         else
                         {
                             assert( Settings::passInequalities == FULL_REDUCED_IF );
                             // we pass the original one and update the reference to the passed formula again
                             std::get < 0 > (it->second) = mModule->addReceivedSubformulaToPassedFormula( it->first ).first;
-                            std::cout << __func__ << ":" << __LINE__ << std::get < 0 > (it->second)->formula() << std::endl;
                         }
                     }
                     break;
@@ -211,6 +231,8 @@ namespace smtrat
     bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterator it, const Ideal& gb, const RewriteRules& rules )
     {
         assert( std::get < 1 > (it->second) != carl::Relation::EQ );
+        // Check if constraint has already been reduced to true (no further reduction possible).
+        if( std::get < 0 > (it->second) == mModule->passedFormulaEnd() ) return true;
 
         Polynomial& p = std::get<2>(it->second).back( ).second;
         Polynomial reduced;
@@ -247,7 +269,7 @@ namespace smtrat
         carl::Relation relation = std::get < 1 > (it->second);
         if( rewriteOccured || reductionOccured )
         {
-            assert(std::get < 0 > (it->second) != mModule->rPassedFormula().end());
+            assert(std::get < 0 > (it->second) != mModule->passedFormulaEnd());
             if( reduced.isZero( ) || reduced.isConstant( ) )
             {
                 bool satisfied = false;
@@ -283,28 +305,34 @@ namespace smtrat
                 {
                     // remove the last formula
                     
-                    // TODO (from Florian): store the reasons formula somewhere, such that we only construct it if the reasons vector has been changed
-                    mModule->removeOrigin( std::get < 0 > (it->second), FormulaT( carl::FormulaType::AND, mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() ) ) ); 
-//                    mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
+                    if( std::get < 0 > (it->second) != mModule->passedFormulaEnd( ) )
+                    {
+                        // TODO (from Florian): store the reasons formula somewhere, such that we only construct it if the reasons vector has been changed
+                        FormulasT subformulas = mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() );
+                        subformulas.insert( it->first->formula() );
+                        FormulaT origin = FormulaT( carl::FormulaType::AND, subformulas );
+                        mModule->removeOrigin( std::get < 0 > (it->second), origin ); 
+//                        mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
+                        std::get < 0 > (it->second) = mModule->passedFormulaEnd( );
+                    }
 
-                    std::get < 2 > (it->second).push_back( CellEntry( mBtnumber, reduced ) );
-                    FormulasT originals = mModule->generateReasons( reduced.getReasons( ) );
-
-                    std::get < 0 > (it->second) = mModule->passedFormulaEnd( );
+                    std::get < 2 > (it->second).push_back( CellEntry( mBtnumber, reduced ) ); // TODO: Is this necessary?
                     if( Settings::addTheoryDeductions != NO_CONSTRAINTS )
                     {
-                        FormulasT subformulas;
-                        for( auto jt = originals.begin(); jt != originals.end(); ++jt )
-                        {
-                            subformulas.insert( FormulaT( carl::FormulaType::NOT, *jt ) );
-                        }
-                        subformulas.insert( it->first->formula() );
-    //                    mModule->print();
-    //                    std::cout << "Id="<<(*(it->first))->pConstraint()->id()<<std::endl;
-    //                    std::cout << "Gb learns: ";
-    //                    deduction->print();
-     //                   std::cout << std::endl;
-     //                   mModule->addDeduction( FormulaT( carl::FormulaType::carl::FormulaType::OR, subformulas ) ); // TODO: Florian ask Sebastian, why he commented that line
+                        // TODO: Why is the following disabled?
+//                        FormulasT originals = mModule->generateReasons( reduced.getReasons( ) );
+//                        FormulasT subformulas;
+//                        for( auto jt = originals.begin(); jt != originals.end(); ++jt )
+//                        {
+//                            subformulas.insert( FormulaT( carl::FormulaType::NOT, *jt ) );
+//                        }
+//                        subformulas.insert( it->first->formula() );
+//                        mModule->print();
+//                        std::cout << "Id="<<(*(it->first))->pConstraint()->id()<<std::endl;
+//                        std::cout << "Gb learns: ";
+//                        deduction->print();
+//                        std::cout << std::endl;
+//                        mModule->addDeduction( FormulaT( carl::FormulaType::carl::FormulaType::OR, subformulas ) ); // TODO: Florian ask Sebastian, why he commented that line
                         #ifdef SMTRAT_DEVOPTION_Statistics
                         mStats->DeducedInequality();
                         #endif
@@ -339,7 +367,10 @@ namespace smtrat
                     //remove the last one
                     
                     // TODO (from Florian): store the reasons formula somewhere, such that we only construct it if the reasons vector has been changed
-                    mModule->removeOrigin( std::get < 0 > (it->second), FormulaT( carl::FormulaType::AND, mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() ) ) ); 
+                    FormulasT subformulas = mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() );
+                    subformulas.insert( it->first->formula() );
+                    FormulaT origin = FormulaT( carl::FormulaType::AND, subformulas );
+                    mModule->removeOrigin( std::get < 0 > (it->second), origin ); 
 //                    mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
                 }
                 //add a new cell
@@ -369,7 +400,8 @@ namespace smtrat
                         }
                         default:
                         {
-                            assert( redResult.getType() == carl::FormulaType::CONSTRAINT );// get the reason set for the reduced polynomial
+                            assert( redResult.getType() == carl::FormulaType::CONSTRAINT );
+                            // get the reason set for the reduced polynomial
                             FormulasT originals = mModule->generateReasons( reduced.getReasons( ) );
                             originals.insert( it->first->formula() );
 
@@ -514,7 +546,11 @@ namespace smtrat
         for( auto it = mReducedInequalities.begin( ); it != mReducedInequalities.end( ); ++it )
         {
             typename std::list<CellEntry>::const_iterator listEnd = std::get < 2 > (it->second).end( );
-            os << it->first->formula() << " -> " << std::get<0>(it->second)->formula() << std::endl;
+            os << it->first->formula() << " -> ";
+            if( std::get<0>(it->second) == mModule->passedFormulaEnd() )
+                os << "true" << std::endl;
+            else
+                os << std::get<0>(it->second)->formula() << std::endl;
             for(typename std::list<CellEntry>::const_iterator jt = std::get < 2 > (it->second).begin( ); jt != listEnd; ++jt )
             {
                 os << "\t(" << jt->first << ") " << jt->second << " [";

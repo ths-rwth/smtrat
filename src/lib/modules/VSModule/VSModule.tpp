@@ -1109,11 +1109,6 @@ namespace smtrat
         bool allSubstitutionsApplied = true;
         ConditionSetSet conflictSet;
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
-        if( _currentState->father().variableBounds().isConflicting() )
-        {
-            _currentState->father().printAlone();
-            _currentState->printAlone();
-        }
 //        EvalDoubleIntervalMap solBox = (currentSubs.type() == Substitution::MINUS_INFINITY ? EvalDoubleIntervalMap() : _currentState->rFather().rVariableBounds().getIntervalMap());
         EvalDoubleIntervalMap solBox = _currentState->father().variableBounds().getIntervalMap();
         #else
