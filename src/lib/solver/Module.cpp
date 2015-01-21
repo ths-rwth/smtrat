@@ -1066,11 +1066,14 @@ namespace smtrat
         {
             _out << _initiation << "  ";
             _out << setw( 30 ) << form->formula().toString( false, 0, "", true, true, true );
-            for( auto oSubformulas = form->origins().begin(); oSubformulas != form->origins().end(); ++oSubformulas )
+            if( form->hasOrigins() )
             {
-                _out << " {" << oSubformulas->toString( false, 0, "", true, true, true ) << " }";
+                for( auto oSubformulas = form->origins().begin(); oSubformulas != form->origins().end(); ++oSubformulas )
+                {
+                    _out << " {" << oSubformulas->toString( false, 0, "", true, true, true ) << " }";
+                }
             }
-            _out << " )" << endl;
+            _out << endl;
         }
     }
 
