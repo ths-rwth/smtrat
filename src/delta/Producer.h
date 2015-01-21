@@ -59,37 +59,35 @@ public:
 	 * @param n Node to simplify.
 	 */
 	unsigned operator()(Node& root) {
+		std::size_t skip = 0;
 		for (unsigned i = 1; ; i++) {
-			std::size_t skip = 0;
-			while (true) {
-				consumer.reset();
-				progress(0, root.complexity());
-				std::size_t num = 0;
-				if (settings.has("useDFS")) dfs(root, &root, num, skip);
-				else bfs(root, num, skip);
-				if (verbose) {
-					std::cout << GRAY << "Waiting for processes to terminate..." << END << std::endl << std::endl;
-					while (!consumer.wait()) progress(consumer.getProgress());
-					progress(consumer.getProgress());
-				} else {
-					while (!consumer.wait());
-				}
-				if (consumer.hasResult()) {
-					auto r = consumer.getResult();
-					root = std::get<0>(r);
-					skip = std::get<2>(r); // skip until this node
-					std::cout << GREEN << "Success: " << std::get<1>(r) << END << std::endl;
-				} else if (skip > 0) {
-					skip = 0;
-					std::cout << BGREEN << "Finished successful iteration, starting over." << END << std::endl << std::endl;
-				} else {
-					std::cout << std::endl << BRED << "No further simplifications found." << END << std::endl;
-					return i;
-				}
-				if (interrupted) {
-					std::cout << std::endl << "Terminating due to interruption." << std::endl;
-					return i;
-				}
+			consumer.reset();
+			progress(0, root.complexity());
+			std::size_t num = 0;
+			if (settings.has("useDFS")) dfs(root, &root, num, skip);
+			else bfs(root, num, skip);
+			if (verbose) {
+				std::cout << GRAY << "Waiting for processes to terminate..." << END << std::endl << std::endl;
+				while (!consumer.wait()) progress(consumer.getProgress());
+				progress(consumer.getProgress());
+			} else {
+				while (!consumer.wait());
+			}
+			if (consumer.hasResult()) {
+				auto r = consumer.getResult();
+				root = std::get<0>(r);
+				skip = std::get<2>(r); // skip until this node
+				std::cout << GREEN << "Success: " << std::get<1>(r) << END << std::endl;
+			} else if (skip > 0) {
+				skip = 0;
+				std::cout << BGREEN << "Finished successful iteration, starting over." << END << std::endl << std::endl;
+			} else {
+				std::cout << std::endl << BRED << "No further simplifications found." << END << std::endl;
+				return i;
+			}
+			if (interrupted) {
+				std::cout << std::endl << "Terminating due to interruption." << std::endl;
+				return i;
 			}
 		}
 	}
