@@ -1348,6 +1348,7 @@ namespace smtrat
             auto varInterval = mIntervals.find((*nonlinearIt).derivationVar());
             assert( varInterval != mIntervals.end() );
 #ifdef ICP_CONSIDER_WIDTH
+            //TODO: (varInterval->second.lowerBoundType() == carl::BoundType::INFTY || varInterval->second.lowerBoundType() == carl::BoundType::INFTY )
             if ( varInterval->second.diameter() > mTargetDiameter || varInterval->second.diameter() == -1 )
 #else
             if ( varInterval->second.diameter() > 0 || varInterval->second.diameter() == -1 )
@@ -1392,7 +1393,7 @@ namespace smtrat
             if ( mIcpRelevantCandidates.find(target) == mIcpRelevantCandidates.end() )
             {
                 #ifdef ICP_MODULE_DEBUG_0
-                cout << "add to relevant candidates: " << (*_candidate).rhs() << endl;
+                cout << "add to relevant candidates: " << (*_candidate).rhs() << " in variable " << (*_candidate).derivationVar() << endl;
                 cout << "   id: " << (*_candidate).id() << endl;
                 cout << "   key: (" << target.first << ", " << target.second << ")" << endl;
                 #endif
