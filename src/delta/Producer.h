@@ -59,19 +59,28 @@ public:
 	 * @param n Node to simplify.
 	 */
 	unsigned operator()(Node& root) {
+		std::size_t skip = 0;
 		for (unsigned i = 1; ; i++) {
 			consumer.reset();
 			progress(0, root.complexity());
-			if (settings.has("useDFS")) dfs(root, &root);
-			else bfs(root);
-			std::cout << GRAY << "Waiting for processes to terminate..." << END << std::endl << std::endl;
-			while (!consumer.wait()) progress(consumer.getProgress());
-			progress(consumer.getProgress());
+			std::size_t num = 0;
+			if (settings.has("useDFS")) dfs(root, &root, num, skip);
+			else bfs(root, num, skip);
+			if (verbose) {
+				std::cout << GRAY << "Waiting for processes to terminate..." << END << std::endl << std::endl;
+				while (!consumer.wait()) progress(consumer.getProgress());
+				progress(consumer.getProgress());
+			} else {
+				while (!consumer.wait());
+			}
 			if (consumer.hasResult()) {
 				auto r = consumer.getResult();
-				root = r.first;
-				std::cout << GREEN << "Success: " << r.second << END << std::endl;
-				std::cout << std::endl << BGREEN << "Simplified problem, starting over." << END << std::endl;
+				root = std::get<0>(r);
+				skip = std::get<2>(r); // skip until this node
+				std::cout << GREEN << "Success: " << std::get<1>(r) << END << std::endl;
+			} else if (skip > 0) {
+				skip = 0;
+				std::cout << BGREEN << "Finished successful iteration, starting over." << END << std::endl << std::endl;
 			} else {
 				std::cout << std::endl << BRED << "No further simplifications found." << END << std::endl;
 				return i;
@@ -87,29 +96,38 @@ private:
 	 * Iterate over nodes using DFS.
 	 * @param root Root of nodes.
 	 * @param n Current node.
+	 * @param num Internal counter of node.
+	 * @param skip Number of nodes to skip.
 	 */
-	void dfs(const Node& root, const Node* n) {
+	void dfs(const Node& root, const Node* n, std::size_t& num, std::size_t skip) {
 		if (consumer.hasResult()) return;
 		progress();
-		process(root, *n);
+		if (skip < num) process(root, *n, num);
+		num++;
 		for (const auto& child: n->children) {
 			if (child.immutable()) continue;
-			dfs(root, &child);
+			dfs(root, &child, num, skip);
 		}
 	}
 	/**
 	 * Iterate over nodes using BFS.
 	 * @param root Root of nodes.
+	 * @param num Internal counter of node.
+	 * @param skip Number of nodes to skip.
 	 */
-	void bfs(const Node& root) {
+	void bfs(const Node& root, std::size_t& num, std::size_t skip) {
 		std::queue<const Node*> q;
 		q.push(&root);
 		while (!q.empty()) {
 			if (consumer.hasResult()) return;
 			progress();
-			process(root, *q.front());
+			if (skip < num) process(root, *q.front(), num);
+			num++;
 			for (const auto& child: q.front()->children) {
-				if (child.immutable()) continue;
+				if (child.immutable()) {
+					progress(child.complexity());
+					continue;
+				}
 				q.push(&child);
 			}
 			q.pop();
@@ -122,16 +140,16 @@ private:
 	 * @param n Node that is currently processed.
 	 * @param progress Current progress.
 	 */
-	void process(const Node& root, const Node& n) {
+	void process(const Node& root, const Node& n, std::size_t num) {
 		if (n.immutable()) return;
 		if (&root == &n) return;
 		if (!settings.has("no-removal")) {
-			consumer.consume(root.clone(&n, nullptr), String() << "Removed \"" << n.repr(verbose) << "\"");
+			consumer.consume(root.clone(&n, nullptr), String() << "Removed \"" << n.repr(verbose) << "\"", num);
 		}
 		for (auto op: operators) {
 			auto changes = std::get<0>(op)(n);
 			for (auto& c: changes) {
-				consumer.consume(root.clone(&n, &c), String() << std::get<1>(op) << "\"" << n.repr(verbose) << "\"" << std::get<2>(op) << "\"" << c.repr(verbose) << "\"" << std::get<3>(op));
+				consumer.consume(root.clone(&n, &c), String() << std::get<1>(op) << "\"" << n.repr(verbose) << "\"" << std::get<2>(op) << "\"" << c.repr(verbose) << "\"" << std::get<3>(op), num);
 			}
 		}
 	}

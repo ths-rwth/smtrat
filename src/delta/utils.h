@@ -102,6 +102,14 @@ public:
 		(*this)(progress, total);
 	}
 	/**
+	 * Increase progress by number of steps and show progress bar.
+	 * @param steps Steps to move forward.
+	 */
+	void operator()(std::size_t steps) {
+		progress += steps;
+		(*this)(progress, total);
+	}
+	/**
 	 * Print a progress bar for a progress of `progress / total`.
 	 * @param progress Progress.
 	 */

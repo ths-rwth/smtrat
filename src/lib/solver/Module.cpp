@@ -320,6 +320,11 @@ namespace smtrat
 
     pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, const FormulaT& _origin )
     {
+        if( !originInReceivedFormula( _origin ) )
+        {
+            std::cout << _origin << std::endl;
+            print();
+        }
         assert( originInReceivedFormula( _origin ) );
         auto res = mpPassedFormula->add( _formula, _origin );
         if( res.second )
@@ -700,8 +705,6 @@ namespace smtrat
                 while( module != mUsedBackends.end() && result == Unknown )
                 {
                     #ifdef MODULE_VERBOSE
-                    cout << endl << "Call from module " << moduleName( this->type() ) << endl;
-                    this->print( cout, " ");
                     cout << endl << "Call to module " << moduleName( (*module)->type() ) << endl;
                     (*module)->print( cout, " ");
                     #endif
@@ -800,6 +803,12 @@ namespace smtrat
     Answer Module::foundAnswer( Answer _answer )
     {
         mSolverState = _answer;
+        if( !(_answer != True || checkModel() != 0) )
+        {
+            std::cout << "found answer: " << ANSWER_TO_STRING(_answer) << std::endl;
+            print();
+            exit(1234);
+        }
         assert( _answer != True || checkModel() != 0 );
         // If we are in the SMT environment:
         if( mpManager != NULL && _answer != Unknown )
@@ -1053,7 +1062,7 @@ namespace smtrat
         {
             _out << _initiation << "  ";
             // bool _withActivity, unsigned _resolveUnequal, const string _init, bool _oneline, bool _infix, bool _friendlyNames
-            _out << setw( 30 ) << form->formula().toString( false, 0, "", true, true, true );
+            _out << setw( 45 ) << form->formula().toString( false, 0, "", true, true, true );
             if( form->deducted() ) _out << " deducted";
             _out << endl;
         }

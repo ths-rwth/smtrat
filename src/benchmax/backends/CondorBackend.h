@@ -11,41 +11,83 @@
 #include "Backend.h"
 #include "BackendData.h"
 
+#include "../logging.h"
 #include "../Settings.h"
 
 namespace benchmax {
 
 class CondorBackend: public Backend {
 protected:
-	virtual void execute(const Tool& tool, const fs::path& file) {
-		
-	}
-	
-	std::string generateSubmitFile(const Tool& tool, BenchmarkSet& b) {
-		std::ofstream out(".jobs_" + b.benchmarkName());
-		out << "executable = " << tool.path() << std::endl;
-		out << "output = out/out.$(process)" << std::endl;
-		out << "error = out/err.$(process)" << std::endl;
-		out << "log = out/log" << std::endl;
+	virtual void execute(const Tool& tool, const fs::path& file) {}
+private:
+	std::list<std::atomic<bool>> processes;
+
+	std::string generateSubmitFile(std::size_t ID, const Tool& tool, BenchmarkSet& b) {
+		std::ofstream wrapper(".wrapper_" + std::to_string(ID));
+		wrapper << "#!/bin/sh" << std::endl;
+		wrapper << "ulimit -S -t " << Settings::timeLimit << std::endl;
+		wrapper << "ulimit -S -v " << (Settings::memoryLimit * 1024) << std::endl;
+		wrapper << "date +\"Start: %s%3N\"" << std::endl;
+		wrapper << tool.getCommandline() << std::endl;
+		wrapper << "date +\"End: %s%3N\"" << std::endl;
+		wrapper.close();
+
+		std::ofstream out(".jobs." + std::to_string(ID));
+		out << "executable = .wrapper_" << ID << std::endl;
+		out << "output = out/out." << ID << ".$(cluster).$(process)" << std::endl;
+		out << "error = out/err." << ID << ".$(cluster).$(process)" << std::endl;
+		out << "log = out/log." << ID << std::endl;
 		out << "periodic_hold = (time() - JobCurrentStartExecutingDate) > " << Settings::timeLimit << std::endl;
 		
-		while (!b.done()) {
-			auto l = b.pop(1);
-			out << "transfer_input_files = " << l.front().native() << std::endl;
-			out << "arguments = " << l.front().filename().native() << std::endl;
+		for (const auto& file: b) {
+			if (!tool.canHandle(file)) continue;
+			out << "transfer_input_files = " << file.native() ", " << tool.path() << std::endl;
+			out << "arguments = " << file.filename().native() << std::endl;
 			out << "queue" << std::endl;
 		}
 		out.close();
-		return ".jobs_" + b.benchmarkName();
+		return ".jobs." + std::to_string(ID);
 	}
 	
+	void collectResults(std::size_t ID) {
+		typedef fs::directory_iterator dirIt;
+		
+		for (dirIt it("out/"), end; it != end; ++it) {
+			std::string name = it->path().native();
+			if (name.find("out/out." + std::to_string(ID)) != name.end()) {
+				
+			}
+		}
+	}
+	
+	void runAndWait(std::size_t ID, const std::string& submitFile, std::atomic<bool>& it) {
+		BENCHMAX_LOG_INFO("benchmax.condor", "Queueing batch " << ID << "...");
+		system(("condor_submit " + filename).c_str());
+		BENCHMAX_LOG_INFO("benchmax.condor", "Waiting for batch " << ID << "...");
+		system("condor_wait out/log." + std::to_string(ID));
+		BENCHMAX_LOG_INFO("benchmax.condor", "Collecting statistics for batch " << ID << "...");
+		collectResults(ID);
+		BENCHMAX_LOG_INFO("benchmax.condor", "Finished batch " << ID << ".");
+		it = true;
+	}
+	
+public:
 	void run() {
 		BENCHMAX_LOG_INFO("benchmax.condor", "Generating submit files...");
-		/*for (auto& b: data->benchmarks) {
-			auto filename = generateSubmitFile(*b);
-			system(("condor_submit " + filename).c_str());
-			system("condor_wait out/log");
-		}*/
+		
+		for (const Tool& tool: mTools) {
+			for (const BenchmarkSet& set: mBenchmarks) {
+				std::size_t ID = processes.size() + 1;
+				std::string submitFile = generateSubmitFile(ID, tool, set);
+				processes.emplace_back(false);
+				std::async(&CondorBackend::runAndWait, this, ID, submitFile, processes.back());
+			}
+		}
+		while (!processes.empty()) {
+			while (!processes.front()) usleep(1000000);
+			assert(processes.front());
+			processes.pop_front();
+		}
 	}
 };
 

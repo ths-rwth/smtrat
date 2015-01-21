@@ -187,7 +187,7 @@ bool initApplication(const benchmax::Settings& s, std::vector<benchmax::Benchmar
 		fs::path path(p);
 		if (fs::exists(path)) {
 			for (const auto& tool: _tools) {
-				_benchmarks.push_back(new benchmax::BenchmarkSet(path.generic_string(), tool, Settings::ProduceLatex, _stats));
+				_benchmarks.push_back(new benchmax::BenchmarkSet(path.generic_string(), Settings::ProduceLatex));
 			}
 		} else {
 			BENCHMAX_LOG_WARN("benchmax", "Benchmark path " << p << " does not exist.");
@@ -203,7 +203,7 @@ void loadBenchmarks(benchmax::Backend& backend) {
 	for (const auto& p: Settings::pathes) {
 		fs::path path(p);
 		if (fs::exists(path)) {
-			backend.addBenchmark(benchmax::BenchmarkSet(path, Settings::ProduceLatex, _stats))
+			backend.addBenchmark(benchmax::BenchmarkSet(path, Settings::ProduceLatex));
 		} else {
 			BENCHMAX_LOG_WARN("benchmax", "Benchmark path " << p << " does not exist.");
 		}
@@ -244,7 +244,7 @@ int main(int argc, char** argv)
 	}
 	if (Settings::backend == "condor") {
 		BENCHMAX_LOG_INFO("benchmax", "Using condor backend.");
-		benchmax::CondorBackend backend(&data);
+		benchmax::CondorBackend backend;
 		backend.run();
 	} else if (Settings::backend == "local") {
 		BENCHMAX_LOG_INFO("benchmax", "Using local backend.");

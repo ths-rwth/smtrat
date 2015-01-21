@@ -36,8 +36,8 @@ private:
 	std::atomic<bool> found;
 	/// Mutex for changes to result.
 	std::mutex resultMutex;
-	/// Result of successful call, consisting of node and message.
-	std::pair<Node, std::string> result;
+	/// Result of successful call, consisting of node, message and number of node.
+	std::tuple<Node, std::string, std::size_t> result;
 	/// Number of jobs that have been started.
 	std::atomic<unsigned> jobcount;
 	/// Number of jobs that have terminated.
@@ -50,7 +50,7 @@ private:
      * @param checker Checker.
      * @param message Message, if check is successful.
      */
-	void performCheck(const Node& n, const std::string& message) {
+	void performCheck(const Node& n, const std::string& message, std::size_t num) {
 		if (hasResult()) {
 			progress++;
 			return;
@@ -61,7 +61,7 @@ private:
 		progress++;
 		if (res) {
 			std::lock_guard<std::mutex> guard(resultMutex);
-			if (!found) result = std::make_pair(n, message);
+			if (!found) result = std::make_tuple(n, message, num);
 			found = true;
 		}
 	}
@@ -85,7 +85,7 @@ public:
      * @param c Checker.
      * @param message Message.
      */
-	void consume(const Node& n, const std::string& message) {
+	void consume(const Node& n, const std::string& message, std::size_t num) {
 		if (hasResult()) return;
 		while (jobcount - progress >= std::thread::hardware_concurrency()) {
 			wait();
@@ -93,7 +93,7 @@ public:
 		}
 		if (hasResult()) return;
 		jobcount++;
-		jobs.push(std::async(std::launch::async, &Consumer::performCheck, this, n, message));
+		jobs.push(std::async(std::launch::async, &Consumer::performCheck, this, n, message, num));
 	}
 	/**
 	 * Wait for at least one job to finish.
@@ -113,7 +113,7 @@ public:
 	void reset() {
 		while (!jobs.empty()) wait();
 		found = false;
-		result = std::make_pair(Node(), "");
+		result = std::make_tuple(Node(), "", 0);
 		jobcount = 0;
 		progress = 0;
 	}
@@ -128,7 +128,7 @@ public:
 	 * Returns the result, assuming that one exists.
      * @return Result.
      */
-	std::pair<Node, std::string> getResult() {
+	std::tuple<Node, std::string, std::size_t> getResult() {
 		assert(hasResult());
 		return result;
 	}

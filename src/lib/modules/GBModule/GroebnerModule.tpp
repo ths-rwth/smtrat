@@ -292,6 +292,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
 
 			assert(!Settings::getReasonsForInfeasibility || !witness.getReasons().empty());
             carl::BitVector::const_iterator origIt = witness.getReasons().begin( );
+            origIt++; // As the first bit shows to the first entry in the backtrack points, which is the end of the received formula
 			
             auto it = mBacktrackPoints.begin( );
             for( ++it; it != mBacktrackPoints.end( ); ++it )
@@ -346,7 +347,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
             // TODO: Do not use rPassedFormulaBegin, which should be disabled
             for( ModuleInput::iterator i = passedFormulaBegin( ); i != rPassedFormula().end( ); )
             {
-                assert( i->formula().getType( ) == carl::FormulaType::CONSTRAINT );
+                // assert( i->formula().getType( ) == carl::FormulaType::CONSTRAINT ); // TODO: Assure, not to add TRUE to the passed formula.
                 if( mGbEqualities.count(i->formula()) == 1 )
                 {
                     i = super::eraseSubformulaFromPassedFormula( i, true );
