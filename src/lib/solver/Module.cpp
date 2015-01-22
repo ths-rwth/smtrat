@@ -803,12 +803,6 @@ namespace smtrat
     Answer Module::foundAnswer( Answer _answer )
     {
         mSolverState = _answer;
-        if( !(_answer != True || checkModel() != 0) )
-        {
-            std::cout << "found answer: " << ANSWER_TO_STRING(_answer) << std::endl;
-            print();
-            exit(1234);
-        }
         assert( _answer != True || checkModel() != 0 );
         // If we are in the SMT environment:
         if( mpManager != NULL && _answer != Unknown )

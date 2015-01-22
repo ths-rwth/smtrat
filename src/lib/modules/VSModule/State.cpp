@@ -1067,6 +1067,8 @@ namespace vs
         auto iter = mpSubResultCombination->begin();
         while( iter != mpSubResultCombination->end() )
         {
+//            if( iter->first >= mpSubstitutionResults->size() ) exit( 1234 );
+//            if( iter->second >= mpSubstitutionResults->at( iter->first ).size() ) exit( 1234 );
             for( auto cond = mpSubstitutionResults->at( iter->first ).at( iter->second ).first.begin();
                     cond != mpSubstitutionResults->at( iter->first ).at( iter->second ).first.end(); ++cond )
             {
