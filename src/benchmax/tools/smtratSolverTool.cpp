@@ -10,11 +10,6 @@
 
 namespace benchmax {
 
-SmtratSolverTool::SmtratSolverTool(const std::string& pathToTool):
-    Tool(TI_SMTRAT, pathToTool, ".smt2")
-{
-}
-
 std::string SmtratSolverTool::getCallToTool(const std::string& extraArguments) const
 {
     if(mValidationFilePath != "")

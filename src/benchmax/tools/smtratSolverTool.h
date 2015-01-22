@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "../Tool.h"
+#include "Tool.h"
 
 namespace benchmax {
 
@@ -16,7 +16,7 @@ class SmtratSolverTool:
     public Tool
 {
     public:
-        SmtratSolverTool(const std::string& pathToTool);
+		SmtratSolverTool(const fs::path& binary, const std::string& arguments): Tool(binary, arguments) {}
         virtual std::string getCallToTool(const std::string& extraArguments = "") const;
 
     private:

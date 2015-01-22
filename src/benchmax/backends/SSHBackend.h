@@ -51,12 +51,11 @@ benchmax::Node getNode(const string& _nodeAsString)
 	}
 }
 
-class SSHBackend {
-	BackendData* data;
+class SSHBackend: public Backend {
 	std::vector<benchmax::Node> nodes;
 	const unsigned NUMBER_OF_EXAMPLES_TO_SOLVE = 6;
 public:
-	SSHBackend(BackendData* data): data(data) {
+	SSHBackend(): Backend() {
 		int rc = libssh2_init(0);
 		if (rc != 0) {
 			BENCHMAX_LOG_FATAL("benchmax", "Failed to initialize libssh2 (return code " << rc << ")");
@@ -71,20 +70,20 @@ public:
 	~SSHBackend() {
 		libssh2_exit();
 	}
-	void run() {
+	void run(const std::vector<Tool>& tools, const std::vector<BenchmarkSet>& benchmarks) {
 		int nrOfCalls = 0;
-		std::vector<benchmax::BenchmarkSet*>::iterator currentBenchmark = data->benchmarks.begin();
+		auto currentBenchmark = benchmarks.begin();
 		std::vector<benchmax::Node>::iterator currentNode = nodes.begin();
-		if(currentBenchmark != data->benchmarks.end())
-			(*currentBenchmark)->printSettings();
-		while(currentBenchmark != data->benchmarks.end())
+		if(currentBenchmark != benchmarks.end())
+			currentBenchmark->printSettings();
+		while(currentBenchmark != benchmarks.end())
 		{
-			if((*currentBenchmark)->done())
+			if(currentBenchmark->done())
 			{
 				++currentBenchmark;
-				if(currentBenchmark == data->benchmarks.end())
+				if(currentBenchmark == benchmarks.end())
 					break;
-				(*currentBenchmark)->printSettings();
+				currentBenchmark->printSettings();
 			}
 			if(currentNode == nodes.end())
 				currentNode = nodes.begin();
@@ -99,7 +98,7 @@ public:
 			{
 				stringstream tmpStream;
 				tmpStream << ++nrOfCalls;
-				(*currentNode).assignAndExecuteBenchmarks(**currentBenchmark, NUMBER_OF_EXAMPLES_TO_SOLVE, tmpStream.str());
+				//(*currentNode).assignAndExecuteBenchmarks(*currentBenchmark, NUMBER_OF_EXAMPLES_TO_SOLVE, tmpStream.str());
 			}
 			++currentNode;
 			usleep(100000);	// 100 milliseconds (0.1 seconds);
@@ -166,8 +165,7 @@ public:
 				(*currentNode).downloadFile(
 				Settings::RemoteOutputDirectory + "benchmark_" + *jobId + ".out",
 				Settings::outputDir + "benchmark_output/benchmark_" + *jobId + ".out");
-				data->stats->addStat("stats_" + *jobId + ".xml");
-
+				//data->stats->addStat("stats_" + *jobId + ".xml");
 			}
 		}
 	}

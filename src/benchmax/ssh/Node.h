@@ -118,7 +118,7 @@ class Node
 				if(Settings::ValidationTool != NULL)
 				{
 					command << "-W " << Settings::RemoteOutputDirectory << "wrong_results_" << callID << "/ ";
-					command << "-V " << Settings::ValidationTool->path() << " ";
+					//command << "-V " << Settings::ValidationTool->path() << " ";
 				}
 				//command << tool.interfaceToCommandString() << " " << tool.path() << tool.arguments('@');
 //				if(Settings::UseStats)

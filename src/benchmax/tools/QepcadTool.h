@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "../Tool.h"
+#include "Tool.h"
 
 namespace benchmax {
 
