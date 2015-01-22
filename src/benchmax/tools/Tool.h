@@ -14,8 +14,8 @@
 #include <vector>
 #include <boost/version.hpp>
 #include <boost/filesystem.hpp>
-#include "BenchmarkStatus.h"
-#include "Smt2Input.h"
+#include "../BenchmarkStatus.h"
+#include "../Smt2Input.h"
 
 namespace benchmax {
 
@@ -31,12 +31,14 @@ class Smt2Input;
 class Tool {
 protected:
 	fs::path mBinary;
+	std::string mArguments;
 public:
+	Tool(const fs::path& binary, const std::string& arguments): mBinary(binary), mArguments(arguments) {}
 	std::string getCommandline(const fs::path& file) const {
-		return mBinary.native() + " " + file.native();
+		return mBinary.native() + " " + mArguments + " " + file.native();
 	}
 	std::string getCommandline(const fs::path& file, const std::string& localBinary) const {
-		return localBinary + " " + file.native();
+		return localBinary + " " + mArguments + " " + file.native();
 	}
 		
 	virtual bool canHandle(const fs::path&) const {
@@ -53,7 +55,6 @@ public:
 	private:
 		ToolInterface	  mInterface;
 		std::string		mPath;
-		std::vector<std::string> mArguments;
 		std::string		mExpectedSuffix;
 
 	protected:
@@ -64,7 +65,6 @@ public:
 		Tool(ToolInterface interface, const std::string& path, const std::string& expectedSuffix):
 			mInterface(interface),
 			mPath(path),
-			mArguments(),
 			mExpectedSuffix(expectedSuffix)
 		{}
 
@@ -74,7 +74,6 @@ public:
 		Tool(const Tool& t):
 			mInterface(t.mInterface),
 			mPath(t.mPath),
-			mArguments(t.mArguments),
 			mExpectedSuffix(t.mExpectedSuffix),
 			mValidationFilePath(t.mValidationFilePath),
 			mFilePath(t.mFilePath)
@@ -82,21 +81,10 @@ public:
 		Tool& operator=(const Tool& t) {
 			mInterface = t.mInterface;
 			mPath = t.mPath;
-			mArguments = t.mArguments;
 			mExpectedSuffix = t.mExpectedSuffix;
 			mValidationFilePath = t.mValidationFilePath;
 			mFilePath = t.mFilePath;
 			return *this;
-		}
-
-		/**
-		 * 
-		 * @param input A pointer to an object which encodes the input.
-		 * @return false if something went wrong
-		 */
-		virtual bool convertInput(Smt2Input*)
-		{
-			return true;
 		}
 
 		/**
@@ -108,7 +96,7 @@ public:
 		 */
 		virtual std::string getCallToTool(const std::string& extraArguments = "") const
 		{
-			return mPath + " " + arguments(' ') + " " + extraArguments + " " + mFilePath.string();
+			return mPath + " " + " " + extraArguments + " " + mFilePath.string();
 		}
 
 		/**
@@ -121,43 +109,6 @@ public:
 		{
 			return extractAnswerFromOutput(output);
 		}
-
-		/**
-		 * The extension which indicates files that, either directly or after conversion,
-		 * encode the input for the tool
-		 * @return string for this extension, typically starting with a dot.
-		 */
-		std::string expectedFileExtension() const
-		{
-			return mExpectedSuffix;
-		}
-
-		/**
-		 * 
-		 * @param validationFilePath
-		 */
-		virtual void setValidationFilePath(const std::string& validationFilePath)
-		{
-			mValidationFilePath = validationFilePath;
-		}
-
-		/**
-		 * Set the path to the file which encodes the input.
-		 * @param pathToInputFile
-		 */
-		void setFile(const fs::path& pathToInputFile)
-		{
-			mFilePath = pathToInputFile;
-		}
-
-		/**
-		 * 
-		 */
-		ToolInterface toolInterface() const
-		{
-			return mInterface;
-		}
-
 		/**
 		 * 
 		 * @return Path to tool
@@ -165,51 +116,6 @@ public:
 		const std::string& path() const
 		{
 			return mPath;
-		}
-
-		/**
-		 * 
-		 * @param _seperator
-		 * @return A string with all arguments, seperated by _seperator.
-		 */
-		std::string arguments(char _seperator) const
-		{
-			std::string result = "";
-			for(std::vector<std::string>::const_iterator arg = mArguments.begin(); arg != mArguments.end(); ++arg)
-			{
-				result += _seperator + *arg;
-			}
-			return result;
-		}
-
-		virtual std::string interfaceToCommandString() const
-		{
-			switch(mInterface)
-			{
-				case TI_SMTRAT:
-					return "-S ";
-				case TI_Z3:
-					return "-Z ";
-				case TI_ISAT:
-					return "-I ";
-				case TI_REDLOG_RLCAD:
-					return "-C ";
-				case TI_REDLOG_RLQE:
-					return "-R ";
-				case TI_QEPCAD:
-					return "-Q ";
-				default:
-					throw std::runtime_error("Command for tool interface is unknown.");
-			}
-		}
-
-		/**
-		 * Add a (standard) argument for the tool calls.
-		 * @param _arg
-		 */
-		void addArgument(const std::string& _arg)
-		{
-			mArguments.push_back(_arg);
 		}
 
 	protected:
@@ -228,7 +134,5 @@ public:
 												const std::string& unsatIdentifier = "unsat",
 												const std::string& unknownIdentifier = "unknown") const;
 };
-
-Tool createTool(ToolInterface interface, const std::string& pathToTool);
 
 }

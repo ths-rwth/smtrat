@@ -10,7 +10,7 @@
 #include <boost/optional.hpp>
 #include <boost/program_options.hpp>
 
-#include "Tool.h"
+#include "tools/Tool.h"
 
 namespace benchmax {
 
@@ -71,12 +71,12 @@ public:
 			("output-file,f", po::value<std::string>(&outputFile), "output file")
 		;
 		solverOptions.add_options()
-			("smtrat,S", po::value<std::vector<std::string>>(&smtratapps), "an SMT-LIB 2.0 solver with SMT-RAT interface (multiple are possible)")
-			("z3,Z", po::value<std::vector<std::string>>(&z3apps), "an SMT-LIB 2.0 solver with z3 interface (multiple are possible)")
-			("isat,I", po::value<std::vector<std::string>>(&isatapps), "an .Hys solver with isat interface (multiple are possible)")
-			("redlog_rlqe,R", po::value<std::vector<std::string>>(&redlog_rlqeapps), "Redlog solvers calling rlqe")
-			("redlog_rlcad,C", po::value<std::vector<std::string>>(&redlog_rlcadapps), "Redlog solvers calling rlcad")
-			("qepcad,Q", po::value<std::vector<std::string>>(&qepcadapps), "the tool QEPCAD B")
+			("smtrat,S", po::value<std::vector<std::string>>(&tools_smtrat), "an SMT-LIB 2.0 solver with SMT-RAT interface (multiple are possible)")
+			("z3,Z", po::value<std::vector<std::string>>(&tools_z3), "an SMT-LIB 2.0 solver with z3 interface (multiple are possible)")
+			("isat,I", po::value<std::vector<std::string>>(&tools_isat), "an .Hys solver with isat interface (multiple are possible)")
+			("redlog_rlqe,R", po::value<std::vector<std::string>>(&tools_redlogrlqe), "Redlog solvers calling rlqe")
+			("redlog_rlcad,C", po::value<std::vector<std::string>>(&tools_redlogrlcad), "Redlog solvers calling rlcad")
+			("qepcad,Q", po::value<std::vector<std::string>>(&tools_qepcad), "the tool QEPCAD B")
 		;
 		// commandline options
 		desc_cmdline.add(coreOptions).add(toolOptions).add(backendOptions).add(benchmarkOptions).add(solverOptions);
@@ -93,7 +93,7 @@ public:
 		WrongResultPath = outputDir + WrongResultPath;
 		RemoteOutputDirectory = "/scratch/";
 		if (validationtoolpath != "") {
-			ValidationTool.emplace(createTool(benchmax::TI_Z3, validationtoolpath));
+			//ValidationTool.emplace(createTool(benchmax::TI_Z3, validationtoolpath));
 		}
 	}
 	
@@ -119,12 +119,12 @@ public:
 	static std::string outputFile;
 	static boost::optional<Tool> ValidationTool;
 	static std::vector<std::string> pathes;
-	static std::vector<std::string> smtratapps;
-	static std::vector<std::string> z3apps;
-	static std::vector<std::string> isatapps;
-	static std::vector<std::string> redlog_rlqeapps;
-	static std::vector<std::string> redlog_rlcadapps;
-	static std::vector<std::string> qepcadapps;
+	static std::vector<std::string> tools_smtrat;
+	static std::vector<std::string> tools_z3;
+	static std::vector<std::string> tools_isat;
+	static std::vector<std::string> tools_redlogrlqe;
+	static std::vector<std::string> tools_redlogrlcad;
+	static std::vector<std::string> tools_qepcad;
 	static std::vector<std::string> nodes;
 	static std::vector<std::string> composeFiles;
 	

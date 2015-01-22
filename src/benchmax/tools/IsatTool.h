@@ -8,13 +8,13 @@
 
 #pragma once
 
-#include "../Tool.h"
+#include "Tool.h"
 
 namespace benchmax {
 
 class IsatTool: public Tool {
     public:
-        IsatTool(const std::string& pathToTool): Tool(TI_ISAT, pathToTool, ".hys") {}
+		IsatTool(const fs::path& binary, const std::string& arguments): Tool(binary, arguments) {}
 };
 
 }

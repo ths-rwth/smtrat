@@ -53,7 +53,7 @@
 #include <boost/date_time/posix_time/ptime.hpp>
 
 #include "Stats.h"
-#include "Tool.h"
+#include "tools/Tool.h"
 #include "BenchmarkStatus.h"
 #include "Settings.h"
 
