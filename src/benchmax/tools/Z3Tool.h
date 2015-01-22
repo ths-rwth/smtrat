@@ -8,13 +8,13 @@
 
 #pragma once
 
-#include "../Tool.h"
+#include "Tool.h"
 
 namespace benchmax {
 
 class Z3Tool: public Tool {
-    public:
-        Z3Tool(const std::string& pathToTool): Tool(TI_Z3, pathToTool, ".smt2") {}
+public:
+	Z3Tool(const fs::path& binary, const std::string& arguments): Tool(binary, arguments) {}
 };
 
 }

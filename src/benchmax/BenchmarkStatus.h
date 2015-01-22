@@ -8,6 +8,7 @@
 #pragma once
 
 #include <iostream>
+#include <map>
 
 namespace benchmax {
 
@@ -25,6 +26,7 @@ struct BenchmarkResults {
 	std::size_t memory;
 	std::string stdout;
 	std::string stderr;
+	std::map<std::string, std::string> additional;
 };
 
 enum BenchmarkResult

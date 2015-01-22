@@ -12,7 +12,7 @@
 #include "../logging.h"
 #include "../BenchmarkSet.h"
 
-#include "../Tool.h"
+#include "../tools/Tool.h"
 
 namespace benchmax {
 

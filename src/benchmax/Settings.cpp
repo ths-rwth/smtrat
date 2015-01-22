@@ -18,12 +18,12 @@ namespace benchmax {
 	std::string Settings::outputFile;
 	boost::optional<Tool> Settings::ValidationTool;
 	std::vector<std::string> Settings::pathes;
-	std::vector<std::string> Settings::smtratapps;
-	std::vector<std::string> Settings::z3apps;
-	std::vector<std::string> Settings::isatapps;
-	std::vector<std::string> Settings::redlog_rlqeapps;
-	std::vector<std::string> Settings::redlog_rlcadapps;
-	std::vector<std::string> Settings::qepcadapps;
+	std::vector<std::string> Settings::tools_smtrat;
+	std::vector<std::string> Settings::tools_z3;
+	std::vector<std::string> Settings::tools_isat;
+	std::vector<std::string> Settings::tools_redlogrlqe;
+	std::vector<std::string> Settings::tools_redlogrlcad;
+	std::vector<std::string> Settings::tools_qepcad;
 	std::vector<std::string> Settings::nodes;
 	std::vector<std::string> Settings::composeFiles;
 	

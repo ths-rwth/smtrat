@@ -1,33 +1,12 @@
 
 #include "Tool.h"
-#include "tools/Z3Tool.h"
-#include "tools/smtratSolverTool.h"
-#include "tools/IsatTool.h"
-#include "tools/RedlogTool.h"
-#include "tools/QepcadTool.h"
+#include "Z3Tool.h"
+#include "smtratSolverTool.h"
+#include "IsatTool.h"
+#include "RedlogTool.h"
+#include "QepcadTool.h"
 
 namespace benchmax {
-
-Tool createTool(ToolInterface interface, const std::string& pathToTool)
-{
-	switch(interface)
-	{
-		case TI_SMTRAT:
-			return SmtratSolverTool(pathToTool);
-		case TI_Z3:
-			return Z3Tool(pathToTool);
-		case TI_ISAT:
-			return IsatTool(pathToTool);
-		case TI_REDLOG_RLCAD:
-			return RedlogTool(pathToTool, RLCAD);
-		case TI_REDLOG_RLQE:
-			return RedlogTool(pathToTool, RLQE);
-		case TI_QEPCAD:
-			return QepcadTool(pathToTool);
-		default:
-			throw std::runtime_error("Unknown tool interface.");
-	}
-}
 
 BenchmarkResult Tool::extractAnswerFromOutput(const std::string& relevantOutput,
 											  const std::string& satIdentifier,

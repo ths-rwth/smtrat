@@ -7,8 +7,8 @@ add_subdirectory(backends)
 add_subdirectory(ssh)
 add_subdirectory(tools)
 
-add_executable( benchmax benchmax.cpp BenchmarkSet.h Tool.h BenchmarkSet.cpp Stats.cpp
-			Settings.cpp Tool.cpp Smt2Input.cpp BenchmarkStatus.cpp ${backends_sources} ${ssh_sources} ${tool_sources})
+add_executable( benchmax benchmax.cpp BenchmarkSet.h BenchmarkSet.cpp Stats.cpp
+			Settings.cpp Smt2Input.cpp BenchmarkStatus.cpp ${backends_sources} ${ssh_sources} ${tool_sources})
 include_directories(${carl_INCLUDE_DIR})
 
 if(${STATICLIB_SWITCH} STREQUAL "ON")

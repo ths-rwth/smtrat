@@ -6,28 +6,19 @@
 #pragma once
 
 #include "../BenchmarkSet.h"
-#include "../Tool.h"
+#include "../tools/Tool.h"
 #include "../results/Results.h"
 
 namespace benchmax {
 
 class Backend {
 protected:
-	std::vector<Tool> mTools;
-	std::vector<BenchmarkSet> mBenchmarks;
 	Results mResults;
 	virtual void execute(const Tool&, const fs::path&) {}
 public:
-	void addTool(const Tool& t) {
-		mTools.push_back(t);
-	}
-	void addBenchmark(const BenchmarkSet& b) {
-		mBenchmarks.push_back(b);
-	}
-	
-	void run() {
-		for (const Tool& tool: mTools) {
-			for (const BenchmarkSet& set: mBenchmarks) {
+	void run(const std::vector<Tool>& tools, const std::vector<BenchmarkSet>& benchmarks) {
+		for (const Tool& tool: tools) {
+			for (const BenchmarkSet& set: benchmarks) {
 				for (const fs::path& file: set) {
 					if (tool.canHandle(file)) {
 						this->execute(tool, file);
