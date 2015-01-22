@@ -42,7 +42,7 @@
 // Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
 //#define MODULE_VERBOSE_INTEGERS
-//#define DEBUG_MODULE_CALLS_IN_SMTLIB
+#define DEBUG_MODULE_CALLS_IN_SMTLIB
 
 using namespace std;
 using namespace carl;
@@ -596,24 +596,27 @@ namespace smtrat
             {
                 ModuleInput::const_iterator posInReceived = mpPassedFormula->find( *cons );
                 assert( posInReceived != mpReceivedFormula->end() );
-                const std::vector<FormulaT>& formOrigins = posInReceived->origins();
-                // Find the smallest set of origins.
-                std::vector<FormulaT>::const_iterator smallestOrigin = formOrigins.begin();
-                std::vector<FormulaT>::const_iterator origin = formOrigins.begin();
-                while( origin != formOrigins.end() )
+                if( posInReceived->hasOrigins() )
                 {
-                    if( origin->size() == 1 )
+                    const std::vector<FormulaT>& formOrigins = posInReceived->origins();
+                    // Find the smallest set of origins.
+                    std::vector<FormulaT>::const_iterator smallestOrigin = formOrigins.begin();
+                    std::vector<FormulaT>::const_iterator origin = formOrigins.begin();
+                    while( origin != formOrigins.end() )
                     {
-                        smallestOrigin = origin;
-                        break;
+                        if( origin->size() == 1 )
+                        {
+                            smallestOrigin = origin;
+                            break;
+                        }
+                        else if( origin->size() < smallestOrigin->size() )
+                            smallestOrigin = origin;
+                        ++origin;
                     }
-                    else if( origin->size() < smallestOrigin->size() )
-                        smallestOrigin = origin;
-                    ++origin;
+                    assert( smallestOrigin != formOrigins.end() );
+                    // Add its formulas to the infeasible subset.
+                    collectOrigins( *smallestOrigin, result.back() );
                 }
-                assert( smallestOrigin != formOrigins.end() );
-                // Add its formulas to the infeasible subset.
-                collectOrigins( *smallestOrigin, result.back() );
             }
         }
         return result;

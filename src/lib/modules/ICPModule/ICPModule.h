@@ -140,6 +140,9 @@ namespace smtrat
             bool                                                                                mIsBackendCalled; // has a backend already been called in the actual run?
             double                                                                              mTargetDiameter;
             double                                                                              mContractionThreshold;
+            double                                                                              mDefaultSplittingSize;
+            double                                                                              mRelativeContraction;
+            double                                                                              mAbsoluteContraction;
             
             #ifdef ICP_BOXLOG
             std::fstream                                                                        icpLog;
@@ -294,7 +297,7 @@ namespace smtrat
              * Update all affected candidates and reinsert them into icpRelevantCandidates
              * @param _var
              */
-            void updateRelevantCandidates(carl::Variable _var, double _relativeContraction );
+            void updateRelevantCandidates(carl::Variable _var);
             
             /**
              * Method to determine the next combination of variable and constraint to be contracted
@@ -306,10 +309,23 @@ namespace smtrat
             /**
              * Calls the actual contraction function and implements threshold functionality
              * @param _selection
-             * @param _relativeContraction is only changed if no split has occurred and the intervals are bounded
              * @return true if a split has occurred
              */
-            bool contraction( icp::ContractionCandidate* _selection, double& _relativeContraction, double& _absoluteContraction );
+            bool contraction( icp::ContractionCandidate* _selection );
+            
+            /**
+             * 
+             * @param _interval
+             * @param _contractedInterval
+             */
+            void updateRelativeContraction( const DoubleInterval& _interval, const DoubleInterval& _contractedInterval );
+            
+            /**
+             * 
+             * @param _interval
+             * @param _contractedInterval
+             */
+            void updateAbsoluteContraction( const DoubleInterval& _interval, const DoubleInterval& _contractedInterval );
             
             /**
              * 
@@ -321,17 +337,16 @@ namespace smtrat
             /**
              * Calls the actual contraction on a separate map to check, whether contraction is possible. Returns the node, where insertion makes sense.
              * @param _selection
-             * @param _relativeContraction
              * @param _intervals
              */
-            void tryContraction( icp::ContractionCandidate* _selection, double& _relativeContraction, const EvalDoubleIntervalMap& _intervals );
+            void tryContraction( icp::ContractionCandidate* _selection, const EvalDoubleIntervalMap& _intervals );
             
             /**
              * Selects the next splitting direction according to different heuristics.
              * @param _targetDiameter
              * @return 
              */
-            double calculateSplittingImpact ( carl::Variable::Arg _var, icp::ContractionCandidate& _candidate ) const;
+            double calculateSplittingImpact( carl::Variable::Arg _var, const icp::ContractionCandidate& _candidate ) const;
             
             /**
              * 
@@ -419,7 +434,7 @@ namespace smtrat
              * creates constraints for the actual bounds of the original variables.
              * @return 
              */
-            FormulasT createConstraintsFromBounds( const EvalDoubleIntervalMap& _map );
+            FormulasT createConstraintsFromBounds( const EvalDoubleIntervalMap& _map, bool _isOriginal = true );
             
             /**
              * Parses obtained deductions from the LRA module and maps them to original constraints or introduces new ones.
@@ -496,6 +511,13 @@ namespace smtrat
                     }
                 }
                 return true;
+            }
+            
+            bool fullfillsTarget( const DoubleInterval& _interval ) const
+            {
+                if( _interval.lowerBoundType() == carl::BoundType::INFTY || _interval.upperBoundType() == carl::BoundType::INFTY )
+                    return false;
+                return _interval.diameter() <= mTargetDiameter;
             }
             
             #ifdef ICP_BOXLOG
