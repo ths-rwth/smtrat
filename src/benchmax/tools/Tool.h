@@ -34,13 +34,18 @@ protected:
 	std::string mArguments;
 public:
 	Tool(const fs::path& binary, const std::string& arguments): mBinary(binary), mArguments(arguments) {}
-	std::string getCommandline(const fs::path& file) const {
-		return mBinary.native() + " " + mArguments + " " + file.native();
+	
+	fs::path binary() const {
+		return mBinary;
 	}
-	std::string getCommandline(const fs::path& file, const std::string& localBinary) const {
-		return localBinary + " " + mArguments + " " + file.native();
+	
+	std::string getCommandline(const std::string& file) const {
+		return mBinary.native() + " " + mArguments + " " + file;
 	}
-		
+	std::string getCommandline(const std::string& file, const std::string& localBinary) const {
+		return localBinary + " " + mArguments + " " + file;
+	}
+
 	virtual bool canHandle(const fs::path&) const {
 		return false;
 	}
@@ -49,8 +54,9 @@ public:
 		return lhs.mBinary < rhs.mBinary;
 	}
 	
+	virtual void additionalResults(const fs::path&, BenchmarkResults&) const {}
 	
-	
+
 	
 	private:
 		ToolInterface	  mInterface;
@@ -108,14 +114,6 @@ public:
 		virtual BenchmarkResult getAnswer(const std::string& output) const
 		{
 			return extractAnswerFromOutput(output);
-		}
-		/**
-		 * 
-		 * @return Path to tool
-		 */
-		const std::string& path() const
-		{
-			return mPath;
 		}
 
 	protected:

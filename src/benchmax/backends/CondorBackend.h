@@ -43,7 +43,7 @@ private:
 		
 		for (const auto& file: b) {
 			if (!tool.canHandle(file)) continue;
-			out << "transfer_input_files = " << file.native() << ", " << tool.path() << std::endl;
+			out << "transfer_input_files = " << file.native() << ", " << tool.binary().native() << std::endl;
 			out << "arguments = " << file.filename().native() << std::endl;
 			out << "queue" << std::endl;
 		}

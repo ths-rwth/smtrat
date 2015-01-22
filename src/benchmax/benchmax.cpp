@@ -78,12 +78,17 @@ void printWelcome()
 	std::cout << "          ./benchmax -T 90 -D smtlib/qf_nra/etcs/ -D smtlib/qf_nra/bouncing_ball/ --redlog_rlqe /usr/bin/redcsl" << std::endl;
 }
 
-bool initApplication(const benchmax::Settings& s) {
+bool initApplication(int argc, char** argv) {
+	
 	carl::logging::logger().configure("stdout", std::cout);
 	carl::logging::logger().filter("stdout")
 		("benchmax", carl::logging::LogLevel::LVL_INFO)
 		("benchmax.ssh", carl::logging::LogLevel::LVL_INFO)
 	;
+	
+	benchmax::Settings s(argc, argv);
+	Settings::PathOfBenchmarkTool = fs::system_complete(fs::path(argv[0])).native();
+
 	if(s.has("help")) {
 		std::cout << s;
 		return false;
@@ -157,17 +162,14 @@ int main(int argc, char** argv)
 {
 	std::signal(SIGINT, &handleSignal);
 	
-	benchmax::Settings s(argc, argv);
-	Settings::PathOfBenchmarkTool = fs::system_complete(fs::path(argv[0])).native();
-
+	// init benchmark
+	if (!initApplication(argc, argv)) {
+		return 0;
+	}
+	
 	benchmax::Stats* _stats = new Stats(Settings::outputDir + Settings::StatsXMLFile,
 					   (!Settings::nodes.empty() ? Stats::STATS_COLLECTION : Stats::BENCHMARK_RESULT));
 	
-	// init benchmark
-	if (!initApplication(s)) {
-		return 0;
-	}
-
 	std::vector<Tool> tools;
 	loadTools(tools);
 	std::vector<benchmax::BenchmarkSet> benchmarks;
@@ -187,6 +189,7 @@ int main(int argc, char** argv)
 		backend.run(tools, benchmarks);
 	} else if (Settings::backend == "ssh") {
 		BENCHMAX_LOG_INFO("benchmax", "Using ssh backend.");
+		BENCHMAX_LOG_ERROR("benchmax.ssh", "The ssh backend is not tested and most probably disfunctional.");
 		// libssh is needed.
 		benchmax::SSHBackend backend;
 		backend.run(tools, benchmarks);
