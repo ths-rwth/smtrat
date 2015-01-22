@@ -604,58 +604,62 @@ namespace vs
     bool State::simplify( ConditionList& _conditionVectorToSimplify, ConditionSetSet& _conflictSet, ValuationMap& _ranking, bool _stateConditions )
     {
         carl::PointerSet<Condition> redundantConditionSet;
-        for( auto iter = _conditionVectorToSimplify.begin(); iter != _conditionVectorToSimplify.end(); ++iter )
+        if( !mpVariableBounds->isConflicting() )
         {
-            const smtrat::ConstraintT& constr = (*iter)->constraint();
-            if( !constr.isBound() )
+            smtrat::EvalDoubleIntervalMap varIntervals = mpVariableBounds->getIntervalMap();
+            for( auto iter = _conditionVectorToSimplify.begin(); iter != _conditionVectorToSimplify.end(); ++iter )
             {
-                carl::Relation stricterRelation = constr.relation();
-                switch( constr.consistentWith( mpVariableBounds->getIntervalMap(), stricterRelation ) )
+                const smtrat::ConstraintT& constr = (*iter)->constraint();
+                if( !constr.isBound() )
                 {
-                    case 0:
+                    carl::Relation stricterRelation = constr.relation();
+                    switch( constr.consistentWith( varIntervals, stricterRelation ) )
                     {
-                        carl::PointerSet<Condition> condSet = mpVariableBounds->getOriginsOfBounds( constr.variables() );
-                        condSet.insert( *iter );
-                        _conflictSet.insert( std::move( condSet ) );
-                        break;
-                    }
-                    case 1:
-                    {
-                        redundantConditionSet.insert( *iter );
-                        break;
-                    }
-                    default:
-                    {
-                        if( stricterRelation != constr.relation() )
+                        case 0:
                         {
-                            carl::PointerSet<Condition> vbcondSet = mpVariableBounds->getOriginsOfBounds( constr.variables() );
-                            size_t nValuation = (*iter)->valuation();
-                            bool nFlag = (*iter)->flag();
-                            const smtrat::ConstraintT* nConstraint = carl::newConstraint<smtrat::Poly>( constr.lhs(), stricterRelation );
-                            unsigned nConstraintConsistency = nConstraint->isConsistent();
-                            if( nConstraintConsistency == 2 )
+                            carl::PointerSet<Condition> condSet = mpVariableBounds->getOriginsOfBounds( constr.variables() );
+                            condSet.insert( *iter );
+                            _conflictSet.insert( std::move( condSet ) );
+                            break;
+                        }
+                        case 1:
+                        {
+                            redundantConditionSet.insert( *iter );
+                            break;
+                        }
+                        default:
+                        {
+                            if( stricterRelation != constr.relation() )
                             {
-                                if( _stateConditions )
+                                carl::PointerSet<Condition> vbcondSet = mpVariableBounds->getOriginsOfBounds( constr.variables() );
+                                size_t nValuation = (*iter)->valuation();
+                                bool nFlag = (*iter)->flag();
+                                const smtrat::ConstraintT* nConstraint = carl::newConstraint<smtrat::Poly>( constr.lhs(), stricterRelation );
+                                unsigned nConstraintConsistency = nConstraint->isConsistent();
+                                if( nConstraintConsistency == 2 )
                                 {
-                                    carl::PointerSet<Condition> oConds = (*iter)->originalConditions();
-                                    for( const Condition* vbcond : vbcondSet )
-                                        oConds.insert( vbcond->originalConditions().begin(), vbcond->originalConditions().end() );
-                                    addCondition( nConstraint, oConds, nValuation, true, _ranking );
+                                    if( _stateConditions )
+                                    {
+                                        carl::PointerSet<Condition> oConds = (*iter)->originalConditions();
+                                        for( const Condition* vbcond : vbcondSet )
+                                            oConds.insert( vbcond->originalConditions().begin(), vbcond->originalConditions().end() );
+                                        addCondition( nConstraint, oConds, nValuation, true, _ranking );
+                                    }
+                                    else
+                                    {
+                                        const Condition* cond = new Condition( nConstraint, mpConditionIdAllocator->getId(), nValuation, nFlag, (*iter)->originalConditions(), true );
+                                        for( const Condition* vbcond : vbcondSet )
+                                            cond->pOriginalConditions()->insert( vbcond->originalConditions().begin(), vbcond->originalConditions().end() );
+                                        _conditionVectorToSimplify.push_back( cond );
+                                    }
+                                    redundantConditionSet.insert( *iter );
                                 }
-                                else
+                                else if( nConstraint->isConsistent() == 0 )
                                 {
-                                    const Condition* cond = new Condition( nConstraint, mpConditionIdAllocator->getId(), nValuation, nFlag, (*iter)->originalConditions(), true );
-                                    for( const Condition* vbcond : vbcondSet )
-                                        cond->pOriginalConditions()->insert( vbcond->originalConditions().begin(), vbcond->originalConditions().end() );
-                                    _conditionVectorToSimplify.push_back( cond );
+                                    carl::PointerSet<Condition> condSet = mpVariableBounds->getOriginsOfBounds( constr.variables() );
+                                    condSet.insert( *iter );
+                                    _conflictSet.insert( std::move( condSet ) );
                                 }
-                                redundantConditionSet.insert( *iter );
-                            }
-                            else if( nConstraint->isConsistent() == 0 )
-                            {
-                                carl::PointerSet<Condition> condSet = mpVariableBounds->getOriginsOfBounds( constr.variables() );
-                                condSet.insert( *iter );
-                                _conflictSet.insert( std::move( condSet ) );
                             }
                         }
                     }
