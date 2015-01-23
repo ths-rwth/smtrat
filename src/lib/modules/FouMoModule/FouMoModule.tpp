@@ -28,10 +28,11 @@
 
 #include "FouMoModule.h"
 
-//#define DEBUG_FouMoModule
+#define DEBUG_FouMoModule
 
 #define Allow_Deletion
 #define Integer_Mode
+//#define Nonlinear_Mode
 //#define Threshold 20
 
 namespace smtrat
@@ -395,6 +396,9 @@ namespace smtrat
             if( var_corr_constr.empty() ) 
             {
                 // Try to derive a (integer) solution by backtracking through the steps of Fourier-Motzkin
+                #ifdef Nonlinear_Mode
+                return call_backends();                
+                #endif
                 if( construct_solution() )
                 {
                     #ifdef DEBUG_FouMoModule
@@ -548,7 +552,11 @@ namespace smtrat
             auto iter_poly = iter_constr->first.constraint().lhs().begin();
             while( iter_poly != iter_constr->first.constraint().lhs().end() )
             {
+                #ifdef Nonlinear_Mode
+                if( !iter_poly->isConstant() && iter_poly->isLinear() )
+                #else
                 if( !iter_poly->isConstant() )
+                #endif    
                 {
                     carl::Variable var_help = iter_poly->getSingleVariable();
                     auto iter_help = var_corr_constr.find( var_help );
@@ -614,7 +622,11 @@ namespace smtrat
         auto iter_poly_upper = upper_constr->lhs().begin();
         while( iter_poly_upper != upper_constr->lhs().end() )
         {
+            #ifdef Nonlinear_Mode
+            if( !iter_poly_upper->isConstant() && iter_poly_upper->isLinear() )
+            #else
             if( !iter_poly_upper->isConstant() )
+            #endif    
             {
                 if( iter_poly_upper->getSingleVariable() == corr_var )
                 {
@@ -628,7 +640,11 @@ namespace smtrat
         auto iter_poly_lower = lower_constr->lhs().begin();
         while( iter_poly_lower != lower_constr->lhs().end() )
         {
+            #ifdef Nonlinear_Mode
+            if( !iter_poly_lower->isConstant() && iter_poly_lower->isLinear() )
+            #else
             if( !iter_poly_lower->isConstant() )
+            #endif    
             {
                 if( iter_poly_lower->getSingleVariable() == corr_var )
                 {
