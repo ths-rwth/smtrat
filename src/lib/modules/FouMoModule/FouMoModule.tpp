@@ -426,13 +426,6 @@ namespace smtrat
             Rational corr_coeff;
             // Store how the amount of constraints will change after the elimination
             Rational delta_constr = var_corr_constr.begin()->second.first.size()*(var_corr_constr.begin()->second.second.size()-1)-var_corr_constr.begin()->second.second.size();
-            if( false ) //delta_constr > Threshold )
-            {
-                #ifdef DEBUG_FouMoModule
-                cout << "Run Backends because Threshold is exceeded!" << endl;
-                #endif
-                return call_backends();                
-            }
             auto iter_var = var_corr_constr.begin();
             ++iter_var;
             while( iter_var != var_corr_constr.end() )
@@ -444,6 +437,13 @@ namespace smtrat
                     best_var = iter_var->first;
                 }
                 ++iter_var;    
+            }
+            if( false ) //delta_constr > Threshold )
+            {
+                #ifdef DEBUG_FouMoModule
+                cout << "Run Backends because Threshold is exceeded!" << endl;
+                #endif
+                return call_backends();                
             }
             #ifdef DEBUG_FouMoModule
             cout << "The 'best' variable is:" << best_var << endl;
