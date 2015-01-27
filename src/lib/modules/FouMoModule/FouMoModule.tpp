@@ -32,7 +32,7 @@
 
 #define Allow_Deletion
 #define Integer_Mode
-//#define Nonlinear_Mode
+#define Nonlinear_Mode
 //#define Threshold 20
 
 namespace smtrat
@@ -395,9 +395,23 @@ namespace smtrat
             #endif
             if( var_corr_constr.empty() ) 
             {
-                // Try to derive a (integer) solution by backtracking through the steps of Fourier-Motzkin
+                // Try to derive a(n) (integer) solution by backtracking through the steps of Fourier-Motzkin
                 #ifdef Nonlinear_Mode
-                return call_backends();                
+                auto iter_constr = mProc_Constraints.begin();
+                while( iter_constr != mProc_Constraints.end() )
+                {
+                    //std::shared_ptr<std::vector<FormulaT>> formula_cover; // = std::shared_ptr<std::vector<FormulaT>>( iter_constr->second );
+                    std::shared_ptr<std::vector<FormulaT>> formula_cover( new std::vector<FormulaT>() );
+                    //*formula_cover = iter_constr->second; 
+                    addSubformulaToPassedFormula( iter_constr->first, formula_cover );
+                    ++iter_constr;
+                }
+                Answer ans = runBackends();
+                if( ans == False )
+                {
+                    getInfeasibleSubsets();
+                }
+                return ans;
                 #endif
                 if( construct_solution() )
                 {
@@ -694,6 +708,8 @@ namespace smtrat
                 atomic_formula_upper = iter_constr_upper->first;
                 to_be_substituted_upper = atomic_formula_upper.constraint().lhs();
                 auto iter_poly_upper = atomic_formula_upper.constraint().lhs().begin();
+                to_be_substituted_upper.substitute( mVarAss );
+                /*
                 while( iter_poly_upper != atomic_formula_upper.constraint().lhs().end() )
                 {
                     if( !iter_poly_upper->isConstant() )
@@ -704,7 +720,8 @@ namespace smtrat
                         }
                     }
                     ++iter_poly_upper;
-                }
+                } 
+                */
                 #ifdef DEBUG_FouMoModule
                 cout << "Remaining polynomial: " << to_be_substituted_upper << endl;
                 #endif
@@ -776,6 +793,8 @@ namespace smtrat
                 atomic_formula_lower = iter_constr_lower->first;
                 to_be_substituted_lower = atomic_formula_lower.constraint().lhs();
                 auto iter_poly_lower = atomic_formula_lower.constraint().lhs().begin();
+                to_be_substituted_lower = to_be_substituted_lower.substitute( mVarAss ); 
+                /*
                 while( iter_poly_lower != atomic_formula_lower.constraint().lhs().end() )
                 {
                     if( !iter_poly_lower->isConstant() )
@@ -787,6 +806,7 @@ namespace smtrat
                     }
                     ++iter_poly_lower;
                 }
+                */
                 #ifdef DEBUG_FouMoModule
                 cout << "Remaining polynomial: " << to_be_substituted_lower << endl;
                 #endif
