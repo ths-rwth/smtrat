@@ -243,7 +243,7 @@ namespace smtrat\n\
     bool '+m+templateInst+'::inform( const FormulaT& _constraint )\n\
     {\n\
         Module::inform( _constraint ); // This must be invoked at the beginning of this method. \n\
-        const smtrat::ConstraintT* constraint = _constraint.pConstraint();\n\ 
+        const smtrat::ConstraintT* constraint = _constraint.pConstraint(); // Constraint pointer for the passed formula. \n\
         return constraint->isConsistent() != 0;\n\
     }\n\
 \n'+templatePrefix+'\
