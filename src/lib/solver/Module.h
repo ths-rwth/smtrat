@@ -731,7 +731,7 @@ namespace smtrat
              *
              * @result The vector being the two given vectors merged.
              */
-            std::vector<FormulasT> merge( const std::vector<FormulasT>&, const std::vector<FormulasT>& ) const;
+            std::vector<FormulaT> merge( const std::vector<FormulaT>&, const std::vector<FormulaT>& ) const;
             
             /**
              * @param origins A vector of sets of origins.

@@ -336,17 +336,22 @@ namespace smtrat
         return res;
     }
 
-    std::vector<FormulasT> Module::merge( const std::vector<FormulasT>& _vecSetA, const std::vector<FormulasT>& _vecSetB ) const
+    std::vector<FormulaT> Module::merge( const std::vector<FormulaT>& _vecSetA, const std::vector<FormulaT>& _vecSetB ) const
     {
-        std::vector<FormulasT> result;
-        std::vector<FormulasT>::const_iterator originSetA = _vecSetA.begin();
+        std::vector<FormulaT> result;
+        std::vector<FormulaT>::const_iterator originSetA = _vecSetA.begin();
         while( originSetA != _vecSetA.end() )
         {
-            std::vector<FormulasT>::const_iterator originSetB = _vecSetB.begin();
+            std::vector<FormulaT>::const_iterator originSetB = _vecSetB.begin();
             while( originSetB != _vecSetB.end() )
             {
-                result.push_back( FormulasT( originSetA->begin(), originSetA->end() ) );
-                result.back().insert( originSetB->begin(), originSetB->end() );
+                FormulasT subformulas;
+                if( originSetA->getType() == carl::FormulaType::AND )
+                    subformulas = originSetA->subformulas();
+                else
+                    subformulas.insert( *originSetA );
+                subformulas.insert( originSetB->begin(), originSetB->end() );
+                result.push_back( FormulaT( carl::FormulaType::AND, std::move( subformulas ) ) );
                 ++originSetB;
             }
             ++originSetA;
