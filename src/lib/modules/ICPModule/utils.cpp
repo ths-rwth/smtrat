@@ -29,22 +29,22 @@ namespace smtrat
             return result;
         }
     
-        std::pair<const ConstraintT*, const ConstraintT*> intervalToConstraint( carl::Variable::Arg _var, const smtrat::DoubleInterval _interval )
+        std::pair<const ConstraintT*, const ConstraintT*> intervalToConstraint( const Poly& _lhs, const smtrat::DoubleInterval _interval )
         {
             // left:
             Rational           bound  = carl::rationalize<Rational>( _interval.lower() );
             
-            Poly leftEx = Poly(_var) - Poly(bound);
+            Poly leftEx = _lhs - Poly(bound);
             
             const ConstraintT* leftTmp;
             switch( _interval.lowerBoundType() )
             {
                 case carl::BoundType::STRICT:
-//                    leftTmp = Formula::newBound(_var, smtrat::Relation::CR_GREATER, bound);
+//                    leftTmp = Formula::newBound(_lhs, smtrat::Relation::CR_GREATER, bound);
                     leftTmp = newConstraint(leftEx, carl::Relation::GREATER);
                     break;
                 case carl::BoundType::WEAK:
-//                    leftTmp = Formula::newBound(_var, smtrat::Relation::CR_GEQ, bound);
+//                    leftTmp = Formula::newBound(_lhs, smtrat::Relation::CR_GEQ, bound);
                     leftTmp = newConstraint(leftEx, carl::Relation::GEQ);
                     break;
                 default:
@@ -53,18 +53,18 @@ namespace smtrat
 
             // right:
             bound = carl::rationalize<Rational>( _interval.upper() );
-            Poly rightEx = Poly(_var) - Poly(bound);
+            Poly rightEx = _lhs - Poly(bound);
             
             const ConstraintT* rightTmp;
             switch( _interval.upperBoundType() )
             {
                 case carl::BoundType::STRICT:
                     rightTmp = newConstraint(rightEx, carl::Relation::LESS);
-//                    rightTmp = Formula::newBound( _var, smtrat::Relation::CR_LESS, bound );
+//                    rightTmp = Formula::newBound( _lhs, smtrat::Relation::CR_LESS, bound );
                     break;
                 case carl::BoundType::WEAK:
                     rightTmp = newConstraint(rightEx, carl::Relation::LEQ);
-//                    rightTmp = Formula::newBound( _var, smtrat::Relation::CR_LEQ, bound );
+//                    rightTmp = Formula::newBound( _lhs, smtrat::Relation::CR_LEQ, bound );
                     break;
                 default:
                     rightTmp = NULL;

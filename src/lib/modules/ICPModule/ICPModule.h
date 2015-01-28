@@ -141,6 +141,7 @@ namespace smtrat
             double                                                                              mTargetDiameter;
             double                                                                              mContractionThreshold;
             double                                                                              mDefaultSplittingSize;
+            unsigned                                                                            mNumberOfReusagesAfterTargetDiameterReached;
             double                                                                              mRelativeContraction;
             double                                                                              mAbsoluteContraction;
             
@@ -346,7 +347,7 @@ namespace smtrat
              * @param _targetDiameter
              * @return 
              */
-            double calculateSplittingImpact( carl::Variable::Arg _var, const icp::ContractionCandidate& _candidate ) const;
+            double calculateSplittingImpact( std::map<carl::Variable, icp::IcpVariable*>::const_iterator _varIcpVarMapIter ) const;
             
             /**
              * 
@@ -513,7 +514,21 @@ namespace smtrat
                 return true;
             }
             
-            bool fullfillsTarget( const DoubleInterval& _interval ) const
+            bool fulfillsTarget( icp::ContractionCandidate& _cc ) const
+            {
+                if( fulfillsTarget(mIntervals.at(_cc.derivationVar())) )
+                {
+                    if( _cc.reusagesAfterTargetDiameterReached() < mNumberOfReusagesAfterTargetDiameterReached )
+                    {
+                        _cc.incrementReusagesAfterTargetDiameterReached();
+                        return false;
+                    }
+                    return true;
+                }
+                return false;
+            }
+            
+            bool fulfillsTarget( const DoubleInterval& _interval ) const
             {
                 if( _interval.lowerBoundType() == carl::BoundType::INFTY || _interval.upperBoundType() == carl::BoundType::INFTY )
                     return false;
@@ -531,26 +546,31 @@ namespace smtrat
              * Printout of actual tables of linear constraints, active linear
              * constraints, nonlinear constraints and active nonlinear constraints.
              */
-            void debugPrint();
+            void debugPrint() const;
             
             /**
              * Prints the mapping from variable to ContractionCandidates which contain this variable.
              */
-            void printAffectedCandidates();
+            void printAffectedCandidates() const;
             
             /**
              * Prints all icpVariables
              */
-            void printIcpVariables();
+            void printIcpVariables() const;
             
             /**
              * Prints all icpRelevant candidates with their weight and id
              */
-            void printIcpRelevantCandidates();
+            void printIcpRelevantCandidates() const;
             
             /**
              * Prints all intervals from mIntervals, should be the same intervals as in mHistoryActual->intervals().
              */
-            void printIntervals( bool _original = false);
+            void printIntervals( bool _original = false ) const;
+            
+            /**
+             * Prints all intervals from mIntervals, should be the same intervals as in mHistoryActual->intervals().
+             */
+            void printPreprocessedInput( std::string _init = "" ) const;
     };
 }    // namespace smtrat

@@ -63,8 +63,9 @@ namespace icp
             carl::Variable               mVar;
             bool                               mOriginal;
             ContractionCandidates              mCandidates;
+            FormulasT                          mOriginalConstraints;
             const LRAVariable*                 mLraVar;
-            bool                               mActive;
+            unsigned                           mActivity;
             bool                               mLinear;
             EvalDoubleIntervalMap::iterator    mIntervalPos;
             
@@ -93,8 +94,9 @@ namespace icp
                 mVar( _var ),
                 mOriginal( _original ),
                 mCandidates(),
+                mOriginalConstraints(),
                 mLraVar( _lraVar ),
-                mActive( false ),
+                mActivity( 0 ),
                 mLinear( true ),
                 mIntervalPos( _intervalPos ),
                 mUpdated( std::make_pair(Updated::NONE,Updated::NONE) ),
@@ -129,9 +131,23 @@ namespace icp
 
             void addCandidate( ContractionCandidate* _candidate )
             {
+                assert( !isOriginal() );
                 assert( _candidate->lhs() == mVar );
                 mCandidates.insert( mCandidates.end(), _candidate );
-                checkLinear();
+                _candidate->addICPVariable( this );
+                mLinear &= !_candidate->isLinear();
+            }
+            
+            void addOriginalConstraint( const FormulaT& _constraint )
+            {
+                assert( isOriginal() );
+                mOriginalConstraints.insert( _constraint );
+            }
+            
+            void removeOriginalConstraint( const FormulaT& _constraint )
+            {
+                assert( isOriginal() );
+                mOriginalConstraints.erase( _constraint );
             }
 
             void setLraVar( const LRAVariable* _lraVar )
@@ -141,7 +157,7 @@ namespace icp
                 mUpdated = std::make_pair(Updated::BOTH,Updated::BOTH);
             }
 
-            void print( std::ostream& _out = std::cout ) const
+            void print( std::ostream& _out = std::cout, bool _withContractionCandidates = false ) const
             {
                 _out << "Original: " << mOriginal << ", " << mVar << ", ";
                 if( mLinear && (mLraVar != NULL) )
@@ -149,36 +165,34 @@ namespace icp
                     mLraVar->print();
                 }
                 _out << std::endl;
+                if( _withContractionCandidates )
+                {
+                    
+                    _out << "   Contraction candidates:" << std::endl;
+                    for( auto& cc : mCandidates )
+                    {
+                        _out << "      ";
+                        cc->print( _out );
+                    }
+                }
             }
 
             bool isActive() const
             {
-                return mActive;
+                return isOriginal() ? !mOriginalConstraints.empty() : (mActivity > 0);
             }
 
-            void activate()
+            void incrementActivity()
             {
-                mActive = true;
+                assert( !isOriginal() );
+                ++mActivity;
             }
 
-            void deactivate()
+            void decrementActivity()
             {
-                mActive = false;
-            }
-
-            bool checkLinear()
-            {
-                ContractionCandidates::iterator candidateIt = mCandidates.begin();
-                for ( ; candidateIt != mCandidates.end(); ++candidateIt )
-                {
-                    if ( (*candidateIt)->isLinear() == false )
-                    {
-                        mLinear = false;
-                        return false;
-                    }
-                }
-                mLinear = true;
-                return true;
+                assert( !isOriginal() );
+                assert( mActivity > 0 );
+                --mActivity;
             }
             
             bool isLinear()
@@ -295,24 +309,6 @@ namespace icp
             bool isOriginal() const
             {
                 return mOriginal;
-            }
-            
-            /**
-             * Checks all candidates if at least one is active - if so, set variable as active.
-             * @return true if variable is active
-             */
-            bool autoActivate()
-            {
-                ContractionCandidates::iterator candidateIt;
-                for( candidateIt = mCandidates.begin(); candidateIt != mCandidates.end(); ++candidateIt )
-                {
-                    if( (*candidateIt)->isActive() )
-                    {
-                        mActive = true;
-                        return mActive;
-                    }
-                }
-                return false;
             }
             
             bool operator< (IcpVariable const& rhs) const

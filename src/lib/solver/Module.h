@@ -749,12 +749,13 @@ namespace smtrat
              * @param _premise The sub-formulas of the received formula from which the branch is followed.
              *                 Note, that a premise is not necessary, as every branch is a valid formula.
              *                 But a premise can prevent from branching unnecessarily.
-             * @param _leftCaseWeak true, if the given variable should be less or equal than the given value
-             *                            or greater than the given value;
-             *                      false, if the given variable should be less than the given value or
-             *                             or greater or equal than the given value.
+             * @param _leftCaseWeak true, if a branching in the form of (or (<= p b) (> p b)) is desired.
+             *                      false, if a branching in the form of (or (< p b) (>= p b)) is desired.
+             * @param _preferLeftCase true, if the left case (polynomial less(or equal) 0 shall be chosen first.
+             *                        false, otherwise.
+             * @param _isolateBranchValue true, if a branching in the form of (or (= p b) (< p b) (> p b)) is desired. (Currently only supported for reals)
              */
-            void branchAt( const Poly& _polynomial, const Rational& _value, const FormulasT& = FormulasT(), bool _leftCaseWeak = true );
+            void branchAt( const Poly& _polynomial, const Rational& _value, const FormulasT& = FormulasT(), bool _leftCaseWeak = true, bool _preferLeftCase = true, bool _isolateBranchValue = false );
             
             /**
              * Adds the following lemmas for the given constraint p!=0

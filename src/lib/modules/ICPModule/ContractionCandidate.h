@@ -39,6 +39,7 @@ namespace smtrat
 {
     namespace icp{
     
+    class IcpVariable;
     class ContractionCandidateManager;
     
     class ContractionCandidate
@@ -50,18 +51,19 @@ namespace smtrat
             /**
              * Members:
              */
-//            const Constraint* mConstraint;
-            const Poly          mRhs;
-            const ConstraintT*         mConstraint; // Todo: Do not save constraints but formulae instead
-            Contractor<carl::SimpleNewton>&  mContractor;
+            const Poly mRhs;
+            const ConstraintT* mConstraint; // Todo: Do not save constraints but formulae instead
+            Contractor<carl::SimpleNewton>& mContractor;
             
-            carl::Variable            mLhs;
-            carl::Variable            mDerivationVar;
-            Poly                mDerivative;
-            FormulasT       mOrigin;
-            unsigned    mId;
-            bool        mIsLinear;
-            bool        mDerived;
+            carl::Variable mLhs;
+            carl::Variable mDerivationVar;
+            Poly mDerivative;
+            FormulasT mOrigin;
+            unsigned mId;
+            bool mIsLinear;
+            bool mDerived;
+            std::set<IcpVariable*> mIcpVariables;
+            unsigned mReusagesAfterTargetDiameterReached;
 
 
             // RWA
@@ -79,36 +81,22 @@ namespace smtrat
 
             ContractionCandidate( const ContractionCandidate& _original ) = delete;
 			ContractionCandidate( ) = delete;
-//            :
-//            mRhs(_original.rhs()),
-//            mConstraint(_original.constraint()),
-//            mContractor(_original.contractor()),
-//            mLhs(_original.lhs()),
-//            mDerivationVar(_original.derivationVar()),
-//            mDerivative(_original.derivative()),
-//            mOrigin(),
-//            mId(_original.id()),
-//            mIsLinear(_original.isLinear()),
-//            mDerived(_original.isDerived()),
-//            mRWA(_original.RWA()),
-//            mLastPayoff(_original.lastPayoff())
-//            {
-//                mOrigin.insert(_original.origin().begin(), _original.origin().end());
-//            }
 
             ContractionCandidate( carl::Variable _lhs, const Poly _rhs, const ConstraintT* _constraint, carl::Variable _derivationVar, Contractor<carl::SimpleNewton>& _contractor, const FormulaT& _origin, unsigned _id ):
-            mRhs(_rhs),
-            mConstraint(_constraint),
-            mContractor(_contractor),
-            mLhs(_lhs),
-            mDerivationVar(_derivationVar),
-            mDerivative(),
-            mOrigin(),
-            mId(_id),
-            mIsLinear(true),
-            mDerived(false),
-            mRWA(1),
-            mLastPayoff(0)
+                mRhs(_rhs),
+                mConstraint(_constraint),
+                mContractor(_contractor),
+                mLhs(_lhs),
+                mDerivationVar(_derivationVar),
+                mDerivative(),
+                mOrigin(),
+                mId(_id),
+                mIsLinear(true),
+                mIcpVariables(),
+                mReusagesAfterTargetDiameterReached(0),
+                mDerived(false),
+                mRWA(1),
+                mLastPayoff(0)
             {
                 mOrigin.insert(_origin);
             }
@@ -119,19 +107,20 @@ namespace smtrat
              * @param _derivationVar
              */
             ContractionCandidate( carl::Variable _lhs, const Poly _rhs, const ConstraintT* _constraint, carl::Variable _derivationVar, Contractor<carl::SimpleNewton>& _contractor, unsigned _id ):
-            mRhs(_rhs),
-            mConstraint(_constraint),
-            mContractor(_contractor),
-            mLhs(_lhs),
-            mDerivationVar(_derivationVar),
-            mDerivative(),
-            mOrigin(),
-            mId(_id),
-            mIsLinear(false),
-            mDerived(false),
-            mRWA(1),
-            mLastRWA(1),
-            mLastPayoff(0)
+                mRhs(_rhs),
+                mConstraint(_constraint),
+                mContractor(_contractor),
+                mLhs(_lhs),
+                mDerivationVar(_derivationVar),
+                mDerivative(),
+                mOrigin(),
+                mId(_id),
+                mIsLinear(false),
+                mReusagesAfterTargetDiameterReached(0),
+                mDerived(false),
+                mRWA(1),
+                mLastRWA(1),
+                mLastPayoff(0)
             {
             }
 
@@ -190,16 +179,9 @@ namespace smtrat
                 return mOrigin;
             }
 
-            void addOrigin( const FormulaT& _origin )
-            {
-                assert(_origin.getType() == carl::FormulaType::CONSTRAINT);
-                mOrigin.insert(_origin);
-            }
+            void addOrigin( const FormulaT& _origin );
 
-            void removeOrigin( const FormulaT& _origin )
-            {
-                mOrigin.erase(_origin);
-            }
+            void removeOrigin( const FormulaT& _origin );
 
             bool hasOrigin( const FormulaT& _origin ) const
             {
@@ -219,6 +201,26 @@ namespace smtrat
             bool isLinear() const
             {
                 return mIsLinear;
+            }
+            
+            unsigned reusagesAfterTargetDiameterReached() const
+            {
+                return mReusagesAfterTargetDiameterReached;
+            }
+            
+            unsigned incrementReusagesAfterTargetDiameterReached()
+            {
+                return ++mReusagesAfterTargetDiameterReached;
+            }
+            
+            void resetReusagesAfterTargetDiameterReached()
+            {
+                mReusagesAfterTargetDiameterReached = 0;
+            }
+            
+            void addICPVariable( IcpVariable* _icpVar )
+            {
+                mIcpVariables.insert( _icpVar );
             }
 
             double calcRWA()

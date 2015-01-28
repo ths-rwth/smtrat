@@ -424,11 +424,12 @@ namespace smtrat
         return false;
     }
     
-    void Module::branchAt( const Poly& _polynomial, const Rational& _value, const FormulasT& _premise, bool _leftCaseWeak )
+    void Module::branchAt( const Poly& _polynomial, const Rational& _value, const FormulasT& _premise, bool _leftCaseWeak, bool _preferLeftCase, bool _isolateBranchValue )
     {
         assert( !_polynomial.hasConstantTerm() );
         const ConstraintT* constraintA = NULL;
         const ConstraintT* constraintB = NULL;
+        const ConstraintT* equation = NULL;
         bool onlyIntegerValuedVariables = true;
         Variables vars;
         _polynomial.gatherVariables( vars );
@@ -454,45 +455,70 @@ namespace smtrat
             #endif
         }
         else
-        {   
+        {
             Poly constraintLhs = _polynomial - _value;
+            if( _isolateBranchValue )
+            {
+                equation = newConstraint<Poly>( constraintLhs, Relation::EQ );
+            }
             if( _leftCaseWeak )
             {
-                constraintA = newConstraint<Poly>( constraintLhs, Relation::LEQ );
+                constraintA = newConstraint<Poly>( constraintLhs, _isolateBranchValue ? Relation::LESS : Relation::LEQ );
                 constraintB = newConstraint<Poly>( constraintLhs, Relation::GREATER );
             }
             else
             {
                 constraintA = newConstraint<Poly>( constraintLhs, Relation::LESS );
-                constraintB = newConstraint<Poly>( constraintLhs, Relation::GEQ );   
+                constraintB = newConstraint<Poly>( constraintLhs, _isolateBranchValue ? Relation::GREATER : Relation::GEQ );   
             }
         }
-        // (p<=I-1 or p>=I)
+        FormulaT consA = FormulaT( constraintA );
+        FormulaT consB = FormulaT( constraintB );
+        FormulaT eq;
+        if( !onlyIntegerValuedVariables && _isolateBranchValue )
+        {
+            eq = FormulaT( equation );
+            eq.setActivity( -numeric_limits<double>::infinity() );
+        }
+        else
+        {
+            if( _preferLeftCase )
+                consA.setActivity( -numeric_limits<double>::infinity() );
+            else
+                consB.setActivity( -numeric_limits<double>::infinity() );
+        }
+        
+        // Form premise
         FormulasT subformulasA;
         for( const FormulaT& pre : _premise )
         {
             assert( find( mpReceivedFormula->begin(), mpReceivedFormula->end(), pre ) != mpReceivedFormula->end() );
             subformulasA.insert( FormulaT( FormulaType::NOT, pre ) );
         }
-        FormulaT consA = FormulaT( constraintA );
-        consA.setActivity( -numeric_limits<double>::infinity() );
-        FormulaT consB = FormulaT( constraintB );
-        consB.setActivity( -numeric_limits<double>::infinity() );
-        subformulasA.insert( consA );
-        subformulasA.insert( consB );
-        FormulaT dedA = FormulaT( FormulaType::OR, std::move( subformulasA ) );
-        addDeduction( dedA );
-        // (not(p<=I-1) or not(p>=I))
-        FormulasT subformulasB;
-        for( const FormulaT& pre : _premise )
-        {
-            assert( find( mpReceivedFormula->begin(), mpReceivedFormula->end(), pre ) != mpReceivedFormula->end() );
-            subformulasB.insert( FormulaT( FormulaType::NOT, pre ) );
-        }
+        // (not(p<I) or not(p>=I)) resp. (not(p<=I) or not(p>I))
+        FormulasT subformulasB = subformulasA;
         subformulasB.insert( FormulaT( FormulaType::NOT, consA ) );
         subformulasB.insert( FormulaT( FormulaType::NOT, consB ) );
-        FormulaT deduction = FormulaT( FormulaType::OR, std::move( subformulasB ) );
-        addDeduction( deduction );
+        addDeduction( FormulaT( FormulaType::OR, std::move( subformulasB ) ) );
+        if( !onlyIntegerValuedVariables && _isolateBranchValue )
+        {
+            // (not(p=I) or not(p>I))
+            FormulasT subformulasC = subformulasA;
+            subformulasC.insert( FormulaT( FormulaType::NOT, eq ) );
+            subformulasC.insert( FormulaT( FormulaType::NOT, consA ) );
+            addDeduction( FormulaT( FormulaType::OR, std::move( subformulasC ) ) );
+            // (not(p=I) or not(p>I))
+            FormulasT subformulasD = subformulasA;
+            subformulasD.insert( FormulaT( FormulaType::NOT, eq ) );
+            subformulasD.insert( FormulaT( FormulaType::NOT, consB ) );
+            addDeduction( FormulaT( FormulaType::OR, std::move( subformulasD ) ) );
+            // add the equation first
+            subformulasA.insert( eq );
+        }
+        // (p<I or p>=I) resp. (p<=I or p>I)
+        subformulasA.insert( consA );
+        subformulasA.insert( consB );
+        addDeduction( FormulaT( FormulaType::OR, std::move( subformulasA ) ) );
     }
     
     void Module::splitUnequalConstraint( const FormulaT& _unequalConstraint )
