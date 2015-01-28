@@ -61,10 +61,14 @@ Poly ParserState::applyTheoryFunction(const TheoryFunction& f, const Arguments& 
 carl::UFInstance ParserState::applyUninterpretedFunction(const carl::UninterpretedFunction& f, const Arguments& args) {
 	std::vector<carl::UVariable> vars;
 	for (auto v: args) {
-		if (FormulaT* f = boost::get<FormulaT>(&v)) {
+		auto it = mUninterpretedArguments.find(v);
+		if (it != mUninterpretedArguments.end()) {
+			vars.push_back(it->second);
+			continue;
+		} else if (FormulaT* f = boost::get<FormulaT>(&v)) {
 			carl::Variable tmp = carl::freshBooleanVariable();
 			vars.push_back(carl::UVariable(tmp));
-			mUninterpretedEqualities.insert(FormulaT(carl::FormulaType::AND, FormulaT(tmp), *f));
+			mUninterpretedEqualities.insert(FormulaT(carl::FormulaType::IFF, FormulaT(tmp), *f));
 		} else if (Poly* p = boost::get<Poly>(&v)) {
 			carl::Variable tmp = carl::freshRealVariable();
 			vars.push_back(carl::UVariable(tmp));
@@ -75,7 +79,11 @@ carl::UFInstance ParserState::applyUninterpretedFunction(const carl::Uninterpret
 			carl::Variable tmp = carl::freshUninterpretedVariable();
 			vars.push_back(carl::UVariable(tmp, uf->uninterpretedFunction().codomain()));
 			mUninterpretedEqualities.insert(FormulaT(std::move(carl::UEquality(vars.back(), *uf, false))));
+		} else {
+			SMTRAT_LOG_ERROR("smtrat.parser", "The function argument type for function " << f << " was invalid.");
+			continue;
 		}
+		mUninterpretedArguments[v] = vars.back();
 	}
 	return carl::newUFInstance(f, vars);
 }
