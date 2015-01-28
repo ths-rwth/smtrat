@@ -57,6 +57,7 @@ namespace parser {
 		smtrat::Logic mLogic;
 		FormulasT mTheoryIteBindings;
 		FormulasT mUninterpretedEqualities;
+		std::map<Argument, carl::UVariable> mUninterpretedArguments;
 		std::map<carl::Variable, std::tuple<FormulaT, Poly, Poly>> mTheoryItes;
 		
 		InstructionHandler* handler;
