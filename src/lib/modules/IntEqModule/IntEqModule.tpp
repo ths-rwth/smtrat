@@ -457,10 +457,25 @@ namespace smtrat
                         ++coeff_iter;                  
                     }
                     ++iter_var;                   
-                }      
+                }
+                std::shared_ptr<std::vector<FormulaT>> formula_cover( new std::vector<FormulaT>() );
+                auto iter_sets = origins.begin();
+                while( iter_sets != origins.end() )
+                {
+                    auto iter_set = iter_sets->begin();
+                    FormulasT origin;
+                    while( iter_set != iter_sets->end() )
+                    {
+                        origin.insert( *iter_set );
+                        ++iter_set;                            
+                    }
+                    FormulaT origins_conjuncted = FormulaT( carl::FormulaType::AND, std::move( origin ) );
+                    formula_cover->push_back( origins_conjuncted );
+                    ++iter_sets;
+                }  
                 FormulaT formula_passed( carl::newConstraint( new_poly, (*iter_formula).formula().constraint().relation() ) );                
                 addConstraintToInform( formula_passed );
-                //addSubformulaToPassedFormula( formula_passed, origins );    
+                addSubformulaToPassedFormula( formula_passed, formula_cover );    
             }
             ++iter_formula;
         }

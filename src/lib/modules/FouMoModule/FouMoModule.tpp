@@ -400,9 +400,22 @@ namespace smtrat
                 auto iter_constr = mProc_Constraints.begin();
                 while( iter_constr != mProc_Constraints.end() )
                 {
-                    //std::shared_ptr<std::vector<FormulaT>> formula_cover; // = std::shared_ptr<std::vector<FormulaT>>( iter_constr->second );
                     std::shared_ptr<std::vector<FormulaT>> formula_cover( new std::vector<FormulaT>() );
-                    //*formula_cover = iter_constr->second; 
+                    auto iter_sets = iter_constr->second.begin();
+                    while( iter_sets != iter_constr->second.end() )
+                    {
+                        auto iter_set = iter_sets->begin();
+                        FormulasT origin;
+                        while( iter_set != iter_sets->end() )
+                        {
+                            origin.insert( *iter_set );
+                            ++iter_set;                            
+                        }
+                        FormulaT origins_conjuncted = FormulaT( carl::FormulaType::AND, std::move( origin ) );
+                        formula_cover->push_back( origins_conjuncted );
+                        ++iter_sets;
+                    }
+                    addConstraintToInform( iter_constr->first ); 
                     addSubformulaToPassedFormula( iter_constr->first, formula_cover );
                     ++iter_constr;
                 }
