@@ -32,7 +32,7 @@
 #include <stdio.h>
 namespace smtrat
 {
-    typedef std::map<FormulaT,vector<FormulasT>> FormulaOrigins;
+    typedef std::map<FormulaT,std::shared_ptr<std::vector<FormulaT>>> Formula_Origins;
         
     /**
      * A module which checks whether the equations contained in the received formula 
@@ -43,11 +43,11 @@ namespace smtrat
     {
         private:
             // Stores the equations of the received constraints and their origins
-            FormulaOrigins mProc_Constraints; 
+            Formula_Origins mProc_Constraints; 
             // Stores the calculated substitutions
             std::map<carl::Variable, Poly>  mSubstitutions;
             // Stores the origins of the calculated substitutions
-            std::map<carl::Variable, vector<FormulasT>> mVariables;
+            std::map<carl::Variable, std::shared_ptr<std::vector<FormulaT>>> mVariables;
             
         public:
             IntEqModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );

@@ -28,10 +28,11 @@
 
 #include "FouMoModule.h"
 
-//#define DEBUG_FouMoModule
+#define DEBUG_FouMoModule
 
 #define Allow_Deletion
 #define Integer_Mode
+#define Nonlinear_Mode
 //#define Threshold 20
 
 namespace smtrat
@@ -394,7 +395,37 @@ namespace smtrat
             #endif
             if( var_corr_constr.empty() ) 
             {
-                // Try to derive a (integer) solution by backtracking through the steps of Fourier-Motzkin
+                // Try to derive a(n) (integer) solution by backtracking through the steps of Fourier-Motzkin
+                #ifdef Nonlinear_Mode
+                auto iter_constr = mProc_Constraints.begin();
+                while( iter_constr != mProc_Constraints.end() )
+                {
+                    std::shared_ptr<std::vector<FormulaT>> formula_cover( new std::vector<FormulaT>() );
+                    auto iter_sets = iter_constr->second.begin();
+                    while( iter_sets != iter_constr->second.end() )
+                    {
+                        auto iter_set = iter_sets->begin();
+                        FormulasT origin;
+                        while( iter_set != iter_sets->end() )
+                        {
+                            origin.insert( *iter_set );
+                            ++iter_set;                            
+                        }
+                        FormulaT origins_conjuncted = FormulaT( carl::FormulaType::AND, std::move( origin ) );
+                        formula_cover->push_back( origins_conjuncted );
+                        ++iter_sets;
+                    }
+                    addConstraintToInform( iter_constr->first ); 
+                    addSubformulaToPassedFormula( iter_constr->first, formula_cover );
+                    ++iter_constr;
+                }
+                Answer ans = runBackends();
+                if( ans == False )
+                {
+                    getInfeasibleSubsets();
+                }
+                return ans;
+                #endif
                 if( construct_solution() )
                 {
                     #ifdef DEBUG_FouMoModule
@@ -422,13 +453,6 @@ namespace smtrat
             Rational corr_coeff;
             // Store how the amount of constraints will change after the elimination
             Rational delta_constr = var_corr_constr.begin()->second.first.size()*(var_corr_constr.begin()->second.second.size()-1)-var_corr_constr.begin()->second.second.size();
-            if( false ) //delta_constr > Threshold )
-            {
-                #ifdef DEBUG_FouMoModule
-                cout << "Run Backends because Threshold is exceeded!" << endl;
-                #endif
-                return call_backends();                
-            }
             auto iter_var = var_corr_constr.begin();
             ++iter_var;
             while( iter_var != var_corr_constr.end() )
@@ -440,6 +464,13 @@ namespace smtrat
                     best_var = iter_var->first;
                 }
                 ++iter_var;    
+            }
+            if( false ) //delta_constr > Threshold )
+            {
+                #ifdef DEBUG_FouMoModule
+                cout << "Run Backends because Threshold is exceeded!" << endl;
+                #endif
+                return call_backends();                
             }
             #ifdef DEBUG_FouMoModule
             cout << "The 'best' variable is:" << best_var << endl;
@@ -548,7 +579,11 @@ namespace smtrat
             auto iter_poly = iter_constr->first.constraint().lhs().begin();
             while( iter_poly != iter_constr->first.constraint().lhs().end() )
             {
+                #ifdef Nonlinear_Mode
+                if( !iter_poly->isConstant() && iter_poly->isLinear() )
+                #else
                 if( !iter_poly->isConstant() )
+                #endif    
                 {
                     carl::Variable var_help = iter_poly->getSingleVariable();
                     auto iter_help = var_corr_constr.find( var_help );
@@ -614,7 +649,11 @@ namespace smtrat
         auto iter_poly_upper = upper_constr->lhs().begin();
         while( iter_poly_upper != upper_constr->lhs().end() )
         {
+            #ifdef Nonlinear_Mode
+            if( !iter_poly_upper->isConstant() && iter_poly_upper->isLinear() )
+            #else
             if( !iter_poly_upper->isConstant() )
+            #endif    
             {
                 if( iter_poly_upper->getSingleVariable() == corr_var )
                 {
@@ -628,7 +667,11 @@ namespace smtrat
         auto iter_poly_lower = lower_constr->lhs().begin();
         while( iter_poly_lower != lower_constr->lhs().end() )
         {
+            #ifdef Nonlinear_Mode
+            if( !iter_poly_lower->isConstant() && iter_poly_lower->isLinear() )
+            #else
             if( !iter_poly_lower->isConstant() )
+            #endif    
             {
                 if( iter_poly_lower->getSingleVariable() == corr_var )
                 {
@@ -678,6 +721,8 @@ namespace smtrat
                 atomic_formula_upper = iter_constr_upper->first;
                 to_be_substituted_upper = atomic_formula_upper.constraint().lhs();
                 auto iter_poly_upper = atomic_formula_upper.constraint().lhs().begin();
+                to_be_substituted_upper.substitute( mVarAss );
+                /*
                 while( iter_poly_upper != atomic_formula_upper.constraint().lhs().end() )
                 {
                     if( !iter_poly_upper->isConstant() )
@@ -688,7 +733,8 @@ namespace smtrat
                         }
                     }
                     ++iter_poly_upper;
-                }
+                } 
+                */
                 #ifdef DEBUG_FouMoModule
                 cout << "Remaining polynomial: " << to_be_substituted_upper << endl;
                 #endif
@@ -760,6 +806,8 @@ namespace smtrat
                 atomic_formula_lower = iter_constr_lower->first;
                 to_be_substituted_lower = atomic_formula_lower.constraint().lhs();
                 auto iter_poly_lower = atomic_formula_lower.constraint().lhs().begin();
+                to_be_substituted_lower = to_be_substituted_lower.substitute( mVarAss ); 
+                /*
                 while( iter_poly_lower != atomic_formula_lower.constraint().lhs().end() )
                 {
                     if( !iter_poly_lower->isConstant() )
@@ -771,6 +819,7 @@ namespace smtrat
                     }
                     ++iter_poly_lower;
                 }
+                */
                 #ifdef DEBUG_FouMoModule
                 cout << "Remaining polynomial: " << to_be_substituted_lower << endl;
                 #endif

@@ -460,6 +460,15 @@ namespace smtrat
              * @param _originSet The set in which to store the origins.
              */
             void collectOrigins( const FormulaT& _origin, FormulasT& _originSet ) const;
+            
+            /**
+             * Collects the formulas in the given set of formulas, which are part of the received formula. If the given set of formulas directly
+             * occurs in the received formula, it is inserted into the given formula. Otherwise, the given set of formulas must be of 
+             * type AND and all its sub-formulas part of the received formula. Hence, they will be added to the given formula.
+             * @param _originSet The set from which to collect the formulas being sub-formulas of the received formula (origins).
+             * @param _origin The formula in which to store the origins.
+             */
+            void collectOrigins_Reverse( const FormulasT& _originSet, FormulaT& _origin ) const;
 
             // Methods for debugging purposes.
             /**
