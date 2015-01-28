@@ -302,28 +302,6 @@ namespace vs
         return result;
     }
 
-    bool State::checkSubResultsCombs() const
-    {
-        if( hasSubstitutionResults() )
-        {
-            if( hasSubResultsCombination() )
-            {
-                for( auto subResComb = subResultCombination().begin(); subResComb != subResultCombination().end(); ++subResComb )
-                {
-                    if( subResComb->first >= substitutionResults().size() )
-                        return true;
-                    else
-                        if( subResComb->second >= mpSubstitutionResults->at( subResComb->first ).size()
-                            || mpSubstitutionResults->at( subResComb->first ).size() == 0 )
-                        {
-                            return true;
-                        }
-                }
-            }
-        }
-        return false;
-    }
-
     State& State::root()
     {
         State* currentDT = this;
@@ -591,7 +569,7 @@ namespace vs
         // Simplify the condition vector.
         if( !conditionsSimplified() )
         {
-            ConditionSetSet conflictingConditionPairs = ConditionSetSet();
+            ConditionSetSet conflictingConditionPairs;
             if( !simplify( rConditions(), conflictingConditionPairs, _ranking, true ) )
             {
                 addConflictSet( NULL, conflictingConditionPairs );
@@ -604,7 +582,7 @@ namespace vs
     bool State::simplify( ConditionList& _conditionVectorToSimplify, ConditionSetSet& _conflictSet, ValuationMap& _ranking, bool _stateConditions )
     {
         carl::PointerSet<Condition> redundantConditionSet;
-        if( !mpVariableBounds->isConflicting() )
+        if( _stateConditions && !mpVariableBounds->isConflicting() )
         {
             smtrat::EvalDoubleIntervalMap varIntervals = mpVariableBounds->getIntervalMap();
             for( auto iter = _conditionVectorToSimplify.begin(); iter != _conditionVectorToSimplify.end(); ++iter )
@@ -1067,8 +1045,6 @@ namespace vs
         auto iter = mpSubResultCombination->begin();
         while( iter != mpSubResultCombination->end() )
         {
-//            if( iter->first >= mpSubstitutionResults->size() ) exit( 1234 );
-//            if( iter->second >= mpSubstitutionResults->at( iter->first ).size() ) exit( 1234 );
             for( auto cond = mpSubstitutionResults->at( iter->first ).at( iter->second ).first.begin();
                     cond != mpSubstitutionResults->at( iter->first ).at( iter->second ).first.end(); ++cond )
             {
@@ -1330,7 +1306,7 @@ namespace vs
         }
     }
 
-    bool State::checkConditions() 
+    bool State::checkConditions() const 
     {
         for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
         {
@@ -1361,7 +1337,7 @@ namespace vs
         }
         if( hasSubstitutionResults() )
         {
-            for( auto subResult = rSubstitutionResults().begin(); subResult != substitutionResults().end(); ++subResult )
+            for( auto subResult = substitutionResults().begin(); subResult != substitutionResults().end(); ++subResult )
             {
                 for( auto condConj = subResult->begin(); condConj != subResult->end(); ++condConj )
                 {
@@ -1374,6 +1350,21 @@ namespace vs
                                 return false;
                     }
                 }
+            }
+        }
+        return true;
+    }
+    
+    bool State::checkSubresultCombinations() const
+    {
+        if( hasSubstitutionResults() && hasSubResultsCombination() )
+        {
+            auto iter = mpSubResultCombination->begin();
+            while( iter != mpSubResultCombination->end() )
+            {
+                if( iter->first >= mpSubstitutionResults->size() ) return false;
+                if( iter->second >= mpSubstitutionResults->at( iter->first ).size() ) return false;
+                ++iter;
             }
         }
         return true;

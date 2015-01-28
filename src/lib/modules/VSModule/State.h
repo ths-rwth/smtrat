@@ -774,13 +774,6 @@ namespace vs
          * @return The number of nodes in the tree with this state as root.
          */
         unsigned numberOfNodes() const;
-        
-        /**
-         * Checks the substitution result combination vector.
-         * @return  true, if there is an error in the substitution result combination vector;
-         *          false, otherwise.
-         */
-        bool checkSubResultsCombs() const;
 
         /**
          * @return The root of the tree, in which this state is located.
@@ -937,11 +930,16 @@ namespace vs
         void addCondition( const smtrat::ConstraintT* _constraint, const carl::PointerSet<Condition>& _originalConditions, size_t _valutation, bool _recentlyAdded, ValuationMap& _ranking );
             
         /**
-         * Checks whether no condition in this state points to a deleted condition.
          * This is just for debug purpose.
-         * @return true, if all conditions are valid.
+         * @return true, if no condition in this state points to a deleted condition.
          */
-        bool checkConditions();
+        bool checkConditions() const;
+        
+        /**
+         * This is just for debug purpose.
+         * @return true, if no subresult combination is illegal.
+         */
+        bool checkSubresultCombinations() const;
             
         /**
          * Removes everything in this state originated by the given vector of conditions.
