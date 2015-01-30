@@ -208,7 +208,7 @@ namespace smtrat
             else
             {
                 T1 constantPart( constraint.constantPart() );
-                negative = (constraint.lhs().lterm().coeff() < T1( 0 ));
+                negative = (constraint.lhs().lterm().coeff() < typename Poly::CoeffType(T1( 0 )));
                 Poly* linearPart;
                 if( negative )
                     linearPart = new Poly( -constraint.lhs() + (Rational)constantPart );
@@ -2664,7 +2664,7 @@ namespace smtrat
                     std::cout << "i: " << i << std::endl;
                     #endif
                     first_loop = false;
-                    if( mod( (Rational)elim_content, (Rational)added_content ) == 0 )
+                    if( carl::mod( carl::getNum(Rational(elim_content)), carl::getNum(Rational(added_content)) ) == 0 )
                     {
                         /*
                          * If the remain of the division is zero,
@@ -2743,7 +2743,7 @@ namespace smtrat
                         }
                         addColumns( (*(*mpEntries)[row_iterator.entryID()].columnVar()).position(),
                                   diagonals.at(i),
-                                  (Rational)(-1)*inverter*(Rational)(floor_value) );
+                                  Rational(Rational(-1)*inverter*Rational(floor_value)) );
                         #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                         print();
                         #endif
@@ -2781,7 +2781,7 @@ namespace smtrat
                     column_iterator.vMove( false );                  
                 } 
                 changed_values[std::pair<size_t, size_t >((*column_iterator).rowVar()->position(), (*column_iterator).rowVar()->position()  )] = (*column_iterator).content();
-                (*column_iterator).rContent() = 1/(*column_iterator).content();
+                (*column_iterator).rContent() = Rational(Rational(1)/(*column_iterator).content());
                 /*
                  * Now change the other entries in the current column if necessary.
                  */
@@ -2908,7 +2908,7 @@ namespace smtrat
                     }
                     if( product.second != 0 )
                     {
-                        T2 temp = (Rational)(carl::getDenom((Rational)result.mainPart()))*(Rational)product.second;
+                        T2 temp = T2(Rational(carl::getDenom((Rational)result.mainPart()))*Rational(product.second));
                         gcd_row  = carl::gcd( gcd_row , temp );
                         *sum += (*product.first).expression()*(Rational)temp;
                     }
@@ -2921,7 +2921,7 @@ namespace smtrat
                 auto iter = (*sum).begin();
                 while( iter != (*sum).end() )
                 {
-                    if( (*iter).coeff() > max_value*gcd_row )
+                    if( (*iter).coeff() > Rational(max_value*gcd_row) )
                     {
                         return NULL;                        
                     }
@@ -3038,7 +3038,7 @@ namespace smtrat
                     std::cout << "f_zero = " << f_zero << std::endl;
                     std::cout << "(_rowVar->factor() * ( (Rational)1 - f_zero )) = " << (_rowVar->factor() * ( (Rational)1 - f_zero )) << std::endl;
                     #endif
-                    coeff = (*row_iterator).content()/(_rowVar->factor() * ( (Rational)1 - f_zero ));
+                    coeff = (*row_iterator).content()/(_rowVar->factor() * Rational(Rational(1) - Rational(f_zero)));
                     #ifdef LRA_DEBUG_GOMORY_CUT
                     std::cout << "B: coeff = " << coeff << std::endl;
                     #endif
@@ -3054,9 +3054,9 @@ namespace smtrat
                     std::cout << "(*row_iterator).content() = " << (*row_iterator).content() << std::endl;
                     std::cout << "_rowVar->factor() = " << _rowVar->factor() << std::endl;
                     std::cout << "f_zero = " << f_zero << std::endl;
-                    std::cout << "(_rowVar->factor() * ( (Rational)1 - f_zero )) = " << (_rowVar->factor() * ( (Rational)1 - f_zero )) << std::endl;
+                    std::cout << "(_rowVar->factor() * ( (Rational)1 - f_zero )) = " << (_rowVar->factor() * (Rational(1) - Rational(f_zero))) << std::endl;
                     #endif
-                    coeff = -((*row_iterator).content()/(_rowVar->factor() * ( (Rational)1 - f_zero )));
+                    coeff = -((*row_iterator).content()/(_rowVar->factor() * (Rational(1) - Rational(f_zero))));
                     #ifdef LRA_DEBUG_GOMORY_CUT
                     std::cout << "C: coeff = " << coeff << std::endl;
                     #endif

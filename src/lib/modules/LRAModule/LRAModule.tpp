@@ -644,7 +644,7 @@ Return:
             else
             {
                 lowerBoundType = var.infimum().isWeak() ? carl::BoundType::WEAK : carl::BoundType::STRICT;
-                lowerBoundValue = var.infimum().limit().mainPart();
+                lowerBoundValue = Rational(var.infimum().limit().mainPart());
             }
             if( var.supremum().isInfinite() )
             {
@@ -654,7 +654,7 @@ Return:
             else
             {
                 upperBoundType = var.supremum().isWeak() ? carl::BoundType::WEAK : carl::BoundType::STRICT;
-                upperBoundValue = var.supremum().limit().mainPart();
+                upperBoundValue = Rational(var.supremum().limit().mainPart());
             }
             RationalInterval interval = RationalInterval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
             result.insert( std::pair< carl::Variable, RationalInterval >( iter->first, interval ) );
@@ -1302,7 +1302,7 @@ Return:
                         bound_add = 0;
                     }
                     const smtrat::ConstraintT* cut_constraint = carl::newConstraint<Poly>( *cut_from_proof - (Rational)carl::floor((Rational)upper_lower_bound) , carl::Relation::LEQ );
-                    const smtrat::ConstraintT* cut_constraint2 = carl::newConstraint<Poly>( *cut_from_proof - ((Rational)carl::floor((Rational)upper_lower_bound)+bound_add) , carl::Relation::GEQ );
+                    const smtrat::ConstraintT* cut_constraint2 = carl::newConstraint<Poly>( *cut_from_proof - Rational(((Rational)carl::floor((Rational)upper_lower_bound)+Rational(bound_add))), carl::Relation::GEQ );
                     // Construct and add (p<=I-1 or p>=I))
                     FormulaT cons1 = FormulaT( cut_constraint );
                     cons1.setActivity( -numeric_limits<double>::infinity() );

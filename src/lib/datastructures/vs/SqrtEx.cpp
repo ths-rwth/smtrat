@@ -26,9 +26,6 @@
  */
 
 #include "SqrtEx.h"
-#ifdef USE_GINAC
-#include "carl/converter/OldGinacConverter.h"
-#endif
 
 namespace vs
 {
@@ -84,15 +81,13 @@ namespace vs
         else if( !radicand().isZero() )
         {
             smtrat::Rational absOfLCoeff = abs( radicand().coprimeFactor() );
-            smtrat::Rational* sqrtResult = new smtrat::Rational();
-            if( cln::sqrtp( absOfLCoeff, sqrtResult ) )
+            smtrat::Rational sqrtResult;
+            if( carl::sqrtp( absOfLCoeff, sqrtResult ) )
             {
-                mFactor *= (smtrat::Rational)1/(*sqrtResult);
+                mFactor *= (smtrat::Rational)1/sqrtResult;
                 mRadicand *= absOfLCoeff;
             }
-            delete sqrtResult;
         }
-        #ifdef USE_GINAC
         smtrat::Poly gcdA;
         if( mFactor.isZero() )
         {
@@ -104,24 +99,23 @@ namespace vs
         }
         else
         {
-            gcdA = carl::ginacGcd( mConstantPart, mFactor );
+            gcdA = carl::gcd( mConstantPart, mFactor );
         }
-        gcdA = carl::ginacGcd( gcdA, mDenominator );
+        gcdA = carl::gcd( gcdA, mDenominator );
         // Make sure that the polynomial to divide by cannot be negative, otherwise the sign of the square
         // root expression could change.
         if( !(gcdA == smtrat::ONE_POLYNOMIAL) && gcdA.definiteness() == carl::Definiteness::POSITIVE_SEMI )
         {
             if( !mConstantPart.isZero() )
             {
-                carl::ginacDivide( mConstantPart, gcdA, mConstantPart );
+                mConstantPart.divideBy( gcdA, mConstantPart );
             }
             if( !mFactor.isZero() )
             {
-                carl::ginacDivide( mFactor, gcdA, mFactor );
+                mFactor.divideBy( gcdA, mFactor );
             }
-            carl::ginacDivide( mDenominator, gcdA, mDenominator );
+            mDenominator.divideBy( gcdA, mDenominator );
         }
-        #endif
         smtrat::Rational numGcd = smtrat::ZERO_RATIONAL;
         smtrat::Rational denomLcm = smtrat::ONE_RATIONAL;
         if( factor().isZero() )
@@ -311,52 +305,51 @@ namespace vs
         assert( !carl::isZero( denomValue ) );
         // Check whether the resulting assignment is integer.
         bool rounded = true;
-        smtrat::Rational* sqrtExValue = new smtrat::Rational( 0 );
-        if( !cln::sqrtp( radicandValue, sqrtExValue ) )
+        smtrat::Rational sqrtExValue;
+        if( !carl::sqrtp( radicandValue, sqrtExValue ) )
         {
             assert( _rounding != 0 );
             rounded = false;
             assert( factorValue != 0 );
-            double dbSqrt = sqrt( cln::double_approx( radicandValue ) );
-            *sqrtExValue = smtrat::Rational( cln::rationalize( cln::cl_R( dbSqrt ) ) ) ;
+            double dbSqrt = sqrt( carl::toDouble( radicandValue ) );
+            sqrtExValue = carl::rationalize<smtrat::Rational>( dbSqrt ) ;
             // As there is no rational number representing the resulting square root we have to round.
             if( _rounding < 0 ) // If the result should round down in this case.
             {
-                if( factorValue > 0 && (*sqrtExValue)*(*sqrtExValue) > radicandValue )
+                if( factorValue > 0 && (sqrtExValue*sqrtExValue) > radicandValue )
                 {
                     // The factor of the resulting square root is positive, hence force rounding down.
                     dbSqrt = std::nextafter( dbSqrt, -INFINITY );
-                    *sqrtExValue = smtrat::Rational( cln::rationalize( cln::cl_R( dbSqrt ) ) );
-                    assert( !((*sqrtExValue)*(*sqrtExValue) > radicandValue) );
+                    sqrtExValue = carl::rationalize<smtrat::Rational>( dbSqrt );
+                    assert( !((sqrtExValue*sqrtExValue) > radicandValue) );
                 }
-                else if( factorValue < 0 && (*sqrtExValue)*(*sqrtExValue) < radicandValue )
+                else if( factorValue < 0 && (sqrtExValue*sqrtExValue) < radicandValue )
                 {
                     // The factor of the resulting square root is negative, hence force rounding up.
                     dbSqrt = std::nextafter( dbSqrt, INFINITY );
-                    *sqrtExValue = smtrat::Rational( cln::rationalize( cln::cl_R( dbSqrt ) ) );
-                    assert( !((*sqrtExValue)*(*sqrtExValue) < radicandValue) );
+                    sqrtExValue = carl::rationalize<smtrat::Rational>( dbSqrt );
+                    assert( !((sqrtExValue*sqrtExValue) < radicandValue) );
                 }
             }
             else if( _rounding > 0 ) // If the result should round up in this case.
             {
-                if( factorValue < 0 && (*sqrtExValue)*(*sqrtExValue) > radicandValue )
+                if( factorValue < 0 && (sqrtExValue*sqrtExValue) > radicandValue )
                 {
                     // The factor of the resulting square root is negative, hence force rounding down.
                     dbSqrt = std::nextafter( dbSqrt, -INFINITY );
-                    *sqrtExValue = smtrat::Rational( cln::rationalize( cln::cl_R( dbSqrt ) ) );
-                    assert( !((*sqrtExValue)*(*sqrtExValue) > radicandValue) );
+                    sqrtExValue = carl::rationalize<smtrat::Rational>( dbSqrt );
+                    assert( !((sqrtExValue*sqrtExValue) > radicandValue) );
                 }
-                else if( factorValue > 0 && (*sqrtExValue)*(*sqrtExValue) < radicandValue )
+                else if( factorValue > 0 && (sqrtExValue*sqrtExValue) < radicandValue )
                 {
                     // The factor of the resulting square root is positive, hence force rounding up.
                     dbSqrt = std::nextafter( dbSqrt, INFINITY );
-                    *sqrtExValue = smtrat::Rational( cln::rationalize( cln::cl_R( dbSqrt ) ) );
-                    assert( !((*sqrtExValue)*(*sqrtExValue) < radicandValue) );
+                    sqrtExValue = carl::rationalize<smtrat::Rational>( dbSqrt );
+                    assert( !((sqrtExValue*sqrtExValue) < radicandValue) );
                 }
             }
         }
-        _result = (constantPartValue + factorValue * (*sqrtExValue)) / denomValue;
-        delete sqrtExValue;
+        _result = (constantPartValue + factorValue * sqrtExValue) / denomValue;
         return rounded;
     }
 
