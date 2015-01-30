@@ -35,7 +35,7 @@
 #include "Substitute.h"
 #include "State.h"
 #include "VSSettings.h"
-#include "IDAllocator.h"
+#include "carl/util/IDGenerator.h"
 #include "../../solver/Module.h"
 #include "../../solver/RuntimeSettings.h"
 
@@ -64,7 +64,7 @@ namespace smtrat
             size_t mStepCounter;
             #endif
             /// Id allocator for the conditions.
-            vs::IDAllocator* mpConditionIdAllocator;
+            carl::IDGenerator* mpConditionIdAllocator;
             ///
             vs::State* mpStateTree;
             ///

@@ -41,7 +41,7 @@ using namespace std;
 
 namespace vs
 {   
-    State::State( IDAllocator* _conditionIdAllocator, bool _withVariableBounds ):
+    State::State( carl::IDGenerator* _conditionIdAllocator, bool _withVariableBounds ):
         mConditionsSimplified( false ),
         mHasChildrenToInsert( false ),
         mHasRecentlyAddedConditions( false ),
@@ -74,7 +74,7 @@ namespace vs
         mpConditionIdAllocator( _conditionIdAllocator )
     {}
 
-    State::State( State* const _father, const Substitution& _substitution, IDAllocator* _conditionIdAllocator, bool _withVariableBounds ):
+    State::State( State* const _father, const Substitution& _substitution, carl::IDGenerator* _conditionIdAllocator, bool _withVariableBounds ):
         mConditionsSimplified( false ),
         mHasChildrenToInsert( false ),
         mHasRecentlyAddedConditions( false ),
@@ -625,7 +625,7 @@ namespace vs
                                     }
                                     else
                                     {
-                                        const Condition* cond = new Condition( nConstraint, mpConditionIdAllocator->getId(), nValuation, nFlag, (*iter)->originalConditions(), true );
+                                        const Condition* cond = new Condition( nConstraint, mpConditionIdAllocator->get(), nValuation, nFlag, (*iter)->originalConditions(), true );
                                         for( const Condition* vbcond : vbcondSet )
                                             cond->pOriginalConditions()->insert( vbcond->originalConditions().begin(), vbcond->originalConditions().end() );
                                         _conditionVectorToSimplify.push_back( cond );
@@ -731,7 +731,7 @@ namespace vs
                             }
                             else
                             {
-                                const Condition* cond = new Condition( nConstraint, mpConditionIdAllocator->getId(), nValuation, nFlag, condB->originalConditions(), true );
+                                const Condition* cond = new Condition( nConstraint, mpConditionIdAllocator->get(), nValuation, nFlag, condB->originalConditions(), true );
                                 cond->pOriginalConditions()->insert( condA->originalConditions().begin(), condA->originalConditions().end() );
                                 _conditionVectorToSimplify.push_back( cond );
                             }
@@ -1048,7 +1048,7 @@ namespace vs
             for( auto cond = mpSubstitutionResults->at( iter->first ).at( iter->second ).first.begin();
                     cond != mpSubstitutionResults->at( iter->first ).at( iter->second ).first.end(); ++cond )
             {
-                currentSubresultCombination.push_back( new Condition( **cond, mpConditionIdAllocator->getId() ) );
+                currentSubresultCombination.push_back( new Condition( **cond, mpConditionIdAllocator->get() ) );
             }
             ++iter;
         }
@@ -1276,7 +1276,7 @@ namespace vs
                 if( _constraint->variables().find( index() ) == _constraint->variables().end()
                         || constraintWithFinitlyManySolutionCandidatesInIndexExists )
                 {
-                    rConditions().push_back( new Condition( _constraint, mpConditionIdAllocator->getId(), _valutation, true, _originalConditions, _recentlyAdded ) );
+                    rConditions().push_back( new Condition( _constraint, mpConditionIdAllocator->get(), _valutation, true, _originalConditions, _recentlyAdded ) );
                     if( mpVariableBounds != NULL && mpVariableBounds->addBound( _constraint, rConditions().back() ) )
                         mTestCandidateCheckedForBounds = false;
                 }
@@ -1290,7 +1290,7 @@ namespace vs
                         delete mpInfinityChild; // DELETE STATE
                         mpInfinityChild = NULL;
                     }
-                    rConditions().push_back( new Condition( _constraint, mpConditionIdAllocator->getId(), _valutation, false, _originalConditions, _recentlyAdded ) );
+                    rConditions().push_back( new Condition( _constraint, mpConditionIdAllocator->get(), _valutation, false, _originalConditions, _recentlyAdded ) );
                     if( mpVariableBounds != NULL && mpVariableBounds->addBound( _constraint, rConditions().back() ) )
                         mTestCandidateCheckedForBounds = false;
                 }
@@ -1299,7 +1299,7 @@ namespace vs
             else
             {
                 assert( mpInfinityChild == NULL );
-                rConditions().push_back( new Condition( _constraint, mpConditionIdAllocator->getId(), _valutation, false, _originalConditions, false ) );
+                rConditions().push_back( new Condition( _constraint, mpConditionIdAllocator->get(), _valutation, false, _originalConditions, false ) );
                 if( mpVariableBounds != NULL && mpVariableBounds->addBound( _constraint, rConditions().back() ) )
                     mTestCandidateCheckedForBounds = false;
             }
@@ -1736,7 +1736,7 @@ namespace vs
                             {
                                 carl::PointerSet<Condition> oConds;
                                 oConds.insert( *oCond );
-                                conditionsToAdd.push_back( new Condition( (**oCond).pConstraint(), mpConditionIdAllocator->getId(), (**cond).valuation(), false, oConds ) );
+                                conditionsToAdd.push_back( new Condition( (**oCond).pConstraint(), mpConditionIdAllocator->get(), (**cond).valuation(), false, oConds ) );
                                 ++oCond;
                             }
                             const Condition* rpCond = *cond;
@@ -1830,7 +1830,7 @@ namespace vs
                     std::vector<DisjunctionOfConditionConjunctions> subResults;
                     subResults.push_back( DisjunctionOfConditionConjunctions() );
                     subResults.back().push_back( ConditionList() );
-                    subResults.back().back().push_back( new Condition( *sideCond, mpConditionIdAllocator->getId(), state->treeDepth(), false, _substitution.originalConditions(), false ) );
+                    subResults.back().back().push_back( new Condition( *sideCond, mpConditionIdAllocator->get(), state->treeDepth(), false, _substitution.originalConditions(), false ) );
                     state->addSubstitutionResults( subResults );
                     state->rType() = SUBSTITUTION_TO_APPLY;
                 }
@@ -1846,12 +1846,12 @@ namespace vs
                         if( denomPos != carl::constraintPool<smtrat::Poly>().inconsistentConstraint() )
                         {
                             cases.push_back( ConditionList() );
-                            cases.back().push_back( new vs::Condition( denomPos, mpConditionIdAllocator->getId(), state->treeDepth(), false, _substitution.originalConditions(), false ) );
+                            cases.back().push_back( new vs::Condition( denomPos, mpConditionIdAllocator->get(), state->treeDepth(), false, _substitution.originalConditions(), false ) );
                         }
                         if( denomNeg != carl::constraintPool<smtrat::Poly>().inconsistentConstraint() )
                         {
                             cases.push_back( ConditionList() );
-                            cases.back().push_back( new vs::Condition( denomNeg, mpConditionIdAllocator->getId(), state->treeDepth(), false, _substitution.originalConditions(), false ) );
+                            cases.back().push_back( new vs::Condition( denomNeg, mpConditionIdAllocator->get(), state->treeDepth(), false, _substitution.originalConditions(), false ) );
                         }
                         std::vector<DisjunctionOfConditionConjunctions> subResults;
                         subResults.push_back( cases );
@@ -2266,7 +2266,7 @@ namespace vs
             #ifdef VS_DEBUG_ROOTS_CHECK
             cout << "Cauchy bound of  " << cons.lhs() << "  is  " << cb << "." << endl;
             #endif
-            smtrat::DoubleInterval cbInterval = smtrat::DoubleInterval( -cb, carl::BoundType::STRICT, cb, carl::BoundType::STRICT );
+            smtrat::DoubleInterval cbInterval = smtrat::DoubleInterval( smtrat::Rational(-cb), carl::BoundType::STRICT, cb, carl::BoundType::STRICT );
             varDomain = varDomain.intersect( cbInterval );
             #ifdef VS_DEBUG_ROOTS_CHECK
             cout << varDomain << endl;
@@ -2294,8 +2294,8 @@ namespace vs
             {
                 carl::UnivariatePolynomial<smtrat::Rational> rup = cons.lhs().toUnivariatePolynomial();
                 list<carl::UnivariatePolynomial<smtrat::Rational>> seq = rup.standardSturmSequence();
-                smtrat::Rational leftBound = cln::rationalize( cln::cl_F( intervals.begin()->second.lower() ) );
-                smtrat::Rational rightBound = cln::rationalize( cln::cl_F( intervals.begin()->second.upper() ) );
+                smtrat::Rational leftBound = carl::rationalize<smtrat::Rational>( intervals.begin()->second.lower() );
+                smtrat::Rational rightBound = carl::rationalize<smtrat::Rational>( intervals.begin()->second.upper() );
                 smtrat::RationalInterval interv( leftBound, carl::BoundType::WEAK, rightBound, carl::BoundType::WEAK );
                 int numberOfRoots = carl::UnivariatePolynomial<smtrat::Rational>::countRealRoots( seq, interv );
                 assert( index() != carl::Variable::NO_VARIABLE );

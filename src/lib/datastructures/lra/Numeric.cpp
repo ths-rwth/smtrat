@@ -235,7 +235,7 @@ namespace smtrat
          */
         Numeric Numeric::numer() const
         {
-            return Numeric( cln::numerator( this->content() ) );
+            return Numeric( carl::getNum( this->content() ) );
         }
 
         /**
@@ -243,7 +243,7 @@ namespace smtrat
          */
         Numeric Numeric::denom() const
         {
-            return Numeric( cln::denominator( this->content() ) );
+            return Numeric( carl::getDenom( this->content() ) );
         }
         
         /**
@@ -251,7 +251,7 @@ namespace smtrat
          */
         Numeric Numeric::floor() const
         {
-            return Numeric( cln::floor1( this->content() ) );
+            return Numeric( carl::floor( this->content() ) );
         }
 
         /**
@@ -298,7 +298,7 @@ namespace smtrat
          */
         Numeric abs( const Numeric& _value )
         {
-            return Numeric( cln::abs( _value.content() ) );
+            return Numeric( carl::abs( _value.content() ) );
         }
         
         /**
@@ -312,7 +312,7 @@ namespace smtrat
         {
             assert( _valueA.isInteger() && _valueB.isInteger() );
             assert( !_valueB.isZero() );
-            return Numeric( cln::mod( cln::numerator( _valueA.content() ), cln::numerator( _valueB.content() ) ) );
+            return Numeric( carl::mod( carl::getNum( _valueA.content() ), carl::getNum( _valueB.content() ) ) );
         }
         
         /**
@@ -327,7 +327,7 @@ namespace smtrat
             assert( _valueA.isInteger() && _valueB.isInteger() );
             if( _valueA.isZero() || _valueB.isZero() )
                 return Numeric( 0 );
-            return Numeric( cln::lcm( cln::numerator( _valueA.content() ), cln::numerator( _valueB.content() ) ) );
+            return Numeric( carl::lcm( carl::getNum( _valueA.content() ), carl::getNum( _valueB.content() ) ) );
         }
         
         /**
@@ -342,7 +342,7 @@ namespace smtrat
             assert( _valueA.isInteger() && _valueB.isInteger() );
             if( _valueA.isZero() || _valueB.isZero() )
                 return Numeric( 0 );
-            return Numeric( cln::gcd( cln::numerator( _valueA.content() ), cln::numerator( _valueB.content() ) ) );
+            return Numeric( carl::gcd( carl::getNum( _valueA.content() ), carl::getNum( _valueB.content() ) ) );
         }
 
         /**

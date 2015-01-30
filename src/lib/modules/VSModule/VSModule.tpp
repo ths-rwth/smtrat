@@ -27,7 +27,6 @@
 
 
 #include "VSModule.h"
-#include "IDAllocator.h"
 
 using namespace vs;
 
@@ -46,7 +45,7 @@ namespace smtrat
         #ifdef VS_STATISTICS
         mStepCounter( 0 ),
         #endif
-        mpConditionIdAllocator(new IDAllocator() ),
+        mpConditionIdAllocator(new carl::IDGenerator() ),
         mpStateTree( new State( mpConditionIdAllocator, Settings::use_variable_bounds ) ),
         mAllVariables(),
         mFormulaConditionMap(),
@@ -76,7 +75,7 @@ namespace smtrat
         if( _subformula->formula().getType() == carl::FormulaType::CONSTRAINT )
         {
             const ConstraintT* constraint = _subformula->formula().pConstraint();
-            const vs::Condition* condition = new vs::Condition( constraint, mpConditionIdAllocator->getId() );
+            const vs::Condition* condition = new vs::Condition( constraint, mpConditionIdAllocator->get() );
             mFormulaConditionMap[_subformula->formula()] = condition;
             assert( constraint->isConsistent() == 2 );
             for( auto var = constraint->variables().begin(); var != constraint->variables().end(); ++var )
@@ -95,16 +94,16 @@ namespace smtrat
                     && constraint->relation() == carl::Relation::NEQ )
                 {
                     ConditionList condVectorA;
-                    condVectorA.push_back( new vs::Condition( carl::newConstraint<Poly>( constraint->lhs(), carl::Relation::LESS ), mpConditionIdAllocator->getId(), 0, false, oConds ) );
+                    condVectorA.push_back( new vs::Condition( carl::newConstraint<Poly>( constraint->lhs(), carl::Relation::LESS ), mpConditionIdAllocator->get(), 0, false, oConds ) );
                     subResult.push_back( condVectorA );
                     ConditionList condVectorB;
-                    condVectorB.push_back( new vs::Condition( carl::newConstraint<Poly>( constraint->lhs(), carl::Relation::GREATER ), mpConditionIdAllocator->getId(), 0, false, oConds ) );
+                    condVectorB.push_back( new vs::Condition( carl::newConstraint<Poly>( constraint->lhs(), carl::Relation::GREATER ), mpConditionIdAllocator->get(), 0, false, oConds ) );
                     subResult.push_back( condVectorB );
                 }
                 else
                 {
                     ConditionList condVector;
-                    condVector.push_back( new vs::Condition( constraint, mpConditionIdAllocator->getId(), 0, false, oConds ) );
+                    condVector.push_back( new vs::Condition( constraint, mpConditionIdAllocator->get(), 0, false, oConds ) );
                     subResult.push_back( condVector );
                 }
                 subResults.push_back( subResult );
@@ -182,7 +181,7 @@ namespace smtrat
                 std::vector<DisjunctionOfConditionConjunctions> subResults = std::vector<DisjunctionOfConditionConjunctions>();
                 DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
                 ConditionList condVector;
-                condVector.push_back( new vs::Condition( iter->first.pConstraint(), mpConditionIdAllocator->getId(), 0, false, oConds ) );
+                condVector.push_back( new vs::Condition( iter->first.pConstraint(), mpConditionIdAllocator->get(), 0, false, oConds ) );
                 subResult.push_back( condVector );
                 subResults.push_back( subResult );
                 mpStateTree->addSubstitutionResults( subResults );
@@ -1125,7 +1124,7 @@ namespace smtrat
             {
                 if( !anySubstitutionFailed )
                 {
-                    oldConditions.push_back( new vs::Condition( currentConstraint, mpConditionIdAllocator->getId(), (**cond).valuation() ) );
+                    oldConditions.push_back( new vs::Condition( currentConstraint, mpConditionIdAllocator->get(), (**cond).valuation() ) );
                     oldConditions.back()->pOriginalConditions()->insert( *cond );
                 }
             }
@@ -1161,7 +1160,7 @@ namespace smtrat
                             ConditionList& currentConjunction = currentDisjunction.back();
                             for( auto cons = consConj->begin(); cons != consConj->end(); ++cons )
                             {
-                                currentConjunction.push_back( new vs::Condition( *cons, mpConditionIdAllocator->getId(), _currentState->treeDepth() ) );
+                                currentConjunction.push_back( new vs::Condition( *cons, mpConditionIdAllocator->get(), _currentState->treeDepth() ) );
                                 currentConjunction.back()->pOriginalConditions()->insert( *cond );
                             }
                         }
@@ -1674,7 +1673,7 @@ namespace smtrat
 //                                    std::cout << "   " << carl::getNum( subPolyPartiallySubstituted.constantPart() ) << " mod " << carl::getNum( g ) << " == " << carl::mod( carl::getNum( subPolyPartiallySubstituted.constantPart() ), carl::getNum( g ) ) << std::endl; 
                                     if( carl::mod( carl::getNum( subPolyPartiallySubstituted.constantPart() ), carl::getNum( g ) ) != 0 )
                                     {
-                                        Poly branchEx = ((subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * (1 / g));
+                                        Poly branchEx = ((subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * Rational(Rational(1) / g));
                                         Rational branchValue = subPolyPartiallySubstituted.constantPart() * (1 / g);
                                         branchAt( branchEx, branchValue, getReasons( currentState->substitution().originalConditions() ) );
                                         return false;
@@ -1704,7 +1703,7 @@ namespace smtrat
                                 // substituted variable of the current state.
                                 State* toRemove = mRanking.begin()->second;
                                 const Substitution& currSub = currentState->substitution();
-                                SqrtEx t = SqrtEx( Poly( cln::floor1( evaluatedSubTerm ) + 1 ) );
+                                SqrtEx t = SqrtEx( Poly( carl::floor( evaluatedSubTerm ) + Rational(1) ) );
                                 Substitution newSub = Substitution( currSub.variable(), t, Substitution::Type::NORMAL, currSub.originalConditions() );
                                 std::vector<State*> addedChildren = currentState->rFather().addChild( newSub );
                                 if( !addedChildren.empty() )

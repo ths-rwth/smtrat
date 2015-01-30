@@ -214,22 +214,22 @@ namespace smtrat
             if( infimum().isInfinite() )
             {
                 lowerBoundType = carl::BoundType::INFTY;
-                lowerBoundValue = 0;
+                lowerBoundValue = Rational(0);
             }
             else
             {
                 lowerBoundType = infimum().isWeak() ? carl::BoundType::WEAK : carl::BoundType::STRICT;
-                lowerBoundValue = infimum().limit().mainPart();
+                lowerBoundValue = Rational(infimum().limit().mainPart());
             }
             if( supremum().isInfinite() )
             {
                 upperBoundType = carl::BoundType::INFTY;
-                upperBoundValue = 0;
+                upperBoundValue = Rational(0);
             }
             else
             {
                 upperBoundType = supremum().isWeak() ? carl::BoundType::WEAK : carl::BoundType::STRICT;
-                upperBoundValue = supremum().limit().mainPart();
+                upperBoundValue = Rational(supremum().limit().mainPart());
             }
             RationalInterval result = RationalInterval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
             return result;

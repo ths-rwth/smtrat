@@ -71,7 +71,7 @@ namespace smtrat
     
     // Further type definitions.
 
-    typedef cln::cl_RA Rational;
+    typedef mpq_class Rational;
     
     typedef carl::Term<Rational> TermT;
     

@@ -500,7 +500,7 @@ namespace vs
         if( _cons->hasVariable( _subs.variable() ) )
         {
             // Collect all necessary left hand sides to create the new conditions of all cases referring to the virtual substitution.
-            if( pow( smtrat::Rational(_subs.term().constantPart().nrTerms()) + smtrat::Rational(_subs.term().factor().nrTerms()) * smtrat::Rational(_subs.term().radicand().nrTerms()), _cons->maxDegree( _subs.variable() )) > (MAX_NUM_OF_TERMS*MAX_NUM_OF_TERMS) )
+            if( carl::pow( smtrat::Rational(smtrat::Rational(_subs.term().constantPart().nrTerms()) + smtrat::Rational(_subs.term().factor().nrTerms()) * smtrat::Rational(_subs.term().radicand().nrTerms())), _cons->maxDegree( _subs.variable() )) > (MAX_NUM_OF_TERMS*MAX_NUM_OF_TERMS) )
             {
                 return false;
             }
