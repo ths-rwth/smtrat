@@ -289,12 +289,12 @@ namespace smtrat
                         if( (*iter_coeff).getSingleVariable() != corr_var )
                         {
                             carl::Variable var = (*iter_coeff).getSingleVariable();
-                            *temp += -1*sign*(*iter_coeff).coeff()*var;
+                            //*temp += -1*sign*(*iter_coeff).coeff()*var;
                         }                          
                     }
                     else
                     {
-                        *temp += (Rational)(-1)*sign*(*iter_coeff).coeff();                            
+                        //*temp += (Rational)(-1)*sign*(*iter_coeff).coeff();                            
                     }  
                     ++iter_coeff;
                 } 
@@ -317,11 +317,11 @@ namespace smtrat
                             carl::Variable var = (*iter_coeff).getSingleVariable();        
                             if( positive )
                             {
-                                *temp -= sign*carl::floor(carl::div( coeff, smallest_abs_value ))*var;
+                                //*temp -= sign*carl::floor(carl::div( coeff, smallest_abs_value ))*var;
                             }
                             else
                             {
-                                *temp -= sign*(-1)*carl::floor(carl::div( (-1)*coeff, smallest_abs_value ))*var;
+                                //*temp -= sign*(-1)*carl::floor(carl::div( (-1)*coeff, smallest_abs_value ))*var;
                             }    
                         }   
                     }
@@ -329,11 +329,11 @@ namespace smtrat
                     {
                         if( positive )
                         {
-                            *temp -= sign*carl::floor(carl::div( coeff, smallest_abs_value ));
+                            //*temp -= sign*carl::floor(carl::div( coeff, smallest_abs_value ));
                         }
                         else
                         {
-                            *temp -= sign*(-1)*carl::floor(carl::div( (-1)*coeff, smallest_abs_value ));                                                        
+                            //*temp -= sign*(-1)*carl::floor(carl::div( (-1)*coeff, smallest_abs_value ));                                                        
                         }
                     }
                     ++iter_coeff;
