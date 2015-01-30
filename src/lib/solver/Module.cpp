@@ -350,7 +350,10 @@ namespace smtrat
                     subformulas = originSetA->subformulas();
                 else
                     subformulas.insert( *originSetA );
-                subformulas.insert( originSetB->begin(), originSetB->end() );
+                if( originSetB->getType() == carl::FormulaType::AND )
+                    subformulas.insert( originSetB->begin(), originSetB->end() );
+                else
+                    subformulas.insert( *originSetB );
                 result.push_back( FormulaT( carl::FormulaType::AND, std::move( subformulas ) ) );
                 ++originSetB;
             }
