@@ -71,36 +71,48 @@ namespace vs
     void SqrtEx::normalize()
     {
 //        cout << endl << __func__ << ": " << *this << endl;
-        smtrat::Poly sqrtOfRadicand;
-        if( mRadicand.sqrt( sqrtOfRadicand ) )
-        {
-            mConstantPart += mFactor * sqrtOfRadicand;
-            mFactor = smtrat::ZERO_POLYNOMIAL;
-            mRadicand = smtrat::ZERO_POLYNOMIAL;
-        }
-        else if( !radicand().isZero() )
-        {
-            smtrat::Rational absOfLCoeff = abs( radicand().coprimeFactor() );
-            smtrat::Rational sqrtResult;
-            if( carl::sqrtp( absOfLCoeff, sqrtResult ) )
-            {
-                mFactor *= (smtrat::Rational)1/sqrtResult;
-                mRadicand *= absOfLCoeff;
-            }
-        }
         smtrat::Poly gcdA;
         if( mFactor.isZero() )
         {
             gcdA = mConstantPart;
         }
-        else if( mConstantPart.isZero() )
+        else 
         {
-            gcdA = mFactor;
+            smtrat::Poly sqrtOfRadicand;
+            if( mRadicand.sqrt( sqrtOfRadicand ) )
+            {
+                mConstantPart += mFactor * sqrtOfRadicand;
+                mFactor = smtrat::ZERO_POLYNOMIAL;
+                mRadicand = smtrat::ZERO_POLYNOMIAL;
+            }
+            else
+            {
+                assert( !radicand().isZero() );
+                smtrat::Rational absOfLCoeff = abs( radicand().coprimeFactor() );
+                smtrat::Rational sqrtResult;
+                if( carl::sqrtp( absOfLCoeff, sqrtResult ) )
+                {
+                    mFactor *= (smtrat::Rational)1/sqrtResult;
+                    mRadicand *= absOfLCoeff;
+                }
+            }
+            if( mFactor.isZero() )
+            {
+                gcdA = mConstantPart;
+            }
+            else
+            {
+                if( mConstantPart.isZero() )
+                {
+                    gcdA = mFactor;
+                }
+                else
+                {
+                    gcdA = carl::gcd( mConstantPart, mFactor );
+                }
+            }
         }
-        else
-        {
-            gcdA = carl::gcd( mConstantPart, mFactor );
-        }
+        if( gcdA.isZero() ) return;
         gcdA = carl::gcd( gcdA, mDenominator );
         // Make sure that the polynomial to divide by cannot be negative, otherwise the sign of the square
         // root expression could change.
