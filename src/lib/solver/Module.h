@@ -737,7 +737,7 @@ namespace smtrat
              * @param origins A vector of sets of origins.
              * @return The index of the smallest (regarding the size of the sets) element of origins
              */
-            size_t determine_smallest_origin( std::vector<FormulasT>& origins ) const;
+            size_t determine_smallest_origin( const std::vector<FormulaT>& origins ) const;
             
             /**
              * Checks whether given the current branching value and branching variable/polynomial it is (highly) probable that

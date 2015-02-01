@@ -362,7 +362,7 @@ namespace smtrat
         return result;
     }
     
-    size_t Module::determine_smallest_origin( std::vector<FormulasT>& origins) const
+    size_t Module::determine_smallest_origin( const std::vector<FormulaT>& origins) const
     {
         assert( !origins.empty() );
         auto iter = origins.begin();

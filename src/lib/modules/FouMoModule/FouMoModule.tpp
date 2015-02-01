@@ -140,13 +140,13 @@ namespace smtrat
                                         cout << "with 'lower' constraint: " << iter_lower->first.constraint() << endl;
                                         cout << "and obtain: " << new_formula.constraint() << endl;
                                         #endif
-                                        vector<FormulasT> origins_new = std::move( merge( iter_temp->second, iter_lower->second ) );
+                                        vector<FormulasT> origins_new;// = std::move( merge( iter_temp->second, iter_lower->second ) );
                                         if( new_formula.isFalse() )
                                         {
                                             #ifdef DEBUG_FouMoModule
                                             cout << "The obtained formula is unsatisfiable" << endl;
                                             #endif
-                                            size_t i = determine_smallest_origin( origins_new );
+                                            size_t i = 0; // = determine_smallest_origin( origins_new );
                                             FormulasT infSubSet;
                                             infSubSet = origins_new.at(i);
                                             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
@@ -174,13 +174,13 @@ namespace smtrat
                                         cout << "with 'lower' constraint: " << iter_temp->first.constraint() << endl;
                                         cout << "and obtain: " << new_formula.constraint() << endl;
                                         #endif
-                                        vector<FormulasT> origins_new = std::move( merge( iter_temp->second, iter_upper->second ) );
+                                        vector<FormulasT> origins_new;// = std::move( merge( iter_temp->second, iter_upper->second ) );
                                         if( new_formula.isFalse() )
                                         {
                                             #ifdef DEBUG_FouMoModule
                                             cout << "The obtained formula is unsatisfiable" << endl;
                                             #endif
-                                            size_t i = determine_smallest_origin( origins_new );
+                                            size_t i = 0; // = determine_smallest_origin( origins_new );
                                             FormulasT infSubSet;
                                             infSubSet = origins_new.at(i);
                                             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
@@ -486,7 +486,7 @@ namespace smtrat
                 iter_lower = iter_help->second.second.begin();
                 while( iter_lower != iter_help->second.second.end() )
                 {
-                    vector<FormulasT> origins_new = std::move( merge( iter_upper->second, iter_lower->second ) );
+                    vector<FormulasT> origins_new; // = std::move( merge( iter_upper->second, iter_lower->second ) );
                     #ifdef Integer_Mode
                     /*
                     // TO-DO think about this condition
@@ -519,7 +519,7 @@ namespace smtrat
                         #ifdef DEBUG_FouMoModule
                         cout << "The obtained formula is unsatisfiable" << endl;
                         #endif
-                        size_t i = determine_smallest_origin( origins_new );
+                        size_t i = 0;// = determine_smallest_origin( origins_new );
                         FormulasT infSubSet;
                         infSubSet = origins_new.at(i);
                         mInfeasibleSubsets.push_back( std::move( infSubSet ) );
@@ -684,7 +684,7 @@ namespace smtrat
         Poly upper_poly = upper_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
         Poly lower_poly = lower_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
         assert( lower_constr->relation() == carl::Relation::LEQ );
-        combined_formula = FormulaT( carl::newConstraint( coeff_upper*lower_poly + (Rational)-1*coeff_lower*upper_poly, carl::Relation::LEQ ) );
+        //combined_formula = FormulaT( carl::newConstraint( (Rational)coeff_upper*lower_poly) + (Rational)-1*(Rational)coeff_lower*upper_poly, carl::Relation::LEQ );
         return combined_formula;        
     }
     
