@@ -2117,7 +2117,7 @@ NextClause:
             #endif
             FormulaT subResult = FormulaT( cons.constraint().lhs().substitute( varToSubstitute, substitutionTerm ), cons.constraint().relation() );
             #ifdef DEBUG_SAT_APPLY_VALID_SUBS
-            cout << "    results in " << *subResult << endl;
+            cout << "    results in " << subResult << endl;
             #endif
             replaceConstraint( cons, subResult );
         }
@@ -2140,11 +2140,12 @@ NextClause:
     void SATModule<Settings>::replaceConstraint( const FormulaT& _toReplace, const FormulaT& _replaceBy )
     {
         assert( _toReplace.getType() == carl::FormulaType::CONSTRAINT );
-        assert( _replaceBy.getType() == carl::FormulaType::CONSTRAINT );
+//        if( _replaceBy.getType() != carl::FormulaType::CONSTRAINT ) exit(1234);
+        assert( _replaceBy.getType() == carl::FormulaType::CONSTRAINT || _replaceBy.getType() == carl::FormulaType::TRUE || _replaceBy.getType() == carl::FormulaType::FALSE );
         auto consLitPair = mConstraintLiteralMap.find( _toReplace );
         bool negativeLiteral = sign( consLitPair->second.front() );
         assert( consLitPair != mConstraintLiteralMap.end() );
-        if( _replaceBy.constraint().isConsistent() == 0 )
+        if( _replaceBy.getType() == carl::FormulaType::FALSE )
         {
             // applying the substitution to this constraint leads to conflict
             if( assigns[ var( consLitPair->second.front() ) ] == l_Undef )
