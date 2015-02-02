@@ -34,8 +34,8 @@
 namespace smtrat
 {
  
-    typedef std::pair<FormulaT,vector<FormulasT>> SingleFormulaOrigins;
-    typedef std::map<FormulaT,vector<FormulasT>> FormulaOrigins;
+    typedef std::pair<FormulaT,std::shared_ptr<std::vector<FormulaT>>> SingleFormulaOrigins;
+    typedef std::map<FormulaT,std::shared_ptr<std::vector<FormulaT>>> FormulaOrigins;
     typedef std::map<carl::Variable,std::pair<std::vector<SingleFormulaOrigins>,std::vector<SingleFormulaOrigins>>> VariableUpperLower;
     /**
      * A module which applies the Fourier-Motzkin algorithm.
