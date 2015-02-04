@@ -1579,6 +1579,24 @@ namespace smtrat
         // Find all assignments of the variables occurring in the conditions
         // of the state's father except of the variable being the index currentState.
         const State* successorState = mRanking.begin()->second;
+        if( successorState->cannotBeSolved() )
+        {
+            Module::getBackendsModel();
+            for( auto& ass : mModel )
+            {
+                if( ass.second.isSqrtEx() )
+                {
+                    assert( ass.second.asSqrtEx().isConstant() && carl::isInteger( ass.second.asSqrtEx().constantPart().constantPart() ) );
+                    varSolutions[ass.first.asVariable()] = ass.second.asSqrtEx().constantPart().constantPart();
+                }
+                else if( ass.second.isRAN() )
+                {
+                    assert( ass.second.asRAN()->isNumeric() && carl::isInteger( ass.second.asRAN()->value() ) );
+                    varSolutions[ass.first.asVariable()] = ass.second.asRAN()->value();
+                }
+            }
+            mModel.clear();
+        }
         while( successorState != _state )
         {
             assert( !successorState->isRoot() );
@@ -1601,6 +1619,7 @@ namespace smtrat
             assert( sideCisConsistent != 2 );
             if( sideCisConsistent == 0 )
             {
+                std::cout << *sideC << "  not satisfied!" << std::endl;
                 return false;
             }
         }
@@ -1891,7 +1910,7 @@ namespace smtrat
     Answer VSModule<Settings>::runBackendSolvers( State* _state )
     {
         // Run the backends on the constraint of the state.
-        FormulaConditionMap formulaToConditions = FormulaConditionMap();
+        FormulaConditionMap formulaToConditions;
         adaptPassedFormula( *_state, formulaToConditions );
         Answer result = runBackends();
         #ifdef VS_DEBUG
@@ -1911,7 +1930,7 @@ namespace smtrat
                 /*
                 * Get the conflict sets formed by the infeasible subsets in the backend.
                 */
-                ConditionSetSet conflictSet = ConditionSetSet();
+                ConditionSetSet conflictSet;
                 std::vector<Module*>::const_iterator backend = usedBackends().begin();
                 while( backend != usedBackends().end() )
                 {
