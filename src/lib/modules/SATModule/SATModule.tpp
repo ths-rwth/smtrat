@@ -672,6 +672,7 @@ namespace smtrat
             }
         }
         mChangedActivities.clear();
+        if( !passedFormulaCorrect() ) exit(1234);
         assert( passedFormulaCorrect() );
     }
     
@@ -683,7 +684,7 @@ namespace smtrat
             assert( !_abstr.reabstraction.isTrue() );
             if( _abstr.position != rPassedFormula().end() )
             {
-                eraseSubformulaFromPassedFormula( _abstr.position, true );
+                removeOrigins( _abstr.position, _abstr.origins );
                 _abstr.position = passedFormulaEnd();
                 mChangedPassedFormula = true;
             }
@@ -1624,8 +1625,6 @@ SetWatches:
 
         do
         {
-            if( confl == CRef_Undef ) Module::storeAssumptionsToCheck( *mpManager );
-            if( confl == CRef_Undef ) exit( 7771 );
             assert( confl != CRef_Undef );    // (otherwise should be UIP)
             Clause& c = ca[confl];
 
@@ -2067,6 +2066,7 @@ NextClause:
         FormulaT addedConstraint;
         carl::Variable varToSubstitute = carl::Variable::NO_VARIABLE;
         Poly substitutionTerm;
+        std::shared_ptr<std::vector<FormulaT>> subOrigins;
         FormulaT::ConstraintBounds constraintBoundsAnd;
         for( int i = 0; i < mBooleanConstraintMap.size(); ++i )
         {
@@ -2089,6 +2089,7 @@ NextClause:
                     }
                     else if( addedConstraint.constraint().getSubstitution( varToSubstitute, substitutionTerm ) )
                     {
+                        subOrigins = abstr.origins;
                         break;
                     }
                 }
@@ -2119,7 +2120,7 @@ NextClause:
             #ifdef DEBUG_SAT_APPLY_VALID_SUBS
             cout << "    results in " << subResult << endl;
             #endif
-            replaceConstraint( cons, subResult );
+            replaceConstraint( cons, subResult, *subOrigins );
         }
         for( auto varOccPair = mVarOccurrences.begin(); varOccPair != mVarOccurrences.end(); ++varOccPair )
         {
@@ -2137,10 +2138,9 @@ NextClause:
     }
     
     template<class Settings>
-    void SATModule<Settings>::replaceConstraint( const FormulaT& _toReplace, const FormulaT& _replaceBy )
+    void SATModule<Settings>::replaceConstraint( const FormulaT& _toReplace, const FormulaT& _replaceBy, const std::vector<FormulaT>& _subOrigins )
     {
         assert( _toReplace.getType() == carl::FormulaType::CONSTRAINT );
-//        if( _replaceBy.getType() != carl::FormulaType::CONSTRAINT ) exit(1234);
         assert( _replaceBy.getType() == carl::FormulaType::CONSTRAINT || _replaceBy.getType() == carl::FormulaType::TRUE || _replaceBy.getType() == carl::FormulaType::FALSE );
         auto consLitPair = mConstraintLiteralMap.find( _toReplace );
         bool negativeLiteral = sign( consLitPair->second.front() );
@@ -2203,21 +2203,18 @@ NextClause:
                 removeSatisfied( clauses );
                 checkGarbage();
                 rebuildOrderHeap();
-                
-                Abstraction& abstrA = sign( consLitPair->second.front() ) ? *mBooleanConstraintMap[var( consLitPair->second.front() )].second : *mBooleanConstraintMap[var( consLitPair->second.front() )].first;
-                if( abstrA.origins != nullptr )
+                if( _replaceBy.getType() != carl::FormulaType::TRUE )
                 {
-                    Abstraction& abstrB = sign( iter->second.front() ) ? *mBooleanConstraintMap[var( iter->second.front() )].second : *mBooleanConstraintMap[var( iter->second.front() )].first;
-                    if( !abstrB.consistencyRelevant )
+                    Abstraction& abstrA = sign( consLitPair->second.front() ) ? *mBooleanConstraintMap[var( consLitPair->second.front() )].second : *mBooleanConstraintMap[var( consLitPair->second.front() )].first;
+                    if( abstrA.origins != nullptr )
                     {
-                        informBackends( abstrB.reabstraction );
+                        *abstrA.origins = merge( *abstrA.origins, _subOrigins );
+                        if( abstrA.consistencyRelevant )
+                        {
+                            abstrA.reabstraction = _replaceBy;
+                            informBackends( abstrA.reabstraction );
+                        }
                     }
-                    if( abstrB.origins == nullptr )
-                    {
-                        abstrB.origins = std::shared_ptr<std::vector<FormulaT>>( new std::vector<FormulaT>() );
-                    }
-                    abstrB.origins->insert( abstrB.origins->end(), abstrA.origins->begin(), abstrA.origins->end() );
-                    abstrB.consistencyRelevant = true;
                 }
 
                 iter->second.insert( iter->second.end(), consLitPair->second.begin(), consLitPair->second.end() );
@@ -2273,7 +2270,7 @@ NextClause:
                 #ifdef DEBUG_SAT_APPLY_VALID_SUBS
                 cout << __LINE__ << endl;
                 #endif
-                eraseSubformulaFromPassedFormula( abstr.position, true );
+                removeOrigins( abstr.position, abstr.origins );
                 unsigned replacedByConsistency = _replaceBy.constraint().isConsistent();
                 if( replacedByConsistency == 2 )
                 {

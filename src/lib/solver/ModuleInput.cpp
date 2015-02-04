@@ -140,11 +140,39 @@ namespace smtrat
         {
             if( *iter == _origin || iter->contains( _origin ) )
             {
-                iter = origs.erase( iter );
+                *iter = origs.back();
+                origs.pop_back();
             }
             else
             {
                 ++iter;
+            }
+        }
+        if( origs.empty() )
+        {
+            _formula->mOrigins = nullptr;
+            return true;
+        }
+        return false;
+    }
+    
+    bool ModuleInput::removeOrigins( iterator _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins )
+    {
+        assert( _formula != end() );
+        if( !_formula->hasOrigins() ) return true;
+        if( _formula->mOrigins == _origins )
+        {
+            _formula->mOrigins = nullptr;
+            return true;
+        }
+        auto& origs = *_formula->mOrigins;
+        for( auto& orig : *_origins )
+        {
+            auto iter = std::find( origs.begin(), origs.end(), orig );
+            if( iter != origs.end() )
+            {
+                *iter = origs.back();
+                origs.pop_back();
             }
         }
         if( origs.empty() )
@@ -211,17 +239,18 @@ namespace smtrat
         }
         else
         {
-            assert( !iter->hasOrigins() );
-//            if( iter->hasOrigins() )
-//            {
-//                auto& origs = iter->mOrigins;
-//                origs.reserve( origs.size() + _origins.size() );
-//                origs.insert( origs.end(), make_move_iterator( _origins.begin() ), make_move_iterator( _origins.end() ) );
-//            }
-//            else
-//            {
-                iter->mOrigins = _origins;
-//            }
+            if( _origins != nullptr )
+            {
+                if( iter->hasOrigins() )
+                {
+                    iter->mOrigins = std::shared_ptr<std::vector<FormulaT>>( new std::vector<FormulaT>( *iter->mOrigins ) );
+                    iter->mOrigins->insert( iter->mOrigins->end(), _origins->begin(), _origins->end() );
+                }
+                else
+                {
+                    iter->mOrigins = _origins;
+                }
+            }
             return make_pair( iter, false );
         }
     }
