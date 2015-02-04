@@ -92,9 +92,9 @@ namespace smtrat
                 mOrigin(),
                 mId(_id),
                 mIsLinear(true),
-                mIcpVariables(),
-                mReusagesAfterTargetDiameterReached(0),
                 mDerived(false),
+				mIcpVariables(),
+                mReusagesAfterTargetDiameterReached(0),
                 mRWA(1),
                 mLastPayoff(0)
             {
@@ -116,8 +116,9 @@ namespace smtrat
                 mOrigin(),
                 mId(_id),
                 mIsLinear(false),
-                mReusagesAfterTargetDiameterReached(0),
                 mDerived(false),
+				mIcpVariables(),
+                mReusagesAfterTargetDiameterReached(0),
                 mRWA(1),
                 mLastRWA(1),
                 mLastPayoff(0)
