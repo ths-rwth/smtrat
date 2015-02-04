@@ -597,8 +597,9 @@ namespace smtrat
              * 
              * @param _toReplace
              * @param _replaceBy
+             * @param _subOrigins
              */
-            void replaceConstraint( const FormulaT& _toReplace, const FormulaT& _replaceBy );
+            void replaceConstraint( const FormulaT& _toReplace, const FormulaT& _replaceBy, const std::vector<FormulaT>& _subOrigins );
             
             /**
              * Adds the clause of the given type with the given literals to the clauses managed by Minisat.

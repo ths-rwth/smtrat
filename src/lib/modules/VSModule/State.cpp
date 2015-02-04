@@ -1064,8 +1064,8 @@ namespace vs
             // Get the conditions of the currently considered combination of substitution results.
             ConditionList newCombination = getCurrentSubresultCombination();
             // Simplify the conditions already here, to avoid unnecessarily adding and deleting conditions.
-            ConditionList redundantConditions       = ConditionList();
-            ConditionSetSet conflictingConditionPairs = ConditionSetSet();
+            ConditionList redundantConditions;
+            ConditionSetSet conflictingConditionPairs;
             if( !simplify( newCombination, conflictingConditionPairs, _ranking ) )
                 rInconsistent() = true;
             // Delete the conditions of this combination, which do already occur in the considered conditions of this state.
@@ -1825,40 +1825,40 @@ namespace vs
             const carl::PointerSet<smtrat::ConstraintT>& sideConds = _substitution.sideCondition();
             for( auto sideCond = sideConds.begin(); sideCond != sideConds.end(); ++sideCond )
             {
-                if( _substitution.variable().getType() != carl::VariableType::VT_INT || (*sideCond)->relation() != carl::Relation::NEQ )
-                {
+//                if( _substitution.variable().getType() != carl::VariableType::VT_INT || (*sideCond)->relation() != carl::Relation::NEQ )
+//                {
                     std::vector<DisjunctionOfConditionConjunctions> subResults;
                     subResults.push_back( DisjunctionOfConditionConjunctions() );
                     subResults.back().push_back( ConditionList() );
                     subResults.back().back().push_back( new Condition( *sideCond, mpConditionIdAllocator->get(), state->treeDepth(), false, _substitution.originalConditions(), false ) );
                     state->addSubstitutionResults( subResults );
                     state->rType() = SUBSTITUTION_TO_APPLY;
-                }
-                else
-                {
-                    const smtrat::ConstraintT* denomPos = carl::newConstraint<smtrat::Poly>( (*sideCond)->lhs(), carl::Relation::GREATER );
-                    const smtrat::ConstraintT* denomNeg = carl::newConstraint<smtrat::Poly>( (*sideCond)->lhs(), carl::Relation::LESS );
-                    assert( denomPos != carl::constraintPool<smtrat::Poly>().inconsistentConstraint() || denomNeg != carl::constraintPool<smtrat::Poly>().inconsistentConstraint() );
-                    // add (p<0 or p>0) to the substitution results, with the constraint being p!=0
-                    if( denomPos != carl::constraintPool<smtrat::Poly>().consistentConstraint() && denomNeg != carl::constraintPool<smtrat::Poly>().consistentConstraint() )
-                    {
-                        DisjunctionOfConditionConjunctions cases;
-                        if( denomPos != carl::constraintPool<smtrat::Poly>().inconsistentConstraint() )
-                        {
-                            cases.push_back( ConditionList() );
-                            cases.back().push_back( new vs::Condition( denomPos, mpConditionIdAllocator->get(), state->treeDepth(), false, _substitution.originalConditions(), false ) );
-                        }
-                        if( denomNeg != carl::constraintPool<smtrat::Poly>().inconsistentConstraint() )
-                        {
-                            cases.push_back( ConditionList() );
-                            cases.back().push_back( new vs::Condition( denomNeg, mpConditionIdAllocator->get(), state->treeDepth(), false, _substitution.originalConditions(), false ) );
-                        }
-                        std::vector<DisjunctionOfConditionConjunctions> subResults;
-                        subResults.push_back( cases );
-                        state->addSubstitutionResults( subResults );
-                        state->rType() = SUBSTITUTION_TO_APPLY;
-                    }
-                }
+//                }
+//                else
+//                {
+//                    const smtrat::ConstraintT* denomPos = carl::newConstraint<smtrat::Poly>( (*sideCond)->lhs(), carl::Relation::GREATER );
+//                    const smtrat::ConstraintT* denomNeg = carl::newConstraint<smtrat::Poly>( (*sideCond)->lhs(), carl::Relation::LESS );
+//                    assert( denomPos != carl::constraintPool<smtrat::Poly>().inconsistentConstraint() || denomNeg != carl::constraintPool<smtrat::Poly>().inconsistentConstraint() );
+//                    // add (p<0 or p>0) to the substitution results, with the constraint being p!=0
+//                    if( denomPos != carl::constraintPool<smtrat::Poly>().consistentConstraint() && denomNeg != carl::constraintPool<smtrat::Poly>().consistentConstraint() )
+//                    {
+//                        DisjunctionOfConditionConjunctions cases;
+//                        if( denomPos != carl::constraintPool<smtrat::Poly>().inconsistentConstraint() )
+//                        {
+//                            cases.push_back( ConditionList() );
+//                            cases.back().push_back( new vs::Condition( denomPos, mpConditionIdAllocator->get(), state->treeDepth(), false, _substitution.originalConditions(), false ) );
+//                        }
+//                        if( denomNeg != carl::constraintPool<smtrat::Poly>().inconsistentConstraint() )
+//                        {
+//                            cases.push_back( ConditionList() );
+//                            cases.back().push_back( new vs::Condition( denomNeg, mpConditionIdAllocator->get(), state->treeDepth(), false, _substitution.originalConditions(), false ) );
+//                        }
+//                        std::vector<DisjunctionOfConditionConjunctions> subResults;
+//                        subResults.push_back( cases );
+//                        state->addSubstitutionResults( subResults );
+//                        state->rType() = SUBSTITUTION_TO_APPLY;
+//                    }
+//                }
             }
             state->updateValuation();
             rChildren().push_back( state );

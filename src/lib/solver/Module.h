@@ -614,6 +614,15 @@ namespace smtrat
                 return std::make_pair( _formula, false );
             }
             
+            std::pair<ModuleInput::iterator,bool> removeOrigins( ModuleInput::iterator _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins )
+            {
+                if( mpPassedFormula->removeOrigins( _formula, _origins ) )
+                {
+                    return std::make_pair( eraseSubformulaFromPassedFormula( _formula ), true );
+                }
+                return std::make_pair( _formula, false );
+            }
+            
             /**
              * Informs all backends of this module about the given constraint.
              * @param _constraint The constraint to inform about.

@@ -398,6 +398,8 @@ namespace smtrat
         
         bool removeOrigin( iterator _formula, const FormulaT& _origin );
         
+        bool removeOrigins( iterator _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins );
+        
         std::pair<iterator,bool> add( const FormulaT& _formula )
         {
             iterator iter = find( _formula );
