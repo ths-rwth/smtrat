@@ -255,6 +255,12 @@ namespace vs
     {
         return mId < _condition.getId();
     }
+    
+    std::ostream& operator<<( std::ostream& _out, const Condition& _condition )
+    {
+        _condition.print( _out );
+        return _out;
+    }
 
     /**
      * Prints the condition to an output stream.

@@ -314,20 +314,20 @@ namespace smtrat
             cout << "Simplifing results in " << endl;
             currentState->printAlone( "*** ", cout );
             #endif
-//            if( Settings::int_constraints_allowed && !Settings::split_neq_constraints && !currentState->isInconsistent() && !currentState->takeSubResultCombAgain() )
-//            {
-//                for( auto cond = currentState->conditions().begin(); cond != currentState->conditions().end(); ++cond )
-//                {
-//                    if( (*cond)->constraint().hasIntegerValuedVariable() && !(*cond)->constraint().hasRealValuedVariable()
-//                        && (*cond)->constraint().relation() == carl::Relation::NEQ )
-//                    {
-//                        // Split the neq-constraint in a preceeding sat module (make sure that it is there in your strategy when choosing this vssetting)
-//                        splitUnequalConstraint( FormulaT( (*cond)->pConstraint() ) );
-//                        assert( currentState->isRoot() );
-//                        return foundAnswer( Unknown );
-//                    }
-//                }
-//            }
+            if( Settings::int_constraints_allowed && !Settings::split_neq_constraints && !currentState->isInconsistent() && !currentState->takeSubResultCombAgain() )
+            {
+                for( auto cond = currentState->conditions().begin(); cond != currentState->conditions().end(); ++cond )
+                {
+                    if( (*cond)->constraint().hasIntegerValuedVariable() && !(*cond)->constraint().hasRealValuedVariable()
+                        && (*cond)->constraint().relation() == carl::Relation::NEQ )
+                    {
+                        // Split the neq-constraint in a preceeding sat module (make sure that it is there in your strategy when choosing this vssetting)
+                        splitUnequalConstraint( FormulaT( (*cond)->pConstraint() ) );
+                        assert( currentState->isRoot() );
+                        return foundAnswer( Unknown );
+                    }
+                }
+            }
             if( currentState->hasChildrenToInsert() )
             {
                 currentState->rHasChildrenToInsert() = false;
@@ -1608,25 +1608,8 @@ namespace smtrat
     }
     
     template<class Settings>
-    bool VSModule<Settings>::sideConditionsSatisfied( const vs::Substitution& _substitution, const EvalRationalMap& _assignment )
-    {
-        for( const ConstraintT* sideC : _substitution.sideCondition() )
-        {
-            unsigned sideCisConsistent = sideC->satisfiedBy( _assignment );
-            assert( sideCisConsistent != 2 );
-            if( sideCisConsistent == 0 )
-            {
-                std::cout << *sideC << "  not satisfied!" << std::endl;
-                return false;
-            }
-        }
-        return true;
-    }
-    
-    template<class Settings>
     bool VSModule<Settings>::solutionInDomain()
     {
-//        std::cout << __func__ << std::endl;
         assert( solverState() != False );
         if( !mRanking.empty() )
         {
@@ -1634,7 +1617,6 @@ namespace smtrat
             State* currentState = mRanking.begin()->second;
             while( !currentState->isRoot() )
             {
-//                currentState->printAlone();
                 if( currentState->substitution().variable().getType() == carl::VariableType::VT_INT )
                 {
                     if( Settings::branch_and_bound && (currentState->substitution().type() == Substitution::MINUS_INFINITY || currentState->substitution().type() == Substitution::PLUS_INFINITY ) )
@@ -1699,7 +1681,6 @@ namespace smtrat
                         }
                         // Insert the (integer!) assignments of the other variables.
                         const SqrtEx& subTerm = currentState->substitution().term();
-                        assert( sideConditionsSatisfied( currentState->substitution(), varSolutions ) );
                         Rational evaluatedSubTerm;
 //                        std::cout << "replace variable in  " << subTerm << "  by" << std::endl;
 //                        for( const auto& vs : varSolutions )
