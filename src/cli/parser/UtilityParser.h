@@ -60,12 +60,12 @@ struct SymbolParser: public qi::grammar<Iterator, std::string(), Skipper> {
     qi::rule<Iterator, std::string(), Skipper> simple;
 };
 
-struct IdentifierParser: public qi::grammar<Iterator, std::string(), Skipper> {
+struct IdentifierParser: public qi::grammar<Iterator, Identifier(), Skipper> {
     IdentifierParser();
     SymbolParser symbol;
-    qi::uint_parser<Rational,10,1,-1> numeral;
-    qi::rule<Iterator, std::string(), Skipper> main;
-    qi::rule<Iterator, std::string(), Skipper> indexed;
+    qi::uint_parser<std::size_t,10,1,-1> numeral;
+    qi::rule<Iterator, Identifier(), Skipper> main;
+    qi::rule<Iterator, Identifier(), Skipper> indexed;
     std::string buildIdentifier(const std::string& name, const std::vector<Rational>& nums) const;
 };
 
