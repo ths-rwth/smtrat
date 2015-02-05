@@ -251,6 +251,9 @@ namespace smtrat
                 auto iter_origins = (iter_formula->second)->begin();
                 while( iter_origins !=  (iter_formula->second)->end() )
                 {
+                    #ifdef DEBUG_FouMoModule
+                    cout << "Origin: " << *iter_origins << endl;
+                    #endif
                     bool contains = iter_origins->contains( _subformula->formula() ); 
                     if( contains )
                     {
@@ -478,6 +481,12 @@ namespace smtrat
                     cout << "Combine 'upper' constraint: " << iter_upper->first.constraint() << endl;
                     cout << "with 'lower' constraint: " << iter_lower->first.constraint() << endl;
                     cout << "and obtain: " << new_formula.constraint() << endl;
+                    auto iter_origins = origins_new->begin();
+                    while( iter_origins != origins_new->end() )
+                    {
+                        cout << "with origins: " << *iter_origins << endl; 
+                        ++iter_origins;
+                    }                                       
                     #endif
                     if( new_formula.isFalse() )
                     {
@@ -653,7 +662,7 @@ namespace smtrat
         Poly upper_poly = upper_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
         Poly lower_poly = lower_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
         assert( lower_constr->relation() == carl::Relation::LEQ );
-        //combined_formula = FormulaT( carl::newConstraint( (Rational)coeff_upper*lower_poly) + (Rational)-1*(Rational)coeff_lower*upper_poly, carl::Relation::LEQ );
+        combined_formula = FormulaT( carl::newConstraint( Poly ( Rational(coeff_upper)*lower_poly ) + Poly( (Rational)(-1*coeff_lower)*upper_poly ), carl::Relation::LEQ ) );
         return combined_formula;        
     }
     
@@ -738,7 +747,7 @@ namespace smtrat
                     first_iter_upper = false;     
                     if( Settings::Integer_Mode )
                     {
-                        lowest_upper = carl::floor( -to_be_substituted_upper.constantPart()/coeff_upper );                        
+                        lowest_upper = carl::floor( Rational( to_be_substituted_upper.constantPart()/(-1*coeff_upper ) ) );         
                     }
                     else
                     {
@@ -749,9 +758,9 @@ namespace smtrat
                 {                    
                     if( Settings::Integer_Mode )
                     {                        
-                        if( carl::floor( -to_be_substituted_upper.constantPart()/coeff_upper ) < lowest_upper )
+                        if( carl::floor( Rational( -to_be_substituted_upper.constantPart()/coeff_upper ) ) < lowest_upper )
                         {
-                            lowest_upper = carl::floor( -to_be_substituted_upper.constantPart()/coeff_upper );
+                            lowest_upper = carl::floor( Rational( -to_be_substituted_upper.constantPart()/coeff_upper ) );
                         }
                     }
                     else
@@ -854,16 +863,6 @@ namespace smtrat
                     }
                 }
                 ++iter_constr_lower;    
-            }
-            if( Settings::Integer_Mode )
-            {
-                if( ( at_least_one_lower && at_least_one_upper ) && highest_lower > lowest_upper )
-                {
-                    #ifdef DEBUG_FouMoModule
-                    cout << "Highest lower bound is bigger than the lowest upper bound!" << endl;
-                    #endif
-                    return false;
-                }    
             }
             // Insert one of the found bounds into mVarAss
             //assert( at_least_one_lower || at_least_one_upper );

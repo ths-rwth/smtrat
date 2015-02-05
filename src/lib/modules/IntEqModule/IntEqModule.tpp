@@ -321,7 +321,7 @@ namespace smtrat
                             }
                             else
                             {
-                                *temp -= sign*Poly( (-1)*Rational( carl::floor(carl::div( (-1)*coeff, smallest_abs_value ) ) ) )*var;
+                                *temp -= sign*Poly( (-1)*Rational( carl::floor( carl::div( (-1)*coeff, smallest_abs_value ) ) ) )*var;
                             }    
                         }   
                     }
@@ -329,11 +329,11 @@ namespace smtrat
                     {
                         if( positive )
                         {
-                            *temp -= sign*Rational( carl::floor(carl::div( coeff, smallest_abs_value ) ) );
+                            *temp -= sign*Rational( carl::floor( carl::div( coeff, smallest_abs_value ) ) );
                         }
                         else
                         {
-                            *temp -= sign*Rational( (-1)*carl::floor(carl::div( (-1)*coeff, smallest_abs_value ) ) );                                                        
+                            *temp -= sign*Rational( (-1)*carl::floor( carl::div( (-1)*coeff, smallest_abs_value ) ) );                                                        
                         }
                     }
                     ++iter_coeff;
