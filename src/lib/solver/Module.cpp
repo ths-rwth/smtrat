@@ -486,14 +486,14 @@ namespace smtrat
         if( !onlyIntegerValuedVariables && _isolateBranchValue )
         {
             eq = FormulaT( equation );
-            eq.setActivity( -numeric_limits<double>::infinity() );
+            eq.setActivity( numeric_limits<double>::infinity() );
         }
         else
         {
             if( _preferLeftCase )
-                consA.setActivity( -numeric_limits<double>::infinity() );
+                consA.setActivity( numeric_limits<double>::infinity() );
             else
-                consB.setActivity( -numeric_limits<double>::infinity() );
+                consB.setActivity( numeric_limits<double>::infinity() );
         }
         
         // Form premise

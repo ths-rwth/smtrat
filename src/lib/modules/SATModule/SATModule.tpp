@@ -515,7 +515,10 @@ namespace smtrat
             {
                 // Check whether the theory solver wants this literal to assigned as soon as possible.
                 if( act == numeric_limits<double>::infinity() )
+                {
                     activity[var(constraintLiteralPair->second.front())] = maxActivity() + 1;
+                    polarity[var(constraintLiteralPair->second.front())] = false;
+                }
                 // add the origin
                 auto& abstrPair = mBooleanConstraintMap[var(constraintLiteralPair->second.front())];
                 Abstraction& abstr = sign(constraintLiteralPair->second.front()) ? *abstrPair.second : *abstrPair.first;
