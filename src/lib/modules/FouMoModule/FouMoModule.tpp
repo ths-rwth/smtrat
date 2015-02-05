@@ -264,21 +264,23 @@ namespace smtrat
                 }
                 if( iter_formula->second->size() == delete_count )
                 {
-                    mProc_Constraints.erase( iter_formula );
+                    iter_formula = mProc_Constraints.erase( iter_formula );
                 }
-                ++iter_formula;
+                else
+                {
+                    ++iter_formula;
+                }    
             }
             // Do the same for the data structure of the deleted constraints 
             auto iter_var = mDeleted_Constraints.begin();
             while( iter_var != mDeleted_Constraints.end() )
             {
                 auto iter_upper = iter_var->second.first.begin();
-                bool formula_deleted;
                 unsigned delete_count;
                 while( iter_upper != iter_var->second.first.end() )
                 {
                     delete_count = 0;
-                    formula_deleted = false;
+                    bool formula_deleted = false;
                     auto iter_set_upper = iter_upper->second->begin();
                     while( iter_set_upper != iter_upper->second->end() )
                     {
@@ -294,7 +296,7 @@ namespace smtrat
                         formula_deleted = true;
                         iter_upper = iter_var->second.first.erase( iter_upper );
                     }
-                    if( !formula_deleted )
+                    else if( !formula_deleted )
                     {
                         ++iter_upper;
                     }    
@@ -303,7 +305,7 @@ namespace smtrat
                 while( iter_lower != iter_var->second.second.end() )
                 {
                     delete_count = 0;
-                    formula_deleted = false;
+                    bool formula_deleted = false;
                     auto iter_set_lower = iter_lower->second->begin();
                     while( iter_set_lower != iter_lower->second->end() )
                     {
@@ -319,7 +321,7 @@ namespace smtrat
                         formula_deleted = true;
                         iter_lower = iter_var->second.second.erase( iter_lower );
                     }
-                    if( !formula_deleted )
+                    else if( !formula_deleted )
                     {
                         ++iter_lower;
                     }    
@@ -349,9 +351,12 @@ namespace smtrat
                 }
                 if( iter_formula->second->size() == delete_count )
                 {
-                    mEqualities.erase( iter_formula );
+                    iter_formula = mEqualities.erase( iter_formula );
                 }
-                ++iter_formula;
+                else
+                {
+                    ++iter_formula;
+                }    
             }   
         }
         Module::removeSubformula( _subformula ); 
@@ -631,10 +636,10 @@ namespace smtrat
                 nonlinear_flag = iter_poly_upper->isLinear();                    
             }
             if( !iter_poly_upper->isConstant() && nonlinear_flag )       
-            {
+            { 
                 if( iter_poly_upper->getSingleVariable() == corr_var )
                 {
-                    coeff_upper = iter_poly_upper->coeff();
+                    coeff_upper = (Rational)iter_poly_upper->coeff();
                     break;
                 }                                
             }
@@ -653,7 +658,7 @@ namespace smtrat
             {    
                 if( iter_poly_lower->getSingleVariable() == corr_var )
                 {
-                    coeff_lower = iter_poly_lower->coeff(); 
+                    coeff_lower = (Rational)iter_poly_lower->coeff(); 
                     break;
                 }                                
             }
@@ -662,7 +667,7 @@ namespace smtrat
         Poly upper_poly = upper_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
         Poly lower_poly = lower_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
         assert( lower_constr->relation() == carl::Relation::LEQ );
-        combined_formula = FormulaT( carl::newConstraint( Poly ( Rational(coeff_upper)*lower_poly ) + Poly( (Rational)(-1*coeff_lower)*upper_poly ), carl::Relation::LEQ ) );
+        combined_formula = FormulaT( carl::newConstraint( Poly ( coeff_upper*lower_poly ) + Poly( (Rational)(-1*coeff_lower)*upper_poly ), carl::Relation::LEQ ) );
         return combined_formula;        
     }
     
@@ -699,7 +704,7 @@ namespace smtrat
                 atomic_formula_upper = iter_constr_upper->first;
                 to_be_substituted_upper = atomic_formula_upper.constraint().lhs();
                 auto iter_poly_upper = atomic_formula_upper.constraint().lhs().begin();
-                to_be_substituted_upper.substitute( mVarAss );
+                to_be_substituted_upper = to_be_substituted_upper.substitute( mVarAss );
                 /*
                 while( iter_poly_upper != atomic_formula_upper.constraint().lhs().end() )
                 {
@@ -747,27 +752,36 @@ namespace smtrat
                     first_iter_upper = false;     
                     if( Settings::Integer_Mode )
                     {
-                        lowest_upper = carl::floor( Rational( to_be_substituted_upper.constantPart()/(-1*coeff_upper ) ) );         
+                        lowest_upper = carl::floor( Rational( to_be_substituted_upper.constantPart() )/(-1*coeff_upper ) );         
+                        cout << "Coefficient: " << coeff_upper << endl;
+                        cout << "Constant part: " << to_be_substituted_upper.constantPart() << endl;
+                        cout << "Lowest upper: " << lowest_upper << endl;
                     }
                     else
                     {
-                        lowest_upper = -to_be_substituted_upper.constantPart()/coeff_upper;
+                        lowest_upper = Rational(-1)*Rational( to_be_substituted_upper.constantPart() )/coeff_upper;
                     }
                 }
                 else
                 {                    
                     if( Settings::Integer_Mode )
                     {                        
-                        if( carl::floor( Rational( -to_be_substituted_upper.constantPart()/coeff_upper ) ) < lowest_upper )
+                        if( carl::floor( Rational( -to_be_substituted_upper.constantPart() )/coeff_upper ) < lowest_upper )
                         {
-                            lowest_upper = carl::floor( Rational( -to_be_substituted_upper.constantPart()/coeff_upper ) );
+                            lowest_upper = carl::floor( Rational( -to_be_substituted_upper.constantPart() )/coeff_upper );
+                            cout << "Coefficient: " << coeff_upper << endl;
+                            cout << "Constant part: " << to_be_substituted_upper.constantPart() << endl;
+                            cout << "Lowest upper: " << lowest_upper << endl;
                         }
                     }
                     else
                     {                        
-                        if( -to_be_substituted_upper.constantPart()/coeff_upper < lowest_upper )
+                        if( Rational(-1)*Rational( to_be_substituted_upper.constantPart() )/coeff_upper < lowest_upper )
                         {
-                            lowest_upper = -to_be_substituted_upper.constantPart()/coeff_upper;
+                            lowest_upper = Rational(-1)*Rational( to_be_substituted_upper.constantPart() )/coeff_upper;
+                            cout << "Coefficient: " << coeff_upper << endl;
+                            cout << "Constant part: " << to_be_substituted_upper.constantPart() << endl;
+                            cout << "Lowest upper: " << lowest_upper << endl;
                         }
                     }    
                 }
@@ -838,27 +852,27 @@ namespace smtrat
                     first_iter_lower = false;
                     if( Settings::Integer_Mode )
                     {
-                        highest_lower = carl::ceil( to_be_substituted_lower.constantPart()/coeff_lower );
+                        highest_lower = carl::ceil( Rational( to_be_substituted_lower.constantPart() )/coeff_lower );
                     }
                     else
                     {
-                        highest_lower = to_be_substituted_lower.constantPart()/coeff_lower;
+                        highest_lower = Rational( to_be_substituted_lower.constantPart() )/coeff_lower;
                     }
                 }
                 else
                 {
                     if( Settings::Integer_Mode )
                     {
-                        if( carl::ceil( to_be_substituted_lower.constantPart()/coeff_lower ) > highest_lower )
+                        if( carl::ceil( Rational( to_be_substituted_lower.constantPart() )/coeff_lower ) > highest_lower )
                         {
-                            highest_lower = carl::ceil( to_be_substituted_lower.constantPart()/coeff_lower );
+                            highest_lower = carl::ceil( Rational( to_be_substituted_lower.constantPart() )/coeff_lower );
                         }
                     }
                     else
                     {
-                        if( to_be_substituted_lower.constantPart()/coeff_lower > highest_lower )
+                        if( Rational( to_be_substituted_lower.constantPart() )/coeff_lower > highest_lower )
                         {
-                            highest_lower = to_be_substituted_lower.constantPart()/coeff_lower;
+                            highest_lower = Rational( to_be_substituted_lower.constantPart() )/coeff_lower;
                         }
                     }
                 }
@@ -909,7 +923,7 @@ namespace smtrat
                     if( !found_var )
                     {
                         found_var = true;
-                        mVarAss[ iter_poly->getSingleVariable() ] = -constr_poly.constantPart();                       
+                        mVarAss[ iter_poly->getSingleVariable() ] = Rational(-1)*Rational( constr_poly.constantPart() );                       
                     }
                     else
                     {
