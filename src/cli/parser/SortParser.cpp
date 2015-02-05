@@ -17,6 +17,7 @@ namespace parser {
 		simpleSort.add("Bool", carl::SortManager::getInstance().interpretedSort("Bool", carl::VariableType::VT_BOOL));
 		simpleSort.add("Int", carl::SortManager::getInstance().interpretedSort("Int", carl::VariableType::VT_INT));
 		simpleSort.add("Real", carl::SortManager::getInstance().interpretedSort("Real", carl::VariableType::VT_REAL));
+		simpleSort.add("BitVec", carl::SortManager::getInstance().interpretedSort("BitVec", carl::VariableType::VT_BITVECTOR));
 	}
 	
 	void SortParser::setParameters(const std::vector<std::string>& params) {

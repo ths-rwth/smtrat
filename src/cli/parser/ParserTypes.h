@@ -20,7 +20,7 @@ namespace smtrat {
 
 namespace parser {
 
-enum class ExpressionType : unsigned { BOOLEAN, THEORY, UNINTERPRETED };
+enum class ExpressionType : unsigned { BOOLEAN, THEORY, UNINTERPRETED, BITVECTOR };
 
 struct Identifier {
 	std::string symbol;
