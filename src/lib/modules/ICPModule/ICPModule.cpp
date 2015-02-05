@@ -33,7 +33,7 @@
 using namespace std;
 using namespace carl;
 
-//#define ICP_MODULE_DEBUG_0
+#define ICP_MODULE_DEBUG_0
 //#define ICP_MODULE_DEBUG_1
 //#define ICP_MODULE_DEBUG_2
 
@@ -2036,13 +2036,21 @@ namespace smtrat
                 if( varInterval.lowerBoundType() != carl::BoundType::INFTY )
                 {
                     assert( mDefaultSplittingSize > 0 );
-                    bound = carl::rationalize<Rational>( varInterval.lower() + mDefaultSplittingSize );
+                    if( varInterval.lower() >= mDefaultSplittingSize )
+                    {
+                        return carl::Variable::NO_VARIABLE;
+                    }
+                    bound = carl::rationalize<Rational>( mDefaultSplittingSize );
                 }
                 // otherwise keep 0
             }
             else if( varInterval.lowerBoundType() == carl::BoundType::INFTY )
             {
-                bound = carl::rationalize<Rational>( varInterval.upper() - mDefaultSplittingSize );
+                if( varInterval.upper() <= -mDefaultSplittingSize )
+                {
+                    return carl::Variable::NO_VARIABLE;
+                }
+                bound = carl::rationalize<Rational>( -mDefaultSplittingSize );
             }
             else
             {
