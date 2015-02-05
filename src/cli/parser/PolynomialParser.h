@@ -15,6 +15,7 @@
 #include "NumberParser.h"
 #include "ParserState.h"
 #include "FunctionArgumentParser.h"
+#include "BitvectorParser.h"
 
 namespace smtrat {
 namespace parser {
@@ -39,6 +40,7 @@ private:
 	qi::rule<Iterator, Poly(), Skipper> polynomial_fun;
 	qi::rule<Iterator, Poly(), Skipper> polynomial_uf;
 
+	BitvectorParser bitvector;
 	FunctionArgumentParser fun_argument;
 };
 	

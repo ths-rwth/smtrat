@@ -38,6 +38,7 @@
 #include "FunctionArgumentParser.h"
 #include "FormulaParser.h"
 #include "PolynomialParser.h"
+#include "BitvectorParser.h"
 
 namespace smtrat {
 namespace parser {
@@ -84,7 +85,7 @@ public:
 	
 	// Formula
 	FormulaParser formula;
-
+	BitvectorParser bitvector;
 	UninterpretedParser uninterpreted;
 
 	// Polynomial

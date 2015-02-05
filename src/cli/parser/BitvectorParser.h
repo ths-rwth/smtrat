@@ -1,5 +1,5 @@
 /* 
- * @file   UninterpretedParser.h
+ * @file   BitvectorParser.h
  * @author Gereon Kremer <gereon.kremer@cs.rwth-aachen.de>
  */
 
@@ -19,15 +19,12 @@ namespace parser {
 	
 	struct FormulaParser;
 	
-	struct UninterpretedParser: public qi::grammar<Iterator, UninterpretedType(), Skipper> {
-		UninterpretedParser(ParserState* state, FormulaParser* formula);
+	struct BitvectorParser: public qi::grammar<Iterator, BitvectorType(), Skipper> {
+		BitvectorParser(ParserState* state);
 	private:
 		ParserState* state;
 
-		qi::rule<Iterator, UninterpretedType(), Skipper> uninterpreted;
-		
-		PolynomialParser polynomial;
-		FunctionArgumentParser fun_argument;
+		qi::rule<Iterator, BitvectorType(), Skipper> bitvector;
 	};
 	
 }

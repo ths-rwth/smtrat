@@ -12,6 +12,7 @@
 #include "UtilityParser.h"
 #include "ParserState.h"
 #include "PolynomialParser.h"
+#include "BitvectorParser.h"
 #include "UninterpretedParser.h"
 #include "FunctionArgumentParser.h"
 
@@ -35,6 +36,7 @@ private:
 	RelationParser relation;
 	DomainParser domain;
 	AttributeParser attribute;
+	BitvectorParser bitvector;
 	UninterpretedParser uninterpreted;
 	PolynomialParser polynomial;
 	FunctionArgumentParser fun_argument;

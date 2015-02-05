@@ -15,10 +15,11 @@ namespace parser {
 
 struct FormulaParser;
 struct PolynomialParser;
+struct BitvectorParser;
 struct UninterpretedParser;
 	
 struct FunctionArgumentParser: public qi::grammar<Iterator, Argument(), Skipper> {
-	FunctionArgumentParser(FormulaParser* formula, UninterpretedParser* uninterpreted, PolynomialParser* polynomial);
+	FunctionArgumentParser(FormulaParser* formula, BitvectorParser* bitvector, UninterpretedParser* uninterpreted, PolynomialParser* polynomial);
 private:
 	qi::rule<Iterator, Argument(), Skipper> main;
 };

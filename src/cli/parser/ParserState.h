@@ -16,6 +16,7 @@ namespace parser {
 		private:
 			qi::symbols<char, carl::Variable> var_bool;
 			qi::symbols<char, carl::Variable> var_theory;
+			qi::symbols<char, carl::BVVariable> var_bitvector;
 			qi::symbols<char, carl::UVariable> var_uninterpreted;
 			qi::symbols<char, FormulaT> bind_bool;
 			qi::symbols<char, Poly> bind_theory;
@@ -25,6 +26,7 @@ namespace parser {
 			{
 				this->var_bool = state.var_bool.sym;
 				this->var_theory = state.var_theory.sym;
+				this->var_bitvector = state.var_bitvector.sym;
 				this->var_uninterpreted = state.var_uninterpreted.sym;
 				this->bind_bool = state.bind_bool.sym;
 				this->bind_theory = state.bind_theory.sym;
@@ -33,6 +35,7 @@ namespace parser {
 			void restore(ParserState& state) {
 				state.var_bool.sym = this->var_bool;
 				state.var_theory.sym = this->var_theory;
+				state.var_bitvector.sym = this->var_bitvector;
 				state.var_uninterpreted.sym = this->var_uninterpreted;
 				state.bind_bool.sym = this->bind_bool;
 				state.bind_theory.sym = this->bind_theory;
@@ -42,6 +45,7 @@ namespace parser {
 
 		DeclaredSymbolParser<carl::Variable> var_bool;
 		DeclaredSymbolParser<carl::Variable> var_theory;
+		DeclaredSymbolParser<carl::BVVariable> var_bitvector;
 		DeclaredSymbolParser<carl::UVariable> var_uninterpreted;
 
 		DeclaredSymbolParser<FormulaT> bind_bool;
