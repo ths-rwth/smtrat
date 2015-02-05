@@ -247,11 +247,8 @@ namespace smtrat
                             }
                             if( (*bound)->origins().empty() )
                             {
-//                                std::cout << __func__ << ":" << __LINE__ << std::endl;
-//                                std::cout << (*bound)->neqRepresentation() << std::endl;
                                 if( !(*bound)->neqRepresentation().isTrue() )
                                 {
-//                                    std::cout << __func__ << ":" << __LINE__ << ": " << formula << std::endl;
                                     auto constrBoundIterB = mTableau.constraintToBound().find( (*bound)->neqRepresentation() );
                                     assert( constrBoundIterB != mTableau.constraintToBound().end() );
                                     const std::vector< const LRABound* >* uebounds = constrBoundIterB->second;
@@ -259,11 +256,9 @@ namespace smtrat
                                     assert( uebounds->size() >= 4 );
                                     if( !(*uebounds)[0]->isActive() && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive() && !(*uebounds)[3]->isActive() )
                                     {
-//                                        std::cout << __func__ << ":" << __LINE__ << std::endl;
                                         auto pos = mActiveResolvedNEQConstraints.find( (*bound)->neqRepresentation() );
                                         if( pos != mActiveResolvedNEQConstraints.end() )
                                         {
-//                                            std::cout << __func__ << ":" << __LINE__ << std::endl;
                                             auto entry = mActiveUnresolvedNEQConstraints.insert( *pos );
                                             mActiveResolvedNEQConstraints.erase( pos );
                                             entry.first->second.position = addSubformulaToPassedFormula( entry.first->first, entry.first->second.origin ).first;
@@ -396,11 +391,17 @@ namespace smtrat
                     if( checkAssignmentForNonlinearConstraint() )
                     {
                         if( Settings::use_gomory_cuts && gomory_cut() )
+                        {
                             goto Return; // Unknown
+                        }
                         if( !Settings::use_gomory_cuts && Settings::use_cuts_from_proofs && cuts_from_proofs() )
+                        {
                             goto Return; // Unknown
+                        }
                         if( !Settings::use_gomory_cuts && !Settings::use_cuts_from_proofs && branch_and_bound() )
+                        {
                             goto Return; // Unknown
+                        }
                         result = True;
                         if( Settings::restore_previous_consistent_assignment )
                         {
@@ -579,7 +580,6 @@ Return:
                         break;
                     }
                 }
-//                if( !( result != True || assignmentCorrect() ) ) { std::cout << "Error!" << std::endl; exit( 7771 ); }
                 assert( result != True || assignmentCorrect() );
             }
         }
@@ -790,8 +790,6 @@ Return:
             }
         }
         // If the bounds constraint has already been passed to the backend, add the given formulas to it's origins
-        if( _bound->pInfo()->position != passedFormulaEnd() )
-            addOrigin( _bound->pInfo()->position, _formula );
         const LRAVariable& var = _bound->variable();
         const LRABound* psup = var.pSupremum();
         const LRABound& sup = *psup;
@@ -1394,7 +1392,7 @@ Return:
         for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
         {
             assert( var->first == map_iterator->first );
-            Rational& ass = map_iterator->second; 
+            Rational& ass = map_iterator->second;
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
                 size_t row_count_new = mTableau.getNumberOfEntries( var->second );
@@ -1438,7 +1436,7 @@ Return:
         auto branch_var = mTableau.originalVars().begin();
         Rational ass_;
         bool result = false;
-        Rational diff = -1;
+        Rational diff = MINUS_ONE_RATIONAL;
         for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
         {
             assert( var->first == map_iterator->first );
@@ -1446,10 +1444,10 @@ Return:
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
                 Rational curr_diff = ass - carl::floor(ass);
-                if( carl::abs( curr_diff -  (Rational)1/2 ) > diff )
+                if( carl::abs( curr_diff -  ONE_RATIONAL/Rational(2) ) > diff )
                 {
                     result = true;
-                    diff = carl::abs( curr_diff -  (Rational)1/2 ); 
+                    diff = carl::abs( curr_diff -  ONE_RATIONAL/Rational(2) ); 
                     branch_var = var;
                     ass_ = ass;                   
                 }
@@ -1486,7 +1484,7 @@ Return:
         auto branch_var = mTableau.originalVars().begin();
         Rational ass_;
         bool result = false;
-        Rational diff = 1;
+        Rational diff = ONE_RATIONAL;
         for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
         {
             assert( var->first == map_iterator->first );
@@ -1494,10 +1492,10 @@ Return:
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
                 Rational curr_diff = ass - carl::floor(ass);
-                if( carl::abs( Rational(curr_diff - Rational(1)/Rational(2)) ) < diff )
+                if( carl::abs( Rational(curr_diff - ONE_RATIONAL/Rational(2)) ) < diff )
                 {
                     result = true;
-                    diff = carl::abs( Rational(curr_diff -  Rational(1)/Rational(2)) ); 
+                    diff = carl::abs( Rational(curr_diff -  ONE_RATIONAL/Rational(2)) ); 
                     branch_var = var;
                     ass_ = ass;                   
                 }
