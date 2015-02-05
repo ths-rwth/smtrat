@@ -20,7 +20,34 @@ namespace smtrat {
 
 namespace parser {
 
-enum class ExpressionType : unsigned { BOOLEAN, THEORY, UNINTERPRETED };
+enum class ExpressionType : unsigned { BOOLEAN, THEORY, UNINTERPRETED, BITVECTOR };
+
+struct Identifier {
+	std::string symbol;
+	std::vector<std::size_t>* indices;
+	Identifier(): symbol(""), indices(nullptr) {}
+	Identifier(const std::string& symbol): symbol(symbol), indices(nullptr) {}
+	Identifier(const std::string& symbol, const std::vector<std::size_t>& indices): symbol(symbol), indices(new std::vector<std::size_t>(indices)) {}
+	Identifier& operator=(const Identifier& i) {
+		symbol = i.symbol;
+		delete indices;
+		indices = nullptr;
+		if (i.indices != nullptr) indices = new std::vector<std::size_t>(*i.indices);
+		return *this;
+	}
+	~Identifier() {
+		delete indices;
+	}
+	operator std::string() const {
+		if (indices == nullptr || indices->size() == 0) {
+			return symbol;
+		}
+		std::stringstream ss;
+		ss << symbol << "|" << indices->front();
+		for (std::size_t i = 1; i < indices->size(); i++) ss << "," << (*indices)[i];
+		return ss.str();
+	}
+};
 
 typedef boost::variant<bool, std::string, Rational, boost::spirit::qi::unused_type> AttributeValue;
 typedef boost::variant<bool, std::string, Rational> AttributeMandatoryValue;

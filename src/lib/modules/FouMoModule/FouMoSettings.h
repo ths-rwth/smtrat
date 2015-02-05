@@ -32,10 +32,13 @@
 namespace smtrat
 {
     struct FouMoSettings1
-    {
-        /**
-         * Example for a setting.
-         */
-        static const bool example_setting = true;
+    {        
+        static const bool Allow_Deletion = true;
+        
+        static const bool Integer_Mode = true;
+        
+        static const bool Nonlinear_Mode = false;
+        
+        static const int Threshold = 20;
     };
 }

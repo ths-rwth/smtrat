@@ -70,10 +70,10 @@ SymbolParser::SymbolParser() : SymbolParser::base_type(main, "symbol") {
     simple.name("simple symbol");
 }
 
-IdentifierParser::IdentifierParser() : KeywordParser::base_type(main, "identifier") {
-    main = symbol | indexed;
+IdentifierParser::IdentifierParser() : IdentifierParser::base_type(main, "identifier") {
+    main = symbol[qi::_val = px::construct<Identifier>(qi::_1)] | indexed;
     main.name("identifier");
-    indexed = (qi::lit("(") >> qi::lit("_") >> symbol >> +numeral >> qi::lit(")"))[qi::_val = px::bind(&IdentifierParser::buildIdentifier, px::ref(*this), qi::_1, qi::_2)];
+    indexed = (qi::lit("(") >> qi::lit("_") >> symbol >> +numeral >> qi::lit(")"))[qi::_val = px::construct<Identifier>(qi::_1, qi::_2)];
     indexed.name("indexed symbol");
 }
 
