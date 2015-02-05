@@ -59,6 +59,7 @@ struct TypeOfTerm : public boost::static_visitor<ExpressionType> {
 			case carl::VariableType::VT_INT:
 			case carl::VariableType::VT_REAL: return ExpressionType::THEORY;
 			case carl::VariableType::VT_UNINTERPRETED: return ExpressionType::UNINTERPRETED;
+			case carl::VariableType::VT_BITVECTOR: return ExpressionType::BITVECTOR;
 			default:
 				return ExpressionType::THEORY;
 		}

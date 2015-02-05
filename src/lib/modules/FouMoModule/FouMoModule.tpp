@@ -30,11 +30,6 @@
 
 #define DEBUG_FouMoModule
 
-#define Allow_Deletion
-#define Integer_Mode
-#define Nonlinear_Mode
-//#define Threshold 20
-
 namespace smtrat
 {
     /**
@@ -256,6 +251,9 @@ namespace smtrat
                 auto iter_origins = (iter_formula->second)->begin();
                 while( iter_origins !=  (iter_formula->second)->end() )
                 {
+                    #ifdef DEBUG_FouMoModule
+                    cout << "Origin: " << *iter_origins << endl;
+                    #endif
                     bool contains = iter_origins->contains( _subformula->formula() ); 
                     if( contains )
                     {
@@ -266,21 +264,23 @@ namespace smtrat
                 }
                 if( iter_formula->second->size() == delete_count )
                 {
-                    mProc_Constraints.erase( iter_formula );
+                    iter_formula = mProc_Constraints.erase( iter_formula );
                 }
-                ++iter_formula;
+                else
+                {
+                    ++iter_formula;
+                }    
             }
             // Do the same for the data structure of the deleted constraints 
             auto iter_var = mDeleted_Constraints.begin();
             while( iter_var != mDeleted_Constraints.end() )
             {
                 auto iter_upper = iter_var->second.first.begin();
-                bool formula_deleted;
                 unsigned delete_count;
                 while( iter_upper != iter_var->second.first.end() )
                 {
                     delete_count = 0;
-                    formula_deleted = false;
+                    bool formula_deleted = false;
                     auto iter_set_upper = iter_upper->second->begin();
                     while( iter_set_upper != iter_upper->second->end() )
                     {
@@ -296,7 +296,7 @@ namespace smtrat
                         formula_deleted = true;
                         iter_upper = iter_var->second.first.erase( iter_upper );
                     }
-                    if( !formula_deleted )
+                    else if( !formula_deleted )
                     {
                         ++iter_upper;
                     }    
@@ -305,7 +305,7 @@ namespace smtrat
                 while( iter_lower != iter_var->second.second.end() )
                 {
                     delete_count = 0;
-                    formula_deleted = false;
+                    bool formula_deleted = false;
                     auto iter_set_lower = iter_lower->second->begin();
                     while( iter_set_lower != iter_lower->second->end() )
                     {
@@ -321,7 +321,7 @@ namespace smtrat
                         formula_deleted = true;
                         iter_lower = iter_var->second.second.erase( iter_lower );
                     }
-                    if( !formula_deleted )
+                    else if( !formula_deleted )
                     {
                         ++iter_lower;
                     }    
@@ -351,9 +351,12 @@ namespace smtrat
                 }
                 if( iter_formula->second->size() == delete_count )
                 {
-                    mEqualities.erase( iter_formula );
+                    iter_formula = mEqualities.erase( iter_formula );
                 }
-                ++iter_formula;
+                else
+                {
+                    ++iter_formula;
+                }    
             }   
         }
         Module::removeSubformula( _subformula ); 
@@ -399,37 +402,23 @@ namespace smtrat
             #endif
             if( var_corr_constr.empty() ) 
             {
-                // Try to derive a(n) (integer) solution by backtracking through the steps of Fourier-Motzkin
-                #ifdef Nonlinear_Mode
-                auto iter_constr = mProc_Constraints.begin();
-                while( iter_constr != mProc_Constraints.end() )
-                {
-                    std::shared_ptr<std::vector<FormulaT>> formula_cover( new std::vector<FormulaT>() );
-                    auto iter_sets = iter_constr->second->begin();
-                    while( iter_sets != iter_constr->second->end() )
+                if( Settings::Nonlinear_Mode )
+                {    
+                    // Pass the currently obtained set of constraints with the corresponding origins
+                    auto iter_constr = mProc_Constraints.begin();
+                    while( iter_constr != mProc_Constraints.end() )
                     {
-                        auto iter_set = iter_sets->begin();
-                        FormulasT origin;
-                        while( iter_set != iter_sets->end() )
-                        {
-                            origin.insert( *iter_set );
-                            ++iter_set;                            
-                        }
-                        FormulaT origins_conjuncted = FormulaT( carl::FormulaType::AND, std::move( origin ) );
-                        formula_cover->push_back( origins_conjuncted );
-                        ++iter_sets;
+                        addSubformulaToPassedFormula( iter_constr->first, iter_constr->second );
+                        ++iter_constr;
                     }
-                    addConstraintToInform( iter_constr->first ); 
-                    addSubformulaToPassedFormula( iter_constr->first, formula_cover );
-                    ++iter_constr;
+                    Answer ans = runBackends();
+                    if( ans == False )
+                    {
+                        getInfeasibleSubsets();
+                    }
+                    return ans;
                 }
-                Answer ans = runBackends();
-                if( ans == False )
-                {
-                    getInfeasibleSubsets();
-                }
-                return ans;
-                #endif
+                // Try to derive a(n) (integer) solution by backtracking through the steps of Fourier-Motzkin
                 if( construct_solution() )
                 {
                     #ifdef DEBUG_FouMoModule
@@ -497,6 +486,12 @@ namespace smtrat
                     cout << "Combine 'upper' constraint: " << iter_upper->first.constraint() << endl;
                     cout << "with 'lower' constraint: " << iter_lower->first.constraint() << endl;
                     cout << "and obtain: " << new_formula.constraint() << endl;
+                    auto iter_origins = origins_new->begin();
+                    while( iter_origins != origins_new->end() )
+                    {
+                        cout << "with origins: " << *iter_origins << endl; 
+                        ++iter_origins;
+                    }                                       
                     #endif
                     if( new_formula.isFalse() )
                     {
@@ -563,11 +558,12 @@ namespace smtrat
             auto iter_poly = iter_constr->first.constraint().lhs().begin();
             while( iter_poly != iter_constr->first.constraint().lhs().end() )
             {
-                #ifdef Nonlinear_Mode
-                if( !iter_poly->isConstant() && iter_poly->isLinear() )
-                #else
-                if( !iter_poly->isConstant() )
-                #endif    
+                bool nonlinear_flag = true;
+                if( Settings::Nonlinear_Mode )
+                {
+                    nonlinear_flag = iter_poly->isLinear();                    
+                }
+                if( !iter_poly->isConstant() && nonlinear_flag )    
                 {
                     carl::Variable var_help = iter_poly->getSingleVariable();
                     auto iter_help = var_corr_constr.find( var_help );
@@ -610,19 +606,20 @@ namespace smtrat
             }
             ++iter_constr;
         }
-        #ifndef Allow_Deletion
-        // Remove those variables that do not have each at least on upper and 
-        // one lower bound
-        auto iter_var = var_corr_constr.begin();
-        while( iter_var != var_corr_constr.end() )
+        if( !Settings::Allow_Deletion )
         {
-            if( iter_var->second.first.empty() || iter_var->second.second.empty() )
+            // Remove those variables that do not have each at least on upper and 
+            // one lower bound
+            auto iter_var = var_corr_constr.begin();
+            while( iter_var != var_corr_constr.end() )
             {
-                var_corr_constr.erase( iter_var );
+                if( iter_var->second.first.empty() || iter_var->second.second.empty() )
+                {
+                    var_corr_constr.erase( iter_var );
+                }
+                ++iter_var;
             }
-            ++iter_var;
-        }
-        #endif
+        }    
     }
     
     template<class Settings>
@@ -633,15 +630,16 @@ namespace smtrat
         auto iter_poly_upper = upper_constr->lhs().begin();
         while( iter_poly_upper != upper_constr->lhs().end() )
         {
-            #ifdef Nonlinear_Mode
-            if( !iter_poly_upper->isConstant() && iter_poly_upper->isLinear() )
-            #else
-            if( !iter_poly_upper->isConstant() )
-            #endif    
+            bool nonlinear_flag = true;
+            if( Settings::Nonlinear_Mode )
             {
+                nonlinear_flag = iter_poly_upper->isLinear();                    
+            }
+            if( !iter_poly_upper->isConstant() && nonlinear_flag )       
+            { 
                 if( iter_poly_upper->getSingleVariable() == corr_var )
                 {
-                    coeff_upper = iter_poly_upper->coeff();
+                    coeff_upper = (Rational)iter_poly_upper->coeff();
                     break;
                 }                                
             }
@@ -651,15 +649,16 @@ namespace smtrat
         auto iter_poly_lower = lower_constr->lhs().begin();
         while( iter_poly_lower != lower_constr->lhs().end() )
         {
-            #ifdef Nonlinear_Mode
-            if( !iter_poly_lower->isConstant() && iter_poly_lower->isLinear() )
-            #else
-            if( !iter_poly_lower->isConstant() )
-            #endif    
+            bool nonlinear_flag = true;
+            if( Settings::Nonlinear_Mode )
             {
+                nonlinear_flag = iter_poly_lower->isLinear();                    
+            }
+            if( !iter_poly_lower->isConstant() && nonlinear_flag )    
+            {    
                 if( iter_poly_lower->getSingleVariable() == corr_var )
                 {
-                    coeff_lower = iter_poly_lower->coeff(); 
+                    coeff_lower = (Rational)iter_poly_lower->coeff(); 
                     break;
                 }                                
             }
@@ -668,7 +667,7 @@ namespace smtrat
         Poly upper_poly = upper_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
         Poly lower_poly = lower_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
         assert( lower_constr->relation() == carl::Relation::LEQ );
-        //combined_formula = FormulaT( carl::newConstraint( (Rational)coeff_upper*lower_poly) + (Rational)-1*(Rational)coeff_lower*upper_poly, carl::Relation::LEQ );
+        combined_formula = FormulaT( carl::newConstraint( Poly ( coeff_upper*lower_poly ) + Poly( (Rational)(-1*coeff_lower)*upper_poly ), carl::Relation::LEQ ) );
         return combined_formula;        
     }
     
@@ -705,7 +704,7 @@ namespace smtrat
                 atomic_formula_upper = iter_constr_upper->first;
                 to_be_substituted_upper = atomic_formula_upper.constraint().lhs();
                 auto iter_poly_upper = atomic_formula_upper.constraint().lhs().begin();
-                to_be_substituted_upper.substitute( mVarAss );
+                to_be_substituted_upper = to_be_substituted_upper.substitute( mVarAss );
                 /*
                 while( iter_poly_upper != atomic_formula_upper.constraint().lhs().end() )
                 {
@@ -750,26 +749,41 @@ namespace smtrat
                 to_be_substituted_upper = to_be_substituted_upper.substitute( mVarAss ); 
                 if( first_iter_upper )
                 {
-                    first_iter_upper = false;                       
-                    #ifdef Integer_Mode
-                    lowest_upper = carl::floor( -to_be_substituted_upper.constantPart()/coeff_upper );
-                    #else
-                    lowest_upper = -to_be_substituted_upper.constantPart()/coeff_upper;
-                    #endif
+                    first_iter_upper = false;     
+                    if( Settings::Integer_Mode )
+                    {
+                        lowest_upper = carl::floor( Rational( to_be_substituted_upper.constantPart() )/(-1*coeff_upper ) );         
+                        cout << "Coefficient: " << coeff_upper << endl;
+                        cout << "Constant part: " << to_be_substituted_upper.constantPart() << endl;
+                        cout << "Lowest upper: " << lowest_upper << endl;
+                    }
+                    else
+                    {
+                        lowest_upper = Rational(-1)*Rational( to_be_substituted_upper.constantPart() )/coeff_upper;
+                    }
                 }
                 else
                 {                    
-                    #ifdef Integer_Mode
-                    if( carl::floor( -to_be_substituted_upper.constantPart()/coeff_upper ) < lowest_upper )
-                    {
-                        lowest_upper = carl::floor( -to_be_substituted_upper.constantPart()/coeff_upper );
+                    if( Settings::Integer_Mode )
+                    {                        
+                        if( carl::floor( Rational( -to_be_substituted_upper.constantPart() )/coeff_upper ) < lowest_upper )
+                        {
+                            lowest_upper = carl::floor( Rational( -to_be_substituted_upper.constantPart() )/coeff_upper );
+                            cout << "Coefficient: " << coeff_upper << endl;
+                            cout << "Constant part: " << to_be_substituted_upper.constantPart() << endl;
+                            cout << "Lowest upper: " << lowest_upper << endl;
+                        }
                     }
-                    #else
-                    if( -to_be_substituted_upper.constantPart()/coeff_upper < lowest_upper )
-                    {
-                        lowest_upper = -to_be_substituted_upper.constantPart()/coeff_upper;
-                    }
-                    #endif
+                    else
+                    {                        
+                        if( Rational(-1)*Rational( to_be_substituted_upper.constantPart() )/coeff_upper < lowest_upper )
+                        {
+                            lowest_upper = Rational(-1)*Rational( to_be_substituted_upper.constantPart() )/coeff_upper;
+                            cout << "Coefficient: " << coeff_upper << endl;
+                            cout << "Constant part: " << to_be_substituted_upper.constantPart() << endl;
+                            cout << "Lowest upper: " << lowest_upper << endl;
+                        }
+                    }    
                 }
                 ++iter_constr_upper;    
             }
@@ -836,37 +850,34 @@ namespace smtrat
                 if( first_iter_lower )
                 {
                     first_iter_lower = false;
-                    #ifdef Integer_Mode
-                    highest_lower = carl::ceil( to_be_substituted_lower.constantPart()/coeff_lower );
-                    #else
-                    highest_lower = to_be_substituted_lower.constantPart()/coeff_lower;
-                    #endif
+                    if( Settings::Integer_Mode )
+                    {
+                        highest_lower = carl::ceil( Rational( to_be_substituted_lower.constantPart() )/coeff_lower );
+                    }
+                    else
+                    {
+                        highest_lower = Rational( to_be_substituted_lower.constantPart() )/coeff_lower;
+                    }
                 }
                 else
                 {
-                    #ifdef Integer_Mode
-                    if( carl::ceil( to_be_substituted_lower.constantPart()/coeff_lower ) > highest_lower )
+                    if( Settings::Integer_Mode )
                     {
-                        highest_lower = carl::ceil( to_be_substituted_lower.constantPart()/coeff_lower );
+                        if( carl::ceil( Rational( to_be_substituted_lower.constantPart() )/coeff_lower ) > highest_lower )
+                        {
+                            highest_lower = carl::ceil( Rational( to_be_substituted_lower.constantPart() )/coeff_lower );
+                        }
                     }
-                    #else 
-                    if( to_be_substituted_lower.constantPart()/coeff_lower > highest_lower )
+                    else
                     {
-                        highest_lower = to_be_substituted_lower.constantPart()/coeff_lower;
+                        if( Rational( to_be_substituted_lower.constantPart() )/coeff_lower > highest_lower )
+                        {
+                            highest_lower = Rational( to_be_substituted_lower.constantPart() )/coeff_lower;
+                        }
                     }
-                    #endif
                 }
                 ++iter_constr_lower;    
             }
-            #ifdef Integer_Mode
-            if( ( at_least_one_lower && at_least_one_upper ) && highest_lower > lowest_upper )
-            {
-                #ifdef DEBUG_FouMoModule
-                cout << "Highest lower bound is bigger than the lowest upper bound!" << endl;
-                #endif
-                return false;
-            }
-            #endif
             // Insert one of the found bounds into mVarAss
             //assert( at_least_one_lower || at_least_one_upper );
             if( at_least_one_lower )
@@ -912,7 +923,7 @@ namespace smtrat
                     if( !found_var )
                     {
                         found_var = true;
-                        mVarAss[ iter_poly->getSingleVariable() ] = -constr_poly.constantPart();                       
+                        mVarAss[ iter_poly->getSingleVariable() ] = Rational(-1)*Rational( constr_poly.constantPart() );                       
                     }
                     else
                     {

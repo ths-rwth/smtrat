@@ -893,11 +893,6 @@ namespace smtrat
             }
         }
     }
-    
-    void Module::collectOrigins_Reverse( const FormulasT& _originSet, FormulaT& _origin) const
-    {
-        // Implement it!
-    }
 
     void Module::addAssumptionToCheck( const FormulaT& _formula, bool _consistent, const string& _label )
     {
