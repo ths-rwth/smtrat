@@ -672,7 +672,6 @@ namespace smtrat
             }
         }
         mChangedActivities.clear();
-        if( !passedFormulaCorrect() ) exit(1234);
         assert( passedFormulaCorrect() );
     }
     
