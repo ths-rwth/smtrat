@@ -2036,13 +2036,25 @@ namespace smtrat
                 if( varInterval.lowerBoundType() != carl::BoundType::INFTY )
                 {
                     assert( mDefaultSplittingSize > 0 );
-                    bound = carl::rationalize<Rational>( varInterval.lower() + mDefaultSplittingSize );
+                    if( varInterval.lower() >= mDefaultSplittingSize )
+                    {
+                        std::cout << __func__ << ":" << __LINE__ << std::endl;
+                        return carl::Variable::NO_VARIABLE;
+                    }
+                    bound = carl::rationalize<Rational>( mDefaultSplittingSize );
+                    preferLeftCase = true;
                 }
                 // otherwise keep 0
             }
             else if( varInterval.lowerBoundType() == carl::BoundType::INFTY )
             {
-                bound = carl::rationalize<Rational>( varInterval.upper() - mDefaultSplittingSize );
+                if( varInterval.upper() <= -mDefaultSplittingSize )
+                {
+                    std::cout << __func__ << ":" << __LINE__ << std::endl;
+                    return carl::Variable::NO_VARIABLE;
+                }
+                bound = carl::rationalize<Rational>( -mDefaultSplittingSize );
+                preferLeftCase = false;
             }
             else
             {
