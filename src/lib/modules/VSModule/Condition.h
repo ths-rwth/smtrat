@@ -122,6 +122,7 @@ namespace vs
             double valuate( const carl::Variable&, size_t, bool ) const;
             bool operator==( const Condition& ) const;
             bool operator<( const Condition& ) const;
+            friend std::ostream& operator<<( std::ostream& _out, const Condition& _condition );
             void print( std::ostream& = std::cout ) const;
     };
 
