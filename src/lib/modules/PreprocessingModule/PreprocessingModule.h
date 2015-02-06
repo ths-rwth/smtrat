@@ -69,9 +69,12 @@ namespace smtrat
             bool assertSubformula( ModuleInput::const_iterator );
             Answer isConsistent();
             void removeSubformula( ModuleInput::const_iterator );
+			void updateModel() const;
 
         protected:
-			void addBounds(FormulaT formula);
+			/// Bounds that have been added since the last call to isConsistent().
+			std::set<FormulaT> newBounds;
+			bool addBounds(FormulaT formula);
 			void removeBounds(FormulaT formula);
 			
 			FormulaT checkBounds(FormulaT formula);

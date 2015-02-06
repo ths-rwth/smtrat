@@ -65,7 +65,7 @@ namespace smtrat {
 	template<typename Settings>
     bool PreprocessingModule<Settings>::assertSubformula(ModuleInput::const_iterator _subformula) {
         Module::assertSubformula(_subformula);
-		addBounds(_subformula->formula());
+		if (addBounds(_subformula->formula())) newBounds.insert(_subformula->formula());
         return true;
     }
 
@@ -81,9 +81,19 @@ namespace smtrat {
         {
 			FormulaT formula = receivedFormula->formula();
 			
+			auto boundIt = newBounds.find(formula);
+			if (boundIt != newBounds.end()) {
+				newBounds.erase(boundIt);
+				addSubformulaToPassedFormula(formula, receivedFormula->formula());
+				++receivedFormula;
+				continue;
+			}
+			
 			formula = visitor.visit(formula, checkBoundsFunction);
 			
 			// Inequations are transformed.
+			std::cout << "Preprocessing: " << receivedFormula->formula() << std::endl;
+			std::cout << "\t -> " << formula << std::endl;
 			addSubformulaToPassedFormula(formula, receivedFormula->formula());
 			++receivedFormula;
         }
@@ -107,16 +117,38 @@ namespace smtrat {
     }
 	
 	template<typename Settings>
-    void PreprocessingModule<Settings>::addBounds(FormulaT formula) {
+	void PreprocessingModule<Settings>::updateModel() const {
+        clearModel();
+        if (solverState() == True) {
+            getBackendsModel();
+        }
+		carl::Variables vars;
+		rReceivedFormula().arithmeticVars(vars);
+		for (const auto& it: model()) {
+			if (!it.first.isVariable()) continue;
+			carl::Variable v = it.first.asVariable();
+			vars.erase(v);
+		}
+		for (carl::Variable::Arg v: vars) {
+			std::cout << "Setting " << v << " = 0" << std::endl;
+			mModel.emplace(v, vs::SqrtEx());
+		}
+		std::cout << mModel << std::endl;
+    }
+	
+	template<typename Settings>
+    bool PreprocessingModule<Settings>::addBounds(FormulaT formula) {
 		switch (formula.getType()) {
 			case carl::CONSTRAINT:
-				varbounds.addBound(formula.pConstraint(), formula);
-				break;
-			case carl::AND:
-				for (const auto& f: formula.subformulas()) addBounds(f);
-				break;
+				return varbounds.addBound(formula.pConstraint(), formula);
+			case carl::AND: {
+				bool found = false;
+				for (const auto& f: formula.subformulas()) found |= addBounds(f);
+				return found;
+			}
 			default: break;
 		}
+		return false;
 	}
 	template<typename Settings>
     void PreprocessingModule<Settings>::removeBounds(FormulaT formula) {
