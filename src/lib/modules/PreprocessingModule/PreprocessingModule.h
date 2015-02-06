@@ -31,6 +31,7 @@
 #pragma once
 
 #include "../../solver/Module.h"
+#include "../../datastructures/VariableBounds.h"
 #include "PreprocessingSettings.h"
 
 namespace smtrat
@@ -44,13 +45,16 @@ namespace smtrat
     /**
      *
      */
+	template<typename Settings>
     class PreprocessingModule : public Module
     {
         protected:
+			vb::VariableBounds<FormulaT> varbounds;
+			carl::FormulaVisitor<FormulaT> visitor;
 
         public:
 
-            PreprocessingModule( ModuleType _type, const FormulaT* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            PreprocessingModule( ModuleType _type, const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = nullptr );
 
             /**
              * Destructor:
@@ -62,18 +66,18 @@ namespace smtrat
              */
 
             // Interfaces.
-            bool assertSubformula( FormulaT::const_iterator );
+            bool assertSubformula( ModuleInput::const_iterator );
             Answer isConsistent();
-            void removeSubformula( FormulaT::const_iterator );
+            void removeSubformula( ModuleInput::const_iterator );
 
         protected:
-            void setDifficulty( FormulaT* formula, bool invert = false );
-            void rewritePotentialInequalities( FormulaT* formula, bool invert = false );
-            void assignActivitiesToPassedFormula();
-            void addLinearDeductions( FormulaT* formula );
-            void addUpperBounds( FormulaT* formula, const GiNaC::symtab& symbols, GiNaC::numeric boundary, bool strict ) const;
-            GiNaC::numeric determineUpperBounds( unsigned degree, const GiNaC::numeric& constPart ) const;
+			void addBounds(FormulaT formula);
+			void removeBounds(FormulaT formula);
+			
+			FormulaT checkBounds(FormulaT formula);
+			std::function<FormulaT(FormulaT)> checkBoundsFunction;
     };
 
 }    // namespace smtrat
 
+#include "PreprocessingModule.tpp"

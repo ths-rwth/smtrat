@@ -28,16 +28,9 @@
 
 #pragma once
 
-#include "../../RuntimeSettings.h"
-
 namespace smtrat 
 {
-class PreprocessingSettings : public RuntimeSettings
-{
-public:
-    PreprocessingSettings( const std::string& name );
-    virtual ~PreprocessingSettings( ) {}
-private:
-
+struct PreprocessingSettings {
+	
 };
 }
