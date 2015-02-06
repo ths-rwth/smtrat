@@ -1447,7 +1447,7 @@ Return:
                 if( carl::abs(Rational(curr_diff -  ONE_RATIONAL/Rational(2))) > diff )
                 {
                     result = true;
-                    diff = carl::abs(Rational(curr_diff -  ONE_RATIONAL/Rational(2)); 
+                    diff = carl::abs(Rational(curr_diff -  ONE_RATIONAL/Rational(2))); 
                     branch_var = var;
                     ass_ = ass;                   
                 }
