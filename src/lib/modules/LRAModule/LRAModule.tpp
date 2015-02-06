@@ -1444,10 +1444,10 @@ Return:
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
                 Rational curr_diff = ass - carl::floor(ass);
-                if( carl::abs( curr_diff -  ONE_RATIONAL/Rational(2) ) > diff )
+                if( carl::abs(Rational(curr_diff -  ONE_RATIONAL/Rational(2))) > diff )
                 {
                     result = true;
-                    diff = carl::abs( curr_diff -  ONE_RATIONAL/Rational(2) ); 
+                    diff = carl::abs(Rational(curr_diff -  ONE_RATIONAL/Rational(2)); 
                     branch_var = var;
                     ass_ = ass;                   
                 }
