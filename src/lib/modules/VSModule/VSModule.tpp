@@ -314,20 +314,20 @@ namespace smtrat
             cout << "Simplifing results in " << endl;
             currentState->printAlone( "*** ", cout );
             #endif
-            if( Settings::int_constraints_allowed && !Settings::split_neq_constraints && !currentState->isInconsistent() && !currentState->takeSubResultCombAgain() )
-            {
-                for( auto cond = currentState->conditions().begin(); cond != currentState->conditions().end(); ++cond )
-                {
-                    if( (*cond)->constraint().hasIntegerValuedVariable() && !(*cond)->constraint().hasRealValuedVariable()
-                        && (*cond)->constraint().relation() == carl::Relation::NEQ )
-                    {
-                        // Split the neq-constraint in a preceeding sat module (make sure that it is there in your strategy when choosing this vssetting)
-                        splitUnequalConstraint( FormulaT( (*cond)->pConstraint() ) );
-                        assert( currentState->isRoot() );
-                        return foundAnswer( Unknown );
-                    }
-                }
-            }
+//            if( Settings::int_constraints_allowed && !Settings::split_neq_constraints && !currentState->isInconsistent() && !currentState->takeSubResultCombAgain() )
+//            {
+//                for( auto cond = currentState->conditions().begin(); cond != currentState->conditions().end(); ++cond )
+//                {
+//                    if( (*cond)->constraint().hasIntegerValuedVariable() && !(*cond)->constraint().hasRealValuedVariable()
+//                        && (*cond)->constraint().relation() == carl::Relation::NEQ )
+//                    {
+//                        // Split the neq-constraint in a preceeding sat module (make sure that it is there in your strategy when choosing this vssetting)
+//                        splitUnequalConstraint( FormulaT( (*cond)->pConstraint() ) );
+//                        assert( currentState->isRoot() );
+//                        return foundAnswer( Unknown );
+//                    }
+//                }
+//            }
             if( currentState->hasChildrenToInsert() )
             {
                 currentState->rHasChildrenToInsert() = false;

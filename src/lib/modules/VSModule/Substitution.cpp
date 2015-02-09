@@ -37,7 +37,13 @@ namespace vs
         mpTermVariables( NULL ),
         mpOriginalConditions( new carl::PointerSet<Condition>( _oConditions ) ),
         mSideCondition( _sideCondition )
-    {}
+    {
+        if( mType == PLUS_EPSILON && mVariable.getType() == carl::VariableType::VT_INT )
+        {
+            *mpTerm = *mpTerm + smtrat::ONE_POLYNOMIAL;
+            mType = NORMAL;
+        }
+    }
 
     Substitution::Substitution( const carl::Variable& _variable, const SqrtEx& _term, const Type& _type, const carl::PointerSet<Condition>& _oConditions, const carl::PointerSet<smtrat::ConstraintT>& _sideCondition ):
         mVariable( _variable ),
@@ -46,7 +52,13 @@ namespace vs
         mpTermVariables( NULL ),
         mpOriginalConditions( new carl::PointerSet<Condition>( _oConditions ) ),
         mSideCondition( _sideCondition )
-    {}
+    {
+        if( mType == PLUS_EPSILON && mVariable.getType() == carl::VariableType::VT_INT )
+        {
+            *mpTerm = *mpTerm + smtrat::ONE_POLYNOMIAL;
+            mType = NORMAL;
+        }
+    }
 
     Substitution::Substitution( const Substitution& _sub ):
         mVariable( _sub.variable() ),
