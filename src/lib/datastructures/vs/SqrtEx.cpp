@@ -108,14 +108,21 @@ namespace vs
                 }
                 else
                 {
-                    gcdA = carl::gcd( mConstantPart, mFactor );
+                    smtrat::Rational ccConstantPart = mConstantPart.coprimeFactor();
+                    smtrat::Poly cpConstantPart = mConstantPart * ccConstantPart;
+                    smtrat::Rational ccFactor = mFactor.coprimeFactor();
+                    smtrat::Poly cpFactor = mFactor * ccFactor;
+                    gcdA = carl::gcd( cpConstantPart, cpFactor )*carl::gcd(ccConstantPart,ccFactor);
                 }
             }
         }
         if( gcdA.isZero() ) return;
-        gcdA = carl::gcd( gcdA, mDenominator );
-        // Make sure that the polynomial to divide by cannot be negative, otherwise the sign of the square
-        // root expression could change.
+        smtrat::Rational ccGcdA = gcdA.coprimeFactor();
+        smtrat::Poly cpGcdA = gcdA * ccGcdA;
+        smtrat::Rational ccDenominator = mDenominator.coprimeFactor();
+        smtrat::Poly cpDenominator = mDenominator * ccDenominator;
+        gcdA = carl::gcd( cpGcdA, cpDenominator )*carl::gcd(ccGcdA,ccDenominator);
+        // Make sure that the polynomial to divide by cannot be negative, otherwise the sign of the square root expression could change.
         if( !(gcdA == smtrat::ONE_POLYNOMIAL) && gcdA.definiteness() == carl::Definiteness::POSITIVE_SEMI )
         {
             if( !mConstantPart.isZero() )
