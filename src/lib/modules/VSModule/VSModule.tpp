@@ -1685,6 +1685,9 @@ namespace smtrat
 //                        std::cout << "replace variable in  " << subTerm << "  by" << std::endl;
 //                        for( const auto& vs : varSolutions )
 //                            std::cout << "   " << vs.first << " -> " << vs.second << std::endl;
+//                        logConditions( *currentState, true, "VS_SOLUTION_IN_DOMAIN", false );
+//                        if( !currentState->isRoot() )
+//                            logConditions( currentState->father(), true, "VS_SOLUTION_IN_DOMAIN_FATHER", false );
                         bool assIsInteger = subTerm.evaluate( evaluatedSubTerm, varSolutions, -1 );
 //                        std::cout << "results in " << evaluatedSubTerm << std::endl;
                         assIsInteger &= carl::isInteger( evaluatedSubTerm );
@@ -2000,14 +2003,24 @@ namespace smtrat
     }
 
     template<class Settings>
-    void VSModule<Settings>::logConditions( const State& _state, bool _assumption, const string& _description ) const
+    void VSModule<Settings>::logConditions( const State& _state, bool _assumption, const string& _description, bool _logAsDeduction ) const
     {
         if( !_state.conditions().empty() )
         {
             carl::PointerSet<smtrat::ConstraintT> constraints;
             for( auto cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
                 constraints.insert( (**cond).pConstraint() );
-            smtrat::Module::addAssumptionToCheck( constraints, _assumption, _description );
+            if( _logAsDeduction )
+                smtrat::Module::addAssumptionToCheck( constraints, _assumption, _description );
+            else
+            {
+                std::string assumption = "(assert (and";
+                for( auto constraint = constraints.begin(); constraint != constraints.end(); ++constraint )
+                    assumption += " " + (*constraint)->toString( 1, false, true );
+                assumption += " " + _description;
+                assumption += "))";
+                std::cout << assumption << std::endl;
+            }
         }
     }
 

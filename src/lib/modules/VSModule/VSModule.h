@@ -231,7 +231,7 @@ namespace smtrat
              * @param _assumption
              * @param _description
              */
-            void logConditions( const vs::State& _state, bool _assumption, const std::string& _description ) const;
+            void logConditions( const vs::State& _state, bool _assumption, const std::string& _description, bool _logAsDeduction = true ) const;
             
         public:
             
