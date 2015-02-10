@@ -280,11 +280,6 @@ namespace vs
         DisjunctionOfConstraintConjunctions combinations = DisjunctionOfConstraintConjunctions();
         if( _constraint->hasFactorization() && _constraint->factorization().size() <= MAX_PRODUCT_SPLIT_NUMBER )
         {
-            if( !(_constraint->relation() == Relation::GREATER || _constraint->relation() == Relation::LESS
-                    || _constraint->relation() == Relation::GEQ || _constraint->relation() == Relation::LEQ ))
-            {
-                cout << *_constraint << endl;
-            }
             assert( _constraint->relation() == Relation::GREATER || _constraint->relation() == Relation::LESS
                     || _constraint->relation() == Relation::GEQ || _constraint->relation() == Relation::LEQ );
             Relation relPos = Relation::GREATER;
@@ -520,7 +515,7 @@ namespace vs
                 }
                 else
                 {
-                    if( _subs.term().denominator().totalDegree() != 0 && fmod( sub.denominator().totalDegree()/_subs.term().denominator().totalDegree(), 2.0 ) != 0.0 )
+                    if( !_subs.term().denominator().isConstant() )
                     {
                         // Add conjunction (sub.denominator()>0 and sub.constantPart() </>/<=/>= 0) to the substitution result.
                         _result.push_back( ConstraintVector() );
@@ -562,7 +557,7 @@ namespace vs
             else
             {
                 smtrat::Poly s = smtrat::ONE_POLYNOMIAL;
-                if( _subs.term().denominator().totalDegree() != 0 && fmod( sub.denominator().totalDegree()/_subs.term().denominator().totalDegree(), 2.0 ) != 0.0 )
+                if( !_subs.term().denominator().isConstant() )
                     s = sub.denominator();
                 switch( _cons->relation() )
                 {
