@@ -75,6 +75,10 @@ namespace smtrat {
 	template<typename Settings>
     Answer PreprocessingModule<Settings>::isConsistent()
     {
+		if (varbounds.isConflicting()) {
+			mInfeasibleSubsets.push_back(varbounds.getConflict());
+			return foundAnswer(False);
+		}
         auto receivedFormula = firstUncheckedReceivedSubformula();
 		
         while( receivedFormula != rReceivedFormula().end() )
@@ -89,12 +93,22 @@ namespace smtrat {
 				continue;
 			}
 			
+			tmpOrigins.clear();
+			tmpOrigins.insert(receivedFormula->formula());
 			formula = visitor.visit(formula, checkBoundsFunction);
 			
 			// Inequations are transformed.
 			std::cout << "Preprocessing: " << receivedFormula->formula() << std::endl;
 			std::cout << "\t -> " << formula << std::endl;
-			addSubformulaToPassedFormula(formula, receivedFormula->formula());
+			formula = formula.toCNF();
+			FormulaT origins(carl::FormulaType::AND, tmpOrigins);
+			if (formula.getType() == carl::FormulaType::AND) {
+				for (const auto& f: formula.subformulas()) {
+					addSubformulaToPassedFormula(f, origins);
+				}
+			} else {
+				addSubformulaToPassedFormula(formula, origins);
+			}
 			++receivedFormula;
         }
 
@@ -166,9 +180,61 @@ namespace smtrat {
 	template<typename Settings>
     FormulaT PreprocessingModule<Settings>::checkBounds(FormulaT formula) {
 		if(formula.getType() == carl::CONSTRAINT) {
+			auto factors = formula.constraint().factorization();
+			for (auto it = factors.begin(); it != factors.end();) {
+				auto i = carl::IntervalEvaluation::evaluate(it->first, varbounds.getEvalIntervalMap());
+				if (i.isPositive()) {
+					it = factors.erase(it);
+				} else if (i.isSemiPositive()) {
+					it->second = 1;
+					++it;
+				} else if (i.isNegative()) {
+					if (it->second % 2 == 0) it = factors.erase(it);
+					else {
+						it->second = 1;
+						++it;
+					}
+				} else if (i.isSemiNegative()) {
+					if (it->second % 2 == 0) it->second = 2;
+					else it->second = 1;
+					++it;
+				} else if (i.isZero()) {
+					return FormulaT(newConstraint(Poly(0), formula.constraint().relation()));
+				}
+			}
+			Poly p(1);
+			for (const auto& it: factors) {
+				p *= carl::pow(it.first, it.second);
+			}
+			formula = FormulaT(newConstraint(p, formula.constraint().relation()));
+			
 			unsigned result = formula.constraint().evaluate(varbounds.getEvalIntervalMap());
-			if (result == 0) return FormulaT(carl::FormulaType::FALSE);
-			if (result == 2) return FormulaT(carl::FormulaType::TRUE);
+			if (result == 0) {
+				accumulateOrigins(formula.constraint());
+				return FormulaT(carl::FormulaType::FALSE);
+			}
+			if (result == 4) {
+				accumulateOrigins(formula.constraint());
+				return FormulaT(carl::FormulaType::TRUE);
+			}
+			/*if (result == 1 || result == 2) {
+				if (carl::isZero(formula.constraint().constantPart())) {
+					if (formula.constraint().lhs().nrTerms() <= 1) return formula;
+					FormulasT monomials;
+					carl::Sign sign = carl::sgn(formula.constraint().lhs().lcoeff());
+					for (TermT t: formula.constraint().lhs()) {
+						auto i = carl::IntervalEvaluation::evaluate(t, varbounds.getEvalIntervalMap());
+						if (sign != carl::sgn(i)) return formula;
+						monomials.emplace(newConstraint(Poly(t.monomial()), carl::Relation::EQ));
+					}
+					accumulateOrigins(formula.constraint());
+					if (result == 1) {
+						return FormulaT(carl::FormulaType::AND, monomials);
+					} else if (result == 2) {
+						return FormulaT(carl::FormulaType::NOT, FormulaT(carl::FormulaType::AND, monomials));
+					}
+				}
+			}*/
 		}
 		return formula;
 	}
