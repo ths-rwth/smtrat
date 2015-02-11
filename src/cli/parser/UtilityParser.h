@@ -76,7 +76,7 @@ struct DeclaredSymbolParser: public qi::grammar<Iterator, T(), Skipper> {
 		main.name("declared symbol");
 	}
     qi::rule<Iterator, T(), Skipper> main;
-    qi::symbols<char, T> sym;  
+    qi::symbols<char, T> sym;
 };
 
 struct ValueParser: public qi::grammar<Iterator, AttributeMandatoryValue(), Skipper> {
