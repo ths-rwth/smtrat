@@ -42,12 +42,14 @@ namespace smtrat
 	template<typename Settings>
     class PreprocessingModule : public Module
     {
+		private:
+			static constexpr bool collectBounds = Settings::checkBounds;
         protected:
 			vb::VariableBounds<FormulaT> varbounds;
 			carl::FormulaVisitor<FormulaT> visitor;
 			
 			FormulasT tmpOrigins;
-			void accumulateOrigins(const ConstraintT& constraint) {
+			void accumulateBoundOrigins(const ConstraintT& constraint) {
 				auto tmp = varbounds.getOriginsOfBounds(constraint.variables());
 				tmpOrigins.insert(tmp.begin(), tmp.end());
 			}
@@ -77,6 +79,15 @@ namespace smtrat
 			bool addBounds(FormulaT formula);
 			void removeBounds(FormulaT formula);
 			
+			/**
+			 * Removes redundant or obsolete factors of polynomials from the formula.
+             */
+			FormulaT removeFactors(FormulaT formula);
+			std::function<FormulaT(FormulaT)> removeFactorsFunction;
+			
+			/**
+			 * Checks if constraints vanish using the variable bounds.
+			 */
 			FormulaT checkBounds(FormulaT formula);
 			std::function<FormulaT(FormulaT)> checkBoundsFunction;
     };

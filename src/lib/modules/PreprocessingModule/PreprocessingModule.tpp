@@ -42,6 +42,7 @@ namespace smtrat {
 	PreprocessingModule<Settings>::PreprocessingModule( ModuleType _type, const ModuleInput* const _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager )
     {
+		removeFactorsFunction = std::bind(&PreprocessingModule<Settings>::removeFactors, this, std::placeholders::_1);
 		checkBoundsFunction = std::bind(&PreprocessingModule<Settings>::checkBounds, this, std::placeholders::_1);
     }
 
@@ -65,7 +66,9 @@ namespace smtrat {
 	template<typename Settings>
     bool PreprocessingModule<Settings>::assertSubformula(ModuleInput::const_iterator _subformula) {
         Module::assertSubformula(_subformula);
-		if (addBounds(_subformula->formula())) newBounds.insert(_subformula->formula());
+		if (collectBounds) {
+			if (addBounds(_subformula->formula())) newBounds.insert(_subformula->formula());
+		}
         return true;
     }
 
@@ -75,9 +78,12 @@ namespace smtrat {
 	template<typename Settings>
     Answer PreprocessingModule<Settings>::isConsistent()
     {
-		if (varbounds.isConflicting()) {
-			mInfeasibleSubsets.push_back(varbounds.getConflict());
-			return foundAnswer(False);
+		if (collectBounds) {
+			// If bounds are collected, check if they are conflicting.
+			if (varbounds.isConflicting()) {
+				mInfeasibleSubsets.push_back(varbounds.getConflict());
+				return foundAnswer(False);
+			}
 		}
         auto receivedFormula = firstUncheckedReceivedSubformula();
 		
@@ -85,24 +91,37 @@ namespace smtrat {
         {
 			FormulaT formula = receivedFormula->formula();
 			
-			auto boundIt = newBounds.find(formula);
-			if (boundIt != newBounds.end()) {
-				newBounds.erase(boundIt);
-				addSubformulaToPassedFormula(formula, receivedFormula->formula());
-				++receivedFormula;
-				continue;
+			if (collectBounds) {
+				// If bounds are collected, check if next subformula is a bound.
+				// If so, pass on unchanged.
+				auto boundIt = newBounds.find(formula);
+				if (boundIt != newBounds.end()) {
+					newBounds.erase(boundIt);
+					addSubformulaToPassedFormula(formula, receivedFormula->formula());
+					++receivedFormula;
+					continue;
+				}
 			}
 			
 			tmpOrigins.clear();
 			tmpOrigins.insert(receivedFormula->formula());
-			formula = visitor.visit(formula, checkBoundsFunction);
+			if (Settings::removeFactors) {
+				// Remove redundant or obsolete factors of polynomials.
+				formula = visitor.visit(formula, removeFactorsFunction);
+			}
+			if (Settings::checkBounds) {
+				// Check if bounds make constraints vanish.
+				formula = visitor.visit(formula, checkBoundsFunction);
+			}
 			
-			// Inequations are transformed.
-			std::cout << "Preprocessing: " << receivedFormula->formula() << std::endl;
-			std::cout << "\t -> " << formula << std::endl;
+			SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Received " << receivedFormula->formula());
+			SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Result   " << formula);
+			
 			formula = formula.toCNF();
 			FormulaT origins(carl::FormulaType::AND, tmpOrigins);
+			
 			if (formula.getType() == carl::FormulaType::AND) {
+				// If formula has multiple clauses, add separately.
 				for (const auto& f: formula.subformulas()) {
 					addSubformulaToPassedFormula(f, origins);
 				}
@@ -126,7 +145,9 @@ namespace smtrat {
      */
 	template<typename Settings>
     void PreprocessingModule<Settings>::removeSubformula(ModuleInput::const_iterator _subformula) {
-		removeBounds(_subformula->formula());
+		if (collectBounds) {
+			removeBounds(_subformula->formula());
+		}
         Module::removeSubformula(_subformula);
     }
 	
@@ -178,7 +199,7 @@ namespace smtrat {
 	}
 	
 	template<typename Settings>
-    FormulaT PreprocessingModule<Settings>::checkBounds(FormulaT formula) {
+    FormulaT PreprocessingModule<Settings>::removeFactors(FormulaT formula) {
 		if(formula.getType() == carl::CONSTRAINT) {
 			auto factors = formula.constraint().factorization();
 			for (auto it = factors.begin(); it != factors.end();) {
@@ -206,15 +227,21 @@ namespace smtrat {
 			for (const auto& it: factors) {
 				p *= carl::pow(it.first, it.second);
 			}
-			formula = FormulaT(newConstraint(p, formula.constraint().relation()));
-			
+			return FormulaT(newConstraint(p, formula.constraint().relation()));
+		}
+		return formula;
+	}
+	
+	template<typename Settings>
+    FormulaT PreprocessingModule<Settings>::checkBounds(FormulaT formula) {
+		if(formula.getType() == carl::CONSTRAINT) {
 			unsigned result = formula.constraint().evaluate(varbounds.getEvalIntervalMap());
 			if (result == 0) {
-				accumulateOrigins(formula.constraint());
+				accumulateBoundOrigins(formula.constraint());
 				return FormulaT(carl::FormulaType::FALSE);
 			}
 			if (result == 4) {
-				accumulateOrigins(formula.constraint());
+				accumulateBoundOrigins(formula.constraint());
 				return FormulaT(carl::FormulaType::TRUE);
 			}
 			/*if (result == 1 || result == 2) {
