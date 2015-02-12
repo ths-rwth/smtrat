@@ -42,6 +42,8 @@
 #include "carl/util/CMakeOptions.h"
 #include "../lib/utilities/CMakeOptions.h"
 
+#include "../lib/utilities/SettingsManager.h"
+
 namespace smtrat
 {
 
