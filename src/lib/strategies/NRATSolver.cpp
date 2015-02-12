@@ -33,12 +33,15 @@ namespace smtrat
         Manager()
     {
         size_t position = 0;
-        #ifdef SMTRAT_ENABLE_Preprocessing
-        position = addBackendIntoStrategyGraph( position, MT_Preprocessing );
-        #else
+		#ifdef SMTRAT_ENABLE_CNFerModule
         position = addBackendIntoStrategyGraph( position, MT_CNFerModule );
         #endif
+        #ifdef SMTRAT_ENABLE_PreprocessingModule
+        position = addBackendIntoStrategyGraph( position, MT_PreprocessingModule );
+		#endif
+		#ifdef SMTRAT_ENABLE_SATModule
         position = addBackendIntoStrategyGraph( position, MT_SATModule );
+		#endif
 //        #ifdef SMTRAT_ENABLE_ReduceModule
 //        position = addBackendIntoStrategyGraph( position, MT_ReduceModule );
 //        #else
