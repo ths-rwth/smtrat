@@ -9,9 +9,11 @@
 
 #pragma once
 
+#include <functional>
 #include <string>
 #include <stdexcept>
 #include <vector>
+#include <boost/functional/hash.hpp>
 #include <boost/version.hpp>
 #include <boost/filesystem.hpp>
 #include "../BenchmarkStatus.h"
@@ -43,6 +45,19 @@ public:
 	
 	fs::path binary() const {
 		return mBinary;
+	}
+	
+	const std::map<std::string,std::string>& attributes() const {
+		return mAttributes;
+	}
+	
+	std::size_t attributeHash() const {
+		std::size_t res = 0;
+		for (const auto& it: mAttributes) {
+			boost::hash_combine(res, it.first);
+			boost::hash_combine(res, it.second);
+		}
+		return res;
 	}
 	
 	virtual std::string getCommandline(const std::string& file) const {
@@ -91,6 +106,7 @@ public:
 		virtual ~Tool(){}
 		
 		Tool(const Tool& t):
+			mName(t.mName),
 			mBinary(t.mBinary),
 			mInterface(t.mInterface),
 			mPath(t.mPath),
@@ -99,6 +115,7 @@ public:
 			mFilePath(t.mFilePath)
 		{}
 		Tool& operator=(const Tool& t) {
+			mName = t.mName;
 			mBinary = t.mBinary;
 			mInterface = t.mInterface;
 			mPath = t.mPath;
