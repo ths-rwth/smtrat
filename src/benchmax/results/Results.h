@@ -9,7 +9,9 @@
 #include <utility>
 #include <vector>
 
+#include "../logging.h"
 #include "../BenchmarkStatus.h"
+#include "Database.h"
 
 namespace benchmax {
 
@@ -29,6 +31,37 @@ public:
 			fileIt = mFiles.emplace(file, mFiles.size()).first;
 		}
 		mResults.emplace(std::make_pair(toolIt->second, fileIt->second), results);
+	}
+	
+	void store(Database& db) {
+		std::map<std::size_t, std::size_t> toolIDs;
+		std::map<std::size_t, std::size_t> fileIDs;
+		
+		for (const auto& it: mTools) {
+			std::cout << "Creating tool " << it.first << std::endl;
+			toolIDs[it.second] = db.getToolID(it.first);
+			std::cout << toolIDs << std::endl;
+		}
+		for (const auto& it: mFiles) {
+			std::cout << "Creating File " << it.first << std::endl;
+			fileIDs[it.second] = db.getFileID(it.first);
+		}
+		std::size_t benchmarkID = db.createBenchmark();
+		for (const auto& it: mResults) {
+			std::size_t tool = toolIDs[it.first.first];
+			std::size_t file = fileIDs[it.first.second];
+			std::cout << "Creating Benchmark " << benchmarkID << std::endl;
+			std::size_t id = db.addBenchmarkResult(benchmarkID, tool, file, it.second.exitCode, it.second.time);
+			for (const auto& attr: it.second.additional) {
+				db.addBenchmarkAttribute(id, attr.first, attr.second);
+			}
+		}
+	}
+	
+	~Results() {
+		std::cout << "Gathered results for " << mTools << std::endl;
+		std::cout << "On files " << mFiles << std::endl;
+		std::cout << mResults << std::endl;
 	}
 };
 

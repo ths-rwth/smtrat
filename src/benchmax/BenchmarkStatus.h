@@ -23,7 +23,6 @@ std::string benchmarkStatusToString(BenchmarkStatus status);
 struct BenchmarkResults {
 	int exitCode;
 	std::size_t time;
-	std::size_t memory;
 	std::string stdout;
 	std::string stderr;
 	std::map<std::string, std::string> additional;

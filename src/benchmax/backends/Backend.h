@@ -28,6 +28,10 @@ public:
 			}
 		}
 	}
+	virtual ~Backend() {
+		Database db;
+		mResults.store(db);
+	}
 };
 
 }
