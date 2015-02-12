@@ -70,7 +70,7 @@ public:
 	~SSHBackend() {
 		libssh2_exit();
 	}
-	void run(const std::vector<Tool>& tools, const std::vector<BenchmarkSet>& benchmarks) {
+	void run(const std::vector<Tool*>& tools, const std::vector<BenchmarkSet>& benchmarks) {
 		int nrOfCalls = 0;
 		auto currentBenchmark = benchmarks.begin();
 		std::vector<benchmax::Node>::iterator currentNode = nodes.begin();
