@@ -43,6 +43,7 @@ namespace smtrat
     class PreprocessingModule : public Module
     {
 		private:
+			// If anything that needs variable bounds is active, we shall collect the bounds.
 			static constexpr bool collectBounds = Settings::checkBounds;
         protected:
 			vb::VariableBounds<FormulaT> varbounds;

@@ -28,6 +28,8 @@
 
 #pragma once
 
+#include "../../utilities/SettingsManager.h"
+
 namespace smtrat 
 {
 struct PreprocessingSettings {
@@ -39,5 +41,7 @@ struct PreprocessingSettings {
 	 * Enables removing of constraints that vanish within the variable bounds.
 	 */
 	static constexpr bool checkBounds = true;
+	
+	static const bool dummy;
 };
 }
