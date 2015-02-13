@@ -36,21 +36,42 @@
 
 namespace smtrat
 {
-
-    const int squaresArray[30]  = { 0*0 , 1*1, 2*2, 3*3, 4*4, 5*5, 6*6, 7*7, 8*8, 9*9,
-                                    10*10, 11*11, 12*12, 13*13, 14*14, 15*15, 16*16, 17*17, 18*18, 19*19,
-                                    20*20, 21*21, 22*22, 23*23, 24*24, 25*25, 26*26, 27*27, 28*28, 29*29 };
-    const std::vector<int> squares( squaresArray, squaresArray+30 );
-
     /**
      *
      */
 	template<typename Settings>
     class PreprocessingModule : public Module
     {
+		private:
+			// If anything that needs variable bounds is active, we shall collect the bounds.
+			static constexpr bool collectBounds = Settings::checkBounds;
         protected:
 			vb::VariableBounds<FormulaT> varbounds;
 			carl::FormulaVisitor<FormulaT> visitor;
+			
+			FormulasT tmpOrigins;
+			void accumulateBoundOrigins(const ConstraintT& constraint) {
+				auto tmp = varbounds.getOriginsOfBounds(constraint.variables());
+				tmpOrigins.insert(tmp.begin(), tmp.end());
+			}
+			EvalRationalIntervalMap completeBounds(const Poly& p) const {
+				auto res = varbounds.getEvalIntervalMap();
+				for (auto var: p.gatherVariables()) {
+					if (res.find(var) == res.end()) {
+						res[var] = RationalInterval::unboundedInterval();
+					}
+				}
+				return res;
+			}
+			EvalRationalIntervalMap completeBounds(const ConstraintT& c) const {
+				auto res = varbounds.getEvalIntervalMap();
+				for (auto var: c.variables()) {
+					if (res.find(var) == res.end()) {
+						res[var] = RationalInterval::unboundedInterval();
+					}
+				}
+				return res;
+			}
 
         public:
 
@@ -77,6 +98,15 @@ namespace smtrat
 			bool addBounds(FormulaT formula);
 			void removeBounds(FormulaT formula);
 			
+			/**
+			 * Removes redundant or obsolete factors of polynomials from the formula.
+             */
+			FormulaT removeFactors(FormulaT formula);
+			std::function<FormulaT(FormulaT)> removeFactorsFunction;
+			
+			/**
+			 * Checks if constraints vanish using the variable bounds.
+			 */
 			FormulaT checkBounds(FormulaT formula);
 			std::function<FormulaT(FormulaT)> checkBoundsFunction;
     };

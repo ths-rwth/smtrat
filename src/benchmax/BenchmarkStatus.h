@@ -23,11 +23,15 @@ std::string benchmarkStatusToString(BenchmarkStatus status);
 struct BenchmarkResults {
 	int exitCode;
 	std::size_t time;
-	std::size_t memory;
 	std::string stdout;
 	std::string stderr;
 	std::map<std::string, std::string> additional;
 };
+
+inline std::ostream& operator<<(std::ostream& os, const BenchmarkResults& results) {
+	os << "(" << results.exitCode << ", " << results.time << ")";
+	return os;
+}
 
 enum BenchmarkResult
 {

@@ -10,17 +10,34 @@
 
 #include "Tool.h"
 
+#include "../utils/Execute.h"
+#include "../utils/regex.h"
+
 namespace benchmax {
 
-class SmtratSolverTool:
-    public Tool
-{
-    public:
-		SmtratSolverTool(const fs::path& binary, const std::string& arguments): Tool(binary, arguments) {}
-        virtual std::string getCallToTool(const std::string& extraArguments = "") const;
+class SMTRAT: public Tool {
+public:
+	SMTRAT(const fs::path& binary, const std::string& arguments): Tool("SMTRAT", binary, arguments) {
+		std::string output;
+		callProgram(binary.native() + " --settings", output);
+		auto options = parseOptions(output);
+		mAttributes.insert(options.begin(), options.end());
+	}
 
-    private:
-
+	virtual bool canHandle(const fs::path& path) const override {
+		return isExtension(path, ".smt2");
+	}
+	
+	std::map<std::string,std::string> parseOptions(const std::string& options) const {
+		std::map<std::string,std::string> res;
+		regex r("^(.+) = (.+)\n");
+		auto begin = sregex_iterator(options.begin(), options.end(), r);
+		auto end = sregex_iterator();
+		for (auto i = begin; i != end; ++i) {
+			res[(*i)[1]] = (*i)[2];
+		}
+		return res;
+	}
 };
 
 }

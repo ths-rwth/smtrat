@@ -14,7 +14,7 @@ namespace benchmax {
 
 class IsatTool: public Tool {
     public:
-		IsatTool(const fs::path& binary, const std::string& arguments): Tool(binary, arguments) {}
+		IsatTool(const fs::path& binary, const std::string& arguments): Tool("iSAT", binary, arguments) {}
 };
 
 }

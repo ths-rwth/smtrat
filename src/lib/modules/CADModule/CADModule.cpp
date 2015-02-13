@@ -212,7 +212,7 @@ namespace smtrat
 			if (vPos != eiMap.end())
 				boundMap[v] = vPos->second;
 		}
-		if (!mCAD.check(mConstraints, mRealAlgebraicSolution, mConflictGraph, boundMap, false, false))
+		if (!mCAD.check(mConstraints, mRealAlgebraicSolution, mConflictGraph, boundMap, false, true))
 		{
 			#ifdef SMTRAT_CAD_DISABLE_SMT
 			// simulate non-incrementality by constructing a trivial infeasible subset and clearing all data in the CAD
@@ -282,6 +282,7 @@ namespace smtrat
 		SMTRAT_LOG_TRACE("smtrat.cad", "CAD complete: " << mCAD.isComplete());
 		SMTRAT_LOG_TRACE("smtrat.cad", "Solution point: " << mRealAlgebraicSolution);
 		mInfeasibleSubsets.clear();
+#ifdef SMTRAT_CAD_ENABLE_INTEGER
 		if (rReceivedFormula().isIntegerConstraintConjunction()) {
 			// Check whether the found assignment is integer.
 			std::vector<carl::Variable> vars(mCAD.getVariables());
@@ -293,6 +294,7 @@ namespace smtrat
 				}
 			}
 		}
+#endif
 		return foundAnswer(True);
 	}
 

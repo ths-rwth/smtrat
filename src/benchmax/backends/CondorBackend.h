@@ -74,13 +74,13 @@ private:
 	}
 	
 public:
-	void run(const std::vector<Tool>& tools, const std::vector<BenchmarkSet>& benchmarks) {
+	void run(const std::vector<Tool*>& tools, const std::vector<BenchmarkSet>& benchmarks) {
 		BENCHMAX_LOG_INFO("benchmax.condor", "Generating submit files...");
 		
-		for (const Tool& tool: tools) {
+		for (const Tool* tool: tools) {
 			for (const BenchmarkSet& set: benchmarks) {
 				std::size_t ID = processes.size() + 1;
-				std::string submitFile = generateSubmitFile(ID, tool, set);
+				std::string submitFile = generateSubmitFile(ID, *tool, set);
 				processes.emplace_back(false);
 				std::async(&CondorBackend::runAndWait, this, ID, std::ref(submitFile), std::ref(processes.back()));
 			}
