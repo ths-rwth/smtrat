@@ -77,7 +77,7 @@ namespace smtrat
                 ///
                 const Bound<T1, T2>* mpInfimum;
                 ///
-                const Poly* mExpression;
+                const typename Poly::PolyType* mExpression;
                 ///
                 Value<T1> mAssignment;
                 ///
@@ -95,7 +95,7 @@ namespace smtrat
                  * @param _defaultBoundPosition
                  * @param _isInteger
                  */
-                Variable( size_t _position, const Poly* _expression, ModuleInput::iterator _defaultBoundPosition, bool _isInteger );
+                Variable( size_t _position, const typename Poly::PolyType* _expression, ModuleInput::iterator _defaultBoundPosition, bool _isInteger );
                 
                 /**
                  * 
@@ -104,7 +104,7 @@ namespace smtrat
                  * @param _defaultBoundPosition
                  * @param _isInteger
                  */
-                Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator _positionInNonActives, const Poly* _expression, ModuleInput::iterator _defaultBoundPosition, bool _isInteger );
+                Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator _positionInNonActives, const typename Poly::PolyType* _expression, ModuleInput::iterator _defaultBoundPosition, bool _isInteger );
                 
                 /**
                  * 
@@ -389,7 +389,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                const Poly* pExpression() const
+                const typename Poly::PolyType* pExpression() const
                 {
                     return mExpression;
                 }
@@ -397,7 +397,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                const Poly& expression() const
+                const typename Poly::PolyType& expression() const
                 {
                     return *mExpression;
                 }
@@ -427,7 +427,7 @@ namespace smtrat
                  */
                 unsigned isSatisfiedBy( const EvalRationalMap& _ass ) const
                 {
-                    Poly polyTmp = mExpression->substitute( _ass );
+                    typename Poly::PolyType polyTmp = mExpression->substitute( _ass );
                     if( polyTmp.isConstant() )
                         return (*mpInfimum) <= polyTmp.constantPart() && (*mpSupremum) >= polyTmp.constantPart();
 					for( auto& lb : mLowerbounds )
@@ -454,7 +454,7 @@ namespace smtrat
                  */
                 FormulaT inConflictWith( const EvalRationalMap& _ass ) const
                 {
-                    Poly polyTmp = mExpression->substitute( _ass );
+                    typename Poly::PolyType polyTmp = mExpression->substitute( _ass );
 					assert( polyTmp.isConstant() );
                     
 					if( (*mpInfimum) > polyTmp.constantPart() )

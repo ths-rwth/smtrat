@@ -657,6 +657,7 @@ namespace vs
                     const Condition* condA = *iterA;
                     const Condition* condB = *iterB;
                     signed strongProp = smtrat::ConstraintT::compare( condA->pConstraint(), condB->pConstraint() );
+                    std::cout << "compare(  " << condA->constraint() << "  ,  " << condB->constraint() << "  ) = " << strongProp << std::endl;
                     // If the two conditions have the same solution space.
                     if( strongProp == 2 )
                     {

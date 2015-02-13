@@ -382,7 +382,7 @@ namespace smtrat
         return index_min;
     }
     
-    bool Module::probablyLooping( const Poly& _branchingPolynomial, const Rational& _branchingValue )
+    bool Module::probablyLooping( const typename Poly::PolyType& _branchingPolynomial, const Rational& _branchingValue )
     {
         assert( _branchingPolynomial.constantPart() == 0 );
         auto iter = mLastBranches.begin();

@@ -34,6 +34,7 @@
 #include <unordered_map>
 #include "logging.h"
 #include "carl/core/MultivariatePolynomial.h"
+#include "carl/core/FactorizedPolynomial.h"
 #include "carl/core/Variable.h"
 #include "carl/core/VariablePool.h"
 #include "carl/interval/Interval.h"
@@ -76,6 +77,7 @@ namespace smtrat
     typedef carl::Term<Rational> TermT;
     
     typedef carl::MultivariatePolynomial<Rational> Poly;
+//    typedef carl::FactorizedPolynomial<carl::MultivariatePolynomial<Rational>> Poly;
     
     typedef carl::Constraint<Poly> ConstraintT;
     

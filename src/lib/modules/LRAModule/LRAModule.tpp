@@ -1125,8 +1125,8 @@ Return:
                 if( !carl::isInteger( ass ) )
                 {
                     all_int = false;
-                    const Poly* gomory_poly = mTableau.gomoryCut(ass, basicVar);
-                    if( *gomory_poly != ZERO_POLYNOMIAL )
+                    const Poly::PolyType* gomory_poly = mTableau.gomoryCut(ass, basicVar);
+                    if( *gomory_poly != ZERO_RATIONAL )
                     { 
                         const ConstraintT* gomory_constr = carl::newConstraint<Poly>( *gomory_poly , carl::Relation::GEQ );
                         const ConstraintT* neg_gomory_constr = carl::newConstraint<Poly>( *gomory_poly - (*gomory_poly).evaluate( rMap_ ), carl::Relation::LESS );
@@ -1203,7 +1203,7 @@ Return:
         size_t i=0;
         for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
         {
-            dc_Tableau.newNonbasicVariable( new Poly( (*mTableau.columns().at(i)).expression() ), true );
+            dc_Tableau.newNonbasicVariable( new Poly::PolyType( (*mTableau.columns().at(i)).expression() ), true );
             ++i;
         } 
         size_t numRows = mTableau.rows().size();
@@ -1267,7 +1267,7 @@ Return:
             dc_Tableau.calculate_hermite_normalform( diagonals_ref, full_rank );
             if( !full_rank )
             {
-                branchAt( Poly( var->first ), (Rational)map_iterator->second );
+                branchAt( var->first, (Rational)map_iterator->second );
                 return true;
             }
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
@@ -1282,12 +1282,12 @@ Return:
             cout << "Inverted matrix:" << endl;
             dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
             #endif 
-            Poly* cut_from_proof = new Poly();
+            Poly::PolyType* cut_from_proof = nullptr;
             for( size_t i = 0; i < dc_positions.size(); ++i )
             {
                 LRAEntryType upper_lower_bound;
                 cut_from_proof = dc_Tableau.create_cut_from_proof( dc_Tableau, mTableau, i, diagonals, dc_positions, upper_lower_bound, max_value );
-                if( cut_from_proof != NULL )
+                if( cut_from_proof != nullptr )
                 {
                     #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                     cout << "Proof of unsatisfiability:  " << *cut_from_proof << " = 0" << endl;
@@ -1320,6 +1320,7 @@ Return:
                     mTableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
                     cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
                     #endif
+                    delete cut_from_proof;
                     return true;
                 }
             }
@@ -1332,7 +1333,7 @@ Return:
         cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
         cout << "Branch at: " << var->first << endl;
         #endif
-        branchAt( Poly( var->first ), (Rational)map_iterator->second );
+        branchAt( var->first, (Rational)map_iterator->second );
         return true;
     }
 
@@ -1562,7 +1563,7 @@ Return:
             Poly tmp = slackVar.first->substitute( _assignment );
             assert( tmp.isConstant() );
             LRABoundType slackVarAssignment = slackVar.second->assignment().mainPart() + slackVar.second->assignment().deltaPart() * _delta;
-            if( !(tmp == (Rational) slackVarAssignment) )
+            if( !(tmp == Poly(Rational(slackVarAssignment))) )
             {
                 return false;
             }

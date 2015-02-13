@@ -144,6 +144,8 @@ namespace vs
         {
             bool allOtherMonomialsPos = true;
             bool allOtherMonomialsNeg = true;
+            // TODO: this uses the rather expensive iteration over the terms of a polynomial, which needs to expand the polynomial in case it
+            // is only present as factorization.
             for( auto term = mpConstraint->lhs().begin(); term != mpConstraint->lhs().end(); ++term )
             {
                 if( term->has( _consideredVariable ) )
