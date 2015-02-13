@@ -54,6 +54,24 @@ namespace smtrat
 				auto tmp = varbounds.getOriginsOfBounds(constraint.variables());
 				tmpOrigins.insert(tmp.begin(), tmp.end());
 			}
+			EvalRationalIntervalMap completeBounds(const Poly& p) const {
+				auto res = varbounds.getEvalIntervalMap();
+				for (auto var: p.gatherVariables()) {
+					if (res.find(var) == res.end()) {
+						res[var] = RationalInterval::unboundedInterval();
+					}
+				}
+				return res;
+			}
+			EvalRationalIntervalMap completeBounds(const ConstraintT& c) const {
+				auto res = varbounds.getEvalIntervalMap();
+				for (auto var: c.variables()) {
+					if (res.find(var) == res.end()) {
+						res[var] = RationalInterval::unboundedInterval();
+					}
+				}
+				return res;
+			}
 
         public:
 
