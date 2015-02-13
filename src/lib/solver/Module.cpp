@@ -54,7 +54,7 @@ namespace smtrat
     vector<string> Module::mAssumptionToCheck = vector<string>();
     set<string> Module::mVariablesInAssumptionToCheck = set<string>();
     size_t Module::mNumOfBranchVarsToStore = 10;
-    vector<Branching> Module::mLastBranches = vector<Branching>( mNumOfBranchVarsToStore, Branching(ZERO_POLYNOMIAL, ZERO_RATIONAL) );
+    vector<Branching> Module::mLastBranches = vector<Branching>( mNumOfBranchVarsToStore, Branching(typename Poly::PolyType(ZERO_RATIONAL), ZERO_RATIONAL) );
     size_t Module::mFirstPosInLastBranches = 0;
 
     #ifdef SMTRAT_DEVOPTION_Validation

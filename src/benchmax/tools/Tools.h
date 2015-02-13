@@ -1,34 +1,30 @@
 /**
- * @file Tools.h
- * @author Gereon Kremer <gereon.kremer@cs.rwth-aachen.de>
+ * @file   RedlogTool.h
+ *         Created on April 14, 2013, 6:10 PM
+ * @author: Sebastian Junges
+ * @author: Ulrich Loup
+ * @version 2013-04-24
+ *
  */
 
 #pragma once
 
 #include <boost/filesystem/path.hpp>
 
-#ifdef USE_BOOST_REGEX
-#include <boost/regex.hpp>
-using boost::regex;
-using boost::regex_match;
-#else
-#include <regex>
-using std::regex;
-using std::regex_match;
-#endif
-
 #include "Tool.h"
 
 #include "IsatTool.h"
 #include "QepcadTool.h"
 #include "RedlogTool.h"
-#include "Z3Tool.h"
-#include "smtratSolverTool.h"
+#include "Z3.h"
+#include "SMTRAT.h"
+
+#include "../utils/regex.h"
 
 namespace benchmax {
 
 template<typename T>
-void createTools(const std::vector<std::string>& arguments, std::vector<Tool>& tools) {
+void createTools(const std::vector<std::string>& arguments, std::vector<Tool*>& tools) {
 	regex r("([^ ]+)(.*)");
 	for (const auto& arg: arguments) {
 		std::smatch matches;
@@ -43,7 +39,8 @@ void createTools(const std::vector<std::string>& arguments, std::vector<Tool>& t
 				BENCHMAX_LOG_WARN("benchmax", "The tool " << path << " does not seem to be executable. We skip it.");
 				continue;
 			}
-			tools.push_back(T(path, matches[2]));
+			BENCHMAX_LOG_DEBUG("benchmax.tools", "Adding tool " << path.native());
+			tools.push_back(new T(path, matches[2]));
 		}
 	}
 }

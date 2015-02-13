@@ -42,6 +42,8 @@
 #include "carl/util/CMakeOptions.h"
 #include "../lib/utilities/CMakeOptions.h"
 
+#include "../lib/utilities/SettingsManager.h"
+
 namespace smtrat
 {
 
@@ -114,6 +116,14 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
                 printHelp();
                 exit(SMTRAT_EXIT_SUCCESS);
             }
+			else if(optionName == "settings") {
+				std::cout << SettingsManager::getInstance().changed() << std::endl;
+                exit(SMTRAT_EXIT_SUCCESS);
+			}
+			else if(optionName == "all-settings") {
+				std::cout << SettingsManager::getInstance().all() << std::endl;
+                exit(SMTRAT_EXIT_SUCCESS);
+			}
 			else if(optionName == "cmake")
 			{
 				std::cout << "CMake options used for CArL:" << std::endl;

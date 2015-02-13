@@ -9,9 +9,11 @@
 
 #pragma once
 
+#include <functional>
 #include <string>
 #include <stdexcept>
 #include <vector>
+#include <boost/functional/hash.hpp>
 #include <boost/version.hpp>
 #include <boost/filesystem.hpp>
 #include "../BenchmarkStatus.h"
@@ -30,22 +32,48 @@ class Smt2Input;
 
 class Tool {
 protected:
+	std::string mName;
 	fs::path mBinary;
 	std::string mArguments;
+	std::map<std::string,std::string> mAttributes;
 public:
-	Tool(const fs::path& binary, const std::string& arguments): mBinary(binary), mArguments(arguments) {}
+	Tool(const std::string& name, const fs::path& binary, const std::string& arguments): mName(name), mBinary(binary), mArguments(arguments) {}
+
+	std::string name() const {
+		return mName;
+	}
 	
 	fs::path binary() const {
 		return mBinary;
 	}
 	
-	std::string getCommandline(const std::string& file) const {
+	const std::map<std::string,std::string>& attributes() const {
+		return mAttributes;
+	}
+	
+	std::size_t attributeHash() const {
+		std::size_t res = 0;
+		for (const auto& it: mAttributes) {
+			boost::hash_combine(res, it.first);
+			boost::hash_combine(res, it.second);
+		}
+		return res;
+	}
+	
+	virtual std::string getCommandline(const std::string& file) const {
 		return mBinary.native() + " " + mArguments + " " + file;
 	}
-	std::string getCommandline(const std::string& file, const std::string& localBinary) const {
+	virtual std::string getCommandline(const std::string& file, const std::string& localBinary) const {
 		return localBinary + " " + mArguments + " " + file;
 	}
 
+	/**
+	 * Checks if the file extension of the given path matches the given extension.
+	 */
+	bool isExtension(const fs::path& path, const std::string& extension) const {
+		assert(fs::is_regular_file(path));
+		return fs::extension(path) == extension;
+	}
 	virtual bool canHandle(const fs::path&) const {
 		return false;
 	}
@@ -78,6 +106,8 @@ public:
 		virtual ~Tool(){}
 		
 		Tool(const Tool& t):
+			mName(t.mName),
+			mBinary(t.mBinary),
 			mInterface(t.mInterface),
 			mPath(t.mPath),
 			mExpectedSuffix(t.mExpectedSuffix),
@@ -85,6 +115,8 @@ public:
 			mFilePath(t.mFilePath)
 		{}
 		Tool& operator=(const Tool& t) {
+			mName = t.mName;
+			mBinary = t.mBinary;
 			mInterface = t.mInterface;
 			mPath = t.mPath;
 			mExpectedSuffix = t.mExpectedSuffix;
@@ -132,5 +164,9 @@ public:
 												const std::string& unsatIdentifier = "unsat",
 												const std::string& unknownIdentifier = "unknown") const;
 };
+
+inline std::ostream& operator<<(std::ostream& os, const Tool& tool) {
+	return os << tool.binary().native();
+}
 
 }

@@ -44,4 +44,14 @@ namespace boost { namespace spirit { namespace traits {
     template<> inline bool is_equal_to_one(const smtrat::Rational& value) {
         return value == 1;
     }
+	/**
+	 * Specialization of standard implementation to fix compilation errors.
+	 * Standard implementation looks like this:
+	 * <code>return neg ? -n : n;</code>
+	 * However, if using gmpxx <code>-n</code> and <code>n</code> have different types.
+	 * This issue is fixed in this implementation.
+	 */
+	template<> inline smtrat::Rational negate(bool neg, const smtrat::Rational& n) {
+		return neg ? smtrat::Rational(-n) : n;
+	}
 }}}

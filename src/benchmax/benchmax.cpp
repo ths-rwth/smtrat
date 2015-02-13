@@ -44,17 +44,9 @@
 #include "backends/LocalBackend.h"
 #include "backends/SSHBackend.h"
 
-#include "carl/formula/Formula.h"
+#include "utils/regex.h"
 
-#ifdef USE_BOOST_REGEX
-#include <boost/regex.hpp>
-using boost::regex;
-using boost::regex_match;
-#else
-#include <regex>
-using std::regex;
-using std::regex_match;
-#endif
+#include "carl/formula/Formula.h"
 
 using benchmax::Tool;
 using benchmax::Stats;
@@ -84,7 +76,9 @@ bool initApplication(int argc, char** argv) {
 	carl::logging::logger().filter("stdout")
 		("benchmax", carl::logging::LogLevel::LVL_INFO)
 		("benchmax.ssh", carl::logging::LogLevel::LVL_INFO)
+		("benchmax.benchmarks", carl::logging::LogLevel::LVL_INFO)
 	;
+	carl::logging::logger().resetFormatter();
 	
 	benchmax::Settings s(argc, argv);
 	Settings::PathOfBenchmarkTool = fs::system_complete(fs::path(argv[0])).native();
@@ -92,6 +86,12 @@ bool initApplication(int argc, char** argv) {
 	if(s.has("help")) {
 		std::cout << s;
 		return false;
+	}
+	if (s.has("verbose")) {
+		carl::logging::logger().filter("stdout")
+			("benchmax", carl::logging::LogLevel::LVL_DEBUG)
+			("benchmax.benchmarks", carl::logging::LogLevel::LVL_DEBUG)
+		;
 	}
 	if(s.has("disclaimer")) {
 		std::cout << WARRANTY << std::endl;
@@ -120,24 +120,21 @@ bool initApplication(int argc, char** argv) {
 		}
 	}
 
-	if (!s.mute) {
-		printWelcome();
-	}
-
 	return true;
 }
 
-void loadTools(std::vector<benchmax::Tool>& tools) {
+void loadTools(std::vector<benchmax::Tool*>& tools) {
 	benchmax::createTools<benchmax::IsatTool>(Settings::tools_isat, tools);
 	//benchmax::createTools<benchmax::QepcadTool>(Settings::tools_qepcad, tools);
 	//benchmax::createTools<benchmax::IsatTool>(Settings::tools_redlogrlcad, tools);
-	benchmax::createTools<benchmax::SmtratSolverTool>(Settings::tools_smtrat, tools);
-	benchmax::createTools<benchmax::Z3Tool>(Settings::tools_z3, tools);
+	benchmax::createTools<benchmax::SMTRAT>(Settings::tools_smtrat, tools);
+	benchmax::createTools<benchmax::Z3>(Settings::tools_z3, tools);
 }
 void loadBenchmarks(std::vector<benchmax::BenchmarkSet>& benchmarks) {
 	for (const auto& p: Settings::pathes) {
 		fs::path path(p);
 		if (fs::exists(path)) {
+			BENCHMAX_LOG_INFO("benchmax.benchmarks", "Adding benchmark " << path.native());
 			benchmarks.emplace_back(path, Settings::ProduceLatex);
 		} else {
 			BENCHMAX_LOG_WARN("benchmax", "Benchmark path " << p << " does not exist.");
@@ -170,7 +167,7 @@ int main(int argc, char** argv)
 	benchmax::Stats* _stats = new Stats(Settings::outputDir + Settings::StatsXMLFile,
 					   (!Settings::nodes.empty() ? Stats::STATS_COLLECTION : Stats::BENCHMARK_RESULT));
 	
-	std::vector<Tool> tools;
+	std::vector<Tool*> tools;
 	loadTools(tools);
 	std::vector<benchmax::BenchmarkSet> benchmarks;
 	loadBenchmarks(benchmarks);

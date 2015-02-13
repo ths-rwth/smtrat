@@ -679,7 +679,7 @@ namespace smtrat
             #ifndef BOXMANAGEMENT
             while(!mBoxStorage.empty())
                 mBoxStorage.pop();
-
+			
             icp::set_icpVariable icpVariables;
             Variables originalRealVariables;
             rReceivedFormula().realValuedVars(originalRealVariables);
@@ -766,13 +766,13 @@ namespace smtrat
                     invalidBox = true;
                     break;
                 }
-
+				
                 if ( mRelativeContraction > 0 )
                 {
                     mLastCandidate = candidate;
                     contractionApplied = true;
                 }
-
+				
                 // update weight of the candidate
                 removeCandidateFromRelevant(candidate);
                 candidate->setPayoff(mRelativeContraction);
@@ -1940,10 +1940,10 @@ namespace smtrat
         // collect applied contractions
         FormulasT contractions = mHistoryActual->appliedConstraints();
         // collect original box
-//        assert( mBoxStorage.size() == 1 );
+        REGISTERED_ASSERT( mBoxStorage.size() > 0 );
         FormulasT box = mBoxStorage.front();
         contractions.insert( box.begin(), box.end() );
-        mBoxStorage.pop();
+		mBoxStorage.pop();
         return contractions;
     }
     
@@ -2003,18 +2003,6 @@ namespace smtrat
         if( found )
         {
             #ifndef BOXMANAGEMENT
-            // create prequesites: ((oldBox AND CCs) -> newBox) in CNF: (oldBox OR CCs) OR newBox 
-            FormulasT splitPremise = createPremiseDeductions();
-            if( _contractionApplied )
-            {
-                FormulasT subformulas;
-                for( auto formulaIt = splitPremise.begin(); formulaIt != splitPremise.end(); ++formulaIt )
-                    subformulas.insert( FormulaT( FormulaType::NOT, *formulaIt ) );
-                // construct new box
-                subformulas.insert( FormulaT( AND, std::move( createBoxFormula() ) ) ); // TODO: only add this deduction if any contraction took place!!!
-                // push deduction
-                addDeduction( FormulaT( OR, subformulas ) );
-            }
             
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
             
@@ -2038,7 +2026,7 @@ namespace smtrat
                     assert( mDefaultSplittingSize > 0 );
                     if( varInterval.lower() >= mDefaultSplittingSize )
                     {
-                        std::cout << __func__ << ":" << __LINE__ << std::endl;
+//                        std::cout << __func__ << ":" << __LINE__ << std::endl;
                         return carl::Variable::NO_VARIABLE;
                     }
                     bound = carl::rationalize<Rational>( mDefaultSplittingSize );
@@ -2050,7 +2038,7 @@ namespace smtrat
             {
                 if( varInterval.upper() <= -mDefaultSplittingSize )
                 {
-                    std::cout << __func__ << ":" << __LINE__ << std::endl;
+//                    std::cout << __func__ << ":" << __LINE__ << std::endl;
                     return carl::Variable::NO_VARIABLE;
                 }
                 bound = carl::rationalize<Rational>( -mDefaultSplittingSize );
@@ -2059,6 +2047,19 @@ namespace smtrat
             else
             {
                 bound = carl::rationalize<Rational>( varInterval.sample( false ) );
+            }
+			
+            // create prequesites: ((oldBox AND CCs) -> newBox) in CNF: (oldBox OR CCs) OR newBox 
+            FormulasT splitPremise = createPremiseDeductions();
+            if( _contractionApplied )
+            {
+                FormulasT subformulas;
+                for( auto formulaIt = splitPremise.begin(); formulaIt != splitPremise.end(); ++formulaIt )
+                    subformulas.insert( FormulaT( FormulaType::NOT, *formulaIt ) );
+                // construct new box
+                subformulas.insert( FormulaT( AND, std::move( createBoxFormula() ) ) ); // TODO: only add this deduction if any contraction took place!!!
+                // push deduction
+                addDeduction( FormulaT( OR, std::move(subformulas) ) );
             }
 
             Module::branchAt( Poly( variable ), bound, splitPremise, true, preferLeftCase );

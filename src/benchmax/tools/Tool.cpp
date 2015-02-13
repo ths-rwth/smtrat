@@ -1,10 +1,5 @@
 
 #include "Tool.h"
-#include "Z3Tool.h"
-#include "smtratSolverTool.h"
-#include "IsatTool.h"
-#include "RedlogTool.h"
-#include "QepcadTool.h"
 
 namespace benchmax {
 

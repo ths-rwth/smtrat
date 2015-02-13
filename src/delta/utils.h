@@ -90,9 +90,9 @@ public:
 class ProgressBar {
 private:
 	/// Current total.
-	unsigned total;
+	std::size_t total;
 	/// Current progress.
-	unsigned progress;
+	std::size_t progress;
 public:
 	/**
 	 * Increase progress by one and show progress bar.
@@ -113,7 +113,7 @@ public:
 	 * Print a progress bar for a progress of `progress / total`.
 	 * @param progress Progress.
 	 */
-	void operator()(const std::pair<unsigned, unsigned>& p) {
+	void operator()(const std::pair<std::size_t, std::size_t>& p) {
 		if (p.second != 0) (*this)(p.first, p.second);
 	}
 	/**
@@ -121,11 +121,11 @@ public:
 	 * @param progress Progress.
 	 * @param total Total.
 	 */
-	void operator()(unsigned progress, unsigned total) {
+	void operator()(std::size_t progress, std::size_t total) {
 		assert(total != 0);
 		this->total = total;
 		this->progress = progress;
-		unsigned size = progress*30 / total;
+		std::size_t size = progress*30 / total;
 		if ((size == ((progress-1)*30 / total)) && (progress % 5 != 0)) return;
 		if (progress > 0) std::cout << CLEARLINE;
 		std::cout << "[" << std::string(size, '=') << std::string(30 - size, ' ') << "] (" << progress << " / " << total << ")" << std::endl;

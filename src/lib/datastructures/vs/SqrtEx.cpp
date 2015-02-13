@@ -50,7 +50,7 @@ namespace vs
     SqrtEx::SqrtEx( smtrat::Poly&& _constantPart, smtrat::Poly&& _factor, smtrat::Poly&& _denominator, smtrat::Poly&& _radicand ):
         mConstantPart( std::move( _constantPart ) ),
         mFactor( _radicand.isZero() ? std::move( _radicand ) : std::move( _factor ) ),
-        mDenominator( (mFactor.isZero() && _constantPart.isZero()) ? smtrat::ONE_POLYNOMIAL : std::move( _denominator ) ),
+        mDenominator( (mFactor.isZero() && mConstantPart.isZero()) ? smtrat::ONE_POLYNOMIAL : std::move( _denominator ) ),
         mRadicand( mFactor.isZero() ? mFactor : std::move( _radicand ) )
     {
         assert( !mDenominator.isZero() );
