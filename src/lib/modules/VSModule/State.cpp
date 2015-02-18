@@ -154,8 +154,8 @@ namespace vs
                     {
                         const Condition* rpCond = mpSubstitutionResults->back().back().first.back();
                         mpSubstitutionResults->back().back().first.pop_back();
-                        delete rpCond;
                         mpConditionIdAllocator->free( rpCond->getId() );
+                        delete rpCond;
                         rpCond = NULL;
                     }
                     mpSubstitutionResults->back().pop_back();
