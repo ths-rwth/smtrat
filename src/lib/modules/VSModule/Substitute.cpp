@@ -495,7 +495,7 @@ namespace vs
         if( _cons->hasVariable( _subs.variable() ) )
         {
             // Collect all necessary left hand sides to create the new conditions of all cases referring to the virtual substitution.
-            if( carl::pow( smtrat::Rational(smtrat::Rational(_subs.term().constantPart().nrTerms()) + smtrat::Rational(_subs.term().factor().nrTerms()) * smtrat::Rational(_subs.term().radicand().nrTerms())), _cons->maxDegree( _subs.variable() )) > (MAX_NUM_OF_TERMS*MAX_NUM_OF_TERMS) )
+            if( carl::pow( smtrat::Rational(smtrat::Rational(_subs.term().constantPart().size()) + smtrat::Rational(_subs.term().factor().size()) * smtrat::Rational(_subs.term().radicand().size())), _cons->maxDegree( _subs.variable() )) > (MAX_NUM_OF_TERMS*MAX_NUM_OF_TERMS) )
             {
                 return false;
             }
@@ -612,7 +612,7 @@ namespace vs
                                  DisjunctionOfConstraintConjunctions& _result,
                                  bool _accordingPaper )
     {
-        if( _q.nrTerms() > MAX_NUM_OF_TERMS || _r.nrTerms() > MAX_NUM_OF_TERMS || _radicand.nrTerms() > MAX_NUM_OF_TERMS )
+        if( _q.size() > MAX_NUM_OF_TERMS || _r.size() > MAX_NUM_OF_TERMS || _radicand.size() > MAX_NUM_OF_TERMS )
             return false;
         smtrat::Poly lhs = _q.pow( 2 ) - _r.pow( 2 ) * _radicand;
         if( _accordingPaper )
@@ -653,7 +653,7 @@ namespace vs
                                   DisjunctionOfConstraintConjunctions& _result,
                                   bool _accordingPaper )
     {
-        if( _q.nrTerms() > MAX_NUM_OF_TERMS || _r.nrTerms() > MAX_NUM_OF_TERMS || _radicand.nrTerms() > MAX_NUM_OF_TERMS )
+        if( _q.size() > MAX_NUM_OF_TERMS || _r.size() > MAX_NUM_OF_TERMS || _radicand.size() > MAX_NUM_OF_TERMS )
             return false;
         smtrat::Poly lhs = _q.pow( 2 ) - _r.pow( 2 ) * _radicand;
         if( _accordingPaper )
@@ -688,7 +688,7 @@ namespace vs
                                    DisjunctionOfConstraintConjunctions& _result,
                                    bool _accordingPaper )
     {
-        if( _q.nrTerms() > MAX_NUM_OF_TERMS || _r.nrTerms() > MAX_NUM_OF_TERMS || _radicand.nrTerms() > MAX_NUM_OF_TERMS )
+        if( _q.size() > MAX_NUM_OF_TERMS || _r.size() > MAX_NUM_OF_TERMS || _radicand.size() > MAX_NUM_OF_TERMS )
             return false;
         smtrat::Poly lhs = _q.pow( 2 ) - _r.pow( 2 ) * _radicand;
         if( _accordingPaper )
@@ -751,7 +751,7 @@ namespace vs
                                   DisjunctionOfConstraintConjunctions& _result,
                                   bool _accordingPaper )
     {
-        if( _q.nrTerms() > MAX_NUM_OF_TERMS || _r.nrTerms() > MAX_NUM_OF_TERMS || _radicand.nrTerms() > MAX_NUM_OF_TERMS )
+        if( _q.size() > MAX_NUM_OF_TERMS || _r.size() > MAX_NUM_OF_TERMS || _radicand.size() > MAX_NUM_OF_TERMS )
             return false;
         smtrat::Poly lhs = _q.pow( 2 ) - _r.pow( 2 ) * _radicand;
         if( _accordingPaper )

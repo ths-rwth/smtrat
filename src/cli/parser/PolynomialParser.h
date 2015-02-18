@@ -27,6 +27,15 @@ private:
 	ParserState* state;
 
 	Poly mkIteInExpr(const FormulaT& _condition, Poly& _then, Poly& _else);
+    Poly var2Poly(carl::Variable::Arg var) const {
+         return carl::makePolynomial<Poly>(var);
+    }
+    Poly createPoly(const std::pair<Poly::ConstructorOperation, std::vector<Poly>>& p) const {
+        return Poly(p);
+    }
+    Poly rationalToPoly(const smtrat::Rational& rat) const {
+        return Poly(rat);
+    }
 
 	BoundaryParser boundary;
 	TheoryOpParser op_theory;

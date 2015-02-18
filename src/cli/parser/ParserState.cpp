@@ -72,7 +72,7 @@ carl::UFInstance ParserState::applyUninterpretedFunction(const carl::Uninterpret
 		} else if (Poly* p = boost::get<Poly>(&v)) {
 			carl::Variable tmp = carl::freshRealVariable();
 			vars.push_back(carl::UVariable(tmp));
-			mUninterpretedEqualities.insert(FormulaT(*p - tmp, carl::Relation::EQ));
+			mUninterpretedEqualities.insert(FormulaT(*p - carl::makePolynomial<Poly>(tmp), carl::Relation::EQ));
 		} else if (carl::UVariable* uv = boost::get<carl::UVariable>(&v)) {
 			vars.push_back(*uv);
 		} else if (carl::UFInstance* uf = boost::get<carl::UFInstance>(&v)) {
@@ -97,7 +97,7 @@ Poly ParserState::applyUninterpretedTheoryFunction(const carl::UninterpretedFunc
 
 	carl::Variable v = carl::freshVariable(carl::SortManager::getInstance().interpretedType(f.codomain()));
 	mUninterpretedEqualities.insert(FormulaT(std::move(carl::UEquality(carl::UVariable(v), applyUninterpretedFunction(f, args), false))));
-	return Poly(v);
+	return carl::makePolynomial<Poly>(v);
 }
 
 carl::Variable ParserState::addVariableBinding(const std::pair<std::string, carl::Sort>& b) {
@@ -110,7 +110,7 @@ carl::Variable ParserState::addVariableBinding(const std::pair<std::string, carl
 	}
 	case ExpressionType::THEORY: {
 		carl::Variable v = carl::VariablePool::getInstance().getFreshVariable(b.first, carl::SortManager::getInstance().interpretedType(b.second));
-		bind_theory.sym.add(b.first, Poly(v));
+		bind_theory.sym.add(b.first, carl::makePolynomial<Poly>(v));
 		return v;
 	}
 	case ExpressionType::UNINTERPRETED:

@@ -289,7 +289,7 @@ namespace smtrat
 			for (unsigned d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
 				auto r = this->mRealAlgebraicSolution[d]->branchingPoint();
 				if (!carl::isInteger(r)) {
-					branchAt(Poly(vars[d]), r);
+					branchAt(vars[d], r);
 					return foundAnswer(Unknown);
 				}
 			}
@@ -412,7 +412,7 @@ namespace smtrat
 		carl::cad::Constraint<smtrat::Rational> constraint = convertConstraint(f.constraint());
 		mConstraints.push_back(constraint);
 		mConstraintsMap[f] = (unsigned)(mConstraints.size() - 1);
-		mCAD.addPolynomial(Poly(constraint.getPolynomial()), constraint.getVariables());
+		mCAD.addPolynomial(typename Poly::PolyType(constraint.getPolynomial()), constraint.getVariables());
 		mConflictGraph.addConstraintVertex(); // increases constraint index internally what corresponds to adding a new constraint node with index mConstraints.size()-1
 
 		return solverState() != False;
@@ -454,7 +454,7 @@ namespace smtrat
 				break;
 			default: assert(false);
 		}
-		return carl::cad::Constraint<smtrat::Rational>(c.lhs(), signForConstraint, variables, cadConstraintNegated);
+		return carl::cad::Constraint<smtrat::Rational>((typename Poly::PolyType)c.lhs(), signForConstraint, variables, cadConstraintNegated);
 	}
 
 	/**
@@ -480,7 +480,7 @@ namespace smtrat
 				break;
 			default: assert(false);
 		}
-		return newConstraint(Poly(c.getPolynomial()), relation);
+		return carl::newConstraint<Poly>(c.getPolynomial(), relation);
 	}
 
 	/**

@@ -732,7 +732,7 @@ namespace smtrat
                 const Substitution& sub = state->substitution();
                 ModelValue ass;
                 if( sub.type() == Substitution::MINUS_INFINITY )
-                    ass = SqrtEx( Poly( mVariableVector.at( state->treeDepth()-1 ).first ) );
+                    ass = SqrtEx( mVariableVector.at( state->treeDepth()-1 ).first );
                 else
                 {
                     assert( sub.type() != Substitution::PLUS_INFINITY );
@@ -746,7 +746,7 @@ namespace smtrat
                     {
                         ass = SqrtEx( sub.term() );
                         if( sub.type() == Substitution::PLUS_EPSILON )
-                            ass = ass.asSqrtEx() + SqrtEx( Poly( mVariableVector.at( state->treeDepth()-1 ).second ) );
+                            ass = ass.asSqrtEx() + SqrtEx( mVariableVector.at( state->treeDepth()-1 ).second );
                     }
                 }
                 mModel.insert(std::make_pair(state->substitution().variable(), ass));
@@ -760,7 +760,10 @@ namespace smtrat
             for( auto var = allVarsInRoot.begin(); var != allVarsInRoot.end(); ++var )
             {
                 ModelValue ass;
-                ass = SqrtEx( var->getType() == carl::VariableType::VT_INT ? ZERO_POLYNOMIAL : Poly( *var ) );
+                if( var->getType() == carl::VariableType::VT_INT )
+                    ass = SqrtEx( ZERO_POLYNOMIAL );
+                else
+                    ass = SqrtEx( *var );
                 // Note, that this assignment won't take effect if the variable got an assignment by a backend module.
                 mModel.insert(std::make_pair(*var, ass));
             }
@@ -1624,7 +1627,7 @@ namespace smtrat
                         Rational nextIntTCinRange;
                         if( currentState->getNextIntTestCandidate( nextIntTCinRange, Settings::int_max_range ) )
                         {
-                            branchAt( Poly( currentState->substitution().variable() ), nextIntTCinRange, getReasons( currentState->substitution().originalConditions() ) );
+                            branchAt( currentState->substitution().variable(), nextIntTCinRange, getReasons( currentState->substitution().originalConditions() ) );
                         }
                         else
                         {
@@ -1695,7 +1698,7 @@ namespace smtrat
                         {
                             if( Settings::branch_and_bound )
                             {
-                                branchAt( Poly( currentState->substitution().variable() ), evaluatedSubTerm, getReasons( currentState->substitution().originalConditions() ) );
+                                branchAt( currentState->substitution().variable(), evaluatedSubTerm, getReasons( currentState->substitution().originalConditions() ) );
                             }
                             else
                             {

@@ -120,8 +120,8 @@ FormulaT FormulaParser::mkConstraint(const Poly& lhs, const Poly& rhs, carl::Rel
 		// There are many ITEs, we keep the auxiliary variables.
 		for (auto v: vars) {
 			auto t = state->mTheoryItes[v];
-			FormulaT consThen = FormulaT(Poly(v) - std::get<1>(t), carl::Relation::EQ);
-			FormulaT consElse = FormulaT(Poly(v) - std::get<2>(t), carl::Relation::EQ);
+			FormulaT consThen = FormulaT(carl::makePolynomial<Poly>(v) - std::get<1>(t), carl::Relation::EQ);
+			FormulaT consElse = FormulaT(carl::makePolynomial<Poly>(v) - std::get<2>(t), carl::Relation::EQ);
 
 			state->mTheoryIteBindings.emplace(FormulaT(carl::FormulaType::IMPLIES,std::get<0>(t), consThen));
 			state->mTheoryIteBindings.emplace(FormulaT(carl::FormulaType::IMPLIES,FormulaT(carl::FormulaType::NOT,std::get<0>(t)), consElse));

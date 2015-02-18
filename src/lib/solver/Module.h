@@ -68,7 +68,7 @@ namespace smtrat
     struct Branching
     {
         /// The polynomial to branch at.
-        Poly mPolynomial;
+        typename Poly::PolyType mPolynomial;
         /// The value to branch the polynomial at.
         Rational mValue;
         /// The number of repetitions of the branching.
@@ -84,7 +84,7 @@ namespace smtrat
          * @param _polynomial The polynomial to branch at.
          * @param _value The value to branch the polynomial at.
          */
-        Branching( const Poly& _polynomial, const Rational& _value ):
+        Branching( const typename Poly::PolyType& _polynomial, const Rational& _value ):
             mPolynomial( _polynomial ),
             mValue( _value ),
             mRepetitions( 1 ),
@@ -747,7 +747,7 @@ namespace smtrat
              * @return true, if this branching is probably part of an infinite loop of branchings;
              *         false, otherwise.
              */
-            static bool probablyLooping( const Poly& _branchingPolynomial, const Rational& _branchingValue );
+            static bool probablyLooping( const typename Poly::PolyType& _branchingPolynomial, const Rational& _branchingValue );
             
             /**
              * Adds a deductions which provoke a branching for the given variable at the given value,
@@ -765,6 +765,17 @@ namespace smtrat
              * @param _isolateBranchValue true, if a branching in the form of (or (= p b) (< p b) (> p b)) is desired. (Currently only supported for reals)
              */
             void branchAt( const Poly& _polynomial, const Rational& _value, const FormulasT& = FormulasT(), bool _leftCaseWeak = true, bool _preferLeftCase = true, bool _isolateBranchValue = false );
+            
+            void branchAt( const carl::Variable::Arg _var, const Rational& _value, const FormulasT& _premise = FormulasT(), bool _leftCaseWeak = true, bool _preferLeftCase = true, bool _isolateBranchValue = false )
+            {
+                branchAt( carl::makePolynomial<Poly>( _var ), _value, _premise, _leftCaseWeak, _preferLeftCase, _isolateBranchValue );
+            }
+            
+            template<typename P = Poly, carl::EnableIf<carl::needs_cache<P>> = carl::dummy>
+            void branchAt( const typename P::PolyType& _poly, const Rational& _value, const FormulasT& _premise = FormulasT(), bool _leftCaseWeak = true, bool _preferLeftCase = true, bool _isolateBranchValue = false )
+            {
+                branchAt( carl::makePolynomial<P>( _poly ), _value, _premise, _leftCaseWeak, _preferLeftCase, _isolateBranchValue );
+            }
             
             /**
              * Adds the following lemmas for the given constraint p!=0
