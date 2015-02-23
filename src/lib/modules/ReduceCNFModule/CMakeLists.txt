@@ -1,0 +1,15 @@
+set(SMTRAT_ReduceCNF_SETTINGS "1" CACHE STRING "Number of setting used for ReduceCNFModule")
+BeginDefineModule()
+ModuleMainHeader(ReduceCNFModule/ReduceCNFModule.h)
+FILE(GLOB_RECURSE sources *.cpp)
+foreach(src ${sources})
+    AddModuleSource(${src})
+endforeach()
+ModuleName(ReduceCNFModule)
+ModuleClass(ReduceCNFModule<ReduceCNFSettings${SMTRAT_ReduceCNF_SETTINGS}>)
+ModuleVersion(0 0 1)
+EndDefineModule(moduleEnabled)
+
+if(${moduleEnabled})
+    # do something
+endif()
