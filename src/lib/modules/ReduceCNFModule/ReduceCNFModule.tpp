@@ -20,7 +20,7 @@
  */
 /**
  * @file ReduceCNFModule.tpp
- * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ * @author Dustin Huetter <dustin.huetter@rwth-aachen.de>
  *
  * @version 2015-02-23
  * Created on 2015-02-23.
@@ -36,7 +36,9 @@ namespace smtrat
 
     template<class Settings>
     ReduceCNFModule<Settings>::ReduceCNFModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-        Module( _type, _formula, _conditionals, _manager ) 
+        Module( _type, _formula, _conditionals, _manager ),
+        mVarUpperLower(),
+        mTempPassedFormulas()  
     {}
 
     /**
@@ -88,7 +90,59 @@ namespace smtrat
     template<class Settings>
     Answer ReduceCNFModule<Settings>::isConsistent()
     {
-        // Your code.
+        if( !rReceivedFormula().isConstraintConjunction() )
+        {
+            return foundAnswer( Unknown ); // Unknown
+        }
+        gather_upper_lower();
+        // Check which variables are only bounded in one direction 
+        auto iter_vars = mVarUpperLower.begin();
+        while( iter_vars != mVarUpperLower.end() )
+        {
+            if( (*iter_vars).second.first.empty() && !(*iter_vars).second.second.empty() )
+            {
+                // Replace all 'lower constraints' by TRUE 
+                auto iter_constr = (*iter_vars).second.second.begin();
+                auto iter_formula = mTempPassedFormulas.find( *iter_constr );
+                assert( iter_formula != mTempPassedFormulas.end() );      
+            }
+            else if( !(*iter_vars).second.first.empty() && (*iter_vars).second.second.empty() )
+            {
+                // Replace all 'upper constraints' by TRUE    
+                auto iter_constr = (*iter_vars).second.first.begin();
+                auto iter_formula = mTempPassedFormulas.find( *iter_constr );
+                assert( iter_formula != mTempPassedFormulas.end() ); 
+            }
+            ++iter_vars;
+        }
         return Unknown; // This should be adapted according to your implementation.
+    }
+    
+    template<class Settings>
+    void ReduceCNFModule<Settings>::gather_upper_lower()
+    {
+        auto iter_clauses = rReceivedFormula().begin();
+        while( iter_clauses != rReceivedFormula().end() )
+        {
+            auto iter_literals = iter_clauses->formula().begin();
+            while( iter_literals != iter_clauses->formula().end() )
+            {
+                auto iter_terms = iter_literals->constraint().lhs().begin();
+                while( iter_terms != iter_literals->constraint().lhs().end() )
+                {
+                    if( iter_terms->coeff() > 0 )
+                    {
+                        mVarUpperLower[ iter_terms->getSingleVariable() ].first.push_back( *iter_literals );                        
+                    }
+                    else
+                    {
+                        mVarUpperLower[ iter_terms->getSingleVariable() ].second.push_back( *iter_literals );                        
+                    }
+                    ++iter_terms;
+                }
+                ++iter_literals;
+            }
+            ++iter_clauses;
+        }
     }
 }

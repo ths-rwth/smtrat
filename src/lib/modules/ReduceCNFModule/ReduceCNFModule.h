@@ -20,7 +20,7 @@
  */
 /**
  * @file ReduceCNFModule.h
- * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ * @author Dustin Huetter <dustin.huetter@rwth-aachen.de>
  *
  * @version 2015-02-23
  * Created on 2015-02-23.
@@ -37,7 +37,11 @@ namespace smtrat
     class ReduceCNFModule : public Module
     {
         private:
-            // Members.
+            // Stores for each variable the constraints in which it has an upper
+            // resp. a lower bound
+            std::map< carl::Variable, std::pair< std::vector<FormulaT>, std::vector<FormulaT> > > mVarUpperLower;
+            // Stores the temporary formula that is later passed to the backends
+            ModuleInput mTempPassedFormulas;
 
         public:
             ReduceCNFModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
@@ -95,6 +99,11 @@ namespace smtrat
              *         Unknown, otherwise.
              */
             Answer isConsistent();
+            
+            /** For each variable collect the information in which constraints it has 
+             *  an upper resp. a lower bound
+             */ 
+            void gather_upper_lower();
 
     };
 }
