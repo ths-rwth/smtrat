@@ -457,6 +457,7 @@ namespace smtrat
                 }
                 ++iter_var;    
             }
+            cout << "Constraints added: " << delta_constr << endl;
             if( false ) //delta_constr > Threshold )
             {
                 #ifdef DEBUG_FouMoModule

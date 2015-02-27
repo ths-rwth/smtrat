@@ -95,7 +95,7 @@ namespace smtrat
                 *origins = std::move( merge( *origins, *( iter_var->second ) ) );
                 ++iter_subs;
             }
-            FormulaT newEq( carl::newConstraint( new_poly, carl::Relation::EQ ) );
+            FormulaT newEq( carl::newConstraint<Poly>( new_poly, carl::Relation::EQ ) );
             // Return False if the newly obtained constraint is unsatisfiable
             if( newEq.isFalse() )
             {
@@ -361,25 +361,7 @@ namespace smtrat
                 #ifdef DEBUG_IntEqModule
                 cout << "After substitution: " << new_poly << endl;
                 #endif
-                FormulaT newEq = FormulaT( carl::newConstraint( new_poly, carl::Relation::EQ ) );
-                #ifdef DEBUG_IntEqModule
-                /*
-                assert( !origins.empty() );
-                auto iter_ = origins.begin();
-                while( iter_ != origins.end() )
-                {
-                    cout << (*iter_) << endl;
-                    ++iter_;
-                }
-                cout << "Second vector" << new_poly << endl;
-                iter_ = constr_iter->second.begin();
-                while( iter_ != constr_iter->second.end() )
-                {
-                    cout << (*iter_) << endl;
-                    ++iter_;
-                }
-                */
-                #endif
+                FormulaT newEq( carl::newConstraint<Poly>( new_poly, carl::Relation::EQ ) );
                 std::shared_ptr<std::vector<FormulaT>> origins_new( new std::vector<FormulaT>() ); 
                 *origins_new = ( std::move( merge( *origins, *( constr_iter->second ) ) ) );
                 Formula_Origins::iterator iter = mProc_Constraints.find( newEq );
@@ -441,8 +423,6 @@ namespace smtrat
                 #endif
                 std::shared_ptr<std::vector<FormulaT>> origins( new std::vector<FormulaT>() );
                 origins->push_back( std::move( (*iter_formula).formula() ) );
-                //FormulaT origin = (*iter_formula).formula();
-                //origin.insert( (*iter_formula).formula() );
                 auto iter_var = mSubstitutions.begin();
                 while( iter_var != mSubstitutions.end() )
                 {
@@ -470,7 +450,7 @@ namespace smtrat
                     formula_cover->push_back( *iter_sets );
                     ++iter_sets;
                 }  
-                FormulaT formula_passed( carl::newConstraint( new_poly, (*iter_formula).formula().constraint().relation() ) );                
+                FormulaT formula_passed( carl::newConstraint<Poly>( new_poly, (*iter_formula).formula().constraint().relation() ) );                
                 addConstraintToInform( formula_passed );
                 addSubformulaToPassedFormula( formula_passed, formula_cover );    
             }
