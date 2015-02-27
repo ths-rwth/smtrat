@@ -255,10 +255,9 @@ namespace smtrat
                     cout << "Origin: " << *iter_origins << endl;
                     #endif
                     bool contains = iter_origins->contains( _subformula->formula() ); 
-                    if( contains )
+                    if( contains || *iter_origins == _subformula->formula() )
                     {
                         ++delete_count;
-                        //iter_origins->erase( iter_set );
                     }
                     ++iter_origins;
                 }
@@ -285,7 +284,7 @@ namespace smtrat
                     while( iter_set_upper != iter_upper->second->end() )
                     {
                         bool contains = iter_set_upper->contains( _subformula->formula() ); 
-                        if( contains )
+                        if( contains || *iter_set_upper == _subformula->formula() )
                         {
                             ++delete_count;
                         }
@@ -310,7 +309,7 @@ namespace smtrat
                     while( iter_set_lower != iter_lower->second->end() )
                     {
                         bool contains = iter_set_lower->contains( _subformula->formula() ); 
-                        if( contains )
+                        if( contains || *iter_set_lower == _subformula->formula() )
                         {
                             ++delete_count;
                         }
