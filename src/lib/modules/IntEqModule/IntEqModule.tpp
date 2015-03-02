@@ -145,18 +145,20 @@ namespace smtrat
                 while( iter_origins !=  (iter_formula->second)->end() )
                 {                    
                     bool contained = iter_origins->contains( _subformula->formula() );
-                    if( contained )
+                    if( contained || *iter_origins == _subformula->formula() )
                     {
                         ++delete_count;
-                        //iter_origins.erase( iter_set );
                     }
                     ++iter_origins;
                 }
                 if( iter_formula->second->size() == delete_count )
                 {
-                    mProc_Constraints.erase( iter_formula );
+                    iter_formula = mProc_Constraints.erase( iter_formula );
                 }
-                ++iter_formula;
+                else
+                {
+                    ++iter_formula;                    
+                }
             }            
             // Do the same for the substitution data structure(s)
             auto iter_substitutions = mVariables.begin();
@@ -167,21 +169,24 @@ namespace smtrat
                 while( iter_origins !=  (iter_substitutions->second)->end() )
                 {
                     bool contains = iter_origins->contains( _subformula->formula() ); 
-                    if( contains )
+                    if( contains || *iter_origins == _subformula->formula() )
                     {   
                         ++delete_count;
-                        //iter_origins->erase( iter_set );
                     }
                     ++iter_origins;
                 }
                 if( iter_substitutions->second->size() == delete_count )
                 {
-                    mVariables.erase( iter_substitutions );
-                    auto iter_help = mSubstitutions.find( iter_substitutions->first );
+                    auto iter_substitutions_help = iter_substitutions;
+                    iter_substitutions = mVariables.erase( iter_substitutions );
+                    auto iter_help = mSubstitutions.find( iter_substitutions_help->first );
                     assert( iter_help != mSubstitutions.end() );
                     mSubstitutions.erase( iter_help );
                 }
-                ++iter_substitutions;
+                else
+                {
+                    ++iter_substitutions;
+                }    
             }
         }     
         Module::removeSubformula( _subformula ); 
