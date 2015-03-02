@@ -28,7 +28,7 @@
 
 #include "FouMoModule.h"
 
-#define DEBUG_FouMoModule
+//#define DEBUG_FouMoModule
 
 namespace smtrat
 {
@@ -444,12 +444,20 @@ namespace smtrat
             carl::Variable best_var = var_corr_constr.begin()->first;
             Rational corr_coeff;
             // Store how the amount of constraints will change after the elimination
-            Rational delta_constr = var_corr_constr.begin()->second.first.size()*(var_corr_constr.begin()->second.second.size()-1)-var_corr_constr.begin()->second.second.size();
+            int delta_constr = var_corr_constr.begin()->second.first.size()*(var_corr_constr.begin()->second.second.size()-1)-var_corr_constr.begin()->second.second.size();
             auto iter_var = var_corr_constr.begin();
             ++iter_var;
             while( iter_var != var_corr_constr.end() )
             {
-                Rational delta_temp = iter_var->second.first.size()*(iter_var->second.second.size()-1)-iter_var->second.second.size();
+                #ifdef DEBUG_FouMoModule
+                cout << "Variable: " << iter_var->first << endl;
+                cout << "Upper count: " << iter_var->second.first.size() << endl;
+                cout << "Lower count: " << iter_var->second.second.size() << endl;
+                #endif
+                int delta_temp = iter_var->second.first.size()*(iter_var->second.second.size()-1)-iter_var->second.second.size();
+                #ifdef DEBUG_FouMoModule
+                cout << "Delta: " << delta_temp << endl;
+                #endif
                 if( delta_temp < delta_constr )
                 {
                     delta_constr = delta_temp;
@@ -457,8 +465,7 @@ namespace smtrat
                 }
                 ++iter_var;    
             }
-            cout << "Constraints added: " << delta_constr << endl;
-            if( false ) //delta_constr > Threshold )
+            if( delta_constr >= 0.5*mProc_Constraints.size() )
             {
                 #ifdef DEBUG_FouMoModule
                 cout << "Run Backends because Threshold is exceeded!" << endl;
@@ -753,9 +760,6 @@ namespace smtrat
                     if( Settings::Integer_Mode )
                     {
                         lowest_upper = carl::floor( Rational( to_be_substituted_upper.constantPart() )/(-1*coeff_upper ) );         
-                        cout << "Coefficient: " << coeff_upper << endl;
-                        cout << "Constant part: " << to_be_substituted_upper.constantPart() << endl;
-                        cout << "Lowest upper: " << lowest_upper << endl;
                     }
                     else
                     {
@@ -769,9 +773,6 @@ namespace smtrat
                         if( carl::floor( Rational( -to_be_substituted_upper.constantPart() )/coeff_upper ) < lowest_upper )
                         {
                             lowest_upper = carl::floor( Rational( -to_be_substituted_upper.constantPart() )/coeff_upper );
-                            cout << "Coefficient: " << coeff_upper << endl;
-                            cout << "Constant part: " << to_be_substituted_upper.constantPart() << endl;
-                            cout << "Lowest upper: " << lowest_upper << endl;
                         }
                     }
                     else
@@ -779,9 +780,6 @@ namespace smtrat
                         if( Rational(-1)*Rational( to_be_substituted_upper.constantPart() )/coeff_upper < lowest_upper )
                         {
                             lowest_upper = Rational(-1)*Rational( to_be_substituted_upper.constantPart() )/coeff_upper;
-                            cout << "Coefficient: " << coeff_upper << endl;
-                            cout << "Constant part: " << to_be_substituted_upper.constantPart() << endl;
-                            cout << "Lowest upper: " << lowest_upper << endl;
                         }
                     }    
                 }
