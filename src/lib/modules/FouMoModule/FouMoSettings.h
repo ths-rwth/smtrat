@@ -39,6 +39,5 @@ namespace smtrat
         
         static const bool Nonlinear_Mode = false;
         
-        static const int Threshold = 20;
     };
 }

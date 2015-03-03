@@ -28,7 +28,7 @@
 
 #include "FouMoModule.h"
 
-#define DEBUG_FouMoModule
+//#define DEBUG_FouMoModule
 
 namespace smtrat
 {
@@ -255,10 +255,9 @@ namespace smtrat
                     cout << "Origin: " << *iter_origins << endl;
                     #endif
                     bool contains = iter_origins->contains( _subformula->formula() ); 
-                    if( contains )
+                    if( contains || *iter_origins == _subformula->formula() )
                     {
                         ++delete_count;
-                        //iter_origins->erase( iter_set );
                     }
                     ++iter_origins;
                 }
@@ -285,7 +284,7 @@ namespace smtrat
                     while( iter_set_upper != iter_upper->second->end() )
                     {
                         bool contains = iter_set_upper->contains( _subformula->formula() ); 
-                        if( contains )
+                        if( contains || *iter_set_upper == _subformula->formula() )
                         {
                             ++delete_count;
                         }
@@ -310,7 +309,7 @@ namespace smtrat
                     while( iter_set_lower != iter_lower->second->end() )
                     {
                         bool contains = iter_set_lower->contains( _subformula->formula() ); 
-                        if( contains )
+                        if( contains || *iter_set_lower == _subformula->formula() )
                         {
                             ++delete_count;
                         }
@@ -411,6 +410,12 @@ namespace smtrat
                         addSubformulaToPassedFormula( iter_constr->first, iter_constr->second );
                         ++iter_constr;
                     }
+                    auto iter_eq = mEqualities.begin();
+                    while( iter_eq != mEqualities.end() )
+                    {
+                        addSubformulaToPassedFormula( iter_eq->first, iter_eq->second );
+                        ++iter_eq;
+                    }
                     Answer ans = runBackends();
                     if( ans == False )
                     {
@@ -419,7 +424,7 @@ namespace smtrat
                     return ans;
                 }
                 // Try to derive a(n) (integer) solution by backtracking through the steps of Fourier-Motzkin
-                if( construct_solution() )
+                if( !mElim_Order.empty() && construct_solution() )
                 {
                     #ifdef DEBUG_FouMoModule
                     cout << "Found a valid solution!" << endl;
@@ -445,12 +450,20 @@ namespace smtrat
             carl::Variable best_var = var_corr_constr.begin()->first;
             Rational corr_coeff;
             // Store how the amount of constraints will change after the elimination
-            Rational delta_constr = var_corr_constr.begin()->second.first.size()*(var_corr_constr.begin()->second.second.size()-1)-var_corr_constr.begin()->second.second.size();
+            int delta_constr = var_corr_constr.begin()->second.first.size()*(var_corr_constr.begin()->second.second.size()-1)-var_corr_constr.begin()->second.second.size();
             auto iter_var = var_corr_constr.begin();
             ++iter_var;
             while( iter_var != var_corr_constr.end() )
             {
-                Rational delta_temp = iter_var->second.first.size()*(iter_var->second.second.size()-1)-iter_var->second.second.size();
+                #ifdef DEBUG_FouMoModule
+                cout << "Variable: " << iter_var->first << endl;
+                cout << "Upper count: " << iter_var->second.first.size() << endl;
+                cout << "Lower count: " << iter_var->second.second.size() << endl;
+                #endif
+                int delta_temp = iter_var->second.first.size()*(iter_var->second.second.size()-1)-iter_var->second.second.size();
+                #ifdef DEBUG_FouMoModule
+                cout << "Delta: " << delta_temp << endl;
+                #endif
                 if( delta_temp < delta_constr )
                 {
                     delta_constr = delta_temp;
@@ -458,7 +471,7 @@ namespace smtrat
                 }
                 ++iter_var;    
             }
-            if( false ) //delta_constr > Threshold )
+            if( delta_constr >= 0.5*mProc_Constraints.size() )
             {
                 #ifdef DEBUG_FouMoModule
                 cout << "Run Backends because Threshold is exceeded!" << endl;
@@ -753,9 +766,6 @@ namespace smtrat
                     if( Settings::Integer_Mode )
                     {
                         lowest_upper = carl::floor( Rational( to_be_substituted_upper.constantPart() )/(-1*coeff_upper ) );         
-                        cout << "Coefficient: " << coeff_upper << endl;
-                        cout << "Constant part: " << to_be_substituted_upper.constantPart() << endl;
-                        cout << "Lowest upper: " << lowest_upper << endl;
                     }
                     else
                     {
@@ -769,9 +779,6 @@ namespace smtrat
                         if( carl::floor( Rational( -to_be_substituted_upper.constantPart() )/coeff_upper ) < lowest_upper )
                         {
                             lowest_upper = carl::floor( Rational( -to_be_substituted_upper.constantPart() )/coeff_upper );
-                            cout << "Coefficient: " << coeff_upper << endl;
-                            cout << "Constant part: " << to_be_substituted_upper.constantPart() << endl;
-                            cout << "Lowest upper: " << lowest_upper << endl;
                         }
                     }
                     else
@@ -779,9 +786,6 @@ namespace smtrat
                         if( Rational(-1)*Rational( to_be_substituted_upper.constantPart() )/coeff_upper < lowest_upper )
                         {
                             lowest_upper = Rational(-1)*Rational( to_be_substituted_upper.constantPart() )/coeff_upper;
-                            cout << "Coefficient: " << coeff_upper << endl;
-                            cout << "Constant part: " << to_be_substituted_upper.constantPart() << endl;
-                            cout << "Lowest upper: " << lowest_upper << endl;
                         }
                     }    
                 }
