@@ -261,8 +261,6 @@ namespace smtrat
                 {
                     Rational coeff = (*iter_coeff).coeff();
                     carl::Variable var = (*iter_coeff).getSingleVariable();
-                    cout << "Var: " << var << endl;
-                    cout << "Coeff: " << coeff << endl;
                     if( carl::abs(coeff) < smallest_abs_value )
                     {
                         if( coeff < 0 )

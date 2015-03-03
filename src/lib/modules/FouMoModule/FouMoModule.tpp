@@ -687,7 +687,6 @@ namespace smtrat
     template<class Settings>
     bool FouMoModule<Settings>::construct_solution()
     {
-        cout << "In"  << endl;
         VariableUpperLower constr_backtracking = mDeleted_Constraints;
         auto iter_elim = mElim_Order.end();
         --iter_elim;
