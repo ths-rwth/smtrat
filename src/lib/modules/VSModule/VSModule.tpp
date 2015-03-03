@@ -1648,37 +1648,17 @@ namespace smtrat
                             for( auto var = varOrder.rbegin(); var != varOrder.rend(); ++var )
                             {
                                 assert( varSolutions.find( *var ) != varSolutions.end() );
-//                                std::cout << "check if origin  " << substitutionPoly << "  has integer zeros under the assignment" << std::endl;
                                 partialVarSolutions[*var] = varSolutions[*var];
-//                                for( const auto& pvs : partialVarSolutions )
-//                                    std::cout << "      " << pvs.first << " -> " << pvs.second << std::endl;
-//                                std::cout << "check first if side conditions of test candidate are fulfilled:" << std::endl;
                                 Poly subPolyPartiallySubstituted = substitutionPoly.substitute( partialVarSolutions );
-//                                std::cout << "   results in " << subPolyPartiallySubstituted << std::endl;
-                                auto term = subPolyPartiallySubstituted.rbegin();
-                                if( term != subPolyPartiallySubstituted.rend() )
+                                Rational cp = subPolyPartiallySubstituted.coprimeFactorWithoutConstant();
+                                assert( carl::getNum( cp ) == ONE_RATIONAL );
+                                Rational g = carl::getDenom( cp );
+                                if( g > ZERO_RATIONAL && carl::mod( carl::getNum( subPolyPartiallySubstituted.constantPart() ), carl::getNum( g ) ) != 0 )
                                 {
-//                                    std::cout << "   check if the gcd of the coefficients divides the constant part:" << std::endl;
-                                    assert( !term->isConstant() && carl::isInteger( term->coeff() ) );
-                                    Rational g = carl::abs( term->coeff() );
-                                    ++term;
-                                    for( ; term != subPolyPartiallySubstituted.rend(); ++term )
-                                    {
-                                        if( !term->isConstant() )
-                                        {
-                                            assert( carl::isInteger( term->coeff() ) );
-                                            g = carl::gcd( carl::getNum( g ), carl::getNum( carl::abs( term->coeff() ) ) );
-                                        }
-                                    }
-                                    assert( g > ZERO_RATIONAL );
-//                                    std::cout << "   " << carl::getNum( subPolyPartiallySubstituted.constantPart() ) << " mod " << carl::getNum( g ) << " == " << carl::mod( carl::getNum( subPolyPartiallySubstituted.constantPart() ), carl::getNum( g ) ) << std::endl; 
-                                    if( carl::mod( carl::getNum( subPolyPartiallySubstituted.constantPart() ), carl::getNum( g ) ) != 0 )
-                                    {
-                                        Poly branchEx = ((subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * Rational(Rational(1) / g));
-                                        Rational branchValue = subPolyPartiallySubstituted.constantPart() * (1 / g);
-                                        branchAt( branchEx, branchValue, getReasons( currentState->substitution().originalConditions() ) );
-                                        return false;
-                                    }
+                                    Poly branchEx = ((subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * Rational(Rational(1) / g));
+                                    Rational branchValue = subPolyPartiallySubstituted.constantPart() * (1 / g);
+                                    branchAt( branchEx, branchValue, getReasons( currentState->substitution().originalConditions() ) );
+                                    return false;
                                 }
                             }
                         }

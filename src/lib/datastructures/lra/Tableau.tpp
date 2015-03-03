@@ -185,11 +185,13 @@ namespace smtrat
             Variable<T1, T2>* newVar;
             if( constraint.lhs().nrTerms() == 1 || ( constraint.lhs().nrTerms() == 2 && constraint.lhs().hasConstantTerm() ) )
             {
-                auto term = constraint.lhs().begin();
-                for( ; term != constraint.lhs().end(); ++term )
+                // TODO: do not store the expanded polynomial, but use the coefficient and coprimeCoefficients
+                typename Poly::PolyType expandedPoly = constraint.lhs().polynomial();
+                auto term = expandedPoly.begin();
+                for( ; term != expandedPoly.end(); ++term )
                     if( !term->isConstant() ) break;
 				carl::Variable var = term->monomial()->begin()->first;
-                T1 primCoeff = T1( term->coeff() );
+                T1 primCoeff = T1( term->coeff() ) * constraint.lhs().coefficient();
                 negative = (primCoeff < T1( 0 ));
                 boundValue = T1( -constraint.constantPart() )/primCoeff;
                 typename std::map<carl::Variable, Variable<T1, T2>*>::iterator basicIter = mOriginalVars.find( var );
