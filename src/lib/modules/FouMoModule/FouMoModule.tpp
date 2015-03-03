@@ -410,6 +410,12 @@ namespace smtrat
                         addSubformulaToPassedFormula( iter_constr->first, iter_constr->second );
                         ++iter_constr;
                     }
+                    auto iter_eq = mEqualities.begin();
+                    while( iter_eq != mEqualities.end() )
+                    {
+                        addSubformulaToPassedFormula( iter_eq->first, iter_eq->second );
+                        ++iter_eq;
+                    }
                     Answer ans = runBackends();
                     if( ans == False )
                     {
@@ -418,7 +424,7 @@ namespace smtrat
                     return ans;
                 }
                 // Try to derive a(n) (integer) solution by backtracking through the steps of Fourier-Motzkin
-                if( construct_solution() )
+                if( !mElim_Order.empty() && construct_solution() )
                 {
                     #ifdef DEBUG_FouMoModule
                     cout << "Found a valid solution!" << endl;
@@ -681,6 +687,7 @@ namespace smtrat
     template<class Settings>
     bool FouMoModule<Settings>::construct_solution()
     {
+        cout << "In"  << endl;
         VariableUpperLower constr_backtracking = mDeleted_Constraints;
         auto iter_elim = mElim_Order.end();
         --iter_elim;
