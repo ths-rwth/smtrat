@@ -244,7 +244,8 @@ namespace smtrat
             carl::Variable corr_var;
             if( (*iter_coeff).isConstant() )
             {
-                corr_var = (*(++iter_coeff)).getSingleVariable();                
+                corr_var = (*(++iter_coeff)).getSingleVariable(); 
+                smallest_abs_value = carl::abs((*iter_coeff).coeff());
             }
             else
             {
@@ -260,6 +261,8 @@ namespace smtrat
                 {
                     Rational coeff = (*iter_coeff).coeff();
                     carl::Variable var = (*iter_coeff).getSingleVariable();
+                    cout << "Var: " << var << endl;
+                    cout << "Coeff: " << coeff << endl;
                     if( carl::abs(coeff) < smallest_abs_value )
                     {
                         if( coeff < 0 )
@@ -267,6 +270,7 @@ namespace smtrat
                             value_negative = true;
                         }
                         smallest_abs_value = carl::abs(coeff); 
+                        cout << "Smallest absolute value: " << smallest_abs_value << endl;
                         corr_var = var;
                     }
                 }    
