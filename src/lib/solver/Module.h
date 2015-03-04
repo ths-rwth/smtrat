@@ -766,7 +766,7 @@ namespace smtrat
              */
             void branchAt( const Poly& _polynomial, const Rational& _value, const FormulasT& = FormulasT(), bool _leftCaseWeak = true, bool _preferLeftCase = true, bool _isolateBranchValue = false );
             
-            void branchAt( const carl::Variable::Arg _var, const Rational& _value, const FormulasT& _premise = FormulasT(), bool _leftCaseWeak = true, bool _preferLeftCase = true, bool _isolateBranchValue = false )
+            void branchAt( carl::Variable::Arg _var, const Rational& _value, const FormulasT& _premise = FormulasT(), bool _leftCaseWeak = true, bool _preferLeftCase = true, bool _isolateBranchValue = false )
             {
                 branchAt( carl::makePolynomial<Poly>( _var ), _value, _premise, _leftCaseWeak, _preferLeftCase, _isolateBranchValue );
             }

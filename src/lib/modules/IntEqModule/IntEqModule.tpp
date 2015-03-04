@@ -28,7 +28,7 @@
 
 #include "IntEqModule.h"
 
-#define DEBUG_IntEqModule
+//#define DEBUG_IntEqModule
 
 namespace smtrat
 {
@@ -240,18 +240,28 @@ namespace smtrat
             #endif
             std::shared_ptr<std::vector<FormulaT>> origins = mProc_Constraints.begin()->second;
             auto iter_coeff = (curr_constr->lhs()).begin();
-            Rational smallest_abs_value = carl::abs((*iter_coeff).coeff());
+            Rational smallest_abs_value = (*iter_coeff).coeff();
             carl::Variable corr_var;
+            bool value_negative = false;
             if( (*iter_coeff).isConstant() )
             {
                 corr_var = (*(++iter_coeff)).getSingleVariable(); 
-                smallest_abs_value = carl::abs((*iter_coeff).coeff());
+                Rational coeff = (*iter_coeff).coeff();
+                if( coeff < 0 )
+                {
+                    value_negative = true;
+                }
+                smallest_abs_value = carl::abs( coeff );
             }
             else
             {
-                corr_var = (*(iter_coeff)).getSingleVariable();                
+                corr_var = (*(iter_coeff)).getSingleVariable(); 
+                if( smallest_abs_value < 0 )
+                {
+                    value_negative = true;
+                }
+                smallest_abs_value = carl::abs( smallest_abs_value );
             }
-            bool value_negative = false;
             #ifdef DEBUG_IntEqModule
             cout << "Determine the smallest absolute value of the chosen constraint." << endl;
             #endif
@@ -268,7 +278,6 @@ namespace smtrat
                             value_negative = true;
                         }
                         smallest_abs_value = carl::abs(coeff); 
-                        cout << "Smallest absolute value: " << smallest_abs_value << endl;
                         corr_var = var;
                     }
                 }    
@@ -276,6 +285,7 @@ namespace smtrat
             }
             #ifdef DEBUG_IntEqModule
             cout << "The smallest absolute value is:" << smallest_abs_value << endl;
+            cout << "Sign:" << value_negative << endl;
             #endif
             // Proceed with the execution of the equation elimination 
             // depending on the value of the smallest absolute value of curr_constr
@@ -424,7 +434,7 @@ namespace smtrat
                     new_poly = new_poly.substitute( (iter_subs)->first, (iter_subs)->second );
                     ++iter_subs;
                 }
-                new_poly = new_poly.substitute( mSubstitutions );
+                //new_poly = new_poly.substitute( mSubstitutions );
                 #ifdef DEBUG_IntEqModule
                 cout << "After substitution: " << new_poly << endl;
                 #endif

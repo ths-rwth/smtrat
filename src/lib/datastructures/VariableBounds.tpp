@@ -204,7 +204,7 @@ namespace smtrat
             assert( _constraint->variables().size() == 1 );
             if( _constraint->maxDegree( _var ) == 1 )
             {
-                const Rational& coeff = _constraint->lhs().lterm().coeff();
+                const Rational coeff = _constraint->lhs().lterm().coeff();
                 carl::Relation rel = _constraint->relation();
                 Rational* limit = new Rational( -_constraint->constantPart()/coeff );
                 std::pair< typename Variable<T>::BoundSet::iterator, bool> result;
@@ -250,10 +250,10 @@ namespace smtrat
                 (*result.first)->activate( _origin );
                 return *result.first;
             }
-            else if( _constraint->lhs().nrTerms() == 1 || (_constraint->lhs().nrTerms() == 2 && _constraint->lhs().hasConstantTerm()) )
-            {
-                // TODO: Retrieve bounds from constraints of the form x^n+b~0
-            }
+//            else if( _constraint->lhs().nrTerms() == 1 || (_constraint->lhs().nrTerms() == 2 && _constraint->lhs().hasConstantTerm()) )
+//            {
+//                // TODO: Retrieve bounds from constraints of the form x^n+b~0
+//            }
             assert( false );
             return NULL;
         }

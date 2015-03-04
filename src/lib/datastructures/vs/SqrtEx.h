@@ -60,7 +60,7 @@ namespace vs
                 SqrtEx::SqrtEx( std::move( smtrat::Poly( _poly ) ) )
             {}
             
-            SqrtEx( const carl::Variable::Arg _var ) : 
+            SqrtEx( carl::Variable::Arg _var ) : 
                 SqrtEx( std::move( carl::makePolynomial<smtrat::Poly>( _var ) ) )
             {}
             
