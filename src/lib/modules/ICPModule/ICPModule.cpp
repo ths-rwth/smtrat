@@ -509,7 +509,7 @@ namespace smtrat
                 {
                     assert( mVariables.find(*var) == mVariables.end() );
                     assert( mIntervals.find(*var) == mIntervals.end() );
-                    mSubstitutions.insert( std::make_pair( *var, Poly(*var) ) );
+                    mSubstitutions.insert( std::make_pair( *var, carl::makePolynomial<Poly>(*var) ) );
                     getIcpVariable( *var, true, NULL ); // note that we have to set the lra variable later
                     mHistoryRoot->addInterval( *var, smtrat::DoubleInterval::unboundedInterval() );
                 }
@@ -1110,7 +1110,7 @@ namespace smtrat
                 cout << "New replacement: " << monom << " -> " << mVariableLinearizations.at(monom) << endl;
                 #endif
 
-                const Poly rhs = monom - newVar;
+                const Poly rhs = monom - carl::makePolynomial<Poly>(newVar);
                 for( auto varIndex = variables.begin(); varIndex != variables.end(); ++varIndex )
                 {
                     // create a contraction candidate for each variable in the monomial
@@ -1145,19 +1145,20 @@ namespace smtrat
             }
         }
         // Construct the linearization
-        for( auto monomialIt = _constraint->lhs().begin(); monomialIt != _constraint->lhs().end(); ++monomialIt )
+        for( auto monomialIt = _constraint->lhs().polynomial().begin(); monomialIt != _constraint->lhs().polynomial().end(); ++monomialIt )
         {
             if( (monomialIt)->monomial() == NULL || (monomialIt)->monomial()->isAtMostLinear() )
             {
-                linearizedConstraint += *monomialIt;
+                linearizedConstraint += carl::makePolynomial<Poly>(typename Poly::PolyType(*monomialIt));
             }
             else
             {
-                assert( mVariableLinearizations.find(Poly((monomialIt)->monomial())) != mVariableLinearizations.end() );
-                linearizedConstraint += (monomialIt)->coeff() * (*mVariableLinearizations.find( Poly((monomialIt)->monomial() ))).second;
+                assert( mVariableLinearizations.find(carl::makePolynomial<Poly>(typename Poly::PolyType((monomialIt)->monomial()))) != mVariableLinearizations.end() );
+                linearizedConstraint += (monomialIt)->coeff() * carl::makePolynomial<Poly>((*mVariableLinearizations.find( carl::makePolynomial<Poly>(typename Poly::PolyType((monomialIt)->monomial())) )).second);
             }
         }
         mNonlinearConstraints.insert( pair<const ConstraintT*, ContractionCandidates>( _constraint, ccs ) );
+        linearizedConstraint *= _constraint->lhs().coefficient();
         return linearizedConstraint;
     }
     
@@ -1181,12 +1182,12 @@ namespace smtrat
             }
             carl::Variable newVar = hasRealVar ? carl::freshRealVariable() : carl::freshIntegerVariable();
             variables.insert( newVar );
-            mSubstitutions.insert( std::make_pair( newVar, Poly( newVar ) ) );
+            mSubstitutions.insert( std::make_pair( newVar, carl::makePolynomial<Poly>( newVar ) ) );
             assert( mVariables.find( newVar ) == mVariables.end() );
             icp::IcpVariable* icpVar = getIcpVariable( newVar, false, slackvariable );
             mHistoryRoot->addInterval( newVar, smtrat::DoubleInterval::unboundedInterval() );
 
-            const Poly rhs = slackvariable->expression() - newVar;
+            const Poly rhs = carl::makePolynomial<Poly>(slackvariable->expression()) - carl::makePolynomial<Poly>(newVar);
             const ConstraintT* tmpConstr = newConstraint<Poly>( rhs, Relation::EQ );
             auto iter = mContractors.find( rhs );
             if( iter == mContractors.end() )
@@ -1523,7 +1524,7 @@ namespace smtrat
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
             assert(resultA.upperBoundType() != BoundType::INFTY );
             Rational bound = carl::rationalize<Rational>( resultA.upper() );
-            Module::branchAt( Poly( variable ), bound, splitPremise, true, true );
+            Module::branchAt( carl::makePolynomial<Poly>( variable ), bound, splitPremise, true, true );
             #ifdef ICP_MODULE_DEBUG_1
             cout << "division causes split on " << variable << " at " << bound << "!" << endl << endl;
             #endif
@@ -1956,7 +1957,7 @@ namespace smtrat
         {
             if( originalRealVariables.find( (*intervalIt).first ) != originalRealVariables.end() )
             {
-                std::pair<const ConstraintT*, const ConstraintT*> boundaries = icp::intervalToConstraint(Poly((*intervalIt).first), (*intervalIt).second);
+                std::pair<const ConstraintT*, const ConstraintT*> boundaries = icp::intervalToConstraint(carl::makePolynomial<Poly>((*intervalIt).first), (*intervalIt).second);
                 if(boundaries.first != NULL)
                 {
                     subformulas.insert( FormulaT( boundaries.first ) );                       
@@ -2062,7 +2063,7 @@ namespace smtrat
                 addDeduction( FormulaT( OR, std::move(subformulas) ) );
             }
 
-            Module::branchAt( Poly( variable ), bound, splitPremise, true, preferLeftCase );
+            Module::branchAt( carl::makePolynomial<Poly>( variable ), bound, splitPremise, true, preferLeftCase );
             #ifdef ICP_MODULE_DEBUG_0
             std::cout << std::endl << "Force split on " << variable << " at " << bound << "!" << std::endl;
             printIntervals(true);
@@ -2852,7 +2853,7 @@ namespace smtrat
                     if( icpVarExUpdated == icp::Updated::BOTH || icpVarExUpdated == icp::Updated::LEFT )
                     {
                         Rational bound = carl::rationalize<Rational>( interval.lower() );
-                        Poly leftEx = Poly( tmpSymbol ) - Poly(bound);
+                        Poly leftEx = carl::makePolynomial<Poly>( tmpSymbol ) - Poly(bound);
 
                         FormulaT leftTmp;
                         switch( interval.lowerBoundType() )
@@ -2889,7 +2890,7 @@ namespace smtrat
                     {
                         // right:
                         Rational bound = carl::rationalize<Rational>( interval.upper() );
-                        Poly rightEx = Poly( tmpSymbol ) - Poly( bound );
+                        Poly rightEx = carl::makePolynomial<Poly>( tmpSymbol ) - Poly( bound );
                         FormulaT rightTmp;
                         switch( interval.upperBoundType() )
                         {
@@ -3013,7 +3014,7 @@ namespace smtrat
                 }
                 else
                 {
-                    std::pair<const ConstraintT*, const ConstraintT*> boundaries = icp::intervalToConstraint(variablesIt->second->lraVar()->expression(), _map.at(tmpSymbol));
+                    std::pair<const ConstraintT*, const ConstraintT*> boundaries = icp::intervalToConstraint(carl::makePolynomial<Poly>(variablesIt->second->lraVar()->expression()), _map.at(tmpSymbol));
                     icp::Updated inBoundsSet = (*variablesIt).second->isInternalBoundsSet();
                     icp::Updated inBoundsUpdated = (*variablesIt).second->isInternalUpdated();
                     if( boundaries.second != NULL && 

@@ -78,7 +78,7 @@ namespace smtrat
             /// Maps an original variable to it's corresponding LRAModule variable.
             typedef std::map<carl::Variable, LRAVariable*> VarVariableMap;
             /// Maps a linear polynomial to it's corresponding LRAModule variable.
-            typedef carl::FastPointerMap<Poly, LRAVariable*> ExVariableMap;
+            typedef carl::FastPointerMap<typename Poly::PolyType, LRAVariable*> ExVariableMap;
             /// Maps constraint to the bounds it represents (e.g., equations represent two bounds)
             typedef carl::FastMap<FormulaT, std::vector<const LRABound*>*> ConstraintBoundsMap;
             /// Stores the position of a received formula in the passed formula.
