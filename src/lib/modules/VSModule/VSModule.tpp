@@ -1152,11 +1152,11 @@ namespace smtrat
                 {
                     if( allSubstitutionsApplied && !anySubstitutionFailed )
                     {
-                        allSubResults.push_back( DisjunctionOfConditionConjunctions() );
+                        allSubResults.emplace_back();
                         DisjunctionOfConditionConjunctions& currentDisjunction = allSubResults.back();
                         for( auto consConj = subResult.begin(); consConj != subResult.end(); ++consConj )
                         {
-                            currentDisjunction.push_back( ConditionList() );
+                            currentDisjunction.emplace_back();
                             ConditionList& currentConjunction = currentDisjunction.back();
                             for( auto cons = consConj->begin(); cons != consConj->end(); ++cons )
                             {
