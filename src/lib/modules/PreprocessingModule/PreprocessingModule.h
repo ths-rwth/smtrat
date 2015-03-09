@@ -87,9 +87,9 @@ namespace smtrat
              */
 
             // Interfaces.
-            bool assertSubformula( ModuleInput::const_iterator );
-            Answer isConsistent();
-            void removeSubformula( ModuleInput::const_iterator );
+            bool addCore( ModuleInput::const_iterator );
+            Answer checkCore( bool _full );
+            void removeCore( ModuleInput::const_iterator );
 			void updateModel() const;
 
         protected:

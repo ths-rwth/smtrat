@@ -42,33 +42,11 @@ namespace smtrat
         mProc_Constraints(),
         mSubstitutions(),
         mVariables()    
-    { }
-
-    /**
-     * Destructor.
-     */
-
-    template<class Settings>
-    IntEqModule<Settings>::~IntEqModule()
-    {}
-
-
-    template<class Settings>
-    bool IntEqModule<Settings>::inform( const FormulaT& _constraint )
-    {
-        Module::inform( _constraint ); // This must be invoked at the beginning of this method.
-	const smtrat::ConstraintT* constraint = _constraint.pConstraint(); 
-        return constraint->isConsistent() != 0;
-    }
-
-    template<class Settings>
-    void IntEqModule<Settings>::init()
     {}
 
     template<class Settings>
-    bool IntEqModule<Settings>::assertSubformula( ModuleInput::const_iterator _subformula )
+    bool IntEqModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-        Module::assertSubformula( _subformula );
         if( _subformula->formula().isFalse() )
         {
             #ifdef DEBUG_IntEqModule
@@ -77,7 +55,7 @@ namespace smtrat
             FormulasT infSubSet;
             infSubSet.insert( _subformula->formula() );
             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
-            return foundAnswer( False );            
+            return False;            
         }            
         if( _subformula->formula().constraint().relation() == carl::Relation::EQ )
         {
@@ -126,7 +104,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    void IntEqModule<Settings>::removeSubformula( ModuleInput::const_iterator _subformula )
+    void IntEqModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
         if( _subformula->formula().constraint().relation() == carl::Relation::EQ )
         {
@@ -188,8 +166,7 @@ namespace smtrat
                     ++iter_substitutions;
                 }    
             }
-        }     
-        Module::removeSubformula( _subformula ); 
+        }
     }
 
     template<class Settings>
@@ -208,7 +185,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer IntEqModule<Settings>::isConsistent()
+    Answer IntEqModule<Settings>::checkCore( bool _full )
     {
         if( !rReceivedFormula().isConstraintConjunction() )
         {
@@ -233,7 +210,7 @@ namespace smtrat
                 FormulasT infSubSet;
                 collectOrigins( mProc_Constraints.begin()->second->at(i), infSubSet );
                 mInfeasibleSubsets.push_back( std::move( infSubSet ) );
-                return foundAnswer( False );
+                return False;
             }
             #ifdef DEBUG_IntEqModule
             cout << mProc_Constraints.begin()->first.constraint() << " was chosen." << endl;
@@ -476,7 +453,7 @@ namespace smtrat
         #ifdef DEBUG_IntEqModule
         cout << "Run LRAModule" << endl;
         #endif
-        Answer ans = runBackends();
+        Answer ans = runBackends( _full );
         if( ans == False )
         {
             getInfeasibleSubsets();

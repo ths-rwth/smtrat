@@ -168,9 +168,8 @@ namespace smtrat
     }
 
     template<class Settings>
-    bool SATModule<Settings>::assertSubformula( ModuleInput::const_iterator _subformula )
+    bool SATModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-        Module::assertSubformula( _subformula );
         if( carl::PROP_IS_A_CLAUSE <= _subformula->formula().properties() )
         {
             if (mFormulaClauseMap.find( _subformula->formula() ) == mFormulaClauseMap.end())
@@ -184,7 +183,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    void SATModule<Settings>::removeSubformula( ModuleInput::const_iterator _subformula )
+    void SATModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
         FormulaClauseMap::iterator iter = mFormulaClauseMap.find( _subformula->formula() );
         if( iter != mFormulaClauseMap.end() )
@@ -200,8 +199,6 @@ namespace smtrat
                 removeClause( iter->second );
             }
         }
-        
-        Module::removeSubformula( _subformula );
     }
 
     template<class Settings>
@@ -223,7 +220,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    Answer SATModule<Settings>::isConsistent()
+    Answer SATModule<Settings>::checkCore( bool _full )
     {
         if( carl::PROP_IS_IN_CNF <= rReceivedFormula().properties() )
         {
@@ -261,7 +258,7 @@ namespace smtrat
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
-                return foundAnswer( False );
+                return False;
             }
 
             lbool result = l_Undef;
@@ -291,7 +288,7 @@ namespace smtrat
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
-                return foundAnswer( True );
+                return True;
             }
             else if( result == l_False )
             {
@@ -300,19 +297,19 @@ namespace smtrat
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
-                return foundAnswer( False );
+                return False;
             }
             else
             {
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
-                return foundAnswer( Unknown );
+                return Unknown;
             }
         }
         else
         {
-            return foundAnswer( Unknown );
+            return Unknown;
         }
     }
 
@@ -1143,8 +1140,8 @@ SetWatches:
 
         if( strict )
         {
-            remove( watches[~c[0]], Watcher( cr, c[1] ) );
-            remove( watches[~c[1]], Watcher( cr, c[0] ) );
+            Minisat::remove( watches[~c[0]], Watcher( cr, c[1] ) );
+            Minisat::remove( watches[~c[1]], Watcher( cr, c[0] ) );
         }
         else
         {

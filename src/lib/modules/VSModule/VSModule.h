@@ -88,9 +88,9 @@ namespace smtrat
             ~VSModule();
             
             // Interfaces.
-            bool assertSubformula( ModuleInput::const_iterator );
-            Answer isConsistent();
-            void removeSubformula( ModuleInput::const_iterator );
+            bool addCore( ModuleInput::const_iterator );
+            Answer checkCore( bool _full );
+            void removeCore( ModuleInput::const_iterator );
             void updateModel() const;
 
         private:
@@ -213,11 +213,12 @@ namespace smtrat
             /**
              * Run the backend solvers on the conditions of the given state.
              * @param _state    The state to check the conditions of.
+             * @param _full     false, if this module should avoid too expensive procedures and rather return unknown instead.
              * @return  True,    if the conditions are consistent and there is no unfinished ancestor;
              *          False,   if the conditions are inconsistent;
              *          Unknown, if the theory solver cannot give an answer for these conditons.
             */
-            Answer runBackendSolvers( vs::State* _state );
+            Answer runBackendSolvers( vs::State* _state, bool _full );
             
             /**
              * Checks the correctness of the symbolic assignment given by the path from the root

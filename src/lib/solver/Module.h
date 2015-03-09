@@ -193,7 +193,7 @@ namespace smtrat
              * @return false, if it can be easily decided whether the given constraint is inconsistent;
              *          true, otherwise.
              */
-            virtual bool inform( const FormulaT& );
+            bool inform( const FormulaT& );
             
             /**
              * Informs all backends about the so far encountered constraints, which have not yet been communicated.
@@ -209,19 +209,19 @@ namespace smtrat
              *          the already considered sub-formulas;
              *          true, otherwise.
              */
-            virtual bool assertSubformula( ModuleInput::const_iterator _subformula );
+            bool add( ModuleInput::const_iterator _subformula );
             
             /**
              * Checks the received formula for consistency. Note, that this is an implementation of 
              * the satisfiability check of the conjunction of the so far received formulas, which does
              * actually nothing but passing the problem to its backends. This implementation is only used
              * internally and must be overwritten by any derived module.
-             *
+             * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
              * @return True,    if the received formula is satisfiable;
              *         False,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            virtual Answer isConsistent();
+            Answer check( bool _full = true );
             
             /**
              * Removes everything related to the given sub-formula of the received formula. However,
@@ -230,7 +230,7 @@ namespace smtrat
              *
              * @param _subformula The sub formula of the received formula to remove.
              */
-            virtual void removeSubformula( ModuleInput::const_iterator _subformula );
+            void remove( ModuleInput::const_iterator _subformula );
             
             /**
              * Updates the model, if the solver has detected the consistency of the received formula, beforehand.
@@ -534,6 +534,53 @@ namespace smtrat
         protected:
 
             // Internally used methods.
+            /**
+             * Informs the module about the given constraint. It should be tried to inform this
+             * module about any constraint it could receive eventually before assertSubformula
+             * is called (preferably for the first time, but at least before adding a formula
+             * containing that constraint).
+             * @param _constraint The constraint to inform about.
+             * @return false, if it can be easily decided whether the given constraint is inconsistent;
+             *          true, otherwise.
+             */
+            virtual bool informCore( const FormulaT& )
+            {
+                return true;
+            }
+            
+            /**
+             * The module has to take the given sub-formula of the received formula into account.
+             *
+             * @param _subformula The sub-formula to take additionally into account.
+             * @return false, if it can be easily decided that this sub-formula causes a conflict with
+             *          the already considered sub-formulas;
+             *          true, otherwise.
+             */
+            virtual bool addCore( ModuleInput::const_iterator _subformula )
+            {
+                return true;
+            }
+            
+            /**
+             * Checks the received formula for consistency. Note, that this is an implementation of 
+             * the satisfiability check of the conjunction of the so far received formulas, which does
+             * actually nothing but passing the problem to its backends. This implementation is only used
+             * internally and must be overwritten by any derived module.
+             * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
+             * @return True,    if the received formula is satisfiable;
+             *         False,   if the received formula is not satisfiable;
+             *         Unknown, otherwise.
+             */
+            virtual Answer checkCore( bool _full = true );
+            
+            /**
+             * Removes everything related to the given sub-formula of the received formula. However,
+             * it is desired not to lose track of search spaces where no satisfying  assignment can 
+             * be found for the remaining sub-formulas.
+             *
+             * @param _subformula The sub formula of the received formula to remove.
+             */
+            virtual void removeCore( ModuleInput::const_iterator _subformula ) {}
             
             /**
              * Checks for all antecedent modules and those which run in parallel with the same antecedent modules, 
@@ -627,14 +674,6 @@ namespace smtrat
             }
             
             /**
-             * Sets the solver state to the given answer value. This method also fires the flag 
-             * given by the antecessor module of this module to true, if the given answer value is not Unknown.
-             * CALL THIS METHOD ALWAYS BEFORE RETURNING A RESULT WITH ISCONSISTENT!!!
-             * @param _answer The found answer.
-             */
-            Answer foundAnswer( Answer _answer );
-            
-            /**
              * Adds a constraint to the collection of constraints of this module, which are informed to a 
              * freshly generated backend.
              * @param _constraint The constraint to add.
@@ -696,11 +735,12 @@ namespace smtrat
             
             /**
              * Runs the backend solvers on the passed formula.
+             * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
              * @return True,    if the passed formula is consistent;
              *          False,   if the passed formula is inconsistent;
              *          Unknown, otherwise.
              */
-            Answer runBackends();
+            Answer runBackends( bool _full = true );
             
             /**
              * Removes everything related to the sub-formula to remove from the passed formula in the backends of this module.
@@ -830,6 +870,14 @@ namespace smtrat
              */
             void printModel( std::ostream& = std::cout ) const;
         private:
+            
+            /**
+             * Sets the solver state to the given answer value. This method also fires the flag 
+             * given by the antecessor module of this module to true, if the given answer value is not Unknown.
+             * @param _answer The found answer.
+             */
+            Answer foundAnswer( Answer _answer );
+            
             /// Measuring module times.
             clock::time_point mTimerCheckStarted;
             /// Measuring module times.
