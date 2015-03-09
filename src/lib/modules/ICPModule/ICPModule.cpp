@@ -336,7 +336,7 @@ namespace smtrat
         }
     }
 
-    Answer ICPModule::checkCore()
+    Answer ICPModule::checkCore( bool _full )
     {
         #ifdef ICP_MODULE_DEBUG_0
         std::cout << "###########################################################################################################################" << std::endl;
@@ -2510,7 +2510,7 @@ namespace smtrat
 //            }
 //        }
         mLRA.rReceivedFormula().updateProperties();
-        _answer = mLRA.isConsistent();
+        _answer = mLRA.check();
         
         // catch deductions
         mLRA.updateDeductions();
@@ -2623,7 +2623,7 @@ namespace smtrat
             }
         }
         mValidationFormula->updateProperties();
-        Answer boxCheck = mLRA.isConsistent();
+        Answer boxCheck = mLRA.check();
         #ifdef ICP_MODULE_DEBUG_1
         mLRA.print();
         cout << "Boxcheck: " << ANSWER_TO_STRING(boxCheck) << endl;

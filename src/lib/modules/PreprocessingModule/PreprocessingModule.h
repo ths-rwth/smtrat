@@ -95,19 +95,19 @@ namespace smtrat
         protected:
 			/// Bounds that have been added since the last call to isConsistent().
 			std::set<FormulaT> newBounds;
-			bool addBounds(FormulaT formula);
-			void removeBounds(FormulaT formula);
+			bool addBounds(const FormulaT& formula);
+			void removeBounds(const FormulaT& formula);
 			
 			/**
 			 * Removes redundant or obsolete factors of polynomials from the formula.
              */
-			FormulaT removeFactors(FormulaT formula);
+			FormulaT removeFactors(const FormulaT& formula);
 			std::function<FormulaT(FormulaT)> removeFactorsFunction;
 			
 			/**
 			 * Checks if constraints vanish using the variable bounds.
 			 */
-			FormulaT checkBounds(FormulaT formula);
+			FormulaT checkBounds(const FormulaT& formula);
 			std::function<FormulaT(FormulaT)> checkBoundsFunction;
     };
 

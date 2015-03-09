@@ -377,7 +377,7 @@ namespace smtrat
                     FormulasT infSubSet;
                     collectOrigins( origins->at(i), infSubSet  );
                     mInfeasibleSubsets.push_back( infSubSet );
-                    return foundAnswer( False ); 
+                    return False; 
                 }
                 ++constr_iter;
             }
