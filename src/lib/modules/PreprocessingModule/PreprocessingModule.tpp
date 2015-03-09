@@ -64,8 +64,7 @@ namespace smtrat {
      * @return true
      */
 	template<typename Settings>
-    bool PreprocessingModule<Settings>::assertSubformula(ModuleInput::const_iterator _subformula) {
-        Module::assertSubformula(_subformula);
+    bool PreprocessingModule<Settings>::addCore(ModuleInput::const_iterator _subformula) {
 		if (collectBounds) {
 			if (addBounds(_subformula->formula())) newBounds.insert(_subformula->formula());
 		}
@@ -76,13 +75,13 @@ namespace smtrat {
      * Checks the so far received constraints for consistency.
      */
 	template<typename Settings>
-    Answer PreprocessingModule<Settings>::isConsistent()
+    Answer PreprocessingModule<Settings>::checkCore( bool _full )
     {
 		if (collectBounds) {
 			// If bounds are collected, check if they are conflicting.
 			if (varbounds.isConflicting()) {
 				mInfeasibleSubsets.push_back(varbounds.getConflict());
-				return foundAnswer(False);
+				return False;
 			}
 		}
         auto receivedFormula = firstUncheckedReceivedSubformula();
@@ -132,11 +131,11 @@ namespace smtrat {
 			++receivedFormula;
         }
 
-        Answer ans = runBackends();
+        Answer ans = runBackends( _full );
         if (ans == False) {
             getInfeasibleSubsets();
         }
-        return foundAnswer(ans);
+        return ans;
     }
 
     /**
@@ -145,11 +144,10 @@ namespace smtrat {
      * @param _subformula The sub formula of the received formula to remove.
      */
 	template<typename Settings>
-    void PreprocessingModule<Settings>::removeSubformula(ModuleInput::const_iterator _subformula) {
+    void PreprocessingModule<Settings>::removeCore(ModuleInput::const_iterator _subformula) {
 		if (collectBounds) {
 			removeBounds(_subformula->formula());
 		}
-        Module::removeSubformula(_subformula);
     }
 	
 	template<typename Settings>

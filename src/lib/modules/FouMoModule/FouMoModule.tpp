@@ -32,10 +32,6 @@
 
 namespace smtrat
 {
-    /**
-     * Constructors.
-     */
-
     template<class Settings>
     FouMoModule<Settings>::FouMoModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
         Module( _type, _formula, _conditionals, _manager ),
@@ -46,34 +42,12 @@ namespace smtrat
         mVarAss()    
     { }
 
-    /**
-     * Destructor.
-     */
-
     template<class Settings>
-    FouMoModule<Settings>::~FouMoModule()
-    {}
-
-
-    template<class Settings>
-    bool FouMoModule<Settings>::inform( const FormulaT& _constraint )
-    {
-        Module::inform( _constraint ); // This must be invoked at the beginning of this method.
-        const smtrat::ConstraintT* constraint = _constraint.pConstraint();
-        return constraint->isConsistent() != 0;
-    }
-
-    template<class Settings>
-    void FouMoModule<Settings>::init()
-    {}
-
-    template<class Settings>
-    bool FouMoModule<Settings>::assertSubformula( ModuleInput::const_iterator _subformula )
+    bool FouMoModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
         #ifdef DEBUG_FouMoModule
         cout << "Assert: " << _subformula->formula().constraint()<< endl;
         #endif
-        Module::assertSubformula( _subformula ); // This must be invoked at the beginning of this method.
         if( _subformula->formula().isFalse() )
         {
             #ifdef DEBUG_FouMoModule
@@ -233,7 +207,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    void FouMoModule<Settings>::removeSubformula( ModuleInput::const_iterator _subformula )
+    void FouMoModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
         if( _subformula->formula().constraint().relation() == carl::Relation::LEQ )
         {
@@ -358,7 +332,6 @@ namespace smtrat
                 }    
             }   
         }
-        Module::removeSubformula( _subformula ); 
     }
 
     template<class Settings>
@@ -378,7 +351,7 @@ namespace smtrat
     }
             
     template<class Settings>
-    Answer FouMoModule<Settings>::isConsistent()
+    Answer FouMoModule<Settings>::checkCore( bool _full )
     {
         #ifdef DEBUG_FouMoModule
         cout << "Apply the Fourier-Motzkin-Algorithm" << endl;
@@ -436,14 +409,14 @@ namespace smtrat
                         ++iter_con;
                     }
                     #endif
-                    return foundAnswer( True );
+                    return True;
                 }
                 else
                 {
                     #ifdef DEBUG_FouMoModule
                     cout << "Run Backends!" << endl;
                     #endif
-                    return call_backends();
+                    return call_backends( _full );
                 }    
             }
             // Choose the variable to eliminate based on the information provided by var_corr_constr
@@ -476,7 +449,7 @@ namespace smtrat
                 #ifdef DEBUG_FouMoModule
                 cout << "Run Backends because Threshold is exceeded!" << endl;
                 #endif
-                return call_backends();                
+                return call_backends( _full );                
             }
             #ifdef DEBUG_FouMoModule
             cout << "The 'best' variable is:" << best_var << endl;
@@ -515,7 +488,7 @@ namespace smtrat
                         FormulasT infSubSet;
                         collectOrigins( origins_new->at(i), infSubSet );
                         mInfeasibleSubsets.push_back( std::move( infSubSet ) );
-                        return foundAnswer( False );
+                        return False;
                     }
                     else
                     {
@@ -955,7 +928,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    Answer FouMoModule<Settings>::call_backends()
+    Answer FouMoModule<Settings>::call_backends( bool _full )
     {
         auto iter_recv = rReceivedFormula().begin();
         while( iter_recv != rReceivedFormula().end() )
@@ -963,7 +936,7 @@ namespace smtrat
             addReceivedSubformulaToPassedFormula( iter_recv );
             ++iter_recv;
         }
-        Answer ans = runBackends();
+        Answer ans = runBackends( _full );
         if( ans == False )
         {
             getInfeasibleSubsets();

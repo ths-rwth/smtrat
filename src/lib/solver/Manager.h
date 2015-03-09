@@ -150,7 +150,7 @@ namespace smtrat
                         else
                             break;
                     }
-                    return mpPrimaryBackend->assertSubformula( res.first );
+                    return mpPrimaryBackend->add( res.first );
                 }
                 return true;
             }
@@ -168,7 +168,7 @@ namespace smtrat
                 #endif
                 *mPrimaryBackendFoundAnswer.back() = false;
                 mpPassedFormula->updateProperties();
-                return mpPrimaryBackend->isConsistent();
+                return mpPrimaryBackend->check();
             }
             
             /**
@@ -391,7 +391,7 @@ namespace smtrat
             ModuleInput::iterator remove( ModuleInput::iterator _subformula )
             {
                 assert( _subformula != mpPassedFormula->end() );
-                mpPrimaryBackend->removeSubformula( _subformula );
+                mpPrimaryBackend->remove( _subformula );
                 return mpPassedFormula->erase( _subformula );
             }
 

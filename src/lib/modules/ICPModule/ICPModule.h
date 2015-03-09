@@ -171,10 +171,10 @@ namespace smtrat
             ~ICPModule();
 
             // Interfaces.
-            bool inform( const FormulaT& );
-            bool assertSubformula( ModuleInput::const_iterator );
-            void removeSubformula( ModuleInput::const_iterator );
-            Answer isConsistent();
+            bool informCore( const FormulaT& );
+            bool addCore( ModuleInput::const_iterator );
+            void removeCore( ModuleInput::const_iterator );
+            Answer checkCore( bool _full );
             void updateModel() const;
             
         protected:
@@ -253,7 +253,7 @@ namespace smtrat
              * 
              * @return 
              */
-            Answer callBackends();
+            Answer callBackends( bool _full );
 
             /**
              * Creates the non-linear contraction candidates from all items in mTemporaryMonomes and empties mTemporaryMonomes.

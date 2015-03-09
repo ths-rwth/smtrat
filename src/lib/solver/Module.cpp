@@ -107,35 +107,37 @@ namespace smtrat
         mFoundAnswer.clear();
         delete mBackendsFoundAnswer;
     }
-
-    Answer Module::isConsistent()
-    {
-        assert( mInfeasibleSubsets.empty() );
-
-        // Copy the received formula to the passed formula.
-        auto subformula = mpReceivedFormula->begin();
-        for( auto passedSubformula = mpPassedFormula->begin(); passedSubformula != mpPassedFormula->end(); ++passedSubformula )
-        {
-            assert( subformula != mpReceivedFormula->end() );
-            ++subformula;
-        }
-        while( subformula != mpReceivedFormula->end() )
-        {
-            addReceivedSubformulaToPassedFormula( subformula++ );
-        }
-        #ifdef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
-        addAssumptionToCheck( *mpReceivedFormula, true, moduleName( type() ) );
-        return foundAnswer( True );
-        #else
-        // Run the backends on the passed formula and return its answer.
-        Answer a = runBackends();
-        if( a == False )
-        {
-            getInfeasibleSubsets();
-        }
-        mSolverState = a;
-        return foundAnswer( a );
+    
+    Answer Module::check( bool _full )
+    {   
+        #ifdef MODULE_VERBOSE
+        cout << endl << "Call to module " << moduleName( type() ) << endl;
+        print( cout, " ");
         #endif
+        #ifdef SMTRAT_DEVOPTION_MeasureTime
+        startCheckTimer();
+        ++(mNrConsistencyChecks);
+        #endif
+        #ifdef DEBUG_MODULE_CALLS_IN_SMTLIB
+        cout << "(assert (and";
+        for( auto& subformula : *mpReceivedFormula )
+            cout << " " << subformula.formula().toString( false, true );
+        cout << "))\n";
+        #endif
+        Answer result = foundAnswer( checkCore( _full ) );
+        assert(result == Unknown || result == False || result == True);
+        assert( result != False || hasValidInfeasibleSubset() );
+        #ifdef SMTRAT_DEVOPTION_MeasureTime
+        stopCheckTimer();
+        #endif
+        #ifdef SMTRAT_DEVOPTION_Validation
+        if( validationSettings->logTCalls() )
+        {
+            if( result != Unknown )
+                addAssumptionToCheck( *mpReceivedFormula, result == True, moduleName( type() ) );
+        }
+        #endif
+        return result;
     }
 
     bool Module::inform( const FormulaT& _constraint )
@@ -144,26 +146,10 @@ namespace smtrat
         cout << __func__ << " in " << this << " with name " << moduleName( mType ) << ": " << _constraint << endl;
         #endif
         addConstraintToInform( _constraint );
-        return true;
+        return informCore( _constraint );
     }
     
-    void Module::init()
-    {
-        if( mpManager == NULL || mConstraintsToInform.empty() ) return;
-        // Get the backends to be considered from the manager.
-        mUsedBackends = mpManager->getBackends( this, mBackendsFoundAnswer );
-        mAllBackends = mpManager->getAllBackends( this );
-        for( Module* backend : mAllBackends )
-        {
-            for( auto iter = mConstraintsToInform.begin(); iter != mConstraintsToInform.end(); ++iter )
-                backend->inform( *iter );
-            backend->init();
-        }
-        mInformedConstraints.insert( mConstraintsToInform.begin(), mConstraintsToInform.end() );
-        mConstraintsToInform.clear();
-    }
-
-    bool Module::assertSubformula( ModuleInput::const_iterator _receivedSubformula )
+    bool Module::add( ModuleInput::const_iterator _receivedSubformula )
     {
         #ifdef MODULE_VERBOSE
         cout << __func__ << " in " << this << " with name " << moduleName( mType ) << ":" << endl << endl;
@@ -173,15 +159,19 @@ namespace smtrat
         {
             mFirstUncheckedReceivedSubformula = _receivedSubformula;
         }
-        return true;
+        bool result = addCore( _receivedSubformula );
+        if( !result )
+            foundAnswer( False );
+        return result;
     }
     
-    void Module::removeSubformula( ModuleInput::const_iterator _receivedSubformula )
+    void Module::remove( ModuleInput::const_iterator _receivedSubformula )
     {
         #ifdef MODULE_VERBOSE
         cout << __func__ << " in " << this << " with name " << moduleName( mType ) << ":" << endl << endl;
         cout << " " << _receivedSubformula->formula() << endl << endl;
         #endif
+        removeCore( _receivedSubformula );
         if( mFirstUncheckedReceivedSubformula == _receivedSubformula )
             ++mFirstUncheckedReceivedSubformula;
         // Check if the constraint to delete is an original constraint of constraints in the vector
@@ -217,6 +207,51 @@ namespace smtrat
         }
         if( mInfeasibleSubsets.empty() ) 
             mSolverState = Unknown;
+    }
+
+    Answer Module::checkCore( bool _full )
+    {
+        assert( mInfeasibleSubsets.empty() );
+
+        // Copy the received formula to the passed formula.
+        auto subformula = mpReceivedFormula->begin();
+        for( auto passedSubformula = mpPassedFormula->begin(); passedSubformula != mpPassedFormula->end(); ++passedSubformula )
+        {
+            assert( subformula != mpReceivedFormula->end() );
+            ++subformula;
+        }
+        while( subformula != mpReceivedFormula->end() )
+        {
+            addReceivedSubformulaToPassedFormula( subformula++ );
+        }
+        #ifdef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
+        addAssumptionToCheck( *mpReceivedFormula, true, moduleName( type() ) );
+        return True;
+        #else
+        // Run the backends on the passed formula and return its answer.
+        Answer a = runBackends( _full );
+        if( a == False )
+        {
+            getInfeasibleSubsets();
+        }
+        return a;
+        #endif
+    }
+    
+    void Module::init()
+    {
+        if( mpManager == NULL || mConstraintsToInform.empty() ) return;
+        // Get the backends to be considered from the manager.
+        mUsedBackends = mpManager->getBackends( this, mBackendsFoundAnswer );
+        mAllBackends = mpManager->getAllBackends( this );
+        for( Module* backend : mAllBackends )
+        {
+            for( auto iter = mConstraintsToInform.begin(); iter != mConstraintsToInform.end(); ++iter )
+                backend->inform( *iter );
+            backend->init();
+        }
+        mInformedConstraints.insert( mConstraintsToInform.begin(), mConstraintsToInform.end() );
+        mConstraintsToInform.clear();
     }
 
     void Module::updateModel() const
@@ -656,7 +691,7 @@ namespace smtrat
         return result;
     }
 
-    Answer Module::runBackends()
+    Answer Module::runBackends( bool _full )
     {
         if( mpManager == NULL ) return Unknown;
         *mBackendsFoundAnswer = false;
@@ -682,7 +717,7 @@ namespace smtrat
                         (*module)->inform( *iter );
                     for( auto subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end(); ++subformula )
                     {
-                        if( !(*module)->assertSubformula( subformula ) )
+                        if( !(*module)->add( subformula ) )
                             assertionFailed = true;
                     }
                     #ifdef SMTRAT_DEVOPTION_MeasureTime
@@ -712,7 +747,7 @@ namespace smtrat
                     cout << endl << "Call to module " << moduleName( mUsedBackends[ i ]->type() ) << endl;
                     mUsedBackends[ i ]->print( cout, " ");
                     #endif
-                    futures[ i ] = mpManager->submitBackend( mUsedBackends[ i ] );
+                    futures[ i ] = mpManager->submitBackend( mUsedBackends[ i ], _full );
                 }
                 mpManager->checkBackendPriority( mUsedBackends[ highestIndex ] );
                 #ifdef MODULE_VERBOSE
@@ -741,34 +776,8 @@ namespace smtrat
                 vector<Module*>::iterator module = mUsedBackends.begin();
                 while( module != mUsedBackends.end() && result == Unknown )
                 {
-                    #ifdef MODULE_VERBOSE
-                    cout << endl << "Call to module " << moduleName( (*module)->type() ) << endl;
-                    (*module)->print( cout, " ");
-                    #endif
-                    #ifdef SMTRAT_DEVOPTION_MeasureTime
-                    (*module)->startCheckTimer();
-                    ++((*module)->mNrConsistencyChecks);
-                    #endif
-                    #ifdef DEBUG_MODULE_CALLS_IN_SMTLIB
-                    cout << "(assert (and";
-                    for( auto& subformula : *mpPassedFormula )
-                        cout << " " << subformula.formula().toString( false, true );
-                    cout << "))\n";
-                    #endif
-                    result = (*module)->isConsistent();
-                    assert(result == Unknown || result == False || result == True);
-                    assert( result != False || (*module)->hasValidInfeasibleSubset() );
-                    #ifdef SMTRAT_DEVOPTION_MeasureTime
-                    (*module)->stopCheckTimer();
-                    #endif
+                    result = (*module)->check( _full );
                     (*module)->receivedFormulaChecked();
-                    #ifdef SMTRAT_DEVOPTION_Validation
-                    if( validationSettings->logTCalls() )
-                    {
-                        if( result != Unknown )
-                            addAssumptionToCheck( *mpPassedFormula, result == True, moduleName( (*module)->type() ) );
-                    }
-                    #endif
                     ++module;
                 }
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
@@ -822,7 +831,7 @@ namespace smtrat
                     #ifdef SMTRAT_DEVOPTION_MeasureTime
                     (*module)->startRemoveTimer();
                     #endif
-                    (*module)->removeSubformula( _subformula );
+                    (*module)->remove( _subformula );
                     #ifdef SMTRAT_DEVOPTION_MeasureTime
                     (*module)->stopRemoveTimer();
                     #endif

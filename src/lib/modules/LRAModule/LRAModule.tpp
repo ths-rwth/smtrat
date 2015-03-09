@@ -65,12 +65,11 @@ namespace smtrat
     }
 
     template<class Settings>
-    bool LRAModule<Settings>::inform( const FormulaT& _constraint )
+    bool LRAModule<Settings>::informCore( const FormulaT& _constraint )
     {
         #ifdef DEBUG_LRA_MODULE
         cout << "LRAModule::inform  " << "inform about " << _constraint << endl;
         #endif
-        Module::inform( _constraint );
         if( _constraint.getType() == carl::FormulaType::CONSTRAINT )
         {
             const ConstraintT& constraint = _constraint.constraint();
@@ -88,12 +87,11 @@ namespace smtrat
     }
 
     template<class Settings>
-    bool LRAModule<Settings>::assertSubformula( ModuleInput::const_iterator _subformula )
+    bool LRAModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
         #ifdef DEBUG_LRA_MODULE
         cout << "LRAModule::assertSubformula  " << "add " << _subformula->formula() << endl;
         #endif
-        Module::assertSubformula( _subformula );
         switch( _subformula->formula().getType() )
         {
             case carl::FormulaType::FALSE:
@@ -101,7 +99,6 @@ namespace smtrat
                 FormulasT infSubSet;
                 infSubSet.insert( _subformula->formula() );
                 mInfeasibleSubsets.push_back( infSubSet );
-                foundAnswer( False );
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 mpStatistics->addConflict( mInfeasibleSubsets );
                 #endif
@@ -195,7 +192,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    void LRAModule<Settings>::removeSubformula( ModuleInput::const_iterator _subformula )
+    void LRAModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
         #ifdef DEBUG_LRA_MODULE
         cout << "remove " << _subformula->formula() << endl;
@@ -333,11 +330,10 @@ namespace smtrat
                 }
             }
         }
-        Module::removeSubformula( _subformula );
     }
 
     template<class Settings>
-    Answer LRAModule<Settings>::isConsistent()
+    Answer LRAModule<Settings>::checkCore( bool _full )
     {
         #ifdef DEBUG_LRA_MODULE
         cout << "check for consistency" << endl;
@@ -413,7 +409,7 @@ namespace smtrat
                     else
                     {
                         adaptPassedFormula();
-                        Answer a = runBackends();
+                        Answer a = runBackends( _full );
                         if( a == False )
                             getInfeasibleSubsets();
                         result = a;
@@ -589,7 +585,7 @@ Return:
         cout << endl;
         cout << ANSWER_TO_STRING( result ) << endl;
         #endif
-        return foundAnswer( result );
+        return result;
     }
 
     template<class Settings>

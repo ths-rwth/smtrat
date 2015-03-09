@@ -127,7 +127,7 @@ namespace smtrat
 
             // Public methods.
             void checkBackendPriority( Module* );
-            std::future<Answer> submitBackend( Module* );
+            std::future<Answer> submitBackend( Module*, bool );
     };
 }    // namespace smtrat
 
