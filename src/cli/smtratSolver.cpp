@@ -147,34 +147,36 @@ public:
  */
 unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* solver, const smtrat::RuntimeSettingsManager& settingsManager) {
 
-    // Increase stack size to the maximum.
-    rlimit rl;
-    getrlimit(RLIMIT_STACK, &rl);
-    rl.rlim_cur = rl.rlim_max;
-    setrlimit(RLIMIT_STACK, &rl);
+	// Increase stack size to the maximum.
+	rlimit rl;
+	getrlimit(RLIMIT_STACK, &rl);
+	rl.rlim_cur = rl.rlim_max;
+	setrlimit(RLIMIT_STACK, &rl);
 
-    std::ifstream infile(pathToInputFile);
-    if (!infile.good()) {
-        std::cerr << "Could not open file: " << pathToInputFile << std::endl;
-        exit(SMTRAT_EXIT_NOSUCHFILE);
-    }
-    Executor* e = new Executor(solver);
-    smtrat::parser::SMTLIBParser parser(e, true);
-    bool parsingSuccessful = parser.parse(infile, pathToInputFile);
-    if (parser.queueInstructions) e->runInstructions();
-    unsigned exitCode = e->getExitCode();
-    if (!parsingSuccessful) {
-        std::cerr << "Parse error" << std::endl;
-		delete e;
-        exit(SMTRAT_EXIT_PARSERFAILURE);
-    }
-    if( settingsManager.printModel() && e->lastAnswer == smtrat::True )
-    {
-        std::cout << std::endl;
-        solver->printAssignment( std::cout );
-    }
-    delete e;
-    return exitCode;
+	std::ifstream infile(pathToInputFile);
+	if (!infile.good()) {
+		std::cerr << "Could not open file: " << pathToInputFile << std::endl;
+		exit(SMTRAT_EXIT_NOSUCHFILE);
+	}
+	Executor* e = new Executor(solver);
+	{
+		smtrat::parser::SMTLIBParser parser(e, true);
+		bool parsingSuccessful = parser.parse(infile, pathToInputFile);
+		if (!parsingSuccessful) {
+			std::cerr << "Parse error" << std::endl;
+			delete e;
+			exit(SMTRAT_EXIT_PARSERFAILURE);
+		}
+	}
+	if (e->hasInstructions()) e->runInstructions();
+	unsigned exitCode = e->getExitCode();
+	if( settingsManager.printModel() && e->lastAnswer == smtrat::True )
+	{
+		std::cout << std::endl;
+		solver->printAssignment( std::cout );
+	}
+	delete e;
+	return exitCode;
 }
 
 void printTimings(smtrat::Manager* solver)
