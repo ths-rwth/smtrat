@@ -198,10 +198,21 @@ void printTimings(smtrat::Manager* solver)
 int main( int argc, char* argv[] )
 {   
 #ifdef LOGGING
-	carl::logging::logger().configure("smtrat", "smtrat.log");
+	if (!carl::logging::logger().has("smtrat")) {
+		carl::logging::logger().configure("smtrat", "smtrat.log");
+	}
+	if (!carl::logging::logger().has("stdout")) {
+		carl::logging::logger().configure("stdout", std::cout);
+	}
 	carl::logging::logger().filter("smtrat")
 		("smtrat", carl::logging::LogLevel::LVL_INFO)
-		("smtrat.cad", carl::logging::LogLevel::LVL_TRACE)
+		("smtrat.cad", carl::logging::LogLevel::LVL_DEBUG)
+		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
+	;
+	carl::logging::logger().filter("stdout")
+		("smtrat", carl::logging::LogLevel::LVL_INFO)
+		("smtrat.cad", carl::logging::LogLevel::LVL_DEBUG)
+		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
 	;
 #endif
 	SMTRAT_LOG_INFO("smtrat", "Starting smtrat.");
