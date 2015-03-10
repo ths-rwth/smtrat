@@ -96,6 +96,7 @@ public:
 public:
 	
 	SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool debug = false);
+	~SMTLIBParser();
 
 	bool parse(std::istream& in, const std::string& filename);
 
