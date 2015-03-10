@@ -140,10 +140,9 @@ namespace smtrat
 	 * @param _subformula
 	 * @return returns false if the current list of constraints was already found to be unsatisfiable (in this case, nothing is done), returns true previous result if the constraint was already checked for consistency before, otherwise true
 	 */
-	bool CADModule::assertSubformula(ModuleInput::const_iterator _subformula)
+	bool CADModule::addCore(ModuleInput::const_iterator _subformula)
 	{
 		SMTRAT_LOG_FUNC("smtrat.cad", _subformula->formula());
-		Module::assertSubformula(_subformula);
 		switch (_subformula->formula().getType()) {
                     case carl::FormulaType::TRUE: 
 			return true;
@@ -152,7 +151,6 @@ namespace smtrat
 			FormulasT infSubSet;
 			infSubSet.insert(_subformula->formula());
 			mInfeasibleSubsets.push_back(infSubSet);
-			foundAnswer(False);
 			return false;
                     }
                     case carl::FormulaType::CONSTRAINT: {
@@ -174,11 +172,12 @@ namespace smtrat
 	 * All constraints asserted (and not removed)  so far are now added to the CAD object and checked for consistency.
 	 * If the result is false, a minimal infeasible subset of the original constraint set is computed.
 	 * Otherwise a sample value is available.
+         * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
 	 * @return True if consistent, False otherwise
 	 */
-	Answer CADModule::isConsistent()
+	Answer CADModule::checkCore( bool _full )
 	{
-		if (this->hasFalse) return foundAnswer(False);
+		if (this->hasFalse) return False;
 		else {
 			for (auto f: this->subformulaQueue) {
 				this->addConstraintFormula(f);
@@ -189,10 +188,10 @@ namespace smtrat
 		//for (auto c: this->mConstraints) std::cout << "\t\t" << c << std::endl;
 		//this->printReceivedFormula();
 		if (!rReceivedFormula().isRealConstraintConjunction() && !rReceivedFormula().isIntegerConstraintConjunction()) {
-			return foundAnswer(Unknown);
+			return Unknown;
 		}
 		if (!mInfeasibleSubsets.empty())
-			return foundAnswer(False); // there was no constraint removed which was in a previously generated infeasible subset
+			return False; // there was no constraint removed which was in a previously generated infeasible subset
 		// perform the scheduled elimination and see if there were new variables added
 		if (mCAD.prepareElimination())
 			mConflictGraph.clearSampleVertices(); // all sample vertices are now invalid, thus remove them
@@ -201,7 +200,7 @@ namespace smtrat
 		if (variableBounds().isConflicting()) {
 			mInfeasibleSubsets.push_back(variableBounds().getConflict());
 			mRealAlgebraicSolution = carl::RealAlgebraicPoint<smtrat::Rational>();
-			return foundAnswer(False);
+			return False;
 		}
 		carl::CAD<smtrat::Rational>::BoundMap boundMap;
 		std::map<carl::Variable, carl::Interval<smtrat::Rational>> eiMap = mVariableBounds.getEvalIntervalMap();
@@ -212,7 +211,7 @@ namespace smtrat
 			if (vPos != eiMap.end())
 				boundMap[v] = vPos->second;
 		}
-		if (!mCAD.check(mConstraints, mRealAlgebraicSolution, mConflictGraph, boundMap, false, false))
+		if (!mCAD.check(mConstraints, mRealAlgebraicSolution, mConflictGraph, boundMap, false, true))
 		{
 			#ifdef SMTRAT_CAD_DISABLE_SMT
 			// simulate non-incrementality by constructing a trivial infeasible subset and clearing all data in the CAD
@@ -271,7 +270,7 @@ namespace smtrat
 			#endif
 			#endif
 			mRealAlgebraicSolution = carl::RealAlgebraicPoint<smtrat::Rational>();
-			return foundAnswer(False);
+			return False;
 		}
 		SMTRAT_LOG_TRACE("smtrat.cad", "#Samples: " << mCAD.samples().size());
 		SMTRAT_LOG_TRACE("smtrat.cad", "Elimination sets:");
@@ -282,29 +281,29 @@ namespace smtrat
 		SMTRAT_LOG_TRACE("smtrat.cad", "CAD complete: " << mCAD.isComplete());
 		SMTRAT_LOG_TRACE("smtrat.cad", "Solution point: " << mRealAlgebraicSolution);
 		mInfeasibleSubsets.clear();
+#ifdef SMTRAT_CAD_ENABLE_INTEGER
 		if (rReceivedFormula().isIntegerConstraintConjunction()) {
 			// Check whether the found assignment is integer.
 			std::vector<carl::Variable> vars(mCAD.getVariables());
 			for (unsigned d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
 				auto r = this->mRealAlgebraicSolution[d]->branchingPoint();
 				if (!carl::isInteger(r)) {
-					branchAt(Poly(vars[d]), r);
-					return foundAnswer(Unknown);
+					branchAt(vars[d], r);
+					return Unknown;
 				}
 			}
 		}
-		return foundAnswer(True);
+#endif
+		return True;
 	}
 
-	void CADModule::removeSubformula(ModuleInput::const_iterator _subformula)
+	void CADModule::removeCore(ModuleInput::const_iterator _subformula)
 	{
 		switch (_subformula->formula().getType()) {
                     case carl::FormulaType::TRUE:
-			Module::removeSubformula(_subformula);
 			return;
                     case carl::FormulaType::FALSE:
 			this->hasFalse = false;
-			Module::removeSubformula(_subformula);
 			return;
                     case carl::FormulaType::CONSTRAINT: {
 			auto it = this->subformulaQueue.find(_subformula->formula());
@@ -360,8 +359,6 @@ namespace smtrat
 			}
 			SMTRAT_LOG_TRACE("smtrat.cad", "#Samples: " << mCAD.samples().size());
 			SMTRAT_LOG_TRACE("smtrat.cad", "-----------------------------------------");
-
-			Module::removeSubformula(_subformula);
 			return;
 		}
 		default:
@@ -410,7 +407,7 @@ namespace smtrat
 		carl::cad::Constraint<smtrat::Rational> constraint = convertConstraint(f.constraint());
 		mConstraints.push_back(constraint);
 		mConstraintsMap[f] = (unsigned)(mConstraints.size() - 1);
-		mCAD.addPolynomial(Poly(constraint.getPolynomial()), constraint.getVariables());
+		mCAD.addPolynomial(typename Poly::PolyType(constraint.getPolynomial()), constraint.getVariables());
 		mConflictGraph.addConstraintVertex(); // increases constraint index internally what corresponds to adding a new constraint node with index mConstraints.size()-1
 
 		return solverState() != False;
@@ -452,7 +449,7 @@ namespace smtrat
 				break;
 			default: assert(false);
 		}
-		return carl::cad::Constraint<smtrat::Rational>(c.lhs(), signForConstraint, variables, cadConstraintNegated);
+		return carl::cad::Constraint<smtrat::Rational>((typename Poly::PolyType)c.lhs(), signForConstraint, variables, cadConstraintNegated);
 	}
 
 	/**
@@ -478,7 +475,7 @@ namespace smtrat
 				break;
 			default: assert(false);
 		}
-		return newConstraint(Poly(c.getPolynomial()), relation);
+		return carl::newConstraint<Poly>(c.getPolynomial(), relation);
 	}
 
 	/**

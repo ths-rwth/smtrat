@@ -12,6 +12,8 @@
 
 #include "../Settings.h"
 
+#include "../utils/Execute.h"
+
 namespace benchmax {
 
 class LocalBackend: public Backend {
@@ -27,18 +29,11 @@ protected:
 		BenchmarkResults results;
 		auto start = std::chrono::high_resolution_clock::now();
 		
-		FILE* pipe = popen(call.str().c_str(), "r");
-		char buf[255];
-		while (!feof(pipe)) {
-			if (fgets(buf, sizeof(buf), pipe) != nullptr) {
-				results.stdout += buf;
-			}
-		}
-		int exitCode = pclose(pipe);
+		int exitCode = callProgram(call.str(), results.stdout);
 		results.exitCode = WEXITSTATUS(exitCode);
 		
 		auto end = std::chrono::high_resolution_clock::now();
-		results.time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		results.time = (std::size_t)std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 	
 		tool.additionalResults(file, results);
 		

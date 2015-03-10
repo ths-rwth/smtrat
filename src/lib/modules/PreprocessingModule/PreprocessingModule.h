@@ -31,26 +31,51 @@
 #pragma once
 
 #include "../../solver/Module.h"
+#include "../../datastructures/VariableBounds.h"
 #include "PreprocessingSettings.h"
 
 namespace smtrat
 {
-
-    const int squaresArray[30]  = { 0*0 , 1*1, 2*2, 3*3, 4*4, 5*5, 6*6, 7*7, 8*8, 9*9,
-                                    10*10, 11*11, 12*12, 13*13, 14*14, 15*15, 16*16, 17*17, 18*18, 19*19,
-                                    20*20, 21*21, 22*22, 23*23, 24*24, 25*25, 26*26, 27*27, 28*28, 29*29 };
-    const std::vector<int> squares( squaresArray, squaresArray+30 );
-
     /**
      *
      */
+	template<typename Settings>
     class PreprocessingModule : public Module
     {
+		private:
+			// If anything that needs variable bounds is active, we shall collect the bounds.
+			static constexpr bool collectBounds = Settings::checkBounds;
         protected:
+			vb::VariableBounds<FormulaT> varbounds;
+			carl::FormulaVisitor<FormulaT> visitor;
+			
+			FormulasT tmpOrigins;
+			void accumulateBoundOrigins(const ConstraintT& constraint) {
+				auto tmp = varbounds.getOriginsOfBounds(constraint.variables());
+				tmpOrigins.insert(tmp.begin(), tmp.end());
+			}
+			EvalRationalIntervalMap completeBounds(const Poly& p) const {
+				auto res = varbounds.getEvalIntervalMap();
+				for (auto var: p.gatherVariables()) {
+					if (res.find(var) == res.end()) {
+						res[var] = RationalInterval::unboundedInterval();
+					}
+				}
+				return res;
+			}
+			EvalRationalIntervalMap completeBounds(const ConstraintT& c) const {
+				auto res = varbounds.getEvalIntervalMap();
+				for (auto var: c.variables()) {
+					if (res.find(var) == res.end()) {
+						res[var] = RationalInterval::unboundedInterval();
+					}
+				}
+				return res;
+			}
 
         public:
 
-            PreprocessingModule( ModuleType _type, const FormulaT* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            PreprocessingModule( ModuleType _type, const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = nullptr );
 
             /**
              * Destructor:
@@ -62,18 +87,30 @@ namespace smtrat
              */
 
             // Interfaces.
-            bool assertSubformula( FormulaT::const_iterator );
-            Answer isConsistent();
-            void removeSubformula( FormulaT::const_iterator );
+            bool addCore( ModuleInput::const_iterator );
+            Answer checkCore( bool _full );
+            void removeCore( ModuleInput::const_iterator );
+			void updateModel() const;
 
         protected:
-            void setDifficulty( FormulaT* formula, bool invert = false );
-            void rewritePotentialInequalities( FormulaT* formula, bool invert = false );
-            void assignActivitiesToPassedFormula();
-            void addLinearDeductions( FormulaT* formula );
-            void addUpperBounds( FormulaT* formula, const GiNaC::symtab& symbols, GiNaC::numeric boundary, bool strict ) const;
-            GiNaC::numeric determineUpperBounds( unsigned degree, const GiNaC::numeric& constPart ) const;
+			/// Bounds that have been added since the last call to isConsistent().
+			std::set<FormulaT> newBounds;
+			bool addBounds(const FormulaT& formula);
+			void removeBounds(const FormulaT& formula);
+			
+			/**
+			 * Removes redundant or obsolete factors of polynomials from the formula.
+             */
+			FormulaT removeFactors(const FormulaT& formula);
+			std::function<FormulaT(FormulaT)> removeFactorsFunction;
+			
+			/**
+			 * Checks if constraints vanish using the variable bounds.
+			 */
+			FormulaT checkBounds(const FormulaT& formula);
+			std::function<FormulaT(FormulaT)> checkBoundsFunction;
     };
 
 }    // namespace smtrat
 
+#include "PreprocessingModule.tpp"

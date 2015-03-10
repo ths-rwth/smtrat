@@ -263,7 +263,7 @@ namespace smtrat
                 ///
                 std::map<carl::Variable, Variable<T1,T2>*> mOriginalVars;
                 ///
-                carl::FastPointerMap<Poly, Variable<T1,T2>*> mSlackVars;
+                carl::FastPointerMap<typename Poly::PolyType, Variable<T1,T2>*> mSlackVars;
                 ///
                 carl::FastMap<FormulaT, std::vector<const Bound<T1, T2>*>*> mConstraintToBound;
                 ///
@@ -451,7 +451,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                const carl::FastPointerMap<Poly, Variable<T1,T2>*>& slackVars() const 
+                const carl::FastPointerMap<typename Poly::PolyType, Variable<T1,T2>*>& slackVars() const 
                 {
                     return mSlackVars;
                 }
@@ -553,7 +553,7 @@ namespace smtrat
                  * @param _isInteger
                  * @return 
                  */
-                Variable<T1, T2>* newNonbasicVariable( const Poly* _poly, bool _isInteger );
+                Variable<T1, T2>* newNonbasicVariable( const typename Poly::PolyType* _poly, bool _isInteger );
                 
                 /**
                  * 
@@ -562,14 +562,14 @@ namespace smtrat
                  * @param _isInteger
                  * @return 
                  */
-                Variable<T1, T2>* newBasicVariable( const Poly* _poly, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars, bool _isInteger );
+                Variable<T1, T2>* newBasicVariable( const typename Poly::PolyType* _poly, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars, bool _isInteger );
                 
                 /**
                  * 
                  * @param nonbasic_coefficient_list
                  * @return 
                  */
-                Variable<T1, T2>* newBasicVariable( std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, const Poly& poly, T2 leading_coeff, bool isInteger );
+                Variable<T1, T2>* newBasicVariable( std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, const typename Poly::PolyType& poly, T2 leading_coeff, bool isInteger );
                 
                 /**
                  * g
@@ -838,7 +838,7 @@ namespace smtrat
                  * @return the valid proof,    if the proof can be constructed.
                  *         NULL,               otherwise.   
                  */
-                Poly* create_cut_from_proof( Tableau<Settings,T1,T2>& Inverted_Tableau, Tableau<Settings,T1,T2>& DC_Tableau, size_t row_index, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions, T2& lower, T2& max_value );
+                typename Poly::PolyType* create_cut_from_proof( Tableau<Settings,T1,T2>& Inverted_Tableau, Tableau<Settings,T1,T2>& DC_Tableau, size_t row_index, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions, T2& lower, T2& max_value );
 
                 /**
                  * Creates a constraint referring to Gomory Cuts, if possible. 
@@ -847,7 +847,7 @@ namespace smtrat
                  * @return NULL,    if the cut can´t be constructed;
                  *         otherwise the valid constraint is returned.   
                  */
-                const Poly* gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar );
+                const typename Poly::PolyType* gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar );
                 
                 /**
                  * @param _rowVar

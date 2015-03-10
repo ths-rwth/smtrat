@@ -69,9 +69,8 @@ namespace smtrat
     }
 
     template<class Settings>
-    bool VSModule<Settings>::assertSubformula( ModuleInput::const_iterator _subformula )
+    bool VSModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-        Module::assertSubformula( _subformula );
         if( _subformula->formula().getType() == carl::FormulaType::CONSTRAINT )
         {
             const ConstraintT* constraint = _subformula->formula().pConstraint();
@@ -121,7 +120,6 @@ namespace smtrat
             mInfeasibleSubsets.push_back( FormulasT() );
             mInfeasibleSubsets.back().insert( _subformula->formula() );
             mInconsistentConstraintAdded = true;
-            foundAnswer( False );
             assert( checkRanking() );
             return false;
         }
@@ -130,7 +128,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    void VSModule<Settings>::removeSubformula( ModuleInput::const_iterator _subformula )
+    void VSModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
         if( _subformula->formula().getType() == carl::FormulaType::CONSTRAINT )
         {
@@ -156,16 +154,11 @@ namespace smtrat
             condToDelete = NULL;
             mConditionsChanged = true;
         }
-        Module::removeSubformula( _subformula );
-        assert( checkRanking() );
     }
 
     template<class Settings>
-    Answer VSModule<Settings>::isConsistent()
+    Answer VSModule<Settings>::checkCore( bool _full )
     {
-        #ifdef VS_MODULE_VERBOSE_INTEGERS
-        cout << rReceivedFormula().toString( false, 0, "", true, true, true ) << endl;
-        #endif
         #ifdef VS_STATISTICS
         mStepCounter = 0;
         #endif
@@ -189,9 +182,9 @@ namespace smtrat
             addStateToRanking( mpStateTree );
         }
         if( !rReceivedFormula().isConstraintConjunction() )
-            return foundAnswer( Unknown );
+            return Unknown;
         if( Settings::int_constraints_allowed && !(rReceivedFormula().isIntegerConstraintConjunction() || rReceivedFormula().isRealConstraintConjunction()) )
-            return foundAnswer( Unknown );
+            return Unknown;
         if( !mConditionsChanged )
         {
             if( mInfeasibleSubsets.empty() )
@@ -202,7 +195,7 @@ namespace smtrat
                     {
                         if( Settings::branch_and_bound )
                         {
-                            return foundAnswer( Unknown );
+                            return Unknown;
                         }
                     }
                     else
@@ -212,11 +205,11 @@ namespace smtrat
                 }
                 else
                 {
-                    return (mFormulaConditionMap.empty() ? consistencyTrue() : foundAnswer( Unknown ));
+                    return (mFormulaConditionMap.empty() ? consistencyTrue() : Unknown );
                 }
             }
             else
-                return foundAnswer( False );
+                return False;
         }
         mConditionsChanged = false;
         if( rReceivedFormula().empty() )
@@ -225,7 +218,7 @@ namespace smtrat
             {
                 if( Settings::branch_and_bound )
                 {
-                    return foundAnswer( Unknown );
+                    return Unknown;
                 }
             }
             else
@@ -237,7 +230,7 @@ namespace smtrat
         {
             assert( !mInfeasibleSubsets.empty() );
             assert( !mInfeasibleSubsets.back().empty() );
-            return foundAnswer( False );
+            return False;
         }
         if( Settings::use_variable_bounds )
         {
@@ -270,7 +263,7 @@ namespace smtrat
             assert( checkRanking() );
 //                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             if( anAnswerFound() )
-                return foundAnswer( Unknown );
+                return Unknown;
 //            else
 //                cout << "VSModule iteration" << endl;
             #ifdef VS_STATISTICS
@@ -327,7 +320,7 @@ namespace smtrat
 //                        // Split the neq-constraint in a preceeding sat module (make sure that it is there in your strategy when choosing this vssetting)
 //                        splitUnequalConstraint( FormulaT( (*cond)->pConstraint() ) );
 //                        assert( currentState->isRoot() );
-//                        return foundAnswer( Unknown );
+//                        return Unknown;
 //                    }
 //                }
 //            }
@@ -347,7 +340,7 @@ namespace smtrat
                     if( currentState->isRoot() )
                     {
                         updateInfeasibleSubset();
-                        return foundAnswer( False );
+                        return False;
                     }
                     else
                     {
@@ -546,7 +539,7 @@ namespace smtrat
                                                 {
                                                     if( Settings::branch_and_bound )
                                                     {
-                                                        return foundAnswer( Unknown );
+                                                        return Unknown;
                                                     }
                                                 }
                                                 else
@@ -607,7 +600,7 @@ namespace smtrat
                                         if( (*currentState).cannotBeSolved() )
                                         {
                                             // If we need to involve another approach.
-                                            Answer result = runBackendSolvers( currentState );
+                                            Answer result = runBackendSolvers( currentState, _full );
                                             switch( result )
                                             {
                                                 case True:
@@ -631,7 +624,7 @@ namespace smtrat
                                                         {
                                                             if( Settings::branch_and_bound )
                                                             {
-                                                                return foundAnswer( Unknown );
+                                                                return Unknown;
                                                             }
                                                         }
                                                         else
@@ -647,18 +640,18 @@ namespace smtrat
                                                 }
                                                 case Unknown:
                                                 {
-                                                    return foundAnswer( Unknown );
+                                                    return Unknown;
                                                 }
                                                 default:
                                                 {
                                                     cout << "Error: Unknown answer in method " << __func__ << " line " << __LINE__ << endl;
-                                                    return foundAnswer( Unknown );
+                                                    return Unknown;
                                                 }
                                             }
                                         }
                                         else
                                         {
-//                                            return foundAnswer( Unknown );
+//                                            return Unknown;
                                             currentState->rCannotBeSolved() = true;
                                             addStateToRanking( currentState );
                                         }
@@ -705,7 +698,7 @@ namespace smtrat
         #ifdef VS_DEBUG
         printAll();
         #endif
-        return foundAnswer( False );
+        return False;
     }
 
     template<class Settings>
@@ -735,7 +728,7 @@ namespace smtrat
                 const Substitution& sub = state->substitution();
                 ModelValue ass;
                 if( sub.type() == Substitution::MINUS_INFINITY )
-                    ass = SqrtEx( Poly( mVariableVector.at( state->treeDepth()-1 ).first ) );
+                    ass = SqrtEx( mVariableVector.at( state->treeDepth()-1 ).first );
                 else
                 {
                     assert( sub.type() != Substitution::PLUS_INFINITY );
@@ -749,7 +742,7 @@ namespace smtrat
                     {
                         ass = SqrtEx( sub.term() );
                         if( sub.type() == Substitution::PLUS_EPSILON )
-                            ass = ass.asSqrtEx() + SqrtEx( Poly( mVariableVector.at( state->treeDepth()-1 ).second ) );
+                            ass = ass.asSqrtEx() + SqrtEx( mVariableVector.at( state->treeDepth()-1 ).second );
                     }
                 }
                 mModel.insert(std::make_pair(state->substitution().variable(), ass));
@@ -763,7 +756,10 @@ namespace smtrat
             for( auto var = allVarsInRoot.begin(); var != allVarsInRoot.end(); ++var )
             {
                 ModelValue ass;
-                ass = SqrtEx( var->getType() == carl::VariableType::VT_INT ? ZERO_POLYNOMIAL : Poly( *var ) );
+                if( var->getType() == carl::VariableType::VT_INT )
+                    ass = SqrtEx( ZERO_POLYNOMIAL );
+                else
+                    ass = SqrtEx( *var );
                 // Note, that this assignment won't take effect if the variable got an assignment by a backend module.
                 mModel.insert(std::make_pair(*var, ass));
             }
@@ -782,7 +778,7 @@ namespace smtrat
         #ifdef VS_DEBUG
         printAll();
         #endif
-        return foundAnswer( True );
+        return True;
     }
 
     template<class Settings>
@@ -1152,11 +1148,11 @@ namespace smtrat
                 {
                     if( allSubstitutionsApplied && !anySubstitutionFailed )
                     {
-                        allSubResults.push_back( DisjunctionOfConditionConjunctions() );
+                        allSubResults.emplace_back();
                         DisjunctionOfConditionConjunctions& currentDisjunction = allSubResults.back();
                         for( auto consConj = subResult.begin(); consConj != subResult.end(); ++consConj )
                         {
-                            currentDisjunction.push_back( ConditionList() );
+                            currentDisjunction.emplace_back();
                             ConditionList& currentConjunction = currentDisjunction.back();
                             for( auto cons = consConj->begin(); cons != consConj->end(); ++cons )
                             {
@@ -1611,25 +1607,8 @@ namespace smtrat
     }
     
     template<class Settings>
-    bool VSModule<Settings>::sideConditionsSatisfied( const vs::Substitution& _substitution, const EvalRationalMap& _assignment )
-    {
-        for( const ConstraintT* sideC : _substitution.sideCondition() )
-        {
-            unsigned sideCisConsistent = sideC->satisfiedBy( _assignment );
-            assert( sideCisConsistent != 2 );
-            if( sideCisConsistent == 0 )
-            {
-                std::cout << *sideC << "  not satisfied!" << std::endl;
-                return false;
-            }
-        }
-        return true;
-    }
-    
-    template<class Settings>
     bool VSModule<Settings>::solutionInDomain()
     {
-//        std::cout << __func__ << std::endl;
         assert( solverState() != False );
         if( !mRanking.empty() )
         {
@@ -1637,7 +1616,6 @@ namespace smtrat
             State* currentState = mRanking.begin()->second;
             while( !currentState->isRoot() )
             {
-//                currentState->printAlone();
                 if( currentState->substitution().variable().getType() == carl::VariableType::VT_INT )
                 {
                     if( Settings::branch_and_bound && (currentState->substitution().type() == Substitution::MINUS_INFINITY || currentState->substitution().type() == Substitution::PLUS_INFINITY ) )
@@ -1645,7 +1623,7 @@ namespace smtrat
                         Rational nextIntTCinRange;
                         if( currentState->getNextIntTestCandidate( nextIntTCinRange, Settings::int_max_range ) )
                         {
-                            branchAt( Poly( currentState->substitution().variable() ), nextIntTCinRange, getReasons( currentState->substitution().originalConditions() ) );
+                            branchAt( currentState->substitution().variable(), nextIntTCinRange, getReasons( currentState->substitution().originalConditions() ) );
                         }
                         else
                         {
@@ -1666,47 +1644,29 @@ namespace smtrat
                             for( auto var = varOrder.rbegin(); var != varOrder.rend(); ++var )
                             {
                                 assert( varSolutions.find( *var ) != varSolutions.end() );
-//                                std::cout << "check if origin  " << substitutionPoly << "  has integer zeros under the assignment" << std::endl;
                                 partialVarSolutions[*var] = varSolutions[*var];
-//                                for( const auto& pvs : partialVarSolutions )
-//                                    std::cout << "      " << pvs.first << " -> " << pvs.second << std::endl;
-//                                std::cout << "check first if side conditions of test candidate are fulfilled:" << std::endl;
                                 Poly subPolyPartiallySubstituted = substitutionPoly.substitute( partialVarSolutions );
-//                                std::cout << "   results in " << subPolyPartiallySubstituted << std::endl;
-                                auto term = subPolyPartiallySubstituted.rbegin();
-                                if( term != subPolyPartiallySubstituted.rend() )
+                                Rational cp = subPolyPartiallySubstituted.coprimeFactorWithoutConstant();
+                                assert( carl::getNum( cp ) == ONE_RATIONAL );
+                                Rational g = carl::getDenom( cp );
+                                if( g > ZERO_RATIONAL && carl::mod( carl::getNum( subPolyPartiallySubstituted.constantPart() ), carl::getNum( g ) ) != 0 )
                                 {
-//                                    std::cout << "   check if the gcd of the coefficients divides the constant part:" << std::endl;
-                                    assert( !term->isConstant() && carl::isInteger( term->coeff() ) );
-                                    Rational g = carl::abs( term->coeff() );
-                                    ++term;
-                                    for( ; term != subPolyPartiallySubstituted.rend(); ++term )
-                                    {
-                                        if( !term->isConstant() )
-                                        {
-                                            assert( carl::isInteger( term->coeff() ) );
-                                            g = carl::gcd( carl::getNum( g ), carl::getNum( carl::abs( term->coeff() ) ) );
-                                        }
-                                    }
-                                    assert( g > ZERO_RATIONAL );
-//                                    std::cout << "   " << carl::getNum( subPolyPartiallySubstituted.constantPart() ) << " mod " << carl::getNum( g ) << " == " << carl::mod( carl::getNum( subPolyPartiallySubstituted.constantPart() ), carl::getNum( g ) ) << std::endl; 
-                                    if( carl::mod( carl::getNum( subPolyPartiallySubstituted.constantPart() ), carl::getNum( g ) ) != 0 )
-                                    {
-                                        Poly branchEx = ((subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * Rational(Rational(1) / g));
-                                        Rational branchValue = subPolyPartiallySubstituted.constantPart() * (1 / g);
-                                        branchAt( branchEx, branchValue, getReasons( currentState->substitution().originalConditions() ) );
-                                        return false;
-                                    }
+                                    Poly branchEx = ((subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * Rational(Rational(1) / g));
+                                    Rational branchValue = subPolyPartiallySubstituted.constantPart() * (1 / g);
+                                    branchAt( branchEx, branchValue, getReasons( currentState->substitution().originalConditions() ) );
+                                    return false;
                                 }
                             }
                         }
                         // Insert the (integer!) assignments of the other variables.
                         const SqrtEx& subTerm = currentState->substitution().term();
-                        assert( sideConditionsSatisfied( currentState->substitution(), varSolutions ) );
                         Rational evaluatedSubTerm;
 //                        std::cout << "replace variable in  " << subTerm << "  by" << std::endl;
 //                        for( const auto& vs : varSolutions )
 //                            std::cout << "   " << vs.first << " -> " << vs.second << std::endl;
+//                        logConditions( *currentState, true, "VS_SOLUTION_IN_DOMAIN", false );
+//                        if( !currentState->isRoot() )
+//                            logConditions( currentState->father(), true, "VS_SOLUTION_IN_DOMAIN_FATHER", false );
                         bool assIsInteger = subTerm.evaluate( evaluatedSubTerm, varSolutions, -1 );
 //                        std::cout << "results in " << evaluatedSubTerm << std::endl;
                         assIsInteger &= carl::isInteger( evaluatedSubTerm );
@@ -1714,7 +1674,7 @@ namespace smtrat
                         {
                             if( Settings::branch_and_bound )
                             {
-                                branchAt( Poly( currentState->substitution().variable() ), evaluatedSubTerm, getReasons( currentState->substitution().originalConditions() ) );
+                                branchAt( currentState->substitution().variable(), evaluatedSubTerm, getReasons( currentState->substitution().originalConditions() ) );
                             }
                             else
                             {
@@ -1907,12 +1867,12 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer VSModule<Settings>::runBackendSolvers( State* _state )
+    Answer VSModule<Settings>::runBackendSolvers( State* _state, bool _full )
     {
         // Run the backends on the constraint of the state.
         FormulaConditionMap formulaToConditions;
         adaptPassedFormula( *_state, formulaToConditions );
-        Answer result = runBackends();
+        Answer result = runBackends( _full );
         #ifdef VS_DEBUG
         cout << "Ask backend      : ";
         printPassedFormula();
@@ -2022,14 +1982,24 @@ namespace smtrat
     }
 
     template<class Settings>
-    void VSModule<Settings>::logConditions( const State& _state, bool _assumption, const string& _description ) const
+    void VSModule<Settings>::logConditions( const State& _state, bool _assumption, const string& _description, bool _logAsDeduction ) const
     {
         if( !_state.conditions().empty() )
         {
             carl::PointerSet<smtrat::ConstraintT> constraints;
             for( auto cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
                 constraints.insert( (**cond).pConstraint() );
-            smtrat::Module::addAssumptionToCheck( constraints, _assumption, _description );
+            if( _logAsDeduction )
+                smtrat::Module::addAssumptionToCheck( constraints, _assumption, _description );
+            else
+            {
+                std::string assumption = "(assert (and";
+                for( auto constraint = constraints.begin(); constraint != constraints.end(); ++constraint )
+                    assumption += " " + (*constraint)->toString( 1, false, true );
+                assumption += " " + _description;
+                assumption += "))";
+                std::cout << assumption << std::endl;
+            }
         }
     }
 

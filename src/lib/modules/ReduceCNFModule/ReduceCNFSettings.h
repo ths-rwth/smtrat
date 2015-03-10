@@ -19,11 +19,11 @@
  *
  */
 /**
- * @file FouMoSettings.h
+ * @file ReduceCNFSettings.h
  * @author YOUR NAME <YOUR EMAIL ADDRESS>
  *
- * @version 2014-12-01
- * Created on 2014-12-01.
+ * @version 2015-02-23
+ * Created on 2015-02-23.
  */
 
 
@@ -31,13 +31,11 @@
 
 namespace smtrat
 {
-    struct FouMoSettings1
-    {        
-        static const bool Allow_Deletion = true;
-        
-        static const bool Integer_Mode = true;
-        
-        static const bool Nonlinear_Mode = false;
-        
+    struct ReduceCNFSettings1
+    {
+        /**
+         * Example for a setting.
+         */
+        static const bool example_setting = true;
     };
 }

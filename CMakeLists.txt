@@ -145,6 +145,8 @@ else()
 	set( libraries ${libraries} lib_carl)
 endif()
 
+set( libraries ${libraries} boost_system)
+
 # # # # # # # # # # # # # # # # # # # # # #
 # C.2. required libraries
 # # # # # # # # # # # # # # # # # # # # # #

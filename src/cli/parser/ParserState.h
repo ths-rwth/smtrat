@@ -105,6 +105,17 @@ namespace parser {
 		void addUninterpretedBinding(std::string&, const UninterpretedType&);
 		
 		carl::Variable addQuantifiedVariable(const std::string& _name, const boost::optional<carl::VariableType>& type);
+
+		template<typename T>
+		std::size_t size(const qi::symbols<char, T>& t) const {
+			std::size_t res = 0;
+			t.for_each([&res](const std::string&, const T&){ res++; });
+			return res;
+		}
+		void printSizeStats() const {
+			std::cout << "Vars: " << size(var_bool.sym) << " / " << size(var_theory.sym) << " / " << size(var_uninterpreted.sym) << std::endl;
+			std::cout << "Bind: " << size(bind_bool.sym) << " / " << size(bind_theory.sym) << " / " << size(bind_uninterpreted.sym) << std::endl;
+		}
 	};
 
 }

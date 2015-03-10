@@ -78,9 +78,8 @@ GroebnerModule<Settings>::~GroebnerModule( )
  * @return true
  */
 template<class Settings>
-bool GroebnerModule<Settings>::assertSubformula( ModuleInput::const_iterator _formula )
+bool GroebnerModule<Settings>::addCore( ModuleInput::const_iterator _formula )
 {
-    Module::assertSubformula( _formula );
     if( _formula->formula().getType() != carl::FormulaType::CONSTRAINT )
     {
         return true;
@@ -182,10 +181,11 @@ void GroebnerModule<Settings>::handleConstraintNotToGB(ModuleInput::const_iterat
 
 /**
  * A theory call to the GroebnerModule. The exact working of this module depends on the settings in GBSettings.
+ * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
  * @return (TRUE,FALSE,UNKNOWN) dependent on the asserted constraints.
  */
 template<class Settings>
-Answer GroebnerModule<Settings>::isConsistent( )
+Answer GroebnerModule<Settings>::checkCore( bool _full )
 {
 #ifdef GB_OUTPUT
     std::cout << "GB Called" << std::endl;
@@ -193,12 +193,12 @@ Answer GroebnerModule<Settings>::isConsistent( )
     // We can only handle conjunctions of constraints.
     if(!rReceivedFormula().isRealConstraintConjunction())
     {
-        return foundAnswer( Unknown );
+        return Unknown;
     }
     // This check asserts that all the conflicts are handled by the SAT solver. (workaround)
     if( !mInfeasibleSubsets.empty() )
     {
-        return foundAnswer( False );
+        return False;
     }
 
     #ifdef SMTRAT_DEVOPTION_Statistics
@@ -324,7 +324,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
             #endif
 			assert(!mInfeasibleSubsets.empty());
 			assert(!mInfeasibleSubsets.front().empty());
-            return foundAnswer( False );
+            return False;
         }
         saveState( );
 
@@ -336,7 +336,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
 
             if( ans == False )
             {
-                return foundAnswer( ans );
+                return ans;
             }
         }
         assert( mInfeasibleSubsets.empty( ) );
@@ -372,7 +372,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
         // If we managed to get an answer, we can return that.
         if( ans != Unknown )
         {
-            return foundAnswer( ans );
+            return ans;
         }
     }
     assert( mInfeasibleSubsets.empty( ) );
@@ -386,7 +386,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
     #endif
 
     // call other modules as the groebner module cannot decide satisfiability.
-    Answer ans = runBackends( );
+    Answer ans = runBackends( _full );
     if( ans == False )
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
@@ -397,7 +397,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
 
         assert( !mInfeasibleSubsets.empty( ) );
     }
-    return foundAnswer( ans );
+    return ans;
 }
 
 
@@ -647,10 +647,9 @@ void GroebnerModule<Settings>::newConstraintDeduction( )
  * @param _formula the constraint which should be removed.
  */
 template<class Settings>
-void GroebnerModule<Settings>::removeSubformula( ModuleInput::const_iterator _formula )
+void GroebnerModule<Settings>::removeCore( ModuleInput::const_iterator _formula )
 {
     if(_formula->formula().getType() !=  carl::FormulaType::CONSTRAINT) {
-        super::removeSubformula( _formula );
         return;
     }
     #ifdef SMTRAT_DEVOPTION_Statistics
@@ -671,7 +670,6 @@ void GroebnerModule<Settings>::removeSubformula( ModuleInput::const_iterator _fo
             mInequalities.removeInequality( _formula );
         }
     }
-    super::removeSubformula( _formula );
 }
 
 /**

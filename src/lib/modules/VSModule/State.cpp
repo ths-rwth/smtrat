@@ -154,8 +154,8 @@ namespace vs
                     {
                         const Condition* rpCond = mpSubstitutionResults->back().back().first.back();
                         mpSubstitutionResults->back().back().first.pop_back();
-                        delete rpCond;
                         mpConditionIdAllocator->free( rpCond->getId() );
+                        delete rpCond;
                         rpCond = NULL;
                     }
                     mpSubstitutionResults->back().pop_back();
@@ -657,6 +657,34 @@ namespace vs
                     const Condition* condA = *iterA;
                     const Condition* condB = *iterB;
                     signed strongProp = smtrat::ConstraintT::compare( condA->pConstraint(), condB->pConstraint() );
+//                    std::cout << "compare(  " << condA->constraint() << "  ,  " << condB->constraint() << "  ) = ";
+//                    if( strongProp != 0 )
+//                    {
+//                        switch(strongProp)
+//                        {
+//                            case carl::A_IFF_B:
+//                                std::cout << "A_IFF_B";
+//                                break;
+//                            case carl::A_IMPLIES_B:
+//                                std::cout << "A_IMPLIES_B";
+//                                break;
+//                            case carl::B_IMPLIES_A:
+//                                std::cout << "B_IMPLIES_A";
+//                                break;
+//                            case carl::NOT__A_AND_B:
+//                                std::cout << "NOT__A_AND_B";
+//                                break;
+//                            case carl::A_AND_B__IFF_C:
+//                                std::cout << "A_AND_B__IFF_C";
+//                                break;
+//                            case carl::A_XOR_B:
+//                                std::cout << "A_XOR_B";
+//                                break;
+//                            default:
+//                                std::cout << "Nothing";
+//                        }
+//                    } 
+//                    std::cout << std::endl;
                     // If the two conditions have the same solution space.
                     if( strongProp == 2 )
                     {

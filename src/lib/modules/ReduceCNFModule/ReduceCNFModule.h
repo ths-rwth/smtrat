@@ -19,42 +19,54 @@
  *
  */
 /**
- * @file IntEqModule.h
+ * @file ReduceCNFModule.h
  * @author Dustin Huetter <dustin.huetter@rwth-aachen.de>
  *
- * @version 2014-10-17
- * Created on 2014-10-17.
+ * @version 2015-02-23
+ * Created on 2015-02-23.
  */
+
 #pragma once
+
 #include "../../solver/Module.h"
-#include "IntEqStatistics.h"
-#include "IntEqSettings.h"
-#include <stdio.h>
+#include "ReduceCNFStatistics.h"
+#include "ReduceCNFSettings.h"
 namespace smtrat
 {
-    typedef std::map<FormulaT,std::shared_ptr<std::vector<FormulaT>>> Formula_Origins;
-        
-    /**
-     * A module which checks whether the equations contained in the received formula 
-     * have an integer solution.
-     */    
     template<typename Settings>
-    class IntEqModule : public Module
+    class ReduceCNFModule : public Module
     {
         private:
-            // Stores the equations of the received constraints and their origins
-            Formula_Origins mProc_Constraints; 
-            // Stores the calculated substitutions
-            std::map<carl::Variable, Poly>  mSubstitutions;
-            // Stores the origins of the calculated substitutions
-            std::map<carl::Variable, std::shared_ptr<std::vector<FormulaT>>> mVariables;
-            
+            // Stores for each variable the constraints in which it has an upper
+            // resp. a lower bound
+            std::map< carl::Variable, std::pair< std::vector<FormulaT>, std::vector<FormulaT> > > mVarUpperLower;
+            // Stores the temporary formula that is later passed to the backends
+            ModuleInput mTempPassedFormulas;
+
         public:
-            
-            IntEqModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
-            
-            ~IntEqModule() {}
-        
+            ReduceCNFModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
+
+            ~ReduceCNFModule();
+
+            // Main interfaces.
+
+            /**
+             * Informs the module about the given constraint. It should be tried to inform this
+             * module about any constraint it could receive eventually before assertSubformula
+             * is called (preferably for the first time, but at least before adding a formula
+             * containing that constraint).
+             * @param _constraint The constraint to inform about.
+             * @return false, if it can be easily decided whether the given constraint is inconsistent;
+             *          true, otherwise.
+             */
+            bool inform( const FormulaT& _constraint );
+
+            /**
+             * Informs all backends about the so far encountered constraints, which have not yet been communicated.
+             * This method must not and will not be called more than once and only before the first runBackends call.
+             */
+	    void init();
+
             /**
              * The module has to take the given sub-formula of the received formula into account.
              *
@@ -63,8 +75,8 @@ namespace smtrat
              *          the already considered sub-formulas;
              *          true, otherwise.
              */
-            bool addCore( ModuleInput::const_iterator _subformula );
-            
+            bool assertSubformula( ModuleInput::const_iterator _subformula );
+
             /**
              * Removes the subformula of the received formula at the given position to the considered ones of this module.
              * Note that this includes every stored calculation which depended on this subformula, but should keep the other
@@ -72,22 +84,28 @@ namespace smtrat
              *
              * @param _subformula The position of the subformula to remove.
              */
-            void removeCore( ModuleInput::const_iterator _subformula );
-            
+            void removeSubformula( ModuleInput::const_iterator _subformula );
+
             /**
              * Updates the current assignment into the model.
              * Note, that this is a unique but possibly symbolic assignment maybe containing newly introduced variables.
              */
             void updateModel() const;
-            
+
             /**
              * Checks the received formula for consistency.
-             * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
              * @return True,    if the received formula is satisfiable;
              *         False,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            Answer checkCore( bool _full );
+            Answer isConsistent();
+            
+            /** For each variable collect the information in which constraints it has 
+             *  an upper resp. a lower bound
+             */ 
+            void gather_upper_lower();
+
     };
 }
-#include "IntEqModule.tpp"
+
+#include "ReduceCNFModule.tpp"

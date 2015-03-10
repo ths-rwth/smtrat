@@ -137,14 +137,16 @@ namespace vs
         double numberOfVariableOccurencesWeight = (double)varInfo.occurence();
         if( maximum <= numberOfVariableOccurencesWeight )
             numberOfVariableOccurencesWeight = maximum - 1;
-        // If variable occurs only in one monomial, give a bonus if all other monomials are positive.
+        // If variable occurs only in one monomial, give a bonus if all other monomials are either positive or negative.
         double otherMonomialsPositiveWeight = 2;
         double finitlyManySolutionsWeight = INFINITLY_MANY_SOLUTIONS_WEIGHT;
-        if( numberOfVariableOccurencesWeight == 1 && ( mpConstraint->lhs().nrTerms() == 1 || (mpConstraint->constantPart() != smtrat::ZERO_RATIONAL && mpConstraint->lhs().nrTerms() > 1) ) )
+        // TODO: avoid expanding the polynomial somehow
+        typename smtrat::Poly::PolyType polyExpanded = (typename smtrat::Poly::PolyType)mpConstraint->lhs();
+        if( numberOfVariableOccurencesWeight == 1 && ( polyExpanded.nrTerms() == 1 || (mpConstraint->constantPart() != smtrat::ZERO_RATIONAL && polyExpanded.nrTerms() > 1) ) )
         {
             bool allOtherMonomialsPos = true;
             bool allOtherMonomialsNeg = true;
-            for( auto term = mpConstraint->lhs().begin(); term != mpConstraint->lhs().end(); ++term )
+            for( auto term = polyExpanded.begin(); term != polyExpanded.end(); ++term )
             {
                 if( term->has( _consideredVariable ) )
                 {
@@ -254,6 +256,12 @@ namespace vs
     bool Condition::operator<( const Condition& _condition ) const
     {
         return mId < _condition.getId();
+    }
+    
+    std::ostream& operator<<( std::ostream& _out, const Condition& _condition )
+    {
+        _condition.print( _out );
+        return _out;
     }
 
     /**

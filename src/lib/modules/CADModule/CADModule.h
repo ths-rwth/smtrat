@@ -100,11 +100,11 @@ namespace smtrat
 
             CADModule( ModuleType _type, const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
-            virtual ~CADModule();
+            ~CADModule();
 
-            virtual bool assertSubformula(ModuleInput::const_iterator _subformula);
-            virtual void removeSubformula(ModuleInput::const_iterator _subformula);
-            virtual Answer isConsistent();
+            bool addCore(ModuleInput::const_iterator _subformula);
+            void removeCore(ModuleInput::const_iterator _subformula);
+            Answer checkCore( bool _full = true );
             void updateModel() const;
 
 

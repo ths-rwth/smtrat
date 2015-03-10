@@ -204,7 +204,7 @@ namespace smtrat
             assert( _constraint->variables().size() == 1 );
             if( _constraint->maxDegree( _var ) == 1 )
             {
-                const Rational& coeff = _constraint->lhs().lterm().coeff();
+                const Rational coeff = _constraint->lhs().lterm().coeff();
                 carl::Relation rel = _constraint->relation();
                 Rational* limit = new Rational( -_constraint->constantPart()/coeff );
                 std::pair< typename Variable<T>::BoundSet::iterator, bool> result;
@@ -250,10 +250,10 @@ namespace smtrat
                 (*result.first)->activate( _origin );
                 return *result.first;
             }
-            else if( _constraint->lhs().nrTerms() == 1 || (_constraint->lhs().nrTerms() == 2 && _constraint->lhs().hasConstantTerm()) )
-            {
-                // TODO: Retrieve bounds from constraints of the form x^n+b~0
-            }
+//            else if( _constraint->lhs().nrTerms() == 1 || (_constraint->lhs().nrTerms() == 2 && _constraint->lhs().hasConstantTerm()) )
+//            {
+//                // TODO: Retrieve bounds from constraints of the form x^n+b~0
+//            }
             assert( false );
             return NULL;
         }
@@ -697,7 +697,7 @@ namespace smtrat
                         Poly varCoeff = (*cons)->coefficient( var, 1 );
                         assert( !varCoeff.isZero() );
                         RationalInterval varCoeffEvaluated = carl::IntervalEvaluation::evaluate( varCoeff, bounds );
-                        Poly remainder = (*cons)->lhs() - (varCoeff * var);
+                        Poly remainder = (*cons)->lhs().substitute( var, smtrat::ZERO_POLYNOMIAL );
                         RationalInterval remainderEvaluated = carl::IntervalEvaluation::evaluate( remainder, bounds ).inverse();
                         
                         RationalInterval newBoundsA;
@@ -728,17 +728,17 @@ namespace smtrat
                             {
                                 if( newBoundsA.lowerBoundType() != carl::BoundType::INFTY )
                                 {
-                                    Poly boundLhs = Poly( var ) - newBoundsA.lower();
+                                    typename Poly::PolyType boundLhs = typename Poly::PolyType( var ) - newBoundsA.lower();
                                     carl::Relation boundRel = newBoundsA.lowerBoundType() == carl::BoundType::STRICT ? carl::Relation::LEQ : carl::Relation::LESS;
-                                    const ConstraintT* newBoundConstraint = newConstraint( boundLhs, boundRel );
+                                    const ConstraintT* newBoundConstraint = carl::newConstraint<Poly>( boundLhs, boundRel );
 //                                    std::cout << "it follows: " << *newBoundConstraint << std::endl;
                                     result.push_back( std::pair<std::vector< const ConstraintT* >, const ConstraintT* >( boundConstraints, newBoundConstraint ) );
                                 }
                                 if( newBoundsB.upperBoundType() != carl::BoundType::INFTY )
                                 {
-                                    Poly boundLhs = Poly( var ) - newBoundsB.upper();
+                                    typename Poly::PolyType boundLhs = typename Poly::PolyType( var ) - newBoundsB.upper();
                                     carl::Relation boundRel = newBoundsA.upperBoundType() == carl::BoundType::STRICT ? carl::Relation::LEQ : carl::Relation::LESS;
-                                    const ConstraintT* newBoundConstraint = newConstraint( boundLhs, boundRel );
+                                    const ConstraintT* newBoundConstraint = carl::newConstraint<Poly>( boundLhs, boundRel );
 //                                    std::cout << "it follows: " << *newBoundConstraint << std::endl;
                                     result.push_back( std::pair<std::vector< const ConstraintT* >, const ConstraintT* >( boundConstraints, newBoundConstraint ) );
                                 }
@@ -774,11 +774,11 @@ namespace smtrat
                                 {
                                     if( rel == carl::Relation::EQ || rel == carl::Relation::GEQ || rel == carl::Relation::GREATER )
                                     {
-                                        Poly boundLhs = Poly( var ) - newBoundsA.lower();
+                                        typename Poly::PolyType boundLhs = typename Poly::PolyType( var ) - newBoundsA.lower();
                                         carl::Relation boundRel = carl::Relation::GEQ;
                                         if( newBoundsA.lowerBoundType() == carl::BoundType::STRICT || rel == carl::Relation::GREATER )
                                             boundRel = carl::Relation::GREATER;
-                                        const ConstraintT* newBoundConstraint = newConstraint( boundLhs, boundRel );
+                                        const ConstraintT* newBoundConstraint = carl::newConstraint<Poly>( boundLhs, boundRel );
 //                                        std::cout << "it follows: " << *newBoundConstraint << std::endl;
                                         result.push_back( std::pair<std::vector< const ConstraintT* >, const ConstraintT* >( boundConstraints, newBoundConstraint ) );
                                     }
@@ -787,11 +787,11 @@ namespace smtrat
                                 {
                                     if( rel == carl::Relation::EQ || rel == carl::Relation::LEQ || rel == carl::Relation::LESS )
                                     {
-                                        Poly boundLhs = Poly( var ) - newBoundsA.upper();
+                                        typename Poly::PolyType boundLhs = typename Poly::PolyType( var ) - newBoundsA.upper();
                                         carl::Relation boundRel = carl::Relation::LEQ;
                                         if( newBoundsA.upperBoundType() == carl::BoundType::STRICT || rel == carl::Relation::LESS )
                                             boundRel = carl::Relation::LESS;
-                                        const ConstraintT* newBoundConstraint = newConstraint( boundLhs, boundRel );
+                                        const ConstraintT* newBoundConstraint = carl::newConstraint<Poly>( boundLhs, boundRel );
 //                                        std::cout << "it follows: " << *newBoundConstraint << std::endl;
                                         result.push_back( std::pair<std::vector< const ConstraintT* >, const ConstraintT* >( boundConstraints, newBoundConstraint ) );
                                     }

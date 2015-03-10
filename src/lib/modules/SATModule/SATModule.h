@@ -425,39 +425,28 @@ namespace smtrat
             // Interfaces.
             
             /**
-             * Informs this module about the existence of the given constraint, which means
-             * that it could be added in future.
-             * @param _constraint The constraint to inform about.
-             * @return false, if the it can be determined that the constraint itself is conflicting;
-             *         true,  otherwise.
-             */
-            bool inform( const FormulaT& )
-            {
-                return true;
-            }
-            
-            /**
              * The module has to take the given sub-formula of the received formula into account.
              * @param _subformula The sub-formula to take additionally into account.
              * @return false, if it can be easily decided that this sub-formula causes a conflict with
              *          the already considered sub-formulas;
              *          true, otherwise.
              */
-            bool assertSubformula( ModuleInput::const_iterator );
+            bool addCore( ModuleInput::const_iterator );
             
             /**
              * Checks the received formula for consistency.
+             * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
              * @return True,    if the received formula is satisfiable;
              *         False,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            Answer isConsistent();
+            Answer checkCore( bool _full = true );
             
             /**
              * Removes everything related to the given sub-formula of the received formula.
              * @param _subformula The sub formula of the received formula to remove.
              */
-            void removeSubformula( ModuleInput::const_iterator );
+            void removeCore( ModuleInput::const_iterator );
             
             /**
              * Updates the model, if the solver has detected the consistency of the received formula, beforehand.

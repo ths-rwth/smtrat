@@ -12,9 +12,9 @@
 
 namespace benchmax {
 
-class Z3Tool: public Tool {
+class Z3: public Tool {
 public:
-	Z3Tool(const fs::path& binary, const std::string& arguments): Tool(binary, arguments) {}
+	Z3(const fs::path& binary, const std::string& arguments): Tool("Z3", binary, arguments) {}
 };
 
 }

@@ -19,25 +19,50 @@
  *
  */
 /**
- * @file FouMoSettings.h
+ * @file ReduceCNFStatistics.h
  * @author YOUR NAME <YOUR EMAIL ADDRESS>
  *
- * @version 2014-12-01
- * Created on 2014-12-01.
+ * @version 2015-02-23
+ * Created on 2015-02-23.
  */
 
 
 #pragma once
 
+#include "../../config.h"
+#ifdef SMTRAT_DEVOPTION_Statistics
+#include "../../utilities/stats/Statistics.h"
+
 namespace smtrat
 {
-    struct FouMoSettings1
-    {        
-        static const bool Allow_Deletion = true;
-        
-        static const bool Integer_Mode = true;
-        
-        static const bool Nonlinear_Mode = false;
-        
+    class ReduceCNFStatistics : public Statistics
+    {
+    private:
+        // Members.
+        /**
+         * Example for a statistic.
+         */
+        size_t mExampleStatistic;
+
+    public:
+        // Override Statistics::collect.
+        void collect()
+        {
+           Statistics::addKeyValuePair( "example_statistic", mExampleStatistic );
+        }
+
+        void foo()
+        {
+            ++mExampleStatistic;
+        }
+
+        ReduceCNFStatistics( const std::string& _statisticName ): 
+            Statistics( _statisticName, this ),
+            mExampleStatistic( 0 )
+        {}
+
+        ~ReduceCNFStatistics() {}
     };
 }
+
+#endif

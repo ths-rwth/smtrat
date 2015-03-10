@@ -102,9 +102,9 @@ public:
     GroebnerModule( ModuleType _type, const ModuleInput* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
     virtual ~GroebnerModule( );
 
-    bool assertSubformula( ModuleInput::const_iterator _formula );
-    virtual Answer isConsistent( );
-    void removeSubformula( ModuleInput::const_iterator _formula );
+    bool addCore( ModuleInput::const_iterator _formula );
+    virtual Answer checkCore( bool _full = true );
+    void removeCore( ModuleInput::const_iterator _formula );
 	
 
 protected:

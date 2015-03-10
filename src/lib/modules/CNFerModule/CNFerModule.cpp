@@ -39,13 +39,12 @@ namespace smtrat
 
     CNFerModule::~CNFerModule(){}
 
-    bool CNFerModule::assertSubformula( ModuleInput::const_iterator _subformula )
+    bool CNFerModule::addCore( ModuleInput::const_iterator _subformula )
     {
-        Module::assertSubformula( _subformula );
         return true;
     }
 
-    Answer CNFerModule::isConsistent()
+    Answer CNFerModule::checkCore( bool _full )
     {
         auto receivedSubformula = firstUncheckedReceivedSubformula();
         while( receivedSubformula != rReceivedFormula().end() )
@@ -67,7 +66,7 @@ namespace smtrat
                 FormulasT reason;
                 reason.insert( receivedSubformula->formula() );
                 mInfeasibleSubsets.push_back( reason );
-                return foundAnswer( False );
+                return False;
             }
             else
             {
@@ -87,23 +86,22 @@ namespace smtrat
         }
         if( rPassedFormula().empty() )
         {
-            return foundAnswer( True );
+            return True;
         }
         else
         {
-            Answer a = runBackends();
+            Answer a = runBackends( _full );
 
             if( a == False )
             {
                 getInfeasibleSubsets();
             }
-            return foundAnswer( a );
+            return a;
         }
     }
 
-    void CNFerModule::removeSubformula( ModuleInput::const_iterator _subformula )
+    void CNFerModule::removeCore( ModuleInput::const_iterator _subformula )
     {
-        Module::removeSubformula( _subformula );
     }
 }    // namespace smtrat
 

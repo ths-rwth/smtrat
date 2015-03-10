@@ -38,8 +38,8 @@ namespace vs
         mRadicand( smtrat::ZERO_RATIONAL )
     {}
 
-    SqrtEx::SqrtEx( const smtrat::Poly& _poly ):
-        mConstantPart( _poly ),
+    SqrtEx::SqrtEx( smtrat::Poly&& _poly ):
+        mConstantPart( std::move( _poly ) ),
         mFactor( smtrat::ZERO_RATIONAL ),
         mDenominator( smtrat::ONE_RATIONAL ),
         mRadicand( smtrat::ZERO_RATIONAL )
@@ -47,26 +47,16 @@ namespace vs
         normalize();
     }
 
-    SqrtEx::SqrtEx( const smtrat::Poly& _constantPart, const smtrat::Poly& _factor, const smtrat::Poly& _denominator, const smtrat::Poly& _radicand ):
-        mConstantPart( _constantPart ),
-        mFactor( _radicand.isZero() ? _radicand : _factor ),
-        mDenominator( (mFactor.isZero() && _constantPart.isZero()) ? smtrat::ONE_POLYNOMIAL : _denominator ),
-        mRadicand( _factor.isZero() ? _factor : _radicand )
+    SqrtEx::SqrtEx( smtrat::Poly&& _constantPart, smtrat::Poly&& _factor, smtrat::Poly&& _denominator, smtrat::Poly&& _radicand ):
+        mConstantPart( std::move( _constantPart ) ),
+        mFactor( _radicand.isZero() ? std::move( _radicand ) : std::move( _factor ) ),
+        mDenominator( (mFactor.isZero() && mConstantPart.isZero()) ? smtrat::ONE_POLYNOMIAL : std::move( _denominator ) ),
+        mRadicand( mFactor.isZero() ? mFactor : std::move( _radicand ) )
     {
-        assert( !_denominator.isZero() );
-        assert( !_radicand.isConstant() || _radicand.isZero() || smtrat::ZERO_RATIONAL <= _radicand.trailingTerm().coeff() );
+        assert( !mDenominator.isZero() );
+        assert( !mRadicand.isConstant() || mRadicand.isZero() || smtrat::ZERO_RATIONAL <= mRadicand.trailingTerm().coeff() );
         normalize();
     }
-
-    SqrtEx::SqrtEx( const SqrtEx& _sqrtEx ):
-        mConstantPart( _sqrtEx.constantPart() ),
-        mFactor( _sqrtEx.factor() ),
-        mDenominator( _sqrtEx.denominator() ),
-        mRadicand( _sqrtEx.radicand() )
-    {}
-
-    SqrtEx::~SqrtEx()
-    {}
 
     void SqrtEx::normalize()
     {
@@ -108,14 +98,21 @@ namespace vs
                 }
                 else
                 {
-                    gcdA = carl::gcd( mConstantPart, mFactor );
+                    smtrat::Rational ccConstantPart = mConstantPart.coprimeFactor();
+                    smtrat::Poly cpConstantPart = mConstantPart * ccConstantPart;
+                    smtrat::Rational ccFactor = mFactor.coprimeFactor();
+                    smtrat::Poly cpFactor = mFactor * ccFactor;
+                    gcdA = carl::gcd( cpConstantPart, cpFactor )*carl::gcd(ccConstantPart,ccFactor);
                 }
             }
         }
         if( gcdA.isZero() ) return;
-        gcdA = carl::gcd( gcdA, mDenominator );
-        // Make sure that the polynomial to divide by cannot be negative, otherwise the sign of the square
-        // root expression could change.
+        smtrat::Rational ccGcdA = gcdA.coprimeFactor();
+        smtrat::Poly cpGcdA = gcdA * ccGcdA;
+        smtrat::Rational ccDenominator = mDenominator.coprimeFactor();
+        smtrat::Poly cpDenominator = mDenominator * ccDenominator;
+        gcdA = carl::gcd( cpGcdA, cpDenominator )*carl::gcd(ccGcdA,ccDenominator);
+        // Make sure that the polynomial to divide by cannot be negative, otherwise the sign of the square root expression could change.
         if( !(gcdA == smtrat::ONE_POLYNOMIAL) && gcdA.definiteness() == carl::Definiteness::POSITIVE_SEMI )
         {
             if( !mConstantPart.isZero() )
@@ -314,6 +311,7 @@ namespace vs
         smtrat::Poly denomEvaluated = denominator().substitute( _evalMap );
         assert( denomEvaluated.isConstant() );
         smtrat::Rational denomValue = denomEvaluated.constantPart();
+//        if( carl::isZero( denomValue ) ) exit(1236);
         assert( !carl::isZero( denomValue ) );
         // Check whether the resulting assignment is integer.
         bool rounded = true;

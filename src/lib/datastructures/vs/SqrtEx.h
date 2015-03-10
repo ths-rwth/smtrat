@@ -55,7 +55,18 @@ namespace vs
              * Constructs a square root expression from a polynomial p leading to (p + 0 * sqrt( 0 )) / 1
              * @param _poly The polynomial to construct a square root expression for.
              */
-            SqrtEx( const smtrat::Poly& _poly );
+            SqrtEx( smtrat::Poly&& _poly );
+            SqrtEx( const smtrat::Poly& _poly ) : 
+                SqrtEx::SqrtEx( std::move( smtrat::Poly( _poly ) ) )
+            {}
+            
+            SqrtEx( carl::Variable::Arg _var ) : 
+                SqrtEx( std::move( carl::makePolynomial<smtrat::Poly>( _var ) ) )
+            {}
+            
+            template<typename P = smtrat::Poly, typename = typename std::enable_if<carl::needs_cache<P>::value>::type>
+            SqrtEx( typename P::PolyType&& _poly ) : SqrtEx( std::move( carl::makePolynomial<P>( std::move(_poly) ) ) )
+            {}
             
             /**
              * Constructs a square root expression from given constant part, factor, denominator and radicand.
@@ -64,19 +75,12 @@ namespace vs
              * @param _denominator The denominator of the square root expression to construct.
              * @param _radicand The radicand of the square root expression to construct.
              */
-            SqrtEx( const smtrat::Poly& _constantPart , const smtrat::Poly& _factor, const smtrat::Poly& _denominator, const smtrat::Poly& _radicand );
+            SqrtEx( const smtrat::Poly& _constantPart, const smtrat::Poly& _factor, const smtrat::Poly& _denominator, const smtrat::Poly& _radicand ):
+                SqrtEx( std::move( smtrat::Poly( _constantPart ) ), std::move( smtrat::Poly( _factor ) ), std::move( smtrat::Poly( _denominator ) ), std::move( smtrat::Poly( _radicand ) ) )
+            {}
             
-            /**
-             * Copy constructor.
-             * @param _sqrtEx The square root expression to copy.
-             */
-            SqrtEx( const SqrtEx& _sqrtEx );
-
-            /**
-             * Destructor:
-             */
-            ~SqrtEx();
-
+            SqrtEx( smtrat::Poly&& _constantPart, smtrat::Poly&& _factor, smtrat::Poly&& _denominator, smtrat::Poly&& _radicand );
+            
             /**
              * @return A constant reference to the constant part of this square root expression.
              */

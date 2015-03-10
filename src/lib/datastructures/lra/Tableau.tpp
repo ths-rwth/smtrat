@@ -185,18 +185,20 @@ namespace smtrat
             Variable<T1, T2>* newVar;
             if( constraint.lhs().nrTerms() == 1 || ( constraint.lhs().nrTerms() == 2 && constraint.lhs().hasConstantTerm() ) )
             {
-                auto term = constraint.lhs().begin();
-                for( ; term != constraint.lhs().end(); ++term )
+                // TODO: do not store the expanded polynomial, but use the coefficient and coprimeCoefficients
+                const typename Poly::PolyType& expandedPoly = constraint.lhs().polynomial();
+                auto term = expandedPoly.begin();
+                for( ; term != expandedPoly.end(); ++term )
                     if( !term->isConstant() ) break;
 				carl::Variable var = term->monomial()->begin()->first;
-                T1 primCoeff = T1( term->coeff() );
+                T1 primCoeff = T1( term->coeff() ) * constraint.lhs().coefficient();
                 negative = (primCoeff < T1( 0 ));
                 boundValue = T1( -constraint.constantPart() )/primCoeff;
                 typename std::map<carl::Variable, Variable<T1, T2>*>::iterator basicIter = mOriginalVars.find( var );
                 // constraint not found, add new nonbasic variable
                 if( basicIter == mOriginalVars.end() )
                 {
-                    Poly* varPoly = new Poly( var );
+                    typename Poly::PolyType* varPoly = new typename Poly::PolyType( var );
                     newVar = newNonbasicVariable( varPoly, var.getType() == carl::VariableType::VT_INT );
                     mOriginalVars.insert( std::pair<carl::Variable, Variable<T1, T2>*>( var, newVar ) );
                 }
@@ -209,22 +211,22 @@ namespace smtrat
             {
                 T1 constantPart( constraint.constantPart() );
                 negative = (constraint.lhs().lterm().coeff() < typename Poly::CoeffType(T1( 0 )));
-                Poly* linearPart;
+                typename Poly::PolyType* linearPart;
                 if( negative )
-                    linearPart = new Poly( -constraint.lhs() + (Rational)constantPart );
+                    linearPart = new typename Poly::PolyType( -constraint.lhs() + (Rational)constantPart );
                 else
-                    linearPart = new Poly( constraint.lhs() - (Rational)constantPart );
+                    linearPart = new typename Poly::PolyType( constraint.lhs() - (Rational)constantPart );
                 T1 cf( linearPart->coprimeFactor() );
                 assert( cf > 0 );
                 constantPart *= cf;
                 (*linearPart) *= cf;
 //                linearPart->makeOrdered();
                 boundValue = (negative ? constantPart : -constantPart);
-                typename carl::FastPointerMap<Poly, Variable<T1, T2>*>::iterator slackIter = mSlackVars.find( linearPart );
+                typename carl::FastPointerMap<typename Poly::PolyType, Variable<T1, T2>*>::iterator slackIter = mSlackVars.find( linearPart );
                 if( slackIter == mSlackVars.end() )
                 {
                     newVar = newBasicVariable( linearPart, mOriginalVars, constraint.integerValued() );
-                    mSlackVars.insert( std::pair<const Poly*, Variable<T1, T2>*>( linearPart, newVar ) );
+                    mSlackVars.insert( std::pair<const typename Poly::PolyType*, Variable<T1, T2>*>( linearPart, newVar ) );
                 }
                 else
                 {
@@ -343,7 +345,7 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
-        Variable<T1, T2>* Tableau<Settings,T1,T2>::newNonbasicVariable( const Poly* _poly, bool _isInteger )
+        Variable<T1, T2>* Tableau<Settings,T1,T2>::newNonbasicVariable( const typename Poly::PolyType* _poly, bool _isInteger )
         {
             Variable<T1, T2>* var = new Variable<T1, T2>( mWidth++, _poly, mDefaultBoundPosition, _isInteger );
             mColumns.push_back( var );
@@ -351,7 +353,7 @@ namespace smtrat
         }
 
         template<class Settings, typename T1, typename T2>
-        Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( const Poly* _poly, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars, bool _isInteger )
+        Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( const typename Poly::PolyType* _poly, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars, bool _isInteger )
         {
             mNonActiveBasics.emplace_front();
             Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), _poly, mDefaultBoundPosition, _isInteger );
@@ -364,7 +366,7 @@ namespace smtrat
                 auto nonBasicIter = _originalVars.find( var );
                 if( _originalVars.end() == nonBasicIter )
                 {
-                    Poly* varPoly = new Poly( var );
+                    typename Poly::PolyType* varPoly = new typename Poly::PolyType( var );
                     nonBasic = newNonbasicVariable( varPoly, var.getType() == carl::VariableType::VT_INT );
                     _originalVars.insert( std::pair<carl::Variable, Variable<T1, T2>*>( var, nonBasic ) );
                 }
@@ -378,7 +380,7 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
-        Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, const Poly& poly, T2 leading_coeff, bool isInteger )
+        Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, const typename Poly::PolyType& poly, T2 leading_coeff, bool isInteger )
         {
             std::list<std::pair<Variable<T1,T2>*,T2>> nonbasicvar_coefficient = std::list<std::pair<Variable<T1,T2>*,T2>>();            
             auto iter = nonbasicindex_coefficient.begin();
@@ -391,7 +393,7 @@ namespace smtrat
                 ++iter;
             }          
             mNonActiveBasics.push_front( nonbasicvar_coefficient ); 
-            Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), new Poly( poly ), mDefaultBoundPosition, isInteger );            
+            Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), new typename Poly::PolyType( poly ), mDefaultBoundPosition, isInteger );            
             T2& factor = var->rFactor();
             factor = leading_coeff;
             return var;
@@ -1763,9 +1765,9 @@ namespace smtrat
                         #endif
                         {
                             #ifdef LRA_NO_DIVISION
-                            Poly lhs = (*ubound)->variable().expression()*(Rational)rowFactor - (Rational)newlimit->mainPart();
+                            typename Poly::PolyType lhs = (*ubound)->variable().expression()*(Rational)rowFactor - (Rational)newlimit->mainPart();
                             #else
-                            Poly lhs = (*ubound)->variable().expression() - (Rational)newlimit->mainPart();
+                            typename Poly::PolyType lhs = (*ubound)->variable().expression() - (Rational)newlimit->mainPart();
                             #endif
                             carl::Relation rel = newlimit->deltaPart() != 0 ? carl::Relation::LESS : carl::Relation::LEQ;
                             FormulaT constraint = FormulaT( carl::newConstraint<Poly>( lhs, rel ) );
@@ -1853,9 +1855,9 @@ namespace smtrat
                         #endif
                         {
                             #ifdef LRA_NO_DIVISION
-                            Poly lhs = (*lbound)->variable().expression()*(Rational)rowFactor - (Rational)newlimit->mainPart();
+                            typename Poly::PolyType lhs = (*lbound)->variable().expression()*(Rational)rowFactor - (Rational)newlimit->mainPart();
                             #else
-                            Poly lhs = (*lbound)->variable().expression() - (Rational)newlimit->mainPart();
+                            typename Poly::PolyType lhs = (*lbound)->variable().expression() - (Rational)newlimit->mainPart();
                             #endif
                             carl::Relation rel = newlimit->deltaPart() != 0 ? carl::Relation::GREATER : carl::Relation::GEQ;
                             FormulaT constraint = FormulaT( carl::newConstraint<Poly>( lhs, rel ) );
@@ -2076,11 +2078,11 @@ namespace smtrat
             if( mRows[_rowNumber] == NULL ) return false;
             if( _rowNumber != mRows[_rowNumber]->position() ) return false;
             size_t numOfRowElements = 0;
-            Poly sumOfNonbasics = ZERO_POLYNOMIAL;
+            typename Poly::PolyType sumOfNonbasics;
             Iterator rowEntry = Iterator( mRows[_rowNumber]->startEntry(), mpEntries );
             while( !rowEntry.hEnd( false ) )
             {
-                sumOfNonbasics += (*((*rowEntry).columnVar()->pExpression())) * Poly( (*rowEntry).content() );
+                sumOfNonbasics += (*((*rowEntry).columnVar()->pExpression())) * typename Poly::PolyType( (*rowEntry).content() );
                 ++numOfRowElements;
                 rowEntry.hMove( false );
             }
@@ -2089,11 +2091,11 @@ namespace smtrat
             {
                 return false;
             }
-            sumOfNonbasics += (*((*rowEntry).columnVar()->pExpression())) * Poly( (*rowEntry).content() );
+            sumOfNonbasics += (*((*rowEntry).columnVar()->pExpression())) * typename Poly::PolyType( (*rowEntry).content() );
             #ifdef LRA_NO_DIVISION
-            sumOfNonbasics += (*mRows[_rowNumber]->pExpression()) * Poly( mRows[_rowNumber]->factor() ) * MINUS_ONE_POLYNOMIAL;
+            sumOfNonbasics += (*mRows[_rowNumber]->pExpression()) * typename Poly::PolyType( mRows[_rowNumber]->factor() ) * MINUS_ONE_RATIONAL;
             #else
-            sumOfNonbasics += (*mRows[_rowNumber]->pExpression()) * MINUS_ONE_POLYNOMIAL;
+            sumOfNonbasics += (*mRows[_rowNumber]->pExpression()) * MINUS_ONE_RATIONAL;
             #endif
             if( !sumOfNonbasics.isZero() ) 
             {
@@ -2145,7 +2147,7 @@ namespace smtrat
                         break;
                     }                    
                 }
-                Poly dc_poly = Poly();
+                typename Poly::PolyType dc_poly;
                 dc_poly = basic_var.expression();
                 if( upper_bound_hit )
                 {
@@ -2155,7 +2157,7 @@ namespace smtrat
                 {
                     dc_poly = dc_poly - (Rational)(basic_var.infimum().limit().mainPart());
                 }
-                const ConstraintT* dc_constraint = newConstraint( dc_poly, carl::Relation::EQ );
+                const ConstraintT* dc_constraint = carl::newConstraint<Poly>( dc_poly, carl::Relation::EQ );
                 return dc_constraint;
             }
             else
@@ -2853,7 +2855,7 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
-        Poly* Tableau<Settings,T1,T2>::create_cut_from_proof( Tableau<Settings,T1,T2>& Inverted_Tableau, Tableau<Settings,T1,T2>& DC_Tableau, size_t row_index, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions, T2& lower, T2& max_value )
+        typename Poly::PolyType* Tableau<Settings,T1,T2>::create_cut_from_proof( Tableau<Settings,T1,T2>& Inverted_Tableau, Tableau<Settings,T1,T2>& DC_Tableau, size_t row_index, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions, T2& lower, T2& max_value )
         {
             Value<T1> result = T2(0);
             assert( mRows.size() > row_index );
@@ -2882,7 +2884,7 @@ namespace smtrat
                 // Construct the Cut
                 std::pair< const Variable<T1,T2>*, T2 > product;
                 size_t i=0;
-                Poly* sum = new Poly();
+                typename Poly::PolyType* sum = new typename Poly::PolyType();
                 T2 gcd_row = T2(1);
                 while( i < DC_Tableau.mColumns.size() )
                 {
@@ -2953,10 +2955,9 @@ namespace smtrat
         };
 
         template<class Settings, typename T1, typename T2>
-        const Poly* Tableau<Settings,T1,T2>::gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar )
+        const typename Poly::PolyType* Tableau<Settings,T1,T2>::gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar )
         {
-            Poly* sum = new Poly();
-            *sum = ZERO_POLYNOMIAL; 
+            typename Poly::PolyType* sum = new typename Poly::PolyType(smtrat::ZERO_RATIONAL); 
             Iterator row_iterator = Iterator( _rowVar->startEntry(), mpEntries );
             std::vector<GOMORY_SET> splitting;
             // Check, whether the premises for a Gomory Cut are satisfied

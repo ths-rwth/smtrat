@@ -168,9 +168,8 @@ namespace smtrat
     }
 
     template<class Settings>
-    bool SATModule<Settings>::assertSubformula( ModuleInput::const_iterator _subformula )
+    bool SATModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-        Module::assertSubformula( _subformula );
         if( carl::PROP_IS_A_CLAUSE <= _subformula->formula().properties() )
         {
             if (mFormulaClauseMap.find( _subformula->formula() ) == mFormulaClauseMap.end())
@@ -184,7 +183,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    void SATModule<Settings>::removeSubformula( ModuleInput::const_iterator _subformula )
+    void SATModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
         FormulaClauseMap::iterator iter = mFormulaClauseMap.find( _subformula->formula() );
         if( iter != mFormulaClauseMap.end() )
@@ -200,8 +199,6 @@ namespace smtrat
                 removeClause( iter->second );
             }
         }
-        
-        Module::removeSubformula( _subformula );
     }
 
     template<class Settings>
@@ -223,7 +220,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    Answer SATModule<Settings>::isConsistent()
+    Answer SATModule<Settings>::checkCore( bool _full )
     {
         if( carl::PROP_IS_IN_CNF <= rReceivedFormula().properties() )
         {
@@ -261,7 +258,7 @@ namespace smtrat
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
-                return foundAnswer( False );
+                return False;
             }
 
             lbool result = l_Undef;
@@ -291,7 +288,7 @@ namespace smtrat
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
-                return foundAnswer( True );
+                return True;
             }
             else if( result == l_False )
             {
@@ -300,19 +297,19 @@ namespace smtrat
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
-                return foundAnswer( False );
+                return False;
             }
             else
             {
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
-                return foundAnswer( Unknown );
+                return Unknown;
             }
         }
         else
         {
-            return foundAnswer( Unknown );
+            return Unknown;
         }
     }
 
@@ -515,7 +512,10 @@ namespace smtrat
             {
                 // Check whether the theory solver wants this literal to assigned as soon as possible.
                 if( act == numeric_limits<double>::infinity() )
+                {
                     activity[var(constraintLiteralPair->second.front())] = maxActivity() + 1;
+                    polarity[var(constraintLiteralPair->second.front())] = false;
+                }
                 // add the origin
                 auto& abstrPair = mBooleanConstraintMap[var(constraintLiteralPair->second.front())];
                 Abstraction& abstr = sign(constraintLiteralPair->second.front()) ? *abstrPair.second : *abstrPair.first;
@@ -746,7 +746,10 @@ namespace smtrat
         decision.push();
         trail.capacity( v + 1 );
         setDecisionVar( v, dvar );
-        mVarClausesMap.push_back( std::move( std::set<CRef>() ) );
+        if( Settings::apply_valid_substitutions )
+        {
+            mVarClausesMap.push_back( std::move( std::set<CRef>() ) );
+        }
         return v;
     }
 
@@ -836,8 +839,11 @@ namespace smtrat
                 clauses.push( cr );
             }
             Clause& c = ca[cr];
-            for( int i = 0; i < c.size(); ++i )
-                mVarClausesMap[(size_t)var(c[i])].insert( cr );
+            if( Settings::apply_valid_substitutions )
+            {
+                for( int i = 0; i < c.size(); ++i )
+                    mVarClausesMap[(size_t)var(c[i])].insert( cr );
+            }
             arrangeForWatches( c );
             if( _type == DEDUCTED_CLAUSE && value( c[1] ) == l_False )
             {
@@ -1134,8 +1140,8 @@ SetWatches:
 
         if( strict )
         {
-            remove( watches[~c[0]], Watcher( cr, c[1] ) );
-            remove( watches[~c[1]], Watcher( cr, c[0] ) );
+            Minisat::remove( watches[~c[0]], Watcher( cr, c[1] ) );
+            Minisat::remove( watches[~c[1]], Watcher( cr, c[0] ) );
         }
         else
         {
@@ -1940,6 +1946,8 @@ NextClause:
     template<class Settings>
     void SATModule<Settings>::replaceVariable( Lit _var, Lit _by )
     {
+        if( !Settings::apply_valid_substitutions )
+            return;
         #ifdef DEBUG_SAT_REPLACE_VARIABLE
         cout << __func__ << endl;
         cout << "replace " << (sign( _var ) ? "-" : "") << var( _var ) << " by " << (sign( _by ) ? "-" : "") << var( _by ) << endl;
@@ -2061,6 +2069,8 @@ NextClause:
         cout << __func__ << endl;
         print();
         #endif
+        if( !Settings::apply_valid_substitutions )
+            return false;
         // Consider all constraints which have to hold according to decision level 0
         FormulaT addedConstraint;
         carl::Variable varToSubstitute = carl::Variable::NO_VARIABLE;

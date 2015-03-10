@@ -16,16 +16,21 @@ protected:
 	Results mResults;
 	virtual void execute(const Tool&, const fs::path&) {}
 public:
-	void run(const std::vector<Tool>& tools, const std::vector<BenchmarkSet>& benchmarks) {
-		for (const Tool& tool: tools) {
+	void run(const std::vector<Tool*>& tools, const std::vector<BenchmarkSet>& benchmarks) {
+		for (const Tool* tool: tools) {
 			for (const BenchmarkSet& set: benchmarks) {
 				for (const fs::path& file: set) {
-					if (tool.canHandle(file)) {
-						this->execute(tool, file);
+					if (tool->canHandle(file)) {
+						BENCHMAX_LOG_DEBUG("benchmax", "Calling " << tool->binary().native() << " on " << file.native());
+						this->execute(*tool, file);
 					}
 				}
 			}
 		}
+	}
+	virtual ~Backend() {
+		Database db;
+		mResults.store(db);
 	}
 };
 

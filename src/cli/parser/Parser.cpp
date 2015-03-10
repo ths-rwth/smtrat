@@ -63,6 +63,10 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 	}
 }
 
+SMTLIBParser::~SMTLIBParser() {
+	delete state;
+}
+
 bool SMTLIBParser::parse(std::istream& in, const std::string&) {
 	in.unsetf(std::ios::skipws);
 	mInputStream = &in;

@@ -65,12 +65,11 @@ namespace smtrat
     }
 
     template<class Settings>
-    bool LRAModule<Settings>::inform( const FormulaT& _constraint )
+    bool LRAModule<Settings>::informCore( const FormulaT& _constraint )
     {
         #ifdef DEBUG_LRA_MODULE
         cout << "LRAModule::inform  " << "inform about " << _constraint << endl;
         #endif
-        Module::inform( _constraint );
         if( _constraint.getType() == carl::FormulaType::CONSTRAINT )
         {
             const ConstraintT& constraint = _constraint.constraint();
@@ -88,12 +87,11 @@ namespace smtrat
     }
 
     template<class Settings>
-    bool LRAModule<Settings>::assertSubformula( ModuleInput::const_iterator _subformula )
+    bool LRAModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
         #ifdef DEBUG_LRA_MODULE
         cout << "LRAModule::assertSubformula  " << "add " << _subformula->formula() << endl;
         #endif
-        Module::assertSubformula( _subformula );
         switch( _subformula->formula().getType() )
         {
             case carl::FormulaType::FALSE:
@@ -101,7 +99,6 @@ namespace smtrat
                 FormulasT infSubSet;
                 infSubSet.insert( _subformula->formula() );
                 mInfeasibleSubsets.push_back( infSubSet );
-                foundAnswer( False );
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 mpStatistics->addConflict( mInfeasibleSubsets );
                 #endif
@@ -195,7 +192,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    void LRAModule<Settings>::removeSubformula( ModuleInput::const_iterator _subformula )
+    void LRAModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
         #ifdef DEBUG_LRA_MODULE
         cout << "remove " << _subformula->formula() << endl;
@@ -247,11 +244,8 @@ namespace smtrat
                             }
                             if( (*bound)->origins().empty() )
                             {
-//                                std::cout << __func__ << ":" << __LINE__ << std::endl;
-//                                std::cout << (*bound)->neqRepresentation() << std::endl;
                                 if( !(*bound)->neqRepresentation().isTrue() )
                                 {
-//                                    std::cout << __func__ << ":" << __LINE__ << ": " << formula << std::endl;
                                     auto constrBoundIterB = mTableau.constraintToBound().find( (*bound)->neqRepresentation() );
                                     assert( constrBoundIterB != mTableau.constraintToBound().end() );
                                     const std::vector< const LRABound* >* uebounds = constrBoundIterB->second;
@@ -259,11 +253,9 @@ namespace smtrat
                                     assert( uebounds->size() >= 4 );
                                     if( !(*uebounds)[0]->isActive() && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive() && !(*uebounds)[3]->isActive() )
                                     {
-//                                        std::cout << __func__ << ":" << __LINE__ << std::endl;
                                         auto pos = mActiveResolvedNEQConstraints.find( (*bound)->neqRepresentation() );
                                         if( pos != mActiveResolvedNEQConstraints.end() )
                                         {
-//                                            std::cout << __func__ << ":" << __LINE__ << std::endl;
                                             auto entry = mActiveUnresolvedNEQConstraints.insert( *pos );
                                             mActiveResolvedNEQConstraints.erase( pos );
                                             entry.first->second.position = addSubformulaToPassedFormula( entry.first->first, entry.first->second.origin ).first;
@@ -338,11 +330,10 @@ namespace smtrat
                 }
             }
         }
-        Module::removeSubformula( _subformula );
     }
 
     template<class Settings>
-    Answer LRAModule<Settings>::isConsistent()
+    Answer LRAModule<Settings>::checkCore( bool _full )
     {
         #ifdef DEBUG_LRA_MODULE
         cout << "check for consistency" << endl;
@@ -396,11 +387,17 @@ namespace smtrat
                     if( checkAssignmentForNonlinearConstraint() )
                     {
                         if( Settings::use_gomory_cuts && gomory_cut() )
+                        {
                             goto Return; // Unknown
+                        }
                         if( !Settings::use_gomory_cuts && Settings::use_cuts_from_proofs && cuts_from_proofs() )
+                        {
                             goto Return; // Unknown
+                        }
                         if( !Settings::use_gomory_cuts && !Settings::use_cuts_from_proofs && branch_and_bound() )
+                        {
                             goto Return; // Unknown
+                        }
                         result = True;
                         if( Settings::restore_previous_consistent_assignment )
                         {
@@ -412,7 +409,7 @@ namespace smtrat
                     else
                     {
                         adaptPassedFormula();
-                        Answer a = runBackends();
+                        Answer a = runBackends( _full );
                         if( a == False )
                             getInfeasibleSubsets();
                         result = a;
@@ -579,7 +576,6 @@ Return:
                         break;
                     }
                 }
-//                if( !( result != True || assignmentCorrect() ) ) { std::cout << "Error!" << std::endl; exit( 7771 ); }
                 assert( result != True || assignmentCorrect() );
             }
         }
@@ -589,7 +585,7 @@ Return:
         cout << endl;
         cout << ANSWER_TO_STRING( result ) << endl;
         #endif
-        return foundAnswer( result );
+        return result;
     }
 
     template<class Settings>
@@ -790,8 +786,6 @@ Return:
             }
         }
         // If the bounds constraint has already been passed to the backend, add the given formulas to it's origins
-        if( _bound->pInfo()->position != passedFormulaEnd() )
-            addOrigin( _bound->pInfo()->position, _formula );
         const LRAVariable& var = _bound->variable();
         const LRABound* psup = var.pSupremum();
         const LRABound& sup = *psup;
@@ -1127,8 +1121,8 @@ Return:
                 if( !carl::isInteger( ass ) )
                 {
                     all_int = false;
-                    const Poly* gomory_poly = mTableau.gomoryCut(ass, basicVar);
-                    if( *gomory_poly != ZERO_POLYNOMIAL )
+                    const Poly::PolyType* gomory_poly = mTableau.gomoryCut(ass, basicVar);
+                    if( *gomory_poly != ZERO_RATIONAL )
                     { 
                         const ConstraintT* gomory_constr = carl::newConstraint<Poly>( *gomory_poly , carl::Relation::GEQ );
                         const ConstraintT* neg_gomory_constr = carl::newConstraint<Poly>( *gomory_poly - (*gomory_poly).evaluate( rMap_ ), carl::Relation::LESS );
@@ -1205,7 +1199,7 @@ Return:
         size_t i=0;
         for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
         {
-            dc_Tableau.newNonbasicVariable( new Poly( (*mTableau.columns().at(i)).expression() ), true );
+            dc_Tableau.newNonbasicVariable( new Poly::PolyType( (*mTableau.columns().at(i)).expression() ), true );
             ++i;
         } 
         size_t numRows = mTableau.rows().size();
@@ -1269,7 +1263,7 @@ Return:
             dc_Tableau.calculate_hermite_normalform( diagonals_ref, full_rank );
             if( !full_rank )
             {
-                branchAt( Poly( var->first ), (Rational)map_iterator->second );
+                branchAt( var->first, (Rational)map_iterator->second );
                 return true;
             }
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
@@ -1284,12 +1278,12 @@ Return:
             cout << "Inverted matrix:" << endl;
             dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
             #endif 
-            Poly* cut_from_proof = new Poly();
+            Poly::PolyType* cut_from_proof = nullptr;
             for( size_t i = 0; i < dc_positions.size(); ++i )
             {
                 LRAEntryType upper_lower_bound;
                 cut_from_proof = dc_Tableau.create_cut_from_proof( dc_Tableau, mTableau, i, diagonals, dc_positions, upper_lower_bound, max_value );
-                if( cut_from_proof != NULL )
+                if( cut_from_proof != nullptr )
                 {
                     #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                     cout << "Proof of unsatisfiability:  " << *cut_from_proof << " = 0" << endl;
@@ -1322,6 +1316,7 @@ Return:
                     mTableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
                     cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
                     #endif
+                    delete cut_from_proof;
                     return true;
                 }
             }
@@ -1334,7 +1329,7 @@ Return:
         cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
         cout << "Branch at: " << var->first << endl;
         #endif
-        branchAt( Poly( var->first ), (Rational)map_iterator->second );
+        branchAt( var->first, (Rational)map_iterator->second );
         return true;
     }
 
@@ -1394,7 +1389,7 @@ Return:
         for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
         {
             assert( var->first == map_iterator->first );
-            Rational& ass = map_iterator->second; 
+            Rational& ass = map_iterator->second;
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
                 size_t row_count_new = mTableau.getNumberOfEntries( var->second );
@@ -1438,7 +1433,7 @@ Return:
         auto branch_var = mTableau.originalVars().begin();
         Rational ass_;
         bool result = false;
-        Rational diff = -1;
+        Rational diff = MINUS_ONE_RATIONAL;
         for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
         {
             assert( var->first == map_iterator->first );
@@ -1446,10 +1441,10 @@ Return:
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
                 Rational curr_diff = ass - carl::floor(ass);
-                if( carl::abs( curr_diff -  (Rational)1/2 ) > diff )
+                if( carl::abs(Rational(curr_diff -  ONE_RATIONAL/Rational(2))) > diff )
                 {
                     result = true;
-                    diff = carl::abs( curr_diff -  (Rational)1/2 ); 
+                    diff = carl::abs(Rational(curr_diff -  ONE_RATIONAL/Rational(2))); 
                     branch_var = var;
                     ass_ = ass;                   
                 }
@@ -1486,7 +1481,7 @@ Return:
         auto branch_var = mTableau.originalVars().begin();
         Rational ass_;
         bool result = false;
-        Rational diff = 1;
+        Rational diff = ONE_RATIONAL;
         for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
         {
             assert( var->first == map_iterator->first );
@@ -1494,10 +1489,10 @@ Return:
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
                 Rational curr_diff = ass - carl::floor(ass);
-                if( carl::abs( Rational(curr_diff - Rational(1)/Rational(2)) ) < diff )
+                if( carl::abs( Rational(curr_diff - ONE_RATIONAL/Rational(2)) ) < diff )
                 {
                     result = true;
-                    diff = carl::abs( Rational(curr_diff -  Rational(1)/Rational(2)) ); 
+                    diff = carl::abs( Rational(curr_diff -  ONE_RATIONAL/Rational(2)) ); 
                     branch_var = var;
                     ass_ = ass;                   
                 }
@@ -1564,7 +1559,7 @@ Return:
             Poly tmp = slackVar.first->substitute( _assignment );
             assert( tmp.isConstant() );
             LRABoundType slackVarAssignment = slackVar.second->assignment().mainPart() + slackVar.second->assignment().deltaPart() * _delta;
-            if( !(tmp == (Rational) slackVarAssignment) )
+            if( !(tmp == Poly(Rational(slackVarAssignment))) )
             {
                 return false;
             }
