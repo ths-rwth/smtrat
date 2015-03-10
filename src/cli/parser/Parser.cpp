@@ -16,7 +16,7 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 	queueInstructions(queueInstructions),
 	formula(state),
 	bitvector(state),
-	uninterpreted(state, &formula),
+	uninterpreted(state, &formula, &bitvector),
 	polynomial(state, &formula, &uninterpreted),
 	fun_argument(&formula, &bitvector, &uninterpreted, &polynomial)
 {

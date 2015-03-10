@@ -15,7 +15,7 @@ FormulaParser::FormulaParser(ParserState* _state):
 	FormulaParser::base_type(formula, "formula"),
 	state(_state),
 	bitvector(_state),
-	uninterpreted(_state, this),
+	uninterpreted(_state, this, &bitvector),
 	polynomial(_state, this, &uninterpreted),
 	fun_argument(this, &bitvector, &uninterpreted, &polynomial)
 {
