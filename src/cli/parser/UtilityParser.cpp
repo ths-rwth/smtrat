@@ -14,6 +14,21 @@ TheoryOpParser::TheoryOpParser() {
     add("/", Poly::ConstructorOperation::DIV);
 }
 
+BitvectorUnaryOpParser::BitvectorUnaryOpParser() {
+    add("bvnot", carl::BVTermType::NOT);
+    add("bvneg", carl::BVTermType::NEG);
+}
+BitvectorBinaryOpParser::BitvectorBinaryOpParser() {
+    add("bvand", carl::BVTermType::AND);
+    add("bvor", carl::BVTermType::OR);
+    add("bvadd", carl::BVTermType::ADD);
+    add("bvmul", carl::BVTermType::MUL);
+    add("bvudiv", carl::BVTermType::DIV_U);
+    add("bvurem", carl::BVTermType::MOD_U);
+    add("bvshl", carl::BVTermType::LSHIFT);
+    add("bvlshr", carl::BVTermType::RSHIFT_LOGIC);
+}
+
 DomainParser::DomainParser() {
     add("Bool", carl::VariableType::VT_BOOL);
     add("Int", carl::VariableType::VT_INT);
@@ -33,6 +48,7 @@ LogicParser::LogicParser() {
     add("QF_NIA", smtrat::Logic::QF_NIA);
     add("QF_NRA", smtrat::Logic::QF_NRA);
     add("QF_UF", smtrat::Logic::QF_NRA);
+    add("QF_BV", smtrat::Logic::QF_NRA);
 }
 
 RelationParser::RelationParser() {

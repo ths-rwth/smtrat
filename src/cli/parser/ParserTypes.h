@@ -79,6 +79,7 @@ typedef PositionIteratorType Iterator;
 
 
 typedef carl::BVTerm<Poly> BitvectorType;
+typedef carl::BVTermPool<Poly> BitvectorPool;
 typedef boost::variant<carl::UVariable, carl::UFInstance> UninterpretedType;
 typedef boost::variant<FormulaT, Poly, carl::UVariable, carl::UFInstance> Argument;
 typedef std::vector<Argument> Arguments;
