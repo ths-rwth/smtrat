@@ -24,6 +24,18 @@ namespace parser {
 	private:
 		ParserState* state;
 
+		BitvectorType createVariable(const carl::BVVariable& bvv) const {
+			return BitvectorType(BitvectorPool::getInstance().create(carl::BVTermType::VARIABLE, bvv));
+		}
+		BitvectorType createUnary(carl::BVTermType type, const BitvectorType& a) const {
+			return BitvectorType(BitvectorPool::getInstance().create(type, a));
+		}
+		BitvectorType createBinary(carl::BVTermType type, const BitvectorType& a, const BitvectorType& b) const {
+			return BitvectorType(BitvectorPool::getInstance().create(type, a, b));
+		}
+
+		BitvectorUnaryOpParser buop;
+		BitvectorBinaryOpParser bbop;
 		qi::rule<Iterator, BitvectorType(), Skipper> bitvector;
 	};
 	

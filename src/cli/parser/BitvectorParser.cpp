@@ -10,7 +10,9 @@ BitvectorParser::BitvectorParser(ParserState* _state):
 	state(_state)
 {
 	bitvector = (
-			state->var_bitvector[qi::_val = qi::_1]
+			state->var_bitvector[qi::_val = px::bind(&BitvectorParser::createVariable, px::ref(*this), qi::_1)]
+		|	(buop >> bitvector)[qi::_val = px::bind(&BitvectorParser::createUnary, px::ref(*this), qi::_1, qi::_2)]
+		|	(bbop >> bitvector >> bitvector)[qi::_val = px::bind(&BitvectorParser::createBinary, px::ref(*this), qi::_1, qi::_2, qi::_3)]
 	);
 }
 
