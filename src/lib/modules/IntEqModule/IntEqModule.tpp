@@ -226,6 +226,12 @@ namespace smtrat
              * and determine the coefficient of the latter with 
              * the smallest absolute value
              */
+            auto iter_constr = mProc_Constraints.begin();
+            while( iter_constr != mProc_Constraints.end() )
+            {
+                cout << "Formula: " << iter_constr->first << endl;
+                ++iter_constr;
+            }
             const smtrat::ConstraintT* curr_constr = mProc_Constraints.begin()->first.pConstraint();
             if( mProc_Constraints.begin()->first.isFalse() )
             {
@@ -241,26 +247,33 @@ namespace smtrat
             std::shared_ptr<std::vector<FormulaT>> origins = mProc_Constraints.begin()->second;
             auto iter_coeff = (curr_constr->lhs()).begin();
             Rational smallest_abs_value = (*iter_coeff).coeff();
+            cout << "Smallest value: " << smallest_abs_value << endl;
             carl::Variable corr_var;
             bool value_negative = false;
             if( (*iter_coeff).isConstant() )
             {
+                cout << "Constant: " << endl;
                 corr_var = (*(++iter_coeff)).getSingleVariable(); 
                 Rational coeff = (*iter_coeff).coeff();
+                cout << "Coeff: " << coeff << endl;
                 if( coeff < 0 )
                 {
                     value_negative = true;
+                    cout << "Set negative" << endl;
                 }
                 smallest_abs_value = carl::abs( coeff );
             }
             else
             {
+                cout << "Not Constant: " << endl;
                 corr_var = (*(iter_coeff)).getSingleVariable(); 
                 if( smallest_abs_value < 0 )
                 {
                     value_negative = true;
+                    cout << "Set negative" << endl;
                 }
                 smallest_abs_value = carl::abs( smallest_abs_value );
+                cout << "Smallest value: " << smallest_abs_value << endl;
             }
             #ifdef DEBUG_IntEqModule
             cout << "Determine the smallest absolute value of the chosen constraint." << endl;
@@ -270,12 +283,17 @@ namespace smtrat
                 if( !(*iter_coeff).isConstant() )
                 {
                     Rational coeff = (*iter_coeff).coeff();
+                    cout << "Coeff: " << coeff << endl;
                     carl::Variable var = (*iter_coeff).getSingleVariable();
                     if( carl::abs(coeff) < smallest_abs_value )
                     {
                         if( coeff < 0 )
                         {
                             value_negative = true;
+                        }
+                        else
+                        {
+                            value_negative = false;
                         }
                         smallest_abs_value = carl::abs(coeff); 
                         corr_var = var;
@@ -378,18 +396,7 @@ namespace smtrat
                 #ifdef DEBUG_IntEqModule
                 cout << "After substitution: " << new_poly << endl;
                 #endif
-                FormulaT newEq( carl::newConstraint<Poly>( new_poly, carl::Relation::EQ ) );
-                std::shared_ptr<std::vector<FormulaT>> origins_new( new std::vector<FormulaT>() ); 
-                *origins_new = ( std::move( merge( *origins, *( constr_iter->second ) ) ) );
-                Formula_Origins::iterator iter = mProc_Constraints.find( newEq );
-                if( iter != mProc_Constraints.end() )
-                {
-                    iter->second->insert( iter->second->begin(), origins_new->begin(), origins_new->end() );
-                }
-                else
-                {
-                    temp_proc_constraints.emplace( newEq, origins_new );
-                }
+                FormulaT newEq( carl::newConstraint<Poly>( new_poly, carl::Relation::EQ ) );          
                 // Check whether newEq is unsatisfiable
                 if( newEq.isFalse() )
                 {
@@ -402,13 +409,16 @@ namespace smtrat
                     mInfeasibleSubsets.push_back( infSubSet );
                     return foundAnswer( False ); 
                 }
+                std::shared_ptr<std::vector<FormulaT>> origins_new( new std::vector<FormulaT>() ); 
+                *origins_new = ( std::move( merge( *origins, *( constr_iter->second ) ) ) );
+                temp_proc_constraints.emplace( newEq, origins_new );
                 ++constr_iter;
             }
             mProc_Constraints = temp_proc_constraints;
         }
         #ifdef DEBUG_IntEqModule
         cout << "Substitute in the received inequalities:" << endl;
-        #endif
+        #endif  
         auto iter_formula = rReceivedFormula().begin();
         // Iterate through the received constraints and remove the equations
         // by substituting the expressions according to mSubstitutions in the inequalities
