@@ -28,7 +28,7 @@
 
 #include "IntEqModule.h"
 
-#define DEBUG_IntEqModule
+//#define DEBUG_IntEqModule
 
 namespace smtrat
 {
@@ -226,12 +226,6 @@ namespace smtrat
              * and determine the coefficient of the latter with 
              * the smallest absolute value
              */
-            auto iter_constr = mProc_Constraints.begin();
-            while( iter_constr != mProc_Constraints.end() )
-            {
-                cout << "Formula: " << iter_constr->first << endl;
-                ++iter_constr;
-            }
             const smtrat::ConstraintT* curr_constr = mProc_Constraints.begin()->first.pConstraint();
             if( mProc_Constraints.begin()->first.isFalse() )
             {
@@ -247,33 +241,26 @@ namespace smtrat
             std::shared_ptr<std::vector<FormulaT>> origins = mProc_Constraints.begin()->second;
             auto iter_coeff = (curr_constr->lhs()).begin();
             Rational smallest_abs_value = (*iter_coeff).coeff();
-            cout << "Smallest value: " << smallest_abs_value << endl;
             carl::Variable corr_var;
             bool value_negative = false;
             if( (*iter_coeff).isConstant() )
             {
-                cout << "Constant: " << endl;
                 corr_var = (*(++iter_coeff)).getSingleVariable(); 
                 Rational coeff = (*iter_coeff).coeff();
-                cout << "Coeff: " << coeff << endl;
                 if( coeff < 0 )
                 {
                     value_negative = true;
-                    cout << "Set negative" << endl;
                 }
                 smallest_abs_value = carl::abs( coeff );
             }
             else
             {
-                cout << "Not Constant: " << endl;
                 corr_var = (*(iter_coeff)).getSingleVariable(); 
                 if( smallest_abs_value < 0 )
                 {
                     value_negative = true;
-                    cout << "Set negative" << endl;
                 }
                 smallest_abs_value = carl::abs( smallest_abs_value );
-                cout << "Smallest value: " << smallest_abs_value << endl;
             }
             #ifdef DEBUG_IntEqModule
             cout << "Determine the smallest absolute value of the chosen constraint." << endl;
@@ -283,7 +270,6 @@ namespace smtrat
                 if( !(*iter_coeff).isConstant() )
                 {
                     Rational coeff = (*iter_coeff).coeff();
-                    cout << "Coeff: " << coeff << endl;
                     carl::Variable var = (*iter_coeff).getSingleVariable();
                     if( carl::abs(coeff) < smallest_abs_value )
                     {
@@ -297,7 +283,7 @@ namespace smtrat
                         }
                         smallest_abs_value = carl::abs(coeff); 
                         corr_var = var;
-                    }
+                    }   
                 }    
                 ++iter_coeff;                
             }
