@@ -28,7 +28,7 @@
 
 #include "IntEqModule.h"
 
-//#define DEBUG_IntEqModule
+#define DEBUG_IntEqModule
 
 namespace smtrat
 {
@@ -104,10 +104,6 @@ namespace smtrat
                 collectOrigins( origins->at(i), infSubSet  );
                 mInfeasibleSubsets.push_back( infSubSet );
                 return false;                
-            }
-            if( newEq.isTrue() )
-            {
-                return true;
             }
             #ifdef DEBUG_IntEqModule
             cout << "Assert: " << _subformula->formula().constraint() << endl;
