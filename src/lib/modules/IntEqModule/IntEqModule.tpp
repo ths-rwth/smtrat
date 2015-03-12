@@ -28,7 +28,7 @@
 
 #include "IntEqModule.h"
 
-//#define DEBUG_IntEqModule
+#define DEBUG_IntEqModule
 
 namespace smtrat
 {
@@ -468,6 +468,17 @@ namespace smtrat
                     ++iter_sets;
                 }  
                 FormulaT formula_passed( carl::newConstraint<Poly>( new_poly, (*iter_formula).formula().constraint().relation() ) );                
+                if( formula_passed.isFalse() )
+                {
+                    #ifdef DEBUG_IntEqModule
+                    cout << "The obtained formula is unsatisfiable" << endl;
+                    #endif
+                    size_t i = determine_smallest_origin( *formula_cover );
+                    FormulasT infSubSet;
+                    collectOrigins( formula_cover->at(i), infSubSet );
+                    mInfeasibleSubsets.push_back( std::move( infSubSet ) );
+                    return foundAnswer( False );
+                }                                        
                 addConstraintToInform( formula_passed );
                 addSubformulaToPassedFormula( formula_passed, formula_cover );    
             }
