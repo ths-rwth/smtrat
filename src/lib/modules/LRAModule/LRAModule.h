@@ -78,7 +78,7 @@ namespace smtrat
             /// Maps an original variable to it's corresponding LRAModule variable.
             typedef std::map<carl::Variable, LRAVariable*> VarVariableMap;
             /// Maps a linear polynomial to it's corresponding LRAModule variable.
-            typedef carl::FastPointerMap<Poly, LRAVariable*> ExVariableMap;
+            typedef carl::FastPointerMap<typename Poly::PolyType, LRAVariable*> ExVariableMap;
             /// Maps constraint to the bounds it represents (e.g., equations represent two bounds)
             typedef carl::FastMap<FormulaT, std::vector<const LRABound*>*> ConstraintBoundsMap;
             /// Stores the position of a received formula in the passed formula.
@@ -159,7 +159,7 @@ namespace smtrat
              * @return false, if the it can be determined that the constraint itself is conflicting;
              *         true,  otherwise.
              */
-            bool inform( const FormulaT& _constraint );
+            bool informCore( const FormulaT& _constraint );
             
             /**
              * Initializes the tableau according to all linear constraints, of which this module has been informed.
@@ -173,21 +173,22 @@ namespace smtrat
              *          the already considered sub-formulas;
              *          true, otherwise.
              */
-            bool assertSubformula( ModuleInput::const_iterator _subformula );
+            bool addCore( ModuleInput::const_iterator _subformula );
             
             /**
              * Removes everything related to the given sub-formula of the received formula.
              * @param _subformula The sub formula of the received formula to remove.
              */
-            void removeSubformula( ModuleInput::const_iterator _subformula );
+            void removeCore( ModuleInput::const_iterator _subformula );
             
             /**
              * Checks the received formula for consistency.
+             * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
              * @return True,    if the received formula is satisfiable;
              *         False,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            Answer isConsistent();
+            Answer checkCore( bool _full = true );
             
             /**
              * Updates the model, if the solver has detected the consistency of the received formula, beforehand.

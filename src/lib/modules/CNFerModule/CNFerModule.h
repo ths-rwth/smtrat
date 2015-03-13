@@ -59,23 +59,23 @@ namespace smtrat
              *          the already considered sub-formulas;
              *          true, otherwise.
              */
-            bool assertSubformula( ModuleInput::const_iterator _subformula );
+            bool addCore( ModuleInput::const_iterator _subformula );
             
             /**
              * Checks the received formula for consistency.
-             *
+             * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
              * @return True,    if the received formula is satisfiable;
              *         False,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            Answer isConsistent();
+            Answer checkCore( bool _full );
             
             /**
              * Removes everything related to the given sub-formula of the received formula.
              *
              * @param _subformula The sub formula of the received formula to remove.
              */
-            void removeSubformula( ModuleInput::const_iterator _subformula );
+            void removeCore( ModuleInput::const_iterator _subformula );
     };
 
 }    // namespace smtrat

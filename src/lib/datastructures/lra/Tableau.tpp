@@ -186,7 +186,7 @@ namespace smtrat
             if( constraint.lhs().nrTerms() == 1 || ( constraint.lhs().nrTerms() == 2 && constraint.lhs().hasConstantTerm() ) )
             {
                 // TODO: do not store the expanded polynomial, but use the coefficient and coprimeCoefficients
-                typename Poly::PolyType expandedPoly = constraint.lhs().polynomial();
+                const typename Poly::PolyType& expandedPoly = constraint.lhs().polynomial();
                 auto term = expandedPoly.begin();
                 for( ; term != expandedPoly.end(); ++term )
                     if( !term->isConstant() ) break;

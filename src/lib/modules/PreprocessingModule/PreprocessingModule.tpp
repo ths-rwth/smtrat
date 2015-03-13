@@ -64,8 +64,7 @@ namespace smtrat {
      * @return true
      */
 	template<typename Settings>
-    bool PreprocessingModule<Settings>::assertSubformula(ModuleInput::const_iterator _subformula) {
-        Module::assertSubformula(_subformula);
+    bool PreprocessingModule<Settings>::addCore(ModuleInput::const_iterator _subformula) {
 		if (collectBounds) {
 			if (addBounds(_subformula->formula())) newBounds.insert(_subformula->formula());
 		}
@@ -76,13 +75,13 @@ namespace smtrat {
      * Checks the so far received constraints for consistency.
      */
 	template<typename Settings>
-    Answer PreprocessingModule<Settings>::isConsistent()
+    Answer PreprocessingModule<Settings>::checkCore( bool _full )
     {
 		if (collectBounds) {
 			// If bounds are collected, check if they are conflicting.
 			if (varbounds.isConflicting()) {
 				mInfeasibleSubsets.push_back(varbounds.getConflict());
-				return foundAnswer(False);
+				return False;
 			}
 		}
         auto receivedFormula = firstUncheckedReceivedSubformula();
@@ -132,11 +131,11 @@ namespace smtrat {
 			++receivedFormula;
         }
 
-        Answer ans = runBackends();
+        Answer ans = runBackends( _full );
         if (ans == False) {
             getInfeasibleSubsets();
         }
-        return foundAnswer(ans);
+        return ans;
     }
 
     /**
@@ -145,11 +144,10 @@ namespace smtrat {
      * @param _subformula The sub formula of the received formula to remove.
      */
 	template<typename Settings>
-    void PreprocessingModule<Settings>::removeSubformula(ModuleInput::const_iterator _subformula) {
+    void PreprocessingModule<Settings>::removeCore(ModuleInput::const_iterator _subformula) {
 		if (collectBounds) {
 			removeBounds(_subformula->formula());
 		}
-        Module::removeSubformula(_subformula);
     }
 	
 	template<typename Settings>
@@ -173,7 +171,7 @@ namespace smtrat {
     }
 	
 	template<typename Settings>
-    bool PreprocessingModule<Settings>::addBounds(FormulaT formula) {
+    bool PreprocessingModule<Settings>::addBounds(const FormulaT& formula) {
 		switch (formula.getType()) {
 			case carl::CONSTRAINT:
 				return varbounds.addBound(formula.pConstraint(), formula);
@@ -187,7 +185,7 @@ namespace smtrat {
 		return false;
 	}
 	template<typename Settings>
-    void PreprocessingModule<Settings>::removeBounds(FormulaT formula) {
+    void PreprocessingModule<Settings>::removeBounds(const FormulaT& formula) {
 		switch (formula.getType()) {
 			case carl::CONSTRAINT:
 				varbounds.removeBound(formula.pConstraint(), formula);
@@ -200,7 +198,7 @@ namespace smtrat {
 	}
 	
 	template<typename Settings>
-    FormulaT PreprocessingModule<Settings>::removeFactors(FormulaT formula) {
+    FormulaT PreprocessingModule<Settings>::removeFactors(const FormulaT& formula) {
 		if(formula.getType() == carl::CONSTRAINT) {
 			auto factors = formula.constraint().factorization();
 			SMTRAT_LOG_TRACE("smtrat.preprocessing", "Factorization of " << formula << " = " << factors);
@@ -222,20 +220,20 @@ namespace smtrat {
 					else it->second = 1;
 					++it;
 				} else if (i.isZero()) {
-					return FormulaT(newConstraint(Poly(0), formula.constraint().relation()));
+					return FormulaT(ZERO_POLYNOMIAL, formula.constraint().relation());
 				} else ++it;
 			}
-			Poly p(1);
+			Poly p = ONE_POLYNOMIAL;
 			for (const auto& it: factors) {
 				p *= carl::pow(it.first, it.second);
 			}
-			return FormulaT(newConstraint(p, formula.constraint().relation()));
+			return FormulaT(p, formula.constraint().relation());
 		}
 		return formula;
 	}
 	
 	template<typename Settings>
-    FormulaT PreprocessingModule<Settings>::checkBounds(FormulaT formula) {
+    FormulaT PreprocessingModule<Settings>::checkBounds(const FormulaT& formula) {
 		if(formula.getType() == carl::CONSTRAINT) {
 			unsigned result = formula.constraint().evaluate(completeBounds(formula.constraint()));
 			if (result == 0) {

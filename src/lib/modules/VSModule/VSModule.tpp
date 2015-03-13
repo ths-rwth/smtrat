@@ -69,9 +69,8 @@ namespace smtrat
     }
 
     template<class Settings>
-    bool VSModule<Settings>::assertSubformula( ModuleInput::const_iterator _subformula )
+    bool VSModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-        Module::assertSubformula( _subformula );
         if( _subformula->formula().getType() == carl::FormulaType::CONSTRAINT )
         {
             const ConstraintT* constraint = _subformula->formula().pConstraint();
@@ -121,7 +120,6 @@ namespace smtrat
             mInfeasibleSubsets.push_back( FormulasT() );
             mInfeasibleSubsets.back().insert( _subformula->formula() );
             mInconsistentConstraintAdded = true;
-            foundAnswer( False );
             assert( checkRanking() );
             return false;
         }
@@ -130,7 +128,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    void VSModule<Settings>::removeSubformula( ModuleInput::const_iterator _subformula )
+    void VSModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
         if( _subformula->formula().getType() == carl::FormulaType::CONSTRAINT )
         {
@@ -156,12 +154,10 @@ namespace smtrat
             condToDelete = NULL;
             mConditionsChanged = true;
         }
-        Module::removeSubformula( _subformula );
-        assert( checkRanking() );
     }
 
     template<class Settings>
-    Answer VSModule<Settings>::isConsistent()
+    Answer VSModule<Settings>::checkCore( bool _full )
     {
         #ifdef VS_STATISTICS
         mStepCounter = 0;
@@ -186,9 +182,9 @@ namespace smtrat
             addStateToRanking( mpStateTree );
         }
         if( !rReceivedFormula().isConstraintConjunction() )
-            return foundAnswer( Unknown );
+            return Unknown;
         if( Settings::int_constraints_allowed && !(rReceivedFormula().isIntegerConstraintConjunction() || rReceivedFormula().isRealConstraintConjunction()) )
-            return foundAnswer( Unknown );
+            return Unknown;
         if( !mConditionsChanged )
         {
             if( mInfeasibleSubsets.empty() )
@@ -199,7 +195,7 @@ namespace smtrat
                     {
                         if( Settings::branch_and_bound )
                         {
-                            return foundAnswer( Unknown );
+                            return Unknown;
                         }
                     }
                     else
@@ -209,11 +205,11 @@ namespace smtrat
                 }
                 else
                 {
-                    return (mFormulaConditionMap.empty() ? consistencyTrue() : foundAnswer( Unknown ));
+                    return (mFormulaConditionMap.empty() ? consistencyTrue() : Unknown );
                 }
             }
             else
-                return foundAnswer( False );
+                return False;
         }
         mConditionsChanged = false;
         if( rReceivedFormula().empty() )
@@ -222,7 +218,7 @@ namespace smtrat
             {
                 if( Settings::branch_and_bound )
                 {
-                    return foundAnswer( Unknown );
+                    return Unknown;
                 }
             }
             else
@@ -234,7 +230,7 @@ namespace smtrat
         {
             assert( !mInfeasibleSubsets.empty() );
             assert( !mInfeasibleSubsets.back().empty() );
-            return foundAnswer( False );
+            return False;
         }
         if( Settings::use_variable_bounds )
         {
@@ -267,7 +263,7 @@ namespace smtrat
             assert( checkRanking() );
 //                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             if( anAnswerFound() )
-                return foundAnswer( Unknown );
+                return Unknown;
 //            else
 //                cout << "VSModule iteration" << endl;
             #ifdef VS_STATISTICS
@@ -324,7 +320,7 @@ namespace smtrat
 //                        // Split the neq-constraint in a preceeding sat module (make sure that it is there in your strategy when choosing this vssetting)
 //                        splitUnequalConstraint( FormulaT( (*cond)->pConstraint() ) );
 //                        assert( currentState->isRoot() );
-//                        return foundAnswer( Unknown );
+//                        return Unknown;
 //                    }
 //                }
 //            }
@@ -344,7 +340,7 @@ namespace smtrat
                     if( currentState->isRoot() )
                     {
                         updateInfeasibleSubset();
-                        return foundAnswer( False );
+                        return False;
                     }
                     else
                     {
@@ -543,7 +539,7 @@ namespace smtrat
                                                 {
                                                     if( Settings::branch_and_bound )
                                                     {
-                                                        return foundAnswer( Unknown );
+                                                        return Unknown;
                                                     }
                                                 }
                                                 else
@@ -604,7 +600,7 @@ namespace smtrat
                                         if( (*currentState).cannotBeSolved() )
                                         {
                                             // If we need to involve another approach.
-                                            Answer result = runBackendSolvers( currentState );
+                                            Answer result = runBackendSolvers( currentState, _full );
                                             switch( result )
                                             {
                                                 case True:
@@ -628,7 +624,7 @@ namespace smtrat
                                                         {
                                                             if( Settings::branch_and_bound )
                                                             {
-                                                                return foundAnswer( Unknown );
+                                                                return Unknown;
                                                             }
                                                         }
                                                         else
@@ -644,18 +640,18 @@ namespace smtrat
                                                 }
                                                 case Unknown:
                                                 {
-                                                    return foundAnswer( Unknown );
+                                                    return Unknown;
                                                 }
                                                 default:
                                                 {
                                                     cout << "Error: Unknown answer in method " << __func__ << " line " << __LINE__ << endl;
-                                                    return foundAnswer( Unknown );
+                                                    return Unknown;
                                                 }
                                             }
                                         }
                                         else
                                         {
-//                                            return foundAnswer( Unknown );
+//                                            return Unknown;
                                             currentState->rCannotBeSolved() = true;
                                             addStateToRanking( currentState );
                                         }
@@ -702,7 +698,7 @@ namespace smtrat
         #ifdef VS_DEBUG
         printAll();
         #endif
-        return foundAnswer( False );
+        return False;
     }
 
     template<class Settings>
@@ -782,7 +778,7 @@ namespace smtrat
         #ifdef VS_DEBUG
         printAll();
         #endif
-        return foundAnswer( True );
+        return True;
     }
 
     template<class Settings>
@@ -1152,11 +1148,11 @@ namespace smtrat
                 {
                     if( allSubstitutionsApplied && !anySubstitutionFailed )
                     {
-                        allSubResults.push_back( DisjunctionOfConditionConjunctions() );
+                        allSubResults.emplace_back();
                         DisjunctionOfConditionConjunctions& currentDisjunction = allSubResults.back();
                         for( auto consConj = subResult.begin(); consConj != subResult.end(); ++consConj )
                         {
-                            currentDisjunction.push_back( ConditionList() );
+                            currentDisjunction.emplace_back();
                             ConditionList& currentConjunction = currentDisjunction.back();
                             for( auto cons = consConj->begin(); cons != consConj->end(); ++cons )
                             {
@@ -1871,12 +1867,12 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer VSModule<Settings>::runBackendSolvers( State* _state )
+    Answer VSModule<Settings>::runBackendSolvers( State* _state, bool _full )
     {
         // Run the backends on the constraint of the state.
         FormulaConditionMap formulaToConditions;
         adaptPassedFormula( *_state, formulaToConditions );
-        Answer result = runBackends();
+        Answer result = runBackends( _full );
         #ifdef VS_DEBUG
         cout << "Ask backend      : ";
         printPassedFormula();
