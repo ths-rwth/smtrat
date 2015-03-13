@@ -105,6 +105,10 @@ namespace smtrat
                 mInfeasibleSubsets.push_back( infSubSet );
                 return false;                
             }
+            if( newEq.isTrue() )
+            {
+                return true;
+            }
             #ifdef DEBUG_IntEqModule
             cout << "Assert: " << _subformula->formula().constraint() << endl;
             #endif
