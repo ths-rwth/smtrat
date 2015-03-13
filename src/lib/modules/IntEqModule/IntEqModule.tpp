@@ -450,7 +450,7 @@ namespace smtrat
                     FormulasT infSubSet;
                     collectOrigins( formula_cover->at(i), infSubSet );
                     mInfeasibleSubsets.push_back( std::move( infSubSet ) );
-                    return foundAnswer( False );
+                    return False;
                 }                                        
                 addConstraintToInform( formula_passed );
                 addSubformulaToPassedFormula( formula_passed, formula_cover );    
