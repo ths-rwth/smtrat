@@ -147,34 +147,36 @@ public:
  */
 unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* solver, const smtrat::RuntimeSettingsManager& settingsManager) {
 
-    // Increase stack size to the maximum.
-    rlimit rl;
-    getrlimit(RLIMIT_STACK, &rl);
-    rl.rlim_cur = rl.rlim_max;
-    setrlimit(RLIMIT_STACK, &rl);
+	// Increase stack size to the maximum.
+	rlimit rl;
+	getrlimit(RLIMIT_STACK, &rl);
+	rl.rlim_cur = rl.rlim_max;
+	setrlimit(RLIMIT_STACK, &rl);
 
-    std::ifstream infile(pathToInputFile);
-    if (!infile.good()) {
-        std::cerr << "Could not open file: " << pathToInputFile << std::endl;
-        exit(SMTRAT_EXIT_NOSUCHFILE);
-    }
-    Executor* e = new Executor(solver);
-    smtrat::parser::SMTLIBParser parser(e, true);
-    bool parsingSuccessful = parser.parse(infile, pathToInputFile);
-    if (parser.queueInstructions) e->runInstructions();
-    unsigned exitCode = e->getExitCode();
-    if (!parsingSuccessful) {
-        std::cerr << "Parse error" << std::endl;
-		delete e;
-        exit(SMTRAT_EXIT_PARSERFAILURE);
-    }
-    if( settingsManager.printModel() && e->lastAnswer == smtrat::True )
-    {
-        std::cout << std::endl;
-        solver->printAssignment( std::cout );
-    }
-    delete e;
-    return exitCode;
+	std::ifstream infile(pathToInputFile);
+	if (!infile.good()) {
+		std::cerr << "Could not open file: " << pathToInputFile << std::endl;
+		exit(SMTRAT_EXIT_NOSUCHFILE);
+	}
+	Executor* e = new Executor(solver);
+	{
+		smtrat::parser::SMTLIBParser parser(e, true);
+		bool parsingSuccessful = parser.parse(infile, pathToInputFile);
+		if (!parsingSuccessful) {
+			std::cerr << "Parse error" << std::endl;
+			delete e;
+			exit(SMTRAT_EXIT_PARSERFAILURE);
+		}
+	}
+	if (e->hasInstructions()) e->runInstructions();
+	unsigned exitCode = e->getExitCode();
+	if( settingsManager.printModel() && e->lastAnswer == smtrat::True )
+	{
+		std::cout << std::endl;
+		solver->printAssignment( std::cout );
+	}
+	delete e;
+	return exitCode;
 }
 
 void printTimings(smtrat::Manager* solver)
@@ -198,10 +200,21 @@ void printTimings(smtrat::Manager* solver)
 int main( int argc, char* argv[] )
 {   
 #ifdef LOGGING
-	carl::logging::logger().configure("smtrat", "smtrat.log");
+	if (!carl::logging::logger().has("smtrat")) {
+		carl::logging::logger().configure("smtrat", "smtrat.log");
+	}
+	if (!carl::logging::logger().has("stdout")) {
+		carl::logging::logger().configure("stdout", std::cout);
+	}
 	carl::logging::logger().filter("smtrat")
 		("smtrat", carl::logging::LogLevel::LVL_INFO)
-		("smtrat.cad", carl::logging::LogLevel::LVL_TRACE)
+		("smtrat.cad", carl::logging::LogLevel::LVL_DEBUG)
+		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
+	;
+	carl::logging::logger().filter("stdout")
+		("smtrat", carl::logging::LogLevel::LVL_INFO)
+		("smtrat.cad", carl::logging::LogLevel::LVL_DEBUG)
+		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
 	;
 #endif
 	SMTRAT_LOG_INFO("smtrat", "Starting smtrat.");

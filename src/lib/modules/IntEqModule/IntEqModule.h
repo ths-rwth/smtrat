@@ -45,7 +45,7 @@ namespace smtrat
             // Stores the equations of the received constraints and their origins
             Formula_Origins mProc_Constraints; 
             // Stores the calculated substitutions
-            std::map<carl::Variable, Poly>  mSubstitutions;
+            std::vector<std::pair<carl::Variable, Poly>>  mSubstitutions;
             // Stores the origins of the calculated substitutions
             std::map<carl::Variable, std::shared_ptr<std::vector<FormulaT>>> mVariables;
             

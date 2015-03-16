@@ -108,6 +108,9 @@ public:
 	void addInstruction(std::function<void()> bind) {
 		this->instructionQueue.push(bind);
 	}
+	bool hasInstructions() const {
+		return !instructionQueue.empty();
+	}
 	void runInstructions() {
 		while (!this->instructionQueue.empty()) {
 			this->instructionQueue.front()();
