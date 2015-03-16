@@ -76,8 +76,8 @@ namespace smtrat
     
     typedef carl::Term<Rational> TermT;
     
-//    typedef carl::MultivariatePolynomial<Rational> Poly;
-    typedef carl::FactorizedPolynomial<carl::MultivariatePolynomial<Rational>> Poly;
+    typedef carl::MultivariatePolynomial<Rational> Poly;
+//    typedef carl::FactorizedPolynomial<carl::MultivariatePolynomial<Rational>> Poly;
     
     typedef carl::Constraint<Poly> ConstraintT;
     
