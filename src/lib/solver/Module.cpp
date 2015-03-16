@@ -208,15 +208,6 @@ namespace smtrat
         if( mInfeasibleSubsets.empty() ) 
             mSolverState = Unknown;
     }
-    
-    bool Module::addCore( ModuleInput::const_iterator )
-    {
-        return true;
-    }
-    
-    void Module::removeCore( ModuleInput::const_iterator )
-    {
-    }
 
     Answer Module::checkCore( bool _full )
     {
