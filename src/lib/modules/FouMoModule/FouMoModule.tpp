@@ -47,7 +47,7 @@ namespace smtrat
     {
         #ifdef DEBUG_FouMoModule
         cout << "Assert: " << _subformula->formula().constraint()<< endl;
-        #endif
+        #endif                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
         if( _subformula->formula().isFalse() )
         {
             #ifdef DEBUG_FouMoModule
@@ -83,10 +83,10 @@ namespace smtrat
                 assert( iter_help != mDeleted_Constraints.end() );
                 auto iter_temp = temp_constr.begin();
                 FormulaOrigins derived_constr;
-                std::set<std::pair<FormulaT, bool>> to_be_deleted;
-                typename Poly::PolyType lhsExpanded = (typename Poly::PolyType)iter_temp->first.constraint().lhs();
+                std::set<std::pair<FormulaT, bool>> to_be_deleted;      
                 while( iter_temp != temp_constr.end() )
                 {
+                    typename Poly::PolyType lhsExpanded = (typename Poly::PolyType)iter_temp->first.constraint().lhs();
                     auto iter_poly = lhsExpanded.begin();
                     while( iter_poly != lhsExpanded.end() )
                     {
@@ -210,15 +210,15 @@ namespace smtrat
     template<class Settings>
     void FouMoModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
+        #ifdef DEBUG_FouMoModule
+        cout << "Remove: " << _subformula->formula().constraint() << endl;
+        #endif
         if( _subformula->formula().constraint().relation() == carl::Relation::LEQ )
         {
             /* Iterate through the processed constraints and delete all corresponding sets 
              * in the latter containing the element that has to be deleted. Delete a processed 
              * constraint if the corresponding vector is empty 
              */
-            #ifdef DEBUG_FouMoModule
-            cout << "Remove: " << _subformula->formula().constraint() << endl;
-            #endif
             auto iter_formula = mProc_Constraints.begin();
             while( iter_formula != mProc_Constraints.end() )
             {
@@ -429,15 +429,7 @@ namespace smtrat
             ++iter_var;
             while( iter_var != var_corr_constr.end() )
             {
-                #ifdef DEBUG_FouMoModule
-                cout << "Variable: " << iter_var->first << endl;
-                cout << "Upper count: " << iter_var->second.first.size() << endl;
-                cout << "Lower count: " << iter_var->second.second.size() << endl;
-                #endif
                 int delta_temp = iter_var->second.first.size()*(iter_var->second.second.size()-1)-iter_var->second.second.size();
-                #ifdef DEBUG_FouMoModule
-                cout << "Delta: " << delta_temp << endl;
-                #endif
                 if( delta_temp < delta_constr )
                 {
                     delta_constr = delta_temp;
@@ -554,6 +546,7 @@ namespace smtrat
                 if( !iter_poly->isConstant() && nonlinear_flag )    
                 {
                     carl::Variable var_help = iter_poly->getSingleVariable();
+                    assert( var_help.getType() == carl::VariableType::VT_INT);
                     auto iter_help = var_corr_constr.find( var_help );
                     if( iter_help == var_corr_constr.end() )
                     {

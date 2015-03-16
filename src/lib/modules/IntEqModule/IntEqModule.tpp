@@ -28,7 +28,7 @@
 
 #include "IntEqModule.h"
 
-//#define DEBUG_IntEqModule
+#define DEBUG_IntEqModule
 
 namespace smtrat
 {
@@ -55,7 +55,7 @@ namespace smtrat
             FormulasT infSubSet;
             infSubSet.insert( _subformula->formula() );
             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
-            return False;            
+            return false;            
         }            
         if( _subformula->formula().constraint().relation() == carl::Relation::EQ )
         {
@@ -90,10 +90,10 @@ namespace smtrat
             #ifdef DEBUG_IntEqModule
             cout << "Assert: " << _subformula->formula().constraint() << endl;
             #endif
-            auto iter = mProc_Constraints.find( _subformula->formula() );
+            auto iter = mProc_Constraints.find( newEq );
             if( iter != mProc_Constraints.end() )
             {
-                (iter->second)->push_back( _subformula->formula() );
+                (iter->second)->push_back( newEq );
             }
             else
             {
@@ -261,9 +261,6 @@ namespace smtrat
                 }
                 smallest_abs_value = carl::abs( smallest_abs_value );
             }
-            #ifdef DEBUG_IntEqModule
-            cout << "Determine the smallest absolute value of the chosen constraint." << endl;
-            #endif
             while( iter_coeff !=  ccExpanded.end())
             {
                 if( !(*iter_coeff).isConstant() )
@@ -286,10 +283,6 @@ namespace smtrat
                 }    
                 ++iter_coeff;                
             }
-            #ifdef DEBUG_IntEqModule
-            cout << "The smallest absolute value is:" << smallest_abs_value << endl;
-            cout << "Sign:" << value_negative << endl;
-            #endif
             // Proceed with the execution of the equation elimination 
             // depending on the value of the smallest absolute value of curr_constr
             Poly* temp = new Poly();
