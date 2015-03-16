@@ -3007,30 +3007,33 @@ namespace smtrat
                 }
                 else
                 {
-                    std::pair<const ConstraintT*, const ConstraintT*> boundaries = icp::intervalToConstraint(carl::makePolynomial<Poly>(variablesIt->second->lraVar()->expression()), _map.at(tmpSymbol));
-                    icp::Updated inBoundsSet = (*variablesIt).second->isInternalBoundsSet();
-                    icp::Updated inBoundsUpdated = (*variablesIt).second->isInternalUpdated();
-                    if( boundaries.second != NULL && 
-                        (inBoundsUpdated == icp::Updated::BOTH || inBoundsUpdated == icp::Updated::RIGHT || inBoundsSet == icp::Updated::NONE || inBoundsSet == icp::Updated::LEFT) )
+                    if(variablesIt->second->lraVar() != NULL)
                     {
-                        assert( boundaries.second->isConsistent() == 2 );
-                        FormulaT rightBound = FormulaT(boundaries.second);
-                        (*variablesIt).second->setInternalRightBound(rightBound);
-                        addedBoundaries.insert(rightBound);
-                        #ifdef ICP_MODULE_DEBUG_2
-                        cout << "Created upper boundary constraint: " << rightBound << endl;
-                        #endif
-                    }
-                    if( boundaries.first != NULL && 
-                        (inBoundsUpdated == icp::Updated::BOTH || inBoundsUpdated == icp::Updated::LEFT || inBoundsSet == icp::Updated::NONE || inBoundsSet == icp::Updated::RIGHT) )
-                    {
-                        assert( boundaries.first->isConsistent() == 2 );
-                        FormulaT leftBound = FormulaT(boundaries.first);
-                        (*variablesIt).second->setInternalLeftBound(leftBound);
-                        addedBoundaries.insert(leftBound);
-                        #ifdef ICP_MODULE_DEBUG_2
-                        cout << "Created lower boundary constraint: " << leftBound << endl;
-                        #endif
+                        std::pair<const ConstraintT*, const ConstraintT*> boundaries = icp::intervalToConstraint(carl::makePolynomial<Poly>(variablesIt->second->lraVar()->expression()), _map.at(tmpSymbol));
+                        icp::Updated inBoundsSet = (*variablesIt).second->isInternalBoundsSet();
+                        icp::Updated inBoundsUpdated = (*variablesIt).second->isInternalUpdated();
+                        if( boundaries.second != NULL && 
+                            (inBoundsUpdated == icp::Updated::BOTH || inBoundsUpdated == icp::Updated::RIGHT || inBoundsSet == icp::Updated::NONE || inBoundsSet == icp::Updated::LEFT) )
+                        {
+                            assert( boundaries.second->isConsistent() == 2 );
+                            FormulaT rightBound = FormulaT(boundaries.second);
+                            (*variablesIt).second->setInternalRightBound(rightBound);
+                            addedBoundaries.insert(rightBound);
+                            #ifdef ICP_MODULE_DEBUG_2
+                            cout << "Created upper boundary constraint: " << rightBound << endl;
+                            #endif
+                        }
+                        if( boundaries.first != NULL && 
+                            (inBoundsUpdated == icp::Updated::BOTH || inBoundsUpdated == icp::Updated::LEFT || inBoundsSet == icp::Updated::NONE || inBoundsSet == icp::Updated::RIGHT) )
+                        {
+                            assert( boundaries.first->isConsistent() == 2 );
+                            FormulaT leftBound = FormulaT(boundaries.first);
+                            (*variablesIt).second->setInternalLeftBound(leftBound);
+                            addedBoundaries.insert(leftBound);
+                            #ifdef ICP_MODULE_DEBUG_2
+                            cout << "Created lower boundary constraint: " << leftBound << endl;
+                            #endif
+                        }
                     }
                 }
             }
