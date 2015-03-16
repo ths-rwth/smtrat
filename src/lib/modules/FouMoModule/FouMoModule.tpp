@@ -84,10 +84,11 @@ namespace smtrat
                 auto iter_temp = temp_constr.begin();
                 FormulaOrigins derived_constr;
                 std::set<std::pair<FormulaT, bool>> to_be_deleted;
+                typename Poly::PolyType lhsExpanded = (typename Poly::PolyType)iter_temp->first.constraint().lhs();
                 while( iter_temp != temp_constr.end() )
                 {
-                    auto iter_poly = iter_temp->first.constraint().lhs().begin();
-                    while( iter_poly != iter_temp->first.constraint().lhs().end() )
+                    auto iter_poly = lhsExpanded.begin();
+                    while( iter_poly != lhsExpanded.end() )
                     {
                         if( !iter_poly->isConstant() )
                         {
@@ -541,8 +542,9 @@ namespace smtrat
         auto iter_constr = curr_constraints.begin();
         while( iter_constr != curr_constraints.end() )
         {
-            auto iter_poly = iter_constr->first.constraint().lhs().begin();
-            while( iter_poly != iter_constr->first.constraint().lhs().end() )
+            typename Poly::PolyType lhsExpanded = (typename Poly::PolyType)iter_constr->first.constraint().lhs();
+            auto iter_poly = lhsExpanded.begin();
+            while( iter_poly != lhsExpanded.end() )
             {
                 bool nonlinear_flag = true;
                 if( Settings::Nonlinear_Mode )
@@ -613,8 +615,9 @@ namespace smtrat
     {
         FormulaT combined_formula;
         Rational coeff_upper;
-        auto iter_poly_upper = upper_constr->lhs().begin();
-        while( iter_poly_upper != upper_constr->lhs().end() )
+        typename Poly::PolyType ucExpanded = (typename Poly::PolyType)upper_constr->lhs();
+        auto iter_poly_upper = ucExpanded.begin();
+        while( iter_poly_upper != ucExpanded.end() )
         {
             bool nonlinear_flag = true;
             if( Settings::Nonlinear_Mode )
@@ -632,8 +635,9 @@ namespace smtrat
             ++iter_poly_upper;
         }
         Rational coeff_lower;
-        auto iter_poly_lower = lower_constr->lhs().begin();
-        while( iter_poly_lower != lower_constr->lhs().end() )
+        typename Poly::PolyType lcExpanded = (typename Poly::PolyType)lower_constr->lhs();
+        auto iter_poly_lower = lcExpanded.begin();
+        while( iter_poly_lower != lcExpanded.end() )
         {
             bool nonlinear_flag = true;
             if( Settings::Nonlinear_Mode )
@@ -689,10 +693,11 @@ namespace smtrat
                 // and determine the lowest upper bound in the current level
                 atomic_formula_upper = iter_constr_upper->first;
                 to_be_substituted_upper = atomic_formula_upper.constraint().lhs();
-                auto iter_poly_upper = atomic_formula_upper.constraint().lhs().begin();
+                typename Poly::PolyType afuExpanded = (typename Poly::PolyType)atomic_formula_upper.constraint().lhs();
+                auto iter_poly_upper = afuExpanded.begin();
                 to_be_substituted_upper = to_be_substituted_upper.substitute( mVarAss );
                 /*
-                while( iter_poly_upper != atomic_formula_upper.constraint().lhs().end() )
+                while( iter_poly_upper != afuExpanded.end() )
                 {
                     if( !iter_poly_upper->isConstant() )
                     {
@@ -710,8 +715,9 @@ namespace smtrat
                 // The remaining variables that are unequal to the current considered one
                 // are assigned to zero.
                 Rational coeff_upper;
-                iter_poly_upper = to_be_substituted_upper.begin();
-                while( iter_poly_upper != to_be_substituted_upper.end() )
+                typename Poly::PolyType tbsuExpanded = (typename Poly::PolyType)to_be_substituted_upper;
+                iter_poly_upper = tbsuExpanded.begin();
+                while( iter_poly_upper != tbsuExpanded.end() )
                 {
                     if( !iter_poly_upper->isConstant() )
                     {
@@ -780,10 +786,11 @@ namespace smtrat
                 // and determine the highest lower bound in the current level
                 atomic_formula_lower = iter_constr_lower->first;
                 to_be_substituted_lower = atomic_formula_lower.constraint().lhs();
-                auto iter_poly_lower = atomic_formula_lower.constraint().lhs().begin();
+                typename Poly::PolyType aflcExpanded = (typename Poly::PolyType)atomic_formula_lower.constraint().lhs();
+                auto iter_poly_lower = aflcExpanded.begin();
                 to_be_substituted_lower = to_be_substituted_lower.substitute( mVarAss ); 
                 /*
-                while( iter_poly_lower != atomic_formula_lower.constraint().lhs().end() )
+                while( iter_poly_lower != aflcExpanded.end() )
                 {
                     if( !iter_poly_lower->isConstant() )
                     {
@@ -801,8 +808,9 @@ namespace smtrat
                 // The remaining variables that are unequal to the current considered one
                 // are assigned to zero.
                 Rational coeff_lower;
-                iter_poly_lower = to_be_substituted_lower.begin();
-                while( iter_poly_lower != to_be_substituted_lower.end() )
+                typename Poly::PolyType tbslExpanded = (typename Poly::PolyType)to_be_substituted_lower;
+                iter_poly_lower = tbslExpanded.begin();
+                while( iter_poly_lower != tbslExpanded.end() )
                 {
                     if( !iter_poly_lower->isConstant() )
                     {
@@ -891,16 +899,17 @@ namespace smtrat
         {
             Poly constr_poly = iter_eq->first.constraint().lhs();
             constr_poly = constr_poly.substitute( mVarAss );
-            auto iter_poly = constr_poly.begin();
+            typename Poly::PolyType eqExpanded = (typename Poly::PolyType)constr_poly;
+            auto iter_poly = eqExpanded.begin();
             bool found_var = true;
-            while( iter_poly != constr_poly.end() )
+            while( iter_poly != eqExpanded.end() )
             {
                 if( !iter_poly->isConstant() )
                 {
                     if( !found_var )
                     {
                         found_var = true;
-                        mVarAss[ iter_poly->getSingleVariable() ] = Rational(-1)*Rational( constr_poly.constantPart() );                       
+                        mVarAss[ iter_poly->getSingleVariable() ] = Rational(-1)*Rational( eqExpanded.constantPart() );                       
                     }
                     else
                     {

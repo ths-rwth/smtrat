@@ -29,7 +29,7 @@ namespace smtrat
         // We assume that the just added formula is the last one.
         ModuleInput::iterator passedEntry = mModule->addReceivedSubformulaToPassedFormula(received).first;
         // And we add a row to our table
-        return mReducedInequalities.insert( Row( received, RowEntry( passedEntry, received->formula().constraint( ).relation( ), std::list<CellEntry > (1, CellEntry( 0, Polynomial( received->formula().constraint( ).lhs( ) ) )) ) ) ).first;
+        return mReducedInequalities.insert( Row( received, RowEntry( passedEntry, received->formula().constraint( ).relation( ), std::list<CellEntry > (1, CellEntry( 0, Polynomial( (typename Poly::PolyType)received->formula().constraint( ).lhs( ) ) )) ) ) ).first;
     }
 
     /**
@@ -105,7 +105,7 @@ namespace smtrat
                             }
                             else
                             {
-                                FormulaT simplifiedConstraint = FormulaT( smtrat::Poly(std::get<2>(it->second).back().second), std::get<1>(it->second) );
+                                FormulaT simplifiedConstraint = FormulaT( carl::makePolynomial<Poly>(typename smtrat::Poly::PolyType(std::get<2>(it->second).back().second)), std::get<1>(it->second) );
                                 assert( simplifiedConstraint.getType() != carl::FormulaType::FALSE );
                                 if( simplifiedConstraint.getType() == carl::FormulaType::TRUE )
                                 {
@@ -377,7 +377,7 @@ namespace smtrat
                 std::get < 2 > (it->second).push_back( CellEntry( mBtnumber, reduced ) );
                 if( Settings::passInequalities == FULL_REDUCED || (Settings::passInequalities == FULL_REDUCED_IF && pass) )
                 {
-                    FormulaT redResult = FormulaT( smtrat::Poly(reduced), relation );
+                    FormulaT redResult = FormulaT( carl::makePolynomial<Poly>(typename smtrat::Poly::PolyType(reduced)), relation );
                     switch( redResult.getType() )
                     {
                         case carl::FormulaType::TRUE:

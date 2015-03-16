@@ -237,7 +237,8 @@ namespace smtrat
             cout << mProc_Constraints.begin()->first.constraint() << " was chosen." << endl;
             #endif
             std::shared_ptr<std::vector<FormulaT>> origins = mProc_Constraints.begin()->second;
-            auto iter_coeff = (curr_constr->lhs()).begin();
+            typename Poly::PolyType ccExpanded = (typename Poly::PolyType)curr_constr->lhs();
+            auto iter_coeff = ccExpanded.begin();
             Rational smallest_abs_value = (*iter_coeff).coeff();
             carl::Variable corr_var;
             bool value_negative = false;
@@ -263,7 +264,7 @@ namespace smtrat
             #ifdef DEBUG_IntEqModule
             cout << "Determine the smallest absolute value of the chosen constraint." << endl;
             #endif
-            while( iter_coeff !=  (curr_constr->lhs()).end())
+            while( iter_coeff !=  ccExpanded.end())
             {
                 if( !(*iter_coeff).isConstant() )
                 {
@@ -298,17 +299,17 @@ namespace smtrat
             {
                 sign = -1;                    
             } 
-            iter_coeff = (curr_constr->lhs()).begin();
+            iter_coeff = ccExpanded.begin();
             if( smallest_abs_value == 1 )
             {
-                while( iter_coeff != (curr_constr->lhs()).end() )
+                while( iter_coeff != ccExpanded.end() )
                 {
                     if( !(*iter_coeff).isConstant() )
                     {
                         if( (*iter_coeff).getSingleVariable() != corr_var )
                         {
                             carl::Variable var = (*iter_coeff).getSingleVariable();
-                            *temp += Poly(Rational(-1)*sign*(*iter_coeff).coeff())*var;
+                            *temp += carl::makePolynomial<Poly>(var)*Poly(Rational(-1)*sign*(*iter_coeff).coeff());
                         }                          
                     }
                     else
@@ -325,7 +326,7 @@ namespace smtrat
             else
             {
                 assert( smallest_abs_value > 1 );
-                while( iter_coeff != (curr_constr->lhs()).end() )
+                while( iter_coeff != ccExpanded.end() )
                 {
                     Rational coeff = (*iter_coeff).coeff();
                     bool positive = (*iter_coeff).coeff() > 0;
@@ -336,11 +337,11 @@ namespace smtrat
                             carl::Variable var = (*iter_coeff).getSingleVariable();        
                             if( positive )
                             {
-                                *temp -= sign*Poly( Rational( carl::floor( carl::div( coeff, smallest_abs_value ) ) ) )*var;
+                                *temp -= sign*Poly( Rational( carl::floor( carl::div( coeff, smallest_abs_value ) ) ) )*carl::makePolynomial<Poly>(var);
                             }
                             else
                             {
-                                *temp -= sign*Poly( (-1)*Rational( carl::floor( carl::div( (-1)*coeff, smallest_abs_value ) ) ) )*var;
+                                *temp -= sign*Poly( (-1)*Rational( carl::floor( carl::div( (-1)*coeff, smallest_abs_value ) ) ) )*carl::makePolynomial<Poly>(var);
                             }    
                         }   
                     }
@@ -358,7 +359,7 @@ namespace smtrat
                     ++iter_coeff;
                 }
                 carl::Variable fresh_var = carl::freshVariable( carl::VariableType::VT_INT );  
-                *temp += fresh_var;
+                *temp += carl::makePolynomial<Poly>(fresh_var);
             }
             // Substitute the reformulation of the found variable for all occurences
             // of this variable in equations of proc_constraints
@@ -436,9 +437,10 @@ namespace smtrat
                 origins->push_back( std::move( (*iter_formula).formula() ) );
                 auto iter_var = mSubstitutions.begin();
                 while( iter_var != mSubstitutions.end() )
-                {
-                    auto coeff_iter = constr->lhs().begin();
-                    while( coeff_iter != constr->lhs().end() )
+                {  
+                    typename Poly::PolyType cosntrLhsExpanded = (typename Poly::PolyType)constr->lhs();
+                    auto coeff_iter = cosntrLhsExpanded.begin();
+                    while( coeff_iter != cosntrLhsExpanded.end() )
                     {
                         if( !(*coeff_iter).isConstant() )
                         {
