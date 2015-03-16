@@ -76,8 +76,8 @@ namespace smtrat
     
     typedef carl::Term<Rational> TermT;
     
-    typedef carl::MultivariatePolynomial<Rational> Poly;
-//    typedef carl::FactorizedPolynomial<carl::MultivariatePolynomial<Rational>> Poly;
+//    typedef carl::MultivariatePolynomial<Rational> Poly;
+    typedef carl::FactorizedPolynomial<carl::MultivariatePolynomial<Rational>> Poly;
     
     typedef carl::Constraint<Poly> ConstraintT;
     
@@ -104,7 +104,7 @@ namespace smtrat
     template<template<typename> class Operator>
     using Contractor = carl::Contraction<Operator, Poly>;
     
-    typedef carl::FastMap<Poly,unsigned> Factorization;
+    typedef carl::Factors<Poly> Factorization;
     
     // Constants.
     ///@todo move static variables to own cpp
