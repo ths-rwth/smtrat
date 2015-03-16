@@ -556,10 +556,7 @@ namespace smtrat
              *          the already considered sub-formulas;
              *          true, otherwise.
              */
-            virtual bool addCore( ModuleInput::const_iterator _subformula )
-            {
-                return true;
-            }
+            virtual bool addCore( ModuleInput::const_iterator _subformula );
             
             /**
              * Checks the received formula for consistency. Note, that this is an implementation of 
@@ -580,7 +577,7 @@ namespace smtrat
              *
              * @param _subformula The sub formula of the received formula to remove.
              */
-            virtual void removeCore( ModuleInput::const_iterator _subformula ) {}
+            virtual void removeCore( ModuleInput::const_iterator _subformula );
             
             /**
              * Checks for all antecedent modules and those which run in parallel with the same antecedent modules, 
