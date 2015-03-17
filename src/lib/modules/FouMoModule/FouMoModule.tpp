@@ -238,7 +238,7 @@ namespace smtrat
                 }
                 if( iter_formula->second->size() == delete_count )
                 {
-                    iter_formula = mProc_Constraints.erase( iter_formula );
+                    mProc_Constraints.erase( iter_formula++ );
                 }
                 else
                 {
@@ -300,9 +300,26 @@ namespace smtrat
                         ++iter_lower;
                     }    
                 }
-                ++iter_var;
-            }
-        } 
+                if( iter_var->second.first.empty() && iter_var->second.second.empty() )
+                {
+                    auto iter_elim_order = mElim_Order.begin();
+                    while( iter_elim_order != mElim_Order.end() )
+                    {
+                        if( *iter_elim_order == iter_var->first )
+                        {
+                            mElim_Order.erase( iter_elim_order );
+                            break;
+                        }
+                        ++iter_elim_order;
+                    }
+                    mDeleted_Constraints.erase( iter_var++ );
+                }
+                else
+                {
+                    ++iter_var;
+                }    
+            }    
+        }
         else if( _subformula->formula().constraint().relation() == carl::Relation::EQ )
         {
             #ifdef DEBUG_FouMoModule
@@ -316,7 +333,7 @@ namespace smtrat
                 while( iter_origins !=  (iter_formula->second)->end() )
                 {
                     bool contains = iter_origins->contains( _subformula->formula() ); 
-                    if( contains )
+                    if( contains || *iter_origins == _subformula->formula() )
                     {
                         ++delete_count;
                         //iter_origins->erase( iter_set );
@@ -325,7 +342,7 @@ namespace smtrat
                 }
                 if( iter_formula->second->size() == delete_count )
                 {
-                    iter_formula = mEqualities.erase( iter_formula );
+                    mEqualities.erase( iter_formula++ );
                 }
                 else
                 {
@@ -917,7 +934,7 @@ namespace smtrat
         auto iter_constr = rReceivedFormula().begin();
         while( iter_constr != rReceivedFormula().end() )
         {
-            if( !iter_constr->formula().constraint().satisfiedBy( mVarAss ) )
+            if( !iter_constr->formula().constraint().satisfiedBy( mVarAss ) || !( iter_constr->formula().constraint().lhs().substitute( mVarAss ) ).isConstant() )
             {
                 #ifdef DEBUG_FouMoModule
                 cout << "The obtained solution is not correct!" << endl;
