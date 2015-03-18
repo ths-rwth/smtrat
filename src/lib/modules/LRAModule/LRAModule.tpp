@@ -430,12 +430,12 @@ namespace smtrat
                                 assert( newBasicVar->assignment().deltaPart() == 0 );
                                 FormulasT premises;
                                 mTableau.collect_premises( newBasicVar, premises );
-                                FormulasT premisesOrigins;
+                                std::vector<FormulaT> premisesOrigins;
                                 for( auto& pf : premises )
                                 {
                                     collectOrigins( pf, premisesOrigins );
                                 }
-                                branchAt( newBasicVar->expression(), ratAss, premisesOrigins );
+                                branchAt( newBasicVar->expression(), true, ratAss, std::move(premisesOrigins) );
                                 goto Return;
                             }
                         }
@@ -1373,7 +1373,7 @@ Return:
         {
             return gomory_cut();
         }
-        branchAt( _lraVar->expression(), _branchingValue );
+        branchAt( _lraVar->expression(), true, _branchingValue );
         return true;
     }
     
@@ -1416,7 +1416,7 @@ Return:
 //            {
 //                collectOrigins( pf, premisesOrigins );
 //            }
-            branchAt( branch_var->second->expression(), ass_ );
+            branchAt( branch_var->second->expression(), true, ass_ );
             return true;
         }
         else
@@ -1464,7 +1464,7 @@ Return:
 //            {
 //                collectOrigins( pf, premisesOrigins );
 //            }            
-            branchAt( branch_var->second->expression(), ass_ );
+            branchAt( branch_var->second->expression(), true, ass_ );
             return true;         
         }
         else
@@ -1512,7 +1512,7 @@ Return:
 //            {
 //                collectOrigins( pf, premisesOrigins );
 //            }
-            branchAt( branch_var->second->expression(), ass_ );
+            branchAt( branch_var->second->expression(), true, ass_ );
             return true;
         }
         else
@@ -1543,7 +1543,7 @@ Return:
 //                {
 //                    collectOrigins( pf, premisesOrigins );
 //                }
-                branchAt( var->second->expression(), ass );
+                branchAt( var->second->expression(), true, ass );
                 return true;           
             }
             ++map_iterator;

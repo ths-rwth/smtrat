@@ -140,7 +140,10 @@ namespace smtrat
         mChangedActivities(),
         mVarOccurrences(),
         mVarClausesMap(),
-        mVarReplacements()
+        mVarReplacements(),
+        mSplittingVars(),
+        mOldSplittingVars(),
+        mNewSplittingVars()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
         stringstream s;
@@ -467,9 +470,135 @@ namespace smtrat
                 return addClause( learned_clause, _type ) ? (_type == NORMAL_CLAUSE ? clauses.last() : learnts.last() ) : CRef_Undef;
         }
     }
-
+    
+//    #define DEBUG_ADD_SPLITTING
+    
     template<class Settings>
-    Lit SATModule<Settings>::getLiteral( const FormulaT& _formula, const FormulaT& _origin )
+    void SATModule<Settings>::addSplitting( const Splitting& _splitting )
+    {
+        // Learn clause (or (not p1) .. (not pn) h1 h2) where (and p1 .. pn) forms the premise and h1 and h2 are new Boolean variables.
+        #ifdef DEBUG_ADD_SPLITTING
+        std::cout << "add splitting to SAT module" << std::endl;
+        std::cout << "   where the premise is:";
+        #endif
+        vec<Lit> clauseLits;
+        for( const FormulaT& subformula : _splitting.mPremise )
+        {
+            #ifdef DEBUG_ADD_SPLITTING
+            std::cout << " " << subformula;
+            #endif
+            ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( subformula );
+            assert( constraintLiteralPair != mConstraintLiteralMap.end() );
+            clauseLits.push( mkLit( var( constraintLiteralPair->second.front() ), !sign( constraintLiteralPair->second.front() ) ) );
+        }
+        #ifdef DEBUG_ADD_SPLITTING
+        std::cout << std::endl;
+        std::cout << "   and the split is: " << _splitting.mLeftCase << " or " << _splitting.mRightCase << std::endl;
+        std::cout << "   we prefer the " << (_splitting.mPreferLeftCase ? "left":"right") << " case" << std::endl;
+        #endif
+        int leftCase = 0;
+        if( mOldSplittingVars.empty() )
+        {
+            leftCase = newVar( false, true, 0.0 );
+            mBooleanConstraintMap.push( std::make_pair( new Abstraction( passedFormulaEnd(), FormulaT() ), new Abstraction( passedFormulaEnd(), FormulaT() ) ) );
+            #ifdef DEBUG_ADD_SPLITTING
+            std::cout << "create the new Boolean variable " << leftCase << " for the left case" << std::endl;
+            #endif
+        }
+        else
+        {
+            leftCase = mOldSplittingVars.top();
+            mOldSplittingVars.pop();
+            assigns[leftCase] = l_Undef;
+            vardata[leftCase] = mkVarData( CRef_Undef, 0 );
+            activity[leftCase] = 0.0;
+            seen[leftCase] = 0;
+            if( Settings::apply_valid_substitutions )
+            {
+                mVarClausesMap[leftCase] = std::move( std::set<CRef>() );
+            }
+            #ifdef DEBUG_ADD_SPLITTING
+            std::cout << "recycle the Boolean variable " << leftCase << " for the left case" << std::endl;
+            #endif
+        }
+        clauseLits.push( mkLit( leftCase, false ) );
+        mSplittingVars.push_back( leftCase );
+        int rightCase = 0;
+        if( mOldSplittingVars.empty() )
+        {
+            rightCase = newVar( false, true, 0.0 );
+            mBooleanConstraintMap.push( std::make_pair( new Abstraction( passedFormulaEnd(), FormulaT() ), new Abstraction( passedFormulaEnd(), FormulaT() ) ) );
+            #ifdef DEBUG_ADD_SPLITTING
+            std::cout << "create the new Boolean variable " << rightCase << " for the right case" << std::endl;
+            #endif
+        }
+        else
+        {
+            rightCase = mOldSplittingVars.top();
+            mOldSplittingVars.pop();
+            assigns[rightCase] = l_Undef;
+            vardata[rightCase] = mkVarData( CRef_Undef, 0 );
+            activity[rightCase] = 0.0;
+            seen[rightCase] = 0;
+            if( Settings::apply_valid_substitutions )
+            {
+                mVarClausesMap[rightCase] = std::move( std::set<CRef>() );
+            }
+            #ifdef DEBUG_ADD_SPLITTING
+            std::cout << "recycle the Boolean variable " << rightCase << " for the right case" << std::endl;
+            #endif
+        }
+        clauseLits.push( mkLit( rightCase, false ) );
+        mSplittingVars.push_back( rightCase );
+        if( _splitting.mPreferLeftCase )
+            mNewSplittingVars.push( leftCase );
+        else
+            mNewSplittingVars.push( rightCase );
+        #ifdef DEBUG_ADD_SPLITTING
+        std::cout << "add the clause: ";
+        printClause( clauseLits );
+        std::cout << std::endl;
+        #endif
+        addClause( clauseLits, DEDUCTED_CLAUSE );
+        // Add clause (or (not h1) (not h2))
+        vec<Lit> clauseLitsB;
+        clauseLitsB.push( mkLit( leftCase, true ) );
+        clauseLitsB.push( mkLit( rightCase, true ) );
+        #ifdef DEBUG_ADD_SPLITTING
+        printClause( clauseLitsB );
+        std::cout << std::endl;
+        #endif
+        addClause( clauseLitsB, DEDUCTED_CLAUSE );
+        // Add clause (or (not h1) (<= p b)) resp. (or (not h1) (< p b)) where we want to split the polynomial p at b.
+        vec<Lit> clauseLitsC;
+        clauseLitsC.push( mkLit( leftCase, true ) );
+        Lit l = getLiteral( _splitting.mLeftCase, FormulaT( carl::FormulaType::TRUE ), false );
+        #ifdef DEBUG_ADD_SPLITTING
+        std::cout << "Literal for the left case " << _splitting.mLeftCase << " is " << (sign(l) ? "-" : "") << var(l) << std::endl;
+        #endif
+        clauseLitsC.push( l );
+        #ifdef DEBUG_ADD_SPLITTING
+        printClause( clauseLitsC );
+        std::cout << std::endl;
+        #endif
+        addClause( clauseLitsC, DEDUCTED_CLAUSE );
+        // Add clause (or (not h2) (> p b)) resp. (or (not h1) (>= p b)) where we want to split the polynomial p at b.
+        vec<Lit> clauseLitsD;
+        clauseLitsD.push( mkLit( rightCase, true ) );
+        Lit r = getLiteral( _splitting.mRightCase, FormulaT( carl::FormulaType::TRUE ), false );
+        #ifdef DEBUG_ADD_SPLITTING
+        std::cout << "Literal for the right case " << _splitting.mRightCase << " is " << (sign(r) ? "-" : "") << var(r) << std::endl;
+        #endif
+        clauseLitsD.push( r );
+        #ifdef DEBUG_ADD_SPLITTING
+        printClause( clauseLitsD );
+        std::cout << std::endl;
+        #endif
+        addClause( clauseLitsD, DEDUCTED_CLAUSE );
+    }
+    
+    template<class Settings>
+    Lit SATModule<Settings>::getLiteral( const FormulaT& _formula, const FormulaT& _origin, bool _decisionRelevant )
     {
         assert( _formula.propertyHolds( carl::PROP_IS_A_LITERAL ) );
         bool negated = _formula.getType() == carl::FormulaType::NOT;
@@ -480,11 +609,13 @@ namespace smtrat
             BooleanVarMap::iterator booleanVarPair = mBooleanVarMap.find(content.boolean());
             if( booleanVarPair != mBooleanVarMap.end() )
             {
+                if( _decisionRelevant )
+                    setDecisionVar( booleanVarPair->second, _decisionRelevant );
                 l = mkLit( booleanVarPair->second, negated );
             }
             else
             {
-                Var var = newVar( true, true, content.activity() );
+                Var var = newVar( true, _decisionRelevant, content.activity() );
                 mBooleanVarMap[content.boolean()] = var;
                 mBooleanConstraintMap.push( std::make_pair( 
                     new Abstraction( passedFormulaEnd(), content ), 
@@ -511,13 +642,16 @@ namespace smtrat
             if( constraintLiteralPair != mConstraintLiteralMap.end() )
             {
                 // Check whether the theory solver wants this literal to assigned as soon as possible.
+                int abstractionVar = var(constraintLiteralPair->second.front());
                 if( act == numeric_limits<double>::infinity() )
                 {
-                    activity[var(constraintLiteralPair->second.front())] = maxActivity() + 1;
-                    polarity[var(constraintLiteralPair->second.front())] = false;
+                    activity[abstractionVar] = maxActivity() + 1;
+                    polarity[abstractionVar] = false;
                 }
+                if( _decisionRelevant )
+                    setDecisionVar( abstractionVar, _decisionRelevant );
                 // add the origin
-                auto& abstrPair = mBooleanConstraintMap[var(constraintLiteralPair->second.front())];
+                auto& abstrPair = mBooleanConstraintMap[abstractionVar];
                 Abstraction& abstr = sign(constraintLiteralPair->second.front()) ? *abstrPair.second : *abstrPair.first;
                 if( !_origin.isTrue() || !negated )
                 {
@@ -525,11 +659,11 @@ namespace smtrat
                     if( !abstr.consistencyRelevant )
                     {
                         addConstraintToInform( abstr.reabstraction );
-                        if( (sign(constraintLiteralPair->second.front()) && assigns[var( constraintLiteralPair->second.front() )] == l_False)
-                            || (!sign(constraintLiteralPair->second.front()) && assigns[var( constraintLiteralPair->second.front() )] == l_True) )
+                        if( (sign(constraintLiteralPair->second.front()) && assigns[abstractionVar] == l_False)
+                            || (!sign(constraintLiteralPair->second.front()) && assigns[abstractionVar] == l_True) )
                         {
                             if( ++abstr.updateInfo > 0 )
-                                mChangedBooleans.push_back( var( constraintLiteralPair->second.front() ) );
+                                mChangedBooleans.push_back( abstractionVar );
                         }
                         abstr.consistencyRelevant = true;
                     }
@@ -574,7 +708,7 @@ namespace smtrat
                     const carl::UEquality& ueq = content.uequality();
                     invertedConstraint = FormulaT( ueq.lhs(), ueq.rhs(), !ueq.negated() );
                 }
-                Var constraintAbstraction = newVar( !preferredToTSolver, true, act );
+                Var constraintAbstraction = newVar( !preferredToTSolver, _decisionRelevant, act );
                 // map the abstraction variable to the abstraction information for the constraint and it's negation
                 mBooleanConstraintMap.push( std::make_pair( new Abstraction( passedFormulaEnd(), constraint ), new Abstraction( passedFormulaEnd(), invertedConstraint ) ) );
                 // add the constraint and its negation to the constraints to inform backends about
@@ -839,11 +973,6 @@ namespace smtrat
                 clauses.push( cr );
             }
             Clause& c = ca[cr];
-            if( Settings::apply_valid_substitutions )
-            {
-                for( int i = 0; i < c.size(); ++i )
-                    mVarClausesMap[(size_t)var(c[i])].insert( cr );
-            }
             arrangeForWatches( c );
             if( _type == DEDUCTED_CLAUSE && value( c[1] ) == l_False )
             {
@@ -1259,72 +1388,75 @@ SetWatches:
                 // Check constraints corresponding to the positively assigned Boolean variables for consistency.
                 // TODO: Do not call the theory solver on instances which have already been proved to be consistent.
                 //       (Happens if the Boolean assignment is extended by assignments to false only)
-                adaptPassedFormula();
-                if( mChangedPassedFormula )
+                if( pickSplittingVar() == var_Undef )
                 {
-                    _madeTheoryCall = true;
-                    #ifdef DEBUG_SATMODULE
-                    cout << "### Check the constraints: ";
-                    #endif
-                    #ifdef SATMODULE_WITH_CALL_NUMBER
-                    #ifdef DEBUG_SATMODULE
-                    cout << "#" << mNumberOfTheoryCalls << "  ";
-                    #else
-                    ++mNumberOfTheoryCalls;
-                    #endif
-                    #endif
-                    #ifdef DEBUG_SATMODULE
-                    cout << "{ ";
-                    for( ModuleInput::const_iterator subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
-                        cout << subformula->formula() << " ";
-                    cout << "}" << endl;
-                    #endif
-                    mChangedPassedFormula = false;
-                    mCurrentAssignmentConsistent = runBackends();
-                    switch( mCurrentAssignmentConsistent )
+                    adaptPassedFormula();
+                    if( mChangedPassedFormula )
                     {
-                        case True:
+                        _madeTheoryCall = true;
+                        #ifdef DEBUG_SATMODULE
+                        cout << "### Check the constraints: ";
+                        #endif
+                        #ifdef SATMODULE_WITH_CALL_NUMBER
+                        #ifdef DEBUG_SATMODULE
+                        cout << "#" << mNumberOfTheoryCalls << "  ";
+                        #else
+                        ++mNumberOfTheoryCalls;
+                        #endif
+                        #endif
+                        #ifdef DEBUG_SATMODULE
+                        cout << "{ ";
+                        for( ModuleInput::const_iterator subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
+                            cout << subformula->formula() << " ";
+                        cout << "}" << endl;
+                        #endif
+                        mChangedPassedFormula = false;
+                        mCurrentAssignmentConsistent = runBackends();
+                        switch( mCurrentAssignmentConsistent )
                         {
-                            if( Settings::allow_theory_propagation )
+                            case True:
                             {
-                                //Theory propagation.
-                                deductionsLearned = processLemmas();
+                                if( Settings::allow_theory_propagation )
+                                {
+                                    //Theory propagation.
+                                    deductionsLearned = processLemmas();
+                                }
+                                #ifdef DEBUG_SATMODULE
+                                cout << "### Result: True!" << endl;
+                                #endif
+                                break;
                             }
-                            #ifdef DEBUG_SATMODULE
-                            cout << "### Result: True!" << endl;
-                            #endif
-                            break;
-                        }
-                        case False:
-                        {
-                            #ifdef DEBUG_SATMODULE
-                            cout << "### Result: False!" << endl;
-                            #endif
-                            confl = learnTheoryConflict();
-                            if( confl == CRef_Undef )
+                            case False:
                             {
-                                if( !ok ) return CRef_Undef;
-                                processLemmas();
+                                #ifdef DEBUG_SATMODULE
+                                cout << "### Result: False!" << endl;
+                                #endif
+                                confl = learnTheoryConflict();
+                                if( confl == CRef_Undef )
+                                {
+                                    if( !ok ) return CRef_Undef;
+                                    processLemmas();
+                                }
+                                break;
                             }
-                            break;
-                        }
-                        case Unknown:
-                        {
-                            #ifdef DEBUG_SATMODULE
-                            cout << "### Result: Unknown!" << endl;
-                            #endif
-                            if( Settings::allow_theory_propagation )
+                            case Unknown:
                             {
-                                //Theory propagation.
-                                deductionsLearned = processLemmas();
+                                #ifdef DEBUG_SATMODULE
+                                cout << "### Result: Unknown!" << endl;
+                                #endif
+                                if( Settings::allow_theory_propagation )
+                                {
+                                    //Theory propagation.
+                                    deductionsLearned = processLemmas();
+                                }
+                                break;
                             }
-                            break;
-                        }
-                        default:
-                        {
-                            cerr << "Backend returns undefined answer!" << endl;
-                            assert( false );
-                            return CRef_Undef;
+                            default:
+                            {
+                                cerr << "Backend returns undefined answer!" << endl;
+                                assert( false );
+                                return CRef_Undef;
+                            }
                         }
                     }
                 }
@@ -1584,6 +1716,23 @@ SetWatches:
                         progressEstimate() * 100 );
         }
     }
+    
+    template<class Settings>
+    Var SATModule<Settings>::pickSplittingVar()
+    {
+        Var next = var_Undef;
+        while( !mNewSplittingVars.empty() )
+        {
+            if( value( mNewSplittingVars.top() ) == l_Undef )
+            {
+                next = mNewSplittingVars.top();
+                assert( decision[next] );
+                return next;
+            }
+            mNewSplittingVars.pop();
+        }
+        return next;
+    }
 
     template<class Settings>
     Lit SATModule<Settings>::pickBranchLit()
@@ -1597,18 +1746,26 @@ SetWatches:
         //            if( value( next ) == l_Undef && decision[next] )
         //                rnd_decisions++;
         //        }
-
-        // Activity based decision:
-        while( next == var_Undef || value( next ) != l_Undef || !decision[next] )
+        // Check first, if a splitting decision has to be made.
+        next = pickSplittingVar();
+        if( next != var_Undef )
         {
-            if( order_heap.empty() )
+            mNewSplittingVars.pop();
+        }
+        else
+        {
+            // Activity based decision:
+            while( next == var_Undef || value( next ) != l_Undef || !decision[next] )
             {
-                next = var_Undef;
-                break;
-            }
-            else
-            {
-                next = order_heap.removeMin();
+                if( order_heap.empty() )
+                {
+                    next = var_Undef;
+                    break;
+                }
+                else
+                {
+                    next = order_heap.removeMin();
+                }
             }
         }
         // simpler to understand if we do not allow nondeterminism
@@ -1944,6 +2101,25 @@ NextClause:
     }
     
     template<class Settings>
+    void SATModule<Settings>::removeAssignedSplittingVars()
+    {
+        assert( decisionLevel() == 0 );
+        for( size_t i = 0; i < mSplittingVars.size(); )
+        {
+            if( assigns[mSplittingVars[i]] != l_Undef )
+            {
+                mOldSplittingVars.push(mSplittingVars[i]);
+                mSplittingVars[i] = mSplittingVars.back();
+                mSplittingVars.pop_back();
+            }
+            else
+            {
+                ++i;
+            }
+        }
+    }
+    
+    template<class Settings>
     void SATModule<Settings>::replaceVariable( Lit _var, Lit _by )
     {
         if( !Settings::apply_valid_substitutions )
@@ -2045,6 +2221,7 @@ NextClause:
             removeSatisfied( learnts );
             if( remove_satisfied )    // Can be turned off.
                 removeSatisfied( clauses );
+            removeAssignedSplittingVars();
             checkGarbage();
             rebuildOrderHeap();
             simpDB_assigns = nAssigns();
@@ -2330,18 +2507,17 @@ NextClause:
                 if( deduction.getType() != carl::FormulaType::TRUE )
                 {
                     deductionsLearned = true;
-                    #ifdef SMTRAT_DEVOPTION_Validation
-                    if( validationSettings->logLemmata() )
-                    {
-                        addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, deduction ), false, moduleName( (*backend)->type() ) + "_lemma" );
-                    }
-                    #endif
                     #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
                     cout << "Learned a theory deduction from a backend module!" << endl;
                     cout << deduction.toString( false, 0, "", true, true, true ) << endl;
                     #endif
                     addFormula( deduction, DEDUCTED_CLAUSE );
                 }
+            }
+            // Add the splittings.
+            for( const Splitting& splitting : (*backend)->splittings() )
+            {
+                addSplitting( splitting );
             }
             (*backend)->clearDeductions();
             ++backend;

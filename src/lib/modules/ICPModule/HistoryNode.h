@@ -64,14 +64,14 @@ namespace smtrat
                  */
 
                 EvalDoubleIntervalMap                          mIntervals;    // intervals AFTER contraction with Candidates of the incoming edge has been applied
-                const ConstraintT*                              mSplit;
+                const ConstraintT*                             mSplit;
                 std::map<carl::Variable, std::set<const ConstraintT*> >  mReasons;
-                std::map<carl::Variable, set_icpVariable>         mVariableReasons;
+                std::map<carl::Variable, set_icpVariable>      mVariableReasons;
                 HistoryNode*                                   mLeftChild;
                 HistoryNode*                                   mRightChild;
                 HistoryNode*                                   mParent;
                 std::set<const ContractionCandidate*>          mAppliedContractions;
-                std::set<const ConstraintT*>                                  mStateInfeasibleConstraints;
+                std::set<const ConstraintT*>                   mStateInfeasibleConstraints;
                 set_icpVariable                                mStateInfeasibleVariables;
                 const unsigned                                 mId;
                 
@@ -238,11 +238,6 @@ namespace smtrat
                     return false;
                 }
                 
-                std::set<const ContractionCandidate*>& rAppliedContractions()
-                {
-                    return mAppliedContractions;
-                }
-                
                 std::set<const ContractionCandidate*> appliedContractions()
                 {
                     return mAppliedContractions;
@@ -259,6 +254,17 @@ namespace smtrat
                         }
                     }
                     return appliedConstraints;
+                }
+                
+                void appliedConstraints( std::vector<FormulaT>& _result )
+                {
+                    for( std::set<const ContractionCandidate*>::iterator candidateIt = mAppliedContractions.begin(); candidateIt != mAppliedContractions.end(); ++candidateIt )
+                    {
+                        for( auto originIt = (*candidateIt)->origin().begin(); originIt != (*candidateIt)->origin().end(); ++originIt )
+                        {
+                            _result.push_back(*originIt);
+                        }
+                    }
                 }
 
                 std::set<const ConstraintT*>& rStateInfeasibleConstraints()
