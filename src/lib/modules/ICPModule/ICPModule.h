@@ -129,11 +129,11 @@ namespace smtrat
             RuntimeSettings*                                                                    mLraRuntimeSettings;
             LRAModule<LRASettings1>                                                             mLRA; // internal LRA module
             
-            std::set<const ConstraintT*>                                                         mCenterConstraints; // keeps actual centerConstaints for deletion
-            FormulasT                                                                 mCreatedDeductions; // keeps pointers to the created deductions for deletion
+            std::set<const ConstraintT*>                                                        mCenterConstraints; // keeps actual centerConstaints for deletion
+            FormulasT                                                                           mCreatedDeductions; // keeps pointers to the created deductions for deletion
             icp::ContractionCandidate*                                                          mLastCandidate; // the last applied candidate
             #ifndef BOXMANAGEMENT
-            std::queue<FormulasT >                                                    mBoxStorage; // keeps the box before contraction
+            std::queue<FormulasT>                                                               mBoxStorage; // keeps the box before contraction
             #endif
             bool                                                                                mIsIcpInitialized; // initialized ICPModule?
             unsigned                                                                            mCurrentId; // keeps the currentId of the state nodes
@@ -298,7 +298,7 @@ namespace smtrat
              * Update all affected candidates and reinsert them into icpRelevantCandidates
              * @param _var
              */
-            void updateRelevantCandidates(carl::Variable _var);
+            void updateRelevantCandidates(carl::Variable::Arg _var);
             
             /**
              * Method to determine the next combination of variable and constraint to be contracted
@@ -354,6 +354,8 @@ namespace smtrat
              * @return 
              */
             FormulasT createPremiseDeductions();
+            
+            std::vector<FormulaT> createPremise();
             
             /**
              * 

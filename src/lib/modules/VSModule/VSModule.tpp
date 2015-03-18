@@ -1521,6 +1521,45 @@ namespace smtrat
         }
         return result;
     }
+
+    template<class Settings>
+    std::vector<FormulaT> VSModule<Settings>::getReasonsAsVector( const carl::PointerSet<vs::Condition>& _conditions ) const
+    {
+        std::vector<FormulaT> result;
+        if( _conditions.empty() ) return result;
+        // Get the original conditions of the root of the root state leading to the given set of conditions.
+        carl::PointerSet<vs::Condition> conds = _conditions;
+        carl::PointerSet<vs::Condition> oConds;
+        while( !(*conds.begin())->originalConditions().empty() )
+        {
+            for( auto cond = conds.begin(); cond != conds.end(); ++cond )
+            {
+                assert( !(*cond)->originalConditions().empty() );
+                oConds.insert( (*cond)->originalConditions().begin(), (*cond)->originalConditions().end() );
+            }
+            conds.clear();
+            conds.swap( oConds );
+        }
+        // Get the sub-formulas in the received formula corresponding to these original conditions.
+        for( auto oCond = conds.begin(); oCond != conds.end(); ++oCond )
+        {
+            assert( (*oCond)->pConstraint() != NULL );
+            assert( (*oCond)->originalConditions().empty() );
+            auto receivedConstraint = rReceivedFormula().begin();
+            while( receivedConstraint != rReceivedFormula().end() )
+            {
+                if( receivedConstraint->formula().getType() == carl::FormulaType::CONSTRAINT )
+                {
+                    if( (**oCond).constraint() == receivedConstraint->formula().constraint() )
+                        break;
+                }
+                ++receivedConstraint;
+            }
+            assert( receivedConstraint != rReceivedFormula().end() );
+            result.push_back( receivedConstraint->formula() );
+        }
+        return result;
+    }
     
     template<class Settings>
     void VSModule<Settings>::updateInfeasibleSubset( bool _includeInconsistentTestCandidates )
@@ -1623,7 +1662,7 @@ namespace smtrat
                         Rational nextIntTCinRange;
                         if( currentState->getNextIntTestCandidate( nextIntTCinRange, Settings::int_max_range ) )
                         {
-                            branchAt( currentState->substitution().variable(), nextIntTCinRange, getReasons( currentState->substitution().originalConditions() ) );
+                            branchAt( currentState->substitution().variable(), nextIntTCinRange, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
                         }
                         else
                         {
@@ -1653,7 +1692,7 @@ namespace smtrat
                                 {
                                     Poly branchEx = ((subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * Rational(Rational(1) / g));
                                     Rational branchValue = subPolyPartiallySubstituted.constantPart() * (1 / g);
-                                    branchAt( branchEx, branchValue, getReasons( currentState->substitution().originalConditions() ) );
+                                    branchAt( branchEx, true, branchValue, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
                                     return false;
                                 }
                             }
@@ -1674,7 +1713,7 @@ namespace smtrat
                         {
                             if( Settings::branch_and_bound )
                             {
-                                branchAt( currentState->substitution().variable(), evaluatedSubTerm, getReasons( currentState->substitution().originalConditions() ) );
+                                branchAt( currentState->substitution().variable(), evaluatedSubTerm, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
                             }
                             else
                             {

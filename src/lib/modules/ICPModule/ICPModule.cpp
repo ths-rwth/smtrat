@@ -228,7 +228,7 @@ namespace smtrat
                     #endif
                     // If the constraint has not yet been part of the lramodule's received formula, assert it. If the
                     // lramodule already detects inconsistency, process its infeasible subsets.
-					if( res.second && !mLRA.add( res.first ) ) 
+                    if( res.second && !mLRA.add( res.first ) ) 
                     {
                         remapAndSetLraInfeasibleSubsets();
                         assert( !mInfeasibleSubsets.empty() );
@@ -331,7 +331,7 @@ namespace smtrat
             #ifdef ICP_MODULE_DEBUG_1
             cout << "[mLRA] remove " << validationFormulaIt->formula().constraint() << endl;
             #endif
-            mLRA.removeCore( validationFormulaIt );
+            mLRA.remove( validationFormulaIt );
             mValidationFormula->erase( validationFormulaIt );
         }
     }
@@ -666,13 +666,12 @@ namespace smtrat
         #endif
         bool invalidBox = false;
         mLastCandidate = NULL;
-        bool contractionApplied = false;
+        bool originalVariableIntervalContracted = false;
         for( ; ; )
         {
             #ifndef BOXMANAGEMENT
             while(!mBoxStorage.empty())
                 mBoxStorage.pop();
-			
             icp::set_icpVariable icpVariables;
             Variables originalRealVariables;
             rReceivedFormula().realValuedVars(originalRealVariables);
@@ -683,7 +682,6 @@ namespace smtrat
             }
             FormulasT box = variableReasonHull(icpVariables);
             mBoxStorage.push(box);
-//            cout << "ADD TO BOX!" << endl;
             #endif
             #ifdef ICP_MODULE_DEBUG_1
             cout << "********************** [ICP] Contraction **********************" << endl;
@@ -694,16 +692,6 @@ namespace smtrat
             icpLog << "startContraction";
             writeBox();
             #endif
-            #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
-            FormulaT negatedContraction = FormulaT( *mpReceivedFormula );
-            GiNaCRA::evaldoubleintervalmap tmp = GiNaCRA::evaldoubleintervalmap();
-            for ( auto constraintIt = mIntervals.begin(); constraintIt != mIntervals.end(); ++constraintIt )
-                tmp.insert((*constraintIt));
-
-            FormulasT boundaryConstraints = createConstraintsFromBounds(tmp);
-            for ( auto boundaryConstraint = boundaryConstraints.begin(); boundaryConstraint != boundaryConstraints.end(); ++boundaryConstraint )
-                negatedContraction->addSubformula(*boundaryConstraint);
-            #endif
             // prepare IcpRelevantCandidates
 //            activateLinearEquations(); // TODO (Florian): do something alike again
             fillCandidates();
@@ -711,43 +699,11 @@ namespace smtrat
 
             while ( !mIcpRelevantCandidates.empty() && !_splitOccurred )
             {
-                #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
-                mCheckContraction = new FormulaT(*mpReceivedFormula);
-
-                GiNaCRA::evaldoubleintervalmap tmp = GiNaCRA::evaldoubleintervalmap();
-                for ( auto constraintIt = mIntervals.begin(); constraintIt != mIntervals.end(); ++constraintIt )
-                    tmp.insert((*constraintIt));
-
-                FormulasT boundaryConstraints = createConstraintsFromBounds(tmp);
-                for ( auto boundaryConstraint = boundaryConstraints.begin(); boundaryConstraint != boundaryConstraints.end(); ++boundaryConstraint )
-                    mCheckContraction->addSubformula(*boundaryConstraint);
-                #endif
-
                 icp::ContractionCandidate* candidate = chooseContractionCandidate();
                 assert(candidate != NULL);
                 mRelativeContraction = -1; // TODO: try without this line
                 mAbsoluteContraction = 0; // TODO: try without this line
                 _splitOccurred = contraction( candidate );
-                #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
-                if ( !_splitOccurred && mRelativeContraction != 0 )
-                {
-                    GiNaCRA::evaldoubleintervalmap tmp = GiNaCRA::evaldoubleintervalmap();
-                    for ( auto constraintIt = mIntervals.begin(); constraintIt != mIntervals.end(); ++constraintIt )
-                        tmp.insert((*constraintIt));
-
-                    FormulasT contractedBox = createConstraintsFromBounds(tmp);
-                    FormulaT* negBox = new FormulaT(NOT);
-                    FormulaT* boxConjunction = new FormulaT(AND);
-                    for ( auto formulaIt = contractedBox.begin(); formulaIt != contractedBox.end(); ++formulaIt )
-                        boxConjunction->addSubformula(*formulaIt);
-
-                    negBox->addSubformula(boxConjunction);
-                    mCheckContraction->addSubformula(negBox);
-                    addAssumptionToCheck(*mCheckContraction,false,"SingleContractionCheck");
-                }
-                mCheckContraction->clear();
-                delete mCheckContraction;
-                #endif
 
                 // catch if new interval is empty -> we can drop box and chose next box
                 if ( mIntervals.at(candidate->derivationVar()).isEmpty() )
@@ -760,10 +716,10 @@ namespace smtrat
                     break;
                 }
 				
-                if ( mRelativeContraction > 0 )
+                if( mRelativeContraction > 0 && originalRealVariables.find( candidate->derivationVar() ) != originalRealVariables.end() )
                 {
                     mLastCandidate = candidate;
-                    contractionApplied = true;
+                    originalVariableIntervalContracted = true;
                 }
 				
                 // update weight of the candidate
@@ -821,29 +777,6 @@ namespace smtrat
                     icpLog << "contraction; \n";
                     #endif
                 }
-
-//                #ifdef ICP_CONSIDER_WIDTH
-//                bool originalAllFinished = true;
-//                Variables originalRealVariables;
-//                rReceivedFormula().realValuedVars(originalRealVariables);
-//                for( auto varIt = originalRealVariables.begin(); varIt != originalRealVariables.end(); ++varIt )
-//                {
-//                    auto varInterval = mIntervals.find(*varIt);
-//                    if( varInterval != mIntervals.end() )
-//                    {
-//                        if( !fulfillsTarget(varInterval->second) )
-//                        {
-//                            originalAllFinished = false;
-//                            break;
-//                        }
-//                    }
-//                }
-//                if( originalAllFinished )
-//                {
-//                    mIcpRelevantCandidates.clear();
-//                    break;
-//                }
-//                #endif
             } //while ( !mIcpRelevantCandidates.empty() && !_splitOccurred)
             // verify if the box is already invalid
             if (!invalidBox && !_splitOccurred)
@@ -858,47 +791,12 @@ namespace smtrat
                     icpLog << "invalid Post Contraction; \n";
                 }
                 #endif
-                // do a quick test with one point.
-//                if( !invalidBox )
-//                {
-//                    EvalRationalMap rationals;
-//                    std::map<carl::Variable, double> values = createModel();
-//                    for(auto value : values)
-//                    {
-//                        rationals.insert(std::make_pair(value.first, carl::rationalize<Rational>(value.second)));
-//                    }
-//                    unsigned result = mpReceivedFormula->satisfiedBy(rationals);
-//                    if ( result == 1 )
-//                    {
-//                        return True;
-//                    }
-//                }
             }
             #ifdef ICP_BOXLOG
             else
             {
                 icpLog << "contract to emp; \n";
             }
-            #endif
-            #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
-            if ( !_splitOccurred && !invalidBox )
-            {
-                GiNaCRA::evaldoubleintervalmap tmp = GiNaCRA::evaldoubleintervalmap();
-                for ( auto constraintIt = mIntervals.begin(); constraintIt != mIntervals.end(); ++constraintIt )
-                    tmp.insert((*constraintIt));
-
-                FormulasT contractedBox = createConstraintsFromBounds(tmp);
-                FormulaT* negConstraint = new FormulaT(NOT);
-                FormulaT* conjunction = new FormulaT(AND);
-                for ( auto formulaIt = contractedBox.begin(); formulaIt != contractedBox.end(); ++formulaIt )
-                    conjunction->addSubformula(*formulaIt);
-
-                negConstraint->addSubformula(conjunction);
-                negatedContraction->addSubformula(negConstraint);
-                addAssumptionToCheck(*negatedContraction,false,"ICPContractionCheck");
-            }
-            negatedContraction->clear();
-            delete negatedContraction;
             #endif
             if( invalidBox )
                 return true;
@@ -907,7 +805,7 @@ namespace smtrat
                 // perform splitting if possible
                 if( !_splitOccurred )
                 {
-                    _splitOccurred = checkAndPerformSplit( contractionApplied ) != carl::Variable::NO_VARIABLE;
+                    _splitOccurred = checkAndPerformSplit( originalVariableIntervalContracted ) != carl::Variable::NO_VARIABLE;
                 }
                 if( _splitOccurred )
                 {
@@ -925,7 +823,6 @@ namespace smtrat
                 }
                 else
                     return false;
-
                 #ifdef ICP_MODULE_DEBUG_1
                 cout << "empty: " << invalidBox << "  _splitOccurred: " << _splitOccurred << endl;
                 #endif
@@ -1348,7 +1245,7 @@ namespace smtrat
         return false;
     }
     				
-    void ICPModule::updateRelevantCandidates(carl::Variable _var)
+    void ICPModule::updateRelevantCandidates(carl::Variable::Arg _var)
     {
         // update all candidates which contract in the dimension in which the split has happened
         std::set<icp::ContractionCandidate*> updatedCandidates;
@@ -1497,7 +1394,7 @@ namespace smtrat
 #else
             /// create prequesites: ((oldBox AND CCs) -> newBox) in CNF: (oldBox OR CCs) OR newBox 
             FormulasT subformulas;
-            FormulasT splitPremise = createPremiseDeductions();
+            std::vector<FormulaT> splitPremise = createPremise();
             for( const FormulaT& subformula : splitPremise )
                 subformulas.insert( FormulaT( FormulaType::NOT, subformula ) );
             // construct new box
@@ -1517,7 +1414,7 @@ namespace smtrat
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
             assert(resultA.upperBoundType() != BoundType::INFTY );
             Rational bound = carl::rationalize<Rational>( resultA.upper() );
-            Module::branchAt( carl::makePolynomial<Poly>( variable ), bound, splitPremise, true, true );
+            Module::branchAt( variable, bound, std::move(splitPremise), true, true );
             #ifdef ICP_MODULE_DEBUG_1
             cout << "division causes split on " << variable << " at " << bound << "!" << endl << endl;
             #endif
@@ -1679,7 +1576,8 @@ namespace smtrat
             assert( varIntervalIt->first == varIt->first );
             assert( varIt->second->var() == varIt->first );
             double value = 0;
-            if( !varIntervalIt->second.isUnbounded() )
+            const DoubleInterval& interv = varIntervalIt->second; 
+            if( !interv.isUnbounded() )
             {
                 bool takeLower = false;
                 bool takeUpper = false;
@@ -1721,35 +1619,73 @@ namespace smtrat
                 }
                 if( takeLower && takeUpper )
                 {
-                    if(varIntervalIt->second.isPointInterval())
-                            value = varIntervalIt->second.lower();
+                    if(interv.isPointInterval())
+                        value = interv.lower();
                     else
-                            value = varIntervalIt->second.sample(false);
+                        value = interv.sample(false);
                 }
                 else if( takeLower )
                 {
-                    if( varIntervalIt->second.lowerBoundType() == BoundType::INFTY )
+                    if( interv.lowerBoundType() == BoundType::INFTY )
                     {
-                        value = varIntervalIt->second.upperBoundType() == BoundType::WEAK ? varIntervalIt->second.upper() : std::nextafter( varIntervalIt->second.upper(), -INFINITY );
+                        if( interv.upperBoundType() == BoundType::WEAK )
+                        {
+                            value = interv.upper();
+                        }
+                        else
+                        {
+                            value = std::nextafter( interv.upper(), -INFINITY );
+                        }
                     }
                     else
                     {
-                        value = varIntervalIt->second.lowerBoundType() == BoundType::WEAK ? varIntervalIt->second.lower() : std::nextafter( varIntervalIt->second.lower(), INFINITY );
+                        if( interv.lowerBoundType() == BoundType::WEAK )
+                        {
+                            value = interv.lower();
+                        }
+                        else
+                        {
+                            value = std::nextafter( interv.lower(), INFINITY );
+                            // Check if the interval does contain any double. If not, return an empty model.
+                            if( value > interv.upper() || (interv.upperBoundType() == BoundType::STRICT && value == interv.upper()) )
+                            {
+                                return std::map<carl::Variable, double>();
+                            }
+                        }
                     }
                 }
                 else
-                {   
-                    if( varIntervalIt->second.upperBoundType() == BoundType::INFTY )
+                {
+                    if( interv.upperBoundType() == BoundType::INFTY )
                     {
-                        value = varIntervalIt->second.lowerBoundType() == BoundType::WEAK ? varIntervalIt->second.lower() : std::nextafter( varIntervalIt->second.lower(), INFINITY );
+                        if( interv.lowerBoundType() == BoundType::WEAK )
+                        {
+                            value = interv.lower();
+                        }
+                        else
+                        {
+                            value = std::nextafter( interv.lower(), INFINITY );
+                        }
                     }
                     else
                     {
-                        value = varIntervalIt->second.upperBoundType() == BoundType::WEAK ? varIntervalIt->second.upper() : std::nextafter( varIntervalIt->second.upper(), -INFINITY );
+                        if( interv.upperBoundType() == BoundType::WEAK )
+                        {
+                            value = interv.upper();
+                        }
+                        else
+                        {
+                            value = std::nextafter( interv.upper(), -INFINITY );
+                            // Check if the interval does contain any double. If not, return an empty model.
+                            if( value < interv.lower() || (interv.lowerBoundType() == BoundType::STRICT && value == interv.lower()) )
+                            {
+                                return std::map<carl::Variable, double>();
+                            }
+                        }
                     }
                 }
             }
-            assert( varIntervalIt->second.contains( value ));
+            assert( interv.contains( value ) );
             assignments.insert( std::make_pair(varIt->first, value) );
             ++varIntervalIt;
         }
@@ -1828,9 +1764,6 @@ namespace smtrat
         carl::Variable variable = _selection->derivationVar();
         assert(intervals.find(variable) != intervals.end());
         
-//        const Poly               constr     = _selection->rhs();
-//        const Poly               derivative = _selection->derivative();
-//        splitOccurred = mIcp.contract<GiNaCRA::SimpleNewton>( intervals, constr, derivative, variable, resultA, resultB );
         splitOccurred    = _selection->contract( mIntervals, resultA, resultB );
         
         smtrat::DoubleInterval originalInterval = intervals.at(variable);
@@ -1935,9 +1868,22 @@ namespace smtrat
         FormulasT contractions = mHistoryActual->appliedConstraints();
         // collect original box
         REGISTERED_ASSERT( mBoxStorage.size() > 0 );
-        FormulasT box = mBoxStorage.front();
+        const FormulasT& box = mBoxStorage.front();
         contractions.insert( box.begin(), box.end() );
-		mBoxStorage.pop();
+        mBoxStorage.pop();
+        return contractions;
+    }
+
+    std::vector<FormulaT> ICPModule::createPremise()
+    {
+        // collect applied contractions
+        std::vector<FormulaT> contractions;
+        mHistoryActual->appliedConstraints( contractions );
+        // collect original box
+        REGISTERED_ASSERT( mBoxStorage.size() > 0 );
+        for( const FormulaT& f : mBoxStorage.front() )
+            contractions.push_back( f );
+        mBoxStorage.pop();
         return contractions;
     }
     
@@ -2002,49 +1948,56 @@ namespace smtrat
             
             Rational bound = ZERO_RATIONAL;
             bool preferLeftCase = true;
+            bool leftCaseWeak = true;
             const DoubleInterval& varInterval =  mIntervals.at(variable);
+            // Variable interval is [0,a> => split it to [0,0] and (0,a> 
             if( varInterval.lowerBoundType() == carl::BoundType::WEAK && varInterval.lower() == 0 )
             {
                 bound = carl::rationalize<Rational>( varInterval.lower() );
-                preferLeftCase = !preferLeftCase;
             }
+            // Variable interval is <a,0] => split it to <a,0) and [0,0]
             else if( varInterval.upperBoundType() == carl::BoundType::WEAK && varInterval.upper() == 0 )
             {
                 bound = carl::rationalize<Rational>( varInterval.upper() );
-                preferLeftCase = !preferLeftCase;
+                preferLeftCase = false;
+                leftCaseWeak = false;
             }
+            // Variable interval is <a,oo)
             else if( varInterval.upperBoundType() == carl::BoundType::INFTY )
             {
                 if( varInterval.lowerBoundType() != carl::BoundType::INFTY )
                 {
+                    // a is finite => if b = mDefaultSplittingSize is not in the interval give up otherwise split to <a,b] and (b,oo)
                     assert( mDefaultSplittingSize > 0 );
                     if( varInterval.lower() >= mDefaultSplittingSize )
                     {
-//                        std::cout << __func__ << ":" << __LINE__ << std::endl;
                         return carl::Variable::NO_VARIABLE;
                     }
                     bound = carl::rationalize<Rational>( mDefaultSplittingSize );
-                    preferLeftCase = true;
                 }
-                // otherwise keep 0
+                // otherwise the interval is (-oo,oo) so keep 0
             }
+            // Variable interval is (-oo,a> and a finite
             else if( varInterval.lowerBoundType() == carl::BoundType::INFTY )
             {
+                // if b = -mDefaultSplittingSize is not in the interval give up otherwise split to (-oo,b) and [b,a>
                 if( varInterval.upper() <= -mDefaultSplittingSize )
                 {
-//                    std::cout << __func__ << ":" << __LINE__ << std::endl;
                     return carl::Variable::NO_VARIABLE;
                 }
                 bound = carl::rationalize<Rational>( -mDefaultSplittingSize );
                 preferLeftCase = false;
+                leftCaseWeak = false;
             }
+            // Variable interval is <a,b> and a and b are finite
             else
             {
+                // split at a nice number c in the interval: <a,c] and (c,b> 
                 bound = carl::rationalize<Rational>( varInterval.sample( false ) );
             }
 			
             // create prequesites: ((oldBox AND CCs) -> newBox) in CNF: (oldBox OR CCs) OR newBox 
-            FormulasT splitPremise = createPremiseDeductions();
+            std::vector<FormulaT> splitPremise = createPremise();
             if( _contractionApplied )
             {
                 FormulasT subformulas;
@@ -2056,7 +2009,7 @@ namespace smtrat
                 addDeduction( FormulaT( OR, std::move(subformulas) ) );
             }
 
-            Module::branchAt( carl::makePolynomial<Poly>( variable ), bound, splitPremise, true, preferLeftCase );
+            Module::branchAt( variable, bound, std::move(splitPremise), leftCaseWeak, preferLeftCase );
             #ifdef ICP_MODULE_DEBUG_0
             std::cout << std::endl << "Force split on " << variable << " at " << bound << "!" << std::endl;
             printIntervals(true);
@@ -2120,6 +2073,13 @@ namespace smtrat
         #ifdef ICP_MODULE_DEBUG_0
         cout << __func__ << ":" << endl;
         #endif
+        if( antipoint.empty() )
+        {
+            #ifdef ICP_MODULE_DEBUG_0
+            cout << "  Failed!" << endl << endl;
+            #endif
+            return false;
+        }
         for( auto iter = antipoint.begin(); iter != antipoint.end(); ++iter )
         {
             #ifdef ICP_MODULE_DEBUG_0
@@ -2167,7 +2127,7 @@ namespace smtrat
         if( !testSuccessful )
             mFoundSolution.clear();
         #ifdef ICP_MODULE_DEBUG_0
-        if( testSuccessful ) cout << "  Sucess!" << endl << endl;
+        if( testSuccessful ) cout << "  Success!" << endl << endl;
         #endif
         return testSuccessful;
     }
@@ -3005,7 +2965,7 @@ namespace smtrat
                     addedBoundaries.insert((*variablesIt).second->internalLeftBound());
                     addedBoundaries.insert((*variablesIt).second->internalRightBound());
                 }
-                else
+                else if( variablesIt->second->lraVar() != NULL )
                 {
                     if(variablesIt->second->lraVar() != NULL)
                     {

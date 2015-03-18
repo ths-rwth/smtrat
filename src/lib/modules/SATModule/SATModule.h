@@ -400,6 +400,12 @@ namespace smtrat
             std::vector<std::set<Minisat::CRef>> mVarClausesMap;
             /// Maps the arithmetic variables to the terms they have been replaced by a valid substitution (only used by the valid-substitutions optimization).
             std::map<carl::Variable,Poly> mVarReplacements;
+            /// Stores all Boolean variables introduced for theory splitting decisions.
+            std::vector<signed> mSplittingVars;
+            /// Stores all Boolean variables which once had been used for theory splitting decisions.
+            std::stack<signed> mOldSplittingVars;
+            /// Stores the just introduced Boolean variables for theory splitting decisions.
+            std::stack<signed> mNewSplittingVars;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
             SATModuleStatistics* mpStatistics;
@@ -806,6 +812,11 @@ namespace smtrat
             void decrementLearntSizeAdjustCnt();
             
             /**
+             * @return The next decision variable meant to invoke a splitting..
+             */
+            Minisat::Var pickSplittingVar();
+            
+            /**
              * @return The next decision variable.
              */
             Minisat::Lit pickBranchLit();
@@ -944,6 +955,11 @@ namespace smtrat
              * @param cs The vector of clauses wherein to remove all satisfied clauses.
              */
             void removeSatisfied( Minisat::vec<Minisat::CRef>& cs );
+            
+            /**
+             * Removes all splitting variables, which are either assigned to true of false in decision level 0.
+             */
+            void removeAssignedSplittingVars();
             
             /**
              * Replaces the variable in the literal _var by the variable in the literal _by, such that _var is replaced by _by 
@@ -1215,13 +1231,19 @@ namespace smtrat
             Minisat::CRef addClause( const FormulaT&, unsigned _type = 0 );
             
             /**
-             * Creates the literal belonging to the formula being the first argument. 
+             * Stores the given splitting to the set of learned clauses
+             * @param _splitting The splitting to stores in the learned clauses.
+             */
+            void addSplitting( const Splitting& _splitting );
+            
+            /**
+             * Creates or simply returns the literal belonging to the formula being the first argument. 
              * @param _formula The formula to get the literal for.
              * @param _origin The origin of the formula to get the literal for.
-             * @param _fromReceived true, if the literal stems from a received clause.
-             * @return The created literal.
+             * @param _decisionRelevant true, if the variable of the literal needs to be involved in the decision process of the SAT solving.
+             * @return The corresponding literal.
              */
-            Minisat::Lit getLiteral( const FormulaT& _formula, const FormulaT& _origin );
+            Minisat::Lit getLiteral( const FormulaT& _formula, const FormulaT& _origin, bool _decisionRelevant = true );
             
             /**
              * Adapts the passed formula according to the current assignment within the SAT solver.
