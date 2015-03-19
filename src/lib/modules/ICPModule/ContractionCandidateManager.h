@@ -83,7 +83,7 @@ namespace smtrat
          */
         ContractionCandidate* createCandidate ( carl::Variable _lhs,
                                                 const Poly _rhs,
-                                                const ConstraintT* _constraint,
+                                                const ConstraintT& _constraint,
                                                 carl::Variable _derivationVar,
                                                 Contractor<carl::SimpleNewton>& _contractor );
         

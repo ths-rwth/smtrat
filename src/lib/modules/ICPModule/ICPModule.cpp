@@ -253,20 +253,20 @@ namespace smtrat
         {
             return;
         }
-        const ConstraintT* constr = _formula->formula().pConstraint();
+        const ConstraintT& constr = _formula->formula().constraint();
         #ifdef ICP_MODULE_DEBUG_1
-        cout << "[ICP] Remove Formula " << *constr << endl;
+        cout << "[ICP] Remove Formula " << constr << endl;
         #endif
-        assert( constr->isConsistent() == 2 );
+        assert( constr.isConsistent() == 2 );
 		
-        if( constr->relation() == carl::Relation::NEQ ) {
+        if( constr.relation() == carl::Relation::NEQ ) {
             mNotEqualConstraints.erase(_formula->formula());
             return;
         }
         
-        if( !constr->isBound() )
+        if( !constr.isBound() )
         {
-            for( auto& var : constr->variables() )
+            for( auto& var : constr.variables() )
                 mVariables.at(var)->addOriginalConstraint( _formula->formula() );
         }
 			
@@ -518,7 +518,7 @@ namespace smtrat
                 assert( mLinearizations.find( _formula ) == mLinearizations.end() );
                 vector<Poly> temporaryMonomes = icp::getNonlinearMonomials( constr );
                 assert( !temporaryMonomes.empty() );
-                Poly lhs = createNonlinearCCs( _formula.pConstraint(), temporaryMonomes );
+                Poly lhs = createNonlinearCCs( _formula.constraint(), temporaryMonomes );
                 linearFormula = FormulaT( lhs, constraint.relation() );
                 assert( linearFormula.constraint().lhs().isLinear() );
                 #ifdef ICP_MODULE_DEBUG_1
@@ -578,7 +578,7 @@ namespace smtrat
     void ICPModule::activateNonlinearConstraint( const FormulaT& _formula )
     {
         assert( _formula.getType() == FormulaType::CONSTRAINT );
-        auto iter = mNonlinearConstraints.find( _formula.pConstraint() );
+        auto iter = mNonlinearConstraints.find( _formula.constraint() );
         #ifdef ICP_MODULE_DEBUG_1
         cout << "[ICP] Assertion (nonlinear)" << _formula.constraint() <<  endl;
         cout << "mNonlinearConstraints.size: " << mNonlinearConstraints.size() << endl;
@@ -928,7 +928,7 @@ namespace smtrat
                 assert(!mInfeasibleSubsets.empty());
                 for (auto infSetIt = (*mInfeasibleSubsets.begin()).begin(); infSetIt != (*mInfeasibleSubsets.begin()).end(); ++infSetIt )
                 {
-                    if( (*infSetIt)->pConstraint()->isBound() )
+                    if( (*infSetIt)->constraint().isBound() )
                     {
                         assert( mVariables.find( *(*infSetIt)->constraint().variables().begin() ) != mVariables.end() );
 //                                        mHistoryActual->addInfeasibleVariable( mVariables.at((*(*infSetIt)->constraint().variables().begin()).first) );
@@ -936,7 +936,7 @@ namespace smtrat
                     }
                     else
                     {
-                        mHistoryActual->addInfeasibleConstraint((*infSetIt)->pConstraint());
+                        mHistoryActual->addInfeasibleConstraint((*infSetIt)->constraint());
 //                                        cout << "Added infeasible Constraint." << endl;
                     }
 
@@ -968,7 +968,7 @@ namespace smtrat
         }
     }
         
-    Poly ICPModule::createNonlinearCCs( const ConstraintT* _constraint, const vector<Poly>& _tempMonomes )
+    Poly ICPModule::createNonlinearCCs( const ConstraintT& _constraint, const vector<Poly>& _tempMonomes )
     {
         Poly linearizedConstraint = smtrat::ZERO_POLYNOMIAL;
         ContractionCandidates ccs;
@@ -1008,7 +1008,7 @@ namespace smtrat
                     {
                         mContractors.insert(std::make_pair(rhs, Contractor<carl::SimpleNewton>(rhs)));
                     }
-                    const ConstraintT* tmp = newConstraint<Poly>( rhs, Relation::EQ );
+                    ConstraintT tmp = ConstraintT( rhs, Relation::EQ );
                     icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmp, *varIndex, mContractors.at( rhs ) );
                     ccs.insert( ccs.end(), tmpCandidate );
                     tmpCandidate->setNonlinear();
@@ -1017,7 +1017,7 @@ namespace smtrat
                     tmpIcpVar->second->addCandidate( tmpCandidate );
                 }
                 // add one candidate for the replacement variable
-                const ConstraintT* tmp = newConstraint<Poly>( rhs, Relation::EQ );
+                ConstraintT tmp = ConstraintT( rhs, Relation::EQ );
                 icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmp, newVar, mContractors.at( rhs ) );
                 tmpCandidate->setNonlinear();
                 icpVar->addCandidate( tmpCandidate );
@@ -1035,7 +1035,7 @@ namespace smtrat
             }
         }
         // Construct the linearization
-        for( auto monomialIt = _constraint->lhs().polynomial().begin(); monomialIt != _constraint->lhs().polynomial().end(); ++monomialIt )
+        for( auto monomialIt = _constraint.lhs().polynomial().begin(); monomialIt != _constraint.lhs().polynomial().end(); ++monomialIt )
         {
             if( (monomialIt)->monomial() == NULL || (monomialIt)->monomial()->isAtMostLinear() )
             {
@@ -1047,8 +1047,8 @@ namespace smtrat
                 linearizedConstraint += (monomialIt)->coeff() * carl::makePolynomial<Poly>((*mVariableLinearizations.find( carl::makePolynomial<Poly>(typename Poly::PolyType((monomialIt)->monomial())) )).second);
             }
         }
-        mNonlinearConstraints.insert( pair<const ConstraintT*, ContractionCandidates>( _constraint, ccs ) );
-        linearizedConstraint *= _constraint->lhs().coefficient();
+        mNonlinearConstraints.insert( pair<ConstraintT, ContractionCandidates>( _constraint, ccs ) );
+        linearizedConstraint *= _constraint.lhs().coefficient();
         return linearizedConstraint;
     }
     
@@ -1078,7 +1078,7 @@ namespace smtrat
             mHistoryRoot->addInterval( newVar, smtrat::DoubleInterval::unboundedInterval() );
 
             const Poly rhs = carl::makePolynomial<Poly>(slackvariable->expression()) - carl::makePolynomial<Poly>(newVar);
-            const ConstraintT* tmpConstr = newConstraint<Poly>( rhs, Relation::EQ );
+            ConstraintT tmpConstr = ConstraintT( rhs, Relation::EQ );
             auto iter = mContractors.find( rhs );
             if( iter == mContractors.end() )
             {
@@ -1105,7 +1105,7 @@ namespace smtrat
     
     void ICPModule::initiateWeights()
     {
-//        std::map<const Constraint*, ContractionCandidates>::iterator constrIt;
+//        std::map<Constraint, ContractionCandidates>::iterator constrIt;
 //        ContractionCandidates::iterator   varIt;
 //        double                   minDiameter = 0;
 //        double maxDiameter = 0;
@@ -1159,7 +1159,7 @@ namespace smtrat
 //            ContractionCandidates candidates = (*candidatesIt).second;
 //            for( auto ccIt = candidates.begin(); ccIt != candidates.end(); ++ccIt )
 //            {
-//                if( (*ccIt)->constraint()->relation() == Relation::EQ )
+//                if( (*ccIt)->constraint().relation() == Relation::EQ )
 //                {
 //                    (*ccIt)->activate();
 //                }
@@ -1323,7 +1323,7 @@ namespace smtrat
             cout << "Split occured: " << resultA << " and " << resultB << endl;
             #endif
             smtrat::icp::set_icpVariable variables;
-            for( auto variableIt = _selection->constraint()->variables().begin(); variableIt != _selection->constraint()->variables().end(); ++variableIt )
+            for( auto variableIt = _selection->constraint().variables().begin(); variableIt != _selection->constraint().variables().end(); ++variableIt )
             {
                 assert(mVariables.find(*variableIt) != mVariables.end());
                 variables.insert(mVariables.at(*variableIt));
@@ -1458,7 +1458,7 @@ namespace smtrat
             {
                 mHistoryActual->addInterval(_selection->lhs(), mIntervals.at(_selection->lhs()));
                 smtrat::icp::set_icpVariable variables;
-                for( auto variableIt = _selection->constraint()->variables().begin(); variableIt != _selection->constraint()->variables().end(); ++variableIt )
+                for( auto variableIt = _selection->constraint().variables().begin(); variableIt != _selection->constraint().variables().end(); ++variableIt )
                 {
                     assert(mVariables.find(*variableIt) != mVariables.end());
                     variables.insert(mVariables.at(*variableIt));
@@ -1896,12 +1896,12 @@ namespace smtrat
         {
             if( originalRealVariables.find( (*intervalIt).first ) != originalRealVariables.end() )
             {
-                std::pair<const ConstraintT*, const ConstraintT*> boundaries = icp::intervalToConstraint(carl::makePolynomial<Poly>((*intervalIt).first), (*intervalIt).second);
-                if(boundaries.first != NULL)
+                std::pair<ConstraintT, ConstraintT> boundaries = icp::intervalToConstraint(carl::makePolynomial<Poly>((*intervalIt).first), (*intervalIt).second);
+                if(boundaries.first != ConstraintT())
                 {
                     subformulas.insert( FormulaT( boundaries.first ) );                       
                 }
-                if(boundaries.second != NULL)
+                if(boundaries.second != ConstraintT())
                 {
                     subformulas.insert( FormulaT( boundaries.second ) );
                 }
@@ -2033,7 +2033,7 @@ namespace smtrat
                 tmpRight.insert((*constraintIt));
 
             icp::HistoryNode* newRightChild = new icp::HistoryNode(tmpRight, mCurrentId+2);
-            std::pair<const ConstraintT*, const ConstraintT*> boundaryConstraints = icp::intervalToConstraint(Poly(variable), tmpRightInt);
+            std::pair<ConstraintT, ConstraintT> boundaryConstraints = icp::intervalToConstraint(Poly(variable), tmpRightInt);
             newRightChild->setSplit(boundaryConstraints.first);
             mHistoryActual->addRight(newRightChild);
 
@@ -2100,7 +2100,7 @@ namespace smtrat
         }
         for( auto candidate = mActiveNonlinearConstraints.begin(); candidate != mActiveNonlinearConstraints.end(); ++candidate )
         {
-            unsigned isSatisfied = (*candidate)->constraint()->satisfiedBy( mFoundSolution );
+            unsigned isSatisfied = (*candidate)->constraint().satisfiedBy( mFoundSolution );
             assert( isSatisfied != 2 );
             if( isSatisfied == 0 )
             {
@@ -2150,8 +2150,8 @@ namespace smtrat
 //        ContractionCandidates candidates;
 //        for( auto candidate = mActiveLinearConstraints.begin(); candidate != mActiveLinearConstraints.end(); ++candidate )
 //        {
-//            const Constraint* constraint = (*candidate)->constraint();
-//            unsigned isSatisfied = constraint->consistentWith( tmp );
+//            const Constraint& constraint = (*candidate)->constraint();
+//            unsigned isSatisfied = constraint.consistentWith( tmp );
 //            if( isSatisfied == 0 )
 //            {
 //                if( !(*candidate)->isActive() )
@@ -2195,8 +2195,8 @@ namespace smtrat
 //                smtrat::DoubleInterval center = smtrat::DoubleInterval(interval.sample());
 //                Polynomial constraint = Polynomial(variable) - Polynomial(carl::rationalize<Rational>(center.sample()));
 //                Formula centerTmpFormula = FormulaT( constraint, Relation::EQ );
-//                mLRA.inform(centerTmpFormula->pConstraint());
-//                mCenterConstraints.insert(centerTmpFormula->pConstraint());
+//                mLRA.inform(centerTmpFormula->constraint());
+//                mCenterConstraints.insert(centerTmpFormula->constraint());
 //                mValidationFormula->push_back( centerTmpFormula );
 //            }
 //        }
@@ -2294,7 +2294,7 @@ namespace smtrat
 //                    val = constraint.isZero() ? 0 : constraint.lcoeff();
 //                }
 //                
-//                switch ((*linearIt)->constraint()->relation())
+//                switch ((*linearIt)->constraint().relation())
 //                {
 //                    case Relation::EQ: //CR_EQ = 0
 //                        satisfied = (val == 0 && !isLeftInfty && !isRightInfty);
@@ -2328,7 +2328,7 @@ namespace smtrat
 //                    {
 //                        for( auto originIt = (*linearIt)->rOrigin().begin(); originIt != (*linearIt)->rOrigin().end(); ++originIt )
 //                        {
-//                            if ((*formulaIt)->pConstraint() == (*originIt)->pConstraint() )
+//                            if ((*formulaIt)->constraint() == (*originIt)->constraint() )
 //                            {
 //                                currentInfSet.insert(*formulaIt);
 //                                break;
@@ -2370,7 +2370,7 @@ namespace smtrat
 //            for ( auto infSetIt = (*vecIt).begin(); infSetIt != (*vecIt).end(); ++infSetIt )
 //            {
 //                // if the failed constraint is not a centerConstraint - Ignore centerConstraints
-//                if ( mCenterConstraints.find((*infSetIt)->pConstraint()) == mCenterConstraints.end() )
+//                if ( mCenterConstraints.find((*infSetIt)->constraint()) == mCenterConstraints.end() )
 //                {
 //                    // add candidates for all variables to icpRelevantConstraints  
 //                    auto iterB = mDeLinearizations.find( *infSetIt );
@@ -2396,7 +2396,7 @@ namespace smtrat
 //                                }
 //
 //                                // activate all icpVariables for that candidate
-//                                for ( auto variableIt = actCandidateIt->constraint()->variables().begin(); variableIt != actCandidateIt->constraint()->variables().end(); ++variableIt )
+//                                for ( auto variableIt = actCandidateIt->constraint().variables().begin(); variableIt != actCandidateIt->constraint().variables().end(); ++variableIt )
 //                                {
 //                                    std::map<carl::Variable, icp::IcpVariable*>::iterator icpVar = mVariables.find(*variableIt);
 //                                    assert(icpVar != mVariables.end());
@@ -2436,7 +2436,7 @@ namespace smtrat
     {
         for( auto centerIt = mValidationFormula->begin(); centerIt != mValidationFormula->end(); )
         {
-            if( mCenterConstraints.find( centerIt->formula().pConstraint()) != mCenterConstraints.end() )
+            if( mCenterConstraints.find( centerIt->formula().constraint()) != mCenterConstraints.end() )
             {
                 mLRA.remove( centerIt );
                 centerIt = mValidationFormula->erase( centerIt );
@@ -2603,9 +2603,9 @@ namespace smtrat
             {
                 for ( auto formulaIt = (*infSetIt).begin(); formulaIt != (*infSetIt).end(); ++formulaIt )
                 {
-                    if( !formulaIt->pConstraint()->isBound() )
+                    if( !formulaIt->constraint().isBound() )
                     {
-                        mHistoryActual->addInfeasibleConstraint(formulaIt->pConstraint());
+                        mHistoryActual->addInfeasibleConstraint(formulaIt->constraint());
                         for( auto variableIt = formulaIt->constraint().variables().begin(); variableIt != formulaIt->constraint().variables().end(); ++variableIt )
                         {
                             assert( mVariables.find(*variableIt) != mVariables.end() );
@@ -2614,8 +2614,8 @@ namespace smtrat
                     }
                     else
                     {
-                        assert( mVariables.find( *formulaIt->pConstraint()->variables().begin() ) != mVariables.end() );
-                        mHistoryActual->addInfeasibleVariable( mVariables.at( *formulaIt->pConstraint()->variables().begin()) );
+                        assert( mVariables.find( *formulaIt->constraint().variables().begin() ) != mVariables.end() );
+                        mHistoryActual->addInfeasibleVariable( mVariables.at( *formulaIt->constraint().variables().begin()) );
                     }
                 }
             }
@@ -2933,14 +2933,14 @@ namespace smtrat
         return reasons;
     }
     
-    FormulasT ICPModule::constraintReasonHull( const std::set<const ConstraintT*>& _reasons )
+    FormulasT ICPModule::constraintReasonHull( const std::set<ConstraintT>& _reasons )
     {
         FormulasT reasons;
         for ( auto constraintIt = _reasons.begin(); constraintIt != _reasons.end(); ++constraintIt )
         {
             for ( auto formulaIt = rReceivedFormula().begin(); formulaIt != rReceivedFormula().end(); ++formulaIt )
             {
-                if ( *constraintIt == formulaIt->formula().pConstraint() )
+                if ( *constraintIt == formulaIt->formula().constraint() )
                 {
                     reasons.insert( formulaIt->formula() );
                     break;
@@ -2967,33 +2967,30 @@ namespace smtrat
                 }
                 else if( variablesIt->second->lraVar() != NULL )
                 {
-                    if(variablesIt->second->lraVar() != NULL)
+                    std::pair<ConstraintT, ConstraintT> boundaries = icp::intervalToConstraint(carl::makePolynomial<Poly>(variablesIt->second->lraVar()->expression()), _map.at(tmpSymbol));
+                    icp::Updated inBoundsSet = (*variablesIt).second->isInternalBoundsSet();
+                    icp::Updated inBoundsUpdated = (*variablesIt).second->isInternalUpdated();
+                    if( boundaries.second != ConstraintT() && 
+                        (inBoundsUpdated == icp::Updated::BOTH || inBoundsUpdated == icp::Updated::RIGHT || inBoundsSet == icp::Updated::NONE || inBoundsSet == icp::Updated::LEFT) )
                     {
-                        std::pair<const ConstraintT*, const ConstraintT*> boundaries = icp::intervalToConstraint(carl::makePolynomial<Poly>(variablesIt->second->lraVar()->expression()), _map.at(tmpSymbol));
-                        icp::Updated inBoundsSet = (*variablesIt).second->isInternalBoundsSet();
-                        icp::Updated inBoundsUpdated = (*variablesIt).second->isInternalUpdated();
-                        if( boundaries.second != NULL && 
-                            (inBoundsUpdated == icp::Updated::BOTH || inBoundsUpdated == icp::Updated::RIGHT || inBoundsSet == icp::Updated::NONE || inBoundsSet == icp::Updated::LEFT) )
-                        {
-                            assert( boundaries.second->isConsistent() == 2 );
-                            FormulaT rightBound = FormulaT(boundaries.second);
-                            (*variablesIt).second->setInternalRightBound(rightBound);
-                            addedBoundaries.insert(rightBound);
-                            #ifdef ICP_MODULE_DEBUG_2
-                            cout << "Created upper boundary constraint: " << rightBound << endl;
-                            #endif
-                        }
-                        if( boundaries.first != NULL && 
-                            (inBoundsUpdated == icp::Updated::BOTH || inBoundsUpdated == icp::Updated::LEFT || inBoundsSet == icp::Updated::NONE || inBoundsSet == icp::Updated::RIGHT) )
-                        {
-                            assert( boundaries.first->isConsistent() == 2 );
-                            FormulaT leftBound = FormulaT(boundaries.first);
-                            (*variablesIt).second->setInternalLeftBound(leftBound);
-                            addedBoundaries.insert(leftBound);
-                            #ifdef ICP_MODULE_DEBUG_2
-                            cout << "Created lower boundary constraint: " << leftBound << endl;
-                            #endif
-                        }
+                        assert( boundaries.second.isConsistent() == 2 );
+                        FormulaT rightBound = FormulaT(boundaries.second);
+                        (*variablesIt).second->setInternalRightBound(rightBound);
+                        addedBoundaries.insert(rightBound);
+                        #ifdef ICP_MODULE_DEBUG_2
+                        cout << "Created upper boundary constraint: " << rightBound << endl;
+                        #endif
+                    }
+                    if( boundaries.first != ConstraintT() && 
+                        (inBoundsUpdated == icp::Updated::BOTH || inBoundsUpdated == icp::Updated::LEFT || inBoundsSet == icp::Updated::NONE || inBoundsSet == icp::Updated::RIGHT) )
+                    {
+                        assert( boundaries.first.isConsistent() == 2 );
+                        FormulaT leftBound = FormulaT(boundaries.first);
+                        (*variablesIt).second->setInternalLeftBound(leftBound);
+                        addedBoundaries.insert(leftBound);
+                        #ifdef ICP_MODULE_DEBUG_2
+                        cout << "Created lower boundary constraint: " << leftBound << endl;
+                        #endif
                     }
                 }
             }
@@ -3201,8 +3198,7 @@ namespace smtrat
         for( auto linearIt = mLinearConstraints.begin(); linearIt != mLinearConstraints.end(); ++linearIt){
             for ( auto candidateIt = (*linearIt).second.begin(); candidateIt != (*linearIt).second.end(); ++candidateIt )
             {
-                const ConstraintT* constraint = (*candidateIt)->constraint();
-                cout << (*candidateIt)->id() << ": " << *constraint << endl;
+                cout << (*candidateIt)->id() << ": " << (*candidateIt)->constraint() << endl;
             }
         }
         cout << "****************** active linear constraints ******************" << endl;
@@ -3220,7 +3216,7 @@ namespace smtrat
         cout << "******************** nonlinear constraints ********************" << endl;
         ContractionCandidates::iterator replacementsIt;
         for(auto nonlinearIt = mNonlinearConstraints.begin(); nonlinearIt != mNonlinearConstraints.end(); ++nonlinearIt){
-            cout << *(*nonlinearIt).first << endl;
+            cout << (*nonlinearIt).first << endl;
             cout << "\t replacements: " << endl;
             for(replacementsIt = nonlinearIt->second.begin(); replacementsIt != nonlinearIt->second.end(); ++replacementsIt)
             {
@@ -3324,20 +3320,20 @@ namespace smtrat
     
     void ICPModule::printPreprocessedInput( std::string _init ) const
     {
-        const ConstraintT* last = NULL;
+        ConstraintT last = ConstraintT();
         for(auto activeLinearIt = mActiveLinearConstraints.begin(); activeLinearIt != mActiveLinearConstraints.end(); ++activeLinearIt){
             if( (*activeLinearIt)->constraint() != last )
             {
                 last = (*activeLinearIt)->constraint();
-                std::cout << _init << *last << std::endl;
+                std::cout << _init << last << std::endl;
             }
         }
-        last = NULL;
+        last = ConstraintT();
         for(auto activeNoninearIt = mActiveNonlinearConstraints.begin(); activeNoninearIt != mActiveNonlinearConstraints.end(); ++activeNoninearIt){
             if( (*activeNoninearIt)->constraint() != last )
             {
                 last = (*activeNoninearIt)->constraint();
-                std::cout << _init << *last << std::endl;
+                std::cout << _init << last << std::endl;
             }
         }
     }

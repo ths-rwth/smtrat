@@ -83,7 +83,7 @@ FormulaT FormulaParser::mkConstraint(const Poly& lhs, const Poly& rhs, carl::Rel
 	std::size_t n = vars.size();
 	if (n == 0) {
 		// There are no ITEs.
-		const ConstraintT* cons = carl::newConstraint<smtrat::Poly>(p, rel);
+		ConstraintT cons = ConstraintT(std::move(p), rel);
 		return FormulaT(cons);
 	} else if (n < 4) {
 		// There are only a few ITEs, hence we expand them here directly to 2^n cases.
@@ -120,8 +120,8 @@ FormulaT FormulaParser::mkConstraint(const Poly& lhs, const Poly& rhs, carl::Rel
 		// There are many ITEs, we keep the auxiliary variables.
 		for (auto v: vars) {
 			auto t = state->mTheoryItes[v];
-			FormulaT consThen = FormulaT(carl::makePolynomial<Poly>(v) - std::get<1>(t), carl::Relation::EQ);
-			FormulaT consElse = FormulaT(carl::makePolynomial<Poly>(v) - std::get<2>(t), carl::Relation::EQ);
+			FormulaT consThen = FormulaT(std::move(carl::makePolynomial<Poly>(v) - std::get<1>(t)), carl::Relation::EQ);
+			FormulaT consElse = FormulaT(std::move(carl::makePolynomial<Poly>(v) - std::get<2>(t)), carl::Relation::EQ);
 
 			state->mTheoryIteBindings.emplace(FormulaT(carl::FormulaType::IMPLIES,std::get<0>(t), consThen));
 			state->mTheoryIteBindings.emplace(FormulaT(carl::FormulaType::IMPLIES,FormulaT(carl::FormulaType::NOT,std::get<0>(t)), consElse));

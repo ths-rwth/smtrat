@@ -52,9 +52,9 @@ namespace vs
             /// The variables occurring in the term to substitute for.
             mutable carl::Variables* mpTermVariables;
             /// The conditions from which this substitution has been originated. (e.g. [x -> 2] could have had the origins {x-2<=0, x^2-4=0})
-            carl::PointerSet<Condition>* mpOriginalConditions;
+            carl::PointerSet<Condition> mOriginalConditions;
             /// The side conditions, which have to hold to make this substitution valid. (e.g. [x -> 1/a] has the side condition {a!=0})
-            carl::PointerSet<smtrat::ConstraintT> mSideCondition;
+            smtrat::ConstraintsT mSideCondition;
 
         public:
 
@@ -65,7 +65,7 @@ namespace vs
              * @param _oConditions The original conditions of the substitution to construct.
              * @param _sideCondition The side conditions of the substitution to construct.
              */
-            Substitution( const carl::Variable& _variable, const Type& _type, const carl::PointerSet<Condition>& _oConditions, const carl::PointerSet<smtrat::ConstraintT>& _sideCondition = carl::PointerSet<smtrat::ConstraintT>() );
+            Substitution( const carl::Variable& _variable, const Type& _type, carl::PointerSet<Condition>&& _oConditions, smtrat::ConstraintsT&& _sideCondition = smtrat::ConstraintsT() );
             
             /**
              * Constructs a substitution with a square root term to map to.
@@ -75,7 +75,7 @@ namespace vs
              * @param _oConditions The original conditions of the substitution to construct.
              * @param _sideCondition The side conditions of the substitution to construct.
              */
-            Substitution( const carl::Variable&, const SqrtEx& _term, const Type& _type, const carl::PointerSet<Condition>& _oConditions, const carl::PointerSet<smtrat::ConstraintT>& _sideCondition = carl::PointerSet<smtrat::ConstraintT>() );
+            Substitution( const carl::Variable&, const SqrtEx& _term, const Type& _type, carl::PointerSet<Condition>&& _oConditions, smtrat::ConstraintsT&& _sideCondition = smtrat::ConstraintsT() );
             
             /**
              * Copy constructor.
@@ -135,7 +135,7 @@ namespace vs
              */
             carl::PointerSet<Condition>& rOriginalConditions()
             {
-                return *mpOriginalConditions;
+                return mOriginalConditions;
             }
 
             /**
@@ -143,13 +143,13 @@ namespace vs
              */
             const carl::PointerSet<Condition>& originalConditions() const
             {
-                return *mpOriginalConditions;
+                return mOriginalConditions;
             }
 
             /**
              * @return A constant reference to the side condition of this substitution.
              */
-            const carl::PointerSet<smtrat::ConstraintT>& sideCondition() const
+            const smtrat::ConstraintsT& sideCondition() const
             {
                 return mSideCondition;
             }

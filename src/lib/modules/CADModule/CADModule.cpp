@@ -312,7 +312,7 @@ namespace smtrat
 				return;
 			}
 
-			mVariableBounds.removeBound(_subformula->formula().pConstraint(), _subformula->formula());
+			mVariableBounds.removeBound(_subformula->formula().constraint(), _subformula->formula());
 
 			ConstraintIndexMap::iterator constraintIt = mConstraintsMap.find(_subformula->formula());
 			if (constraintIt == mConstraintsMap.end())
@@ -400,7 +400,7 @@ namespace smtrat
 	
 	bool CADModule::addConstraintFormula(const FormulaT& f) {
 		assert(f.getType() == carl::FormulaType::CONSTRAINT);
-		mVariableBounds.addBound(f.pConstraint(), f);
+		mVariableBounds.addBound(f.constraint(), f);
 		// add the constraint to the local list of constraints and memorize the index/constraint assignment if the constraint is not present already
 		if (mConstraintsMap.find(f) != mConstraintsMap.end())
 			return true;	// the exact constraint was already considered
@@ -457,7 +457,7 @@ namespace smtrat
 	 * @param c constraint of the GiNaCRA
 	 * @return constraint of SMT-RAT
 	 */
-	inline const ConstraintT* CADModule::convertConstraint( const carl::cad::Constraint<smtrat::Rational>& c )
+	inline ConstraintT CADModule::convertConstraint( const carl::cad::Constraint<smtrat::Rational>& c )
 	{
 		carl::Relation relation = carl::Relation::EQ;
 		switch (c.getSign()) {
@@ -475,7 +475,7 @@ namespace smtrat
 				break;
 			default: assert(false);
 		}
-		return carl::newConstraint<Poly>(c.getPolynomial(), relation);
+		return ConstraintT(c.getPolynomial(), relation);
 	}
 
 	/**

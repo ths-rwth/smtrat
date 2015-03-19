@@ -692,14 +692,14 @@ namespace smtrat
                     {
                         constraint = content;
                         const ConstraintT& cons = content.constraint();
-                        invertedConstraint = FormulaT( cons.lhs(), ConstraintT::invertRelation( cons.relation() ) );
+                        invertedConstraint = FormulaT( cons.lhs(), carl::invertRelation( cons.relation() ) );
                     }
                     else
                     {
                         const ConstraintT& cons = content.constraint();
                         Poly constraintLhs = cons.lhs().substitute( mVarReplacements );
                         constraint = FormulaT( constraintLhs, cons.relation() );
-                        invertedConstraint = FormulaT( constraintLhs, ConstraintT::invertRelation( cons.relation() ) );
+                        invertedConstraint = FormulaT( constraintLhs, carl::invertRelation( cons.relation() ) );
                     }
                 }
                 else // content.getType() == carl::FormulaType::UEQ

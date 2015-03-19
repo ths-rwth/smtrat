@@ -467,13 +467,13 @@ namespace smtrat
     void Module::branchAt( const Poly& _polynomial, bool _integral, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak, bool _preferLeftCase )
     {
         assert( !_polynomial.hasConstantTerm() );
-        const ConstraintT* constraintA = nullptr;
-        const ConstraintT* constraintB = nullptr;
+        ConstraintT constraintA;
+        ConstraintT constraintB;
         if( _integral )
         {
             Rational bound = carl::floor( _value );
-            constraintA = newConstraint<Poly>( _polynomial - bound, Relation::LEQ );
-            constraintB = newConstraint<Poly>( _polynomial - (++bound), Relation::GEQ );
+            constraintA = ConstraintT( std::move(_polynomial - bound), Relation::LEQ );
+            constraintB = ConstraintT( std::move(_polynomial - (++bound)), Relation::GEQ );
             #ifdef MODULE_VERBOSE_INTEGERS
             cout << "[" << moduleName(type()) << "]  branch at  " << *constraintA << "  and  " << *constraintB << endl;
             #endif
@@ -483,13 +483,13 @@ namespace smtrat
             Poly constraintLhs = _polynomial - _value;
             if( _leftCaseWeak )
             {
-                constraintA = newConstraint<Poly>( constraintLhs, Relation::LEQ );
-                constraintB = newConstraint<Poly>( constraintLhs, Relation::GREATER );
+                constraintA = ConstraintT( constraintLhs, Relation::LEQ );
+                constraintB = ConstraintT( std::move(constraintLhs), Relation::GREATER );
             }
             else
             {
-                constraintA = newConstraint<Poly>( constraintLhs, Relation::LESS );
-                constraintB = newConstraint<Poly>( constraintLhs, Relation::GEQ );   
+                constraintA = ConstraintT( constraintLhs, Relation::LESS );
+                constraintB = ConstraintT( std::move(constraintLhs), Relation::GEQ );   
             }
         }
         mSplittings.emplace_back( FormulaT( constraintA ), FormulaT( constraintB ), std::move( _premise ), _preferLeftCase );
@@ -780,6 +780,7 @@ namespace smtrat
     Answer Module::foundAnswer( Answer _answer )
     {
         mSolverState = _answer;
+//        if( !( _answer != True || checkModel() != 0 ) ) exit(1234);
         assert( _answer != True || checkModel() != 0 );
         // If we are in the SMT environment:
         if( mpManager != NULL && _answer != Unknown )
@@ -902,13 +903,13 @@ namespace smtrat
         mVariablesInAssumptionToCheck.insert( _label );
     }
 
-    void Module::addAssumptionToCheck( const PointerSet<ConstraintT>& _constraints, bool _consistent, const string& _label )
+    void Module::addAssumptionToCheck( const ConstraintsT& _constraints, bool _consistent, const string& _label )
     {
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
         assumption += "(assert (and";
         for( auto constraint = _constraints.begin(); constraint != _constraints.end(); ++constraint )
-            assumption += " " + (*constraint)->toString( 1, false, true );
+            assumption += " " + constraint->toString( 1, false, true );
         assumption += " " + _label;
         assumption += "))\n";
         assumption += "(get-assertions)\n";

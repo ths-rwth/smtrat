@@ -70,7 +70,7 @@ namespace smtrat
              * @param corr_var     Variable that shall be eliminated
              * @return             Pointer to the constraint resulting from the combination
              */
-            FormulaT combine_upper_lower( const smtrat::ConstraintT* upper_constr, const smtrat::ConstraintT* lower_Constr, carl::Variable& corr_var );
+            FormulaT combine_upper_lower( const smtrat::ConstraintT& upper_constr, const smtrat::ConstraintT& lower_Constr, carl::Variable& corr_var );
             
             bool construct_solution();
             

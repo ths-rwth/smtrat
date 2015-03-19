@@ -174,7 +174,7 @@ namespace smtrat {
     bool PreprocessingModule<Settings>::addBounds(const FormulaT& formula) {
 		switch (formula.getType()) {
 			case carl::CONSTRAINT:
-				return varbounds.addBound(formula.pConstraint(), formula);
+				return varbounds.addBound(formula.constraint(), formula);
 			case carl::AND: {
 				bool found = false;
 				for (const auto& f: formula.subformulas()) found |= addBounds(f);
@@ -188,7 +188,7 @@ namespace smtrat {
     void PreprocessingModule<Settings>::removeBounds(const FormulaT& formula) {
 		switch (formula.getType()) {
 			case carl::CONSTRAINT:
-				varbounds.removeBound(formula.pConstraint(), formula);
+				varbounds.removeBound(formula.constraint(), formula);
 				break;
 			case carl::AND:
 				for (const auto& f: formula.subformulas()) removeBounds(f);

@@ -134,7 +134,7 @@ namespace vs
             const Condition* pCond = rConditions().back();
             rConditions().pop_back();
             if( mpVariableBounds != NULL )
-                mpVariableBounds->removeBound( pCond->pConstraint(), pCond );
+                mpVariableBounds->removeBound( pCond->constraint(), pCond );
             mpConditionIdAllocator->free( pCond->getId() );
             delete pCond;
             pCond = NULL;
@@ -449,7 +449,7 @@ namespace vs
                     bool containsEmptyCase = false;
                     while( condConjunction != subResult->end() && subResult->size() > 1 )
                     {
-                        ConditionSetSet conflictingConditionPairs = ConditionSetSet();
+                        ConditionSetSet conflictingConditionPairs;
                         if( !simplify( condConjunction->first, conflictingConditionPairs, _ranking ) )
                         {
                             while( !condConjunction->first.empty() )
@@ -559,9 +559,9 @@ namespace vs
                 // If the state is already inconsistent update obvious conflicts.
                 if( isInconsistent() && fixedConditions != mpSubstitutionResults->end() )
                 {
-                    ConditionSetSet conflictingConditionPairs = ConditionSetSet();
+                    ConditionSetSet conflictingConditionPairs;
                     if( !simplify( fixedConditions->back().first, conflictingConditionPairs, _ranking ) )
-                        addConflicts( NULL, conflictingConditionPairs );
+                        addConflicts( NULL, std::move(conflictingConditionPairs) );
                 }
             }
             mSubResultsSimplified = true;
@@ -572,7 +572,7 @@ namespace vs
             ConditionSetSet conflictingConditionPairs;
             if( !simplify( rConditions(), conflictingConditionPairs, _ranking, true ) )
             {
-                addConflictSet( NULL, conflictingConditionPairs );
+                addConflictSet( NULL, std::move(conflictingConditionPairs) );
                 rInconsistent() = true;
             }
             mConditionsSimplified = true;
@@ -612,8 +612,8 @@ namespace vs
                                 carl::PointerSet<Condition> vbcondSet = mpVariableBounds->getOriginsOfBounds( constr.variables() );
                                 size_t nValuation = (*iter)->valuation();
                                 bool nFlag = (*iter)->flag();
-                                const smtrat::ConstraintT* nConstraint = carl::newConstraint<smtrat::Poly>( constr.lhs(), stricterRelation );
-                                unsigned nConstraintConsistency = nConstraint->isConsistent();
+                                smtrat::ConstraintT nConstraint = smtrat::ConstraintT( constr.lhs(), stricterRelation );
+                                unsigned nConstraintConsistency = nConstraint.isConsistent();
                                 if( nConstraintConsistency == 2 )
                                 {
                                     if( _stateConditions )
@@ -632,7 +632,7 @@ namespace vs
                                     }
                                     redundantConditionSet.insert( *iter );
                                 }
-                                else if( nConstraint->isConsistent() == 0 )
+                                else if( nConstraint.isConsistent() == 0 )
                                 {
                                     carl::PointerSet<Condition> condSet = mpVariableBounds->getOriginsOfBounds( constr.variables() );
                                     condSet.insert( *iter );
@@ -656,7 +656,7 @@ namespace vs
                 {
                     const Condition* condA = *iterA;
                     const Condition* condB = *iterB;
-                    signed strongProp = smtrat::ConstraintT::compare( condA->pConstraint(), condB->pConstraint() );
+                    signed strongProp = carl::compare<smtrat::Poly>( condA->constraint(), condB->constraint() );
 //                    std::cout << "compare(  " << condA->constraint() << "  ,  " << condB->constraint() << "  ) = ";
 //                    if( strongProp != 0 )
 //                    {
@@ -710,7 +710,7 @@ namespace vs
                     {
                         const smtrat::ConstraintT& constraintA = condA->constraint();
                         const smtrat::ConstraintT& constraintB = condB->constraint();
-                        const smtrat::ConstraintT* nConstraint = NULL;
+                        smtrat::ConstraintT nConstraint;
                         size_t nValuation = 0;
                         bool nFlag = false;
                         if( (constraintA.relation() == carl::Relation::GEQ && constraintB.relation() == carl::Relation::GEQ)
@@ -718,37 +718,37 @@ namespace vs
                                 || (constraintA.relation() == carl::Relation::LEQ && constraintB.relation() == carl::Relation::GEQ)
                                 || (constraintA.relation() == carl::Relation::LEQ && constraintB.relation() == carl::Relation::LEQ) )
                         {
-                            nConstraint = carl::newConstraint<smtrat::Poly>( constraintB.lhs(), carl::Relation::EQ );
+                            nConstraint = smtrat::ConstraintT( constraintB.lhs(), carl::Relation::EQ );
                             nValuation = condB->valuation();
                             nFlag = condB->flag();
                         }
                         else if( (constraintA.relation() == carl::Relation::NEQ && constraintB.relation() == carl::Relation::GEQ) )
                         {
-                            nConstraint = carl::newConstraint<smtrat::Poly>( constraintB.lhs(), carl::Relation::GREATER );
+                            nConstraint = smtrat::ConstraintT( constraintB.lhs(), carl::Relation::GREATER );
                             nValuation = condB->valuation();
                             nFlag = condB->flag();
                         }
                         else if( (constraintA.relation() == carl::Relation::GEQ && constraintB.relation() == carl::Relation::NEQ) )
                         {
-                            nConstraint = carl::newConstraint<smtrat::Poly>( constraintA.lhs(), carl::Relation::GREATER );
+                            nConstraint = smtrat::ConstraintT( constraintA.lhs(), carl::Relation::GREATER );
                             nValuation = condA->valuation();
                             nFlag = condA->flag();
                         }
                         else if( (constraintA.relation() == carl::Relation::NEQ && constraintB.relation() == carl::Relation::LEQ) )
                         {
-                            nConstraint = carl::newConstraint<smtrat::Poly>( constraintB.lhs(), carl::Relation::LESS );
+                            nConstraint = smtrat::ConstraintT( constraintB.lhs(), carl::Relation::LESS );
                             nValuation = condB->valuation();
                             nFlag = condB->flag();
                         }
                         else if( (constraintA.relation() == carl::Relation::LEQ && constraintB.relation() == carl::Relation::NEQ) )
                         {
-                            nConstraint = carl::newConstraint<smtrat::Poly>( constraintA.lhs(), carl::Relation::LESS );
+                            nConstraint = smtrat::ConstraintT( constraintA.lhs(), carl::Relation::LESS );
                             nValuation = condA->valuation();
                             nFlag = condA->flag();
                         }
                         else
                             assert( false );
-                        unsigned nConstraintConsistency = nConstraint->isConsistent();
+                        unsigned nConstraintConsistency = nConstraint.isConsistent();
                         if( nConstraintConsistency == 2 )
                         {
                             if( _stateConditions )
@@ -766,7 +766,7 @@ namespace vs
                             redundantConditionSet.insert( condA );
                             redundantConditionSet.insert( condB );
                         }
-                        else if( nConstraint->isConsistent() == 0 )
+                        else if( nConstraint.isConsistent() == 0 )
                         {
                             carl::PointerSet<Condition> condSet;
                             condSet.insert( condA );
@@ -833,12 +833,12 @@ namespace vs
         initConditionFlags();
     }
 
-    void State::addConflictSet( const Substitution* _substitution, ConditionSetSet& _condSetSet )
+    void State::addConflictSet( const Substitution* _substitution, ConditionSetSet&& _condSetSet )
     {
         auto iter = mpConflictSets->find( _substitution );
         if( iter != mpConflictSets->end() )
         {
-            iter->second.insert( _condSetSet );
+            iter->second.insert( std::move(_condSetSet) );
             if( _substitution != NULL && _substitution->type() == Substitution::Type::INVALID )
             {
                 delete _substitution;
@@ -846,34 +846,34 @@ namespace vs
         }
         else
         {
-            ConditionSetSetSet condSetSetSet = ConditionSetSetSet();
-            condSetSetSet.insert( _condSetSet );
-            mpConflictSets->insert( pair<const Substitution*, ConditionSetSetSet>( _substitution, condSetSetSet ) );
+            ConditionSetSetSet condSetSetSet;
+            condSetSetSet.insert( std::move(_condSetSet) );
+            mpConflictSets->insert( pair<const Substitution*, ConditionSetSetSet>( _substitution, std::move(condSetSetSet) ) );
         }
         if( _substitution == NULL )
             rInconsistent() = true;
     }
 
-    void State::addConflicts( const Substitution* _substitution, ConditionSetSet& _condSetSet )
+    void State::addConflicts( const Substitution* _substitution, ConditionSetSet&& _condSetSet )
     {
         auto iter = mpConflictSets->find( _substitution );
         if( iter != mpConflictSets->end() )
         {
-            ConditionSetSetSet newCondSetSetSet = ConditionSetSetSet();
+            ConditionSetSetSet newCondSetSetSet;
             for( auto condSetSet = iter->second.begin(); condSetSet != iter->second.end(); ++condSetSet )
             {
-                ConditionSetSet newCondSetSet = ConditionSetSet();
+                ConditionSetSet newCondSetSet;
                 newCondSetSet.insert( condSetSet->begin(), condSetSet->end() );
                 newCondSetSet.insert( _condSetSet.begin(), _condSetSet.end() );
-                newCondSetSetSet.insert( newCondSetSet );
+                newCondSetSetSet.insert( std::move(newCondSetSet) );
             }
-            iter->second = newCondSetSetSet;
+            iter->second = std::move(newCondSetSetSet);
         }
         else
         {
-            ConditionSetSetSet condSetSetSet = ConditionSetSetSet();
-            condSetSetSet.insert( _condSetSet );
-            mpConflictSets->insert( pair<const Substitution*, ConditionSetSetSet>( _substitution, condSetSetSet ) );
+            ConditionSetSetSet condSetSetSet;
+            condSetSetSet.insert( std::move(_condSetSet) );
+            mpConflictSets->insert( pair<const Substitution*, ConditionSetSetSet>( _substitution, std::move(condSetSetSet) ) );
         }
     }
 
@@ -930,16 +930,16 @@ namespace vs
         return false;
     }
 
-    void State::addSubstitutionResults( vector<DisjunctionOfConditionConjunctions>& _disjunctionsOfCondConj )
+    void State::addSubstitutionResults( vector<DisjunctionOfConditionConjunctions>&& _disjunctionsOfCondConj )
     {
         // For each disjunction add a substitution result to the substitution results of this state.
         if( mpSubstitutionResults == NULL )
             mpSubstitutionResults = new SubstitutionResults();
         for( auto disjunction = _disjunctionsOfCondConj.begin(); disjunction != _disjunctionsOfCondConj.end(); ++disjunction )
         {
-            mpSubstitutionResults->push_back( SubstitutionResult() );
+            mpSubstitutionResults->emplace_back();
             for( auto conjunction = disjunction->begin(); conjunction != disjunction->end(); ++conjunction )
-                mpSubstitutionResults->back().push_back( pair<ConditionList, bool>( *conjunction, false ) );
+                mpSubstitutionResults->back().push_back( pair<ConditionList, bool>( std::move(*conjunction), false ) );
         }
         // Mark this state as not yet simplified.
         mSubResultsSimplified = false;
@@ -1067,7 +1067,7 @@ namespace vs
         }
     }
 
-    const ConditionList State::getCurrentSubresultCombination() const
+    ConditionList State::getCurrentSubresultCombination() const
     {
         ConditionList currentSubresultCombination;
         auto iter = mpSubResultCombination->begin();
@@ -1092,7 +1092,6 @@ namespace vs
             // Get the conditions of the currently considered combination of substitution results.
             ConditionList newCombination = getCurrentSubresultCombination();
             // Simplify the conditions already here, to avoid unnecessarily adding and deleting conditions.
-            ConditionList redundantConditions;
             ConditionSetSet conflictingConditionPairs;
             if( !simplify( newCombination, conflictingConditionPairs, _ranking ) )
                 rInconsistent() = true;
@@ -1149,7 +1148,7 @@ namespace vs
             }
             // Add the remaining conditions of the current combination to the conditions this state considers.
             for( auto newCond = newCombination.begin(); newCond != newCombination.end(); ++newCond )
-                addCondition( (**newCond).pConstraint(), (**newCond).originalConditions(), (**newCond).valuation(), true, _ranking );
+                addCondition( (**newCond).constraint(), (**newCond).originalConditions(), (**newCond).valuation(), true, _ranking );
             while( !newCombination.empty() )
             {
                 const Condition* rpCond = newCombination.back();
@@ -1277,10 +1276,10 @@ namespace vs
         return false;
     }
 
-    void State::addCondition( const smtrat::ConstraintT* _constraint, const carl::PointerSet<Condition>& _originalConditions, size_t _valutation, bool _recentlyAdded, ValuationMap& _ranking )
+    void State::addCondition( const smtrat::ConstraintT& _constraint, const carl::PointerSet<Condition>& _originalConditions, size_t _valutation, bool _recentlyAdded, ValuationMap& _ranking )
     {
         // Check if the constraint is variable-free and consistent. If so, discard it.
-        unsigned constraintConsistency = _constraint->isConsistent();
+        unsigned constraintConsistency = _constraint.isConsistent();
         assert( constraintConsistency != 0 );
         if( constraintConsistency != 1 )
         {
@@ -1301,7 +1300,7 @@ namespace vs
                     break;
                 }
                 // Does the constraint contain the variable to eliminate.
-                if( _constraint->variables().find( index() ) == _constraint->variables().end()
+                if( _constraint.variables().find( index() ) == _constraint.variables().end()
                         || constraintWithFinitlyManySolutionCandidatesInIndexExists )
                 {
                     rConditions().push_back( new Condition( _constraint, mpConditionIdAllocator->get(), _valutation, true, _originalConditions, _recentlyAdded ) );
@@ -1439,7 +1438,7 @@ namespace vs
                     if( mpVariableBounds != NULL )
                     {
                         carl::Variable* changedVar;
-                        unsigned boundRemoved = mpVariableBounds->removeBound( (*condition)->pConstraint(), *condition, changedVar );
+                        unsigned boundRemoved = mpVariableBounds->removeBound( (*condition)->constraint(), *condition, changedVar );
                         if( boundRemoved == 2 )
                         {
                             for( auto condB = rConditions().begin(); condB != conditions().end(); ++condB )
@@ -1520,7 +1519,7 @@ namespace vs
                 if( mpVariableBounds != NULL )
                 {
                     carl::Variable* changedVar;
-                    unsigned boundRemoved = mpVariableBounds->removeBound( (*cond)->pConstraint(), *cond, changedVar );
+                    unsigned boundRemoved = mpVariableBounds->removeBound( (*cond)->constraint(), *cond, changedVar );
                     if( boundRemoved == 2 )
                     {
                         for( auto condB = rConditions().begin(); condB != conditions().end(); ++condB )
@@ -1607,12 +1606,12 @@ namespace vs
         auto conflictSet = mpConflictSets->begin();
         while( conflictSet != mpConflictSets->end() )
         {
-            ConditionSetSetSet updatedCondSetSetSet = ConditionSetSetSet();
+            ConditionSetSetSet updatedCondSetSetSet;
             auto condSetSet = conflictSet->second.begin();
             bool emptyReasonOccured = false;
             while( condSetSet != conflictSet->second.end() )
             {
-                ConditionSetSet updatedCondSetSet = ConditionSetSet();
+                ConditionSetSet updatedCondSetSet;
                 auto condSet = condSetSet->begin();
                 while( condSet != condSetSet->end() )
                 {
@@ -1741,7 +1740,7 @@ namespace vs
                 auto condConj = subResult->begin();
                 while( condConj != subResult->end() )
                 {
-                    ConditionList conditionsToAdd = ConditionList();
+                    ConditionList conditionsToAdd;
                     auto cond = condConj->first.begin();
                     while( cond != condConj->first.end() )
                     {
@@ -1764,7 +1763,7 @@ namespace vs
                             {
                                 carl::PointerSet<Condition> oConds;
                                 oConds.insert( *oCond );
-                                conditionsToAdd.push_back( new Condition( (**oCond).pConstraint(), mpConditionIdAllocator->get(), (**cond).valuation(), false, oConds ) );
+                                conditionsToAdd.push_back( new Condition( (**oCond).constraint(), mpConditionIdAllocator->get(), (**cond).valuation(), false, oConds ) );
                                 ++oCond;
                             }
                             const Condition* rpCond = *cond;
@@ -1850,40 +1849,40 @@ namespace vs
                 }
             }
             State* state = new State( this, _substitution, mpConditionIdAllocator, mpVariableBounds != NULL );
-            const carl::PointerSet<smtrat::ConstraintT>& sideConds = _substitution.sideCondition();
+            const smtrat::ConstraintsT& sideConds = _substitution.sideCondition();
             for( auto sideCond = sideConds.begin(); sideCond != sideConds.end(); ++sideCond )
             {
-//                if( _substitution.variable().getType() != carl::VariableType::VT_INT || (*sideCond)->relation() != carl::Relation::NEQ )
+//                if( _substitution.variable().getType() != carl::VariableType::VT_INT || sideCond->relation() != carl::Relation::NEQ )
 //                {
                     std::vector<DisjunctionOfConditionConjunctions> subResults;
-                    subResults.push_back( DisjunctionOfConditionConjunctions() );
-                    subResults.back().push_back( ConditionList() );
+                    subResults.emplace_back();
+                    subResults.back().emplace_back();
                     subResults.back().back().push_back( new Condition( *sideCond, mpConditionIdAllocator->get(), state->treeDepth(), false, _substitution.originalConditions(), false ) );
-                    state->addSubstitutionResults( subResults );
+                    state->addSubstitutionResults( std::move(subResults) );
                     state->rType() = SUBSTITUTION_TO_APPLY;
 //                }
 //                else
 //                {
-//                    const smtrat::ConstraintT* denomPos = carl::newConstraint<smtrat::Poly>( (*sideCond)->lhs(), carl::Relation::GREATER );
-//                    const smtrat::ConstraintT* denomNeg = carl::newConstraint<smtrat::Poly>( (*sideCond)->lhs(), carl::Relation::LESS );
-//                    assert( denomPos != carl::constraintPool<smtrat::Poly>().inconsistentConstraint() || denomNeg != carl::constraintPool<smtrat::Poly>().inconsistentConstraint() );
+//                    smtrat::ConstraintT denomPos = smtrat::ConstraintT( sideCond->lhs(), carl::Relation::GREATER );
+//                    smtrat::ConstraintT denomNeg = smtrat::ConstraintT( sideCond->lhs(), carl::Relation::LESS );
+//                    assert( denomPos != ConstraintT( false ) || denomNeg != ConstraintT( false ) );
 //                    // add (p<0 or p>0) to the substitution results, with the constraint being p!=0
-//                    if( denomPos != carl::constraintPool<smtrat::Poly>().consistentConstraint() && denomNeg != carl::constraintPool<smtrat::Poly>().consistentConstraint() )
+//                    if( denomPos != ConstraintT( true ) && denomNeg != ConstraintT( true ) )
 //                    {
 //                        DisjunctionOfConditionConjunctions cases;
-//                        if( denomPos != carl::constraintPool<smtrat::Poly>().inconsistentConstraint() )
+//                        if( denomPos != ConstraintT( false ) )
 //                        {
-//                            cases.push_back( ConditionList() );
+//                            cases.emplace_back();
 //                            cases.back().push_back( new vs::Condition( denomPos, mpConditionIdAllocator->get(), state->treeDepth(), false, _substitution.originalConditions(), false ) );
 //                        }
-//                        if( denomNeg != carl::constraintPool<smtrat::Poly>().inconsistentConstraint() )
+//                        if( denomNeg != ConstraintT( false ) )
 //                        {
-//                            cases.push_back( ConditionList() );
+//                            cases.emplace_back()
 //                            cases.back().push_back( new vs::Condition( denomNeg, mpConditionIdAllocator->get(), state->treeDepth(), false, _substitution.originalConditions(), false ) );
 //                        }
 //                        std::vector<DisjunctionOfConditionConjunctions> subResults;
 //                        subResults.push_back( cases );
-//                        state->addSubstitutionResults( subResults );
+//                        state->addSubstitutionResults( std::move(subResults) );
 //                        state->rType() = SUBSTITUTION_TO_APPLY;
 //                    }
 //                }
@@ -1951,9 +1950,6 @@ namespace vs
 
     void State::passConflictToFather( bool _checkConflictForSideCondition, bool _includeInconsistentTestCandidates )
     {
-//        cout << "Pass conflict to father: " << endl;
-//        father().printAlone( "***" );
-//        printAlone( "***   " );
         assert( isInconsistent() );
         bool coverSetOCondsContainIndexOfFather = false;
         if( index().getType() != carl::VariableType::VT_INT || !mpConflictSets->empty() )
@@ -1973,15 +1969,15 @@ namespace vs
             }
             coveringSet( confSets, covSet, treeDepth() );
             #ifdef VS_LOG_INFSUBSETS
-            carl::PointerSet<smtrat::ConstraintT> constraints;
+            smtrat::ConstraintsT constraints;
             for( auto cond = covSet.begin(); cond != covSet.end(); ++cond )
-                constraints.insert( (**cond).pConstraint() );
+                constraints.insert( (**cond).constraint() );
             smtrat::Module::addAssumptionToCheck( constraints, false, "VSModule_IS_1" );
             #endif
             // Get the original conditions to the covering set.
             carl::PointerSet<Condition> coverSetOConds;
             bool sideConditionIsPartOfConflict = !_checkConflictForSideCondition || (pOriginalCondition() == NULL || originalCondition().constraint().relation() != carl::Relation::EQ);
-            const carl::PointerSet<smtrat::ConstraintT>& subsSideConds = substitution().sideCondition();
+            const smtrat::ConstraintsT& subsSideConds = substitution().sideCondition();
             for( auto cond = covSet.begin(); cond != covSet.end(); ++cond )
             {
                 // Add the original conditions of the condition to the conflict set.
@@ -1997,7 +1993,7 @@ namespace vs
                         oCond++;
                     }
                 }
-                sideConditionIsPartOfConflict |= subsSideConds.find( (*cond)->pConstraint() ) != subsSideConds.end();
+                sideConditionIsPartOfConflict |= subsSideConds.find( (*cond)->constraint() ) != subsSideConds.end();
             }
             if( !sideConditionIsPartOfConflict )
             {
@@ -2014,13 +2010,13 @@ namespace vs
                 coverSetOCondsContainIndexOfFather = true;
             }
             ConditionSetSet conflictSet;
-            conflictSet.insert( coverSetOConds );
             assert( !coverSetOConds.empty() );
+            conflictSet.insert( std::move(coverSetOConds) );
             // Add the original conditions of the covering set as a conflict set to the father.
             if( !coverSetOCondsContainIndexOfFather )
-                rFather().addConflictSet( NULL, conflictSet );
+                rFather().addConflictSet( NULL, std::move(conflictSet) );
             else
-                rFather().addConflictSet( pSubstitution(), conflictSet );
+                rFather().addConflictSet( pSubstitution(), std::move(conflictSet) );
             // Delete the conflict sets.
             mpConflictSets->clear();
         }
@@ -2038,7 +2034,7 @@ namespace vs
             const Condition* pCond = rConditions().back();
             rConditions().pop_back();
             if( mpVariableBounds != NULL )
-                mpVariableBounds->removeBound( pCond->pConstraint(), pCond );
+                mpVariableBounds->removeBound( pCond->constraint(), pCond );
             mpConditionIdAllocator->free( pCond->getId() );
             delete pCond;
             pCond = NULL;
@@ -2147,9 +2143,9 @@ namespace vs
         }
         if( containsConflictToCover )
         {
-            ConditionSetSet localConflict = ConditionSetSet();
+            ConditionSetSet localConflict;
             localConflict.insert( infSubset );
-            addConflictSet( NULL, localConflict );
+            addConflictSet( NULL, std::move(localConflict) );
             return true;
         }
         else
@@ -2171,9 +2167,9 @@ namespace vs
             vector< smtrat::DoubleInterval > solutionSpaces = solutionSpace( conflict );
             if( solutionSpaces.empty() )
             {
-                ConditionSetSet conflicts = ConditionSetSet();
-                conflicts.insert( conflict );
-                pFather()->addConflictSet( pSubstitution(), conflicts );
+                ConditionSetSet conflicts;
+                conflicts.insert( std::move(conflict) );
+                pFather()->addConflictSet( pSubstitution(), std::move(conflicts) );
                 return false;
             }
         }
@@ -2286,7 +2282,7 @@ namespace vs
         #endif
         assert( index() != carl::Variable::NO_VARIABLE );
         const smtrat::ConstraintT& cons = _condition->constraint();
-        smtrat::EvalDoubleIntervalMap intervals = smtrat::EvalDoubleIntervalMap();
+        smtrat::EvalDoubleIntervalMap intervals;
         if( cons.lhs().isUnivariate() )
         {
             smtrat::DoubleInterval varDomain = variableBounds().getDoubleInterval( index() );
@@ -2366,9 +2362,9 @@ namespace vs
                     origins.insert( _condition );
                     carl::PointerSet<Condition> conflictingBounds = variableBounds().getOriginsOfBounds( index() );
                     origins.insert( conflictingBounds.begin(), conflictingBounds.end() );
-                    ConditionSetSet conflicts = ConditionSetSet();
-                    conflicts.insert( origins );
-                    addConflictSet( NULL, conflicts );
+                    ConditionSetSet conflicts;
+                    conflicts.insert( std::move(origins) );
+                    addConflictSet( NULL, std::move(conflicts) );
                     rInconsistent() = true;
                     #ifdef VS_DEBUG_ROOTS_CHECK
                     cout << "  -> false (1)" << endl;
@@ -2406,18 +2402,18 @@ namespace vs
         origins.insert( _condition );
         carl::PointerSet<Condition> conflictingBounds = variableBounds().getOriginsOfBounds( cons.variables() );
         origins.insert( conflictingBounds.begin(), conflictingBounds.end() );
-        ConditionSetSet conflicts = ConditionSetSet();
-        conflicts.insert( origins );
+        ConditionSetSet conflicts;
+        conflicts.insert( std::move(origins) );
         Substitution* sub = NULL;
         if( !constraintInconsistent )
         {
-            carl::PointerSet<smtrat::ConstraintT> constraints = carl::PointerSet<smtrat::ConstraintT>();
-            constraints.insert( _condition->pConstraint() );
+            smtrat::ConstraintsT constraints;
+            constraints.insert( _condition->constraint() );
             carl::PointerSet<Condition> subsOrigins;
             subsOrigins.insert( _condition );
-            sub = new Substitution( index(), Substitution::INVALID, subsOrigins, constraints );
+            sub = new Substitution( index(), Substitution::INVALID, std::move(subsOrigins), std::move(constraints) );
         }
-        addConflictSet( sub, conflicts );
+        addConflictSet( sub, std::move(conflicts) );
         #ifdef VS_DEBUG_ROOTS_CHECK
         cout << "  -> false (2)" << endl;
         #endif
@@ -2534,7 +2530,6 @@ namespace vs
     {
         if( hasSubstitutionResults() )
         {
-//            _out << _initiation << "Substitution results:" << endl;
             for( auto subResult = mpSubstitutionResults->begin(); subResult != mpSubstitutionResults->end(); ++subResult )
             {
                 if( subResult == mpSubstitutionResults->begin() )
@@ -2551,12 +2546,9 @@ namespace vs
                     for( auto cond = condConjunction->first.begin(); cond != condConjunction->first.end(); ++cond )
                     {
                         if( cond != condConjunction->first.begin() ) _out << " and ";
-//                        (**cond).print( _out );
                         cout << (*cond)->constraint();
                     }
                     _out << " )";
-//                    if( condConjunction->second ) _out << "_[True]  ";
-//                    else _out << "_[False]  ";
                     auto nextCondConjunction = condConjunction;
                     ++nextCondConjunction;
                     if( nextCondConjunction != subResult->end() ) _out << endl;

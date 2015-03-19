@@ -52,7 +52,7 @@ namespace smtrat
              * Members:
              */
             const Poly mRhs;
-            const ConstraintT* mConstraint; // Todo: Do not save constraints but formulae instead
+            ConstraintT mConstraint; // Todo: Do not save constraints but formulae instead
             Contractor<carl::SimpleNewton>& mContractor;
             
             carl::Variable mLhs;
@@ -82,7 +82,7 @@ namespace smtrat
             ContractionCandidate( const ContractionCandidate& _original ) = delete;
 			ContractionCandidate( ) = delete;
 
-            ContractionCandidate( carl::Variable _lhs, const Poly _rhs, const ConstraintT* _constraint, carl::Variable _derivationVar, Contractor<carl::SimpleNewton>& _contractor, const FormulaT& _origin, unsigned _id ):
+            ContractionCandidate( carl::Variable _lhs, const Poly _rhs, const ConstraintT& _constraint, carl::Variable _derivationVar, Contractor<carl::SimpleNewton>& _contractor, const FormulaT& _origin, unsigned _id ):
                 mRhs(_rhs),
                 mConstraint(_constraint),
                 mContractor(_contractor),
@@ -106,7 +106,7 @@ namespace smtrat
              * @param _constraint
              * @param _derivationVar
              */
-            ContractionCandidate( carl::Variable _lhs, const Poly _rhs, const ConstraintT* _constraint, carl::Variable _derivationVar, Contractor<carl::SimpleNewton>& _contractor, unsigned _id ):
+            ContractionCandidate( carl::Variable _lhs, const Poly _rhs, const ConstraintT& _constraint, carl::Variable _derivationVar, Contractor<carl::SimpleNewton>& _contractor, unsigned _id ):
                 mRhs(_rhs),
                 mConstraint(_constraint),
                 mContractor(_contractor),
@@ -140,7 +140,7 @@ namespace smtrat
                 return mRhs;
             }
             
-            const ConstraintT* constraint() const
+            const ConstraintT& constraint() const
             {
                 return mConstraint;
             }
