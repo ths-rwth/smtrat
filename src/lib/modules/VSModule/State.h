@@ -847,7 +847,7 @@ namespace vs
          *                      (NULL in the case a detected conflict without substitution)
          * @param _condSetSet The conflicts to add.
          */
-        void addConflictSet( const Substitution* _substitution, ConditionSetSet& _condSetSet );
+        void addConflictSet( const Substitution* _substitution, ConditionSetSet&& _condSetSet );
         
         /**
          * Adds all conflicts to all sets of the conflict set of the given substitution.
@@ -855,7 +855,7 @@ namespace vs
          *                      (NULL in the case a detected conflict without substitution)
          * @param _condSetSet The conflicts to add.
          */
-        void addConflicts( const Substitution* _substitution, ConditionSetSet& _condSetSet );
+        void addConflicts( const Substitution* _substitution, ConditionSetSet&& _condSetSet );
         
         /**
          * Clears the conflict sets.
@@ -876,7 +876,7 @@ namespace vs
          * @param _disjunctionsOfCondConj The substitution results given by a vector
          *                                 of disjunctions of conjunctions of conditions.
          */
-        void addSubstitutionResults( std::vector< DisjunctionOfConditionConjunctions >& _disjunctionsOfCondConj );
+        void addSubstitutionResults( std::vector< DisjunctionOfConditionConjunctions >&& _disjunctionsOfCondConj );
         
         /**
          * Extends the currently considered combination of conjunctions in the substitution results.
@@ -896,7 +896,7 @@ namespace vs
          * Gets the current substitution result combination as condition vector.
          * @return The current substitution result combination as condition vector.
          */
-        const ConditionList getCurrentSubresultCombination() const;
+        ConditionList getCurrentSubresultCombination() const;
         
         /**
          * Determines the condition vector corresponding to the current combination of the
@@ -927,7 +927,7 @@ namespace vs
          * @param _recentlyAdded Is the condition a recently added one.
          * @sideeffect The state can obtain a new condition.
          */
-        void addCondition( const smtrat::ConstraintT* _constraint, const carl::PointerSet<Condition>& _originalConditions, size_t _valutation, bool _recentlyAdded, ValuationMap& _ranking );
+        void addCondition( const smtrat::ConstraintT& _constraint, const carl::PointerSet<Condition>& _originalConditions, size_t _valutation, bool _recentlyAdded, ValuationMap& _ranking );
             
         /**
          * This is just for debug purpose.

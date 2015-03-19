@@ -31,12 +31,12 @@ using namespace std;
 
 namespace vs
 {
-    Condition::Condition( const smtrat::ConstraintT* _cons, size_t _id, size_t _val, bool _flag, const carl::PointerSet<Condition>& _oConds, bool _rAdded ):
+    Condition::Condition( const smtrat::ConstraintT& _cons, size_t _id, size_t _val, bool _flag, const carl::PointerSet<Condition>& _oConds, bool _rAdded ):
         mFlag( _flag ),
         mRecentlyAdded( _rAdded ),
         mValuation( _val ),
         mId( _id ),
-        mpConstraint( _cons ),
+        mConstraint( _cons ),
         mpOriginalConditions( new carl::PointerSet<Condition>( _oConds ) )
     {}
 
@@ -45,7 +45,7 @@ namespace vs
         mRecentlyAdded( false ),
         mValuation( _cond.valuation() ),
         mId( _id ),
-        mpConstraint( _cond.pConstraint() ),
+        mConstraint( _cond.constraint() ),
         mpOriginalConditions( new carl::PointerSet<Condition>( _cond.originalConditions() ) )
     {}
 
@@ -77,7 +77,7 @@ namespace vs
             maximum = (double)_maxNumberOfVars * (double)_maxNumberOfVars;
         // Check the relation symbol.
         double relationSymbolWeight = 0;
-        switch( mpConstraint->relation() )
+        switch( constraint().relation() )
         {
             case carl::Relation::EQ:
                 relationSymbolWeight += 1;
@@ -109,7 +109,7 @@ namespace vs
         unsigned lCoeffWeightB = 2;
         if( degreeWeight <= 1 )
         {
-            smtrat::Poly coeff = mpConstraint->coefficient( _consideredVariable, varInfo.maxDegree() );
+            smtrat::Poly coeff = constraint().coefficient( _consideredVariable, varInfo.maxDegree() );
             if( coeff.isConstant() )
             {
                 if( _consideredVariable.getType() == carl::VariableType::VT_INT && (coeff == smtrat::ONE_POLYNOMIAL || coeff == smtrat::MINUS_ONE_POLYNOMIAL) )
@@ -123,8 +123,8 @@ namespace vs
         }
         else if( degreeWeight == 2 )
         {
-            bool hasRationalLeadingCoefficient = mpConstraint->coefficient( _consideredVariable, varInfo.maxDegree() ).isConstant();
-            if( hasRationalLeadingCoefficient && mpConstraint->coefficient( _consideredVariable, varInfo.maxDegree() - 1 ).isConstant() )
+            bool hasRationalLeadingCoefficient = constraint().coefficient( _consideredVariable, varInfo.maxDegree() ).isConstant();
+            if( hasRationalLeadingCoefficient && constraint().coefficient( _consideredVariable, varInfo.maxDegree() - 1 ).isConstant() )
                 lCoeffWeight = 1;
             else if( hasRationalLeadingCoefficient )
                 lCoeffWeight = 2;
@@ -132,7 +132,7 @@ namespace vs
                 lCoeffWeight = 3;
         }
         // Check the number of variables.
-        double numberOfVariableWeight = (double) mpConstraint->variables().size();
+        double numberOfVariableWeight = (double) constraint().variables().size();
         // Check how in how many monomials the variable occurs.
         double numberOfVariableOccurencesWeight = (double)varInfo.occurence();
         if( maximum <= numberOfVariableOccurencesWeight )
@@ -141,8 +141,8 @@ namespace vs
         double otherMonomialsPositiveWeight = 2;
         double finitlyManySolutionsWeight = INFINITLY_MANY_SOLUTIONS_WEIGHT;
         // TODO: avoid expanding the polynomial somehow
-        typename smtrat::Poly::PolyType polyExpanded = (typename smtrat::Poly::PolyType)mpConstraint->lhs();
-        if( numberOfVariableOccurencesWeight == 1 && ( polyExpanded.nrTerms() == 1 || (mpConstraint->constantPart() != smtrat::ZERO_RATIONAL && polyExpanded.nrTerms() > 1) ) )
+        typename smtrat::Poly::PolyType polyExpanded = (typename smtrat::Poly::PolyType)constraint().lhs();
+        if( numberOfVariableOccurencesWeight == 1 && ( polyExpanded.nrTerms() == 1 || (constraint().constantPart() != smtrat::ZERO_RATIONAL && polyExpanded.nrTerms() > 1) ) )
         {
             bool allOtherMonomialsPos = true;
             bool allOtherMonomialsNeg = true;
@@ -190,7 +190,7 @@ namespace vs
             }
         }
         double weightFactorTmp = maximum;
-//        cout << "valuate " << *mpConstraint << " for " << _consideredVariable << endl;
+//        cout << "valuate " << mConstraint << " for " << _consideredVariable << endl;
 //        cout << "finitlyManySolutionsWeight = " << finitlyManySolutionsWeight << endl;
 //        cout << "wtfweight = " << (_preferEquation ? ((constraint().relation() == carl::Relation::EQ || degreeWeight <= 2) ? 1 : 2) : (degreeWeight <= 2 ? 1 : 2)) << endl;
 //        cout << "relationSymbolWeight = " << relationSymbolWeight << endl;

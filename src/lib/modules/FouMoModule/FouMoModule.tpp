@@ -104,7 +104,7 @@ namespace smtrat
                                     // regarding the currently considered variable
                                     while( iter_lower != iter_help->second.second.end() )
                                     {
-                                        FormulaT new_formula = std::move( combine_upper_lower( iter_temp->first.pConstraint(), iter_lower->first.pConstraint(), *iter_var ) );                                                                                                                       
+                                        FormulaT new_formula = std::move( combine_upper_lower( iter_temp->first.constraint(), iter_lower->first.constraint(), *iter_var ) );                                                                                                                       
                                         #ifdef DEBUG_FouMoModule
                                         cout << "Combine 'upper' constraint: " << iter_temp->first.constraint() << endl;
                                         cout << "with 'lower' constraint: " << iter_lower->first.constraint() << endl;
@@ -139,7 +139,7 @@ namespace smtrat
                                     auto iter_upper = iter_help->second.first.begin(); 
                                     while( iter_upper != iter_help->second.first.end() )
                                     {
-                                        FormulaT new_formula = std::move( combine_upper_lower( iter_upper->first.pConstraint(), iter_temp->first.pConstraint(), *iter_var ) );                                                                                                                       
+                                        FormulaT new_formula = std::move( combine_upper_lower( iter_upper->first.constraint(), iter_temp->first.constraint(), *iter_var ) );                                                                                                                       
                                         #ifdef DEBUG_FouMoModule
                                         cout << "Combine 'upper' constraint: " << iter_upper->first.constraint() << endl;
                                         cout << "with 'lower' constraint: " << iter_temp->first.constraint() << endl;
@@ -477,7 +477,7 @@ namespace smtrat
                 {
                     std::shared_ptr<std::vector<FormulaT>> origins_new( new std::vector<FormulaT>() );
                     *origins_new = std::move( merge( *( iter_upper->second ), *( iter_lower->second ) ) );
-                    new_formula = std::move( combine_upper_lower( iter_upper->first.pConstraint(), iter_lower->first.pConstraint(), best_var ) );
+                    new_formula = std::move( combine_upper_lower( iter_upper->first.constraint(), iter_lower->first.constraint(), best_var ) );
                     #ifdef DEBUG_FouMoModule
                     cout << "Combine 'upper' constraint: " << iter_upper->first.constraint() << endl;
                     cout << "with 'lower' constraint: " << iter_lower->first.constraint() << endl;
@@ -569,7 +569,7 @@ namespace smtrat
                     {
                         std::vector<SingleFormulaOrigins> upper;
                         std::vector<SingleFormulaOrigins> lower;
-                        if( ( iter_poly->coeff() > 0 && iter_constr->first.pConstraint()->relation() == carl::Relation::LEQ ) )
+                        if( ( iter_poly->coeff() > 0 && iter_constr->first.constraint().relation() == carl::Relation::LEQ ) )
                         {
                             SingleFormulaOrigins upper_help;
                             upper_help.first = iter_constr->first;
@@ -590,7 +590,7 @@ namespace smtrat
                         SingleFormulaOrigins help;
                         help.first = iter_constr->first;
                         help.second = iter_constr->second;
-                        if( ( iter_poly->coeff() > 0 && iter_constr->first.pConstraint()->relation() == carl::Relation::LEQ ) ) 
+                        if( ( iter_poly->coeff() > 0 && iter_constr->first.constraint().relation() == carl::Relation::LEQ ) ) 
                         {
                             iter_help->second.first.push_back( std::move( help ) );
                         }
@@ -621,11 +621,11 @@ namespace smtrat
     }
     
     template<class Settings>
-    FormulaT FouMoModule<Settings>::combine_upper_lower(const smtrat::ConstraintT* upper_constr, const smtrat::ConstraintT* lower_constr, carl::Variable& corr_var)
+    FormulaT FouMoModule<Settings>::combine_upper_lower(const smtrat::ConstraintT& upper_constr, const smtrat::ConstraintT& lower_constr, carl::Variable& corr_var)
     {
         FormulaT combined_formula;
         Rational coeff_upper;
-        typename Poly::PolyType ucExpanded = (typename Poly::PolyType)upper_constr->lhs();
+        typename Poly::PolyType ucExpanded = (typename Poly::PolyType)upper_constr.lhs();
         auto iter_poly_upper = ucExpanded.begin();
         while( iter_poly_upper != ucExpanded.end() )
         {
@@ -645,7 +645,7 @@ namespace smtrat
             ++iter_poly_upper;
         }
         Rational coeff_lower;
-        typename Poly::PolyType lcExpanded = (typename Poly::PolyType)lower_constr->lhs();
+        typename Poly::PolyType lcExpanded = (typename Poly::PolyType)lower_constr.lhs();
         auto iter_poly_lower = lcExpanded.begin();
         while( iter_poly_lower != lcExpanded.end() )
         {
@@ -664,10 +664,10 @@ namespace smtrat
             }
             ++iter_poly_lower;
         }
-        Poly upper_poly = upper_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
-        Poly lower_poly = lower_constr->lhs().substitute( corr_var, ZERO_POLYNOMIAL );
-        assert( lower_constr->relation() == carl::Relation::LEQ );
-        combined_formula = FormulaT( carl::newConstraint( Poly ( coeff_upper*lower_poly ) + Poly( (Rational)(-1*coeff_lower)*upper_poly ), carl::Relation::LEQ ) );
+        Poly upper_poly = upper_constr.lhs().substitute( corr_var, ZERO_POLYNOMIAL );
+        Poly lower_poly = lower_constr.lhs().substitute( corr_var, ZERO_POLYNOMIAL );
+        assert( lower_constr.relation() == carl::Relation::LEQ );
+        combined_formula = FormulaT( ConstraintT( std::move(Poly ( coeff_upper*lower_poly ) + Poly( (Rational)(-1*coeff_lower)*upper_poly )), carl::Relation::LEQ ) );
         return combined_formula;        
     }
     

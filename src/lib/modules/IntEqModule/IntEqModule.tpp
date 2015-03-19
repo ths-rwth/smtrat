@@ -62,8 +62,8 @@ namespace smtrat
             // Do substitutions that have already been determined and update origins accordingly
             std::shared_ptr<std::vector<FormulaT>> origins( new std::vector<FormulaT>() );
             origins->push_back( _subformula->formula() );
-            const smtrat::ConstraintT* constr = _subformula->formula().pConstraint();
-            Poly new_poly( constr->lhs() );
+            const ConstraintT& constr = _subformula->formula().constraint();
+            Poly new_poly( constr.lhs() );
             auto iter_subs = mSubstitutions.begin();
             while( iter_subs != mSubstitutions.end() )
             {
@@ -77,7 +77,7 @@ namespace smtrat
                 }
                 ++iter_subs;
             }
-            FormulaT newEq( carl::newConstraint<Poly>( new_poly, carl::Relation::EQ ) );
+            FormulaT newEq( ConstraintT( std::move(new_poly), carl::Relation::EQ ) );
             // Return False if the newly obtained constraint is unsatisfiable
             if( newEq.isFalse() )
             {
@@ -226,7 +226,7 @@ namespace smtrat
              * and determine the coefficient of the latter with 
              * the smallest absolute value
              */
-            const smtrat::ConstraintT* curr_constr = mProc_Constraints.begin()->first.pConstraint();
+            const ConstraintT& curr_constr = mProc_Constraints.begin()->first.constraint();
             if( mProc_Constraints.begin()->first.isFalse() )
             {
                 size_t i = determine_smallest_origin( *( mProc_Constraints.begin()->second ) );
@@ -239,7 +239,7 @@ namespace smtrat
             cout << mProc_Constraints.begin()->first.constraint() << " was chosen." << endl;
             #endif
             std::shared_ptr<std::vector<FormulaT>> origins = mProc_Constraints.begin()->second;
-            typename Poly::PolyType ccExpanded = (typename Poly::PolyType)curr_constr->lhs();
+            typename Poly::PolyType ccExpanded = (typename Poly::PolyType)curr_constr.lhs();
             auto iter_coeff = ccExpanded.begin();
             Rational smallest_abs_value = (*iter_coeff).coeff();
             carl::Variable corr_var;
@@ -384,12 +384,12 @@ namespace smtrat
                 //#ifdef DEBUG_IntEqModule
                 //cout << "After substitution: " << new_poly << endl;
                 //#endif
-                FormulaT newEq( carl::newConstraint<Poly>( new_poly, carl::Relation::EQ ) );          
+                FormulaT newEq( ConstraintT( std::move(new_poly), carl::Relation::EQ ) );          
                 // Check whether newEq is unsatisfiable
                 if( newEq.isFalse() )
                 {
                     #ifdef DEBUG_IntEqModule
-                    cout << "Constraint is invalid!" << new_poly << endl;
+                    cout << "Constraint is invalid!" << endl;
                     #endif
                     size_t i = determine_smallest_origin( *origins_new );
                     FormulasT infSubSet;
@@ -422,8 +422,8 @@ namespace smtrat
                 //    ++iter_subs_help;
                 //}
                 //#endif
-                const smtrat::ConstraintT* constr = (*iter_formula).formula().pConstraint();
-                Poly new_poly = constr->lhs();
+                const ConstraintT& constr = (*iter_formula).formula().constraint();
+                Poly new_poly = constr.lhs();
                 std::shared_ptr<std::vector<FormulaT>> origins( new std::vector<FormulaT>() );
                 origins->push_back( (*iter_formula).formula() );
                 auto iter_subs = mSubstitutions.begin();
@@ -449,7 +449,7 @@ namespace smtrat
                 auto iter_var = mSubstitutions.begin();
                 while( iter_var != mSubstitutions.end() )
                 {  
-                    typename Poly::PolyType cosntrLhsExpanded = (typename Poly::PolyType)constr->lhs();
+                    typename Poly::PolyType cosntrLhsExpanded = (typename Poly::PolyType)constr.lhs();
                     auto coeff_iter = cosntrLhsExpanded.begin();
                     while( coeff_iter != cosntrLhsExpanded.end() )
                     {
@@ -475,7 +475,7 @@ namespace smtrat
                 //    formula_cover->push_back( *iter_sets );
                 //    ++iter_sets;
                 //}  
-                FormulaT formula_passed( carl::newConstraint<Poly>( new_poly, (*iter_formula).formula().constraint().relation() ) );                
+                FormulaT formula_passed( ConstraintT( std::move(new_poly), (*iter_formula).formula().constraint().relation() ) );                
                 if( formula_passed.isFalse() )
                 {
                     #ifdef DEBUG_IntEqModule

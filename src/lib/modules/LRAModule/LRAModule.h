@@ -127,7 +127,7 @@ namespace smtrat
              * Stores all set of constraints which have already led to defining constraint matrices. 
              * As the computation of these matrices is rather expensive, we try to omit this if possible.
              */
-            std::set< std::vector< const ConstraintT* > > mProcessedDCMatrices;
+            std::set< std::vector<ConstraintT> > mProcessedDCMatrices;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores the yet collected statistics of this LRAModule.
             LRAModuleStatistics* mpStatistics;

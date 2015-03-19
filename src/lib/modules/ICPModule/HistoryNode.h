@@ -64,14 +64,14 @@ namespace smtrat
                  */
 
                 EvalDoubleIntervalMap                          mIntervals;    // intervals AFTER contraction with Candidates of the incoming edge has been applied
-                const ConstraintT*                             mSplit;
-                std::map<carl::Variable, std::set<const ConstraintT*> >  mReasons;
+                ConstraintT                                    mSplit;
+                std::map<carl::Variable, std::set<ConstraintT> >  mReasons;
                 std::map<carl::Variable, set_icpVariable>      mVariableReasons;
                 HistoryNode*                                   mLeftChild;
                 HistoryNode*                                   mRightChild;
                 HistoryNode*                                   mParent;
                 std::set<const ContractionCandidate*>          mAppliedContractions;
-                std::set<const ConstraintT*>                   mStateInfeasibleConstraints;
+                std::set<ConstraintT>                          mStateInfeasibleConstraints;
                 set_icpVariable                                mStateInfeasibleVariables;
                 const unsigned                                 mId;
                 
@@ -84,7 +84,7 @@ namespace smtrat
 
                 HistoryNode( HistoryNode* _parent, unsigned _id ):
                     mIntervals(),
-                    mSplit( NULL ),
+                    mSplit(),
                     mReasons(),
                     mVariableReasons(),
                     mLeftChild( NULL ),
@@ -98,7 +98,7 @@ namespace smtrat
 
                 HistoryNode( const EvalDoubleIntervalMap& _intervals, unsigned _id ):
                     mIntervals( _intervals ),
-                    mSplit( NULL ),
+                    mSplit(),
                     mReasons(),
                     mVariableReasons(),
                     mLeftChild( NULL ),
@@ -112,7 +112,7 @@ namespace smtrat
 
                 HistoryNode( HistoryNode* _parent, const EvalDoubleIntervalMap& _intervals, unsigned _id ):
                     mIntervals( _intervals ),
-                    mSplit( NULL ),
+                    mSplit(),
                     mReasons(),
                     mVariableReasons(),
                     mLeftChild( NULL ),
@@ -172,8 +172,8 @@ namespace smtrat
                 
                 carl::Variable::Arg variable() const
                 {
-                    assert( mSplit != NULL );
-                    return (*mSplit->variables().begin());
+                    assert( mSplit != ConstraintT() );
+                    return (*mSplit.variables().begin());
                 }
 
                 const EvalDoubleIntervalMap& intervals() const
@@ -267,12 +267,12 @@ namespace smtrat
                     }
                 }
 
-                std::set<const ConstraintT*>& rStateInfeasibleConstraints()
+                std::set<ConstraintT>& rStateInfeasibleConstraints()
                 {
                     return mStateInfeasibleConstraints;
                 }
                 
-                std::set<const ConstraintT*> stateInfeasibleConstraints() const
+                std::set<ConstraintT> stateInfeasibleConstraints() const
                 {
                     return mStateInfeasibleConstraints;
                 }
@@ -299,12 +299,12 @@ namespace smtrat
                     return false;
                 }
                 
-                bool addInfeasibleConstraint(const ConstraintT* _constraint, bool _addOnlyConstraint = false)
+                bool addInfeasibleConstraint(const ConstraintT& _constraint, bool _addOnlyConstraint = false)
                 {
                     if(!_addOnlyConstraint)
                     {
                         // also add all variables contained in the constraint to stateInfeasibleVariables
-                        for( auto variableIt = _constraint->variables().begin(); variableIt != _constraint->variables().end(); ++variableIt )
+                        for( auto variableIt = _constraint.variables().begin(); variableIt != _constraint.variables().end(); ++variableIt )
                         {
                             if(mVariableReasons.find(*variableIt) != mVariableReasons.end())
                             {
@@ -341,7 +341,7 @@ namespace smtrat
                     assert(!_candidate->origin().empty());
                     // TEMPORARY!!! -> Very coarse overapprox!
                     for( auto originIt = _candidate->rOrigin().begin(); originIt != _candidate->rOrigin().end(); ++originIt )
-                        addReason( _candidate->derivationVar(), originIt->pConstraint() );
+                        addReason( _candidate->derivationVar(), originIt->constraint() );
                 }
 
                 std::set<const ContractionCandidate*> getCandidates() const
@@ -349,54 +349,54 @@ namespace smtrat
                     return mAppliedContractions;
                 }
 
-                void setSplit( const ConstraintT* _split )
+                void setSplit( const ConstraintT& _split )
                 {
                     mSplit = _split;
                 }
 
-                const ConstraintT* split() const
+                const ConstraintT& split() const
                 {
                     return mSplit;
                 }
 
-                std::map<carl::Variable, std::set<const ConstraintT*>>& rReasons()
+                std::map<carl::Variable, std::set<ConstraintT>>& rReasons()
                 {
                     return mReasons;
                 }
 
-                const std::map<carl::Variable, std::set<const ConstraintT*>>& reasons() const
+                const std::map<carl::Variable, std::set<ConstraintT>>& reasons() const
                 {
                     return mReasons;
                 }
 
 
-                std::set<const ConstraintT*>& reasons( carl::Variable::Arg _variable )
+                std::set<ConstraintT>& reasons( carl::Variable::Arg _variable )
                 {
                     assert( mReasons.find( _variable ) != mReasons.end() );
                     return mReasons.at( _variable );
                 }
 
-                void addReason( carl::Variable::Arg _variable, const ConstraintT* _reason )
+                void addReason( carl::Variable::Arg _variable, const ConstraintT& _reason )
                 {
                     if( mReasons.find( _variable ) == mReasons.end() )
-                        mReasons[_variable] = std::set<const ConstraintT*>();
+                        mReasons[_variable] = std::set<ConstraintT>();
                     
                     bool inserted = mReasons.at( _variable ).insert( _reason ).second;
                     if( inserted )
                     {
-                        for( auto varIt = _reason->variables().begin(); varIt != _reason->variables().end(); ++varIt )
+                        for( auto varIt = _reason.variables().begin(); varIt != _reason.variables().end(); ++varIt )
                         {
                             if( mReasons.find(*varIt) == mReasons.end() )
-                                mReasons[*varIt] = std::set<const ConstraintT*>();
+                                mReasons[*varIt] = std::set<ConstraintT>();
                             addReasons( _variable, mReasons.at( *varIt ) );
                         }
                     }
                     assert( mReasons.find( _variable ) != mReasons.end() );
                 }
 
-                void addReasons( carl::Variable::Arg _variable, const std::set<const ConstraintT*>& _reasons )
+                void addReasons( carl::Variable::Arg _variable, const std::set<ConstraintT>& _reasons )
                 {
-                    for( std::set<const ConstraintT*>::iterator reasonsIt = _reasons.begin(); reasonsIt != _reasons.end(); ++reasonsIt )
+                    for( std::set<ConstraintT>::iterator reasonsIt = _reasons.begin(); reasonsIt != _reasons.end(); ++reasonsIt )
                         addReason( _variable, (*reasonsIt) );
                 }
 
@@ -407,16 +407,16 @@ namespace smtrat
                     auto minimal = _origins.begin();
                     for( auto originIt = _origins.begin(); originIt != _origins.end(); ++originIt )
                     {
-                        if( mReasons.at( _variable ).find( originIt->pConstraint() ) != mReasons.at( _variable ).end() )
+                        if( mReasons.at( _variable ).find( originIt->constraint() ) != mReasons.at( _variable ).end() )
                         {
                             contained = true;
                             break;
                         }
-                        if( originIt->pConstraint()->variables().size() < minimal->pConstraint()->variables().size() )
+                        if( originIt->constraint().variables().size() < minimal->constraint().variables().size() )
                             minimal = originIt;
                     }
                     if( !contained )
-                        addReason( _variable, minimal->pConstraint() );
+                        addReason( _variable, minimal->constraint() );
                 }
                 
                 void addVariableReason( carl::Variable::Arg _variable, const IcpVariable* _reason )
@@ -457,7 +457,7 @@ namespace smtrat
                 {
                     if( !this->isRoot() )
                     {
-                        for( std::set<const ConstraintT*>::iterator constraintIt = mStateInfeasibleConstraints.begin(); constraintIt != mStateInfeasibleConstraints.end(); ++constraintIt )
+                        for( std::set<ConstraintT>::iterator constraintIt = mStateInfeasibleConstraints.begin(); constraintIt != mStateInfeasibleConstraints.end(); ++constraintIt )
                             mParent->addInfeasibleConstraint(*constraintIt);
                         
                         mParent->propagateStateInfeasibleConstraints();
@@ -542,8 +542,8 @@ namespace smtrat
 #endif
                     _out << "Left:   " << mLeftChild << std::endl;
                     _out << "Right:  " << mRightChild << std::endl;
-                    if( mSplit != NULL )
-                        _out << "Split in: " << (*mSplit->variables().begin()) << std::endl;
+                    if( mSplit != ConstraintT() )
+                        _out << "Split in: " << (*mSplit.variables().begin()) << std::endl;
                     else
                         _out << "Split in: None" << std::endl;
                     
@@ -581,8 +581,8 @@ namespace smtrat
                     if( !mStateInfeasibleConstraints.empty() )
                     {
                         _out << std::endl;
-                        for( std::set<const ConstraintT*>::iterator constraintIt = mStateInfeasibleConstraints.begin(); constraintIt != mStateInfeasibleConstraints.end(); ++constraintIt )
-                        _out << **constraintIt << std::endl;
+                        for( std::set<ConstraintT>::iterator constraintIt = mStateInfeasibleConstraints.begin(); constraintIt != mStateInfeasibleConstraints.end(); ++constraintIt )
+                            _out << *constraintIt << std::endl;
                     }
                     else
                     {
@@ -594,14 +594,13 @@ namespace smtrat
                 void printReasons( std::ostream& _out = std::cout ) const
                 {
                     _out << "Reasons(" << mReasons.size() << ")" << std::endl;
-                    for( std::map<carl::Variable, std::set<const ConstraintT*> >::const_iterator variablesIt = mReasons.begin();
+                    for( std::map<carl::Variable, std::set<ConstraintT> >::const_iterator variablesIt = mReasons.begin();
                             variablesIt != mReasons.end(); ++variablesIt )
                     {
                         _out << (*variablesIt).first << ":\t";
-                        for( std::set<const ConstraintT*>::const_iterator reasonIt = (*variablesIt).second.begin();
-                                reasonIt != (*variablesIt).second.end(); ++reasonIt )
+                        for( std::set<ConstraintT>::const_iterator reasonIt = (*variablesIt).second.begin(); reasonIt != (*variablesIt).second.end(); ++reasonIt )
                         {
-                            _out << **reasonIt << ", ";
+                            _out << *reasonIt << ", ";
                         }
                         _out << std::endl;
                     }

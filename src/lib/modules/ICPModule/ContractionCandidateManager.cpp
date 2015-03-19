@@ -42,7 +42,7 @@ namespace smtrat
     
     ContractionCandidate* ContractionCandidateManager::createCandidate (carl::Variable _lhs, 
                                                                         const Poly _rhs,
-                                                                        const ConstraintT* _constraint,
+                                                                        const ConstraintT& _constraint,
                                                                         carl::Variable _derivationVar,
                                                                         Contractor<carl::SimpleNewton>& _contractor)
     {
@@ -71,7 +71,7 @@ namespace smtrat
         {
 //            cout << "[Closure] Add candidate ";
             _candidate->print();
-            for( auto symbolIt = _candidate->constraint()->variables().begin(); symbolIt != _candidate->constraint()->variables().end(); ++symbolIt )
+            for( auto symbolIt = _candidate->constraint().variables().begin(); symbolIt != _candidate->constraint().variables().end(); ++symbolIt )
             {
                 for( auto candidateIt = mCandidates.begin(); candidateIt != mCandidates.end(); ++candidateIt )
                 {
