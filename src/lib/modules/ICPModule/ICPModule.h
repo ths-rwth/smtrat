@@ -22,7 +22,7 @@
 
 /*
  * @file   ICPModule.h
- * @author name surname <emailadress>
+ * @author Stefan Schupp <stefan.schupp@cs.rwth-aachen.de>
  *
  * Created on October 16, 2012, 1:07 PM
  */
