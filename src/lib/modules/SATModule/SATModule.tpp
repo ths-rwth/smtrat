@@ -515,6 +515,7 @@ namespace smtrat
         {
             leftCase = mOldSplittingVars.top();
             mOldSplittingVars.pop();
+            assert( leftCase < trail.capacity() );
             assigns[leftCase] = l_Undef;
             vardata[leftCase] = mkVarData( CRef_Undef, 0 );
             activity[leftCase] = 0.0;
@@ -542,6 +543,7 @@ namespace smtrat
         {
             rightCase = mOldSplittingVars.top();
             mOldSplittingVars.pop();
+            assert( rightCase < trail.capacity() );
             assigns[rightCase] = l_Undef;
             vardata[rightCase] = mkVarData( CRef_Undef, 0 );
             activity[rightCase] = 0.0;
@@ -2109,11 +2111,24 @@ NextClause:
     template<class Settings>
     void SATModule<Settings>::removeAssignedSplittingVars()
     {
+//        std::cout << __func__ << std::endl;
+//        printDecisions();
+//        std::cout << "qhead = " << qhead << std::endl;
+//        std::cout << "trail_lim.size() = " << trail_lim.size() << std::endl;
         assert( decisionLevel() == 0 );
+//        std::cout << "mSplittingVars:" << std::endl;
+//        for( const auto& iter : mSplittingVars )
+//        {
+//            std::cout << "   " << iter << " assigned to " << (assigns[iter] == l_True ? "true" :(assigns[iter] == l_False ? "false" : "undef")) << std::endl;
+//        }
+//        std::cout << "start removing:" << std::endl;
         for( size_t i = 0; i < mSplittingVars.size(); )
         {
+//            std::cout << "   " << mSplittingVars[i] << " assigned to " << (assigns[mSplittingVars[i]] == l_True ? "true" :(assigns[mSplittingVars[i]] == l_False ? "false" : "undef")) << std::endl;
             if( assigns[mSplittingVars[i]] != l_Undef )
             {
+//                std::cout << "test" << std::endl;
+                assigns[mSplittingVars[i]] = l_Undef;
                 mOldSplittingVars.push(mSplittingVars[i]);
                 mSplittingVars[i] = mSplittingVars.back();
                 mSplittingVars.pop_back();
@@ -2123,6 +2138,23 @@ NextClause:
                 ++i;
             }
         }
+//        if( trail_lim.size() == 1 ) std::cout << "trail_lim[0] = " << trail_lim[0] << std::endl;
+        int i, j;
+        for( i = j = 0; i < trail.size(); ++i )
+        {
+//            std::cout << "trail[i] = " << (sign( trail[i] ) ? "-" : "") << var( trail[i] ) << std::endl;
+//            std::cout << "trail[j] = " << (sign( trail[j] ) ? "-" : "") << var( trail[j] ) << std::endl;
+            if( assigns[var(trail[i])] != l_Undef )
+            {
+                trail[j++] = trail[i];
+            }
+        }
+        trail.shrink( i - j );
+        qhead = trail.size();
+//        printDecisions();
+//        std::cout << "qhead = " << qhead << std::endl;
+//        std::cout << "trail_lim.size() = " << trail_lim.size() << std::endl;
+//            trail_lim.shrink( trail_lim.size() - level );
     }
     
     template<class Settings>
