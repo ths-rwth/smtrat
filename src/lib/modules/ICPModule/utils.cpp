@@ -40,10 +40,10 @@ namespace smtrat
             switch( _interval.lowerBoundType() )
             {
                 case carl::BoundType::STRICT:
-                    leftTmp = ConstraintT(std::move(leftEx), carl::Relation::GREATER);
+                    leftTmp = ConstraintT(leftEx, carl::Relation::GREATER);
                     break;
                 case carl::BoundType::WEAK:
-                    leftTmp = ConstraintT(std::move(leftEx), carl::Relation::GEQ);
+                    leftTmp = ConstraintT(leftEx, carl::Relation::GEQ);
                     break;
                 default:
                     leftTmp = ConstraintT();
@@ -57,10 +57,10 @@ namespace smtrat
             switch( _interval.upperBoundType() )
             {
                 case carl::BoundType::STRICT:
-                    rightTmp = ConstraintT(std::move(rightEx), carl::Relation::LESS);
+                    rightTmp = ConstraintT(rightEx, carl::Relation::LESS);
                     break;
                 case carl::BoundType::WEAK:
-                    rightTmp = ConstraintT(std::move(rightEx), carl::Relation::LEQ);
+                    rightTmp = ConstraintT(rightEx, carl::Relation::LEQ);
                     break;
                 default:
                     rightTmp = ConstraintT();

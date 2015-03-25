@@ -1975,12 +1975,48 @@ namespace smtrat
             #endif
             return false;
         }
+        EvalRationalIntervalMap lraVarBounds = mLRA.getVariableBounds();
         for( auto iter = antipoint.begin(); iter != antipoint.end(); ++iter )
         {
+            // rationalize the found test point for the given dimension
+            Rational value = carl::rationalize<Rational>( iter->second );
+            // check if the test point, which has been generated for double intervals, does not satisfy the rational 
+            // original bounds in this dimension (might occur, as we over-approximated them)
+            auto lraVarBoundsIter = lraVarBounds.find( iter->first );
+            if( lraVarBoundsIter != lraVarBounds.end() )
+            {
+                const RationalInterval& varBounds = lraVarBoundsIter->second;
+                assert( !varBounds.isEmpty() );
+                if( !varBounds.isPointInterval() )
+                {
+                    if( varBounds.lowerBoundType() != carl::BoundType::INFTY && value < varBounds.lower() )
+                    {
+                        if( varBounds.lowerBoundType() == carl::BoundType::STRICT )
+                        {
+                            value = varBounds.sample( false );
+                        }
+                        else
+                        {
+                            value = varBounds.lower();
+                        }
+                    }
+                    else if( varBounds.upperBoundType() != carl::BoundType::INFTY && value > varBounds.upper() )
+                    {
+                        if( varBounds.upperBoundType() == carl::BoundType::STRICT )
+                        {
+                            value = varBounds.sample( false );
+                        }
+                        else
+                        {
+                            value = varBounds.upper();
+                        }
+                    }
+                }
+            }
             #ifdef ICP_MODULE_DEBUG_0
-            cout << "    " << iter->first << " -> " << std::setprecision(10) << iter->second << "  [" << carl::rationalize<Rational>( iter->second ) << "]" << endl;
+            cout << "    " << iter->first << " -> " << std::setprecision(10) << iter->second << "  [" << value << "]" << endl;
             #endif
-            mFoundSolution.insert( std::make_pair( iter->first, carl::rationalize<Rational>( iter->second ) ) );
+            mFoundSolution.insert( std::make_pair( iter->first, value ) );
         }
         ContractionCandidates candidates;
         for( auto iter = mLinearConstraints.begin(); iter != mLinearConstraints.end(); ++iter )
