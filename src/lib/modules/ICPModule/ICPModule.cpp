@@ -60,6 +60,7 @@ namespace smtrat
      */
     ICPModule::ICPModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* , Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
+        mCandidateManager(),
         mActiveNonlinearConstraints(),
         mActiveLinearConstraints(),
         mLinearConstraints(),
@@ -107,13 +108,16 @@ namespace smtrat
      */
     ICPModule::~ICPModule()
     {
+        while( !mLRAFoundAnswer.empty() )
+        {
+            std::atomic_bool* toDel = mLRAFoundAnswer.back();
+            mLRAFoundAnswer.pop_back();
+            delete toDel;
+        }
         mLRAFoundAnswer.clear();
         delete mLraRuntimeSettings;
-        #ifdef BOXMANAGEMENT
         delete mHistoryRoot;
-        #endif
         delete mValidationFormula;
-        mLRAFoundAnswer.clear();
         
         for(auto variableIt = mVariables.begin(); variableIt != mVariables.end(); ++variableIt)
             delete (*variableIt).second;
@@ -1009,7 +1013,7 @@ namespace smtrat
                         mContractors.insert(std::make_pair(rhs, Contractor<carl::SimpleNewton>(rhs)));
                     }
                     ConstraintT tmp = ConstraintT( rhs, Relation::EQ );
-                    icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmp, *varIndex, mContractors.at( rhs ) );
+                    icp::ContractionCandidate* tmpCandidate = mCandidateManager.createCandidate( newVar, rhs, tmp, *varIndex, mContractors.at( rhs ) );
                     ccs.insert( ccs.end(), tmpCandidate );
                     tmpCandidate->setNonlinear();
                     auto tmpIcpVar = mVariables.find( newVar );
@@ -1018,7 +1022,7 @@ namespace smtrat
                 }
                 // add one candidate for the replacement variable
                 ConstraintT tmp = ConstraintT( rhs, Relation::EQ );
-                icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmp, newVar, mContractors.at( rhs ) );
+                icp::ContractionCandidate* tmpCandidate = mCandidateManager.createCandidate( newVar, rhs, tmp, newVar, mContractors.at( rhs ) );
                 tmpCandidate->setNonlinear();
                 icpVar->addCandidate( tmpCandidate );
                 ccs.insert( ccs.end(), tmpCandidate );
@@ -1088,7 +1092,7 @@ namespace smtrat
             // Create candidates for every possible variable:
             for( auto var = variables.begin(); var != variables.end(); ++var )
             {   
-                icp::ContractionCandidate* newCandidate = mCandidateManager->getInstance()->createCandidate( newVar, rhs, tmpConstr, *var, iter->second );
+                icp::ContractionCandidate* newCandidate = mCandidateManager.createCandidate( newVar, rhs, tmpConstr, *var, iter->second );
 
                 // ensure that the created candidate is set as linear
                 newCandidate->setLinear();
@@ -1261,8 +1265,8 @@ namespace smtrat
                 removeCandidateFromRelevant(*candidatesIt);
 
                 // create new tuple for mIcpRelevantCandidates
-                mCandidateManager->getInstance()->getCandidate(id)->setPayoff(mRelativeContraction );
-                mCandidateManager->getInstance()->getCandidate(id)->calcRWA();
+                mCandidateManager.getCandidate(id)->setPayoff(mRelativeContraction );
+                mCandidateManager.getCandidate(id)->calcRWA();
                 updatedCandidates.insert(*candidatesIt);
             }
         }
@@ -1284,9 +1288,9 @@ namespace smtrat
         // as the map is sorted ascending, we can simply pick the last value
         for( auto candidateIt = mIcpRelevantCandidates.rbegin(); candidateIt != mIcpRelevantCandidates.rend(); ++candidateIt )
         {
-            icp::ContractionCandidate* cc = mCandidateManager->getInstance()->getCandidate((*candidateIt).second);
+            icp::ContractionCandidate* cc = mCandidateManager.getCandidate((*candidateIt).second);
             assert( cc != NULL );
-            if( cc->isActive() )//&& mIntervals[mCandidateManager->getInstance()->getCandidate((*candidateIt).second)->derivationVar()].diameter() != 0 )
+            if( cc->isActive() )//&& mIntervals[mCandidateManager.getCandidate((*candidateIt).second)->derivationVar()].diameter() != 0 )
             {
                 cc->calcDerivative();
                 #ifdef ICP_MODULE_DEBUG_1
@@ -3295,7 +3299,7 @@ namespace smtrat
         for ( auto candidateIt = mIcpRelevantCandidates.begin(); candidateIt != mIcpRelevantCandidates.end(); ++candidateIt )
         {
             cout << (*candidateIt).first << " \t " << (*candidateIt).second <<"\t Candidate: ";
-            icp::ContractionCandidate* cc = mCandidateManager->getInstance()->getCandidate((*candidateIt).second);
+            icp::ContractionCandidate* cc = mCandidateManager.getCandidate((*candidateIt).second);
             assert( cc != NULL );
             cc->print();
         }

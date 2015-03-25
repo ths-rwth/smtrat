@@ -133,9 +133,12 @@ namespace icp
             {
                 assert( !isOriginal() );
                 assert( _candidate->lhs() == mVar );
-                mCandidates.insert( mCandidates.end(), _candidate );
-                _candidate->addICPVariable( this );
-                mLinear &= !_candidate->isLinear();
+                auto res = mCandidates.insert( _candidate );
+                if( res.second )
+                {
+                    (*res.first)->addICPVariable( this );
+                    mLinear &= !(*res.first)->isLinear();
+                }
             }
             
             void addOriginalConstraint( const FormulaT& _constraint )

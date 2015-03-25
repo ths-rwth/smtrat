@@ -101,7 +101,7 @@ namespace smtrat
             /**
              * Members:
              */
-            icp::ContractionCandidateManager*                                   mCandidateManager; // keeps all candidates
+            icp::ContractionCandidateManager                                    mCandidateManager; // keeps all candidates
             std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> mActiveNonlinearConstraints; // nonlinear candidates considered
             std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> mActiveLinearConstraints; // linear candidates considered
             std::map<const LRAVariable*, ContractionCandidates>                 mLinearConstraints; // all linear candidates

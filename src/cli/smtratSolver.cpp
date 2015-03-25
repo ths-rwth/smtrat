@@ -250,6 +250,7 @@ int main( int argc, char* argv[] )
     
     // Introduce the settingsObjects from the modules to the manager.
     settingsManager.addSettingsObject( settingsObjects );
+    settingsObjects.clear();
 	
 	// Parse input.
     unsigned exitCode = executeFile(pathToInputFile, solver, settingsManager);

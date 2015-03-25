@@ -1288,7 +1288,6 @@ Return:
                     #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                     cout << "Proof of unsatisfiability:  " << *cut_from_proof << " = 0" << endl;
                     #endif
-                    if( mTableau.slackVars().size() > 1 ) exit(7771);
                     LRAEntryType bound_add = 1;
                     LRAEntryType bound = upper_lower_bound;
                     if( carl::isInteger( upper_lower_bound ) )

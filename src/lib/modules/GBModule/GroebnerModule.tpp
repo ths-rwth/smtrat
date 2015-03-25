@@ -67,9 +67,7 @@ GroebnerModule<Settings>::GroebnerModule( ModuleType _type, const ModuleInput* c
 
 template<class Settings>
 GroebnerModule<Settings>::~GroebnerModule( )
-{
-
-}
+{}
 
 /**
  * Adds the constraint to the known constraints of the module.

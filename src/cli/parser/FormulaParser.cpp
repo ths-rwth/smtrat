@@ -83,7 +83,7 @@ FormulaT FormulaParser::mkConstraint(const Poly& lhs, const Poly& rhs, carl::Rel
 	std::size_t n = vars.size();
 	if (n == 0) {
 		// There are no ITEs.
-		ConstraintT cons = ConstraintT(std::move(p), rel);
+		ConstraintT cons = ConstraintT(p, rel);
 		return FormulaT(cons);
 	} else if (n < 4) {
 		// There are only a few ITEs, hence we expand them here directly to 2^n cases.

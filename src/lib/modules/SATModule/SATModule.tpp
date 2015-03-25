@@ -275,6 +275,12 @@ namespace smtrat
                     current_restarts = mCurr_Restarts;
                     double rest_base = luby_restart ? luby( restart_inc, mCurr_Restarts ) : pow( restart_inc, mCurr_Restarts );
                     result = search( (int)rest_base * restart_first );
+                    if( mCurr_Restarts > 0 )
+                    {
+//                        carl::constraintPool<Poly>().print();
+//                        carl::FormulaPool<Poly>::getInstance().print();
+                        return Unknown;
+                    }
                     // if( !withinBudget() ) break;
                 }
             }

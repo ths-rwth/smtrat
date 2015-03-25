@@ -667,7 +667,7 @@ namespace smtrat
         Poly upper_poly = upper_constr.lhs().substitute( corr_var, ZERO_POLYNOMIAL );
         Poly lower_poly = lower_constr.lhs().substitute( corr_var, ZERO_POLYNOMIAL );
         assert( lower_constr.relation() == carl::Relation::LEQ );
-        combined_formula = FormulaT( ConstraintT( std::move(Poly ( coeff_upper*lower_poly ) + Poly( (Rational)(-1*coeff_lower)*upper_poly )), carl::Relation::LEQ ) );
+        combined_formula = FormulaT( ConstraintT( Poly( coeff_upper*lower_poly ) + Poly( (Rational)(-1*coeff_lower)*upper_poly ), carl::Relation::LEQ ) );
         return combined_formula;        
     }
     

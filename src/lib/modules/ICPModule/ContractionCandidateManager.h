@@ -34,7 +34,7 @@
 
 namespace smtrat
 {   
-    namespace icp{
+namespace icp{
     class ContractionCandidateManager
     {
         
@@ -43,10 +43,10 @@ namespace smtrat
         /**
          * Member variables
          */
-        static ContractionCandidateManager* mInstance;
         unsigned mCurrentId;
         std::vector<ContractionCandidate*> mCandidates;
         
+    public:
         /**
          * Constructors
          */
@@ -63,15 +63,9 @@ namespace smtrat
             }
         }
         
-    public:
         /**
          * Constructor & Functions
          */
-        
-        /**
-         * Returns the instance of the Manager
-         */
-        ContractionCandidateManager* getInstance();
         
         /**
          * Creates a new candidate with an unique id.
@@ -99,7 +93,7 @@ namespace smtrat
          * @param _id
          * @return the pointer to the contraction candidate
          */
-        ContractionCandidate* getCandidate ( const unsigned _id );
+        ContractionCandidate* getCandidate ( unsigned _id ) const;
         
         /**
          * Calculates the closure of a certain candidate according to the variables contained.

@@ -77,7 +77,7 @@ namespace smtrat
                 }
                 ++iter_subs;
             }
-            FormulaT newEq( ConstraintT( std::move(new_poly), carl::Relation::EQ ) );
+            FormulaT newEq( ConstraintT( new_poly, carl::Relation::EQ ) );
             // Return False if the newly obtained constraint is unsatisfiable
             if( newEq.isFalse() )
             {
@@ -384,7 +384,7 @@ namespace smtrat
                 //#ifdef DEBUG_IntEqModule
                 //cout << "After substitution: " << new_poly << endl;
                 //#endif
-                FormulaT newEq( ConstraintT( std::move(new_poly), carl::Relation::EQ ) );          
+                FormulaT newEq( ConstraintT( new_poly, carl::Relation::EQ ) );          
                 // Check whether newEq is unsatisfiable
                 if( newEq.isFalse() )
                 {
@@ -475,7 +475,7 @@ namespace smtrat
                 //    formula_cover->push_back( *iter_sets );
                 //    ++iter_sets;
                 //}  
-                FormulaT formula_passed( ConstraintT( std::move(new_poly), (*iter_formula).formula().constraint().relation() ) );                
+                FormulaT formula_passed( ConstraintT( new_poly, (*iter_formula).formula().constraint().relation() ) );                
                 if( formula_passed.isFalse() )
                 {
                     #ifdef DEBUG_IntEqModule
