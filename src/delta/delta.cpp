@@ -7,6 +7,7 @@
 #include <csignal>
 #include <fstream>
 #include <iostream>
+#include <sys/resource.h>
 
 #include "Producer.h"
 #include "Parser.h"
@@ -27,6 +28,11 @@ void handle_SIGINT(int) {
 }
 
 int main(int argc, char* argv[]) {
+	// Increase stack size to the maximum.
+	rlimit rl;
+	getrlimit(RLIMIT_STACK, &rl);
+	rl.rlim_cur = rl.rlim_max;
+	setrlimit(RLIMIT_STACK, &rl);
 	std::signal(SIGINT, &handle_SIGINT);
 	auto start = Clock::now();
 	
