@@ -36,6 +36,8 @@
 
 #include "carl/core/logging.h"
 
+#include "MISGeneration.h"
+
 using carl::UnivariatePolynomial;
 using carl::cad::EliminationSet;
 using carl::cad::Constraint;
@@ -49,14 +51,10 @@ using namespace std;
 // CAD settings
 //#define SMTRAT_CAD_GENERIC_SETTING
 #define SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
-//#define SMTRAT_CAD_DISABLE_SMT
 //#define SMTRAT_CAD_DISABLE_MIS
 //#define CHECK_SMALLER_MUSES
 //#define SMTRAT_CAD_ONEMOSTDEGREEVERTEX_MISHEURISTIC
 //#define SMTRAT_CAD_TWOMOSTDEGREEVERTICES_MISHEURISTIC
-#ifdef SMTRAT_CAD_DISABLE_SMT
-	#define SMTRAT_CAD_DISABLE_MIS
-#endif
 
 namespace smtrat
 {
@@ -121,9 +119,6 @@ namespace smtrat
 		#endif
 		#ifdef SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
 		SMTRAT_LOG_TRACE("smtrat.cad", "SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION set");
-		#endif
-		#ifdef SMTRAT_CAD_DISABLE_SMT
-		SMTRAT_LOG_TRACE("smtrat.cad", "SMTRAT_CAD_DISABLE_SMT set");
 		#endif
 		#ifdef SMTRAT_CAD_DISABLE_MIS
 		SMTRAT_LOG_TRACE("smtrat.cad", "SMTRAT_CAD_DISABLE_MIS set");
@@ -213,28 +208,16 @@ namespace smtrat
 		}
 		if (!mCAD.check(mConstraints, mRealAlgebraicSolution, mConflictGraph, boundMap, false, true))
 		{
-			#ifdef SMTRAT_CAD_DISABLE_SMT
-			// simulate non-incrementality by constructing a trivial infeasible subset and clearing all data in the CAD
-			#define SMTRAT_CAD_DISABLE_MIS // this constructs a trivial infeasible subset below
-			mCAD.clear();
-			// replay adding the polynomials as scheduled polynomials
-			for( vector<carl::cad::Constraint<smtrat::Rational>>::const_iterator constraint = mConstraints.begin(); constraint != mConstraints.end(); ++constraint )
-				mCAD.addPolynomial( constraint->getPolynomial(), constraint->getVariables() );
-			#endif
 			#ifdef SMTRAT_CAD_DISABLE_MIS
 			// construct a trivial infeasible subset
-			FormulasT boundConstraints = mVariableBounds.getOriginsOfBounds();
-			mInfeasibleSubsets.push_back( FormulasT() );
-			for (auto i:mConstraintsMap)
-			{
-				mInfeasibleSubsets.back().insert( i.first );
-			}
-			mInfeasibleSubsets.back().insert( boundConstraints.begin(), boundConstraints.end() );
+			std::cout << "Trivial" << std::endl;
+			cad::MISGeneration<cad::MISHeuristic::TRIVIAL> tmp(*this);
+			tmp(mInfeasibleSubsets);
 			#else
 			// construct an infeasible subset
 			assert(mCAD.getSetting().computeConflictGraph);
 			// copy conflict graph for destructive heuristics and invert it
-			ConflictGraph g(mConflictGraph);
+			ConflictGraph<smtrat::Rational> g(mConflictGraph);
 			g.invert();
 			#if defined SMTRAT_CAD_ONEMOSTDEGREEVERTEX_MISHEURISTIC
 				// remove the lowest-degree vertex (highest degree in inverted graph)
@@ -256,14 +239,20 @@ namespace smtrat
 			std::vector<FormulasT> infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics(g);
 
 			FormulasT boundConstraints = mVariableBounds.getOriginsOfBounds();
-			for (auto i: infeasibleSubsets) {
+			for (const auto& i: infeasibleSubsets) {
                 #ifdef LOGGING_CARL
 				SMTRAT_LOG_DEBUG("smtrat.cad", "Infeasible:");
-				for (auto j: i) SMTRAT_LOG_DEBUG("smtrat.cad", "\t" << j);
+				for (const auto& j: i) SMTRAT_LOG_DEBUG("smtrat.cad", "\t" << j);
                 #endif
 				mInfeasibleSubsets.push_back(i);
 				mInfeasibleSubsets.back().insert(boundConstraints.begin(), boundConstraints.end());
 			}
+			std::vector<FormulasT> ours;
+			cad::MISGeneration<cad::MISHeuristic::GREEDY> tmp(*this);
+			tmp(ours);
+			//std::cout << "MIS: " << mInfeasibleSubsets << std::endl;
+			//std::cout << "MIS2: " << ours << std::endl;
+			assert(ours == mInfeasibleSubsets);
 
 			#ifdef CHECK_SMALLER_MUSES
 			Module::checkInfSubsetForMinimality(mInfeasibleSubsets->begin());
@@ -407,6 +396,7 @@ namespace smtrat
 		carl::cad::Constraint<smtrat::Rational> constraint = convertConstraint(f.constraint());
 		mConstraints.push_back(constraint);
 		mConstraintsMap[f] = (unsigned)(mConstraints.size() - 1);
+		mCFMap[constraint] = f;
 		mCAD.addPolynomial(typename Poly::PolyType(constraint.getPolynomial()), constraint.getVariables());
 		mConflictGraph.addConstraintVertex(); // increases constraint index internally what corresponds to adding a new constraint node with index mConstraints.size()-1
 
@@ -489,14 +479,14 @@ namespace smtrat
 	 * @param conflictGraph the conflict graph is destroyed during the computation
 	 * @return an infeasible subset of the current set of constraints
 	 */
-	inline std::vector<FormulasT> CADModule::extractMinimalInfeasibleSubsets_GreedyHeuristics( ConflictGraph& conflictGraph )
+	inline std::vector<FormulasT> CADModule::extractMinimalInfeasibleSubsets_GreedyHeuristics( ConflictGraph<smtrat::Rational>& conflictGraph )
 	{
 		// initialize MIS with the last constraint
 		std::vector<FormulasT> mis = std::vector<FormulasT>(1, FormulasT());
 		mis.front().insert(getConstraintAt((unsigned)(mConstraints.size() - 1)));	// the last constraint is assumed to be always in the MIS
 		if (mConstraints.size() > 1) {
 			// construct set cover by greedy heuristic
-			std::list<ConflictGraph::Vertex> setCover;
+			std::list<ConflictGraph<smtrat::Rational>::Vertex> setCover;
 			long unsigned vertex = conflictGraph.maxDegreeVertex();
 			while (conflictGraph.degree(vertex) > 0) {
 				// add v to the setCover
@@ -550,4 +540,3 @@ namespace smtrat
 	}
 
 }	// namespace smtrat
-
