@@ -49,14 +49,10 @@ using namespace std;
 // CAD settings
 //#define SMTRAT_CAD_GENERIC_SETTING
 #define SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
-//#define SMTRAT_CAD_DISABLE_SMT
 //#define SMTRAT_CAD_DISABLE_MIS
 //#define CHECK_SMALLER_MUSES
 //#define SMTRAT_CAD_ONEMOSTDEGREEVERTEX_MISHEURISTIC
 //#define SMTRAT_CAD_TWOMOSTDEGREEVERTICES_MISHEURISTIC
-#ifdef SMTRAT_CAD_DISABLE_SMT
-	#define SMTRAT_CAD_DISABLE_MIS
-#endif
 
 namespace smtrat
 {
@@ -121,9 +117,6 @@ namespace smtrat
 		#endif
 		#ifdef SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
 		SMTRAT_LOG_TRACE("smtrat.cad", "SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION set");
-		#endif
-		#ifdef SMTRAT_CAD_DISABLE_SMT
-		SMTRAT_LOG_TRACE("smtrat.cad", "SMTRAT_CAD_DISABLE_SMT set");
 		#endif
 		#ifdef SMTRAT_CAD_DISABLE_MIS
 		SMTRAT_LOG_TRACE("smtrat.cad", "SMTRAT_CAD_DISABLE_MIS set");
@@ -213,14 +206,6 @@ namespace smtrat
 		}
 		if (!mCAD.check(mConstraints, mRealAlgebraicSolution, mConflictGraph, boundMap, false, true))
 		{
-			#ifdef SMTRAT_CAD_DISABLE_SMT
-			// simulate non-incrementality by constructing a trivial infeasible subset and clearing all data in the CAD
-			#define SMTRAT_CAD_DISABLE_MIS // this constructs a trivial infeasible subset below
-			mCAD.clear();
-			// replay adding the polynomials as scheduled polynomials
-			for( vector<carl::cad::Constraint<smtrat::Rational>>::const_iterator constraint = mConstraints.begin(); constraint != mConstraints.end(); ++constraint )
-				mCAD.addPolynomial( constraint->getPolynomial(), constraint->getVariables() );
-			#endif
 			#ifdef SMTRAT_CAD_DISABLE_MIS
 			// construct a trivial infeasible subset
 			FormulasT boundConstraints = mVariableBounds.getOriginsOfBounds();
@@ -550,4 +535,3 @@ namespace smtrat
 	}
 
 }	// namespace smtrat
-
