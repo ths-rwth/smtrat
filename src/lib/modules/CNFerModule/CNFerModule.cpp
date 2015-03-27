@@ -39,11 +39,6 @@ namespace smtrat
 
     CNFerModule::~CNFerModule(){}
 
-    bool CNFerModule::addCore( ModuleInput::const_iterator _subformula )
-    {
-        return true;
-    }
-
     Answer CNFerModule::checkCore( bool _full )
     {
         auto receivedSubformula = firstUncheckedReceivedSubformula();
@@ -98,10 +93,6 @@ namespace smtrat
             }
             return a;
         }
-    }
-
-    void CNFerModule::removeCore( ModuleInput::const_iterator _subformula )
-    {
     }
 }    // namespace smtrat
 

@@ -172,10 +172,10 @@ namespace smtrat
 	 * All constraints asserted (and not removed)  so far are now added to the CAD object and checked for consistency.
 	 * If the result is false, a minimal infeasible subset of the original constraint set is computed.
 	 * Otherwise a sample value is available.
-         * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
+         * @param false, if this module should avoid too expensive procedures and rather return unknown instead.
 	 * @return True if consistent, False otherwise
 	 */
-	Answer CADModule::checkCore( bool _full )
+	Answer CADModule::checkCore( bool )
 	{
 		if (this->hasFalse) return False;
 		else {

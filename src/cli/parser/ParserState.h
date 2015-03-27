@@ -72,7 +72,6 @@ namespace parser {
 		}
 		
 		void pushScope() {
-			assert(this != nullptr);
 			mScopeStack.emplace(*this);
 		}
 		void popScope() {
