@@ -439,7 +439,7 @@ namespace vs
                      const smtrat::EvalDoubleIntervalMap& _solutionSpace )
     {
         #ifdef VS_DEBUG_SUBSTITUTION
-        cout << "substitute: ( " << *_cons << " )" << _subs << endl;
+        cout << "substitute: ( " << _cons << " )" << _subs << endl;
         #endif
         bool result = true;
         // Apply the substitution according to its type.

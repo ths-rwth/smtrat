@@ -134,6 +134,11 @@ namespace smtrat
             typedef std::chrono::high_resolution_clock clock;
             /// For time measuring purposes.
             typedef std::chrono::microseconds timeunit;
+            /*
+             * The type of a deduction.
+             *     PERMANENT = The deduction should not be forgotten.
+             */
+            enum class DeductionType: unsigned { NORMAL = 0, PERMANENT = 1 };
 
         // Members.
         private:
@@ -167,7 +172,7 @@ namespace smtrat
             /// The backends of this module which have been used.
             std::vector<Module*> mAllBackends;
             /// Stores the deductions/lemmas being valid formulas this module or its backends made.
-            std::vector<FormulaT> mDeductions;
+            std::vector<std::pair<FormulaT,DeductionType>> mDeductions;
             /// Stores the splitting decisions this module or its backends made.
             std::vector<Splitting> mSplittings;
             /// Stores the position of the first sub-formula in the passed formula, which has not yet been considered for a consistency check of the backends.
@@ -407,10 +412,11 @@ namespace smtrat
             /**
              * Stores a deduction/lemma being a valid formula.
              * @param _deduction The eduction/lemma to store.
+             * @param _dt The type of the deduction.
              */
-            void addDeduction( const FormulaT& _deduction )
+            void addDeduction( const FormulaT& _deduction, const DeductionType& _dt = DeductionType::NORMAL )
             {
-                mDeductions.push_back( _deduction );
+                mDeductions.push_back( std::pair<FormulaT,DeductionType>( _deduction, _dt ) );
             }
 
             /**
@@ -433,15 +439,7 @@ namespace smtrat
             /**
              * @return A constant reference to the deductions/lemmas being valid formulas this module or its backends made.
              */
-            const std::vector<FormulaT>& deductions() const
-            {
-                return mDeductions;
-            }
-
-            /**
-             * @return A reference to the deductions/lemmas being valid formulas this module or its backends made.
-             */
-            std::vector<FormulaT>& rDeductions()
+            const std::vector<std::pair<FormulaT,DeductionType>>& deductions() const
             {
                 return mDeductions;
             }
@@ -592,12 +590,12 @@ namespace smtrat
             /**
              * The module has to take the given sub-formula of the received formula into account.
              *
-             * @param _subformula The sub-formula to take additionally into account.
+             * @param The sub-formula to take additionally into account.
              * @return false, if it can be easily decided that this sub-formula causes a conflict with
              *          the already considered sub-formulas;
              *          true, otherwise.
              */
-            virtual bool addCore( ModuleInput::const_iterator _subformula )
+            virtual bool addCore( ModuleInput::const_iterator )
             {
                 return true;
             }
@@ -619,9 +617,9 @@ namespace smtrat
              * it is desired not to lose track of search spaces where no satisfying  assignment can 
              * be found for the remaining sub-formulas.
              *
-             * @param _subformula The sub formula of the received formula to remove.
+             * @param The sub formula of the received formula to remove.
              */
-            virtual void removeCore( ModuleInput::const_iterator _subformula ) {}
+            virtual void removeCore( ModuleInput::const_iterator ) {}
             
             /**
              * Checks for all antecedent modules and those which run in parallel with the same antecedent modules, 

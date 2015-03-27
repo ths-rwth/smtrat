@@ -180,19 +180,19 @@ namespace smtrat
                     // catch deductions
                     mLRA.init();
                     mLRA.updateDeductions();
-                    while( !mLRA.deductions().empty() )
+                    for( const auto& ded : mLRA.deductions() )
                     {
                         #ifdef ICP_MODULE_DEBUG_2
-                        cout << "Create deduction for: " << mLRA.deductions().back().toString(false,0,"",true,true,true ) << endl;
+                        cout << "Create deduction for: " << ded.first.toString(false,0,"",true,true,true ) << endl;
                         #endif
-                        FormulaT deduction = transformDeductions( mLRA.deductions().back() );
+                        FormulaT deduction = transformDeductions( ded.first );
                         mCreatedDeductions.insert(deduction);
-                        mLRA.rDeductions().pop_back();
-                        addDeduction(deduction);
+                        addDeduction(deduction, ded.second);
                         #ifdef ICP_MODULE_DEBUG_2
                         cout << "Passed deduction: " << deduction.toString(false,0,"",true,true,true ) << endl;
                         #endif
                     }
+                    mLRA.clearDeductions();
                     mIsIcpInitialized = true;
                 }
                 // Handle Not Equal separate
@@ -678,11 +678,12 @@ namespace smtrat
                 mBoxStorage.pop();
             icp::set_icpVariable icpVariables;
             Variables originalRealVariables;
-            rReceivedFormula().realValuedVars(originalRealVariables);
+            rReceivedFormula().realValuedVars(originalRealVariables); // TODO: store original variables as member, updating them efficiently with assert and remove
             for( auto variablesIt = originalRealVariables.begin(); variablesIt != originalRealVariables.end(); ++variablesIt )
             {
-                assert(mVariables.count(*variablesIt) > 0);
-                icpVariables.insert( (*(mVariables.find(*variablesIt))).second );
+                auto iter = mVariables.find(*variablesIt);
+                if( iter != mVariables.end() )
+                    icpVariables.insert( iter->second );
             }
             FormulasT box = variableReasonHull(icpVariables);
             mBoxStorage.push(box);
@@ -841,7 +842,7 @@ namespace smtrat
         #ifdef ICP_MODULE_DEBUG_0
         cout << "Ask backends for the satisfiability of:" << endl;
         for( const auto& f : rPassedFormula() )
-            std::cout << "    " << f.formula().constraint() << "   " << carl::IntervalEvaluation::evaluate(f.formula().constraint().lhs(), mIntervals ) << std::endl;
+            std::cout << "    " << f.formula().constraint() << std::endl;
         #endif
         #ifdef ICP_BOXLOG
         icpLog << "backend";
@@ -1318,7 +1319,6 @@ namespace smtrat
         assert( mVariables.find( variable ) != mVariables.end() );
         icp::IcpVariable& icpVar = *mVariables.find( variable )->second;
         const DoubleInterval icpVarIntervalBefore = icpVar.interval();
-        const DoubleInterval& icpVarInterval = icpVar.interval();
         
         splitOccurred = _selection->contract( mIntervals, resultA, resultB );
         if( splitOccurred )
@@ -1655,7 +1655,7 @@ namespace smtrat
                 }
             }
             else
-            {   
+            {
                 for( auto assignmentIt = mFoundSolution.begin(); assignmentIt != mFoundSolution.end(); ++assignmentIt )
                 {
                     auto varIt = mVariables.find((*assignmentIt).first);
@@ -1832,7 +1832,7 @@ namespace smtrat
     FormulasT ICPModule::createBoxFormula()
     {
         Variables originalRealVariables;
-        rReceivedFormula().realValuedVars(originalRealVariables);
+        rReceivedFormula().realValuedVars(originalRealVariables); // TODO: store original variables as member, updating them efficiently with assert and remove
         FormulasT subformulas;
         for( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
         {
@@ -1963,6 +1963,8 @@ namespace smtrat
     {
         bool testSuccessful = true;
         // find a point within the intervals
+        Variables originalRealVariables;
+        rReceivedFormula().realValuedVars(originalRealVariables); // TODO: store original variables as member, updating them efficiently with assert and remove
         std::map<carl::Variable, double> antipoint = createModel( true );
         mFoundSolution.clear();
         #ifdef ICP_MODULE_DEBUG_0
@@ -1975,9 +1977,18 @@ namespace smtrat
             #endif
             return false;
         }
+        auto origVarsIter = originalRealVariables.begin();
         EvalRationalIntervalMap lraVarBounds = mLRA.getVariableBounds();
         for( auto iter = antipoint.begin(); iter != antipoint.end(); ++iter )
         {
+            // Add an assignment for variables only occurring in constraints with != as relation symbol
+            while( origVarsIter != originalRealVariables.end() && *origVarsIter < iter->first )
+            {
+                mFoundSolution.insert( std::make_pair( *origVarsIter, ZERO_RATIONAL ) ); // TODO: find a rational assignment which most probably satisfies this inequality
+                ++origVarsIter;
+            }
+            if( origVarsIter != originalRealVariables.end() )
+                ++origVarsIter;
             // rationalize the found test point for the given dimension
             Rational value = carl::rationalize<Rational>( iter->second );
             // check if the test point, which has been generated for double intervals, does not satisfy the rational 
@@ -2103,14 +2114,13 @@ namespace smtrat
         
         // catch deductions
         mLRA.updateDeductions();
-        while( !mLRA.deductions().empty() )
+        for( const auto& ded : mLRA.deductions() )
         {
             #ifdef ICP_MODULE_DEBUG_2
-            cout << "Create deduction for: " << mLRA.deductions().back() << endl;
+            cout << "Create deduction for: " << ded.first << endl;
             #endif
-            FormulaT deduction = transformDeductions(mLRA.deductions().back());
-            mLRA.rDeductions().pop_back();
-            addDeduction(deduction);
+            FormulaT deduction = transformDeductions(ded.first);
+            addDeduction(deduction, ded.second);
             #ifdef ICP_MODULE_DEBUG_2   
             cout << "Passed deduction: " << deduction << endl;
             #endif
@@ -2326,7 +2336,8 @@ namespace smtrat
     void ICPModule::pushBoundsToPassedFormula()
     {
         Variables originalRealVariables;
-        rReceivedFormula().realValuedVars( originalRealVariables );
+        rReceivedFormula().realValuedVars( originalRealVariables ); // TODO: store original variables as member, updating them efficiently with assert and remove
+        EvalRationalIntervalMap lraVarBounds = mLRA.getVariableBounds();
         for( std::map<carl::Variable, icp::IcpVariable*>::iterator iter = mVariables.begin(); iter != mVariables.end(); ++iter )
         {
             carl::Variable::Arg tmpSymbol = iter->first;
@@ -2338,15 +2349,24 @@ namespace smtrat
                     auto varIntervalPair = mIntervals.find( tmpSymbol );
                     assert( varIntervalPair != mIntervals.end() );
                     DoubleInterval& interval = varIntervalPair->second;
+                    auto lraVarBoundsIter = lraVarBounds.find( tmpSymbol );
+                    assert( lraVarBoundsIter != lraVarBounds.end() );
+                    const RationalInterval& varBounds = lraVarBoundsIter->second;
                     icp::Updated icpVarExUpdated = icpVar.isExternalUpdated();
                     // generate both bounds, left first
                     if( icpVarExUpdated == icp::Updated::BOTH || icpVarExUpdated == icp::Updated::LEFT )
                     {
                         Rational bound = carl::rationalize<Rational>( interval.lower() );
+                        carl::BoundType boundType = interval.lowerBoundType();
+                        if( varBounds.lowerBoundType() != carl::BoundType::INFTY && bound < varBounds.lower() )
+                        {
+                            bound = varBounds.lower();
+                            boundType = varBounds.lowerBoundType();
+                        }
                         Poly leftEx = carl::makePolynomial<Poly>( tmpSymbol ) - Poly(bound);
 
                         FormulaT leftTmp;
-                        switch( interval.lowerBoundType() )
+                        switch( boundType )
                         {
                             case carl::BoundType::STRICT:
                                 leftTmp = FormulaT( leftEx, Relation::GREATER );
@@ -2380,9 +2400,15 @@ namespace smtrat
                     {
                         // right:
                         Rational bound = carl::rationalize<Rational>( interval.upper() );
+                        carl::BoundType boundType = interval.upperBoundType();
+                        if( varBounds.upperBoundType() != carl::BoundType::INFTY && bound > varBounds.upper() )
+                        {
+                            bound = varBounds.upper();
+                            boundType = varBounds.upperBoundType();
+                        }
                         Poly rightEx = carl::makePolynomial<Poly>( tmpSymbol ) - Poly( bound );
                         FormulaT rightTmp;
-                        switch( interval.upperBoundType() )
+                        switch( boundType )
                         {
                             case carl::BoundType::STRICT:
                                 rightTmp = FormulaT( rightEx, Relation::LESS );
@@ -2436,7 +2462,7 @@ namespace smtrat
                     // cout << "Defining origin: " << **formulaIt << " FOR " << *(*variableIt) << endl;
                     bool hasAdditionalVariables = false;
                     Variables realValuedVars;
-                    rReceivedFormula().realValuedVars(realValuedVars);
+                    rReceivedFormula().realValuedVars(realValuedVars); // TODO: store original variables as member, updating them efficiently with assert and remove
                     for( auto varIt = realValuedVars.begin(); varIt != realValuedVars.end(); ++varIt )
                     {
                         if(*varIt != (*variableIt)->var() && formulaIt->constraint().hasVariable(*varIt))
@@ -2579,21 +2605,13 @@ namespace smtrat
         for ( auto infSetIt = tmpSet.begin(); infSetIt != tmpSet.end(); ++infSetIt )
         {
             FormulasT newSet;
-            for ( auto formulaIt = (*infSetIt).begin(); formulaIt != (*infSetIt).end(); ++formulaIt )
+            for( auto formulaIt = (*infSetIt).begin(); formulaIt != (*infSetIt).end(); ++formulaIt )
             {
-                if( formulaIt->constraint().isBound() )
+                auto delinIt = mDeLinearizations.find(*formulaIt);
+                assert( delinIt != mDeLinearizations.end() );
+                if( rReceivedFormula().contains( delinIt->second ) )
                 {
-                    assert( rReceivedFormula().contains( *formulaIt ) );
-                    newSet.insert( *formulaIt );
-                }
-                else
-                {
-                    auto delinIt = mDeLinearizations.find(*formulaIt);
-                    assert( delinIt != mDeLinearizations.end() );
-                    if( rReceivedFormula().contains( delinIt->second ) )
-                    {
-                        newSet.insert( delinIt->second );
-                    }
+                    newSet.insert( delinIt->second );
                 }
             }
             assert(newSet.size() == (*infSetIt).size());

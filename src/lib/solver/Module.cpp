@@ -780,7 +780,7 @@ namespace smtrat
     Answer Module::foundAnswer( Answer _answer )
     {
         mSolverState = _answer;
-//        if( !( _answer != True || checkModel() != 0 ) ) exit(1234);
+        if( !( _answer != True || checkModel() != 0 ) ) exit(1234);
         assert( _answer != True || checkModel() != 0 );
         // If we are in the SMT environment:
         if( mpManager != NULL && _answer != Unknown )
@@ -807,11 +807,11 @@ namespace smtrat
             if( validationSettings->logLemmata() )
             {
                 for( const auto& ded : (*module)->deductions() )
-                    addAssumptionToCheck( FormulaT( FormulaType::NOT, ded ), false, moduleName( (*module)->type() ) + "_lemma" );
+                    addAssumptionToCheck( FormulaT( FormulaType::NOT, ded.first ), false, moduleName( (*module)->type() ) + "_lemma" );
             }
             #endif
-            std::move((*module)->rDeductions().begin(), (*module)->rDeductions().end(), std::back_inserter(mDeductions));
-            (*module)->rDeductions().clear();
+            std::move((*module)->mDeductions.begin(), (*module)->mDeductions.end(), std::back_inserter(mDeductions));
+            (*module)->mDeductions.clear();
             std::move((*module)->mSplittings.begin(), (*module)->mSplittings.end(), std::back_inserter(mSplittings));
             (*module)->mSplittings.clear();
         }

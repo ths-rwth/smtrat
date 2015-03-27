@@ -223,7 +223,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    Answer SATModule<Settings>::checkCore( bool _full )
+    Answer SATModule<Settings>::checkCore( bool )
     {
         if( carl::PROP_IS_IN_CNF <= rReceivedFormula().properties() )
         {
@@ -275,12 +275,6 @@ namespace smtrat
                     current_restarts = mCurr_Restarts;
                     double rest_base = luby_restart ? luby( restart_inc, mCurr_Restarts ) : pow( restart_inc, mCurr_Restarts );
                     result = search( (int)rest_base * restart_first );
-                    if( mCurr_Restarts > 0 )
-                    {
-//                        carl::constraintPool<Poly>().print();
-//                        carl::FormulaPool<Poly>::getInstance().print();
-                        return Unknown;
-                    }
                     // if( !withinBudget() ) break;
                 }
             }
@@ -522,7 +516,7 @@ namespace smtrat
             seen[leftCase] = 0;
             if( Settings::apply_valid_substitutions )
             {
-                mVarClausesMap[leftCase] = std::move( std::set<CRef>() );
+                mVarClausesMap[(size_t)leftCase] = std::move( std::set<CRef>() );
             }
             #ifdef DEBUG_ADD_SPLITTING
             std::cout << "recycle the Boolean variable " << leftCase << " for the left case" << std::endl;
@@ -550,7 +544,7 @@ namespace smtrat
             seen[rightCase] = 0;
             if( Settings::apply_valid_substitutions )
             {
-                mVarClausesMap[rightCase] = std::move( std::set<CRef>() );
+                mVarClausesMap[(size_t)rightCase] = std::move( std::set<CRef>() );
             }
             #ifdef DEBUG_ADD_SPLITTING
             std::cout << "recycle the Boolean variable " << rightCase << " for the right case" << std::endl;
@@ -2540,16 +2534,16 @@ NextClause:
         {
             // Learn the deductions.
             (*backend)->updateDeductions();
-            for( const FormulaT& deduction : (*backend)->deductions() )
+            for( const auto& ded : (*backend)->deductions() )
             {
-                if( deduction.getType() != carl::FormulaType::TRUE )
+                if( ded.first.getType() != carl::FormulaType::TRUE )
                 {
                     deductionsLearned = true;
                     #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
                     cout << "Learned a theory deduction from a backend module!" << endl;
-                    cout << deduction.toString( false, 0, "", true, true, true ) << endl;
+                    cout << ded.first.toString( false, 0, "", true, true, true ) << endl;
                     #endif
-                    addFormula( deduction, DEDUCTED_CLAUSE );
+                    addFormula( ded.first, DEDUCTED_CLAUSE );
                 }
             }
             // Add the splittings.
