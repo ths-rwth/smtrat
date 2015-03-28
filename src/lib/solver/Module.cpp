@@ -780,7 +780,7 @@ namespace smtrat
     Answer Module::foundAnswer( Answer _answer )
     {
         mSolverState = _answer;
-        if( !( _answer != True || checkModel() != 0 ) ) exit(1234);
+//        if( !( _answer != True || checkModel() != 0 ) ) exit(1234);
         assert( _answer != True || checkModel() != 0 );
         // If we are in the SMT environment:
         if( mpManager != NULL && _answer != Unknown )
@@ -1095,21 +1095,7 @@ namespace smtrat
         this->updateModel();
         if( !model().empty() )
         {
-            _out << "(";
-            for( Model::const_iterator ass = model().begin(); ass != model().end(); ++ass )
-            {
-                if (ass != model().begin()) _out << " ";
-                if( ass->first.isVariable() )
-                    _out << "(" << ass->first << " " << ass->second << ")" << endl;
-                else if( ass->first.isUVariable() )
-                    _out << "(define-fun " << ass->first << " () " << ass->first.asUVariable().domain() << " " << ass->second << ")" << endl;
-                else
-                {
-                    assert( ass->first.isFunction() );
-                    _out << ass->second.asUFModel() << endl;
-                }
-            }
-            _out << ")" << endl;
+            _out << model();
         }
     }
 } // namespace smtrat
