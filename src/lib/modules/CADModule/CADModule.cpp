@@ -170,8 +170,12 @@ namespace smtrat
          * @param false, if this module should avoid too expensive procedures and rather return unknown instead.
 	 * @return True if consistent, False otherwise
 	 */
-	Answer CADModule::checkCore( bool )
+	Answer CADModule::checkCore( bool _full )
 	{
+            if( !_full )
+            {
+                return Unknown;
+            }
 		if (this->hasFalse) return False;
 		else {
 			for (auto f: this->subformulaQueue) {
@@ -247,12 +251,12 @@ namespace smtrat
 				mInfeasibleSubsets.push_back(i);
 				mInfeasibleSubsets.back().insert(boundConstraints.begin(), boundConstraints.end());
 			}
-			std::vector<FormulasT> ours;
-			cad::MISGeneration<cad::MISHeuristic::GREEDY> tmp(*this);
-			tmp(ours);
-			//std::cout << "MIS: " << mInfeasibleSubsets << std::endl;
-			//std::cout << "MIS2: " << ours << std::endl;
-			assert(ours == mInfeasibleSubsets);
+//			std::vector<FormulasT> ours;
+//			cad::MISGeneration<cad::MISHeuristic::GREEDY> tmp(*this);
+//			tmp(ours);
+//			//std::cout << "MIS: " << mInfeasibleSubsets << std::endl;
+//			//std::cout << "MIS2: " << ours << std::endl;
+//			assert(ours == mInfeasibleSubsets);
 
 			#ifdef CHECK_SMALLER_MUSES
 			Module::checkInfSubsetForMinimality(mInfeasibleSubsets->begin());
