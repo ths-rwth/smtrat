@@ -893,6 +893,11 @@ namespace vs
         bool nextSubResultCombination();
         
         /**
+         * @return The number of the current substitution result combination.
+         */
+        size_t getNumberOfCurrentSubresultCombination() const;
+        
+        /**
          * Gets the current substitution result combination as condition vector.
          * @return The current substitution result combination as condition vector.
          */

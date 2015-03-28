@@ -1067,6 +1067,29 @@ namespace vs
         }
     }
 
+    size_t State::getNumberOfCurrentSubresultCombination() const
+    {
+        if( mpSubResultCombination->size() == 1 )
+        {
+            return mpSubResultCombination->begin()->second;
+        }
+        else
+        {
+            // First compute the number of combinations being a prefix of the current substitution result combination.
+            size_t numOfPrefixCombinations = 1;
+            for( size_t pos = 0; pos < mpSubResultCombination->size()-1; ++pos )
+            {
+                numOfPrefixCombinations *= mpSubstitutionResults->at( pos ).size();
+            }
+            size_t numOfCurrentCombination = 1;
+            for( const auto& src : *mpSubResultCombination )
+            {
+                numOfCurrentCombination *= src.second;
+            }
+            return numOfPrefixCombinations + numOfCurrentCombination;
+        }
+    }
+
     ConditionList State::getCurrentSubresultCombination() const
     {
         ConditionList currentSubresultCombination;
