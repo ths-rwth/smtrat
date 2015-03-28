@@ -35,7 +35,7 @@
 //#define VS_DEBUG_LOCAL_CONFLICT_SEARCH
 //#define VS_DEBUG_ROOTS_CHECK
 
-#define VS_LOG_INFSUBSETS
+//#define VS_LOG_INFSUBSETS
 
 using namespace std;
 
