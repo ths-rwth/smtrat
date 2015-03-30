@@ -744,7 +744,7 @@ namespace smtrat
                  * @return true, if the constraint is a defining constraint
                  *         false, otherwise   
                  */
-                const ConstraintT* isDefining( size_t row_index, std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient_list, T2 lcm, T2& max_value ) const;
+                ConstraintT isDefining( size_t row_index, std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient_list, T2 lcm, T2& max_value ) const;
                 
                 /**
                  * Checks whether the row with index row_index is defining. 

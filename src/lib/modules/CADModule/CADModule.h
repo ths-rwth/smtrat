@@ -79,6 +79,7 @@ namespace smtrat
 
 		/// The constraints extracted from the passed formulas.
 		std::vector<carl::cad::Constraint<smtrat::Rational>> mConstraints;
+        std::map<carl::cad::Constraint<smtrat::Rational>, FormulaT> mCFMap;
 
 		/// Indicates if false has been asserted.
 		bool hasFalse;
@@ -93,7 +94,7 @@ namespace smtrat
 		/// A satisfying assignment of the received constraints if existent; otherwise it is empty.
 		carl::RealAlgebraicPoint<smtrat::Rational> mRealAlgebraicSolution;
 		/// the conflict graph storing for each last component of all sample points which constraints were satisfied by the point
-		carl::cad::ConflictGraph mConflictGraph;
+		carl::cad::ConflictGraph<smtrat::Rational> mConflictGraph;
 		VariableBounds mVariableBounds;
 
         public:
@@ -110,12 +111,20 @@ namespace smtrat
 
             const VariableBounds&   variableBounds  ()	const 	{ return mVariableBounds; }
             VariableBounds&         rVariableBounds ()      	{ return mVariableBounds; }
+            const ConstraintIndexMap&   constraints  ()	const 	{ return mConstraintsMap; }
+            carl::cad::ConflictGraph<smtrat::Rational>   conflictGraph() const { return mConflictGraph; }
+            
+            const FormulaT& formulaFor(const carl::cad::Constraint<smtrat::Rational>& constraint) const {
+                auto it = mCFMap.find(constraint);
+                assert(it != mCFMap.end());
+                return it->second;
+            }
 
         private:
 			bool addConstraintFormula(const FormulaT& f);
             const carl::cad::Constraint<smtrat::Rational> convertConstraint(const ConstraintT&);
-            const ConstraintT* convertConstraint(const carl::cad::Constraint<smtrat::Rational>&);
-            std::vector<FormulasT> extractMinimalInfeasibleSubsets_GreedyHeuristics(carl::cad::ConflictGraph& conflictGraph);
+            ConstraintT convertConstraint(const carl::cad::Constraint<smtrat::Rational>&);
+            std::vector<FormulasT> extractMinimalInfeasibleSubsets_GreedyHeuristics(carl::cad::ConflictGraph<smtrat::Rational>& conflictGraph);
             const FormulaT& getConstraintAt(unsigned index);
             void updateConstraintMap(unsigned index, bool decrement = true);
 #ifdef SMTRAT_DEVOPTION_Statistics

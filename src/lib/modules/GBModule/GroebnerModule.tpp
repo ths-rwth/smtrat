@@ -67,9 +67,7 @@ GroebnerModule<Settings>::GroebnerModule( ModuleType _type, const ModuleInput* c
 
 template<class Settings>
 GroebnerModule<Settings>::~GroebnerModule( )
-{
-
-}
+{}
 
 /**
  * Adds the constraint to the known constraints of the module.
@@ -835,8 +833,8 @@ template<class Settings>
 typename GroebnerModule<Settings>::GBPolynomial GroebnerModule<Settings>::transformIntoEquality( ModuleInput::const_iterator constraint )
 {
     GBPolynomial result( (typename Poly::PolyType)constraint->formula().constraint( ).lhs( ) );
-    unsigned constrId = constraint->formula().constraint( ).id( );
-    std::map<unsigned, carl::Variable>::const_iterator mapentry = mAdditionalVarMap.find( constrId );
+    size_t constrId = constraint->formula().constraint( ).id( );
+    std::map<size_t, carl::Variable>::const_iterator mapentry = mAdditionalVarMap.find( constrId );
     carl::Variable var = carl::Variable::NO_VARIABLE;
     if( mapentry == mAdditionalVarMap.end( ) )
     {
@@ -844,7 +842,7 @@ typename GroebnerModule<Settings>::GBPolynomial GroebnerModule<Settings>::transf
         stream << "AddVarGB" << constrId;
         
         var = carl::VariablePool::getInstance().getFreshVariable( stream.str() );
-        mAdditionalVarMap.insert(std::pair<unsigned, carl::Variable>(constrId, var));
+        mAdditionalVarMap.insert(std::pair<size_t, carl::Variable>(constrId, var));
     }
     else
     {

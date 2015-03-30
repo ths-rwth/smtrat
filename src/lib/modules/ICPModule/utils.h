@@ -27,7 +27,7 @@ namespace smtrat
         * @param _interval
         * @return pair <lowerBoundConstraint*, upperBoundConstraint*>
         */
-        std::pair<const ConstraintT*, const ConstraintT*> intervalToConstraint( const Poly& _lhs, const smtrat::DoubleInterval _interval );
+        std::pair<ConstraintT, ConstraintT> intervalToConstraint( const Poly& _lhs, const smtrat::DoubleInterval _interval );
         
         /**
         * Checks mIntervals if it contains an empty interval.

@@ -1124,11 +1124,11 @@ Return:
                     const Poly::PolyType* gomory_poly = mTableau.gomoryCut(ass, basicVar);
                     if( *gomory_poly != ZERO_RATIONAL )
                     { 
-                        const ConstraintT* gomory_constr = carl::newConstraint<Poly>( *gomory_poly , carl::Relation::GEQ );
-                        const ConstraintT* neg_gomory_constr = carl::newConstraint<Poly>( *gomory_poly - (*gomory_poly).evaluate( rMap_ ), carl::Relation::LESS );
-                        //std::cout << *gomory_constr << endl;
-                        assert( !gomory_constr->satisfiedBy( rMap_ ) );
-                        assert( !neg_gomory_constr->satisfiedBy( rMap_ ) );
+                        ConstraintT gomory_constr = ConstraintT( *gomory_poly , carl::Relation::GEQ );
+                        ConstraintT neg_gomory_constr = ConstraintT( *gomory_poly - (*gomory_poly).evaluate( rMap_ ), carl::Relation::LESS );
+                        //std::cout << gomory_constr << endl;
+                        assert( !gomory_constr.satisfiedBy( rMap_ ) );
+                        assert( !neg_gomory_constr.satisfiedBy( rMap_ ) );
                         /*
                         FormulasT subformulas; 
                         mTableau.collect_premises( basicVar, subformulas );
@@ -1208,15 +1208,15 @@ Return:
         #ifdef LRA_NO_DIVISION
         std::vector<LRAEntryType> lcm_rows;
         #endif
-        std::vector< const ConstraintT* > DC_Matrix = std::vector< const ConstraintT* >();
+        std::vector<ConstraintT> DC_Matrix;
         for( size_t i = 0; i < numRows; ++i )
         {
             std::vector<std::pair<size_t,LRAEntryType>> nonbasicindex_coefficient = std::vector<std::pair<size_t,LRAEntryType>>();
             LRAEntryType lcmOfCoeffDenoms = 1;
-            const ConstraintT* dc_constraint = mTableau.isDefining( i, nonbasicindex_coefficient,  lcmOfCoeffDenoms, max_value );
-            if( dc_constraint != NULL  )
+            ConstraintT dc_constraint = mTableau.isDefining( i, nonbasicindex_coefficient,  lcmOfCoeffDenoms, max_value );
+            if( dc_constraint != ConstraintT()  )
             {      
-                LRAVariable* new_var = dc_Tableau.newBasicVariable( nonbasicindex_coefficient, (*mTableau.rows().at(i)).expression(), (*mTableau.rows().at(i)).factor(),dc_constraint->integerValued() );
+                LRAVariable* new_var = dc_Tableau.newBasicVariable( nonbasicindex_coefficient, (*mTableau.rows().at(i)).expression(), (*mTableau.rows().at(i)).factor(),dc_constraint.integerValued() );
                 dc_Tableau.activateBasicVar(new_var);
                 dc_positions.push_back(i); 
                 #ifdef LRA_NO_DIVISION
@@ -1288,15 +1288,14 @@ Return:
                     #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                     cout << "Proof of unsatisfiability:  " << *cut_from_proof << " = 0" << endl;
                     #endif
-                    if( mTableau.slackVars().size() > 1 ) exit(7771);
                     LRAEntryType bound_add = 1;
                     LRAEntryType bound = upper_lower_bound;
                     if( carl::isInteger( upper_lower_bound ) )
                     {
                         bound_add = 0;
                     }
-                    const smtrat::ConstraintT* cut_constraint = carl::newConstraint<Poly>( *cut_from_proof - (Rational)carl::floor((Rational)upper_lower_bound) , carl::Relation::LEQ );
-                    const smtrat::ConstraintT* cut_constraint2 = carl::newConstraint<Poly>( *cut_from_proof - Rational(((Rational)carl::floor((Rational)upper_lower_bound)+Rational(bound_add))), carl::Relation::GEQ );
+                    ConstraintT cut_constraint = ConstraintT( *cut_from_proof - (Rational)carl::floor((Rational)upper_lower_bound) , carl::Relation::LEQ );
+                    ConstraintT cut_constraint2 = ConstraintT( *cut_from_proof - Rational(((Rational)carl::floor((Rational)upper_lower_bound)+Rational(bound_add))), carl::Relation::GEQ );
                     // Construct and add (p<=I-1 or p>=I))
                     FormulaT cons1 = FormulaT( cut_constraint );
                     cons1.setActivity( -numeric_limits<double>::infinity() );

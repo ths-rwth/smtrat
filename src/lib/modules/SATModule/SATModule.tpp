@@ -223,7 +223,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    Answer SATModule<Settings>::checkCore( bool _full )
+    Answer SATModule<Settings>::checkCore( bool )
     {
         if( carl::PROP_IS_IN_CNF <= rReceivedFormula().properties() )
         {
@@ -509,13 +509,14 @@ namespace smtrat
         {
             leftCase = mOldSplittingVars.top();
             mOldSplittingVars.pop();
+            assert( leftCase < trail.capacity() );
             assigns[leftCase] = l_Undef;
             vardata[leftCase] = mkVarData( CRef_Undef, 0 );
             activity[leftCase] = 0.0;
             seen[leftCase] = 0;
             if( Settings::apply_valid_substitutions )
             {
-                mVarClausesMap[leftCase] = std::move( std::set<CRef>() );
+                mVarClausesMap[(size_t)leftCase] = std::move( std::set<CRef>() );
             }
             #ifdef DEBUG_ADD_SPLITTING
             std::cout << "recycle the Boolean variable " << leftCase << " for the left case" << std::endl;
@@ -536,13 +537,14 @@ namespace smtrat
         {
             rightCase = mOldSplittingVars.top();
             mOldSplittingVars.pop();
+            assert( rightCase < trail.capacity() );
             assigns[rightCase] = l_Undef;
             vardata[rightCase] = mkVarData( CRef_Undef, 0 );
             activity[rightCase] = 0.0;
             seen[rightCase] = 0;
             if( Settings::apply_valid_substitutions )
             {
-                mVarClausesMap[rightCase] = std::move( std::set<CRef>() );
+                mVarClausesMap[(size_t)rightCase] = std::move( std::set<CRef>() );
             }
             #ifdef DEBUG_ADD_SPLITTING
             std::cout << "recycle the Boolean variable " << rightCase << " for the right case" << std::endl;
@@ -692,14 +694,14 @@ namespace smtrat
                     {
                         constraint = content;
                         const ConstraintT& cons = content.constraint();
-                        invertedConstraint = FormulaT( cons.lhs(), ConstraintT::invertRelation( cons.relation() ) );
+                        invertedConstraint = FormulaT( cons.lhs(), carl::invertRelation( cons.relation() ) );
                     }
                     else
                     {
                         const ConstraintT& cons = content.constraint();
                         Poly constraintLhs = cons.lhs().substitute( mVarReplacements );
                         constraint = FormulaT( constraintLhs, cons.relation() );
-                        invertedConstraint = FormulaT( constraintLhs, ConstraintT::invertRelation( cons.relation() ) );
+                        invertedConstraint = FormulaT( constraintLhs, carl::invertRelation( cons.relation() ) );
                     }
                 }
                 else // content.getType() == carl::FormulaType::UEQ
@@ -2103,11 +2105,24 @@ NextClause:
     template<class Settings>
     void SATModule<Settings>::removeAssignedSplittingVars()
     {
+//        std::cout << __func__ << std::endl;
+//        printDecisions();
+//        std::cout << "qhead = " << qhead << std::endl;
+//        std::cout << "trail_lim.size() = " << trail_lim.size() << std::endl;
         assert( decisionLevel() == 0 );
+//        std::cout << "mSplittingVars:" << std::endl;
+//        for( const auto& iter : mSplittingVars )
+//        {
+//            std::cout << "   " << iter << " assigned to " << (assigns[iter] == l_True ? "true" :(assigns[iter] == l_False ? "false" : "undef")) << std::endl;
+//        }
+//        std::cout << "start removing:" << std::endl;
         for( size_t i = 0; i < mSplittingVars.size(); )
         {
+//            std::cout << "   " << mSplittingVars[i] << " assigned to " << (assigns[mSplittingVars[i]] == l_True ? "true" :(assigns[mSplittingVars[i]] == l_False ? "false" : "undef")) << std::endl;
             if( assigns[mSplittingVars[i]] != l_Undef )
             {
+//                std::cout << "test" << std::endl;
+                assigns[mSplittingVars[i]] = l_Undef;
                 mOldSplittingVars.push(mSplittingVars[i]);
                 mSplittingVars[i] = mSplittingVars.back();
                 mSplittingVars.pop_back();
@@ -2117,6 +2132,23 @@ NextClause:
                 ++i;
             }
         }
+//        if( trail_lim.size() == 1 ) std::cout << "trail_lim[0] = " << trail_lim[0] << std::endl;
+        int i, j;
+        for( i = j = 0; i < trail.size(); ++i )
+        {
+//            std::cout << "trail[i] = " << (sign( trail[i] ) ? "-" : "") << var( trail[i] ) << std::endl;
+//            std::cout << "trail[j] = " << (sign( trail[j] ) ? "-" : "") << var( trail[j] ) << std::endl;
+            if( assigns[var(trail[i])] != l_Undef )
+            {
+                trail[j++] = trail[i];
+            }
+        }
+        trail.shrink( i - j );
+        qhead = trail.size();
+//        printDecisions();
+//        std::cout << "qhead = " << qhead << std::endl;
+//        std::cout << "trail_lim.size() = " << trail_lim.size() << std::endl;
+//            trail_lim.shrink( trail_lim.size() - level );
     }
     
     template<class Settings>
@@ -2502,16 +2534,16 @@ NextClause:
         {
             // Learn the deductions.
             (*backend)->updateDeductions();
-            for( const FormulaT& deduction : (*backend)->deductions() )
+            for( const auto& ded : (*backend)->deductions() )
             {
-                if( deduction.getType() != carl::FormulaType::TRUE )
+                if( ded.first.getType() != carl::FormulaType::TRUE )
                 {
                     deductionsLearned = true;
                     #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
                     cout << "Learned a theory deduction from a backend module!" << endl;
-                    cout << deduction.toString( false, 0, "", true, true, true ) << endl;
+                    cout << ded.first.toString( false, 0, "", true, true, true ) << endl;
                     #endif
-                    addFormula( deduction, DEDUCTED_CLAUSE );
+                    addFormula( ded.first, DEDUCTED_CLAUSE );
                 }
             }
             // Add the splittings.

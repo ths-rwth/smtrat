@@ -244,7 +244,12 @@ namespace smtrat
              */
             std::vector<FormulaT> lemmas() const
             {
-                return mpPrimaryBackend->deductions();
+                std::vector<FormulaT> result;
+                for( const auto& ded : mpPrimaryBackend->deductions() )
+                {
+                    result.push_back( ded.first );
+                }
+                return result;
             }
 
             /**

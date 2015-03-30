@@ -81,6 +81,8 @@ namespace smtrat
     
     typedef carl::Constraint<Poly> ConstraintT;
     
+    typedef carl::Constraints<Poly> ConstraintsT;
+    
     typedef carl::Formula<Poly> FormulaT;
     
     typedef carl::Formulas<Poly> FormulasT;

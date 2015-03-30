@@ -23,26 +23,16 @@
 
 namespace smtrat
 {
-    namespace icp{
-    ContractionCandidateManager* ContractionCandidateManager::mInstance = NULL;
-    
+namespace icp
+{   
     ContractionCandidateManager::ContractionCandidateManager():
-    mCurrentId(1),
-    mCandidates() // TODO: initialize with a certain size
+        mCurrentId(1),
+        mCandidates() // TODO: initialize with a certain size
     {}
-    
-    ContractionCandidateManager* ContractionCandidateManager::getInstance()
-    {
-        if ( mInstance == NULL )
-        {
-            mInstance = new ContractionCandidateManager();
-        }
-        return mInstance;
-    }
     
     ContractionCandidate* ContractionCandidateManager::createCandidate (carl::Variable _lhs, 
                                                                         const Poly _rhs,
-                                                                        const ConstraintT* _constraint,
+                                                                        const ConstraintT& _constraint,
                                                                         carl::Variable _derivationVar,
                                                                         Contractor<carl::SimpleNewton>& _contractor)
     {
@@ -55,7 +45,7 @@ namespace smtrat
         return tmp;
     }
     
-    ContractionCandidate* ContractionCandidateManager::getCandidate( const unsigned _id )
+    ContractionCandidate* ContractionCandidateManager::getCandidate( unsigned _id ) const
     {
         if( _id <= mCandidates.size() && _id > 0 )
         {
@@ -64,20 +54,20 @@ namespace smtrat
         return NULL;
     }
     
-    void ContractionCandidateManager::closure (const ContractionCandidate* const _candidate, std::set<const ContractionCandidate*>& _candidates) const
+    void ContractionCandidateManager::closure(const ContractionCandidate* const _candidate, std::set<const ContractionCandidate*>& _candidates) const
     {
         std::pair<std::set<const ContractionCandidate*>::iterator, bool> res = _candidates.insert(_candidate);
         if ( res.second )
         {
 //            cout << "[Closure] Add candidate ";
             _candidate->print();
-            for( auto symbolIt = _candidate->constraint()->variables().begin(); symbolIt != _candidate->constraint()->variables().end(); ++symbolIt )
+            for( auto symbolIt = _candidate->constraint().variables().begin(); symbolIt != _candidate->constraint().variables().end(); ++symbolIt )
             {
                 for( auto candidateIt = mCandidates.begin(); candidateIt != mCandidates.end(); ++candidateIt )
                 {
                     if( (*candidateIt)->lhs() == (*symbolIt) )
                     {
-                        mInstance->closure(*candidateIt, _candidates);
+                        closure(*candidateIt, _candidates);
                     }
                 }
             }

@@ -22,7 +22,7 @@
 
 /*
  * @file   ICPModule.h
- * @author name surname <emailadress>
+ * @author Stefan Schupp <stefan.schupp@cs.rwth-aachen.de>
  *
  * Created on October 16, 2012, 1:07 PM
  */
@@ -84,8 +84,8 @@ namespace smtrat
             
             struct linearVariable
             {
-                FormulaT                           constraint;
-                const ConstraintT*                        origin;
+                FormulaT constraint;
+                ConstraintT origin;
             };
 
             struct weights
@@ -101,11 +101,11 @@ namespace smtrat
             /**
              * Members:
              */
-            icp::ContractionCandidateManager*                                   mCandidateManager; // keeps all candidates
+            icp::ContractionCandidateManager                                    mCandidateManager; // keeps all candidates
             std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> mActiveNonlinearConstraints; // nonlinear candidates considered
             std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> mActiveLinearConstraints; // linear candidates considered
             std::map<const LRAVariable*, ContractionCandidates>                 mLinearConstraints; // all linear candidates
-            std::map<const ConstraintT*, ContractionCandidates>                  mNonlinearConstraints; // all nonlinear candidates
+            std::map<ConstraintT, ContractionCandidates>                  mNonlinearConstraints; // all nonlinear candidates
 			FormulasT															mNotEqualConstraints;
             
             std::map<carl::Variable, icp::IcpVariable*>                                   mVariables; // list of occurring variables
@@ -129,7 +129,7 @@ namespace smtrat
             RuntimeSettings*                                                                    mLraRuntimeSettings;
             LRAModule<LRASettings1>                                                             mLRA; // internal LRA module
             
-            std::set<const ConstraintT*>                                                        mCenterConstraints; // keeps actual centerConstaints for deletion
+            std::set<ConstraintT>                                                        mCenterConstraints; // keeps actual centerConstaints for deletion
             FormulasT                                                                           mCreatedDeductions; // keeps pointers to the created deductions for deletion
             icp::ContractionCandidate*                                                          mLastCandidate; // the last applied candidate
             #ifndef BOXMANAGEMENT
@@ -258,7 +258,7 @@ namespace smtrat
             /**
              * Creates the non-linear contraction candidates from all items in mTemporaryMonomes and empties mTemporaryMonomes.
              */
-            Poly createNonlinearCCs( const ConstraintT* _constraint, const std::vector<Poly>& _tempMonomes );
+            Poly createNonlinearCCs( const ConstraintT& _constraint, const std::vector<Poly>& _tempMonomes );
 
             /**
              * Creates the linear contraction candidates corresponding to the given linear constraint.
@@ -430,7 +430,7 @@ namespace smtrat
              * @param _map
              * @return 
              */
-            FormulasT constraintReasonHull( const std::set<const ConstraintT*>& _reasons );
+            FormulasT constraintReasonHull( const std::set<ConstraintT>& _reasons );
             
             
             /**
