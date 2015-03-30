@@ -56,7 +56,11 @@ namespace smtrat
             infSubSet.insert( _subformula->formula() );
             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
             return false;            
-        }            
+        } 
+        else if( _subformula->formula().isTrue() )
+        {
+            return true;
+        }
         if( _subformula->formula().constraint().relation() == carl::Relation::EQ )
         {
             // Do substitutions that have already been determined and update origins accordingly
@@ -413,17 +417,17 @@ namespace smtrat
         {
             if( (*iter_formula).formula().constraint().relation() != carl::Relation::EQ )
             {
-                //#ifdef DEBUG_IntEqModule
-                //cout << "Substitute in: " << (*iter_formula).formula().constraint().lhs() << endl;
-                //auto iter_subs_help = mSubstitutions.begin();
-                //while( iter_subs_help != mSubstitutions.end() )
-                //{
-                //    cout << *iter_subs_help << endl;
-                //    ++iter_subs_help;
-                //}
-                //#endif
-                const ConstraintT& constr = (*iter_formula).formula().constraint();
-                Poly new_poly = constr.lhs();
+                #ifdef DEBUG_IntEqModule
+                cout << "Substitute in: " << (*iter_formula).formula().constraint().lhs() << endl;
+                auto iter_subs_help = mSubstitutions.begin();
+                while( iter_subs_help != mSubstitutions.end() )
+                {
+                    cout << *iter_subs_help << endl;
+                    ++iter_subs_help;
+                }
+                #endif
+                const smtrat::ConstraintT* constr = (*iter_formula).formula().pConstraint();
+                Poly new_poly = constr->lhs();
                 std::shared_ptr<std::vector<FormulaT>> origins( new std::vector<FormulaT>() );
                 origins->push_back( (*iter_formula).formula() );
                 auto iter_subs = mSubstitutions.begin();
@@ -431,6 +435,7 @@ namespace smtrat
                 {
                     Poly tmp_poly = new_poly;
                     new_poly = new_poly.substitute( (iter_subs)->first, (iter_subs)->second );
+                    cout << "New polynomial: " << new_poly << endl;
                     if( tmp_poly != new_poly )
                     {
                         auto iter_help = mVariables.find( iter_subs->first );
@@ -480,6 +485,7 @@ namespace smtrat
                 {
                     #ifdef DEBUG_IntEqModule
                     cout << "The obtained formula is unsatisfiable" << endl;
+                    cout << "Origins: " << *origins << endl;
                     #endif
                     size_t i = determine_smallest_origin( *origins );
                     FormulasT infSubSet;

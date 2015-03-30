@@ -484,9 +484,12 @@ namespace smtrat
      */
     void ICPModule::resetHistory( icp::ContractionCandidate* _cc )
     {
-        if(mHistoryActual->getCandidates().find(_cc) != mHistoryActual->getCandidates().end()) {
-        	setBox(mHistoryRoot);
-        	mHistoryActual->reset();
+        if( mHistoryActual != NULL )
+        {
+            if(mHistoryActual->getCandidates().find(_cc) != mHistoryActual->getCandidates().end()) {
+                    setBox(mHistoryRoot);
+                    mHistoryActual->reset();
+            }
         }
     }
     
@@ -1641,7 +1644,9 @@ namespace smtrat
         {
             if( mFoundSolution.empty() )
             {
+                std::cout << __func__ << ":" << __LINE__ << std::endl;
                 Module::getBackendsModel();
+                std::cout << model();
                 EvalRationalMap rationalAssignment = mLRA.getRationalModel();
                 for( auto assignmentIt = rationalAssignment.begin(); assignmentIt != rationalAssignment.end(); ++assignmentIt )
                 {
@@ -1656,6 +1661,7 @@ namespace smtrat
             }
             else
             {
+                std::cout << __func__ << ":" << __LINE__ << std::endl;
                 for( auto assignmentIt = mFoundSolution.begin(); assignmentIt != mFoundSolution.end(); ++assignmentIt )
                 {
                     auto varIt = mVariables.find((*assignmentIt).first);
@@ -1672,13 +1678,15 @@ namespace smtrat
     
     ModuleInput::iterator ICPModule::eraseSubformulaFromPassedFormula( ModuleInput::iterator _subformula, bool _ignoreOrigins )
     {
-        for( std::map<carl::Variable, icp::IcpVariable*>::iterator iter = mVariables.begin(); iter != mVariables.end(); ++iter )
+        // TODO: check if the sub-formula is a bound, then take the variable, find its icp-variable and update it
+        for( auto& varIcpvarPair : mVariables )
         {
-            icp::IcpVariable& icpVar = *iter->second;
+            icp::IcpVariable& icpVar = *varIcpvarPair.second;
             assert( icpVar.externalLeftBound() == passedFormulaEnd() || icpVar.externalLeftBound() != icpVar.externalRightBound() );
             if( icpVar.externalLeftBound() == _subformula )
             {
                 icpVar.setExternalLeftBound( passedFormulaEnd() );
+                icpVar.setExternalModified();
                 break;
             }
             else if( icpVar.externalRightBound() == _subformula )

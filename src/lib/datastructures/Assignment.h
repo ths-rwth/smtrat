@@ -403,4 +403,6 @@ namespace smtrat
      *         2, otherwise.
      */
     unsigned satisfies( const Model& _model, const EvalRationalMap& _assignment, const FormulaT& _formula );
+    
+    std::ostream& operator<<( std::ostream& _out, const Model& _model );
 }

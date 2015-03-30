@@ -364,4 +364,24 @@ namespace smtrat
             }
         }
     }
+    
+    std::ostream& operator<<( std::ostream& _out, const Model& _model )
+    {
+        _out << "(";
+        for( Model::const_iterator ass = _model.begin(); ass != _model.end(); ++ass )
+        {
+            if (ass != _model.begin()) _out << " ";
+            if( ass->first.isVariable() )
+                _out << "(" << ass->first << " " << ass->second << ")" << endl;
+            else if( ass->first.isUVariable() )
+                _out << "(define-fun " << ass->first << " () " << ass->first.asUVariable().domain() << " " << ass->second << ")" << endl;
+            else
+            {
+                assert( ass->first.isFunction() );
+                _out << ass->second.asUFModel() << endl;
+            }
+        }
+        _out << ")" << endl;
+        return _out;
+    }
 }    

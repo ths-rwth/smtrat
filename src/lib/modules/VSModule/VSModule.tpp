@@ -947,7 +947,7 @@ namespace smtrat
                                     sideCond.insert( cons22 );
                                 // Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b+sqrt(b^2-4ac))/2a]):
                                 SqrtEx sqExA = SqrtEx( -linearCoeff, ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
-                                Substitution subA = Substitution( _eliminationVar, sqExA, subType, std::move(carl::PointerSet<vs::Condition>(oConditions)), std::move(sideCond) );
+                                Substitution subA = Substitution( _eliminationVar, sqExA, subType, std::move(carl::PointerSet<vs::Condition>(oConditions)), std::move(ConstraintsT(sideCond)) );
                                 std::vector<State*> addedChildrenA = _currentState->addChild( subA );
                                 if( !addedChildrenA.empty() )
                                 {

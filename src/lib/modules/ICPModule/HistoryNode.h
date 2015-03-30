@@ -245,7 +245,7 @@ namespace smtrat
                         addReason( _candidate->derivationVar(), originIt->constraint() );
                 }
 
-                std::set<const ContractionCandidate*> getCandidates() const
+                const std::set<const ContractionCandidate*>& getCandidates() const
                 {
                     return mAppliedContractions;
                 }
