@@ -252,6 +252,13 @@ namespace smtrat
 			tmp(ours);
 			//std::cout << "MIS: " << mInfeasibleSubsets << std::endl;
 			//std::cout << "MIS2: " << ours << std::endl;
+			if (ours != mInfeasibleSubsets) {
+				std::cout << "old = " << mInfeasibleSubsets << std::endl;
+				std::cout << "new = " << ours << std::endl;
+				addAssumptionToCheck(ours.back(), false, "new");
+				addAssumptionToCheck(mInfeasibleSubsets.back(), false, "old");
+				storeAssumptionsToCheck(*mpManager);
+			}
 			assert(ours == mInfeasibleSubsets);
 
 			#ifdef CHECK_SMALLER_MUSES
