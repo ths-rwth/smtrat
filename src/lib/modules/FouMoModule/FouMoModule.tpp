@@ -28,7 +28,7 @@
 
 #include "FouMoModule.h"
 
-//#define DEBUG_FouMoModule
+#define DEBUG_FouMoModule
 
 namespace smtrat
 {
@@ -57,6 +57,10 @@ namespace smtrat
             infSubSet.insert( _subformula->formula() );
             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
             return false;            
+        }
+        else if( _subformula->formula().isTrue() )
+        {
+            return true;
         }
         else if( _subformula->formula().constraint().relation() == carl::Relation::LEQ )
         {
@@ -190,13 +194,19 @@ namespace smtrat
                         assert( iter_origins != temp_constr.end() );
                         iter_help->second.second.push_back( std::make_pair( iter_deleted->first, iter_origins->second ) );                        
                     }
-                    temp_constr.erase( iter_deleted->first );
+                    FormulaT formula_temp = iter_deleted->first;
+                    temp_constr.erase( formula_temp );
                     ++iter_deleted;
                 }
                 temp_constr.insert( derived_constr.begin(), derived_constr.end() );
                 ++iter_var;
             }
-            mProc_Constraints.insert( temp_constr.begin(), temp_constr.end() );
+            auto iter_temp = temp_constr.begin();
+            while( iter_temp != temp_constr.end() )
+            {
+                mProc_Constraints.emplace( *iter_temp ); 
+                ++iter_temp;
+            }
         }
         else if( _subformula->formula().constraint().relation() == carl::Relation::EQ )
         {
