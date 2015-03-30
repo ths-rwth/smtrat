@@ -28,7 +28,7 @@
 
 #include "FouMoModule.h"
 
-#define DEBUG_FouMoModule
+//#define DEBUG_FouMoModule
 
 namespace smtrat
 {
@@ -101,7 +101,7 @@ namespace smtrat
                                 if( iter_poly->coeff() > 0 ) 
                                 {
                                     to_be_deleted.emplace( iter_temp->first, true );
-                                    // The current considered constraint that iter_temp points to acts acts as an upper bound
+                                    // The current considered constraint that iter_temp points to acts as an upper bound
                                     // regarding the currently considered variable
                                     auto iter_lower = iter_help->second.second.begin();
                                     // Combine the current considered constraint with all lower bound constraints
@@ -129,7 +129,15 @@ namespace smtrat
                                         }
                                         else
                                         {
-                                            derived_constr.emplace( new_formula, origins_new );
+                                            auto iter_help = derived_constr.find( new_formula );
+                                            if( iter_help == derived_constr.end() )
+                                            {
+                                                derived_constr.emplace( new_formula, origins_new );
+                                            }
+                                            else
+                                            {
+                                                iter_help->second->insert( iter_help->second->end(), origins_new->begin(), origins_new->end() );
+                                            }
                                         }
                                         ++iter_lower;
                                     }
@@ -138,7 +146,7 @@ namespace smtrat
                                 else
                                 {
                                     to_be_deleted.emplace( iter_temp->first, false );
-                                    // The current considered constraint that iter_temp points to acts acts as a lower bound.
+                                    // The current considered constraint that iter_temp points to acts as a lower bound.
                                     // Do everything analogously compared to the contrary case.
                                     auto iter_upper = iter_help->second.first.begin(); 
                                     while( iter_upper != iter_help->second.first.end() )
@@ -164,7 +172,15 @@ namespace smtrat
                                         }
                                         else
                                         {
-                                            derived_constr.emplace( new_formula, origins_new );
+                                            auto iter_help = derived_constr.find( new_formula );
+                                            if( iter_help == derived_constr.end() )
+                                            {
+                                                derived_constr.emplace( new_formula, origins_new );
+                                            }
+                                            else
+                                            {
+                                                iter_help->second->insert( iter_help->second->end(), origins_new->begin(), origins_new->end() );
+                                            }
                                         }
                                         ++iter_upper;
                                     }    
@@ -198,13 +214,35 @@ namespace smtrat
                     temp_constr.erase( formula_temp );
                     ++iter_deleted;
                 }
-                temp_constr.insert( derived_constr.begin(), derived_constr.end() );
+                auto iter_derived = derived_constr.begin();
+                while( iter_derived != derived_constr.end() )
+                {
+                    auto iter_help = temp_constr.find( iter_derived->first );
+                    if( iter_help == temp_constr.end() )
+                    {
+                        temp_constr.emplace( *iter_derived );
+                    }
+                    else
+                    {
+                        iter_help->second->insert( iter_help->second->end(), iter_derived->second->begin(), iter_derived->second->end() );
+                    }
+                    ++iter_derived;
+                }    
                 ++iter_var;
             }
             auto iter_temp = temp_constr.begin();
             while( iter_temp != temp_constr.end() )
             {
-                mProc_Constraints.emplace( *iter_temp ); 
+                // Check whether the new constraint is already contained in mProc_Constraints
+                auto iter_help = mProc_Constraints.find( iter_temp->first );
+                if( iter_help == mProc_Constraints.end() )
+                {
+                    mProc_Constraints.emplace( *iter_temp ); 
+                }
+                else
+                {
+                    iter_help->second->insert( iter_help->second->end(), iter_temp->second->begin(), iter_temp->second->end() );
+                }
                 ++iter_temp;
             }
         }
@@ -212,7 +250,15 @@ namespace smtrat
         {
             std::shared_ptr<std::vector<FormulaT>> origins( new std::vector<FormulaT>() );
             origins->push_back( _subformula->formula() );
-            mEqualities.emplace( _subformula->formula(), origins );
+            auto iter_help = mEqualities.find( _subformula->formula() );
+            if( iter_help == mEqualities.end() )
+            {
+                mEqualities.emplace( _subformula->formula(), origins );
+            }
+            else
+            {
+                iter_help->second->push_back( _subformula->formula() );
+            }
         }
         return true;
     }
@@ -236,9 +282,11 @@ namespace smtrat
                 auto iter_origins = (iter_formula->second)->begin();
                 while( iter_origins !=  (iter_formula->second)->end() )
                 {
+                    /*
                     #ifdef DEBUG_FouMoModule
                     cout << "Origin: " << *iter_origins << endl;
                     #endif
+                    */
                     bool contains = iter_origins->contains( _subformula->formula() ); 
                     if( contains || *iter_origins == _subformula->formula() )
                     {
@@ -512,7 +560,16 @@ namespace smtrat
                     }
                     else
                     {
-                        mProc_Constraints.emplace( new_formula, origins_new );
+                        // Check whether the new constraint is already contained in mProc_Constraints
+                        auto iter_help = mProc_Constraints.find( new_formula );
+                        if( iter_help == mProc_Constraints.end() )
+                        {
+                            mProc_Constraints.emplace( new_formula, origins_new );
+                        }
+                        else
+                        {
+                            iter_help->second->insert( iter_help->second->end(), origins_new->begin(), origins_new->end() );                            
+                        }
                     }
                     ++iter_lower;
                 }
