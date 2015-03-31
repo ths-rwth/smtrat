@@ -426,8 +426,8 @@ namespace smtrat
                     ++iter_subs_help;
                 }
                 #endif
-                const smtrat::ConstraintT* constr = (*iter_formula).formula().pConstraint();
-                Poly new_poly = constr->lhs();
+                const smtrat::ConstraintT& constr = (*iter_formula).formula().constraint();
+                Poly new_poly = constr.lhs();
                 std::shared_ptr<std::vector<FormulaT>> origins( new std::vector<FormulaT>() );
                 origins->push_back( (*iter_formula).formula() );
                 auto iter_subs = mSubstitutions.begin();
