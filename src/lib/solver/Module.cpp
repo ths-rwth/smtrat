@@ -111,7 +111,7 @@ namespace smtrat
     Answer Module::check( bool _full )
     {   
         #ifdef MODULE_VERBOSE
-        cout << endl << "Call to module " << moduleName( type() ) << endl;
+        cout << endl << "Check " << (_full ? "full" : "lazy" ) << " with " << moduleName( type() ) << endl;
         print( cout, " ");
         #endif
         #ifdef SMTRAT_DEVOPTION_MeasureTime
