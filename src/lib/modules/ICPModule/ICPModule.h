@@ -101,57 +101,60 @@ namespace smtrat
             /**
              * Members:
              */
-            icp::ContractionCandidateManager                                    mCandidateManager; // keeps all candidates
+            icp::ContractionCandidateManager mCandidateManager; // keeps all candidates
             std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> mActiveNonlinearConstraints; // nonlinear candidates considered
             std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> mActiveLinearConstraints; // linear candidates considered
-            std::map<const LRAVariable*, ContractionCandidates>                 mLinearConstraints; // all linear candidates
-            std::map<ConstraintT, ContractionCandidates>                  mNonlinearConstraints; // all nonlinear candidates
-			FormulasT															mNotEqualConstraints;
+            std::map<const LRAVariable*, ContractionCandidates> mLinearConstraints; // all linear candidates
+            std::map<ConstraintT, ContractionCandidates> mNonlinearConstraints; // all nonlinear candidates
+			FormulasT mNotEqualConstraints;
             
-            std::map<carl::Variable, icp::IcpVariable*>                                   mVariables; // list of occurring variables
-            EvalDoubleIntervalMap                                                               mIntervals; // actual intervals relevant for contraction
-            EvalRationalMap                                                                     mFoundSolution;
-            std::set<std::pair<double, unsigned>, comp>                                         mIcpRelevantCandidates; // candidates considered for contraction 
+            std::map<carl::Variable, icp::IcpVariable*> mVariables; // list of occurring variables
+            EvalDoubleIntervalMap mIntervals; // actual intervals relevant for contraction
+            EvalRationalMap mFoundSolution;
+            std::set<std::pair<double, unsigned>, comp> mIcpRelevantCandidates; // candidates considered for contraction 
             
-            carl::FastMap<FormulaT,FormulaT>                                              mLinearizations; // linearized constraint -> original constraint
-            carl::FastMap<FormulaT,FormulaT>                                              mDeLinearizations; // linearized constraint -> original constraint
-            carl::FastMap<Poly, carl::Variable>                                                 mVariableLinearizations; // monome -> variable
-            std::map<carl::Variable, Poly>                                                mSubstitutions; // variable -> monome/variable
-            carl::FastMap<Poly, Contractor<carl::SimpleNewton>>                                 mContractors;
+            carl::FastMap<FormulaT,FormulaT> mLinearizations; // linearized constraint -> original constraint
+            carl::FastMap<FormulaT,FormulaT> mDeLinearizations; // linearized constraint -> original constraint
+            carl::FastMap<Poly, carl::Variable> mVariableLinearizations; // monome -> variable
+            std::map<carl::Variable, Poly> mSubstitutions; // variable -> monome/variable
+            carl::FastMap<Poly, Contractor<carl::SimpleNewton>> mContractors;
             
-            //#ifdef BOXMANAGEMENT
-            icp::HistoryNode*                                                                   mHistoryRoot; // Root-Node of the state-tree
-            icp::HistoryNode*                                                                   mHistoryActual; // Actual node of the state-tree
-            //#endif
+            icp::HistoryNode* mHistoryRoot; // Root-Node of the state-tree
+            icp::HistoryNode* mHistoryActual; // Actual node of the state-tree
             
-            ModuleInput*                                                                        mValidationFormula; // ReceivedFormula of the internal LRA Module
-            std::vector<std::atomic_bool*>                                                      mLRAFoundAnswer;
-            RuntimeSettings*                                                                    mLraRuntimeSettings;
-            LRAModule<LRASettings1>                                                             mLRA; // internal LRA module
+            ModuleInput* mValidationFormula; // ReceivedFormula of the internal LRA Module
+            std::vector<std::atomic_bool*> mLRAFoundAnswer;
+            RuntimeSettings* mLraRuntimeSettings;
+            LRAModule<LRASettings1> mLRA; // internal LRA module
             
-            std::set<ConstraintT>                                                        mCenterConstraints; // keeps actual centerConstaints for deletion
-            FormulasT                                                                           mCreatedDeductions; // keeps pointers to the created deductions for deletion
-            icp::ContractionCandidate*                                                          mLastCandidate; // the last applied candidate
+            std::set<ConstraintT> mCenterConstraints; // keeps actual centerConstaints for deletion
+            FormulasT mCreatedDeductions; // keeps pointers to the created deductions for deletion
+            icp::ContractionCandidate* mLastCandidate; // the last applied candidate
             #ifndef BOXMANAGEMENT
-            std::queue<FormulasT>                                                               mBoxStorage; // keeps the box before contraction
+            std::queue<FormulasT> mBoxStorage; // keeps the box before contraction
             #endif
-            bool                                                                                mIsIcpInitialized; // initialized ICPModule?
-            unsigned                                                                            mCurrentId; // keeps the currentId of the state nodes
-            bool                                                                                mIsBackendCalled; // has a backend already been called in the actual run?
-            double                                                                              mTargetDiameter;
-            double                                                                              mContractionThreshold;
-            double                                                                              mDefaultSplittingSize;
-            unsigned                                                                            mNumberOfReusagesAfterTargetDiameterReached;
-            double                                                                              mRelativeContraction;
-            double                                                                              mAbsoluteContraction;
+            bool mIsIcpInitialized; // initialized ICPModule?
+            unsigned mCurrentId; // keeps the currentId of the state nodes
+            bool mIsBackendCalled; // has a backend already been called in the actual run?
+            bool mSplitOccurred;
+            bool mOriginalVariableIntervalContracted;
+            double mTargetDiameter;
+            double mContractionThreshold;
+            double mDefaultSplittingSize;
+            unsigned mNumberOfReusagesAfterTargetDiameterReached;
+            double mRelativeContraction;
+            double mAbsoluteContraction;
             
             #ifdef ICP_BOXLOG
-            std::fstream                                                                        icpLog;
+            std::fstream icpLog;
             #endif
             #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
-            FormulaT                                                                      mCheckContraction;
+            FormulaT mCheckContraction;
             #endif
-            int                                                                                 mCountBackendCalls;
+            int mCountBackendCalls;
+            double mGlobalBoxSize;
+            double mInitialBoxSize;
+            double mCovererdRegionSize;
 
             /*
              *  Constants
@@ -247,7 +250,7 @@ namespace smtrat
              * @param _splitOccurred
              * @return 
              */
-            bool contractCurrentBox( bool& _splitOccurred );
+            bool contractCurrentBox();
             
             /**
              * 
@@ -310,9 +313,8 @@ namespace smtrat
             /**
              * Calls the actual contraction function and implements threshold functionality
              * @param _selection
-             * @return true if a split has occurred
              */
-            bool contraction( icp::ContractionCandidate* _selection );
+            void contraction( icp::ContractionCandidate* _selection );
             
             /**
              * 
@@ -448,6 +450,10 @@ namespace smtrat
              * Sets the own infeasible subset according to the infeasible subset of the internal lra module.
              */
             void remapAndSetLraInfeasibleSubsets();
+            
+            double calculateCurrentBoxSize();
+            
+            void addProgress( double _progress );
             
             //#ifdef BOXMANAGEMENT
             /**

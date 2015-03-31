@@ -36,6 +36,7 @@ using namespace carl;
 //#define ICP_MODULE_DEBUG_0
 //#define ICP_MODULE_DEBUG_1
 //#define ICP_MODULE_DEBUG_2
+//#define ICP_MODULE_SHOW_PROGRESS
 
 #ifdef ICP_MODULE_DEBUG_2
 #ifndef ICP_MODULE_DEBUG_1
@@ -96,7 +97,9 @@ namespace smtrat
         mNumberOfReusagesAfterTargetDiameterReached(1),
         mRelativeContraction(0),
         mAbsoluteContraction(0),
-        mCountBackendCalls(0)
+        mCountBackendCalls(0),
+        mGlobalBoxSize(0.0),
+        mInitialBoxSize(0.0)
     {
         #ifdef ICP_BOXLOG
         icpLog.open ("icpLog.txt", ios::out | ios::trunc );
@@ -129,6 +132,7 @@ namespace smtrat
             icpLog.close();
         }
         #endif
+        std::cout << std::endl;
     }
 
     bool ICPModule::informCore( const FormulaT& _constraint )
@@ -347,8 +351,6 @@ namespace smtrat
         std::cout << "Start consistency check with the ICPModule on the constraints " << endl;
         for( const auto& f : rReceivedFormula() )
             std::cout << "    " << f.formula().constraint() << std::endl;
-        std::cout << "Given the intervals" << std::endl;
-        printIntervals( false );
         #endif
         if( !mFoundSolution.empty() )
         {
@@ -390,7 +392,17 @@ namespace smtrat
             }
             return lraAnswer;
         }
-            
+        #ifdef ICP_MODULE_SHOW_PROGRESS
+        if( mGlobalBoxSize == 0.0 )
+        {
+            mGlobalBoxSize = calculateCurrentBoxSize();
+        }
+        mInitialBoxSize = calculateCurrentBoxSize();
+        #endif
+        #ifdef ICP_MODULE_DEBUG_0
+        std::cout << "Start with the intervals" << std::endl;
+        printIntervals( false );
+        #endif
         #ifdef ICP_BOXLOG
         icpLog << "startTheoryCall";
         writeBox();
@@ -399,79 +411,88 @@ namespace smtrat
         printIntervals(true);
         cout << "---------------------------------------------" << endl;
         #endif
-        for( ; ; )
+        bool invalidBox = contractCurrentBox();
+        #ifdef ICP_MODULE_DEBUG_0
+        std::cout << std::endl;
+        #endif
+        #ifdef ICP_MODULE_DEBUG_1
+        cout << endl << "contract to:" << endl;
+        printIntervals(true);
+        cout << endl;
+        #endif
+        // when one interval is empty, we can skip validation and chose next box.
+        if( invalidBox ) // box contains no solution
         {
-            bool splitOccurred = false;
-            bool invalidBox = contractCurrentBox( splitOccurred );
-            #ifdef ICP_MODULE_DEBUG_0
-            std::cout << std::endl;
-            #endif
+            #ifdef BOXMANAGEMENT
+            // choose next box
             #ifdef ICP_MODULE_DEBUG_1
-            cout << endl << "contract to:" << endl;
-            printIntervals(true);
-            cout << endl;
+            cout << "Generated empty interval, Chose new box: " << endl;
             #endif
-            // when one interval is empty, we can skip validation and chose next box.
-            if( invalidBox ) // box contains no solution
+            if( mLastCandidate != NULL) // if there has been a candidate, the stateInfeasible set has to be created, otherwise it has been generated during checkBoxAgainstLinear...
             {
-                #ifdef BOXMANAGEMENT
-                // choose next box
-                #ifdef ICP_MODULE_DEBUG_1
-                cout << "Generated empty interval, Chose new box: " << endl;
-                #endif
-                if( mLastCandidate != NULL) // if there has been a candidate, the stateInfeasible set has to be created, otherwise it has been generated during checkBoxAgainstLinear...
+                assert(mVariables.find(mLastCandidate->derivationVar()) != mVariables.end());
+                mHistoryActual->addInfeasibleVariable( mVariables.at(mLastCandidate->derivationVar()) );
+                if (mHistoryActual->rReasons().find(mLastCandidate->derivationVar()) != mHistoryActual->rReasons().end())
                 {
-                    assert(mVariables.find(mLastCandidate->derivationVar()) != mVariables.end());
-                    mHistoryActual->addInfeasibleVariable( mVariables.at(mLastCandidate->derivationVar()) );
-                    if (mHistoryActual->rReasons().find(mLastCandidate->derivationVar()) != mHistoryActual->rReasons().end())
-                    {
-                        for( auto constraintIt = mHistoryActual->rReasons().at(mLastCandidate->derivationVar()).begin(); constraintIt != mHistoryActual->rReasons().at(mLastCandidate->derivationVar()).end(); ++constraintIt )
-                            mHistoryActual->addInfeasibleConstraint(*constraintIt);
-                    }
+                    for( auto constraintIt = mHistoryActual->rReasons().at(mLastCandidate->derivationVar()).begin(); constraintIt != mHistoryActual->rReasons().at(mLastCandidate->derivationVar()).end(); ++constraintIt )
+                        mHistoryActual->addInfeasibleConstraint(*constraintIt);
                 }
-                if( !chooseBox() )
-                    return False;
-                #else
-                #ifdef ICP_MODULE_DEBUG_0
-                cout << "Whole box contains no solution! Return False." << endl;
-                #endif
-                // whole box forms infeasible subset
-                mInfeasibleSubsets.push_back( createPremiseDeductions() );
+            }
+            if( !chooseBox() )
                 return False;
+            #else
+            #ifdef ICP_MODULE_DEBUG_0
+            cout << "Whole box contains no solution! Return False." << endl;
+            #endif
+            // whole box forms infeasible subset
+            mInfeasibleSubsets.push_back( createPremiseDeductions() );
+            #ifdef ICP_MODULE_SHOW_PROGRESS
+            addProgress( mInitialBoxSize );
+            #endif
+            return False;
+            #endif
+        }
+        else
+        {
+            assert( !intervalsEmpty() );
+            #ifndef BOXMANAGEMENT
+            if( mSplitOccurred )
+            {
+                #ifdef ICP_MODULE_DEBUG_0
+                cout << "Return unknown, raise deductions for split." << endl;
                 #endif
+                assert( !splittings().empty() );
+                return Unknown;
+            }
+            assert( splittings().empty() );
+            #endif
+            if( tryTestPoints() )
+            {
+                if( checkNotEqualConstraints() )
+                    return True;
+                else
+                {
+                    return Unknown;
+                }
             }
             else
             {
-                assert( !intervalsEmpty() );
-                #ifndef BOXMANAGEMENT
-                if( splitOccurred )
+                // create Bounds and set them, add to passedFormula
+                pushBoundsToPassedFormula();
+                // lazy call of the backends on found box
+                Answer lazyResult = callBackends( false );
+                // if it led to a result or the backends require a splitting
+                if( lazyResult != Unknown || !splittings().empty() )
+                    return lazyResult;
+                // Full call of the backends, if no box has target diameter
+                if( checkAndPerformSplit( mOriginalVariableIntervalContracted ) == carl::Variable::NO_VARIABLE )
                 {
-                    #ifdef ICP_MODULE_DEBUG_0
-                    cout << "Return unknown, raise deductions for split." << endl;
-                    #endif
-                    return Unknown;
-                }
-                #endif
-                if( tryTestPoints() )
-                {
-                    if( checkNotEqualConstraints() )
-                        return True;
-                    else
-                    {
-                        return Unknown;
-                    }
-                }
-                else
-                {
-                    // create Bounds and set them, add to passedFormula
-                    pushBoundsToPassedFormula();
-                    // call backends on found box
                     return callBackends( _full );
                 }
+                assert( !splittings().empty() );
+                return Unknown; // Splitting required
             }
         }
-        assert( false ); // This should not happen!
-        return Unknown;
     }
     
 
@@ -486,9 +507,10 @@ namespace smtrat
     {
         if( mHistoryActual != NULL )
         {
-            if(mHistoryActual->getCandidates().find(_cc) != mHistoryActual->getCandidates().end()) {
-                    setBox(mHistoryRoot);
-                    mHistoryActual->reset();
+            if(mHistoryActual->getCandidates().find(_cc) != mHistoryActual->getCandidates().end())
+            {
+                setBox(mHistoryRoot);
+                mHistoryActual->reset();
             }
         }
     }
@@ -666,14 +688,15 @@ namespace smtrat
         return true;
     }
     
-    bool ICPModule::contractCurrentBox( bool& _splitOccurred )
+    bool ICPModule::contractCurrentBox()
     {
         #ifdef ICP_MODULE_DEBUG_0
         std::cout << __func__ << ":" << std::endl;
         #endif
         bool invalidBox = false;
         mLastCandidate = NULL;
-        bool originalVariableIntervalContracted = false;
+        mSplitOccurred = false;
+        mOriginalVariableIntervalContracted = false;
         for( ; ; )
         {
             #ifndef BOXMANAGEMENT
@@ -703,15 +726,14 @@ namespace smtrat
             // prepare IcpRelevantCandidates
 //            activateLinearEquations(); // TODO (Florian): do something alike again
             fillCandidates();
-            _splitOccurred = false;
 
-            while ( !mIcpRelevantCandidates.empty() && !_splitOccurred )
+            while ( !mIcpRelevantCandidates.empty() && !mSplitOccurred )
             {
                 icp::ContractionCandidate* candidate = chooseContractionCandidate();
                 assert(candidate != NULL);
                 mRelativeContraction = -1; // TODO: try without this line
                 mAbsoluteContraction = 0; // TODO: try without this line
-                _splitOccurred = contraction( candidate );
+                contraction( candidate );
 
                 // catch if new interval is empty -> we can drop box and chose next box
                 if ( mIntervals.at(candidate->derivationVar()).isEmpty() )
@@ -727,7 +749,7 @@ namespace smtrat
                 if( mRelativeContraction > 0 && originalRealVariables.find( candidate->derivationVar() ) != originalRealVariables.end() )
                 {
                     mLastCandidate = candidate;
-                    originalVariableIntervalContracted = true;
+                    mOriginalVariableIntervalContracted = true;
                 }
 				
                 // update weight of the candidate
@@ -744,9 +766,9 @@ namespace smtrat
 
                 assert(mIntervals.find(candidate->derivationVar()) != mIntervals.end() );
                 #ifdef ICP_CONSIDER_WIDTH
-                if ( (mRelativeContraction < mContractionThreshold && !_splitOccurred) || fulfillsTarget(*candidate) )
+                if ( (mRelativeContraction < mContractionThreshold && !mSplitOccurred) || fulfillsTarget(*candidate) )
                 #else
-                if ( (mAbsoluteContraction < mContractionThreshold && !_splitOccurred) )
+                if ( (mAbsoluteContraction < mContractionThreshold && !mSplitOccurred) )
                 #endif
                 {
                     removeCandidateFromRelevant(candidate);
@@ -785,9 +807,9 @@ namespace smtrat
                     icpLog << "contraction; \n";
                     #endif
                 }
-            } //while ( !mIcpRelevantCandidates.empty() && !_splitOccurred)
+            } //while ( !mIcpRelevantCandidates.empty() && !mSplitOccurred)
             // verify if the box is already invalid
-            if (!invalidBox && !_splitOccurred)
+            if (!invalidBox && !mSplitOccurred)
             {
                 invalidBox = !checkBoxAgainstLinearFeasibleRegion();
                 #ifdef ICP_MODULE_DEBUG_1
@@ -808,32 +830,9 @@ namespace smtrat
             #endif
             if( invalidBox )
                 return true;
-            if( _splitOccurred || mIcpRelevantCandidates.empty() ) // relevantCandidates is not empty, if we got new bounds from LRA during boxCheck
+            if( mSplitOccurred || mIcpRelevantCandidates.empty() ) // relevantCandidates is not empty, if we got new bounds from LRA during boxCheck
             {
-                // perform splitting if possible
-                if( !_splitOccurred )
-                {
-                    _splitOccurred = checkAndPerformSplit( originalVariableIntervalContracted ) != carl::Variable::NO_VARIABLE;
-                }
-                if( _splitOccurred )
-                {
-                    #ifdef ICP_BOXLOG
-                    icpLog << "split size subtree; " << mHistoryRoot->sizeSubtree() << "\n";
-                    #endif
-                    #ifdef ICP_MODULE_DEBUG_2
-                    cout << "Size subtree: " << mHistoryActual->sizeSubtree() << " \t Size total: " << mHistoryRoot->sizeSubtree() << endl;
-                    #endif
-                    #ifdef BOXMANAGEMENT
-                    invalidBox = false;
-                    #else
-                    return invalidBox;
-                    #endif
-                }
-                else
-                    return false;
-                #ifdef ICP_MODULE_DEBUG_1
-                cout << "empty: " << invalidBox << "  _splitOccurred: " << _splitOccurred << endl;
-                #endif
+                return false;
             }
         }
         assert( false ); // should not happen
@@ -843,7 +842,7 @@ namespace smtrat
     Answer ICPModule::callBackends( bool _full )
     {
         #ifdef ICP_MODULE_DEBUG_0
-        cout << "Ask backends for the satisfiability of:" << endl;
+        cout << "Ask backends " << (_full ? "full" : "lazy") << " for the satisfiability of:" << endl;
         for( const auto& f : rPassedFormula() )
             std::cout << "    " << f.formula().constraint() << std::endl;
         #endif
@@ -882,6 +881,9 @@ namespace smtrat
                 }
                 ++backend;
             }
+            #ifdef ICP_MODULE_SHOW_PROGRESS
+            addProgress( mInitialBoxSize );
+            #endif
             return False;
             #else
             bool isBoundInfeasible = false;
@@ -939,13 +941,10 @@ namespace smtrat
                     if( (*infSetIt)->constraint().isBound() )
                     {
                         assert( mVariables.find( *(*infSetIt)->constraint().variables().begin() ) != mVariables.end() );
-//                                        mHistoryActual->addInfeasibleVariable( mVariables.at((*(*infSetIt)->constraint().variables().begin()).first) );
-//                                        cout << "Added infeasible Variable." << endl;
                     }
                     else
                     {
                         mHistoryActual->addInfeasibleConstraint((*infSetIt)->constraint());
-//                                        cout << "Added infeasible Constraint." << endl;
                     }
 
                 }
@@ -1308,11 +1307,10 @@ namespace smtrat
         return NULL;
     }
     
-    bool ICPModule::contraction( icp::ContractionCandidate* _selection )
+    void ICPModule::contraction( icp::ContractionCandidate* _selection )
     {
         smtrat::DoubleInterval resultA;
         smtrat::DoubleInterval resultB;
-        bool splitOccurred = false;
 
         // check if derivative is already calculated
         if(_selection->derivative().isZero())
@@ -1323,8 +1321,8 @@ namespace smtrat
         icp::IcpVariable& icpVar = *mVariables.find( variable )->second;
         const DoubleInterval icpVarIntervalBefore = icpVar.interval();
         
-        splitOccurred = _selection->contract( mIntervals, resultA, resultB );
-        if( splitOccurred )
+        mSplitOccurred = _selection->contract( mIntervals, resultA, resultB );
+        if( mSplitOccurred )
         {
             #ifdef ICP_MODULE_DEBUG_2   
             cout << "Split occured: " << resultA << " and " << resultB << endl;
@@ -1355,6 +1353,9 @@ namespace smtrat
                     addDeduction( FormulaT( OR, subformulasTmp ) );
                 }
             }
+            #ifdef ICP_MODULE_SHOW_PROGRESS
+            addProgress( mInitialBoxSize - calculateCurrentBoxSize() );
+            #endif
 
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
             assert(resultA.upperBoundType() != BoundType::INFTY );
@@ -1414,7 +1415,6 @@ namespace smtrat
         #ifdef ICP_MODULE_DEBUG_1
         cout << "      Relative contraction: " << mRelativeContraction << endl;
         #endif
-        return splitOccurred;
     }
     
     void ICPModule::updateRelativeContraction( const DoubleInterval& _interval, const DoubleInterval& _contractedInterval )
@@ -1644,9 +1644,7 @@ namespace smtrat
         {
             if( mFoundSolution.empty() )
             {
-                std::cout << __func__ << ":" << __LINE__ << std::endl;
                 Module::getBackendsModel();
-                std::cout << model();
                 EvalRationalMap rationalAssignment = mLRA.getRationalModel();
                 for( auto assignmentIt = rationalAssignment.begin(); assignmentIt != rationalAssignment.end(); ++assignmentIt )
                 {
@@ -1705,7 +1703,6 @@ namespace smtrat
         EvalDoubleIntervalMap intervals = _intervals;
         smtrat::DoubleInterval resultA;
         smtrat::DoubleInterval resultB;
-        bool splitOccurred = false;
 
         // check if derivative is already calculated
         if(_selection->derivative().isZero())
@@ -1714,10 +1711,10 @@ namespace smtrat
         carl::Variable variable = _selection->derivationVar();
         assert(intervals.find(variable) != intervals.end());
         
-        splitOccurred    = _selection->contract( mIntervals, resultA, resultB );
+        mSplitOccurred = _selection->contract( mIntervals, resultA, resultB );
         
         smtrat::DoubleInterval originalInterval = intervals.at(variable);
-        if( splitOccurred )
+        if( mSplitOccurred )
         {   
             EvalDoubleIntervalMap tmpRight = EvalDoubleIntervalMap();
             for ( auto intervalIt = intervals.begin(); intervalIt != intervals.end(); ++intervalIt )
@@ -1955,6 +1952,9 @@ namespace smtrat
                 subformulas.insert( FormulaT( AND, std::move( createBoxFormula() ) ) ); // TODO: only add this deduction if any contraction took place!!!
                 // push deduction
                 addDeduction( FormulaT( OR, std::move(subformulas) ) );
+                #ifdef ICP_MODULE_SHOW_PROGRESS
+                addProgress( mInitialBoxSize - calculateCurrentBoxSize() );
+                #endif
             }
 
             Module::branchAt( variable, bound, std::move(splitPremise), leftCaseWeak, preferLeftCase );
@@ -2358,18 +2358,21 @@ namespace smtrat
                     assert( varIntervalPair != mIntervals.end() );
                     DoubleInterval& interval = varIntervalPair->second;
                     auto lraVarBoundsIter = lraVarBounds.find( tmpSymbol );
-                    assert( lraVarBoundsIter != lraVarBounds.end() );
-                    const RationalInterval& varBounds = lraVarBoundsIter->second;
+                    
                     icp::Updated icpVarExUpdated = icpVar.isExternalUpdated();
                     // generate both bounds, left first
                     if( icpVarExUpdated == icp::Updated::BOTH || icpVarExUpdated == icp::Updated::LEFT )
                     {
                         Rational bound = carl::rationalize<Rational>( interval.lower() );
                         carl::BoundType boundType = interval.lowerBoundType();
-                        if( varBounds.lowerBoundType() != carl::BoundType::INFTY && bound < varBounds.lower() )
+                        if( lraVarBoundsIter != lraVarBounds.end() )
                         {
-                            bound = varBounds.lower();
-                            boundType = varBounds.lowerBoundType();
+                            const RationalInterval& varBounds = lraVarBoundsIter->second;
+                            if( varBounds.lowerBoundType() != carl::BoundType::INFTY && bound < varBounds.lower() )
+                            {
+                                bound = varBounds.lower();
+                                boundType = varBounds.lowerBoundType();
+                            }
                         }
                         Poly leftEx = carl::makePolynomial<Poly>( tmpSymbol ) - Poly(bound);
 
@@ -2409,10 +2412,14 @@ namespace smtrat
                         // right:
                         Rational bound = carl::rationalize<Rational>( interval.upper() );
                         carl::BoundType boundType = interval.upperBoundType();
-                        if( varBounds.upperBoundType() != carl::BoundType::INFTY && bound > varBounds.upper() )
+                        if( lraVarBoundsIter != lraVarBounds.end() )
                         {
-                            bound = varBounds.upper();
-                            boundType = varBounds.upperBoundType();
+                            const RationalInterval& varBounds = lraVarBoundsIter->second;
+                            if( varBounds.upperBoundType() != carl::BoundType::INFTY && bound > varBounds.upper() )
+                            {
+                                bound = varBounds.upper();
+                                boundType = varBounds.upperBoundType();
+                            }
                         }
                         Poly rightEx = carl::makePolynomial<Poly>( tmpSymbol ) - Poly( bound );
                         FormulaT rightTmp;
@@ -2624,6 +2631,32 @@ namespace smtrat
             }
             assert(newSet.size() == (*infSetIt).size());
             mInfeasibleSubsets.push_back(newSet);
+        }
+    }
+    
+    double ICPModule::calculateCurrentBoxSize()
+    {
+        if( mIntervals.empty() ) return 0.0;
+        double result = 1.0;
+        for( const auto& interv : mIntervals )
+        {
+            auto varIt = mVariables.find(interv.first);
+            if( varIt != mVariables.end() && varIt->second->isOriginal() )
+            {
+                result *= interv.second.diameter();
+            }
+        }
+        return result;
+    }
+    
+    void ICPModule::addProgress( double _progress )
+    {
+        if( _progress > 0.0 )
+        {
+            mCovererdRegionSize += _progress;
+            std::cout << "\r";
+            std::cout << std::setprecision(10) << std::setw(20) << (mCovererdRegionSize > 0 ? ((mCovererdRegionSize/mGlobalBoxSize)*100.0) : 0.0) << " %";
+            std::cout.flush();
         }
     }
 
