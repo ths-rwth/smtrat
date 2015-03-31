@@ -13,7 +13,7 @@ namespace spirit = boost::spirit;
 namespace qi = boost::spirit::qi;
 namespace px = boost::phoenix;
 
-struct RationalPolicies : qi::ureal_policies<smtrat::Rational> {
+struct RationalPolicies : qi::real_policies<smtrat::Rational> {
     template <typename It, typename Attr>
     static bool parse_nan(It&, It const&, Attr&) { return false; }
     template <typename It, typename Attr>

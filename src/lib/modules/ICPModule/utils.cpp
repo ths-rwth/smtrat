@@ -29,45 +29,41 @@ namespace smtrat
             return result;
         }
     
-        std::pair<const ConstraintT*, const ConstraintT*> intervalToConstraint( const Poly& _lhs, const smtrat::DoubleInterval _interval )
+        std::pair<ConstraintT, ConstraintT> intervalToConstraint( const Poly& _lhs, const smtrat::DoubleInterval _interval )
         {
             // left:
-            Rational           bound  = carl::rationalize<Rational>( _interval.lower() );
+            Rational bound  = carl::rationalize<Rational>( _interval.lower() );
             
-            Poly leftEx = _lhs - Poly(bound);
+            Poly leftEx = _lhs - bound;
             
-            const ConstraintT* leftTmp;
+            ConstraintT leftTmp;
             switch( _interval.lowerBoundType() )
             {
                 case carl::BoundType::STRICT:
-//                    leftTmp = Formula::newBound(_lhs, smtrat::Relation::CR_GREATER, bound);
-                    leftTmp = carl::newConstraint<Poly>(leftEx, carl::Relation::GREATER);
+                    leftTmp = ConstraintT(leftEx, carl::Relation::GREATER);
                     break;
                 case carl::BoundType::WEAK:
-//                    leftTmp = Formula::newBound(_lhs, smtrat::Relation::CR_GEQ, bound);
-                    leftTmp = carl::newConstraint<Poly>(leftEx, carl::Relation::GEQ);
+                    leftTmp = ConstraintT(leftEx, carl::Relation::GEQ);
                     break;
                 default:
-                    leftTmp = NULL;
+                    leftTmp = ConstraintT();
             }
 
             // right:
             bound = carl::rationalize<Rational>( _interval.upper() );
-            Poly rightEx = _lhs - Poly(bound);
+            Poly rightEx = _lhs - bound;
             
-            const ConstraintT* rightTmp;
+            ConstraintT rightTmp;
             switch( _interval.upperBoundType() )
             {
                 case carl::BoundType::STRICT:
-                    rightTmp = carl::newConstraint<Poly>(rightEx, carl::Relation::LESS);
-//                    rightTmp = Formula::newBound( _lhs, smtrat::Relation::CR_LESS, bound );
+                    rightTmp = ConstraintT(rightEx, carl::Relation::LESS);
                     break;
                 case carl::BoundType::WEAK:
-                    rightTmp = carl::newConstraint<Poly>(rightEx, carl::Relation::LEQ);
-//                    rightTmp = Formula::newBound( _lhs, smtrat::Relation::CR_LEQ, bound );
+                    rightTmp = ConstraintT(rightEx, carl::Relation::LEQ);
                     break;
                 default:
-                    rightTmp = NULL;
+                    rightTmp = ConstraintT();
             }
 
             return std::make_pair( leftTmp, rightTmp );

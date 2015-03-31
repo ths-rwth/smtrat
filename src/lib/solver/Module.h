@@ -93,6 +93,35 @@ namespace smtrat
     };
     
     /**
+     * Stores all necessary information for a splitting decision.
+     */
+    struct Splitting
+    {
+        /// The constraint of the form p<=b or p<b for a polynomial p and a rational b.
+        FormulaT mLeftCase;
+        /// The constraint of the form p>b or p>=b for a polynomial p and a rational b.
+        FormulaT mRightCase;
+        /// The premise of the split, that is the current received formulas forming the reason for the desired splitting.
+        std::vector<FormulaT> mPremise;
+        /// A flag which is true, if the left case shall be preferred when deciding which case to choose.
+        bool mPreferLeftCase;
+
+        /**
+         * Constructor.
+         */
+        Splitting( const FormulaT& _leftCase, const FormulaT& _rightCase, std::vector<FormulaT>&& _premise, bool _preferLeftCase = true ):
+            mLeftCase( _leftCase ),
+            mRightCase( _rightCase ),
+            mPremise( std::move( _premise ) ),
+            mPreferLeftCase( _preferLeftCase )
+        {}
+        
+        Splitting( const FormulaT& _leftCase, const FormulaT& _rightCase, const std::vector<FormulaT>& _premise = std::vector<FormulaT>(), bool _preferLeftCase = true ):
+            Splitting( _leftCase, _rightCase, std::move( std::vector<FormulaT>( _premise ) ), _preferLeftCase )
+        {}
+    };
+    
+    /**
      * A base class for all kind of theory solving methods.
      */
     class Module
@@ -105,6 +134,11 @@ namespace smtrat
             typedef std::chrono::high_resolution_clock clock;
             /// For time measuring purposes.
             typedef std::chrono::microseconds timeunit;
+            /*
+             * The type of a deduction.
+             *     PERMANENT = The deduction should not be forgotten.
+             */
+            enum class DeductionType: unsigned { NORMAL = 0, PERMANENT = 1 };
 
         // Members.
         private:
@@ -138,7 +172,9 @@ namespace smtrat
             /// The backends of this module which have been used.
             std::vector<Module*> mAllBackends;
             /// Stores the deductions/lemmas being valid formulas this module or its backends made.
-            std::vector<FormulaT> mDeductions;
+            std::vector<std::pair<FormulaT,DeductionType>> mDeductions;
+            /// Stores the splitting decisions this module or its backends made.
+            std::vector<Splitting> mSplittings;
             /// Stores the position of the first sub-formula in the passed formula, which has not yet been considered for a consistency check of the backends.
             ModuleInput::iterator mFirstSubformulaToPass;
             /// Stores the constraints which the backends must be informed about.
@@ -376,10 +412,11 @@ namespace smtrat
             /**
              * Stores a deduction/lemma being a valid formula.
              * @param _deduction The eduction/lemma to store.
+             * @param _dt The type of the deduction.
              */
-            void addDeduction( const FormulaT& _deduction )
+            void addDeduction( const FormulaT& _deduction, const DeductionType& _dt = DeductionType::NORMAL )
             {
-                mDeductions.push_back( _deduction );
+                mDeductions.push_back( std::pair<FormulaT,DeductionType>( _deduction, _dt ) );
             }
 
             /**
@@ -388,20 +425,21 @@ namespace smtrat
             void clearDeductions()
             {
                 mDeductions.clear();
+                mSplittings.clear();
+            }
+
+            /**
+             * @return A constant reference to the splitting decisions this module or its backends made.
+             */
+            const std::vector<Splitting>& splittings() const
+            {
+                return mSplittings;
             }
 
             /**
              * @return A constant reference to the deductions/lemmas being valid formulas this module or its backends made.
              */
-            const std::vector<FormulaT>& deductions() const
-            {
-                return mDeductions;
-            }
-
-            /**
-             * @return A reference to the deductions/lemmas being valid formulas this module or its backends made.
-             */
-            std::vector<FormulaT>& rDeductions()
+            const std::vector<std::pair<FormulaT,DeductionType>>& deductions() const
             {
                 return mDeductions;
             }
@@ -456,10 +494,11 @@ namespace smtrat
              * Collects the formulas in the given formula, which are part of the received formula. If the given formula directly
              * occurs in the received formula, it is inserted into the given set. Otherwise, the given formula must be of 
              * type AND and all its sub-formulas part of the received formula. Hence, they will be added to the given set.
-             * @param _origin The formula from which to collect the formulas being sub-formulas of the received formula (origins).
-             * @param _originSet The set in which to store the origins.
+             * @param _formula The formula from which to collect the formulas being sub-formulas of the received formula (origins).
+             * @param _origins The set in which to store the origins.
              */
-            void collectOrigins( const FormulaT& _origin, FormulasT& _originSet ) const;
+            void collectOrigins( const FormulaT& _formula, FormulasT& _origins ) const;
+            void collectOrigins( const FormulaT& _formula, std::vector<FormulaT>& _origins ) const;
 
             // Methods for debugging purposes.
             /**
@@ -507,7 +546,7 @@ namespace smtrat
              *               or its sub-procedure).
              * @see Module::storeAssumptionsToCheck
              */
-            static void addAssumptionToCheck( const carl::PointerSet<ConstraintT>& _constraints, bool _consistent, const std::string& _label );
+            static void addAssumptionToCheck( const ConstraintsT& _constraints, bool _consistent, const std::string& _label );
             
             /**
              * Prints the collected assumptions in the assumption vector into _filename with an appropriate smt2 
@@ -551,12 +590,12 @@ namespace smtrat
             /**
              * The module has to take the given sub-formula of the received formula into account.
              *
-             * @param _subformula The sub-formula to take additionally into account.
+             * @param The sub-formula to take additionally into account.
              * @return false, if it can be easily decided that this sub-formula causes a conflict with
              *          the already considered sub-formulas;
              *          true, otherwise.
              */
-            virtual bool addCore( ModuleInput::const_iterator _subformula )
+            virtual bool addCore( ModuleInput::const_iterator )
             {
                 return true;
             }
@@ -578,9 +617,9 @@ namespace smtrat
              * it is desired not to lose track of search spaces where no satisfying  assignment can 
              * be found for the remaining sub-formulas.
              *
-             * @param _subformula The sub formula of the received formula to remove.
+             * @param The sub formula of the received formula to remove.
              */
-            virtual void removeCore( ModuleInput::const_iterator _subformula ) {}
+            virtual void removeCore( ModuleInput::const_iterator ) {}
             
             /**
              * Checks for all antecedent modules and those which run in parallel with the same antecedent modules, 
@@ -793,7 +832,8 @@ namespace smtrat
              * Adds a deductions which provoke a branching for the given variable at the given value,
              * if this module returns Unknown and there exists a preceding SATModule. Note that the 
              * given value is rounded down and up, if the given variable is integer-valued.
-             * @param _var The variable to branch for.
+             * @param _polynomial The variable to branch for.
+             * @pparam _integral A flag being true, if all variables in the polynomial to branch for are integral.
              * @param _value The value to branch at.
              * @param _premise The sub-formulas of the received formula from which the branch is followed.
              *                 Note, that a premise is not necessary, as every branch is a valid formula.
@@ -804,17 +844,33 @@ namespace smtrat
              *                        false, otherwise.
              * @param _isolateBranchValue true, if a branching in the form of (or (= p b) (< p b) (> p b)) is desired. (Currently only supported for reals)
              */
-            void branchAt( const Poly& _polynomial, const Rational& _value, const FormulasT& = FormulasT(), bool _leftCaseWeak = true, bool _preferLeftCase = true, bool _isolateBranchValue = false );
+            void branchAt( const Poly& _polynomial, bool _integral, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak = true, bool _preferLeftCase = true );
             
-            void branchAt( carl::Variable::Arg _var, const Rational& _value, const FormulasT& _premise = FormulasT(), bool _leftCaseWeak = true, bool _preferLeftCase = true, bool _isolateBranchValue = false )
+            void branchAt( const Poly& _polynomial, bool _integral, const Rational& _value, bool _leftCaseWeak = true, bool _preferLeftCase = true, const std::vector<FormulaT>& _premise = std::vector<FormulaT>() )
             {
-                branchAt( carl::makePolynomial<Poly>( _var ), _value, _premise, _leftCaseWeak, _preferLeftCase, _isolateBranchValue );
+                branchAt( _polynomial, _integral, _value, std::move( std::vector<FormulaT>( _premise ) ), _leftCaseWeak, _preferLeftCase );
+            }
+            
+            void branchAt( carl::Variable::Arg _var, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak = true, bool _preferLeftCase = true )
+            {
+                branchAt( carl::makePolynomial<Poly>( _var ), _var.getType() == carl::VariableType::VT_INT, _value, std::move( _premise ), _leftCaseWeak, _preferLeftCase );
+            }
+            
+            void branchAt( carl::Variable::Arg _var, const Rational& _value, bool _leftCaseWeak = true, bool _preferLeftCase = true, const std::vector<FormulaT>& _premise = std::vector<FormulaT>() )
+            {
+                branchAt( carl::makePolynomial<Poly>( _var ), _var.getType() == carl::VariableType::VT_INT, _value, std::move( std::vector<FormulaT>( _premise ) ), _leftCaseWeak, _preferLeftCase );
             }
             
             template<typename P = Poly, carl::EnableIf<carl::needs_cache<P>> = carl::dummy>
-            void branchAt( const typename P::PolyType& _poly, const Rational& _value, const FormulasT& _premise = FormulasT(), bool _leftCaseWeak = true, bool _preferLeftCase = true, bool _isolateBranchValue = false )
+            void branchAt( const typename P::PolyType& _poly, bool _integral, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak = true, bool _preferLeftCase = true )
             {
-                branchAt( carl::makePolynomial<P>( _poly ), _value, _premise, _leftCaseWeak, _preferLeftCase, _isolateBranchValue );
+                branchAt( carl::makePolynomial<P>( _poly ), _integral, _value, std::move( _premise ), _leftCaseWeak, _preferLeftCase );
+            }
+            
+            template<typename P = Poly, carl::EnableIf<carl::needs_cache<P>> = carl::dummy>
+            void branchAt( const typename P::PolyType& _poly, bool _integral, const Rational& _value, bool _leftCaseWeak = true, bool _preferLeftCase = true, const std::vector<FormulaT>& _premise = std::vector<FormulaT>() )
+            {
+                branchAt( carl::makePolynomial<P>( _poly ), _integral, _value, std::move( std::vector<FormulaT>( _premise ) ), _leftCaseWeak, _preferLeftCase );
             }
             
             /**

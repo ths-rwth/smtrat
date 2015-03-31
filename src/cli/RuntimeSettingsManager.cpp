@@ -48,6 +48,7 @@ namespace smtrat
 {
 
 RuntimeSettingsManager::RuntimeSettingsManager() : 
+    mSettingObjects(),
     mDoPrintTimings( false ), 
     mPrintModel( false ),
     mPrintStatistics( false )

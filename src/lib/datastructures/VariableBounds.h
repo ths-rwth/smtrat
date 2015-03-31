@@ -277,7 +277,7 @@ namespace smtrat
                  * @param _limit
                  * @return The added bound.
                  */
-                const Bound<T>* addBound( const ConstraintT* _constraint, const carl::Variable& _var, const T& _origin );
+                const Bound<T>* addBound( const ConstraintT& _constraint, const carl::Variable& _var, const T& _origin );
                 
                 /**
                  * Updates the infimum and supremum of this variable.
@@ -377,7 +377,7 @@ namespace smtrat
         {
             public:
                 /// A map from Constraint pointers to Bound pointers.
-                typedef carl::PointerMap<ConstraintT,const Bound<T>*> ConstraintBoundMap;
+                typedef std::map<ConstraintT,const Bound<T>*> ConstraintBoundMap;
                 /// A hash-map from arithmetic variables to variables managing the bounds.
                 typedef carl::FastMap<carl::Variable, Variable<T>*>  VariableMap;
             private:
@@ -395,9 +395,9 @@ namespace smtrat
                 /// Note, that it is updated on demand.
                 mutable EvalDoubleIntervalMap mDoubleIntervalMap;
                 /// Stores the constraints which cannot be used to infer a bound for a variable.
-                carl::PointerSet<ConstraintT> mNonBoundConstraints;
+                ConstraintsT mNonBoundConstraints;
                 /// Stores deductions which this variable bounds manager has detected.
-                mutable std::unordered_set<std::vector<const ConstraintT* >> mBoundDeductions;
+                mutable std::unordered_set<std::vector<ConstraintT>> mBoundDeductions;
             public:
                 /**
                  * Constructs a variable bounds manager.
@@ -416,7 +416,7 @@ namespace smtrat
                  * @return true, if the variable bounds have been changed;
                  *          false, otherwise.
                  */
-                bool addBound( const ConstraintT* _constraint, const T& _origin );
+                bool addBound( const ConstraintT& _constraint, const T& _origin );
                 
                 /**
                  * Removes all effects the given constraint has on the variable bounds.
@@ -426,7 +426,7 @@ namespace smtrat
                  *          1, if the constraint was a (not the strictest) bound;
                  *          0, otherwise.
                  */
-                unsigned removeBound( const ConstraintT* _constraint, const T& _origin );
+                unsigned removeBound( const ConstraintT& _constraint, const T& _origin );
                 
                 /**
                  * Removes all effects the given constraint has on the variable bounds.
@@ -437,7 +437,7 @@ namespace smtrat
                  *          1, if the constraint was a (not the strictest) bound;
                  *          0, otherwise.
                  */
-                unsigned removeBound( const ConstraintT* _constraint, const T& _origin, carl::Variable*& _changedVariable );
+                unsigned removeBound( const ConstraintT& _constraint, const T& _origin, carl::Variable*& _changedVariable );
                 
                 /**
                  * Creates an evalintervalmap corresponding to the variable bounds.
@@ -486,7 +486,7 @@ namespace smtrat
                 /**
                  * @return The deductions which this variable bounds manager has detected.
                  */
-                std::vector<std::pair<std::vector< const ConstraintT* >, const ConstraintT* >> getBoundDeductions() const;
+                std::vector<std::pair<std::vector<ConstraintT>, ConstraintT>> getBoundDeductions() const;
                 
                 /**
                  * Prints the variable bounds.

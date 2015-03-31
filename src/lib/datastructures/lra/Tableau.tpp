@@ -296,7 +296,7 @@ namespace smtrat
                 }
                 case carl::Relation::NEQ:
                 {
-                    FormulaT constraintLess = FormulaT( carl::newConstraint<Poly>( constraint.lhs(), carl::Relation::LESS ) );
+                    FormulaT constraintLess = FormulaT( smtrat::ConstraintT( constraint.lhs(), carl::Relation::LESS ) );
                     Value<T1>* valueA = constraint.integerValued() ? new Value<T1>( boundValue - T1( 1 ) ) : new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
                     result = negative ? newVar->addLowerBound( valueA, mDefaultBoundPosition, constraintLess ) : newVar->addUpperBound( valueA, mDefaultBoundPosition, constraintLess );
                     std::vector< const Bound<T1,T2>* >* boundVectorLess = new std::vector< const Bound<T1,T2>* >();
@@ -307,7 +307,7 @@ namespace smtrat
                     std::vector< const Bound<T1,T2>* >* boundVectorB = new std::vector< const Bound<T1,T2>* >();
                     boundVectorB->push_back( result.first );
                     
-                    FormulaT constraintLeq = FormulaT( carl::newConstraint<Poly>( constraint.lhs(), carl::Relation::LEQ ) );
+                    FormulaT constraintLeq = FormulaT( smtrat::ConstraintT( constraint.lhs(), carl::Relation::LEQ ) );
                     Value<T1>* valueB = new Value<T1>( boundValue );
                     result = negative ? newVar->addLowerBound( valueB, mDefaultBoundPosition, constraintLeq ) : newVar->addUpperBound( valueB, mDefaultBoundPosition, constraintLeq );
                     std::vector< const Bound<T1,T2>* >* boundVectorLeq = new std::vector< const Bound<T1,T2>* >();
@@ -317,7 +317,7 @@ namespace smtrat
                     
                     boundVectorB->push_back( result.first );
                     
-                    FormulaT constraintGeq = FormulaT( carl::newConstraint<Poly>( constraint.lhs(), carl::Relation::GEQ ) );
+                    FormulaT constraintGeq = FormulaT( smtrat::ConstraintT( constraint.lhs(), carl::Relation::GEQ ) );
                     Value<T1>* valueC = new Value<T1>( boundValue );
                     result = negative ? newVar->addUpperBound( valueC, mDefaultBoundPosition, constraintGeq ) : newVar->addLowerBound( valueC, mDefaultBoundPosition, constraintGeq );
                     std::vector< const Bound<T1,T2>* >* boundVectorGeq = new std::vector< const Bound<T1,T2>* >();
@@ -327,7 +327,7 @@ namespace smtrat
                     
                     boundVectorB->push_back( result.first );
                     
-                    FormulaT constraintGreater = FormulaT( carl::newConstraint<Poly>( constraint.lhs(), carl::Relation::GREATER ) );
+                    FormulaT constraintGreater = FormulaT( smtrat::ConstraintT( constraint.lhs(), carl::Relation::GREATER ) );
                     Value<T1>* valueD = constraint.integerValued() ? new Value<T1>( boundValue + T1( 1 ) ) : new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
                     result = negative ? newVar->addUpperBound( valueD, mDefaultBoundPosition, constraintGreater ) : newVar->addLowerBound( valueD, mDefaultBoundPosition, constraintGreater );
                     std::vector< const Bound<T1,T2>* >* boundVectorGreater = new std::vector< const Bound<T1,T2>* >();
@@ -1770,7 +1770,7 @@ namespace smtrat
                             typename Poly::PolyType lhs = (*ubound)->variable().expression() - (Rational)newlimit->mainPart();
                             #endif
                             carl::Relation rel = newlimit->deltaPart() != 0 ? carl::Relation::LESS : carl::Relation::LEQ;
-                            FormulaT constraint = FormulaT( carl::newConstraint<Poly>( lhs, rel ) );
+                            FormulaT constraint = FormulaT( smtrat::ConstraintT( lhs, rel ) );
                             learnedBound.newBound = basicVar.addUpperBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                         }
                         else
@@ -1860,7 +1860,7 @@ namespace smtrat
                             typename Poly::PolyType lhs = (*lbound)->variable().expression() - (Rational)newlimit->mainPart();
                             #endif
                             carl::Relation rel = newlimit->deltaPart() != 0 ? carl::Relation::GREATER : carl::Relation::GEQ;
-                            FormulaT constraint = FormulaT( carl::newConstraint<Poly>( lhs, rel ) );
+                            FormulaT constraint = FormulaT( smtrat::ConstraintT( lhs, rel ) );
                             learnedBound.newBound = basicVar.addLowerBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                         }
                         else
@@ -1969,7 +1969,7 @@ namespace smtrat
                     #endif
                     assert( iter->second->front()->pVariable()->isBasic() ); // This makes removing lra-variables far easier and must be assured before invoking this method.
                     slackVarsToRemove.insert( iter->second->front()->pVariable() );
-                    FormulaT cons = FormulaT( carl::newConstraint<Poly>( constraint.lhs().substitute( _var, _term ), constraint.relation() ) );
+                    FormulaT cons = FormulaT( smtrat::ConstraintT( constraint.lhs().substitute( _var, _term ), constraint.relation() ) );
                     if( cons.constraint().isConsistent() == 2 )
                     {
                         #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
@@ -2105,7 +2105,7 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
-        const ConstraintT* Tableau<Settings,T1,T2>::isDefining( size_t row_index, std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, T2 lcm, T2& max_value ) const
+        ConstraintT Tableau<Settings,T1,T2>::isDefining( size_t row_index, std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, T2 lcm, T2& max_value ) const
         {
             const Variable<T1, T2>& basic_var = *mRows.at(row_index);
             basic_var.expression();
@@ -2157,8 +2157,7 @@ namespace smtrat
                 {
                     dc_poly = dc_poly - (Rational)(basic_var.infimum().limit().mainPart());
                 }
-                const ConstraintT* dc_constraint = carl::newConstraint<Poly>( dc_poly, carl::Relation::EQ );
-                return dc_constraint;
+                return smtrat::ConstraintT( dc_poly, carl::Relation::EQ );
             }
             else
             {
@@ -2179,7 +2178,7 @@ namespace smtrat
                     }                    
                 }                
             }
-            return NULL;
+            return smtrat::ConstraintT();
         }
         
         template<class Settings, typename T1, typename T2>

@@ -46,6 +46,7 @@ namespace smtrat
         bool mPrintStatistics;
     public:
         RuntimeSettingsManager();
+        virtual ~RuntimeSettingsManager() {}
         
         void addSettingsObject(const std::string& name, RuntimeSettings* settings);
         void addSettingsObject(const std::list<std::pair<std::string, RuntimeSettings*> >& settings);

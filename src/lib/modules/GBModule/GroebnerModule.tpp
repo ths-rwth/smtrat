@@ -67,9 +67,7 @@ GroebnerModule<Settings>::GroebnerModule( ModuleType _type, const ModuleInput* c
 
 template<class Settings>
 GroebnerModule<Settings>::~GroebnerModule( )
-{
-
-}
+{}
 
 /**
  * Adds the constraint to the known constraints of the module.
@@ -137,7 +135,7 @@ void GroebnerModule<Settings>::handleConstraintToGBQueue(ModuleInput::const_iter
 	GBPolynomial newPol;
     if(_formula->formula().constraint( ).relation() ==  carl::Relation::EQ)
     {
-		newPol = GBPolynomial (_formula->formula().constraint().lhs());
+		newPol = GBPolynomial ((typename Poly::PolyType)_formula->formula().constraint().lhs());
     }
     else
     {
@@ -834,9 +832,9 @@ typename Settings::Polynomial GroebnerModule<Settings>::callGroebnerToSDP( const
 template<class Settings>
 typename GroebnerModule<Settings>::GBPolynomial GroebnerModule<Settings>::transformIntoEquality( ModuleInput::const_iterator constraint )
 {
-    GBPolynomial result( constraint->formula().constraint( ).lhs( ) );
-    unsigned constrId = constraint->formula().constraint( ).id( );
-    std::map<unsigned, carl::Variable>::const_iterator mapentry = mAdditionalVarMap.find( constrId );
+    GBPolynomial result( (typename Poly::PolyType)constraint->formula().constraint( ).lhs( ) );
+    size_t constrId = constraint->formula().constraint( ).id( );
+    std::map<size_t, carl::Variable>::const_iterator mapentry = mAdditionalVarMap.find( constrId );
     carl::Variable var = carl::Variable::NO_VARIABLE;
     if( mapentry == mAdditionalVarMap.end( ) )
     {
@@ -844,7 +842,7 @@ typename GroebnerModule<Settings>::GBPolynomial GroebnerModule<Settings>::transf
         stream << "AddVarGB" << constrId;
         
         var = carl::VariablePool::getInstance().getFreshVariable( stream.str() );
-        mAdditionalVarMap.insert(std::pair<unsigned, carl::Variable>(constrId, var));
+        mAdditionalVarMap.insert(std::pair<size_t, carl::Variable>(constrId, var));
     }
     else
     {
@@ -937,7 +935,7 @@ void GroebnerModule<Settings>::passGB( )
         // We now add polynomial = 0 as a constraint to the passed formula.
         // We use the originals set calculated before as reason set.
         assert(!simplIt->isConstant());
-        auto res = addSubformulaToPassedFormula( FormulaT( smtrat::Poly(*simplIt), carl::Relation::EQ ), FormulaT( carl::FormulaType::AND, originals ) );
+        auto res = addSubformulaToPassedFormula( FormulaT( carl::makePolynomial<Poly>(typename smtrat::Poly::PolyType((*simplIt))), carl::Relation::EQ ), FormulaT( carl::FormulaType::AND, originals ) );
         if( res.second )
             mGbEqualities.insert(res.first->formula());
     }

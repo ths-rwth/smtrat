@@ -73,11 +73,11 @@ namespace smtrat
     {
         if( _subformula->formula().getType() == carl::FormulaType::CONSTRAINT )
         {
-            const ConstraintT* constraint = _subformula->formula().pConstraint();
+            const ConstraintT& constraint = _subformula->formula().constraint();
             const vs::Condition* condition = new vs::Condition( constraint, mpConditionIdAllocator->get() );
             mFormulaConditionMap[_subformula->formula()] = condition;
-            assert( constraint->isConsistent() == 2 );
-            for( auto var = constraint->variables().begin(); var != constraint->variables().end(); ++var )
+            assert( constraint.isConsistent() == 2 );
+            for( auto var = constraint.variables().begin(); var != constraint.variables().end(); ++var )
                 mAllVariables.insert( *var );
             if( Settings::incremental_solving )
             {
@@ -89,14 +89,14 @@ namespace smtrat
                 DisjunctionOfConditionConjunctions subResult;
 
                 if( Settings::int_constraints_allowed && Settings::split_neq_constraints
-                    && constraint->hasIntegerValuedVariable() && !constraint->hasRealValuedVariable()
-                    && constraint->relation() == carl::Relation::NEQ )
+                    && constraint.hasIntegerValuedVariable() && !constraint.hasRealValuedVariable()
+                    && constraint.relation() == carl::Relation::NEQ )
                 {
                     ConditionList condVectorA;
-                    condVectorA.push_back( new vs::Condition( carl::newConstraint<Poly>( constraint->lhs(), carl::Relation::LESS ), mpConditionIdAllocator->get(), 0, false, oConds ) );
+                    condVectorA.push_back( new vs::Condition( ConstraintT( constraint.lhs(), carl::Relation::LESS ), mpConditionIdAllocator->get(), 0, false, oConds ) );
                     subResult.push_back( condVectorA );
                     ConditionList condVectorB;
-                    condVectorB.push_back( new vs::Condition( carl::newConstraint<Poly>( constraint->lhs(), carl::Relation::GREATER ), mpConditionIdAllocator->get(), 0, false, oConds ) );
+                    condVectorB.push_back( new vs::Condition( ConstraintT( constraint.lhs(), carl::Relation::GREATER ), mpConditionIdAllocator->get(), 0, false, oConds ) );
                     subResult.push_back( condVectorB );
                 }
                 else
@@ -106,7 +106,7 @@ namespace smtrat
                     subResult.push_back( condVector );
                 }
                 subResults.push_back( subResult );
-                mpStateTree->addSubstitutionResults( subResults );
+                mpStateTree->addSubstitutionResults( std::move(subResults) );
                 addStateToRanking( mpStateTree );
                 insertTooHighDegreeStatesInRanking( mpStateTree );
             }
@@ -171,13 +171,11 @@ namespace smtrat
             {
                 carl::PointerSet<vs::Condition> oConds;
                 oConds.insert( iter->second );
-                std::vector<DisjunctionOfConditionConjunctions> subResults = std::vector<DisjunctionOfConditionConjunctions>();
-                DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
-                ConditionList condVector;
-                condVector.push_back( new vs::Condition( iter->first.pConstraint(), mpConditionIdAllocator->get(), 0, false, oConds ) );
-                subResult.push_back( condVector );
-                subResults.push_back( subResult );
-                mpStateTree->addSubstitutionResults( subResults );
+                std::vector<DisjunctionOfConditionConjunctions> subResults;
+                subResults.emplace_back();
+                subResults.back().emplace_back();
+                subResults.back().back().push_back( new vs::Condition( iter->first.constraint(), mpConditionIdAllocator->get(), 0, false, oConds ) );
+                mpStateTree->addSubstitutionResults( std::move(subResults) );
             }
             addStateToRanking( mpStateTree );
         }
@@ -236,7 +234,7 @@ namespace smtrat
         {
             if( !mpStateTree->variableBounds().isConflicting() )
             {
-                std::vector<pair<vector<const ConstraintT*>, const ConstraintT*>> bDeds = mpStateTree->variableBounds().getBoundDeductions();
+                std::vector<pair<vector<ConstraintT>, ConstraintT>> bDeds = mpStateTree->variableBounds().getBoundDeductions();
                 for( auto bDed = bDeds.begin(); bDed != bDeds.end(); ++bDed )
                 {
                     FormulasT subformulas;
@@ -318,7 +316,7 @@ namespace smtrat
 //                        && (*cond)->constraint().relation() == carl::Relation::NEQ )
 //                    {
 //                        // Split the neq-constraint in a preceeding sat module (make sure that it is there in your strategy when choosing this vssetting)
-//                        splitUnequalConstraint( FormulaT( (*cond)->pConstraint() ) );
+//                        splitUnequalConstraint( FormulaT( (*cond)->constraint() ) );
 //                        assert( currentState->isRoot() );
 //                        return Unknown;
 //                    }
@@ -489,7 +487,7 @@ namespace smtrat
                                                     carl::PointerSet<vs::Condition> oConditions;
                                                     for( auto cond : currentState->conditions() )
                                                         oConditions.insert( cond );
-                                                    Substitution sub = Substitution( currentState->index(), Substitution::MINUS_INFINITY, oConditions );
+                                                    Substitution sub = Substitution( currentState->index(), Substitution::MINUS_INFINITY, std::move(oConditions) );
                                                     std::vector<State*> addedChildren = currentState->addChild( sub );
                                                     if( !addedChildren.empty() )
                                                     {
@@ -785,7 +783,7 @@ namespace smtrat
     void VSModule<Settings>::eliminate( State* _currentState, const carl::Variable& _eliminationVar, const vs::Condition* _condition )
     {
         // Get the constraint of this condition.
-        const ConstraintT* constraint = (*_condition).pConstraint();
+        const ConstraintT& constraint = (*_condition).constraint();
         assert( _condition->constraint().hasVariable( _eliminationVar ) );
         bool generatedTestCandidateBeingASolution = false;
         unsigned numberOfAddedChildren = 0;
@@ -809,10 +807,10 @@ namespace smtrat
             bool weakConstraint = (relation == carl::Relation::EQ || relation == carl::Relation::LEQ || relation == carl::Relation::GEQ);
             Substitution::Type subType = weakConstraint ? Substitution::NORMAL : Substitution::PLUS_EPSILON;
             std::vector< Poly > factors = std::vector< Poly >();
-            carl::PointerSet<ConstraintT> sideConditions;
-            if( Settings::elimination_with_factorization && constraint->hasFactorization() )
+            ConstraintsT sideConditions;
+            if( Settings::elimination_with_factorization && constraint.hasFactorization() )
             {
-                for( auto iter = constraint->factorization().begin(); iter != constraint->factorization().end(); ++iter )
+                for( auto iter = constraint.factorization().begin(); iter != constraint.factorization().end(); ++iter )
                 {
                     carl::Variables factorVars;
                     iter->first.gatherVariables( factorVars );
@@ -820,17 +818,17 @@ namespace smtrat
                         factors.push_back( iter->first );
                     else
                     {
-                        const smtrat::ConstraintT* cons = carl::newConstraint<Poly>( iter->first, carl::Relation::NEQ );
-                        if( cons != carl::constraintPool<Poly>().consistentConstraint() )
+                        ConstraintT cons = ConstraintT( iter->first, carl::Relation::NEQ );
+                        if( cons != ConstraintT( true ) )
                         {
-                            assert( cons != carl::constraintPool<Poly>().inconsistentConstraint() );
+                            assert( cons != ConstraintT( false ) );
                             sideConditions.insert( cons );
                         }
                     }
                 }
             }
             else
-                factors.push_back( constraint->lhs() );
+                factors.push_back( constraint.lhs() );
             for( auto factor = factors.begin(); factor != factors.end(); ++factor )
             {
                 #ifdef VS_DEBUG
@@ -854,19 +852,19 @@ namespace smtrat
                         auto iter = coeffs.find( 0 );
                         if( iter != coeffs.end() ) constantCoeff = iter->second;
                         // Create state ({b!=0} + oldConditions, [x -> -c/b]):
-                        const smtrat::ConstraintT* cons = carl::newConstraint<Poly>( coeffs.rbegin()->second, carl::Relation::NEQ );
-                        if( cons == carl::constraintPool<Poly>().inconsistentConstraint() )
+                        ConstraintT cons = ConstraintT( coeffs.rbegin()->second, carl::Relation::NEQ );
+                        if( cons == ConstraintT( false ) )
                         {
                             if( relation == carl::Relation::EQ )
                                 generatedTestCandidateBeingASolution = sideConditions.empty();
                         }
                         else
                         {
-                            carl::PointerSet<ConstraintT> sideCond = sideConditions;
-                            if( cons != carl::constraintPool<Poly>().consistentConstraint() )
+                            ConstraintsT sideCond = sideConditions;
+                            if( cons != ConstraintT( true ) )
                                 sideCond.insert( cons );
                             SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, coeffs.rbegin()->second, ZERO_POLYNOMIAL );
-                            Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
+                            Substitution sub = Substitution( _eliminationVar, sqEx, subType, std::move(carl::PointerSet<vs::Condition>(oConditions)), std::move(sideCond) );
                             std::vector<State*> addedChildren = _currentState->addChild( sub );
                             if( !addedChildren.empty() )
                             {
@@ -900,20 +898,20 @@ namespace smtrat
                         if( iter != coeffs.end() ) linearCoeff = iter->second;
                         Poly radicand = linearCoeff.pow( 2 ) - Rational( 4 ) * coeffs.rbegin()->second * constantCoeff;
                         bool constraintHasZeros = false;
-                        const smtrat::ConstraintT* cons11 = carl::newConstraint<Poly>( coeffs.rbegin()->second, carl::Relation::EQ );
-                        if( cons11 != carl::constraintPool<Poly>().inconsistentConstraint() )
+                        ConstraintT cons11 = ConstraintT( coeffs.rbegin()->second, carl::Relation::EQ );
+                        if( cons11 != ConstraintT( false ) )
                         {
                             // Create state ({a==0, b!=0} + oldConditions, [x -> -c/b]):
-                            const smtrat::ConstraintT* cons12 = carl::newConstraint<Poly>( linearCoeff, carl::Relation::NEQ );
-                            if( cons12 != carl::constraintPool<Poly>().inconsistentConstraint() )
+                            ConstraintT cons12 = ConstraintT( linearCoeff, carl::Relation::NEQ );
+                            if( cons12 != ConstraintT( false ) )
                             {
-                                carl::PointerSet<ConstraintT> sideCond = sideConditions;
-                                if( cons11 != carl::constraintPool<Poly>().consistentConstraint() )
+                                ConstraintsT sideCond = sideConditions;
+                                if( cons11 != ConstraintT( true ) )
                                     sideCond.insert( cons11 );
-                                if( cons12 != carl::constraintPool<Poly>().consistentConstraint() )
+                                if( cons12 != ConstraintT( true ) )
                                     sideCond.insert( cons12 );
                                 SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, linearCoeff, ZERO_POLYNOMIAL );
-                                Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
+                                Substitution sub = Substitution( _eliminationVar, sqEx, subType, std::move(carl::PointerSet<vs::Condition>(oConditions)), std::move(sideCond) );
                                 std::vector<State*> addedChildren = _currentState->addChild( sub );
                                 if( !addedChildren.empty() )
                                 {
@@ -936,20 +934,20 @@ namespace smtrat
                                 constraintHasZeros = true;
                             }
                         }
-                        const smtrat::ConstraintT* cons21 = carl::newConstraint<Poly>( radicand, carl::Relation::GEQ );
-                        if( cons21 != carl::constraintPool<Poly>().inconsistentConstraint() )
+                        ConstraintT cons21 = ConstraintT( radicand, carl::Relation::GEQ );
+                        if( cons21 != ConstraintT( false ) )
                         {
-                            const smtrat::ConstraintT* cons22 = carl::newConstraint<Poly>( coeffs.rbegin()->second, carl::Relation::NEQ );
-                            if( cons22 != carl::constraintPool<Poly>().inconsistentConstraint() )
+                            ConstraintT cons22 = ConstraintT( coeffs.rbegin()->second, carl::Relation::NEQ );
+                            if( cons22 != ConstraintT( false ) )
                             {
-                                carl::PointerSet<ConstraintT> sideCond = sideConditions;
-                                if( cons21 != carl::constraintPool<Poly>().consistentConstraint() )
+                                ConstraintsT sideCond = sideConditions;
+                                if( cons21 != ConstraintT( true ) )
                                     sideCond.insert( cons21 );
-                                if( cons22 != carl::constraintPool<Poly>().consistentConstraint() )
+                                if( cons22 != ConstraintT( true ) )
                                     sideCond.insert( cons22 );
                                 // Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b+sqrt(b^2-4ac))/2a]):
                                 SqrtEx sqExA = SqrtEx( -linearCoeff, ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
-                                Substitution subA = Substitution( _eliminationVar, sqExA, subType, oConditions, sideCond );
+                                Substitution subA = Substitution( _eliminationVar, sqExA, subType, std::move(carl::PointerSet<vs::Condition>(oConditions)), std::move(ConstraintsT(sideCond)) );
                                 std::vector<State*> addedChildrenA = _currentState->addChild( subA );
                                 if( !addedChildrenA.empty() )
                                 {
@@ -971,7 +969,7 @@ namespace smtrat
                                 }
                                 // Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b-sqrt(b^2-4ac))/2a]):
                                 SqrtEx sqExB = SqrtEx( -linearCoeff, MINUS_ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
-                                Substitution subB = Substitution( _eliminationVar, sqExB, subType, oConditions, sideCond );
+                                Substitution subB = Substitution( _eliminationVar, sqExB, subType, std::move(carl::PointerSet<vs::Condition>(oConditions)), std::move(sideCond) );
                                 std::vector<State*> addedChildrenB = _currentState->addChild( subB );
                                 if( !addedChildrenB.empty() )
                                 {
@@ -1014,7 +1012,7 @@ namespace smtrat
             if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
             {
                 // Create state ( Conditions, [x -> -infinity]):
-                Substitution sub = Substitution( _eliminationVar, Substitution::MINUS_INFINITY, oConditions );
+                Substitution sub = Substitution( _eliminationVar, Substitution::MINUS_INFINITY, std::move(carl::PointerSet<vs::Condition>(oConditions)) );
                 std::vector<State*> addedChildren = _currentState->addChild( sub );
                 if( !addedChildren.empty() )
                 {
@@ -1036,7 +1034,7 @@ namespace smtrat
             if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
             {
                 // Create state ( Conditions, [x -> -infinity]):
-                Substitution sub = Substitution( _eliminationVar, Substitution::PLUS_INFINITY, oConditions );
+                Substitution sub = Substitution( _eliminationVar, Substitution::PLUS_INFINITY, std::move(carl::PointerSet<vs::Condition>(oConditions)) );
                 std::vector<State*> addedChildren = _currentState->addChild( sub );
                 if( !addedChildren.empty() )
                 {
@@ -1075,7 +1073,7 @@ namespace smtrat
                 carl::PointerSet<vs::Condition> condSet;
                 condSet.insert( _condition );
                 conflictSet.insert( condSet );
-                _currentState->addConflicts( NULL, conflictSet );
+                _currentState->addConflicts( NULL, std::move(conflictSet) );
                 _currentState->rInconsistent() = true;
             }
         }
@@ -1113,10 +1111,10 @@ namespace smtrat
         for( auto cond = _conditions.begin(); cond != _conditions.end(); ++cond )
         {
             // The constraint to substitute in.
-            const ConstraintT* currentConstraint = (**cond).pConstraint();
+            const ConstraintT& currentConstraint = (**cond).constraint();
             // Does the condition contain the variable to substitute.
-            auto var = currentConstraint->variables().find( substitutionVariable );
-            if( var == currentConstraint->variables().end() )
+            auto var = currentConstraint.variables().find( substitutionVariable );
+            if( var == currentConstraint.variables().end() )
             {
                 if( !anySubstitutionFailed )
                 {
@@ -1167,7 +1165,7 @@ namespace smtrat
         bool cleanResultsOfThisMethod = false;
         if( anySubstitutionFailed )
         {
-            _currentState->rFather().addConflicts( _currentState->pSubstitution(), conflictSet );
+            _currentState->rFather().addConflicts( _currentState->pSubstitution(), std::move(conflictSet) );
             _currentState->rInconsistent() = true;
             while( !_currentState->rConflictSets().empty() )
             {
@@ -1192,7 +1190,7 @@ namespace smtrat
                 const vs::Condition* pCond = _currentState->rConditions().back();
                 _currentState->rConditions().pop_back();
                 #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                _currentState->rVariableBounds().removeBound( pCond->pConstraint(), pCond );
+                _currentState->rVariableBounds().removeBound( pCond->constraint(), pCond );
                 #endif
                 mpConditionIdAllocator->free( pCond->getId() );
                 delete pCond;
@@ -1207,9 +1205,9 @@ namespace smtrat
                 if( allSubstitutionsApplied )
                 {
                     removeStatesFromRanking( *_currentState );
-                    allSubResults.push_back( DisjunctionOfConditionConjunctions() );
+                    allSubResults.emplace_back();
                     allSubResults.back().push_back( oldConditions );
-                    _currentState->addSubstitutionResults( allSubResults );
+                    _currentState->addSubstitutionResults( std::move(allSubResults) );
                     #ifdef VS_MODULE_VERBOSE_INTEGERS
                     _currentState->printSubstitutionResults( string( _currentState->treeDepth()*3, ' '), cout );
                     #endif
@@ -1232,7 +1230,7 @@ namespace smtrat
                         const vs::Condition* pCond = _currentState->rConditions().back();
                         _currentState->rConditions().pop_back();
                         #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                        _currentState->rVariableBounds().removeBound( pCond->pConstraint(), pCond );
+                        _currentState->rVariableBounds().removeBound( pCond->constraint(), pCond );
                         #endif
                         mpConditionIdAllocator->free( pCond->getId() );
                         delete pCond;
@@ -1504,7 +1502,6 @@ namespace smtrat
         // Get the sub-formulas in the received formula corresponding to these original conditions.
         for( auto oCond = conds.begin(); oCond != conds.end(); ++oCond )
         {
-            assert( (*oCond)->pConstraint() != NULL );
             assert( (*oCond)->originalConditions().empty() );
             auto receivedConstraint = rReceivedFormula().begin();
             while( receivedConstraint != rReceivedFormula().end() )
@@ -1518,6 +1515,44 @@ namespace smtrat
             }
             assert( receivedConstraint != rReceivedFormula().end() );
             result.insert( receivedConstraint->formula() );
+        }
+        return result;
+    }
+
+    template<class Settings>
+    std::vector<FormulaT> VSModule<Settings>::getReasonsAsVector( const carl::PointerSet<vs::Condition>& _conditions ) const
+    {
+        std::vector<FormulaT> result;
+        if( _conditions.empty() ) return result;
+        // Get the original conditions of the root of the root state leading to the given set of conditions.
+        carl::PointerSet<vs::Condition> conds = _conditions;
+        carl::PointerSet<vs::Condition> oConds;
+        while( !(*conds.begin())->originalConditions().empty() )
+        {
+            for( auto cond = conds.begin(); cond != conds.end(); ++cond )
+            {
+                assert( !(*cond)->originalConditions().empty() );
+                oConds.insert( (*cond)->originalConditions().begin(), (*cond)->originalConditions().end() );
+            }
+            conds.clear();
+            conds.swap( oConds );
+        }
+        // Get the sub-formulas in the received formula corresponding to these original conditions.
+        for( auto oCond = conds.begin(); oCond != conds.end(); ++oCond )
+        {
+            assert( (*oCond)->originalConditions().empty() );
+            auto receivedConstraint = rReceivedFormula().begin();
+            while( receivedConstraint != rReceivedFormula().end() )
+            {
+                if( receivedConstraint->formula().getType() == carl::FormulaType::CONSTRAINT )
+                {
+                    if( (**oCond).constraint() == receivedConstraint->formula().constraint() )
+                        break;
+                }
+                ++receivedConstraint;
+            }
+            assert( receivedConstraint != rReceivedFormula().end() );
+            result.push_back( receivedConstraint->formula() );
         }
         return result;
     }
@@ -1623,7 +1658,7 @@ namespace smtrat
                         Rational nextIntTCinRange;
                         if( currentState->getNextIntTestCandidate( nextIntTCinRange, Settings::int_max_range ) )
                         {
-                            branchAt( currentState->substitution().variable(), nextIntTCinRange, getReasons( currentState->substitution().originalConditions() ) );
+                            branchAt( currentState->substitution().variable(), nextIntTCinRange, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
                         }
                         else
                         {
@@ -1653,7 +1688,7 @@ namespace smtrat
                                 {
                                     Poly branchEx = ((subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * Rational(Rational(1) / g));
                                     Rational branchValue = subPolyPartiallySubstituted.constantPart() * (1 / g);
-                                    branchAt( branchEx, branchValue, getReasons( currentState->substitution().originalConditions() ) );
+                                    branchAt( branchEx, true, branchValue, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
                                     return false;
                                 }
                             }
@@ -1674,7 +1709,7 @@ namespace smtrat
                         {
                             if( Settings::branch_and_bound )
                             {
-                                branchAt( currentState->substitution().variable(), evaluatedSubTerm, getReasons( currentState->substitution().originalConditions() ) );
+                                branchAt( currentState->substitution().variable(), evaluatedSubTerm, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
                             }
                             else
                             {
@@ -1683,7 +1718,7 @@ namespace smtrat
                                 State* toRemove = mRanking.begin()->second;
                                 const Substitution& currSub = currentState->substitution();
                                 SqrtEx t = SqrtEx( Poly( carl::floor( evaluatedSubTerm ) + Rational(1) ) );
-                                Substitution newSub = Substitution( currSub.variable(), t, Substitution::Type::NORMAL, currSub.originalConditions() );
+                                Substitution newSub = Substitution( currSub.variable(), t, Substitution::Type::NORMAL, std::move(carl::PointerSet<vs::Condition>(currSub.originalConditions())) );
                                 std::vector<State*> addedChildren = currentState->rFather().addChild( newSub );
                                 if( !addedChildren.empty() )
                                 {
@@ -1802,35 +1837,35 @@ namespace smtrat
         if( _state.conditions().empty() ) return false;
         bool changedPassedFormula = false;
         // Collect the constraints to check.
-        carl::PointerMap<ConstraintT,const vs::Condition*> constraintsToCheck;
+        std::map<ConstraintT,const vs::Condition*> constraintsToCheck;
         for( auto cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
         {
             // Optimization: If the zeros of the polynomial in a weak inequality have already been checked pass the strict version.
             if( _state.allTestCandidatesInvalidated( *cond ) )
             {
-                const ConstraintT* constraint = (*cond)->pConstraint();
-                switch( constraint->relation() )
+                const ConstraintT& constraint = (*cond)->constraint();
+                switch( constraint.relation() )
                 {
                     case carl::Relation::GEQ:
                     {
-                        const ConstraintT* strictVersion = carl::newConstraint<Poly>( constraint->lhs(), carl::Relation::GREATER );
-                        constraintsToCheck.insert( std::pair< const ConstraintT*, const vs::Condition*>( strictVersion, *cond ) );
+                        ConstraintT strictVersion = ConstraintT( constraint.lhs(), carl::Relation::GREATER );
+                        constraintsToCheck.insert( std::pair< ConstraintT, const vs::Condition*>( strictVersion, *cond ) );
                         break;
                     }
                     case carl::Relation::LEQ:
                     {
-                        const ConstraintT* strictVersion = carl::newConstraint<Poly>( constraint->lhs(), carl::Relation::LESS );
-                        constraintsToCheck.insert( std::pair< const ConstraintT*, const vs::Condition*>( strictVersion, *cond ) );
+                        ConstraintT strictVersion = ConstraintT( constraint.lhs(), carl::Relation::LESS );
+                        constraintsToCheck.insert( std::pair< ConstraintT, const vs::Condition*>( strictVersion, *cond ) );
                         break;
                     }
                     default:
                     {
-                        constraintsToCheck.insert( std::pair< const ConstraintT*, const vs::Condition*>( constraint, *cond ) );
+                        constraintsToCheck.insert( std::pair< ConstraintT, const vs::Condition*>( constraint, *cond ) );
                     }
                 }
             }
             else
-                constraintsToCheck.insert( std::pair< const ConstraintT*, const vs::Condition*>( (*cond)->pConstraint(), *cond ) );
+                constraintsToCheck.insert( std::pair< ConstraintT, const vs::Condition*>( (*cond)->constraint(), *cond ) );
         }
         /*
          * Remove the constraints from the constraints to check, which are already in the passed formula
@@ -1840,7 +1875,7 @@ namespace smtrat
         auto subformula = passedFormulaBegin();
         while( subformula != rPassedFormula().end() )
         {
-            auto iter = constraintsToCheck.find( subformula->formula().pConstraint() );
+            auto iter = constraintsToCheck.find( subformula->formula().constraint() );
             if( iter != constraintsToCheck.end() )
             {
                 _formulaCondMap[subformula->formula()] = iter->second;
@@ -1917,9 +1952,9 @@ namespace smtrat
                             #ifdef SMTRAT_DEVOPTION_Validation
                             if( validationSettings->logTCalls() )
                             {
-                                carl::PointerSet<smtrat::ConstraintT> constraints;
+                                smtrat::ConstraintsT constraints;
                                 for( auto cond = conflict.begin(); cond != conflict.end(); ++cond )
-                                    constraints.insert( (**cond).pConstraint() );
+                                    constraints.insert( (**cond).constraint() );
                                 smtrat::Module::addAssumptionToCheck( constraints, false, moduleName( (*backend)->type() ) + "_infeasible_subset" );
                             }
                             #endif
@@ -1931,7 +1966,7 @@ namespace smtrat
                     }
                 }
                 assert( !conflictSet.empty() );
-                _state->addConflictSet( NULL, conflictSet );
+                _state->addConflictSet( NULL, std::move(conflictSet) );
                 removeStatesFromRanking( *_state );
 
                 #ifdef VS_LOG_INTERMEDIATE_STEPS
@@ -1986,16 +2021,16 @@ namespace smtrat
     {
         if( !_state.conditions().empty() )
         {
-            carl::PointerSet<smtrat::ConstraintT> constraints;
+            smtrat::ConstraintsT constraints;
             for( auto cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
-                constraints.insert( (**cond).pConstraint() );
+                constraints.insert( (**cond).constraint() );
             if( _logAsDeduction )
                 smtrat::Module::addAssumptionToCheck( constraints, _assumption, _description );
             else
             {
                 std::string assumption = "(assert (and";
                 for( auto constraint = constraints.begin(); constraint != constraints.end(); ++constraint )
-                    assumption += " " + (*constraint)->toString( 1, false, true );
+                    assumption += " " + constraint->toString( 1, false, true );
                 assumption += " " + _description;
                 assumption += "))";
                 std::cout << assumption << std::endl;

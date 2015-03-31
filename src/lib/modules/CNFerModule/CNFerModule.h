@@ -52,16 +52,6 @@ namespace smtrat
             // Interfaces.
             
             /**
-             * The module has to take the given sub-formula of the received formula into account.
-             *
-             * @param _subformula The sub-formula to take additionally into account.
-             * @return false, if it can be easily decided that this sub-formula causes a conflict with
-             *          the already considered sub-formulas;
-             *          true, otherwise.
-             */
-            bool addCore( ModuleInput::const_iterator _subformula );
-            
-            /**
              * Checks the received formula for consistency.
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
              * @return True,    if the received formula is satisfiable;
@@ -69,13 +59,6 @@ namespace smtrat
              *         Unknown, otherwise.
              */
             Answer checkCore( bool _full );
-            
-            /**
-             * Removes everything related to the given sub-formula of the received formula.
-             *
-             * @param _subformula The sub formula of the received formula to remove.
-             */
-            void removeCore( ModuleInput::const_iterator _subformula );
     };
 
 }    // namespace smtrat

@@ -30,13 +30,13 @@ using namespace std;
 
 namespace vs
 {
-    Substitution::Substitution( const carl::Variable& _variable, const Type& _type, const carl::PointerSet<Condition>& _oConditions, const carl::PointerSet<smtrat::ConstraintT>& _sideCondition ):
+    Substitution::Substitution( const carl::Variable& _variable, const Type& _type, carl::PointerSet<Condition>&& _oConditions, smtrat::ConstraintsT&& _sideCondition ):
         mVariable( _variable ),
         mpTerm( new SqrtEx() ),
         mType( _type ),
         mpTermVariables( NULL ),
-        mpOriginalConditions( new carl::PointerSet<Condition>( _oConditions ) ),
-        mSideCondition( _sideCondition )
+        mOriginalConditions( std::move( _oConditions ) ),
+        mSideCondition( std::move(_sideCondition) )
     {
         if( mType == PLUS_EPSILON && mVariable.getType() == carl::VariableType::VT_INT )
         {
@@ -45,13 +45,13 @@ namespace vs
         }
     }
 
-    Substitution::Substitution( const carl::Variable& _variable, const SqrtEx& _term, const Type& _type, const carl::PointerSet<Condition>& _oConditions, const carl::PointerSet<smtrat::ConstraintT>& _sideCondition ):
+    Substitution::Substitution( const carl::Variable& _variable, const SqrtEx& _term, const Type& _type, carl::PointerSet<Condition>&& _oConditions, smtrat::ConstraintsT&& _sideCondition ):
         mVariable( _variable ),
         mpTerm( new SqrtEx( _term ) ),
         mType( _type ),
         mpTermVariables( NULL ),
-        mpOriginalConditions( new carl::PointerSet<Condition>( _oConditions ) ),
-        mSideCondition( _sideCondition )
+        mOriginalConditions( std::move( _oConditions ) ),
+        mSideCondition( std::move( _sideCondition ) )
     {
         if( mType == PLUS_EPSILON && mVariable.getType() == carl::VariableType::VT_INT )
         {
@@ -65,7 +65,7 @@ namespace vs
         mpTerm( new SqrtEx( _sub.term() ) ),
         mType( _sub.type() ),
         mpTermVariables( _sub.mpTermVariables == NULL ? NULL : new carl::Variables( *_sub.mpTermVariables ) ),
-        mpOriginalConditions( new carl::PointerSet<Condition>( _sub.originalConditions() ) ),
+        mOriginalConditions( _sub.originalConditions() ),
         mSideCondition( _sub.sideCondition() )
     {}
 
@@ -74,7 +74,6 @@ namespace vs
         if( mpTermVariables != NULL )
             delete mpTermVariables;
         delete mpTerm;
-        delete mpOriginalConditions;
     }
 
     unsigned Substitution::valuate( bool _preferMinusInf ) const
@@ -182,51 +181,6 @@ namespace vs
             return false;
     }
 
-//    bool Substitution::operator<( const Substitution& _substitution ) const
-//    {
-//        if( variable() < _substitution.variable() )
-//            return true;
-//        else if( variable() == _substitution.variable() )
-//        {
-//            if( type() < _substitution.type() )
-//                return true;
-//            else if( type() == _substitution.type() )
-//            {
-//                if( term().constantPart() < _substitution.term().constantPart() )
-//                    return true;
-//                else if( term().constantPart() == _substitution.term().constantPart() )
-//                {
-//                    if( term().factor() < _substitution.term().factor() )
-//                        return true;
-//                    else if( term().factor() == _substitution.term().factor() )
-//                    {
-//                        if( term().radicand() < _substitution.term().radicand() )
-//                            return true;
-//                        else if( term().radicand() == _substitution.term().radicand() )
-//                        {
-//                            if( term().denominator() < _substitution.term().denominator() )
-//                                return true;
-//                            else if( sideCondition() < _substitution.sideCondition() )
-//                                return true;
-//                            else
-//                                return false;
-//                        }
-//                        else
-//                            return false;
-//                    }
-//                    else
-//                        return false;
-//                }
-//                else
-//                    return false;
-//            }
-//            else
-//                return false;
-//        }
-//        else
-//            return false;
-//    }
-
     ostream& operator<<( ostream& _ostream, const Substitution& _substitution )
     {
         return (_ostream << _substitution.toString( true ));
@@ -237,7 +191,6 @@ namespace vs
         stringstream o;
         o << mVariable;
         string result = "[" + o.str() + " -> ";
-//        string result = "[" + smtrat::Formula::constraintPool().getVariableName( mVariable, _friendlyNames ) + " -> ";
         switch( type() )
         {
             case NORMAL:
@@ -277,7 +230,7 @@ namespace vs
             {
                 if( sCons != sideCondition().begin() )
                     _out << " and ";
-                _out << (*sCons)->toString( 0, true, true );
+                _out << sCons->toString( 0, true, true );
             }
         }
         _out << endl;

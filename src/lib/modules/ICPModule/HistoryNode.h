@@ -44,19 +44,6 @@ namespace smtrat
         {
             public:
 
-                /**
-                * Typedefs & operators:
-                */
-                struct comp
-                {
-                    bool operator ()( const HistoryNode* lhs, const HistoryNode* rhs ) const
-                    {
-                        return lhs->id() < rhs->id();
-                    }
-                };
-                
-                typedef std::set<const HistoryNode*, comp> set_HistoryNode;
-
             private:
 
                 /**
@@ -64,16 +51,11 @@ namespace smtrat
                  */
 
                 EvalDoubleIntervalMap                          mIntervals;    // intervals AFTER contraction with Candidates of the incoming edge has been applied
-                const ConstraintT*                              mSplit;
-                std::map<carl::Variable, std::set<const ConstraintT*> >  mReasons;
-                std::map<carl::Variable, set_icpVariable>         mVariableReasons;
-                HistoryNode*                                   mLeftChild;
-                HistoryNode*                                   mRightChild;
-                HistoryNode*                                   mParent;
+                std::map<carl::Variable, std::set<ConstraintT> >  mReasons;
+                std::map<carl::Variable, set_icpVariable>      mVariableReasons;
                 std::set<const ContractionCandidate*>          mAppliedContractions;
-                std::set<const ConstraintT*>                                  mStateInfeasibleConstraints;
+                std::set<ConstraintT>                          mStateInfeasibleConstraints;
                 set_icpVariable                                mStateInfeasibleVariables;
-                const unsigned                                 mId;
                 
 
             public:
@@ -82,99 +64,30 @@ namespace smtrat
                  *  Methods
                  */
 
-                HistoryNode( HistoryNode* _parent, unsigned _id ):
+                HistoryNode():
                     mIntervals(),
-                    mSplit( NULL ),
                     mReasons(),
                     mVariableReasons(),
-                    mLeftChild( NULL ),
-                    mRightChild( NULL ),
-                    mParent( _parent ),
                     mAppliedContractions(),
                     mStateInfeasibleConstraints(),
-                    mStateInfeasibleVariables(),
-                    mId( _id )
+                    mStateInfeasibleVariables()
                 {}
 
-                HistoryNode( const EvalDoubleIntervalMap& _intervals, unsigned _id ):
+                HistoryNode( const EvalDoubleIntervalMap& _intervals):
                     mIntervals( _intervals ),
-                    mSplit( NULL ),
                     mReasons(),
                     mVariableReasons(),
-                    mLeftChild( NULL ),
-                    mRightChild( NULL ),
-                    mParent( NULL ),
                     mAppliedContractions(),
                     mStateInfeasibleConstraints(),
-                    mStateInfeasibleVariables(),
-                    mId( _id )
-                {}
-
-                HistoryNode( HistoryNode* _parent, const EvalDoubleIntervalMap& _intervals, unsigned _id ):
-                    mIntervals( _intervals ),
-                    mSplit( NULL ),
-                    mReasons(),
-                    mVariableReasons(),
-                    mLeftChild( NULL ),
-                    mRightChild( NULL ),
-                    mParent( _parent ),
-                    mAppliedContractions(),
-                    mStateInfeasibleConstraints(),
-                    mStateInfeasibleVariables(),
-                    mId( _id )
+                    mStateInfeasibleVariables()
                 {}
 
                 ~HistoryNode()
-                {
-                    if(mLeftChild != NULL)
-                        delete mLeftChild;
-                    if(mRightChild != NULL)
-                        delete mRightChild;
-                }
+                {}
 
                 /**
                  * Getters and Setters
                  */
-
-                HistoryNode* left() const
-                {
-                    return mLeftChild;
-                }
-
-                HistoryNode* right() const
-                {
-                    return mRightChild;
-                }
-
-                HistoryNode* addLeft( HistoryNode* _child )
-                {
-                    mLeftChild = _child;
-                    _child->setParent( this );
-                    return _child;
-                }
-
-                HistoryNode* addRight( HistoryNode* _child )
-                {
-                    mRightChild = _child;
-                    _child->setParent( this );
-                    return _child;
-                }
-                
-                HistoryNode* parent() const
-                {
-                    return mParent;
-                }
-
-                void setParent( HistoryNode* _parent )
-                {
-                    this->mParent = _parent;
-                }
-                
-                carl::Variable::Arg variable() const
-                {
-                    assert( mSplit != NULL );
-                    return (*mSplit->variables().begin());
-                }
 
                 const EvalDoubleIntervalMap& intervals() const
                 {
@@ -238,11 +151,6 @@ namespace smtrat
                     return false;
                 }
                 
-                std::set<const ContractionCandidate*>& rAppliedContractions()
-                {
-                    return mAppliedContractions;
-                }
-                
                 std::set<const ContractionCandidate*> appliedContractions()
                 {
                     return mAppliedContractions;
@@ -260,13 +168,24 @@ namespace smtrat
                     }
                     return appliedConstraints;
                 }
+                
+                void appliedConstraints( std::vector<FormulaT>& _result )
+                {
+                    for( std::set<const ContractionCandidate*>::iterator candidateIt = mAppliedContractions.begin(); candidateIt != mAppliedContractions.end(); ++candidateIt )
+                    {
+                        for( auto originIt = (*candidateIt)->origin().begin(); originIt != (*candidateIt)->origin().end(); ++originIt )
+                        {
+                            _result.push_back(*originIt);
+                        }
+                    }
+                }
 
-                std::set<const ConstraintT*>& rStateInfeasibleConstraints()
+                std::set<ConstraintT>& rStateInfeasibleConstraints()
                 {
                     return mStateInfeasibleConstraints;
                 }
                 
-                std::set<const ConstraintT*> stateInfeasibleConstraints() const
+                const std::set<ConstraintT>& stateInfeasibleConstraints() const
                 {
                     return mStateInfeasibleConstraints;
                 }
@@ -280,25 +199,13 @@ namespace smtrat
                 {
                     return mStateInfeasibleVariables;
                 }
-
-                bool stateInfeasibleConstraintsContainSplit()
-                {
-                    for( set_icpVariable::const_iterator variableIt = mStateInfeasibleVariables.begin(); variableIt != mStateInfeasibleVariables.end(); ++variableIt )
-                    {
-                        if( (*variableIt)->var() == this->variable() )
-                        {
-                            return true;
-                        }
-                    }
-                    return false;
-                }
                 
-                bool addInfeasibleConstraint(const ConstraintT* _constraint, bool _addOnlyConstraint = false)
+                bool addInfeasibleConstraint(const ConstraintT& _constraint, bool _addOnlyConstraint = false)
                 {
                     if(!_addOnlyConstraint)
                     {
                         // also add all variables contained in the constraint to stateInfeasibleVariables
-                        for( auto variableIt = _constraint->variables().begin(); variableIt != _constraint->variables().end(); ++variableIt )
+                        for( auto variableIt = _constraint.variables().begin(); variableIt != _constraint.variables().end(); ++variableIt )
                         {
                             if(mVariableReasons.find(*variableIt) != mVariableReasons.end())
                             {
@@ -335,62 +242,52 @@ namespace smtrat
                     assert(!_candidate->origin().empty());
                     // TEMPORARY!!! -> Very coarse overapprox!
                     for( auto originIt = _candidate->rOrigin().begin(); originIt != _candidate->rOrigin().end(); ++originIt )
-                        addReason( _candidate->derivationVar(), originIt->pConstraint() );
+                        addReason( _candidate->derivationVar(), originIt->constraint() );
                 }
 
-                std::set<const ContractionCandidate*> getCandidates() const
+                const std::set<const ContractionCandidate*>& getCandidates() const
                 {
                     return mAppliedContractions;
                 }
 
-                void setSplit( const ConstraintT* _split )
-                {
-                    mSplit = _split;
-                }
-
-                const ConstraintT* split() const
-                {
-                    return mSplit;
-                }
-
-                std::map<carl::Variable, std::set<const ConstraintT*>>& rReasons()
+                std::map<carl::Variable, std::set<ConstraintT>>& rReasons()
                 {
                     return mReasons;
                 }
 
-                const std::map<carl::Variable, std::set<const ConstraintT*>>& reasons() const
+                const std::map<carl::Variable, std::set<ConstraintT>>& reasons() const
                 {
                     return mReasons;
                 }
 
 
-                std::set<const ConstraintT*>& reasons( carl::Variable::Arg _variable )
+                std::set<ConstraintT>& reasons( carl::Variable::Arg _variable )
                 {
                     assert( mReasons.find( _variable ) != mReasons.end() );
                     return mReasons.at( _variable );
                 }
 
-                void addReason( carl::Variable::Arg _variable, const ConstraintT* _reason )
+                void addReason( carl::Variable::Arg _variable, const ConstraintT& _reason )
                 {
                     if( mReasons.find( _variable ) == mReasons.end() )
-                        mReasons[_variable] = std::set<const ConstraintT*>();
+                        mReasons[_variable] = std::set<ConstraintT>();
                     
                     bool inserted = mReasons.at( _variable ).insert( _reason ).second;
                     if( inserted )
                     {
-                        for( auto varIt = _reason->variables().begin(); varIt != _reason->variables().end(); ++varIt )
+                        for( auto varIt = _reason.variables().begin(); varIt != _reason.variables().end(); ++varIt )
                         {
                             if( mReasons.find(*varIt) == mReasons.end() )
-                                mReasons[*varIt] = std::set<const ConstraintT*>();
+                                mReasons[*varIt] = std::set<ConstraintT>();
                             addReasons( _variable, mReasons.at( *varIt ) );
                         }
                     }
                     assert( mReasons.find( _variable ) != mReasons.end() );
                 }
 
-                void addReasons( carl::Variable::Arg _variable, const std::set<const ConstraintT*>& _reasons )
+                void addReasons( carl::Variable::Arg _variable, const std::set<ConstraintT>& _reasons )
                 {
-                    for( std::set<const ConstraintT*>::iterator reasonsIt = _reasons.begin(); reasonsIt != _reasons.end(); ++reasonsIt )
+                    for( std::set<ConstraintT>::iterator reasonsIt = _reasons.begin(); reasonsIt != _reasons.end(); ++reasonsIt )
                         addReason( _variable, (*reasonsIt) );
                 }
 
@@ -401,16 +298,16 @@ namespace smtrat
                     auto minimal = _origins.begin();
                     for( auto originIt = _origins.begin(); originIt != _origins.end(); ++originIt )
                     {
-                        if( mReasons.at( _variable ).find( originIt->pConstraint() ) != mReasons.at( _variable ).end() )
+                        if( mReasons.at( _variable ).find( originIt->constraint() ) != mReasons.at( _variable ).end() )
                         {
                             contained = true;
                             break;
                         }
-                        if( originIt->pConstraint()->variables().size() < minimal->pConstraint()->variables().size() )
+                        if( originIt->constraint().variables().size() < minimal->constraint().variables().size() )
                             minimal = originIt;
                     }
                     if( !contained )
-                        addReason( _variable, minimal->pConstraint() );
+                        addReason( _variable, minimal->constraint() );
                 }
                 
                 void addVariableReason( carl::Variable::Arg _variable, const IcpVariable* _reason )
@@ -447,100 +344,27 @@ namespace smtrat
                 }
                 
                 
-                void propagateStateInfeasibleConstraints() const
+                void propagateStateInfeasibleConstraints(HistoryNode* _target) const
                 {
-                    if( !this->isRoot() )
-                    {
-                        for( std::set<const ConstraintT*>::iterator constraintIt = mStateInfeasibleConstraints.begin(); constraintIt != mStateInfeasibleConstraints.end(); ++constraintIt )
-                            mParent->addInfeasibleConstraint(*constraintIt);
-                        
-                        mParent->propagateStateInfeasibleConstraints();
-                    }
+                        for( std::set<ConstraintT>::iterator constraintIt = mStateInfeasibleConstraints.begin(); constraintIt != mStateInfeasibleConstraints.end(); ++constraintIt )
+                            _target->addInfeasibleConstraint(*constraintIt);
                 }
                 
-                void propagateStateInfeasibleVariables() const
+                void propagateStateInfeasibleVariables(HistoryNode* _target) const
                 {
-                    if( !this->isRoot() )
-                    {
                         set_icpVariable result;
                         for( set_icpVariable::iterator variableIt = mStateInfeasibleVariables.begin(); variableIt != mStateInfeasibleVariables.end(); ++variableIt )
                         {
                             gatherVariables((*variableIt)->var(), result);
                             for( set_icpVariable::iterator collectedVarIt = result.begin(); collectedVarIt != result.end(); ++collectedVarIt )
                             {
-                                mParent->addInfeasibleVariable(*collectedVarIt);
+                                _target->addInfeasibleVariable(*collectedVarIt);
                             }
                         }
-                        
-                        
-                        mParent->propagateStateInfeasibleVariables();
-                    }
-                }
-
-                void removeLeftChild()
-                {
-                    delete mLeftChild;
-                    mLeftChild = NULL;
-                }
-
-                void removeRightChild()
-                {
-                    delete mRightChild;
-                    mRightChild = NULL;
-                }
-
-                bool isLeaf() const
-                {
-                    return (mLeftChild == NULL && mRightChild == NULL);
-                }
-                
-                bool isRoot() const
-                {
-                    return (mParent == NULL);
-                }
-
-                bool isLeft() const
-                {
-                    if( mParent == NULL )
-                        return false;
-                    
-                    return (this == mParent->left());
-                }
-
-                bool isRight() const
-                {
-                    if( mParent == NULL )
-                        return true;
-                    
-                    return (this == mParent->right());
-                }
-
-                unsigned id() const
-                {
-                    return mId;
                 }
 
                 void print( std::ostream& _out = std::cout ) const
-                {
-#ifdef HISTORY_DEBUG
-                    _out << "Id: " << this->mId << endl;
-                    if( mParent != NULL )
-                        _out << "Parent: " << mParent->id() << std::endl;
-                    
-#else
-                    _out << "Adress: " << this << std::endl;
-                    if( mParent != NULL )
-                    {
-                        _out << "Parent: " << mParent << std::endl;
-                    }
-#endif
-                    _out << "Left:   " << mLeftChild << std::endl;
-                    _out << "Right:  " << mRightChild << std::endl;
-                    if( mSplit != NULL )
-                        _out << "Split in: " << (*mSplit->variables().begin()) << std::endl;
-                    else
-                        _out << "Split in: None" << std::endl;
-                    
+                {   
                     _out << "Intervals: " << std::endl;
                     for( EvalDoubleIntervalMap::const_iterator intervalIt = mIntervals.begin(); intervalIt != mIntervals.end();
                             ++intervalIt )
@@ -575,8 +399,8 @@ namespace smtrat
                     if( !mStateInfeasibleConstraints.empty() )
                     {
                         _out << std::endl;
-                        for( std::set<const ConstraintT*>::iterator constraintIt = mStateInfeasibleConstraints.begin(); constraintIt != mStateInfeasibleConstraints.end(); ++constraintIt )
-                        _out << **constraintIt << std::endl;
+                        for( std::set<ConstraintT>::iterator constraintIt = mStateInfeasibleConstraints.begin(); constraintIt != mStateInfeasibleConstraints.end(); ++constraintIt )
+                            _out << *constraintIt << std::endl;
                     }
                     else
                     {
@@ -588,14 +412,13 @@ namespace smtrat
                 void printReasons( std::ostream& _out = std::cout ) const
                 {
                     _out << "Reasons(" << mReasons.size() << ")" << std::endl;
-                    for( std::map<carl::Variable, std::set<const ConstraintT*> >::const_iterator variablesIt = mReasons.begin();
+                    for( std::map<carl::Variable, std::set<ConstraintT> >::const_iterator variablesIt = mReasons.begin();
                             variablesIt != mReasons.end(); ++variablesIt )
                     {
                         _out << (*variablesIt).first << ":\t";
-                        for( std::set<const ConstraintT*>::const_iterator reasonIt = (*variablesIt).second.begin();
-                                reasonIt != (*variablesIt).second.end(); ++reasonIt )
+                        for( std::set<ConstraintT>::const_iterator reasonIt = (*variablesIt).second.begin(); reasonIt != (*variablesIt).second.end(); ++reasonIt )
                         {
-                            _out << **reasonIt << ", ";
+                            _out << *reasonIt << ", ";
                         }
                         _out << std::endl;
                     }
@@ -616,51 +439,6 @@ namespace smtrat
                         std::cout << std::endl;
                     }
                 }
-
-                /**
-                 * Search for Candidates in the tree below this node.
-                 * @param _candidate The candidate which is to be found
-                 * @return a list of pointers to the first nodes which have the candidate in their contraction sequence
-                 */
-                set_HistoryNode findCandidates( ContractionCandidate* _candidate ) const
-                {
-                    set_HistoryNode result = set_HistoryNode();
-
-                    if( mLeftChild != NULL )
-                        mLeftChild->findFirstOccurrence( _candidate, result );
-                    if( mRightChild != NULL )
-                        mRightChild->findFirstOccurrence( _candidate, result );
-
-                    return result;
-                }
-
-                /**
-                 * Creates a set of contraction candidate pointers from the candidates which have been used so far since the last reset of the tree.
-                 * @param _candidates Reference to the resulting set of contraction candidate pointers.
-                 */
-                void overallContractions( std::set<const ContractionCandidate*>& _candidates ) const
-                {
-                    if( mParent != NULL )
-                        mParent->overallContractions( _candidates );
-                    
-                    for( std::set<const ContractionCandidate*>::iterator ccIt = mAppliedContractions.begin(); ccIt != mAppliedContractions.end();
-                            ++ccIt )
-                        _candidates.insert( *ccIt );
-                }
-
-                /**
-                 * Returns the number of nodes in the subtree including the actual node.
-                 * @return
-                 */
-                int sizeSubtree() const
-                {
-					int size = 1;
-                    if (mLeftChild != NULL)
-                        size += mLeftChild->sizeSubtree();
-					if (mRightChild != NULL)
-						size += mRightChild->sizeSubtree();
-					return size;
-                }
                 
                 void reset()
                 {
@@ -671,51 +449,11 @@ namespace smtrat
                     mVariableReasons.clear();
                 }
 
-                friend bool operator==( HistoryNode const& lhs, HistoryNode const& rhs )
-                {
-                    return lhs.mId == rhs.mId;
-                }
-
             private:
 
                 /**
                  *  Functions
                  */
-
-                /**
-                 * Find first occurrence of the contractionCandidate below this node
-                 * @param _candidate
-                 * @return pointer to Node
-                 */
-                void findFirstOccurrence( ContractionCandidate* _candidate, set_HistoryNode& _result ) const
-                {
-#ifdef HISTORY_DEBUG
-                    cout << "searching for ";
-                    _candidate->print();
-                    cout << "#contractions in " << mId << ": " << mAppliedContractions.size() << endl;
-                    for( std::set<const ContractionCandidate*>::iterator candidateIt = mAppliedContractions.begin();
-                            candidateIt != mAppliedContractions.end(); ++candidateIt )
-                    {
-                        (*candidateIt)->print();
-                    }
-#endif
-                    std::set<const ContractionCandidate*>::iterator pos = mAppliedContractions.find( _candidate );
-                    if( pos != mAppliedContractions.end() )
-                    {
-#ifdef HISTORY_DEBUG
-                        std::cout << "Found candidate" << (*pos)->id() << " in node " << mId << ": ";
-                        (*pos)->print();
-#endif
-                        _result.insert( this );
-                    }
-                    else
-                    {
-                        if( mLeftChild != NULL )
-                            mLeftChild->findFirstOccurrence( _candidate, _result );
-                        if( mRightChild != NULL )
-                            mRightChild->findFirstOccurrence( _candidate, _result );
-                    }
-                }
                 
                 void gatherVariables(carl::Variable::Arg _var, set_icpVariable& _result) const
                 {

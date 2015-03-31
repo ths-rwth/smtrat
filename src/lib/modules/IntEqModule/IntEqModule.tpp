@@ -28,7 +28,7 @@
 
 #include "IntEqModule.h"
 
-//#define DEBUG_IntEqModule
+#define DEBUG_IntEqModule
 
 namespace smtrat
 {
@@ -55,25 +55,33 @@ namespace smtrat
             FormulasT infSubSet;
             infSubSet.insert( _subformula->formula() );
             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
-            return False;            
-        }            
+            return false;            
+        } 
+        else if( _subformula->formula().isTrue() )
+        {
+            return true;
+        }
         if( _subformula->formula().constraint().relation() == carl::Relation::EQ )
         {
             // Do substitutions that have already been determined and update origins accordingly
             std::shared_ptr<std::vector<FormulaT>> origins( new std::vector<FormulaT>() );
             origins->push_back( _subformula->formula() );
-            const smtrat::ConstraintT* constr = _subformula->formula().pConstraint();
-            Poly new_poly( constr->lhs() );
+            const ConstraintT& constr = _subformula->formula().constraint();
+            Poly new_poly( constr.lhs() );
             auto iter_subs = mSubstitutions.begin();
             while( iter_subs != mSubstitutions.end() )
             {
+                Poly tmp_poly = new_poly;
                 new_poly = new_poly.substitute( (iter_subs)->first, (iter_subs)->second );
-                auto iter_var = mVariables.find( (iter_subs)->first );
-                assert( iter_var != mVariables.end() );
-                *origins = std::move( merge( *origins, *( iter_var->second ) ) );
+                if( tmp_poly != new_poly )
+                {
+                    auto iter_var = mVariables.find( iter_subs->first );
+                    assert( iter_var != mVariables.end() );
+                    *origins = std::move( merge( *origins, *( iter_var->second ) ) );                        
+                }
                 ++iter_subs;
             }
-            FormulaT newEq( carl::newConstraint<Poly>( new_poly, carl::Relation::EQ ) );
+            FormulaT newEq( ConstraintT( new_poly, carl::Relation::EQ ) );
             // Return False if the newly obtained constraint is unsatisfiable
             if( newEq.isFalse() )
             {
@@ -89,11 +97,12 @@ namespace smtrat
             }
             #ifdef DEBUG_IntEqModule
             cout << "Assert: " << _subformula->formula().constraint() << endl;
+            cout << "After substitution: " << newEq << endl;
             #endif
-            std::map<FormulaT,std::shared_ptr<std::vector<FormulaT>>>::iterator iter = mProc_Constraints.find( _subformula->formula() );
+            auto iter = mProc_Constraints.find( newEq );
             if( iter != mProc_Constraints.end() )
             {
-                (iter->second)->push_back( _subformula->formula() );
+                (iter->second)->push_back( newEq );
             }
             else
             {
@@ -115,6 +124,9 @@ namespace smtrat
             #ifdef DEBUG_IntEqModule
             cout << "Remove: " << _subformula->formula().constraint() << endl;
             #endif
+            #ifdef DEBUG_IntEqModule
+            cout << "Size of mProc_Constraints: " << mProc_Constraints.size() << endl;
+            #endif
             auto iter_formula = mProc_Constraints.begin();
             while( iter_formula != mProc_Constraints.end() )
             {
@@ -122,8 +134,8 @@ namespace smtrat
                 auto iter_origins = (iter_formula->second)->begin();
                 while( iter_origins !=  (iter_formula->second)->end() )
                 {                    
-                    bool contained = iter_origins->contains( _subformula->formula() );
-                    if( contained || *iter_origins == _subformula->formula() )
+                    bool contains = iter_origins->contains( _subformula->formula() );
+                    if( contains || *iter_origins == _subformula->formula() )
                     {
                         ++delete_count;
                     }
@@ -131,7 +143,7 @@ namespace smtrat
                 }
                 if( iter_formula->second->size() == delete_count )
                 {
-                    iter_formula = mProc_Constraints.erase( iter_formula );
+                    mProc_Constraints.erase( iter_formula++ );
                 }
                 else
                 {
@@ -139,6 +151,10 @@ namespace smtrat
                 }
             }            
             // Do the same for the substitution data structure(s)
+            #ifdef DEBUG_IntEqModule
+            cout << "Size of mVariables: " << mVariables.size() << endl;
+            cout << "Size of mSubstitutions: " << mSubstitutions.size() << endl;
+            #endif
             auto iter_substitutions = mVariables.begin();
             while( iter_substitutions != mVariables.end() )
             {
@@ -157,15 +173,26 @@ namespace smtrat
                 {
                     auto iter_substitutions_help = iter_substitutions;
                     iter_substitutions = mVariables.erase( iter_substitutions );
-                    auto iter_help = mSubstitutions.find( iter_substitutions_help->first );
-                    assert( iter_help != mSubstitutions.end() );
-                    mSubstitutions.erase( iter_help );
+                    auto iter_help = mSubstitutions.begin();//find( iter_substitutions_help->first );
+                    while( iter_help != mSubstitutions.end() )
+                    {
+                        if( iter_help->first == iter_substitutions_help->first )
+                        {
+                            mSubstitutions.erase( iter_help );
+                            break;
+                        }
+                        ++iter_help;
+                    }
                 }
                 else
                 {
                     ++iter_substitutions;
-                }    
+                }
             }
+            #ifdef DEBUG_IntEqModule
+            cout << "Size of mVariables: " << mVariables.size() << endl;
+            cout << "Size of mSubstitutions: " << mSubstitutions.size() << endl;
+            #endif
         }
     }
 
@@ -203,7 +230,7 @@ namespace smtrat
              * and determine the coefficient of the latter with 
              * the smallest absolute value
              */
-            const smtrat::ConstraintT* curr_constr = mProc_Constraints.begin()->first.pConstraint();
+            const ConstraintT& curr_constr = mProc_Constraints.begin()->first.constraint();
             if( mProc_Constraints.begin()->first.isFalse() )
             {
                 size_t i = determine_smallest_origin( *( mProc_Constraints.begin()->second ) );
@@ -216,7 +243,8 @@ namespace smtrat
             cout << mProc_Constraints.begin()->first.constraint() << " was chosen." << endl;
             #endif
             std::shared_ptr<std::vector<FormulaT>> origins = mProc_Constraints.begin()->second;
-            auto iter_coeff = (curr_constr->lhs()).begin();
+            typename Poly::PolyType ccExpanded = (typename Poly::PolyType)curr_constr.lhs();
+            auto iter_coeff = ccExpanded.begin();
             Rational smallest_abs_value = (*iter_coeff).coeff();
             carl::Variable corr_var;
             bool value_negative = false;
@@ -239,10 +267,7 @@ namespace smtrat
                 }
                 smallest_abs_value = carl::abs( smallest_abs_value );
             }
-            #ifdef DEBUG_IntEqModule
-            cout << "Determine the smallest absolute value of the chosen constraint." << endl;
-            #endif
-            while( iter_coeff !=  (curr_constr->lhs()).end())
+            while( iter_coeff !=  ccExpanded.end())
             {
                 if( !(*iter_coeff).isConstant() )
                 {
@@ -254,16 +279,16 @@ namespace smtrat
                         {
                             value_negative = true;
                         }
+                        else
+                        {
+                            value_negative = false;
+                        }
                         smallest_abs_value = carl::abs(coeff); 
                         corr_var = var;
-                    }
+                    }   
                 }    
                 ++iter_coeff;                
             }
-            #ifdef DEBUG_IntEqModule
-            cout << "The smallest absolute value is:" << smallest_abs_value << endl;
-            cout << "Sign:" << value_negative << endl;
-            #endif
             // Proceed with the execution of the equation elimination 
             // depending on the value of the smallest absolute value of curr_constr
             Poly* temp = new Poly();
@@ -273,17 +298,17 @@ namespace smtrat
             {
                 sign = -1;                    
             } 
-            iter_coeff = (curr_constr->lhs()).begin();
+            iter_coeff = ccExpanded.begin();
             if( smallest_abs_value == 1 )
             {
-                while( iter_coeff != (curr_constr->lhs()).end() )
+                while( iter_coeff != ccExpanded.end() )
                 {
                     if( !(*iter_coeff).isConstant() )
                     {
                         if( (*iter_coeff).getSingleVariable() != corr_var )
                         {
                             carl::Variable var = (*iter_coeff).getSingleVariable();
-                            *temp += Poly(Rational(-1)*sign*(*iter_coeff).coeff())*var;
+                            *temp += carl::makePolynomial<Poly>(var)*Poly(Rational(-1)*sign*(*iter_coeff).coeff());
                         }                          
                     }
                     else
@@ -300,7 +325,7 @@ namespace smtrat
             else
             {
                 assert( smallest_abs_value > 1 );
-                while( iter_coeff != (curr_constr->lhs()).end() )
+                while( iter_coeff != ccExpanded.end() )
                 {
                     Rational coeff = (*iter_coeff).coeff();
                     bool positive = (*iter_coeff).coeff() > 0;
@@ -311,11 +336,11 @@ namespace smtrat
                             carl::Variable var = (*iter_coeff).getSingleVariable();        
                             if( positive )
                             {
-                                *temp -= sign*Poly( Rational( carl::floor( carl::div( coeff, smallest_abs_value ) ) ) )*var;
+                                *temp -= sign*Poly( Rational( carl::floor( carl::div( coeff, smallest_abs_value ) ) ) )*carl::makePolynomial<Poly>(var);
                             }
                             else
                             {
-                                *temp -= sign*Poly( (-1)*Rational( carl::floor( carl::div( (-1)*coeff, smallest_abs_value ) ) ) )*var;
+                                *temp -= sign*Poly( (-1)*Rational( carl::floor( carl::div( (-1)*coeff, smallest_abs_value ) ) ) )*carl::makePolynomial<Poly>(var);
                             }    
                         }   
                     }
@@ -333,7 +358,7 @@ namespace smtrat
                     ++iter_coeff;
                 }
                 carl::Variable fresh_var = carl::freshVariable( carl::VariableType::VT_INT );  
-                *temp += fresh_var;
+                *temp += carl::makePolynomial<Poly>(fresh_var);
             }
             // Substitute the reformulation of the found variable for all occurences
             // of this variable in equations of proc_constraints
@@ -341,51 +366,49 @@ namespace smtrat
             cout << "Substitute " << corr_var << " by: " << *temp << endl;
             #endif
             std::pair<carl::Variable, Poly>* new_pair = new std::pair<carl::Variable, Poly>(corr_var, *temp );
-            mSubstitutions.insert( *new_pair );
+            mSubstitutions.push_back( *new_pair );
             mVariables.emplace( new_pair->first, origins );
             Formula_Origins temp_proc_constraints;
             constr_iter = mProc_Constraints.begin();
             while( constr_iter != mProc_Constraints.end() )
             {
-                #ifdef DEBUG_IntEqModule
-                cout << "Substitute in: " << constr_iter->first.constraint().lhs() << endl;
-                #endif
+                //#ifdef DEBUG_IntEqModule
+                //cout << "Substitute in: " << constr_iter->first.constraint().lhs() << endl;
+                //#endif
                 Poly new_poly = constr_iter->first.constraint().lhs();
+                Poly tmp_poly = new_poly;
                 new_poly = new_poly.substitute( new_pair->first, new_pair->second );
-                #ifdef DEBUG_IntEqModule
-                cout << "After substitution: " << new_poly << endl;
-                #endif
-                FormulaT newEq( carl::newConstraint<Poly>( new_poly, carl::Relation::EQ ) );
-                std::shared_ptr<std::vector<FormulaT>> origins_new( new std::vector<FormulaT>() ); 
-                *origins_new = ( std::move( merge( *origins, *( constr_iter->second ) ) ) );
-                Formula_Origins::iterator iter = mProc_Constraints.find( newEq );
-                if( iter != mProc_Constraints.end() )
+                std::shared_ptr<std::vector<FormulaT>> origins_new = constr_iter->second;
+                if( new_poly != tmp_poly )
                 {
-                    iter->second->insert( iter->second->begin(), origins_new->begin(), origins_new->end() );
-                }
-                else
-                {
-                    temp_proc_constraints.emplace( newEq, origins_new );
-                }
+                    auto iter_help = mVariables.find( new_pair->first );
+                    assert( iter_help != mVariables.end() );
+                    *origins_new = ( std::move( merge( *( iter_help->second ), *( constr_iter->second ) ) ) );
+                }    
+                //#ifdef DEBUG_IntEqModule
+                //cout << "After substitution: " << new_poly << endl;
+                //#endif
+                FormulaT newEq( ConstraintT( new_poly, carl::Relation::EQ ) );          
                 // Check whether newEq is unsatisfiable
                 if( newEq.isFalse() )
                 {
                     #ifdef DEBUG_IntEqModule
-                    cout << "Constraint is invalid!" << new_poly << endl;
+                    cout << "Constraint is invalid!" << endl;
                     #endif
-                    size_t i = determine_smallest_origin( *origins );
+                    size_t i = determine_smallest_origin( *origins_new );
                     FormulasT infSubSet;
-                    collectOrigins( origins->at(i), infSubSet  );
+                    collectOrigins( origins_new->at(i), infSubSet  );
                     mInfeasibleSubsets.push_back( infSubSet );
                     return False; 
-                }
+                }        
+                temp_proc_constraints.emplace( newEq, origins_new );
                 ++constr_iter;
             }
             mProc_Constraints = temp_proc_constraints;
         }
         #ifdef DEBUG_IntEqModule
         cout << "Substitute in the received inequalities:" << endl;
-        #endif
+        #endif  
         auto iter_formula = rReceivedFormula().begin();
         // Iterate through the received constraints and remove the equations
         // by substituting the expressions according to mSubstitutions in the inequalities
@@ -405,23 +428,35 @@ namespace smtrat
                 #endif
                 const smtrat::ConstraintT* constr = (*iter_formula).formula().pConstraint();
                 Poly new_poly = constr->lhs();
+                std::shared_ptr<std::vector<FormulaT>> origins( new std::vector<FormulaT>() );
+                origins->push_back( (*iter_formula).formula() );
                 auto iter_subs = mSubstitutions.begin();
                 while( iter_subs != mSubstitutions.end() )
                 {
+                    Poly tmp_poly = new_poly;
                     new_poly = new_poly.substitute( (iter_subs)->first, (iter_subs)->second );
+                    cout << "New polynomial: " << new_poly << endl;
+                    if( tmp_poly != new_poly )
+                    {
+                        auto iter_help = mVariables.find( iter_subs->first );
+                        assert( iter_help != mVariables.end() );
+                        *origins = std::move( merge( *origins, *( iter_help->second ) ) );                        
+                    }
                     ++iter_subs;
                 }
                 //new_poly = new_poly.substitute( mSubstitutions );
-                #ifdef DEBUG_IntEqModule
-                cout << "After substitution: " << new_poly << endl;
-                #endif
+                //#ifdef DEBUG_IntEqModule
+                //cout << "After substitution: " << new_poly << endl;
+                //#endif
+                /*
                 std::shared_ptr<std::vector<FormulaT>> origins( new std::vector<FormulaT>() );
-                origins->push_back( std::move( (*iter_formula).formula() ) );
+                origins->push_back( (*iter_formula).formula() );
                 auto iter_var = mSubstitutions.begin();
                 while( iter_var != mSubstitutions.end() )
-                {
-                    auto coeff_iter = constr->lhs().begin();
-                    while( coeff_iter != constr->lhs().end() )
+                {  
+                    typename Poly::PolyType cosntrLhsExpanded = (typename Poly::PolyType)constr.lhs();
+                    auto coeff_iter = cosntrLhsExpanded.begin();
+                    while( coeff_iter != cosntrLhsExpanded.end() )
                     {
                         if( !(*coeff_iter).isConstant() )
                         {
@@ -437,16 +472,29 @@ namespace smtrat
                     }
                     ++iter_var;                   
                 }
-                std::shared_ptr<std::vector<FormulaT>> formula_cover( new std::vector<FormulaT>() );
-                auto iter_sets = origins->begin();
-                while( iter_sets != origins->end() )
+                */
+                //std::shared_ptr<std::vector<FormulaT>> formula_cover = origins;
+                //auto iter_sets = origins->begin();
+                //while( iter_sets != origins->end() )
+                //{
+                //    formula_cover->push_back( *iter_sets );
+                //    ++iter_sets;
+                //}  
+                FormulaT formula_passed( ConstraintT( new_poly, (*iter_formula).formula().constraint().relation() ) );                
+                if( formula_passed.isFalse() )
                 {
-                    formula_cover->push_back( *iter_sets );
-                    ++iter_sets;
-                }  
-                FormulaT formula_passed( carl::newConstraint<Poly>( new_poly, (*iter_formula).formula().constraint().relation() ) );                
+                    #ifdef DEBUG_IntEqModule
+                    cout << "The obtained formula is unsatisfiable" << endl;
+                    cout << "Origins: " << *origins << endl;
+                    #endif
+                    size_t i = determine_smallest_origin( *origins );
+                    FormulasT infSubSet;
+                    collectOrigins( origins->at(i), infSubSet );
+                    mInfeasibleSubsets.push_back( std::move( infSubSet ) );
+                    return False;
+                }                                        
                 addConstraintToInform( formula_passed );
-                addSubformulaToPassedFormula( formula_passed, formula_cover );    
+                addSubformulaToPassedFormula( formula_passed, origins );    
             }
             ++iter_formula;
         }

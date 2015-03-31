@@ -13,6 +13,7 @@ class GBRuntimeSettings : public RuntimeSettings
 {
 public:
     GBRuntimeSettings(const std::string& name) : RuntimeSettings(name) {}
+    ~GBRuntimeSettings() {}
 };
 }
 

@@ -147,65 +147,65 @@ namespace smtrat
                 Abstraction( const Abstraction& ) = delete;
             };
 
-            /// [Minisat related code.]
+            /// [Minisat related code]
             struct Watcher
             {
-                /// [Minisat related code.]
+                /// [Minisat related code]
                 Minisat::CRef cref;
                 
-                /// [Minisat related code.]
+                /// [Minisat related code]
                 Minisat::Lit  blocker;
 
-                /// [Minisat related code.]
+                /// [Minisat related code]
                 Watcher( Minisat::CRef cr, Minisat::Lit p ):
                     cref( cr ),
                     blocker( p )
                 {}
                 
-                /// [Minisat related code.]
+                /// [Minisat related code]
                 bool operator ==( const Watcher& w ) const
                 {
                     return cref == w.cref;
                 }
 
-                /// [Minisat related code.]
+                /// [Minisat related code]
                 bool operator !=( const Watcher& w ) const
                 {
                     return cref != w.cref;
                 }
             };
 
-            /// [Minisat related code.]
+            /// [Minisat related code]
             struct WatcherDeleted
             {
-                /// [Minisat related code.]
+                /// [Minisat related code]
                 const Minisat::ClauseAllocator& ca;
 
-                /// [Minisat related code.]
+                /// [Minisat related code]
                 WatcherDeleted( const Minisat::ClauseAllocator& _ca ):
                     ca( _ca )
                 {}
                 
-                /// [Minisat related code.]
+                /// [Minisat related code]
                 bool operator ()( const Watcher& w ) const
                 {
                     return ca[w.cref].mark() == 1;
                 }
             };
 
-            /// [Minisat related code.]
+            /// [Minisat related code]
             struct VarOrderLt
             {
-                /// [Minisat related code.]
+                /// [Minisat related code]
                 const Minisat::vec<double>& activity;
 
-                /// [Minisat related code.]
+                /// [Minisat related code]
                 bool operator ()( Minisat::Var x, Minisat::Var y ) const
                 {
                     return activity[x] > activity[y];
                 }
 
-                /// [Minisat related code.]
+                /// [Minisat related code]
                 VarOrderLt( const Minisat::vec<double>& act ):
                     activity( act )
                 {}
@@ -235,7 +235,7 @@ namespace smtrat
             /// A set of vectors of integer representing a set of clauses.
             typedef std::set<std::vector<int>> ClauseSet;
 
-            /// [Minisat related code.]
+            /// [Minisat related code]
             static inline VarData mkVarData( Minisat::CRef cr, int l )
             {
                 VarData d = { cr, l };
@@ -245,17 +245,17 @@ namespace smtrat
             // Minisat related members.
 
             // Mode of operation:
-            /// [Minisat related code.]
+            /// [Minisat related code]
             int verbosity;
-            /// [Minisat related code.]
+            /// [Minisat related code]
             double var_decay;
-            /// [Minisat related code.]
+            /// [Minisat related code]
             double clause_decay;
-            /// [Minisat related code.]
+            /// [Minisat related code]
             double random_var_freq;
-            /// [Minisat related code.]
+            /// [Minisat related code]
             double random_seed;
-            /// [Minisat related code.]
+            /// [Minisat related code]
             bool   luby_restart;
             /// Controls conflict clause minimization (0=none, 1=basic, 2=deep).
             int ccmin_mode;
@@ -275,15 +275,15 @@ namespace smtrat
             double learntsize_factor;
             /// The limit for learned clauses is multiplied with this factor each restart.(default 1.1)
             double learntsize_inc;
-            /// [Minisat related code.]
+            /// [Minisat related code]
             int    learntsize_adjust_start_confl;
-            /// [Minisat related code.]
+            /// [Minisat related code]
             double learntsize_adjust_inc;
 
             // Statistics: (read-only member variable)
-            /// [Minisat related code.]
+            /// [Minisat related code]
             uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts;
-            /// [Minisat related code.]
+            /// [Minisat related code]
             uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
 
             // Solver state:
@@ -329,23 +329,23 @@ namespace smtrat
             double progress_estimate;
             /// Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
             bool remove_satisfied;
-            /// [Minisat related code.]
+            /// [Minisat related code]
             Minisat::ClauseAllocator ca;
 
             // Temporaries (to reduce allocation overhead).
             /// Each variable is prefixed by the method in which it is used, except 'seen' which is used in several places.
             Minisat::vec<char> seen;
-            /// [Minisat related code.]
+            /// [Minisat related code]
             Minisat::vec<Minisat::Lit> analyze_stack;
-            /// [Minisat related code.]
+            /// [Minisat related code]
             Minisat::vec<Minisat::Lit> analyze_toclear;
-            /// [Minisat related code.]
+            /// [Minisat related code]
             Minisat::vec<Minisat::Lit> add_tmp;
-            /// [Minisat related code.]
+            /// [Minisat related code]
             double max_learnts;
-            /// [Minisat related code.]
+            /// [Minisat related code]
             double learntsize_adjust_confl;
-            /// [Minisat related code.]
+            /// [Minisat related code]
             int learntsize_adjust_cnt;
 
             // Resource constraints:
@@ -353,7 +353,7 @@ namespace smtrat
             int64_t conflict_budget;
             /// -1 means no budget.
             int64_t propagation_budget;
-            /// [Minisat related code.]
+            /// [Minisat related code]
             bool asynch_interrupt;
 
             // Module related members.
@@ -400,6 +400,12 @@ namespace smtrat
             std::vector<std::set<Minisat::CRef>> mVarClausesMap;
             /// Maps the arithmetic variables to the terms they have been replaced by a valid substitution (only used by the valid-substitutions optimization).
             std::map<carl::Variable,Poly> mVarReplacements;
+            /// Stores all Boolean variables introduced for theory splitting decisions.
+            std::vector<signed> mSplittingVars;
+            /// Stores all Boolean variables which once had been used for theory splitting decisions.
+            std::stack<signed> mOldSplittingVars;
+            /// Stores the just introduced Boolean variables for theory splitting decisions.
+            std::stack<signed> mNewSplittingVars;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
             SATModuleStatistics* mpStatistics;
@@ -705,7 +711,7 @@ namespace smtrat
             }
             
             /**
-             * @return [Minisat related code.]
+             * @return [Minisat related code]
              */
             inline int nFreeVars() const
             {
@@ -715,8 +721,8 @@ namespace smtrat
             // Resource constraints:
             
             /**
-             * [Minisat related code.]
-             * @param x [Minisat related code.]
+             * [Minisat related code]
+             * @param x [Minisat related code]
              */
             inline void setConfBudget( int64_t x )
             {
@@ -724,8 +730,8 @@ namespace smtrat
             }
             
             /**
-             * [Minisat related code.]
-             * @param x [Minisat related code.]
+             * [Minisat related code]
+             * @param x [Minisat related code]
              */
             inline void setPropBudget( int64_t x )
             {
@@ -733,7 +739,7 @@ namespace smtrat
             }
             
             /**
-             * [Minisat related code.]
+             * [Minisat related code]
              */
             inline void budgetOff()
             {
@@ -759,13 +765,13 @@ namespace smtrat
             // Memory management:
             
             /**
-             * [Minisat related code.]
+             * [Minisat related code]
              */
             void garbageCollect();
             
             /**
-             * [Minisat related code.]
-             * @param gf [Minisat related code.]
+             * [Minisat related code]
+             * @param gf [Minisat related code]
              */
             inline void checkGarbage( double gf )
             {
@@ -774,7 +780,7 @@ namespace smtrat
             }
             
             /**
-             * [Minisat related code.]
+             * [Minisat related code]
              */
             void checkGarbage( void )
             {
@@ -782,9 +788,9 @@ namespace smtrat
             }
             
             /**
-             * [Minisat related code.]
-             * @param cout [Minisat related code.]
-             * @param [Minisat related code.]
+             * [Minisat related code]
+             * @param cout [Minisat related code]
+             * @param [Minisat related code]
              */
             void printSatState( std::ostream& = std::cout, const std::string = "" );
 
@@ -792,7 +798,7 @@ namespace smtrat
             
             /**
              * Insert a variable in the decision order priority queue.
-             * @param x [Minisat related code.]
+             * @param x [Minisat related code]
              */
             inline void insertVarOrder( Minisat::Var x )
             {
@@ -801,9 +807,14 @@ namespace smtrat
             }
             
             /**
-             * [Minisat related code.]
+             * [Minisat related code]
              */
             void decrementLearntSizeAdjustCnt();
+            
+            /**
+             * @return The next decision variable meant to invoke a splitting..
+             */
+            Minisat::Var pickSplittingVar();
             
             /**
              * @return The next decision variable.
@@ -829,9 +840,9 @@ namespace smtrat
             /**
              * Test if fact 'p' contradicts current state, enqueue otherwise.
              * NOTE: enqueue does not set the ok flag! (only public methods do)
-             * @param p [Minisat related code.]
-             * @param from [Minisat related code.]
-             * @return [Minisat related code.]
+             * @param p [Minisat related code]
+             * @param from [Minisat related code]
+             * @return [Minisat related code]
              */
             inline bool enqueue( Minisat::Lit p, Minisat::CRef from = Minisat::CRef_Undef )
             {
@@ -884,9 +895,9 @@ namespace smtrat
             /**
              * Check if 'p' can be removed. 'abstract_levels' is used to abort early if the algorithm is
              * visiting literals at levels that cannot be removed later.
-             * @param p [Minisat related code.]
-             * @param abstract_levels [Minisat related code.]
-             * @return [Minisat related code.]
+             * @param p [Minisat related code]
+             * @param abstract_levels [Minisat related code]
+             * @return [Minisat related code]
              */
             bool litRedundant( Minisat::Lit p, uint32_t abstract_levels );
             
@@ -946,6 +957,11 @@ namespace smtrat
             void removeSatisfied( Minisat::vec<Minisat::CRef>& cs );
             
             /**
+             * Removes all splitting variables, which are either assigned to true of false in decision level 0.
+             */
+            void removeAssignedSplittingVars();
+            
+            /**
              * Replaces the variable in the literal _var by the variable in the literal _by, such that _var is replaced by _by 
              * and ~_var is replaced by ~by.
              * @param _var The literal containing the variable to replace.
@@ -964,7 +980,7 @@ namespace smtrat
             bool replaceVariable( Minisat::CRef _cr, Minisat::Lit _var, Minisat::Lit _by );
             
             /**
-             * [Minisat related code.]
+             * [Minisat related code]
              */
             void rebuildOrderHeap();
             
@@ -994,8 +1010,8 @@ namespace smtrat
             
             /**
              * Increase a variable with the current 'bump' value.
-             * @param v [Minisat related code.]
-             * @param inc [Minisat related code.]
+             * @param v [Minisat related code]
+             * @param inc [Minisat related code]
              */
             inline void varBumpActivity( Minisat::Var v, double inc )
             {
@@ -1014,7 +1030,7 @@ namespace smtrat
             
             /**
              * Increase a variable with the current 'bump' value.
-             * @param v [Minisat related code.]
+             * @param v [Minisat related code]
              */
             inline void varBumpActivity( Minisat::Var v )
             {
@@ -1031,7 +1047,7 @@ namespace smtrat
             
             /**
              * Increase a clause with the current 'bump' value.
-             * @param c [Minisat related code.]
+             * @param c [Minisat related code]
              */
             inline void claBumpActivity( Minisat::Clause& c )
             {
@@ -1051,25 +1067,25 @@ namespace smtrat
             
             /**
              * Attach a clause to watcher lists.
-             * @param cr [Minisat related code.]
+             * @param cr [Minisat related code]
              */
             void attachClause( Minisat::CRef cr );
             
             /**
              * Detach a clause to watcher lists.
-             * @param cr [Minisat related code.]
-             * @param strict [Minisat related code.]
+             * @param cr [Minisat related code]
+             * @param strict [Minisat related code]
              */
             void detachClause( Minisat::CRef cr, bool strict = false );
             
             /**
              * Detach and free a clause.
-             * @param cr [Minisat related code.]
+             * @param cr [Minisat related code]
              */
             void removeClause( Minisat::CRef cr );
             
             /**
-             * @param c [Minisat related code.]
+             * @param c [Minisat related code]
              * @return TRUE if a clause is a reason for some implication in the current state.
              */
             inline bool locked( const Minisat::Clause& c ) const
@@ -1078,17 +1094,17 @@ namespace smtrat
             }
             
             /**
-             * @param c [Minisat related code.]
+             * @param c [Minisat related code]
              * @return TRUE if a clause is satisfied in the current state.
              */
             bool satisfied( const Minisat::Clause& c ) const;
 
             /**
-             * [Minisat related code.]
-             * @param x [Minisat related code.]
-             * @param map [Minisat related code.]
-             * @param max [Minisat related code.]
-             * @return [Minisat related code.]
+             * [Minisat related code]
+             * @param x [Minisat related code]
+             * @param map [Minisat related code]
+             * @param max [Minisat related code]
+             * @return [Minisat related code]
              */
             static Minisat::Var mapVar( Minisat::Var x, Minisat::vec<Minisat::Var>& map, Minisat::Var& max );
             
@@ -1109,8 +1125,8 @@ namespace smtrat
             static double luby( double y, int x );
             
             /**
-             * [Minisat related code.]
-             * @param to [Minisat related code.]
+             * [Minisat related code]
+             * @param to [Minisat related code]
              */
             void relocAll( Minisat::ClauseAllocator& to );
 
@@ -1126,8 +1142,8 @@ namespace smtrat
             
             /**
              * Used to represent an abstraction of sets of decision levels.
-             * @param x [Minisat related code.]
-             * @return [Minisat related code.]
+             * @param x [Minisat related code]
+             * @return [Minisat related code]
              */
             inline uint32_t abstractLevel( Minisat::Var x ) const
             {
@@ -1167,7 +1183,7 @@ namespace smtrat
             double progressEstimate() const;
             
             /**
-             * @return [Minisat related code.]
+             * @return [Minisat related code]
              */
             inline bool withinBudget() const
             {
@@ -1178,7 +1194,7 @@ namespace smtrat
             // Static helpers:
 
             /**
-             * @param seed [Minisat related code.]
+             * @param seed [Minisat related code]
              * @return A random float 0 <= x < 1. Seed must never be 0.
              */
             static inline double drand( double& seed )
@@ -1190,8 +1206,8 @@ namespace smtrat
             }
 
             /**
-             * @param seed [Minisat related code.]
-             * @param size [Minisat related code.]
+             * @param seed [Minisat related code]
+             * @param size [Minisat related code]
              * @return A random integer 0 <= x < size. Seed must never be 0.
              */
             static inline int irand( double& seed, int size )
@@ -1215,13 +1231,19 @@ namespace smtrat
             Minisat::CRef addClause( const FormulaT&, unsigned _type = 0 );
             
             /**
-             * Creates the literal belonging to the formula being the first argument. 
+             * Stores the given splitting to the set of learned clauses
+             * @param _splitting The splitting to stores in the learned clauses.
+             */
+            void addSplitting( const Splitting& _splitting );
+            
+            /**
+             * Creates or simply returns the literal belonging to the formula being the first argument. 
              * @param _formula The formula to get the literal for.
              * @param _origin The origin of the formula to get the literal for.
-             * @param _fromReceived true, if the literal stems from a received clause.
-             * @return The created literal.
+             * @param _decisionRelevant true, if the variable of the literal needs to be involved in the decision process of the SAT solving.
+             * @return The corresponding literal.
              */
-            Minisat::Lit getLiteral( const FormulaT& _formula, const FormulaT& _origin );
+            Minisat::Lit getLiteral( const FormulaT& _formula, const FormulaT& _origin, bool _decisionRelevant = true );
             
             /**
              * Adapts the passed formula according to the current assignment within the SAT solver.
