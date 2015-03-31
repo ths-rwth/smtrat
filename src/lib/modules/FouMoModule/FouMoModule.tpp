@@ -360,7 +360,7 @@ namespace smtrat
                     {
                         if( *iter_elim_order == iter_var->first )
                         {
-                            mElim_Order.erase( iter_elim_order );
+                            mElim_Order.erase( iter_elim_order, mElim_Order.end() );
                             break;
                         }
                         ++iter_elim_order;
@@ -411,12 +411,19 @@ namespace smtrat
         mModel.clear();
         if( solverState() == True )
         {
-            auto iter_ass = mVarAss.begin();
-            while( iter_ass != mVarAss.end() )
+            if( mCorrect_Solution )
             {
-                ModelValue ass = vs::SqrtEx( (Poly)iter_ass->second );
-                mModel.insert( std::make_pair( iter_ass->first, ass ) );
-                ++iter_ass;
+                auto iter_ass = mVarAss.begin();
+                while( iter_ass != mVarAss.end() )
+                {
+                    ModelValue ass = vs::SqrtEx( (Poly)iter_ass->second );
+                    mModel.insert( std::make_pair( iter_ass->first, ass ) );
+                    ++iter_ass;
+                }
+            }
+            else
+            {
+                Module::getBackendsModel();
             }
         }
     }
@@ -468,7 +475,8 @@ namespace smtrat
                     return ans;
                 }
                 // Try to derive a(n) (integer) solution by backtracking through the steps of Fourier-Motzkin
-                if( !mElim_Order.empty() && construct_solution() )
+                mCorrect_Solution = construct_solution();
+                if( !mElim_Order.empty() && mCorrect_Solution )
                 {
                     #ifdef DEBUG_FouMoModule
                     cout << "Found a valid solution!" << endl;
@@ -487,7 +495,12 @@ namespace smtrat
                     #ifdef DEBUG_FouMoModule
                     cout << "Run Backends!" << endl;
                     #endif
-                    return call_backends( _full );
+                    Answer ans = call_backends( _full );
+                    if( ans == False )
+                    {
+                        getInfeasibleSubsets();
+                    }
+                    return ans;
                 }    
             }
             // Choose the variable to eliminate based on the information provided by var_corr_constr
@@ -762,6 +775,10 @@ namespace smtrat
     template<class Settings>
     bool FouMoModule<Settings>::construct_solution()
     {
+        if( mElim_Order.empty() )
+        {
+            return false;
+        }
         VariableUpperLower constr_backtracking = mDeleted_Constraints;
         auto iter_elim = mElim_Order.end();
         --iter_elim;
