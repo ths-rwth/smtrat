@@ -25,7 +25,7 @@
 
 #include "Node.h"
 
-namespace delta {
+namespace rewriter {
 
 typedef boost::spirit::istream_iterator BaseIteratorType;
 typedef boost::spirit::line_pos_iterator<BaseIteratorType> PositionIteratorType;
@@ -79,18 +79,16 @@ struct ErrorHandler {
 class Parser {
 	/// Parses symbols.
 	SymbolParser symbol;
-	/// Parses a Node that consists of a symbol.
-	qi::rule<Iterator, std::tuple<std::string, bool>(), Skipper> symbol_node;
-	/// Parses a Node that is empty.
-	qi::rule<Iterator, std::tuple<std::vector<Node>, bool>(), Skipper> empty_node;
-	/// Parses a Node that consists of a symbol and further children.
-	qi::rule<Iterator, std::tuple<std::string, std::vector<Node>, bool>(), Skipper> full_node;
-	/// Parses any Node.
-	qi::rule<Iterator, Node(), Skipper> node;
-	/// Parses a sequence of nodes.
-	qi::rule<Iterator, std::tuple<std::vector<Node>, bool>(), Skipper> nodelist;
-	/// Parses a smtlib file.
-	qi::rule<Iterator, Node(), Skipper> main;
+	qi::rule<Iterator, Node(), Skipper> token;
+	qi::rule<Iterator, Node(), Skipper> tpl;
+	qi::rule<Iterator, Node(), Skipper> function;
+	qi::rule<Iterator, Node(), Skipper> expression;
+	qi::rule<Iterator, std::vector<Node>(), Skipper> expressionlist;
+	qi::rule<Iterator, Skipper> linePrefix;
+	qi::rule<Iterator, Skipper> lineAddr;
+	qi::rule<Iterator, Node(), Skipper> lineContent;
+	qi::rule<Iterator, Node(), Skipper> line;
+	qi::rule<Iterator, std::vector<Node>(), Skipper> main;
 	// Error handler.
 	boost::phoenix::function<ErrorHandler> errorHandler;
 
@@ -99,13 +97,37 @@ public:
 	 * Constructs the parsing rules.
 	 */
 	Parser() {
-		symbol_node = symbol >> qi::attr(false);
-		full_node = qi::lit("(") >> symbol >> *node >> qi::attr(true) >> qi::lit(")");
-		empty_node = qi::lit("(") >> *node >> qi::attr(true) >> qi::lit(")");
-		node = symbol_node | full_node | empty_node;
-		nodelist = *node >> qi::attr(false);
-		main = qi::eps > nodelist > qi::eoi;
+		token = qi::as_string[qi::lexeme[ *(~qi::char_("<>()") | qi::blank) ]];
+		token.name("token");
+		tpl = token >> "<" >> expressionlist >> ">";
+		tpl.name("template");
+		function = token >> "(" >> expressionlist >> ")";
+		function.name("function");
+		expression = tpl | function | token;
+		expression.name("expression");
+		expressionlist = expression % ", ";
+		linePrefix = "==" >> +qi::digit >> "==" >> *qi::blank;
+		linePrefix.name("line prefix");
+		lineAddr = (qi::lit("at 0x") | qi::lit("by 0x")) >> +qi::alnum;
+		lineAddr.name("line address");
+		lineContent = qi::as_string[qi::no_skip[ *(qi::char_ - qi::eol) ]];
+		lineContent.name("line content");
+		line = linePrefix >> (
+				(lineAddr >> ": " >> expression)
+			|	lineContent
+		);
+		line.name("line");
+		main = *line >> qi::eoi;
+		main.name("main");
+		qi::debug(main);
+		qi::debug(line);
+		qi::debug(lineContent);
+		qi::debug(expression);
+		qi::debug(tpl);
 		qi::on_error<qi::fail>(main, errorHandler(qi::_1, qi::_2, qi::_3));
+		qi::on_success(main, std::cout << qi::_val << std::endl);
+		qi::on_success(line, std::cout << qi::_val << std::endl);
+		qi::on_success(expression, std::cout << qi::_val << std::endl);
 	}
 
 	/**
@@ -113,7 +135,7 @@ public:
 	 * @param filename Filename of the input file.
 	 * @return Node object produced by the parser.
 	 */
-	bool parseFile(const std::string& filename, Node& node) {
+	bool parseFile(const std::string& filename, std::vector<Node>& node) {
 		std::ifstream in(filename);
 		in.unsetf(std::ios::skipws);
 		BaseIteratorType basebegin(in);
@@ -127,7 +149,7 @@ public:
 	 * @param filename Filename of the input file.
 	 * @return Node object produced by the parser.
 	 */
-	static bool parse(const std::string& filename, Node& node) {
+	static bool parse(const std::string& filename, std::vector<Node>& node) {
 		return Parser().parseFile(filename, node);
 	}
 };
