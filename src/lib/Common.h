@@ -45,7 +45,7 @@
 #include "carl/formula/FormulaPool.h"
 #include "carl/formula/UFManager.h"
 #include "carl/formula/UFInstanceManager.h"
-#include <carl/formula/bitvector/BVTermPool.h>
+#include "carl/formula/bitvector/BVTerm.h"
 
 namespace smtrat
 {
@@ -134,7 +134,3 @@ namespace smtrat
     #define ANSWER_TO_STRING(_ans) (_ans == True ? "True" : (_ans == False ? "False" : (_ans == Unknown ? "Unknown" : "Undefined")))
     
 }    // namespace smtrat
-
-
-
-
