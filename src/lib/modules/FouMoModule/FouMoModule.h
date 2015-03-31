@@ -56,6 +56,8 @@ namespace smtrat
             VariableUpperLower mDeleted_Constraints;  
             // Stores constructed assignments for the occuring variables when a solution was found
             std::map<carl::Variable, Rational> mVarAss;
+            // Stores whether we found a valid solution in this module
+            bool mCorrect_Solution;
             
             /**
              * @param curr_constraints Contains the constraints for which a possibly good
