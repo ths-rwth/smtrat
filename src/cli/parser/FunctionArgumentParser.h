@@ -14,6 +14,7 @@ namespace smtrat {
 namespace parser {
 
 struct FormulaParser;
+struct BitvectorParser;
 struct PolynomialParser;
 struct BitvectorParser;
 struct UninterpretedParser;
