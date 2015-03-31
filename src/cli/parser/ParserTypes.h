@@ -87,7 +87,7 @@ typedef std::vector<Argument> Arguments;
 typedef std::tuple<std::string, std::vector<carl::Variable>, FormulaT> BooleanFunction;
 typedef std::tuple<std::string, std::vector<carl::Variable>, Poly> TheoryFunction;
 
-
+typedef carl::BVTerm<Poly> BitvectorType;
 
 struct Skipper: public boost::spirit::qi::grammar<Iterator> {
 	Skipper(): Skipper::base_type(main, "skipper") {

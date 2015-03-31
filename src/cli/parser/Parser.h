@@ -37,6 +37,7 @@
 #include "ParserState.h"
 #include "FunctionArgumentParser.h"
 #include "FormulaParser.h"
+#include "BitvectorParser.h"
 #include "PolynomialParser.h"
 #include "BitvectorParser.h"
 
