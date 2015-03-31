@@ -25,13 +25,13 @@ namespace parser {
 		ParserState* state;
 
 		BitvectorType createVariable(const carl::BVVariable& bvv) const {
-			return BitvectorType(BitvectorPool::getInstance().create(carl::BVTermType::VARIABLE, bvv));
+			return BitvectorType(carl::BVTermType::VARIABLE, bvv);
 		}
 		BitvectorType createUnary(carl::BVTermType type, const BitvectorType& a) const {
-			return BitvectorType(BitvectorPool::getInstance().create(type, a));
+			return BitvectorType(type, a);
 		}
 		BitvectorType createBinary(carl::BVTermType type, const BitvectorType& a, const BitvectorType& b) const {
-			return BitvectorType(BitvectorPool::getInstance().create(type, a, b));
+			return BitvectorType(type, a, b);
 		}
 
 		BitvectorUnaryOpParser buop;
