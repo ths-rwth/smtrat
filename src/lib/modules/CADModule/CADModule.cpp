@@ -251,6 +251,7 @@ namespace smtrat
 				mInfeasibleSubsets.push_back(i);
 				mInfeasibleSubsets.back().insert(boundConstraints.begin(), boundConstraints.end());
 			}
+            #ifdef SMTRAT_DEVOPTION_Validation
 			std::vector<FormulasT> ours;
 			cad::MISGeneration<cad::MISHeuristic::GREEDY> tmp(*this);
 			tmp(ours);
@@ -264,6 +265,7 @@ namespace smtrat
 				storeAssumptionsToCheck(*mpManager);
 			}
 			//assert(ours == mInfeasibleSubsets);
+            #endif
 
 			#ifdef CHECK_SMALLER_MUSES
 			Module::checkInfSubsetForMinimality(mInfeasibleSubsets->begin());
