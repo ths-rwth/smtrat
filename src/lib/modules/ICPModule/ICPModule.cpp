@@ -132,7 +132,9 @@ namespace smtrat
             icpLog.close();
         }
         #endif
+        #ifdef ICP_MODULE_SHOW_PROGRESS
         std::cout << std::endl;
+        #endif
     }
 
     bool ICPModule::informCore( const FormulaT& _constraint )
