@@ -52,7 +52,6 @@ namespace smtrat
             Numeric( long );
             Numeric( unsigned long );
             Numeric( const char* );
-            Numeric( const cln::cl_N& );
             Numeric( const Numeric& );
             ~Numeric();
 

@@ -18,7 +18,7 @@
 #include <carl/formula/FormulaPool.h>
 namespace smtrat {
 	enum class Logic : unsigned { UNDEFINED, QF_NRA, QF_LRA, QF_NIA, QF_LIA };
-	typedef cln::cl_RA Rational;
+	typedef mpq_class Rational;
 	typedef carl::MultivariatePolynomial<Rational> Poly;
 	typedef carl::Constraint<Poly> ConstraintT;
 	typedef carl::Formula<Poly> FormulaT;
