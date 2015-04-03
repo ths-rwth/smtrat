@@ -35,7 +35,6 @@
 #include <functional>
 
 #include <typeinfo>
-#include <cln/cln.h>
 
 using namespace std;
 
