@@ -215,6 +215,32 @@ namespace smtrat
         if( solverState() == True )
         {
             Module::getBackendsModel();
+            /*
+            // Determine the assignments of the variables that haven't been passed
+            auto iter_vars = mSubstitutions.end();
+            if( mSubstitutions.empty() )
+            {
+                return;
+            }
+            else
+            {
+                --iter_vars;
+            }    
+            while( iter_vars != mSubstitutions.begin() )
+            {
+                auto iter_subs = mModel.begin();
+                Poly value = ZERO_POLYNOMIAL;
+                while( iter_subs != mModel.end() )
+                {   
+                    value = iter_vars->second.substitute( iter_subs->first.asVariable(), (Poly)(Rational)iter_subs->second.asRAN()->value() );
+                    ++iter_subs;
+                }   
+                //assert( value.isConstant() );
+                ModelValue ass = vs::SqrtEx( value );
+                mModel.emplace( iter_vars->first, ass );
+                --iter_vars;
+            }
+            */
         }
     }
 
