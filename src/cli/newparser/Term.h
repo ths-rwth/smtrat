@@ -50,12 +50,12 @@ struct TermParser: public qi::grammar<Iterator, Theories::TermType(), Skipper> {
 		;
 		termop = 
 				(qualifiedidentifier >> +main)[qi::_val = px::bind(&Theories::functionCall, px::ref(*theories), qi::_1, qi::_2)]
-			|	(qi::lit("let") >> "(" >> +binding >> ")" >> main)[qi::_val = qi::_1]
+			|	(qi::lit("let")[px::bind(&Theories::openScope, px::ref(*theories))] >> "(" >> +binding >> ")" >> main[qi::_val = qi::_1])[px::bind(&Theories::closeScope, px::ref(*theories))]
 			|	(qi::lit("forall") >> "(" >> +sortedvariable >> ")" >> main)[qi::_val = qi::_2]
 			|	(qi::lit("exists") >> "(" >> +sortedvariable >> ")" >> main)[qi::_val = qi::_2]
 			//|	(qi::lit("!") >> main >> +attribute)
 		;
-		binding = (qi::lit("(") >> symbol >> main >> ")")[px::bind(&Theories::addBinding, px::ref(*theories), qi::_1, qi::_2)];
+		binding = (qi::lit("(") >> symbol >> main >> ")")[px::bind(&Theories::handleLet, px::ref(*theories), qi::_1, qi::_2)];
 	}
 
 	Theories* theories;
