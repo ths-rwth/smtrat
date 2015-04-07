@@ -55,10 +55,11 @@ namespace parser {
 		//std::map<std::string, carl::UninterpretedFunction> funmap_ufarithmetic;
 		//std::map<std::string, carl::UninterpretedFunction> funmap_uf;
 
-		FormulasT marithmeticIteBindings;
+		FormulasT mArithmeticIteBindings;
 		FormulasT mUninterpretedEqualities;
 		//std::map<Argument, carl::UVariable> mUninterpretedArguments;
-		//std::map<carl::Variable, std::tuple<FormulaT, Poly, Poly>> mArithmeticItes;
+		std::map<carl::Variable, std::tuple<FormulaT, Poly, Poly>> mArithmeticItes;
+		FormulasT mGlobalFormulas;
 		
 		InstructionHandler* handler;
 		

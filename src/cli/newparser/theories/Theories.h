@@ -50,8 +50,8 @@ struct Theories {
 	}
 	
 	void addGlobalFormulas(FormulasT& formulas) {
-		core.addGlobalFormulas(formulas);
-		arithmetic.addGlobalFormulas(formulas);
+		formulas.insert(state->mGlobalFormulas.begin(), state->mGlobalFormulas.end());
+		state->mGlobalFormulas.clear();
 	}
 	void newVariable(const std::string& name, const carl::Sort& sort) {
 		if (state->isSymbolFree(name)) {
@@ -61,29 +61,6 @@ struct Theories {
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Variable \"" << name << "\" will not be declared due to a name clash.");
 		}
-	}
-	
-	struct BindVisitor: 
-		public boost::static_visitor<>,
-		public virtual CoreTheory::BindVisitor, 
-		public virtual ArithmeticTheory::BindVisitor 
-	{
-		using CoreTheory::BindVisitor::operator();
-		using ArithmeticTheory::BindVisitor::operator();
-		
-		BindVisitor(ParserState* state, const std::string& symbol) {
-			this->state = state;
-			this->symbol = symbol;
-		}
-		
-		void operator()(const std::string& s) {
-			SMTRAT_LOG_ERROR("smtrat.parser", "Can not bind string \"" << s << "\".");
-		}
-	};
-	
-	void addBinding(const std::string& symbol, const TermType& term) {
-		BindVisitor bv(state, symbol);
-		boost::apply_visitor(bv, term);
 	}
 
 	TermType resolveSymbol(const Identifier& identifier) const {
@@ -95,14 +72,51 @@ struct Theories {
 		}
 	}
 	
+	void openScope() {
+		state->pushScope();
+	}
+	void closeScope() {
+		state->popScope();
+	}
+	
+	void handleLet(const std::string& symbol, const TermType& term) {
+		TheoryError te;
+		if (core.handleLet(symbol, term, te("Core"))) return;
+		if (arithmetic.handleLet(symbol, term, te("Arithmetic"))) return;
+		SMTRAT_LOG_ERROR("smtrat.parser", "Failed to bind \"" << symbol << "\" to \"" << term << "\":" << te);
+		std::cout << "Failed!" << std::endl;
+	}
+
+	TermType handleITE(const std::vector<TermType>& arguments) {
+		TermType result;
+		if (arguments.size() != 3) {
+			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to construct ITE expression, only exactly three arguments are allowed, but \"" << arguments << "\" were given.");
+			return result;
+		}
+		if (boost::get<FormulaT>(&arguments[0]) == nullptr) {
+			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to construct ITE expression, the first argument must be a formula, but \"" << arguments[0] << "\" was given.");
+			return result;
+		}
+		FormulaT ifterm = boost::get<FormulaT>(arguments[0]);
+		if (ifterm.isTrue()) return arguments[1];
+		if (ifterm.isFalse()) return arguments[2];
+		TheoryError te;
+		if (core.handleITE(ifterm, arguments[1], arguments[2], result, te("Core"))) return result;
+		if (arithmetic.handleITE(ifterm, arguments[1], arguments[2], result, te("Arithmetic"))) return result;
+		SMTRAT_LOG_ERROR("smtrat.parser", "Failed to construct ITE \"" << ifterm << "\" ? \"" << arguments[1] << "\" : \"" << arguments[2] << "\": " << te);
+		std::cout << "Failed!" << std::endl;
+		return result;
+	}
+	
 	TermType functionCall(const Identifier& identifier, const std::vector<TermType>& arguments) {
+		if (identifier.symbol == "ite") {
+			return handleITE(arguments);
+		}
 		TermType result;
 		TheoryError te;
-		te.setCurrent("Core");
-		if (core.functionCall(identifier, arguments, result, te)) return result;
-		te.setCurrent("Arithmetic");
-		if (arithmetic.functionCall(identifier, arguments, result, te)) return result;
-		SMTRAT_LOG_ERROR("smtrat.parser", "Failed to call " << identifier << " with " << arguments << ":" << te);
+		if (core.functionCall(identifier, arguments, result, te("Core"))) return result;
+		if (arithmetic.functionCall(identifier, arguments, result, te("Arithmetic"))) return result;
+		SMTRAT_LOG_ERROR("smtrat.parser", "Failed to call \"" << identifier << "\" with arguments " << arguments << ":" << te);
 		std::cout << "Failed!" << std::endl;
 		return result;
 	}

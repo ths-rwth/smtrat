@@ -2,7 +2,6 @@
 
 #include "../Common.h"
 #include "ParserState.h"
-#include "Visitors.h"
 
 namespace smtrat {
 namespace parser {
@@ -24,15 +23,33 @@ struct CoreTheory {
 		constants.add("false", T(FormulaT(carl::FormulaType::FALSE)));
 	}
 	
+	template<typename Term>
+	static bool convertTerm(const Term& term, FormulaT& result) {
+		if (boost::get<FormulaT>(&term) != nullptr) {
+			result = boost::get<FormulaT>(term);
+			return true;
+		} else if (boost::get<carl::Variable>(&term) != nullptr) {
+			if (boost::get<carl::Variable>(term).getType() == carl::VariableType::VT_BOOL) {
+				result = FormulaT(boost::get<carl::Variable>(term));
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			return false;
+		}
+	}
+	
 	template<typename Operator, typename Term>
 	static bool convertArguments(const Operator& op, const std::vector<Term>& arguments, std::vector<FormulaT>& result, TheoryError& errors) {
 		result.clear();
 		for (std::size_t i = 0; i < arguments.size(); i++) {
-			if (boost::get<FormulaT>(&arguments[i]) == nullptr) {
-				errors.next() << "Operator \"" << op << "\" expects arguments to be formulas, but argument " << (i+1) << " is not.";
+			FormulaT res;
+			if (!convertTerm(arguments[i], res)) {
+				errors.next() << "Operator \"" << op << "\" expects arguments to be arithmetic, but argument " << (i+1) << " is not: \"" << arguments[i] << "\".";
 				return false;
 			}
-			result.push_back(boost::get<FormulaT>(arguments[i]));
+			result.push_back(res);
 		}
 		return true;
 	}
@@ -43,6 +60,7 @@ struct CoreTheory {
 		carl::SortManager& sm = carl::SortManager::getInstance();
 		sm.interpretedSort("Bool", carl::VariableType::VT_BOOL);
 		
+		ops.emplace("=", OperatorType(carl::FormulaType::IFF));
 		ops.emplace("not", OperatorType(carl::FormulaType::NOT));
 		ops.emplace("=>", OperatorType(carl::FormulaType::IMPLIES));
 		ops.emplace("and", OperatorType(carl::FormulaType::AND));
@@ -50,8 +68,6 @@ struct CoreTheory {
 		ops.emplace("xor", OperatorType(carl::FormulaType::XOR));
 	}
 	
-	void addGlobalFormulas(FormulasT& formulas) {
-	}
 	bool newVariable(const std::string& name, const carl::Sort& sort) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
 		if (!sm.isInterpreted(sort)) return false;
@@ -60,12 +76,40 @@ struct CoreTheory {
 		state->var_bool[name] = carl::freshVariable(name, carl::VariableType::VT_BOOL);
 		return true;
 	}
-	
-	struct BindVisitor: public virtual visitors::BindVisitor {
-		void operator()(const FormulaT& f) {
-			state->bind_bool.emplace(symbol, f);
+
+	template<typename Term>
+	bool handleLet(const std::string& symbol, const Term& term, TheoryError& errors) {
+		if (boost::get<FormulaT>(&term) != nullptr) {
+			state->bind_bool.emplace(symbol, boost::get<FormulaT>(term));
+		} else if (boost::get<carl::Variable>(&term) != nullptr) {
+			if (boost::get<carl::Variable>(term).getType() == carl::VariableType::VT_BOOL) {
+				state->bind_bool.emplace(symbol, FormulaT(boost::get<carl::Variable>(term)));
+			} else {
+				errors.next() << "Failed to bind \"" << symbol << "\" to a non-boolean variable.";
+				return false;
+			}
+		} else {
+			errors.next() << "Failed to bind \"" << symbol << "\" to an unsupported term.";
+			return false;
 		}
-	};
+		return true;
+	}
+	
+	template<typename Term>
+	bool handleITE(const FormulaT& ifterm, const Term& thenterm, const Term& elseterm, Term& result, TheoryError& errors) {
+		FormulaT thenf;
+		FormulaT elsef;
+		if (!convertTerm(thenterm, thenf)) {
+			errors.next() << "Failed to construct ITE, the then-term \"" << thenterm << "\" is unsupported.";
+			return false;
+		}
+		if (!convertTerm(elseterm, elsef)) {
+			errors.next() << "Failed to construct ITE, the else-term \"" << elseterm << "\" is unsupported.";
+			return false;
+		}
+		result = FormulaT(carl::FormulaType::ITE, ifterm, thenf, elsef);
+		return true;
+	}
 	
 	template<typename Term>
 	bool functionCall(const Identifier& identifier, const std::vector<Term>& arguments, Term& result, TheoryError& errors) {
