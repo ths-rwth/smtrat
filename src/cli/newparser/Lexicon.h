@@ -25,12 +25,24 @@ struct DecimalParser: qi::real_parser<Rational, RationalPolicies> {};
 /**
  * Parses hexadecimals: `#x[0-9a-fA-F]+`
  */
-struct HexadecimalParser: qi::uint_parser<Integer,16,1,-1> {};
+struct HexadecimalParser: public qi::grammar<Iterator, Rational(), Skipper> {
+    HexadecimalParser(): HexadecimalParser::base_type(main, "hexadecimal") {
+		main = "#x" > number;
+	}
+    qi::uint_parser<Integer,16,1,-1> number;
+    qi::rule<Iterator, Rational(), Skipper> main;
+};
 
 /**
  * Parses binaries: `#b[01]+`
  */
-struct BinaryParser: qi::uint_parser<Integer,2,1,-1> {};
+struct BinaryParser: public qi::grammar<Iterator, Integer(), Skipper> {
+    BinaryParser(): BinaryParser::base_type(main, "binary") {
+		main = "#b" > number;
+	}
+    qi::uint_parser<Integer,2,1,-1> number;
+    qi::rule<Iterator, Integer(), Skipper> main;
+};
 
 /**
  * Parses strings: `".+"` with escape sequences `\"` and `\\`
