@@ -34,7 +34,6 @@ public:
 		theories(&state),
 		parser(handler, theories, *this)
 	{
-		handler->setOption(Attribute(std::string("print-instruction")));
 	}
 		
 	~SMTLIBParser() {
