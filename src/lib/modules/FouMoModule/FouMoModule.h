@@ -48,6 +48,8 @@ namespace smtrat
             FormulaOrigins mProc_Constraints;
             // Stores the equalities
             FormulaOrigins mEqualities;
+            // Stores the disequalities
+            FormulaOrigins mDisequalities;
             // Stores the order in which the variables were eliminated
             std::vector<carl::Variable> mElim_Order;
             // Stores the deleted constraints, just as they worked as an upper respectively lower
@@ -56,6 +58,8 @@ namespace smtrat
             VariableUpperLower mDeleted_Constraints;  
             // Stores constructed assignments for the occuring variables when a solution was found
             std::map<carl::Variable, Rational> mVarAss;
+            // Stores whether we found a valid solution in this module
+            bool mCorrect_Solution;
             
             /**
              * @param curr_constraints Contains the constraints for which a possibly good
