@@ -48,6 +48,8 @@ namespace smtrat
             FormulaOrigins mProc_Constraints;
             // Stores the equalities
             FormulaOrigins mEqualities;
+            // Stores the disqualities
+            FormulaOrigins mDisequalities;
             // Stores the order in which the variables were eliminated
             std::vector<carl::Variable> mElim_Order;
             // Stores the deleted constraints, just as they worked as an upper respectively lower
