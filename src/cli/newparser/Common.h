@@ -106,8 +106,9 @@ namespace parser {
 		std::stringstream ss;
 		std::string currentTheory;
 	public:
-		void setCurrent(const std::string& theory) {
+		TheoryError& operator()(const std::string& theory) {
 			currentTheory = theory;
+			return *this;
 		}
 		friend inline std::ostream& operator<<(std::ostream& os, const TheoryError& te) {
 			return os << te.ss.str();
