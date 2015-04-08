@@ -96,7 +96,7 @@ public:
 	}
 };
 
-int main() {
+int main(int argc, char* argv[]) {
 	if (!carl::logging::logger().has("stdout")) {
 		carl::logging::logger().configure("stdout", std::cout);
 	}
@@ -104,6 +104,6 @@ int main() {
 	Executor* e = new Executor();
 	smtrat::parser::SMTLIBParser p(e, false);
 	
-	std::ifstream infile("test.smt2");
-	p.parse(infile, "test.smt2");
+	std::ifstream infile(argv[1]);
+	p.parse(infile);
 }
