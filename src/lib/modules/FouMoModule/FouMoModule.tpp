@@ -28,7 +28,7 @@
 
 #include "FouMoModule.h"
 
-#define DEBUG_FouMoModule
+//#define DEBUG_FouMoModule
 
 namespace smtrat
 {
@@ -400,7 +400,12 @@ namespace smtrat
                 {
                     ++iter_var;
                 }    
-            }    
+            }
+            if( mDeleted_Constraints.empty() || mProc_Constraints.empty() || mElim_Order.empty() )
+            {
+                cout << "Fresh start!" << endl;
+                fresh_start();                
+            }
         }
         else if( _subformula->formula().constraint().relation() == carl::Relation::EQ )
         {
@@ -864,8 +869,8 @@ namespace smtrat
                 // and determine the lowest upper bound in the current level
                 atomic_formula_upper = iter_constr_upper->first;
                 to_be_substituted_upper = atomic_formula_upper.constraint().lhs();
-                typename Poly::PolyType afuExpanded = (typename Poly::PolyType)atomic_formula_upper.constraint().lhs();
-                auto iter_poly_upper = afuExpanded.begin();
+                //typename Poly::PolyType afuExpanded = (typename Poly::PolyType)atomic_formula_upper.constraint().lhs();
+                //auto iter_poly_upper = afuExpanded.begin();
                 to_be_substituted_upper = to_be_substituted_upper.substitute( mVarAss );
                 #ifdef DEBUG_FouMoModule
                 cout << "Remaining polynomial: " << to_be_substituted_upper << endl;
@@ -874,7 +879,7 @@ namespace smtrat
                 // are assigned to zero.
                 Rational coeff_upper;
                 typename Poly::PolyType tbsuExpanded = (typename Poly::PolyType)to_be_substituted_upper;
-                iter_poly_upper = tbsuExpanded.begin();
+                auto iter_poly_upper = tbsuExpanded.begin();
                 while( iter_poly_upper != tbsuExpanded.end() )
                 {
                     if( !iter_poly_upper->isConstant() )
@@ -944,8 +949,8 @@ namespace smtrat
                 // and determine the highest lower bound in the current level
                 atomic_formula_lower = iter_constr_lower->first;
                 to_be_substituted_lower = atomic_formula_lower.constraint().lhs();
-                typename Poly::PolyType aflcExpanded = (typename Poly::PolyType)atomic_formula_lower.constraint().lhs();
-                auto iter_poly_lower = aflcExpanded.begin();
+                //typename Poly::PolyType aflcExpanded = (typename Poly::PolyType)atomic_formula_lower.constraint().lhs();
+                //auto iter_poly_lower = aflcExpanded.begin();
                 to_be_substituted_lower = to_be_substituted_lower.substitute( mVarAss ); 
                 #ifdef DEBUG_FouMoModule
                 cout << "Remaining polynomial: " << to_be_substituted_lower << endl;
@@ -954,7 +959,7 @@ namespace smtrat
                 // are assigned to zero.
                 Rational coeff_lower;
                 typename Poly::PolyType tbslExpanded = (typename Poly::PolyType)to_be_substituted_lower;
-                iter_poly_lower = tbslExpanded.begin();
+                auto iter_poly_lower = tbslExpanded.begin();
                 while( iter_poly_lower != tbslExpanded.end() )
                 {
                     if( !iter_poly_lower->isConstant() )
@@ -1046,7 +1051,7 @@ namespace smtrat
             constr_poly = constr_poly.substitute( mVarAss );
             typename Poly::PolyType eqExpanded = (typename Poly::PolyType)constr_poly;
             auto iter_poly = eqExpanded.begin();
-            bool found_var = true;
+            bool found_var = false;
             while( iter_poly != eqExpanded.end() )
             {
                 if( !iter_poly->isConstant() )
@@ -1054,7 +1059,7 @@ namespace smtrat
                     if( !found_var )
                     {
                         found_var = true;
-                        mVarAss[ iter_poly->getSingleVariable() ] = Rational(-1)*Rational( eqExpanded.constantPart() );                       
+                        mVarAss[ iter_poly->getSingleVariable() ] = Rational(-1)*Rational( eqExpanded.constantPart() )/(Rational)iter_poly->coeff();                       
                     }
                     else
                     {

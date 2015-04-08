@@ -76,9 +76,23 @@ namespace smtrat
              */
             FormulaT combine_upper_lower( const smtrat::ConstraintT& upper_constr, const smtrat::ConstraintT& lower_Constr, carl::Variable& corr_var );
             
+            /*
+             * Tries to construct a solution by backtracking through the computation steps
+             * and returns whether this was successful
+             */            
             bool construct_solution();
             
+            /*
+             * Depending on whether we work on integer or rational instances, it
+             * sends the corresponding set of constraints to the backends and returns
+             * the answer obtained by the backends
+             */
             Answer call_backends( bool _full );
+            
+            /*
+             * Resets all data structures of this module to the initial assignments
+             */
+            void fresh_start();
             
         public:
             FouMoModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
