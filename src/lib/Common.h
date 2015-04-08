@@ -74,6 +74,7 @@ namespace smtrat
     // Further type definitions.
 
     typedef mpq_class Rational;
+	typedef carl::IntegralType<Rational>::type Integer;
     
     typedef carl::Term<Rational> TermT;
     

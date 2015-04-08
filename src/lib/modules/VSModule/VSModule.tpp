@@ -183,7 +183,7 @@ namespace smtrat
             return Unknown;
         if( Settings::int_constraints_allowed && !(rReceivedFormula().isIntegerConstraintConjunction() || rReceivedFormula().isRealConstraintConjunction()) )
             return Unknown;
-        if( !mConditionsChanged )
+        if( !mConditionsChanged && (!_full || mLastCheckFull) )
         {
             if( mInfeasibleSubsets.empty() )
             {
@@ -210,6 +210,7 @@ namespace smtrat
                 return False;
         }
         mConditionsChanged = false;
+        mLastCheckFull = _full;
         if( rReceivedFormula().empty() )
         {
             if( Settings::int_constraints_allowed && !solutionInDomain() )
@@ -383,6 +384,10 @@ namespace smtrat
                     else
                     {
                         #endif
+                        if( !_full && currentState->getNumberOfCurrentSubresultCombination() > Settings::full_check_threshold )
+                        {
+                            return Unknown;
+                        }
                         switch( currentState->type() )
                         {
                             case State::SUBSTITUTION_TO_APPLY:

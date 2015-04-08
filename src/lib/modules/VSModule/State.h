@@ -179,6 +179,10 @@ namespace vs
         size_t                mCurrentIntRange;
         ///
         carl::IDGenerator*          mpConditionIdAllocator;
+        ///
+        std::vector<std::pair<carl::Variable,multiset<double>>> mRealVarVals;
+        ///
+        std::vector<std::pair<carl::Variable,multiset<double>>> mIntVarVals;
         
     public:
         
@@ -921,8 +925,9 @@ namespace vs
          * most adequate variable. Which variable is taken depends on heuristics.
          * @param _allVariables All globally known variables.
          * @param _preferEquation A flag that indicates to prefer equations in the heuristics of this method.
+         * @param _tryDifferentVarOrder
          */
-        bool initIndex( const carl::Variables& _allVariables, bool _preferEquation );
+        bool initIndex( const carl::Variables& _allVariables, bool _preferEquation, bool _tryDifferentVarOrder = false );
         
         /**
          * Adds a constraint to the conditions of this state.

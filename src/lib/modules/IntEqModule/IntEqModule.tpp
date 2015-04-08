@@ -130,20 +130,26 @@ namespace smtrat
             auto iter_formula = mProc_Constraints.begin();
             while( iter_formula != mProc_Constraints.end() )
             {
-                size_t delete_count = 0;
-                auto iter_origins = (iter_formula->second)->begin();
-                while( iter_origins !=  (iter_formula->second)->end() )
+                //size_t delete_count = 0;
+                auto iter_origins = iter_formula->second->begin();
+                while( iter_origins !=  iter_formula->second->end() )
                 {                    
                     bool contains = iter_origins->contains( _subformula->formula() );
                     if( contains || *iter_origins == _subformula->formula() )
                     {
-                        ++delete_count;
+                        iter_origins = iter_formula->second->erase( iter_origins );
+                        //++delete_count;
                     }
-                    ++iter_origins;
+                    else
+                    {
+                        ++iter_origins;
+                    }    
                 }
-                if( iter_formula->second->size() == delete_count )
+                if( iter_formula->second->empty() )  //iter_formula->second->size() == delete_count )
                 {
-                    mProc_Constraints.erase( iter_formula++ );
+                    auto to_delete = iter_formula;
+                    ++iter_formula;
+                    mProc_Constraints.erase( to_delete );
                 }
                 else
                 {
@@ -158,25 +164,31 @@ namespace smtrat
             auto iter_substitutions = mVariables.begin();
             while( iter_substitutions != mVariables.end() )
             {
-                size_t delete_count = 0;
-                auto iter_origins = (iter_substitutions->second)->begin();
-                while( iter_origins !=  (iter_substitutions->second)->end() )
+                //size_t delete_count = 0;
+                auto iter_origins = iter_substitutions->second->begin();
+                while( iter_origins !=  iter_substitutions->second->end() )
                 {
                     bool contains = iter_origins->contains( _subformula->formula() ); 
                     if( contains || *iter_origins == _subformula->formula() )
                     {   
-                        ++delete_count;
+                        iter_origins = iter_substitutions->second->erase( iter_origins );
+                        //++delete_count;
                     }
-                    ++iter_origins;
+                    else
+                    {
+                        ++iter_origins;
+                    }    
                 }
-                if( iter_substitutions->second->size() == delete_count )
+                if( iter_substitutions->second->empty() ) //iter_substitutions->second->size() == delete_count )
                 {
-                    auto iter_substitutions_help = iter_substitutions;
-                    iter_substitutions = mVariables.erase( iter_substitutions );
+                    auto var_to_be_deleted = iter_substitutions->first; 
+                    auto to_delete = iter_substitutions;
+                    ++iter_substitutions;
+                    mVariables.erase( to_delete );
                     auto iter_help = mSubstitutions.begin();//find( iter_substitutions_help->first );
                     while( iter_help != mSubstitutions.end() )
                     {
-                        if( iter_help->first == iter_substitutions_help->first )
+                        if( iter_help->first == var_to_be_deleted )
                         {
                             mSubstitutions.erase( iter_help );
                             break;
@@ -201,13 +213,34 @@ namespace smtrat
     {
         mModel.clear();
         if( solverState() == True )
-        {    
-            auto iter_subs = mSubstitutions.begin();
-            while( iter_subs != mSubstitutions.end() )
+        {
+            Module::getBackendsModel();
+            /*
+            // Determine the assignments of the variables that haven't been passed
+            auto iter_vars = mSubstitutions.end();
+            if( mSubstitutions.empty() )
             {
-                mModel.insert( mModel.end(), std::make_pair(iter_subs->first, iter_subs->second) );
-                ++iter_subs;
+                return;
             }
+            else
+            {
+                --iter_vars;
+            }    
+            while( iter_vars != mSubstitutions.begin() )
+            {
+                auto iter_subs = mModel.begin();
+                Poly value = ZERO_POLYNOMIAL;
+                while( iter_subs != mModel.end() )
+                {   
+                    value = iter_vars->second.substitute( iter_subs->first.asVariable(), (Poly)(Rational)iter_subs->second.asRAN()->value() );
+                    ++iter_subs;
+                }   
+                //assert( value.isConstant() );
+                ModelValue ass = vs::SqrtEx( value );
+                mModel.emplace( iter_vars->first, ass );
+                --iter_vars;
+            }
+            */
         }
     }
 
@@ -400,8 +433,16 @@ namespace smtrat
                     collectOrigins( origins_new->at(i), infSubSet  );
                     mInfeasibleSubsets.push_back( infSubSet );
                     return False; 
-                }        
-                temp_proc_constraints.emplace( newEq, origins_new );
+                } 
+                auto iter_help = temp_proc_constraints.find( newEq );
+                if( iter_help == temp_proc_constraints.end() )
+                {
+                    temp_proc_constraints.emplace( newEq, origins_new );
+                }
+                else
+                {
+                    iter_help->second->insert( iter_help->second->end(), origins_new->begin(), origins_new->end() );
+                }
                 ++constr_iter;
             }
             mProc_Constraints = temp_proc_constraints;
@@ -426,8 +467,8 @@ namespace smtrat
                     ++iter_subs_help;
                 }
                 #endif
-                const smtrat::ConstraintT* constr = (*iter_formula).formula().pConstraint();
-                Poly new_poly = constr->lhs();
+                const smtrat::ConstraintT constr = (*iter_formula).formula().constraint();
+                Poly new_poly = constr.lhs();
                 std::shared_ptr<std::vector<FormulaT>> origins( new std::vector<FormulaT>() );
                 origins->push_back( (*iter_formula).formula() );
                 auto iter_subs = mSubstitutions.begin();

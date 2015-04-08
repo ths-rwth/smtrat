@@ -55,6 +55,8 @@ namespace smtrat
             
             /// A flag being true, if a condition in the root state has been changed after the last consistency check.
             bool mConditionsChanged;
+            /// A flag, which is true if the last check was a full one.
+            bool mLastCheckFull;
             /// A flag being true, if it is known that a constraint has been added to the root state, which is inconsistent itself.
             bool mInconsistentConstraintAdded;
             /// For the allocation of unique ids for the states.

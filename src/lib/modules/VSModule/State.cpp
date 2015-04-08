@@ -71,7 +71,9 @@ namespace vs
         mMinIntTestCanidate( smtrat::ONE_RATIONAL ),
         mMaxIntTestCanidate( smtrat::MINUS_ONE_RATIONAL ),
         mCurrentIntRange( 0 ),
-        mpConditionIdAllocator( _conditionIdAllocator )
+        mpConditionIdAllocator( _conditionIdAllocator ),
+        mRealVarVals(),
+        mIntVarVals()
     {}
 
     State::State( State* const _father, const Substitution& _substitution, carl::IDGenerator* _conditionIdAllocator, bool _withVariableBounds ):
@@ -104,7 +106,9 @@ namespace vs
         mMinIntTestCanidate( smtrat::ONE_RATIONAL ),
         mMaxIntTestCanidate( smtrat::MINUS_ONE_RATIONAL ),
         mCurrentIntRange( 0 ),
-        mpConditionIdAllocator( _conditionIdAllocator )
+        mpConditionIdAllocator( _conditionIdAllocator ),
+        mRealVarVals(),
+        mIntVarVals()
     {}
 
     State::~State()
@@ -1069,25 +1073,29 @@ namespace vs
 
     size_t State::getNumberOfCurrentSubresultCombination() const
     {
-        if( mpSubResultCombination->size() == 1 )
+        if( hasSubResultsCombination() )
         {
-            return mpSubResultCombination->begin()->second;
-        }
-        else
-        {
-            // First compute the number of combinations being a prefix of the current substitution result combination.
-            size_t numOfPrefixCombinations = 1;
-            for( size_t pos = 0; pos < mpSubResultCombination->size()-1; ++pos )
+            if( mpSubResultCombination->size() == 1 )
             {
-                numOfPrefixCombinations *= mpSubstitutionResults->at( pos ).size();
+                return mpSubResultCombination->begin()->second;
             }
-            size_t numOfCurrentCombination = 1;
-            for( const auto& src : *mpSubResultCombination )
+            else
             {
-                numOfCurrentCombination *= src.second;
+                // First compute the number of combinations being a prefix of the current substitution result combination.
+                size_t numOfPrefixCombinations = 1;
+                for( size_t pos = 0; pos < mpSubResultCombination->size()-1; ++pos )
+                {
+                    numOfPrefixCombinations *= mpSubstitutionResults->at( pos ).size();
+                }
+                size_t numOfCurrentCombination = 1;
+                for( const auto& src : *mpSubResultCombination )
+                {
+                    numOfCurrentCombination *= src.second;
+                }
+                return numOfPrefixCombinations + numOfCurrentCombination;
             }
-            return numOfPrefixCombinations + numOfCurrentCombination;
         }
+        return 0;
     }
 
     ConditionList State::getCurrentSubresultCombination() const
@@ -1201,9 +1209,9 @@ namespace vs
         }
     }
 
-    bool State::initIndex( const carl::Variables& _allVariables, bool _preferEquation )
+    bool State::initIndex( const carl::Variables& _allVariables, bool _preferEquation, bool _tryDifferentVarOrder )
     {
-        mTryToRefreshIndex = false;
+        assert( _tryDifferentVarOrder || !mTryToRefreshIndex );
         if( conditions().empty() )
             return false;
         if( _allVariables.size() == 1 )
@@ -1215,27 +1223,32 @@ namespace vs
             }
             return false;
         }
-        map<carl::Variable, multiset<double> > realVarVals = map<carl::Variable, multiset<double> >();
-        map<carl::Variable, multiset<double> > intVarVals = map<carl::Variable, multiset<double> >();
-        for( auto var = _allVariables.begin(); var != _allVariables.end(); ++var )
+        if( !_tryDifferentVarOrder )
         {
-            if( var->getType() == carl::VariableType::VT_INT )
-                intVarVals.insert( pair<carl::Variable, multiset<double> >( *var, multiset<double>() ) );
-            else
-                realVarVals.insert( pair<carl::Variable, multiset<double> >( *var, multiset<double>() ) );
-        }
-        map<carl::Variable, multiset<double> >& varVals = realVarVals.empty() ? intVarVals : realVarVals;
-        // Find for each variable the highest valuation of all conditions' constraints.
-        for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
-        {
-            // Check for all variables their valuation for the given constraint.
-            for( auto var = varVals.begin(); var != varVals.end(); ++var )
+            mTryToRefreshIndex = false;
+            mRealVarVals.clear();
+            mIntVarVals.clear();
+            for( auto var = _allVariables.begin(); var != _allVariables.end(); ++var )
             {
-                double varInConsVal = (**cond).valuate( var->first, _allVariables.size(), _preferEquation );
-                if( varInConsVal != 0 )
-                    varVals.at( var->first ).insert( varInConsVal );
+                if( var->getType() == carl::VariableType::VT_INT )
+                    mIntVarVals.push_back( pair<carl::Variable, multiset<double> >( *var, std::move(multiset<double>()) ) );
+                else
+                    mRealVarVals.push_back( pair<carl::Variable, multiset<double> >( *var, std::move(multiset<double>()) ) );
+            }
+            vector<pair<carl::Variable, multiset<double>>>& varValsB = mRealVarVals.empty() ? mIntVarVals : mRealVarVals;
+            // Find for each variable the highest valuation of all conditions' constraints.
+            for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
+            {
+                // Check for all variables their valuation for the given constraint.
+                for( auto var = varValsB.begin(); var != varValsB.end(); ++var )
+                {
+                    double varInConsVal = (**cond).valuate( var->first, _allVariables.size(), _preferEquation );
+                    if( varInConsVal != 0 )
+                        var->second.insert( varInConsVal );
+                }
             }
         }
+        vector<pair<carl::Variable, multiset<double>>>& varVals = mRealVarVals.empty() ? mIntVarVals : mRealVarVals;
         #ifdef VS_DEBUG_VARIABLE_VALUATIONS
         for( auto var = varVals.begin(); var != varVals.end(); ++var )
         {
