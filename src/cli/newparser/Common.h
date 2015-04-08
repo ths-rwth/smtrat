@@ -46,6 +46,10 @@ namespace parser {
 		Res convertOne(const T& t) const {
 			return Res(t);
 		}
+		template<typename Variant>
+		Res convertVariant(const Variant& t) const {
+			return boost::apply_visitor(*this, t);
+		}
 		template<typename... T>
 		Res convert(const boost::variant<T...>& t) const {
 			return boost::apply_visitor(*this, t);

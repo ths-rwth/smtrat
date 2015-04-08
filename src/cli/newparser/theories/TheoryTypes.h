@@ -14,11 +14,12 @@ namespace types {
 		typedef carl::mpl_variant_of<TermTypes>::type TermType;
 	};
 #ifdef PARSER_BITVECTOR
+	typedef carl::BVTerm<Poly> BVTerm;
 	struct BitvectorTheory {
-		typedef mpl::vector<carl::BVTerm> ConstTypes;
+		typedef mpl::vector<carl::BVVariable, BVTerm> ConstTypes;
 		typedef mpl::vector<carl::BVVariable> VariableTypes;
-		typedef mpl::vector<carl::BVTerm> ExpressionTypes;
-		typedef mpl::vector<carl::BVTerm> TermTypes;
+		typedef mpl::vector<carl::BVVariable, BVTerm> ExpressionTypes;
+		typedef mpl::vector<carl::BVVariable, BVTerm> TermTypes;
 		typedef carl::mpl_variant_of<TermTypes>::type TermType;
 	};
 #endif
@@ -77,7 +78,15 @@ namespace types {
 		>::type TermTypes;
 	typedef carl::mpl_variant_of<TermTypes>::type TermType;
 	
-	typedef boost::variant<bool, std::string, carl::Variable, Integer, Rational, Poly, FormulaT, SExpressionSequence<types::ConstType>, carl::UVariable, carl::UFInstance, boost::spirit::qi::unused_type> AttributeValue;
+	typedef carl::mpl_concatenate<
+			TermTypes,
+			boost::mpl::vector<
+				SExpressionSequence<types::ConstType>,
+				bool,
+				boost::spirit::qi::unused_type
+			>
+		>::type AttributeTypes;
+	typedef carl::mpl_variant_of<AttributeTypes>::type AttributeValue;
 	
 	struct FunctionInstantiator {
 		bool operator()(const std::vector<TermType>&, TermType&) {

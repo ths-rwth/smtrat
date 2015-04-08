@@ -63,10 +63,15 @@ namespace parser {
 	bool ArithmeticTheory::declareVariable(const std::string& name, const carl::Sort& sort) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
 		if (!sm.isInterpreted(sort)) return false;
-		if ((sm.interpretedType(sort) != carl::VariableType::VT_REAL) && (sm.interpretedType(sort) != carl::VariableType::VT_INT)) return false;
-		assert(state->isSymbolFree(name));
-		state->variables[name] = carl::freshVariable(name, sm.interpretedType(sort));
-		return true;
+		switch (sm.interpretedType(sort)) {
+			case carl::VariableType::VT_INT:
+			case carl::VariableType::VT_REAL:
+				assert(state->isSymbolFree(name));
+				state->variables[name] = carl::freshVariable(name, sm.interpretedType(sort));
+				return true;
+			default:
+				return false;
+		}
 	}
 
 	bool ArithmeticTheory::handleITE(const FormulaT& ifterm, const types::TermType& thenterm, const types::TermType& elseterm, types::TermType& result, TheoryError& errors) {

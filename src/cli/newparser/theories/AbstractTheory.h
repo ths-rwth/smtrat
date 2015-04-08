@@ -16,9 +16,6 @@ public:
 	virtual bool declareVariable(const std::string&, const carl::Sort&) {
 		return false;
 	}
-	virtual bool declareFunction(const std::string&, const std::vector<carl::Sort>&, const carl::Sort&) {
-		return false;
-	}
 	virtual bool defineFunction(const std::string&, const std::vector<carl::Sort>&, const carl::Sort&) {
 		return false;
 	}

@@ -8,7 +8,7 @@
 #include "Arithmetic.h"
 #include "Uninterpreted.h"
 #ifdef PARSER_BITVECTOR
-#indlude "Bitvector.h"
+#include "Bitvector.h"
 #endif
 
 namespace smtrat {
@@ -28,7 +28,7 @@ struct Theories {
 	static void addSimpleSorts(qi::symbols<char, carl::Sort>& sorts) {
 		ArithmeticTheory::addSimpleSorts(sorts);
 #ifdef PARSER_BITVECTOR
-		BitvectorTheory::addSimpleSorts(constants);
+		BitvectorTheory::addSimpleSorts(sorts);
 #endif
 		CoreTheory::addSimpleSorts(sorts);
 		UninterpretedTheory::addSimpleSorts(sorts);
@@ -61,10 +61,7 @@ struct Theories {
 	}
 	void declareFunction(const std::string& name, const std::vector<carl::Sort>& args, const carl::Sort& sort) {
 		if (state->isSymbolFree(name)) {
-			for (auto& t: theories) {
-				if (t.second->declareFunction(name, args, sort)) return;
-			}
-			SMTRAT_LOG_ERROR("smtrat.parser", "Function \"" << name << "\" could not be declared.");
+			state->declared_functions[name] = carl::newUninterpretedFunction(name, args, sort);
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Function \"" << name << "\" will not be declared due to a name clash.");
 		}

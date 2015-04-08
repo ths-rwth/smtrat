@@ -13,7 +13,6 @@ struct ArithmeticTheory: public AbstractTheory  {
 	static void addSimpleSorts(qi::symbols<char, carl::Sort>& sorts);
 	
 	static bool convertTerm(const types::TermType& term, Poly& result);
-	
 	static bool convertArguments(const OperatorType& op, const std::vector<types::TermType>& arguments, std::vector<Poly>& result, TheoryError& errors);
 	
 	std::map<std::string, OperatorType> ops;

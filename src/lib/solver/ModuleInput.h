@@ -34,7 +34,7 @@
 #include <iterator>
 #include "../Common.h"
 #include "../datastructures/Assignment.h"
-#include "../../cli/parser/ParserTypes.h"
+#include "../../cli/newparser/Parser.h"
 #include "../config.h"
 
 namespace smtrat

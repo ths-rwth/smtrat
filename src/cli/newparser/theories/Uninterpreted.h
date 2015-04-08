@@ -10,12 +10,11 @@ namespace parser {
 struct UninterpretedTheory: public AbstractTheory {
 	
 	static bool convertTerm(const types::TermType& term, types::UninterpretedTheory::TermType& result);
-	static bool convertArguments(const std::string& op, const std::vector<types::TermType>& arguments, std::vector<types::UninterpretedTheory::TermType>& result, TheoryError& errors);
+	static bool convertArguments(const std::vector<types::TermType>& arguments, std::vector<types::UninterpretedTheory::TermType>& result, TheoryError& errors);
 	
 	UninterpretedTheory(ParserState* state);
 	
 	bool declareVariable(const std::string& name, const carl::Sort& sort);
-	bool declareFunction(const std::string& name, const std::vector<carl::Sort>& args, const carl::Sort& sort);
 	
 	bool handleITE(const FormulaT& ifterm, const types::TermType& thenterm, const types::TermType& elseterm, types::TermType& result, TheoryError& errors);
 	
