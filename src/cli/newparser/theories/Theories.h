@@ -1,94 +1,115 @@
 #pragma once
 
 #include "../Common.h"
+#include "TheoryTypes.h"
+#include "AbstractTheory.h"
 #include "ParserState.h"
-
-#include <carl/util/mpl_utils.h>
-
 #include "Core.h"
 #include "Arithmetic.h"
+#include "Uninterpreted.h"
+#ifdef PARSER_BITVECTOR
+#indlude "Bitvector.h"
+#endif
 
 namespace smtrat {
 namespace parser {
 
 struct Theories {
-
-	/// Constants
-	typedef carl::mpl_concatenate<
-			CoreTheory::ConstTypes,
-			ArithmeticTheory::ConstTypes
-		>::type ConstTypes;
-	typedef carl::mpl_variant_of<ConstTypes>::type ConstType;
 	
-	static void addConstants(qi::symbols<char, ConstType>& constants) {
-		CoreTheory::addConstants(constants);
+	static void addConstants(qi::symbols<char, types::ConstType>& constants) {
 		ArithmeticTheory::addConstants(constants);
+#ifdef PARSER_BITVECTOR
+		BitvectorTheory::addConstants(constants);
+#endif
+		CoreTheory::addConstants(constants);
+		UninterpretedTheory::addConstants(constants);
 	}
-	
-	typedef carl::mpl_concatenate<
-			CoreTheory::ExpressionTypes,
-			ArithmeticTheory::ExpressionTypes
-		>::type ExpressionTypes;
-	typedef carl::mpl_variant_of<ExpressionTypes>::type ExpressionType;
-	
-	typedef carl::mpl_concatenate<
-			CoreTheory::TermTypes,
-			ArithmeticTheory::TermTypes
-		>::type TermTypes;
-	typedef carl::mpl_variant_of<TermTypes>::type TermType;
 
 	static void addSimpleSorts(qi::symbols<char, carl::Sort>& sorts) {
-		CoreTheory::addSimpleSorts(sorts);
 		ArithmeticTheory::addSimpleSorts(sorts);
+#ifdef PARSER_BITVECTOR
+		BitvectorTheory::addSimpleSorts(constants);
+#endif
+		CoreTheory::addSimpleSorts(sorts);
+		UninterpretedTheory::addSimpleSorts(sorts);
 	}
 	
 	Theories(ParserState* state):
-		state(state), 
-		core(state),
-		arithmetic(state)
+		state(state)
 	{
+		theories.emplace("Arithmetic", new ArithmeticTheory(state));
+#ifdef PARSER_BITVECTOR
+		theories.emplace("Bitvector", new BitvectorTheory(state));
+#endif
+		theories.emplace("Core", new CoreTheory(state));
+		theories.emplace("Uninterpreted", new UninterpretedTheory(state));
 	}
 	
 	void addGlobalFormulas(FormulasT& formulas) {
 		formulas.insert(state->mGlobalFormulas.begin(), state->mGlobalFormulas.end());
 		state->mGlobalFormulas.clear();
 	}
-	void newVariable(const std::string& name, const carl::Sort& sort) {
+	void declareVariable(const std::string& name, const carl::Sort& sort) {
 		if (state->isSymbolFree(name)) {
-			if (core.newVariable(name, sort)) return;
-			if (arithmetic.newVariable(name, sort)) return;
+			for (auto& t: theories) {
+				if (t.second->declareVariable(name, sort)) return;
+			}
 			SMTRAT_LOG_ERROR("smtrat.parser", "Variable \"" << name << "\" was declared with an invalid sort \"" << sort << "\".");
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Variable \"" << name << "\" will not be declared due to a name clash.");
 		}
 	}
-
-	TermType resolveSymbol(const Identifier& identifier) const {
-		if (identifier.indices == nullptr) {
-			return state->resolveSymbol<TermType>(identifier.symbol);
+	void declareFunction(const std::string& name, const std::vector<carl::Sort>& args, const carl::Sort& sort) {
+		if (state->isSymbolFree(name)) {
+			for (auto& t: theories) {
+				if (t.second->declareFunction(name, args, sort)) return;
+			}
+			SMTRAT_LOG_ERROR("smtrat.parser", "Function \"" << name << "\" could not be declared.");
 		} else {
-			SMTRAT_LOG_ERROR("smtrat.parser", "Indexed symbols are not supported yet.");
-			return TermType();
+			SMTRAT_LOG_ERROR("smtrat.parser", "Function \"" << name << "\" will not be declared due to a name clash.");
 		}
 	}
 	
-	void openScope() {
-		state->pushScope();
-	}
-	void closeScope() {
-		state->popScope();
+	void declareFunctionArgument(const std::pair<std::string, carl::Sort>& arg) {
+		if (state->isSymbolFree(arg.first)) {
+			carl::SortManager& sm = carl::SortManager::getInstance();
+			if (sm.isInterpreted(arg.second)) {
+				carl::Variable v = carl::VariablePool::getInstance().getFreshVariable(arg.first, carl::SortManager::getInstance().interpretedType(arg.second));
+				state->bindings.emplace(arg.first, v);
+			} else {
+				SMTRAT_LOG_ERROR("smtrat.parser", "Function argument \"" << arg.first << "\" is of uninterpreted type.");
+			}
+		} else {
+			SMTRAT_LOG_ERROR("smtrat.parser", "Function argument \"" << arg.first << "\" will not be declared due to a name clash.");
+		}
 	}
 	
-	void handleLet(const std::string& symbol, const TermType& term) {
-		TheoryError te;
-		if (core.handleLet(symbol, term, te("Core"))) return;
-		if (arithmetic.handleLet(symbol, term, te("Arithmetic"))) return;
-		SMTRAT_LOG_ERROR("smtrat.parser", "Failed to bind \"" << symbol << "\" to \"" << term << "\":" << te);
-		std::cout << "Failed!" << std::endl;
+	void defineFunction(const std::string& name, const carl::Sort& sort, const types::TermType& definition) {
+		SMTRAT_LOG_ERROR("smtrat.parser", "Defined \"" << sort << " " << name << " -> " << definition << "\".");
 	}
 
-	TermType handleITE(const std::vector<TermType>& arguments) {
-		TermType result;
+	types::TermType resolveSymbol(const Identifier& identifier) const {
+		if (identifier.indices == nullptr) {
+			return state->resolveSymbol<types::TermType>(identifier.symbol);
+		} else {
+			SMTRAT_LOG_ERROR("smtrat.parser", "Indexed symbols are not supported yet.");
+			return types::TermType();
+		}
+	}
+	
+	void openScope(std::size_t n) {
+		for (; n > 0; n--) state->pushScope();
+	}
+	void closeScope(std::size_t n) {
+		for (; n > 0; n--) state->popScope();
+	}
+	
+	void handleLet(const std::string& symbol, const types::TermType& term) {
+		state->bindings.emplace(symbol, term);
+	}
+
+	types::TermType handleITE(const std::vector<types::TermType>& arguments) {
+		types::TermType result;
 		if (arguments.size() != 3) {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to construct ITE expression, only exactly three arguments are allowed, but \"" << arguments << "\" were given.");
 			return result;
@@ -101,29 +122,40 @@ struct Theories {
 		if (ifterm.isTrue()) return arguments[1];
 		if (ifterm.isFalse()) return arguments[2];
 		TheoryError te;
-		if (core.handleITE(ifterm, arguments[1], arguments[2], result, te("Core"))) return result;
-		if (arithmetic.handleITE(ifterm, arguments[1], arguments[2], result, te("Arithmetic"))) return result;
+		for (auto& t: theories) {
+			if (t.second->handleITE(ifterm, arguments[1], arguments[2], result, te(t.first))) return result;
+		}
 		SMTRAT_LOG_ERROR("smtrat.parser", "Failed to construct ITE \"" << ifterm << "\" ? \"" << arguments[1] << "\" : \"" << arguments[2] << "\": " << te);
-		std::cout << "Failed!" << std::endl;
 		return result;
 	}
 	
-	TermType functionCall(const Identifier& identifier, const std::vector<TermType>& arguments) {
+	types::TermType handleDistinct(const std::vector<types::TermType>& arguments) {
+		types::TermType result;
+		TheoryError te;
+		for (auto& t: theories) {
+			if (t.second->handleDistinct(arguments, result, te(t.first))) return result;
+		}
+		SMTRAT_LOG_ERROR("smtrat.parser", "Failed to construct distinct for \"" << arguments << "\": " << te);
+		return result;
+	}
+	
+	types::TermType functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments) {
 		if (identifier.symbol == "ite") {
 			return handleITE(arguments);
+		} else if (identifier.symbol == "distinct") {
+			return handleDistinct(arguments);
 		}
-		TermType result;
+		types::TermType result;
 		TheoryError te;
-		if (core.functionCall(identifier, arguments, result, te("Core"))) return result;
-		if (arithmetic.functionCall(identifier, arguments, result, te("Arithmetic"))) return result;
+		for (auto& t: theories) {
+			if (t.second->functionCall(identifier, arguments, result, te(t.first))) return result;
+		}
 		SMTRAT_LOG_ERROR("smtrat.parser", "Failed to call \"" << identifier << "\" with arguments " << arguments << ":" << te);
-		std::cout << "Failed!" << std::endl;
 		return result;
 	}
 private:
 	ParserState* state;
-	CoreTheory core;
-	ArithmeticTheory arithmetic;
+	std::map<std::string, AbstractTheory*> theories;
 };
 	
 }

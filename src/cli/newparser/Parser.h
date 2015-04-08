@@ -28,7 +28,8 @@ public:
 	
 public:
 	
-	SMTLIBParser(InstructionHandler* handler, bool queueInstructions, bool debug = false):
+	SMTLIBParser(InstructionHandler* handler, bool queueInstructions):
+		queueInstructions(queueInstructions),
 		handler(handler),
 		state(handler),
 		theories(&state),
@@ -39,7 +40,7 @@ public:
 	~SMTLIBParser() {
 	}
 
-	bool parse(std::istream& in, const std::string& filename) {
+	bool parse(std::istream& in) {
 		in.unsetf(std::ios::skipws);
 		mInputStream = &in;
 		Skipper skipper;
@@ -55,7 +56,7 @@ public:
 		}
 	}
 
-	void add(const Theories::TermType& t) {
+	void add(const types::TermType& t) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(assert " << t << ")");
 		if (boost::get<FormulaT>(&t) == nullptr) {
 			SMTRAT_LOG_INFO("smtrat.parser", "assert requires it's argument to be a formula, but it is \"" << t << "\".");
@@ -70,24 +71,23 @@ public:
 			additional.insert(f);
 			f = FormulaT(carl::FormulaType::AND, std::move(additional));
 		}
-		this->handler->add(f);
+		std::cout << "Add " << f << std::endl;
+		callHandler(&InstructionHandler::add, f);
 	}
 	void check() {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(check-sat)");
-		this->handler->check();
+		callHandler(&InstructionHandler::check);
 	}
 	void declareConst(const std::string& name, const carl::Sort& sort) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(declare-const " << name << " " << sort << ")");
-		theories.newVariable(name, sort);
+		theories.declareVariable(name, sort);
 	}
 	void declareFun(const std::string& name, const std::vector<carl::Sort>& args, const carl::Sort& sort) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(declare-fun " << name << " () " << sort << ")");
 		if (args.size() == 0) {
-			std::cout << "Declaring variable " << name << " of sort " << sort << std::endl;
-			theories.newVariable(name, sort);
+			theories.declareVariable(name, sort);
 		} else {
-			//theories.newFunction(name, args, sort);
-			SMTRAT_LOG_ERROR("smtrat.parser", "Actual functions are not supported yet.");
+			theories.declareFunction(name, args, sort);
 		}
 	}
 	void declareSort(const std::string& name, Integer arity) {
@@ -99,62 +99,64 @@ public:
 	void exit() {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(exit)");
 		///@todo this->mInputStream->setstate(std::ios::eofbit);
-		this->handler->exit();
+		callHandler(&InstructionHandler::exit);
 	}
 	void getAssertions() {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-assertions)");
-		this->handler->getAssertions();
+		callHandler(&InstructionHandler::getAssertions);
 	}
 	void getAssignment() {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-assignment)");
-		this->handler->getAssignment();
+		callHandler(&InstructionHandler::getAssignment);
 	}
 	void getInfo(const std::string& key) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-info " << key << ")");
-		this->handler->getInfo(key);
+		callHandler(&InstructionHandler::getInfo, key);
 	}
 	void getOption(const std::string& key) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-option " << key << ")");
-		this->handler->getOption(key);
+		callHandler(&InstructionHandler::getOption, key);
 	}
 	void getProof() {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-proof)");
-		this->handler->getProof();
+		callHandler(&InstructionHandler::getProof);
 	}
 	void getUnsatCore() {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-unsat-core)");
-		this->handler->getUnsatCore();
+		callHandler(&InstructionHandler::getUnsatCore);
 	}
-	void getValue(const std::vector<Theories::TermType>& vars) {
+	void getValue(const std::vector<types::TermType>& vars) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-value " << vars << ")");
 	}
 	void pop(const Integer& n) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(pop " << n << ")");
-		this->handler->pop(carl::toInt<std::size_t>(n));
+		theories.closeScope(carl::toInt<std::size_t>(n));
+		callHandler(&InstructionHandler::pop, carl::toInt<std::size_t>(n));
 	}
 	void push(const Integer& n) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(push " << n << ")");
-		this->handler->push(carl::toInt<std::size_t>(n));
+		theories.openScope(carl::toInt<std::size_t>(n));
+		callHandler(&InstructionHandler::push, carl::toInt<std::size_t>(n));
 	}
 	void setInfo(const Attribute& attribute) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(set-info :" << attribute << ")");
-		this->handler->setInfo(attribute);
+		callHandler(&InstructionHandler::setInfo, attribute);
 	}
 	void setLogic(const std::string& name) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(set-logic " << name << ")");
-		this->handler->setLogic(name);
+		callHandler(&InstructionHandler::setLogic, name);
 	}
 	void setOption(const Attribute& option) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(set-option " << option << ")");
-		this->handler->setOption(option);
+		callHandler(&InstructionHandler::setOption, option);
 	}
 	
 	template<typename Function, typename... Args>
 	void callHandler(const Function& f, const Args&... args) {
 		if (this->queueInstructions) {
-			//this->handler->addInstruction(std::bind(f, this->handler, args...));
+			this->handler->addInstruction(std::bind(f, this->handler, args...));
 		} else {
-			//(this->handler->*f)(args...);
+			(this->handler->*f)(args...);
 		}
 	}
 };

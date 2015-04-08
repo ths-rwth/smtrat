@@ -26,7 +26,10 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 			|	(qi::lit("declare-const") > symbol > sort > ")")[px::bind(&Callee::declareConst, px::ref(callee), qi::_1, qi::_2)]
 			|	(qi::lit("declare-fun") > symbol > "(" > *sort > ")" > sort > ")")[px::bind(&Callee::declareFun, px::ref(callee), qi::_1, qi::_2, qi::_3)]
 			|	(qi::lit("declare-sort") > symbol > numeral > ")")[px::bind(&Callee::declareSort, px::ref(callee), qi::_1, qi::_2)]
-			|	(qi::lit("define-fun") > symbol > "(" > *sortedvariable > ")" > sort > term > ")")
+			|	(qi::lit("define-fun")[px::bind(&Theories::openScope, px::ref(theories), 1)] > 
+					symbol > "(" > 
+						*(sortedvariable[px::bind(&Theories::declareFunctionArgument, px::ref(theories), qi::_1)]) > ")" > sort > term > ")")
+						[px::bind(&Theories::defineFunction, px::ref(theories), qi::_1, qi::_3, qi::_4), px::bind(&Theories::closeScope, px::ref(theories), 1)]
 			//|	(qi::lit("define-sort") > symbol > "(" > (*symbol)[px::bind(&SortParser::setParameters, px::ref(sort), qi::_1)] > ")" > sort > ")")[px::bind(&ScriptParser::defineSort, px::ref(callee), qi::_1, qi::_2, qi::_3)]
 			|	(qi::lit("exit") > ")")[px::bind(&Callee::exit, px::ref(callee))]
 			|	(qi::lit("get-assertions") > ")")[px::bind(&Callee::getAssertions, px::ref(callee))]
