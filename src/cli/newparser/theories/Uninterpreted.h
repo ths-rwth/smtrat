@@ -9,8 +9,8 @@ namespace parser {
 
 struct UninterpretedTheory: public AbstractTheory {
 	
-	static bool convertTerm(const types::TermType& term, UninterpretedType& result);
-	static bool convertArguments(const std::string& op, const std::vector<types::TermType>& arguments, std::vector<UninterpretedType>& result, TheoryError& errors);
+	static bool convertTerm(const types::TermType& term, types::UninterpretedTheory::TermType& result);
+	static bool convertArguments(const std::string& op, const std::vector<types::TermType>& arguments, std::vector<types::UninterpretedTheory::TermType>& result, TheoryError& errors);
 	
 	UninterpretedTheory(ParserState* state);
 	
