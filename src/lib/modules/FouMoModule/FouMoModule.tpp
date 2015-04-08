@@ -1125,4 +1125,35 @@ namespace smtrat
         }
         return ans;        
     }
+    
+    template<class Settings>
+    void FouMoModule<Settings>::fresh_start()
+    {
+        mProc_Constraints = FormulaOrigins();
+        mEqualities = FormulaOrigins();
+        mDisequalities = FormulaOrigins();
+        mElim_Order = std::vector<carl::Variable>();
+        mDeleted_Constraints = VariableUpperLower();  
+        mVarAss = std::map<carl::Variable, Rational>();
+        mCorrect_Solution = false; 
+        auto iter_constr = rReceivedFormula().begin();
+        while( iter_constr != rReceivedFormula().end() )
+        {
+            std::shared_ptr<std::vector<FormulaT>> origins( new std::vector<FormulaT>() );
+            origins->push_back( iter_constr->formula() );
+            if( iter_constr->formula().constraint().relation() == carl::Relation::LEQ )
+            {
+                mProc_Constraints.emplace( iter_constr->formula(), origins );                                
+            }
+            else if( iter_constr->formula().constraint().relation() == carl::Relation::EQ )
+            {
+                mEqualities.emplace( iter_constr->formula(), origins );                
+            }
+            else if( iter_constr->formula().constraint().relation() == carl::Relation::NEQ )
+            {
+                mDisequalities.emplace( iter_constr->formula(), origins );                
+            }
+            ++iter_constr;
+        }
+    }    
 }
