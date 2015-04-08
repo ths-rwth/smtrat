@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "VariantMap.h"
 #include "Attribute.h"
+#include "theories/Theories.h"
 
 namespace smtrat {
 namespace parser {
@@ -29,7 +30,7 @@ public:
 
 class InstructionHandler {
 public:
-	typedef smtrat::parser::AttributeValue Value;
+	typedef types::AttributeValue Value;
 
 private:
 	std::queue<std::function<void()>> instructionQueue;
@@ -76,7 +77,7 @@ protected:
 	}
 public:
 	InstructionHandler(): mRegular(std::cout.rdbuf()), mDiagnostic(std::cerr.rdbuf()) {
-		Attribute attr("print-instruction", AttributeMandatoryValue(false));
+		Attribute attr("print-instruction", Value(false));
 		this->setOption(attr);
 	}
 	virtual ~InstructionHandler() {
@@ -126,7 +127,6 @@ public:
 	virtual void pop(std::size_t) = 0;
 	virtual void push(std::size_t) = 0;
 	void setInfo(const Attribute& attr) {
-		std::cout << "set info " << attr << std::endl;
 		if (this->infos.count(attr.key) > 0) warn() << "overwriting info for :" << attr.key;
 		if (attr.key == "name" || attr.key == "authors" || attr.key == "version") error() << "The info :" << attr.key << " is read-only.";
 		else this->infos[attr.key] = attr.value;

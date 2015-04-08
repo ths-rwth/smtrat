@@ -6,6 +6,7 @@
 #pragma once
 
 #include "../Common.h"
+#include "TheoryTypes.h"
 
 namespace smtrat {
 namespace parser {
@@ -16,48 +17,36 @@ namespace parser {
 
 		struct Scope {
 		private:
-			std::map<std::string, carl::Variable> var_bool;
-			std::map<std::string, carl::Variable> var_arithmetic;
-			std::map<std::string, carl::UVariable> var_uninterpreted;
-			std::map<std::string, FormulaT> bind_bool;
-			std::map<std::string, Poly> bind_arithmetic;
-			//std::map<std::string, UninterpretedType> bind_uninterpreted;
+			std::map<std::string, types::VariableType> variables;
+			std::map<std::string, types::TermType> bindings;
+			std::map<std::string, carl::UninterpretedFunction> declared_functions;
 		public:
 			Scope(const ParserState& state)
 			{
-				this->var_bool = state.var_bool;
-				this->var_arithmetic = state.var_arithmetic;
-				this->var_uninterpreted = state.var_uninterpreted;
-				this->bind_bool = state.bind_bool;
-				this->bind_arithmetic = state.bind_arithmetic;
-				//this->bind_uninterpreted = state.bind_uninterpreted;
+				this->variables = state.variables;
+				this->bindings = state.bindings;
+				this->declared_functions = state.declared_functions;
 			}
 			void restore(ParserState& state) {
-				state.var_bool = this->var_bool;
-				state.var_arithmetic = this->var_arithmetic;
-				state.var_uninterpreted = this->var_uninterpreted;
-				state.bind_bool = this->bind_bool;
-				state.bind_arithmetic = this->bind_arithmetic;
-				//state.bind_uninterpreted = this->bind_uninterpreted;
+				state.variables = this->variables;
+				state.bindings = this->bindings;
+				state.declared_functions = this->declared_functions;
 			}
 		};
-
-		std::map<std::string, carl::Variable> var_bool;
-		std::map<std::string, carl::Variable> var_arithmetic;
-		std::map<std::string, carl::UVariable> var_uninterpreted;
-		std::map<std::string, FormulaT> bind_bool;
-		std::map<std::string, Poly> bind_arithmetic;
-		//std::map<std::string, UninterpretedType> bind_uninterpreted;
+		
+		std::map<std::string, types::VariableType> variables;
+		std::map<std::string, types::TermType> bindings;
+		std::map<std::string, carl::UninterpretedFunction> declared_functions;
+		std::map<std::string, types::FunctionInstantiator> defined_functions;
 	
 		//std::map<std::string, BooleanFunction> funmap_bool;
 		//std::map<std::string, ArithmeticFunction> funmap_arithmetic;
 		//std::map<std::string, carl::UninterpretedFunction> funmap_ufbool;
 		//std::map<std::string, carl::UninterpretedFunction> funmap_ufarithmetic;
-		//std::map<std::string, carl::UninterpretedFunction> funmap_uf;
 
 		FormulasT mArithmeticIteBindings;
 		FormulasT mUninterpretedEqualities;
-		//std::map<Argument, carl::UVariable> mUninterpretedArguments;
+		std::map<types::TermType, carl::UVariable> mUninterpretedArguments;
 		std::map<carl::Variable, std::tuple<FormulaT, Poly, Poly>> mArithmeticItes;
 		FormulasT mGlobalFormulas;
 		
@@ -83,18 +72,14 @@ namespace parser {
 		}
 		bool isSymbolFree(const std::string& name, bool output = true) {
 				std::stringstream out;
-				if (name == "true" || name == "false") out << "'" << name << "' is a reserved keyword.";
-				else if (this->var_bool.find(name) != var_bool.end()) out << "'" << name << "' has already been defined as a boolean variable.";
-				else if (this->var_arithmetic.find(name) != var_arithmetic.end()) out << "'" << name << "' has already been defined as a theory variable.";
-				//else if (this->var_uninterpreted.find(name) != var_uninterpreted.end()) out << "'" << name << "' has already been defined as an uninterpreted variable.";
-				else if (this->bind_bool.find(name) != bind_bool.end()) out << "'" << name << "' has already been defined as a boolean binding.";
-				else if (this->bind_arithmetic.find(name) != bind_arithmetic.end()) out << "'" << name << "' has already been defined as a theory binding.";
-				//else if (this->bind_uninterpreted.find(name) != bind_uninterpreted.end()) out << "'" << name << "' has already been defined as an uninterpreted binding.";
-				//else if (this->funmap_bool.find(name) != funmap_bool.end()) out << "'" << name << "' has already been defined as a boolean function.";
-				//else if (this->funmap_theory.find(name) != funmap_theory.end()) out << "'" << name << "' has already been defined as a theory funtion.";
-				//else if (this->funmap_ufbool.find(name) != funmap_ufbool.end()) out << "'" << name << "' has already been defined as an uninterpreted function of boolean return type.";
-				//else if (this->funmap_uftheory.find(name) != funmap_uftheory.end()) out << "'" << name << "' has already been defined as an uninterpreted function of theory return type.";
-				//else if (this->funmap_uf.find(name) != funmap_uf.end()) out << "'" << name << "' has already been defined as an uninterpreted function.";
+				if (name == "true" || name == "false") out << "\"" << name << "\" is a reserved keyword.";
+				else if (variables.find(name) != variables.end()) out << "\"" << name << "\" has already been defined as a variable.";
+				else if (bindings.find(name) != bindings.end()) out << "\"" << name << "\" has already been defined as a binding to \"" << bindings[name] << "\".";
+				else if (declared_functions.find(name) != declared_functions.end()) out << "\"" << name << "\" has already been declared as a function.";
+				//else if (funmap_theory.find(name) != funmap_theory.end()) out << "\"" << name << "\" has already been defined as a theory funtion.";
+				//else if (funmap_ufbool.find(name) != funmap_ufbool.end()) out << "\"" << name << "\" has already been defined as an uninterpreted function of boolean return type.";
+				//else if (funmap_uftheory.find(name) != funmap_uftheory.end()) out << "\"" << name << "\" has already been defined as an uninterpreted function of theory return type.";
+				//else if (funmap_uf.find(name) != funmap_uf.end()) out << "\"" << name << "\" has already been defined as an uninterpreted function.";
 				else return true;
 				if (output) SMTRAT_LOG_ERROR("smtrat.parser", out.str());
 				return false;
@@ -111,10 +96,8 @@ namespace parser {
 		template<typename Res>
 		Res resolveSymbol(const std::string& name) const {
 			Res r;
-			if (resolveSymbol(name, var_bool, r)) return r;
-			if (resolveSymbol(name, var_arithmetic, r)) return r;
-			if (resolveSymbol(name, bind_bool, r)) return r;
-			if (resolveSymbol(name, bind_arithmetic, r)) return r;
+			if (resolveSymbol(name, variables, r)) return r;
+			if (resolveSymbol(name, bindings, r)) return r;
 			SMTRAT_LOG_ERROR("smtrat.parser", "Tried to resolve symbol \"" << name << "\" which was not registered.");
 			return r;
 		}

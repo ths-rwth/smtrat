@@ -3,22 +3,21 @@
 #include "Common.h"
 #include "Lexicon.h"
 #include "SExpression.h"
+#include "theories/Theories.h"
 
 namespace smtrat {
 namespace parser {
 
-typedef boost::variant<bool, std::string, carl::Variable, Integer, Rational, Poly, FormulaT, SExpressionSequence, boost::spirit::qi::unused_type> AttributeValue;
-typedef boost::variant<bool, std::string, carl::Variable, Integer, Rational, Poly, FormulaT, SExpressionSequence> AttributeMandatoryValue;
-
 class Attribute {
 public:
+	typedef types::AttributeValue AttributeValue;
 	std::string key;
 	AttributeValue value;
 
 	Attribute() {}
 	explicit Attribute(const std::string& key) : key(key) {}
-	Attribute(const std::string& key, const AttributeMandatoryValue& value) : key(key), value(value) {}
-	Attribute(const std::string& key, const boost::optional<AttributeMandatoryValue>& value) : key(key) {
+	Attribute(const std::string& key, const AttributeValue& value) : key(key), value(value) {}
+	Attribute(const std::string& key, const boost::optional<AttributeValue>& value) : key(key) {
 		if (value.is_initialized()) this->value = value.get();
 	}
 
@@ -32,20 +31,20 @@ inline std::ostream& operator<<(std::ostream& os, const Attribute& attr) {
 	return os;
 }
 
-struct AttributeValueParser: public qi::grammar<Iterator, AttributeMandatoryValue(), Skipper> {
-	typedef VariantConverter<AttributeMandatoryValue> Converter;
+struct AttributeValueParser: public qi::grammar<Iterator, types::AttributeValue(), Skipper> {
+	typedef VariantConverter<types::AttributeValue> Converter;
 	AttributeValueParser(): AttributeValueParser::base_type(main, "attribute value") {
 		main = 
-				specconstant[qi::_val = px::bind(&Converter::template convert<Theories::ConstType>, &converter, qi::_1)]
+				specconstant[qi::_val = px::bind(&Converter::template convert<types::ConstType>, &converter, qi::_1)]
 			|	symbol[qi::_val = px::bind(&Converter::template convert<std::string>, px::ref(converter), qi::_1)]
-			|	(qi::lit("(") >> *sexpression >> qi::lit(")"))[qi::_val = px::bind(&Converter::template convert<SExpressionSequence>, px::ref(converter), px::construct<SExpressionSequence>(qi::_1))]
+			|	(qi::lit("(") >> *sexpression >> qi::lit(")"))[qi::_val = px::bind(&Converter::template convert<SExpressionSequence<types::ConstType>>, px::ref(converter), px::construct<SExpressionSequence<types::ConstType>>(qi::_1))]
 		;
 	}
 	SpecConstantParser specconstant;
 	SymbolParser symbol;
 	SExpressionParser sexpression;
 	Converter converter;
-	qi::rule<Iterator, AttributeMandatoryValue(), Skipper> main;
+	qi::rule<Iterator, types::AttributeValue(), Skipper> main;
 };
 
 

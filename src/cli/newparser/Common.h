@@ -15,13 +15,18 @@
 #include <boost/mpl/vector.hpp>
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 #include <boost/spirit/include/qi.hpp>
-#include <boost/spirit/include/support_line_pos_iterator.hpp>
-#include <boost/spirit/include/phoenix_core.hpp>
-#include <boost/spirit/include/phoenix_operator.hpp>
+#include <boost/fusion/include/std_pair.hpp>
 #include <boost/spirit/include/phoenix_bind.hpp>
-#include <boost/spirit/include/phoenix_stl.hpp>
+#include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_object.hpp>
+#include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/phoenix_statement.hpp>
+#include <boost/spirit/include/phoenix_stl.hpp>
+#include <boost/spirit/include/support_line_pos_iterator.hpp>
+
+#include <carl/util/mpl_utils.h>
+
+#define PARSER_BITVECTOR
 
 namespace smtrat {
 namespace parser {
@@ -124,25 +129,40 @@ namespace parser {
 		}
 	};
 	
-	bool isOneOf(const std::string& s, const std::string& set) {
+	inline bool isOneOf(const std::string& s, const std::string& set) {
 		return boost::iequals(s, set);
 	}
-	bool isOneOf(const std::string& s, const std::initializer_list<std::string>& set) {
+	inline bool isOneOf(const std::string& s, const std::initializer_list<std::string>& set) {
 		for (const auto& t: set) {
 			if (boost::iequals(s, t)) return true;
 		}
 		return false;
 	}
-}
-}
 
-typedef boost::spirit::istream_iterator BaseIteratorType;
-typedef boost::spirit::line_pos_iterator<BaseIteratorType> PositionIteratorType;
-typedef PositionIteratorType Iterator;
-
-struct Skipper: public boost::spirit::qi::grammar<Iterator> {
-	Skipper(): Skipper::base_type(main, "skipper") {
-		main = (boost::spirit::qi::space | boost::spirit::qi::lit(";") >> *(boost::spirit::qi::char_ - boost::spirit::qi::eol) >> boost::spirit::qi::eol);
+	template<typename T>
+	struct SExpressionSequence;
+	template<typename T>
+	using SExpression = boost::variant<T, boost::recursive_wrapper<SExpressionSequence<T>>>;
+	template<typename T>
+	struct SExpressionSequence: public std::vector<SExpression<T>> {
+		SExpressionSequence(const std::vector<SExpression<T>>& v): std::vector<SExpression<T>>(v) {}
+		SExpressionSequence(std::vector<SExpression<T>>&& v): std::vector<SExpression<T>>(std::move(v)) {}
 	};
-    boost::spirit::qi::rule<Iterator> main;
-};
+	template<typename T>
+	inline std::ostream& operator<<(std::ostream& os, const SExpressionSequence<T>& ses) {
+		return os << std::vector<SExpression<T>>(ses);
+	}
+
+	typedef boost::spirit::istream_iterator BaseIteratorType;
+	typedef boost::spirit::line_pos_iterator<BaseIteratorType> PositionIteratorType;
+	typedef PositionIteratorType Iterator;
+
+	struct Skipper: public boost::spirit::qi::grammar<Iterator> {
+		Skipper(): Skipper::base_type(main, "skipper") {
+			main = (boost::spirit::qi::space | boost::spirit::qi::lit(";") >> *(boost::spirit::qi::char_ - boost::spirit::qi::eol) >> boost::spirit::qi::eol);
+		};
+	    boost::spirit::qi::rule<Iterator> main;
+	};
+
+}
+}
