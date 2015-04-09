@@ -215,7 +215,10 @@ namespace smtrat
         if( solverState() == True )
         {
             Module::getBackendsModel();
-            /*
+            std::map<carl::Variable, Rational> temp_map;
+            bool all_rational;
+            all_rational = getRationalAssignmentsFromModel( mModel, temp_map );
+            assert( all_rational );
             // Determine the assignments of the variables that haven't been passed
             auto iter_vars = mSubstitutions.end();
             if( mSubstitutions.empty() )
@@ -226,21 +229,23 @@ namespace smtrat
             {
                 --iter_vars;
             }    
-            while( iter_vars != mSubstitutions.begin() )
+            while( true )
             {
-                auto iter_subs = mModel.begin();
-                Poly value = ZERO_POLYNOMIAL;
-                while( iter_subs != mModel.end() )
-                {   
-                    value = iter_vars->second.substitute( iter_subs->first.asVariable(), (Poly)(Rational)iter_subs->second.asRAN()->value() );
-                    ++iter_subs;
-                }   
-                //assert( value.isConstant() );
-                ModelValue ass = vs::SqrtEx( value );
-                mModel.emplace( iter_vars->first, ass );
-                --iter_vars;
+                Poly value = iter_vars->second;
+                value = value.substitute( temp_map );
+                assert( value.isConstant() );
+                temp_map.insert( temp_map.end(), std::make_pair( iter_vars->first, (Rational)value.constantPart() ) );
+                ModelValue assignment = vs::SqrtEx( value );
+                mModel.insert( mModel.end(), std::make_pair( iter_vars->first, assignment ) );
+                if( iter_vars != mSubstitutions.begin() )
+                {
+                    --iter_vars;
+                }
+                else
+                {
+                    break;
+                }
             }
-            */
         }
     }
 
