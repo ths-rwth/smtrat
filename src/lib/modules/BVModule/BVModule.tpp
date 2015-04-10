@@ -49,11 +49,10 @@ namespace smtrat
 
 
     template<class Settings>
-    bool BVModule<Settings>::inform( const FormulaT& _constraint )
+    bool BVModule<Settings>::informCore( const FormulaT& _constraint )
     {
-        Module::inform( _constraint ); // This must be invoked at the beginning of this method. 
-        const smtrat::ConstraintT* constraint = _constraint.pConstraint(); // Constraint pointer for the passed formula. 
-        return constraint->isConsistent() != 0;
+        const smtrat::ConstraintT& constraint = _constraint.constraint(); // Constraint pointer for the passed formula.
+        return constraint.isConsistent() != 0;
     }
 
     template<class Settings>
@@ -61,18 +60,16 @@ namespace smtrat
     {}
 
     template<class Settings>
-    bool BVModule<Settings>::assertSubformula( ModuleInput::const_iterator _subformula )
+    bool BVModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-        Module::assertSubformula( _subformula ); // This must be invoked at the beginning of this method.
         // Your code.
         return true; // This should be adapted according to your implementation.
     }
 
     template<class Settings>
-    void BVModule<Settings>::removeSubformula( ModuleInput::const_iterator _subformula )
+    void BVModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
         // Your code.
-        Module::removeSubformula( _subformula ); // This must be invoked at the end of this method.
     }
 
     template<class Settings>
@@ -86,11 +83,11 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer BVModule<Settings>::isConsistent()
+    Answer BVModule<Settings>::checkCore( bool _full )
     {
-		for (const FormulaWithOrigins& fwo: rReceivedFormula()) {
-			const FormulaT& f = fwo.formula();
-		}
+        for (const FormulaWithOrigins& fwo: rReceivedFormula()) {
+            const FormulaT& f = fwo.formula();
+        }
         // Your code.
         return Unknown; // This should be adapted according to your implementation.
     }

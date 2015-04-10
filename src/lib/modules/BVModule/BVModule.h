@@ -55,13 +55,13 @@ namespace smtrat
              * @return false, if it can be easily decided whether the given constraint is inconsistent;
              *          true, otherwise.
              */
-            bool inform( const FormulaT& _constraint );
+            bool informCore( const FormulaT& _constraint );
 
             /**
              * Informs all backends about the so far encountered constraints, which have not yet been communicated.
              * This method must not and will not be called more than once and only before the first runBackends call.
              */
-	    void init();
+            void init();
 
             /**
              * The module has to take the given sub-formula of the received formula into account.
@@ -71,7 +71,7 @@ namespace smtrat
              *          the already considered sub-formulas;
              *          true, otherwise.
              */
-            bool assertSubformula( ModuleInput::const_iterator _subformula );
+            bool addCore( ModuleInput::const_iterator _subformula );
 
             /**
              * Removes the subformula of the received formula at the given position to the considered ones of this module.
@@ -80,7 +80,7 @@ namespace smtrat
              *
              * @param _subformula The position of the subformula to remove.
              */
-            void removeSubformula( ModuleInput::const_iterator _subformula );
+            void removeCore( ModuleInput::const_iterator _subformula );
 
             /**
              * Updates the current assignment into the model.
@@ -90,11 +90,12 @@ namespace smtrat
 
             /**
              * Checks the received formula for consistency.
+             * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
              * @return True,    if the received formula is satisfiable;
              *         False,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            Answer isConsistent();
+            Answer checkCore( bool _full = true );
 
     };
 }
