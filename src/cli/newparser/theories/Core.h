@@ -19,7 +19,6 @@ struct CoreTheory: public AbstractTheory {
 	
 	static bool convertArguments(const std::vector<types::TermType>& arguments, std::vector<FormulaT>& result, TheoryError& errors);
 	
-	std::map<std::string, OperatorType> ops;
 	CoreTheory(ParserState* state);
 	
 	bool declareVariable(const std::string& name, const carl::Sort& sort);

@@ -37,7 +37,7 @@ namespace parser {
 		std::map<std::string, types::VariableType> variables;
 		std::map<std::string, types::TermType> bindings;
 		std::map<std::string, carl::UninterpretedFunction> declared_functions;
-		std::map<std::string, types::FunctionInstantiator> defined_functions;
+		std::map<std::string, const types::FunctionInstantiator*> defined_functions;
 	
 		//std::map<std::string, BooleanFunction> funmap_bool;
 		//std::map<std::string, ArithmeticFunction> funmap_arithmetic;
@@ -76,6 +76,7 @@ namespace parser {
 				else if (variables.find(name) != variables.end()) out << "\"" << name << "\" has already been defined as a variable.";
 				else if (bindings.find(name) != bindings.end()) out << "\"" << name << "\" has already been defined as a binding to \"" << bindings[name] << "\".";
 				else if (declared_functions.find(name) != declared_functions.end()) out << "\"" << name << "\" has already been declared as a function.";
+				else if (defined_functions.find(name) != defined_functions.end()) out << "\"" << name << "\" has already been defined as a function.";
 				//else if (funmap_theory.find(name) != funmap_theory.end()) out << "\"" << name << "\" has already been defined as a theory funtion.";
 				//else if (funmap_ufbool.find(name) != funmap_ufbool.end()) out << "\"" << name << "\" has already been defined as an uninterpreted function of boolean return type.";
 				//else if (funmap_uftheory.find(name) != funmap_uftheory.end()) out << "\"" << name << "\" has already been defined as an uninterpreted function of theory return type.";
@@ -102,25 +103,13 @@ namespace parser {
 			return r;
 		}
 		
-		//FormulaT applyBooleanFunction(const BooleanFunction& f, const Arguments& args);
-		//Poly applyTheoryFunction(const TheoryFunction& f, const Arguments& args);
-		//carl::UFInstance applyUninterpretedFunction(const carl::UninterpretedFunction& f, const Arguments& args);
-		//FormulaT applyUninterpretedBooleanFunction(const carl::UninterpretedFunction& f, const Arguments& args);
-		//Poly applyUninterpretedTheoryFunction(const carl::UninterpretedFunction& f, const Arguments& args);
-		
-		
-
-		//carl::Variable addVariableBinding(const std::pair<std::string, carl::Sort>& b);
-		//void addTheoryBinding(std::string& _varName, Poly&);
-		//void addBooleanBinding(std::string&, const FormulaT&);
-		//void addUninterpretedBinding(std::string&, const UninterpretedType&);
-		
-		//carl::Variable addQuantifiedVariable(const std::string& _name, const boost::optional<carl::VariableType>& type);
-
-		/*void printSizeStats() const {
-			std::cout << "Vars: " << var_bool.size() << " / " << var_arithmetic.size() << " / " << var_uninterpreted.size() << std::endl;
-			std::cout << "Bind: " << bind_bool.size() << " / " << bind_arithmetic.size() << " / " << bind_uninterpreted.size() << std::endl;
-		}*/
+		void registerFunction(const std::string& name, const types::FunctionInstantiator* fi) {
+			if (!isSymbolFree(name)) {
+				SMTRAT_LOG_ERROR("smtrat.parser", "Failed to register function \"" << name << "\", name is already used.");
+				return;
+			}
+			defined_functions.emplace(name, fi);
+		}
 	};
 
 }

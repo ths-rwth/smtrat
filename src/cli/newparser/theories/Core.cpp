@@ -4,9 +4,45 @@
 namespace smtrat {
 namespace parser {
 
+	struct CoreInstantiator: public types::FunctionInstantiator {
+		bool operator()(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) const {
+			std::vector<FormulaT> args;
+			if (!convert(arguments, args)) return false;
+			return apply(args, result, errors);
+		}
+		virtual bool apply(const std::vector<FormulaT>& arguments, types::TermType& result, TheoryError& errors) const = 0;
+	};
+	template<carl::FormulaType type>
+	struct NaryCoreInstantiator: public CoreInstantiator {
+		bool apply(const std::vector<FormulaT>& arguments, types::TermType& result, TheoryError& errors) const {
+			result = FormulaT(type, arguments);
+			return true;
+		}
+	};
+	struct NotCoreInstantiator: public CoreInstantiator {
+		bool apply(const std::vector<FormulaT>& arguments, types::TermType& result, TheoryError& errors) const {
+			if (arguments.size() != 1) {
+				errors.next() << "Operator \"not\" may only have a single argument.";
+				return false;
+			}
+			result = FormulaT(carl::FormulaType::NOT, arguments[0]);
+			return true;
+		}
+	};
+	struct ImpliesCoreInstantiator: public CoreInstantiator {
+		bool apply(const std::vector<FormulaT>& arguments, types::TermType& result, TheoryError& errors) const {
+			if (arguments.size() != 2) {
+				errors.next() << "Operator \"implies\" may only have a single argument.";
+				return false;
+			}
+			result = FormulaT(carl::FormulaType::IMPLIES, arguments[0], arguments[1]);
+			return true;
+		}
+	};
+
 	void CoreTheory::addSimpleSorts(qi::symbols<char, carl::Sort>& sorts) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
-		sorts.add("Bool", sm.interpretedSort(carl::VariableType::VT_BOOL));
+		sorts.add("Bool", sm.getInterpreted(carl::VariableType::VT_BOOL));
 	}
 	void CoreTheory::addConstants(qi::symbols<char, types::ConstType>& constants) {
 		constants.add("true", types::ConstType(FormulaT(carl::FormulaType::TRUE)));
@@ -44,20 +80,20 @@ namespace parser {
 
 	CoreTheory::CoreTheory(ParserState* state): AbstractTheory(state) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
-		sm.interpretedSort("Bool", carl::VariableType::VT_BOOL);
+		sm.addSort("Bool", carl::VariableType::VT_BOOL);
 		
-		ops.emplace("=", OperatorType(carl::FormulaType::IFF));
-		ops.emplace("not", OperatorType(carl::FormulaType::NOT));
-		ops.emplace("=>", OperatorType(carl::FormulaType::IMPLIES));
-		ops.emplace("and", OperatorType(carl::FormulaType::AND));
-		ops.emplace("or", OperatorType(carl::FormulaType::OR));
-		ops.emplace("xor", OperatorType(carl::FormulaType::XOR));
+		state->registerFunction("not", new NotCoreInstantiator());
+		state->registerFunction("and", new NaryCoreInstantiator<carl::FormulaType::AND>());
+		state->registerFunction("iff", new NaryCoreInstantiator<carl::FormulaType::IFF>());
+		state->registerFunction("or", new NaryCoreInstantiator<carl::FormulaType::OR>());
+		state->registerFunction("xor", new NaryCoreInstantiator<carl::FormulaType::XOR>());
+		state->registerFunction("=>", new ImpliesCoreInstantiator());
+		state->registerFunction("implies", new ImpliesCoreInstantiator());
 	}
 
 	bool CoreTheory::declareVariable(const std::string& name, const carl::Sort& sort) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
-		if (!sm.isInterpreted(sort)) return false;
-		switch (sm.interpretedType(sort)) {
+		switch (sm.getType(sort)) {
 			case carl::VariableType::VT_BOOL:
 				assert(state->isSymbolFree(name));
 				state->variables[name] = carl::freshVariable(name, carl::VariableType::VT_BOOL);
@@ -96,41 +132,11 @@ namespace parser {
 
 	bool CoreTheory::functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
 		std::vector<FormulaT> args;
-		auto it = ops.find(identifier);
-		if (it == ops.end()) {
-			errors.next() << "Invalid operator \"" << identifier << "\".";
-			return false;
-		}
-		OperatorType op = it->second;
 		if (!convertArguments(arguments, args, errors)) return false;
-
-		if (boost::get<carl::FormulaType>(&op) != nullptr) {
-			carl::FormulaType t = boost::get<carl::FormulaType>(op);
-			switch (t) {
-				case carl::FormulaType::NOT: {
-					if (args.size() == 1) {
-						result = FormulaT(t, args[0]);
-						return true;
-					} else errors.next() << "Operator \"" << op << "\" expects a single argument.";
-					break;
-				}
-				case carl::FormulaType::AND:
-				case carl::FormulaType::OR:
-				case carl::FormulaType::IFF:
-				case carl::FormulaType::XOR: {
-					result = FormulaT(t, FormulasT(args.begin(), args.end()));
-					return true;
-				}
-				case carl::FormulaType::IMPLIES: {
-					if (args.size() == 2) {
-						result = FormulaT(t, args[0], args[1]);
-						return true;
-					} else errors.next() << "Operator \"" << op << "\" expects two arguments.";
-				}
-				default: {
-					errors.next() << "The operator \"" << op << "\" should never be parsed directly.";
-				}
-			}
+		
+		if (boost::iequals(identifier.symbol, "=")) {
+			result = FormulaT(carl::FormulaType::IFF, FormulasT(args.begin(), args.end()));
+			return true;
 		}
 		return false;
 	}

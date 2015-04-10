@@ -5,8 +5,8 @@ namespace smtrat {
 namespace parser {
 	void ArithmeticTheory::addSimpleSorts(qi::symbols<char, carl::Sort>& sorts) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
-		sorts.add("Int", sm.interpretedSort(carl::VariableType::VT_INT));
-		sorts.add("Real", sm.interpretedSort(carl::VariableType::VT_REAL));
+		sorts.add("Int", sm.getInterpreted(carl::VariableType::VT_INT));
+		sorts.add("Real", sm.getInterpreted(carl::VariableType::VT_REAL));
 	}
 
 	bool ArithmeticTheory::convertTerm(const types::TermType& term, Poly& result) {
@@ -45,8 +45,8 @@ namespace parser {
 
 	ArithmeticTheory::ArithmeticTheory(ParserState* state): AbstractTheory(state) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
-		sm.interpretedSort("Int", carl::VariableType::VT_INT);
-		sm.interpretedSort("Real", carl::VariableType::VT_REAL);
+		sm.addSort("Int", carl::VariableType::VT_INT);
+		sm.addSort("Real", carl::VariableType::VT_REAL);
 		
 		ops.emplace("+", OperatorType(Poly::ConstructorOperation::ADD));
 		ops.emplace("-", OperatorType(Poly::ConstructorOperation::SUB));
@@ -62,12 +62,11 @@ namespace parser {
 
 	bool ArithmeticTheory::declareVariable(const std::string& name, const carl::Sort& sort) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
-		if (!sm.isInterpreted(sort)) return false;
-		switch (sm.interpretedType(sort)) {
+		switch (sm.getType(sort)) {
 			case carl::VariableType::VT_INT:
 			case carl::VariableType::VT_REAL:
 				assert(state->isSymbolFree(name));
-				state->variables[name] = carl::freshVariable(name, sm.interpretedType(sort));
+				state->variables[name] = carl::freshVariable(name, sm.getType(sort));
 				return true;
 			default:
 				return false;

@@ -89,9 +89,24 @@ namespace types {
 	typedef carl::mpl_variant_of<AttributeTypes>::type AttributeValue;
 	
 	struct FunctionInstantiator {
-		bool operator()(const std::vector<TermType>&, TermType&) {
+		template<typename T>
+		bool convert(const std::vector<TermType>& from, std::vector<T>& to) const {
+			VectorVariantConverter<T> converter;
+			return converter.convert(from, to);
+		}
+		virtual bool operator()(const std::vector<TermType>&, TermType&, TheoryError& errors) const {
+			errors.next() << "Instantiation of this function is not supported.";
 			return false;
 		}
+	};
+	struct UserFunctionInstantiator: public FunctionInstantiator {
+	private:
+		std::vector<std::pair<std::string, carl::Sort>> arguments;
+		carl::Sort sort;
+		TermType definition;
+	public:
+		UserFunctionInstantiator(const std::vector<std::pair<std::string, carl::Sort>>& arguments, const carl::Sort& sort, const TermType& definition):
+			arguments(arguments), sort(sort), definition(definition) {}
 	};
 }
 }

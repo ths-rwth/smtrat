@@ -3,9 +3,41 @@
 
 namespace smtrat {
 namespace parser {
+	
+	struct BitvectorInstantiator: public types::FunctionInstantiator {
+		bool operator()(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) const {
+			std::vector<types::BVTerm> args;
+			if (!convert(arguments, args)) return false;
+			return apply(args, result, errors);
+		}
+		virtual bool apply(const std::vector<types::BVTerm>& arguments, types::TermType& result, TheoryError& errors) const = 0;
+	};
+	template<carl::BVTermType type>
+	struct UnaryBitvectorInstantiator: public BitvectorInstantiator {
+		bool apply(const std::vector<types::BVTerm>& arguments, types::TermType& result, TheoryError& errors) const {
+			if (arguments.size() != 1) {
+				errors.next() << "The operator \"" << type << "\" expects exactly one argument.";
+				return false;
+			}
+			result = types::BVTerm(type, arguments[0]);
+			return true;
+		}
+	};
+	template<carl::BVTermType type>
+	struct BinaryBitvectorInstantiator: public BitvectorInstantiator {
+		bool apply(const std::vector<types::BVTerm>& arguments, types::TermType& result, TheoryError& errors) const {
+			if (arguments.size() != 2) {
+				errors.next() << "The operator \"" << type << "\" expects exactly two arguments.";
+				return false;
+			}
+			result = types::BVTerm(type, arguments[0], arguments[1]);
+			return true;
+		}
+	};
+	
 	void BitvectorTheory::addSimpleSorts(qi::symbols<char, carl::Sort>& sorts) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
-		sorts.add("Bool", sm.interpretedSort(carl::VariableType::VT_BOOL));
+		sorts.add("Bool", sm.getInterpreted(carl::VariableType::VT_BOOL));
 	}
 	
 	bool BitvectorTheory::convertTerm(const types::TermType& term, types::BVTerm& result) {
@@ -34,12 +66,15 @@ namespace parser {
 	}
 
 	BitvectorTheory::BitvectorTheory(ParserState* state): AbstractTheory(state) {
+		carl::SortManager& sm = carl::SortManager::getInstance();
+		sm.addSort("BitVec", carl::VariableType::VT_BITVECTOR);
+
+		state->registerFunction("bvnot", new UnaryBitvectorInstantiator<carl::BVTermType::NOT>());
 	}
 
 	bool BitvectorTheory::declareVariable(const std::string& name, const carl::Sort& sort) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
-		if (!sm.isInterpreted(sort)) return false;
-		switch (sm.interpretedType(sort)) {
+		switch (sm.getType(sort)) {
 			case carl::VariableType::VT_BITVECTOR: {
 				assert(state->isSymbolFree(name));
 				carl::Variable v = carl::freshVariable(name, carl::VariableType::VT_BITVECTOR);

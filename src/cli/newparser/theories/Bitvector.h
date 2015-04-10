@@ -13,8 +13,6 @@ struct BitvectorTheory: public AbstractTheory  {
 	static bool convertTerm(const types::TermType& term, types::BVTerm& result);
 	static bool convertArguments(const std::vector<types::TermType>& arguments, std::vector<types::BVTerm>& result, TheoryError& errors);
 	
-	std::map<std::string, OperatorType> ops;
-	
 	BitvectorTheory(ParserState* state);
 	
 	bool declareVariable(const std::string& name, const carl::Sort& sort);

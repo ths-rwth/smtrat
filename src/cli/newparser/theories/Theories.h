@@ -71,7 +71,7 @@ struct Theories {
 		if (state->isSymbolFree(arg.first)) {
 			carl::SortManager& sm = carl::SortManager::getInstance();
 			if (sm.isInterpreted(arg.second)) {
-				carl::Variable v = carl::VariablePool::getInstance().getFreshVariable(arg.first, carl::SortManager::getInstance().interpretedType(arg.second));
+				carl::Variable v = carl::VariablePool::getInstance().getFreshVariable(arg.first, carl::SortManager::getInstance().getType(arg.second));
 				state->bindings.emplace(arg.first, v);
 			} else {
 				SMTRAT_LOG_ERROR("smtrat.parser", "Function argument \"" << arg.first << "\" is of uninterpreted type.");
@@ -81,8 +81,13 @@ struct Theories {
 		}
 	}
 	
-	void defineFunction(const std::string& name, const carl::Sort& sort, const types::TermType& definition) {
-		SMTRAT_LOG_ERROR("smtrat.parser", "Defined \"" << sort << " " << name << " -> " << definition << "\".");
+	void defineFunction(const std::string& name, const std::vector<std::pair<std::string, carl::Sort>>& arguments, const carl::Sort& sort, const types::TermType& definition) {
+		if (state->isSymbolFree(name)) {
+			///@todo check that definition matches the sort
+			state->defined_functions.emplace(name, new types::UserFunctionInstantiator(arguments, sort, definition));
+		} else {
+			SMTRAT_LOG_ERROR("smtrat.parser", "Function \"" << name << "\" will not be defined due to a name clash.");
+		}
 	}
 
 	types::TermType resolveSymbol(const Identifier& identifier) const {
@@ -137,18 +142,38 @@ struct Theories {
 	}
 	
 	types::TermType functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments) {
+		types::TermType result;
 		if (identifier.symbol == "ite") {
+			if (identifier.indices != nullptr) {
+				SMTRAT_LOG_WARN("smtrat.parser", "The function \"" << identifier << "\" should not have indices.");
+				return result;
+			}
 			return handleITE(arguments);
 		} else if (identifier.symbol == "distinct") {
+			if (identifier.indices != nullptr) {
+				SMTRAT_LOG_WARN("smtrat.parser", "The function \"" << identifier << "\" should not have indices.");
+				return result;
+			}
 			return handleDistinct(arguments);
 		}
-		types::TermType result;
-		TheoryError te;
-		for (auto& t: theories) {
-			if (t.second->functionCall(identifier, arguments, result, te(t.first))) return result;
+		auto deffunit = state->defined_functions.find(identifier.symbol);
+		 if (deffunit != state->defined_functions.end()) {
+			if (identifier.indices != nullptr) {
+				SMTRAT_LOG_WARN("smtrat.parser", "The function \"" << identifier << "\" should not have indices.");
+				return result;
+			}
+			TheoryError te;
+			if ((*deffunit->second)(arguments, result, te)) return result;
+			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to call user-defined function \"" << identifier << "\" with arguments " << arguments << ":" << te);
+			return result;
+		} else {
+			TheoryError te;
+			for (auto& t: theories) {
+				if (t.second->functionCall(identifier, arguments, result, te(t.first))) return result;
+			}
+			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to call \"" << identifier << "\" with arguments " << arguments << ":" << te);
+			return result;
 		}
-		SMTRAT_LOG_ERROR("smtrat.parser", "Failed to call \"" << identifier << "\" with arguments " << arguments << ":" << te);
-		return result;
 	}
 private:
 	ParserState* state;
