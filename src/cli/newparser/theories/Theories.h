@@ -51,6 +51,7 @@ struct Theories {
 	}
 	void declareVariable(const std::string& name, const carl::Sort& sort) {
 		if (state->isSymbolFree(name)) {
+			std::cout << "Declaring " << name << " as " << sort << std::endl;
 			for (auto& t: theories) {
 				if (t.second->declareVariable(name, sort)) return;
 			}

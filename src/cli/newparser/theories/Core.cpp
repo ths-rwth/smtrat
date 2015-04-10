@@ -70,7 +70,7 @@ namespace parser {
 		for (std::size_t i = 0; i < arguments.size(); i++) {
 			FormulaT res;
 			if (!convertTerm(arguments[i], res)) {
-				errors.next() << "Arguments are expected to be arithmetic, but argument " << (i+1) << " is not: \"" << arguments[i] << "\".";
+				errors.next() << "Arguments are expected to be formulas, but argument " << (i+1) << " is not: \"" << arguments[i] << "\".";
 				return false;
 			}
 			result.push_back(res);
@@ -80,7 +80,7 @@ namespace parser {
 
 	CoreTheory::CoreTheory(ParserState* state): AbstractTheory(state) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
-		sm.addSort("Bool", carl::VariableType::VT_BOOL);
+		sm.addInterpretedSort("Bool", carl::VariableType::VT_BOOL);
 		
 		state->registerFunction("not", new NotCoreInstantiator());
 		state->registerFunction("and", new NaryCoreInstantiator<carl::FormulaType::AND>());

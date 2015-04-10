@@ -45,8 +45,8 @@ namespace parser {
 
 	ArithmeticTheory::ArithmeticTheory(ParserState* state): AbstractTheory(state) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
-		sm.addSort("Int", carl::VariableType::VT_INT);
-		sm.addSort("Real", carl::VariableType::VT_REAL);
+		sm.addInterpretedSort("Int", carl::VariableType::VT_INT);
+		sm.addInterpretedSort("Real", carl::VariableType::VT_REAL);
 		
 		ops.emplace("+", OperatorType(Poly::ConstructorOperation::ADD));
 		ops.emplace("-", OperatorType(Poly::ConstructorOperation::SUB));

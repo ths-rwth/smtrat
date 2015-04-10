@@ -35,11 +35,12 @@ struct SortParser : public qi::grammar<Iterator, carl::Sort(), Skipper> {
 	}
 	
 	carl::Sort getSort(const Identifier& i) {
-		std::cout << "Parsed sort " << i << " with indices at " << i.indices << std::endl;
+		std::cout << "Parsed sort " << i << std::endl;
 		if (i.indices == nullptr) return carl::getSort(i.symbol);
 		return carl::getSort(i.symbol, *i.indices);
 	}
 	carl::Sort getSort(const Identifier& i, const std::vector<carl::Sort>& params) {
+		std::cout << "Parsed sort " << i << " with params " << params << std::endl;
 		if (i.indices == nullptr) return carl::getSort(i.symbol, params);
 		return carl::getSort(i.symbol, *i.indices, params);
 	}
