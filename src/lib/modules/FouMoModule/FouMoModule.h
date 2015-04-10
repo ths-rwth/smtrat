@@ -90,6 +90,15 @@ namespace smtrat
             Answer call_backends( bool _full );
             
             /*
+             * @param  formula_map A map of formulas and their origins
+             * @param  new_poly    A polynomial whose formula could be added to formula_map if it is not redundant
+             * @return The formula whose polynomial, ignoring the constant part, corresponds
+             *         to new_poly. Otherwise, returns a false formula. The second component of the result
+             *         indicates whether the formula belonging to new_poly would add new information to formula_map.
+             */
+            std::pair< FormulaT, bool > worth_inserting( FormulaOrigins& formula_map, const Poly& new_poly );
+            
+            /*
              * Resets all data structures of this module to the initial assignments
              */
             void fresh_start();
