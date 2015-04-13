@@ -101,7 +101,7 @@ namespace smtrat
                         {
                             if( iter_poly->getSingleVariable() == *iter_var )
                             {
-                                if( iter_poly->coeff() > 0 ) 
+                                if( (Rational)iter_poly->coeff() > 0 ) 
                                 {
                                     to_be_deleted.emplace( iter_temp->first, true );
                                     // The current considered constraint that iter_temp points to acts as an upper bound
@@ -779,13 +779,12 @@ namespace smtrat
                         if( forbidden_fruits.end() == forbidden_fruits.find( iter_poly->getSingleVariable() ) )
                         {
                             carl::Variable var_help = iter_poly->getSingleVariable();
-                            assert( var_help.getType() == carl::VariableType::VT_INT);
                             auto iter_help = var_corr_constr.find( var_help );
                             if( iter_help == var_corr_constr.end() )
                             {
                                 std::vector<SingleFormulaOrigins> upper;
                                 std::vector<SingleFormulaOrigins> lower;
-                                if( ( iter_poly->coeff() > 0 && iter_constr->first.constraint().relation() == carl::Relation::LEQ ) )
+                                if( ( (Rational)iter_poly->coeff() > 0 && iter_constr->first.constraint().relation() == carl::Relation::LEQ ) )
                                 {
                                     SingleFormulaOrigins upper_help;
                                     upper_help.first = iter_constr->first;
@@ -806,7 +805,7 @@ namespace smtrat
                                 SingleFormulaOrigins help;
                                 help.first = iter_constr->first;
                                 help.second = iter_constr->second;
-                                if( ( iter_poly->coeff() > 0 && iter_constr->first.constraint().relation() == carl::Relation::LEQ ) ) 
+                                if( ( (Rational)iter_poly->coeff() > 0 && iter_constr->first.constraint().relation() == carl::Relation::LEQ ) ) 
                                 {
                                     iter_help->second.first.push_back( std::move( help ) );
                                 }
@@ -963,7 +962,7 @@ namespace smtrat
                         }
                         else
                         {
-                            coeff_upper = iter_poly_upper->coeff();
+                            coeff_upper = (Rational)iter_poly_upper->coeff();
                             #ifdef DEBUG_FouMoModule
                             cout << "Coefficient: " << iter_poly_upper->coeff() << endl;
                             #endif
@@ -977,7 +976,7 @@ namespace smtrat
                     first_iter_upper = false;     
                     if( Settings::Integer_Mode )
                     {
-                        lowest_upper = carl::floor( Rational( to_be_substituted_upper.constantPart() )/(-1*coeff_upper ) );         
+                        lowest_upper = carl::floor( Rational( to_be_substituted_upper.constantPart() )/(Rational(-1)*coeff_upper ) );         
                     }
                     else
                     {
@@ -988,9 +987,9 @@ namespace smtrat
                 {                    
                     if( Settings::Integer_Mode )
                     {                        
-                        if( carl::floor( Rational( -to_be_substituted_upper.constantPart() )/coeff_upper ) < lowest_upper )
+                        if( carl::floor( Rational( Rational(-1)*(Rational)to_be_substituted_upper.constantPart() )/coeff_upper ) < lowest_upper )
                         {
-                            lowest_upper = carl::floor( Rational( -to_be_substituted_upper.constantPart() )/coeff_upper );
+                            lowest_upper = carl::floor( Rational( Rational(-1)*(Rational)to_be_substituted_upper.constantPart() )/coeff_upper );
                         }
                     }
                     else
@@ -1043,7 +1042,7 @@ namespace smtrat
                         }
                         else
                         {
-                            coeff_lower = -iter_poly_lower->coeff();
+                            coeff_lower = Rational(-1)*(Rational)iter_poly_lower->coeff();
                             #ifdef DEBUG_FouMoModule
                             cout << "Coeff: " << coeff_lower << endl;
                             #endif
