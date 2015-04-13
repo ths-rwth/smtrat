@@ -1,11 +1,20 @@
 #pragma once
 
 #include "../Common.h"
+#include "config.h"
 
 namespace smtrat {
 namespace parser {
 namespace types {
-
+	
+	struct CoreTheory {
+		typedef mpl::vector<FormulaT, std::string> ConstTypes;
+		typedef mpl::vector<carl::Variable> VariableTypes;
+		typedef mpl::vector<FormulaT, std::string> ExpressionTypes;
+		typedef mpl::vector<FormulaT, std::string> TermTypes;
+		typedef carl::mpl_variant_of<TermTypes>::type TermType;
+	};
+#ifdef PARSER_ENABLE_ARITHMETIC
 	struct ArithmeticTheory  {
 		typedef mpl::vector<Rational> ConstTypes;
 		typedef mpl::vector<carl::Variable> VariableTypes;
@@ -13,7 +22,8 @@ namespace types {
 		typedef mpl::vector<carl::Variable, Rational, Poly> TermTypes;
 		typedef carl::mpl_variant_of<TermTypes>::type TermType;
 	};
-#ifdef PARSER_BITVECTOR
+#endif
+#ifdef PARSER_ENABLE_BITVECTOR
 	typedef carl::BVTerm<Poly> BVTerm;
 	struct BitvectorTheory {
 		typedef mpl::vector<carl::BVVariable, BVTerm> ConstTypes;
@@ -23,13 +33,7 @@ namespace types {
 		typedef carl::mpl_variant_of<TermTypes>::type TermType;
 	};
 #endif
-	struct CoreTheory {
-		typedef mpl::vector<FormulaT, std::string> ConstTypes;
-		typedef mpl::vector<carl::Variable> VariableTypes;
-		typedef mpl::vector<FormulaT, std::string> ExpressionTypes;
-		typedef mpl::vector<FormulaT, std::string> TermTypes;
-		typedef carl::mpl_variant_of<TermTypes>::type TermType;
-	};
+#ifdef PARSER_ENABLE_UNINTERPRETED
 	struct UninterpretedTheory {
 		typedef mpl::vector<carl::UVariable, carl::UFInstance> ConstTypes;
 		typedef mpl::vector<carl::UVariable> VariableTypes;
@@ -37,6 +41,7 @@ namespace types {
 		typedef mpl::vector<carl::UVariable, carl::UFInstance> TermTypes;
 		typedef carl::mpl_variant_of<TermTypes>::type TermType;
 	};
+#endif
 
 	typedef carl::mpl_concatenate<
 			ArithmeticTheory::ConstTypes,

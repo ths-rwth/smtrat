@@ -37,7 +37,7 @@ namespace parser {
 	
 	void BitvectorTheory::addSimpleSorts(qi::symbols<char, carl::Sort>& sorts) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
-		sorts.add("Bool", sm.getInterpreted(carl::VariableType::VT_BOOL));
+		sorts.add("BitVec", sm.getInterpreted(carl::VariableType::VT_BOOL));
 	}
 	
 	bool BitvectorTheory::convertTerm(const types::TermType& term, types::BVTerm& result) {
@@ -67,9 +67,11 @@ namespace parser {
 
 	BitvectorTheory::BitvectorTheory(ParserState* state): AbstractTheory(state) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
-		sm.addSort("BitVec", carl::VariableType::VT_BITVECTOR);
+		carl::Sort bv = sm.addSort("BitVec", carl::VariableType::VT_UNINTERPRETED);
+		sm.makeSortIndexable(bv, 1, carl::VariableType::VT_BITVECTOR);
 
 		state->registerFunction("bvnot", new UnaryBitvectorInstantiator<carl::BVTermType::NOT>());
+		//state->registerFunction("bvslt", new BinaryBitvectorInstantiator<carl::BVTermType::NOT>());
 	}
 
 	bool BitvectorTheory::declareVariable(const std::string& name, const carl::Sort& sort) {
@@ -84,6 +86,39 @@ namespace parser {
 			default:
 				return false;
 		}
+	}
+
+	struct BitvectorConstantParser: public qi::grammar<std::string::const_iterator, Rational()> {
+		BitvectorConstantParser(): BitvectorConstantParser::base_type(main, "bitvector literal") {
+			main = "bv" > number;
+		}
+		qi::uint_parser<Integer,10,1,-1> number;
+	    qi::rule<std::string::const_iterator, Rational()> main;
+	};
+	
+	bool BitvectorTheory::resolveSymbol(const Identifier& identifier, types::TermType& result, TheoryError& errors) {
+		Rational r;
+		const std::string& s = identifier.symbol;
+		if (qi::parse(s.begin(), s.end(), BitvectorConstantParser(), r)) {
+			if (identifier.indices == nullptr) {
+				errors.next() << "Found a possible bitvector symbol \"" << identifier << "\" but no bit size was specified.";
+				return false;
+			}
+			if (identifier.indices->size() != 1) {
+				errors.next() << "Found a possible bitvector symbol \"" << identifier << "\" but did not find a single index specifying the bit size.";
+				return false;
+			}
+			std::size_t bitsize = identifier.indices->at(0);
+			if (bitsize <= sizeof(std::size_t) * CHAR_BIT) {
+				carl::BVValue value(bitsize, carl::toInt<std::size_t>(r));
+				result = types::BVTerm(carl::BVTermType::CONSTANT, value);
+				return true;
+			} else {
+				errors.next() << "Bitvector constant was larger than " << sizeof(std::size_t) << " bits.";
+				return false;
+			}
+		}
+		return false;
 	}
 
 	bool BitvectorTheory::handleITE(const FormulaT& ifterm, const types::TermType& thenterm, const types::TermType& elseterm, types::TermType& result, TheoryError& errors) {

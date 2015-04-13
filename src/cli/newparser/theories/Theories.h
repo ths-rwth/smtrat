@@ -6,9 +6,11 @@
 #include "ParserState.h"
 #include "Core.h"
 #include "Arithmetic.h"
-#include "Uninterpreted.h"
-#ifdef PARSER_BITVECTOR
+#ifdef PARSER_ENABLE_BITVECTOR
 #include "Bitvector.h"
+#endif
+#ifdef PARSER_ENABLE_UNINTERPRETED
+#include "Uninterpreted.h"
 #endif
 
 namespace smtrat {
@@ -16,33 +18,55 @@ namespace parser {
 
 struct Theories {
 	
-	static void addConstants(qi::symbols<char, types::ConstType>& constants) {
-		ArithmeticTheory::addConstants(constants);
-#ifdef PARSER_BITVECTOR
-		BitvectorTheory::addConstants(constants);
+	typedef boost::mpl::vector<
+		CoreTheory*,
+#ifdef PARSER_ENABLE_ARITHMETIC
+		ArithmeticTheory*,
 #endif
-		CoreTheory::addConstants(constants);
-		UninterpretedTheory::addConstants(constants);
-	}
-
-	static void addSimpleSorts(qi::symbols<char, carl::Sort>& sorts) {
-		ArithmeticTheory::addSimpleSorts(sorts);
-#ifdef PARSER_BITVECTOR
-		BitvectorTheory::addSimpleSorts(sorts);
+#ifdef PARSER_ENABLE_BITVECTOR
+		BitvectorTheory*,
 #endif
-		CoreTheory::addSimpleSorts(sorts);
-		UninterpretedTheory::addSimpleSorts(sorts);
-	}
-	
+#ifdef PARSER_ENABLE_UNINTERPRETED
+		UninterpretedTheory*
+#endif	
+		>::type Modules;
+		
+		
 	Theories(ParserState* state):
 		state(state)
 	{
+		theories.emplace("Core", new CoreTheory(state));
+#ifdef PARSER_ENABLE_ARITHMETIC
 		theories.emplace("Arithmetic", new ArithmeticTheory(state));
-#ifdef PARSER_BITVECTOR
+#endif
+#ifdef PARSER_ENABLE_BITVECTOR
 		theories.emplace("Bitvector", new BitvectorTheory(state));
 #endif
-		theories.emplace("Core", new CoreTheory(state));
+#ifdef PARSER_ENABLE_UNINTERPRETED
 		theories.emplace("Uninterpreted", new UninterpretedTheory(state));
+#endif	
+	}
+		
+	struct ConstantAdder {
+		qi::symbols<char, types::ConstType>& constants;
+		ConstantAdder(qi::symbols<char, types::ConstType>& constants): constants(constants) {}
+		template<typename T> void operator()(T*) {
+			T::addConstants(constants);
+		}
+	};
+	static void addConstants(qi::symbols<char, types::ConstType>& constants) {
+		boost::mpl::for_each<Modules>(ConstantAdder(constants));
+	}
+
+	struct SimpleSortAdder {
+		qi::symbols<char, carl::Sort>& sorts;
+		SimpleSortAdder(qi::symbols<char, carl::Sort>& sorts): sorts(sorts) {}
+		template<typename T> void operator()(T*) {
+			T::addSimpleSorts(sorts);
+		}
+	};
+	static void addSimpleSorts(qi::symbols<char, carl::Sort>& sorts) {
+		boost::mpl::for_each<Modules>(SimpleSortAdder(sorts));
 	}
 	
 	void addGlobalFormulas(FormulasT& formulas) {
@@ -51,7 +75,6 @@ struct Theories {
 	}
 	void declareVariable(const std::string& name, const carl::Sort& sort) {
 		if (state->isSymbolFree(name)) {
-			std::cout << "Declaring " << name << " as " << sort << std::endl;
 			for (auto& t: theories) {
 				if (t.second->declareVariable(name, sort)) return;
 			}
@@ -92,12 +115,16 @@ struct Theories {
 	}
 
 	types::TermType resolveSymbol(const Identifier& identifier) const {
+		types::TermType result;
 		if (identifier.indices == nullptr) {
-			return state->resolveSymbol<types::TermType>(identifier.symbol);
-		} else {
-			SMTRAT_LOG_ERROR("smtrat.parser", "Indexed symbols are not supported yet.");
-			return types::TermType();
+			if (state->resolveSymbol(identifier.symbol, result)) return result;
 		}
+		TheoryError te;
+		for (auto& t: theories) {
+			if (t.second->resolveSymbol(identifier, result, te)) return result;
+		}
+		SMTRAT_LOG_ERROR("smtrat.parser", "Tried to resolve symbol \"" << identifier << "\" which is unknown." << te);
+		return types::TermType();
 	}
 	
 	void openScope(std::size_t n) {

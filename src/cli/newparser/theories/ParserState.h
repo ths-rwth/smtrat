@@ -94,13 +94,10 @@ namespace parser {
 			return true;
 		}
 		
-		template<typename Res>
-		Res resolveSymbol(const std::string& name) const {
-			Res r;
-			if (resolveSymbol(name, variables, r)) return r;
-			if (resolveSymbol(name, bindings, r)) return r;
-			SMTRAT_LOG_ERROR("smtrat.parser", "Tried to resolve symbol \"" << name << "\" which was not registered.");
-			return r;
+		bool resolveSymbol(const std::string& name, types::TermType& r) const {
+			if (resolveSymbol(name, variables, r)) return true;
+			if (resolveSymbol(name, bindings, r)) return true;
+			return false;
 		}
 		
 		void registerFunction(const std::string& name, const types::FunctionInstantiator* fi) {

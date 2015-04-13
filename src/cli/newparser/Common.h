@@ -12,10 +12,12 @@
 #include <sstream>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/fusion/include/std_pair.hpp>
+#include <boost/mpl/for_each.hpp>
 #include <boost/mpl/vector.hpp>
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 #include <boost/spirit/include/qi.hpp>
-#include <boost/fusion/include/std_pair.hpp>
+#include <boost/spirit/include/qi_parse.hpp>
 #include <boost/spirit/include/phoenix_bind.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_object.hpp>

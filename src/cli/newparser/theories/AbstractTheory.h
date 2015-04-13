@@ -19,6 +19,10 @@ public:
 	virtual bool defineFunction(const std::string&, const std::vector<carl::Sort>&, const carl::Sort&) {
 		return false;
 	}
+	virtual bool resolveSymbol(const Identifier&, types::TermType&, TheoryError& errors) {
+		errors.next() << "Custom symbols are not supported.";
+		return false;
+	}
 
 	virtual bool handleITE(const FormulaT&, const types::TermType&, const types::TermType&, types::TermType&, TheoryError& errors) {
 		errors.next() << "ITEs are not supported.";
