@@ -27,7 +27,7 @@ namespace types {
 	typedef carl::BVTerm<Poly> BVTerm;
 	struct BitvectorTheory {
 		typedef mpl::vector<carl::BVVariable, BVTerm> ConstTypes;
-		typedef mpl::vector<carl::BVVariable> VariableTypes;
+		typedef mpl::vector<carl::BVVariable, BVTerm> VariableTypes;
 		typedef mpl::vector<carl::BVVariable, BVTerm> ExpressionTypes;
 		typedef mpl::vector<carl::BVVariable, BVTerm> TermTypes;
 		typedef carl::mpl_variant_of<TermTypes>::type TermType;
@@ -100,6 +100,17 @@ namespace types {
 			return converter.convert(from, to);
 		}
 		virtual bool operator()(const std::vector<TermType>&, TermType&, TheoryError& errors) const {
+			errors.next() << "Instantiation of this function is not supported.";
+			return false;
+		}
+	};
+	struct IndexedFunctionInstantiator {
+		template<typename T>
+		bool convert(const std::vector<TermType>& from, std::vector<T>& to) const {
+			VectorVariantConverter<T> converter;
+			return converter.convert(from, to);
+		}
+		virtual bool operator()(const std::vector<std::size_t>&, const std::vector<TermType>&, TermType&, TheoryError& errors) const {
 			errors.next() << "Instantiation of this function is not supported.";
 			return false;
 		}
