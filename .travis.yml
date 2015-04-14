@@ -2,11 +2,6 @@ language: cpp
 
 sudo: required
 
-branches:
-  only:
-    - master
-    - bitvectors
-
 os:
   - linux
   - osx
