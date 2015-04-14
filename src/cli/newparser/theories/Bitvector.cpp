@@ -7,10 +7,24 @@ namespace parser {
 	struct BitvectorInstantiator: public types::FunctionInstantiator {
 		bool operator()(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) const {
 			std::vector<types::BVTerm> args;
-			if (!convert(arguments, args)) return false;
+			if (!convert(arguments, args)) {
+				errors.next() << "Failed to convert arguments.";
+				return false;
+			}
 			return apply(args, result, errors);
 		}
 		virtual bool apply(const std::vector<types::BVTerm>& arguments, types::TermType& result, TheoryError& errors) const = 0;
+	};
+	struct IndexedBitvectorInstantiator: public types::IndexedFunctionInstantiator {
+		bool operator()(const std::vector<std::size_t>& indices, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) const {
+			std::vector<types::BVTerm> args;
+			if (!convert(arguments, args)) {
+				errors.next() << "Failed to convert arguments.";
+				return false;
+			}
+			return apply(indices, args, result, errors);
+		}
+		virtual bool apply(const std::vector<std::size_t>& indices, const std::vector<types::BVTerm>& arguments, types::TermType& result, TheoryError& errors) const = 0;
 	};
 	template<carl::BVTermType type>
 	struct UnaryBitvectorInstantiator: public BitvectorInstantiator {
@@ -31,6 +45,35 @@ namespace parser {
 				return false;
 			}
 			result = types::BVTerm(type, arguments[0], arguments[1]);
+			return true;
+		}
+	};
+	template<carl::BVTermType type>
+	struct SingleIndexBitvectorInstantiator: public IndexedBitvectorInstantiator {
+		bool apply(const std::vector<std::size_t>& indices, const std::vector<types::BVTerm>& arguments, types::TermType& result, TheoryError& errors) const {
+			if (arguments.size() != 1) {
+				errors.next() << "The operator \"" << type << "\" expects exactly one argument.";
+				return false;
+			}
+			if (indices.size() != 1) {
+				errors.next() << "The operator \"" << type << "\" expects exactly one index.";
+				return false;
+			result = types::BVTerm(type, arguments[0], indices[0]);
+			}
+			return true;
+		}
+	};
+	struct ExtractBitvectorInstantiator: public IndexedBitvectorInstantiator {
+		bool apply(const std::vector<std::size_t>& indices, const std::vector<types::BVTerm>& arguments, types::TermType& result, TheoryError& errors) const {
+			if (arguments.size() != 1) {
+				errors.next() << "The operator \"extract\" expects exactly one argument.";
+				return false;
+			}
+			if (indices.size() != 2) {
+				errors.next() << "The operator \"extract\" expects exactly two indices.";
+				return false;
+			result = types::BVTerm(carl::BVTermType::EXTRACT, arguments[0], indices[0], indices[1]);
+			}
 			return true;
 		}
 	};
@@ -70,8 +113,34 @@ namespace parser {
 		carl::Sort bv = sm.addSort("BitVec", carl::VariableType::VT_UNINTERPRETED);
 		sm.makeSortIndexable(bv, 1, carl::VariableType::VT_BITVECTOR);
 
+		state->registerFunction("concat", new BinaryBitvectorInstantiator<carl::BVTermType::CONCAT>());
+		state->registerFunction("extract", new ExtractBitvectorInstantiator());
+		
 		state->registerFunction("bvnot", new UnaryBitvectorInstantiator<carl::BVTermType::NOT>());
-		//state->registerFunction("bvslt", new BinaryBitvectorInstantiator<carl::BVTermType::NOT>());
+		state->registerFunction("bvneg", new UnaryBitvectorInstantiator<carl::BVTermType::NEG>());
+		
+		state->registerFunction("bvand", new BinaryBitvectorInstantiator<carl::BVTermType::AND>());
+		state->registerFunction("bvor", new BinaryBitvectorInstantiator<carl::BVTermType::OR>());
+		state->registerFunction("bvxor", new BinaryBitvectorInstantiator<carl::BVTermType::XOR>());
+		state->registerFunction("bvnand", new BinaryBitvectorInstantiator<carl::BVTermType::NAND>());
+		state->registerFunction("bvnor", new BinaryBitvectorInstantiator<carl::BVTermType::NOR>());
+		state->registerFunction("bvxnor", new BinaryBitvectorInstantiator<carl::BVTermType::XNOR>());
+		state->registerFunction("bvadd", new BinaryBitvectorInstantiator<carl::BVTermType::ADD>());
+		state->registerFunction("bvsub", new BinaryBitvectorInstantiator<carl::BVTermType::SUB>());
+		state->registerFunction("bvmul", new BinaryBitvectorInstantiator<carl::BVTermType::MUL>());
+		state->registerFunction("bvudiv", new BinaryBitvectorInstantiator<carl::BVTermType::DIV_U>());
+		state->registerFunction("bvsdiv", new BinaryBitvectorInstantiator<carl::BVTermType::DIV_S>());
+		state->registerFunction("bvurem", new BinaryBitvectorInstantiator<carl::BVTermType::MOD_U>());
+		state->registerFunction("bvsrem", new BinaryBitvectorInstantiator<carl::BVTermType::MOD_S1>());
+		state->registerFunction("bvsmod", new BinaryBitvectorInstantiator<carl::BVTermType::MOD_S2>());
+		state->registerFunction("bvshl", new BinaryBitvectorInstantiator<carl::BVTermType::LSHIFT>());
+		state->registerFunction("bvlshr", new BinaryBitvectorInstantiator<carl::BVTermType::RSHIFT_LOGIC>());
+		
+		state->registerFunction("rotate_left", new SingleIndexBitvectorInstantiator<carl::BVTermType::LROTATE>());
+		state->registerFunction("rotate_right", new SingleIndexBitvectorInstantiator<carl::BVTermType::RROTATE>());
+		state->registerFunction("zero_extend", new SingleIndexBitvectorInstantiator<carl::BVTermType::EXT_U>());
+		state->registerFunction("sign_extend", new SingleIndexBitvectorInstantiator<carl::BVTermType::EXT_S>());
+		state->registerFunction("repeat", new SingleIndexBitvectorInstantiator<carl::BVTermType::REPEAT>());
 	}
 
 	bool BitvectorTheory::declareVariable(const std::string& name, const carl::Sort& sort) {
@@ -80,7 +149,7 @@ namespace parser {
 			case carl::VariableType::VT_BITVECTOR: {
 				assert(state->isSymbolFree(name));
 				carl::Variable v = carl::freshVariable(name, carl::VariableType::VT_BITVECTOR);
-				state->variables[name] = carl::BVVariable(v, sort);
+				state->variables[name] = types::BVTerm(carl::BVTermType::VARIABLE, carl::BVVariable(v, sort));
 				return true;
 			}
 			default:
