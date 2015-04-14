@@ -38,6 +38,7 @@ namespace parser {
 		std::map<std::string, types::TermType> bindings;
 		std::map<std::string, carl::UninterpretedFunction> declared_functions;
 		std::map<std::string, const types::FunctionInstantiator*> defined_functions;
+		std::map<std::string, const types::IndexedFunctionInstantiator*> defined_indexed_functions;
 	
 		//std::map<std::string, BooleanFunction> funmap_bool;
 		//std::map<std::string, ArithmeticFunction> funmap_arithmetic;
@@ -77,10 +78,7 @@ namespace parser {
 				else if (bindings.find(name) != bindings.end()) out << "\"" << name << "\" has already been defined as a binding to \"" << bindings[name] << "\".";
 				else if (declared_functions.find(name) != declared_functions.end()) out << "\"" << name << "\" has already been declared as a function.";
 				else if (defined_functions.find(name) != defined_functions.end()) out << "\"" << name << "\" has already been defined as a function.";
-				//else if (funmap_theory.find(name) != funmap_theory.end()) out << "\"" << name << "\" has already been defined as a theory funtion.";
-				//else if (funmap_ufbool.find(name) != funmap_ufbool.end()) out << "\"" << name << "\" has already been defined as an uninterpreted function of boolean return type.";
-				//else if (funmap_uftheory.find(name) != funmap_uftheory.end()) out << "\"" << name << "\" has already been defined as an uninterpreted function of theory return type.";
-				//else if (funmap_uf.find(name) != funmap_uf.end()) out << "\"" << name << "\" has already been defined as an uninterpreted function.";
+				else if (defined_indexed_functions.find(name) != defined_indexed_functions.end()) out << "\"" << name << "\" has already been defined as a function.";
 				else return true;
 				if (output) SMTRAT_LOG_ERROR("smtrat.parser", out.str());
 				return false;
@@ -106,6 +104,13 @@ namespace parser {
 				return;
 			}
 			defined_functions.emplace(name, fi);
+		}
+		void registerFunction(const std::string& name, const types::IndexedFunctionInstantiator* fi) {
+			if (!isSymbolFree(name)) {
+				SMTRAT_LOG_ERROR("smtrat.parser", "Failed to register indexed function \"" << name << "\", name is already used.");
+				return;
+			}
+			defined_indexed_functions.emplace(name, fi);
 		}
 	};
 
