@@ -171,6 +171,7 @@ struct Theories {
 	
 	types::TermType functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments) {
 		types::TermType result;
+		TheoryError te;
 		if (identifier.symbol == "ite") {
 			if (identifier.indices != nullptr) {
 				SMTRAT_LOG_WARN("smtrat.parser", "The function \"" << identifier << "\" should not have indices.");
@@ -185,23 +186,30 @@ struct Theories {
 			return handleDistinct(arguments);
 		}
 		auto deffunit = state->defined_functions.find(identifier.symbol);
-		 if (deffunit != state->defined_functions.end()) {
+		if (deffunit != state->defined_functions.end()) {
 			if (identifier.indices != nullptr) {
 				SMTRAT_LOG_WARN("smtrat.parser", "The function \"" << identifier << "\" should not have indices.");
 				return result;
 			}
-			TheoryError te;
-			if ((*deffunit->second)(arguments, result, te)) return result;
+			if ((*deffunit->second)(arguments, result, te(identifier.symbol))) return result;
 			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to call user-defined function \"" << identifier << "\" with arguments " << arguments << ":" << te);
 			return result;
-		} else {
-			TheoryError te;
-			for (auto& t: theories) {
-				if (t.second->functionCall(identifier, arguments, result, te(t.first))) return result;
+		}
+		auto ideffunit = state->defined_indexed_functions.find(identifier.symbol);
+		if (ideffunit != state->defined_indexed_functions.end()) {
+			if (identifier.indices == nullptr) {
+				SMTRAT_LOG_WARN("smtrat.parser", "The function \"" << identifier << "\" should have indices.");
+				return result;
 			}
-			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to call \"" << identifier << "\" with arguments " << arguments << ":" << te);
+			if ((*ideffunit->second)(*identifier.indices, arguments, result, te(identifier.symbol))) return result;
+			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to call user-defined function \"" << identifier << "\" with arguments " << arguments << ":" << te);
 			return result;
 		}
+		for (auto& t: theories) {
+			if (t.second->functionCall(identifier, arguments, result, te(t.first))) return result;
+		}
+		SMTRAT_LOG_ERROR("smtrat.parser", "Failed to call \"" << identifier << "\" with arguments " << arguments << ":" << te);
+		return result;
 	}
 private:
 	ParserState* state;
