@@ -16,6 +16,8 @@ struct BitvectorTheory: public AbstractTheory  {
 	BitvectorTheory(ParserState* state);
 	
 	bool declareVariable(const std::string& name, const carl::Sort& sort);
+	
+	bool resolveSymbol(const Identifier& identifier, types::TermType& result, TheoryError& errors);
 
 	bool handleITE(const FormulaT& ifterm, const types::TermType& thenterm, const types::TermType& elseterm, types::TermType& result, TheoryError& errors);
 	
