@@ -191,8 +191,12 @@ struct Theories {
 				SMTRAT_LOG_WARN("smtrat.parser", "The function \"" << identifier << "\" should not have indices.");
 				return result;
 			}
-			if ((*deffunit->second)(arguments, result, te(identifier.symbol))) return result;
-			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to call user-defined function \"" << identifier << "\" with arguments " << arguments << ":" << te);
+			SMTRAT_LOG_DEBUG("smtrat.parser", "Trying to call function \"" << identifier << "\" with arguments " << arguments << ".");
+			if ((*deffunit->second)(arguments, result, te(identifier.symbol))) {
+				SMTRAT_LOG_DEBUG("smtrat.parser", "Success, result is \"" << result << "\".");
+				return result;
+			}
+			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to call function \"" << identifier << "\" with arguments " << arguments << ":" << te);
 			return result;
 		}
 		auto ideffunit = state->defined_indexed_functions.find(identifier.symbol);
@@ -201,8 +205,12 @@ struct Theories {
 				SMTRAT_LOG_WARN("smtrat.parser", "The function \"" << identifier << "\" should have indices.");
 				return result;
 			}
-			if ((*ideffunit->second)(*identifier.indices, arguments, result, te(identifier.symbol))) return result;
-			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to call user-defined function \"" << identifier << "\" with arguments " << arguments << ":" << te);
+			SMTRAT_LOG_DEBUG("smtrat.parser", "Trying to call function \"" << identifier << "\" with arguments " << arguments << ".");
+			if ((*ideffunit->second)(*identifier.indices, arguments, result, te(identifier.symbol))) {
+				SMTRAT_LOG_DEBUG("smtrat.parser", "Success, result is \"" << result << "\".");
+				return result;
+			}
+			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to call function \"" << identifier << "\" with arguments " << arguments << ":" << te);
 			return result;
 		}
 		for (auto& t: theories) {

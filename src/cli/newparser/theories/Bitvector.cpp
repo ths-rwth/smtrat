@@ -72,8 +72,8 @@ namespace parser {
 			if (indices.size() != 2) {
 				errors.next() << "The operator \"extract\" expects exactly two indices.";
 				return false;
-			result = types::BVTerm(carl::BVTermType::EXTRACT, arguments[0], indices[0], indices[1]);
 			}
+			result = types::BVTerm(carl::BVTermType::EXTRACT, arguments[0], indices[0], indices[1]);
 			return true;
 		}
 	};
@@ -126,6 +126,7 @@ namespace parser {
 		state->registerFunction("bvnor", new BinaryBitvectorInstantiator<carl::BVTermType::NOR>());
 		state->registerFunction("bvxnor", new BinaryBitvectorInstantiator<carl::BVTermType::XNOR>());
 		state->registerFunction("bvadd", new BinaryBitvectorInstantiator<carl::BVTermType::ADD>());
+		state->registerFunction("bvplus", new BinaryBitvectorInstantiator<carl::BVTermType::ADD>());
 		state->registerFunction("bvsub", new BinaryBitvectorInstantiator<carl::BVTermType::SUB>());
 		state->registerFunction("bvmul", new BinaryBitvectorInstantiator<carl::BVTermType::MUL>());
 		state->registerFunction("bvudiv", new BinaryBitvectorInstantiator<carl::BVTermType::DIV_U>());

@@ -26,6 +26,7 @@ link_directories( ${PROJECT_BINARY_DIR}/src/lib
 #######################
 configure_file( ${CMAKE_SOURCE_DIR}/src/cli/config.h.in ${CMAKE_SOURCE_DIR}/src/cli/config.h )
 
+configure_file( ${CMAKE_SOURCE_DIR}/src/cli/newparser/theories/config.h.in ${CMAKE_SOURCE_DIR}/src/cli/newparser/theories/config.h )
 
 # executable solver
 # # # # # # # # # #
