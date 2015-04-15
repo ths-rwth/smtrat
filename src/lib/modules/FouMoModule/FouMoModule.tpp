@@ -557,6 +557,33 @@ namespace smtrat
             else
             {
                 Module::getBackendsModel();
+                // Now the obtained model of the backends is either complete e.g. 
+                // for the case that this module was not able to find an integer solution
+                // or it is not since some variables might have been eliminated before
+                // we called the backends
+                // Check whether the obtained solution is correct
+                bool solution_correct = true;
+                auto iter_constr = rReceivedFormula().begin();
+                while( iter_constr != rReceivedFormula().end() )
+                {
+                    if( !iter_constr->formula().constraint().satisfiedBy( mVarAss ) || !( iter_constr->formula().constraint().lhs().substitute( mVarAss ) ).isConstant() )
+                    {
+                        #ifdef DEBUG_FouMoModule
+                        cout << "The obtained solution is not correct!" << endl;
+                        #endif
+                        solution_correct = false;
+                        break;
+                    }
+                    ++iter_constr;
+                }
+                if( !solution_correct )
+                {
+                    std::map< carl::Variable, Rational > temp_solution;
+                    bool all_rational;
+                    all_rational = getRationalAssignmentsFromModel( mModel, temp_solution );
+                    bool new_solution_correct;
+                    //new_solution_correct = construct_solution( temp_solution );                   
+                }
             }
         }
     }
@@ -595,7 +622,8 @@ namespace smtrat
                     return ans;
                 }
                 // Try to derive a(n) (integer) solution by backtracking through the steps of Fourier-Motzkin
-                mCorrect_Solution = construct_solution();
+                std::map< carl::Variable, Rational > dummy_map;
+                mCorrect_Solution = construct_solution( dummy_map );
                 if( !mElim_Order.empty() && mCorrect_Solution )
                 {
                     #ifdef DEBUG_FouMoModule
@@ -903,7 +931,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    bool FouMoModule<Settings>::construct_solution()
+    bool FouMoModule<Settings>::construct_solution( const std::map< carl::Variable, Rational > temp_solution )
     {
         if( mElim_Order.empty() )
         {
@@ -912,7 +940,7 @@ namespace smtrat
         VariableUpperLower constr_backtracking = mDeleted_Constraints;
         auto iter_elim = mElim_Order.end();
         --iter_elim;
-        mVarAss = std::map<carl::Variable, Rational>();
+        mVarAss = temp_solution;
         // Iterate backwards through the variables that have been eliminated
         while( true )
         {
@@ -1166,9 +1194,6 @@ namespace smtrat
                 addReceivedSubformulaToPassedFormula( iter_recv );
                 ++iter_recv;
             }
-            // TO-DO: Exclude the constraints of those iterations in
-            // which, from the beginning, subsequently only constraints 
-            // were deleted
         }
         else
         {

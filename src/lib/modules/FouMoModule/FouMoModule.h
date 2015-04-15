@@ -57,7 +57,7 @@ namespace smtrat
             // upper/lower constraints are saved in the order given by mElim_Order
             VariableUpperLower mDeleted_Constraints;  
             // Stores constructed assignments for the occuring variables when a solution was found
-            std::map<carl::Variable, Rational> mVarAss;
+            std::map< carl::Variable, Rational > mVarAss;
             // Stores whether we found a valid solution in this module
             bool mCorrect_Solution;
             
@@ -80,7 +80,7 @@ namespace smtrat
              * Tries to construct a solution by backtracking through the computation steps
              * and returns whether this was successful
              */            
-            bool construct_solution();
+            bool construct_solution( std::map< carl::Variable, Rational > temp_solution );
             
             /*
              * Depending on whether we work on integer or rational instances, it
