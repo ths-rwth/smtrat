@@ -283,13 +283,13 @@ namespace smtrat
             std::shared_ptr<std::vector<FormulaT>> origins = mProc_Constraints.begin()->second;
             typename Poly::PolyType ccExpanded = (typename Poly::PolyType)curr_constr.lhs();
             auto iter_coeff = ccExpanded.begin();
-            Rational smallest_abs_value = (*iter_coeff).coeff();
+            Rational smallest_abs_value = (Rational)(*iter_coeff).coeff();
             carl::Variable corr_var;
             bool value_negative = false;
             if( (*iter_coeff).isConstant() )
             {
                 corr_var = (*(++iter_coeff)).getSingleVariable(); 
-                Rational coeff = (*iter_coeff).coeff();
+                Rational coeff = (Rational)(*iter_coeff).coeff();
                 if( coeff < 0 )
                 {
                     value_negative = true;
@@ -309,7 +309,7 @@ namespace smtrat
             {
                 if( !(*iter_coeff).isConstant() )
                 {
-                    Rational coeff = (*iter_coeff).coeff();
+                    Rational coeff = (Rational)(*iter_coeff).coeff();
                     carl::Variable var = (*iter_coeff).getSingleVariable();
                     if( carl::abs(coeff) < smallest_abs_value )
                     {
@@ -331,10 +331,10 @@ namespace smtrat
             // depending on the value of the smallest absolute value of curr_constr
             Poly* temp = new Poly();
             *temp = ZERO_POLYNOMIAL;
-            Rational sign = 1;
+            Rational sign = (Rational)1;
             if( value_negative )
             {
-                sign = -1;                    
+                sign = (Rational)-1;                    
             } 
             iter_coeff = ccExpanded.begin();
             if( smallest_abs_value == 1 )
@@ -346,12 +346,12 @@ namespace smtrat
                         if( (*iter_coeff).getSingleVariable() != corr_var )
                         {
                             carl::Variable var = (*iter_coeff).getSingleVariable();
-                            *temp += carl::makePolynomial<Poly>(var)*Poly(Rational(-1)*sign*(*iter_coeff).coeff());
+                            *temp += carl::makePolynomial<Poly>(var)*Poly(Rational(-1)*sign*(Rational)(*iter_coeff).coeff());
                         }                          
                     }
                     else
                     {
-                        *temp += (Rational)(-1)*sign*(*iter_coeff).coeff();                            
+                        *temp += (Rational)(-1)*sign*(Rational)(*iter_coeff).coeff();                            
                     }  
                     ++iter_coeff;
                 } 
@@ -365,8 +365,8 @@ namespace smtrat
                 assert( smallest_abs_value > 1 );
                 while( iter_coeff != ccExpanded.end() )
                 {
-                    Rational coeff = (*iter_coeff).coeff();
-                    bool positive = (*iter_coeff).coeff() > 0;
+                    Rational coeff = (Rational)(*iter_coeff).coeff();
+                    bool positive = (Rational)(*iter_coeff).coeff() > 0;
                     if( !(*iter_coeff).isConstant() )
                     {
                         if( (*iter_coeff).getSingleVariable() != corr_var )
@@ -378,7 +378,7 @@ namespace smtrat
                             }
                             else
                             {
-                                *temp -= sign*Poly( (-1)*Rational( carl::floor( carl::div( (-1)*coeff, smallest_abs_value ) ) ) )*carl::makePolynomial<Poly>(var);
+                                *temp -= sign*Poly( (Rational)(-1)*Rational( carl::floor( carl::div( (Rational)(-1)*coeff, smallest_abs_value ) ) ) )*carl::makePolynomial<Poly>(var);
                             }    
                         }   
                     }
@@ -390,7 +390,7 @@ namespace smtrat
                         }
                         else
                         {
-                            *temp -= sign*Rational( (-1)*carl::floor( carl::div( (-1)*coeff, smallest_abs_value ) ) );                                                        
+                            *temp -= sign*Rational( (-1)*carl::floor( carl::div( (Rational)(-1)*coeff, smallest_abs_value ) ) );                                                        
                         }
                     }
                     ++iter_coeff;
@@ -541,6 +541,10 @@ namespace smtrat
                 }                                        
                 addConstraintToInform( formula_passed );
                 addSubformulaToPassedFormula( formula_passed, origins );    
+            }
+            else if( mSubstitutions.empty() )
+            {
+                addReceivedSubformulaToPassedFormula( iter_formula );                                
             }
             ++iter_formula;
         }
