@@ -1214,7 +1214,7 @@ namespace smtrat
             Poly temp = iter_form->first.constraint().lhs();
             if( temp - temp.constantPart() == new_poly - new_poly.constantPart() )
             {
-                if( -temp.constantPart() <= -new_poly.constantPart() )
+                if( Rational(-1)*(Rational)temp.constantPart() <= Rational(-1)*(Rational)new_poly.constantPart() )
                 {
                     result.second = false;
                     return result;
