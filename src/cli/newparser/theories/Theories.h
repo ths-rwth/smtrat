@@ -174,13 +174,13 @@ struct Theories {
 		TheoryError te;
 		if (identifier.symbol == "ite") {
 			if (identifier.indices != nullptr) {
-				SMTRAT_LOG_WARN("smtrat.parser", "The function \"" << identifier << "\" should not have indices.");
+				SMTRAT_LOG_ERROR("smtrat.parser", "The function \"" << identifier << "\" should not have indices.");
 				return result;
 			}
 			return handleITE(arguments);
 		} else if (identifier.symbol == "distinct") {
 			if (identifier.indices != nullptr) {
-				SMTRAT_LOG_WARN("smtrat.parser", "The function \"" << identifier << "\" should not have indices.");
+				SMTRAT_LOG_ERROR("smtrat.parser", "The function \"" << identifier << "\" should not have indices.");
 				return result;
 			}
 			return handleDistinct(arguments);
@@ -188,7 +188,7 @@ struct Theories {
 		auto deffunit = state->defined_functions.find(identifier.symbol);
 		if (deffunit != state->defined_functions.end()) {
 			if (identifier.indices != nullptr) {
-				SMTRAT_LOG_WARN("smtrat.parser", "The function \"" << identifier << "\" should not have indices.");
+				SMTRAT_LOG_ERROR("smtrat.parser", "The function \"" << identifier << "\" should not have indices.");
 				return result;
 			}
 			SMTRAT_LOG_DEBUG("smtrat.parser", "Trying to call function \"" << identifier << "\" with arguments " << arguments << ".");
@@ -202,7 +202,7 @@ struct Theories {
 		auto ideffunit = state->defined_indexed_functions.find(identifier.symbol);
 		if (ideffunit != state->defined_indexed_functions.end()) {
 			if (identifier.indices == nullptr) {
-				SMTRAT_LOG_WARN("smtrat.parser", "The function \"" << identifier << "\" should have indices.");
+				SMTRAT_LOG_ERROR("smtrat.parser", "The function \"" << identifier << "\" should have indices.");
 				return result;
 			}
 			SMTRAT_LOG_DEBUG("smtrat.parser", "Trying to call function \"" << identifier << "\" with arguments " << arguments << ".");

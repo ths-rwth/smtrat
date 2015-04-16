@@ -231,7 +231,7 @@ namespace parser {
 			if (arguments.size() == 2) {
 				std::vector<types::BVTerm> args;
 				if (!convertArguments(arguments, args, errors)) return false;
-				result = types::BVTerm(carl::BVTermType::EQ, args[0], args[1]);
+				result = FormulaT(types::BVConstraint::create(carl::BVCompareRelation::EQ, args[0], args[1]));
 				return true;
 			}
 			errors.next() << "Operator \"" << identifier << "\" expects exactly two arguments, but got " << arguments.size() << ".";
