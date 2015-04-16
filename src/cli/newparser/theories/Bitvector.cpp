@@ -69,8 +69,8 @@ namespace parser {
 			if (indices.size() != 1) {
 				errors.next() << "The operator \"" << type << "\" expects exactly one index.";
 				return false;
-			result = types::BVTerm(type, arguments[0], indices[0]);
 			}
+			result = types::BVTerm(type, arguments[0], indices[0]);
 			return true;
 		}
 	};
@@ -121,8 +121,8 @@ namespace parser {
 
 	BitvectorTheory::BitvectorTheory(ParserState* state): AbstractTheory(state) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
-		carl::Sort bv = sm.addSort("BitVec", carl::VariableType::VT_UNINTERPRETED);
-		sm.makeSortIndexable(bv, 1, carl::VariableType::VT_BITVECTOR);
+		this->bvSort = sm.addSort("BitVec", carl::VariableType::VT_UNINTERPRETED);
+		sm.makeSortIndexable(this->bvSort, 1, carl::VariableType::VT_BITVECTOR);
 
 		state->registerFunction("concat", new BinaryBitvectorInstantiator<carl::BVTermType::CONCAT>());
 		state->registerFunction("extract", new ExtractBitvectorInstantiator());
@@ -222,8 +222,24 @@ namespace parser {
 			errors.next() << "Failed to construct ITE, the else-term \"" << elseterm << "\" is unsupported.";
 			return false;
 		}
-		//result = FormulaT(carl::FormulaType::ITE, ifterm, thenf, elsef);
-		return false;
+		if (thent.width() != elset.width()) {
+			errors.next() << "Failed to construct ITE, the then-term \"" << thent << "\" and the else-term \"" << elset << "\" have different widths.";
+			return false;
+		}
+		if (ifterm.isTrue()) { result = thent; return true; }
+		if (ifterm.isFalse()) { result = elset; return true; }
+		carl::SortManager& sm = carl::SortManager::getInstance();
+		carl::Variable var = carl::freshVariable(carl::VariableType::VT_BITVECTOR);
+		carl::BVVariable bvvar(var, sm.index(this->bvSort, {thent.width()}));
+		types::BVTerm vart = types::BVTerm(carl::BVTermType::VARIABLE, bvvar);
+		
+		FormulaT consThen = FormulaT(types::BVConstraint::create(carl::BVCompareRelation::EQ, vart, thent));
+		FormulaT consElse = FormulaT(types::BVConstraint::create(carl::BVCompareRelation::EQ, vart, elset));
+		
+		state->mGlobalFormulas.emplace(FormulaT(carl::FormulaType::IMPLIES,ifterm, consThen));
+		state->mGlobalFormulas.emplace(FormulaT(carl::FormulaType::IMPLIES,FormulaT(carl::FormulaType::NOT,ifterm), consElse));
+		result = vart;
+		return true;
 	}
 
 	bool BitvectorTheory::functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
@@ -231,7 +247,7 @@ namespace parser {
 			if (arguments.size() == 2) {
 				std::vector<types::BVTerm> args;
 				if (!convertArguments(arguments, args, errors)) return false;
-				result = types::BVTerm(carl::BVTermType::EQ, args[0], args[1]);
+				result = FormulaT(types::BVConstraint::create(carl::BVCompareRelation::EQ, args[0], args[1]));
 				return true;
 			}
 			errors.next() << "Operator \"" << identifier << "\" expects exactly two arguments, but got " << arguments.size() << ".";
