@@ -48,6 +48,17 @@ namespace parser {
 			return true;
 		}
 	};
+	template<carl::BVCompareRelation type>
+	struct BitvectorRelationInstantiator: public BitvectorInstantiator {
+		bool apply(const std::vector<types::BVTerm>& arguments, types::TermType& result, TheoryError& errors) const {
+			if (arguments.size() != 2) {
+				errors.next() << "The operator \"" << type << "\" expects exactly two arguments.";
+				return false;
+			}
+			result = FormulaT(types::BVConstraint::create(type, arguments[0], arguments[1]));
+			return true;
+		}
+	};
 	template<carl::BVTermType type>
 	struct SingleIndexBitvectorInstantiator: public IndexedBitvectorInstantiator {
 		bool apply(const std::vector<std::size_t>& indices, const std::vector<types::BVTerm>& arguments, types::TermType& result, TheoryError& errors) const {
@@ -142,6 +153,15 @@ namespace parser {
 		state->registerFunction("zero_extend", new SingleIndexBitvectorInstantiator<carl::BVTermType::EXT_U>());
 		state->registerFunction("sign_extend", new SingleIndexBitvectorInstantiator<carl::BVTermType::EXT_S>());
 		state->registerFunction("repeat", new SingleIndexBitvectorInstantiator<carl::BVTermType::REPEAT>());
+		
+		state->registerFunction("bvult", new BitvectorRelationInstantiator<carl::BVCompareRelation::ULT>());
+		state->registerFunction("bvule", new BitvectorRelationInstantiator<carl::BVCompareRelation::ULE>());
+		state->registerFunction("bvugt", new BitvectorRelationInstantiator<carl::BVCompareRelation::UGT>());
+		state->registerFunction("bvuge", new BitvectorRelationInstantiator<carl::BVCompareRelation::UGE>());
+		state->registerFunction("bvslt", new BitvectorRelationInstantiator<carl::BVCompareRelation::SLT>());
+		state->registerFunction("bvsle", new BitvectorRelationInstantiator<carl::BVCompareRelation::SLE>());
+		state->registerFunction("bvsgt", new BitvectorRelationInstantiator<carl::BVCompareRelation::SGT>());
+		state->registerFunction("bvsge", new BitvectorRelationInstantiator<carl::BVCompareRelation::SGE>());
 	}
 
 	bool BitvectorTheory::declareVariable(const std::string& name, const carl::Sort& sort) {

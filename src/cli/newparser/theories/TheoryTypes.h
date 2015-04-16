@@ -25,11 +25,12 @@ namespace types {
 #endif
 #ifdef PARSER_ENABLE_BITVECTOR
 	typedef carl::BVTerm<Poly> BVTerm;
+	typedef carl::BVConstraint<Poly> BVConstraint;
 	struct BitvectorTheory {
 		typedef mpl::vector<carl::BVVariable, BVTerm> ConstTypes;
 		typedef mpl::vector<carl::BVVariable, BVTerm> VariableTypes;
-		typedef mpl::vector<carl::BVVariable, BVTerm> ExpressionTypes;
-		typedef mpl::vector<carl::BVVariable, BVTerm> TermTypes;
+		typedef mpl::vector<carl::BVVariable, BVTerm, BVConstraint> ExpressionTypes;
+		typedef mpl::vector<carl::BVVariable, BVTerm, BVConstraint> TermTypes;
 		typedef carl::mpl_variant_of<TermTypes>::type TermType;
 	};
 #endif

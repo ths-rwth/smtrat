@@ -47,6 +47,8 @@
 #include "carl/formula/UFInstanceManager.h"
 #include "carl/formula/bitvector/BVTerm.h"
 #include "carl/formula/bitvector/BVTermPool.h"
+#include "carl/formula/bitvector/BVConstraintPool.h"
+#include "carl/formula/bitvector/BVConstraint.h"
 
 namespace smtrat
 {
