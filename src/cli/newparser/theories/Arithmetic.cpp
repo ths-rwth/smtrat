@@ -141,7 +141,7 @@ namespace parser {
 			return res;
 		} else {
 			// There are many ITEs, we keep the auxiliary variables.
-			for (auto v: vars) {
+			for (const auto& v: vars) {
 				auto t = mITEs[v];
 				FormulaT consThen = FormulaT(std::move(carl::makePolynomial<Poly>(v) - std::get<1>(t)), carl::Relation::EQ);
 				FormulaT consElse = FormulaT(std::move(carl::makePolynomial<Poly>(v) - std::get<2>(t)), carl::Relation::EQ);

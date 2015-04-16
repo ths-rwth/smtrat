@@ -8,6 +8,7 @@ namespace smtrat {
 namespace parser {
 
 struct BitvectorTheory: public AbstractTheory  {
+	carl::Sort bvSort;
 	typedef carl::BVTermType OperatorType;
 	static void addSimpleSorts(qi::symbols<char, carl::Sort>& sorts);
 	static bool convertTerm(const types::TermType& term, types::BVTerm& result);
