@@ -55,7 +55,7 @@ namespace parser {
 				errors.next() << "The operator \"" << type << "\" expects exactly two arguments.";
 				return false;
 			}
-			result = types::BVConstraint::create(type, arguments[0], arguments[1]);
+			result = FormulaT(types::BVConstraint::create(type, arguments[0], arguments[1]));
 			return true;
 		}
 	};
