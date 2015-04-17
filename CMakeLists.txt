@@ -21,8 +21,11 @@
 # F. CPack
 # # # # # # # # # # # # # # # # # # # # # #
 
-
-cmake_minimum_required (VERSION 2.8)
+if (WIN32)
+	cmake_minimum_required (VERSION 3.1 FATAL_ERROR)
+else()
+	cmake_minimum_required (VERSION 2.8 FATAL_ERROR)
+endif()
 
 # # # # # # # # # # # # # # # # # # # # # #
 # A. Project properties
@@ -87,12 +90,19 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 	set(CMAKE_CXX_RELEASE_FLAGS "${CMAKE_CXX_RELEASE_FLAGS} -O3")
 	set(CMAKE_CXX_DEBUG_FLAGS "${CMAKE_CXX_DEBUG_FLAGS} -O1")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    message("-- Using Visual Studio C++")
+    set(CMAKE_CXX_RELEASE_FLAGS "${CMAKE_CXX_RELEASE_FLAGS} /O2")
 else()
     message("-- Possibly unsupported compiler")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif()
 if(DEVELOPER)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wconversion -Wno-deprecated-declarations")
+	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Wall")
+	else()
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wconversion -Wno-deprecated-declarations")
+	endif()
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG")
 	set(CMAKE_BUILD_TYPE "DEBUG")
 endif()
