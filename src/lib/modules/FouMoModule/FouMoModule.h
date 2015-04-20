@@ -48,6 +48,8 @@ namespace smtrat
             FormulaOrigins mProc_Constraints;
             // Stores the equalities
             FormulaOrigins mEqualities;
+            // Stores the disequalities
+            FormulaOrigins mDisequalities;
             // Stores the order in which the variables were eliminated
             std::vector<carl::Variable> mElim_Order;
             // Stores the deleted constraints, just as they worked as an upper respectively lower
@@ -55,7 +57,9 @@ namespace smtrat
             // upper/lower constraints are saved in the order given by mElim_Order
             VariableUpperLower mDeleted_Constraints;  
             // Stores constructed assignments for the occuring variables when a solution was found
-            std::map<carl::Variable, Rational> mVarAss;
+            std::map< carl::Variable, Rational > mVarAss;
+            // Stores whether we found a valid solution in this module
+            bool mCorrect_Solution;
             
             /**
              * @param curr_constraints Contains the constraints for which a possibly good
@@ -72,9 +76,32 @@ namespace smtrat
              */
             FormulaT combine_upper_lower( const smtrat::ConstraintT& upper_constr, const smtrat::ConstraintT& lower_Constr, carl::Variable& corr_var );
             
-            bool construct_solution();
+            /*
+             * Tries to construct a solution by backtracking through the computation steps
+             * and returns whether this was successful
+             */            
+            bool construct_solution( std::map< carl::Variable, Rational > temp_solution );
             
+            /*
+             * Depending on whether we work on integer or rational instances, it
+             * sends the corresponding set of constraints to the backends and returns
+             * the answer obtained by the backends
+             */
             Answer call_backends( bool _full );
+            
+            /*
+             * @param  formula_map A map of formulas and their origins
+             * @param  new_poly    A polynomial whose formula could be added to formula_map if it is not redundant
+             * @return The formula whose polynomial, ignoring the constant part, corresponds
+             *         to new_poly. Otherwise, returns a false formula. The second component of the result
+             *         indicates whether the formula belonging to new_poly would add new information to formula_map.
+             */
+            std::pair< FormulaT, bool > worth_inserting( FormulaOrigins& formula_map, const Poly& new_poly );
+            
+            /*
+             * Resets all data structures of this module to the initial assignments
+             */
+            void fresh_start();
             
         public:
             FouMoModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );

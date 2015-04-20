@@ -1,82 +1,12 @@
-/**
- * @file ParserUtils.h
- * @author Gereon Kremer <gereon.kremer@cs.rwth-aachen.de>
- */
-
 #pragma once
-
-#include <algorithm>
-#include <sstream>
-#include <type_traits>
-#include <fstream>
-#include <queue>
-#include <boost/spirit/include/qi.hpp>
-#include <boost/variant.hpp>
-#include <boost/spirit/include/phoenix_object.hpp>
-#include <boost/spirit/include/phoenix_core.hpp>
-#include <boost/spirit/include/phoenix_bind.hpp>
-#include <boost/spirit/include/phoenix_operator.hpp>
 
 #include "Common.h"
 #include "VariantMap.h"
-#include "ParserTypes.h"
-#include "UtilityParser.h"
-
-#include "carl/core/logging.h"
+#include "Attribute.h"
+#include "theories/Theories.h"
 
 namespace smtrat {
 namespace parser {
-
-namespace spirit = boost::spirit;
-namespace qi = boost::spirit::qi;
-namespace px = boost::phoenix;
-
-inline std::ostream& operator<<(std::ostream& os, const AttributeValue& value) {
-	if (value.which() == 0) {
-		return os << std::boolalpha << boost::get<bool>(value);
-	} else {
-		return boost::operator<<(os, value);
-	}
-}
-
-template<typename T>
-std::ostream& operator<<(std::ostream& os, const qi::symbols<char, T>& sym) {
-	os << "Symbols " << sym.name() << std::endl;
-	sym.for_each([&](const std::string& key, const T& val){ os << "\t" << key << " -> " << val << std::endl; });
-	return os;
-}
-
-struct TypeOfTerm : public boost::static_visitor<ExpressionType> {
-	ExpressionType operator()(const FormulaT&) const { return ExpressionType::BOOLEAN; }
-	ExpressionType operator()(const carl::UFInstance&) const { return ExpressionType::UNINTERPRETED; }
-	ExpressionType operator()(const carl::UVariable&) const { return ExpressionType::UNINTERPRETED; }
-	ExpressionType operator()(const UninterpretedType&) const { return ExpressionType::UNINTERPRETED; }
-	ExpressionType operator()(const Poly&) const { return ExpressionType::THEORY; }
-	ExpressionType operator()(const carl::Variable& v) const { return (*this)(v.getType()); }
-	ExpressionType operator()(const carl::VariableType& v) const {
-		switch (v) {
-			case carl::VariableType::VT_BOOL: return ExpressionType::BOOLEAN;
-			case carl::VariableType::VT_INT:
-			case carl::VariableType::VT_REAL: return ExpressionType::THEORY;
-			case carl::VariableType::VT_UNINTERPRETED: return ExpressionType::UNINTERPRETED;
-			case carl::VariableType::VT_BITVECTOR: return ExpressionType::BITVECTOR;
-			default:
-				return ExpressionType::THEORY;
-		}
-	}
-	ExpressionType operator()(const carl::Sort& v) const {
-		if (carl::SortManager::getInstance().isInterpreted(v)) return (*this)(carl::SortManager::getInstance().interpretedType(v));
-		else return ExpressionType::UNINTERPRETED;
-	}
-	template<typename T>
-	static ExpressionType get(const T& t) {
-		return TypeOfTerm()(t);
-	}
-	template<typename... T>
-	static ExpressionType get(const boost::variant<T...>& var) {
-		return boost::apply_visitor(TypeOfTerm(), var);
-	}
-};
 
 class OutputWrapper {
 	std::ostream out;
@@ -100,7 +30,7 @@ public:
 
 class InstructionHandler {
 public:
-	typedef smtrat::parser::AttributeValue Value;
+	typedef types::AttributeValue Value;
 
 private:
 	std::queue<std::function<void()>> instructionQueue;
@@ -147,7 +77,7 @@ protected:
 	}
 public:
 	InstructionHandler(): mRegular(std::cout.rdbuf()), mDiagnostic(std::cerr.rdbuf()) {
-		Attribute attr("print-instruction", AttributeMandatoryValue(false));
+		Attribute attr("print-instruction", Value(false));
 		this->setOption(attr);
 	}
 	virtual ~InstructionHandler() {
@@ -194,14 +124,14 @@ public:
 	virtual void getProof() = 0;
 	virtual void getUnsatCore() = 0;
 	virtual void getValue(const std::vector<carl::Variable>&) = 0;
-	virtual void pop(const unsigned&) = 0;
-	virtual void push(const unsigned&) = 0;
+	virtual void pop(std::size_t) = 0;
+	virtual void push(std::size_t) = 0;
 	void setInfo(const Attribute& attr) {
 		if (this->infos.count(attr.key) > 0) warn() << "overwriting info for :" << attr.key;
 		if (attr.key == "name" || attr.key == "authors" || attr.key == "version") error() << "The info :" << attr.key << " is read-only.";
 		else this->infos[attr.key] = attr.value;
 	}
-	virtual void setLogic(const smtrat::Logic&) = 0;
+	virtual void setLogic(const std::string&) = 0;
 	void setOption(const Attribute& option)  {
 		std::string key = option.key;
 		if (this->options.count(key) > 0) warn() << "overwriting option for :" << key;
@@ -236,52 +166,6 @@ public:
 		else if (key == "verbosity") {
 			this->options.assertType<Rational>("verbosity", std::bind(&InstructionHandler::error, this));
 		}
-	}
-};
-
-struct SuccessHandler {
-	template<typename> struct result { typedef void type; };
-	template<typename Parser, typename Rule, typename Entity, typename Begin, typename End>
-	void operator()(Parser& p, const Rule& rule, const Entity& entity, Begin b, End e) const {
-		p.lastrule.str("");
-		p.lastrule << rule.name();
-		p.lastentity.str("");
-		p.lastentity << entity;
-		auto line_end = std::find(b, e, '\n');
-		std::cout << p.lastrule.str() << ": " << p.lastentity.str() << "\n\t" << std::string(b, line_end) << std::endl;
-	}
-};
-struct SuccessHandlerPtr {
-	template<typename> struct result { typedef void type; };
-	template<typename Parser, typename Rule, typename Entity, typename Begin, typename End>
-	void operator()(Parser& p, const Rule& rule, const Entity& entity, Begin b, End e) const {
-		p.lastrule.str("");
-		p.lastrule << rule.name();
-		p.lastentity.str("");
-		p.lastentity << entity;
-		auto line_end = std::find(b, e, '\n');
-		std::cout << p.lastrule.str() << ": " << p.lastentity.str() << "\n\t" << std::string(b, line_end) << std::endl;
-	}
-};
-
-struct ErrorHandler {
-	template<typename> struct result { typedef qi::error_handler_result type; };
-	template<typename Parser, typename T1, typename T2, typename T3, typename T4>
-	qi::error_handler_result operator()(const Parser& p, T1 b, T2 e, T3 where, T4 const& what) const {
-		auto line_start = spirit::get_line_start(b, where);
-		auto line_end = std::find(where, e, '\n');
-		std::string line(++line_start, line_end);
-		std::string input(where, line_end);
-		
-		std::cerr << std::endl;
-		SMTRAT_LOG_ERROR("smtrat.parser", "Parsing error at " << spirit::get_line(where) << ":" << spirit::get_column(line_start, where));
-		if (p.lastrule.str().size() > 0) {
-			SMTRAT_LOG_ERROR("smtrat.parser", "after parsing rule " << p.lastrule.str() << ": " << p.lastentity.str());
-		}
-		SMTRAT_LOG_ERROR("smtrat.parser", "expected" << std::endl << "\t" << what.tag << ": " << what);
-		SMTRAT_LOG_ERROR("smtrat.parser", "but got" << std::endl << "\t" << input);
-		SMTRAT_LOG_ERROR("smtrat.parser", "in line " << spirit::get_line(where) << std::endl << "\t" << line);
-		return qi::fail;
 	}
 };
 

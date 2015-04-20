@@ -73,6 +73,7 @@ namespace smtrat
     // Further type definitions.
 
     typedef mpq_class Rational;
+	typedef carl::IntegralType<Rational>::type Integer;
     
     typedef carl::Term<Rational> TermT;
     
@@ -135,7 +136,3 @@ namespace smtrat
     #define ANSWER_TO_STRING(_ans) (_ans == True ? "True" : (_ans == False ? "False" : (_ans == Unknown ? "Unknown" : "Undefined")))
     
 }    // namespace smtrat
-
-
-
-

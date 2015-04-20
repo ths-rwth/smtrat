@@ -32,7 +32,7 @@
 #include <stdio.h>
 namespace smtrat
 {
-    typedef std::map<FormulaT,std::shared_ptr<std::vector<FormulaT>>> Formula_Origins;
+    typedef std::map< FormulaT, std::shared_ptr< std::vector<FormulaT> > > Formula_Origins;
         
     /**
      * A module which checks whether the equations contained in the received formula 
@@ -42,12 +42,14 @@ namespace smtrat
     class IntEqModule : public Module
     {
         private:
-            // Stores the equations of the received constraints and their origins
-            Formula_Origins mProc_Constraints; 
+            // Stores the current equations of the received constraints and their origins
+            Formula_Origins mProc_Constraints;
+            // Stores the equations of the every iteration step
+            std::vector< Formula_Origins > mRecent_Constraints;
             // Stores the calculated substitutions
-            std::vector<std::pair<carl::Variable, Poly>>  mSubstitutions;
+            std::vector< std::pair< carl::Variable, Poly > >  mSubstitutions;
             // Stores the origins of the calculated substitutions
-            std::map<carl::Variable, std::shared_ptr<std::vector<FormulaT>>> mVariables;
+            std::map< carl::Variable, std::shared_ptr< std::vector<FormulaT> > > mVariables;
             
         public:
             
