@@ -41,7 +41,7 @@ namespace smtrat
     class BVModule : public Module
     {
         private:
-            // Members.
+            BVDirectEncoder mEncoder;
 
         public:
             BVModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );

@@ -75,38 +75,32 @@ namespace smtrat
     template<class Settings>
     void BVModule<Settings>::updateModel() const
     {
-        mModel.clear();
-        if( solverState() == True )
+        clearModel();
+        if(solverState() == True)
         {
-            // Your code.
+            getBackendsModel();
         }
     }
 
     template<class Settings>
     Answer BVModule<Settings>::checkCore( bool _full )
     {
-        for( auto receivedFormula = rReceivedFormula().begin(); receivedFormula != rReceivedFormula().end(); ++receivedFormula )
+        auto receivedSubformula = firstUncheckedReceivedSubformula();
+        while(receivedSubformula != rReceivedFormula().end())
         {
-            const FormulaWithOrigins& fwo = *receivedFormula;
+            const FormulaWithOrigins& fwo = *receivedSubformula;
             const FormulaT& formula = fwo.formula();
 
-            if(formula.getType() == carl::FormulaType::BITVECTOR)
-            {
-                BVDirectEncoder encoder;
-                encoder.encode(formula.bvConstraint());
+            std::cerr << "[BVModule] Encoding formula:" << std::endl << " -(IN ): " << formula << std::endl;
 
-                std::cerr << "Encoding BV formula:" << std::endl << " -(IN ): " << formula << std::endl;
+            const FormulasT& formulasToPass = mEncoder.encode(formula);
 
-                for( const FormulaT& encodedFormula: encoder.toSAT())
-                {
-                    std::cerr << " -(OUT): " << encodedFormula << std::endl;
-                    addSubformulaToPassedFormula(encodedFormula, formula);
-                }
-            }
-            else
+            for(const FormulaT formulaToPass : formulasToPass)
             {
-                addReceivedSubformulaToPassedFormula(receivedFormula);
+                std::cerr << " -(OUT): " << formulaToPass << std::endl;
+                addSubformulaToPassedFormula(formulaToPass, formula);
             }
+            ++receivedSubformula;
         }
 
         Answer backendAnswer = runBackends(_full);
