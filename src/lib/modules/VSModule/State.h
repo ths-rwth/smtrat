@@ -225,9 +225,9 @@ namespace vs
          * @return A constant reference to the flag indicating whether a condition with too high degree for 
          *          the virtual substitution method must be considered.
          */
-        bool cannotBeSolved( bool _full ) const
+        bool cannotBeSolved( bool _lazy ) const
         {
-            return mCannotBeSolved || (!_full && mCannotBeSolvedLazy);
+            return mCannotBeSolved || (_lazy && mCannotBeSolvedLazy);
         }
         
         /**

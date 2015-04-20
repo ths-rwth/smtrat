@@ -366,7 +366,7 @@ namespace smtrat
                         {
                             if( _full )
                             {
-                                if( currentState->cannotBeSolved( false ) )
+                                if( currentState->cannotBeSolved( true ) )
                                 {
                                     removeStatesFromRanking( *mpStateTree );
                                     mLazyMode = false;
@@ -387,7 +387,6 @@ namespace smtrat
                                         delete toDelete;  // DELETE STATE
                                     }
                                     currentState->updateIntTestCandidates();
-                                    currentState->printAlone();
                                 }
                                 else
                                 {
@@ -398,7 +397,7 @@ namespace smtrat
                             }
                             else
                             {
-                                if( currentState->cannotBeSolved( false ) )
+                                if( currentState->cannotBeSolved( true ) )
                                 {
                                     return Unknown;
                                 }  
