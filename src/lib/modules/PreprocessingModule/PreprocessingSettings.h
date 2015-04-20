@@ -41,6 +41,10 @@ struct PreprocessingSettings {
 	 * Enables removing of constraints that vanish within the variable bounds.
 	 */
 	static constexpr bool checkBounds = true;
+	/**
+	 * Enables removing of constraints that vanish within the variable bounds.
+	 */
+	static constexpr bool splitSOS = true;
 	
 	static const bool dummy;
 };
