@@ -79,8 +79,10 @@ struct Theories {
 				if (t.second->declareVariable(name, sort)) return;
 			}
 			SMTRAT_LOG_ERROR("smtrat.parser", "Variable \"" << name << "\" was declared with an invalid sort \"" << sort << "\".");
+			HANDLE_ERROR
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Variable \"" << name << "\" will not be declared due to a name clash.");
+			HANDLE_ERROR
 		}
 	}
 	void declareFunction(const std::string& name, const std::vector<carl::Sort>& args, const carl::Sort& sort) {
@@ -88,6 +90,7 @@ struct Theories {
 			state->declared_functions[name] = carl::newUninterpretedFunction(name, args, sort);
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Function \"" << name << "\" will not be declared due to a name clash.");
+			HANDLE_ERROR
 		}
 	}
 	
@@ -99,9 +102,11 @@ struct Theories {
 				state->bindings.emplace(arg.first, v);
 			} else {
 				SMTRAT_LOG_ERROR("smtrat.parser", "Function argument \"" << arg.first << "\" is of uninterpreted type.");
+				HANDLE_ERROR
 			}
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Function argument \"" << arg.first << "\" will not be declared due to a name clash.");
+			HANDLE_ERROR
 		}
 	}
 	
@@ -111,6 +116,7 @@ struct Theories {
 			state->defined_functions.emplace(name, new types::UserFunctionInstantiator(arguments, sort, definition));
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Function \"" << name << "\" will not be defined due to a name clash.");
+			HANDLE_ERROR
 		}
 	}
 
@@ -124,6 +130,7 @@ struct Theories {
 			if (t.second->resolveSymbol(identifier, result, te)) return result;
 		}
 		SMTRAT_LOG_ERROR("smtrat.parser", "Tried to resolve symbol \"" << identifier << "\" which is unknown." << te);
+		HANDLE_ERROR
 		return types::TermType();
 	}
 	
@@ -142,10 +149,12 @@ struct Theories {
 		types::TermType result;
 		if (arguments.size() != 3) {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to construct ITE expression, only exactly three arguments are allowed, but \"" << arguments << "\" were given.");
+			HANDLE_ERROR
 			return result;
 		}
 		if (boost::get<FormulaT>(&arguments[0]) == nullptr) {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to construct ITE expression, the first argument must be a formula, but \"" << arguments[0] << "\" was given.");
+			HANDLE_ERROR
 			return result;
 		}
 		FormulaT ifterm = boost::get<FormulaT>(arguments[0]);
@@ -156,6 +165,7 @@ struct Theories {
 			if (t.second->handleITE(ifterm, arguments[1], arguments[2], result, te(t.first))) return result;
 		}
 		SMTRAT_LOG_ERROR("smtrat.parser", "Failed to construct ITE \"" << ifterm << "\" ? \"" << arguments[1] << "\" : \"" << arguments[2] << "\": " << te);
+		HANDLE_ERROR
 		return result;
 	}
 	
@@ -166,6 +176,7 @@ struct Theories {
 			if (t.second->handleDistinct(arguments, result, te(t.first))) return result;
 		}
 		SMTRAT_LOG_ERROR("smtrat.parser", "Failed to construct distinct for \"" << arguments << "\": " << te);
+		HANDLE_ERROR
 		return result;
 	}
 	
@@ -175,12 +186,14 @@ struct Theories {
 		if (identifier.symbol == "ite") {
 			if (identifier.indices != nullptr) {
 				SMTRAT_LOG_ERROR("smtrat.parser", "The function \"" << identifier << "\" should not have indices.");
+				HANDLE_ERROR
 				return result;
 			}
 			return handleITE(arguments);
 		} else if (identifier.symbol == "distinct") {
 			if (identifier.indices != nullptr) {
 				SMTRAT_LOG_ERROR("smtrat.parser", "The function \"" << identifier << "\" should not have indices.");
+				HANDLE_ERROR
 				return result;
 			}
 			return handleDistinct(arguments);
@@ -189,6 +202,7 @@ struct Theories {
 		if (deffunit != state->defined_functions.end()) {
 			if (identifier.indices != nullptr) {
 				SMTRAT_LOG_ERROR("smtrat.parser", "The function \"" << identifier << "\" should not have indices.");
+				HANDLE_ERROR
 				return result;
 			}
 			SMTRAT_LOG_DEBUG("smtrat.parser", "Trying to call function \"" << identifier << "\" with arguments " << arguments << ".");
@@ -197,12 +211,14 @@ struct Theories {
 				return result;
 			}
 			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to call function \"" << identifier << "\" with arguments " << arguments << ":" << te);
+			HANDLE_ERROR
 			return result;
 		}
 		auto ideffunit = state->defined_indexed_functions.find(identifier.symbol);
 		if (ideffunit != state->defined_indexed_functions.end()) {
 			if (identifier.indices == nullptr) {
 				SMTRAT_LOG_ERROR("smtrat.parser", "The function \"" << identifier << "\" should have indices.");
+				HANDLE_ERROR
 				return result;
 			}
 			SMTRAT_LOG_DEBUG("smtrat.parser", "Trying to call function \"" << identifier << "\" with arguments " << arguments << ".");
@@ -211,12 +227,14 @@ struct Theories {
 				return result;
 			}
 			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to call function \"" << identifier << "\" with arguments " << arguments << ":" << te);
+			HANDLE_ERROR
 			return result;
 		}
 		for (auto& t: theories) {
 			if (t.second->functionCall(identifier, arguments, result, te(t.first))) return result;
 		}
 		SMTRAT_LOG_ERROR("smtrat.parser", "Failed to call \"" << identifier << "\" with arguments " << arguments << ":" << te);
+		HANDLE_ERROR
 		return result;
 	}
 private:
