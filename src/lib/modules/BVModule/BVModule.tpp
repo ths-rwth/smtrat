@@ -36,7 +36,7 @@ namespace smtrat
 
     template<class Settings>
     BVModule<Settings>::BVModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-        Module( _type, _formula, _conditionals, _manager ) 
+        Module( _type, _formula, _conditionals, _manager )
     {}
 
     /**
@@ -85,10 +85,36 @@ namespace smtrat
     template<class Settings>
     Answer BVModule<Settings>::checkCore( bool _full )
     {
-        for (const FormulaWithOrigins& fwo: rReceivedFormula()) {
-            const FormulaT& f = fwo.formula();
+        for( auto receivedFormula = rReceivedFormula().begin(); receivedFormula != rReceivedFormula().end(); ++receivedFormula )
+        {
+            const FormulaWithOrigins& fwo = *receivedFormula;
+            const FormulaT& formula = fwo.formula();
+
+            if(formula.getType() == carl::FormulaType::BITVECTOR)
+            {
+                BVDirectEncoder encoder;
+                encoder.encode(formula.bvConstraint());
+
+                std::cerr << "Encoding BV formula:" << std::endl << " -(IN ): " << formula << std::endl;
+
+                for( const FormulaT& encodedFormula: encoder.toSAT())
+                {
+                    std::cerr << " -(OUT): " << encodedFormula << std::endl;
+                    addSubformulaToPassedFormula(encodedFormula, formula);
+                }
+            }
+            else
+            {
+                addReceivedSubformulaToPassedFormula(receivedFormula);
+            }
         }
-        // Your code.
-        return Unknown; // This should be adapted according to your implementation.
+
+        Answer backendAnswer = runBackends(_full);
+        if(backendAnswer == False)
+        {
+            getInfeasibleSubsets();
+        }
+
+        return backendAnswer;
     }
 }

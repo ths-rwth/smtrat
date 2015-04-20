@@ -31,6 +31,10 @@
 #include "../../solver/Module.h"
 #include "BVStatistics.h"
 #include "BVSettings.h"
+#include "BVDirectEncoder.h"
+#include "carl/formula/bitvector/BVConstraint.h"
+#include "carl/formula/bitvector/BVConstraintPool.h"
+
 namespace smtrat
 {
     template<typename Settings>
