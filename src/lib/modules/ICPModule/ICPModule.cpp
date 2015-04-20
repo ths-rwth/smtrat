@@ -66,7 +66,7 @@ namespace smtrat
         mActiveLinearConstraints(),
         mLinearConstraints(),
         mNonlinearConstraints(),
-		mNotEqualConstraints(),
+        mNotEqualConstraints(),
         mVariables(),
         mIntervals(),
         mIcpRelevantCandidates(),
@@ -1661,7 +1661,6 @@ namespace smtrat
             }
             else
             {
-                std::cout << __func__ << ":" << __LINE__ << std::endl;
                 for( auto assignmentIt = mFoundSolution.begin(); assignmentIt != mFoundSolution.end(); ++assignmentIt )
                 {
                     auto varIt = mVariables.find((*assignmentIt).first);

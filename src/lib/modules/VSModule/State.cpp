@@ -73,7 +73,8 @@ namespace vs
         mCurrentIntRange( 0 ),
         mpConditionIdAllocator( _conditionIdAllocator ),
         mRealVarVals(),
-        mIntVarVals()
+        mIntVarVals(),
+        mBestVarVals()
     {}
 
     State::State( State* const _father, const Substitution& _substitution, carl::IDGenerator* _conditionIdAllocator, bool _withVariableBounds ):
@@ -108,7 +109,8 @@ namespace vs
         mCurrentIntRange( 0 ),
         mpConditionIdAllocator( _conditionIdAllocator ),
         mRealVarVals(),
-        mIntVarVals()
+        mIntVarVals(),
+        mBestVarVals()
     {}
 
     State::~State()
@@ -177,6 +179,13 @@ namespace vs
         _ranking.erase( key );
         for( const State* child : toRemove.children() )
             removeStatesFromRanking( *child, _ranking );
+    }
+    
+    void State::resetCannotBeSolvedLazyFlags()
+    {
+        mCannotBeSolvedLazy = false;
+        for( State* child : *mpChildren )
+            child->resetCannotBeSolvedLazyFlags();
     }
 
     unsigned State::treeDepth() const
@@ -1211,7 +1220,7 @@ namespace vs
 
     bool State::initIndex( const carl::Variables& _allVariables, bool _preferEquation, bool _tryDifferentVarOrder )
     {
-        assert( _tryDifferentVarOrder || !mTryToRefreshIndex );
+        assert( !_tryDifferentVarOrder || !mTryToRefreshIndex );
         if( conditions().empty() )
             return false;
         if( _allVariables.size() == 1 )
@@ -1223,29 +1232,37 @@ namespace vs
             }
             return false;
         }
-        if( !_tryDifferentVarOrder )
+        if( _tryDifferentVarOrder )
         {
-            mTryToRefreshIndex = false;
-            mRealVarVals.clear();
-            mIntVarVals.clear();
-            for( auto var = _allVariables.begin(); var != _allVariables.end(); ++var )
+            if( mBestVarVals.empty() )
+                return false;
+            size_t bestVar = mBestVarVals.back();
+            mBestVarVals.pop_back();
+            vector<pair<carl::Variable, multiset<double>>>& varVals = mRealVarVals.empty() ? mIntVarVals : mRealVarVals;
+            assert( index() != varVals[bestVar].first );
+            setIndex( varVals[bestVar].first );
+            return true;
+        }
+        mTryToRefreshIndex = false;
+        mRealVarVals.clear();
+        mIntVarVals.clear();
+        for( auto var = _allVariables.begin(); var != _allVariables.end(); ++var )
+        {
+            if( var->getType() == carl::VariableType::VT_INT )
+                mIntVarVals.push_back( pair<carl::Variable, multiset<double> >( *var, std::move(multiset<double>()) ) );
+            else
+                mRealVarVals.push_back( pair<carl::Variable, multiset<double> >( *var, std::move(multiset<double>()) ) );
+        }
+        vector<pair<carl::Variable, multiset<double>>>& varValsB = mRealVarVals.empty() ? mIntVarVals : mRealVarVals;
+        // Find for each variable the highest valuation of all conditions' constraints.
+        for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
+        {
+            // Check for all variables their valuation for the given constraint.
+            for( auto var = varValsB.begin(); var != varValsB.end(); ++var )
             {
-                if( var->getType() == carl::VariableType::VT_INT )
-                    mIntVarVals.push_back( pair<carl::Variable, multiset<double> >( *var, std::move(multiset<double>()) ) );
-                else
-                    mRealVarVals.push_back( pair<carl::Variable, multiset<double> >( *var, std::move(multiset<double>()) ) );
-            }
-            vector<pair<carl::Variable, multiset<double>>>& varValsB = mRealVarVals.empty() ? mIntVarVals : mRealVarVals;
-            // Find for each variable the highest valuation of all conditions' constraints.
-            for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
-            {
-                // Check for all variables their valuation for the given constraint.
-                for( auto var = varValsB.begin(); var != varValsB.end(); ++var )
-                {
-                    double varInConsVal = (**cond).valuate( var->first, _allVariables.size(), _preferEquation );
-                    if( varInConsVal != 0 )
-                        var->second.insert( varInConsVal );
-                }
+                double varInConsVal = (**cond).valuate( var->first, _allVariables.size(), _preferEquation );
+                if( varInConsVal != 0 )
+                    var->second.insert( varInConsVal );
             }
         }
         vector<pair<carl::Variable, multiset<double>>>& varVals = mRealVarVals.empty() ? mIntVarVals : mRealVarVals;
@@ -1260,29 +1277,36 @@ namespace vs
         #endif
         // Find the variable which has in a constraint the best valuation. If more than one have the highest valuation, 
         // then choose the one having the higher valuation according to the order in _allVariables.
-        auto bestVar = varVals.begin();
-        auto var     = varVals.begin();
-        ++var;
-        while( var != varVals.end() )
+        size_t var = 1;
+        mBestVarVals.push_back(0);
+        while( var < varVals.size() )
         {
-            if( !var->second.empty() && !bestVar->second.empty() )
+            const auto& vv = varVals[var];
+            const auto& bv = varVals[mBestVarVals.back()];
+            if( !vv.second.empty() && !bv.second.empty() )
             {
-                if( var->second.size() == 1 && bestVar->second.size() == 1 )
+                if( vv.second.size() == 1 && bv.second.size() == 1 )
                 {
-                    if( *var->second.begin() < *bestVar->second.begin() )
+                    if( *vv.second.begin() < *bv.second.begin() )
                     {
-                        bestVar = var;
+                        mBestVarVals.clear();
+                        mBestVarVals.push_back(var);
+                    }
+                    else if( *vv.second.begin() == *bv.second.begin() )
+                    {
+                        mBestVarVals.push_back(var);
                     }
                 }
                 else
                 {
-                    auto varInConsVal     = var->second.begin();
-                    auto bestVarInConsVal = bestVar->second.begin();
-                    while( varInConsVal != var->second.end() && bestVarInConsVal != bestVar->second.end() )
+                    auto varInConsVal = vv.second.begin();
+                    auto bestVarInConsVal = bv.second.begin();
+                    while( varInConsVal != vv.second.end() && bestVarInConsVal != bv.second.end() )
                     {
                         if( *varInConsVal < *bestVarInConsVal )
                         {
-                            bestVar = var;
+                            mBestVarVals.clear();
+                            mBestVarVals.push_back(var);
                             break;
                         }
                         else if( *varInConsVal > *bestVarInConsVal )
@@ -1292,21 +1316,33 @@ namespace vs
                         ++varInConsVal;
                         ++bestVarInConsVal;
                     }
-                    if( varInConsVal == var->second.end() && bestVarInConsVal != bestVar->second.end() )
+                    if( varInConsVal == vv.second.end() )
                     {
-                        bestVar = var;
-                    } 
+                        if( bestVarInConsVal == bv.second.end() )
+                        {
+                            mBestVarVals.push_back(var);
+                        }
+                        else
+                        {
+                            mBestVarVals.clear();
+                            mBestVarVals.push_back(var);
+                        }
+                    }
                 }
             }
-            else if( !var->second.empty() && bestVar->second.empty() )
+            else if( !vv.second.empty() && bv.second.empty() )
             {
-                bestVar = var;
+                mBestVarVals.clear();
+                mBestVarVals.push_back(var);
             }
             ++var;
         }
-        if( index() != bestVar->first )
+        assert( !mBestVarVals.empty() );
+        size_t bestVar = mBestVarVals.back();
+        mBestVarVals.pop_back();
+        if( index() != varVals[bestVar].first )
         {
-            setIndex( (*bestVar).first );
+            setIndex( varVals[bestVar].first );
             return true;
         }
         return false;
@@ -1923,26 +1959,29 @@ namespace vs
 //                    }
 //                }
             }
-            state->updateValuation();
             rChildren().push_back( state );
             result.push_back( state );
         }
         return result;
     }
 
-    void State::updateValuation()
+    void State::updateValuation( bool _lazy )
     {
-        if( cannotBeSolved() )
-        {
+        if( _lazy )
             mValuation = 1;
+        else
+            mValuation = 0;
+        if( mCannotBeSolved )
+        {
+            mValuation += 1;
             updateBackendCallValuation();
         }
         else
         {
             if( !isRoot() ) 
-                mValuation = 100 * treeDepth() + 10 * substitution().valuate( substitution().variable().getType() == carl::VariableType::VT_REAL );
+                mValuation += 100 * treeDepth() + 10 * substitution().valuate( substitution().variable().getType() == carl::VariableType::VT_REAL );
             else 
-                mValuation = 1;
+                mValuation += 1;
             if( isInconsistent() ) 
                 mValuation += 7;
             else if( hasRecentlyAddedConditions() ) 
@@ -1952,7 +1991,7 @@ namespace vs
             else
             {
                 if( type() == SUBSTITUTION_TO_APPLY ) 
-                    mValuation += 2;
+                    mValuation += 3;
                 else if( type() == TEST_CANDIDATE_TO_GENERATE ) 
                 {
                     mValuation += 4;
@@ -2510,7 +2549,7 @@ namespace vs
             _out << _initiation << "                        tryToRefreshIndex: yes" << endl;
         else
             _out << _initiation << "                        tryToRefreshIndex: no" << endl;
-        if( cannotBeSolved() )
+        if( mCannotBeSolved )
             _out << _initiation << "                             toHighDegree: yes" << endl;
         else
             _out << _initiation << "                             toHighDegree: no" << endl;
