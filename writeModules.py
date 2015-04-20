@@ -54,6 +54,8 @@ def checkName(m, p):
             result = m[:-6]
           else:
             result = m
+  else:
+    result = m
   if( result != '' ):
     for name in os.listdir(p):
       if( name == result + 'Module' ):
@@ -167,12 +169,12 @@ namespace smtrat\n\
              * @return false, if it can be easily decided whether the given constraint is inconsistent;\n\
              *          true, otherwise.\n\
              */\n\
-            bool inform( const FormulaT& _constraint );\n\n\
+            bool informCore( const FormulaT& _constraint );\n\n\
             /**\n\
              * Informs all backends about the so far encountered constraints, which have not yet been communicated.\n\
              * This method must not and will not be called more than once and only before the first runBackends call.\n\
              */\n\
-	    void init();\n\n\
+	        void init();\n\n\
             /**\n\
              * The module has to take the given sub-formula of the received formula into account.\n\
              *\n\
@@ -181,7 +183,7 @@ namespace smtrat\n\
              *          the already considered sub-formulas;\n\
              *          true, otherwise.\n\
              */\n\
-            bool assertSubformula( ModuleInput::const_iterator _subformula );\n\n\
+            bool addCore( ModuleInput::const_iterator _subformula );\n\n\
             /**\n\
              * Removes the subformula of the received formula at the given position to the considered ones of this module.\n\
              * Note that this includes every stored calculation which depended on this subformula, but should keep the other\n\
@@ -189,7 +191,7 @@ namespace smtrat\n\
              *\n\
              * @param _subformula The position of the subformula to remove.\n\
              */\n\
-            void removeSubformula( ModuleInput::const_iterator _subformula );\n\n\
+            void removeCore( ModuleInput::const_iterator _subformula );\n\n\
             /**\n\
              * Updates the current assignment into the model.\n\
              * Note, that this is a unique but possibly symbolic assignment maybe containing newly introduced variables.\n\
@@ -197,11 +199,12 @@ namespace smtrat\n\
             void updateModel() const;\n\n\
             /**\n\
              * Checks the received formula for consistency.\n\
+             * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.\n\
              * @return True,    if the received formula is satisfiable;\n\
              *         False,   if the received formula is not satisfiable;\n\
              *         Unknown, otherwise.\n\
              */\n\
-            Answer isConsistent();\n\n\
+            Answer checkCore( bool _full );\n\n\
     };\n\
 }\n'
   if(s):
@@ -240,27 +243,24 @@ namespace smtrat\n\
     {}\n\
 \n\
 \n'+templatePrefix+'\
-    bool '+m+templateInst+'::inform( const FormulaT& _constraint )\n\
+    bool '+m+templateInst+'::informCore( const FormulaT& _constraint )\n\
     {\n\
-        Module::inform( _constraint ); // This must be invoked at the beginning of this method. \n\
-        const smtrat::ConstraintT* constraint = _constraint.pConstraint(); // Constraint pointer for the passed formula. \n\
-        return constraint->isConsistent() != 0;\n\
+        // Your code.\n\
+        return true; // This should be adapted according to your implementation.\n\
     }\n\
 \n'+templatePrefix+'\
     void '+m+templateInst+'::init()\n\
     {}\n\
 \n'+templatePrefix+'\
-    bool '+m+templateInst+'::assertSubformula( ModuleInput::const_iterator _subformula )\n\
+    bool '+m+templateInst+'::addCore( ModuleInput::const_iterator _subformula )\n\
     {\n\
-        Module::assertSubformula( _subformula ); // This must be invoked at the beginning of this method.\n\
         // Your code.\n\
         return true; // This should be adapted according to your implementation.\n\
     }\n\
 \n'+templatePrefix+'\
-    void '+m+templateInst+'::removeSubformula( ModuleInput::const_iterator _subformula )\n\
+    void '+m+templateInst+'::removeCore( ModuleInput::const_iterator _subformula )\n\
     {\n\
         // Your code.\n\
-        Module::removeSubformula( _subformula ); // This must be invoked at the end of this method.\n\
     }\n\
 \n'+templatePrefix+'\
     void '+m+templateInst+'::updateModel() const\n\
@@ -272,7 +272,7 @@ namespace smtrat\n\
         }\n\
     }\n\
 \n'+templatePrefix+'\
-    Answer '+m+templateInst+'::isConsistent()\n\
+    Answer '+m+templateInst+'::checkCore( bool _full )\n\
     {\n\
         // Your code.\n\
         return Unknown; // This should be adapted according to your implementation.\n\
@@ -322,7 +322,7 @@ for entry in sys.argv:
     printUsage()
     sys.exit(0)
   i += 1
-if i != 3:
+if i != 2 and i != 3:
   print( "Error: Insufficient number of arguments." )
   printUsage()
   sys.exit(0)
