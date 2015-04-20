@@ -50,6 +50,8 @@ namespace smtrat
             std::vector< std::pair< carl::Variable, Poly > >  mSubstitutions;
             // Stores the origins of the calculated substitutions
             std::map< carl::Variable, std::shared_ptr< std::vector<FormulaT> > > mVariables;
+            // Stores the auxiliary variables
+            std::set< carl::Variable > mAuxiliaries;
             
         public:
             

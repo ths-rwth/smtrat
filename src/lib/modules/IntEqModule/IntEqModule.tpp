@@ -42,7 +42,8 @@ namespace smtrat
         mProc_Constraints(),
         mRecent_Constraints(),    
         mSubstitutions(),
-        mVariables()    
+        mVariables(),
+        mAuxiliaries()    
     {}
 
     template<class Settings>
@@ -122,7 +123,7 @@ namespace smtrat
             auto iter = mProc_Constraints.find( newEq );
             if( iter != mProc_Constraints.end() )
             {
-                (iter->second)->push_back( newEq );
+                (iter->second)->insert( iter->second->end(), origins->begin(), origins->end() );
                 auto iter_help = mRecent_Constraints.back().find( newEq );
                 assert( iter_help != mRecent_Constraints.back().end() );
                 iter_help->second->insert( iter_help->second->end(), origins->begin(), origins->end() );
@@ -295,7 +296,7 @@ namespace smtrat
             cout << "Size of mRecent_Constraints: " << mRecent_Constraints.size() << endl;
             #endif
             //assert( mSubstitutions.size() + 1 == mRecent_Constraints.size() );
-            mProc_Constraints = mRecent_Constraints.back();                
+            //mProc_Constraints = mRecent_Constraints.back();                
         }
     }
 
@@ -309,6 +310,10 @@ namespace smtrat
             std::map<carl::Variable, Rational> temp_map;
             bool all_rational;
             all_rational = getRationalAssignmentsFromModel( mModel, temp_map );
+            #ifdef DEBUG_IntEqModule
+            cout << "Model: " << mModel << endl;
+            cout << "Auxiliaries: " << mAuxiliaries << endl;
+            #endif
             assert( all_rational );
             // Determine the assignments of the variables that haven't been passed
             auto iter_vars = mSubstitutions.end();
@@ -322,12 +327,15 @@ namespace smtrat
             }    
             while( true )
             {
+                #ifdef DEBUG_IntEqModule
+                cout << "Substitution: " << iter_vars->first << " by " << iter_vars->second << endl;
+                #endif
                 Poly value = iter_vars->second;
                 value = value.substitute( temp_map );
                 assert( value.isConstant() );
-                temp_map.insert( temp_map.end(), std::make_pair( iter_vars->first, (Rational)value.constantPart() ) );
+                temp_map[ iter_vars->first ] = (Rational)value.constantPart();
                 ModelValue assignment = vs::SqrtEx( value );
-                mModel.insert( mModel.end(), std::make_pair( iter_vars->first, assignment ) );
+                mModel[ iter_vars->first ] = assignment;
                 if( iter_vars != mSubstitutions.begin() )
                 {
                     --iter_vars;
@@ -337,6 +345,37 @@ namespace smtrat
                     break;
                 }
             }
+            // Delete the assignments of the auxiliary variables
+            auto iter_ass = mModel.begin();
+            while( iter_ass != mModel.end() )
+            {
+                auto iter_help = mAuxiliaries.find( iter_ass->first.asVariable() );
+                if( iter_help == mAuxiliaries.end() )
+                {
+                    ++iter_ass;
+                }
+                else
+                {
+                    auto to_delete = iter_ass;
+                    ++iter_ass;
+                    mModel.erase( to_delete );
+                }
+            }
+            #ifdef DEBUG_IntEqModule
+            cout << "Model: " << mModel << endl;
+            temp_map = std::map<carl::Variable, Rational>();
+            all_rational = getRationalAssignmentsFromModel( mModel, temp_map );
+            cout << "temp_map: " << temp_map << endl;
+            auto iter = rReceivedFormula().begin();
+            while( iter != rReceivedFormula().end() )
+            {
+                if( iter->formula().constraint().satisfiedBy( temp_map ) != 1 )
+                {
+                    cout << iter->formula() << endl;
+                }
+                ++iter;
+            }
+            #endif
         }
     }
 
@@ -486,7 +525,8 @@ namespace smtrat
                     }
                     ++iter_coeff;
                 }
-                carl::Variable fresh_var = carl::freshVariable( carl::VariableType::VT_INT );  
+                carl::Variable fresh_var = carl::freshVariable( carl::VariableType::VT_INT ); 
+                mAuxiliaries.insert( fresh_var );
                 *temp += carl::makePolynomial<Poly>(fresh_var);
             }
             // Substitute the reformulation of the found variable for all occurences
@@ -496,7 +536,8 @@ namespace smtrat
             #endif
             std::pair<carl::Variable, Poly>* new_pair = new std::pair<carl::Variable, Poly>(corr_var, *temp );
             mSubstitutions.push_back( *new_pair );
-            mVariables.emplace( new_pair->first, origins );
+            mVariables[ new_pair->first ] = origins;
+            //assert( res.second );
             Formula_Origins temp_proc_constraints;
             constr_iter = mProc_Constraints.begin();
             while( constr_iter != mProc_Constraints.end() )
@@ -553,19 +594,11 @@ namespace smtrat
         // and ignoring the equations
         while( iter_formula != rReceivedFormula().end() )
         {
+            #ifdef DEBUG_IntEqModule
+            cout << "Substitute in: " << (*iter_formula).formula().constraint() << endl;
+            #endif
             if( (*iter_formula).formula().constraint().relation() != carl::Relation::EQ )
             {
-                /*
-                #ifdef DEBUG_IntEqModule
-                cout << "Substitute in: " << (*iter_formula).formula().constraint().lhs() << endl;
-                auto iter_subs_help = mSubstitutions.begin();
-                while( iter_subs_help != mSubstitutions.end() )
-                {
-                    cout << *iter_subs_help << endl;
-                    ++iter_subs_help;
-                }
-                #endif
-                */ 
                 const smtrat::ConstraintT constr = (*iter_formula).formula().constraint();
                 Poly new_poly = constr.lhs();
                 std::shared_ptr<std::vector<FormulaT>> origins( new std::vector<FormulaT>() );
@@ -584,9 +617,9 @@ namespace smtrat
                     ++iter_subs;
                 }
                 //new_poly = new_poly.substitute( mSubstitutions );
-                //#ifdef DEBUG_IntEqModule
-                //cout << "After substitution: " << new_poly << endl;
-                //#endif
+                #ifdef DEBUG_IntEqModule
+                cout << "After substitution: " << new_poly << endl;
+                #endif
                 /*
                 std::shared_ptr<std::vector<FormulaT>> origins( new std::vector<FormulaT>() );
                 origins->push_back( (*iter_formula).formula() );
@@ -637,6 +670,9 @@ namespace smtrat
             }
             else if( mSubstitutions.empty() )
             {
+                #ifdef DEBUG_IntEqModule
+                cout << "No substitution" << endl;
+                #endif
                 addReceivedSubformulaToPassedFormula( iter_formula );                                
             }
             ++iter_formula;
