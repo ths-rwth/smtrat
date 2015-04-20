@@ -59,8 +59,12 @@ namespace smtrat
             bool mLastCheckFull;
             /// A flag being true, if it is known that a constraint has been added to the root state, which is inconsistent itself.
             bool mInconsistentConstraintAdded;
+            ///
+            bool mLazyMode;
             /// For the allocation of unique ids for the states.
             size_t mIDCounter;
+            ///
+            size_t mLazyCheckThreshold;
             #ifdef VS_STATISTICS
             /// 
             size_t mStepCounter;
