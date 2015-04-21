@@ -539,10 +539,6 @@ namespace smtrat
                                             {
                                                 // Go back to this ancestor and refine.
                                                 removeStatesFromRanking( *unfinishedAncestor );
-                                                if( !unfinishedAncestor->subResultsSimplified() )
-                                                {
-                                                    unfinishedAncestor->print();
-                                                }
                                                 unfinishedAncestor->extendSubResultCombination();
                                                 unfinishedAncestor->rType() = State::COMBINE_SUBRESULTS;
                                                 if( unfinishedAncestor->refreshConditions( mRanking ) ) 
