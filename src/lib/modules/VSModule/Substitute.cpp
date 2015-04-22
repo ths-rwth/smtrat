@@ -275,6 +275,156 @@ namespace vs
         return result;
     }
 
+    bool splitSosDecompositions( DisjunctionOfConstraintConjunctions& _toSimplify )
+    {
+        bool result = true;
+        size_t toSimpSize = _toSimplify.size();
+        for( size_t pos = 0; pos < toSimpSize; )
+        {
+            if( !_toSimplify.begin()->empty() )
+            {
+                DisjunctionOfConstraintConjunctions temp;
+                if( !splitSosDecompositions( _toSimplify[pos], temp ) )
+                    result = false;
+                _toSimplify.erase( _toSimplify.begin() );
+                _toSimplify.insert( _toSimplify.end(), temp.begin(), temp.end() );
+                --toSimpSize;
+            }
+            else
+                ++pos;
+        }
+        return result;
+    }
+
+    bool splitSosDecompositions( const ConstraintVector& _toSimplify, DisjunctionOfConstraintConjunctions& _result )
+    {
+        bool result = true;
+        vector<DisjunctionOfConstraintConjunctions> toCombine;
+        for( auto constraint = _toSimplify.begin(); constraint != _toSimplify.end(); ++constraint )
+        {
+            toCombine.emplace_back();
+            std::vector<std::pair<smtrat::Rational,smtrat::Poly>> sosDec;
+            bool lcoeffNeg = carl::isNegative(constraint->lhs().lcoeff());
+            if (lcoeffNeg)
+                sosDec = (-constraint->lhs()).sosDecomposition();
+            else
+                sosDec = constraint->lhs().sosDecomposition();
+            if( sosDec.size() <= 1 )
+            {
+                toCombine.back().emplace_back();
+                toCombine.back().back().push_back( *constraint );
+            }
+            else
+            {
+//                std::cout << "Sum-of-squares decomposition of " << constraint->lhs() << " = " << sosDec << std::endl;
+                bool addSquares = true;
+                switch( constraint->relation() )
+                {
+                    case carl::Relation::EQ:
+                    {
+                        if( constraint->lhs().hasConstantTerm() )
+                        {
+                            result = false;
+                            addSquares = false;
+                        }
+                        break;
+                    }
+                    case carl::Relation::NEQ:
+                    {
+                        if( constraint->lhs().hasConstantTerm() )
+                        {
+                            addSquares = false;
+                            break;
+                        }
+                        toCombine.back().emplace_back();
+                        toCombine.back().back().push_back( *constraint );
+                        break;
+                    }
+                    case carl::Relation::LEQ:
+                    {
+                        if( lcoeffNeg )
+                        {
+                            addSquares = false;
+                            break;
+                        }
+                        else if( constraint->lhs().hasConstantTerm() )
+                        {
+                            result = false;
+                            addSquares = false;
+                        }
+                        break;
+                    }
+                    case carl::Relation::LESS:
+                    {
+                        if( lcoeffNeg )
+                        {
+                            if( constraint->lhs().hasConstantTerm() )
+                            {
+                                addSquares = false;
+                                break;
+                            }
+                            toCombine.back().emplace_back();
+                            toCombine.back().back().push_back( *constraint );
+                        }
+                        else 
+                        {
+                            result = false;
+                            addSquares = false;
+                        }
+                        break;
+                    }
+                    case carl::Relation::GEQ:
+                    {
+                        if( !lcoeffNeg )
+                        {
+                            addSquares = false;
+                        }
+                        else if( constraint->lhs().hasConstantTerm() )
+                        {
+                            result = false;
+                            addSquares = false;
+                        }
+                        break;
+                    }
+                    default:
+                    {
+                        assert( constraint->relation() == carl::Relation::GREATER );
+                        if( lcoeffNeg )
+                        {
+                            result = false;
+                            addSquares = false;
+                        }
+                        else
+                        {
+                            if( constraint->lhs().hasConstantTerm() )
+                            {
+                                addSquares = false;
+                            }
+                            toCombine.back().emplace_back();
+                            toCombine.back().back().push_back( *constraint );
+                        }
+                    }
+                }
+                if( addSquares )
+                {
+                    toCombine.back().emplace_back();
+                    for( auto it = sosDec.begin(); it != sosDec.end(); ++it )
+                    {
+                        toCombine.back().back().emplace_back( it->second, carl::Relation::EQ );
+                    }
+                }
+                else
+                {
+                    toCombine.pop_back();
+                }
+            }
+        }
+        if( !combine( toCombine, _result ) )
+            result = false;
+        simplify( _result );
+        return result;
+    }
+
     DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::ConstraintT& _constraint )
     {
         DisjunctionOfConstraintConjunctions combinations;
@@ -476,9 +626,11 @@ namespace vs
         #ifdef SMTRAT_STRAT_Factorization
         if( !splitProducts( _result, true ) ) 
             result = false;
+        #endif
+        if( result && !splitSosDecompositions( _result ) )
+            result = false;
         #ifdef VS_DEBUG_SUBSTITUTION
         print( _result );
-        #endif
         #endif
         return result;
     }
