@@ -685,7 +685,7 @@ namespace smtrat
                 cout << endl << "Call to module " << moduleName( mUsedBackends[ highestIndex ]->type() ) << endl;
                 mUsedBackends[ highestIndex ]->print( cout, " ");
                 #endif
-                result = mUsedBackends[ highestIndex ]->isConsistent();
+                result = mUsedBackends[ highestIndex ]->check( _full );
                 mUsedBackends[ highestIndex ]->receivedFormulaChecked();
                 for( unsigned i=0; i<highestIndex; ++i )
                 {
