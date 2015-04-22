@@ -679,7 +679,7 @@ namespace smtrat
                 }
                 ++iter_var;    
             }
-            if( delta_constr >= 0.5*mProc_Constraints.size() )
+            if( delta_constr >= (Rational)(Settings::Threshold*0.01)*mProc_Constraints.size() )
             {
                 #ifdef DEBUG_FouMoModule
                 cout << "Run Backends because Threshold is exceeded!" << endl;
