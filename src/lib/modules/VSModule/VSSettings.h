@@ -53,7 +53,7 @@ namespace smtrat
         static const bool branch_and_bound                                      = false;
         static const bool split_neq_constraints                                 = false;
         static const size_t int_max_range                                       = 1;
-        static const size_t lazy_check_threshold                                = 1;
+        static const size_t lazy_check_threshold                                = 4;
         static const bool try_first_lazy                                        = false;
     };
     
