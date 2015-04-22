@@ -210,8 +210,9 @@ namespace smtrat
 			if (vPos != eiMap.end())
 				boundMap[v] = vPos->second;
 		}
-		if (!mCAD.check(mConstraints, mRealAlgebraicSolution, mConflictGraph, boundMap, false, true))
-		{
+		bool status = mCAD.check(mConstraints, mRealAlgebraicSolution, mConflictGraph, boundMap, false, true);
+		if (anAnswerFound()) return Unknown;
+		if (!status) {
 			#ifdef SMTRAT_CAD_DISABLE_MIS
 			// construct a trivial infeasible subset
 			std::cout << "Trivial" << std::endl;
