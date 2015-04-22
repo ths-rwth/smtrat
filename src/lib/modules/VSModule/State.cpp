@@ -51,6 +51,7 @@ namespace vs
         mTakeSubResultCombAgain( false ),
         mTestCandidateCheckedForBounds( false ),
         mCannotBeSolved( false ),
+        mCannotBeSolvedLazy( false ),
         mTryToRefreshIndex( false ),
         mBackendCallValuation( 0 ),
         mID( 0 ),
@@ -87,6 +88,7 @@ namespace vs
         mTakeSubResultCombAgain( false ),
         mTestCandidateCheckedForBounds( false ),
         mCannotBeSolved( false ),
+        mCannotBeSolvedLazy( false ),
         mTryToRefreshIndex( false ),
         mBackendCallValuation( 0 ),
         mID( 0 ),
@@ -956,9 +958,9 @@ namespace vs
         }
         // Mark this state as not yet simplified.
         mSubResultsSimplified = false;
-        mCannotBeSolved       = false;
-        mMarkedAsDeleted      = false;
-        mType                 = COMBINE_SUBRESULTS;
+        mCannotBeSolved = false;
+        mMarkedAsDeleted = false;
+        mType = COMBINE_SUBRESULTS;
     }
 
     bool State::extendSubResultCombination()
@@ -968,9 +970,9 @@ namespace vs
             mpSubResultCombination = new SubResultCombination();
         if( mpSubResultCombination->size() < mpSubstitutionResults->size() )
         {
-            unsigned bestSubResultIndex          = 0;
-            bool     notConsideredSubResultFound = false;
-            unsigned subResultIndex              = 0;
+            unsigned bestSubResultIndex = 0;
+            bool notConsideredSubResultFound = false;
+            unsigned subResultIndex = 0;
             while( subResultIndex < mpSubstitutionResults->size() )
             {
                 // Set all flags of conjunctions of conditions in the substitution result to false.
@@ -2744,18 +2746,16 @@ namespace vs
         {
             if( !conflictSet->empty() )
             {
-                // Greatest tree depth of the original conditions of the conditions in the
-                // currently best set of conditions in this conflict set.
+                // Greatest tree depth of the original conditions of the conditions in the currently best set of conditions in this conflict set.
                 size_t greatestTreeDepthConflictSet = 0;
-                // The number of conditions in the currently best set of conditions, which are
-                // not covered of the so far created covering set.
-                size_t                        numUncovCondsConflictSet = 0;
-                auto bestConditionSet         = conflictSet->begin();
+                // The number of conditions in the currently best set of conditions, which are not covered of the so far created covering set.
+                size_t numUncovCondsConflictSet = 0;
+                auto bestConditionSet = conflictSet->begin();
                 for( auto conditionSet = conflictSet->begin(); conditionSet != conflictSet->end(); ++conditionSet )
                 {
-                    size_t numUncovCondsCondSet     = 0;
+                    size_t numUncovCondsCondSet = 0;
                     size_t greatestTreeDepthCondSet = 0;
-                    bool     justEmptyOConds          = true;
+                    bool justEmptyOConds = true;
                     for( auto condition = conditionSet->begin(); condition != conditionSet->end(); ++condition )
                     {
                         if( _coveringSet.find( *condition ) == _coveringSet.end() )
@@ -2774,9 +2774,9 @@ namespace vs
                     if( conditionSet == conflictSet->begin() || (greatestTreeDepthCondSet < greatestTreeDepthConflictSet)
                             || ((greatestTreeDepthCondSet == greatestTreeDepthConflictSet && numUncovCondsCondSet < numUncovCondsConflictSet)) )
                     {
-                        bestConditionSet             = conditionSet;
+                        bestConditionSet = conditionSet;
                         greatestTreeDepthConflictSet = greatestTreeDepthCondSet;
-                        numUncovCondsConflictSet     = numUncovCondsCondSet;
+                        numUncovCondsConflictSet = numUncovCondsCondSet;
                     }
                 }
                 if( greatestTreeDepthConflictSet > greatestTreeDepth )
