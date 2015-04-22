@@ -88,6 +88,17 @@ namespace smtrat
                 // would have been part of the initially asserted constraints
                 auto iter_help = mDeleted_Constraints.find( *iter_var ); 
                 assert( iter_help != mDeleted_Constraints.end() );
+                bool simple_assert = true;
+                // Check whether the variable that is currently considered occurs
+                // in the newly asserted constraint as in the ones that were 
+                // previously considered
+                if( Settings::Nonlinear_Mode )
+                {
+                    if( true )
+                    {
+                        // TO-DO
+                    }
+                }
                 auto iter_temp = temp_constr.begin();
                 FormulaOrigins derived_constr;
                 std::set<std::pair<FormulaT, bool>> to_be_deleted;      
@@ -99,7 +110,7 @@ namespace smtrat
                     {
                         if( !iter_poly->isConstant() )
                         {
-                            if( iter_poly->getSingleVariable() == *iter_var )
+                            if( iter_poly->monomial().get()->begin()->first == *iter_var )
                             {
                                 if( (Rational)iter_poly->coeff() > 0 ) 
                                 {
@@ -784,29 +795,48 @@ namespace smtrat
         // lower bounds according to the Fourier-Motzkin algorithm
         auto iter_constr = curr_constraints.begin();
         // Store which variables occur at least one time non-linear 
-        std::set<carl::Variable> forbidden_fruits;                  
+        std::set< carl::Variable > forbidden_fruits;
+        // Store which variables only occur as x^i for some fixed integer i
+        std::map< carl::Variable, unsigned > suitable_monomials;
         while( iter_constr != curr_constraints.end() )
         {
             typename Poly::PolyType lhsExpanded = (typename Poly::PolyType)iter_constr->first.constraint().lhs();
             auto iter_poly = lhsExpanded.begin();
             while( iter_poly != lhsExpanded.end() )
             {
-                bool nonlinear_flag = true;
                 if( Settings::Nonlinear_Mode )
                 {
-                    nonlinear_flag = iter_poly->isLinear();  
-                    if( !nonlinear_flag )
+                    if( iter_poly->getNrVariables() == 1 )
+                    {
+                        const carl::Monomial* temp = iter_poly->monomial().get();
+                        if( forbidden_fruits.find( temp->begin()->first ) == forbidden_fruits.end() )
+                        {
+                            auto iter_help = suitable_monomials.find( temp->begin()->first );
+                            if( iter_help == suitable_monomials.end() )
+                            {
+                                suitable_monomials[ temp->begin()->first ] = temp->begin()->second;
+                            }
+                            else if( iter_help->second != temp->begin()->second )
+                            {
+                                forbidden_fruits.insert( temp->begin()->first );
+                                suitable_monomials.erase( iter_help );
+                                var_corr_constr.erase( temp->begin()->first );
+                            }
+                        }    
+                    }
+                    else
                     {
                         iter_poly->gatherVariables( forbidden_fruits );
-                    }
+                    }    
                 }
                 if( !iter_poly->isConstant() )    
                 {
-                    if( nonlinear_flag )
+                    if( iter_poly->getNrVariables() == 1 )
                     {
-                        if( forbidden_fruits.end() == forbidden_fruits.find( iter_poly->getSingleVariable() ) )
+                        if( forbidden_fruits.end() == forbidden_fruits.find( iter_poly->monomial().get()->begin()->first ) )
                         {
-                            carl::Variable var_help = iter_poly->getSingleVariable();
+                            // Collect the 'lower' respectively 'upper' constraints of the considered monomial 
+                            carl::Variable var_help = iter_poly->monomial().get()->begin()->first;      
                             auto iter_help = var_corr_constr.find( var_help );
                             if( iter_help == var_corr_constr.end() )
                             {
@@ -853,7 +883,7 @@ namespace smtrat
                         {
                             if( var_corr_constr.find( *iter_vars ) != var_corr_constr.end() )
                             {
-                                var_corr_constr.erase( iter_poly->getSingleVariable() );  
+                                var_corr_constr.erase( *iter_vars );  
                             }
                             ++iter_vars;
                         }    
@@ -888,14 +918,9 @@ namespace smtrat
         auto iter_poly_upper = ucExpanded.begin();
         while( iter_poly_upper != ucExpanded.end() )
         {
-            bool nonlinear_flag = true;
-            if( Settings::Nonlinear_Mode )
-            {
-                nonlinear_flag = iter_poly_upper->isLinear();                    
-            }
-            if( !iter_poly_upper->isConstant() && nonlinear_flag )       
+            if( !iter_poly_upper->isConstant() && iter_poly_upper->getNrVariables() == 1 )       
             { 
-                if( iter_poly_upper->getSingleVariable() == corr_var )
+                if( iter_poly_upper->monomial().get()->begin()->first == corr_var )
                 {
                     coeff_upper = (Rational)iter_poly_upper->coeff();
                     break;
@@ -908,14 +933,9 @@ namespace smtrat
         auto iter_poly_lower = lcExpanded.begin();
         while( iter_poly_lower != lcExpanded.end() )
         {
-            bool nonlinear_flag = true;
-            if( Settings::Nonlinear_Mode )
-            {
-                nonlinear_flag = iter_poly_lower->isLinear();                    
-            }
-            if( !iter_poly_lower->isConstant() && nonlinear_flag )    
+            if( !iter_poly_lower->isConstant() && iter_poly_lower->getNrVariables() == 1 )    
             {    
-                if( iter_poly_lower->getSingleVariable() == corr_var )
+                if( iter_poly_lower->monomial().get()->begin()->first == corr_var )
                 {
                     coeff_lower = (Rational)iter_poly_lower->coeff(); 
                     break;
@@ -981,12 +1001,12 @@ namespace smtrat
                 {
                     if( !iter_poly_upper->isConstant() )
                     {
-                        if( iter_poly_upper->getSingleVariable() != *iter_elim )
+                        if( iter_poly_upper->monomial().get()->begin()->first != *iter_elim )
                         {
                             #ifdef DEBUG_FouMoModule
-                            cout << "Set to zero: " << iter_poly_upper->getSingleVariable() << endl;
+                            cout << "Set to zero: " << iter_poly_upper->monomial().get()->begin()->first << endl;
                             #endif
-                            mVarAss[ iter_poly_upper->getSingleVariable() ] = 0;         
+                            mVarAss[ iter_poly_upper->monomial().get()->begin()->first ] = 0;         
                         }
                         else
                         {
@@ -1061,12 +1081,12 @@ namespace smtrat
                 {
                     if( !iter_poly_lower->isConstant() )
                     {
-                        if( iter_poly_lower->getSingleVariable() != *iter_elim )
+                        if( iter_poly_lower->monomial().get()->begin()->first != *iter_elim )
                         {
                             #ifdef DEBUG_FouMoModule
-                            cout << "Set to zero: " << iter_poly_lower->getSingleVariable() << endl;
+                            cout << "Set to zero: " << iter_poly_lower->monomial().get()->begin()->first << endl;
                             #endif
-                            mVarAss[ iter_poly_lower->getSingleVariable() ] = 0;                            
+                            mVarAss[ iter_poly_lower->monomial().get()->begin()->first ] = 0;                            
                         }
                         else
                         {
@@ -1156,11 +1176,11 @@ namespace smtrat
                     if( !found_var )
                     {
                         found_var = true;
-                        mVarAss[ iter_poly->getSingleVariable() ] = Rational(-1)*Rational( eqExpanded.constantPart() )/(Rational)iter_poly->coeff();                       
+                        mVarAss[ iter_poly->monomial().get()->begin()->first ] = Rational(-1)*Rational( eqExpanded.constantPart() )/(Rational)iter_poly->coeff();                       
                     }
                     else
                     {
-                        mVarAss[ iter_poly->getSingleVariable() ] = 0;                        
+                        mVarAss[ iter_poly->monomial().get()->begin()->first ] = 0;                        
                     }
                 }
                 ++iter_poly;
