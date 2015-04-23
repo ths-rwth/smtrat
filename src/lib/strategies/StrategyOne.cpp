@@ -33,9 +33,9 @@ namespace smtrat
     {
         addBackendIntoStrategyGraph( 0, MT_CNFerModule, isCondition );
         addBackendIntoStrategyGraph( 1, MT_SATModule, isCondition );
-        addBackendIntoStrategyGraph( 2, MT_CADModule, isCondition );
         addBackendIntoStrategyGraph( 2, MT_VSModule, isCondition );
-        addBackendIntoStrategyGraph( 4, MT_CADModule, isCondition );
+        addBackendIntoStrategyGraph( 3, MT_CADModule, isCondition );
+        addBackendIntoStrategyGraph( 2, MT_CADModule, isCondition );
     }
 
     StrategyOne::~StrategyOne(){}
