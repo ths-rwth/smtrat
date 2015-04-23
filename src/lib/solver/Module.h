@@ -68,7 +68,11 @@ namespace smtrat
     struct Branching
     {
         /// The polynomial to branch at.
+#ifdef __VS
+		Poly::PolyType mPolynomial;
+#else
         typename Poly::PolyType mPolynomial;
+#endif
         /// The value to branch the polynomial at.
         Rational mValue;
         /// The number of repetitions of the branching.
@@ -84,7 +88,11 @@ namespace smtrat
          * @param _polynomial The polynomial to branch at.
          * @param _value The value to branch the polynomial at.
          */
+#ifdef __VS
+		Branching(const Poly::PolyType& _polynomial, const Rational& _value) :
+#else
         Branching( const typename Poly::PolyType& _polynomial, const Rational& _value ):
+#endif
             mPolynomial( _polynomial ),
             mValue( _value ),
             mRepetitions( 1 ),
@@ -826,7 +834,11 @@ namespace smtrat
              * @return true, if this branching is probably part of an infinite loop of branchings;
              *         false, otherwise.
              */
-            static bool probablyLooping( const typename Poly::PolyType& _branchingPolynomial, const Rational& _branchingValue );
+#ifdef __VS
+			static bool probablyLooping(const Poly::PolyType& _branchingPolynomial, const Rational& _branchingValue);
+#else
+			static bool probablyLooping(const typename Poly::PolyType& _branchingPolynomial, const Rational& _branchingValue);
+#endif
             
             /**
              * Adds a deductions which provoke a branching for the given variable at the given value,

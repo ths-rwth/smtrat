@@ -141,8 +141,12 @@ namespace vs
         double otherMonomialsPositiveWeight = 2;
         double finitlyManySolutionsWeight = INFINITLY_MANY_SOLUTIONS_WEIGHT;
         // TODO: avoid expanding the polynomial somehow
-        typename smtrat::Poly::PolyType polyExpanded = (typename smtrat::Poly::PolyType)constraint().lhs();
-        if( numberOfVariableOccurencesWeight == 1 && ( polyExpanded.nrTerms() == 1 || (constraint().constantPart() != smtrat::ZERO_RATIONAL && polyExpanded.nrTerms() > 1) ) )
+#ifdef __VS
+        smtrat::Poly::PolyType polyExpanded = (smtrat::Poly::PolyType)constraint().lhs();
+#else
+		typename smtrat::Poly::PolyType polyExpanded = (typename smtrat::Poly::PolyType)constraint().lhs();
+#endif
+		if( numberOfVariableOccurencesWeight == 1 && ( polyExpanded.nrTerms() == 1 || (constraint().constantPart() != smtrat::ZERO_RATIONAL && polyExpanded.nrTerms() > 1) ) )
         {
             bool allOtherMonomialsPos = true;
             bool allOtherMonomialsNeg = true;
