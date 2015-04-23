@@ -72,6 +72,7 @@ namespace smtrat
     template<class Settings>
     bool VSModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
+        mLazyMode = false;
         if( _subformula->formula().getType() == carl::FormulaType::CONSTRAINT )
         {
             const ConstraintT& constraint = _subformula->formula().constraint();
@@ -131,6 +132,7 @@ namespace smtrat
     template<class Settings>
     void VSModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
+        mLazyMode = false;
         if( _subformula->formula().getType() == carl::FormulaType::CONSTRAINT )
         {
             mInconsistentConstraintAdded = false;
