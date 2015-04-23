@@ -36,6 +36,7 @@ namespace smtrat
     FouMoModule<Settings>::FouMoModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         mProc_Constraints(),
+        mRecent_Constraints(),    
         mEqualities(),
         mDisequalities(),
         mElim_Order(),    
@@ -72,11 +73,65 @@ namespace smtrat
             cout << "Do the eliminations for the newly asserted subformula!" << endl;
             #endif
             auto iter_var = mElim_Order.begin();
-            std::shared_ptr<std::vector<FormulaT>> origins( new std::vector<FormulaT>() );
+            bool simple_assert = true;
+            // Check whether the variable that is currently considered occurs
+            // in the newly asserted constraint as in the ones that were 
+            // previously considered
+            if( Settings::Nonlinear_Mode )
+            {
+                unsigned i = 0;
+                while( iter_var != mElim_Order.end() )
+                {
+                    auto iter_poly = _subformula->formula().constraint().lhs().begin();
+                    while( iter_poly != _subformula->formula().constraint().lhs().end() )
+                    {
+                        if( iter_poly->getNrVariables() > 1 )
+                        {
+                            std::set< carl::Variable > temp;
+                            iter_poly->gatherVariables( temp );
+                            if( temp.find( *iter_var ) != temp.find( *iter_var ) )
+                            {
+                                simple_assert = false;
+                                break;
+                            }
+                        }
+                        ++iter_poly;                        
+                    }
+                    if( !simple_assert )
+                    {
+                        break;
+                    }
+                    ++i;
+                    ++iter_var;
+                }
+                if( !simple_assert )
+                {
+                    // Backtrack to the last elimination step that is valid considering the new constraint
+                    mProc_Constraints = mRecent_Constraints.at( i );
+                    auto iter_help = iter_var;
+                    while( iter_help != mElim_Order.end() )
+                    {
+                        auto iter_find = mDeleted_Constraints.find( *iter_help );
+                        assert( iter_find != mDeleted_Constraints.end() );
+                        mDeleted_Constraints.erase( iter_find );
+                        ++iter_help;
+                    }
+                    mElim_Order.erase( iter_var, mElim_Order.end() );
+                    auto iter_recent = mRecent_Constraints.begin();
+                    unsigned j = 0;
+                    while( j != i )
+                    {
+                        ++j;
+                        ++iter_recent;
+                    }
+                    ++iter_recent;
+                    mRecent_Constraints.erase( iter_recent, mRecent_Constraints.end( ) );
+                    return true;
+                }
+                iter_var = mElim_Order.begin();
+            }
+            std::shared_ptr< std::vector< FormulaT > > origins( new std::vector<FormulaT>() );
             origins->push_back( _subformula->formula() );
-            //FormulasT origin;
-            //origin.insert( _subformula->formula() );
-            //origins.push_back( std::move( origin ) );
             FormulaOrigins temp_constr;
             temp_constr.emplace( _subformula->formula(), origins );
             while( iter_var != mElim_Order.end() )
@@ -88,17 +143,6 @@ namespace smtrat
                 // would have been part of the initially asserted constraints
                 auto iter_help = mDeleted_Constraints.find( *iter_var ); 
                 assert( iter_help != mDeleted_Constraints.end() );
-                bool simple_assert = true;
-                // Check whether the variable that is currently considered occurs
-                // in the newly asserted constraint as in the ones that were 
-                // previously considered
-                if( Settings::Nonlinear_Mode )
-                {
-                    if( true )
-                    {
-                        // TO-DO
-                    }
-                }
                 auto iter_temp = temp_constr.begin();
                 FormulaOrigins derived_constr;
                 std::set<std::pair<FormulaT, bool>> to_be_deleted;      
@@ -110,7 +154,7 @@ namespace smtrat
                     {
                         if( !iter_poly->isConstant() )
                         {
-                            if( iter_poly->monomial().get()->begin()->first == *iter_var )
+                            if( iter_poly->getNrVariables() == 1 && iter_poly->monomial().get()->begin()->first == *iter_var )
                             {
                                 if( (Rational)iter_poly->coeff() > 0 ) 
                                 {
@@ -298,6 +342,11 @@ namespace smtrat
                 }
                 ++iter_temp;
             }
+            if( mRecent_Constraints.empty() )
+            {
+                mRecent_Constraints.push_back( FormulaOrigins() );
+            }
+            mRecent_Constraints.back() = mProc_Constraints;
         }
         else if( _subformula->formula().constraint().relation() == carl::Relation::EQ )
         {
@@ -345,7 +394,6 @@ namespace smtrat
             auto iter_formula = mProc_Constraints.begin();
             while( iter_formula != mProc_Constraints.end() )
             {
-                //size_t delete_count = 0;
                 auto iter_origins = iter_formula->second->begin();
                 while( iter_origins !=  iter_formula->second->end() )
                 {
@@ -361,14 +409,13 @@ namespace smtrat
                     if( contains || *iter_origins == _subformula->formula() )
                     {
                         iter_origins = iter_formula->second->erase( iter_origins );
-                        //++delete_count;
                     }
                     else
                     {
                         ++iter_origins;
                     }    
                 }
-                if( iter_formula->second->empty() )//iter_formula->second->size() == delete_count )
+                if( iter_formula->second->empty() )
                 {
                     auto to_delete = iter_formula;
                     ++iter_formula;
@@ -379,35 +426,67 @@ namespace smtrat
                     ++iter_formula;
                 }    
             }
+            // Do the same for the data structure of the iteration history
+            auto iter_steps = mRecent_Constraints.begin();
+            while( iter_steps != mRecent_Constraints.end() )
+            {    
+                auto iter_formula = iter_steps->begin();
+                while( iter_formula != iter_steps->end() )
+                {
+                    auto iter_origins = iter_formula->second->begin();
+                    while( iter_origins !=  iter_formula->second->end() )
+                    {
+                        bool contains = iter_origins->contains( _subformula->formula() ); 
+                        if( contains || *iter_origins == _subformula->formula() )
+                        {
+                            iter_origins = iter_formula->second->erase( iter_origins );
+                        }
+                        else
+                        {
+                            ++iter_origins;
+                        }    
+                    }
+                    if( iter_formula->second->empty() )
+                    {
+                        auto to_delete = iter_formula;
+                        ++iter_formula;
+                        iter_steps->erase( to_delete );
+                    }
+                    else
+                    {
+                        ++iter_formula;
+                    }    
+                }
+                if( iter_steps->empty() )
+                {
+                    iter_steps = mRecent_Constraints.erase( iter_steps );
+                }
+                else
+                {
+                    ++iter_steps;
+                }    
+            }
             // Do the same for the data structure of the deleted constraints 
             auto iter_var = mDeleted_Constraints.begin();
             while( iter_var != mDeleted_Constraints.end() )
             {
                 auto iter_upper = iter_var->second.first.begin();
-                //size_t delete_count;
                 while( iter_upper != iter_var->second.first.end() )
-                {
-                    //delete_count = 0;   
+                {  
                     auto iter_set_upper = iter_upper->second->begin();
                     while( iter_set_upper != iter_upper->second->end() )
                     {
                         bool contains = iter_set_upper->contains( _subformula->formula() ); 
-                        /*
-                        cout << *iter_set_upper << endl;
-                        cout << _subformula->formula() << endl;
-                        cout << contains << endl;
-                        */
                         if( contains || *iter_set_upper == _subformula->formula() )
                         {
                             iter_set_upper = iter_upper->second->erase( iter_set_upper );
-                            //++delete_count;
                         }
                         else
                         {
                             ++iter_set_upper;
                         }    
                     }
-                    if( iter_upper->second->empty() )//iter_upper->second->size() == delete_count )
+                    if( iter_upper->second->empty() )
                     {
                         iter_upper = iter_var->second.first.erase( iter_upper );
                     }
@@ -419,27 +498,20 @@ namespace smtrat
                 auto iter_lower = iter_var->second.second.begin();
                 while( iter_lower != iter_var->second.second.end() )
                 {
-                    //delete_count = 0;
                     auto iter_set_lower = iter_lower->second->begin();
                     while( iter_set_lower != iter_lower->second->end() )
                     {
                         bool contains = iter_set_lower->contains( _subformula->formula() ); 
-                        /*
-                        cout << *iter_set_lower << endl;
-                        cout << _subformula->formula() << endl;
-                        cout << contains << endl;
-                        */
                         if( contains || *iter_set_lower == _subformula->formula() )
                         {
                             iter_set_lower = iter_lower->second->erase( iter_set_lower );
-                            //++delete_count;
                         }
                         else
                         {
                             ++iter_set_lower;
                         }    
                     }
-                    if( iter_lower->second->empty() ) //iter_lower->second->size() == delete_count )
+                    if( iter_lower->second->empty() ) 
                     {
                         iter_lower = iter_var->second.second.erase( iter_lower );
                     }
@@ -485,14 +557,12 @@ namespace smtrat
             auto iter_formula = mEqualities.begin();
             while( iter_formula != mEqualities.end() )
             {
-                //size_t delete_count = 0;
                 auto iter_origins = iter_formula->second->begin();
                 while( iter_origins !=  iter_formula->second->end() )
                 {
                     bool contains = iter_origins->contains( _subformula->formula() ); 
                     if( contains || *iter_origins == _subformula->formula() )
                     {
-                        //++delete_count;
                         iter_origins = iter_formula->second->erase( iter_origins );
                     }
                     else
@@ -500,7 +570,7 @@ namespace smtrat
                         ++iter_origins;
                     }   
                 }
-                if( iter_formula->second->empty() ) //iter_formula->second->size() == delete_count )
+                if( iter_formula->second->empty() )
                 {
                     auto to_delete = iter_formula;
                     ++iter_formula;
@@ -520,14 +590,12 @@ namespace smtrat
             auto iter_formula = mDisequalities.begin();
             while( iter_formula != mDisequalities.end() )
             {
-                //size_t delete_count = 0;
                 auto iter_origins = iter_formula->second->begin();
                 while( iter_origins !=  iter_formula->second->end() )
                 {
                     bool contains = iter_origins->contains( _subformula->formula() ); 
                     if( contains || *iter_origins == _subformula->formula() )
                     {
-                        //++delete_count;
                         iter_origins = iter_formula->second->erase( iter_origins );
                     }
                     else
@@ -535,7 +603,7 @@ namespace smtrat
                         ++iter_origins;
                     }   
                 }
-                if( iter_formula->second->empty() ) //iter_formula->second->size() == delete_count )
+                if( iter_formula->second->empty() )
                 {
                     auto to_delete = iter_formula;
                     ++iter_formula;
@@ -785,6 +853,7 @@ namespace smtrat
                 mProc_Constraints.erase( iter_delete );
                 ++iter_lower;
             }
+            mRecent_Constraints.push_back( mProc_Constraints );
         }    
     }
     
