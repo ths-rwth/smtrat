@@ -410,7 +410,11 @@ namespace smtrat
 		mConstraints.push_back(constraint);
 		mConstraintsMap[f] = (unsigned)(mConstraints.size() - 1);
 		mCFMap[constraint] = f;
+#ifdef __VS
+		mCAD.addPolynomial(Poly::PolyType(constraint.getPolynomial()), constraint.getVariables());
+#else
 		mCAD.addPolynomial(typename Poly::PolyType(constraint.getPolynomial()), constraint.getVariables());
+#endif
 		mConflictGraph.addConstraintVertex(); // increases constraint index internally what corresponds to adding a new constraint node with index mConstraints.size()-1
 
 		return solverState() != False;
@@ -452,7 +456,11 @@ namespace smtrat
 				break;
 			default: assert(false);
 		}
+#ifdef __VS
+		return carl::cad::Constraint<smtrat::Rational>((Poly::PolyType)c.lhs(), signForConstraint, variables, cadConstraintNegated);
+#else
 		return carl::cad::Constraint<smtrat::Rational>((typename Poly::PolyType)c.lhs(), signForConstraint, variables, cadConstraintNegated);
+#endif
 	}
 
 	/**
