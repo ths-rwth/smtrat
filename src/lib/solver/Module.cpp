@@ -53,7 +53,11 @@ namespace smtrat
     vector<string> Module::mAssumptionToCheck = vector<string>();
     set<string> Module::mVariablesInAssumptionToCheck = set<string>();
     size_t Module::mNumOfBranchVarsToStore = 10;
-    vector<Branching> Module::mLastBranches = vector<Branching>( mNumOfBranchVarsToStore, Branching(typename Poly::PolyType(ZERO_RATIONAL), ZERO_RATIONAL) );
+#ifdef __VS
+    vector<Branching> Module::mLastBranches = vector<Branching>( mNumOfBranchVarsToStore, Branching(Poly::PolyType(ZERO_RATIONAL), ZERO_RATIONAL) );
+#else
+	vector<Branching> Module::mLastBranches = vector<Branching>(mNumOfBranchVarsToStore, Branching(typename Poly::PolyType(ZERO_RATIONAL), ZERO_RATIONAL));
+#endif
     size_t Module::mFirstPosInLastBranches = 0;
 
     #ifdef SMTRAT_DEVOPTION_Validation
@@ -414,7 +418,11 @@ namespace smtrat
         return index_min;
     }
     
-    bool Module::probablyLooping( const typename Poly::PolyType& _branchingPolynomial, const Rational& _branchingValue )
+#ifdef __VS
+    bool Module::probablyLooping( const Poly::PolyType& _branchingPolynomial, const Rational& _branchingValue )
+#else
+	bool Module::probablyLooping(const typename Poly::PolyType& _branchingPolynomial, const Rational& _branchingValue)
+#endif
     {
         assert( _branchingPolynomial.constantPart() == 0 );
         auto iter = mLastBranches.begin();
