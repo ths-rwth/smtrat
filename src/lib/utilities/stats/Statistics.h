@@ -100,11 +100,13 @@ protected:
         mKeyValuePairs.push_back(std::pair<std::string, std::string>(key, value));
     }
     
+#ifndef __VS
     void addKeyValuePair(const std::string & key, size_t value) {
         std::stringstream convert;
         convert << value;
         addKeyValuePair(key, convert.str());
     }
+#endif
     
     void addKeyValuePair(const std::string & key, unsigned value) {
         std::stringstream convert;
