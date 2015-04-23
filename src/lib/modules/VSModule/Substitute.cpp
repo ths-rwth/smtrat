@@ -277,152 +277,127 @@ namespace vs
 
     bool splitSosDecompositions( DisjunctionOfConstraintConjunctions& _toSimplify )
     {
-        bool result = true;
-        size_t toSimpSize = _toSimplify.size();
-        for( size_t pos = 0; pos < toSimpSize; )
+        for( size_t i = 0; i < _toSimplify.size(); )
         {
-            if( !_toSimplify.begin()->empty() )
+            auto& cc = _toSimplify[i];
+            bool foundNoInvalidConstraint = true;
+            size_t pos = 0;
+            while( foundNoInvalidConstraint && pos < cc.size() )
             {
-                DisjunctionOfConstraintConjunctions temp;
-                if( !splitSosDecompositions( _toSimplify[pos], temp ) )
-                    result = false;
-                _toSimplify.erase( _toSimplify.begin() );
-                _toSimplify.insert( _toSimplify.end(), temp.begin(), temp.end() );
-                --toSimpSize;
-            }
-            else
-                ++pos;
-        }
-        return result;
-    }
-
-    bool splitSosDecompositions( const ConstraintVector& _toSimplify, DisjunctionOfConstraintConjunctions& _result )
-    {
-        bool result = true;
-        vector<DisjunctionOfConstraintConjunctions> toCombine;
-        for( auto constraint = _toSimplify.begin(); constraint != _toSimplify.end(); ++constraint )
-        {
-            toCombine.emplace_back();
-            std::vector<std::pair<smtrat::Rational,smtrat::Poly>> sosDec;
-            bool lcoeffNeg = carl::isNegative(constraint->lhs().lcoeff());
-            if (lcoeffNeg)
-                sosDec = (-constraint->lhs()).sosDecomposition();
-            else
-                sosDec = constraint->lhs().sosDecomposition();
-            if( sosDec.size() <= 1 )
-            {
-                toCombine.back().emplace_back();
-                toCombine.back().back().push_back( *constraint );
-            }
-            else
-            {
-//                std::cout << "Sum-of-squares decomposition of " << constraint->lhs() << " = " << sosDec << std::endl;
-                bool addSquares = true;
-                switch( constraint->relation() )
+                const smtrat::ConstraintT& constraint = cc[pos];
+                std::vector<std::pair<smtrat::Rational,smtrat::Poly>> sosDec;
+                bool lcoeffNeg = carl::isNegative(constraint.lhs().lcoeff());
+                if (lcoeffNeg)
+                    sosDec = (-constraint.lhs()).sosDecomposition();
+                else
+                    sosDec = constraint.lhs().sosDecomposition();
+                if( sosDec.size() > 1 )
                 {
-                    case carl::Relation::EQ:
+//                    std::cout << "Sum-of-squares decomposition of " << constraint.lhs() << " = " << sosDec << std::endl;
+                    bool addSquares = true;
+                    bool constraintValid = false;
+                    switch( constraint.relation() )
                     {
-                        if( constraint->lhs().hasConstantTerm() )
+                        case carl::Relation::EQ:
                         {
-                            result = false;
-                            addSquares = false;
-                        }
-                        break;
-                    }
-                    case carl::Relation::NEQ:
-                    {
-                        if( constraint->lhs().hasConstantTerm() )
-                        {
-                            addSquares = false;
-                            break;
-                        }
-                        toCombine.back().emplace_back();
-                        toCombine.back().back().push_back( *constraint );
-                        break;
-                    }
-                    case carl::Relation::LEQ:
-                    {
-                        if( lcoeffNeg )
-                        {
-                            addSquares = false;
-                            break;
-                        }
-                        else if( constraint->lhs().hasConstantTerm() )
-                        {
-                            result = false;
-                            addSquares = false;
-                        }
-                        break;
-                    }
-                    case carl::Relation::LESS:
-                    {
-                        if( lcoeffNeg )
-                        {
-                            if( constraint->lhs().hasConstantTerm() )
+                            if( constraint.lhs().hasConstantTerm() )
                             {
-                                addSquares = false;
-                                break;
-                            }
-                            toCombine.back().emplace_back();
-                            toCombine.back().back().push_back( *constraint );
-                        }
-                        else 
-                        {
-                            result = false;
-                            addSquares = false;
-                        }
-                        break;
-                    }
-                    case carl::Relation::GEQ:
-                    {
-                        if( !lcoeffNeg )
-                        {
-                            addSquares = false;
-                        }
-                        else if( constraint->lhs().hasConstantTerm() )
-                        {
-                            result = false;
-                            addSquares = false;
-                        }
-                        break;
-                    }
-                    default:
-                    {
-                        assert( constraint->relation() == carl::Relation::GREATER );
-                        if( lcoeffNeg )
-                        {
-                            result = false;
-                            addSquares = false;
-                        }
-                        else
-                        {
-                            if( constraint->lhs().hasConstantTerm() )
-                            {
+                                foundNoInvalidConstraint = false;
                                 addSquares = false;
                             }
-                            toCombine.back().emplace_back();
-                            toCombine.back().back().push_back( *constraint );
+                            break;
+                        }
+                        case carl::Relation::NEQ:
+                        {
+                            addSquares = false;
+                            if( constraint.lhs().hasConstantTerm() )
+                            {
+                                constraintValid = true;
+                            }
+                            break;
+                        }
+                        case carl::Relation::LEQ:
+                        {
+                            if( lcoeffNeg )
+                            {
+                                addSquares = false;
+                                constraintValid = true;
+                            }
+                            else if( constraint.lhs().hasConstantTerm() )
+                            {
+                                addSquares = false;
+                                foundNoInvalidConstraint = false;
+                            }
+                            break;
+                        }
+                        case carl::Relation::LESS:
+                        {
+                            addSquares = false;
+                            if( lcoeffNeg )
+                            {
+                                if( constraint.lhs().hasConstantTerm() )
+                                    constraintValid = true;
+                            }
+                            else 
+                                foundNoInvalidConstraint = false;
+                            break;
+                        }
+                        case carl::Relation::GEQ:
+                        {
+                            if( !lcoeffNeg )
+                            {
+                                addSquares = false;
+                                constraintValid = true;
+                            }
+                            else if( constraint.lhs().hasConstantTerm() )
+                            {
+                                addSquares = false;
+                                foundNoInvalidConstraint = false;
+                            }
+                            break;
+                        }
+                        default:
+                        {
+                            assert( constraint.relation() == carl::Relation::GREATER );
+                            addSquares = false;
+                            if( lcoeffNeg )
+                                foundNoInvalidConstraint = false;
+                            else
+                            {
+                                if( constraint.lhs().hasConstantTerm() )
+                                    constraintValid = true;
+                            }
                         }
                     }
-                }
-                if( addSquares )
-                {
-                    toCombine.back().emplace_back();
-                    for( auto it = sosDec.begin(); it != sosDec.end(); ++it )
+                    assert( !(!foundNoInvalidConstraint && constraintValid) );
+                    assert( !(!foundNoInvalidConstraint && addSquares) );
+                    if( constraintValid || addSquares )
                     {
-                        toCombine.back().back().emplace_back( it->second, carl::Relation::EQ );
+                        cc[pos] = cc.back();
+                        cc.pop_back();
                     }
+                    else
+                        ++pos;
+                    if( addSquares )
+                    {
+                        for( auto it = sosDec.begin(); it != sosDec.end(); ++it )
+                        {
+                            cc.emplace_back( it->second, carl::Relation::EQ );
+                        }
+                    }   
                 }
                 else
-                {
-                    toCombine.pop_back();
-                }
+                    ++pos;
+            }
+            if( foundNoInvalidConstraint )
+                ++i;
+            else
+            {
+                cc = _toSimplify.back();
+                _toSimplify.pop_back();
             }
         }
-        if( !combine( toCombine, _result ) )
-            result = false;
-        simplify( _result );
-        return result;
+        return !_toSimplify.empty();
     }
 
     DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::ConstraintT& _constraint )

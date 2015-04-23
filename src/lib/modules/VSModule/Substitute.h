@@ -165,7 +165,6 @@ namespace vs
     DisjunctionOfConstraintConjunctions splitProducts( const smtrat::ConstraintT&, bool = false );
     
     bool splitSosDecompositions( DisjunctionOfConstraintConjunctions& );
-    bool splitSosDecompositions( const ConstraintVector&, DisjunctionOfConstraintConjunctions& );
     
     /**
      * For a given constraint f_1*...*f_n ~ 0 this method computes all combinations of constraints
