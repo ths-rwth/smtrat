@@ -28,7 +28,7 @@
 
 #include "FouMoModule.h"
 
-//#define DEBUG_FouMoModule
+#define DEBUG_FouMoModule
 
 namespace smtrat
 {
@@ -1290,18 +1290,21 @@ namespace smtrat
             auto iter_constr = mProc_Constraints.begin();
             while( iter_constr != mProc_Constraints.end() )
             {
+                addConstraintToInform( iter_constr->first);
                 addSubformulaToPassedFormula( iter_constr->first, iter_constr->second );
                 ++iter_constr;
             }
             auto iter_eq = mEqualities.begin();
             while( iter_eq != mEqualities.end() )
             {
+                addConstraintToInform( iter_eq->first);
                 addSubformulaToPassedFormula( iter_eq->first, iter_eq->second );
                 ++iter_eq;
             } 
             auto iter_diseq = mDisequalities.begin();
             while( iter_diseq != mDisequalities.end() )
             {
+                addConstraintToInform( iter_diseq->first);
                 addSubformulaToPassedFormula( iter_diseq->first, iter_diseq->second );
                 ++iter_diseq;
             }
