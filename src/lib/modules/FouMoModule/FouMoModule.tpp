@@ -66,7 +66,7 @@ namespace smtrat
         {
             return true;
         }
-        else if( _subformula->formula().constraint().relation() == carl::Relation::LEQ )
+        else if( _subformula->formula().constraint().relation() == carl::Relation::LEQ || _subformula->formula().constraint().relation() == carl::Relation::LESS )
         {
             // Apply the Fourier-Motzkin elimination steps for the subformula to be asserted
             #ifdef DEBUG_FouMoModule
@@ -385,7 +385,7 @@ namespace smtrat
         #ifdef DEBUG_FouMoModule
         cout << "Remove: " << _subformula->formula().constraint() << endl;
         #endif
-        if( _subformula->formula().constraint().relation() == carl::Relation::LEQ )
+        if( _subformula->formula().constraint().relation() == carl::Relation::LEQ || _subformula->formula().constraint().relation() == carl::Relation::LESS )
         {
             /* Iterate through the processed constraints and delete all corresponding sets 
              * in the latter containing the element that has to be deleted. Delete a processed 
@@ -636,6 +636,9 @@ namespace smtrat
             else
             {
                 Module::getBackendsModel();
+                std::map< carl::Variable, Rational > backends_solution;
+                bool all_rational;
+                all_rational = getRationalAssignmentsFromModel( mModel, backends_solution );
                 // Now the obtained model of the backends is either complete e.g. 
                 // for the case that this module was not able to find an integer solution
                 // or it is not since some variables might have been eliminated before
@@ -645,7 +648,7 @@ namespace smtrat
                 auto iter_constr = rReceivedFormula().begin();
                 while( iter_constr != rReceivedFormula().end() )
                 {
-                    if( !iter_constr->formula().constraint().satisfiedBy( mVarAss ) || !( iter_constr->formula().constraint().lhs().substitute( mVarAss ) ).isConstant() )
+                    if( !iter_constr->formula().constraint().satisfiedBy( backends_solution ) || !( iter_constr->formula().constraint().lhs().substitute( backends_solution ) ).isConstant() )
                     {
                         #ifdef DEBUG_FouMoModule
                         cout << "The obtained solution is not correct!" << endl;
@@ -661,7 +664,18 @@ namespace smtrat
                     bool all_rational;
                     all_rational = getRationalAssignmentsFromModel( mModel, temp_solution );
                     bool new_solution_correct;
-                    //new_solution_correct = construct_solution( temp_solution );                   
+                    //new_solution_correct = construct_solution( temp_solution );
+                    auto iter_sol = mVarAss.begin();
+                    while( iter_sol != mVarAss.end() )
+                    {
+                        auto iter_help = temp_solution.find( iter_sol->first );
+                        if( iter_help == temp_solution.end() )
+                        {
+                            ModelValue assignment = vs::SqrtEx( Poly( iter_sol->second ) );
+                            mModel[ iter_sol->first ] = assignment;
+                        }
+                        ++iter_sol;
+                    }
                 }
             }
         }
@@ -692,7 +706,10 @@ namespace smtrat
             if( var_corr_constr.empty() ) 
             {
                 if( Settings::Nonlinear_Mode )
-                {    
+                {
+                    #ifdef DEBUG_FouMoModule
+                    cout << "Run non-linear backends!" << endl;
+                    #endif
                     Answer ans = call_backends( _full );
                     if( ans == False )
                     {
@@ -911,7 +928,7 @@ namespace smtrat
                             {
                                 std::vector<SingleFormulaOrigins> upper;
                                 std::vector<SingleFormulaOrigins> lower;
-                                if( ( (Rational)iter_poly->coeff() > 0 && iter_constr->first.constraint().relation() == carl::Relation::LEQ ) )
+                                if( (Rational)iter_poly->coeff() > 0 )
                                 {
                                     SingleFormulaOrigins upper_help;
                                     upper_help.first = iter_constr->first;
@@ -932,7 +949,7 @@ namespace smtrat
                                 SingleFormulaOrigins help;
                                 help.first = iter_constr->first;
                                 help.second = iter_constr->second;
-                                if( ( (Rational)iter_poly->coeff() > 0 && iter_constr->first.constraint().relation() == carl::Relation::LEQ ) ) 
+                                if( (Rational)iter_poly->coeff() > 0 ) 
                                 {
                                     iter_help->second.first.push_back( std::move( help ) );
                                 }
@@ -1014,13 +1031,19 @@ namespace smtrat
         }
         Poly upper_poly = upper_constr.lhs().substitute( corr_var, ZERO_POLYNOMIAL );
         Poly lower_poly = lower_constr.lhs().substitute( corr_var, ZERO_POLYNOMIAL );
-        assert( lower_constr.relation() == carl::Relation::LEQ );
-        combined_formula = FormulaT( ConstraintT( Poly( coeff_upper*lower_poly ) + Poly( (Rational)(-1*coeff_lower)*upper_poly ), carl::Relation::LEQ ) );
+        if( upper_constr.relation() == carl::Relation::LEQ && lower_constr.relation() == carl::Relation::LEQ )
+        {
+            combined_formula = FormulaT( ConstraintT( Poly( coeff_upper*lower_poly ) + Poly( (Rational)(-1*coeff_lower)*upper_poly ), carl::Relation::LEQ ) );
+        } 
+        else
+        {
+            combined_formula = FormulaT( ConstraintT( Poly( coeff_upper*lower_poly ) + Poly( (Rational)(-1*coeff_lower)*upper_poly ), carl::Relation::LESS ) );
+        }
         return combined_formula;        
     }
     
     template<class Settings>
-    bool FouMoModule<Settings>::construct_solution( const std::map< carl::Variable, Rational > temp_solution )
+    bool FouMoModule<Settings>::construct_solution( std::map< carl::Variable, Rational > temp_solution )
     {
         if( mElim_Order.empty() )
         {
@@ -1309,6 +1332,7 @@ namespace smtrat
                 ++iter_diseq;
             }
         }
+        
         Answer ans = runBackends( _full );
         if( ans == False )
         {
@@ -1359,7 +1383,7 @@ namespace smtrat
         {
             std::shared_ptr<std::vector<FormulaT>> origins( new std::vector<FormulaT>() );
             origins->push_back( iter_constr->formula() );
-            if( iter_constr->formula().constraint().relation() == carl::Relation::LEQ )
+            if( iter_constr->formula().constraint().relation() == carl::Relation::LEQ || iter_constr->formula().constraint().relation() == carl::Relation::LESS )
             {
                 mProc_Constraints.emplace( iter_constr->formula(), origins );                                
             }
