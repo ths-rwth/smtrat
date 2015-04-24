@@ -28,7 +28,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <sys/resource.h>
 #include "ExitCodes.h"
 #include "../lib/config.h"
 
@@ -36,6 +35,10 @@
 #include CMakeStrategyHeader
 #include "RuntimeSettingsManager.h"
 #include "../lib/modules/AddModules.h"
+
+#ifndef __WIN
+#include <sys/resource.h>
+#endif
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "../lib/utilities/stats/CollectStatistics.h"

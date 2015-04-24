@@ -7,12 +7,17 @@
 #include <csignal>
 #include <fstream>
 #include <iostream>
-#include <sys/resource.h>
 
 #include "Producer.h"
 #include "Parser.h"
 #include "Settings.h"
 #include "Consumer.h"
+
+#include "../cli/config.h"
+
+#ifndef __WIN
+#include <sys/resource.h>
+#endif
 
 namespace bpo = boost::program_options;
 typedef std::chrono::system_clock Clock;
