@@ -203,7 +203,6 @@ namespace smtrat
             auto iter_formula = mProc_Constraints.begin();
             while( iter_formula != mProc_Constraints.end() )
             {
-                //size_t delete_count = 0;
                 auto iter_origins = iter_formula->second->begin();
                 while( iter_origins !=  iter_formula->second->end() )
                 {                    
@@ -211,14 +210,13 @@ namespace smtrat
                     if( contains || *iter_origins == _subformula->formula() )
                     {
                         iter_origins = iter_formula->second->erase( iter_origins );
-                        //++delete_count;
                     }
                     else
                     {
                         ++iter_origins;
                     }    
                 }
-                if( iter_formula->second->empty() )  //iter_formula->second->size() == delete_count )
+                if( iter_formula->second->empty() )
                 {
                     auto to_delete = iter_formula;
                     ++iter_formula;
@@ -241,7 +239,6 @@ namespace smtrat
                 auto iter_formula = iter_steps->begin();
                 while( iter_formula != iter_steps->end() )
                 {
-                    //size_t delete_count = 0;
                     auto iter_origins = iter_formula->second->begin();
                     while( iter_origins !=  iter_formula->second->end() )
                     {                    
@@ -249,14 +246,13 @@ namespace smtrat
                         if( contains || *iter_origins == _subformula->formula() )
                         {
                             iter_origins = iter_formula->second->erase( iter_origins );
-                            //++delete_count;
                         }
                         else
                         {
                             ++iter_origins;
                         }    
                     }
-                    if( iter_formula->second->empty() )  //iter_formula->second->size() == delete_count )
+                    if( iter_formula->second->empty() )
                     {
                         auto to_delete = iter_formula;
                         ++iter_formula;
@@ -292,7 +288,6 @@ namespace smtrat
             auto iter_substitutions = mVariables.begin();
             while( iter_substitutions != mVariables.end() )
             {
-                //size_t delete_count = 0;
                 auto iter_origins = iter_substitutions->second->begin();
                 while( iter_origins !=  iter_substitutions->second->end() )
                 {
@@ -300,20 +295,19 @@ namespace smtrat
                     if( contains || *iter_origins == _subformula->formula() )
                     {   
                         iter_origins = iter_substitutions->second->erase( iter_origins );
-                        //++delete_count;
                     }
                     else
                     {
                         ++iter_origins;
                     }    
                 }
-                if( iter_substitutions->second->empty() ) //iter_substitutions->second->size() == delete_count )
+                if( iter_substitutions->second->empty() )
                 {
                     auto var_to_be_deleted = iter_substitutions->first; 
                     auto to_delete = iter_substitutions;
                     ++iter_substitutions;
                     mVariables.erase( to_delete );
-                    auto iter_help = mSubstitutions.begin();//find( iter_substitutions_help->first );
+                    auto iter_help = mSubstitutions.begin();
                     while( iter_help != mSubstitutions.end() )
                     {
                         if( iter_help->first == var_to_be_deleted )
