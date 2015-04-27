@@ -518,6 +518,7 @@ namespace smtrat
             vardata[leftCase] = mkVarData( CRef_Undef, 0 );
             activity[leftCase] = 0.0;
             seen[leftCase] = 0;
+            decision[leftCase] = true;
             if( Settings::apply_valid_substitutions )
             {
                 mVarClausesMap[(size_t)leftCase] = std::move( std::set<CRef>() );
@@ -546,6 +547,7 @@ namespace smtrat
             vardata[rightCase] = mkVarData( CRef_Undef, 0 );
             activity[rightCase] = 0.0;
             seen[rightCase] = 0;
+            decision[rightCase] = true;
             if( Settings::apply_valid_substitutions )
             {
                 mVarClausesMap[(size_t)rightCase] = std::move( std::set<CRef>() );
@@ -557,9 +559,9 @@ namespace smtrat
         clauseLits.push( mkLit( rightCase, false ) );
         mSplittingVars.push_back( rightCase );
         if( _splitting.mPreferLeftCase )
-            mNewSplittingVars.push( leftCase );
+            mNewSplittingVars.push_back( leftCase );
         else
-            mNewSplittingVars.push( rightCase );
+            mNewSplittingVars.push_back( rightCase );
         #ifdef DEBUG_ADD_SPLITTING
         std::cout << "add the clause: ";
         printClause( clauseLits );
@@ -1757,13 +1759,15 @@ SetWatches:
         Var next = var_Undef;
         while( !mNewSplittingVars.empty() )
         {
-            if( value( mNewSplittingVars.top() ) == l_Undef )
+            if( value( mNewSplittingVars.back() ) == l_Undef )
             {
-                next = mNewSplittingVars.top();
+                next = mNewSplittingVars.back();
+                if( !decision[next] )
+                    std::cout << next << std::endl;
                 assert( decision[next] );
                 return next;
             }
-            mNewSplittingVars.pop();
+            mNewSplittingVars.pop_back();
         }
         return next;
     }
@@ -1784,7 +1788,7 @@ SetWatches:
         next = pickSplittingVar();
         if( next != var_Undef )
         {
-            mNewSplittingVars.pop();
+            mNewSplittingVars.pop_back();
         }
         else
         {
@@ -2149,39 +2153,35 @@ NextClause:
     template<class Settings>
     void SATModule<Settings>::removeAssignedSplittingVars()
     {
-//        std::cout << __func__ << std::endl;
-//        printDecisions();
-//        std::cout << "qhead = " << qhead << std::endl;
-//        std::cout << "trail_lim.size() = " << trail_lim.size() << std::endl;
         assert( decisionLevel() == 0 );
-//        std::cout << "mSplittingVars:" << std::endl;
-//        for( const auto& iter : mSplittingVars )
-//        {
-//            std::cout << "   " << iter << " assigned to " << (assigns[iter] == l_True ? "true" :(assigns[iter] == l_False ? "false" : "undef")) << std::endl;
-//        }
-//        std::cout << "start removing:" << std::endl;
         for( size_t i = 0; i < mSplittingVars.size(); )
         {
-//            std::cout << "   " << mSplittingVars[i] << " assigned to " << (assigns[mSplittingVars[i]] == l_True ? "true" :(assigns[mSplittingVars[i]] == l_False ? "false" : "undef")) << std::endl;
             if( assigns[mSplittingVars[i]] != l_Undef )
             {
-//                std::cout << "test" << std::endl;
                 assigns[mSplittingVars[i]] = l_Undef;
+                decision[mSplittingVars[i]] = false;
                 mOldSplittingVars.push(mSplittingVars[i]);
                 mSplittingVars[i] = mSplittingVars.back();
                 mSplittingVars.pop_back();
+                for( auto iter = mNewSplittingVars.begin(); iter != mNewSplittingVars.end(); ++iter )
+                {
+                    if( *iter == mSplittingVars[i] )
+                    {
+                        // we want to keep the order and do a rather expensive erase, but this vector
+                        // is not going to be very big and this method is called only at decision level 0
+                        mNewSplittingVars.erase( iter ); 
+                        break;
+                    }
+                }
             }
             else
             {
                 ++i;
             }
         }
-//        if( trail_lim.size() == 1 ) std::cout << "trail_lim[0] = " << trail_lim[0] << std::endl;
         int i, j;
         for( i = j = 0; i < trail.size(); ++i )
         {
-//            std::cout << "trail[i] = " << (sign( trail[i] ) ? "-" : "") << var( trail[i] ) << std::endl;
-//            std::cout << "trail[j] = " << (sign( trail[j] ) ? "-" : "") << var( trail[j] ) << std::endl;
             if( assigns[var(trail[i])] != l_Undef )
             {
                 trail[j++] = trail[i];
@@ -2189,10 +2189,6 @@ NextClause:
         }
         trail.shrink( i - j );
         qhead = trail.size();
-//        printDecisions();
-//        std::cout << "qhead = " << qhead << std::endl;
-//        std::cout << "trail_lim.size() = " << trail_lim.size() << std::endl;
-//            trail_lim.shrink( trail_lim.size() - level );
     }
     
     template<class Settings>

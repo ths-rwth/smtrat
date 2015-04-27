@@ -275,7 +275,7 @@ namespace vs
         return result;
     }
 
-    bool splitSosDecompositions( DisjunctionOfConstraintConjunctions& _toSimplify )
+    void splitSosDecompositions( DisjunctionOfConstraintConjunctions& _toSimplify )
     {
         for( size_t i = 0; i < _toSimplify.size(); )
         {
@@ -397,7 +397,6 @@ namespace vs
                 _toSimplify.pop_back();
             }
         }
-        return !_toSimplify.empty();
     }
 
     DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::ConstraintT& _constraint )
@@ -602,8 +601,10 @@ namespace vs
         if( !splitProducts( _result, true ) ) 
             result = false;
         #endif
-        if( result && !splitSosDecompositions( _result ) )
-            result = false;
+        if( result )
+        {
+            splitSosDecompositions( _result );
+        }
         #ifdef VS_DEBUG_SUBSTITUTION
         print( _result );
         #endif
