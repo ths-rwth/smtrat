@@ -34,7 +34,6 @@
 
 #include "../modules/ModuleType.h"
 #include "../Common.h"
-#include <atomic>
 
 namespace smtrat
 {
@@ -42,9 +41,6 @@ namespace smtrat
     class Manager;
     class Module;
     class ModuleInput;
-
-    typedef std::vector< std::atomic_bool* > Conditionals;
-
     
     /**
      * An abstract base class for Module factories

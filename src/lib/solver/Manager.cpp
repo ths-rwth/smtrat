@@ -44,8 +44,12 @@ namespace smtrat
     // Constructor.
     
     Manager::Manager():
-        mPrimaryBackendFoundAnswer( std::vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
-        mpPassedFormula( new ModuleInput() ),
+#ifdef __VS
+        mPrimaryBackendFoundAnswer(smtrat::Conditionals(1, new std::atomic<bool>(false))),
+#else
+        mPrimaryBackendFoundAnswer(smtrat::Conditionals(1, new std::atomic_bool(false))),
+#endif
+        mpPassedFormula(new ModuleInput()),
         mBacktrackPoints(),
         mGeneratedModules(),
         mBackendsOfModules(),
@@ -96,7 +100,11 @@ namespace smtrat
         delete mpModuleFactories;
         while( !mPrimaryBackendFoundAnswer.empty() )
         {
+#ifdef __VS
+            std::atomic<bool>* toDelete = mPrimaryBackendFoundAnswer.back();
+#else
             std::atomic_bool* toDelete = mPrimaryBackendFoundAnswer.back();
+#endif
             mPrimaryBackendFoundAnswer.pop_back();
             delete toDelete;
         }
@@ -166,7 +174,11 @@ namespace smtrat
         _out << ")" << endl;
     }
     
+#ifdef __VS
+    vector<Module*> Manager::getBackends( Module* _requiredBy, atomic<bool>* _foundAnswer )
+#else
     vector<Module*> Manager::getBackends( Module* _requiredBy, atomic_bool* _foundAnswer )
+#endif
     {
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         std::lock_guard<std::mutex> lock( mBackendsMutex );
@@ -197,7 +209,7 @@ namespace smtrat
             {
                 auto backendFactory = mpModuleFactories->find( iter->second );
                 assert( backendFactory != mpModuleFactories->end() );
-                vector< atomic_bool* > foundAnswers = vector< atomic_bool* >( _requiredBy->answerFound() );
+                smtrat::Conditionals foundAnswers = smtrat::Conditionals( _requiredBy->answerFound() );
                 foundAnswers.push_back( _foundAnswer );
                 Module* pBackend = backendFactory->second->create( iter->second, _requiredBy->pPassedFormula(), foundAnswers, this );
                 mGeneratedModules.push_back( pBackend );

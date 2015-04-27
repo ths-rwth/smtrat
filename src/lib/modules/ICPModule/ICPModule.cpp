@@ -75,7 +75,11 @@ namespace smtrat
         mHistoryRoot(new icp::HistoryNode(mIntervals)),
         mHistoryActual(nullptr),
         mValidationFormula(new ModuleInput()),
-        mLRAFoundAnswer( vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
+#ifdef __VS
+        mLRAFoundAnswer(smtrat::Conditionals(1, new std::atomic<bool>(false))),
+#else
+        mLRAFoundAnswer(smtrat::Conditionals(1, new std::atomic_bool(false))),
+#endif
         mLraRuntimeSettings(new RuntimeSettings),
         mLRA(MT_LRAModule, mValidationFormula, mLraRuntimeSettings, mLRAFoundAnswer),
         mCenterConstraints(),
@@ -100,7 +104,11 @@ namespace smtrat
     {
         while( !mLRAFoundAnswer.empty() )
         {
+#ifdef __VS
+            std::atomic<bool>* toDel = mLRAFoundAnswer.back();
+#else
             std::atomic_bool* toDel = mLRAFoundAnswer.back();
+#endif
             mLRAFoundAnswer.pop_back();
             delete toDel;
         }

@@ -76,7 +76,11 @@ namespace smtrat
         mpManager( _manager ),
         mModel(),
         mSolverState( Unknown ),
-        mBackendsFoundAnswer( new std::atomic_bool( false ) ),
+#ifdef __VS
+        mBackendsFoundAnswer(new std::atomic<bool>(false)),
+#else
+        mBackendsFoundAnswer(new std::atomic_bool(false)),
+#endif
         mFoundAnswer( _foundAnswer ),
         mUsedBackends(),
         mAllBackends(),

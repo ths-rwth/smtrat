@@ -58,9 +58,6 @@
 namespace smtrat
 {
     class Manager;
-
-    /// A vector of atomic bool pointers.
-    typedef std::vector<std::atomic_bool*> Conditionals;
     
     /**
      * Stores all necessary information of an branch, which can be used to detect probable infinite loop of branchings.
@@ -172,7 +169,11 @@ namespace smtrat
             /// States whether the received formula is known to be satisfiable or unsatisfiable otherwise it is set to unknown.
             Answer mSolverState;
             /// This flag is passed to any backend and if it determines an answer to a prior check call, this flag is fired.
+#ifdef __VS
+            std::atomic<bool>* mBackendsFoundAnswer;
+#else
             std::atomic_bool* mBackendsFoundAnswer;
+#endif
             /// Vector of Booleans: If any of them is true, we have to terminate a running check procedure.
             Conditionals mFoundAnswer;
             /// The backends of this module which are currently used (conditions to use this module are fulfilled for the passed formula).
@@ -479,7 +480,7 @@ namespace smtrat
             /**
              * @return A vector of Booleans: If any of them is true, we have to terminate a running check procedure.
              */
-            const std::vector< std::atomic_bool* >& answerFound() const
+            const smtrat::Conditionals& answerFound() const
             {
                 return mFoundAnswer;
             }

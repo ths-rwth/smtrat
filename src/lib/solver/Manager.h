@@ -55,7 +55,7 @@ namespace smtrat
         private:
 
             /// a vector of flags, which indicate that an answer has been found of an antecessor module of the primary module
-            std::vector< std::atomic_bool* > mPrimaryBackendFoundAnswer;
+            smtrat::Conditionals mPrimaryBackendFoundAnswer;
             /// the constraints so far passed to the primary backend
             ModuleInput* mpPassedFormula;
             /// The propositions of the passed formula.
@@ -472,7 +472,11 @@ namespace smtrat
              * @return  A vector of modules, which the module defined by _requiredBy calls in parallel to achieve
              *           an answer to the given instance.
              */
+#ifdef __VS
+            std::vector<Module*> getBackends( Module*, std::atomic<bool>* );
+#else
             std::vector<Module*> getBackends( Module*, std::atomic_bool* );
+#endif
             
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
             /**

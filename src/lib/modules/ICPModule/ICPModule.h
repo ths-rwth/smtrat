@@ -117,7 +117,7 @@ namespace smtrat
             icp::HistoryNode* mHistoryActual; // Actual node of the state-tree
             
             ModuleInput* mValidationFormula; // ReceivedFormula of the internal LRA Module
-            std::vector<std::atomic_bool*> mLRAFoundAnswer;
+            smtrat::Conditionals mLRAFoundAnswer;
             RuntimeSettings* mLraRuntimeSettings;
             LRAModule<LRASettings1> mLRA; // internal LRA module
             

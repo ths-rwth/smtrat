@@ -32,6 +32,7 @@
 #include <string.h>
 #include <unordered_set>
 #include <unordered_map>
+#include <atomic>
 #include "logging.h"
 #include "carl/core/MultivariatePolynomial.h"
 #include "carl/core/FactorizedPolynomial.h"
@@ -108,6 +109,12 @@ namespace smtrat
     using Contractor = carl::Contraction<Operator, Poly>;
     
     typedef carl::Factors<Poly> Factorization;
+
+#ifdef __VS
+    typedef std::vector<std::atomic<bool>*> Conditionals;
+#else
+    typedef std::vector<std::atomic_bool*> Conditionals;
+#endif
     
     // Constants.
     ///@todo move static variables to own cpp
