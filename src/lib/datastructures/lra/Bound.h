@@ -115,7 +115,11 @@ namespace smtrat
                  * @param _boundInfo
                  * @param _deduced
                  */
-                Bound( const Value<T1>* const _limit, Variable<T1, T2>* const _var, Type _type, const FormulaT& _constraint, Bound<T1, T2>::Info* _boundInfo = NULL, bool _deduced = false );
+#ifdef __VS
+                Bound(const Value<T1>* const _limit, Variable<T1, T2>* const _var, Type _type, const FormulaT& _constraint, Info* _boundInfo = NULL, bool _deduced = false);
+#else
+                Bound(const Value<T1>* const _limit, Variable<T1, T2>* const _var, Type _type, const FormulaT& _constraint, Bound<T1, T2>::Info* _boundInfo = NULL, bool _deduced = false);
+#endif
                 
                 /**
                  * 

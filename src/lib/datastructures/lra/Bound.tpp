@@ -34,7 +34,11 @@ namespace smtrat
     namespace lra
     {
         template<typename T1, typename T2>
-        Bound<T1, T2>::Bound( const Value<T1>* const _limit, Variable<T1, T2>* const _var, Type _type, const FormulaT& _constraint, Bound<T1, T2>::Info* _boundInfo, bool _deduced ):
+#ifdef __VS
+            Bound<T1, T2>::Bound(const Value<T1>* const _limit, Variable<T1, T2>* const _var, Type _type, const FormulaT& _constraint, Info* _boundInfo, bool _deduced) :
+#else
+            Bound<T1, T2>::Bound(const Value<T1>* const _limit, Variable<T1, T2>* const _var, Type _type, const FormulaT& _constraint, Bound<T1, T2>::Info* _boundInfo, bool _deduced) :
+#endif
             mDeduced( _deduced ),
             mType( _type ),
             mLimit( _limit ),
