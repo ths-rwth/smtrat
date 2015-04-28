@@ -92,6 +92,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	set(CMAKE_CXX_DEBUG_FLAGS "${CMAKE_CXX_DEBUG_FLAGS} -O1")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     message("-- Using Visual Studio C++")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
     set(CMAKE_CXX_RELEASE_FLAGS "${CMAKE_CXX_RELEASE_FLAGS} /O2")
     set(CMAKE_CXX_DEBUG_FLAGS "${CMAKE_CXX_DEBUG_FLAGS} /MTd")
 else()
@@ -156,7 +157,9 @@ else()
 	set( libraries ${libraries} lib_carl)
 endif()
 
-set( libraries ${libraries} boost_system)
+if (NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+	set( libraries ${libraries} boost_system)
+endif()
 
 # # # # # # # # # # # # # # # # # # # # # #
 # C.2. required libraries
