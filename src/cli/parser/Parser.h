@@ -46,8 +46,13 @@ namespace spirit = boost::spirit;
 namespace qi = boost::spirit::qi;
 namespace px = boost::phoenix;
 
+#ifdef __VS
+template <typename T>
+using rule = qi::rule<Iterator, T(), Skipper>;
+#else
 template <typename... T>
 using rule = qi::rule<Iterator, T()..., Skipper>;
+#endif
 
 class SMTLIBParser
 {
@@ -79,9 +84,13 @@ public:
 	// Custom functions
 	qi::rule<Iterator, Skipper, qi::locals<std::string, std::vector<carl::Variable>>> fun_definition;
 
-	// Commands	
-	rule<> cmd;
-	
+	// Commands
+#ifdef __VS
+	rule<Iterator> cmd;
+#else
+    rule<> cmd;
+#endif
+
 	// Formula
 	FormulaParser formula;
 
@@ -91,8 +100,12 @@ public:
 	PolynomialParser polynomial;
 	FunctionArgumentParser fun_argument;
 	// Main rule
+#ifdef __VS
+    rule<Iterator> main;
+#else
 	rule<> main;
-	
+#endif
+
 public:
 	
 	SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool debug = false);
