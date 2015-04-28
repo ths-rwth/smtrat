@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <future>
+
 #ifdef USE_BOOST_REGEX
 #include <boost/regex.hpp>
 using boost::regex;
@@ -17,6 +19,7 @@ using std::regex_match;
 
 #include "BackendData.h"
 #include "../ssh/Node.h"
+#include "../newssh/SSHScheduler.h"
 
 namespace benchmax {
 
@@ -52,10 +55,39 @@ benchmax::Node getNode(const string& _nodeAsString)
 }
 
 class SSHBackend: public Backend {
+private:
+	std::queue<std::future<bool>> jobs;
+	ssh::SSHScheduler* scheduler;
+	
+protected:
+	virtual void startTool(const Tool& tool) {
+		scheduler->uploadTool(tool);
+	}
+	virtual void execute(const Tool& tool, const fs::path& file) {
+		BENCHMAX_LOG_WARN("benchmax", "Executing...");
+#if 0
+		jobs.push(std::async(std::launch::async, &ssh::SSHScheduler::executeJob, scheduler, tool, file));
+#else
+		scheduler->executeJob(tool, file);
+#endif
+	}
+public:
+	SSHBackend(): Backend() {
+		scheduler = new ssh::SSHScheduler();
+	}
+	~SSHBackend() {
+		while (!jobs.empty()) {
+			jobs.front().wait();
+			jobs.pop();
+		}
+	}
+};
+
+class OldSSHBackend: public Backend {
 	std::vector<benchmax::Node> nodes;
 	const unsigned NUMBER_OF_EXAMPLES_TO_SOLVE = 6;
 public:
-	SSHBackend(): Backend() {
+	OldSSHBackend(): Backend() {
 		int rc = libssh2_init(0);
 		if (rc != 0) {
 			BENCHMAX_LOG_FATAL("benchmax", "Failed to initialize libssh2 (return code " << rc << ")");
@@ -63,14 +95,14 @@ public:
 		}
 		
 		// add the remote nodes
-		for (const auto& node: Settings::nodes) {
+		for (const auto& node: Settings::ssh_nodes) {
 			nodes.push_back(getNode(node));
 		}
 	}
-	~SSHBackend() {
+	~OldSSHBackend() {
 		libssh2_exit();
 	}
-	void run(const std::vector<Tool*>& tools, const std::vector<BenchmarkSet>& benchmarks) {
+	void run(const std::vector<Tool*>&, const std::vector<BenchmarkSet>& benchmarks) {
 		int nrOfCalls = 0;
 		auto currentBenchmark = benchmarks.begin();
 		std::vector<benchmax::Node>::iterator currentNode = nodes.begin();
