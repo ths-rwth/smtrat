@@ -6,8 +6,10 @@
 #pragma once
 
 #include <boost/variant.hpp>
-#include <cxxabi.h>
 #include <map>
+#ifndef __VS
+#include <cxxabi.h>
+#endif
 
 namespace smtrat {
 
@@ -52,10 +54,15 @@ private:
      * @return Demangled type string.
      */
 	std::string demangle(const char* t) const {
+#ifdef __VS
+        //TODO find windows specific solution
+        std::string type(t);
+#else
 		int status;
 		char* res = abi::__cxa_demangle(t, 0, 0, &status);
 		std::string type(res);
 		std::free(res);
+#endif
 		return type;
 	}
 public:
