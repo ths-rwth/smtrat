@@ -12,9 +12,9 @@ add_executable( benchmax benchmax.cpp BenchmarkSet.h BenchmarkSet.cpp Stats.cpp
 include_directories(${carl_INCLUDE_DIR})
 
 if(${STATICLIB_SWITCH} STREQUAL "ON")
-	target_link_libraries( benchmax mysqlpp ssh2 ssl crypto dl z pthread boost_program_options boost_filesystem boost_system boost_chrono smtlibParser ${libraries} )
+	target_link_libraries( benchmax mysqlpp ssh ssh_threads ssh2 ssl crypto dl z pthread boost_program_options boost_filesystem boost_system boost_chrono smtlibParser ${libraries} )
 else()
-	target_link_libraries( benchmax mysqlpp ssh2 pthread boost_program_options boost_filesystem  boost_system boost_chrono smtlibParser ${libraries} )
+	target_link_libraries( benchmax mysqlpp ssh ssh_threads ssh2 pthread boost_program_options boost_filesystem  boost_system boost_chrono smtlibParser ${libraries} )
 endif()
 
 # stripping
