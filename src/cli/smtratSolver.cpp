@@ -150,7 +150,7 @@ public:
  */
 unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* solver, const smtrat::RuntimeSettingsManager& settingsManager) {
 
-#ifdef __VS
+#ifdef __WIN
 //TODO: do not use magical number
 #pragma comment(linker, "/STACK:10000000")
 #else

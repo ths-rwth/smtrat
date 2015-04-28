@@ -33,11 +33,16 @@ void handle_SIGINT(int) {
 }
 
 int main(int argc, char* argv[]) {
+#ifdef __WIN
+    //TODO: do not use magical number
+#pragma comment(linker, "/STACK:10000000")
+#else
 	// Increase stack size to the maximum.
 	rlimit rl;
 	getrlimit(RLIMIT_STACK, &rl);
 	rl.rlim_cur = rl.rlim_max;
 	setrlimit(RLIMIT_STACK, &rl);
+#endif
 	std::signal(SIGINT, &handle_SIGINT);
 	auto start = Clock::now();
 	
