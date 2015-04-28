@@ -12,6 +12,7 @@
 #include <sstream>
 
 #include "operators.h"
+#include "../cli/config.h"
 
 namespace delta {
 
@@ -32,6 +33,11 @@ class Checker {
 	 * @return Exit code.
 	 */
 	int execute(const std::string& filename) const {
+#ifdef __WIN
+        //TODO do something!
+        assert(false);
+        return -1;
+#else
 		std::stringstream ss;
 		ss << "sh -c \"";
 		ss << "ulimit -t " << timeout << ";";
@@ -39,6 +45,7 @@ class Checker {
 		ss << "\" 2> /dev/null";
 		int code = system(ss.str().c_str());
 		return WEXITSTATUS(code);
+#endif
 	}
 public:
 	/**

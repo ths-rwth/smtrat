@@ -9,3 +9,7 @@
 #ifdef _MSC_VER
 #define __VS
 #endif
+
+#ifdef _WIN32
+#define __WIN
+#endif
