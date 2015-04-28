@@ -150,9 +150,11 @@ public:
  */
 unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* solver, const smtrat::RuntimeSettingsManager& settingsManager) {
 
-#ifndef __VS
-    //TODO: solution for Windows
-	// Increase stack size to the maximum.
+#ifdef __VS
+//TODO: do not use magical number
+#pragma comment(linker, "/STACK:10000000")
+#else
+    // Increase stack size to the maximum.
 	rlimit rl;
 	getrlimit(RLIMIT_STACK, &rl);
 	rl.rlim_cur = rl.rlim_max;
