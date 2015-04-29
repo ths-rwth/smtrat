@@ -31,13 +31,17 @@
 #include "../../solver/Module.h"
 #include "BVStatistics.h"
 #include "BVSettings.h"
+#include "BVDirectEncoder.h"
+#include "carl/formula/bitvector/BVConstraint.h"
+#include "carl/formula/bitvector/BVConstraintPool.h"
+
 namespace smtrat
 {
     template<typename Settings>
     class BVModule : public Module
     {
         private:
-            // Members.
+            BVDirectEncoder mEncoder;
 
         public:
             BVModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );

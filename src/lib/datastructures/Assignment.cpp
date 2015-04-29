@@ -165,6 +165,11 @@ namespace smtrat
             {
                 return _formula.constraint().satisfiedBy( _assignment );
             }
+            case carl::FormulaType::BITVECTOR:
+            {
+                ///@todo do something here
+                return 2;
+            }
             case carl::FormulaType::NOT:
             {
                 switch( satisfies( _model, _assignment, _formula.subformula() ) )

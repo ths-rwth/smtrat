@@ -36,7 +36,7 @@ namespace smtrat
 
     template<class Settings>
     BVModule<Settings>::BVModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-        Module( _type, _formula, _conditionals, _manager ) 
+        Module( _type, _formula, _conditionals, _manager )
     {}
 
     /**
@@ -75,20 +75,40 @@ namespace smtrat
     template<class Settings>
     void BVModule<Settings>::updateModel() const
     {
-        mModel.clear();
-        if( solverState() == True )
+        clearModel();
+        if(solverState() == True)
         {
-            // Your code.
+            getBackendsModel();
         }
     }
 
     template<class Settings>
     Answer BVModule<Settings>::checkCore( bool _full )
     {
-        for (const FormulaWithOrigins& fwo: rReceivedFormula()) {
-            const FormulaT& f = fwo.formula();
+        auto receivedSubformula = firstUncheckedReceivedSubformula();
+        while(receivedSubformula != rReceivedFormula().end())
+        {
+            const FormulaWithOrigins& fwo = *receivedSubformula;
+            const FormulaT& formula = fwo.formula();
+
+            std::cerr << "[BVModule] Encoding formula:" << std::endl << " -(IN ): " << formula << std::endl;
+
+            const FormulasT& formulasToPass = mEncoder.encode(formula);
+
+            for(const FormulaT formulaToPass : formulasToPass)
+            {
+                std::cerr << " -(OUT): " << formulaToPass << std::endl;
+                addSubformulaToPassedFormula(formulaToPass, formula);
+            }
+            ++receivedSubformula;
         }
-        // Your code.
-        return Unknown; // This should be adapted according to your implementation.
+
+        Answer backendAnswer = runBackends(_full);
+        if(backendAnswer == False)
+        {
+            getInfeasibleSubsets();
+        }
+
+        return backendAnswer;
     }
 }
