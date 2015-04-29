@@ -164,9 +164,6 @@ int main(int argc, char** argv)
 		return 0;
 	}
 	
-	benchmax::Stats* _stats = new Stats(Settings::outputDir + Settings::StatsXMLFile,
-					   (!Settings::nodes.empty() ? Stats::STATS_COLLECTION : Stats::BENCHMARK_RESULT));
-	
 	std::vector<Tool*> tools;
 	loadTools(tools);
 	std::vector<benchmax::BenchmarkSet> benchmarks;
@@ -190,11 +187,6 @@ int main(int argc, char** argv)
 		// libssh is needed.
 		benchmax::SSHBackend backend;
 		backend.run(tools, benchmarks);
-		
-		_stats->createStatsCompose(Settings::outputDir + "statsCompose.xsl");
-		Stats::callComposeProcessor();
-		// Necessary output message (DO NOT REMOVE IT)
-		std::cout << Settings::ExitMessage << std::endl;
 	} else {
 		BENCHMAX_LOG_ERROR("benchmax", "Invalid backend \"" << Settings::backend << "\".");
 	}
