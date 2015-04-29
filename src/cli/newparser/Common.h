@@ -30,6 +30,13 @@
 
 #define PARSER_BITVECTOR
 
+#define EXIT_ON_ERROR
+#ifdef EXIT_ON_ERROR
+#define HANDLE_ERROR exit(123);
+#else
+#define HANDLE_ERROR
+#endif
+
 namespace smtrat {
 namespace parser {
 	namespace spirit = boost::spirit;

@@ -20,24 +20,22 @@
  */
 
 /**
- * @file StrategyOne.cpp
+ * @file strategyTwo.h
  *
  */
-#include "StrategyOne.h"
+#ifndef SMTRAT_STRATEGYTWO_H
+#define SMTRAT_STRATEGYTWO_H
+
+#include "../solver/Manager.h"
 
 namespace smtrat
 {
-
-    StrategyOne::StrategyOne():
-        Manager()
+    class strategyTwo:
+        public Manager
     {
-        addBackendIntoStrategyGraph( 0, MT_CNFerModule, isCondition );
-        addBackendIntoStrategyGraph( 1, MT_SATModule, isCondition );
-        addBackendIntoStrategyGraph( 2, MT_VSModule, isCondition );
-        addBackendIntoStrategyGraph( 3, MT_CADModule, isCondition );
-        addBackendIntoStrategyGraph( 2, MT_CADModule, isCondition );
-    }
-
-    StrategyOne::~StrategyOne(){}
-
+        public:
+            strategyTwo();
+            ~strategyTwo();
+    };
 }    // namespace smtrat
+#endif    /** SMTRAT_STRATEGYTWO_H */

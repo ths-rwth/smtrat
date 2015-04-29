@@ -405,7 +405,7 @@ namespace smtrat
             /// Stores all Boolean variables which once had been used for theory splitting decisions.
             std::stack<signed> mOldSplittingVars;
             /// Stores the just introduced Boolean variables for theory splitting decisions.
-            std::stack<signed> mNewSplittingVars;
+            std::vector<signed> mNewSplittingVars;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
             SATModuleStatistics* mpStatistics;

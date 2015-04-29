@@ -7,6 +7,7 @@
 
 #include "../BenchmarkSet.h"
 #include "../tools/Tool.h"
+#include "../utils/regex.h"
 #include "../results/Results.h"
 
 namespace benchmax {
@@ -14,10 +15,12 @@ namespace benchmax {
 class Backend {
 protected:
 	Results mResults;
+	virtual void startTool(const Tool&) {}
 	virtual void execute(const Tool&, const fs::path&) {}
 public:
 	void run(const std::vector<Tool*>& tools, const std::vector<BenchmarkSet>& benchmarks) {
 		for (const Tool* tool: tools) {
+			this->startTool(*tool);
 			for (const BenchmarkSet& set: benchmarks) {
 				for (const fs::path& file: set) {
 					if (tool->canHandle(file)) {
