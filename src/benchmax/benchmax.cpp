@@ -46,8 +46,6 @@
 
 #include "utils/regex.h"
 
-#include "carl/formula/Formula.h"
-
 using benchmax::Tool;
 using benchmax::Stats;
 using benchmax::Settings;

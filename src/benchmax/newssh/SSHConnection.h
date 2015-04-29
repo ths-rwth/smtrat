@@ -134,7 +134,7 @@ public:
 	}
 	
 	std::string createTmpDir(const string& folder) {
-		BENCHMAX_LOG_WARN("benchmax.ssh", "Creating directory " << folder);
+		BENCHMAX_LOG_DEBUG("benchmax.ssh", "Creating directory " << folder);
 		ssh_scp scp = getSCP(SSH_SCP_WRITE | SSH_SCP_RECURSIVE, Settings::ssh_tmpdir.c_str());
 		int rc;
 		SSH_LOCKED(rc = ssh_scp_push_directory(scp, folder.c_str(), S_IRWXU));
@@ -147,7 +147,7 @@ public:
 	}
 	
 	void removeDir(const std::string& folder) {
-		BENCHMAX_LOG_WARN("benchmax.ssh", "Removing directory " << folder);
+		BENCHMAX_LOG_DEBUG("benchmax.ssh", "Removing directory " << folder);
 		sftp_session sftp = getSFTP();
 		sftp_dir dir;
 		sftp_attributes attr;
@@ -182,7 +182,7 @@ public:
 	}
 	
 	bool uploadFile(const fs::path& local, const std::string& base, const std::string& remote, int mode = S_IRUSR | S_IWUSR) {
-		BENCHMAX_LOG_WARN("benchmax.ssh", "Pushing file " << base << remote);
+		BENCHMAX_LOG_DEBUG("benchmax.ssh", "Pushing file " << base << remote);
 		ssh_scp scp = getSCP(SSH_SCP_WRITE | SSH_SCP_RECURSIVE, base.c_str());
 		std::ifstream tmp(local.native(), std::ios::binary | std::ios::ate);
 		int rc;
@@ -203,7 +203,7 @@ public:
 	}
 	
 	bool executeCommand(const std::string& cmd, BenchmarkResults& result) {
-		BENCHMAX_LOG_WARN("benchmax.ssh", "Executing command " << cmd);
+		BENCHMAX_LOG_DEBUG("benchmax.ssh", "Executing command " << cmd);
 		ssh_channel channel = getChannel();
 		std::stringstream call;
 		call << "date +\"Start: %s%3N\" ; ";
