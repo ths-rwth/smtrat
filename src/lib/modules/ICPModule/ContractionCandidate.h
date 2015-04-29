@@ -152,7 +152,7 @@ namespace smtrat
             
             bool contract(EvalDoubleIntervalMap& _intervals, DoubleInterval& _resA, DoubleInterval& _resB)
             {
-                return mContractor(_intervals, mDerivationVar, _resA, _resB, true, false);
+                return mContractor(_intervals, mDerivationVar, _resA, _resB, true, true);
             }
 
             carl::Variable::Arg derivationVar() const
