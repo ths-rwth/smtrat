@@ -331,12 +331,13 @@ namespace smtrat
 
         // Debug Outputs of linear and nonlinear Tables
         #ifdef ICP_MODULE_DEBUG_0
-        #ifndef ICP_MODULE_DEBUG_1
+        #ifdef ICP_MODULE_DEBUG_1
+        printIcpVariables();
+        #else
         std::cout << "Constraints after preprocessing:" << std::endl;
         printPreprocessedInput( "    " );
         std::cout << std::endl;
         #endif
-        printIcpVariables();
         #endif
         for( icp::ContractionCandidate* cc : mActiveLinearConstraints )
             cc->resetReusagesAfterTargetDiameterReached();
@@ -957,7 +958,7 @@ namespace smtrat
             std::pair<double, unsigned> target(_candidate->RWA(), _candidate->id());
             if ( mIcpRelevantCandidates.find(target) == mIcpRelevantCandidates.end() )
             {
-                #ifdef ICP_MODULE_DEBUG_0
+                #ifdef ICP_MODULE_DEBUG_1
                 cout << "add to relevant candidates: " << (*_candidate).rhs() << " in variable " << (*_candidate).derivationVar() << endl;
                 cout << "   id: " << (*_candidate).id() << endl;
                 cout << "   key: (" << target.first << ", " << target.second << ")" << endl;
