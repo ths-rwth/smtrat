@@ -10,6 +10,7 @@ ModuleClass(GroebnerModule<GBSettings${SMTRAT_GROEBNER_Settings}>)
 ModuleVersion(0 5 0)
 ModuleSettingsClass(GBRuntimeSettings)
 ModuleSettingsName(output)
+ModuleDefaultEnabled()
 EndDefineModule(gbEnabled)
 
 if(${gbEnabled})
