@@ -45,14 +45,15 @@ namespace smtrat
         typedef FormulaT Formula;
 
         private:
-            // Encoding of bitvector variables
-            std::map<BitVec, Bits> mBitVecToBits;
-            std::map<Bit, BitVec> mBitToBitVec;
+            // Set of all bits that have been introduced by the encoder
+            std::set<Bit> mIntroducedBits;
 
             // Substituted fresh variables
-            //  - for terms (one variable for each bitvector bit)
+            //  - for bitvector variables (one variable for each bitvector bit)
+            std::map<BitVec, Bits> mBitVecBits;
+            //  - for bitvector terms (likewise, one variable for each bitvector bit)
             std::map<BitVecTerm, Bits> mTermBits;
-            //  - for constraints (a single variable)
+            //  - for bitvector constraints (a single variable)
             std::map<BitVecConstr, Bit> mConstraintBits;
 
             // Created formulas ("encodings")
@@ -109,15 +110,12 @@ namespace smtrat
 
             Bits encodeVariable(const BitVec& _variable)
             {
-                std::map<BitVec, Bits>::iterator it = mBitVecToBits.find(_variable);
+                std::map<BitVec, Bits>::iterator it = mBitVecBits.find(_variable);
 
-                if(it == mBitVecToBits.end())
+                if(it == mBitVecBits.end())
                 {
                     Bits out = createBits(_variable.width());
-                    mBitVecToBits[_variable] = out;
-                    for(Bit bit: out) {
-                        mBitToBitVec[bit] = _variable;
-                    }
+                    mBitVecBits[_variable] = out;
                     return out;
                 }
                 else
@@ -886,7 +884,9 @@ namespace smtrat
 
             Bit createBit()
             {
-                return carl::VariablePool::getInstance().getFreshVariable(carl::VariableType::VT_BOOL);
+                Bit bit = carl::VariablePool::getInstance().getFreshVariable(carl::VariableType::VT_BOOL);
+                mIntroducedBits.insert(bit);
+                return bit;
             }
 
             Bits createBits(std::size_t _n)
@@ -900,6 +900,15 @@ namespace smtrat
                 return out;
             }
 
+            FormulaT encodeBVConstraints(const FormulaT _original)
+            {
+                if(_original.getType() == carl::FormulaType::BITVECTOR)
+                {
+                    Bit substitute = encodeConstraint(_original.bvConstraint());
+                    return Formula(substitute);
+                }
+                return _original;
+            }
 
         public:
 
@@ -913,14 +922,14 @@ namespace smtrat
                 return mCurrentEncodings;
             }
 
-            FormulaT encodeBVConstraints(const FormulaT _original)
+            const std::set<Bit>& introducedBits() const
             {
-                if(_original.getType() == carl::FormulaType::BITVECTOR)
-                {
-                    Bit substitute = encodeConstraint(_original.bvConstraint());
-                    return Formula(substitute);
-                }
-                return _original;
+                return mIntroducedBits;
+            }
+
+            const std::map<BitVec, Bits> bitvectorBlastings() const
+            {
+                return mBitVecBits;
             }
 
             BVDirectEncoder()
