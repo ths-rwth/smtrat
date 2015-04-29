@@ -131,14 +131,23 @@ namespace icp
 
             void addCandidate( ContractionCandidate* _candidate )
             {
-                assert( !isOriginal() );
-                assert( _candidate->lhs() == mVar );
                 auto res = mCandidates.insert( _candidate );
                 if( res.second )
                 {
                     (*res.first)->addICPVariable( this );
                     mLinear &= !(*res.first)->isLinear();
                 }
+            }
+
+            void addCandidates( const ContractionCandidates& _candidates )
+            {
+                for( auto& cc : _candidates )
+                {
+                    assert( mCandidates.find( cc ) == mCandidates.end() );
+                    cc->addICPVariable( this );
+                    mLinear &= !cc->isLinear();
+                }
+                mCandidates.insert( _candidates.begin(), _candidates.end() );
             }
             
             void addOriginalConstraint( const FormulaT& _constraint )
@@ -187,13 +196,11 @@ namespace icp
 
             void incrementActivity()
             {
-                assert( !isOriginal() );
                 ++mActivity;
             }
 
             void decrementActivity()
             {
-                assert( !isOriginal() );
                 assert( mActivity > 0 );
                 --mActivity;
             }
