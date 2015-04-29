@@ -56,6 +56,13 @@ namespace smtrat
             // we had afterwards no addCore call with an equality
             bool mNew_Substitution;
             
+            /*
+             * This module constructs a solution when it's possible and returns
+             * true in this case. Otherwise, e.g. if a disequality is not satisfied,
+             * it returns false.
+             */
+            bool constructSolution();
+            
         public:
             
             IntEqModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
