@@ -32,35 +32,6 @@
 namespace smtrat 
 {
 
-std::map<unsigned,CADStatistics*> CADStatistics::instances = std::map<unsigned,CADStatistics*>();
-
-CADStatistics* CADStatistics::getInstance(unsigned key)
-{
-  if( instances[key] == 0 )
-    instances[key] = new CADStatistics();
-  return instances[key];
-}
-
-void CADStatistics::printAll(std::ostream& os) {
-    for(auto stats = instances.begin(); stats != instances.end(); ++stats ) {
-        stats->second->print(os);
-    }
-}
-
-void CADStatistics::print(std::ostream& ) {
-   
-}
-
-void CADStatistics::collect() {
-#ifdef USE_CAD_STATISTICS
-	this->addKeyValuePair("Numeric Roots", GiNaCRA::rootfinder::Statistics::NumericRoots);
-	this->addKeyValuePair("Interval Roots", GiNaCRA::rootfinder::Statistics::IntervalRoots);
-	this->addKeyValuePair("Double Ops", GiNaCRA::rootfinder::Statistics::DoubleOps);
-	this->addKeyValuePair("Exact Ops", GiNaCRA::rootfinder::Statistics::ExactOps);
-#endif
-}
-
 }
 
 #endif
-

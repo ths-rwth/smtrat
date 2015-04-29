@@ -29,7 +29,9 @@ struct BenchmarkResults {
 };
 
 inline std::ostream& operator<<(std::ostream& os, const BenchmarkResults& results) {
-	os << "(" << results.exitCode << ", " << results.time << ")";
+	os << "(" << results.exitCode << ", " << results.time << ")" << std::endl;
+	os << results.stdout << std::endl;
+	os << results.stderr << std::endl;
 	return os;
 }
 

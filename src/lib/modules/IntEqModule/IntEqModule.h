@@ -52,6 +52,9 @@ namespace smtrat
             std::map< carl::Variable, std::shared_ptr< std::vector<FormulaT> > > mVariables;
             // Stores the auxiliary variables
             std::set< carl::Variable > mAuxiliaries;
+            // Stores whether a new substitution has been found in the last ckeckCore call and 
+            // we had afterwards no addCore call with an equality
+            bool mNew_Substitution;
             
         public:
             
