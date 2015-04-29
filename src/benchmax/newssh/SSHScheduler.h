@@ -75,7 +75,7 @@ public:
 	}
 	
 	void uploadTool(const Tool& tool) {
-		BENCHMAX_LOG_WARN("benchmax.ssh", "Uploading " << tool);
+		BENCHMAX_LOG_DEBUG("benchmax.ssh", "Uploading " << tool);
 		std::set<std::string> nodes;
 		for (SSHConnection* c: connections) {
 			// Check if we have already uploaded to this host
@@ -84,21 +84,24 @@ public:
 		}
 	}
 	
-	bool executeJob(const Tool& tool, const fs::path& file) {
-		BENCHMAX_LOG_WARN("benchmax.ssh", "Executing " << file);
+	bool executeJob(const Tool& tool, const fs::path& file, Results& res) {
+		BENCHMAX_LOG_DEBUG("benchmax.ssh", "Executing " << file);
 		SSHConnection* c = get();
 		// Create temporary directory
 		std::string folder = c->createTmpDir(tmpDirName(file));
 		// Upload benchmark file
 		c->uploadFile(file, folder, file.filename().native());
+		// Execute benchmark run
 		BenchmarkResults result;
 		std::string cmdLine = tool.getCommandline(folder + file.filename().native(), Settings::ssh_basedir + tool.binary().filename().native());
-		if (c->executeCommand(cmdLine, result)) {
-			std::cout << result << std::endl;
-		} else {
-			std::cout << "Failed to execute command." << std::endl;
+		if (!c->executeCommand(cmdLine, result)) {
+			BENCHMAX_LOG_ERROR("benchmax.ssh", "Failed to execute command.");
 		}
+		tool.additionalResults(file, result);
+		// Remove temporary directory
 		c->removeDir(folder);
+		// Store result
+		res.addResult(tool, file, result);
 		return true;
 	}
 };

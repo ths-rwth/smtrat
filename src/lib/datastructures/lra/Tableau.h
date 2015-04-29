@@ -569,7 +569,7 @@ namespace smtrat
                  * @param nonbasic_coefficient_list
                  * @return 
                  */
-                Variable<T1, T2>* newBasicVariable( std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, const typename Poly::PolyType& poly, T2 leading_coeff, bool isInteger );
+                Variable<T1, T2>* newBasicVariable( std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, const typename Poly::PolyType& poly, const T2& leading_coeff, bool isInteger );
                 
                 /**
                  * g
@@ -744,7 +744,7 @@ namespace smtrat
                  * @return true, if the constraint is a defining constraint
                  *         false, otherwise   
                  */
-                ConstraintT isDefining( size_t row_index, std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient_list, T2 lcm, T2& max_value ) const;
+                ConstraintT isDefining( size_t row_index, std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient_list, T2& lcm, T2& max_value ) const;
                 
                 /**
                  * Checks whether the row with index row_index is defining. 
@@ -790,14 +790,14 @@ namespace smtrat
                  * @param columnB_index
                  * @param multiple
                  */
-                void addColumns( size_t columnA_index, size_t columnB_index, T2 multiple );
+                void addColumns( size_t columnA_index, size_t columnB_index, const T2& multiple );
                 
                 /**
                  * Multiplies the row with index row_index by multiple.
                  * @param row_index
                  * @param multiple
                  */        
-                void multiplyRow( size_t row_index, T2 multiple );
+                void multiplyRow( size_t row_index, const T2& multiple );
                 
                 /**
                  * Calculates the scalar product of the row with index rowA from Tableau A with the column

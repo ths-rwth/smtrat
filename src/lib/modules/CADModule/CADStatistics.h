@@ -19,24 +19,30 @@
 namespace smtrat {
 class CADStatistics : public Statistics
 {
-   public:
-     static CADStatistics* getInstance(unsigned key);
-     
-     static void printAll(std::ostream& = std::cout);
-     
-     void collect();
-     
-     void print(std::ostream& os = std::cout);
-     void exportKeyValue(std::ostream& os = std::cout);
-   protected:
-    CADStatistics() : Statistics("CAD Statistics", this)
+private:
+    std::size_t mMISCount;
+    std::size_t mMISBaseSize;
+    std::size_t mMISSize;
+    
+    void collect() {
+        Statistics::addKeyValuePair("mis-count", mMISCount);
+        Statistics::addKeyValuePair("mis-basesize", mMISBaseSize);
+        Statistics::addKeyValuePair("mis-size", mMISSize);
+    }
+ public:
+    CADStatistics() : Statistics("CAD Statistics", this),
+        mMISCount(0),
+        mMISBaseSize(0),
+        mMISSize(0)
     {}
-
-   private:
-     static std::map<unsigned,CADStatistics*> instances;
+        
+    void addMIS(std::size_t baseSize, std::size_t size) {
+        mMISCount++;
+        mMISBaseSize += baseSize;
+        mMISSize += size;
+    }
 };
 
 }
 
 #endif
-

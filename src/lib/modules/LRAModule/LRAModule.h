@@ -40,9 +40,17 @@
 namespace smtrat
 {
     /// Number type of the underlying value of a bound of a variable within the LRAModule.
+    #ifdef SMTRAT_STRAT_PARALLEL_MODE
+    typedef Rational LRABoundType;
+    #else
     typedef carl::Numeric<Rational> LRABoundType;
+    #endif
     /// Type of an entry within the tableau.
+    #ifdef SMTRAT_STRAT_PARALLEL_MODE
+    typedef Rational LRAEntryType;
+    #else
     typedef carl::Numeric<Rational> LRAEntryType;
+    #endif
     /// Type of a bound of a variable within the LRAModule.
     typedef lra::Bound<LRABoundType, LRAEntryType> LRABound;
     /// A variable of the LRAModule, being either a original variable or a slack variable representing a linear polynomial.

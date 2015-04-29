@@ -422,7 +422,7 @@ namespace smtrat
                     if( Settings::branch_and_bound_early )
                     {
                         LRAVariable* newBasicVar = mTableau.pivot( pivotingElement.first );
-                        Rational ratAss = newBasicVar->assignment().mainPart().toRational();
+                        Rational ratAss = (Rational)newBasicVar->assignment().mainPart();
                         if( newBasicVar->isActive() && newBasicVar->isInteger() && !carl::isInteger( ratAss ) )
                         {
                             if( !probablyLooping( newBasicVar->expression(), ratAss ) )

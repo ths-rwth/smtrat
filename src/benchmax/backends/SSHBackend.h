@@ -66,9 +66,9 @@ protected:
 	virtual void execute(const Tool& tool, const fs::path& file) {
 		BENCHMAX_LOG_WARN("benchmax", "Executing...");
 #if 0
-		jobs.push(std::async(std::launch::async, &ssh::SSHScheduler::executeJob, scheduler, tool, file));
+		jobs.push(std::async(std::launch::async, &ssh::SSHScheduler::executeJob, scheduler, tool, file, mResults));
 #else
-		scheduler->executeJob(tool, file);
+		scheduler->executeJob(tool, file, mResults);
 #endif
 	}
 public:
