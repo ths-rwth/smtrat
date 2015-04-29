@@ -73,7 +73,7 @@ namespace vs
                 return false;
         }
     };
-    typedef std::pair<UnsignedTriple, vs::State*>                   ValStatePair;
+    typedef std::pair<UnsignedTriple, vs::State*> ValStatePair;
     typedef std::map<UnsignedTriple, vs::State*, unsignedTripleCmp> ValuationMap;
 
     class State
@@ -83,106 +83,110 @@ namespace vs
         enum Type{ TEST_CANDIDATE_TO_GENERATE, SUBSTITUTION_TO_APPLY, COMBINE_SUBRESULTS };
         
         typedef carl::FastPointerMapB<Substitution,ConditionSetSetSet> ConflictSets;
-        typedef std::vector< std::pair< ConditionList, bool > > 		 SubstitutionResult;
-        typedef std::vector< SubstitutionResult > 						 SubstitutionResults;   
-        typedef std::vector< std::pair< unsigned, unsigned > >           SubResultCombination;
-        typedef smtrat::vb::VariableBounds<const Condition*>             VariableBoundsCond;
+        typedef std::vector<std::pair< ConditionList, bool>> SubstitutionResult;
+        typedef std::vector<SubstitutionResult> SubstitutionResults;   
+        typedef std::vector<std::pair< unsigned, unsigned>> SubResultCombination;
+        typedef smtrat::vb::VariableBounds<const Condition*> VariableBoundsCond;
     private:
         
         // Members:
 
         /// A flag indicating whether the conditions this state considers are simplified.
-        bool				  mConditionsSimplified;
+        bool mConditionsSimplified;
         /// A flag indicating whether there are states that are children of this state and must 
         /// be still considered in the further progress of finding a solution.
-        bool				  mHasChildrenToInsert;
+        bool mHasChildrenToInsert;
         /// A flag that indicates whether this state has conditions in its considered list of
         /// conditions, which were recently added and, hence, must be propagated further.
-        bool				  mHasRecentlyAddedConditions;
+        bool mHasRecentlyAddedConditions;
         /// A flag that indicates whether this state is already inconsistent. Note that if it 
         /// is set to false, it does not necessarily mean that this state is consistent.
-        bool				  mInconsistent;
+        bool mInconsistent;
         /// A flag indicating whether this state has already marked as deleted, which means
         /// that there is no need to consider it in the further progress of finding a solution.
-        bool				  mMarkedAsDeleted;
+        bool mMarkedAsDeleted;
         /// A flag indicating whether the substitution results this state are simplified.
-        bool				  mSubResultsSimplified;
+        bool mSubResultsSimplified;
         /// A flag indicating whether to take the current combination of substitution results
         /// once again.
-        bool				  mTakeSubResultCombAgain;
+        bool mTakeSubResultCombAgain;
         /// A flag indicating whether the test candidate contained by this state has already been
         /// check for the bounds of the variables.
-        bool                  mTestCandidateCheckedForBounds;
+        bool mTestCandidateCheckedForBounds;
         /// A flag indicating whether this state has been progressed until a point where a condition
         /// must be involved having a too high degree to tackle with virtual substitution. Note, that
         /// this flag is also set to true if heuristics decide that the combinatorial blow up using
         /// virtual substitution for the considered list of conditions of this state is too high.
         /// If this flag is set to true, it the state is delayed until a point where only such state
         /// remain and a backend must be involved.
-        bool				  mCannotBeSolved;
+        bool mCannotBeSolved;
+        /// 
+        bool mCannotBeSolvedLazy;
         /// A flag indicating whether the index (the variable to eliminate in this state) should be
         /// reconsidered and maybe changed.
-        bool				  mTryToRefreshIndex;
+        bool mTryToRefreshIndex;
         /// A heuristically determined value stating the expected difficulty of this state's considered
         /// conditions to be solved by a backend. The higher this value, the easier it should be to
         /// solve this state's considered conditions.
-        size_t              mBackendCallValuation;
+        size_t mBackendCallValuation;
         /// A unique id identifying this state.
-        size_t              mID;
+        size_t mID;
         /// A heuristically determined value stating the expected difficulty of this state's considered
         /// conditions to be solved by virtual substitution. The higher this value, the easier it should be to
         /// solve this state's considered conditions. Furthermore, this value enforces currently a depth first
         /// search, as a child has always a higher valuation than its father.
-        size_t              mValuation;
+        size_t mValuation;
         /// The type of this state, which states whether this state has still a substitution to apply or either
         /// test candidates shall be generated or a new combination of the substitution results must be found
         /// in order to consider it next.
-        Type                  mType;
+        Type mType;
         /// The variable which is going to be eliminated from this state's considered conditions. That means, 
         /// this variable won't occur in the children of this state.
-        carl::Variable		  mIndex;
+        carl::Variable mIndex;
         /// If the test candidate considered by this state stems from a condition for which it is enough to
         /// consider it only for test candidate generation for finding the satisfiability of the conditions
         /// it occurs in, this member stores that condition. It is necessary, as it must be part of the origins
         /// (conditions in the father of this state) of any conflict found in this state.
-        const Condition*      mpOriginalCondition;
+        const Condition* mpOriginalCondition;
         /// The father state of this state.
-        State*				  mpFather;
+        State* mpFather;
         /// The substitution this state considers. Note that it is NULL if this state is the root.
-        Substitution*		  mpSubstitution;
+        Substitution* mpSubstitution;
         /// The vector storing the substitution results, that is for each application of the substitution in
         /// this state to one of its considered conditions a disjunction of conjunctions of constraints.
-        SubstitutionResults*  mpSubstitutionResults;
+        SubstitutionResults* mpSubstitutionResults;
         /// The currently considered combination of conjunctions of constraints in the substitution
         /// result vector, which form the currently considered conditions of this state (store in mpConditions).
         SubResultCombination* mpSubResultCombination;
         /// The currently considered conditions of this state, for which the satisfiability must be checked.
-        ConditionList*        mpConditions;
+        ConditionList* mpConditions;
         /// Stores for each already considered and failed test candidate all conflicts which have been found for it.
-        ConflictSets*		  mpConflictSets;
+        ConflictSets* mpConflictSets;
         /// The children states of this state. For each test candidate we generate for the conditions this state 
         /// considers such a child is created.
-        std::list< State* >*  mpChildren;
+        std::list< State* >* mpChildren;
         /// The conditions of this state, which cannot be solved by the virtual substitution.
         carl::PointerSet<Condition>* mpTooHighDegreeConditions;
         /// A pointer to an object which manages and stores the bounds on the variables occurring in this state.
         /// These bounds are filtered from the conditions this state considers. Note that if we do not use 
         /// optimizations based on variable bounds.
-        VariableBoundsCond*   mpVariableBounds;
+        VariableBoundsCond* mpVariableBounds;
         ///
-        State*                mpInfinityChild;
+        State* mpInfinityChild;
         ///
-        smtrat::Rational      mMinIntTestCanidate;
+        smtrat::Rational mMinIntTestCanidate;
         ///
-        smtrat::Rational      mMaxIntTestCanidate;
+        smtrat::Rational mMaxIntTestCanidate;
         ///
-        size_t                mCurrentIntRange;
+        size_t mCurrentIntRange;
         ///
-        carl::IDGenerator*          mpConditionIdAllocator;
+        carl::IDGenerator* mpConditionIdAllocator;
         ///
         std::vector<std::pair<carl::Variable,multiset<double>>> mRealVarVals;
         ///
         std::vector<std::pair<carl::Variable,multiset<double>>> mIntVarVals;
+        ///
+        std::vector<size_t> mBestVarVals;
         
     public:
         
@@ -221,9 +225,9 @@ namespace vs
          * @return A constant reference to the flag indicating whether a condition with too high degree for 
          *          the virtual substitution method must be considered.
          */
-        const bool& cannotBeSolved() const
+        bool cannotBeSolved( bool _lazy ) const
         {
-            return mCannotBeSolved;
+            return mCannotBeSolved || (_lazy && mCannotBeSolvedLazy);
         }
         
         /**
@@ -234,12 +238,21 @@ namespace vs
         {
             return mCannotBeSolved;
         }
+        
+        /**
+         * @return A reference to the flag indicating whether a condition with too high degree for 
+         *          the virtual substitution method must be considered.
+         */
+        bool& rCannotBeSolvedLazy()
+        {
+            return mCannotBeSolvedLazy;
+        }
 
         /**
          * @return A constant reference to the flag indicating whether this state is marked as deleted, which
          *          means that there is no need to consider it in the further progress of finding a solution.
          */
-        const bool& markedAsDeleted() const
+        bool markedAsDeleted() const
         {
             return mMarkedAsDeleted;
         }
@@ -257,7 +270,7 @@ namespace vs
          * @return A constant reference to the flag indicating whether there are states that are children 
          *          of this state and must be still considered in the further progress of finding a solution.
          */
-        const bool& hasChildrenToInsert() const
+        bool hasChildrenToInsert() const
         {
             return mHasChildrenToInsert;
         }
@@ -276,7 +289,7 @@ namespace vs
          *          considered conditions. Note, if there is no variable decided to be eliminated, this
          *          method will fail.
          */
-        const carl::Variable& index() const
+        carl::Variable::Arg index() const
         {
             return mIndex;
         }
@@ -317,7 +330,7 @@ namespace vs
         /**
          * @return A reference to the vector of the children of this state.
          */
-        std::list< State* >& rChildren()
+        std::list<State*>& rChildren()
         {
             return *mpChildren;
         }
@@ -325,7 +338,7 @@ namespace vs
         /**
          * @return A constant reference to the vector of the children of this state.
          */
-        const std::list< State* >& children() const
+        const std::list<State*>& children() const
         {
             return *mpChildren;
         }
@@ -697,6 +710,8 @@ namespace vs
         }
         
         static void removeStatesFromRanking( const State& toRemove, ValuationMap& _ranking );
+        
+        void resetCannotBeSolvedLazyFlags();
 
         /**
          * @return The depth of the subtree with this state as root node.
@@ -1000,7 +1015,7 @@ namespace vs
         /**
          * Updates the valuation of this state.
          */
-        void updateValuation();
+        void updateValuation( bool _lazy );
         
         /**
          * Valuates the state's currently considered conditions according to a backend call.

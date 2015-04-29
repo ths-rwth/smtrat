@@ -105,6 +105,12 @@ namespace smtrat
 			std::function<FormulaT(FormulaT)> removeFactorsFunction;
 			
 			/**
+			 * Splits the sum-of-squares (sos) decomposition, if the given formula is a constraint with a sos as left-hand side.
+             */
+			FormulaT splitSOS(const FormulaT& formula);
+			std::function<FormulaT(FormulaT)> splitSOSFunction;
+			
+			/**
 			 * Checks if constraints vanish using the variable bounds.
 			 */
 			FormulaT checkBounds(const FormulaT& formula);

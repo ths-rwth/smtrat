@@ -70,7 +70,7 @@ namespace smtrat
 		mConflictGraph(),
 		mVariableBounds()
 #ifdef SMTRAT_DEVOPTION_Statistics
-		,mStats(CADStatistics::getInstance(0))
+		,mStats(new CADStatistics())
 #endif
 	{
 		mInfeasibleSubsets.clear();	// initially everything is satisfied
@@ -210,8 +210,9 @@ namespace smtrat
 			if (vPos != eiMap.end())
 				boundMap[v] = vPos->second;
 		}
-		if (!mCAD.check(mConstraints, mRealAlgebraicSolution, mConflictGraph, boundMap, false, true))
-		{
+		bool status = mCAD.check(mConstraints, mRealAlgebraicSolution, mConflictGraph, boundMap, false, true);
+		if (anAnswerFound()) return Unknown;
+		if (!status) {
 			#ifdef SMTRAT_CAD_DISABLE_MIS
 			// construct a trivial infeasible subset
 			std::cout << "Trivial" << std::endl;
@@ -265,6 +266,9 @@ namespace smtrat
 				storeAssumptionsToCheck(*mpManager);
 			}
 			//assert(ours == mInfeasibleSubsets);
+			#ifdef SMTRAT_DEVOPTION_Statistics
+			mStats->addMIS(constraints().size() + variableBounds().getOriginsOfBounds().size(), ours.size());
+			#endif
             #endif
 
 			#ifdef CHECK_SMALLER_MUSES

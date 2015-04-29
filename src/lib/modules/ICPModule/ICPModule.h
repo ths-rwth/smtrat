@@ -18,18 +18,15 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-
 /*
- * @file   ICPModule.h
+ * @file ICPModule.h
  * @author Stefan Schupp <stefan.schupp@cs.rwth-aachen.de>
+ * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  *
  * Created on October 16, 2012, 1:07 PM
  */
 #pragma once
 
-//#define ICP_BOXLOG
-//#define BOXMANAGEMENT
 #ifdef SMTRAT_DEVOPTION_Validation
 #define SMTRAT_DEVOPTION_VALIDATION_ICP
 #endif
@@ -44,11 +41,8 @@
 #include "../../datastructures/VariableBounds.h"
 #include "IcpVariable.h"
 #include "utils.h"
-#include <fstream>
-
-//#ifdef BOXMANAGEMENT
 #include "HistoryNode.h"
-//#endif
+#include <fstream>
 
 namespace smtrat
 {
@@ -130,9 +124,7 @@ namespace smtrat
             std::set<ConstraintT> mCenterConstraints; // keeps actual centerConstaints for deletion
             FormulasT mCreatedDeductions; // keeps pointers to the created deductions for deletion
             icp::ContractionCandidate* mLastCandidate; // the last applied candidate
-            #ifndef BOXMANAGEMENT
             std::queue<FormulasT> mBoxStorage; // keeps the box before contraction
-            #endif
             bool mIsIcpInitialized; // initialized ICPModule?
             unsigned mCurrentId; // keeps the currentId of the state nodes
             bool mIsBackendCalled; // has a backend already been called in the actual run?
@@ -144,10 +136,6 @@ namespace smtrat
             unsigned mNumberOfReusagesAfterTargetDiameterReached;
             double mRelativeContraction;
             double mAbsoluteContraction;
-            
-            #ifdef ICP_BOXLOG
-            std::fstream icpLog;
-            #endif
             #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
             FormulaT mCheckContraction;
             #endif
@@ -455,7 +443,6 @@ namespace smtrat
             
             void addProgress( double _progress );
             
-            //#ifdef BOXMANAGEMENT
             /**
              * Selects and sets the next possible interval box from the history nodes.
              * @param _basis
@@ -480,7 +467,6 @@ namespace smtrat
              * generates and sets the infeasible subset
              */
             FormulasT collectReasons( icp::HistoryNode* _node );
-            //#endif
             
             bool intervalsEmpty( bool _original = false) const;
             
@@ -542,13 +528,6 @@ namespace smtrat
                     return false;
                 return _interval.diameter() <= mTargetDiameter;
             }
-            
-            #ifdef ICP_BOXLOG
-            /**
-             * Writes actual box to file. Note that the file has to be open.
-             */
-            void writeBox();
-            #endif
             
             /**
              * Printout of actual tables of linear constraints, active linear

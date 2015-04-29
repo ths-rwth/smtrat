@@ -32,7 +32,6 @@ using namespace vs;
 
 //#define VS_DEBUG
 //#define VS_MODULE_VERBOSE_INTEGERS
-//#define VS_TERMINATION_INVARIANCE
 
 namespace smtrat
 {
@@ -41,7 +40,9 @@ namespace smtrat
         Module( _type, _formula, _conditionals, _manager ),
         mConditionsChanged( false ),
         mInconsistentConstraintAdded( false ),
+        mLazyMode( false ),
         mIDCounter( 0 ),
+        mLazyCheckThreshold( Settings::lazy_check_threshold ),
         #ifdef VS_STATISTICS
         mStepCounter( 0 ),
         #endif
@@ -71,6 +72,7 @@ namespace smtrat
     template<class Settings>
     bool VSModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
+        mLazyMode = false;
         if( _subformula->formula().getType() == carl::FormulaType::CONSTRAINT )
         {
             const ConstraintT& constraint = _subformula->formula().constraint();
@@ -130,6 +132,7 @@ namespace smtrat
     template<class Settings>
     void VSModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
+        mLazyMode = false;
         if( _subformula->formula().getType() == carl::FormulaType::CONSTRAINT )
         {
             mInconsistentConstraintAdded = false;
@@ -244,19 +247,19 @@ namespace smtrat
                         subformulas.insert( FormulaT( carl::FormulaType::NOT, FormulaT( *cons ) ) ); // @todo store formulas and do not generate a formula here
                     }
                     subformulas.insert( FormulaT( bDed->second ) );
-    //                cout << "learn: " << deduction->toString( true, true ) << endl;
                     addDeduction( FormulaT( carl::FormulaType::OR, std::move( subformulas ) ) );
                 }
             }
         }
-        #ifdef VS_TERMINATION_INVARIANCE
-        size_t previousId = 0;
-        size_t previousValuation = 0;
-        bool previousConditionsSimplified = false;
-        bool previousSubResultsSimplified = false;
-        bool previousTakeSubResultAgain = false;
-        size_t numOfNotConsideredConditions = 0;
-        #endif
+        mLazyMode = !_full || Settings::try_first_lazy;
+        if( Settings::try_first_lazy && _full )
+        {
+            mLazyCheckThreshold = 1;
+        }
+        else if( !_full )
+        {
+            mLazyCheckThreshold = Settings::lazy_check_threshold;
+        }
         while( !mRanking.empty() )
         {
             assert( checkRanking() );
@@ -268,30 +271,7 @@ namespace smtrat
             #ifdef VS_STATISTICS
             ++mStepCounter;
             #endif
-//            if( mStepCounter >= 21520 )
-//            {
-//                assert(false);
-//            }
-//            cout << "Iteration:  " << mStepCounter << endl;
             State* currentState = mRanking.begin()->second;
-            #ifdef VS_TERMINATION_INVARIANCE
-            size_t tmp = 0;
-            for( auto cond = currentState->conditions().begin(); cond != currentState->conditions().end(); ++cond )
-                if( !(*cond)->flag() ) ++tmp;
-            if( numOfNotConsideredConditions == tmp && previousId == currentState->id() && previousValuation == currentState->valuation() && previousTakeSubResultAgain == currentState->takeSubResultCombAgain() && previousConditionsSimplified == currentState->conditionsSimplified() && previousSubResultsSimplified == currentState->subResultsSimplified() )
-            {
-//                currentState->printAlone();
-                cout << "[VS] non-termination" << endl; 
-                exit( 7771 );
-            }
-            assert( !(numOfNotConsideredConditions == tmp && previousId == currentState->id() && previousValuation == currentState->valuation() && previousTakeSubResultAgain == currentState->takeSubResultCombAgain() && previousConditionsSimplified == currentState->conditionsSimplified() && previousSubResultsSimplified == currentState->subResultsSimplified()) );
-            previousId = currentState->id();
-            previousValuation = currentState->valuation();
-            previousConditionsSimplified = currentState->conditionsSimplified();
-            previousSubResultsSimplified = currentState->subResultsSimplified();
-            previousTakeSubResultAgain = currentState->takeSubResultCombAgain();
-            numOfNotConsideredConditions = tmp;
-            #endif
             #ifdef VS_DEBUG
             cout << "Ranking:" << endl;
             for( auto valDTPair = mRanking.begin(); valDTPair != mRanking.end(); ++valDTPair )
@@ -384,9 +364,49 @@ namespace smtrat
                     else
                     {
                         #endif
-                        if( !_full && currentState->getNumberOfCurrentSubresultCombination() > Settings::full_check_threshold )
+                        if( mLazyMode && currentState->getNumberOfCurrentSubresultCombination() > mLazyCheckThreshold )
                         {
-                            return Unknown;
+                            if( _full )
+                            {
+                                if( currentState->cannotBeSolved( true ) )
+                                {
+                                    removeStatesFromRanking( *mpStateTree );
+                                    mLazyMode = false;
+                                    mpStateTree->resetCannotBeSolvedLazyFlags();
+                                    addStatesToRanking( mpStateTree );
+                                    continue;
+                                }
+                                if( currentState->initIndex( mAllVariables, Settings::prefer_equation_over_all, true ) )
+                                {
+                                    currentState->initConditionFlags();
+                                    currentState->resetConflictSets();
+                                    while( !currentState->children().empty() )
+                                    {
+                                        State* toDelete = currentState->rChildren().back();
+                                        removeStatesFromRanking( *toDelete );
+                                        currentState->rChildren().pop_back();
+                                        currentState->resetInfinityChild( toDelete );
+                                        delete toDelete;  // DELETE STATE
+                                    }
+                                    currentState->updateIntTestCandidates();
+                                }
+                                else
+                                {
+                                    removeStatesFromRanking( *currentState );
+                                    currentState->rCannotBeSolvedLazy() = true;
+                                    addStateToRanking( currentState );
+                                }
+                            }
+                            else
+                            {
+                                if( currentState->cannotBeSolved( true ) )
+                                {
+                                    return Unknown;
+                                }  
+                                removeStatesFromRanking( *currentState );
+                                currentState->rCannotBeSolvedLazy() = true;
+                                addStateToRanking( currentState );
+                            }
                         }
                         switch( currentState->type() )
                         {
@@ -479,7 +499,7 @@ namespace smtrat
                                 const vs::Condition* currentCondition;
                                 if( !currentState->bestCondition( currentCondition, mAllVariables.size(), Settings::prefer_equation_over_all ) )
                                 {
-                                    if( !(*currentState).cannotBeSolved() && currentState->tooHighDegreeConditions().empty() )
+                                    if( !(*currentState).cannotBeSolved( mLazyMode ) && currentState->tooHighDegreeConditions().empty() )
                                     {
                                         // It is a state, where no more elimination could be applied to the conditions.
                                         if( Settings::int_constraints_allowed && !Settings::branch_and_bound && currentState->index().getType() == carl::VariableType::VT_INT )
@@ -521,10 +541,6 @@ namespace smtrat
                                             {
                                                 // Go back to this ancestor and refine.
                                                 removeStatesFromRanking( *unfinishedAncestor );
-                                                if( !unfinishedAncestor->subResultsSimplified() )
-                                                {
-                                                    unfinishedAncestor->print();
-                                                }
                                                 unfinishedAncestor->extendSubResultCombination();
                                                 unfinishedAncestor->rType() = State::COMBINE_SUBRESULTS;
                                                 if( unfinishedAncestor->refreshConditions( mRanking ) ) 
@@ -564,7 +580,7 @@ namespace smtrat
                                                 {
                                                     if( !(**child).markedAsDeleted() )
                                                         addStateToRanking( *child );
-                                                    if( !(**child).cannotBeSolved() && !(**child).markedAsDeleted() )
+                                                    if( !(**child).cannotBeSolved( mLazyMode ) && !(**child).markedAsDeleted() )
                                                         currentStateHasChildrenToConsider = true;
                                                     else 
                                                         currentStateHasChildrenWithToHighDegree = true;
@@ -600,7 +616,7 @@ namespace smtrat
                                     }
                                     else
                                     {
-                                        if( (*currentState).cannotBeSolved() )
+                                        if( (*currentState).cannotBeSolved( mLazyMode ) )
                                         {
                                             // If we need to involve another approach.
                                             Answer result = runBackendSolvers( currentState, _full );
@@ -654,7 +670,6 @@ namespace smtrat
                                         }
                                         else
                                         {
-//                                            return Unknown;
                                             currentState->rCannotBeSolved() = true;
                                             addStateToRanking( currentState );
                                         }
@@ -751,7 +766,7 @@ namespace smtrat
                 mModel.insert(std::make_pair(state->substitution().variable(), ass));
                 state = state->pFather();
             }
-            if( mRanking.begin()->second->cannotBeSolved() )
+            if( mRanking.begin()->second->cannotBeSolved( mLazyMode ) )
                 Module::getBackendsModel();
             // All variables which occur in the root of the constructed state tree but were incidentally eliminated
             // (during the elimination of another variable) can have an arbitrary assignment. If the variable has the
@@ -1410,7 +1425,8 @@ namespace smtrat
     template<class Settings>
     void VSModule<Settings>::addStateToRanking( State* _state )
     {
-        if( !_state->markedAsDeleted() && !(_state->isInconsistent() && _state->conflictSets().empty() && _state->conditionsSimplified()) )
+        if( !_state->markedAsDeleted() 
+            && !(_state->isInconsistent() && _state->conflictSets().empty() && _state->conditionsSimplified()))
         {
             if( _state->id() != 0 )
             {
@@ -1423,7 +1439,7 @@ namespace smtrat
                 increaseIDCounter();
                 _state->rID() = mIDCounter;
             }
-            _state->updateValuation();
+            _state->updateValuation( mLazyMode );
             UnsignedTriple key = UnsignedTriple( _state->valuation(), std::pair< size_t, size_t> ( _state->id(), _state->backendCallValuation() ) );
             if( (mRanking.insert( ValStatePair( key, _state ) )).second == false )
             {
@@ -1445,7 +1461,7 @@ namespace smtrat
     template<class Settings>
     void VSModule<Settings>::insertTooHighDegreeStatesInRanking( State* _state )
     {
-        if( _state->cannotBeSolved() )
+        if( _state->cannotBeSolved( mLazyMode ) )
             addStateToRanking( _state );
         else
             for( auto dt = (*_state).rChildren().begin(); dt != (*_state).children().end(); ++dt )
@@ -1615,7 +1631,7 @@ namespace smtrat
         // Find all assignments of the variables occurring in the conditions
         // of the state's father except of the variable being the index currentState.
         const State* successorState = mRanking.begin()->second;
-        if( successorState->cannotBeSolved() )
+        if( successorState->cannotBeSolved( mLazyMode ) )
         {
             Module::getBackendsModel();
             for( auto& ass : mModel )

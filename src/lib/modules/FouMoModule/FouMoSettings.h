@@ -20,7 +20,7 @@
  */
 /**
  * @file FouMoSettings.h
- * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ * @author Dustin Huetter <dustin.huetter@rwth-aachen.de>
  *
  * @version 2014-12-01
  * Created on 2014-12-01.
@@ -37,7 +37,9 @@ namespace smtrat
         
         static const bool Integer_Mode = true;
         
-        static const bool Nonlinear_Mode = false;
+        static const bool Nonlinear_Mode = true;
         
+        // The threshold, in percentage, for determining whether to run the backends
+        static const unsigned Threshold = 50;        
     };
 }

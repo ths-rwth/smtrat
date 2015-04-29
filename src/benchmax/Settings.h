@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <ctime>
 #include <fstream>
 #include <memory>
 #include <boost/optional.hpp>
@@ -20,6 +21,7 @@ namespace po = boost:: program_options;
 
 class Settings {
 private:
+    unsigned printWidth;
     po::variables_map vm;
 	po::options_description coreOptions;
 	po::options_description toolOptions;
@@ -32,18 +34,20 @@ private:
 	po::options_description desc_file;
 public:
 	Settings(int argc, char** argv):
-		coreOptions("Core options"),
-		toolOptions("Tool options"),
-		backendOptions("Backend options"),
-		backendOptions_SSH("SSH backend options (if backend = \"SSH\")"),
-		benchmarkOptions("Benchmark options"),
-		solverOptions("Solver options")
+        printWidth(120),
+		coreOptions("Core options", printWidth),
+		toolOptions("Tool options", printWidth),
+		backendOptions("Backend options", printWidth),
+		backendOptions_SSH("SSH backend options (if backend = \"SSH\")", printWidth),
+		benchmarkOptions("Benchmark options", printWidth),
+		solverOptions("Solver options", printWidth)
 	{
+        startTime = std::time(nullptr);
 		coreOptions.add_options()
 			("help,h", "show this help text")
-			("verbose,v", po::bool_switch(&verbose), "display comprehensive output")
-			("quiet", po::bool_switch(&quiet), "display only final output")
-			("mute", po::bool_switch(&mute), "prevent all output except for possible LaTeX output")
+			("verbose,v", po::bool_switch(&verbose)->default_value(false), "display comprehensive output")
+			("quiet", po::bool_switch(&quiet)->default_value(false), "display only final output")
+			("mute", po::bool_switch(&mute)->default_value(false), "prevent all output except for possible LaTeX output")
 			("copyright", "show the copyright")
 			("disclaimer", "show the warranty disclaimer")
 		;
@@ -57,14 +61,17 @@ public:
 			("backend,b", po::value<std::string>(&backend), "Backend to be used. Possible values: \"condor\", \"local\", \"ssh\".")
 		;
 		backendOptions_SSH.add_options()
-			("node,N", po::value<std::vector<std::string>>(&nodes), "remote blades")
+			("node,N", po::value<std::vector<std::string>>(&ssh_nodes), "remote blades")
+            ("channels", po::value<std::size_t>(&ssh_maxchannels)->default_value(4), "channels per connection")
+            ("basedir", po::value<std::string>(&ssh_basedir)->default_value("~/"), "remote base directory")
+            ("tmpdir", po::value<std::string>(&ssh_tmpdir)->default_value("/tmp/"), "remote temporary directory")
 		;
 		backendOptions.add(backendOptions_SSH);
 		
 		benchmarkOptions.add_options()
 			("include-directory,D", po::value<std::vector<std::string>>(&pathes), "path to look for benchmarks (several are possible)")
-			("timeout,T", po::value<std::size_t>(&timeLimit)->default_value(150), "timeout for all competing solvers in seconds (standard: 150 sec)")
-			("memory,M", po::value<std::size_t>(&memoryLimit)->default_value(1024), "memory limit for all competing solvers in mega bytes (standard: 1024 MB)")
+			("timeout,T", po::value<std::size_t>(&timeLimit)->default_value(60), "timeout for all competing solvers in seconds")
+			("memory,M", po::value<std::size_t>(&memoryLimit)->default_value(1024), "memory limit for all competing solvers in mega bytes")
 			("validation,V", po::value<std::string>(&validationtoolpath), "tool to check assumptions")
 			("wrong-result-path,W", po::value<std::string>(&WrongResultPath)->default_value("wrong_result/"), "path to the directory to store the wrong results")
 			("stats-xml-file,X", po::value<std::string>(&StatsXMLFile)->default_value("stats.xml"), "path to the xml-file where the statistics are stored")
@@ -101,35 +108,50 @@ public:
 		return vm.count(s);
 	}
 
-	// Options
-	bool verbose = false;
-	bool quiet = false;
-	bool mute = false;
+	/// Core Options
+	static bool verbose;
+    static bool quiet;
+    static bool mute;
+    
+    /// Tool Options
 	static bool ProduceLatex;
 	static bool UseStats;
-	static std::size_t memoryLimit;
-	static std::size_t timeLimit;
-	static std::string backend;
-	static std::string validationtoolpath;
 	static std::string outputDir;
+	static std::vector<std::string> composeFiles;
+    
+    /// Backend Options
+	static std::string backend;
+    
+    /// SSH Backend Options
+	static std::vector<std::string> ssh_nodes;
+    static std::string ssh_basedir;
+    static std::string ssh_tmpdir;
+    static std::size_t ssh_maxchannels;
+    
+    /// Benchmark Options
+	static std::vector<std::string> pathes;
+	static std::size_t timeLimit;
+	static std::size_t memoryLimit;
+	static std::string validationtoolpath;
 	static std::string WrongResultPath;
 	static std::string StatsXMLFile;
-	static std::string RemoteOutputDirectory;
-	static std::string PathOfBenchmarkTool;
 	static std::string outputFile;
-	static boost::optional<Tool> ValidationTool;
-	static std::vector<std::string> pathes;
+    
+    /// Solver Options
 	static std::vector<std::string> tools_smtrat;
 	static std::vector<std::string> tools_z3;
 	static std::vector<std::string> tools_isat;
 	static std::vector<std::string> tools_redlogrlqe;
 	static std::vector<std::string> tools_redlogrlcad;
 	static std::vector<std::string> tools_qepcad;
-	static std::vector<std::string> nodes;
-	static std::vector<std::string> composeFiles;
+    
+	static std::string RemoteOutputDirectory;
+	static std::string PathOfBenchmarkTool;
+	static boost::optional<Tool> ValidationTool;
 	
 	// Constants
 	static const std::string ExitMessage;
+    static std::time_t startTime;
 	
 	friend std::ostream& operator<<(std::ostream& os, const Settings& s) {
 		os << s.desc_cmdline << std::endl;

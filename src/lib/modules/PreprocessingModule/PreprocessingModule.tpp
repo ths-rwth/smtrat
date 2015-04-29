@@ -30,7 +30,6 @@
 #include "PreprocessingModule.h"
 #include "../../../cli/ExitCodes.h"
 #include <limits.h>
-#include <bits/stl_map.h>
 
 //#define REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION (Not working)
 //#define ADDLINEARDEDUCTIONS
@@ -44,6 +43,7 @@ namespace smtrat {
     {
 		removeFactorsFunction = std::bind(&PreprocessingModule<Settings>::removeFactors, this, std::placeholders::_1);
 		checkBoundsFunction = std::bind(&PreprocessingModule<Settings>::checkBounds, this, std::placeholders::_1);
+		splitSOSFunction = std::bind(&PreprocessingModule<Settings>::splitSOS, this, std::placeholders::_1);
     }
 
     /**
@@ -116,6 +116,11 @@ namespace smtrat {
 				formula = visitor.visit(formula, checkBoundsFunction);
 			}
 			SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Checked bounds  " << formula);
+			if (Settings::splitSOS) {
+				// Check if bounds make constraints vanish.
+				formula = visitor.visit(formula, splitSOSFunction);
+			}
+			SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Split sum-of-square decompositions  " << formula);
 			
 			formula = formula.toCNF();
 			FormulaT origins(carl::FormulaType::AND, tmpOrigins);
@@ -164,10 +169,8 @@ namespace smtrat {
 			vars.erase(v);
 		}
 		for (carl::Variable::Arg v: vars) {
-			std::cout << "Setting " << v << " = 0" << std::endl;
 			mModel.emplace(v, vs::SqrtEx());
 		}
-		std::cout << mModel << std::endl;
     }
 	
 	template<typename Settings>
@@ -201,7 +204,7 @@ namespace smtrat {
     FormulaT PreprocessingModule<Settings>::removeFactors(const FormulaT& formula) {
 		if(formula.getType() == carl::CONSTRAINT) {
 			auto factors = formula.constraint().factorization();
-			SMTRAT_LOG_TRACE("smtrat.preprocessing", "Factorization of " << formula << " = " << factors);
+			SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Factorization of " << formula << " = " << factors);
 			for (auto it = factors.begin(); it != factors.end();) {
 				auto i = carl::IntervalEvaluation::evaluate(it->first, completeBounds(it->first));
 				if (i.isPositive()) {
@@ -228,6 +231,75 @@ namespace smtrat {
 				p *= carl::pow(it.first, it.second);
 			}
 			return FormulaT(p, formula.constraint().relation());
+		}
+		return formula;
+	}
+	
+	template<typename Settings>
+    FormulaT PreprocessingModule<Settings>::splitSOS(const FormulaT& formula) {
+		if(formula.getType() == carl::CONSTRAINT) {
+            std::vector<std::pair<Rational,Poly>> sosDec;
+            bool lcoeffNeg = carl::isNegative(formula.constraint().lhs().lcoeff());
+            if (lcoeffNeg) {
+                sosDec = (-formula.constraint().lhs()).sosDecomposition();
+            } else {
+                sosDec = formula.constraint().lhs().sosDecomposition();
+            }
+            if (sosDec.size() <= 1) {
+                return formula;
+            }
+			SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Sum-of-squares decomposition of " << formula << " = " << sosDec);
+            carl::Relation rel = carl::Relation::EQ;
+            carl::FormulaType boolOp = carl::FormulaType::AND;
+            switch(formula.constraint().relation()) {
+                case carl::Relation::EQ:
+                    if (formula.constraint().lhs().hasConstantTerm())
+                        return FormulaT(carl::FormulaType::FALSE);
+                    break;
+                case carl::Relation::NEQ:
+                    if (formula.constraint().lhs().hasConstantTerm())
+                        return FormulaT(carl::FormulaType::TRUE);
+                    rel = carl::Relation::NEQ;
+                    boolOp = carl::FormulaType::OR;
+                    break;
+                case carl::Relation::LEQ:
+                    if (lcoeffNeg)
+                        return FormulaT(carl::FormulaType::TRUE);
+                    else if (formula.constraint().lhs().hasConstantTerm())
+                        return FormulaT(carl::FormulaType::FALSE);
+                    break;
+                case carl::Relation::LESS:
+                    if (lcoeffNeg) {
+                        if (formula.constraint().lhs().hasConstantTerm())
+                            return FormulaT(carl::FormulaType::TRUE);
+                        rel = carl::Relation::NEQ;
+                        boolOp = carl::FormulaType::OR;
+                    }
+                    else 
+                        return FormulaT(carl::FormulaType::FALSE);
+                    break;
+                case carl::Relation::GEQ:
+                    if (!lcoeffNeg)
+                        return FormulaT(carl::FormulaType::TRUE);
+                    else if (formula.constraint().lhs().hasConstantTerm())
+                        return FormulaT(carl::FormulaType::FALSE);
+                    break;
+                default:
+                    assert(formula.constraint().relation() == carl::Relation::GREATER);
+                    if (lcoeffNeg)
+                        return FormulaT(carl::FormulaType::FALSE);
+                    else {
+                        if (formula.constraint().lhs().hasConstantTerm())
+                            return FormulaT(carl::FormulaType::TRUE);
+                        rel = carl::Relation::NEQ;
+                        boolOp = carl::FormulaType::OR;
+                    }
+            }
+            FormulasT subformulas;
+			for (auto it = sosDec.begin(); it != sosDec.end(); ++it) {
+                subformulas.emplace(it->second, rel);
+			}
+			return FormulaT(boolOp, subformulas);
 		}
 		return formula;
 	}

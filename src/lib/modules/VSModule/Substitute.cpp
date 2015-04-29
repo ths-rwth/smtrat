@@ -275,6 +275,130 @@ namespace vs
         return result;
     }
 
+    void splitSosDecompositions( DisjunctionOfConstraintConjunctions& _toSimplify )
+    {
+        for( size_t i = 0; i < _toSimplify.size(); )
+        {
+            auto& cc = _toSimplify[i];
+            bool foundNoInvalidConstraint = true;
+            size_t pos = 0;
+            while( foundNoInvalidConstraint && pos < cc.size() )
+            {
+                const smtrat::ConstraintT& constraint = cc[pos];
+                std::vector<std::pair<smtrat::Rational,smtrat::Poly>> sosDec;
+                bool lcoeffNeg = carl::isNegative(constraint.lhs().lcoeff());
+                if (lcoeffNeg)
+                    sosDec = (-constraint.lhs()).sosDecomposition();
+                else
+                    sosDec = constraint.lhs().sosDecomposition();
+                if( sosDec.size() > 1 )
+                {
+//                    std::cout << "Sum-of-squares decomposition of " << constraint.lhs() << " = " << sosDec << std::endl;
+                    bool addSquares = true;
+                    bool constraintValid = false;
+                    switch( constraint.relation() )
+                    {
+                        case carl::Relation::EQ:
+                        {
+                            if( constraint.lhs().hasConstantTerm() )
+                            {
+                                foundNoInvalidConstraint = false;
+                                addSquares = false;
+                            }
+                            break;
+                        }
+                        case carl::Relation::NEQ:
+                        {
+                            addSquares = false;
+                            if( constraint.lhs().hasConstantTerm() )
+                            {
+                                constraintValid = true;
+                            }
+                            break;
+                        }
+                        case carl::Relation::LEQ:
+                        {
+                            if( lcoeffNeg )
+                            {
+                                addSquares = false;
+                                constraintValid = true;
+                            }
+                            else if( constraint.lhs().hasConstantTerm() )
+                            {
+                                addSquares = false;
+                                foundNoInvalidConstraint = false;
+                            }
+                            break;
+                        }
+                        case carl::Relation::LESS:
+                        {
+                            addSquares = false;
+                            if( lcoeffNeg )
+                            {
+                                if( constraint.lhs().hasConstantTerm() )
+                                    constraintValid = true;
+                            }
+                            else 
+                                foundNoInvalidConstraint = false;
+                            break;
+                        }
+                        case carl::Relation::GEQ:
+                        {
+                            if( !lcoeffNeg )
+                            {
+                                addSquares = false;
+                                constraintValid = true;
+                            }
+                            else if( constraint.lhs().hasConstantTerm() )
+                            {
+                                addSquares = false;
+                                foundNoInvalidConstraint = false;
+                            }
+                            break;
+                        }
+                        default:
+                        {
+                            assert( constraint.relation() == carl::Relation::GREATER );
+                            addSquares = false;
+                            if( lcoeffNeg )
+                                foundNoInvalidConstraint = false;
+                            else
+                            {
+                                if( constraint.lhs().hasConstantTerm() )
+                                    constraintValid = true;
+                            }
+                        }
+                    }
+                    assert( !(!foundNoInvalidConstraint && constraintValid) );
+                    assert( !(!foundNoInvalidConstraint && addSquares) );
+                    if( constraintValid || addSquares )
+                    {
+                        cc[pos] = cc.back();
+                        cc.pop_back();
+                    }
+                    else
+                        ++pos;
+                    if( addSquares )
+                    {
+                        for( auto it = sosDec.begin(); it != sosDec.end(); ++it )
+                        {
+                            cc.emplace_back( it->second, carl::Relation::EQ );
+                        }
+                    }   
+                }
+                else
+                    ++pos;
+            }
+            if( foundNoInvalidConstraint )
+                ++i;
+            else
+            {
+                cc = _toSimplify.back();
+                _toSimplify.pop_back();
+            }
+        }
+    }
+
     DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::ConstraintT& _constraint )
     {
         DisjunctionOfConstraintConjunctions combinations;
@@ -476,9 +600,13 @@ namespace vs
         #ifdef SMTRAT_STRAT_Factorization
         if( !splitProducts( _result, true ) ) 
             result = false;
+        #endif
+        if( result )
+        {
+            splitSosDecompositions( _result );
+        }
         #ifdef VS_DEBUG_SUBSTITUTION
         print( _result );
-        #endif
         #endif
         return result;
     }
