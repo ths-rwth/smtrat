@@ -70,7 +70,7 @@ namespace smtrat
 		mConflictGraph(),
 		mVariableBounds()
 #ifdef SMTRAT_DEVOPTION_Statistics
-		,mStats(CADStatistics::getInstance(0))
+		,mStats(new CADStatistics())
 #endif
 	{
 		mInfeasibleSubsets.clear();	// initially everything is satisfied
@@ -266,6 +266,9 @@ namespace smtrat
 				storeAssumptionsToCheck(*mpManager);
 			}
 			//assert(ours == mInfeasibleSubsets);
+			#ifdef SMTRAT_DEVOPTION_Statistics
+			mStats->addMIS(constraints().size() + variableBounds().getOriginsOfBounds().size(), ours.size());
+			#endif
             #endif
 
 			#ifdef CHECK_SMALLER_MUSES
