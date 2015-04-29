@@ -331,16 +331,13 @@ namespace smtrat
 
         // Debug Outputs of linear and nonlinear Tables
         #ifdef ICP_MODULE_DEBUG_0
-        #ifndef ICP_MODULE_DEBUG_1
+        #ifdef ICP_MODULE_DEBUG_1
+        printIcpVariables();
+        #else
         std::cout << "Constraints after preprocessing:" << std::endl;
         printPreprocessedInput( "    " );
         std::cout << std::endl;
         #endif
-        #endif
-        #ifdef ICP_MODULE_DEBUG_1
-        printAffectedCandidates();
-        printIcpVariables();
-        cout << "Id selected box: " << mHistoryRoot->id() << " Size subtree: " << mHistoryRoot->sizeSubtree() << endl;
         #endif
         for( icp::ContractionCandidate* cc : mActiveLinearConstraints )
             cc->resetReusagesAfterTargetDiameterReached();
@@ -367,10 +364,6 @@ namespace smtrat
         #ifdef ICP_MODULE_DEBUG_0
         std::cout << "Start with the intervals" << std::endl;
         printIntervals( false );
-        #endif
-        #ifdef ICP_MODULE_DEBUG_1
-        printIntervals(true);
-        cout << "---------------------------------------------" << endl;
         #endif
         bool invalidBox = contractCurrentBox();
         #ifdef ICP_MODULE_DEBUG_0
@@ -640,7 +633,7 @@ namespace smtrat
             mHistoryActual->print();
             #endif
             // prepare IcpRelevantCandidates
-//            activateLinearEquations(); // TODO (Florian): do something alike again
+//            activateLinearEquations(); // TODO: do we need this?
             fillCandidates();
             while ( !mIcpRelevantCandidates.empty() && !mSplitOccurred )
             {
@@ -652,8 +645,8 @@ namespace smtrat
                 // catch if new interval is empty -> we can drop box and chose next box
                 if ( mIntervals.at(candidate->derivationVar()).isEmpty() )
                 {
-                    #ifdef ICP_MODULE_DEBUG_1
-                    cout << "GENERATED EMPTY INTERVAL, Drop Box: " << endl;
+                    #ifdef ICP_MODULE_DEBUG_0
+                    cout << "Contracted to empty interval!" << endl;
                     #endif
                     mLastCandidate = candidate;
                     invalidBox = true;
@@ -690,6 +683,7 @@ namespace smtrat
                     for ( auto candidateIt = (*icpVar).second->candidates().begin(); candidateIt != (*icpVar).second->candidates().end(); ++candidateIt )
                     {
                         bool toAdd = true;
+                        // TODO: there must be a better way to find out whether the candidate is already in the relevants
                         for ( auto relevantCandidateIt = mIcpRelevantCandidates.begin(); relevantCandidateIt != mIcpRelevantCandidates.end(); ++relevantCandidateIt )
                         {
                             if ( (*relevantCandidateIt).second == (*candidateIt)->id() )
@@ -775,9 +769,14 @@ namespace smtrat
     {
         Poly linearizedConstraint = smtrat::ZERO_POLYNOMIAL;
         ContractionCandidates ccs;
-        // Create contraction candidate object for every possible derivation variable
+        /*
+         * Create all icp variables and contraction candidates for the given non-linear constraint:
+         * 
+         *      a_1*m_1 + .. + a_k*m_k ~ b, with b and a_i being rationals and m_i being monomials (possibly linear)
+         */
         for( auto& monom : _tempMonomes )
         {
+            ContractionCandidates ccsOfMonomial;
             auto iter = mVariableLinearizations.find( monom );
             if( iter == mVariableLinearizations.end() ) // no linearization yet
             {
@@ -785,9 +784,9 @@ namespace smtrat
                 Variables variables;
                 monom.gatherVariables( variables );
                 bool hasRealVar = false;
-                for( auto var : variables )
+                for( auto var = variables.begin(); var != variables.end(); ++var )
                 {
-                    if( var.getType() == carl::VariableType::VT_REAL )
+                    if( var->getType() == carl::VariableType::VT_REAL )
                     {
                         hasRealVar = true;
                         break;
@@ -802,26 +801,36 @@ namespace smtrat
                 #ifdef ICP_MODULE_DEBUG_1
                 cout << "New replacement: " << monom << " -> " << mVariableLinearizations.at(monom) << endl;
                 #endif
+                // Create equation m_i - v_i = 0, where m_i is the nonlinear monomial x_{i,1}^e_{i,1}*..*x_{i,n}^e_{i,n} being replaced by the freshly introduced variable v_i
                 const Poly rhs = monom - carl::makePolynomial<Poly>(newVar);
+                if( mContractors.find(rhs) == mContractors.end() )
+                    mContractors.insert(std::make_pair(rhs, Contractor<carl::SimpleNewton>(rhs)));
+                
+                ConstraintT tmp = ConstraintT( rhs, Relation::EQ );
                 for( auto varIndex = variables.begin(); varIndex != variables.end(); ++varIndex )
                 {
-                    // create a contraction candidate for each variable in the monomial
-                    if( mContractors.find(rhs) == mContractors.end() )
-                        mContractors.insert(std::make_pair(rhs, Contractor<carl::SimpleNewton>(rhs)));
-                    ConstraintT tmp = ConstraintT( rhs, Relation::EQ );
+                    // create a contraction candidate for m_i-v_i regarding the variable x_{i,1}
                     icp::ContractionCandidate* tmpCandidate = mCandidateManager.createCandidate( newVar, rhs, tmp, *varIndex, mContractors.at( rhs ) );
-                    ccs.insert( ccs.end(), tmpCandidate );
+                    ccsOfMonomial.insert( ccsOfMonomial.end(), tmpCandidate );
                     tmpCandidate->setNonlinear();
+                    // add the contraction candidate to the icp variable of v_i
                     auto tmpIcpVar = mVariables.find( newVar );
                     assert( tmpIcpVar != mVariables.end() );
                     tmpIcpVar->second->addCandidate( tmpCandidate );
                 }
-                // add one candidate for the replacement variable
-                ConstraintT tmp = ConstraintT( rhs, Relation::EQ );
+                // create a contraction candidate for m_i-v_i regarding the variable v_i
                 icp::ContractionCandidate* tmpCandidate = mCandidateManager.createCandidate( newVar, rhs, tmp, newVar, mContractors.at( rhs ) );
                 tmpCandidate->setNonlinear();
                 icpVar->addCandidate( tmpCandidate );
-                ccs.insert( ccs.end(), tmpCandidate );
+                ccsOfMonomial.insert( ccsOfMonomial.end(), tmpCandidate );
+                // add all contraction candidates for m_i-v_i to the icp variables of all x_{i,j}
+                for( auto var = variables.begin(); var != variables.end(); ++var )
+                {
+                    auto origIcpVar = mVariables.find( *var );
+                    assert( origIcpVar != mVariables.end() );
+                    origIcpVar->second->addCandidates( ccsOfMonomial );
+                }
+                ccs.insert( ccsOfMonomial.begin(), ccsOfMonomial.end() );
             }
             else // already existing replacement/substitution/linearization
             {
@@ -845,13 +854,18 @@ namespace smtrat
                 linearizedConstraint += (monomialIt)->coeff() * carl::makePolynomial<Poly>((*mVariableLinearizations.find( carl::makePolynomial<Poly>(typename Poly::PolyType((monomialIt)->monomial())) )).second);
             }
         }
-        mNonlinearConstraints.insert( pair<ConstraintT, ContractionCandidates>( _constraint, ccs ) );
+        mNonlinearConstraints.emplace( _constraint, std::move(ccs) );
         linearizedConstraint *= _constraint.lhs().coefficient();
         return linearizedConstraint;
     }
     
     void ICPModule::createLinearCCs( const FormulaT& _constraint)
     {
+        /*
+         * Create all icp variables and contraction candidates for the given linear constraint:
+         * 
+         *      a_1*x_1 + .. + a_k*x_k ~ b, with b and a_i being rationals and x_i being variables
+         */
         assert( _constraint.getType() == FormulaType::CONSTRAINT );
         assert( _constraint.constraint().lhs().isLinear() );
         const LRAVariable* slackvariable = mLRA.getSlackVariable( _constraint );
@@ -869,28 +883,32 @@ namespace smtrat
                 }
             }
             carl::Variable newVar = hasRealVar ? carl::freshRealVariable() : carl::freshIntegerVariable();
-            variables.insert( newVar );
+            variables.insert( variables.end(), newVar );
             mSubstitutions.insert( std::make_pair( newVar, carl::makePolynomial<Poly>( newVar ) ) );
             assert( mVariables.find( newVar ) == mVariables.end() );
             icp::IcpVariable* icpVar = getIcpVariable( newVar, false, slackvariable );
             mHistoryRoot->addInterval( newVar, smtrat::DoubleInterval::unboundedInterval() );
+            // Create equation a_1'*x_1 + .. + a_k'*x_k = 0, with a_i' = a_i/gcd(a_1,..,a_k)*sgn(a_1)
             const Poly rhs = carl::makePolynomial<Poly>(slackvariable->expression()) - carl::makePolynomial<Poly>(newVar);
             ConstraintT tmpConstr = ConstraintT( rhs, Relation::EQ );
             auto iter = mContractors.find( rhs );
             if( iter == mContractors.end() )
                 iter = mContractors.insert( std::make_pair( rhs, Contractor<carl::SimpleNewton>(rhs) ) ).first;
+            ContractionCandidates ccs;
             // Create candidates for every possible variable:
             for( auto var = variables.begin(); var != variables.end(); ++var )
-            {   
+            {
+                // create a contraction candidate for a_1'*x_1 + .. + a_k'*x_k - v regarding the variable x_i/v
                 icp::ContractionCandidate* newCandidate = mCandidateManager.createCandidate( newVar, rhs, tmpConstr, *var, iter->second );
-                // ensure that the created candidate is set as linear
+                ccs.insert( ccs.end(), newCandidate );
                 newCandidate->setLinear();
-                #ifdef ICP_MODULE_DEBUG_2
-                cout << "[ICP] Create & activate candidate: ";
-                newCandidate->print();
-                slackvariable->print();
-                #endif
-                icpVar->addCandidate( newCandidate );
+            }
+            // add all contraction candidates for a_1'*x_1 + .. + a_k'*x_k - v to the icp variables of all x_i/v
+            for( auto var = variables.begin(); var != variables.end(); ++var )
+            {
+                auto origIcpVar = mVariables.find( *var );
+                assert( origIcpVar != mVariables.end() );
+                origIcpVar->second->addCandidates( ccs );
             }
             mLinearConstraints.insert( pair<const LRAVariable*, ContractionCandidates>( slackvariable, icpVar->candidates() ) );
         }
@@ -2436,7 +2454,7 @@ namespace smtrat
     void ICPModule::printIcpVariables() const
     {
         for ( auto varIt = mVariables.begin(); varIt != mVariables.end(); ++varIt )
-            (*varIt).second->print();
+            (*varIt).second->print( std::cout, true );
     }
 
     void ICPModule::printIcpRelevantCandidates() const

@@ -415,7 +415,9 @@ namespace smtrat
              */
             std::vector<Module*> getAllBackends( Module* _module ) const
             {
-                // Mutex?
+                #ifdef SMTRAT_STRAT_PARALLEL_MODE
+                std::lock_guard<std::mutex> lock( mBackendsMutex );
+                #endif
                 auto iter = mBackendsOfModules.find( _module );
                 assert( iter != mBackendsOfModules.end() );
                 std::vector<Module*> result = iter->second;
