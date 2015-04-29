@@ -9,6 +9,7 @@ ModuleClass(PreprocessingModule<PreprocessingSettings>)
 ModuleVersion(0 0 1)
 #ModuleSettingsClass(PreprocessingSettings)
 #ModuleSettingsName(standard)
+ModuleDefaultEnabled()
 EndDefineModule(moduleEnabled)
 
 if(${moduleEnabled})
