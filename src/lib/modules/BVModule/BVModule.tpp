@@ -62,15 +62,12 @@ namespace smtrat
     template<class Settings>
     bool BVModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-        // Your code.
-        return true; // This should be adapted according to your implementation.
+        return true;
     }
 
     template<class Settings>
     void BVModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
-    {
-        // Your code.
-    }
+    {}
 
     template<class Settings>
     void BVModule<Settings>::updateModel() const
@@ -79,6 +76,29 @@ namespace smtrat
         if(solverState() == True)
         {
             getBackendsModel();
+        }
+
+        // Build bitvector values from the values of the single bits
+        auto& blastings = mEncoder.bitvectorBlastings();
+
+        for(auto const & bitvectorToBits : blastings)
+        {
+            carl::BVValue composedValue(bitvectorToBits.first.width());
+
+            for(std::size_t i=0;i<bitvectorToBits.second.size();++i)
+            {
+                composedValue[i] = mModel[bitvectorToBits.second[i]].asBool();
+            }
+
+            mModel[bitvectorToBits.first] = composedValue;
+        }
+
+        // Remove internal variables which have been introduced by blasting
+        auto& introducedVariables = mEncoder.introducedBits();
+
+        for(auto const & introducedVariable : introducedVariables)
+        {
+            mModel.erase(introducedVariable);
         }
     }
 
@@ -91,13 +111,10 @@ namespace smtrat
             const FormulaWithOrigins& fwo = *receivedSubformula;
             const FormulaT& formula = fwo.formula();
 
-            std::cerr << "[BVModule] Encoding formula:" << std::endl << " -(IN ): " << formula << std::endl;
-
             const FormulasT& formulasToPass = mEncoder.encode(formula);
 
             for(const FormulaT formulaToPass : formulasToPass)
             {
-                std::cerr << " -(OUT): " << formulaToPass << std::endl;
                 addSubformulaToPassedFormula(formulaToPass, formula);
             }
             ++receivedSubformula;

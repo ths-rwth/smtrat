@@ -44,6 +44,20 @@ namespace smtrat
         return true;
     }
     
+    bool operator<( const ModelVariable& _mvar, const carl::BVVariable& _bvvar )
+    {
+        if( _mvar.isBVVariable() )
+            return _mvar.asBVVariable() < _bvvar;
+        return _mvar.isVariable();
+    }
+
+    bool operator<( const carl::BVVariable& _bvvar, const ModelVariable& _mvar )
+    {
+        if( _mvar.isBVVariable() )
+            return _bvvar < _mvar.asBVVariable();
+        return !_mvar.isVariable();
+    }
+
     bool operator<( const ModelVariable& _mvar, const carl::UVariable& _uv )
     {
         if( _mvar.isUVariable() )
@@ -378,6 +392,8 @@ namespace smtrat
             if (ass != _model.begin()) _out << " ";
             if( ass->first.isVariable() )
                 _out << "(" << ass->first << " " << ass->second << ")" << endl;
+            else if( ass->first.isBVVariable() )
+                _out << "(define-fun " << ass->first << " () " << ass->first.asBVVariable().sort() << " " << ass->second << ")" << endl;
             else if( ass->first.isUVariable() )
                 _out << "(define-fun " << ass->first << " () " << ass->first.asUVariable().domain() << " " << ass->second << ")" << endl;
             else
