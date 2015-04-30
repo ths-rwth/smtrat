@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "theories/TheoryTypes.h"
 
 namespace smtrat {
 namespace parser {
@@ -25,23 +26,35 @@ struct DecimalParser: qi::real_parser<Rational, RationalPolicies> {};
 /**
  * Parses hexadecimals: `#x[0-9a-fA-F]+`
  */
-struct HexadecimalParser: public qi::grammar<Iterator, Rational(), Skipper> {
-    HexadecimalParser(): HexadecimalParser::base_type(main, "hexadecimal") {
-		main = "#x" > number;
+struct HexadecimalParser: public qi::grammar<Iterator, FixedWidthConstant(), Skipper> {
+    typedef boost::iterator_range<Iterator> ITRange;
+    HexadecimalParser(): HexadecimalParser::base_type(main2, "hexadecimal") {
+		main = "#x" > (qi::raw[number[qi::_a = qi::_1]])[qi::_val = px::bind(&HexadecimalParser::build, px::ref(*this), qi::_1, qi::_a)];
+        main2 = main;
 	}
+    FixedWidthConstant build(const ITRange& itr, const Integer& val) {
+        return FixedWidthConstant(val, 4*std::string(itr.begin(), itr.end()).size());
+    }
     qi::uint_parser<Integer,16,1,-1> number;
-    qi::rule<Iterator, Rational(), Skipper> main;
+    qi::rule<Iterator, FixedWidthConstant(), Skipper, qi::locals<Integer>> main;
+    qi::rule<Iterator, FixedWidthConstant(), Skipper> main2;
 };
 
 /**
  * Parses binaries: `#b[01]+`
  */
-struct BinaryParser: public qi::grammar<Iterator, Integer(), Skipper> {
-    BinaryParser(): BinaryParser::base_type(main, "binary") {
-		main = "#b" > number;
+struct BinaryParser: public qi::grammar<Iterator, FixedWidthConstant(), Skipper> {
+    typedef boost::iterator_range<Iterator> ITRange;
+    BinaryParser(): BinaryParser::base_type(main2, "binary") {
+        main = "#b" > (qi::raw[number[qi::_a = qi::_1]])[qi::_val = px::bind(&BinaryParser::build, px::ref(*this), qi::_1, qi::_a)];
+        main2 = main;
 	}
+    FixedWidthConstant build(const ITRange& itr, const Integer& val) {
+        return FixedWidthConstant(val, std::string(itr.begin(), itr.end()).size());
+    }
     qi::uint_parser<Integer,2,1,-1> number;
-    qi::rule<Iterator, Integer(), Skipper> main;
+    qi::rule<Iterator, FixedWidthConstant(), Skipper, qi::locals<Integer>> main;
+    qi::rule<Iterator, FixedWidthConstant(), Skipper> main2;
 };
 
 /**

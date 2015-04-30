@@ -5,6 +5,22 @@
 
 namespace smtrat {
 namespace parser {
+
+struct FixedWidthConstant {
+    Integer value;
+    std::size_t width;
+    FixedWidthConstant(): value(0), width(0) {}
+    FixedWidthConstant(const Integer& value, std::size_t width): value(value), width(width) {
+        std::cout << "Constructing " << value << "_" << width << std::endl;
+    }
+	bool operator<(const FixedWidthConstant& fwc) const {
+		return value < fwc.value;
+	}
+};
+inline std::ostream& operator<<(std::ostream& os, const FixedWidthConstant& fwc) {
+    return os << fwc.value << "_" << fwc.width;
+}
+
 namespace types {
 	
 	struct CoreTheory {
@@ -16,10 +32,10 @@ namespace types {
 	};
 #ifdef PARSER_ENABLE_ARITHMETIC
 	struct ArithmeticTheory  {
-		typedef mpl::vector<Rational> ConstTypes;
+		typedef mpl::vector<Rational, FixedWidthConstant> ConstTypes;
 		typedef mpl::vector<carl::Variable> VariableTypes;
-		typedef mpl::vector<carl::Variable, Rational, Poly> ExpressionTypes;
-		typedef mpl::vector<carl::Variable, Rational, Poly> TermTypes;
+		typedef mpl::vector<carl::Variable, Rational, FixedWidthConstant, Poly> ExpressionTypes;
+		typedef mpl::vector<carl::Variable, Rational, FixedWidthConstant, Poly> TermTypes;
 		typedef carl::mpl_variant_of<TermTypes>::type TermType;
 	};
 #endif
@@ -27,10 +43,10 @@ namespace types {
 	typedef carl::BVTerm BVTerm;
 	typedef carl::BVConstraint BVConstraint;
 	struct BitvectorTheory {
-		typedef mpl::vector<carl::BVVariable, BVTerm> ConstTypes;
+		typedef mpl::vector<carl::BVVariable, FixedWidthConstant, BVTerm> ConstTypes;
 		typedef mpl::vector<carl::BVVariable, BVTerm> VariableTypes;
-		typedef mpl::vector<carl::BVVariable, BVTerm, BVConstraint> ExpressionTypes;
-		typedef mpl::vector<carl::BVVariable, BVTerm, BVConstraint> TermTypes;
+		typedef mpl::vector<carl::BVVariable, FixedWidthConstant, BVTerm, BVConstraint> ExpressionTypes;
+		typedef mpl::vector<carl::BVVariable, FixedWidthConstant, BVTerm, BVConstraint> TermTypes;
 		typedef carl::mpl_variant_of<TermTypes>::type TermType;
 	};
 #endif
