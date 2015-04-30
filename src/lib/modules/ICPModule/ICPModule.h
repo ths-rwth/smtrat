@@ -559,5 +559,7 @@ namespace smtrat
              * Prints all intervals from mIntervals, should be the same intervals as in mHistoryActual->intervals().
              */
             void printPreprocessedInput( std::string _init = "" ) const;
+            
+            void printContraction( const icp::ContractionCandidate& _cc, const DoubleInterval& _before, const DoubleInterval& _afterA, const DoubleInterval& _afterB = DoubleInterval::emptyInterval(), std::ostream& _out = std::cout ) const;
     };
 }    // namespace smtrat
