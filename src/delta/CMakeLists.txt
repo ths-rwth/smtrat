@@ -6,8 +6,10 @@ add_executable( delta
 	delta.cpp
 )
 
+target_link_libraries( delta boost_program_options )
+
 if (NOT WIN32)
-	target_link_libraries( delta boost_program_options pthread )
+	target_link_libraries( delta pthread )
 endif()
 
 if(USE_BOOST_REGEX)

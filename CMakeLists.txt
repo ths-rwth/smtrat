@@ -157,9 +157,7 @@ else()
 	set( libraries ${libraries} lib_carl)
 endif()
 
-if (NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-	set( libraries ${libraries} boost_system)
-endif()
+set( libraries ${libraries} boost_system)
 
 # # # # # # # # # # # # # # # # # # # # # #
 # C.2. required libraries
