@@ -149,6 +149,7 @@ namespace parser {
 		state->registerFunction("bvsmod", new BinaryBitvectorInstantiator<carl::BVTermType::MOD_S2>());
 		state->registerFunction("bvshl", new BinaryBitvectorInstantiator<carl::BVTermType::LSHIFT>());
 		state->registerFunction("bvlshr", new BinaryBitvectorInstantiator<carl::BVTermType::RSHIFT_LOGIC>());
+		state->registerFunction("bvashr", new BinaryBitvectorInstantiator<carl::BVTermType::RSHIFT_ARITH>());
 		
 		state->registerFunction("rotate_left", new SingleIndexBitvectorInstantiator<carl::BVTermType::LROTATE>());
 		state->registerFunction("rotate_right", new SingleIndexBitvectorInstantiator<carl::BVTermType::RROTATE>());

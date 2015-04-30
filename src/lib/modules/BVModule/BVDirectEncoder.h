@@ -309,8 +309,13 @@ namespace smtrat
                                         Formula(out[i]),
                                         Formula(carl::FormulaType::XOR,
                                                 Formula(_first[i]),
-                                                Formula(_second[i]),
-                                                Formula(carry[i]))));
+                                                Formula(carl::FormulaType::XOR,
+                                                        Formula(_second[i]),
+                                                        Formula(carry[i])))));
+                }
+
+                if(_withCarryOut) {
+                    out.insert(out.end(), carry[carry.size()-1]);
                 }
 
                 return out;
@@ -325,16 +330,18 @@ namespace smtrat
                     summands[i] = createBits(_first.size() - i);
 
                     for(std::size_t j=0;j<summands[i].size();++j) {
-                        addEncoding(Formula(carl::FormulaType::ITE,
-                                            Formula(_second[i]),
-                                            Formula(_first[j]),
-                                            Formula(carl::FormulaType::FALSE)));
+                        addEncoding(Formula(carl::FormulaType::IFF,
+                                            Formula(summands[i][j]),
+                                            Formula(carl::FormulaType::ITE,
+                                                    Formula(_second[i]),
+                                                    Formula(_first[j]),
+                                                    Formula(carl::FormulaType::FALSE))));
                     }
                     summands[i].insert(summands[i].begin(), i, const0());
                 }
 
                 for(std::size_t i=0;i<sums.size();++i) {
-                    sums[i] = encodeAdderNetwork(summands[i], summands[i+1]);
+                    sums[i] = encodeAdderNetwork((i == 0 ? summands[0] : sums[i-1]), summands[i+1]);
                 }
 
                 if(sums.size() > 0) {
@@ -365,12 +372,14 @@ namespace smtrat
                 );
 
                 Bit remainderLessThanDivisor = encodeUlt(remainder, _second);
+                Bit outLessThanFirst = encodeUle(out, _first);
 
                 addEncoding(Formula(carl::FormulaType::IMPLIES,
                                     Formula(wellDefined),
                                     Formula(carl::FormulaType::AND,
                                             Formula(summationCorrect),
-                                            Formula(remainderLessThanDivisor))));
+                                            Formula(remainderLessThanDivisor),
+                                            Formula(outLessThanFirst))));
 
                 return (_returnRemainder ? remainder : out);
             }
@@ -491,11 +500,10 @@ namespace smtrat
                     ++highestRelevantPos;
 
                 Bits lastStage(_first);
-                std::size_t currentShiftBy = 0;
+                std::size_t currentShiftBy = 1;
 
                 for(std::size_t stage=0;stage<=highestRelevantPos && stage<_second.size();++stage)
                 {
-                    ++currentShiftBy;
                     Bits currentStage = createBits(lastStage.size());
 
                     for(std::size_t pos=0;pos<lastStage.size();++pos)
@@ -520,6 +528,7 @@ namespace smtrat
                                                     Formula(notShifted))));
                     }
 
+                    currentShiftBy *= 2;
                     lastStage = currentStage;
                 }
 
@@ -571,7 +580,9 @@ namespace smtrat
                 Bits out(_operand);
                 std::rotate(out.begin(),
                             out.begin() + (Bits::difference_type)(
-                                _index % _operand.size()),
+                                (_operand.size() -
+                                    (_index % _operand.size()))
+                                % _operand.size()),
                             out.end());
                 return out;
             }
@@ -581,9 +592,7 @@ namespace smtrat
                 Bits out(_operand);
                 std::rotate(out.begin(),
                             out.begin() + (Bits::difference_type)(
-                                (_operand.size() -
-                                    (_index % _operand.size()))
-                                % _operand.size()),
+                                _index % _operand.size()),
                             out.end());
                 return out;
             }
