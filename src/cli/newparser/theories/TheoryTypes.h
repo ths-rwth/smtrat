@@ -10,9 +10,7 @@ struct FixedWidthConstant {
     Integer value;
     std::size_t width;
     FixedWidthConstant(): value(0), width(0) {}
-    FixedWidthConstant(const Integer& value, std::size_t width): value(value), width(width) {
-        std::cout << "Constructing " << value << "_" << width << std::endl;
-    }
+    FixedWidthConstant(const Integer& value, std::size_t width): value(value), width(width) {}
 	bool operator<(const FixedWidthConstant& fwc) const {
 		return value < fwc.value;
 	}
@@ -110,37 +108,6 @@ namespace types {
 		>::type AttributeTypes;
 	typedef carl::mpl_variant_of<AttributeTypes>::type AttributeValue;
 	
-	struct FunctionInstantiator {
-		template<typename T>
-		bool convert(const std::vector<TermType>& from, std::vector<T>& to) const {
-			VectorVariantConverter<T> converter;
-			return converter.convert(from, to);
-		}
-		virtual bool operator()(const std::vector<TermType>&, TermType&, TheoryError& errors) const {
-			errors.next() << "Instantiation of this function is not supported.";
-			return false;
-		}
-	};
-	struct IndexedFunctionInstantiator {
-		template<typename T>
-		bool convert(const std::vector<TermType>& from, std::vector<T>& to) const {
-			VectorVariantConverter<T> converter;
-			return converter.convert(from, to);
-		}
-		virtual bool operator()(const std::vector<std::size_t>&, const std::vector<TermType>&, TermType&, TheoryError& errors) const {
-			errors.next() << "Instantiation of this function is not supported.";
-			return false;
-		}
-	};
-	struct UserFunctionInstantiator: public FunctionInstantiator {
-	private:
-		std::vector<std::pair<std::string, carl::Sort>> arguments;
-		carl::Sort sort;
-		TermType definition;
-	public:
-		UserFunctionInstantiator(const std::vector<std::pair<std::string, carl::Sort>>& arguments, const carl::Sort& sort, const TermType& definition):
-			arguments(arguments), sort(sort), definition(definition) {}
-	};
 }
 }
 }

@@ -7,6 +7,7 @@
 
 #include "../Common.h"
 #include "TheoryTypes.h"
+#include "FunctionInstantiator.h"
 
 namespace smtrat {
 namespace parser {
@@ -37,8 +38,9 @@ namespace parser {
 		std::map<std::string, types::VariableType> variables;
 		std::map<std::string, types::TermType> bindings;
 		std::map<std::string, carl::UninterpretedFunction> declared_functions;
-		std::map<std::string, const types::FunctionInstantiator*> defined_functions;
-		std::map<std::string, const types::IndexedFunctionInstantiator*> defined_indexed_functions;
+		std::map<std::string, types::TermType> defined_constants;
+		std::map<std::string, const FunctionInstantiator*> defined_functions;
+		std::map<std::string, const IndexedFunctionInstantiator*> defined_indexed_functions;
 	
 		//std::map<std::string, BooleanFunction> funmap_bool;
 		//std::map<std::string, ArithmeticFunction> funmap_arithmetic;
@@ -76,6 +78,7 @@ namespace parser {
 				if (name == "true" || name == "false") out << "\"" << name << "\" is a reserved keyword.";
 				else if (variables.find(name) != variables.end()) out << "\"" << name << "\" has already been defined as a variable.";
 				else if (bindings.find(name) != bindings.end()) out << "\"" << name << "\" has already been defined as a binding to \"" << bindings[name] << "\".";
+				else if (defined_constants.find(name) != defined_constants.end()) out << "\"" << name << "\" has already been defined as a constant.";
 				else if (declared_functions.find(name) != declared_functions.end()) out << "\"" << name << "\" has already been declared as a function.";
 				else if (defined_functions.find(name) != defined_functions.end()) out << "\"" << name << "\" has already been defined as a function.";
 				else if (defined_indexed_functions.find(name) != defined_indexed_functions.end()) out << "\"" << name << "\" has already been defined as a function.";
@@ -95,17 +98,18 @@ namespace parser {
 		bool resolveSymbol(const std::string& name, types::TermType& r) const {
 			if (resolveSymbol(name, variables, r)) return true;
 			if (resolveSymbol(name, bindings, r)) return true;
+			if (resolveSymbol(name, defined_constants, r)) return true;
 			return false;
 		}
 		
-		void registerFunction(const std::string& name, const types::FunctionInstantiator* fi) {
+		void registerFunction(const std::string& name, const FunctionInstantiator* fi) {
 			if (!isSymbolFree(name)) {
 				SMTRAT_LOG_ERROR("smtrat.parser", "Failed to register function \"" << name << "\", name is already used.");
 				return;
 			}
 			defined_functions.emplace(name, fi);
 		}
-		void registerFunction(const std::string& name, const types::IndexedFunctionInstantiator* fi) {
+		void registerFunction(const std::string& name, const IndexedFunctionInstantiator* fi) {
 			if (!isSymbolFree(name)) {
 				SMTRAT_LOG_ERROR("smtrat.parser", "Failed to register indexed function \"" << name << "\", name is already used.");
 				return;

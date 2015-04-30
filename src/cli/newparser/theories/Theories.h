@@ -113,7 +113,11 @@ struct Theories {
 	void defineFunction(const std::string& name, const std::vector<std::pair<std::string, carl::Sort>>& arguments, const carl::Sort& sort, const types::TermType& definition) {
 		if (state->isSymbolFree(name)) {
 			///@todo check that definition matches the sort
-			state->defined_functions.emplace(name, new types::UserFunctionInstantiator(arguments, sort, definition));
+			if (arguments.size() == 0) {
+				state->defined_constants.emplace(name, definition);
+			} else {
+				state->defined_functions.emplace(name, new UserFunctionInstantiator(arguments, sort, definition));
+			}
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Function \"" << name << "\" will not be defined due to a name clash.");
 			HANDLE_ERROR

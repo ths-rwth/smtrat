@@ -1,10 +1,12 @@
 #include "Bitvector.h"
 #include "ParserState.h"
+#include "Conversions.h"
+#include "FunctionInstantiator.h"
 
 namespace smtrat {
 namespace parser {
 	
-	struct BitvectorInstantiator: public types::FunctionInstantiator {
+	struct BitvectorInstantiator: public FunctionInstantiator {
 		bool operator()(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) const {
 			std::vector<types::BVTerm> args;
 			if (!convert(arguments, args)) {
@@ -15,7 +17,7 @@ namespace parser {
 		}
 		virtual bool apply(const std::vector<types::BVTerm>& arguments, types::TermType& result, TheoryError& errors) const = 0;
 	};
-	struct IndexedBitvectorInstantiator: public types::IndexedFunctionInstantiator {
+	struct IndexedBitvectorInstantiator: public IndexedFunctionInstantiator {
 		bool operator()(const std::vector<std::size_t>& indices, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) const {
 			std::vector<types::BVTerm> args;
 			if (!convert(arguments, args)) {

@@ -43,46 +43,6 @@ namespace parser {
 	namespace qi = boost::spirit::qi;
 	namespace px = boost::phoenix;
 	namespace mpl = boost::mpl;
-	
-	template<typename Res>
-	struct VariantConverter: public boost::static_visitor<> {
-		typedef Res result_type;
-		template<typename T>
-		Res operator()(const T& t) const {
-			return Res(t);
-		}
-		template<typename T>
-		Res convertOne(const T& t) const {
-			return Res(t);
-		}
-		template<typename Variant>
-		Res convertVariant(const Variant& t) const {
-			return boost::apply_visitor(*this, t);
-		}
-		template<typename... T>
-		Res convert(const boost::variant<T...>& t) const {
-			return boost::apply_visitor(*this, t);
-		}
-	};
-	
-	template<typename Res>
-	struct VectorVariantConverter: public boost::static_visitor<> {
-		typedef Res result_type;
-		template<typename T>
-		Res operator()(const T& t) const {
-			return Res(t);
-		}
-		template<typename... T>
-		bool convert(const std::vector<boost::variant<T...>>& v, std::vector<Res>& result) const {
-			result.clear();
-			for (const auto& val: v) {
-				if (boost::get<Res>(&val) == nullptr) return false;
-				result.push_back(boost::get<Res>(val));
-			}
-			return true;
-		}
-	};
-	
 		
 	struct Identifier {
 		std::string symbol;

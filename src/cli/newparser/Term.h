@@ -38,7 +38,7 @@ struct SortedVariableParser: public qi::grammar<Iterator, std::pair<std::string,
 };
 
 struct TermParser: public qi::grammar<Iterator, types::TermType(), Skipper> {
-	typedef VariantConverter<types::TermType> Converter;
+	typedef conversion::VariantVariantConverter<types::TermType> Converter;
 	TermParser(Theories* theories): TermParser::base_type(main, "term"), theories(theories) {
 		main =
 				specconstant[qi::_val = px::bind(&Converter::template convert<types::ConstType>, &converter, qi::_1)]

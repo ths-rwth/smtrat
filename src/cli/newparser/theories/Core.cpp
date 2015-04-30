@@ -4,7 +4,7 @@
 namespace smtrat {
 namespace parser {
 
-	struct CoreInstantiator: public types::FunctionInstantiator {
+	struct CoreInstantiator: public FunctionInstantiator {
 		bool operator()(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) const {
 			std::vector<FormulaT> args;
 			if (!convert(arguments, args)) return false;

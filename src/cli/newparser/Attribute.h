@@ -33,10 +33,10 @@ inline std::ostream& operator<<(std::ostream& os, const Attribute& attr) {
 }
 
 struct AttributeValueParser: public qi::grammar<Iterator, types::AttributeValue(), Skipper> {
-	typedef VariantConverter<types::AttributeValue> Converter;
+	typedef conversion::VariantVariantConverter<types::AttributeValue> Converter;
 	AttributeValueParser(): AttributeValueParser::base_type(main, "attribute value") {
 		main = 
-				specconstant[qi::_val = px::bind(&Converter::template convertVariant<types::ConstType>, &converter, qi::_1)]
+				specconstant[qi::_val = px::bind(&Converter::template convert<types::ConstType>, &converter, qi::_1)]
 			|	symbol[qi::_val = px::bind(&Converter::template convert<std::string>, px::ref(converter), qi::_1)]
 			|	(qi::lit("(") >> *sexpression >> qi::lit(")"))[qi::_val = px::bind(&Converter::template convert<SExpressionSequence<types::ConstType>>, px::ref(converter), px::construct<SExpressionSequence<types::ConstType>>(qi::_1))]
 		;
