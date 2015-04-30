@@ -31,7 +31,15 @@
  */
 
 #include <iostream>
+#include "../cli/config.h"
+#ifdef __VS
+#pragma warning(push, 0)
 #include <boost/filesystem/path.hpp>
+#pragma warning(pop)
+#else
+#include <boost/filesystem/path.hpp>
+#endif
+
 #include <signal.h>
 
 #include "logging.h"

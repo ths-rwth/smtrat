@@ -10,12 +10,25 @@
 #include <type_traits>
 #include <fstream>
 #include <queue>
+
+#include "../config.h"
+#ifdef __VS
+#pragma warning(push, 0)
 #include <boost/spirit/include/qi.hpp>
 #include <boost/variant.hpp>
 #include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_bind.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
+#pragma warning(pop)
+#else
+#include <boost/spirit/include/qi.hpp>
+#include <boost/variant.hpp>
+#include <boost/spirit/include/phoenix_object.hpp>
+#include <boost/spirit/include/phoenix_core.hpp>
+#include <boost/spirit/include/phoenix_bind.hpp>
+#include <boost/spirit/include/phoenix_operator.hpp>
+#endif
 
 #include "Common.h"
 #include "VariantMap.h"

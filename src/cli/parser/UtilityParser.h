@@ -1,7 +1,14 @@
 #pragma once
 
+#include "../config.h"
 #define BOOST_SPIRIT_USE_PHOENIX_V3
+#ifdef __VS
+#pragma warning(push, 0)
 #include <boost/spirit/include/qi.hpp>
+#pragma warning(pop)
+#else
+#include <boost/spirit/include/qi.hpp>
+#endif
 
 #include "Common.h"
 #include "ParserTypes.h"

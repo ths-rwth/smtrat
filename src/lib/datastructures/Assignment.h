@@ -30,7 +30,15 @@
 #pragma once
 
 #include <map>
+#include "../../cli/config.h"
+#ifdef __VS
+#pragma warning(push, 0)
 #include <boost/variant.hpp>
+#pragma warning(pop)
+#else
+#include <boost/variant.hpp>
+#endif
+
 #include "../Common.h"
 #include "vs/SqrtEx.h"
 #include "carl/core/RealAlgebraicNumber.h"

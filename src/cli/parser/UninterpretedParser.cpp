@@ -1,6 +1,13 @@
 #include "UninterpretedParser.h"
 
+#ifdef __VS
+#pragma warning(push, 0)
 #include <boost/spirit/include/phoenix_bind.hpp>
+#pragma warning(pop)
+#else
+#include <boost/spirit/include/phoenix_bind.hpp>
+#endif
+
 
 namespace smtrat {
 namespace parser {

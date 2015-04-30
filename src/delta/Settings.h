@@ -8,7 +8,14 @@
 #include <cassert>
 #include <iostream>
 
+#include "../cli/config.h"
+#ifdef __VS
+#pragma warning(push, 0)
 #include <boost/program_options.hpp>
+#pragma warning(pop)
+#else
+#include <boost/program_options.hpp>
+#endif
 
 namespace bpo = boost::program_options;
 

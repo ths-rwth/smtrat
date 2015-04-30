@@ -7,8 +7,15 @@
 
 #include <iostream>
 #include <map>
-
+#include "../cli/config.h"
+#ifdef __VS
+#pragma warning(push, 0)
 #include <boost/spirit/home/support/detail/hold_any.hpp>
+#pragma warning(pop)
+#else
+#include <boost/spirit/home/support/detail/hold_any.hpp>
+#endif
+
 
 #include <carl/util/Singleton.h>
 

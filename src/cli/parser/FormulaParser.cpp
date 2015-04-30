@@ -1,5 +1,7 @@
 #include "FormulaParser.h"
 
+#ifdef __VS
+#pragma warning(push, 0)
 #include <boost/fusion/include/std_pair.hpp>
 #include <boost/phoenix.hpp>
 #include <boost/spirit/include/phoenix_bind.hpp>
@@ -7,6 +9,16 @@
 #include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/phoenix_stl.hpp>
+#pragma warning(pop)
+#else
+#include <boost/fusion/include/std_pair.hpp>
+#include <boost/phoenix.hpp>
+#include <boost/spirit/include/phoenix_bind.hpp>
+#include <boost/spirit/include/phoenix_core.hpp>
+#include <boost/spirit/include/phoenix_object.hpp>
+#include <boost/spirit/include/phoenix_operator.hpp>
+#include <boost/spirit/include/phoenix_stl.hpp>
+#endif
 
 namespace smtrat {
 namespace parser {

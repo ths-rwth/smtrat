@@ -1,7 +1,14 @@
 #include "SortParser.h"
 
+#ifdef __VS
+#pragma warning(push, 0)
 #include <boost/spirit/include/phoenix_bind.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
+#pragma warning(pop)
+#else
+#include <boost/spirit/include/phoenix_bind.hpp>
+#include <boost/spirit/include/phoenix_operator.hpp>
+#endif
 
 namespace smtrat {
 namespace parser {

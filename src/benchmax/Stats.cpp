@@ -10,7 +10,15 @@
 #include <iostream>
 #include <fstream>
 #include <assert.h>
+#include "../cli/config.h"
+#ifdef __VS
+#pragma warning(push, 0)
 #include <boost/filesystem.hpp>
+#pragma warning(pop)
+#else
+#include <boost/filesystem.hpp>
+#endif
+
 #include "Settings.h"
 
 namespace benchmax {

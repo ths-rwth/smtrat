@@ -5,11 +5,17 @@
 
 #pragma once
 
+#include "../../cli/config.h"
+#ifdef __VS
+#pragma warning(push, 0)
 #include <boost/variant.hpp>
-#include <map>
-#ifndef __VS
+#pragma warning(pop)
+#else
+#include <boost/variant.hpp>
 #include <cxxabi.h>
 #endif
+
+#include <map>
 
 namespace smtrat {
 

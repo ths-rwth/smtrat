@@ -1,4 +1,11 @@
+#include "../cli/config.h"
+#ifdef __VS
+#pragma warning(push, 0)
 #include <boost/operators.hpp>
+#pragma warning(pop)
+#else
+#include <boost/operators.hpp>
+#endif
 
 #include "Settings.h"
 

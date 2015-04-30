@@ -9,10 +9,19 @@
 #include <map>
 #include <typeinfo>
 
+#include "../config.h"
 #define BOOST_SPIRIT_USE_PHOENIX_V3
+#ifdef __VS
+#pragma warning(push, 0)
 #include <boost/variant.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/support_line_pos_iterator.hpp>
+#pragma warning(pop)
+#else
+#include <boost/variant.hpp>
+#include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/support_line_pos_iterator.hpp>
+#endif
 
 #include "Common.h"
 

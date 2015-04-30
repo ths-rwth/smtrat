@@ -7,8 +7,16 @@
 
 #include <fstream>
 #include <memory>
+#include "../cli/config.h"
+#ifdef __VS
+#pragma warning(push, 0)
 #include <boost/optional.hpp>
 #include <boost/program_options.hpp>
+#pragma warning(pop)
+#else
+#include <boost/optional.hpp>
+#include <boost/program_options.hpp>
+#endif
 
 #include "tools/Tool.h"
 

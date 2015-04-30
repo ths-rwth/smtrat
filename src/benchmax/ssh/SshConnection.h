@@ -13,9 +13,19 @@
 
 #pragma once
 
+#include "../../cli/config.h"
+#ifdef __VS
+#pragma warning(push, 0)
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/utility.hpp>
+#pragma warning(pop)
+#else
+#include <boost/asio/io_service.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/utility.hpp>
+#endif
+
 #include <libssh2.h>
 #include "SshChannel.h"
 #include "SFTPDownloader.h"

@@ -8,8 +8,10 @@
 #include <fstream>
 #include <tuple>
 
+#include "../cli/config.h"
 #define BOOST_SPIRIT_USE_PHOENIX_V3
-
+#ifdef __VS
+#pragma warning(push, 0)
 #include <boost/variant.hpp>
 #include <boost/fusion/include/std_pair.hpp>
 #include <boost/fusion/adapted/std_tuple.hpp>
@@ -22,6 +24,21 @@
 #include <boost/spirit/include/phoenix_stl.hpp>
 #include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/spirit/include/phoenix_statement.hpp>
+#pragma warning(pop)
+#else
+#include <boost/variant.hpp>
+#include <boost/fusion/include/std_pair.hpp>
+#include <boost/fusion/adapted/std_tuple.hpp>
+#include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/qi_numeric.hpp>
+#include <boost/spirit/include/support_line_pos_iterator.hpp>
+#include <boost/spirit/include/phoenix_core.hpp>
+#include <boost/spirit/include/phoenix_operator.hpp>
+#include <boost/spirit/include/phoenix_bind.hpp>
+#include <boost/spirit/include/phoenix_stl.hpp>
+#include <boost/spirit/include/phoenix_object.hpp>
+#include <boost/spirit/include/phoenix_statement.hpp>
+#endif
 
 #include "Node.h"
 

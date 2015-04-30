@@ -39,11 +39,11 @@
 #include <iostream>
 
 #define BOOST_FILESYSTEM_VERSION 3
-
+#include "../cli/config.h"
+#ifdef __VS
+#pragma warning(push, 0)
 #include <boost/chrono/chrono_io.hpp>
-
 //#include <boost/chrono/round.hpp>
-
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/program_options.hpp>
@@ -51,6 +51,18 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/date_time.hpp>
 #include <boost/date_time/posix_time/ptime.hpp>
+#pragma warning(pop)
+#else
+#include <boost/chrono/chrono_io.hpp>
+//#include <boost/chrono/round.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/program_options.hpp>
+#include <boost/foreach.hpp>
+#include <boost/filesystem/fstream.hpp>
+#include <boost/date_time.hpp>
+#include <boost/date_time/posix_time/ptime.hpp>
+#endif
 
 #include "Stats.h"
 #include "tools/Tool.h"

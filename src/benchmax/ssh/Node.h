@@ -8,7 +8,14 @@
 #pragma once
 
 #include <memory>
+#include "../../cli/config.h"
+#ifdef __VS
+#pragma warning(push, 0)
 #include <boost/filesystem.hpp>
+#pragma warning(pop)
+#else
+#include <boost/filesystem.hpp>
+#endif
 
 #include "SshConnection.h"
 #include "../BenchmarkSet.h"

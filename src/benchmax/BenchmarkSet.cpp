@@ -37,11 +37,18 @@
 #include "logging.h"
 #include "Settings.h"
 
+#include "../cli/config.h"
+#ifdef __VS
+#pragma warning(push, 0)
+#include <boost/filesystem.hpp>
+#pragma warning(pop)
+#else
+#include <boost/filesystem.hpp>
+#endif
+
 namespace dt = boost:: date_time;
 namespace pt = boost:: posix_time;
 namespace ch = boost:: chrono;
-
-#include <boost/filesystem.hpp>
 
 using std::endl;
 using carl::Formula;

@@ -15,7 +15,14 @@
 #include "config.h"
 
 #ifdef USE_BOOST_REGEX
+#include "../cli/config.h"
+#ifdef __VS
+#pragma warning(push, 0)
 #include <boost/regex.hpp>
+#pragma warning(pop)
+#else
+#include <boost/regex.hpp>
+#endif
 using boost::regex;
 using boost::regex_match;
 #else
