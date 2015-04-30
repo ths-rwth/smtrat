@@ -133,7 +133,7 @@ namespace smtrat
              * Updates the current assignment into the model.
              * Note, that this is a unique but possibly symbolic assignment maybe containing newly introduced variables.
              */
-            void updateModel() const;
+            void updateModel();
 
             /**
              * Checks the received formula for consistency.

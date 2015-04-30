@@ -28,7 +28,7 @@
 
 #include "FouMoModule.h"
 
-//#define DEBUG_FouMoModule
+#define DEBUG_FouMoModule
 
 namespace smtrat
 {
@@ -618,24 +618,30 @@ namespace smtrat
     }    
 
     template<class Settings>
-    void FouMoModule<Settings>::updateModel() const
+    void FouMoModule<Settings>::updateModel() 
     {
         mModel.clear();
         if( solverState() == True )
         {
             if( mCorrect_Solution )
             {
+                #ifdef DEBUG_FouMoModule
+                cout << "mVarAss: " << mModel << endl;
+                #endif
                 auto iter_ass = mVarAss.begin();
                 while( iter_ass != mVarAss.end() )
                 {
                     ModelValue ass = vs::SqrtEx( (Poly)iter_ass->second );
-                    mModel.insert( std::make_pair( iter_ass->first, ass ) );
+                    mModel[ iter_ass->first ] = ass;
                     ++iter_ass;
                 }
             }
             else
             {
                 Module::getBackendsModel();
+                #ifdef DEBUG_FouMoModule
+                cout << "Model: " << mModel << endl;
+                #endif
                 std::map< carl::Variable, Rational > backends_solution;
                 bool all_rational;
                 all_rational = getRationalAssignmentsFromModel( mModel, backends_solution );
@@ -664,7 +670,7 @@ namespace smtrat
                     bool all_rational;
                     all_rational = getRationalAssignmentsFromModel( mModel, temp_solution );
                     bool new_solution_correct;
-                    //new_solution_correct = construct_solution( temp_solution );
+                    new_solution_correct = construct_solution( temp_solution );
                     auto iter_sol = mVarAss.begin();
                     while( iter_sol != mVarAss.end() )
                     {
@@ -1222,9 +1228,13 @@ namespace smtrat
                 }
                 ++iter_constr_lower;    
             }
-            // Insert one of the found bounds into mVarAss
-            //assert( at_least_one_lower || at_least_one_upper );
-            if( at_least_one_lower )
+            // Insert one of the found bounds into mVarAss respectively the arithmetic mean 
+            // due to the fact that this module also handles strict inequalities
+            if( at_least_one_lower && at_least_one_upper )
+            {
+                mVarAss[ *iter_elim ] = Rational(highest_lower+lowest_upper)/2;                
+            }
+            else if( at_least_one_lower )
             {
                 #ifdef DEBUG_FouMoModule
                 cout << "Set: " << *iter_elim << " to: " << highest_lower << endl;
