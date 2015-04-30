@@ -35,7 +35,7 @@ namespace smtrat
     {        
         static const bool Allow_Deletion = true;
         
-        static const bool Integer_Mode = true;
+        static const bool Integer_Mode = false;
         
         static const bool Nonlinear_Mode = true;
         
