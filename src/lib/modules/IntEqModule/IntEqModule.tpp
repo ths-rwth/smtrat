@@ -28,7 +28,7 @@
 
 #include "IntEqModule.h"
 
-#define DEBUG_IntEqModule
+//#define DEBUG_IntEqModule
 
 namespace smtrat
 {
@@ -43,7 +43,8 @@ namespace smtrat
         mRecent_Constraints(),    
         mSubstitutions(),
         mVariables(),
-        mAuxiliaries()
+        mAuxiliaries(),
+        mTemp_Model()    
     {
         mNew_Substitution = false;
     }
@@ -415,76 +416,7 @@ namespace smtrat
         mModel.clear();
         if( solverState() == True )
         {
-            Module::getBackendsModel();
-            std::map<carl::Variable, Rational> temp_map;
-            bool all_rational;
-            all_rational = getRationalAssignmentsFromModel( mModel, temp_map );
-            #ifdef DEBUG_IntEqModule
-            cout << "Model: " << mModel << endl;
-            cout << "Auxiliaries: " << mAuxiliaries << endl;
-            #endif
-            assert( all_rational );
-            // Determine the assignments of the variables that haven't been passed
-            auto iter_vars = mSubstitutions.end();
-            if( mSubstitutions.empty() )
-            {
-                return;
-            }
-            else
-            {
-                --iter_vars;
-            }    
-            while( true )
-            {
-                #ifdef DEBUG_IntEqModule
-                cout << "Substitution: " << iter_vars->first << " by " << iter_vars->second << endl;
-                #endif
-                Poly value = iter_vars->second;
-                value = value.substitute( temp_map );
-                assert( value.isConstant() );
-                temp_map[ iter_vars->first ] = (Rational)value.constantPart();
-                ModelValue assignment = vs::SqrtEx( value );
-                mModel[ iter_vars->first ] = assignment;
-                if( iter_vars != mSubstitutions.begin() )
-                {
-                    --iter_vars;
-                }
-                else
-                {
-                    break;
-                }
-            }
-            // Delete the assignments of the auxiliary variables
-            auto iter_ass = mModel.begin();
-            while( iter_ass != mModel.end() )
-            {
-                auto iter_help = mAuxiliaries.find( iter_ass->first.asVariable() );
-                if( iter_help == mAuxiliaries.end() )
-                {
-                    ++iter_ass;
-                }
-                else
-                {
-                    auto to_delete = iter_ass;
-                    ++iter_ass;
-                    mModel.erase( to_delete );
-                }
-            }
-            #ifdef DEBUG_IntEqModule
-            cout << "Model: " << mModel << endl;
-            temp_map = std::map<carl::Variable, Rational>();
-            all_rational = getRationalAssignmentsFromModel( mModel, temp_map );
-            cout << "temp_map: " << temp_map << endl;
-            auto iter = rReceivedFormula().begin();
-            while( iter != rReceivedFormula().end() )
-            {
-                if( iter->formula().constraint().satisfiedBy( temp_map ) != 1 )
-                {
-                    cout << iter->formula() << endl;
-                }
-                ++iter;
-            }
-            #endif
+            mModel = mTemp_Model;
         }
     }
 
@@ -812,13 +744,102 @@ namespace smtrat
         {
             getInfeasibleSubsets();
         }
+        else if( ans == True )
+        {
+            if( !constructSolution() )
+            {
+                ans = Unknown;
+            }    
+        }
         return ans;
     }
     
     template<class Settings>
     bool IntEqModule<Settings>::constructSolution()
     {
-        // TO-DO
+        mTemp_Model.clear();
+        Module::getBackendsModel();
+        auto iter_model = mModel.begin();
+        while( iter_model != mModel.end() )
+        {
+            mTemp_Model[ iter_model->first ] = iter_model->second;
+            ++iter_model;
+        }
+        std::map<carl::Variable, Rational> temp_map;
+        bool all_rational;
+        all_rational = getRationalAssignmentsFromModel( mTemp_Model, temp_map );
+        assert( all_rational );
+        #ifdef DEBUG_IntEqModule
+        cout << "Model: " << mModel << endl;
+        cout << "Temp Model: " << mTemp_Model << endl;
+        cout << "Auxiliaries: " << mAuxiliaries << endl;
+        #endif
+        // Determine the assignments of the variables that haven't been passed
+        auto iter_vars = mSubstitutions.end();
+        if( mSubstitutions.empty() )
+        {
+            return true;
+        }
+        else
+        {
+            --iter_vars;
+        }    
+        while( true )
+        {
+            #ifdef DEBUG_IntEqModule
+            cout << "Substitution: " << iter_vars->first << " by " << iter_vars->second << endl;
+            #endif
+            Poly value = iter_vars->second;
+            value = value.substitute( temp_map );
+            assert( value.isConstant() );
+            temp_map[ iter_vars->first ] = (Rational)value.constantPart();
+            ModelValue assignment = vs::SqrtEx( value );
+            mTemp_Model[ iter_vars->first ] = assignment;
+            if( iter_vars != mSubstitutions.begin() )
+            {
+                --iter_vars;
+            }
+            else
+            {
+                break;
+            }
+        }
+        // Delete the assignments of the auxiliary variables
+        auto iter_ass = mTemp_Model.begin();
+        while( iter_ass != mTemp_Model.end() )
+        {
+            auto iter_help = mAuxiliaries.find( iter_ass->first.asVariable() );
+            if( iter_help == mAuxiliaries.end() )
+            {
+                ++iter_ass;
+            }
+            else
+            {
+                auto to_delete = iter_ass;
+                ++iter_ass;
+                mTemp_Model.erase( to_delete );
+            }
+        }
+        #ifdef DEBUG_IntEqModule
+        cout << "Temp Model: " << mTemp_Model << endl;
+        #endif
+        temp_map = std::map<carl::Variable, Rational>();
+        all_rational = getRationalAssignmentsFromModel( mTemp_Model, temp_map );
+        #ifdef DEBUG_IntEqModule
+        cout << "temp_map: " << temp_map << endl;
+        #endif
+        auto iter = rReceivedFormula().begin();
+        while( iter != rReceivedFormula().end() )
+        {
+            if( iter->formula().constraint().satisfiedBy( temp_map ) != 1 )
+            {
+                return false;
+                #ifdef DEBUG_IntEqModule
+                cout << iter->formula() << endl;
+                #endif
+            }
+            ++iter;
+        }
         return true;        
     }
 }    
