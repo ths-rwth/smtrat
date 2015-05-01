@@ -102,7 +102,7 @@ public:
 
 	// Commands
 #ifdef __VS
-	rule<Iterator> cmd;
+	qi::rule<Iterator, Skipper> cmd;
 #else
     rule<> cmd;
 #endif
