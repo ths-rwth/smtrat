@@ -282,16 +282,20 @@ namespace smtrat
             for( icp::ContractionCandidate* cc : iterB->second )
             {
                 // remove candidate if counter == 1, else decrement counter.
-                assert( cc->isActive() );
-                // remove origin, no matter if constraint is active or not
-                cc->removeOrigin( _formula->formula() );
-                if( cc->activity() == 0 )
+                // TODO: as the origin has maybe already been removed with removing the origins of non-linear constraints
+                // we need to check the following before. This should be avoided differently.
+                if( cc->hasOrigin( _formula->formula() ) ) 
                 {
-                    // reset History to point before this candidate was used
-                    resetHistory( cc );
-                    // clean up icpRelevantCandidates
-                    removeCandidateFromRelevant( cc );
-                    mActiveLinearConstraints.erase( cc );
+                    // remove origin, no matter if constraint is active or not
+                    cc->removeOrigin( _formula->formula() );
+                    if( cc->activity() == 0 )
+                    {
+                        // reset History to point before this candidate was used
+                        resetHistory( cc );
+                        // clean up icpRelevantCandidates
+                        removeCandidateFromRelevant( cc );
+                        mActiveLinearConstraints.erase( cc );
+                    }
                 }
             }
         }
@@ -347,6 +351,10 @@ namespace smtrat
         if( initialLinearCheck( lraAnswer ) )
         {
             if( lraAnswer == True ) {
+                Variables originalRealVariables;
+                rReceivedFormula().realValuedVars(originalRealVariables); // TODO: store original variables as member, updating them efficiently with assert and remove
+                for( auto var : originalRealVariables )
+                    mFoundSolution.emplace( var, ZERO_RATIONAL ); // Note, that it is only stored 0 as solution, if the variable has not yet a solution
                 if( checkNotEqualConstraints() )
                     return True;
                 else
@@ -1345,7 +1353,7 @@ namespace smtrat
                 for( auto assignmentIt = mFoundSolution.begin(); assignmentIt != mFoundSolution.end(); ++assignmentIt )
                 {
                     auto varIt = mVariables.find((*assignmentIt).first);
-                    if(  varIt != mVariables.end() && (*varIt).second->isOriginal() )
+                    if( varIt != mVariables.end() && (*varIt).second->isOriginal() )
                     {
                         Poly value = Poly( assignmentIt->second );
                         ModelValue assignment = vs::SqrtEx(value);
