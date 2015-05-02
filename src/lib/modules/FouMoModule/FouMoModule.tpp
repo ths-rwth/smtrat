@@ -28,7 +28,7 @@
 
 #include "FouMoModule.h"
 
-//#define DEBUG_FouMoModule
+#define DEBUG_FouMoModule
 
 namespace smtrat
 {
@@ -166,7 +166,7 @@ namespace smtrat
                                     // regarding the currently considered variable
                                     while( iter_lower != iter_help->second.second.end() )
                                     {
-                                        FormulaT new_formula = std::move( combine_upper_lower( iter_temp->first.constraint(), iter_lower->first.constraint(), *iter_var ) );                                                                                                                       
+                                        FormulaT new_formula = std::move( combineUpperLower( iter_temp->first.constraint(), iter_lower->first.constraint(), *iter_var ) );                                                                                                                       
                                         #ifdef DEBUG_FouMoModule
                                         cout << "Combine 'upper' constraint: " << iter_temp->first.constraint() << endl;
                                         cout << "with 'lower' constraint: " << iter_lower->first.constraint() << endl;
@@ -190,7 +190,7 @@ namespace smtrat
                                             auto iter_help = derived_constr.find( new_formula );
                                             if( iter_help == derived_constr.end() )
                                             {
-                                                std::pair< FormulaT, bool > result = worth_inserting( derived_constr, new_formula.constraint().lhs() );
+                                                std::pair< FormulaT, bool > result = worthInserting( derived_constr, new_formula.constraint().lhs() );
                                                 if( result.second == true )
                                                 {
                                                     if( !result.first.isFalse() )
@@ -219,7 +219,7 @@ namespace smtrat
                                     auto iter_upper = iter_help->second.first.begin(); 
                                     while( iter_upper != iter_help->second.first.end() )
                                     {
-                                        FormulaT new_formula = std::move( combine_upper_lower( iter_upper->first.constraint(), iter_temp->first.constraint(), *iter_var ) );                                                                                                                       
+                                        FormulaT new_formula = std::move( combineUpperLower( iter_upper->first.constraint(), iter_temp->first.constraint(), *iter_var ) );                                                                                                                       
                                         #ifdef DEBUG_FouMoModule
                                         cout << "Combine 'upper' constraint: " << iter_upper->first.constraint() << endl;
                                         cout << "with 'lower' constraint: " << iter_temp->first.constraint() << endl;
@@ -243,7 +243,7 @@ namespace smtrat
                                             auto iter_help = derived_constr.find( new_formula );
                                             if( iter_help == derived_constr.end() )
                                             {
-                                                std::pair< FormulaT, bool > result = worth_inserting( derived_constr, new_formula.constraint().lhs() );
+                                                std::pair< FormulaT, bool > result = worthInserting( derived_constr, new_formula.constraint().lhs() );
                                                 if( result.second == true )
                                                 {
                                                     if( !result.first.isFalse() )
@@ -297,7 +297,7 @@ namespace smtrat
                     auto iter_help = temp_constr.find( iter_derived->first );
                     if( iter_help == temp_constr.end() )
                     {
-                        std::pair< FormulaT, bool > result = worth_inserting( temp_constr, iter_derived->first.constraint().lhs() );
+                        std::pair< FormulaT, bool > result = worthInserting( temp_constr, iter_derived->first.constraint().lhs() );
                         if( result.second == true )
                         {
                             if( !result.first.isFalse() )
@@ -324,7 +324,7 @@ namespace smtrat
                 auto iter_help = mProc_Constraints.find( iter_temp->first );
                 if( iter_help == mProc_Constraints.end() )
                 {
-                    std::pair< FormulaT, bool > result = worth_inserting( mProc_Constraints, iter_temp->first.constraint().lhs() );
+                    std::pair< FormulaT, bool > result = worthInserting( mProc_Constraints, iter_temp->first.constraint().lhs() );
                     if( result.second == true )
                     {
                         if( !result.first.isFalse() )
@@ -618,24 +618,30 @@ namespace smtrat
     }    
 
     template<class Settings>
-    void FouMoModule<Settings>::updateModel() const
+    void FouMoModule<Settings>::updateModel() 
     {
         mModel.clear();
         if( solverState() == True )
         {
             if( mCorrect_Solution )
             {
+                #ifdef DEBUG_FouMoModule
+                cout << "mVarAss: " << mModel << endl;
+                #endif
                 auto iter_ass = mVarAss.begin();
                 while( iter_ass != mVarAss.end() )
                 {
                     ModelValue ass = vs::SqrtEx( (Poly)iter_ass->second );
-                    mModel.insert( std::make_pair( iter_ass->first, ass ) );
+                    mModel[ iter_ass->first ] = ass;
                     ++iter_ass;
                 }
             }
             else
             {
                 Module::getBackendsModel();
+                #ifdef DEBUG_FouMoModule
+                cout << "Model: " << mModel << endl;
+                #endif
                 std::map< carl::Variable, Rational > backends_solution;
                 bool all_rational;
                 all_rational = getRationalAssignmentsFromModel( mModel, backends_solution );
@@ -664,7 +670,7 @@ namespace smtrat
                     bool all_rational;
                     all_rational = getRationalAssignmentsFromModel( mModel, temp_solution );
                     bool new_solution_correct;
-                    //new_solution_correct = construct_solution( temp_solution );
+                    new_solution_correct = constructSolution( temp_solution );
                     auto iter_sol = mVarAss.begin();
                     while( iter_sol != mVarAss.end() )
                     {
@@ -693,7 +699,7 @@ namespace smtrat
             // Collect for every variable the information in which constraint it has as an upper
             // respectively a lower bound and store it in var_corr_constr
             VariableUpperLower var_corr_constr;
-            gather_upper_lower( mProc_Constraints, var_corr_constr );
+            gatherUpperLower( mProc_Constraints, var_corr_constr );
             #ifdef DEBUG_FouMoModule
             cout << "Processed Constraints" << endl;
             auto iter_PC = mProc_Constraints.begin();
@@ -710,7 +716,7 @@ namespace smtrat
                     #ifdef DEBUG_FouMoModule
                     cout << "Run non-linear backends!" << endl;
                     #endif
-                    Answer ans = call_backends( _full );
+                    Answer ans = callBackends( _full );
                     if( ans == False )
                     {
                         getInfeasibleSubsets();
@@ -719,7 +725,7 @@ namespace smtrat
                 }
                 // Try to derive a(n) (integer) solution by backtracking through the steps of Fourier-Motzkin
                 std::map< carl::Variable, Rational > dummy_map;
-                mCorrect_Solution = construct_solution( dummy_map );
+                mCorrect_Solution = constructSolution( dummy_map );
                 if( !mElim_Order.empty() && mCorrect_Solution )
                 {
                     #ifdef DEBUG_FouMoModule
@@ -739,7 +745,7 @@ namespace smtrat
                     #ifdef DEBUG_FouMoModule
                     cout << "Run Backends!" << endl;
                     #endif
-                    Answer ans = call_backends( _full );
+                    Answer ans = callBackends( _full );
                     if( ans == False )
                     {
                         getInfeasibleSubsets();
@@ -769,7 +775,7 @@ namespace smtrat
                 #ifdef DEBUG_FouMoModule
                 cout << "Run Backends because Threshold is exceeded!" << endl;
                 #endif
-                return call_backends( _full );                
+                return callBackends( _full );                
             }
             #ifdef DEBUG_FouMoModule
             cout << "The 'best' variable is:" << best_var << endl;
@@ -787,7 +793,7 @@ namespace smtrat
                 {
                     std::shared_ptr<std::vector<FormulaT>> origins_new( new std::vector<FormulaT>() );
                     *origins_new = std::move( merge( *( iter_upper->second ), *( iter_lower->second ) ) );
-                    new_formula = std::move( combine_upper_lower( iter_upper->first.constraint(), iter_lower->first.constraint(), best_var ) );
+                    new_formula = std::move( combineUpperLower( iter_upper->first.constraint(), iter_lower->first.constraint(), best_var ) );
                     #ifdef DEBUG_FouMoModule
                     cout << "Combine 'upper' constraint: " << iter_upper->first.constraint() << endl;
                     cout << "with 'lower' constraint: " << iter_lower->first.constraint() << endl;
@@ -817,7 +823,7 @@ namespace smtrat
                         auto iter_help = mProc_Constraints.find( new_formula );
                         if( iter_help == mProc_Constraints.end() )
                         {
-                            std::pair< FormulaT, bool > result = worth_inserting( mProc_Constraints, new_formula.constraint().lhs() );
+                            std::pair< FormulaT, bool > result = worthInserting( mProc_Constraints, new_formula.constraint().lhs() );
                             if( result.second == true )
                             {
                                 if( !result.first.isFalse() )
@@ -875,7 +881,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    void FouMoModule<Settings>::gather_upper_lower( FormulaOrigins& curr_constraints, VariableUpperLower& var_corr_constr )
+    void FouMoModule<Settings>::gatherUpperLower( FormulaOrigins& curr_constraints, VariableUpperLower& var_corr_constr )
     {
         // Iterate over the passed constraints to store which variables have upper respectively
         // lower bounds according to the Fourier-Motzkin algorithm
@@ -996,7 +1002,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    FormulaT FouMoModule<Settings>::combine_upper_lower(const smtrat::ConstraintT& upper_constr, const smtrat::ConstraintT& lower_constr, carl::Variable& corr_var)
+    FormulaT FouMoModule<Settings>::combineUpperLower(const smtrat::ConstraintT& upper_constr, const smtrat::ConstraintT& lower_constr, carl::Variable& corr_var)
     {
         FormulaT combined_formula;
         Rational coeff_upper;
@@ -1043,7 +1049,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    bool FouMoModule<Settings>::construct_solution( std::map< carl::Variable, Rational > temp_solution )
+    bool FouMoModule<Settings>::constructSolution( std::map< carl::Variable, Rational > temp_solution )
     {
         if( mElim_Order.empty() )
         {
@@ -1222,9 +1228,13 @@ namespace smtrat
                 }
                 ++iter_constr_lower;    
             }
-            // Insert one of the found bounds into mVarAss
-            //assert( at_least_one_lower || at_least_one_upper );
-            if( at_least_one_lower )
+            // Insert one of the found bounds into mVarAss respectively the arithmetic mean 
+            // due to the fact that this module also handles strict inequalities
+            if( at_least_one_lower && at_least_one_upper )
+            {
+                mVarAss[ *iter_elim ] = Rational(highest_lower+lowest_upper)/2;                
+            }
+            else if( at_least_one_lower )
             {
                 #ifdef DEBUG_FouMoModule
                 cout << "Set: " << *iter_elim << " to: " << highest_lower << endl;
@@ -1296,7 +1306,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    Answer FouMoModule<Settings>::call_backends( bool _full )
+    Answer FouMoModule<Settings>::callBackends( bool _full )
     {
         if( Settings::Integer_Mode )
         {
@@ -1342,7 +1352,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    std::pair< FormulaT, bool > FouMoModule<Settings>::worth_inserting( FormulaOrigins& formula_map, const Poly& new_poly )
+    std::pair< FormulaT, bool > FouMoModule<Settings>::worthInserting( FormulaOrigins& formula_map, const Poly& new_poly )
     {
         std::pair< FormulaT, bool > result( FormulaT( ConstraintT( Poly( 1 ), carl::Relation::EQ ) ), true );
         if( new_poly.isConstant() )

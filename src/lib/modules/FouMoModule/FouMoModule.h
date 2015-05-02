@@ -68,7 +68,7 @@ namespace smtrat
              *                         variable is chosen
              * @param var_corr_constr  Contains the chosen variable and the constraints for the elimination step
              */
-            void gather_upper_lower( FormulaOrigins& curr_constraints, VariableUpperLower& var_corr_constr );
+            void gatherUpperLower( FormulaOrigins& curr_constraints, VariableUpperLower& var_corr_constr );
             
             /**
              * @param upper_constr Pointer to the constraint corresponding to an upper bound of corr_var          *                         variable is chosen
@@ -76,20 +76,20 @@ namespace smtrat
              * @param corr_var     Variable that shall be eliminated
              * @return             Pointer to the constraint resulting from the combination
              */
-            FormulaT combine_upper_lower( const smtrat::ConstraintT& upper_constr, const smtrat::ConstraintT& lower_Constr, carl::Variable& corr_var );
+            FormulaT combineUpperLower( const smtrat::ConstraintT& upper_constr, const smtrat::ConstraintT& lower_Constr, carl::Variable& corr_var );
             
             /*
              * Tries to construct a solution by backtracking through the computation steps
              * and returns whether this was successful
              */            
-            bool construct_solution( std::map< carl::Variable, Rational > temp_solution );
+            bool constructSolution( std::map< carl::Variable, Rational > temp_solution );
             
             /*
              * Depending on whether we work on integer or rational instances, it
              * sends the corresponding set of constraints to the backends and returns
              * the answer obtained by the backends
              */
-            Answer call_backends( bool _full );
+            Answer callBackends( bool _full );
             
             /*
              * @param  formula_map A map of formulas and their origins
@@ -98,7 +98,7 @@ namespace smtrat
              *         to new_poly. Otherwise, returns a false formula. The second component of the result
              *         indicates whether the formula belonging to new_poly would add new information to formula_map.
              */
-            std::pair< FormulaT, bool > worth_inserting( FormulaOrigins& formula_map, const Poly& new_poly );
+            std::pair< FormulaT, bool > worthInserting( FormulaOrigins& formula_map, const Poly& new_poly );
             
             /*
              * Resets all data structures of this module to the initial assignments
@@ -133,7 +133,7 @@ namespace smtrat
              * Updates the current assignment into the model.
              * Note, that this is a unique but possibly symbolic assignment maybe containing newly introduced variables.
              */
-            void updateModel() const;
+            void updateModel();
 
             /**
              * Checks the received formula for consistency.
