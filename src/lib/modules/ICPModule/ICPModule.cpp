@@ -2181,7 +2181,7 @@ namespace smtrat
         FormulasT addedBoundaries;
         for ( auto variablesIt = mVariables.begin(); variablesIt != mVariables.end(); ++variablesIt )
         {
-            if( _onlyOriginals && !variablesIt->second->isOriginal() )
+            if( (_onlyOriginals && !variablesIt->second->isOriginal()) || !variablesIt->second->isActive() )
                 continue;
             carl::Variable tmpSymbol = variablesIt->first;
             if ( _map.find(tmpSymbol) != _map.end() )
