@@ -28,7 +28,7 @@
 
 #include "FouMoModule.h"
 
-#define DEBUG_FouMoModule
+//#define DEBUG_FouMoModule
 
 namespace smtrat
 {
@@ -654,7 +654,7 @@ namespace smtrat
                 auto iter_constr = rReceivedFormula().begin();
                 while( iter_constr != rReceivedFormula().end() )
                 {
-                    if( !iter_constr->formula().constraint().satisfiedBy( backends_solution ) || !( iter_constr->formula().constraint().lhs().substitute( backends_solution ) ).isConstant() )
+                    if( iter_constr->formula().constraint().satisfiedBy( backends_solution ) == 0 || !( iter_constr->formula().constraint().lhs().substitute( backends_solution ) ).isConstant() )
                     {
                         #ifdef DEBUG_FouMoModule
                         cout << "The obtained solution is not correct!" << endl;
@@ -1341,8 +1341,7 @@ namespace smtrat
                 addSubformulaToPassedFormula( iter_diseq->first, iter_diseq->second );
                 ++iter_diseq;
             }
-        }
-        
+        }        
         Answer ans = runBackends( _full );
         if( ans == False )
         {
