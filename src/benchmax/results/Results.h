@@ -41,19 +41,16 @@ public:
 		std::map<std::size_t, std::size_t> fileIDs;
 		
 		for (const auto& it: mTools) {
-			std::cout << "Creating tool " << it.first << std::endl;
 			toolIDs[it.second] = db.getToolID(it.first);
 			std::cout << toolIDs << std::endl;
 		}
 		for (const auto& it: mFiles) {
-			std::cout << "Creating File " << it.first << std::endl;
 			fileIDs[it.second] = db.getFileID(it.first);
 		}
 		std::size_t benchmarkID = db.createBenchmark();
 		for (const auto& it: mResults) {
 			std::size_t tool = toolIDs[it.first.first];
 			std::size_t file = fileIDs[it.first.second];
-			std::cout << "Creating Benchmark " << benchmarkID << std::endl;
 			std::size_t id = db.addBenchmarkResult(benchmarkID, tool, file, it.second.exitCode, it.second.time);
 			for (const auto& attr: it.second.additional) {
 				db.addBenchmarkAttribute(id, attr.first, attr.second);
