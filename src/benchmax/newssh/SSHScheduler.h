@@ -23,7 +23,7 @@ namespace ssh {
  */
 Node getNode(const string& _nodeAsString)
 {
-	regex noderegex("([^:]+):([^@]+)@([^:@]+)(?::(\\d+))?(?:@(\\d+))?");
+	regex noderegex("([^:]+):([^@]+)@([^:@]+)(?::(\\d+))?(?:@(\\d+))?(?:#(\\d+))?");
 	std::smatch matches;
 	if (regex_match(_nodeAsString, matches, noderegex)) {
 		std::string username = matches[1];
@@ -31,18 +31,20 @@ Node getNode(const string& _nodeAsString)
 		std::string hostname = matches[3];
 		unsigned long port = 22;
 		unsigned long cores = 1;
+		std::size_t connections = 1;
 		try {
 			if (matches[4] != "") port = std::stoul(matches[4]);
 			if (matches[5] != "") cores = std::stoul(matches[5]);
+			if (matches[6] != "") connections = std::stoul(matches[6]);
 		} catch (std::out_of_range) {
 			BENCHMAX_LOG_ERROR("benchmax", "Value for port or number of cores is out of range.");
 			BENCHMAX_LOG_ERROR("benchmax", "\tPort: " << matches[4]);
 			BENCHMAX_LOG_ERROR("benchmax", "\tCores: " << matches[5]);
 		}
-		return {hostname, username, password, (unsigned short)port, cores};
+		return {hostname, username, password, (unsigned short)port, cores, connections};
 	} else {
 		BENCHMAX_LOG_ERROR("benchmax", "Invalid format for node specification. Use the following format:");
-		BENCHMAX_LOG_ERROR("benchmax", "\t<user>:<password>@<hostname>[:<port = 22>][@<cores = 1>]");
+		BENCHMAX_LOG_ERROR("benchmax", "\t<user>:<password>@<hostname>[:<port = 22>][@<cores = 1>][#<connections = 1>]");
 		exit(1);
 	}
 }
@@ -56,7 +58,10 @@ private:
 		std::lock_guard<std::mutex> lock(mutex);
 		while (true) {
 			for (auto& c: connections) {
-				if (!c->busy()) return c;
+				if (c->jobFree()) {
+					c->newJob();
+					return c;
+				}
 			}
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}
@@ -67,7 +72,10 @@ private:
 public:
 	SSHScheduler() {
 		for (const auto& s: Settings::ssh_nodes) {
-			connections.push_back(new SSHConnection(getNode(s)));
+			Node n = getNode(s);
+			for (std::size_t i = 0; i < n.connections; i++) {
+				connections.push_back(new SSHConnection(n));
+			}
 		}
 	}
 	~SSHScheduler() {
@@ -102,6 +110,7 @@ public:
 		c->removeDir(folder);
 		// Store result
 		res.addResult(tool, file, result);
+		c->finishJob();
 		return true;
 	}
 };
