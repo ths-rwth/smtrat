@@ -595,7 +595,7 @@ namespace smtrat
             for( FormulasT::const_iterator cons = infSubSet->begin(); cons != infSubSet->end(); ++cons )
             {
                 ModuleInput::const_iterator posInReceived = mpPassedFormula->find( *cons );
-                assert( posInReceived != mpReceivedFormula->end() );
+                assert( posInReceived != mpPassedFormula->end() );
                 if( posInReceived->hasOrigins() )
                 {
                     const std::vector<FormulaT>& formOrigins = posInReceived->origins();
@@ -670,9 +670,9 @@ namespace smtrat
                 // Run the backend solver parallel until the first answers true or false.
                 if( anAnswerFound() )
                     return Unknown;
-                unsigned highestIndex = numberOfUsedBackends-1;
+                size_t highestIndex = numberOfUsedBackends-1;
                 vector< std::future<Answer> > futures( highestIndex );
-                for( unsigned i=0; i<highestIndex; ++i )
+                for( size_t i=0; i<highestIndex; ++i )
                 {
                     #ifdef MODULE_VERBOSE
                     cout << endl << "Call to module " << moduleName( mUsedBackends[ i ]->type() ) << endl;
@@ -716,7 +716,7 @@ namespace smtrat
             #endif
         }
         #ifdef MODULE_VERBOSE
-        cout << "Result:   " << ANSWER_TO_STRING( result ) << endl;
+//        cout << "Result:   " << ANSWER_TO_STRING( result ) << endl;
         #endif
         return result;
     }
