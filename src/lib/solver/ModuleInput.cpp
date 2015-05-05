@@ -153,8 +153,16 @@ namespace smtrat
         {
             if( *iter == _origin || iter->contains( _origin ) )
             {
-                *iter = origs.back();
-                origs.pop_back();
+                if (iter != --origs.end())
+                {
+                    *iter = origs.back();
+                    origs.pop_back();
+                }
+                else
+                {
+                    origs.pop_back();
+                    break;
+                }
             }
             else
             {
