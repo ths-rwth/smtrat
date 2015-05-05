@@ -520,7 +520,9 @@ namespace vs
                         if( mpSubResultCombination != NULL )
                         {
                             if( mpSubResultCombination->size() > 0 )
+                            {
                                 mTakeSubResultCombAgain = true;
+                            }
                             assert( mpSubResultCombination->size() <= mpSubstitutionResults->size() );
                         }
                     }
@@ -559,7 +561,9 @@ namespace vs
                                 if( mpSubResultCombination != NULL )
                                 {
                                     if( mpSubResultCombination->size() > 0 )
+                                    {
                                         mTakeSubResultCombAgain = true;
+                                    }
                                     assert( mpSubResultCombination->size() <= mpSubstitutionResults->size() );
                                 }
                             }
@@ -1112,6 +1116,11 @@ namespace vs
     ConditionList State::getCurrentSubresultCombination() const
     {
         ConditionList currentSubresultCombination;
+        if( !hasSubResultsCombination() )
+        {
+            printAlone();
+        }
+        assert( hasSubResultsCombination() );
         auto iter = mpSubResultCombination->begin();
         while( iter != mpSubResultCombination->end() )
         {
@@ -1794,7 +1803,8 @@ namespace vs
                 if( (*child)->type() != SUBSTITUTION_TO_APPLY )
                 {
                     (*child)->rType() = COMBINE_SUBRESULTS;
-                    (*child)->rTakeSubResultCombAgain() = true;
+                    if( (*child)->hasSubstitutionResults() && (*child)->hasSubResultsCombination() )
+                        (*child)->rTakeSubResultCombAgain() = true;
                 }
                 (*child)->rInconsistent() = false;
             }
