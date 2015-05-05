@@ -20,16 +20,16 @@ public:
 	typedef DBAL::Index Index;
 	
 	Index addTool(const Tool& tool) {
-		Index id = conn.insert("INSERT INTO tool (interface, hash) VALUES (%0q, %1q)", tool.name(), tool.attributeHash());
-		DBAL::Statement stmt = conn.prepare("INSERT INTO toolattributes (toolid, key, value) VALUES (%0q, %1q, %2q)");
+		Index id = conn.insert("INSERT INTO main_tool (`interface`, `hash`) VALUES (%0q, %1q)", tool.name(), tool.attributeHash());
+		DBAL::Statement stmt = conn.prepare("INSERT INTO main_toolattribute (`key`, `value`, `tool_id`) VALUES (%0q, %1q, %2q)");
 		for (const auto& it: tool.attributes()) {
-			conn.execute(stmt, id, it.first, it.second);
+			conn.execute(stmt, it.first, it.second, id);
 		}
 		return id;
 	}
 	
 	Index getToolID(const Tool& tool) {
-		DBAL::Results res = conn.select("SELECT id FROM tool WHERE interface = %0q AND hash = %1q", tool.name(), tool.attributeHash());
+		DBAL::Results res = conn.select("SELECT id FROM main_tool WHERE `interface` = %0q AND `hash` = %1q", tool.name(), tool.attributeHash());
 		if (conn.size(res) == 0) {
 			return addTool(tool);
 		}
@@ -38,11 +38,11 @@ public:
 	}
 	
 	Index addFile(const fs::path& file) {
-		return conn.insert("INSERT INTO file (filename) VALUES (%0q)", file.native());
+		return conn.insert("INSERT INTO main_file (`filename`) VALUES (%0q)", file.native());
 	}
 	
 	Index getFileID(const fs::path& file) {
-		DBAL::Results res = conn.select("SELECT id FROM file WHERE filename = %0q", file.native());
+		DBAL::Results res = conn.select("SELECT id FROM main_file WHERE `filename` = %0q", file.native());
 		if (conn.size(res) == 0) {
 			return addFile(file);
 		}
@@ -51,20 +51,21 @@ public:
 	}
 	
 	Index createBenchmark() {
-		return conn.insert("INSERT INTO benchmark () VALUES ()");
+		return conn.insert("INSERT INTO main_benchmark () VALUES ()");
 	}
 	
 	Index addBenchmarkResult(Index benchmark, Index tool, Index file, int exitCode, std::size_t time) {
-		return conn.insert("INSERT INTO benchmarkresult (benchmark, tool, file, exitcode, time) VALUES (%0q, %1q, %2q, %3q, %4q)", benchmark, tool, file, exitCode, time);
+		return conn.insert("INSERT INTO main_benchmarkresult (`exitcode`, `time`, `memory`, `benchmark_id`, `tool_id`, `file_id`) VALUES (%0q, %1q, %2q, %3q, %4q, %5q)", exitCode, time, 0, benchmark, tool, file);
 	}
 	
 	void addBenchmarkAttribute(Index benchmarkResult, const std::string& key, const std::string& value) {
-		conn.insert("INSERT INTO benchmarkattribute (benchmarkresultid, key, value) VALUES (%0q, %1q, %2q)", benchmarkResult, key, value);
+		conn.insert("INSERT INTO main_benchmarkattribute (`key`, `value`, `result_id`) VALUES (%0q, %1q, %2q)", key, value, benchmarkResult);
 	}
 
 	Database() {
-		if (!conn.connect("benchmax", "ths.informatik.rwth-aachen.de", "benchmax", "Km2FLeJJ2wX3nMqq")) {
-			BENCHMAX_LOG_ERROR("benchmax.database", "Failed to connect to database.");
+		if (!conn.connect("benchmarks", "ths.informatik.rwth-aachen.de", "benchmax", "Km2FLeJJ2wX3nMqq")) {
+			BENCHMAX_LOG_FATAL("benchmax.database", "Failed to connect to database.");
+			exit(1);
 		}
 	}
 	

@@ -704,7 +704,7 @@ namespace smtrat
             {
             #endif
                 // Run the backend solver sequentially until the first answers true or false.
-                vector<Module*>::iterator module = mUsedBackends.begin();
+                std::vector<Module*>::iterator module = mUsedBackends.begin();
                 while( module != mUsedBackends.end() && result == Unknown )
                 {
                     result = (*module)->check( _full );
