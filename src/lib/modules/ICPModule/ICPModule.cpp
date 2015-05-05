@@ -1494,6 +1494,8 @@ namespace smtrat
     FormulasT ICPModule::createPremiseDeductions()
     {
         // collect applied contractions
+        if( mHistoryActual == nullptr )
+            exit(1234);
         FormulasT contractions = mHistoryActual->appliedConstraints();
         // collect original box
         REGISTERED_ASSERT( mBoxStorage.size() > 0 );
@@ -1782,15 +1784,7 @@ namespace smtrat
             #endif
             return true;
         }
-        else if( _answer == Unknown )
-        {
-            #ifdef ICP_MODULE_DEBUG_1
-            mLRA.printReceivedFormula();
-            cout << "LRA: " << _answer << endl;
-            #endif
-            return true;
-        }
-        else if( mActiveNonlinearConstraints.empty() ) // _answer == True, but no nonlinear constraints -> linear solution is a solution
+        else if( _answer == True && mActiveNonlinearConstraints.empty() ) // _answer == True, but no nonlinear constraints -> linear solution is a solution
         {
             #ifdef ICP_MODULE_DEBUG_1
             cout << "LRA: " << _answer << endl;
@@ -1798,7 +1792,7 @@ namespace smtrat
             mFoundSolution = mLRA.getRationalModel();
             return true;
         }
-        else // _answer == True
+        else // _answer == True or _answer == False
         {
             // get intervals for initial variables
             EvalRationalIntervalMap tmp = mLRA.getVariableBounds();
@@ -1878,85 +1872,87 @@ namespace smtrat
             Module::addAssumptionToCheck(*actualAssumptions,false,"ICP_BoxValidation");
         }
         #endif
-        assert( boxCheck != Unknown );
-        if( boxCheck != True )
+        if( boxCheck != Unknown )
         {
-            std::vector<FormulasT> tmpSet = mLRA.infeasibleSubsets();
-            for ( auto infSetIt = tmpSet.begin(); infSetIt != tmpSet.end(); ++infSetIt )
+            if( boxCheck != True )
             {
-                for ( auto formulaIt = (*infSetIt).begin(); formulaIt != (*infSetIt).end(); ++formulaIt )
+                std::vector<FormulasT> tmpSet = mLRA.infeasibleSubsets();
+                for ( auto infSetIt = tmpSet.begin(); infSetIt != tmpSet.end(); ++infSetIt )
                 {
-                    if( !formulaIt->constraint().isBound() )
+                    for ( auto formulaIt = (*infSetIt).begin(); formulaIt != (*infSetIt).end(); ++formulaIt )
                     {
-                        mHistoryActual->addInfeasibleConstraint(formulaIt->constraint());
-                        for( auto variableIt = formulaIt->constraint().variables().begin(); variableIt != formulaIt->constraint().variables().end(); ++variableIt )
+                        if( !formulaIt->constraint().isBound() )
                         {
-                            assert( mVariables.find(*variableIt) != mVariables.end() );
-                            mHistoryActual->addInfeasibleVariable(mVariables.at(*variableIt));
+                            mHistoryActual->addInfeasibleConstraint(formulaIt->constraint());
+                            for( auto variableIt = formulaIt->constraint().variables().begin(); variableIt != formulaIt->constraint().variables().end(); ++variableIt )
+                            {
+                                assert( mVariables.find(*variableIt) != mVariables.end() );
+                                mHistoryActual->addInfeasibleVariable(mVariables.at(*variableIt));
+                            }
+                        }
+                        else
+                        {
+                            assert( mVariables.find( *formulaIt->constraint().variables().begin() ) != mVariables.end() );
+                            mHistoryActual->addInfeasibleVariable( mVariables.at( *formulaIt->constraint().variables().begin()) );
                         }
                     }
-                    else
-                    {
-                        assert( mVariables.find( *formulaIt->constraint().variables().begin() ) != mVariables.end() );
-                        mHistoryActual->addInfeasibleVariable( mVariables.at( *formulaIt->constraint().variables().begin()) );
-                    }
                 }
             }
-        }
-        #ifdef ICP_PROLONG_CONTRACTION
-        else
-        {
-            EvalRationalIntervalMap bounds = mLRA.getVariableBounds();
-            #ifdef ICP_MODULE_DEBUG_1
-            cout << "Newly obtained Intervals: " << endl;
-            #endif
-            for ( auto boundIt = bounds.begin(); boundIt != bounds.end(); ++boundIt )
+            #ifdef ICP_PROLONG_CONTRACTION
+            else
             {
-                assert( mVariables.find((*boundIt).first) != mVariables.end() );
-                icp::IcpVariable& icpVar = *mVariables.find((*boundIt).first)->second;
-                RationalInterval tmp = (*boundIt).second;
-                const DoubleInterval& icpVarInterval = icpVar.interval();
-                // mHistoryRoot->addInterval((*boundIt).first, DoubleInterval(tmp.lower(), tmp.lowerBoundType(), tmp.upper(), tmp.upperBoundType()) );
-                DoubleInterval newInterval = DoubleInterval(tmp.lower(), tmp.lowerBoundType(), tmp.upper(), tmp.upperBoundType() );
-                if( !(icpVarInterval == newInterval) && icpVarInterval.contains(newInterval) )
+                EvalRationalIntervalMap bounds = mLRA.getVariableBounds();
+                #ifdef ICP_MODULE_DEBUG_1
+                cout << "Newly obtained Intervals: " << endl;
+                #endif
+                for ( auto boundIt = bounds.begin(); boundIt != bounds.end(); ++boundIt )
                 {
-                    #ifdef ICP_MODULE_DEBUG_1
-                    cout << (*boundIt).first << ": " << (*boundIt).second << endl;
-                    #endif
-                    updateRelativeContraction( icpVarInterval, newInterval );
-                    icpVar.setInterval( newInterval );
-                    updateRelevantCandidates((*boundIt).first);
-                }
-            }
-            
-            // get intervals for slackvariables
-            const LRAModule<LRASettings1>::ExVariableMap slackVariables = mLRA.slackVariables();
-            for ( auto slackIt = slackVariables.begin(); slackIt != slackVariables.end(); ++slackIt )
-            {
-                std::map<const LRAVariable*, ContractionCandidates>::iterator linIt = mLinearConstraints.find((*slackIt).second);
-                if ( linIt != mLinearConstraints.end() )
-                {
-                    // dirty hack: expect lhs to be set and take first item of set of CCs --> Todo: Check if it is really set in the constructors of the CCs during inform and assert
-                    RationalInterval tmp = (*slackIt).second->getVariableBounds();
-                    // keep root updated about the initial box.
-                    // mHistoryRoot->rIntervals()[(*(*linIt).second.begin())->lhs()] = DoubleInterval(tmp.lower(), tmp.lowerBoundType(), tmp.upper(), tmp.upperBoundType());
-                    DoubleInterval newInterval = DoubleInterval(tmp.lower(), tmp.lowerBoundType(), tmp.upper(), tmp.upperBoundType() );
-                    carl::Variable var = (*(*linIt).second.begin())->lhs();
-                    icp::IcpVariable& icpVar = *mVariables.at(var);
+                    assert( mVariables.find((*boundIt).first) != mVariables.end() );
+                    icp::IcpVariable& icpVar = *mVariables.find((*boundIt).first)->second;
+                    RationalInterval tmp = (*boundIt).second;
                     const DoubleInterval& icpVarInterval = icpVar.interval();
+                    // mHistoryRoot->addInterval((*boundIt).first, DoubleInterval(tmp.lower(), tmp.lowerBoundType(), tmp.upper(), tmp.upperBoundType()) );
+                    DoubleInterval newInterval = DoubleInterval(tmp.lower(), tmp.lowerBoundType(), tmp.upper(), tmp.upperBoundType() );
                     if( !(icpVarInterval == newInterval) && icpVarInterval.contains(newInterval) )
                     {
+                        #ifdef ICP_MODULE_DEBUG_1
+                        cout << (*boundIt).first << ": " << (*boundIt).second << endl;
+                        #endif
                         updateRelativeContraction( icpVarInterval, newInterval );
                         icpVar.setInterval( newInterval );
-                        updateRelevantCandidates(var);
-                        #ifdef ICP_MODULE_DEBUG_2
-                        cout << "Added interval (slackvariables): " << var << " " << tmp << endl;
-                        #endif
+                        updateRelevantCandidates((*boundIt).first);
+                    }
+                }
+
+                // get intervals for slackvariables
+                const LRAModule<LRASettings1>::ExVariableMap slackVariables = mLRA.slackVariables();
+                for ( auto slackIt = slackVariables.begin(); slackIt != slackVariables.end(); ++slackIt )
+                {
+                    std::map<const LRAVariable*, ContractionCandidates>::iterator linIt = mLinearConstraints.find((*slackIt).second);
+                    if ( linIt != mLinearConstraints.end() )
+                    {
+                        // dirty hack: expect lhs to be set and take first item of set of CCs --> Todo: Check if it is really set in the constructors of the CCs during inform and assert
+                        RationalInterval tmp = (*slackIt).second->getVariableBounds();
+                        // keep root updated about the initial box.
+                        // mHistoryRoot->rIntervals()[(*(*linIt).second.begin())->lhs()] = DoubleInterval(tmp.lower(), tmp.lowerBoundType(), tmp.upper(), tmp.upperBoundType());
+                        DoubleInterval newInterval = DoubleInterval(tmp.lower(), tmp.lowerBoundType(), tmp.upper(), tmp.upperBoundType() );
+                        carl::Variable var = (*(*linIt).second.begin())->lhs();
+                        icp::IcpVariable& icpVar = *mVariables.at(var);
+                        const DoubleInterval& icpVarInterval = icpVar.interval();
+                        if( !(icpVarInterval == newInterval) && icpVarInterval.contains(newInterval) )
+                        {
+                            updateRelativeContraction( icpVarInterval, newInterval );
+                            icpVar.setInterval( newInterval );
+                            updateRelevantCandidates(var);
+                            #ifdef ICP_MODULE_DEBUG_2
+                            cout << "Added interval (slackvariables): " << var << " " << tmp << endl;
+                            #endif
+                        }
                     }
                 }
             }
+            #endif
         }
-        #endif
         // remove boundaries from mLRA module after boxChecking.
         for( auto boundIt = addedBoundaries.begin(); boundIt != addedBoundaries.end(); )
         {
@@ -1972,9 +1968,9 @@ namespace smtrat
         mLRA.clearDeductions();
         assert(addedBoundaries.empty());
         
-        if ( boxCheck == True )
-            return true;
-        return false;
+        if ( boxCheck == False )
+            return false;
+        return true;
     }
 
     void ICPModule::pushBoundsToPassedFormula()
