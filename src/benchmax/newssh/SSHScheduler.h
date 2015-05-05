@@ -23,7 +23,7 @@ namespace ssh {
  */
 Node getNode(const string& _nodeAsString)
 {
-	regex noderegex("([^:]+):([^@]+)@([^:@]+)(?::(\\d+))?(?:@(\\d+))?(?:#(\\d+))?");
+	regex noderegex("([^:@]+)(?::([^@]+))?@([^:@]+)(?::(\\d+))?(?:@(\\d+))?(?:#(\\d+))?");
 	std::smatch matches;
 	if (regex_match(_nodeAsString, matches, noderegex)) {
 		std::string username = matches[1];
@@ -44,7 +44,7 @@ Node getNode(const string& _nodeAsString)
 		return {hostname, username, password, (unsigned short)port, cores, connections};
 	} else {
 		BENCHMAX_LOG_ERROR("benchmax", "Invalid format for node specification. Use the following format:");
-		BENCHMAX_LOG_ERROR("benchmax", "\t<user>:<password>@<hostname>[:<port = 22>][@<cores = 1>][#<connections = 1>]");
+		BENCHMAX_LOG_ERROR("benchmax", "\t<user>[:<password>]@<hostname>[:<port = 22>][@<cores = 1>][#<connections = 1>]");
 		exit(1);
 	}
 }
@@ -93,8 +93,8 @@ public:
 	}
 	
 	bool executeJob(const Tool& tool, const fs::path& file, Results& res) {
-		BENCHMAX_LOG_DEBUG("benchmax.ssh", "Executing " << file);
 		SSHConnection* c = get();
+		BENCHMAX_LOG_INFO("benchmax.ssh", "Executing " << file);
 		// Create temporary directory
 		std::string folder = c->createTmpDir(tmpDirName(file));
 		// Upload benchmark file

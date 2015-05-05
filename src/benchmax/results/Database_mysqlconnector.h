@@ -65,18 +65,19 @@ public:
 		stmt->setUInt64(2, a2);
 		return Results(stmt->executeQuery());
 	}
-	Results execute(Statement& stmt, const Index& a1, const std::string& a2, const std::string& a3) {
-		stmt->setUInt64(1, a1);
+	Results execute(Statement& stmt, const std::string& a1, const std::string& a2, const Index& a3) {
+		stmt->setString(1, a1);
 		stmt->setString(2, a2);
-		stmt->setString(3, a3);
+		stmt->setUInt64(3, a3);
 		return Results(stmt->executeQuery());
 	}
-	Results execute(Statement& stmt, const Index& a1, const Index& a2, const Index& a3, int a4, std::size_t a5) {
-		stmt->setUInt64(1, a1);
+	Results execute(Statement& stmt, int a1, std::size_t a2, std::size_t a3, const Index& a4, const Index& a5, const Index& a6) {
+		stmt->setInt(1, a1);
 		stmt->setUInt64(2, a2);
 		stmt->setUInt64(3, a3);
-		stmt->setInt(4, a4);
+		stmt->setUInt64(4, a4);
 		stmt->setUInt64(5, a5);
+		stmt->setUInt64(6, a6);
 		return Results(stmt->executeQuery());
 	}
 	template<typename... Args>

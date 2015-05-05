@@ -111,10 +111,10 @@ public:
 		
 		int rc = ssh_connect(session);
 		if (rc != SSH_OK) {
-			BENCHMAX_LOG_ERROR("benchmax.ssh", "Failed to connect to " << node.username << " @ "<< node.hostname << ":" << node.port);
+			BENCHMAX_LOG_ERROR("benchmax.ssh", "Failed to connect to " << node.username << "@" << node.hostname);
 			exit(1);
 		}
-		BENCHMAX_LOG_DEBUG("benchmax.ssh", "Connected to " << node.username << " @ "<< node.hostname << ":" << node.port);
+		BENCHMAX_LOG_DEBUG("benchmax.ssh", "Connected to " << node.username << "@"<< node.hostname);
 		
 		rc = ssh_userauth_publickey_auto(session, nullptr, nullptr);
 		if (rc != SSH_AUTH_SUCCESS) {
@@ -252,6 +252,7 @@ public:
 			if (n > 0) result.stderr += std::string(buf, std::size_t(n));
 			SSH_LOCKED(eof = ssh_channel_is_eof(channel));
 			std::this_thread::yield();
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
 		SSH_LOCKED(result.exitCode = ssh_channel_get_exit_status(channel));
 		result.time = parseDuration(result.stdout);
