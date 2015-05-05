@@ -558,14 +558,13 @@ namespace vs
                                     }
                                 }
                                 subResult = mpSubstitutionResults->erase( subResult );
-                                if( mpSubResultCombination != NULL )
+                                if( hasSubResultsCombination() )
                                 {
-                                    if( mpSubResultCombination->size() > 0 )
-                                    {
-                                        mTakeSubResultCombAgain = true;
-                                    }
+                                    mTakeSubResultCombAgain = true;
                                     assert( mpSubResultCombination->size() <= mpSubstitutionResults->size() );
                                 }
+                                else
+                                    mTakeSubResultCombAgain = false;
                             }
                         }
                         else
@@ -1804,7 +1803,11 @@ namespace vs
                 {
                     (*child)->rType() = COMBINE_SUBRESULTS;
                     if( (*child)->hasSubstitutionResults() && (*child)->hasSubResultsCombination() )
+                    {
                         (*child)->rTakeSubResultCombAgain() = true;
+                    }
+                    else
+                       (*child)->rTakeSubResultCombAgain() = false; 
                 }
                 (*child)->rInconsistent() = false;
             }
