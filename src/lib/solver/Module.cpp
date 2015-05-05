@@ -607,7 +607,7 @@ namespace smtrat
             for( FormulasT::const_iterator cons = infSubSet->begin(); cons != infSubSet->end(); ++cons )
             {
                 ModuleInput::const_iterator posInReceived = mpPassedFormula->find( *cons );
-                assert( posInReceived != mpReceivedFormula->end() );
+                assert( posInReceived != mpPassedFormula->end() );
                 if( posInReceived->hasOrigins() )
                 {
                     const std::vector<FormulaT>& formOrigins = posInReceived->origins();
