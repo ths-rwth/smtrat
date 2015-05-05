@@ -670,8 +670,8 @@ namespace smtrat
                 // Run the backend solver parallel until the first answers true or false.
                 if( anAnswerFound() )
                     return Unknown;
-                unsigned highestIndex = numberOfUsedBackends-1;
-                vector< std::future<Answer> > futures( highestIndex );
+                std::size_t highestIndex = numberOfUsedBackends-1;
+                std::vector<std::future<Answer>> futures(highestIndex);
                 for( unsigned i=0; i<highestIndex; ++i )
                 {
                     #ifdef MODULE_VERBOSE
@@ -704,7 +704,7 @@ namespace smtrat
             {
             #endif
                 // Run the backend solver sequentially until the first answers true or false.
-                vector<Module*>::iterator module = mUsedBackends.begin();
+                std::vector<Module*>::iterator module = mUsedBackends.begin();
                 while( module != mUsedBackends.end() && result == Unknown )
                 {
                     result = (*module)->check( _full );
