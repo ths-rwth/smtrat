@@ -93,35 +93,18 @@ private:
     std::vector<std::pair<std::string, std::string> > mKeyValuePairs;
     
 protected:
-    
-    void addKeyValuePair(const std::string& key, const std::string& value) {
+    template<typename T, carl::EnableIf<std::is_same<T, std::string>> = carl::dummy>
+    void addKeyValuePair(const std::string& key, const T& value) {
         if( key.size() > mMaxKeyLength )
             mMaxKeyLength = key.size();
         mKeyValuePairs.push_back(std::pair<std::string, std::string>(key, value));
     }
     
-    void addKeyValuePair(const std::string & key, size_t value) {
+    template<typename T, carl::DisableIf<std::is_same<T, std::string>> = carl::dummy>
+    void addKeyValuePair(const std::string & key, const T& value) {
         std::stringstream convert;
         convert << value;
-        addKeyValuePair(key, convert.str());
-    }
-    
-    void addKeyValuePair(const std::string & key, unsigned value) {
-        std::stringstream convert;
-        convert << value;
-        addKeyValuePair(key, convert.str());
-    }
-    
-    void addKeyValuePair(const std::string & key, int value) {
-        std::stringstream convert;
-        convert << value;
-        addKeyValuePair(key, convert.str());
-    }
-    
-    void addKeyValuePair(const std::string & key, double value) {
-        std::stringstream convert;
-        convert << value;
-        addKeyValuePair(key, convert.str());
+        addKeyValuePair(key, std::string(convert.str()));
     }
 };
 }
