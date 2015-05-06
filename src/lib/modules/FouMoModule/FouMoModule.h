@@ -64,6 +64,14 @@ namespace smtrat
             bool mCorrect_Solution;
             // Stores whether at least one non-linear term occured
             bool mNonLinear;
+            // Stores whether the current instance contains only integer resp. real variables
+            enum VAR_DOM
+            {
+                INT,
+                UNKNOWN
+            }; 
+            VAR_DOM mDom;
+            
             
             /**
              * @param curr_constraints Contains the constraints for which a possibly good

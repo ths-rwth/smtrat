@@ -45,6 +45,7 @@ namespace smtrat
     {
         mCorrect_Solution = false;
         mNonLinear = false;
+        mDom = UNKNOWN;
     }
 
     template<class Settings>
@@ -55,15 +56,25 @@ namespace smtrat
         #endif    
         // Check whether the constraint to be asserted contains a non-linear term
         // in order to determine whether non-linear support is needed
-        if( !mNonLinear )
+        if( !mNonLinear || mDom == UNKNOWN )
         {
             auto iter_poly = _subformula->formula().constraint().lhs().begin();
             while( iter_poly != _subformula->formula().constraint().lhs().end() )
             {
-                if( !iter_poly->isLinear() )
+                if( !mNonLinear )
+                {                    
+                    if( !iter_poly->isLinear() )
+                    {
+                        mNonLinear = true;
+                    }
+                }    
+                if( !iter_poly->isConstant() && mDom != INT )
                 {
-                    mNonLinear = true;
-                }
+                    if( iter_poly->monomial()->begin()->first.getType() == carl::VariableType::VT_INT )
+                    {
+                        mDom = INT;
+                    }
+                }    
                 ++iter_poly;
             }
         }
@@ -1135,7 +1146,7 @@ namespace smtrat
                 if( first_iter_upper )
                 {
                     first_iter_upper = false;     
-                    if( Settings::Integer_Mode )
+                    if( mDom == INT )
                     {
                         lowest_upper = carl::floor( Rational( to_be_substituted_upper.constantPart() )/(Rational(-1)*coeff_upper ) );         
                     }
@@ -1146,7 +1157,7 @@ namespace smtrat
                 }
                 else
                 {                    
-                    if( Settings::Integer_Mode )
+                    if( mDom == INT )
                     {                        
                         if( carl::floor( Rational( Rational(-1)*(Rational)to_be_substituted_upper.constantPart() )/coeff_upper ) < lowest_upper )
                         {
@@ -1215,7 +1226,7 @@ namespace smtrat
                 if( first_iter_lower )
                 {
                     first_iter_lower = false;
-                    if( Settings::Integer_Mode )
+                    if( mDom == INT )
                     {
                         highest_lower = carl::ceil( Rational( to_be_substituted_lower.constantPart() )/coeff_lower );
                     }
@@ -1226,7 +1237,7 @@ namespace smtrat
                 }
                 else
                 {
-                    if( Settings::Integer_Mode )
+                    if( mDom == INT )
                     {
                         if( carl::ceil( Rational( to_be_substituted_lower.constantPart() )/coeff_lower ) > highest_lower )
                         {
@@ -1323,7 +1334,7 @@ namespace smtrat
     template<class Settings>
     Answer FouMoModule<Settings>::callBackends( bool _full )
     {
-        if( Settings::Integer_Mode )
+        if( mDom == INT )
         {
             auto iter_recv = rReceivedFormula().begin();
             while( iter_recv != rReceivedFormula().end() )
@@ -1421,5 +1432,5 @@ namespace smtrat
             }
             ++iter_constr;
         }
-    }    
+    }   
 }
