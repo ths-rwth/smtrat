@@ -129,6 +129,7 @@ namespace smtrat
         #ifdef SMTRAT_DEVOPTION_Validation
         friend class ValidationSettings;
         #endif
+        friend Manager;
         public:
             /// For time measuring purposes.
             typedef std::chrono::high_resolution_clock clock;
