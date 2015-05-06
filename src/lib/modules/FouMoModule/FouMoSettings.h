@@ -33,12 +33,7 @@ namespace smtrat
 {
     struct FouMoSettings1
     {        
-        static const bool Allow_Deletion = true;
-        
-        static const bool Integer_Mode = false;
-        
-        static const bool Nonlinear_Mode = true;
-        
+        static const bool Allow_Deletion = true;       
         // The threshold, in percentage, for determining whether to run the backends
         static const unsigned Threshold = 50;        
     };
