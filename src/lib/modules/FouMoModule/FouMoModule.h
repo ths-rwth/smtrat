@@ -62,6 +62,8 @@ namespace smtrat
             std::map< carl::Variable, Rational > mVarAss;
             // Stores whether we found a valid solution in this module
             bool mCorrect_Solution;
+            // Stores whether at least one non-linear term occured
+            bool mNonLinear;
             
             /**
              * @param curr_constraints Contains the constraints for which a possibly good

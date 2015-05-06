@@ -44,6 +44,7 @@ namespace smtrat
         mVarAss()    
     {
         mCorrect_Solution = false;
+        mNonLinear = false;
     }
 
     template<class Settings>
@@ -51,7 +52,21 @@ namespace smtrat
     {
         #ifdef DEBUG_FouMoModule
         cout << "Assert: " << _subformula->formula().constraint()<< endl;
-        #endif                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+        #endif    
+        // Check whether the constraint to be asserted contains a non-linear term
+        // in order to determine whether non-linear support is needed
+        if( !mNonLinear )
+        {
+            auto iter_poly = _subformula->formula().constraint().lhs().begin();
+            while( iter_poly != _subformula->formula().constraint().lhs().end() )
+            {
+                if( !iter_poly->isLinear() )
+                {
+                    mNonLinear = true;
+                }
+                ++iter_poly;
+            }
+        }
         if( _subformula->formula().isFalse() )
         {
             #ifdef DEBUG_FouMoModule
@@ -77,7 +92,7 @@ namespace smtrat
             // Check whether the variable that is currently considered occurs
             // in the newly asserted constraint as in the ones that were 
             // previously considered
-            if( Settings::Nonlinear_Mode )
+            if( mNonLinear )
             {
                 unsigned i = 0;
                 while( iter_var != mElim_Order.end() )
@@ -711,7 +726,7 @@ namespace smtrat
             #endif
             if( var_corr_constr.empty() ) 
             {
-                if( Settings::Nonlinear_Mode )
+                if( mNonLinear )
                 {
                     #ifdef DEBUG_FouMoModule
                     cout << "Run non-linear backends!" << endl;
@@ -896,7 +911,7 @@ namespace smtrat
             auto iter_poly = lhsExpanded.begin();
             while( iter_poly != lhsExpanded.end() )
             {
-                if( Settings::Nonlinear_Mode )
+                if( mNonLinear )
                 {
                     if( iter_poly->getNrVariables() == 1 )
                     {

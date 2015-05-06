@@ -37,8 +37,6 @@ namespace smtrat
         
         static const bool Integer_Mode = false;
         
-        static const bool Nonlinear_Mode = true;
-        
         // The threshold, in percentage, for determining whether to run the backends
         static const unsigned Threshold = 50;        
     };
