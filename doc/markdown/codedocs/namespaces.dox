@@ -1,0 +1,9 @@
+/**
+@namespace carl
+carl is the main namespace for the library. Everything included in this library is found in this namespace. 
+
+@namespace carl::cad
+Contains everything directly related to the implementation of the cylindrical algebraic decomposition.
+
+
+*/

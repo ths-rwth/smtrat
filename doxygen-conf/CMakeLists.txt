@@ -17,12 +17,15 @@ if("${PROJECT_NAME}" STREQUAL "")
 	project(SMT-RAT-doxygen NONE)
 	set(CMAKE_CURRENT_BINARY_DIR "build")
 	set(CMAKE_SOURCE_DIR "..")
+	set(PROJECT_SOURCE_DIR "..")
 	include(FindDoxygen)
 endif()
 
 # Cmake doxygen settings
 # # # # # # # # # # # # #
 
+option(DOCUMENTATION_CREATE_PDF "Create PDF reference manual" OFF )
+option(DOCUMENTATION_INCLUDE_SOURCE_REFERENCE "Include source reference in manual" ON)
 
 option(MYPROJECT_DOC_WITH_STATIC "Create documentation for static members" ON )
 option(MYPROJECT_DOC_WITH_PRIVATE "Create documentation for private members" ON )
@@ -103,8 +106,17 @@ set(DOXYGEN_LANGUAGE "English" CACHE STRING "Language used by doxygen" )
 mark_as_advanced(DOXYGEN_LANGUAGE )
 
 set(DOXYGEN_SOURCE_DIR
-	${lib_${PROJECT_NAME}_SRCS}  )
-set(DOXYGEN_OUTPUT_DIR doc )
+	${PROJECT_SOURCE_DIR}/doc/markdown
+)
+if( DOCUMENTATION_INCLUDE_SOURCE_REFERENCE )
+set( DOXYGEN_SOURCE_DIR ${DOXYGEN_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src )
+else(DOCUMENTATION_INCLUDE_SOURCE_REFERENCE )
+
+endif( DOCUMENTATION_INCLUDE_SOURCE_REFERENCE ) 
+
+
+
+set(DOXYGEN_OUTPUT_DIR ${PROJECT_BINARY_DIR}/doc )
 STRING(REGEX REPLACE ";" " " DOXYGEN_INPUT_LIST "${DOXYGEN_SOURCE_DIR}" )
 
 # Generate doxygen.conf
@@ -134,4 +146,3 @@ else( DOXYGEN_PDFLATEX )
   add_custom_target( doc 
                      DEPENDS doxygen-doc )
 endif( DOXYGEN_PDFLATEX )
-

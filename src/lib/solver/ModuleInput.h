@@ -175,10 +175,12 @@ namespace smtrat
         
         // Member.
         /// Store some properties about the conjunction of the stored formulas.
-        mutable carl::Condition mProperties;
+        carl::Condition mProperties;
+        /// A flag indicating whether the properties of this module input are updated.
+        bool mPropertiesUpdated;
         /// Maps all formulas occurring (in the origins) at pos i in this module input to i. This is for a faster access.
         carl::FastMap<FormulaT,iterator> mFormulaPositionMap;
-
+        
     public:
             
         /**
@@ -187,6 +189,7 @@ namespace smtrat
         ModuleInput(): 
             std::list<FormulaWithOrigins>(),
             mProperties(),
+            mPropertiesUpdated(false),
             mFormulaPositionMap()
         {}
         
@@ -195,9 +198,9 @@ namespace smtrat
         /**
          * @return All known properties of the underlying formula of this module input.
          */
-        const carl::Condition& properties() const
+        carl::Condition properties() const
         {
-            updateProperties();
+            assert( mPropertiesUpdated );
             return mProperties;
         }
         
@@ -300,7 +303,7 @@ namespace smtrat
         /**
          * Updates all properties of the formula underlying this module input.
          */
-        void updateProperties() const;
+        void updateProperties();
         
         /**
          * Collects all real valued variables occurring in this formula.
@@ -405,6 +408,7 @@ namespace smtrat
             iterator iter = find( _formula );
             if( iter == end() )
             {
+                mPropertiesUpdated = false;
                 emplace_back( _formula );
                 iterator pos = --end(); // TODO: maybe use reverse iterator for not decrementing here
                 mFormulaPositionMap[_formula] = pos;
