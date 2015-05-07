@@ -650,42 +650,9 @@ namespace smtrat
                     }
                     ++iter_subs;
                 }
-                //new_poly = new_poly.substitute( mSubstitutions );
                 #ifdef DEBUG_IntEqModule
                 //cout << "After substitution: " << new_poly << endl;
-                #endif
-                /*
-                std::shared_ptr<std::vector<FormulaT>> origins( new std::vector<FormulaT>() );
-                origins->push_back( (*iter_formula).formula() );
-                auto iter_var = mSubstitutions.begin();
-                while( iter_var != mSubstitutions.end() )
-                {  
-                    typename Poly::PolyType cosntrLhsExpanded = (typename Poly::PolyType)constr.lhs();
-                    auto coeff_iter = cosntrLhsExpanded.begin();
-                    while( coeff_iter != cosntrLhsExpanded.end() )
-                    {
-                        if( !(*coeff_iter).isConstant() )
-                        {
-                            if( (*iter_var).first == (*coeff_iter).getSingleVariable() )
-                            {
-                                auto iter_help = mVariables.find( (*iter_var).first );
-                                assert( iter_help != mVariables.end() );
-                                *origins = std::move( merge( *origins, *( iter_help->second ) ) );
-                                break;
-                            }
-                        }    
-                        ++coeff_iter;                  
-                    }
-                    ++iter_var;                   
-                }
-                */
-                //std::shared_ptr<std::vector<FormulaT>> formula_cover = origins;
-                //auto iter_sets = origins->begin();
-                //while( iter_sets != origins->end() )
-                //{
-                //    formula_cover->push_back( *iter_sets );
-                //    ++iter_sets;
-                //}  
+                #endif 
                 FormulaT formula_passed( ConstraintT( new_poly, (*iter_formula).formula().constraint().relation() ) );                
                 if( formula_passed.isFalse() )
                 {
