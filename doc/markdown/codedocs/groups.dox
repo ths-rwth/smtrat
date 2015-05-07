@@ -1,0 +1,63 @@
+/**
+@defgroup Polynomials Polynomials
+@{
+
+@defgroup multirp  Multivariate Represented Polynomials
+@{ @}
+
+@defgroup unirp Univariate Represented Polynomials
+@{ @}
+
+@}
+
+@defgroup constraints Constraints
+@{ @}
+
+
+ 
+@defgroup constraints Constraints
+@{ @}
+
+@defgroup algorithm Algorithms
+@{
+@defgroup gcd Greatest Common Divisor
+@{ @}
+
+@defgroup gb Groebner Bases
+@{ @}
+
+@defgroup cad Cylindrical Algebraic Decomposition
+@{ @}
+@}
+@defgroup number Number Types
+@{
+@defgroup gmpxx GMPxx Usage
+@{ @}
+
+@defgroup cln CLN Usage
+@{ @}
+@}
+
+@defgroup typetraits Type Traits
+@{
+@defgroup typetraits_is_field is_field
+@defgroup typetraits_is_finite is_finite
+@defgroup typetraits_is_float is_float
+@defgroup typetraits_is_integer is_integer
+@{
+	@defgroup typetraits_is_subset_of_integers is_subset_of_integers
+@}
+@defgroup typetraits_is_number is_number
+@defgroup typetraits_is_rational is_rational
+@{
+	@defgroup typetraits_is_subset_of_rationals is_subset_of_rationals
+@}
+
+@defgroup typetraits_IntegralType IntegralType
+@defgroup typetraits_UnderlyingNumberType UnderlyingNumberType
+@}
+
+
+
+*/
+ // end of a group
