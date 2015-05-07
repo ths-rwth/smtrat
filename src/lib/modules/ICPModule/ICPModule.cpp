@@ -1494,11 +1494,9 @@ namespace smtrat
     FormulasT ICPModule::createPremiseDeductions()
     {
         // collect applied contractions
-        if( mHistoryActual == nullptr )
-            exit(1234);
         FormulasT contractions = mHistoryActual->appliedConstraints();
         // collect original box
-        REGISTERED_ASSERT( mBoxStorage.size() > 0 );
+        assert( mBoxStorage.size() > 0 );
         const FormulasT& box = mBoxStorage.front();
         contractions.insert( box.begin(), box.end() );
         mBoxStorage.pop();
@@ -1511,7 +1509,7 @@ namespace smtrat
         std::vector<FormulaT> contractions;
         mHistoryActual->appliedConstraints( contractions );
         // collect original box
-        REGISTERED_ASSERT( mBoxStorage.size() > 0 );
+        assert( mBoxStorage.size() > 0 );
         for( const FormulaT& f : mBoxStorage.front() )
             contractions.push_back( f );
         mBoxStorage.pop();
@@ -1758,7 +1756,7 @@ namespace smtrat
         #endif
         // call mLRA to check linear feasibility
         mLRA.clearDeductions();
-        mLRA.rReceivedFormula().updateProperties();
+        mValidationFormula->updateProperties();
         _answer = mLRA.check();
         
         // catch deductions

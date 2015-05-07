@@ -1762,8 +1762,6 @@ SetWatches:
             if( value( mNewSplittingVars.back() ) == l_Undef )
             {
                 next = mNewSplittingVars.back();
-                if( !decision[next] )
-                    std::cout << next << std::endl;
                 assert( decision[next] );
                 return next;
             }

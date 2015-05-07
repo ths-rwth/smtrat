@@ -176,6 +176,7 @@ namespace smtrat
         /*
          * Get the types of the modules, which the given module needs to call to solve its passedFormula.
          */
+        _requiredBy->mpPassedFormula->updateProperties();
         std::vector< std::pair< thread_priority, ModuleType > > backendValues = mStrategyGraph.getNextModuleTypes( _requiredBy->threadPriority().second, _requiredBy->pPassedFormula()->properties() );
         for( auto iter = backendValues.begin(); iter != backendValues.end(); ++iter )
         {
