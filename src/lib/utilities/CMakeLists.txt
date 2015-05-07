@@ -32,4 +32,5 @@ set(lib_utilities_src
 	utilities/stats/CollectStatistics.cpp
 	utilities/stats/StatisticSettings.cpp
 	utilities/CMakeOptions.cpp
+	utilities/WrapperExternal.cpp
 PARENT_SCOPE)
