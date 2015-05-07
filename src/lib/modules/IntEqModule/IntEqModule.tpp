@@ -108,11 +108,15 @@ namespace smtrat
                     #endif
                     */
                 }
+                #ifdef DEBUG_IntEqModule
+                cout << "After temporary substitution: " << new_poly << endl;
+                #endif
                 FormulaT temp_eq( ( ConstraintT( new_poly, carl::Relation::EQ ) ) );
                 if( !temp_eq.isTrue() && !temp_eq.isFalse() )  
                 {
                     if( *iter_subs != mSubstitutions.back() )
                     {
+                        assert( iter_recent != mRecent_Constraints.end() );
                         iter_recent->insert( std::make_pair( temp_eq, origins ) );
                     }
                     else
@@ -125,41 +129,6 @@ namespace smtrat
                             mRecent_Constraints.push_back( temp );
                             mNew_Substitution = false;
                         }
-                        /*
-                        else if( mRecent_Constraints.back().size() == 1 )
-                        {
-                            auto iter_temp = mSubstitutions.begin();                            
-                            bool is_sub = false;
-                            Poly maybe_sub = mRecent_Constraints.back().begin()->first.constraint().lhs();
-                            while( iter_temp != mSubstitutions.end() )
-                            {
-                                if( maybe_sub.substitute( iter_temp->first, iter_temp->second ) == ZERO_POLYNOMIAL )
-                                {
-                                    is_sub = true;
-                                    break;
-                                }
-                                ++iter_temp;
-                            }
-                            if( is_sub )
-                            {
-                                Formula_Origins temp;
-                                temp.emplace( temp_eq, origins );
-                                mRecent_Constraints.push_back( temp );
-                            }
-                            else
-                            {
-                                auto iter_help = mRecent_Constraints.back().find( temp_eq );
-                                if( iter_help == mRecent_Constraints.back().end() )
-                                {
-                                    mRecent_Constraints.back().insert( std::make_pair( temp_eq, origins ) ); 
-                                }
-                                else
-                                {
-                                    iter_help->second->insert( iter_help->second->end(), origins->begin(), origins->end() );                                
-                                }                                
-                            }
-                        }
-                        */
                         else
                         {
                             auto iter_help = mRecent_Constraints.back().find( temp_eq );
@@ -180,10 +149,10 @@ namespace smtrat
                 }    
                 ++iter_subs;
             }
-            FormulaT newEq( ConstraintT( new_poly, carl::Relation::EQ ) );
             #ifdef DEBUG_IntEqModule
-            cout << "After substitution: " << newEq << endl;
+            cout << "After substitution: " << new_poly << endl;
             #endif
+            FormulaT newEq( ConstraintT( new_poly, carl::Relation::EQ ) );
             // Return False if the newly obtained constraint is unsatisfiable
             if( newEq.isFalse() )
             {
@@ -204,28 +173,13 @@ namespace smtrat
             if( iter != mProc_Constraints.end() )
             {
                 (iter->second)->insert( iter->second->end(), origins->begin(), origins->end() );
-                //auto iter_help = mRecent_Constraints.back().find( newEq );
-                //assert( iter_help != mRecent_Constraints.back().end() );
-                //iter_help->second->insert( --iter_help->second->end(), origins->begin(), origins->end() );
             }
             else
             {
-                mProc_Constraints.emplace( newEq, origins );
-                /*
-                if( mRecent_Constraints.empty() )
-                {
-                    Formula_Origins temp;
-                    temp.emplace( newEq, origins );
-                    mRecent_Constraints.push_back( temp );
-                }
-                else
-                {
-                    mRecent_Constraints.back().emplace( newEq, origins );
-                }
-                */    
+                mProc_Constraints.emplace( newEq, origins );   
             }
             #ifdef DEBUG_IntEqModule
-            cout << mRecent_Constraints << endl;
+            //cout << mRecent_Constraints << endl;
             #endif
             mProc_Constraints = mRecent_Constraints.back();
         }
@@ -324,7 +278,28 @@ namespace smtrat
                 }
                 else
                 {
-                    ++iter_steps;
+                    ++iter_steps;   
+                }    
+            }
+            // Now possibly delete iteration steps in the case that two 
+            // adjacent steps are equal due to the fact that a deleted substitution
+            // is followed by another one. In this case two adjacent steps can be equal.  
+            auto iter_recent = mRecent_Constraints.begin();
+            while( iter_recent != mRecent_Constraints.end() )
+            {
+                auto iter_next = iter_recent;
+                ++iter_next;
+                if( iter_next == mRecent_Constraints.end() )
+                {
+                    break;
+                }
+                if( *iter_next == *iter_recent )
+                {
+                    iter_recent = mRecent_Constraints.erase( iter_next ); 
+                }
+                else
+                {
+                    ++iter_recent;
                 }    
             }
             // Do the same for the substitution data structure(s)
@@ -641,7 +616,7 @@ namespace smtrat
                 mRecent_Constraints.push_back( mProc_Constraints );
             }   
             #ifdef DEBUG_IntEqModule
-            cout << mRecent_Constraints << endl;  
+            //cout << mRecent_Constraints << endl;  
             #endif 
         }
         #ifdef DEBUG_IntEqModule
@@ -729,9 +704,6 @@ namespace smtrat
             }
             else if( mSubstitutions.empty() || (*iter_formula).formula().constraint().relation() == carl::Relation::NEQ )
             {
-                #ifdef DEBUG_IntEqModule
-                cout << "No substitution or disequality" << endl;
-                #endif
                 addReceivedSubformulaToPassedFormula( iter_formula );                                
             }
             ++iter_formula;
