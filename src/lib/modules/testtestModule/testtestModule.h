@@ -1,52 +1,27 @@
-/*
- * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
- *
- * This file is part of SMT-RAT.
- *
- * SMT-RAT is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SMT-RAT is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
 /**
- * @file ReduceCNFModule.h
- * @author Dustin Huetter <dustin.huetter@rwth-aachen.de>
+ * @file testtestModule.h
+ * @author YOUR NAME <YOUR EMAIL ADDRESS>
  *
- * @version 2015-02-23
- * Created on 2015-02-23.
+ * @version 2015-05-08
+ * Created on 2015-05-08.
  */
 
 #pragma once
 
 #include "../../solver/Module.h"
-#include "ReduceCNFStatistics.h"
-#include "ReduceCNFSettings.h"
+#include "testtestStatistics.h"
+
 namespace smtrat
 {
-    template<typename Settings>
-    class ReduceCNFModule : public Module
+    class testtestModule : public Module
     {
         private:
-            // Stores for each variable the constraints in which it has an upper
-            // resp. a lower bound
-            std::map< carl::Variable, std::pair< std::vector<FormulaT>, std::vector<FormulaT> > > mVarUpperLower;
-            // Stores the temporary formula that is later passed to the backends
-            ModuleInput mTempPassedFormulas;
+            // Members.
 
         public:
-            ReduceCNFModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
+            testtestModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
-            ~ReduceCNFModule();
+            ~testtestModule();
 
             // Main interfaces.
 
@@ -59,13 +34,13 @@ namespace smtrat
              * @return false, if it can be easily decided whether the given constraint is inconsistent;
              *          true, otherwise.
              */
-            bool inform( const FormulaT& _constraint );
+            bool informCore( const FormulaT& _constraint );
 
             /**
              * Informs all backends about the so far encountered constraints, which have not yet been communicated.
              * This method must not and will not be called more than once and only before the first runBackends call.
              */
-	    void init();
+	        void init();
 
             /**
              * The module has to take the given sub-formula of the received formula into account.
@@ -75,7 +50,7 @@ namespace smtrat
              *          the already considered sub-formulas;
              *          true, otherwise.
              */
-            bool assertSubformula( ModuleInput::const_iterator _subformula );
+            bool addCore( ModuleInput::const_iterator _subformula );
 
             /**
              * Removes the subformula of the received formula at the given position to the considered ones of this module.
@@ -84,7 +59,7 @@ namespace smtrat
              *
              * @param _subformula The position of the subformula to remove.
              */
-            void removeSubformula( ModuleInput::const_iterator _subformula );
+            void removeCore( ModuleInput::const_iterator _subformula );
 
             /**
              * Updates the current assignment into the model.
@@ -94,18 +69,12 @@ namespace smtrat
 
             /**
              * Checks the received formula for consistency.
+             * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
              * @return True,    if the received formula is satisfiable;
              *         False,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            Answer isConsistent();
-            
-            /** For each variable collect the information in which constraints it has 
-             *  an upper resp. a lower bound
-             */ 
-            void gather_upper_lower();
+            Answer checkCore( bool _full );
 
     };
 }
-
-#include "ReduceCNFModule.tpp"

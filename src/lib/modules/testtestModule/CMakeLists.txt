@@ -1,14 +1,15 @@
+
 BeginDefineModule()
-ModuleMainHeader(VRWModule/VRWModule.h)
+ModuleMainHeader(testtestModule/testtestModule.h)
 FILE(GLOB_RECURSE sources *.cpp)
 foreach(src ${sources})
     AddModuleSource(${src})
 endforeach()
-ModuleName(VRWModule)
-ModuleClass(VRWModule)
+ModuleName(testtestModule)
+ModuleClass(testtestModule)
 ModuleVersion(0 0 1)
 EndDefineModule(moduleEnabled)
 
 if(${moduleEnabled})
-	# do something
+    # do something
 endif()
