@@ -9,6 +9,7 @@ namespace ssh {
 		std::string password;
 		int port;
 		unsigned long cores;
+		std::size_t connections;
 	};
 	
 }

@@ -24,7 +24,7 @@ public:
 			for (const BenchmarkSet& set: benchmarks) {
 				for (const fs::path& file: set) {
 					if (tool->canHandle(file)) {
-						BENCHMAX_LOG_DEBUG("benchmax", "Calling " << tool->binary().native() << " on " << file.native());
+						//BENCHMAX_LOG_DEBUG("benchmax", "Calling " << tool->binary().native() << " on " << file.native());
 						this->execute(*tool, file);
 					}
 				}

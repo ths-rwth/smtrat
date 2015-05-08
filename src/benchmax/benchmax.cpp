@@ -72,7 +72,7 @@ bool initApplication(int argc, char** argv) {
 	
 	carl::logging::logger().configure("stdout", std::cout);
 	carl::logging::logger().filter("stdout")
-		("benchmax", carl::logging::LogLevel::LVL_INFO)
+		("benchmax", carl::logging::LogLevel::LVL_DEBUG)
 		("benchmax.ssh", carl::logging::LogLevel::LVL_INFO)
 		("benchmax.benchmarks", carl::logging::LogLevel::LVL_INFO)
 	;

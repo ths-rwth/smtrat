@@ -52,9 +52,18 @@ namespace smtrat
             std::map< carl::Variable, std::shared_ptr< std::vector<FormulaT> > > mVariables;
             // Stores the auxiliary variables
             std::set< carl::Variable > mAuxiliaries;
+            // Stores the determined (temporary) model 
+            mutable Model mTemp_Model;
             // Stores whether a new substitution has been found in the last ckeckCore call and 
             // we had afterwards no addCore call with an equality
             bool mNew_Substitution;
+            
+            /*
+             * This module constructs a solution when it's possible and returns
+             * true in this case. Otherwise, e.g. if a disequality is not satisfied,
+             * it returns false.
+             */
+            bool constructSolution();
             
         public:
             

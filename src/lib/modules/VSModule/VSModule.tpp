@@ -1703,12 +1703,12 @@ namespace smtrat
                                 partialVarSolutions[*var] = varSolutions[*var];
                                 Poly subPolyPartiallySubstituted = substitutionPoly.substitute( partialVarSolutions );
                                 Rational cp = subPolyPartiallySubstituted.coprimeFactorWithoutConstant();
-                                assert( carl::getNum( cp ) == ONE_RATIONAL );
+                                assert( carl::getNum( cp ) == ONE_RATIONAL || carl::getNum( cp ) == MINUS_ONE_RATIONAL );
                                 Rational g = carl::getDenom( cp );
-                                if( g > ZERO_RATIONAL && carl::mod( carl::getNum( subPolyPartiallySubstituted.constantPart() ), carl::getNum( g ) ) != 0 )
+                                if( g > ZERO_RATIONAL && carl::mod( Integer( subPolyPartiallySubstituted.constantPart() ), Integer( g ) ) != 0 )
                                 {
-                                    Poly branchEx = ((subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * Rational(Rational(1) / g));
-                                    Rational branchValue = subPolyPartiallySubstituted.constantPart() * (1 / g);
+                                    Poly branchEx = (subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * cp;
+                                    Rational branchValue = subPolyPartiallySubstituted.constantPart() * cp;
                                     branchAt( branchEx, true, branchValue, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
                                     return false;
                                 }

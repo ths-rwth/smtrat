@@ -21,13 +21,15 @@ private:
 	Node node;
 	std::size_t curChannels;
 	std::size_t maxChannels;
+	std::size_t curJobs;
 	ssh_session session;
 	std::mutex mutex;
 	int verbosity;
 	
 	ssh_channel getChannel() {
-		assert(!busy());
 		std::lock_guard<std::mutex> guard(mutex);
+		BENCHMAX_LOG_DEBUG("benchmax.ssh", "Allocating channel, currently " << curChannels << " / " << maxChannels);
+		assert(!busy());
 		ssh_channel channel = ssh_channel_new(session);
 		if (channel == nullptr) {
 			BENCHMAX_LOG_ERROR("benchmax.ssh", "Failed to create new ssh channel: " << ssh_get_error(session));
@@ -42,8 +44,9 @@ private:
 		return channel;
 	}
 	ssh_scp getSCP(int mode, const std::string& basedir) {
-		assert(!busy());
 		std::lock_guard<std::mutex> guard(mutex);
+		BENCHMAX_LOG_DEBUG("benchmax.ssh", "Allocation scp, currently " << curChannels << " / " << maxChannels);
+		assert(!busy());
 		ssh_scp scp = ssh_scp_new(session, mode, basedir.c_str());
 		if (scp == nullptr) {
 			BENCHMAX_LOG_ERROR("benchmax.ssh", "Failed to create new scp session: " << ssh_get_error(session));
@@ -58,8 +61,9 @@ private:
 		return scp;
 	}
 	sftp_session getSFTP() {
-		assert(!busy());
 		std::lock_guard<std::mutex> guard(mutex);
+		BENCHMAX_LOG_DEBUG("benchmax.ssh", "Allocating sftp, currently " << curChannels << " / " << maxChannels);
+		assert(!busy());
 		sftp_session sftp = sftp_new(session);
 		if (sftp == nullptr) {
 			BENCHMAX_LOG_ERROR("benchmax.ssh", "Failed to create new sftp session: " << ssh_get_error(session));
@@ -70,22 +74,26 @@ private:
 			BENCHMAX_LOG_ERROR("benchmax.ssh", "Failed to initialize sftp session: " << ssh_get_error(session));
 			exit(1);
 		}
+		curChannels++;
 		return sftp;
 	}
 	void destroy(ssh_channel channel) {
 		std::lock_guard<std::mutex> guard(mutex);
+		BENCHMAX_LOG_DEBUG("benchmax.ssh", "Destroying channel, currently " << curChannels << " / " << maxChannels);
 		ssh_channel_close(channel);
 		ssh_channel_free(channel);
 		curChannels--;
 	}
 	void destroy(ssh_scp scp) {
 		std::lock_guard<std::mutex> guard(mutex);
+		BENCHMAX_LOG_DEBUG("benchmax.ssh", "Destroying scp, currently " << curChannels << " / " << maxChannels);
 		ssh_scp_close(scp);
 		ssh_scp_free(scp);
 		curChannels--;
 	}
 	void destroy(sftp_session sftp) {
 		std::lock_guard<std::mutex> guard(mutex);
+		BENCHMAX_LOG_DEBUG("benchmax.ssh", "Destroying sftp, currently " << curChannels << " / " << maxChannels);
 		sftp_free(sftp);
 		curChannels--;
 	}
@@ -103,10 +111,10 @@ public:
 		
 		int rc = ssh_connect(session);
 		if (rc != SSH_OK) {
-			BENCHMAX_LOG_ERROR("benchmax.ssh", "Failed to connect to " << node.username << " @ "<< node.hostname << ":" << node.port);
+			BENCHMAX_LOG_ERROR("benchmax.ssh", "Failed to connect to " << node.username << "@" << node.hostname);
 			exit(1);
 		}
-		BENCHMAX_LOG_DEBUG("benchmax.ssh", "Connected to " << node.username << " @ "<< node.hostname << ":" << node.port);
+		BENCHMAX_LOG_DEBUG("benchmax.ssh", "Connected to " << node.username << "@"<< node.hostname);
 		
 		rc = ssh_userauth_publickey_auto(session, nullptr, nullptr);
 		if (rc != SSH_AUTH_SUCCESS) {
@@ -128,8 +136,21 @@ public:
 	const Node& getNode() const {
 		return node;
 	}
-	
+	bool jobFree() {
+		return curJobs < maxChannels;
+	}
+	void newJob() {
+		assert(curJobs < maxChannels);
+		curJobs++;
+	}
+	void finishJob() {
+		curJobs--;
+	}
+	std::size_t jobs() const {
+		return curJobs;
+	}
 	bool busy() {
+		//BENCHMAX_LOG_DEBUG("benchmax.ssh", "Currently " << curChannels << " / " << maxChannels);
 		return curChannels == maxChannels;
 	}
 	
@@ -189,6 +210,7 @@ public:
 		SSH_LOCKED(rc = ssh_scp_push_file(scp, remote.c_str(), (std::size_t)tmp.tellg(), mode));
 		if (rc != SSH_OK) {
 			BENCHMAX_LOG_ERROR("benchmax.ssh", "Failed to create remote file: " << ssh_get_error(session));
+			destroy(scp);
 			return false;
 		}
 		std::ifstream in(local.native(), std::ios::binary);
@@ -221,15 +243,16 @@ public:
 		result.stderr = "";
 		char buf[512];
 		int n;
-		SSH_LOCKED(n = ssh_channel_read(channel, buf, sizeof(buf), 0));
-		while (n > 0) {
-			result.stdout += std::string(buf, std::size_t(n));
-			SSH_LOCKED(n = ssh_channel_read(channel, buf, sizeof(buf), 0));
-		}
-		SSH_LOCKED(n = ssh_channel_read(channel, buf, sizeof(buf), 1));
-		while (n > 0) {
-			result.stderr += std::string(buf, std::size_t(n));
-			SSH_LOCKED(n = ssh_channel_read(channel, buf, sizeof(buf), 1));
+		int eof;
+		SSH_LOCKED(eof = ssh_channel_is_eof(channel));
+		while (eof == 0) {
+			SSH_LOCKED(n = ssh_channel_read_nonblocking(channel, buf, sizeof(buf), 0));
+			if (n > 0) result.stdout += std::string(buf, std::size_t(n));
+			SSH_LOCKED(n = ssh_channel_read_nonblocking(channel, buf, sizeof(buf), 1));
+			if (n > 0) result.stderr += std::string(buf, std::size_t(n));
+			SSH_LOCKED(eof = ssh_channel_is_eof(channel));
+			std::this_thread::yield();
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
 		SSH_LOCKED(result.exitCode = ssh_channel_get_exit_status(channel));
 		result.time = parseDuration(result.stdout);
