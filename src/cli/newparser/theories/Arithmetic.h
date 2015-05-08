@@ -7,6 +7,9 @@
 namespace smtrat {
 namespace parser {
 
+/**
+ * Implements the theory of arithmetic, including LRA, LIA, NRA and NIA.
+ */
 struct ArithmeticTheory: public AbstractTheory  {
 	typedef boost::variant<Poly::ConstructorOperation, carl::Relation> OperatorType;
 	

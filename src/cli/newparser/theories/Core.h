@@ -9,6 +9,9 @@ namespace parser {
 
 struct ParserState;
 
+/**
+ * Implements the core theory of the booleans.
+ */
 struct CoreTheory: public AbstractTheory {
 	typedef boost::variant<carl::FormulaType> OperatorType;
 	

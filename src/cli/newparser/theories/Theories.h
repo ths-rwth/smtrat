@@ -16,6 +16,9 @@
 namespace smtrat {
 namespace parser {
 
+/**
+ * The Theories class combines all implemented theories and provides a single interface to interact with all theories at once.
+ */
 struct Theories {
 	
 	typedef boost::mpl::vector<
@@ -46,7 +49,10 @@ struct Theories {
 		theories.emplace("Uninterpreted", new UninterpretedTheory(state));
 #endif	
 	}
-		
+	
+	/**
+	 * Helper functor for addConstants() method.
+	 */
 	struct ConstantAdder {
 		qi::symbols<char, types::ConstType>& constants;
 		ConstantAdder(qi::symbols<char, types::ConstType>& constants): constants(constants) {}
@@ -54,10 +60,16 @@ struct Theories {
 			T::addConstants(constants);
 		}
 	};
+	/**
+	 * Collects constants from all theory modules.
+	 */
 	static void addConstants(qi::symbols<char, types::ConstType>& constants) {
 		boost::mpl::for_each<Modules>(ConstantAdder(constants));
 	}
 
+	/**
+	 * Helper functor for addSimpleSorts() method.
+	 */
 	struct SimpleSortAdder {
 		qi::symbols<char, carl::Sort>& sorts;
 		SimpleSortAdder(qi::symbols<char, carl::Sort>& sorts): sorts(sorts) {}
@@ -65,6 +77,9 @@ struct Theories {
 			T::addSimpleSorts(sorts);
 		}
 	};
+	/**
+	 * Collects simple sorts from all theory modules.
+	 */
 	static void addSimpleSorts(qi::symbols<char, carl::Sort>& sorts) {
 		boost::mpl::for_each<Modules>(SimpleSortAdder(sorts));
 	}

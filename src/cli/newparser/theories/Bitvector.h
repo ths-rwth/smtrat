@@ -7,6 +7,9 @@
 namespace smtrat {
 namespace parser {
 
+/**
+ * Implements the theory of bitvectors.
+ */
 struct BitvectorTheory: public AbstractTheory  {
 	carl::Sort bvSort;
 	typedef carl::BVTermType OperatorType;

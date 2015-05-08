@@ -8,6 +8,9 @@
 namespace smtrat {
 namespace parser {
 
+/**
+ * Represents an 
+ */
 class Attribute {
 public:
 	typedef types::AttributeValue AttributeValue;

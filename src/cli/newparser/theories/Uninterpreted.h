@@ -7,6 +7,9 @@
 namespace smtrat {
 namespace parser {
 
+/**
+ * Implements the theory of equalities and uninterpreted functions.
+ */
 struct UninterpretedTheory: public AbstractTheory {
 	
 	static bool convertTerm(const types::TermType& term, types::UninterpretedTheory::TermType& result);

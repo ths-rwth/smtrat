@@ -6,6 +6,10 @@
 namespace smtrat {
 namespace parser {
 
+/**
+ * Specialization of qi::real_policies for a Rational.
+ * Specifies that neither NaN nor Inf is allowed.
+ */
 struct RationalPolicies : qi::real_policies<Rational> {
     template <typename It, typename Attr>
     static bool parse_nan(It&, It const&, Attr&) { return false; }
@@ -26,35 +30,35 @@ struct DecimalParser: qi::real_parser<Rational, RationalPolicies> {};
 /**
  * Parses hexadecimals: `#x[0-9a-fA-F]+`
  */
-struct HexadecimalParser: public qi::grammar<Iterator, FixedWidthConstant(), Skipper> {
+struct HexadecimalParser: public qi::grammar<Iterator, FixedWidthConstant<Integer>(), Skipper> {
     typedef boost::iterator_range<Iterator> ITRange;
     HexadecimalParser(): HexadecimalParser::base_type(main2, "hexadecimal") {
 		main = "#x" > (qi::raw[number[qi::_a = qi::_1]])[qi::_val = px::bind(&HexadecimalParser::build, px::ref(*this), qi::_1, qi::_a)];
         main2 = main;
 	}
-    FixedWidthConstant build(const ITRange& itr, const Integer& val) {
-        return FixedWidthConstant(val, 4*std::string(itr.begin(), itr.end()).size());
+    FixedWidthConstant<Integer> build(const ITRange& itr, const Integer& val) {
+        return FixedWidthConstant<Integer>(val, 4*std::string(itr.begin(), itr.end()).size());
     }
     qi::uint_parser<Integer,16,1,-1> number;
-    qi::rule<Iterator, FixedWidthConstant(), Skipper, qi::locals<Integer>> main;
-    qi::rule<Iterator, FixedWidthConstant(), Skipper> main2;
+    qi::rule<Iterator, FixedWidthConstant<Integer>(), Skipper, qi::locals<Integer>> main;
+    qi::rule<Iterator, FixedWidthConstant<Integer>(), Skipper> main2;
 };
 
 /**
  * Parses binaries: `#b[01]+`
  */
-struct BinaryParser: public qi::grammar<Iterator, FixedWidthConstant(), Skipper> {
+struct BinaryParser: public qi::grammar<Iterator, FixedWidthConstant<Integer>(), Skipper> {
     typedef boost::iterator_range<Iterator> ITRange;
     BinaryParser(): BinaryParser::base_type(main2, "binary") {
         main = "#b" > (qi::raw[number[qi::_a = qi::_1]])[qi::_val = px::bind(&BinaryParser::build, px::ref(*this), qi::_1, qi::_a)];
         main2 = main;
 	}
-    FixedWidthConstant build(const ITRange& itr, const Integer& val) {
-        return FixedWidthConstant(val, std::string(itr.begin(), itr.end()).size());
+    FixedWidthConstant<Integer> build(const ITRange& itr, const Integer& val) {
+        return FixedWidthConstant<Integer>(val, std::string(itr.begin(), itr.end()).size());
     }
     qi::uint_parser<Integer,2,1,-1> number;
-    qi::rule<Iterator, FixedWidthConstant(), Skipper, qi::locals<Integer>> main;
-    qi::rule<Iterator, FixedWidthConstant(), Skipper> main2;
+    qi::rule<Iterator, FixedWidthConstant<Integer>(), Skipper, qi::locals<Integer>> main;
+    qi::rule<Iterator, FixedWidthConstant<Integer>(), Skipper> main2;
 };
 
 /**

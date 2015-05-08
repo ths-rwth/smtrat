@@ -33,7 +33,7 @@ struct Converter<types::BVTerm> {
 		to = from;
 		return true;
 	}
-	bool operator()(const FixedWidthConstant& from, types::BVTerm& to) const {
+	bool operator()(const FixedWidthConstant<Integer>& from, types::BVTerm& to) const {
 		carl::BVValue value(from.width);
 		Integer v = from.value;
 		
