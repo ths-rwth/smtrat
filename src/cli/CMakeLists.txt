@@ -30,7 +30,7 @@ configure_file( ${CMAKE_SOURCE_DIR}/src/cli/config.h.in ${CMAKE_SOURCE_DIR}/src/
 # executable solver
 # # # # # # # # # #
 
-add_executable( smtratSolver
+add_executable( smtrat
 	${CMAKE_SOURCE_DIR}/src/cli/parser/Parser.cpp
 	${CMAKE_SOURCE_DIR}/src/cli/parser/ParserUtils.cpp
 	${CMAKE_SOURCE_DIR}/src/cli/parser/UtilityParser.cpp
@@ -45,15 +45,15 @@ add_executable( smtratSolver
 	RuntimeSettingsManager.cpp
 )
 
-target_link_libraries( smtratSolver
+target_link_libraries( smtrat
                         lib_${PROJECT_NAME} # smtrat library
                         ${libraries} # libraries definied in top-level CMakeLists.txt
 )
 
 if(${USE_GINAC} STREQUAL "ON")
-	target_link_libraries( smtratSolver ginac)
+	target_link_libraries( smtrat ginac)
 endif()
-set_target_properties( smtratSolver PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
+set_target_properties( smtrat PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
 
 add_library( smtlibParser
 	${CMAKE_SOURCE_DIR}/src/cli/smtratSolver.cpp

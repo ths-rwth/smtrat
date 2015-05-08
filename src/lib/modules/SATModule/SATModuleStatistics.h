@@ -1,13 +1,12 @@
 /** 
  * @file   SATstatistics.h
  *         Created on October 8, 2012, 11:07 PM
- * @author: Sebastian Junges
+ * @author: Florian Corzilius
  *
  * 
  */
 
-#ifndef SATMODULESTATISTICS_H
-#define	SATMODULESTATISTICS_H
+#pragma once
 
 #include "../../utilities/stats/Statistics.h"
 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -90,6 +89,3 @@ namespace smtrat
 
 }
 #endif
-
-#endif	/* SATMODULESTATISTICS_H */
-

@@ -1,24 +1,3 @@
-/*
- * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2013 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
- *
- * This file is part of SMT-RAT.
- *
- * SMT-RAT is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SMT-RAT is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SMT-RAT. If not, see <http://www.gnu.org/licenses/>.
- *
- */
-
 import edu.uci.ics.jung.algorithms.layout.FRLayout;
 import java.awt.HeadlessException;
 import java.awt.Rectangle;
@@ -570,7 +549,7 @@ public class IOTools
                     edges.put( e.getPriority(), e );
                 }
 
-                String license = "/*" + nl + " * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox" + nl + " * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges" + nl + " *" + nl + " * This file is part of SMT-RAT." + nl + " *" + nl + " * SMT-RAT is free software: you can redistribute it and/or modify" + nl + " * it under the terms of the GNU General Public License as published by" + nl + " * the Free Software Foundation, either version 3 of the License, or"+ nl + " * (at your option) any later version." + nl + " *" + nl + " * SMT-RAT is distributed in the hope that it will be useful," + nl + " * but WITHOUT ANY WARRANTY; without even the implied warranty of" + nl + " * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the" + nl + " * GNU General Public License for more details." + nl + " *" + nl + " * You should have received a copy of the GNU General Public License" + nl + " * along with SMT-RAT. If not, see <http://www.gnu.org/licenses/>." + nl + " *" + nl + " */" + nl + nl;
+                String license = "";
 
                 String headerString = license + "/**" + nl + " * @file " + solverName + ".h" + nl + " *" + nl + " */" + nl + "#ifndef SMTRAT_" + solverNameUpperCase + "_H" + nl + "#define SMTRAT_" + solverNameUpperCase + "_H" + nl + nl + "#include \"../solver/Manager.h\"" + nl + nl + "namespace smtrat" + nl + "{" + nl + tab + "class " + solverName + ":" + nl + tab + tab + "public Manager" + nl + tab + "{" + nl + tab + tab + "public:" + nl + tab + tab + tab + solverName + "();" + nl + tab + tab + tab + "~" + solverName + "();" + nl + tab + "};" + nl + "}" + tab + "// namespace smtrat" + nl + "#endif" + tab + "/** SMTRAT_" + solverNameUpperCase + "_H */" + nl;
 

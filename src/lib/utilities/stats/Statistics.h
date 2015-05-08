@@ -7,9 +7,6 @@
  
 #pragma once
 
-//#ifndef STATISTICS_H
-//#define	STATISTICS_H
-
 #include "../../config.h"
 
 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -110,5 +107,4 @@ protected:
 }
 
 #endif
-//#endif	/* STATISTICMODULE_H */
 
