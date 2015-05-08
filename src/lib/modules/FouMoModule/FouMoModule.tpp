@@ -28,7 +28,7 @@
 
 #include "FouMoModule.h"
 
-#define DEBUG_FouMoModule
+//#define DEBUG_FouMoModule
 
 namespace smtrat
 {
@@ -423,15 +423,7 @@ namespace smtrat
                 auto iter_origins = iter_formula->second->begin();
                 while( iter_origins !=  iter_formula->second->end() )
                 {
-                    bool contains = iter_origins->contains( _subformula->formula() ); 
-                    /*
-                    if( !contains && *iter_origins == _subformula->formula() )
-                    {
-                        cout << *iter_origins << endl;
-                        cout << _subformula->formula() << endl;
-                        cout << contains << endl;
-                    }  
-                    */  
+                    bool contains = iter_origins->contains( _subformula->formula() );   
                     if( contains || *iter_origins == _subformula->formula() )
                     {
                         iter_origins = iter_formula->second->erase( iter_origins );
