@@ -28,7 +28,7 @@
 
 #include "FouMoModule.h"
 
-//#define DEBUG_FouMoModule
+#define DEBUG_FouMoModule
 
 namespace smtrat
 {
@@ -1258,7 +1258,14 @@ namespace smtrat
             // due to the fact that this module also handles strict inequalities
             if( at_least_one_lower && at_least_one_upper )
             {
-                mVarAss[ *iter_elim ] = Rational(highest_lower+lowest_upper)/2;                
+                if( mNonLinear )
+                {
+                    mVarAss[ *iter_elim ] = Rational(highest_lower+lowest_upper)/2; 
+                }
+                else
+                {
+                    mVarAss[ *iter_elim ] = highest_lower; 
+                }
             }
             else if( at_least_one_lower )
             {
