@@ -31,8 +31,8 @@ project(smtrat CXX)
 
 set(PROJECT_FULLNAME "SMT-RAT")
 set(PROJECT_DESCRIPTION "Satisfiability-Modulo-Theories Real Algebra Toolbox")
-set(smtrat_MAJORVERSION 0)
-set(smtrat_MINORVERSION 4)
+set(smtrat_MAJORVERSION 2)
+set(smtrat_MINORVERSION 0)
 set(smtrat_MAINTENANCEVERSION 0)
 set(smtrat_VERSION "${smtrat_MAJORVERSION}.${smtrat_MINORVERSION}.${smtrat_MAINTENANCEVERSION}")
 set(PROJECT_VERSION "${smtrat_MAJORVERSION}.${smtrat_MINORVERSION}.${smtrat_MAINTENANCEVERSION}")
@@ -47,10 +47,10 @@ set(ADDITIONAL_LINK_DIRS "" CACHE STRING "Additional directories added to the li
 # # # # # # # # # # # # # # # # # # # # # #
 
 # options
-option( DEVELOPER "Compile with extra warnings" ON )
+option( DEVELOPER "Compile with extra warnings" OFF )
 option( STATICLIB_SWITCH "Compile a statically linked version of the library." OFF )
-option( LOGGING "Enable logging within the carl library" ON )
-option( LOGGING_CARL "Compile with the logging facility of the carl library" ON )
+option( LOGGING "Enable logging within the carl library" OFF )
+option( LOGGING_CARL "Compile with the logging facility of the carl library" OFF )
 option( BUILD_SOLVER "Build the SMT-RAT Solver" ON )
 option( BUILD_GUI "Build the GUI" OFF )
 option( USE_GINAC "If disabled, all implementations using the ginac library are disabled." OFF )
@@ -62,9 +62,9 @@ set(SMTRAT_Strategy "NRATSolver" CACHE STRING "Used strategy in the solver")
 option( SMTRAT_STRAT_PARALLEL_MODE "Parallel mode" OFF )
 
 # Development options
-option(SMTRAT_DEVOPTION_Validation "Output intermediate states in an smt2 file" ON)
-option(SMTRAT_DEVOPTION_MeasureTime "Measure times and number of calls" ON)
-option(SMTRAT_DEVOPTION_Statistics "Use the Statistics gathering" ON)
+option(SMTRAT_DEVOPTION_Validation "Output intermediate states in an smt2 file" OFF)
+option(SMTRAT_DEVOPTION_MeasureTime "Measure times and number of calls" OFF)
+option(SMTRAT_DEVOPTION_Statistics "Use the Statistics gathering" OFF)
 
 # path to find own modules
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)

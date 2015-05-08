@@ -13,7 +13,8 @@ Project sourceforge page: https://github.com/nafur/smtrat
 * Optional dependencies
  - The library GiNaC: http://www.ginac.de/ (if usage of polynomial factorization is enabled, which is recommended for NIA and NRA)
  - The documentation build system Doxygen: http://www.stack.nl/~dimitri/doxygen/ 
- - A Java development environment >= 1.6 (only for building the gui): http://www.oracle.com/technetwork/java/index.html
+ - The build system Ant: http://ant.apache.org/ (only for building the gui)
+ - A Java development environment >= 1.6: http://www.oracle.com/technetwork/java/index.html (only for building the gui)
 
 
 * How to build the project including library and the binary (solver)
