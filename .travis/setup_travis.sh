@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [[ ${TASK} == "doxygen" ]]; then
-
+	echo "Skipping carl"
 else
 	git clone https://github.com/nafur/carl.git
 	cd carl/.travis/
