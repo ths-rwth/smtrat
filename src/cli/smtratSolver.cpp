@@ -179,6 +179,38 @@ void printTimings(smtrat::Manager* solver)
  */
 int main( int argc, char* argv[] )
 {   
+carl::Variable x = carl::VariablePool::getInstance().getFreshVariable( "x", carl::VariableType::VT_REAL );
+carl::Variable y = carl::VariablePool::getInstance().getFreshVariable( "y", carl::VariableType::VT_REAL );
+carl::Variable i = carl::VariablePool::getInstance().getFreshVariable( "i", carl::VariableType::VT_INT );
+carl::Variable b = carl::VariablePool::getInstance().getFreshVariable( "b", carl::VariableType::VT_BOOL );
+//carl::Sort sortS = carl::newSort( "S" );
+//Sort sortT = smtrat::newSort( "T" );
+//carl::Variable u = smtrat::newUninterpretedVariable( "u", sortS );
+//carl::Variable v = smtrat::newUninterpretedVariable( "v", sortT );
+
+smtrat::Poly px( x );
+smtrat::Poly py( y );
+smtrat::Poly lhsA = px.pow(2) - py;
+smtrat::Poly lhsB = smtrat::Rational(4) * px + py - smtrat::Rational(8) * py.pow(7);
+
+smtrat::ConstraintT constraintA = smtrat::ConstraintT( lhsA, carl::Relation::LESS );
+smtrat::ConstraintT constraintB = smtrat::ConstraintT( lhsB, carl::Relation::EQ );
+
+smtrat::FormulaT atomA( constraintA );
+smtrat::FormulaT atomB( constraintB );
+smtrat::FormulaT atomC( b );
+
+smtrat::FormulasT subformulasA;
+subformulasA.insert( smtrat::FormulaT( carl::FormulaType::NOT, atomC ) );
+subformulasA.insert( atomA );
+subformulasA.insert( atomB );
+smtrat::FormulaT phiA( carl::FormulaType::AND, std::move(subformulasA) );
+smtrat::FormulasT subformulasB;
+subformulasB.insert( smtrat::FormulaT( carl::FormulaType::NOT, atomA ) );
+subformulasB.insert( atomC );
+smtrat::FormulaT phiC( carl::FormulaType::OR, std::move(subformulasB) );
+smtrat::FormulaT phiE( carl::FormulaType::IMPLIES, phiA, phiC );
+std::cout << phiE << std::endl;
 #ifdef LOGGING
 	if (!carl::logging::logger().has("smtrat")) {
 		carl::logging::logger().configure("smtrat", "smtrat.log");

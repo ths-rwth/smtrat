@@ -3,10 +3,10 @@
 In this section we show how to embed a solver composed as explained
 in Chapter~\ref{chapter:composingats}, e.g., the built-in 
 solver \texttt{NRATSolver}. For instance, we could embed a theory solver composed with \smtrat 
-into an SMT solver in order to extend its supported logics by \SmtratLogic (or any of its sub-logics) 
+into an SMT solver in order to extend its supported logics by \supportedLogics (or any of its sub-logics) 
 or embed an SMT solver composed with \smtrat into a model checker for the verification of the 
 satisfiability/unsatisfiability of occurring SMT formulas. In Chapter~\ref{chapter:constructingaformula}
-we have seen, how to construct an object representing an \SmtratLogic formula. Having this formula,
+we have seen, how to construct an object representing an \supportedLogics formula. Having this formula,
 we can add it to the formulas, whose conjunction the solver composed with \smtrat has to check later
 for satisfiability. Here we give an overview of all interfaces:
 \begin{itemize}

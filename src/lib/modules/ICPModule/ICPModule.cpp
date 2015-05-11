@@ -635,7 +635,7 @@ namespace smtrat
                     invalidBox = true;
                     break;
                 }
-                if( mRelativeContraction > 0 && originalRealVariables.find( candidate->derivationVar() ) != originalRealVariables.end() )
+                if( (mRelativeContraction > 0 || mAbsoluteContraction > 0) && originalRealVariables.find( candidate->derivationVar() ) != originalRealVariables.end() )
                 {
                     mLastCandidate = candidate;
                     mOriginalVariableIntervalContracted = true;
@@ -1095,7 +1095,7 @@ namespace smtrat
             #ifdef ICP_MODULE_DEBUG_0
             printContraction( *_selection, icpVarIntervalBefore, resultA );
             #endif
-            if (mRelativeContraction > 0)
+            if (mRelativeContraction > 0 || mAbsoluteContraction > 0)
             {
                 mHistoryActual->addInterval(_selection->lhs(), mIntervals.at(_selection->lhs()));
                 icp::set_icpVariable variables;
@@ -2492,7 +2492,7 @@ namespace smtrat
     
     void ICPModule::printContraction( const icp::ContractionCandidate& _cc, const DoubleInterval& _before, const DoubleInterval& _afterA, const DoubleInterval& _afterB, std::ostream& _out ) const
     {
-        _out << (mRelativeContraction > 0 ? "#" : " ");
+        _out << ((mRelativeContraction > 0 || mAbsoluteContraction > 0) ? "#" : " ");
         _out << std::setw(10) << _cc.derivationVar();
         std::stringstream s;
         s << _before;
