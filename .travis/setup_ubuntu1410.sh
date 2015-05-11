@@ -8,7 +8,7 @@ function install {
 
 sudo apt-get -qq update
 
-install cmake libboost1.55-all-dev libcln-dev libeigen3-dev libgtest-dev libstdc++-4.9-dev
+install cmake doxygen libboost1.55-all-dev libcln-dev libeigen3-dev libgtest-dev libstdc++-4.9-dev
 
 if [[ ${USE} == "g++-4.8" ]]; then
 	install gcc-4.8 g++-4.8

@@ -8,7 +8,7 @@ function install {
 }
 
 brew update --quiet
-brew install cln eigen 
+brew install cln doxygen eigen 
 
 if [[ ${USE} == "g++-4.8" ]]; then
 	echo "g++-4.8 is not supported"
@@ -25,4 +25,3 @@ elif [[ ${USE} == "clang++-3.5" ]]; then
 	install llvm
 	defCXX clang clang++
 fi
-
