@@ -12,10 +12,10 @@ namespace parser {
  */
 struct BitvectorTheory: public AbstractTheory  {
 	carl::Sort bvSort;
+	conversion::VectorVariantConverter<types::BVTerm> vectorConverter;
+	conversion::VariantConverter<types::BVTerm> termConverter;
 	typedef carl::BVTermType OperatorType;
 	static void addSimpleSorts(qi::symbols<char, carl::Sort>& sorts);
-	static bool convertTerm(const types::TermType& term, types::BVTerm& result);
-	static bool convertArguments(const std::vector<types::TermType>& arguments, std::vector<types::BVTerm>& result, TheoryError& errors);
 	
 	BitvectorTheory(ParserState* state);
 	

@@ -95,31 +95,6 @@ namespace parser {
 		carl::SortManager& sm = carl::SortManager::getInstance();
 		sorts.add("BitVec", sm.getInterpreted(carl::VariableType::VT_BOOL));
 	}
-	
-	bool BitvectorTheory::convertTerm(const types::TermType& term, types::BVTerm& result) {
-		if (boost::get<types::BVTerm>(&term) != nullptr) {
-			result = boost::get<types::BVTerm>(term);
-			return true;
-		} else if (boost::get<carl::BVVariable>(&term) != nullptr) {
-			result = types::BVTerm(carl::BVTermType::VARIABLE, boost::get<carl::BVVariable>(term));
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	bool BitvectorTheory::convertArguments(const std::vector<types::TermType>& arguments, std::vector<types::BVTerm>& result, TheoryError& errors) {
-		result.clear();
-		for (std::size_t i = 0; i < arguments.size(); i++) {
-			types::BVTerm res;
-			if (!convertTerm(arguments[i], res)) {
-				errors.next() << "Operator expects arguments to be a bitvector, but argument " << (i+1) << " is not: \"" << arguments[i] << "\".";
-				return false;
-			}
-			result.push_back(res);
-		}
-		return true;
-	}
 
 	BitvectorTheory::BitvectorTheory(ParserState* state): AbstractTheory(state) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
@@ -217,11 +192,11 @@ namespace parser {
 	bool BitvectorTheory::handleITE(const FormulaT& ifterm, const types::TermType& thenterm, const types::TermType& elseterm, types::TermType& result, TheoryError& errors) {
 		types::BVTerm thent;
 		types::BVTerm elset;
-		if (!convertTerm(thenterm, thent)) {
+		if (!termConverter(thenterm, thent)) {
 			errors.next() << "Failed to construct ITE, the then-term \"" << thenterm << "\" is unsupported.";
 			return false;
 		}
-		if (!convertTerm(elseterm, elset)) {
+		if (!termConverter(elseterm, elset)) {
 			errors.next() << "Failed to construct ITE, the else-term \"" << elseterm << "\" is unsupported.";
 			return false;
 		}
@@ -249,7 +224,7 @@ namespace parser {
 		if (identifier.symbol == "=") {
 			if (arguments.size() == 2) {
 				std::vector<types::BVTerm> args;
-				if (!convertArguments(arguments, args, errors)) return false;
+				if (!vectorConverter(arguments, args, errors)) return false;
 				result = FormulaT(types::BVConstraint::create(carl::BVCompareRelation::EQ, args[0], args[1]));
 				return true;
 			}
