@@ -538,6 +538,7 @@ namespace smtrat
                 mSubstitutions.push_back( *new_pair );
                 mVariables[ new_pair->first ] = origins;
             }
+            /*
             else
             {
                 #ifdef DEBUG_IntEqModule
@@ -545,7 +546,7 @@ namespace smtrat
                 #endif
                 break;
             }
-            //assert( res.second );
+            */
             Formula_Origins temp_proc_constraints;
             constr_iter = mProc_Constraints.begin();
             while( constr_iter != mProc_Constraints.end() )
