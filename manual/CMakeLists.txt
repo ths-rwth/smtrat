@@ -43,6 +43,10 @@ if( MANUAL_PDFLATEX )
                       COMMAND ${PDFLATEX_COMPILER}
                       ARGS -output-directory=${CMAKE_CURRENT_BINARY_DIR} manual.tex
                       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
+  add_custom_command( OUTPUT ${PDF_OUTPUT}
+                      COMMAND ${PDFLATEX_COMPILER}
+                      ARGS -output-directory=${CMAKE_CURRENT_BINARY_DIR} manual.tex
+                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
   add_custom_target( manual
                      COMMAND mv ${PDF_OUTPUT} ${CMAKE_CURRENT_BINARY_DIR}/manual_${PROJECT_NAME}-${PROJECT_VERSION}.pdf
                      DEPENDS ${PDF_OUTPUT} )

@@ -55,63 +55,74 @@ A formula is stored as a directed acyclic graph, where the intermediate nodes re
 
 The construction of formulas, which are represented by the \formulaClass, is mainly based on the presented abstract grammar. A formula being a leave wraps the objects the corresponding objects representing a Boolean variable, a constraint or an uninterpreted equality, unless for constraints actually a pointer to a constraint is stored. A Boolean combinations of Boolean variables, constraints and uninterpreted equalities consists of a Boolean operator and the sub-formulas it interconnects. For this purpose we firstly create a set of formulas containing all sub-formulas and then construct the Formula. Note that formulas, constraints and uninterpreted equalities are non-mutable, once they are constructed. (TODO: explain mutable member of formulas for information storage) 
 
-We give a small example constructing the formula \[(\neg b\ \land\ x^2-y<0\ \land\ 4x+y-8y^2=0 )\ \rightarrow\ (\neg(x^2-y<0)\ \lor\ b ),\] with the Boolean variable $b$ and the real-valued variables $x$ and $y$, for demonstration. Firstly, we show how to create real and integer valued, Boolean and uninterpreted variables:
+We give a small example constructing the formula \[(\neg b\ \land\ x^2-y<0\ \land\ 4x+y-8y^2=0 )\ \rightarrow\ (\neg(x^2-y<0)\ \lor\ b ),\] with the Boolean variable $b$ and the real-valued variables $x$ and $y$, for demonstration. Furthermore, we construct the UF formula
+\[v = f(u,u)\ \oplus\ w \neq u\]
+with $u$, $v$ and $w$ being uninterpreted variables of not specified domains $S$ and $T$, respectively,
+and $f$ is an uninterpreted function with not specified domain $T^{S\times S}$.
+
+Firstly, we show how to create real and integer valued, Boolean and uninterpreted variables:
 \scriptsize
 \begin{verbatim}
-carl::Variable x = carl::VariablePool::getInstance().getFreshVariable( "x", carl::VariableType::VT_REAL );
-carl::Variable y = carl::VariablePool::getInstance().getFreshVariable( "y", carl::VariableType::VT_REAL );
-carl::Variable i = carl::VariablePool::getInstance().getFreshVariable( "i", carl::VariableType::VT_INT );
-carl::Variable b = carl::VariablePool::getInstance().getFreshVariable( "b", carl::VariableType::VT_BOOL );
-Sort sortS = carl::SortManager::getInstance().getSort( "S" );
-Sort sortT = carl::SortManager::getInstance().getSort( "T" );
-carl::Variable u = smtrat::newUninterpretedVariable( "u", sortS );
-carl::Variable v = smtrat::newUninterpretedVariable( "v", sortT );
+carl::Variable x = smtrat::newVariable( "x", carl::VariableType::VT_REAL );
+carl::Variable y = smtrat::newVariable( "y", carl::VariableType::VT_REAL );
+carl::Variable i = smtrat::newVariable( "i", carl::VariableType::VT_INT );
+carl::Variable b = smtrat::newVariable( "b", carl::VariableType::VT_BOOL );
+carl::Variable u = smtrat::newVariable( "u", carl::VariableType::VT_UNINTERPRETED );
+carl::Variable v = smtrat::newVariable( "v", carl::VariableType::VT_UNINTERPRETED );
+carl::Variable w = smtrat::newVariable( "w", carl::VariableType::VT_UNINTERPRETED );
+\end{verbatim}
+\normalsize
+Uninterpreted variables, functions and function instances combined in equations or inequalities comparing them are constructed the following way.
+\scriptsize
+\begin{verbatim}
+carl::Sort sortS = smtrat::newSort( "S" );
+carl::Sort sortT = smtrat::newSort( "T" );
+carl::UVariable uu( u, sortS );
+carl::UVariable uv( v, sortT );
+carl::UVariable uw( w, sortS );
+carl::UninterpretedFunction f = smtrat::newUF( "f", sortS, sortS, sortT );
+carl::UFInstance f1 = smtrat::newUFInstance( f, uu, uw );
+carl::UEquality ueqA( uv, f1, false );
+carl::UEquality ueqB( uw, uu, true );
 \end{verbatim}
 \normalsize
 Next we see an example how to create polynomials, which form the left-hand sides of the constraints:
 \scriptsize
 \begin{verbatim}
-smtrat::Polynomial px( x );
-smtrat::Polynomial py( y );
-smtrat::Polynomial lhsA = px.pow(2) - py;
-smtrat::Polynomial lhsB = smtrat::Rational(4) * px + py - smtrat::Rational(8) * py.pow(7);
+smtrat::Poly px( x );
+smtrat::Poly py( y );
+smtrat::Poly lhsA = px.pow(2) - py;
+smtrat::Poly lhsB = smtrat::Rational(4) * px + py - smtrat::Rational(8) * py.pow(7);
 \end{verbatim}
 \normalsize
 Constraints can then be constructed as follows:
 \scriptsize
 \begin{verbatim}
-const smtrat::Constraint* constraintA = smtrat::newConstraint( lhsA, smtrat::Relation::LESS );
-const smtrat::Constraint* constraintB = smtrat::newConstraint( lhsB, smtrat::Relation::EQ );
-\end{verbatim}
-\normalsize
-Uninterpreted functions are 
-\scriptsize
-\begin{verbatim}
-const smtrat::Constraint* constraintA = smtrat::newConstraint( lhsA, smtrat::Relation::LESS );
-const smtrat::Constraint* constraintB = smtrat::newConstraint( lhsB, smtrat::Relation::EQ );
+smtrat::ConstraintT constraintA( lhsA, carl::Relation::LESS );
+smtrat::ConstraintT constraintB( lhsB, carl::Relation::EQ );
 \end{verbatim}
 \normalsize
 Now, we can construct the atoms of the Boolean formula
 \scriptsize
 \begin{verbatim}
-const smtrat::Formula* atomA = smtrat::newFormula( constraintA );
-const smtrat::Formula* atomB = smtrat::newFormula( constraintB );
-const smtrat::Formula* atomC = smtrat::newBoolean( b );
+smtrat::FormulaT atomA( constraintA );
+smtrat::FormulaT atomB( constraintB );
+smtrat::FormulaT atomC( b );
+smtrat::FormulaT atomD( ueqA );
+smtrat::FormulaT atomE( ueqB );
 \end{verbatim}
 \normalsize
-and the formula itself:
+and the formulas itself (either with a set of arguments or directly):
 \scriptsize
 \begin{verbatim}
-smtrat::PointerSet<smtrat::Formula> subformulasA;
-subformulasA.insert( smtrat::newNegation( atomC ) );
+smtrat::FormulasT subformulasA;
+subformulasA.insert( smtrat::FormulaT( carl::FormulaType::NOT, atomC ) );
 subformulasA.insert( atomA );
 subformulasA.insert( atomB );
-const smtrat::Formula* phiA = smtrat::newFormula( smtrat::AND, subformulasA );
-smtrat::PointerSet<smtrat::Formula> subformulasB;
-subformulasB.insert( smtrat::newNegation( atomA ) );
-subformulasB.insert( atomC );
-const smtrat::Formula* phiC = smtrat::newFormula( smtrat::OR, subformulasB );
-const smtrat::Formula* phiE = smtrat::newImplication( phiA, phiC );
+smtrat::FormulaT phiA( carl::FormulaType::AND, std::move(subformulasA) );
+smtrat::FormulaT phiB( carl::FormulaType::OR, smtrat::FormulaT( carl::FormulaType::NOT, atomA ), atomC );
+smtrat::FormulaT phiC( carl::FormulaType::IMPLIES, phiA, phiB );
+smtrat::FormulaT phiD( carl::FormulaType::XOR, atomD, atomE );
 \end{verbatim}
 \normalsize
 Note, that $\land$ and $\lor$ are $n$-ary constructors, $\neg$ is a unary constructor and all the other Boolean operators are binary.
