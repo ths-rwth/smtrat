@@ -611,7 +611,7 @@ namespace smtrat
             #ifdef DEBUG_IntEqModule
             //cout << "Substitute in: " << (*iter_formula).formula().constraint() << endl;
             #endif
-            if( (*iter_formula).formula().constraint().relation() == carl::Relation::LEQ )
+            if( (*iter_formula).formula().constraint().relation() == carl::Relation::LEQ || (*iter_formula).formula().constraint().relation() == carl::Relation::NEQ )
             {
                 const smtrat::ConstraintT constr = (*iter_formula).formula().constraint();
                 Poly new_poly = constr.lhs();
@@ -649,7 +649,7 @@ namespace smtrat
                 addConstraintToInform( formula_passed );
                 addSubformulaToPassedFormula( formula_passed, origins );    
             }
-            else if( mSubstitutions.empty() || (*iter_formula).formula().constraint().relation() == carl::Relation::NEQ )
+            else if( mSubstitutions.empty() )
             {
                 addReceivedSubformulaToPassedFormula( iter_formula );                                
             }

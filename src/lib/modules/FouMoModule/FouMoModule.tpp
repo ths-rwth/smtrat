@@ -403,15 +403,7 @@ namespace smtrat
                 auto iter_origins = iter_formula->second->begin();
                 while( iter_origins !=  iter_formula->second->end() )
                 {
-                    bool contains = iter_origins->contains( _subformula->formula() ); 
-                    /*
-                    if( !contains && *iter_origins == _subformula->formula() )
-                    {
-                        cout << *iter_origins << endl;
-                        cout << _subformula->formula() << endl;
-                        cout << contains << endl;
-                    }  
-                    */  
+                    bool contains = iter_origins->contains( _subformula->formula() );   
                     if( contains || *iter_origins == _subformula->formula() )
                     {
                         iter_origins = iter_formula->second->erase( iter_origins );
@@ -1238,7 +1230,14 @@ namespace smtrat
             // due to the fact that this module also handles strict inequalities
             if( at_least_one_lower && at_least_one_upper )
             {
-                mVarAss[ *iter_elim ] = Rational(highest_lower+lowest_upper)/2;                
+                if( mNonLinear )
+                {
+                    mVarAss[ *iter_elim ] = Rational(highest_lower+lowest_upper)/2; 
+                }
+                else
+                {
+                    mVarAss[ *iter_elim ] = highest_lower; 
+                }
             }
             else if( at_least_one_lower )
             {
