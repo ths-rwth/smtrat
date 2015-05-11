@@ -524,7 +524,7 @@ public class IOTools
     {
         try
         {
-            if( solverName==null || solverName.equals( "" ) )
+            if( solverName==null || solverName.equals( "" ) || solverName.contains( "config" ) )
             {
                 return null;
             }
@@ -661,18 +661,17 @@ public class IOTools
                 }
             }
 
-            String newStrategiesBuildFileContents = "";
-            try ( BufferedReader readBuildFile = new BufferedReader( new FileReader( SMTRAT_STRATEGIES_BUILD_FILE ) ) )
-            {
-                String line;
-                while( (line = readBuildFile.readLine())!=null )
-                {
-                    newStrategiesBuildFileContents += line + nl;
-                }
-
-                newStrategiesBuildFileContents = newStrategiesBuildFileContents.replaceAll( "strategies/" + solverName + "\\.cpp\\s*", "" );
-                newStrategiesBuildFileContents = newStrategiesBuildFileContents.replaceAll( "strategies/" + solverName + "\\.h\\s*", "" );
-            }
+            //String newStrategiesBuildFileContents = "";
+            //try ( BufferedReader readBuildFile = new BufferedReader( new FileReader( SMTRAT_STRATEGIES_BUILD_FILE ) ) )
+            //{
+            //    String line;
+            //    while( (line = readBuildFile.readLine())!=null )
+            //    {
+            //        newStrategiesBuildFileContents += line + nl;
+            //    }
+            //    newStrategiesBuildFileContents = newStrategiesBuildFileContents.replaceAll( "strategies/" + solverName + "\\.cpp\\s*", "" );
+            //    newStrategiesBuildFileContents = newStrategiesBuildFileContents.replaceAll( "strategies/" + solverName + "\\.h\\s*", "" );
+            //}
 
             String newStrategiesHeaderFileContents;
             try ( BufferedReader readHeaderFile = new BufferedReader( new FileReader( SMTRAT_STRATEGIES_HEADER_FILE ) ) )
@@ -689,38 +688,38 @@ public class IOTools
 
             if( add )
             {
-                Pattern definitionStart = Pattern.compile( "set\\(lib_strategies_src\\s*\\$\\{lib_strategies_src\\}\\s*", Pattern.COMMENTS + Pattern.DOTALL );
-                Matcher definitionStartMatcher = definitionStart.matcher( newStrategiesBuildFileContents );
+                //Pattern definitionStart = Pattern.compile( "set\\(lib_strategies_src\\s*\\$\\{lib_strategies_src\\}\\s*", Pattern.COMMENTS + Pattern.DOTALL );
+                //Matcher definitionStartMatcher = definitionStart.matcher( newStrategiesBuildFileContents );
+                //if( definitionStartMatcher.find() )
+                //{
+                //    int matchIndexEnd = definitionStartMatcher.end();
+                //    newStrategiesBuildFileContents = newStrategiesBuildFileContents.substring( 0, matchIndexEnd ) + "strategies/" + solverName + ".cpp " + newStrategiesBuildFileContents.substring( matchIndexEnd );
+                //}
+                //else
+                //{
+                //    throw new IOToolsException( IOToolsException.BUILD_ENTRY_POINT_NOT_FOUND );
+                //}
+
+                //definitionStart = Pattern.compile( "set\\(lib_strategies_headers\\s*\\$\\{lib_strategies_header\\}\\s*", Pattern.COMMENTS + Pattern.DOTALL );
+                //definitionStartMatcher = definitionStart.matcher( newStrategiesBuildFileContents );
+
+                //if( definitionStartMatcher.find() )
+                //{
+                //    int matchIndexEnd = definitionStartMatcher.end();
+                //    newStrategiesBuildFileContents = newStrategiesBuildFileContents.substring( 0, matchIndexEnd ) + "strategies/" + solverName + ".h " + newStrategiesBuildFileContents.substring( matchIndexEnd );
+                //}
+                //else
+                //{
+                //    throw new IOToolsException( IOToolsException.BUILD_ENTRY_POINT_NOT_FOUND );
+                //}
+
+                Pattern definitionStart = Pattern.compile( "#include", Pattern.DOTALL );
+                Matcher definitionStartMatcher = definitionStart.matcher( newStrategiesHeaderFileContents );
+
                 if( definitionStartMatcher.find() )
                 {
-                    int matchIndexEnd = definitionStartMatcher.end();
-                    newStrategiesBuildFileContents = newStrategiesBuildFileContents.substring( 0, matchIndexEnd ) + "strategies/" + solverName + ".cpp " + newStrategiesBuildFileContents.substring( matchIndexEnd );
-                }
-                else
-                {
-                    throw new IOToolsException( IOToolsException.BUILD_ENTRY_POINT_NOT_FOUND );
-                }
-
-                definitionStart = Pattern.compile( "set\\(lib_strategies_headers\\s*\\$\\{lib_strategies_header\\}\\s*", Pattern.COMMENTS + Pattern.DOTALL );
-                definitionStartMatcher = definitionStart.matcher( newStrategiesBuildFileContents );
-
-                if( definitionStartMatcher.find() )
-                {
-                    int matchIndexEnd = definitionStartMatcher.end();
-                    newStrategiesBuildFileContents = newStrategiesBuildFileContents.substring( 0, matchIndexEnd ) + "strategies/" + solverName + ".h " + newStrategiesBuildFileContents.substring( matchIndexEnd );
-                }
-                else
-                {
-                    throw new IOToolsException( IOToolsException.BUILD_ENTRY_POINT_NOT_FOUND );
-                }
-
-                definitionStart = Pattern.compile( "#define\\s*STRATEGIES_H\\s*", Pattern.DOTALL );
-                definitionStartMatcher = definitionStart.matcher( newStrategiesHeaderFileContents );
-
-                if( definitionStartMatcher.find() )
-                {
-                    int matchIndexEnd = definitionStartMatcher.end();
-                    newStrategiesHeaderFileContents = newStrategiesHeaderFileContents.substring( 0, matchIndexEnd ) + "#include \"" + solverName + ".h\"" + nl + newStrategiesHeaderFileContents.substring( matchIndexEnd );
+                    int matchIndexBegin = definitionStartMatcher.start();
+                    newStrategiesHeaderFileContents = newStrategiesHeaderFileContents.substring( 0, matchIndexBegin ) + "#include \"" + solverName + ".h\"" + nl + newStrategiesHeaderFileContents.substring( matchIndexBegin );
                 }
                 else
                 {
@@ -728,30 +727,30 @@ public class IOTools
                 }
             }
 
-            Files.copy( SMTRAT_STRATEGIES_BUILD_FILE.toPath(), smtratStrategiesBuildTempFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
+            //Files.copy( SMTRAT_STRATEGIES_BUILD_FILE.toPath(), smtratStrategiesBuildTempFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
             Files.copy( SMTRAT_STRATEGIES_HEADER_FILE.toPath(), smtratStrategiesHeaderTempFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
 
-            try( PrintWriter writeBuildFile = new PrintWriter( new FileWriter( SMTRAT_STRATEGIES_BUILD_FILE ) ) )
-            {
-                writeBuildFile.print( newStrategiesBuildFileContents );
-                writeBuildFile.flush();
+            //try( PrintWriter writeBuildFile = new PrintWriter( new FileWriter( SMTRAT_STRATEGIES_BUILD_FILE ) ) )
+            //{
+            //    writeBuildFile.print( newStrategiesBuildFileContents );
+            //    writeBuildFile.flush();
                 try( PrintWriter writeHeaderFile = new PrintWriter( new FileWriter( SMTRAT_STRATEGIES_HEADER_FILE ) ) )
                 {
                     writeHeaderFile.print( newStrategiesHeaderFileContents );
                     writeHeaderFile.flush();
-                }
-                if( !add )
-                {
-                    if( headerFile.exists() )
+                    if( !add )
                     {
-                        Files.delete( headerFile.toPath() );
-                    }
-                    if( implementationFile.exists() )
-                    {
-                        Files.delete( implementationFile.toPath() );
+                        if( headerFile.exists() )
+                        {
+                            Files.delete( headerFile.toPath() );
+                        }
+                        if( implementationFile.exists() )
+                        {
+                            Files.delete( implementationFile.toPath() );
+                        }
                     }
                 }
-            }
+            //}
             catch( Exception ex )
             {
                 if( headerTempFile!=null && headerTempFile.exists() )
@@ -764,11 +763,11 @@ public class IOTools
                     Files.copy( implementationTempFile.toPath(), implementationFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
                     Files.delete( implementationTempFile.toPath() );
                 }
-                if( smtratStrategiesBuildTempFile.exists() )
-                {
-                    Files.copy( smtratStrategiesBuildTempFile.toPath(), SMTRAT_STRATEGIES_BUILD_FILE.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
-                    Files.delete( smtratStrategiesBuildTempFile.toPath() );
-                }
+                //if( smtratStrategiesBuildTempFile.exists() )
+                //{
+                //    Files.copy( smtratStrategiesBuildTempFile.toPath(), SMTRAT_STRATEGIES_BUILD_FILE.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
+                //    Files.delete( smtratStrategiesBuildTempFile.toPath() );
+                //}
                 if( smtratStrategiesHeaderTempFile.exists() )
                 {
                     Files.copy( smtratStrategiesHeaderTempFile.toPath(), SMTRAT_STRATEGIES_HEADER_FILE.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
@@ -785,10 +784,10 @@ public class IOTools
             {
                 Files.delete( implementationTempFile.toPath() );
             }
-            if( smtratStrategiesBuildTempFile.exists() )
-            {
-                Files.delete( smtratStrategiesBuildTempFile.toPath() );
-            }
+            //if( smtratStrategiesBuildTempFile.exists() )
+            //{
+            //    Files.delete( smtratStrategiesBuildTempFile.toPath() );
+            //}
 
             return solverName;
         }
@@ -887,8 +886,11 @@ public class IOTools
         for( File f : SMTRAT_STRATEGIES_DIR.listFiles( new StrategyHeaderFilter() ) )
         {
             String name = f.getName();
-            name = name.substring( 0, name.length()-2 );
-            solverNamesList.add( name );
+            if( !name.contains( "config" ) )
+            {
+                name = name.substring( 0, name.length()-2 );
+                solverNamesList.add( name );
+            }
         }
 
         Collections.sort( solverNamesList );

@@ -1,5 +1,5 @@
 /**
- * @file NRATSolver.h
+ * @file RatOne.h
  */
 #pragma once
 
@@ -15,12 +15,12 @@ namespace smtrat
      * @version
      *
      */
-    class NRATSolver:
+    class RatOne:
         public Manager
     {
         public:
-            NRATSolver();
-            ~NRATSolver();
+            RatOne();
+            ~RatOne();
 
     };
 

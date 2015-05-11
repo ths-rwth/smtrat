@@ -297,6 +297,10 @@ public class ManageSolverDialog extends JDialog
                 solverNameTextField.requestFocus();
                 JOptionPane.showMessageDialog( ManageSolverDialog.this, "Solver exported successfully.", "Information", JOptionPane.INFORMATION_MESSAGE );
             }
+            else
+            {
+                JOptionPane.showMessageDialog( ManageSolverDialog.this, textInput + " is not allowed as solver name.", "Information", JOptionPane.INFORMATION_MESSAGE );
+            }
         }
     }
     
