@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 git clone https://github.com/nafur/carl.git
-cd carl/installation/
+cd carl/.travis/
 source setup_travis.sh
 cd ../
 source .travis.build
