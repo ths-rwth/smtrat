@@ -149,15 +149,6 @@ namespace smtrat
             {
                 return true;
             }
-            auto iter = mProc_Constraints.find( newEq );
-            if( iter != mProc_Constraints.end() )
-            {
-                (iter->second)->insert( iter->second->end(), origins->begin(), origins->end() );
-            }
-            else
-            {
-                mProc_Constraints.emplace( newEq, origins );   
-            }
             #ifdef DEBUG_IntEqModule
             //cout << mRecent_Constraints << endl;
             #endif
