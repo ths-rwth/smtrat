@@ -14,6 +14,11 @@ sudo apt-get -qq update
 
 install cmake libboost1.48-all-dev libcln-dev libeigen3-dev libgtest-dev libstdc++-4.9-dev
 
+if [[ ${USE} == "doxygen" ]]; then
+	install doxygen
+	USE="clang++-3.5"
+fi
+
 if [[ ${USE} == "g++-4.8" ]]; then
 	install gcc-4.8 g++-4.8
 	defCXX gcc-4.8 g++-4.8
