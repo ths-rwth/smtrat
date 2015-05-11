@@ -6,8 +6,6 @@
 #cmakedefine SMTRAT_ENABLE_VSModule
 #cmakedefine SMTRAT_ENABLE_CNFerModule
 #cmakedefine SMTRAT_ENABLE_PreprocessingModule
-#cmakedefine SMTRAT_ENABLE_VRWModule
 #cmakedefine SMTRAT_ENABLE_LRAModule
 #cmakedefine SMTRAT_ENABLE_SATModule
-#cmakedefine SMTRAT_ENABLE_CacheModule
 #cmakedefine SMTRAT_ENABLE_ICPModule

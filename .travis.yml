@@ -11,7 +11,7 @@ env:
   - USE=g++-4.9
   - USE=clang++-3.4
   - USE=clang++-3.5
-  - USE=doxygen TASK=doxygen
+  - USE=clang++-3.5 TASK=doxygen
 
 matrix:
   exclude:

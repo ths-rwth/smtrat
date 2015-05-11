@@ -1,23 +1,3 @@
-/*
- * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
- *
- * This file is part of SMT-RAT.
- *
- * SMT-RAT is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SMT-RAT is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
 /**
  * @file FouMoModule.tpp
  * @author Dustin Huetter <dustin.huetter@rwth-aachen.de>
@@ -423,15 +403,7 @@ namespace smtrat
                 auto iter_origins = iter_formula->second->begin();
                 while( iter_origins !=  iter_formula->second->end() )
                 {
-                    bool contains = iter_origins->contains( _subformula->formula() ); 
-                    /*
-                    if( !contains && *iter_origins == _subformula->formula() )
-                    {
-                        cout << *iter_origins << endl;
-                        cout << _subformula->formula() << endl;
-                        cout << contains << endl;
-                    }  
-                    */  
+                    bool contains = iter_origins->contains( _subformula->formula() );   
                     if( contains || *iter_origins == _subformula->formula() )
                     {
                         iter_origins = iter_formula->second->erase( iter_origins );
@@ -1258,7 +1230,14 @@ namespace smtrat
             // due to the fact that this module also handles strict inequalities
             if( at_least_one_lower && at_least_one_upper )
             {
-                mVarAss[ *iter_elim ] = Rational(highest_lower+lowest_upper)/2;                
+                if( mNonLinear )
+                {
+                    mVarAss[ *iter_elim ] = Rational(highest_lower+lowest_upper)/2; 
+                }
+                else
+                {
+                    mVarAss[ *iter_elim ] = highest_lower; 
+                }
             }
             else if( at_least_one_lower )
             {

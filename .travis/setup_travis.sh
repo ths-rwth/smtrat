@@ -16,4 +16,3 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
 	source setup_osx.sh
 
 fi
-

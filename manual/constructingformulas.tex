@@ -1,6 +1,6 @@
-\chapter{Constructing an \SmtratLogic formula}
+\chapter{Constructing an \supportedLogics formula}
 \label{chapter:constructingaformula}
-The class \formulaClass represents arbitrary \SmtratLogic formulas, which are
+The class \formulaClass represents arbitrary \supportedLogics formulas, which are
 defined according to the following abstract grammar
 
 \[
@@ -21,7 +21,7 @@ defined according to the following abstract grammar
 
 where $a$ is a rational number, $e$ is a natural number greater one, $b$ is a \emph{Boolean variable} and the \emph{arithmetic variable} $x$ is an inherently existential quantified and either real- or integer-valued. We call $p$ a \emph{polynomial} and use a \carl multivariate polynomial with \cln rationals as coefficients to represent it. The \emph{uninterpreted function} $f$ is of a certain \emph{order} $o(f)$ and each of its $o(f)$ arguments are either an arithmetic variable or an \emph{uninterpreted variable} $u$, which is also inherently existential quantified, but has no domain specified. Than an \emph{uninterpreted equation} $e$ has either an uninterpreted function, an uninterpreted variable or an arithmetic variable as left-hand respectively right-hand side. A \emph{constraint} $c$ compares a polynomial to zero, using a \emph{relation symbol}. Furthermore, we keep constraints in a normalized representation to be able to differ them better.
 
-\subsection{Normalized constraints}
+\section{Normalized constraints}
 A normalized constraint has the form
 \[a_1\overbrace{x_{1,1}^{e_{1,1}}\cdot\ldots\cdot x_{1,k_1}^{e_{1,k_1}}}^{m_1}+\ldots+a_n\overbrace{x_{n,1}^{e_{n,1}}\cdot\ldots\cdot x_{n,k_n}^{e_{n,k_n}}}^{m_n}\ + \ d\ \sim \ 0\]
 with $n\geq0$, the \emph{$i$th coefficient} $a_i$ being an integral number ($\neq 0$), $d$ being a integral number, $x_{i,j_i}$ being a real- or integer-valued variable and $e_{i,j_i}$ being a natural number greater zero (for all $1\leq i\leq n$ and $1\leq j_i\leq k_i$). Furthermore, it holds that
@@ -50,7 +50,7 @@ the constraint is simplified $0=0$.
 
 We do some further simplifactions, such as the elimination of multiple roots of the left-hand sides in equations and inequalities with the relation symbol $\neq$, e.g., $x^3=0$ is simplified to $x=0$. We also simplify constraints whose left-hand sides are obviously positive (semi)/negative (semi) definite, e.g., $x^2\leq 0$ is simplified to $x^2=0$, which again can be simplified to $x=0$ according to the first simplification rule.
 
-\subsection{Boolean combinations of constraints and Boolean variables}
+\section{Boolean combinations of constraints and Boolean variables}
 A formula is stored as a directed acyclic graph, where the intermediate nodes represent the Boolean operations on the sub-formulas represented by the successors of this node. The leaves (nodes without successor) contain either a Boolean variable, a constraint or an uninterpreted equality. Note that equal formulas, that is formulas being leaves and containing the same element or formulas representing the same operation on the same sub-formulas are stored once and are therefore physically the same objects.
 
 The construction of formulas, which are represented by the \formulaClass, is mainly based on the presented abstract grammar. A formula being a leave wraps the objects the corresponding objects representing a Boolean variable, a constraint or an uninterpreted equality, unless for constraints actually a pointer to a constraint is stored. A Boolean combinations of Boolean variables, constraints and uninterpreted equalities consists of a Boolean operator and the sub-formulas it interconnects. For this purpose we firstly create a set of formulas containing all sub-formulas and then construct the Formula. Note that formulas, constraints and uninterpreted equalities are non-mutable, once they are constructed. (TODO: explain mutable member of formulas for information storage) 
@@ -58,12 +58,12 @@ The construction of formulas, which are represented by the \formulaClass, is mai
 We give a small example constructing the formula \[(\neg b\ \land\ x^2-y<0\ \land\ 4x+y-8y^2=0 )\ \rightarrow\ (\neg(x^2-y<0)\ \lor\ b ),\] with the Boolean variable $b$ and the real-valued variables $x$ and $y$, for demonstration. Firstly, we show how to create real and integer valued, Boolean and uninterpreted variables:
 \scriptsize
 \begin{verbatim}
-carl::Variable x = smtrat::newArithmeticVariable( "x", carl::VariableType::VT_REAL );
-carl::Variable y = smtrat::newArithmeticVariable( "y", carl::VariableType::VT_REAL );
-carl::Variable i = smtrat::newArithmeticVariable( "i", carl::VariableType::VT_INT );
-carl::Variable b = smtrat::newBooleanVariable( "b" );
-Sort sortS = smtrat::newSort( "S" );
-Sort sortT = smtrat::newSort( "T" );
+carl::Variable x = carl::VariablePool::getInstance().getFreshVariable( "x", carl::VariableType::VT_REAL );
+carl::Variable y = carl::VariablePool::getInstance().getFreshVariable( "y", carl::VariableType::VT_REAL );
+carl::Variable i = carl::VariablePool::getInstance().getFreshVariable( "i", carl::VariableType::VT_INT );
+carl::Variable b = carl::VariablePool::getInstance().getFreshVariable( "b", carl::VariableType::VT_BOOL );
+Sort sortS = carl::SortManager::getInstance().getSort( "S" );
+Sort sortT = carl::SortManager::getInstance().getSort( "T" );
 carl::Variable u = smtrat::newUninterpretedVariable( "u", sortS );
 carl::Variable v = smtrat::newUninterpretedVariable( "v", sortT );
 \end{verbatim}

@@ -1,24 +1,4 @@
 /*
- *  SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
- *
- * This file is part of SMT-RAT.
- *
- * SMT-RAT is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SMT-RAT is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
-/*
  * @file ICPModule.cpp
  * @author Stefan Schupp <stefan.schupp@rwth-aachen.de>
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
@@ -655,7 +635,7 @@ namespace smtrat
                     invalidBox = true;
                     break;
                 }
-                if( mRelativeContraction > 0 && originalRealVariables.find( candidate->derivationVar() ) != originalRealVariables.end() )
+                if( (mRelativeContraction > 0 || mAbsoluteContraction > 0) && originalRealVariables.find( candidate->derivationVar() ) != originalRealVariables.end() )
                 {
                     mLastCandidate = candidate;
                     mOriginalVariableIntervalContracted = true;
@@ -1115,7 +1095,7 @@ namespace smtrat
             #ifdef ICP_MODULE_DEBUG_0
             printContraction( *_selection, icpVarIntervalBefore, resultA );
             #endif
-            if (mRelativeContraction > 0)
+            if (mRelativeContraction > 0 || mAbsoluteContraction > 0)
             {
                 mHistoryActual->addInterval(_selection->lhs(), mIntervals.at(_selection->lhs()));
                 icp::set_icpVariable variables;
@@ -2512,7 +2492,7 @@ namespace smtrat
     
     void ICPModule::printContraction( const icp::ContractionCandidate& _cc, const DoubleInterval& _before, const DoubleInterval& _afterA, const DoubleInterval& _afterB, std::ostream& _out ) const
     {
-        _out << (mRelativeContraction > 0 ? "#" : " ");
+        _out << ((mRelativeContraction > 0 || mAbsoluteContraction > 0) ? "#" : " ");
         _out << std::setw(10) << _cc.derivationVar();
         std::stringstream s;
         s << _before;

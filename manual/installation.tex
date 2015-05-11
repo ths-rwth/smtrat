@@ -1,36 +1,50 @@
 \chapter{Installation}
 \label{chapter:installation}
 \section{Requirements}
-\smtrat has been successfully compiled and tested under Linux. For its configuration we use \cmake, which can be found on \cmakeURL, and for its compilation we use \gplusplus (version 4.7 or higher), available on \gplusplusURL. The configuration settings can be changed with the command line interface \ccmake. The arithmetic calculations of rationals \smtrat uses the \Cpp library \Cln, which can be found on \clnURL. The algebraic operations and data structures within \smtrat are based on the \Cpp library \carl available at \carlURL. Optional, there is a grapical user interface for the composition of a solver, which needs \java (version 1.7 or higher). Note, that we use \Cppeleven. Summarizing, you need the following packages before installation:
+\smtrat has been successfully compiled and tested under Linux and Mac OS. For its configuration we use \cmake, which can be found on \cmakeURL, and for its compilation we tested successfully \gcc (version \gccVersion or higher), available on \gccURL, and \clang (version \clangVersion or higher). The configuration settings can be changed with the command line interface \ccmake. For the arithmetic calculations of rationals \smtrat uses the \Cpp library \Gmp, which can be found on \gmpURL  (but most often it is already installed on the system). The data structures and basic operations with polynomials and formulas within \smtrat are based on the \Cpp library \carl available at \carlURL. Optional, there is a graphical user interface for the composition of a solver, which needs \java (version \javaVersion or higher) and its package \ant, which can be found on \antURL. 
+
+Summarizing, you need the following packages:
 \begin{itemize}
-	\item \gplusplus (version 4.7 or higher)
+	\item \gcc (version \gccVersion or higher) or alternatively \clang (version \clangVersion or higher)
 	\item \cmake
-	\item \ccmake
-	\item \cln
-	\item \carl
-	\item \java (version 1.7 or higher)
+	\item \Gmp
+	\item \Carl 
 \end{itemize}
 
-\section{Building, installing and uninstalling \smtrat}
-You can download \smtrat from \smtratURL and install it the following way:
+Optional:
+\begin{itemize}
+	\item \ccmake [for the command line interface for compiler settings]
+	\item \java (version 1.7 or higher) [for the GUI]
+	\item \Ant [for the GUI]
+\end{itemize}
+
+
+\section{Building %, installing and uninstalling 
+	     \smtrat}
+You can download \smtrat from \smtratURL and build it the following way:
 
 \begin{enumerate}
-	\item Unpack the package:
-		\begin{verbatim} tar xvzf smtrat-*.tar.gz \end{verbatim}
+	\item Open a terminal and navigate to the root folder of \smtrat.
 	\item Create a directory (e.g. build) that will contain the object files and the executables, and change into it:
 		\begin{verbatim} mkdir build && cd build\end{verbatim}
 	\item Configure:
 		\begin{verbatim} cmake .. \end{verbatim}
 	\item Build: 
 		\begin{verbatim} make \end{verbatim}
-	\item Install: 
-		\begin{verbatim} make install \end{verbatim}
-	\item Uninstall: 
-		\begin{verbatim} xargs rm < install_manifest.txt \end{verbatim}
+	%\item Install: 
+	%	\begin{verbatim} make install \end{verbatim}
+	\item Cleaning: 
+		%\begin{verbatim} xargs rm < install_manifest.txt \end{verbatim}
 		\begin{verbatim} make clean \end{verbatim}
 \end{enumerate}
 
 More information can be found in the README file, which can be found in \smtrat directory.
+
+\section{Execute \smtrat as an SMT solver}
+You can find the executable of \smtrat, named \smtratSolverName, in the build-directory. It displays the usage information if it is invoked with the option flag \texttt{--help}:
+\begin{verbatim} ./smtrat --help\end{verbatim}
+The executable supports only \smtlibFiles as input, so the solving can be invoked by, e.g.:
+\begin{verbatim} ./smtrat path_to_your_smt_file.smt2\end{verbatim}
 
 %\section{Troubleshooting}
 %Here we list problems, which might occur during the installation:

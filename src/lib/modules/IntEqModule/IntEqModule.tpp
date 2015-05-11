@@ -1,23 +1,3 @@
-/*
- * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
- *
- * This file is part of SMT-RAT.
- *
- * SMT-RAT is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SMT-RAT is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNaU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
 /**
  * @file IntEqModule.tpp
  * @author Dustin Huetter <dustin.huetter@rwth-aachen.de>
@@ -169,15 +149,6 @@ namespace smtrat
             {
                 return true;
             }
-            auto iter = mProc_Constraints.find( newEq );
-            if( iter != mProc_Constraints.end() )
-            {
-                (iter->second)->insert( iter->second->end(), origins->begin(), origins->end() );
-            }
-            else
-            {
-                mProc_Constraints.emplace( newEq, origins );   
-            }
             #ifdef DEBUG_IntEqModule
             //cout << mRecent_Constraints << endl;
             #endif
@@ -191,45 +162,10 @@ namespace smtrat
     {
         if( _subformula->formula().constraint().relation() == carl::Relation::EQ )
         {
-            /* Iterate through the processed constraints and delete all corresponding sets 
+            /* Iterate through all the processed constraints and delete all corresponding sets 
              * in the latter containing the element that has to be deleted. Delete a processed 
              * constraint if the corresponding vector is empty 
              */
-            #ifdef DEBUG_IntEqModule
-            cout << "Remove: " << _subformula->formula().constraint() << endl;
-            #endif
-            #ifdef DEBUG_IntEqModule
-            cout << "Size of mProc_Constraints: " << mProc_Constraints.size() << endl;
-            #endif
-            auto iter_formula = mProc_Constraints.begin();
-            while( iter_formula != mProc_Constraints.end() )
-            {
-                auto iter_origins = iter_formula->second->begin();
-                while( iter_origins !=  iter_formula->second->end() )
-                {                    
-                    bool contains = iter_origins->contains( _subformula->formula() );
-                    if( contains || *iter_origins == _subformula->formula() )
-                    {
-                        iter_origins = iter_formula->second->erase( iter_origins );
-                    }
-                    else
-                    {
-                        ++iter_origins;
-                    }    
-                }
-                if( iter_formula->second->empty() )
-                {
-                    auto to_delete = iter_formula;
-                    ++iter_formula;
-                    mProc_Constraints.erase( to_delete );
-                }
-                else
-                {
-                    ++iter_formula;                    
-                }
-            }
-            // Also clean up the data structure for the algorithms' history
-            // but definitely keep the initial constraints
             #ifdef DEBUG_IntEqModule
             cout << "Size of mRecent_Constraints: " << mRecent_Constraints.size() << endl;
             cout << mRecent_Constraints << endl;
@@ -558,6 +494,7 @@ namespace smtrat
                 mSubstitutions.push_back( *new_pair );
                 mVariables[ new_pair->first ] = origins;
             }
+            /*
             else
             {
                 #ifdef DEBUG_IntEqModule
@@ -565,7 +502,7 @@ namespace smtrat
                 #endif
                 break;
             }
-            //assert( res.second );
+            */
             Formula_Origins temp_proc_constraints;
             constr_iter = mProc_Constraints.begin();
             while( constr_iter != mProc_Constraints.end() )
@@ -631,7 +568,7 @@ namespace smtrat
             #ifdef DEBUG_IntEqModule
             //cout << "Substitute in: " << (*iter_formula).formula().constraint() << endl;
             #endif
-            if( (*iter_formula).formula().constraint().relation() == carl::Relation::LEQ )
+            if( (*iter_formula).formula().constraint().relation() == carl::Relation::LEQ || (*iter_formula).formula().constraint().relation() == carl::Relation::NEQ )
             {
                 const smtrat::ConstraintT constr = (*iter_formula).formula().constraint();
                 Poly new_poly = constr.lhs();
@@ -669,7 +606,7 @@ namespace smtrat
                 addConstraintToInform( formula_passed );
                 addSubformulaToPassedFormula( formula_passed, origins );    
             }
-            else if( mSubstitutions.empty() || (*iter_formula).formula().constraint().relation() == carl::Relation::NEQ )
+            else if( mSubstitutions.empty() )
             {
                 addReceivedSubformulaToPassedFormula( iter_formula );                                
             }
