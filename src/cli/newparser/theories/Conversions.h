@@ -67,6 +67,14 @@ struct VariantConverter: public boost::static_visitor<> {
 	bool operator()(const boost::variant<T...>& t) {
 		return boost::apply_visitor(*this, t);
 	}
+	template<typename... T>
+	bool operator()(const boost::variant<T...>& t, Res& r) {
+		if ((*this)(t)) {
+			r = result;
+			return true;
+		}
+		return false;
+	}
 	template<typename T>
 	Res convert(const T& t) {
 		if ((*this)(t)) return result;
@@ -107,6 +115,19 @@ struct VectorVariantConverter: public boost::static_visitor<> {
 		for (const auto& val: v) {
 			if (vc(val)) result.push_back(vc.result);
 			else return false;
+		}
+		return true;
+	}
+	template<typename... T>
+	bool operator()(const std::vector<boost::variant<T...>>& v, std::vector<Res>& result, TheoryError& errors) const {
+		result.clear();
+		VariantConverter<Res> vc;
+		for (const auto& val: v) {
+			if (vc(val)) result.push_back(vc.result);
+			else {
+				errors.next() << "Failed to convert \"" << val << "\" to " << typeid(Res).name() << ".";
+				return false;
+			}
 		}
 		return true;
 	}
