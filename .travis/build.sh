@@ -5,7 +5,7 @@ cd build/ || return 1
 cmake -D DEVELOPER=ON ../ || return 1
 
 if [[ ${TASK} == "doxygen" ]]; then
-	make doc || return 1
+	make doc
 	
 	git config --global user.email "gereon.kremer@cs.rwth-aachen.de"
 	git config --global user.name "Travis doxygen daemon"
