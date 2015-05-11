@@ -10,6 +10,7 @@ if [[ ${TASK} == "doxygen" ]]; then
 	source .travis/build.sh
 	cd ../
 	export TASK="doxygen"
+	export USE="doxygen"
 else
 	git clone https://github.com/nafur/carl.git
 	cd carl/.travis/
