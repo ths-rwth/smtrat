@@ -100,7 +100,7 @@ namespace smtrat
             {
                 Bits out;
 
-                for(size_t i=0;i<_value.size();++i)
+                for(size_t i=0;i<_value.width();++i)
                 {
                     out.push_back(_value[i] ? const1() : const0());
                 }
