@@ -19,7 +19,7 @@ if [[ ${TASK} == "doxygen" ]]; then
 	git push origin master
 
 else
-	make -j4 || return 1
+	make -j1 || return 1
 fi
 
 cd ../
