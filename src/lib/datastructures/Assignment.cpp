@@ -390,10 +390,8 @@ namespace smtrat
         for( Model::const_iterator ass = _model.begin(); ass != _model.end(); ++ass )
         {
             if (ass != _model.begin()) _out << " ";
-            if( ass->first.isVariable() )
+            if( ass->first.isVariable() || ass->first.isBVVariable() )
                 _out << "(" << ass->first << " " << ass->second << ")" << endl;
-            else if( ass->first.isBVVariable() )
-                _out << "(define-fun " << ass->first << " () " << ass->first.asBVVariable().sort() << " " << ass->second << ")" << endl;
             else if( ass->first.isUVariable() )
                 _out << "(define-fun " << ass->first << " () " << ass->first.asUVariable().domain() << " " << ass->second << ")" << endl;
             else
