@@ -1,13 +1,13 @@
 /**
- * @file StrategyOne.cpp
+ * @file RatThree.cpp
  *
  */
-#include "StrategyOne.h"
+#include "RatThree.h"
 
 namespace smtrat
 {
 
-    StrategyOne::StrategyOne():
+    RatThree::RatThree():
         Manager()
     {
         addBackendIntoStrategyGraph( 0, MT_CNFerModule, isCondition );
@@ -19,6 +19,6 @@ namespace smtrat
         addBackendIntoStrategyGraph( 4, MT_CADModule, isCondition );
     }
 
-    StrategyOne::~StrategyOne(){}
+    RatThree::~RatThree(){}
 
 }    // namespace smtrat

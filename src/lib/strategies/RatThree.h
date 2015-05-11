@@ -1,5 +1,5 @@
 /**
- * @file StrategyOne.h
+ * @file RatThree.h
  *
  */
 #pragma once
@@ -8,11 +8,11 @@
 
 namespace smtrat
 {
-    class StrategyOne:
+    class RatThree:
         public Manager
     {
         public:
-            StrategyOne();
-            ~StrategyOne();
+            RatThree();
+            ~RatThree();
     };
 }    // namespace smtrat

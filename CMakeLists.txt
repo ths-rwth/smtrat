@@ -58,13 +58,17 @@ option(${PROJECT_NAME}_DOC_CREATE_PDF "Create PDF reference manual" ON )
 
 # Strategy
 option( SMTRAT_STRAT_Factorization "Factorization" ON )
-set(SMTRAT_Strategy "NRATSolver" CACHE STRING "Used strategy in the solver")
+set(SMTRAT_Strategy "RatOne" CACHE STRING "Used strategy in the solver")
 option( SMTRAT_STRAT_PARALLEL_MODE "Parallel mode" OFF )
 
 # Development options
 option(SMTRAT_DEVOPTION_Validation "Output intermediate states in an smt2 file" OFF)
 option(SMTRAT_DEVOPTION_MeasureTime "Measure times and number of calls" OFF)
 option(SMTRAT_DEVOPTION_Statistics "Use the Statistics gathering" OFF)
+
+if (CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE "RELEASE")
+endif()
 
 # path to find own modules
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)

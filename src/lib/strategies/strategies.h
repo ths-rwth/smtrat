@@ -1,18 +1,15 @@
 /*
  * File:   strategies.h
- * Author: hik
+ * Author: Florian Corzilius
  *
  * Created on January 18, 2013, 2:43 PM
  */
 
-#ifndef STRATEGIES_H
-#define	STRATEGIES_H
+#pragma once
 
-#include "strategyTwo.h"
-#include "Verit_Backend.h"
-#include "StrategyOne.h"
-#include "NRATSolver.h"
+#include "RatOne.h"
+#include "RatTwo.h"
+#include "RatThree.h"
+#include "RatFour.h"
 
-
-#endif	/* STRATEGIES_H */
 
