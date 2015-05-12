@@ -18,22 +18,21 @@ Project sourceforge page: https://github.com/smtrat/smtrat
 
 
 * How to build the project including library and the binary (solver)
-mkdir build        // Create a separate build directory.
+mkdir build   // Create a separate build directory.
 cd build
-cmake ..            // Configure using cmake. Use "ccmake .." in order for an 
-                          // interactive user interface with more options.
-make                 // Build the project, in particular, build the solver smtratSolver
+cmake ..      // Configure using cmake. Use "ccmake .." in order for an 
+              // interactive user interface with more options.
+make          // Build the project, in particular, build the solver smtratSolver
 
 * Other targets to make
 
-make help          // Show a list of possible targets.
-make clean        // Force the build system to re-build everything.
-make install       // Install library to the specified (adjust via ccmake) system 
-			 // directory.
-make gui            // Make the java-based GUI.
-make run-gui      // Make/run the java-based GUI.
-make package   // Construct a package of the project.
-make doc           // Build the project API documentation.
+make help     // Show a list of possible targets.
+make clean    // Force the build system to re-build everything.
+make install  // Install library to the specified (adjust via ccmake) system directory.
+make gui      // Make the java-based GUI.
+make run-gui  // Make/run the java-based GUI.
+make package  // Construct a package of the project.
+make doc      // Build the project API documentation.
 
 * Run the solver
 The excecutable solver smtrat can be found in the build directory. It accepts .smt2 files as described by the smtlib (http://www.smtlib.org/).
