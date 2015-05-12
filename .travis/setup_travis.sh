@@ -2,9 +2,9 @@
 
 git clone https://github.com/nafur/carl.git
 cd carl/installation/
-source setup_travis.sh
+source setup_travis.sh || return 1
 cd ../
-source .travis.build
+source .travis.build || return 1
 cd ../
 
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
