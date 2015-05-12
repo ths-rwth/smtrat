@@ -60,13 +60,13 @@ namespace smtrat
     {}
 
     template<class Settings>
-    bool BVModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
+    bool BVModule<Settings>::addCore( ModuleInput::const_iterator /* _subformula */ )
     {
         return true;
     }
 
     template<class Settings>
-    void BVModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
+    void BVModule<Settings>::removeCore( ModuleInput::const_iterator /* _subformula */ )
     {}
 
     template<class Settings>
