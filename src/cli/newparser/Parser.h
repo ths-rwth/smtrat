@@ -71,7 +71,6 @@ public:
 			additional.insert(f);
 			f = FormulaT(carl::FormulaType::AND, std::move(additional));
 		}
-		std::cout << "Add " << f << std::endl;
 		callHandler(&InstructionHandler::add, f);
 	}
 	void check() {
