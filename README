@@ -24,7 +24,7 @@ cmake ..      // Configure using cmake. Use "ccmake .." in order for an
               // interactive user interface with more options.
 make          // Build the project, in particular, build the solver smtratSolver
 
-* Other targets to make
+* Other targets to build
 
 make help     // Show a list of possible targets.
 make clean    // Force the build system to re-build everything.
@@ -51,5 +51,5 @@ make doc
 
 * Troubleshooting
 
-  This list can grow - by your help! Just contact one of the authors.
+  This list can grow - with your help! Just contact one of the authors.
 
