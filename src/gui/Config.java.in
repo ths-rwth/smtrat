@@ -1,0 +1,28 @@
+/**
+ * @file Config.java
+ *
+ * @author  Florian Corzilius
+ * @since   2015-05-12
+ * @version 2015-05-12
+ */
+public class Config
+{
+    private String carlSourcePath;
+    private String manualPath;
+
+    public Config()
+    {
+        this.carlSourcePath = "@carl_INCLUDE_DIR@";
+        this.manualPath = "@SMTRAT_MANUAL_PATH@";
+    }
+    
+    public String getCarlSourcePath()
+    {
+        return this.carlSourcePath;
+    }
+    
+    public String getManualPath()
+    {
+        return this.carlSourcePath;
+    }
+}

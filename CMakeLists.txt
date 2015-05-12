@@ -72,6 +72,8 @@ endif()
 
 # path to find own modules
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
+set(SMTRAT_MANUAL_PATH ${PROJECT_SOURCE_DIR}/manual/manual_${PROJECT_NAME}-${PROJECT_VERSION}.pdf)
 # Include own macros.
 include( smtratmacros )
 # TODO: iteratively search for cmake files and include them here.

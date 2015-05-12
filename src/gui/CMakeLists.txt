@@ -23,7 +23,7 @@ configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/help.html.in ${CMAKE_CURRENT_BINARY_
 
 # write config.h
 #######################
-configure_file( ${CMAKE_SOURCE_DIR}/src/gui/config.txt.in ${CMAKE_SOURCE_DIR}/src/gui/config.txt )
+configure_file( ${CMAKE_SOURCE_DIR}/src/gui/Config.java.in ${CMAKE_SOURCE_DIR}/src/gui/Config.java )
 
 # use ant to build the gui
 add_custom_target( build-gui ALL ant 
