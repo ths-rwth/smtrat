@@ -51,6 +51,22 @@ struct Converter<types::BVTerm> {
 	}
 };
 
+template<>
+struct Converter<FormulaT> {
+	template<typename From>
+	bool operator()(const From&, FormulaT&) const {
+		return false;
+	}
+	bool operator()(const FormulaT& from, FormulaT& to) const {
+		to = from;
+		return true;
+	}
+	bool operator()(const carl::Variable& from, FormulaT& to) const {
+		to = FormulaT(from);
+		return true;
+	}
+};
+
 /**
  * Converts variants to some type using the Converter class.
  */
