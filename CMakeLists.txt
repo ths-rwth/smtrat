@@ -155,14 +155,6 @@ set( libraries ${libraries} boost_system)
 # C.2. required libraries
 # # # # # # # # # # # # # # # # # # # # # #
 
-find_package(ReallyNull)
-if(ReallyNull_FOUND)
-	set(USE_NSS 1)
-	set(libraries ${libraries} ${ReallyNull_LIBRARY})
-else()
-	set(USE_NSS 0)
-endif()
-
 # # # # # # # # # # # # # # # # # # # # # #
 # C.4. Required libraries for GUI.
 # # # # # # # # # # # # # # # # # # # # # #

@@ -62,14 +62,9 @@ if( MANUAL_PDFLATEX )
                       -output-directory=${CMAKE_CURRENT_BINARY_DIR} manual.tex
                       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                       DEPENDS bibtex )
-  add_custom_target( fourth_pdflatex
-                      COMMAND ${PDFLATEX_COMPILER}
-                      -output-directory=${CMAKE_CURRENT_BINARY_DIR} manual.tex
-                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                      DEPENDS third_pdflatex )
   add_custom_target( manual
                      COMMAND mv ${PDF_OUTPUT} ${CMAKE_CURRENT_BINARY_DIR}/manual_${PROJECT_NAME}-${PROJECT_VERSION}.pdf
-                     DEPENDS fourth_pdflatex )
+                     DEPENDS third_pdflatex )
   add_custom_target( rm_bibs
                      COMMAND rm ${CMAKE_CURRENT_BINARY_DIR}/*.bib ${CMAKE_CURRENT_BINARY_DIR}/*.aux ${CMAKE_CURRENT_BINARY_DIR}/*.bbl ${CMAKE_CURRENT_BINARY_DIR}/*.out ${CMAKE_CURRENT_BINARY_DIR}/*.toc
                      DEPENDS manual )

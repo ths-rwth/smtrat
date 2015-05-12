@@ -1,20 +1,19 @@
 \chapter{Composing a solver}
 \label{chapter:composingats}
-\smtrat contributes a toolbox for composing an SMT compliant solver for real and integer arithmetic, that means it 
-is incremental, supports backtracking and provides reasons for inconsistency. The resulting
-solver is either a fully operative SMT solver for real and integer arithmetic, which can be applied
+\smtrat contributes a toolbox for composing an SMT compliant solver for its supported logics, that means it is incremental, supports backtracking and provides reasons for inconsistency. The resulting
+solver is either a fully operative SMT solver, which can be applied
 directly on \texttt{.smt2}-files, or a theory solver, which can be embedded into an SMT 
-solver in order to extend its supported logics by real and integer arithmetic.
+solver in order to extend its supported logics by those provided by \smtrat.
 
 We are talking about composition and toolbox, as \smtrat contains implementations
-of many different mathematical approaches to tackle real and integer arithmetic, each of them
+of many different procedures to tackle, \eg \supportedLogics, each of them
 embedded in a module with uniform interfaces. These modules form the tools in the toolbox
-and it is dedicated to a user how to use them for solving a real and integer arithmetic formula.
-We provide a self-explanatory graphical user interface (GUI) for defining a graph-based 
+and it is dedicated to a user how to use them for solving an SMT formula.
+We provide a self-explanatory graphical user interface (GUI) for the definition of a graph-based 
 strategy specifying which module(s) should be applied on which formula, 
-taking into account the modules we have already involved.
+taking into account the modules which were already involved.
 
-In Section~\ref{sec:managerstrategy} we have already introduced
+In Section~\ref{sec::strategy} we have already introduced
 a strategy and in the following of this chapter we firstly give a brief introduction 
 to the existing modules equipped with an estimation of their input-based performances and then illustrate
 how to use the GUI for composing a strategy.
@@ -36,14 +35,13 @@ how to use the GUI for composing a strategy.
 \section{Specifying a strategy with the GUI}
 
 The following subsections are used to give an overview of the 
-GUI of SMT-RAT, which we call SMT-XRAT, and to introduce its 
-functionalities.
+ \smtrat's GUI, which we call \smtxrat, and to introduce its functionalities.
 
 \subsection{Concept}
 \label{sec:concept_of_smt-xrat}
-The underlying concept of SMT-XRAT is the user-guided, visual 
+The underlying concept of \smtxrat is the user-guided, visual 
 modeling of module compositions in form of graphs and their 
-mapping onto their corresponding source code for SMT-RAT. A 
+mapping onto their corresponding source code for \smtrat. A 
 modeled graph expresses an intended strategy graph of the user. 
 Both can easily be projected on each other, because the data 
 structure of a strategy graph also describes a graph structure, 
@@ -55,32 +53,32 @@ priority values are required to be unique.
 
 The GUI does not only support the visual creation of strategy 
 graphs and their translation into source code, but also enables 
-the user to integrate the translated source code into SMT-RAT or, 
+the user to integrate the translated source code into \smtrat or, 
 if necessary, delete it subsequently. The conclusive work only 
-involves a recompilation of SMT-RAT with the desired strategy 
+involves a recompilation of \smtrat with the desired strategy 
 graph instance to obtain a customized SMT solver.
 
 \subsection{Main window structure}
 \label{sec:main_window_structure_of_smt-xrat}
-The main window structure of the SMT-XRAT application can be seen 
+The main window structure of the \smtxrat application can be seen 
 in Figure \ref{fig:smt-xrat_main_window}. It principally consists 
 only of one large pane, which is called \emph{strategy graph pane}. 
 This pane embodies the workspace of the user and visualizes the 
 composition of SMT-RAT modules, which are currently modeled. Only a
 comparatively small area is occupied by a compact menu bar, which 
-offers for instance the exportation of a strategy graph into SMT-RAT.
+offers for instance the exportation of a strategy graph into \smtrat.
 \begin{figure}
   \begin{center}
     \includegraphics[width=0.9\textwidth]{graphics/smt-xrat_main_window.png}
   \end{center}
-  \caption{The main window of the SMT-XRAT application in its initial state.}
+  \caption{The main window of the \smtxrat application in its initial state.}
   \label{fig:smt-xrat_main_window}
 \end{figure}
 
 \subsection{Strategy graph pane}
 \label{sec:the_strategy_graph_pane}
 The graphs, which can be modeled in the strategy pane, must be acyclic, directed and weakly 
-connected. Nodes represent SMT-RAT modules and edges represent the call 
+connected. Nodes represent \smtrat modules and edges represent the call 
 hierarchy of them. Both of the element types are labeled to display all 
 necessary and editable module attributes within the visualization.
 Modeling strategy graphs on the pane implies the interactive operations 
@@ -100,21 +98,20 @@ if desired by the user.
 An initial visualization of the pane contains the inevitable \emph{Start} 
 module of an SMT solver, which displays no attributes, but marks the 
 starting point for the user to create the desired strategy graph. 
-The user can simply consider the \emph{Start} module as the frontend of an 
-SMT solver where NRA/NIA problems are passed to. Building up a composition of 
+The user can simply consider the \emph{Start} module as the front-end of an 
+SMT solver where, \eg \supportedLogics formulas are passed to. Building up a composition of 
 modules occurs by appending backends to the \emph{Start} module and then to 
 the newly appended backends and so forth. When appending a backend to a 
 selected module, a dialog window requests the operating user to input a 
-condition and to choose the type of SMT-RAT module for the new backend. 
+condition and to choose the type of \smtrat module for the new backend. 
 The GUI provides a special input interface to enter conditions, which is 
 explained later. For each appended backend a new node as well as a directed 
 edge from the originating module to this new node is drawn in the visualization. 
-In this way, the graph gradually arises on the pane. The added graph elements 
-display the inputted data of a backend. A node is labeled with its 
-type of SMT-RAT module whereas an edge holds its condition and an automatically 
+In this way, the graph gradually arises on the pane.  A node is labeled with its 
+type of \smtrat module whereas an edge holds its condition and an automatically 
 assigned priority value. Initially this priority value is always the total number 
 of currently existing modules minus $1$, as the \emph{Start} module is not 
-counted. As inputted conditions might get quite long, they cannot be directly 
+counted. As the user-defined conditions might get quite long, they cannot be directly 
 seen on the strategy graph pane. Instead, a small rectangle alongside the 
 edge reveals them quickly on request. The user needs to point the mouse cursor 
 over a rectangle to obtain its corresponding tool tip text, which shows the 
@@ -122,7 +119,8 @@ hidden condition, as can be seen in Figure \ref{fig:smt-xrat_condition_ttt}.
 This leaves the graph compact and helps to concentrate on the more essential 
 aspect of modeling an execution hierarchy. The user can choose to input an 
 own condition or leave it by the default value of `\texttt{TRUE}', which, as 
-described before, means that a condition is always satisfied. 
+described before, means that given a formula the condition is always satisfied and,
+hence, the backends will always be used. 
 To point out better which modules contain default conditions and which do not,
 the color of a rectangle containing a default condition is green and otherwise 
 orange.
@@ -165,17 +163,17 @@ is unknown, which of the logical operators has the higher precedence. Writing
 the same term with parenthesis as $p_1 \lor (p_2 \land p_3 \texttt{)}$ clarifies, 
 that the conjunction operator is of higher precedence.
 
-The propositions $P = \{p_1, \dots, p_n\}$ are as explained in Section~\ref{sec:managerstrategy}. 
-This set can vary among releases of the SMT-RAT, as well as the user can also 
+The propositions $P = \{p_1, \dots, p_n\}$ are as explained in Section~\ref{sec::strategy}. 
+This set can vary among releases of the \smtrat, as well as the user can also 
 define own propositions. For this reason, the set of propositions is dynamically 
-loaded from the SMT-RAT source code each time the GUI is started. As mentioned in 
-the previous chapter, the set of SMT-RAT modules can vary as well. Therefore the 
-list of available SMT-RAT modules is also dynamically loaded.
+loaded from the \smtrat source code each time the GUI is started. As mentioned in 
+the previous chapter, the set of \smtrat modules can vary as well. Therefore the 
+list of available \smtrat modules is also dynamically loaded.
 
 \subsubsection{Interface for inputting conditions}
 \label{subsec:improved_interface_for_inputting_conditions}
 When adding backends to existing modules on the strategy graph pane, a dialog window
-requests the user to input a desired condition, which must be derivable from the 
+requests the user to input a condition, which must be derivable from the 
 above defined Grammar $\cal C$. This dialog window is equipped with additional 
 features to ease the input process for the user and to improve the usability. 
 A specialized text area is used for inputting conditions. Initially, it contains
@@ -187,17 +185,17 @@ beforehand, it is simply overwritten by the chosen proposition value. The user c
 only input proposition values by using this combo box. Proposition values cannot
 be typed into the text area directly. On the one side, this simply prevents mistyping
 and, on the other side, the list of propositions might be changed between releases
-of SMT-RAT, as stated before. In many cases it will not be sufficient to use conditions,
+of \smtrat, as stated before. In many cases it will not be sufficient to use conditions,
 which contain just one single proposition. When requiring a Boolean combination of 
 conditions, the above stated logical operators are needed. Although, the 
 characters of the operators are generally not present on a keyboard, they can just
-be typed into the specialized text area of the dialog window. To input the 
+be typed into the specialized text area of the dialog window. To type in the 
 conjunction operator `$\land$', for instance, the user simply needs to hit the 
 key `c' on the keyboard. Instead of the character `c', the character `$\land$' 
 will then appear in the text area.
 
 In order to increase the user experience even further, the text area treats the
-single characters of an inputted proposition value as a block, which cannot be
+single characters of an inserted proposition value as a block, which cannot be
 entered by the caret of the text area. This means, that if the caret is positioned
 directly left of an inputted proposition value and the user navigates the caret to
 the right, it will jump to the position directly right of the proposition. The
@@ -211,9 +209,9 @@ values. Otherwise it will be refused. Allowed values cover proposition values, t
 characters used to express logical operators and parenthesis.
 
 When the user confirms the dialog window, the implemented recursive descent parser of
-SMT-XRAT checks, whether the inputted condition is a valid derivation of Grammar
+\smtxrat checks, whether the inputted condition is a valid derivation of Grammar
 $\cal C$ or not. In case it is not, the user will be returned to the dialog window
-to re-edit the condition, as can be seen in Figure \ref{fig:smt-xrat_condition_wrong}.
+to re-edit the condition, as can be seen in Figure~\ref{fig:smt-xrat_condition_wrong}.
 Otherwise the inputted condition is adopted for the backend.
 
 \begin{figure}
@@ -231,9 +229,10 @@ also the possibility to remove and edit them subsequently.
 
 The deletion of a single module implicates that all of its succeeding modules in
 the composition hierarchy will be removed as well. The strategy graph pane is only
-allowed to contain one single weakly connected graph. Furthermore, when deleting
+allowed to contain one weakly connected graph. Furthermore, when deleting
 one or implicitly more modules, the priority values of all remaining modules might
-automatically be adjusted to comply the constraints of the priority values.
+automatically be adjusted to comply the constraints of the priority values (the priority
+value of an edge is always greater than the priority values of its preceding edges).
 However, the logical priority order remains untouched.
 
 When editing modules, the same dialog window is displayed as for adding modules.
@@ -244,13 +243,12 @@ displayed alongside the edges. The user can manually change the priority order b
 pushing the priority value of a lower prioritized module in front of the priority
 value of a higher prioritized one. The user achieves this by using the mouse pointer
 to draw a dashed arrow from the edge label of that lower prioritized module to the
-edge label of the higher prioritized module, as it is illustrated by Figure
-\ref{fig:smt-xrat_priority_a}. Afterwards the lower prioritized module will have a higher
+edge label of the higher prioritized module, as it is illustrated by Figure~\ref{fig:smt-xrat_priority_a}. Afterwards the lower prioritized module will have a higher
 priority than the other one. The priority values of the modules might just be swapped.
 If this is not possible, the priority values of the modules and of their preceding modules
 are adjusted automatically, so that as a result, the newly prioritized module will be
 ordered logically before the other one. The adaptation of the priority values is
-emphasized by Figure \ref{fig:smt-xrat_priority_b}.
+emphasized by Figure~\ref{fig:smt-xrat_priority_b}.
 \begin{figure}
   \begin{center}
     \includegraphics[width=0.9\textwidth]{graphics/smt-xrat_priority_a.png}
@@ -271,11 +269,11 @@ emphasized by Figure \ref{fig:smt-xrat_priority_b}.
 \label{sec:further_functionalities}
 Further features of the GUI are reached through the menu bar. The most important
 and also necessary functionality is the management of strategy graphs inside
-the SMT-RAT source code, e.g., the translation of a strategy in the GUI into source code
-of SMT-RAT. To export a currently modeled strategy graph, the user simply needs 
-to open the corresponding dialog window and choose a name, Figure~\ref{fig:managing_smt_solvers}
+the \smtrat source code, \eg the translation of a strategy in the GUI into source code
+of \smtrat. To export a currently modeled strategy graph, the user simply needs 
+to open the corresponding dialog window and choose a name. Figure~\ref{fig:managing_smt_solvers}
 shows an example for exporting the current strategy graph and naming it 
-\emph{SMT\_XRAT}. The GUI will then fulfill the translation and integration process. 
+\smtxrat. The GUI will then fulfill the translation and integration process. 
 The same dialog window also lists all existing strategy graphs, which are currently 
 integrated in the source code, and gives the opportunity to delete them separately.
 This can be seen for the existing strategy graph \emph{NRATSolver} of the example.
@@ -285,8 +283,7 @@ process and usability. For example, the GUI allows the user to save the current 
 graph into an XML file. This file can then be opened again for later editing or it can be
 exchanged with another user. Another practical feature is the ability to save a screen shot
 of the strategy graph pane into an image file. Such image files can be used to discuss
-strategy graphs, when it is not desired to run the GUI. For this purpose, it could be
-attached into an email or included into a presentation, for instance.
+strategy graphs, when it is not desired to run the GUI.
 \begin{figure}
   \begin{center}
     \includegraphics[width=0.9\textwidth]{graphics/smt-xrat_manage_solvers.png}

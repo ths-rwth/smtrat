@@ -38,8 +38,8 @@ for satisfiability. Here we give an overview of all interfaces:
 	SMT solver, these lemmas can be used in its sat solving process in the same way as infeasible subsets are 
 	used. The strategy of an SMT solver composed with \smtrat has to involve a \satModule before any theory module
 	is used\footnote{It is possible to define a strategy using conditions in a way, that we achieve an SMT solver, even if for some cases no \satModule is involved before a theory module is applied.} and, therefore, the SMT solver never communicates these lemmas as they are already processed by the
-	\satModule. A better explanation on the modules and the strategy are given in Section~\ref{sec:managerstrategy} 
-	of the last chapter and Chapter~\ref{chapter:composingats}. If the Boolean argument of the function \texttt{check} is \false, the composed solver is allowed to omit hard obstacles during solving at the cost of returning \UNKNOWN in more cases.
+	\satModule. A better explanation on the modules and the strategy can be found in Chapter~\ref{chapter:generalframework} 
+	and Chapter~\ref{chapter:composingats}. If the Boolean argument of the function \texttt{check} is \false, the composed solver is allowed to omit hard obstacles during solving at the cost of returning \UNKNOWN in more cases.
      \item \begin{verbatim}void push()\end{verbatim}
     	Pushes a backtrack point to the stack of backtrack points.
     \item \begin{verbatim}bool pop()\end{verbatim}
