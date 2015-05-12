@@ -7,7 +7,7 @@ namespace parser {
 	struct CoreInstantiator: public FunctionInstantiator {
 		bool operator()(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) const {
 			std::vector<FormulaT> args;
-			if (!convert(arguments, args)) return false;
+			if (!convert(arguments, args, errors)) return false;
 			return apply(args, result, errors);
 		}
 		virtual bool apply(const std::vector<FormulaT>& arguments, types::TermType& result, TheoryError& errors) const = 0;
