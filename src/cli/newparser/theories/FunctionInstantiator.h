@@ -11,6 +11,11 @@ struct FunctionInstantiator {
 		conversion::VectorVariantConverter<T> converter;
 		return converter(from, to);
 	}
+	template<typename T>
+	bool convert(const std::vector<types::TermType>& from, std::vector<T>& to, TheoryError& errors) const {
+		conversion::VectorVariantConverter<T> converter;
+		return converter(from, to, errors);
+	}
 	virtual bool operator()(const std::vector<types::TermType>&, types::TermType&, TheoryError& errors) const {
 		errors.next() << "Instantiation of this function is not supported.";
 		return false;
