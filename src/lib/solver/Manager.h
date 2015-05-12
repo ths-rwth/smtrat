@@ -139,14 +139,14 @@ namespace smtrat
              *          False, if it not satisfiable;
              *          Unknown, if this solver cannot decide whether it is satisfiable or not.
              */
-            Answer check()
+            Answer check( bool _full = true )
             {
                 #ifdef SMTRAT_STRAT_PARALLEL_MODE
                 initialize();
                 #endif
                 *mPrimaryBackendFoundAnswer.back() = false;
                 mpPassedFormula->updateProperties();
-                return mpPrimaryBackend->check();
+                return mpPrimaryBackend->check( _full );
             }
             
             /**
