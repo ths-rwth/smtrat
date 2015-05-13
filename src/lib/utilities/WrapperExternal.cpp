@@ -1,19 +1,29 @@
 #include "WrapperExternal.h"
+#include "carl/util/stringparser.h"
+#include "carl/util/parser/Parser.h"
+#include "carl/util/Common.h"
 #include <iostream>
 
 namespace smtrat {
 
     bool WrapperExternal::inform(const char* _constraint)
     {
-        //TODO convert _constraint to constraint
-        FormulaT constraint;
+        carl::parser::Parser<Poly> parser;
+        FormulaT constraint = parser.formula(_constraint);
+        std::cout << "Informed: " << constraint << std::endl;
         return manager->inform(constraint);
     }
 
     bool WrapperExternal::add(const char* _subformula)
     {
-        //TODO convert _subformula to subformula
-        FormulaT subformula;
+        carl::parser::Parser<Poly> parser;
+        FormulaT subformula = parser.formula(_subformula);
+        carl::Variables vars;
+        subformula.booleanVars(vars);
+        for (auto it = vars.begin(); it != vars.end(); ++it) {
+            manager->quantifierManager().addUnquantifiedVariable(*it);
+        }
+        std::cout << "Added: " << subformula << std::endl;
         return manager->add(subformula);
     }
 

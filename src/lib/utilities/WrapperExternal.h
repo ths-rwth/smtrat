@@ -24,6 +24,7 @@ namespace smtrat {
         DLL_EXPORT static WrapperExternal* createWrapper(){
             WrapperExternal* pWrapper = new WrapperExternal();
             pWrapper->manager = new Manager();
+            pWrapper->manager->rLogic() = Logic::QF_NRA;
             return pWrapper;
         }
 
