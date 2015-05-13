@@ -58,10 +58,8 @@ namespace smtrat {
 	{}
 
 	template<class Settings>
-		bool EQModule<Settings>::inform(const FormulaT& _constraint)
+		bool EQModule<Settings>::informCore(const FormulaT& _constraint)
 	{
-		Module::inform(_constraint); // This must be invoked at the beginning of this method.
-
 		if(_constraint.getType() == carl::UEQ) {
 			const UEquality &ueq = _constraint.uequality();
 			const UEquality::Arg &lhs = ueq.lhs();
@@ -195,13 +193,11 @@ namespace smtrat {
 	}
 
 	template<class Settings>
-		bool EQModule<Settings>::assertSubformula(ModuleInput::const_iterator _subformula)
+		bool EQModule<Settings>::addCore(ModuleInput::const_iterator _subformula)
 	{
 		if(Settings::printFormulas) {
 			std::cout << "assertSubformula: " << _subformula->formula() << std::endl;
 		}
-
-		Module::assertSubformula(_subformula); // This must be invoked at the beginning of this method.
 
 		if(_subformula->formula().getType() != carl::UEQ) {
 			++mCountNonUEQFormulas;
@@ -373,7 +369,7 @@ namespace smtrat {
 	}
 
 	template<class Settings>
-		void EQModule<Settings>::removeSubformula(ModuleInput::const_iterator _subformula)
+		void EQModule<Settings>::removeCore(ModuleInput::const_iterator _subformula)
 	{
 		if(Settings::printFormulas) {
 			std::cout << "removeSubformula: " << _subformula->formula() << std::endl;
@@ -381,7 +377,6 @@ namespace smtrat {
 
 		if(_subformula->formula().getType() != carl::UEQ) {
 			--mCountNonUEQFormulas;
-			Module::removeSubformula( _subformula );
 			return;
 		}
 		
@@ -558,8 +553,6 @@ namespace smtrat {
 		if(Settings::printBucketSets) {
 			P_print_bucket_sets();
 		}
-
-		Module::removeSubformula( _subformula ); // This must be invoked at the end of this method.
 	}
 
 	template<class Settings>
@@ -889,7 +882,7 @@ namespace smtrat {
 	}
 
 	template<class Settings>
-		Answer EQModule<Settings>::isConsistent()
+		Answer EQModule<Settings>::checkCore( bool )
 	{
 		Answer answer = (mCountNonUEQFormulas == 0) ? True : Unknown;
 		
@@ -962,7 +955,7 @@ namespace smtrat {
 			}
 		}
 
-		return foundAnswer(answer);
+		return answer;
 	}
 
 	template<class Settings>
