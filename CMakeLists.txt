@@ -72,6 +72,8 @@ endif()
 
 # path to find own modules
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
+set(SMTRAT_MANUAL_PATH ${PROJECT_SOURCE_DIR}/manual/manual_${PROJECT_NAME}-${PROJECT_VERSION}.pdf)
 # Include own macros.
 include( smtratmacros )
 # TODO: iteratively search for cmake files and include them here.
@@ -107,7 +109,11 @@ message("-- CXX Release Flags: ${CMAKE_CXX_RELEASE_FLAGS}")
 
 if(STATICLIB_SWITCH)
 	message("-- linking static")
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+    if (APPLE)
+	    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+    else()
+	    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+    endif()
 	set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
 	set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS)       # remove -Wl,-Bdynamic
 	set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
@@ -154,14 +160,6 @@ set( libraries ${libraries} boost_system)
 # # # # # # # # # # # # # # # # # # # # # #
 # C.2. required libraries
 # # # # # # # # # # # # # # # # # # # # # #
-
-find_package(ReallyNull)
-if(ReallyNull_FOUND)
-	set(USE_NSS 1)
-	set(libraries ${libraries} ${ReallyNull_LIBRARY})
-else()
-	set(USE_NSS 0)
-endif()
 
 # # # # # # # # # # # # # # # # # # # # # #
 # C.4. Required libraries for GUI.

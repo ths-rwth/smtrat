@@ -120,9 +120,10 @@ subformulasA.insert( smtrat::FormulaT( carl::FormulaType::NOT, atomC ) );
 subformulasA.insert( atomA );
 subformulasA.insert( atomB );
 smtrat::FormulaT phiA( carl::FormulaType::AND, std::move(subformulasA) );
-smtrat::FormulaT phiB( carl::FormulaType::OR, smtrat::FormulaT( carl::FormulaType::NOT, atomA ), atomC );
-smtrat::FormulaT phiC( carl::FormulaType::IMPLIES, phiA, phiB );
-smtrat::FormulaT phiD( carl::FormulaType::XOR, atomD, atomE );
+smtrat::FormulaT phiB( carl::FormulaType::NOT, atomA )
+smtrat::FormulaT phiC( carl::FormulaType::OR, phiB, atomC );
+smtrat::FormulaT phiD( carl::FormulaType::IMPLIES, phiA, phiC );
+smtrat::FormulaT phiE( carl::FormulaType::XOR, atomD, atomE );
 \end{verbatim}
 \normalsize
 Note, that $\land$ and $\lor$ are $n$-ary constructors, $\neg$ is a unary constructor and all the other Boolean operators are binary.

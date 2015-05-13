@@ -50,7 +50,7 @@ namespace smtrat
         
     protected:
         void printHelp() const;
-        void printWarranty() const;
+        void printLicense() const;
         void printToC() const;
         void printWelcome() const;
         void printInfo() const;

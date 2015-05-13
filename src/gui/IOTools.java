@@ -55,7 +55,6 @@ public class IOTools
     public static final String STRATEGIES_HEADER_CLASS = "strategies";
 
     private static final File MODULE_TYPE_LISTING_FILE = new File( SMTRAT_SOURCE_DIR + File.separator + "modules" + File.separator + "MODULETYPES.txt" );
-    private static final File CARL_PATH_SOURCE_FILE = new File( "config.txt" );
     private static final File PROPOSITION_SOURCE_FILE = new File( getAbsoluteCarlPath() + File.separator + "carl" + File.separator + "formula" + File.separator + "Condition.h" );
     private static final File SMTRAT_STRATEGIES_BUILD_FILE = new File( SMTRAT_STRATEGIES_DIR + File.separator + "CMakeLists.txt" );
     private static final File SMTRAT_STRATEGIES_HEADER_FILE = new File( SMTRAT_STRATEGIES_DIR + File.separator + STRATEGIES_HEADER_CLASS + ".h" );
@@ -899,15 +898,8 @@ public class IOTools
     
     private static String getAbsoluteCarlPath()
     {
-        try ( BufferedReader readFile = new BufferedReader( new FileReader( CARL_PATH_SOURCE_FILE ) ) )
-        {
-            return readFile.readLine();
-        }
-        catch( IOException ex )
-        {
-            JOptionPane.showMessageDialog( gui, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE );
-            return null;
-        }
+        Config config = new Config();
+        return config.getCarlSourcePath();
     }
 
     private static String removeComments( File file )

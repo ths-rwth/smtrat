@@ -39,16 +39,34 @@ endif( PDFLATEX_COMPILER AND ${PROJECT_NAME}_DOC_CREATE_PDF )
 if( MANUAL_PDFLATEX )
   set( TEX_DIR ${CMAKE_CURRENT_SOURCE_DIR} )
   set( PDF_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/manual.pdf )
-  add_custom_command( OUTPUT ${PDF_OUTPUT}
+  set( BBL_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/manual.bbl )
+  add_custom_target( first_pdflatex
                       COMMAND ${PDFLATEX_COMPILER}
-                      ARGS -output-directory=${CMAKE_CURRENT_BINARY_DIR} manual.tex
+                      -output-directory=${CMAKE_CURRENT_BINARY_DIR} manual.tex
                       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
-  add_custom_command( OUTPUT ${PDF_OUTPUT}
+  add_custom_target( second_pdflatex
                       COMMAND ${PDFLATEX_COMPILER}
-                      ARGS -output-directory=${CMAKE_CURRENT_BINARY_DIR} manual.tex
-                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
+                      -output-directory=${CMAKE_CURRENT_BINARY_DIR} manual.tex
+                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                      DEPENDS first_pdflatex )
+  add_custom_target( copy_bibs
+                     COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/*.bib ${CMAKE_CURRENT_BINARY_DIR}/
+                     DEPENDS second_pdflatex )
+  add_custom_target( bibtex
+                      COMMAND ${BIBTEX_COMPILER}
+                      manual.aux
+                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                      DEPENDS copy_bibs )
+  add_custom_target( third_pdflatex
+                      COMMAND ${PDFLATEX_COMPILER}
+                      -output-directory=${CMAKE_CURRENT_BINARY_DIR} manual.tex
+                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                      DEPENDS bibtex )
   add_custom_target( manual
                      COMMAND mv ${PDF_OUTPUT} ${CMAKE_CURRENT_BINARY_DIR}/manual_${PROJECT_NAME}-${PROJECT_VERSION}.pdf
-                     DEPENDS ${PDF_OUTPUT} )
+                     DEPENDS third_pdflatex )
+  add_custom_target( rm_bibs
+                     COMMAND rm ${CMAKE_CURRENT_BINARY_DIR}/*.bib ${CMAKE_CURRENT_BINARY_DIR}/*.aux ${CMAKE_CURRENT_BINARY_DIR}/*.bbl ${CMAKE_CURRENT_BINARY_DIR}/*.out ${CMAKE_CURRENT_BINARY_DIR}/*.toc
+                     DEPENDS manual )
 endif( MANUAL_PDFLATEX )
 
