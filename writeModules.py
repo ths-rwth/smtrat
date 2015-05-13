@@ -117,6 +117,10 @@ if(${moduleEnabled})\n\
 endif()'
   return result
 
+def texContent():
+  result = "Implements ...\n\n\paragraph{Efficiency} ...\n"
+  return result 
+
 def headerContent(m, p, s):
   result = license(m + '.h') + '\n\
 #pragma once\n\
@@ -321,6 +325,11 @@ headerFile = open(moduleDirectory + '/' + moduleName + '.h', 'w')
 print('Writing ' + moduleDirectory + '/' + moduleName + '.h ...')
 headerFile.write(headerContent(moduleName,moduleNamePref,withSettings))
 headerFile.close()
+
+texFile = open(moduleDirectory + '/' + moduleName + '.tex', 'w')
+print('Writing ' + moduleDirectory + '/' + moduleName + '.tex ...')
+texFile.write(texContent())
+texFile.close()
 
 if(withSettings):
   sourceFile = open(moduleDirectory + '/' + moduleName + '.tpp', 'w')
