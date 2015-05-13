@@ -109,7 +109,7 @@ message("-- CXX Release Flags: ${CMAKE_CXX_RELEASE_FLAGS}")
 
 if(STATICLIB_SWITCH)
 	message("-- linking static")
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
 	set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
 	set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS)       # remove -Wl,-Bdynamic
 	set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)

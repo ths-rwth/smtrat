@@ -23,6 +23,6 @@ public class Config
     
     public String getManualPath()
     {
-        return this.carlSourcePath;
+        return this.manualPath;
     }
 }
