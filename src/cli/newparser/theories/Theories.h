@@ -171,12 +171,13 @@ struct Theories {
 			HANDLE_ERROR
 			return result;
 		}
-		if (boost::get<FormulaT>(&arguments[0]) == nullptr) {
+		FormulaT ifterm;
+		conversion::VariantConverter<FormulaT> converter;
+		if (!converter(arguments[0], ifterm)) {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to construct ITE expression, the first argument must be a formula, but \"" << arguments[0] << "\" was given.");
 			HANDLE_ERROR
 			return result;
 		}
-		FormulaT ifterm = boost::get<FormulaT>(arguments[0]);
 		if (ifterm.isTrue()) return arguments[1];
 		if (ifterm.isFalse()) return arguments[2];
 		TheoryError te;
