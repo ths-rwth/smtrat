@@ -21,21 +21,24 @@ struct UninterpretedTheory: public AbstractTheory {
 	
 	bool handleITE(const FormulaT& ifterm, const types::TermType& thenterm, const types::TermType& elseterm, types::TermType& result, TheoryError& errors);
 	
+	template<bool negated>
 	struct EqualityGenerator: public boost::static_visitor<FormulaT> {
 		FormulaT operator()(const carl::UVariable& lhs, const carl::UVariable& rhs) {
-			return FormulaT(lhs, rhs, false);
+			return FormulaT(lhs, rhs, negated);
 		}
 		FormulaT operator()(const carl::UVariable& lhs, const carl::UFInstance& rhs) {
-			return FormulaT(lhs, rhs, false);
+			return FormulaT(lhs, rhs, negated);
 		}
 		FormulaT operator()(const carl::UFInstance& lhs, const carl::UVariable& rhs) {
-			return FormulaT(lhs, rhs, false);
+			return FormulaT(lhs, rhs, negated);
 		}
 		FormulaT operator()(const carl::UFInstance& lhs, const carl::UFInstance& rhs) {
-			return FormulaT(lhs, rhs, false);
+			return FormulaT(lhs, rhs, negated);
 		}
 	};
 	bool handleFunctionInstantiation(const carl::UninterpretedFunction& f, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors);
+	
+	bool handleDistinct(const std::vector<types::TermType>&, types::TermType&, TheoryError& errors);
 	
 	bool functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors);
 };

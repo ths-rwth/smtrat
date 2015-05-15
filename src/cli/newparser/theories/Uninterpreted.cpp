@@ -84,7 +84,29 @@ namespace parser {
 			}
 			state->mUninterpretedArguments[v] = vars.back();
 		}
-		result = carl::newUFInstance(f, vars);
+		carl::UFInstance ufi = carl::newUFInstance(f, vars);
+		carl::SortManager& sm = carl::SortManager::getInstance();
+		if (sm.isInterpreted(f.codomain())) {
+			carl::Variable var = carl::freshVariable(sm.getType(f.codomain()));
+			state->mGlobalFormulas.insert(FormulaT(std::move(carl::UEquality(carl::UVariable(var), ufi, false))));
+			result = var;
+		} else {
+			result = ufi;
+		}
+		return true;
+	}
+	
+	bool UninterpretedTheory::handleDistinct(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
+		std::vector<types::UninterpretedTheory::TermType> args;
+		if (!convertArguments(arguments, args, errors)) return false;
+		FormulasT subformulas;
+		EqualityGenerator<true> eg;
+		for (std::size_t i = 0; i < args.size() - 1; i++) {
+			for (std::size_t j = i + 1; j < args.size(); j++) {
+				subformulas.insert(boost::apply_visitor(eg, args[i], args[j]));
+			}
+		}
+		result = FormulaT(carl::FormulaType::AND, subformulas);
 		return true;
 	}
 
@@ -97,7 +119,7 @@ namespace parser {
 			std::vector<types::UninterpretedTheory::TermType> args;
 			if (!convertArguments(arguments, args, errors)) return false;
 			FormulasT subformulas;
-			EqualityGenerator eg;
+			EqualityGenerator<false> eg;
 			for (std::size_t i = 0; i < args.size() - 1; i++) {
 				subformulas.insert(boost::apply_visitor(eg, args[i], args[i+1]));
 			}
