@@ -54,6 +54,8 @@ set(lib_datastructures_headers
 	datastructures/lra/Variable.h
 	datastructures/lra/Numeric.h
 	datastructures/vs/SqrtEx.h
+    datastructures/eq/alloc.h
+    datastructures/eq/union_find.h
 )
 
 set(lib_datastructures_src
@@ -67,6 +69,7 @@ set(lib_datastructures_src
 	datastructures/lra/Value.tpp
 	datastructures/lra/Variable.tpp
 	datastructures/vs/SqrtEx.cpp
+    datastructures/eq/alloc.cpp
 )
 
 set(lib_solver_headers
