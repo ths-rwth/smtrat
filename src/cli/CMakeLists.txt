@@ -32,7 +32,7 @@ configure_file( ${CMAKE_SOURCE_DIR}/src/cli/config.h.in ${CMAKE_SOURCE_DIR}/src/
 # executable solver
 # # # # # # # # # #
 
-add_executable( smtratSolver
+add_executable( smtrat
     newparser/theories/Arithmetic.cpp
 	newparser/theories/Bitvector.cpp
     newparser/theories/Core.cpp
@@ -41,7 +41,7 @@ add_executable( smtratSolver
 	RuntimeSettingsManager.cpp
 )
 
-target_link_libraries( smtratSolver
+target_link_libraries( smtrat
                         lib_${PROJECT_NAME} # smtrat library
                         ${libraries} # libraries definied in top-level CMakeLists.txt
 )
