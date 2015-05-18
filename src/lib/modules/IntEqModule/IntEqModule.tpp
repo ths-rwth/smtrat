@@ -8,7 +8,7 @@
 
 #include "IntEqModule.h"
 
-//#define DEBUG_IntEqModule
+#define DEBUG_IntEqModule
 
 namespace smtrat
 {
@@ -160,6 +160,9 @@ namespace smtrat
     template<class Settings>
     void IntEqModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
+        #ifdef DEBUG_IntEqModule
+        cout << "Remove: " << _subformula->formula() << endl;
+        #endif
         if( _subformula->formula().constraint().relation() == carl::Relation::EQ )
         {
             /* Iterate through all the processed constraints and delete all corresponding sets 
@@ -231,7 +234,7 @@ namespace smtrat
                 }
                 if( *iter_next == *iter_recent )
                 {
-                    iter_recent = mRecent_Constraints.erase( iter_next ); 
+                    iter_recent = mRecent_Constraints.erase( iter_recent ); 
                 }
                 else
                 {
@@ -309,14 +312,17 @@ namespace smtrat
                 if( is_sub )
                 {
                     mNew_Substitution = true;
-                }    
+                    #ifdef DEBUG_IntEqModule
+                    cout << "mRecent_Constraints: " << mRecent_Constraints << endl;
+                    #endif
+                }                
             } 
             #ifdef DEBUG_IntEqModule
             cout << "Size of mVariables: " << mVariables.size() << endl;
             cout << "Size of mSubstitutions: " << mSubstitutions.size() << endl;
             cout << "Size of mRecent_Constraints: " << mRecent_Constraints.size() << endl;
             #endif
-            //assert( mSubstitutions.empty() || mSubstitutions.size() == mRecent_Constraints.size() );
+            assert( mSubstitutions.empty() || mSubstitutions.size() == mRecent_Constraints.size() );
             mProc_Constraints = mRecent_Constraints.back();                
         }
     }

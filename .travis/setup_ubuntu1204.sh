@@ -6,6 +6,9 @@ function install {
 	sudo apt-get -qq install --force-yes $*
 }
 
+if [[ ${TASK} == "doxygen" ]]; then
+	sudo apt-add-repository "deb http://ppa.launchpad.net/kedazo/doxygen-updates-precise/ubuntu precise main"
+fi
 sudo add-apt-repository -y ppa:kalakris/cmake
 sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
 sudo add-apt-repository -y "deb http://llvm.org/apt/precise/ llvm-toolchain-precise-3.4 main" 

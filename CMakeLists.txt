@@ -108,24 +108,28 @@ message("-- CXX Debug Flags: ${CMAKE_CXX_DEBUG_FLAGS}")
 message("-- CXX Release Flags: ${CMAKE_CXX_RELEASE_FLAGS}")
 
 if(STATICLIB_SWITCH)
-	message("-- linking static")
+    message("-- linking static")
     if (APPLE)
-	    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mmacosx-version-min=10.7")
     else()
-	    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
     endif()
-	set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
-	set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS)       # remove -Wl,-Bdynamic
-	set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
-	set(CMAKE_SHARED_LIBRARY_C_FLAGS)         # remove -fPIC
-	set(CMAKE_SHARED_LIBRARY_CXX_FLAGS)
-	set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS)    # remove -rdynamic
-	set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS)
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
+    set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS)       # remove -Wl,-Bdynamic
+    set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
+    set(CMAKE_SHARED_LIBRARY_C_FLAGS)         # remove -fPIC
+    set(CMAKE_SHARED_LIBRARY_CXX_FLAGS)
+    set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS)    # remove -rdynamic
+    set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS)
 endif()
 
 if(SMTRAT_STRAT_PARALLEL_MODE)
+    if (APPLE)
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl -lpthread -Wl")
+    else()
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--whole-archive -lpthread -Wl,--no-whole-archive")
-	set(libraries ${libraries} pthread)
+    endif()
+    set(libraries ${libraries} pthread)
 endif()
 
 # path to put in the executables
@@ -226,7 +230,7 @@ add_subdirectory(src)
 set( CPACK_GENERATOR "TGZ" )
 set( CPACK_PACKAGE_FILE_README "${CMAKE_CURRENT_SOURCE_DIROPTIONAL}/README" )
 set( CPACK_PACKAGE_DESCRIPTION_SUMMARY ${PROJECT_DESCRIPTION} )
-set( CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING" )
+set( CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE" )
 set( CPACK_PACKAGE_VERSION_MAJOR ${smtrat_MAJORVERSION})
 set( CPACK_PACKAGE_VERSION_MINOR ${smtrat_MINORVERSION})
 set( CPACK_PACKAGE_VERSION_PATCH ${smtrat_MAINTENANCEVERSION})

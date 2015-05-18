@@ -46,10 +46,7 @@ target_link_libraries( smtratSolver
                         ${libraries} # libraries definied in top-level CMakeLists.txt
 )
 
-if(${USE_GINAC} STREQUAL "ON")
-	target_link_libraries( smtratSolver ginac)
-endif()
-set_target_properties( smtratSolver PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
+set_target_properties( smtrat PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
 
 add_library( smtlibParser
 	${CMAKE_SOURCE_DIR}/src/cli/smtratSolver.cpp
