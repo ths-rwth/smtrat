@@ -6,7 +6,9 @@
 #pragma once
 
 #include "../../cli/config.h"
-#include "../solver/Manager.h"
+#include "../strategies/strategies.h"
+#include "../modules/ModuleType.h"
+#include "../modules/Modules.h"
 
 #ifdef __WIN
 #define DLL_EXPORT __declspec(dllexport)
@@ -14,22 +16,35 @@
 #define DLL_EXPORT 
 #endif
 
+#define SOLVER NRATSolver
+
 namespace smtrat {
     class WrapperExternal
     {
     private:
-        Manager* manager;
+        SOLVER* solver;
     public:
 
         DLL_EXPORT static WrapperExternal* createWrapper(){
             WrapperExternal* pWrapper = new WrapperExternal();
-            pWrapper->manager = new Manager();
-            pWrapper->manager->rLogic() = Logic::QF_NRA;
+            pWrapper->solver = new SOLVER();
+            pWrapper->solver->rLogic() = Logic::QF_NRA;
+
+            //Add modules
+            pWrapper->solver->addModuleType(MT_CNFerModule, new StandardModuleFactory< CNFerModule >());
+            pWrapper->solver->addModuleType(MT_LRAModule, new StandardModuleFactory< LRAModule<LRASettings1> >());
+            pWrapper->solver->addModuleType(MT_SATModule, new StandardModuleFactory< SATModule<SATSettings1> >());
+            pWrapper->solver->addModuleType(MT_VSModule, new StandardModuleFactory< VSModule<VSSettings2346> >());
+
             return pWrapper;
         }
 
         DLL_EXPORT static void disposeWrapper(WrapperExternal* wrapper) {
             if (wrapper != NULL) {
+                if (wrapper->solver != NULL) {
+                    delete wrapper->solver;
+                    wrapper->solver = NULL;
+                }
                 delete wrapper;
                 wrapper = NULL;
             }

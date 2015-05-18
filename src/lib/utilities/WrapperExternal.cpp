@@ -11,7 +11,7 @@ namespace smtrat {
         carl::parser::Parser<Poly> parser;
         FormulaT constraint = parser.formula(_constraint);
         std::cout << "Informed: " << constraint << std::endl;
-        return manager->inform(constraint);
+        return solver->inform(constraint);
     }
 
     bool WrapperExternal::add(const char* _subformula)
@@ -21,61 +21,64 @@ namespace smtrat {
         carl::Variables vars;
         subformula.booleanVars(vars);
         for (auto it = vars.begin(); it != vars.end(); ++it) {
-            manager->quantifierManager().addUnquantifiedVariable(*it);
+            solver->quantifierManager().addUnquantifiedVariable(*it);
         }
         std::cout << "Added: " << subformula << std::endl;
-        return manager->add(subformula);
+        return solver->add(subformula);
     }
 
     int WrapperExternal::check()
     {
-        return manager->check();
+        std::cout << "Checking.." << std::endl;
+        int tmp = solver->check();
+        std::cout << "Check ended" << std::endl;
+        return tmp;
     }
 
     void WrapperExternal::push()
     {
-        manager->push();
+        solver->push();
     }
 
     bool WrapperExternal::pop()
     {
-        return manager->pop();
+        return solver->pop();
     }
 
     void WrapperExternal::infeasibleSubsets(char* bufferInfeasibleSubsets, int bufferSize) const
     {
-        std::vector<FormulasT> infeasibleSubsets = manager->infeasibleSubsets();
+        std::vector<FormulasT> infeasibleSubsets = solver->infeasibleSubsets();
         //TODO convert infeasibleSubsets into bufferInfeasibleSubsets
     }
 
     void WrapperExternal::getModelEqualities(char* bufferModelEqualities, int bufferSize) const
     {
-        std::list<std::vector<carl::Variable>> modelEqualities = manager->getModelEqualities();
+        std::list<std::vector<carl::Variable>> modelEqualities = solver->getModelEqualities();
         //TODO convert modelEqualities into bufferModelEqualities
     }
 
     void WrapperExternal::model(char* bufferModel, int bufferSize) const
     {
-        Model model = manager->model();
+        Model model = solver->model();
         //TODO convert model into bufferModel
     }
 
     void WrapperExternal::lemmas(char* bufferLemmas, int bufferSize) const
     {
-        std::vector<FormulaT> lemmas = manager->lemmas();
+        std::vector<FormulaT> lemmas = solver->lemmas();
         //TODO convert lemmas into bufferLemmas
     }
 
     void WrapperExternal::formula(char* bufferFormula, int buffersize) const
     {
-        //ModuleInput formula = manager->formula();
+        //ModuleInput formula = solver->formula();
         //TODO convert formula into bufferFormula
     }
 
     void WrapperExternal::getAssignmentString(char* buffer, int bufferSize) const
     {
         std::ostringstream stream;
-        manager->printAssignment(stream);
+        solver->printAssignment(stream);
         // Copy result in buffer for external program
         strcpy_s(buffer, bufferSize, stream.str().c_str());
     }
@@ -83,7 +86,7 @@ namespace smtrat {
     void WrapperExternal::getAssertionsString(char* buffer, int bufferSize) const
     {
         std::ostringstream stream;
-        manager->printAssertions(stream);
+        solver->printAssertions(stream);
         // Copy result in buffer for external program
         strcpy_s(buffer, bufferSize, stream.str().c_str());
     }
@@ -91,7 +94,7 @@ namespace smtrat {
     void WrapperExternal::getInfeasibleSubsetString(char* buffer, int bufferSize) const
     {
         std::ostringstream stream;
-        manager->printAssignment(stream);
+        solver->printAssignment(stream);
         // Copy result in buffer for external program
         strcpy_s(buffer, bufferSize, stream.str().c_str());
     }
