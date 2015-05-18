@@ -81,7 +81,7 @@ namespace smtrat {
     void WrapperExternal::getInfeasibleSubsetString(char* buffer, int bufferSize) const
     {
         std::ostringstream stream;
-        solver->printAssignment(stream);
+        solver->printInfeasibleSubset(stream);
         // Copy result in buffer for external program
         strcpy_s(buffer, bufferSize, stream.str().c_str());
     }
