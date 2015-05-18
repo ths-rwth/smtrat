@@ -10,10 +10,10 @@
 #include "../../utilities/stats/Statistics.h"
 
 namespace smtrat {
-class GroebnerModuleStats : public Statistics
+class GBModuleStats : public Statistics
 {
    public:
-     static GroebnerModuleStats* getInstance(unsigned key);
+     static GBModuleStats* getInstance(unsigned key);
      
      static void printAll(std::ostream& = std::cout);
      
@@ -148,7 +148,7 @@ class GroebnerModuleStats : public Statistics
      void print(std::ostream& os = std::cout);
      void exportKeyValue(std::ostream& os = std::cout);
    protected:
-    GroebnerModuleStats() : Statistics("GroebnerBasis", this), mNrCalls(0), mNrConstantGBs(0),
+    GBModuleStats() : Statistics("GroebnerBasis", this), mNrCalls(0), mNrConstantGBs(0),
             mNrInfeasibleInequalities(0), mNrDeducedInequalities(0), mNrDeducedEqualities(0),mNrBackendReturnsFalse(0), mNrOfStrictInequalitiesAdded(0),
             mNrOfNonStrictInequalitiesAdded(0), mNrOfEqualitiesAdded(0), mNrOfStrictInequalitiesRemoved(0),
             mNrOfNonStrictInequalitiesRemoved(0), mNrOfEqualitiesRemoved(0), mNrOfFoundEqualities(0), mNrOfFoundIdentities(0)
@@ -173,7 +173,7 @@ class GroebnerModuleStats : public Statistics
     std::vector<unsigned> mPopLevel;
     
    private:
-     static std::map<unsigned,GroebnerModuleStats*> instances;
+     static std::map<unsigned,GBModuleStats*> instances;
 };
 
 }

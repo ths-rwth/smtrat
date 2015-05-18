@@ -1,5 +1,5 @@
 /**
- * @file   GroebnerModule.tpp
+ * @file   GBModule.tpp
  *
  * @author Sebastian Junges
  * @author Ulrich Loup
@@ -8,7 +8,7 @@
  */
 #include "../../config.h"
 
-#include "GroebnerModule.h"
+#include "GBModule.h"
 #include "GBModuleStatistics.h"
 #include "UsingDeclarations.h"
 #ifdef USE_NSS
@@ -27,7 +27,7 @@ namespace smtrat
 {
 
 template<class Settings>
-GroebnerModule<Settings>::GroebnerModule( ModuleType _type, const ModuleInput* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+GBModule<Settings>::GBModule( ModuleType _type, const ModuleInput* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
     mBasis( ),
     mInequalities( this ),
@@ -36,7 +36,7 @@ GroebnerModule<Settings>::GroebnerModule( ModuleType _type, const ModuleInput* c
     mRuntimeSettings(static_cast<GBRuntimeSettings*>(settings))
 #ifdef SMTRAT_DEVOPTION_Statistics
     ,
-    mStats(GroebnerModuleStats::getInstance(Settings::identifier)),
+    mStats(GBModuleStats::getInstance(Settings::identifier)),
     mGBStats(GBCalculationStats::getInstance(Settings::identifier))
 #endif
 {
@@ -44,7 +44,7 @@ GroebnerModule<Settings>::GroebnerModule( ModuleType _type, const ModuleInput* c
 }
 
 template<class Settings>
-GroebnerModule<Settings>::~GroebnerModule( )
+GBModule<Settings>::~GBModule( )
 {}
 
 /**
@@ -54,7 +54,7 @@ GroebnerModule<Settings>::~GroebnerModule( )
  * @return true
  */
 template<class Settings>
-bool GroebnerModule<Settings>::addCore( ModuleInput::const_iterator _formula )
+bool GBModule<Settings>::addCore( ModuleInput::const_iterator _formula )
 {
     if( _formula->formula().getType() != carl::FormulaType::CONSTRAINT )
     {
@@ -74,7 +74,7 @@ bool GroebnerModule<Settings>::addCore( ModuleInput::const_iterator _formula )
 }
 
 template<class Settings>
-bool GroebnerModule<Settings>::constraintByGB(carl::Relation cr)
+bool GBModule<Settings>::constraintByGB(carl::Relation cr)
 {
     return ((cr == carl::Relation::EQ) ||
             (Settings::transformIntoEqualities == ALL_INEQUALITIES) ||
@@ -86,7 +86,7 @@ bool GroebnerModule<Settings>::constraintByGB(carl::Relation cr)
  * @param _formula
  */
 template<class Settings>
-void GroebnerModule<Settings>::processNewConstraint(ModuleInput::const_iterator _formula)
+void GBModule<Settings>::processNewConstraint(ModuleInput::const_iterator _formula)
 {
     const ConstraintT& constraint = _formula->formula().constraint( );
     bool toGb = constraintByGB(constraint.relation());
@@ -106,7 +106,7 @@ void GroebnerModule<Settings>::processNewConstraint(ModuleInput::const_iterator 
  * @param _formula
  */
 template<class Settings>
-void GroebnerModule<Settings>::handleConstraintToGBQueue(ModuleInput::const_iterator _formula)
+void GBModule<Settings>::handleConstraintToGBQueue(ModuleInput::const_iterator _formula)
 {
     pushBacktrackPoint( _formula );
     // Equalities do not need to be transformed, so we add them directly.
@@ -136,7 +136,7 @@ void GroebnerModule<Settings>::handleConstraintToGBQueue(ModuleInput::const_iter
  * @param _formula
  */
 template<class Settings>
-void GroebnerModule<Settings>::handleConstraintNotToGB(ModuleInput::const_iterator _formula)
+void GBModule<Settings>::handleConstraintNotToGB(ModuleInput::const_iterator _formula)
 {
     if( Settings::checkInequalities == NEVER )
     {
@@ -156,12 +156,12 @@ void GroebnerModule<Settings>::handleConstraintNotToGB(ModuleInput::const_iterat
 
 
 /**
- * A theory call to the GroebnerModule. The exact working of this module depends on the settings in GBSettings.
+ * A theory call to the GBModule. The exact working of this module depends on the settings in GBSettings.
  * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
  * @return (TRUE,FALSE,UNKNOWN) dependent on the asserted constraints.
  */
 template<class Settings>
-Answer GroebnerModule<Settings>::checkCore( bool _full )
+Answer GBModule<Settings>::checkCore( bool _full )
 {
 #ifdef GB_OUTPUT
     std::cout << "GB Called" << std::endl;
@@ -383,7 +383,7 @@ Answer GroebnerModule<Settings>::checkCore( bool _full )
  */
 
 template<class Settings>
-bool GroebnerModule<Settings>::iterativeVariableRewriting()
+bool GBModule<Settings>::iterativeVariableRewriting()
 {
     std::list<GBPolynomial> polynomials = mBasis.listBasisPolynomials();
     bool newRuleFound = true;
@@ -567,13 +567,13 @@ bool GroebnerModule<Settings>::iterativeVariableRewriting()
  * 
  */
 template<class Settings>
-bool GroebnerModule<Settings>::findTrivialFactorisations()
+bool GBModule<Settings>::findTrivialFactorisations()
 {
     return false;
 }
 
 template<class Settings>
-void GroebnerModule<Settings>::knownConstraintDeduction(const std::list<std::pair<carl::BitVector,carl::BitVector> >& deductions)
+void GBModule<Settings>::knownConstraintDeduction(const std::list<std::pair<carl::BitVector,carl::BitVector> >& deductions)
 {
     for(auto it =  deductions.rbegin(); it != deductions.rend(); ++it)
     {
@@ -610,7 +610,7 @@ void GroebnerModule<Settings>::knownConstraintDeduction(const std::list<std::pai
 }
 
 template<class Settings>
-void GroebnerModule<Settings>::newConstraintDeduction( )
+void GBModule<Settings>::newConstraintDeduction( )
 {
     
 
@@ -623,7 +623,7 @@ void GroebnerModule<Settings>::newConstraintDeduction( )
  * @param _formula the constraint which should be removed.
  */
 template<class Settings>
-void GroebnerModule<Settings>::removeCore( ModuleInput::const_iterator _formula )
+void GBModule<Settings>::removeCore( ModuleInput::const_iterator _formula )
 {
     if(_formula->formula().getType() !=  carl::FormulaType::CONSTRAINT) {
         return;
@@ -653,7 +653,7 @@ void GroebnerModule<Settings>::removeCore( ModuleInput::const_iterator _formula 
  * @param _formula
  */
 template<class Settings>
-void GroebnerModule<Settings>::removeReceivedFormulaFromNewInequalities( ModuleInput::const_iterator _formula )
+void GBModule<Settings>::removeReceivedFormulaFromNewInequalities( ModuleInput::const_iterator _formula )
 {
     for(auto it = mNewInequalities.begin(); it != mNewInequalities.end(); ++it )
     {
@@ -670,7 +670,7 @@ void GroebnerModule<Settings>::removeReceivedFormulaFromNewInequalities( ModuleI
  * @param btpoint The equality we have removed
  */
 template<class Settings>
-void GroebnerModule<Settings>::pushBacktrackPoint( ModuleInput::const_iterator btpoint )
+void GBModule<Settings>::pushBacktrackPoint( ModuleInput::const_iterator btpoint )
 {
     assert( mBacktrackPoints.empty( ) || btpoint->formula().getType( ) ==  carl::FormulaType::CONSTRAINT );
     assert( mBacktrackPoints.size( ) == mStateHistory.size( ) );
@@ -689,7 +689,7 @@ void GroebnerModule<Settings>::pushBacktrackPoint( ModuleInput::const_iterator b
     else
     {
         // we save the current basis and the rewrite rules
-        mStateHistory.push_back( GroebnerModuleState<Settings>( mBasis, mRewriteRules ) );
+        mStateHistory.push_back( GBModuleState<Settings>( mBasis, mRewriteRules ) );
     }
 
     mBacktrackPoints.push_back( btpoint );
@@ -709,7 +709,7 @@ void GroebnerModule<Settings>::pushBacktrackPoint( ModuleInput::const_iterator b
  * @param a pointer in the received formula to the constraint which will be removed.
  */
 template<class Settings>
-void GroebnerModule<Settings>::popBacktrackPoint( ModuleInput::const_iterator btpoint )
+void GBModule<Settings>::popBacktrackPoint( ModuleInput::const_iterator btpoint )
 {
     //assert( validityCheck( ) );
     assert( mBacktrackPoints.size( ) == mStateHistory.size( ) );
@@ -773,7 +773,7 @@ void GroebnerModule<Settings>::popBacktrackPoint( ModuleInput::const_iterator bt
  * @return A witness which is zero in case we had no success.
  */
 template<class Settings>
-typename Settings::Polynomial GroebnerModule<Settings>::callGroebnerToSDP( const Ideal& gb ) 
+typename Settings::Polynomial GBModule<Settings>::callGroebnerToSDP( const Ideal& gb ) 
 {
     using namespace reallynull;
     Poly witness;
@@ -808,7 +808,7 @@ typename Settings::Polynomial GroebnerModule<Settings>::callGroebnerToSDP( const
  * @return The polynomial which represents the equality.
  */
 template<class Settings>
-typename GroebnerModule<Settings>::GBPolynomial GroebnerModule<Settings>::transformIntoEquality( ModuleInput::const_iterator constraint )
+typename GBModule<Settings>::GBPolynomial GBModule<Settings>::transformIntoEquality( ModuleInput::const_iterator constraint )
 {
     GBPolynomial result( (typename Poly::PolyType)constraint->formula().constraint( ).lhs( ) );
     size_t constrId = constraint->formula().constraint( ).id( );
@@ -859,13 +859,13 @@ typename GroebnerModule<Settings>::GBPolynomial GroebnerModule<Settings>::transf
  * @return
  */
 template<class Settings>
-bool GroebnerModule<Settings>::saveState( )
+bool GBModule<Settings>::saveState( )
 {
     assert( mStateHistory.size( ) == mBacktrackPoints.size( ) );
 
     // TODO fix this copy.
     mStateHistory.pop_back( );
-    mStateHistory.push_back( GroebnerModuleState<Settings>( mBasis, mRewriteRules ) );
+    mStateHistory.push_back( GBModuleState<Settings>( mBasis, mRewriteRules ) );
 
     return true;
 }
@@ -874,7 +874,7 @@ bool GroebnerModule<Settings>::saveState( )
  * Add the equalities from the Groebner basis to the passed formula. Adds the reason vector.
  */
 template<class Settings>
-void GroebnerModule<Settings>::passGB( )
+void GBModule<Settings>::passGB( )
 {
     // This method should only be called if the GB should be passed.
     assert( Settings::passGB );
@@ -925,7 +925,7 @@ void GroebnerModule<Settings>::passGB( )
  * @return The reason set.
  */
 template<class Settings>
-FormulasT GroebnerModule<Settings>::generateReasons( const carl::BitVector& reasons )
+FormulasT GBModule<Settings>::generateReasons( const carl::BitVector& reasons )
 {
     if(reasons.empty())
     {
@@ -959,7 +959,7 @@ FormulasT GroebnerModule<Settings>::generateReasons( const carl::BitVector& reas
  * @return true, iff the backtrackpoints are valid.
  */
 template<class Settings>
-bool GroebnerModule<Settings>::validityCheck( )
+bool GBModule<Settings>::validityCheck( )
 {
     auto btp = mBacktrackPoints.begin( );
     ++btp;
@@ -988,7 +988,7 @@ bool GroebnerModule<Settings>::validityCheck( )
  * @param _formula
  */
 template<class Settings>
-void GroebnerModule<Settings>::removeSubformulaFromPassedFormula( ModuleInput::iterator _formula )
+void GBModule<Settings>::removeSubformulaFromPassedFormula( ModuleInput::iterator _formula )
 {
     super::eraseSubformulaFromPassedFormula( _formula, true );
 }
@@ -998,7 +998,7 @@ void GroebnerModule<Settings>::removeSubformulaFromPassedFormula( ModuleInput::i
  *  Prints the state history.
  */
 template<class Settings>
-void GroebnerModule<Settings>::printStateHistory( )
+void GBModule<Settings>::printStateHistory( )
 {
     std::cout << "[";
     auto btp = mBacktrackPoints.begin( );
@@ -1016,7 +1016,7 @@ void GroebnerModule<Settings>::printStateHistory( )
  * Prints the rewrite rules.
  */
 template<class Settings>
-void GroebnerModule<Settings>::printRewriteRules( )
+void GBModule<Settings>::printRewriteRules( )
 {
     for(auto it = mRewriteRules.begin(); it != mRewriteRules.end(); ++it)
     {

@@ -3,20 +3,20 @@
 namespace smtrat 
 {
     /**
-     * A class to save the current state of a GroebnerModule.
+     * A class to save the current state of a GBModule.
      * Used for backtracking-support
      */
     template<typename Settings>
-    class GroebnerModuleState
+    class GBModuleState
     {
     public:
-        GroebnerModuleState( ) :
+        GBModuleState( ) :
         mRewrites()
         {
 
         }
 
-        GroebnerModuleState( const typename Settings::Groebner& basisCalculation, const std::map<carl::Variable, std::pair<TermT, carl::BitVector> >& rewrites ) :
+        GBModuleState( const typename Settings::Groebner& basisCalculation, const std::map<carl::Variable, std::pair<TermT, carl::BitVector> >& rewrites ) :
         mBasis( basisCalculation ), mRewrites(rewrites)
         {
         }
