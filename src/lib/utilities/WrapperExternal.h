@@ -9,6 +9,9 @@
 #include "../strategies/strategies.h"
 #include "../modules/ModuleType.h"
 #include "../modules/Modules.h"
+#include "carl/util/stringparser.h"
+#include "carl/util/parser/Parser.h"
+#include "carl/util/Common.h"
 
 #ifdef __WIN
 #define DLL_EXPORT __declspec(dllexport)
@@ -23,6 +26,7 @@ namespace smtrat {
     {
     private:
         SOLVER* solver;
+        carl::parser::Parser<Poly> parser;
     public:
 
         DLL_EXPORT static WrapperExternal* createWrapper(){
