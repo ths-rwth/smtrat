@@ -144,20 +144,23 @@ namespace smtrat {
         * added formulas to values of their domains, if the conjunction of these
         * formulas is satisfiable.
         * @param The stream to print on.
+        * @return needed buffersize if the current one is too small, 0 otherwise
         */
-        DLL_EXPORT void getAssignmentString(char* buffer, int bufferSize) const;
+        DLL_EXPORT int getAssignmentString(char* buffer, int bufferSize) const;
 
         /**
         * Prints the so far added formulas.
         * @param _out The stream to print on.
+        * @return needed buffersize if the current one is too small, 0 otherwise
         */
-        DLL_EXPORT void getAssertionsString(char* buffer, int bufferSize) const;
+        DLL_EXPORT int getAssertionsString(char* buffer, int bufferSize) const;
 
         /**
         * Prints the first found infeasible subset of the set of received formulas.
         * @param _out The stream to print on.
+        * @return needed buffersize if the current one is too small, 0 otherwise
         */
-        DLL_EXPORT void getInfeasibleSubsetString(char* buffer, int bufferSize) const;
+        DLL_EXPORT int getInfeasibleSubsetString(char* buffer, int bufferSize) const;
 
     };
 }

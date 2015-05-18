@@ -62,28 +62,49 @@ namespace smtrat {
         //TODO convert formula into bufferFormula
     }
 
-    void WrapperExternal::getAssignmentString(char* buffer, int bufferSize) const
+    int WrapperExternal::getAssignmentString(char* buffer, int bufferSize) const
     {
         std::ostringstream stream;
         solver->printAssignment(stream);
         // Copy result in buffer for external program
-        strcpy_s(buffer, bufferSize, stream.str().c_str());
+        string result = stream.str();
+        if (result.size() > bufferSize) {
+            return result.size() + 1;
+        }
+        else {
+            assert(result.size() < bufferSize);
+            strcpy_s(buffer, bufferSize, result.c_str());
+        }
     }
 
-    void WrapperExternal::getAssertionsString(char* buffer, int bufferSize) const
+    int WrapperExternal::getAssertionsString(char* buffer, int bufferSize) const
     {
         std::ostringstream stream;
         solver->printAssertions(stream);
         // Copy result in buffer for external program
-        strcpy_s(buffer, bufferSize, stream.str().c_str());
+        string result = stream.str();
+        if (result.size() > bufferSize) {
+            return result.size() + 1;
+        }
+        else {
+            assert(result.size() < bufferSize);
+            strcpy_s(buffer, bufferSize, result.c_str());
+        }
     }
 
-    void WrapperExternal::getInfeasibleSubsetString(char* buffer, int bufferSize) const
+    int WrapperExternal::getInfeasibleSubsetString(char* buffer, int bufferSize) const
     {
         std::ostringstream stream;
         solver->printInfeasibleSubset(stream);
         // Copy result in buffer for external program
-        strcpy_s(buffer, bufferSize, stream.str().c_str());
+        string result = stream.str();
+        if (result.size() > bufferSize) {
+            return result.size() + 1;
+        }
+        else {
+            assert(result.size() < bufferSize);
+            strcpy_s(buffer, bufferSize, result.c_str());
+        }
     }
 
 }
