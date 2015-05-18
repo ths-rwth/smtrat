@@ -11,7 +11,7 @@ Eventually, there is no transformation left, such that the faulty behaviour is r
 This approach only works, if the transformation rules can neither be chained to form a loop, nor continue infinitely.
 Usually, as the ultimate goal is a minimal example that triggers some bug, all transformation rules are designed to make the input \emph{smaller}, in one way or another.
 
-As this approach has proven to be very valuable in the context of SMT solving, but existing delta debugging tools seemed to be suboptimal to us, SMT-RAT provides its own delta debugging tool \texttt{delta} which can be used completely independent of SMT-RAT.
+As this approach has proven to be very valuable in the context of SMT solving, but existing delta debugging tools\cite{Niemetz2013ddsmt} seemed to be suboptimal to us, SMT-RAT provides its own delta debugging tool \texttt{delta} which can be used completely independent of SMT-RAT.
 \texttt{delta} is built to be as generic as possible, but focuses on programs operating on SMTLib files.
 It has knowledge of the semantics or logics, but only operates on nodes. Any SMTLib construct, that is either a constant or a braced expression, is a node.
 
