@@ -15,7 +15,7 @@ namespace smtrat {
 
 			M& get() noexcept { return module; }
 
-			bool assertSubformula(const FormulaT& formula) {
+			bool add(const FormulaT& formula) {
 				ModuleInput::iterator iter;
 				bool added;
 
@@ -25,14 +25,14 @@ namespace smtrat {
 				}
 
 				asserted.insert(formula);
-				return module.assertSubformula(iter);
+				return module.add(iter);
 			}
 
-			void removeSubformula(const FormulaT& formula) {
+			void remove(const FormulaT& formula) {
 				ModuleInput::iterator iter = input.find(formula);
 				if(iter != input.end()) {
 					asserted.erase(formula);
-					module.removeSubformula(iter);
+					module.remove(iter);
 				}
 			}
 
@@ -40,8 +40,8 @@ namespace smtrat {
 				return asserted.count(formula);
 			}
 
-			bool isConsistent() {
-				return module.isConsistent() != False;
+			bool check() {
+				return module.check() != False;
 			}
 
 			const std::vector<FormulasT>& infeasibleSubsets() {
