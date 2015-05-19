@@ -838,11 +838,20 @@ namespace smtrat
         for( auto monomialIt = _constraint.lhs().polynomial().begin(); monomialIt != _constraint.lhs().polynomial().end(); ++monomialIt )
         {
             if( (monomialIt)->monomial() == nullptr || (monomialIt)->monomial()->isAtMostLinear() )
+#ifdef __VS
+                linearizedConstraint += carl::makePolynomial<Poly>(Poly::PolyType(*monomialIt));
+#else
                 linearizedConstraint += carl::makePolynomial<Poly>(typename Poly::PolyType(*monomialIt));
+#endif
             else
             {
-                assert( mVariableLinearizations.find(carl::makePolynomial<Poly>(typename Poly::PolyType((monomialIt)->monomial()))) != mVariableLinearizations.end() );
-                linearizedConstraint += (monomialIt)->coeff() * carl::makePolynomial<Poly>((*mVariableLinearizations.find( carl::makePolynomial<Poly>(typename Poly::PolyType((monomialIt)->monomial())) )).second);
+#ifdef __VS
+                assert( mVariableLinearizations.find(carl::makePolynomial<Poly>(Poly::PolyType((monomialIt)->monomial()))) != mVariableLinearizations.end() );
+                linearizedConstraint += (monomialIt)->coeff() * carl::makePolynomial<Poly>((*mVariableLinearizations.find( carl::makePolynomial<Poly>(Poly::PolyType((monomialIt)->monomial())) )).second);
+#else
+                assert(mVariableLinearizations.find(carl::makePolynomial<Poly>(typename Poly::PolyType((monomialIt)->monomial()))) != mVariableLinearizations.end());
+                linearizedConstraint += (monomialIt)->coeff() * carl::makePolynomial<Poly>((*mVariableLinearizations.find(carl::makePolynomial<Poly>(typename Poly::PolyType((monomialIt)->monomial())))).second);
+#endif
             }
         }
         mNonlinearConstraints.emplace( _constraint, std::move(ccs) );

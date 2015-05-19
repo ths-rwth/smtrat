@@ -22,7 +22,11 @@ namespace smtrat
                 {
                     if( !termIt->monomial()->isLinear() )
                     {
+#ifdef __VS
+                        result.emplace_back(carl::makePolynomial<Poly>(Poly::PolyType(termIt->monomial()))*_expr.coefficient());
+#else
                         result.emplace_back( carl::makePolynomial<Poly>(typename Poly::PolyType(termIt->monomial()))*_expr.coefficient() );
+#endif
                     }
                 }
             }
@@ -81,7 +85,11 @@ namespace smtrat
         
         const LRAVariable* getOriginalLraVar( carl::Variable::Arg _var, const LRAModule<LRASettings1>& _lra )
         {
+#ifdef __VS
+            LRAModule<LRASettings1>::VarVariableMap::const_iterator target = _lra.originalVariables().find(_var);
+#else
             typename LRAModule<LRASettings1>::VarVariableMap::const_iterator target = _lra.originalVariables().find(_var);
+#endif
             if( target != _lra.originalVariables().end() )
             {
                 return (*target).second;
