@@ -49,7 +49,7 @@ Using `[t]`, you can enable the _advanced mode_ that shows all options. Most of 
 CMake Targets
 ------------
 
-There are a few important targets in the CArL CMakeLists:
+There are a few important targets in the SMT-RAT CMakeLists:
 
 - `doc`: Builds the doxygen documentation.
 - `manual`: Builds the current version of the manual.
