@@ -44,8 +44,12 @@ namespace smtrat
 
 
             // RWA
-            static const uint       mK     = 10;
+            static const size_t     mK     = 10;
+#ifdef __VS
+            static const double     mAlpha;
+#else
             static constexpr double mAlpha = 0.9;
+#endif
             double                  mRWA;
             double                  mLastRWA;
             double                  mLastPayoff;
