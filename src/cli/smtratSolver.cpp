@@ -107,12 +107,13 @@ public:
 	void push(std::size_t n) {
 		for (; n > 0; n--) this->solver->push();
 	}
-	void setLogic(const std::string& logic) {
-		/*if (this->solver->logic() != smtrat::Logic::UNDEFINED) {
+	void setLogic(const smtrat::Logic& logic) {
+		if (this->solver->logic() != smtrat::Logic::UNDEFINED) {
 			error() << "The logic has already been set!";
 		} else {
 			this->solver->rLogic() = logic;
-		}*/
+			error() << "Setting logic to " << logic;
+		}
 	}
 	unsigned getExitCode() const {
 		return this->exitCode;
