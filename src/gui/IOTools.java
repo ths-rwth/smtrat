@@ -567,8 +567,8 @@ public class IOTools
 
                     if( !condition.isTrueCondition() )
                     {
-//                        implementationString.append( tab ).append( "static Condition condition" ).append( i ).append( " = (" ).append( condition.toStringCPP() ).append( ");" ).append( nl );
-                        conditionsString.append( nl ).append( tab ).append( "static bool conditionEvaluation" ).append( i ).append( "( Condition _condition )" ).append( nl ).append( tab ).append( "{" ).append( nl ).append( tab ).append( tab ).append( "return " ).append( "( " ).append( condition.toStringCPP( "_condition" ) ).append( " );" ).append( nl ).append( tab ).append( "}" ).append( nl );
+//                        implementationString.append( tab ).append( "static carl::Condition condition" ).append( i ).append( " = (" ).append( condition.toStringCPP() ).append( ");" ).append( nl );
+                        conditionsString.append( nl ).append( tab ).append( "static bool conditionEvaluation" ).append( i ).append( "( carl::Condition _condition )" ).append( nl ).append( tab ).append( "{" ).append( nl ).append( tab ).append( tab ).append( "return " ).append( "( " ).append( condition.toStringCPP( "_condition" ) ).append( " );" ).append( nl ).append( tab ).append( "}" ).append( nl );
                     }
 
                     if( edge.isBackLink() )
