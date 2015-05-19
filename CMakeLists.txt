@@ -33,9 +33,9 @@ endif()
 project(smtrat CXX)
 
 set(PROJECT_FULLNAME "SMT-RAT")
-set(PROJECT_DESCRIPTION "Satisfiability-Modulo-Theories Real Algebra Toolbox")
-set(smtrat_MAJORVERSION 0)
-set(smtrat_MINORVERSION 4)
+set(PROJECT_DESCRIPTION "Toolbox for Strategic and Parallel Satisfiability-Modulo-Theories Solving")
+set(smtrat_MAJORVERSION 2)
+set(smtrat_MINORVERSION 0)
 set(smtrat_MAINTENANCEVERSION 0)
 set(smtrat_VERSION "${smtrat_MAJORVERSION}.${smtrat_MINORVERSION}.${smtrat_MAINTENANCEVERSION}")
 set(PROJECT_VERSION "${smtrat_MAJORVERSION}.${smtrat_MINORVERSION}.${smtrat_MAINTENANCEVERSION}")
@@ -50,10 +50,10 @@ set(ADDITIONAL_LINK_DIRS "" CACHE STRING "Additional directories added to the li
 # # # # # # # # # # # # # # # # # # # # # #
 
 # options
-option( DEVELOPER "Compile with extra warnings" ON )
+option( DEVELOPER "Compile with extra warnings" OFF )
 option( STATICLIB_SWITCH "Compile a statically linked version of the library." OFF )
-option( LOGGING "Enable logging within the carl library" ON )
-option( LOGGING_CARL "Compile with the logging facility of the carl library" ON )
+option( LOGGING "Enable logging within the carl library" OFF )
+option( LOGGING_CARL "Compile with the logging facility of the carl library" OFF )
 option( BUILD_SOLVER "Build the SMT-RAT Solver" ON )
 option( BUILD_GUI "Build the GUI" OFF )
 option( USE_GINAC "If disabled, all implementations using the ginac library are disabled." OFF )
@@ -61,16 +61,23 @@ option(${PROJECT_NAME}_DOC_CREATE_PDF "Create PDF reference manual" ON )
 
 # Strategy
 option( SMTRAT_STRAT_Factorization "Factorization" ON )
-set(SMTRAT_Strategy "NRATSolver" CACHE STRING "Used strategy in the solver")
+set(SMTRAT_Strategy "RatOne" CACHE STRING "Used strategy in the solver")
 option( SMTRAT_STRAT_PARALLEL_MODE "Parallel mode" OFF )
 
 # Development options
-option(SMTRAT_DEVOPTION_Validation "Output intermediate states in an smt2 file" ON)
-option(SMTRAT_DEVOPTION_MeasureTime "Measure times and number of calls" ON)
-option(SMTRAT_DEVOPTION_Statistics "Use the Statistics gathering" ON)
+option(SMTRAT_DEVOPTION_Validation "Output intermediate states in an smt2 file" OFF)
+option(SMTRAT_DEVOPTION_MeasureTime "Measure times and number of calls" OFF)
+option(SMTRAT_DEVOPTION_Statistics "Use the Statistics gathering" OFF)
+
+if (CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE "RELEASE")
+endif()
 
 # path to find own modules
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
+set(SMTRAT_MANUAL_PATH ${PROJECT_SOURCE_DIR}/manual/manual_${PROJECT_NAME}-${PROJECT_VERSION}.pdf)
+set(SMTRAT_MODULES_PATH ${PROJECT_SOURCE_DIR}/src/lib/modules)
 # Include own macros.
 include( smtratmacros )
 # TODO: iteratively search for cmake files and include them here.
@@ -114,20 +121,28 @@ message("-- CXX Debug Flags: ${CMAKE_CXX_DEBUG_FLAGS}")
 message("-- CXX Release Flags: ${CMAKE_CXX_RELEASE_FLAGS}")
 
 if(STATICLIB_SWITCH)
-	message("-- linking static")
+    message("-- linking static")
+    if (APPLE)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mmacosx-version-min=10.7")
+    else()
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
-	set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
-	set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS)       # remove -Wl,-Bdynamic
-	set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
-	set(CMAKE_SHARED_LIBRARY_C_FLAGS)         # remove -fPIC
-	set(CMAKE_SHARED_LIBRARY_CXX_FLAGS)
-	set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS)    # remove -rdynamic
-	set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS)
+    endif()
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
+    set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS)       # remove -Wl,-Bdynamic
+    set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
+    set(CMAKE_SHARED_LIBRARY_C_FLAGS)         # remove -fPIC
+    set(CMAKE_SHARED_LIBRARY_CXX_FLAGS)
+    set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS)    # remove -rdynamic
+    set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS)
 endif()
 
 if(SMTRAT_STRAT_PARALLEL_MODE)
+    if (APPLE)
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl -lpthread -Wl")
+    else()
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--whole-archive -lpthread -Wl,--no-whole-archive")
-	set(libraries ${libraries} pthread)
+    endif()
+    set(libraries ${libraries} pthread)
 endif()
 
 # path to put in the executables
@@ -162,14 +177,6 @@ set( libraries ${libraries} boost_system)
 # # # # # # # # # # # # # # # # # # # # # #
 # C.2. required libraries
 # # # # # # # # # # # # # # # # # # # # # #
-
-find_package(ReallyNull)
-if(ReallyNull_FOUND)
-	set(USE_NSS 1)
-	set(libraries ${libraries} ${ReallyNull_LIBRARY})
-else()
-	set(USE_NSS 0)
-endif()
 
 # # # # # # # # # # # # # # # # # # # # # #
 # C.4. Required libraries for GUI.
@@ -213,59 +220,6 @@ configure_file( ${CMAKE_SOURCE_DIR}/smtrat.pc.in ${CMAKE_BINARY_DIR}/smtrat.pc )
 # specify pkg-config file to be installed
 install( FILES ${CMAKE_BINARY_DIR}/smtrat.pc DESTINATION lib/pkgconfig )
 
-# # # # # # # # # # # # # # # # # # # # # #
-# E. Source file aggregation and clustering
-# # # # # # # # # # # # # # # # # # # # # #
-
-file(GLOB_RECURSE SMTRAT_HEADERS ${PROJECT_SOURCE_DIR}/src/*.h)
-file(GLOB_RECURSE SMTRAT_SOURCES ${PROJECT_SOURCE_DIR}/src/*/*.cpp)
-file(GLOB_RECURSE SMTRAT_MAIN_FILE ${PROJECT_SOURCE_DIR}/src/cli/smtratSolver.cpp)
-file(GLOB SMTRAT_SOLVER_FILES ${PROJECT_SOURCE_DIR}/src/cli/*.h ${PROJECT_SOURCE_DIR}/src/cli/*.cpp)
-file(GLOB_RECURSE SMTRAT_PARSER_FILES ${PROJECT_SOURCE_DIR}/src/cli/parser/*.h ${PROJECT_SOURCE_DIR}/src/cli/parser/*.cpp)
-file(GLOB SMTRAT_LIB_FILES ${PROJECT_SOURCE_DIR}/src/lib/*.h ${PROJECT_SOURCE_DIR}/src/lib/*.cpp)
-file(GLOB_RECURSE SMTRAT_UTILITY_FILES ${PROJECT_SOURCE_DIR}/src/lib/utilities/*.h ${PROJECT_SOURCE_DIR}/src/lib/utilities/*.cpp)
-file(GLOB_RECURSE SMTRAT_STRATEGY_FILES ${PROJECT_SOURCE_DIR}/src/lib/strategies/*.h ${PROJECT_SOURCE_DIR}/src/lib/strategies/*.cpp)
-file(GLOB_RECURSE SMTRAT_MISC_FILES ${PROJECT_SOURCE_DIR}/src/lib/misc/*.h ${PROJECT_SOURCE_DIR}/src/lib/misc/*.cpp)
-file(GLOB SMTRAT_DATASTRUCTURE_FILES ${PROJECT_SOURCE_DIR}/src/lib/datastructures/*.h ${PROJECT_SOURCE_DIR}/src/lib/datastructures/*.cpp)
-file(GLOB_RECURSE SMTRAT_DATASTRUCTURE_VS_FILES ${PROJECT_SOURCE_DIR}/src/lib/datastructures/vs/*.h ${PROJECT_SOURCE_DIR}/src/lib/datastructures/vs/*.cpp)
-file(GLOB_RECURSE SMTRAT_DATASTRUCTURE_LRA_FILES ${PROJECT_SOURCE_DIR}/src/lib/datastructures/lra/*.h ${PROJECT_SOURCE_DIR}/src/lib/datastructures/lra/*.cpp)
-file(GLOB SMTRAT_MODULES_FILES ${PROJECT_SOURCE_DIR}/src/lib/modules/*.h ${PROJECT_SOURCE_DIR}/src/lib/modules/*.cpp)
-file(GLOB_RECURSE SMTRAT_CACHE_MODULE_FILES ${PROJECT_SOURCE_DIR}/src/lib/modules/CacheModule/*.h ${PROJECT_SOURCE_DIR}/src/lib/modules/CacheModule/*.cpp)
-file(GLOB_RECURSE SMTRAT_CAD_MODULE_FILES ${PROJECT_SOURCE_DIR}/src/lib/modules/CADModule/*.h ${PROJECT_SOURCE_DIR}/src/lib/modules/CADModule/*.cpp)
-file(GLOB_RECURSE SMTRAT_CNFER_MODULE_FILES ${PROJECT_SOURCE_DIR}/src/lib/modules/CNFerModule/*.h ${PROJECT_SOURCE_DIR}/src/lib/modules/CNFerModule/*.cpp)
-file(GLOB_RECURSE SMTRAT_GB_MODULE_FILES ${PROJECT_SOURCE_DIR}/src/lib/modules/GBModule/*.h ${PROJECT_SOURCE_DIR}/src/lib/modules/GBModule/*.cpp)
-file(GLOB_RECURSE SMTRAT_ICP_MODULE_FILES ${PROJECT_SOURCE_DIR}/src/lib/modules/ICPModule/*.h ${PROJECT_SOURCE_DIR}/src/lib/modules/ICPModule/*.cpp)
-file(GLOB_RECURSE SMTRAT_LRA_MODULE_FILES ${PROJECT_SOURCE_DIR}/src/lib/modules/LRAModule/*.h ${PROJECT_SOURCE_DIR}/src/lib/modules/LRAModule/*.cpp)
-file(GLOB_RECURSE SMTRAT_PREPROCESSING_MODULE_FILES ${PROJECT_SOURCE_DIR}/src/lib/modules/PreprocessingModule/*.h ${PROJECT_SOURCE_DIR}/src/lib/modules/PreprocessingModule/*.cpp)
-file(GLOB_RECURSE SMTRAT_REDUCE_MODULE_FILES ${PROJECT_SOURCE_DIR}/src/lib/modules/ReduceModule/*.h ${PROJECT_SOURCE_DIR}/src/lib/modules/ReduceModule/*.cpp)
-file(GLOB_RECURSE SMTRAT_SAT_MODULE_FILES ${PROJECT_SOURCE_DIR}/src/lib/modules/SATModule/*.h ${PROJECT_SOURCE_DIR}/src/lib/modules/SATModule/*.cpp)
-file(GLOB_RECURSE SMTRAT_SINGLEVS_MODULE_FILES ${PROJECT_SOURCE_DIR}/src/lib/modules/SingleVSModule/*.h ${PROJECT_SOURCE_DIR}/src/lib/modules/SingleVSModule/*.cpp)
-file(GLOB_RECURSE SMTRAT_SMART_SIMPLIFIER_MODULE_FILES ${PROJECT_SOURCE_DIR}/src/lib/modules/SmartSimplifier/*.h ${PROJECT_SOURCE_DIR}/src/lib/modules/SmartSimplifier/*.cpp)
-file(GLOB_RECURSE SMTRAT_VRW_MODULE_FILES ${PROJECT_SOURCE_DIR}/src/lib/modules/VRWModule/*.h ${PROJECT_SOURCE_DIR}/src/lib/modules/VRWModule/*.cpp)
-file(GLOB_RECURSE SMTRAT_VS_MODULE_FILES ${PROJECT_SOURCE_DIR}/src/lib/modules/VSModule/*.h ${PROJECT_SOURCE_DIR}/src/lib/modules/VSModule/*.cpp)
-
-# Group the headers and sources
-source_group(main FILES ${SMTRAT_MAIN_FILE})
-source_group(lib FILES ${SMTRAT_LIB_FILES})
-source_group(lib\\misc FILES ${SMTRAT_MISC_FILES})
-source_group(lib\\datastructures FILES ${SMTRAT_DATASTRUCTURE_FILES})
-source_group(lib\\datastructures\\lra FILES ${SMTRAT_DATASTRUCTURE_LRA_FILES})
-source_group(lib\\datastructures\\vs FILES ${SMTRAT_DATASTRUCTURE_VS_FILES})
-source_group(lib\\modules FILES ${SMTRAT_MODULES_FILES})
-source_group(lib\\modules\\CacheModule FILES ${SMTRAT_CACHE_MODULE_FILES})
-source_group(lib\\modules\\CADModule FILES ${SMTRAT_CAD_MODULE_FILES})
-source_group(lib\\modules\\CNFerModule FILES ${SMTRAT_CNFER_MODULE_FILES})
-source_group(lib\\modules\\GBModule FILES ${SMTRAT_GB_MODULE_FILES})
-source_group(lib\\modules\\ICPModule FILES ${SMTRAT_ICP_MODULE_FILES})
-source_group(lib\\modules\\LRAModule FILES ${SMTRAT_LRA_MODULE_FILES})
-source_group(lib\\modules\\PreprocessingModule FILES ${SMTRAT_PREPROCESSING_MODULE_FILES})
-source_group(lib\\modules\\ReduceModule FILES ${SMTRAT_REDUCE_MODULE_FILES})
-source_group(lib\\modules\\SATModule FILES ${SMTRAT_SAT_MODULE_FILES})
-source_group(lib\\modules\\SingleVSModule FILES ${SMTRAT_SINGLEVS_MODULE_FILES})
-source_group(lib\\modules\\SmartSimplifier FILES ${SMTRAT_SMART_MODULE_FILES})
-source_group(lib\\modules\\VRWModule FILES ${SMTRAT_VRW_MODULE_FILES})
-source_group(lib\\modules\\VSModule FILES ${SMTRAT_VS_MODULE_FILES})
-
 # Add custom additional include or link directories
 if (ADDITIONAL_INCLUDE_DIRS)
 	message(STATUS "SMT-RAT - Using additional include directories ${ADDITIONAL_INCLUDE_DIRS}")
@@ -289,7 +243,7 @@ add_subdirectory(src)
 set( CPACK_GENERATOR "TGZ" )
 set( CPACK_PACKAGE_FILE_README "${CMAKE_CURRENT_SOURCE_DIROPTIONAL}/README" )
 set( CPACK_PACKAGE_DESCRIPTION_SUMMARY ${PROJECT_DESCRIPTION} )
-set( CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING" )
+set( CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE" )
 set( CPACK_PACKAGE_VERSION_MAJOR ${smtrat_MAJORVERSION})
 set( CPACK_PACKAGE_VERSION_MINOR ${smtrat_MINORVERSION})
 set( CPACK_PACKAGE_VERSION_PATCH ${smtrat_MAINTENANCEVERSION})

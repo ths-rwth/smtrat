@@ -81,7 +81,7 @@ public:
 	 * Checks if the file extension of the given path matches the given extension.
 	 */
 	bool isExtension(const fs::path& path, const std::string& extension) const {
-		assert(fs::is_regular_file(path));
+		if (!fs::is_regular_file(path)) return false;
 		return fs::extension(path) == extension;
 	}
 	virtual bool canHandle(const fs::path&) const {

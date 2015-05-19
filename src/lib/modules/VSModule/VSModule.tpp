@@ -1,23 +1,3 @@
-/*
- *  SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
- *
- * This file is part of SMT-RAT.
- *
- * SMT-RAT is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SMT-RAT is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
 /**
  * File:   VSModule.cpp
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
@@ -1703,12 +1683,12 @@ namespace smtrat
                                 partialVarSolutions[*var] = varSolutions[*var];
                                 Poly subPolyPartiallySubstituted = substitutionPoly.substitute( partialVarSolutions );
                                 Rational cp = subPolyPartiallySubstituted.coprimeFactorWithoutConstant();
-                                assert( carl::getNum( cp ) == ONE_RATIONAL );
+                                assert( carl::getNum( cp ) == ONE_RATIONAL || carl::getNum( cp ) == MINUS_ONE_RATIONAL );
                                 Rational g = carl::getDenom( cp );
-                                if( g > ZERO_RATIONAL && carl::mod( carl::getNum( subPolyPartiallySubstituted.constantPart() ), carl::getNum( g ) ) != 0 )
+                                if( g > ZERO_RATIONAL && carl::mod( Integer( subPolyPartiallySubstituted.constantPart() ), Integer( g ) ) != 0 )
                                 {
-                                    Poly branchEx = ((subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * Rational(Rational(1) / g));
-                                    Rational branchValue = subPolyPartiallySubstituted.constantPart() * (1 / g);
+                                    Poly branchEx = (subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * cp;
+                                    Rational branchValue = subPolyPartiallySubstituted.constantPart() * cp;
                                     branchAt( branchEx, true, branchValue, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
                                     return false;
                                 }

@@ -2,6 +2,7 @@
 
 #define CMakeStrategySolver smtrat::@SMTRAT_Strategy@
 #define CMakeStrategyHeader "../lib/strategies/@SMTRAT_Strategy@.h"
+#define LICENSE_CONTENT R"licenseString(@LICENSE_CONTENT_IN@)licenseString"
 
 #cmakedefine LOGGING
 #cmakedefine LOGGING_CARL

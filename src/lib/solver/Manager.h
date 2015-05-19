@@ -1,24 +1,3 @@
-/*
- * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2013 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
- *
- * This file is part of SMT-RAT.
- *
- * SMT-RAT is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SMT-RAT is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SMT-RAT. If not, see <http://www.gnu.org/licenses/>.
- *
- */
-
 /**
  * @file Manager.h
  *
@@ -30,8 +9,7 @@
  * @version 2013-01-11
  */
 
-#ifndef SMTRAT_MANAGER_H
-#define SMTRAT_MANAGER_H
+#pragma once
 
 #include <vector>
 
@@ -161,14 +139,14 @@ namespace smtrat
              *          False, if it not satisfiable;
              *          Unknown, if this solver cannot decide whether it is satisfiable or not.
              */
-            Answer check()
+            Answer check( bool _full = true )
             {
                 #ifdef SMTRAT_STRAT_PARALLEL_MODE
                 initialize();
                 #endif
                 *mPrimaryBackendFoundAnswer.back() = false;
                 mpPassedFormula->updateProperties();
-                return mpPrimaryBackend->check();
+                return mpPrimaryBackend->check( _full );
             }
             
             /**
@@ -415,7 +393,9 @@ namespace smtrat
              */
             std::vector<Module*> getAllBackends( Module* _module ) const
             {
-                // Mutex?
+                #ifdef SMTRAT_STRAT_PARALLEL_MODE
+                std::lock_guard<std::mutex> lock( mBackendsMutex );
+                #endif
                 auto iter = mBackendsOfModules.find( _module );
                 assert( iter != mBackendsOfModules.end() );
                 std::vector<Module*> result = iter->second;
@@ -495,4 +475,3 @@ namespace smtrat
             #endif
     };
 }    // namespace smtrat
-#endif   /** SMTRAT_MANAGER_H */

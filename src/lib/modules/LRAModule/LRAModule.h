@@ -1,23 +1,3 @@
-/*
- *  SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
- *
- * This file is part of SMT-RAT.
- *
- * SMT-RAT is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SMT-RAT is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
 /**
  * @file LRAModule.h
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
@@ -40,9 +20,17 @@
 namespace smtrat
 {
     /// Number type of the underlying value of a bound of a variable within the LRAModule.
+    #ifdef SMTRAT_STRAT_PARALLEL_MODE
+    typedef Rational LRABoundType;
+    #else
     typedef carl::Numeric<Rational> LRABoundType;
+    #endif
     /// Type of an entry within the tableau.
+    #ifdef SMTRAT_STRAT_PARALLEL_MODE
+    typedef Rational LRAEntryType;
+    #else
     typedef carl::Numeric<Rational> LRAEntryType;
+    #endif
     /// Type of a bound of a variable within the LRAModule.
     typedef lra::Bound<LRABoundType, LRAEntryType> LRABound;
     /// A variable of the LRAModule, being either a original variable or a slack variable representing a linear polynomial.

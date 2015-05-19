@@ -1,23 +1,3 @@
-/*
- *  SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
- *
- * This file is part of SMT-RAT.
- *
- * SMT-RAT is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SMT-RAT is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
 /**
  * Common.h
  * @author Florian Corzilius
@@ -141,5 +121,68 @@ namespace smtrat
     // Macros.
     
     #define ANSWER_TO_STRING(_ans) (_ans == True ? "True" : (_ans == False ? "False" : (_ans == Unknown ? "Unknown" : "Undefined")))
+
+    // Function wrapper.
+    
+    inline carl::Variable newVariable( const std::string& _name, const carl::VariableType& _type )
+    {
+        return carl::VariablePool::getInstance().getFreshVariable( _name, _type );
+    }
+    
+    inline carl::Sort newSort( const std::string& _name, size_t _arity = 0 )
+    {
+        carl::SortManager::getInstance().declare( _name, _arity );
+        return carl::SortManager::getInstance().getSort( _name );
+    }
+    
+    inline carl::UninterpretedFunction newUF( const std::string& _name, std::vector<carl::Sort>&& _dom, const carl::Sort& _codom )
+    {
+        return carl::UFManager::getInstance().newUninterpretedFunction( _name, std::move(_dom), _codom );
+    }
+    
+    inline carl::UninterpretedFunction newUF( const std::string& _name, const std::vector<carl::Sort>& _dom, const carl::Sort& _codom )
+    {
+        return newUF( _name, std::move( std::vector<carl::Sort>( _dom ) ), _codom );
+    }
+    
+    inline carl::UninterpretedFunction newUF( const std::string& _name, const carl::Sort& _dom, const carl::Sort& _codom )
+    {
+        std::vector<carl::Sort> dom;
+        dom.push_back( _dom );
+        return smtrat::newUF( _name, std::move( dom ), _codom );
+    }
+    
+    inline carl::UninterpretedFunction newUF( const std::string& _name, const carl::Sort& _domA, const carl::Sort& _domB, const carl::Sort& _codom )
+    {
+        std::vector<carl::Sort> dom;
+        dom.push_back( _domA );
+        dom.push_back( _domB );
+        return smtrat::newUF(_name, std::move( dom ), _codom);
+    }
+    
+    inline carl::UFInstance newUFInstance( const carl::UninterpretedFunction& _function, std::vector<carl::UVariable>&& _args )
+    {
+        return carl::UFInstanceManager::getInstance().newUFInstance( _function, std::move(_args) );
+    }
+    
+    inline carl::UFInstance newUFInstance( const carl::UninterpretedFunction& _function, const std::vector<carl::UVariable>& _args )
+    {
+        return smtrat::newUFInstance( _function, std::move(std::vector<carl::UVariable>(_args)) );
+    }
+    
+    inline carl::UFInstance newUFInstance( const carl::UninterpretedFunction& _function, const carl::UVariable& _arg )
+    {   
+        std::vector<carl::UVariable> args;
+        args.push_back( _arg );
+        return smtrat::newUFInstance( _function, std::move(args) );
+    }
+    
+    inline carl::UFInstance newUFInstance( const carl::UninterpretedFunction& _function, const carl::UVariable& _argA, const carl::UVariable& _argB )
+    {   
+        std::vector<carl::UVariable> args;
+        args.push_back( _argA );
+        args.push_back( _argB );
+        return smtrat::newUFInstance( _function, std::move(args) );
+    }
     
 }    // namespace smtrat

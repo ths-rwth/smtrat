@@ -1,24 +1,3 @@
-/*
- * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2013 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
- *
- * This file is part of SMT-RAT.
- *
- * SMT-RAT is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SMT-RAT is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SMT-RAT. If not, see <http://www.gnu.org/licenses/>.
- *
- */
-
 import edu.uci.ics.jung.algorithms.layout.FRLayout;
 import java.awt.HeadlessException;
 import java.awt.Rectangle;
@@ -76,7 +55,6 @@ public class IOTools
     public static final String STRATEGIES_HEADER_CLASS = "strategies";
 
     private static final File MODULE_TYPE_LISTING_FILE = new File( SMTRAT_SOURCE_DIR + File.separator + "modules" + File.separator + "MODULETYPES.txt" );
-    private static final File CARL_PATH_SOURCE_FILE = new File( "config.txt" );
     private static final File PROPOSITION_SOURCE_FILE = new File( getAbsoluteCarlPath() + File.separator + "carl" + File.separator + "formula" + File.separator + "Condition.h" );
     private static final File SMTRAT_STRATEGIES_BUILD_FILE = new File( SMTRAT_STRATEGIES_DIR + File.separator + "CMakeLists.txt" );
     private static final File SMTRAT_STRATEGIES_HEADER_FILE = new File( SMTRAT_STRATEGIES_DIR + File.separator + STRATEGIES_HEADER_CLASS + ".h" );
@@ -545,7 +523,7 @@ public class IOTools
     {
         try
         {
-            if( solverName==null || solverName.equals( "" ) )
+            if( solverName==null || solverName.equals( "" ) || solverName.contains( "config" ) )
             {
                 return null;
             }
@@ -570,7 +548,7 @@ public class IOTools
                     edges.put( e.getPriority(), e );
                 }
 
-                String license = "/*" + nl + " * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox" + nl + " * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges" + nl + " *" + nl + " * This file is part of SMT-RAT." + nl + " *" + nl + " * SMT-RAT is free software: you can redistribute it and/or modify" + nl + " * it under the terms of the GNU General Public License as published by" + nl + " * the Free Software Foundation, either version 3 of the License, or"+ nl + " * (at your option) any later version." + nl + " *" + nl + " * SMT-RAT is distributed in the hope that it will be useful," + nl + " * but WITHOUT ANY WARRANTY; without even the implied warranty of" + nl + " * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the" + nl + " * GNU General Public License for more details." + nl + " *" + nl + " * You should have received a copy of the GNU General Public License" + nl + " * along with SMT-RAT. If not, see <http://www.gnu.org/licenses/>." + nl + " *" + nl + " */" + nl + nl;
+                String license = "";
 
                 String headerString = license + "/**" + nl + " * @file " + solverName + ".h" + nl + " *" + nl + " */" + nl + "#ifndef SMTRAT_" + solverNameUpperCase + "_H" + nl + "#define SMTRAT_" + solverNameUpperCase + "_H" + nl + nl + "#include \"../solver/Manager.h\"" + nl + nl + "namespace smtrat" + nl + "{" + nl + tab + "class " + solverName + ":" + nl + tab + tab + "public Manager" + nl + tab + "{" + nl + tab + tab + "public:" + nl + tab + tab + tab + solverName + "();" + nl + tab + tab + tab + "~" + solverName + "();" + nl + tab + "};" + nl + "}" + tab + "// namespace smtrat" + nl + "#endif" + tab + "/** SMTRAT_" + solverNameUpperCase + "_H */" + nl;
 
@@ -682,18 +660,17 @@ public class IOTools
                 }
             }
 
-            String newStrategiesBuildFileContents = "";
-            try ( BufferedReader readBuildFile = new BufferedReader( new FileReader( SMTRAT_STRATEGIES_BUILD_FILE ) ) )
-            {
-                String line;
-                while( (line = readBuildFile.readLine())!=null )
-                {
-                    newStrategiesBuildFileContents += line + nl;
-                }
-
-                newStrategiesBuildFileContents = newStrategiesBuildFileContents.replaceAll( "strategies/" + solverName + "\\.cpp\\s*", "" );
-                newStrategiesBuildFileContents = newStrategiesBuildFileContents.replaceAll( "strategies/" + solverName + "\\.h\\s*", "" );
-            }
+            //String newStrategiesBuildFileContents = "";
+            //try ( BufferedReader readBuildFile = new BufferedReader( new FileReader( SMTRAT_STRATEGIES_BUILD_FILE ) ) )
+            //{
+            //    String line;
+            //    while( (line = readBuildFile.readLine())!=null )
+            //    {
+            //        newStrategiesBuildFileContents += line + nl;
+            //    }
+            //    newStrategiesBuildFileContents = newStrategiesBuildFileContents.replaceAll( "strategies/" + solverName + "\\.cpp\\s*", "" );
+            //    newStrategiesBuildFileContents = newStrategiesBuildFileContents.replaceAll( "strategies/" + solverName + "\\.h\\s*", "" );
+            //}
 
             String newStrategiesHeaderFileContents;
             try ( BufferedReader readHeaderFile = new BufferedReader( new FileReader( SMTRAT_STRATEGIES_HEADER_FILE ) ) )
@@ -710,38 +687,38 @@ public class IOTools
 
             if( add )
             {
-                Pattern definitionStart = Pattern.compile( "set\\(lib_strategies_src\\s*\\$\\{lib_strategies_src\\}\\s*", Pattern.COMMENTS + Pattern.DOTALL );
-                Matcher definitionStartMatcher = definitionStart.matcher( newStrategiesBuildFileContents );
+                //Pattern definitionStart = Pattern.compile( "set\\(lib_strategies_src\\s*\\$\\{lib_strategies_src\\}\\s*", Pattern.COMMENTS + Pattern.DOTALL );
+                //Matcher definitionStartMatcher = definitionStart.matcher( newStrategiesBuildFileContents );
+                //if( definitionStartMatcher.find() )
+                //{
+                //    int matchIndexEnd = definitionStartMatcher.end();
+                //    newStrategiesBuildFileContents = newStrategiesBuildFileContents.substring( 0, matchIndexEnd ) + "strategies/" + solverName + ".cpp " + newStrategiesBuildFileContents.substring( matchIndexEnd );
+                //}
+                //else
+                //{
+                //    throw new IOToolsException( IOToolsException.BUILD_ENTRY_POINT_NOT_FOUND );
+                //}
+
+                //definitionStart = Pattern.compile( "set\\(lib_strategies_headers\\s*\\$\\{lib_strategies_header\\}\\s*", Pattern.COMMENTS + Pattern.DOTALL );
+                //definitionStartMatcher = definitionStart.matcher( newStrategiesBuildFileContents );
+
+                //if( definitionStartMatcher.find() )
+                //{
+                //    int matchIndexEnd = definitionStartMatcher.end();
+                //    newStrategiesBuildFileContents = newStrategiesBuildFileContents.substring( 0, matchIndexEnd ) + "strategies/" + solverName + ".h " + newStrategiesBuildFileContents.substring( matchIndexEnd );
+                //}
+                //else
+                //{
+                //    throw new IOToolsException( IOToolsException.BUILD_ENTRY_POINT_NOT_FOUND );
+                //}
+
+                Pattern definitionStart = Pattern.compile( "#include", Pattern.DOTALL );
+                Matcher definitionStartMatcher = definitionStart.matcher( newStrategiesHeaderFileContents );
+
                 if( definitionStartMatcher.find() )
                 {
-                    int matchIndexEnd = definitionStartMatcher.end();
-                    newStrategiesBuildFileContents = newStrategiesBuildFileContents.substring( 0, matchIndexEnd ) + "strategies/" + solverName + ".cpp " + newStrategiesBuildFileContents.substring( matchIndexEnd );
-                }
-                else
-                {
-                    throw new IOToolsException( IOToolsException.BUILD_ENTRY_POINT_NOT_FOUND );
-                }
-
-                definitionStart = Pattern.compile( "set\\(lib_strategies_headers\\s*\\$\\{lib_strategies_header\\}\\s*", Pattern.COMMENTS + Pattern.DOTALL );
-                definitionStartMatcher = definitionStart.matcher( newStrategiesBuildFileContents );
-
-                if( definitionStartMatcher.find() )
-                {
-                    int matchIndexEnd = definitionStartMatcher.end();
-                    newStrategiesBuildFileContents = newStrategiesBuildFileContents.substring( 0, matchIndexEnd ) + "strategies/" + solverName + ".h " + newStrategiesBuildFileContents.substring( matchIndexEnd );
-                }
-                else
-                {
-                    throw new IOToolsException( IOToolsException.BUILD_ENTRY_POINT_NOT_FOUND );
-                }
-
-                definitionStart = Pattern.compile( "#define\\s*STRATEGIES_H\\s*", Pattern.DOTALL );
-                definitionStartMatcher = definitionStart.matcher( newStrategiesHeaderFileContents );
-
-                if( definitionStartMatcher.find() )
-                {
-                    int matchIndexEnd = definitionStartMatcher.end();
-                    newStrategiesHeaderFileContents = newStrategiesHeaderFileContents.substring( 0, matchIndexEnd ) + "#include \"" + solverName + ".h\"" + nl + newStrategiesHeaderFileContents.substring( matchIndexEnd );
+                    int matchIndexBegin = definitionStartMatcher.start();
+                    newStrategiesHeaderFileContents = newStrategiesHeaderFileContents.substring( 0, matchIndexBegin ) + "#include \"" + solverName + ".h\"" + nl + newStrategiesHeaderFileContents.substring( matchIndexBegin );
                 }
                 else
                 {
@@ -749,30 +726,30 @@ public class IOTools
                 }
             }
 
-            Files.copy( SMTRAT_STRATEGIES_BUILD_FILE.toPath(), smtratStrategiesBuildTempFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
+            //Files.copy( SMTRAT_STRATEGIES_BUILD_FILE.toPath(), smtratStrategiesBuildTempFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
             Files.copy( SMTRAT_STRATEGIES_HEADER_FILE.toPath(), smtratStrategiesHeaderTempFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
 
-            try( PrintWriter writeBuildFile = new PrintWriter( new FileWriter( SMTRAT_STRATEGIES_BUILD_FILE ) ) )
-            {
-                writeBuildFile.print( newStrategiesBuildFileContents );
-                writeBuildFile.flush();
+            //try( PrintWriter writeBuildFile = new PrintWriter( new FileWriter( SMTRAT_STRATEGIES_BUILD_FILE ) ) )
+            //{
+            //    writeBuildFile.print( newStrategiesBuildFileContents );
+            //    writeBuildFile.flush();
                 try( PrintWriter writeHeaderFile = new PrintWriter( new FileWriter( SMTRAT_STRATEGIES_HEADER_FILE ) ) )
                 {
                     writeHeaderFile.print( newStrategiesHeaderFileContents );
                     writeHeaderFile.flush();
-                }
-                if( !add )
-                {
-                    if( headerFile.exists() )
+                    if( !add )
                     {
-                        Files.delete( headerFile.toPath() );
-                    }
-                    if( implementationFile.exists() )
-                    {
-                        Files.delete( implementationFile.toPath() );
+                        if( headerFile.exists() )
+                        {
+                            Files.delete( headerFile.toPath() );
+                        }
+                        if( implementationFile.exists() )
+                        {
+                            Files.delete( implementationFile.toPath() );
+                        }
                     }
                 }
-            }
+            //}
             catch( Exception ex )
             {
                 if( headerTempFile!=null && headerTempFile.exists() )
@@ -785,11 +762,11 @@ public class IOTools
                     Files.copy( implementationTempFile.toPath(), implementationFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
                     Files.delete( implementationTempFile.toPath() );
                 }
-                if( smtratStrategiesBuildTempFile.exists() )
-                {
-                    Files.copy( smtratStrategiesBuildTempFile.toPath(), SMTRAT_STRATEGIES_BUILD_FILE.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
-                    Files.delete( smtratStrategiesBuildTempFile.toPath() );
-                }
+                //if( smtratStrategiesBuildTempFile.exists() )
+                //{
+                //    Files.copy( smtratStrategiesBuildTempFile.toPath(), SMTRAT_STRATEGIES_BUILD_FILE.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
+                //    Files.delete( smtratStrategiesBuildTempFile.toPath() );
+                //}
                 if( smtratStrategiesHeaderTempFile.exists() )
                 {
                     Files.copy( smtratStrategiesHeaderTempFile.toPath(), SMTRAT_STRATEGIES_HEADER_FILE.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
@@ -806,10 +783,10 @@ public class IOTools
             {
                 Files.delete( implementationTempFile.toPath() );
             }
-            if( smtratStrategiesBuildTempFile.exists() )
-            {
-                Files.delete( smtratStrategiesBuildTempFile.toPath() );
-            }
+            //if( smtratStrategiesBuildTempFile.exists() )
+            //{
+            //    Files.delete( smtratStrategiesBuildTempFile.toPath() );
+            //}
 
             return solverName;
         }
@@ -908,8 +885,11 @@ public class IOTools
         for( File f : SMTRAT_STRATEGIES_DIR.listFiles( new StrategyHeaderFilter() ) )
         {
             String name = f.getName();
-            name = name.substring( 0, name.length()-2 );
-            solverNamesList.add( name );
+            if( !name.contains( "config" ) )
+            {
+                name = name.substring( 0, name.length()-2 );
+                solverNamesList.add( name );
+            }
         }
 
         Collections.sort( solverNamesList );
@@ -918,15 +898,8 @@ public class IOTools
     
     private static String getAbsoluteCarlPath()
     {
-        try ( BufferedReader readFile = new BufferedReader( new FileReader( CARL_PATH_SOURCE_FILE ) ) )
-        {
-            return readFile.readLine();
-        }
-        catch( IOException ex )
-        {
-            JOptionPane.showMessageDialog( gui, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE );
-            return null;
-        }
+        Config config = new Config();
+        return config.getCarlSourcePath();
     }
 
     private static String removeComments( File file )

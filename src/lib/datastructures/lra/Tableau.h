@@ -1,23 +1,3 @@
-/*
- *  SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
- *
- * This file is part of SMT-RAT.
- *
- * SMT-RAT is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SMT-RAT is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
 /**
  * @file Tableau.h
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
@@ -569,7 +549,7 @@ namespace smtrat
                  * @param nonbasic_coefficient_list
                  * @return 
                  */
-                Variable<T1, T2>* newBasicVariable( std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, const typename Poly::PolyType& poly, T2 leading_coeff, bool isInteger );
+                Variable<T1, T2>* newBasicVariable( std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, const typename Poly::PolyType& poly, const T2& leading_coeff, bool isInteger );
                 
                 /**
                  * g
@@ -744,7 +724,7 @@ namespace smtrat
                  * @return true, if the constraint is a defining constraint
                  *         false, otherwise   
                  */
-                ConstraintT isDefining( size_t row_index, std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient_list, T2 lcm, T2& max_value ) const;
+                ConstraintT isDefining( size_t row_index, std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient_list, T2& lcm, T2& max_value ) const;
                 
                 /**
                  * Checks whether the row with index row_index is defining. 
@@ -790,14 +770,14 @@ namespace smtrat
                  * @param columnB_index
                  * @param multiple
                  */
-                void addColumns( size_t columnA_index, size_t columnB_index, T2 multiple );
+                void addColumns( size_t columnA_index, size_t columnB_index, const T2& multiple );
                 
                 /**
                  * Multiplies the row with index row_index by multiple.
                  * @param row_index
                  * @param multiple
                  */        
-                void multiplyRow( size_t row_index, T2 multiple );
+                void multiplyRow( size_t row_index, const T2& multiple );
                 
                 /**
                  * Calculates the scalar product of the row with index rowA from Tableau A with the column

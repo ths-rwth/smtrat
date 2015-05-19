@@ -1,24 +1,3 @@
-/*
- * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
- *
- * This file is part of SMT-RAT.
- *
- * SMT-RAT is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SMT-RAT is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
-
 /** 
  * @file   RuntimeSettingsManager.cpp
  * @author Sebastian Junges
@@ -31,12 +10,16 @@
 #include <string.h>
 #include <map>
 #include <iostream>
+#include <fstream>
+#include <istream>
+#include <algorithm>
 
 #include "RuntimeSettingsManager.h"
 #include "ExitCodes.h"
 
 #include "../lib/modules/Modules.h"
 #include "../lib/config.h"
+#include "config.h"
 #include "../lib/solver/CompileInfo.h"
 
 #include "carl/util/CMakeOptions.h"
@@ -112,31 +95,33 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
         {
             std::string optionName( argv[argi] + ( foundOptionShortcut ? 1 : 2 ) );
             // check for global options.
-            if(optionName == "help") 
+            if(optionName == "help" || optionName == "h") 
             {
                 printHelp();
                 exit(SMTRAT_EXIT_SUCCESS);
             }
-			else if(optionName == "settings") {
-				std::cout << SettingsManager::getInstance().changed() << std::endl;
-                exit(SMTRAT_EXIT_SUCCESS);
-			}
-			else if(optionName == "all-settings") {
-				std::cout << SettingsManager::getInstance().all() << std::endl;
-                exit(SMTRAT_EXIT_SUCCESS);
-			}
-			else if(optionName == "cmake")
-			{
-				std::cout << "CMake options used for CArL:" << std::endl;
-				carl::printCMakeOptions(std::cout);
-				std::cout << std::endl;
-				std::cout << "CMake options used for SMT-RAT:" << std::endl;
-				smtrat::printCMakeOptions(std::cout);
-				std::cout << std::endl;
-			}
-            else if(optionName == "warranty") 
+            else if(optionName == "settings")
             {
-                printWarranty();
+                std::cout << SettingsManager::getInstance().changed() << std::endl;
+                exit(SMTRAT_EXIT_SUCCESS);
+            }
+            else if(optionName == "all-settings")
+            {
+                std::cout << SettingsManager::getInstance().all() << std::endl;
+                exit(SMTRAT_EXIT_SUCCESS);
+            }
+            else if(optionName == "cmake")
+            {
+                std::cout << "CMake options used for CArL:" << std::endl;
+                carl::printCMakeOptions(std::cout);
+                std::cout << std::endl;
+                std::cout << "CMake options used for SMT-RAT:" << std::endl;
+                smtrat::printCMakeOptions(std::cout);
+                std::cout << std::endl;
+            }
+            else if(optionName == "license") 
+            {
+                printLicense();
                 exit(SMTRAT_EXIT_SUCCESS);
             }
             else if(optionName == "toc") 
@@ -224,9 +209,9 @@ void RuntimeSettingsManager::printHelp() const
     std::cout << std::endl;
     // Print help for the global options.
     std::cout << "Global options:" << std::endl;
-    std::cout << "\t --help \t\t prints this help." << std::endl;
+    std::cout << "\t --help (-h) \t\t prints this help." << std::endl;
 	std::cout << "\t --cmake \t\t print cmake options." << std::endl;
-    std::cout << "\t --warranty \t\t prints the warranty." << std::endl;
+    std::cout << "\t --license \t\t prints the license." << std::endl;
     std::cout << "\t --toc  \t\t\t prints the terms of condition" << std::endl;
     std::cout << "\t --info \t\t\t prints information about the binary" << std::endl;
     std::cout << "\t --model (-m) \t\t\t prints a model is printed if the example is found to be satisfiable" << std::endl;
@@ -251,21 +236,14 @@ void RuntimeSettingsManager::printHelp() const
     std::cout << "For more information, please visit our website at " << SMTRAT_WEBSITE << std::endl;
 }
 
-
 /**
- * Print statement of no warranty.
+ * Print license.
  */
-void RuntimeSettingsManager::printWarranty() const 
+void RuntimeSettingsManager::printLicense() const 
 {
-   std::cout << "\
-HERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY \n\
-APPLICABLE LAW.  EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT \n\
-HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM \"AS IS\" WITHOUT WARRANTY \n\
-OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, \n\
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR \n\
-PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM \n\
-IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF \n\
-ALL NECESSARY SERVICING, REPAIR OR CORRECTION. \n";
+    std::string license = LICENSE_CONTENT;
+    std::replace( license.begin(), license.end(), ';', '\n');
+    std::cout << license << std::endl;
 }
 
 /**
@@ -285,12 +263,7 @@ void RuntimeSettingsManager::printWelcome() const
     std::cout << "Version: " << SMTRAT_VERSION << std::endl;
     std::cout << "For more information, run this binary with --help." << std::endl;
     std::cout << std::endl << std::endl;
-    std::cout << "\
-SMT-RAT  Copyright (C) 2012-2013 \n \
-Florian Corzilius, Ulrich Loup, Sebastian Junges, Erika Abraham \n\n\
-This program comes with ABSOLUTELY NO WARRANTY; for details run the solver with --warranty'. \n\
-This is free software, and you are welcome to redistribute it \n\
-under certain conditions;"<< std::endl << std::endl;
+    printLicense();
 }
 
 void RuntimeSettingsManager::printInfo() const

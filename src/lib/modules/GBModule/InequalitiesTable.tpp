@@ -7,12 +7,12 @@ namespace smtrat
      * @param module
      */
     template<class Settings>
-    InequalitiesTable<Settings>::InequalitiesTable( GroebnerModule<Settings>* module ) : mModule( module )
+    InequalitiesTable<Settings>::InequalitiesTable( GBModule<Settings>* module ) : mModule( module )
     {
         mBtnumber = 0;
         mNewConstraints = mReducedInequalities.begin( );
         #ifdef SMTRAT_DEVOPTION_Statistics
-        mStats = GroebnerModuleStats::getInstance(Settings::identifier);
+        mStats = GBModuleStats::getInstance(Settings::identifier);
         #endif
     }
 

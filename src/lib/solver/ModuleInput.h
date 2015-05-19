@@ -1,23 +1,3 @@
-/*
- *  SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
- *
- * This file is part of SMT-RAT.
- *
- * SMT-RAT is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SMT-RAT is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
 /**
  * @file ModuleInput.h
  * @author Florian Corzilius
@@ -175,10 +155,12 @@ namespace smtrat
         
         // Member.
         /// Store some properties about the conjunction of the stored formulas.
-        mutable carl::Condition mProperties;
+        carl::Condition mProperties;
+        /// A flag indicating whether the properties of this module input are updated.
+        bool mPropertiesUpdated;
         /// Maps all formulas occurring (in the origins) at pos i in this module input to i. This is for a faster access.
         carl::FastMap<FormulaT,iterator> mFormulaPositionMap;
-
+        
     public:
             
         /**
@@ -187,6 +169,7 @@ namespace smtrat
         ModuleInput(): 
             std::list<FormulaWithOrigins>(),
             mProperties(),
+            mPropertiesUpdated(false),
             mFormulaPositionMap()
         {}
         
@@ -195,9 +178,9 @@ namespace smtrat
         /**
          * @return All known properties of the underlying formula of this module input.
          */
-        const carl::Condition& properties() const
+        carl::Condition properties() const
         {
-            updateProperties();
+            assert( mPropertiesUpdated );
             return mProperties;
         }
         
@@ -300,7 +283,7 @@ namespace smtrat
         /**
          * Updates all properties of the formula underlying this module input.
          */
-        void updateProperties() const;
+        void updateProperties();
         
         /**
          * Collects all real valued variables occurring in this formula.
@@ -405,6 +388,7 @@ namespace smtrat
             iterator iter = find( _formula );
             if( iter == end() )
             {
+                mPropertiesUpdated = false;
                 emplace_back( _formula );
                 iterator pos = --end(); // TODO: maybe use reverse iterator for not decrementing here
                 mFormulaPositionMap[_formula] = pos;

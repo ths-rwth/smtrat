@@ -1,34 +1,11 @@
 /*
- *  SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
- *
- * This file is part of SMT-RAT.
- *
- * SMT-RAT is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SMT-RAT is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
-
-
-/*
  * File:   HistoryNode.h
  * Author: Stefan Schupp
  *
  * Created on November 9, 2012, 2:02 PM
  */
 
-#ifndef HISTORYNODE_H
-#define HISTORYNODE_H
+#pragma once
 
 //#define HISTORY_DEBUG
 
@@ -478,5 +455,3 @@ namespace smtrat
         };    // class HistoryNode
     }    // namespace icp
 }    // namespace smtrat
-
-#endif   /* HISTORYNODE_H */

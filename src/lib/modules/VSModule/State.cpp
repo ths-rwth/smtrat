@@ -1,23 +1,3 @@
-/*
- *  SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
- *
- * This file is part of SMT-RAT.
- *
- * SMT-RAT is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SMT-RAT is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
 /**
  * Class to create a state object.
  * @author Florian Corzilius
@@ -520,7 +500,9 @@ namespace vs
                         if( mpSubResultCombination != NULL )
                         {
                             if( mpSubResultCombination->size() > 0 )
+                            {
                                 mTakeSubResultCombAgain = true;
+                            }
                             assert( mpSubResultCombination->size() <= mpSubstitutionResults->size() );
                         }
                     }
@@ -556,12 +538,13 @@ namespace vs
                                     }
                                 }
                                 subResult = mpSubstitutionResults->erase( subResult );
-                                if( mpSubResultCombination != NULL )
+                                if( hasSubResultsCombination() )
                                 {
-                                    if( mpSubResultCombination->size() > 0 )
-                                        mTakeSubResultCombAgain = true;
+                                    mTakeSubResultCombAgain = true;
                                     assert( mpSubResultCombination->size() <= mpSubstitutionResults->size() );
                                 }
+                                else
+                                    mTakeSubResultCombAgain = false;
                             }
                         }
                         else
@@ -1112,6 +1095,11 @@ namespace vs
     ConditionList State::getCurrentSubresultCombination() const
     {
         ConditionList currentSubresultCombination;
+        if( !hasSubResultsCombination() )
+        {
+            printAlone();
+        }
+        assert( hasSubResultsCombination() );
         auto iter = mpSubResultCombination->begin();
         while( iter != mpSubResultCombination->end() )
         {
@@ -1794,7 +1782,12 @@ namespace vs
                 if( (*child)->type() != SUBSTITUTION_TO_APPLY )
                 {
                     (*child)->rType() = COMBINE_SUBRESULTS;
-                    (*child)->rTakeSubResultCombAgain() = true;
+                    if( (*child)->hasSubstitutionResults() && (*child)->hasSubResultsCombination() )
+                    {
+                        (*child)->rTakeSubResultCombAgain() = true;
+                    }
+                    else
+                       (*child)->rTakeSubResultCombAgain() = false; 
                 }
                 (*child)->rInconsistent() = false;
             }

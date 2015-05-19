@@ -1,24 +1,3 @@
-/*
- *  SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
- *
- * This file is part of SMT-RAT.
- *
- * SMT-RAT is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SMT-RAT is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
-
 #pragma once
 
 #include "../../config.h"
@@ -31,10 +10,10 @@
 #include "../../utilities/stats/Statistics.h"
 
 namespace smtrat {
-class GroebnerModuleStats : public Statistics
+class GBModuleStats : public Statistics
 {
    public:
-     static GroebnerModuleStats* getInstance(unsigned key);
+     static GBModuleStats* getInstance(unsigned key);
      
      static void printAll(std::ostream& = std::cout);
      
@@ -169,7 +148,7 @@ class GroebnerModuleStats : public Statistics
      void print(std::ostream& os = std::cout);
      void exportKeyValue(std::ostream& os = std::cout);
    protected:
-    GroebnerModuleStats() : Statistics("GroebnerBasis", this), mNrCalls(0), mNrConstantGBs(0),
+    GBModuleStats() : Statistics("GroebnerBasis", this), mNrCalls(0), mNrConstantGBs(0),
             mNrInfeasibleInequalities(0), mNrDeducedInequalities(0), mNrDeducedEqualities(0),mNrBackendReturnsFalse(0), mNrOfStrictInequalitiesAdded(0),
             mNrOfNonStrictInequalitiesAdded(0), mNrOfEqualitiesAdded(0), mNrOfStrictInequalitiesRemoved(0),
             mNrOfNonStrictInequalitiesRemoved(0), mNrOfEqualitiesRemoved(0), mNrOfFoundEqualities(0), mNrOfFoundIdentities(0)
@@ -194,7 +173,7 @@ class GroebnerModuleStats : public Statistics
     std::vector<unsigned> mPopLevel;
     
    private:
-     static std::map<unsigned,GroebnerModuleStats*> instances;
+     static std::map<unsigned,GBModuleStats*> instances;
 };
 
 }

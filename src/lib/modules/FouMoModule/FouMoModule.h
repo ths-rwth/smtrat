@@ -1,23 +1,3 @@
-/*
- * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
- *
- * This file is part of SMT-RAT.
- *
- * SMT-RAT is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SMT-RAT is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
 /**
  * @file FouMoModule.h
  * @author Dustin Huetter <dustin.huetter@rwth-aachen.de>
@@ -62,13 +42,23 @@ namespace smtrat
             std::map< carl::Variable, Rational > mVarAss;
             // Stores whether we found a valid solution in this module
             bool mCorrect_Solution;
+            // Stores whether at least one non-linear term occured
+            bool mNonLinear;
+            // Stores whether the current instance contains only integer resp. real variables
+            enum VAR_DOM
+            {
+                INT,
+                UNKNOWN
+            }; 
+            VAR_DOM mDom;
+            
             
             /**
              * @param curr_constraints Contains the constraints for which a possibly good
              *                         variable is chosen
              * @param var_corr_constr  Contains the chosen variable and the constraints for the elimination step
              */
-            void gather_upper_lower( FormulaOrigins& curr_constraints, VariableUpperLower& var_corr_constr );
+            void gatherUpperLower( FormulaOrigins& curr_constraints, VariableUpperLower& var_corr_constr );
             
             /**
              * @param upper_constr Pointer to the constraint corresponding to an upper bound of corr_var          *                         variable is chosen
@@ -76,20 +66,20 @@ namespace smtrat
              * @param corr_var     Variable that shall be eliminated
              * @return             Pointer to the constraint resulting from the combination
              */
-            FormulaT combine_upper_lower( const smtrat::ConstraintT& upper_constr, const smtrat::ConstraintT& lower_Constr, carl::Variable& corr_var );
+            FormulaT combineUpperLower( const smtrat::ConstraintT& upper_constr, const smtrat::ConstraintT& lower_Constr, carl::Variable& corr_var );
             
             /*
              * Tries to construct a solution by backtracking through the computation steps
              * and returns whether this was successful
              */            
-            bool construct_solution( std::map< carl::Variable, Rational > temp_solution );
+            bool constructSolution( std::map< carl::Variable, Rational > temp_solution );
             
             /*
              * Depending on whether we work on integer or rational instances, it
              * sends the corresponding set of constraints to the backends and returns
              * the answer obtained by the backends
              */
-            Answer call_backends( bool _full );
+            Answer callBackends( bool _full );
             
             /*
              * @param  formula_map A map of formulas and their origins
@@ -98,7 +88,7 @@ namespace smtrat
              *         to new_poly. Otherwise, returns a false formula. The second component of the result
              *         indicates whether the formula belonging to new_poly would add new information to formula_map.
              */
-            std::pair< FormulaT, bool > worth_inserting( FormulaOrigins& formula_map, const Poly& new_poly );
+            std::pair< FormulaT, bool > worthInserting( FormulaOrigins& formula_map, const Poly& new_poly );
             
             /*
              * Resets all data structures of this module to the initial assignments
@@ -133,7 +123,7 @@ namespace smtrat
              * Updates the current assignment into the model.
              * Note, that this is a unique but possibly symbolic assignment maybe containing newly introduced variables.
              */
-            void updateModel() const;
+            void updateModel();
 
             /**
              * Checks the received formula for consistency.

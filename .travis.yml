@@ -11,6 +11,7 @@ env:
   - USE=g++-4.9
   - USE=clang++-3.4
   - USE=clang++-3.5
+  - USE=clang++-3.5 TASK=doxygen
 
 matrix:
   exclude:
@@ -20,11 +21,14 @@ matrix:
       env: USE=g++-4.9
     - os: osx
       env: USE=clang++-3.4
+    - os: osx
+      env: USE=doxygen TASK=doxygen
 
 before_install:
-  - cd installation && source setup_travis.sh && cd ../
+  - cd .travis/ && source setup_travis.sh && cd ../
 
-script: mkdir build && cd build/ && cmake -D DEVELOPER=ON ../ && make -j1 && cd ../
+script:
+  - source .travis/build.sh
 
 notifications:
   email:

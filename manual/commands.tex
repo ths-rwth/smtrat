@@ -1,3 +1,9 @@
+
+\newcommand{\wrt}{w.\,r.\,t.\xspace}
+\newcommand{\ie}{i.\,e., }
+\newcommand{\eg}{e.\,g., }
+\newcommand{\st}{s.\,t.\xspace}
+
 \newcommand{\automake}{\href{http://www.gnu.org/software/automake/}{\texttt{automake}}\xspace}
 \newcommand{\automakeURL}{\href{http://www.gnu.org/software/automake/}{\color{blue}http://www.gnu.org/software/automake/}\xspace}
 \newcommand{\cmake}{\href{http://www.cmake.org/}{\texttt{cmake}}\xspace}
@@ -5,8 +11,13 @@
 \newcommand{\ccmake}{\href{http://www.cmake.org/}{\texttt{ccmake}}\xspace}
 \newcommand{\java}{\href{http://openjdk.java.net/}{\texttt{java}}\xspace}
 \newcommand{\javaURL}{\href{http://openjdk.java.net/}{\color{blue}http://openjdk.java.net/}\xspace}
-\newcommand{\gplusplus}{\href{http://gcc.gnu.org/}{\texttt{g++}}\xspace}
-\newcommand{\gplusplusURL}{\href{http://gcc.gnu.org/}{\color{blue}http://gcc.gnu.org/}\xspace}
+\newcommand{\javaVersion}{1.7\xspace}
+\newcommand{\gcc}{\href{http://gcc.gnu.org/}{\texttt{gcc}}\xspace}
+\newcommand{\gccURL}{\href{http://gcc.gnu.org/}{\color{blue}http://gcc.gnu.org/}\xspace}
+\newcommand{\gccVersion}{4.8\xspace}
+\newcommand{\clang}{\href{http://clang.llvm.org/}{\texttt{clang}}\xspace}
+\newcommand{\clangURL}{\href{http://clang.llvm.org/}{\color{blue}http://clang.llvm.org/}\xspace}
+\newcommand{\clangVersion}{3.4\xspace}
 \newcommand{\B}{\ensuremath{\mathbb{B}}\xspace}
 \newcommand{\true}{\ensuremath{\texttt{true}}\xspace}
 \newcommand{\false}{\ensuremath{\texttt{false}}\xspace}
@@ -14,7 +25,7 @@
 \newcommand{\prop}{\ensuremath{\textit{Prop}}\xspace}
 \newcommand{\strategy}{\ensuremath{\textit{Strat}}\xspace}
 \newcommand{\Gentoo}{\href{http://www.gentoo.org/}{Gentoo Linux}\xspace}
-\newcommand{\SMTRAT}{\href{http://smtrat.sourceforge.net/}{\texttt{SMT-RAT}}\xspace}
+\newcommand{\SMTRAT}{\href{https://github.com/smtrat/smtrat}{\texttt{SMT-RAT}}\xspace}
 \newcommand{\Matlab}{\href{http://www.mathworks.de/}{\texttt{MATLAB}}\xspace}
 \newcommand{\Mathematica}{\href{http://www.wolfram.com/}{\texttt{Mathematica}}\xspace}
 \newcommand{\Synaps}{\href{http://www-sop.inria.fr/galaad/logiciels/synaps/}{\texttt{SYNAPS}}\xspace}
@@ -28,15 +39,21 @@
 \newcommand{\ginac}{{\texttt{GiNaC}}\xspace}
 \newcommand{\Ginac}{\href{http://www.ginac.de/}{\texttt{GiNaC}}\xspace}
 \newcommand{\ginacURL}{\href{http://www.ginac.de/}{\color{blue}http://www.ginac.de/}\xspace}
-\newcommand{\cln}{{\texttt{cln}}\xspace}
+\newcommand{\gmp}{{\texttt{GMP}}\xspace}
+\newcommand{\Gmp}{\href{https://gmplib.org/}{\texttt{GMP}}\xspace}
+\newcommand{\gmpURL}{\href{https://gmplib.org/}{\color{blue}https://gmplib.org/}\xspace}
+\newcommand{\cln}{\texttt{cln}\xspace}
 \newcommand{\Cln}{\href{http://www.ginac.de/}{\texttt{cln}}\xspace}
 \newcommand{\clnURL}{\href{http://www.ginac.de/}{\color{blue}http://www.ginac.de/}\xspace}
-\newcommand{\carl}{{\texttt{carl}}\xspace}
-\newcommand{\Carl}{\href{http://carl.sourceforge.net/}{\texttt{carl}}\xspace}
-\newcommand{\carlURL}{\href{http://carl.sourceforge.net/}{\color{blue}http://carl.sourceforge.net/}\xspace}
+\newcommand{\minisat}{\texttt{minisat}\xspace}
+\newcommand{\carl}{{\texttt{CArL}}\xspace}
+\newcommand{\Carl}{\href{http://ths.informatik.rwth-aachen.de/doxygen/carl/html/}{\texttt{CArL}}\xspace}
+\newcommand{\carlURL}{\href{http://ths.informatik.rwth-aachen.de/doxygen/carl/html/}{\color{blue}http://ths.informatik.rwth-aachen.de/doxygen/carl/html/}\xspace}
+\newcommand{\ant}{{\texttt{ANTLR}}\xspace}
+\newcommand{\Ant}{\href{http://www.antlr.org/}{\texttt{ANTLR}}\xspace}
+\newcommand{\antURL}{\href{http://www.antlr.org/}{\color{blue}http://www.antlr.org/\xspace}}
 \newcommand{\Cpp}{\texttt{C++}\xspace}
 \newcommand{\Cppeleven}{\texttt{C++11}\xspace}
-\newcommand{\Java}{\texttt{Java}\xspace}
 \newcommand{\Reduce}{\href{http://www.reduce-algebra.com/}{\texttt{Reduce}}\xspace}
 \newcommand{\Libreduce}{\href{http://www.reduce-algebra.com/}{\texttt{Libreduce}}\xspace}
 \def\cocoa{{\hbox{\rm C\kern-.13em o\kern-.07em C\kern-.13em o\kern-.15em A}}}
@@ -46,9 +63,11 @@
 \newcommand{\Cppunit}{\href{http://sourceforge.net/projects/cppunit/}{\texttt{CppUnit}}\xspace}
 \newcommand{\ginacra}{\href{http://ginacra.sourceforge.net/}{\texttt{GiNaCRA}}\xspace}
 \newcommand{\ginacraURL}{\href{http://ginacra.sourceforge.net/}{\color{blue}http://ginacra.sourceforge.net/}\xspace}
-\newcommand{\manualURL}{\href{http://smtrat.sourceforge.net/manual/manual.pdf}{http://smtrat.sourceforge.net/manual/manual.pdf}\xspace}
+\newcommand{\manualURL}{\href{https://github.com/smtrat/smtrat/manual/manual.pdf}{https://github.com/smtrat/smtrat/manual/manual.pdf}\xspace}
 \newcommand{\smtrat}{\texttt{SMT-RAT}\xspace}
-\newcommand{\smtratURL}{\href{http://smtrat.sourceforge.net/}{http://smtrat.sourceforge.net/}\xspace}
+\newcommand{\smtxrat}{\texttt{SMT-XRAT}\xspace}
+\newcommand{\smtratSolverName}{\texttt{smtrat}\xspace}
+\newcommand{\smtratURL}{\href{https://github.com/smtrat/smtrat}{\color{blue}https://github.com/smtrat/smtrat}\xspace}
 \newcommand{\ZThree}{\href{http://research.microsoft.com/en-us/um/redmond/projects/z3/}{\texttt{Z3}}\xspace}
 \newcommand{\Cvc}{\href{http://cs.nyu.edu/acsys/cvc3/}{\texttt{CVC3}}\xspace}
 \newcommand{\hysat}{\href{http://hysat.informatik.uni-oldenburg.de/}{\texttt{HySAT}}\xspace}
@@ -57,17 +76,28 @@
 \newcommand{\minismt}{\href{http://cl-informatik.uibk.ac.at/software/minismt/}{\texttt{MiniSmt}}\xspace}
 \newcommand{\sep}{\ensuremath{~\mid~}}
 \newcommand{\R}{\ensuremath{\mathbb{R}}\xspace}
+\newcommand{\Q}{\ensuremath{\mathbb{Q}}\xspace}
 \newcommand{\formulaClass}{\texttt{Formula}\xspace}
 \newcommand{\moduleInputClass}{\texttt{ModuleInput}\xspace}
 \newcommand{\moduleClass}{\texttt{Module}\xspace}
 \newcommand{\gbModuleClass}{\texttt{GroebnerModule}\xspace}
 \newcommand{\vsModuleClass}{\texttt{VSModule}\xspace}
 \newcommand{\lraModuleClass}{\texttt{LRAModule}\xspace}
+\newcommand{\icpModuleClass}{\texttt{ICPModule}\xspace}
 \newcommand{\satModuleClass}{\texttt{SATModule}\xspace}
 \newcommand{\cnferModuleClass}{\texttt{CNFerModule}\xspace}
 \newcommand{\cadModuleClass}{\texttt{CADModule}\xspace}
 \newcommand{\managerClass}{\texttt{Manager}\xspace}
 \newcommand{\strategyClass}{\texttt{Strategy}\xspace}
+\newcommand{\cadModule}{\texttt{CAD$_M$}\xspace}
+\newcommand{\vsModule}{\texttt{VS$_M$}\xspace}
+\newcommand{\gbModule}{\texttt{GB$_M$}\xspace}
+\newcommand{\simplexModule}{\texttt{SIM$_M$}\xspace}
+\newcommand{\satModule}{\texttt{SAT$_M$}\xspace}
+\newcommand{\icpModule}{\texttt{ICP$_M$}\xspace}
+\newcommand{\fmModule}{\texttt{FM$_M$}\xspace}
+\newcommand{\cnfModule}{\texttt{CNF$_M$}\xspace}
+\newcommand{\ppModule}{\texttt{PP$_M$}\xspace}
 
 \newcommand{\writeModule}{\texttt{writeModules.py}\xspace}
 
@@ -78,10 +108,6 @@
 \newcommand{\VSM}{\texttt{M$_\text{VS}$}\xspace}
 \newcommand{\CADM}{\texttt{M$_\text{CAD}$}\xspace}
 \newcommand{\GBM}{\texttt{M$_\text{GB}$}\xspace}
-
-\newcommand{\CADModule}{\texttt{MC$_M$}\xspace}
-\newcommand{\vsModule}{\texttt{VS$_M$}\xspace}
-\newcommand{\groebnerModule}{\texttt{GS$_M$}\xspace}
 
 \newcommand{\opensmt}{\texttt{OpenSMT}\xspace}
 \newcommand{\Opensmt}{\href{http://verify.inf.usi.ch/opensmt}{\texttt{OpenSMT}}\xspace}
@@ -104,6 +130,12 @@
 \newcommand{\True}{\texttt{True}\xspace}
 \newcommand{\False}{\texttt{False}\xspace}
 \newcommand{\Unknown}{\texttt{Unknown}\xspace}
-\newcommand{\smtratLogic}{non-linear real and integer arithmetic with uninterpreted functions\xspace}
-\newcommand{\SmtratLogic}{UF$\_$NRIA\xspace}
 \newcommand{\polynomialOrder}{graded lexicographic order\xspace}
+\newcommand{\supportedLogicsText}{nonlinear real and integer
+arithmetic (NRA/NIA)\xspace}
+\newcommand{\supportedLogics}{NRA/NIA\xspace}
+\newcommand{\parsableLogicsText}{nonlinear real and integer
+arithmetic (NRA/NIA)\xspace}
+\newcommand{\parsableLogics}{NRA/NIA\xspace}
+\newcommand{\smtlibfile}{\texttt{.smt2}-file\xspace}
+\newcommand{\smtlibFiles}{\texttt{.smt2}-files\xspace}

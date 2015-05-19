@@ -5,6 +5,9 @@
 
 #pragma once
 
+#include <future>
+#include <thread>
+
 #ifdef USE_BOOST_REGEX
 #include "../../cli/config.h"
 #ifdef __VS
@@ -24,8 +27,11 @@ using std::regex_match;
 
 #include "BackendData.h"
 #include "../ssh/Node.h"
+#include "../newssh/SSHScheduler.h"
 
 namespace benchmax {
+
+//#define USE_STD_ASYNC
 
 /**
  * Parses a node identifier of the format `server[:port]@[numberOfCores]@user@password`
@@ -59,121 +65,42 @@ benchmax::Node getNode(const string& _nodeAsString)
 }
 
 class SSHBackend: public Backend {
-	std::vector<benchmax::Node> nodes;
-	const unsigned NUMBER_OF_EXAMPLES_TO_SOLVE = 6;
+private:
+#ifdef USE_STD_ASYNC
+	std::queue<std::future<bool>> jobs;
+#else
+	std::queue<std::thread> jobs;
+#endif
+	ssh::SSHScheduler* scheduler;
+	
+protected:
+	virtual void startTool(const Tool& tool) {
+		scheduler->uploadTool(tool);
+	}
+	virtual void execute(const Tool& tool, const fs::path& file) {
+		//BENCHMAX_LOG_WARN("benchmax", "Executing...");
+#if 1
+#ifdef USE_STD_ASYNC
+		jobs.push(std::async(std::launch::async, &ssh::SSHScheduler::executeJob, scheduler, tool, file, std::ref(mResults)));
+#else
+		jobs.push(std::thread(&ssh::SSHScheduler::executeJob, scheduler, tool, file, std::ref(mResults)));
+#endif
+#else
+		scheduler->executeJob(tool, file, mResults);
+#endif
+	}
 public:
 	SSHBackend(): Backend() {
-		int rc = libssh2_init(0);
-		if (rc != 0) {
-			BENCHMAX_LOG_FATAL("benchmax", "Failed to initialize libssh2 (return code " << rc << ")");
-			exit(1);
-		}
-		
-		// add the remote nodes
-		for (const auto& node: Settings::nodes) {
-			nodes.push_back(getNode(node));
-		}
+		scheduler = new ssh::SSHScheduler();
 	}
 	~SSHBackend() {
-		libssh2_exit();
-	}
-	void run(const std::vector<Tool*>& tools, const std::vector<BenchmarkSet>& benchmarks) {
-		int nrOfCalls = 0;
-		auto currentBenchmark = benchmarks.begin();
-		std::vector<benchmax::Node>::iterator currentNode = nodes.begin();
-		if(currentBenchmark != benchmarks.end())
-			currentBenchmark->printSettings();
-		while(currentBenchmark != benchmarks.end())
-		{
-			if(currentBenchmark->done())
-			{
-				++currentBenchmark;
-				if(currentBenchmark == benchmarks.end())
-					break;
-				currentBenchmark->printSettings();
-			}
-			if(currentNode == nodes.end())
-				currentNode = nodes.begin();
-			if(!(*currentNode).connected())
-			{
-				(*currentNode).createSSHconnection();
-			}
-
-			(*currentNode).updateResponses();
-
-			if((*currentNode).freeCores() > 0)
-			{
-				stringstream tmpStream;
-				tmpStream << ++nrOfCalls;
-				//(*currentNode).assignAndExecuteBenchmarks(*currentBenchmark, NUMBER_OF_EXAMPLES_TO_SOLVE, tmpStream.str());
-			}
-			++currentNode;
-			usleep(100000);	// 100 milliseconds (0.1 seconds);
-		}
-		waitForJobs();
-		downloadFiles();
-	}
-	void waitForJobs() {
-		unsigned waitedTime = 0;
-		//		unsigned numberOfTries = 0;
-		// Wait until all nodes have finished.
-		BENCHMAX_LOG_INFO("benchmax", "All scheduled!");
-		bool allNodesEntirelyIdle = false;
-		BENCHMAX_LOG_INFO("benchmax", "Waiting for calls...");
-		while(!allNodesEntirelyIdle)
-		{
-			allNodesEntirelyIdle = true;
-			std::vector<benchmax::Node>::iterator currentNode = nodes.begin();
-			while(currentNode != nodes.end())
-			{
-				(*currentNode).updateResponses();
-				if(!(*currentNode).idle())
-				{
-					allNodesEntirelyIdle = false;
-					if(waitedTime > (Settings::timeLimit * NUMBER_OF_EXAMPLES_TO_SOLVE))
-					{
-						BENCHMAX_LOG_INFO("benchmax", "Waiting for call...");
-						(*currentNode).sshConnection().logActiveRemoteCalls();
-						waitedTime = 0;
-					}
-					break;
-				}
-				++currentNode;
-			}
-			sleep(1);
-			++waitedTime;
-		}
-	}
-	void downloadFiles() {
-		for(std::vector<benchmax::Node>::iterator currentNode = nodes.begin(); currentNode != nodes.end(); ++currentNode)
-		{
-			for(std::vector<std::string>::const_iterator jobId = (*currentNode).jobIds().begin(); jobId != (*currentNode).jobIds().end(); ++jobId)
-			{
-				std::stringstream out;
-				out << *jobId;
-				(*currentNode).downloadFile(
-				Settings::RemoteOutputDirectory + "stats_" + *jobId + ".xml", Settings::outputDir + "stats_" + *jobId + ".xml");
-				if(Settings::ValidationTool != nullptr)
-				{
-					fs::path newloc = fs::path(Settings::WrongResultPath);
-					if(!fs::is_directory(newloc))
-					{
-						fs::create_directories(newloc);
-					}
-					(*currentNode).downloadFile(
-					Settings::RemoteOutputDirectory + "wrong_results_" + *jobId + ".tgz",
-					Settings::WrongResultPath + "wrong_results_" + *jobId + ".tgz");
-				}
-				fs::path newloc = fs::path(Settings::outputDir + "benchmark_output/");
-				if(!fs::is_directory(newloc))
-				{
-					fs::create_directories(newloc);
-				}
-				(*currentNode).downloadFile(
-				Settings::RemoteOutputDirectory + "benchmark_" + *jobId + ".out",
-				Settings::outputDir + "benchmark_output/benchmark_" + *jobId + ".out");
-				//data->stats->addStat("stats_" + *jobId + ".xml");
-			}
+		while (!jobs.empty()) {
+#ifdef USE_STD_ASYNC
+			jobs.front().wait();
+#else
+			jobs.front().join();
+#endif
+			jobs.pop();
 		}
 	}
 };

@@ -1,25 +1,3 @@
-/*
- *  SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
- *
- * This file is part of SMT-RAT.
- *
- * SMT-RAT is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SMT-RAT is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
-
-
 /**
  * @file benchmax.cpp
  *
@@ -54,8 +32,6 @@
 
 #include "utils/regex.h"
 
-#include "carl/formula/Formula.h"
-
 using benchmax::Tool;
 using benchmax::Stats;
 using benchmax::Settings;
@@ -82,7 +58,7 @@ bool initApplication(int argc, char** argv) {
 	
 	carl::logging::logger().configure("stdout", std::cout);
 	carl::logging::logger().filter("stdout")
-		("benchmax", carl::logging::LogLevel::LVL_INFO)
+		("benchmax", carl::logging::LogLevel::LVL_DEBUG)
 		("benchmax.ssh", carl::logging::LogLevel::LVL_INFO)
 		("benchmax.benchmarks", carl::logging::LogLevel::LVL_INFO)
 	;
@@ -172,9 +148,6 @@ int main(int argc, char** argv)
 		return 0;
 	}
 	
-	benchmax::Stats* _stats = new Stats(Settings::outputDir + Settings::StatsXMLFile,
-					   (!Settings::nodes.empty() ? Stats::STATS_COLLECTION : Stats::BENCHMARK_RESULT));
-	
 	std::vector<Tool*> tools;
 	loadTools(tools);
 	std::vector<benchmax::BenchmarkSet> benchmarks;
@@ -198,11 +171,6 @@ int main(int argc, char** argv)
 		// libssh is needed.
 		benchmax::SSHBackend backend;
 		backend.run(tools, benchmarks);
-		
-		_stats->createStatsCompose(Settings::outputDir + "statsCompose.xsl");
-		Stats::callComposeProcessor();
-		// Necessary output message (DO NOT REMOVE IT)
-		std::cout << Settings::ExitMessage << std::endl;
 	} else {
 		BENCHMAX_LOG_ERROR("benchmax", "Invalid backend \"" << Settings::backend << "\".");
 	}

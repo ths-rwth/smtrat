@@ -1,23 +1,3 @@
-/*
- *  SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
- *
- * This file is part of SMT-RAT.
- *
- * SMT-RAT is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SMT-RAT is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
 /**
  * @file Tableau.hpp
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
@@ -380,7 +360,7 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
-        Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, const typename Poly::PolyType& poly, T2 leading_coeff, bool isInteger )
+        Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, const typename Poly::PolyType& poly, const T2& leading_coeff, bool isInteger )
         {
             std::list<std::pair<Variable<T1,T2>*,T2>> nonbasicvar_coefficient = std::list<std::pair<Variable<T1,T2>*,T2>>();            
             auto iter = nonbasicindex_coefficient.begin();
@@ -2105,7 +2085,7 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
-        ConstraintT Tableau<Settings,T1,T2>::isDefining( size_t row_index, std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, T2 lcm, T2& max_value ) const
+        ConstraintT Tableau<Settings,T1,T2>::isDefining( size_t row_index, std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, T2& lcm, T2& max_value ) const
         {
             const Variable<T1, T2>& basic_var = *mRows.at(row_index);
             basic_var.expression();
@@ -2248,7 +2228,7 @@ namespace smtrat
             Iterator column_iterator = Iterator( (*mColumns.at(column_index)).startEntry(), mpEntries );   
             while(true)
             {
-                (*mpEntries)[column_iterator.entryID()].rContent() = (-1)*(((*mpEntries)[column_iterator.entryID()].rContent()).content());
+                (*mpEntries)[column_iterator.entryID()].rContent() = T2(-1)*(*mpEntries)[column_iterator.entryID()].content();
                 if( !column_iterator.vEnd( false ) )
                 {
                     column_iterator.vMove( false );            
@@ -2261,7 +2241,7 @@ namespace smtrat
         }
 
         template<class Settings, typename T1, typename T2>
-        void Tableau<Settings,T1,T2>::addColumns( size_t columnA_index, size_t columnB_index, T2 multiple )
+        void Tableau<Settings,T1,T2>::addColumns( size_t columnA_index, size_t columnB_index, const T2& multiple )
         {
             #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
             std::cout << __func__ << "( " << columnA_index << ", " << columnB_index << ", " << multiple << " )" << std::endl;
@@ -2280,7 +2260,7 @@ namespace smtrat
             EntryID ID1_to_be_Fixed,ID2_to_be_Fixed;            
             if( (*(*columnA_iterator).rowVar()).position() == (*(*columnB_iterator).rowVar()).position() )
             {
-                T2 content = T2(((*columnA_iterator).content().content())+((multiple.content())*((*columnB_iterator).content().content())));  
+                T2 content = T2((*columnA_iterator).content()+T2(multiple*(*columnB_iterator).content()));  
                 if(content == 0)
                 {
                     EntryID to_delete = columnA_iterator.entryID();
@@ -2301,7 +2281,7 @@ namespace smtrat
                    * A new entry has to be created under the position of columnA_iterator
                    * and sideways to column_B_iterator.
                    */   
-                  EntryID entryID = newTableauEntry(T2(((multiple.content())*((*columnB_iterator).content().content()))));
+                  EntryID entryID = newTableauEntry(T2(multiple*(*columnB_iterator).content()));
                   TableauEntry<T1,T2>& entry = (*mpEntries)[entryID];
                   TableauEntry<T1,T2>& entry_down = (*mpEntries)[(*columnA_iterator).vNext( true )];   
                   EntryID down = (*columnA_iterator).vNext( true );
@@ -2381,7 +2361,7 @@ namespace smtrat
                    * A new entry has to be created above the position of columnA_iterator
                    * and sideways to column_B_iterator.
                    */                   
-                  EntryID entryID = newTableauEntry(T2(((multiple.content())*((*columnB_iterator).content().content()))));
+                  EntryID entryID = newTableauEntry(T2(multiple*(*columnB_iterator).content()));
                   TableauEntry<T1,T2>& entry = (*mpEntries)[entryID];
                   entry.setColumnVar((*columnA_iterator).columnVar());
                   entry.setRowVar((*columnB_iterator).rowVar());
@@ -2459,13 +2439,13 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2> 
-        void Tableau<Settings,T1,T2>::multiplyRow( size_t row_index,T2 multiple )
+        void Tableau<Settings,T1,T2>::multiplyRow( size_t row_index, const T2& _multiple )
         {            
             const Variable<T1, T2>& basic_var = *mRows.at(row_index);
             Iterator row_iterator = Iterator( basic_var.position(), mpEntries);
             while(true)
             { 
-                T2 content = T2(((*row_iterator).content().content())*(multiple.content()));
+                T2 content = (*row_iterator).content()*_multiple;
                 (*row_iterator).rContent() = content;
                 if( !row_iterator.hEnd( false ) )
                 {
@@ -2651,9 +2631,9 @@ namespace smtrat
                     std::cout << "floor_value = " << floor_value << std::endl;
                     std::cout << "added_content = " << added_content << std::endl;
                     std::cout << "elim_content = " << elim_content << std::endl;
-                    std::cout << "T2((-1)*floor_value.content()*added_content.content()) = " << T2((-1)*floor_value.content()*added_content.content()) << std::endl;
+                    std::cout << "T2((-1)*floor_value*added_content) = " << T2((-1)*floor_value*added_content) << std::endl;
                     #endif
-                    addColumns(elim_pos,added_pos,T2((-1)*floor_value.content()));
+                    addColumns(elim_pos,added_pos,T2((-1)*floor_value));
                     #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                     std::cout << "Add " << (added_pos+1) << ". column to " << (elim_pos+1) << ". column:" << std::endl;
                     print( LAST_ENTRY_ID, std::cout, "", true, true );
@@ -2733,7 +2713,7 @@ namespace smtrat
                         std::cout << diagonals.at(i) << std::endl;
                         #endif
                         T2 floor_value = T2( (carl::floor( (Rational)(carl::abs( (*row_iterator).content() / added_content) ) ) ) );
-                        if( carl::mod( carl::abs( (*row_iterator).content() ) , added_content ) != 0 )
+                        if( carl::mod( carl::toInt<typename carl::IntegralType<T2>::type>(carl::abs( (*row_iterator).content() )), carl::toInt<typename carl::IntegralType<T2>::type>(added_content) ) != 0 )
                         {
                             ++floor_value;
                         }

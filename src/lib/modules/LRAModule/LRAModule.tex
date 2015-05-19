@@ -1,4 +1,4 @@
-Implements the SMT compliant \emph{Simplex} method presented in \cite{}.
+Implements the SMT compliant \emph{Simplex} method presented in \cite{DM06}.
 Hence, this module can decide the consistency of any conjunction
 consisting only of linear real arithmetic constraints. Furthermore,
 it might also find the consistency of a conjunction of constraints
@@ -11,9 +11,9 @@ and the found solution does not satisfy the non-linear constraints. Note that th
  position before an \lraModuleClass.
 
 \paragraph{Integer arithmetic} In order to find integer solutions, this
-module applies, depending on which settings are used, branch-and-bound~\cite{},
-the construction of Gomory cuts~\cite{} and the generation of cuts from 
-proofs~\cite{}. It is also supported to combine these approaches. Note that
+module applies, depending on which settings are used, branch-and-bound,
+the construction of Gomory cuts and the generation of cuts from 
+proofs~\cite{DilligDA11}. It is also supported to combine these approaches. Note that
 for all of them the \lraModuleClass needs to communicate a lemma/tautology to a
 preceding \satModuleClass and the strategy needs for this reason to define a 
 \satModuleClass at any position before an \lraModuleClass.

@@ -12,9 +12,6 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 include_directories( ${carl_INCLUDE_DIR} )
-if(ReallyNull_FOUND)
-    include_directories( ${ReallyNull_INCLUDE_DIR} )
-endif()
 
 # Core library
 # # # # # # # # # # #

@@ -1,23 +1,3 @@
-/*
- * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2013 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
- *
- * This file is part of SMT-RAT.
- *
- * SMT-RAT is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SMT-RAT is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SMT-RAT. If not, see <http://www.gnu.org/licenses/>.
- *
- */
 /**
  * @file ModuleInput.cpp
  *
@@ -139,6 +119,7 @@ namespace smtrat
     ModuleInput::iterator ModuleInput::erase( iterator _formula )
     {
         assert( _formula != end() );
+        mPropertiesUpdated = false;
         mFormulaPositionMap.erase( _formula->formula() );
         return super::erase( _formula );
     }
@@ -204,7 +185,7 @@ namespace smtrat
         return false;
     }
     
-    void ModuleInput::updateProperties() const
+    void ModuleInput::updateProperties()
     {
         mProperties = Condition();
         mProperties |= PROP_IS_PURE_CONJUNCTION | PROP_IS_IN_CNF | PROP_IS_IN_NNF;
@@ -223,6 +204,7 @@ namespace smtrat
                 mProperties &= ~PROP_IS_IN_NNF;
             mProperties |= (subFormulaConds & WEAK_CONDITIONS);
         }
+        mPropertiesUpdated = true;
     }
     
     pair<ModuleInput::iterator,bool> ModuleInput::add( const FormulaT& _formula, const FormulaT& _origin )
@@ -230,6 +212,7 @@ namespace smtrat
         iterator iter = find( _formula );
         if( iter == end() )
         {
+            mPropertiesUpdated = false;
             std::shared_ptr<std::vector<FormulaT>> vecOfOrigs = std::shared_ptr<std::vector<FormulaT>>( new std::vector<FormulaT>() );
             vecOfOrigs->push_back( _origin );
             emplace_back( _formula, std::move( vecOfOrigs ) );
@@ -253,6 +236,7 @@ namespace smtrat
         iterator iter = find( _formula );
         if( iter == end() )
         {
+            mPropertiesUpdated = false;
             emplace_back( _formula, _origins );
             iterator pos = --end();
             mFormulaPositionMap.insert( make_pair( _formula, pos ) );

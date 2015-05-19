@@ -1,24 +1,3 @@
-/*
- * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2013 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
- *
- * This file is part of SMT-RAT.
- *
- * SMT-RAT is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SMT-RAT is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SMT-RAT. If not, see <http://www.gnu.org/licenses/>.
- *
- */
-
 import edu.uci.ics.jung.visualization.VisualizationViewer;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -54,6 +33,10 @@ import javax.swing.text.Caret;
 import javax.swing.text.DefaultHighlighter.DefaultHighlightPainter;
 import javax.swing.text.Highlighter.Highlight;
 import javax.swing.text.PlainDocument;
+import java.io.File;
+import java.io.FileReader;
+import java.io.BufferedReader;
+import java.io.IOException;
 
 /**
  * @file EditStrategyGraphDialog.java
@@ -63,7 +46,7 @@ import javax.swing.text.PlainDocument;
  * @version 2012-11-19
  */
 public class EditStrategyGraphDialog extends JDialog
-{   
+{
     public static final String DELETE_EDGE = "Delete";
     public static final String DELETE_VERTEX = "Delete";
     public static final String ADD_EDGE = "Add Condition";
@@ -126,6 +109,7 @@ public class EditStrategyGraphDialog extends JDialog
         getRootPane().getInputMap( JComponent.WHEN_IN_FOCUSED_WINDOW ).put( KeyStroke.getKeyStroke( KeyEvent.VK_F1, 0 ), "Instructions" );
         getRootPane().getActionMap().put( "Instructions", instructionsAction );
         AddPropositionAction addPropositionAction = new AddPropositionAction();
+        ModuleInfoAction moduleInfoAction = new ModuleInfoAction();
         
         conditionCaretListener = new ConditionCaretListener();
         ConditionFocusListener conditionFocusListener = new ConditionFocusListener();
@@ -165,13 +149,22 @@ public class EditStrategyGraphDialog extends JDialog
             getContentPane().add( moduleLabel );
 
             gridBagConstraints.insets = nonLabelInsets;
+            JPanel modulePanel = new JPanel();
+            modulePanel.setLayout( new BoxLayout( modulePanel, BoxLayout.LINE_AXIS ) );
             moduleComboBox = new JComboBox( IOTools.modules.toArray() );
             if( type==DialogType.EditVertex )
             {
                 moduleComboBox.setSelectedItem( module );
             }
             gridBagLayout.setConstraints( moduleComboBox, gridBagConstraints );
-            getContentPane().add( moduleComboBox );
+            modulePanel.add( moduleComboBox );
+            modulePanel.add( Box.createRigidArea( new Dimension( 5, 0 ) ) );
+            JButton moduleInfoButton = new JButton( "?" );
+            moduleInfoButton.addActionListener( moduleInfoAction );
+            moduleInfoButton.setMnemonic( KeyEvent.VK_I );
+            modulePanel.add( moduleInfoButton );
+            gridBagLayout.setConstraints( modulePanel, gridBagConstraints );
+            getContentPane().add( modulePanel );
         }
 
         if( type==DialogType.AddEdge || type==DialogType.AddVertexAndEdge || type==DialogType.EditEdge )
@@ -620,6 +613,117 @@ public class EditStrategyGraphDialog extends JDialog
             catch( Exception ex )
             {
                 JOptionPane.showMessageDialog( EditStrategyGraphDialog.this, ex.toString(), "Error", JOptionPane.ERROR_MESSAGE );
+            }
+        }
+    }
+
+    private class ModuleInfoAction extends AbstractAction
+    {
+        @Override
+        public void actionPerformed( ActionEvent ae )
+        {
+            int textAreaWidth = 50;
+            int textWidth = (textAreaWidth*3)/2;
+            String moduleName = moduleComboBox.getSelectedItem().toString() + new String( "Module" );
+            Config config = new Config();
+            File file = new File( config.getModulesPath() + File.separator + moduleName + File.separator + moduleName + ".tex" );
+            try ( BufferedReader readFile = new BufferedReader( new FileReader( file ) ) )
+            {
+                String line;
+                StringBuilder ret = new StringBuilder();
+                while( (line = readFile.readLine())!=null )
+                {
+                    ret.append( line );
+                    ret.append(" ");
+                }
+                JTextArea textArea = new JTextArea(20, textAreaWidth);
+                String infoText = ret.toString().replace( "~", " " );;
+                infoText = infoText.replaceAll( "\\$", "" );
+                infoText = infoText.replaceAll( "\\.", "\\. " );
+                infoText = infoText.replaceAll( "\\,", "\\, " );
+                infoText = infoText.replaceAll( "\\;", "\\; " );
+                infoText = infoText.replaceAll( "\\:", "\\: " );
+                while( !infoText.equals( infoText.replaceAll( "  ", " " ) ) )
+                {
+                    infoText = infoText.replaceAll( "  ", " " );
+                }
+                String paragraphString = new String("paragraph");
+                StringBuilder sb = new StringBuilder();
+                StringBuilder sbForLastWord = new StringBuilder();
+                boolean firstWordInLineSet = false;
+                int j = 0;
+                boolean paragraph = false;
+                for( int i = 0; i < infoText.length(); i++ )
+                {
+                    j++;
+                    if( infoText.charAt(i) == ' ' )
+                    {
+                        if( !paragraph )
+                        {
+                            paragraph = sbForLastWord.toString().contains( paragraphString );
+                            if( paragraph )
+                            {
+                                j = 0;
+                            }
+                        }
+                        if( paragraph )
+                        {
+                            if( sbForLastWord.toString().contains( "}" ) )
+                            {
+                                sb.append("\n\n");
+                                sb.append( sbForLastWord.toString() );
+                                sbForLastWord.setLength( 0 );
+                                sb.append(":\n");
+                                j = 0;
+                                firstWordInLineSet = false;
+                                paragraph = false;
+                            }
+                            else
+                            {
+                                sbForLastWord.append(" ");
+                            }
+                        }
+                        else
+                        {
+                            if( firstWordInLineSet )
+                            {
+                                sb.append( " " );
+                            }
+                            else
+                            {
+                                firstWordInLineSet = true;
+                            }
+                            sb.append( sbForLastWord.toString() );
+                            sbForLastWord.setLength( 0 );
+                        }
+                    }
+                    else
+                    {
+                        sbForLastWord.append( infoText.charAt(i) );
+                    }
+                    if( j == textWidth )
+                    {
+                        j = 0;
+                        sb.append("\n");
+                        firstWordInLineSet = false;
+                    }
+                }
+                infoText = sb.toString();
+                infoText = infoText.replaceAll( "\\\\paragraph\\{(.+?)\\}", "$1" );
+                infoText = infoText.replaceAll( "\\{", "" );
+                infoText = infoText.replaceAll( "\\}", "" );
+                infoText = infoText.replaceAll( "\\\\cite", "" );
+                infoText = infoText.replaceAll( "\\\\emph", "" );
+                infoText = infoText.replaceAll( "\\\\", "" );
+                textArea.setText(infoText);
+                textArea.setEditable(false);
+                JScrollPane scrollPane = new JScrollPane(textArea);
+                String dialogName = new String( "Information to the " ) + moduleName;
+                JOptionPane.showMessageDialog(EditStrategyGraphDialog.this, scrollPane, dialogName, JOptionPane.INFORMATION_MESSAGE);
+            }
+            catch( IOException ex )
+            {
+                JOptionPane.showMessageDialog( gui, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE );
             }
         }
     }

@@ -6,7 +6,6 @@ includedir=@CMAKE_INSTALL_PREFIX@/include/smt-rat
 Name: @PROJECT_FULLNAME@
 Description: @PROJECT_DESCRIPTION@
 Version: @PROJECT_VERSION@
-Requires: ginacra >= 0.5.0
 Libs: -L@DOLLAR@{libdir} -l@PROJECT_NAME@
 Cflags: -I@DOLLAR@{includedir}
 

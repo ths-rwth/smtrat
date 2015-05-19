@@ -19,9 +19,9 @@
 namespace smtrat 
 {
     template<typename Settings>
-    class GroebnerModule;
+    class GBModule;
     /**
-     * Datastructure for the GroebnerModule.
+     * Datastructure for the GBModule.
      * A table of all inequalities and how they are reduced.
      * @author Sebastian Junges
      */
@@ -44,8 +44,8 @@ namespace smtrat
         Rows mReducedInequalities;
         /// The actual number of backtrackpoints
         unsigned mBtnumber;
-        /// A pointer to the GroebnerModule which uses this table.
-        GroebnerModule<Settings>* mModule;
+        /// A pointer to the GBModule which uses this table.
+        GBModule<Settings>* mModule;
 
         typename Rows::iterator mNewConstraints;
 
@@ -53,7 +53,7 @@ namespace smtrat
         unsigned mLastRestart;
 
     public:
-        InequalitiesTable( GroebnerModule<Settings>* module );
+        InequalitiesTable( GBModule<Settings>* module );
 
         typename Rows::iterator InsertReceivedFormula( ModuleInput::const_iterator received );
 
@@ -77,7 +77,7 @@ namespace smtrat
 
     private:
         #ifdef SMTRAT_DEVOPTION_Statistics
-        GroebnerModuleStats* mStats;
+        GBModuleStats* mStats;
         #endif //SMTRAT_DEVOPTION_Statistics
     };
 }
