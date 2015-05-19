@@ -22,7 +22,11 @@ namespace smtrat
     {
 		private:
 			// If anything that needs variable bounds is active, we shall collect the bounds.
-			static constexpr bool collectBounds = Settings::checkBounds;
+#ifdef __VS
+			static const bool collectBounds = Settings::checkBounds;
+#else
+            static constexpr bool collectBounds = Settings::checkBounds;
+#endif
         protected:
 			vb::VariableBounds<FormulaT> varbounds;
 			carl::FormulaVisitor<FormulaT> visitor;
