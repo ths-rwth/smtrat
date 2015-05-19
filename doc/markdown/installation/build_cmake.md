@@ -8,7 +8,7 @@ To simplify the building process on Unix, we suggest using the GUI for [CMake](w
 We suggest initiating this procedure from a separate build directory, called 'out-of-source' building. 
 This keeps the source directory free from files created during the building process.
 
-CMake Options for building CArL.
+CMake Options for building SMT-RAT.
 ------------
 
 Run `ccmake` to obtain a list of all available options or change them.
@@ -22,7 +22,7 @@ Using `[t]`, you can enable the _advanced mode_ that shows all options. Most of 
 ### General 
 
 - *BUILD_STATIC* [ON, OFF] <br>
-  If set to *ON*, carl is built as shared and static library, otherwise only as shared library.
+  If set to *ON*, SMT-RAT is built as static library, otherwise only as shared library.
 
 - *CMAKE_BUILD_TYPE* [Release, Debug]
   - *Release*
@@ -33,18 +33,14 @@ Using `[t]`, you can enable the _advanced mode_ that shows all options. Most of 
   - `/usr/bin/g++`: Uses `g++`.
   - `/usr/bin/clang++`: Uses `clang`.
 
-- *USE_COTIRE* [ON, OFF] <br>
-  If set to *ON*, `cotire` is used to produce precompiled headers. This can reduce the compile time significantly.
-
-
 ### Debugging
 
 - *DEVELOPER* <br>
-  Enables additional compiler warnings.
+  Enables additional compiler warnings and sets the build type to *Debug*.
 
 - *LOGGING* [ON, OFF] <br>
   Setting *LOGGING* to *OFF* disables all logging output. 
-  It is recommended if the performance should be maximized, but notice that this also prevents important warnings and error messages to be generated.
+  It is recommended if the performance should be maximized, but this also prevents important warnings and error messages to be generated.
 
 - *LOGGING_CARL* [ON, OFF] <br>
   Switches between the CArL logging library (*ON*) and simply logging to `std::cout` and `std::cerr` (*OFF*).
@@ -56,7 +52,7 @@ CMake Targets
 There are a few important targets in the CArL CMakeLists:
 
 - `doc`: Builds the doxygen documentation.
-- `lib_carl`: Builds the shared library.
-- `lib_carl_static`: Builds the static library.
-- `runXTests`: Builds the tests for the `X` module.
-- `test`: Build and run all tests.
+- `manual`: Builds the current version of the manual.
+- `lib_smtrat`: Builds the SMT-RAT library.
+- `smtrat`: Builds the executable SMT solver.
+- `delta`: Builds the delta debugger.
