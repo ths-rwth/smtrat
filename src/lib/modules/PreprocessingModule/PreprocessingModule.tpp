@@ -86,17 +86,17 @@ namespace smtrat {
 			SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Received        " << formula);
 			if (Settings::removeFactors) {
 				// Remove redundant or obsolete factors of polynomials.
-				formula = visitor.visit(formula, removeFactorsFunction);
+				formula = visitor.visitResult(formula, removeFactorsFunction);
 			}
 			SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Removed factors " << formula);
 			if (Settings::checkBounds) {
 				// Check if bounds make constraints vanish.
-				formula = visitor.visit(formula, checkBoundsFunction);
+				formula = visitor.visitResult(formula, checkBoundsFunction);
 			}
 			SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Checked bounds  " << formula);
 			if (Settings::splitSOS) {
 				// Check if bounds make constraints vanish.
-				formula = visitor.visit(formula, splitSOSFunction);
+				formula = visitor.visitResult(formula, splitSOSFunction);
 			}
 			SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Split sum-of-square decompositions  " << formula);
 			
