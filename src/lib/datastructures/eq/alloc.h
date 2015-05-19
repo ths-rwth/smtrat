@@ -53,14 +53,14 @@ namespace smtrat {
 				assert((1u<<mSizeShift) >= sizeof(T));
 				assert((1u<<mSizeShift) >= sizeof(void*));
 
-				if((mPages[0] = std::malloc(first_page_size << mSizeShift)) == nullptr) {
+				if((mPages[0] = malloc(first_page_size << mSizeShift)) == nullptr) {
 					throw std::bad_alloc();
 				}
 			}
 
 			~freelist() {
 				for(std::size_t i = 0; i < mPageCount; ++i) {
-					std::free(mPages[i]);
+					free(mPages[i]);
 				}
 			}
 
@@ -113,7 +113,7 @@ namespace smtrat {
 				 * If there is no next page, allocate a new page with malloc.
 				 * This page has twice the space of the previous page.
 				 */
-				void* newPage = std::malloc((first_page_size << mCurrentPage) << mSizeShift);
+				void* newPage = malloc((first_page_size << mCurrentPage) << mSizeShift);
 				if(newPage == nullptr) {
 					--mCurrentPage;
 					throw std::bad_alloc();
@@ -173,14 +173,14 @@ namespace smtrat {
 				mPageCount(1),
 				mCurrentPageFreeFrom(0)
 			{
-				if((mPages[0] = std::malloc(first_page_size << ChunkSizeShift)) == nullptr) {
+				if((mPages[0] = malloc(first_page_size << ChunkSizeShift)) == nullptr) {
 					throw std::bad_alloc();
 				}
 			}
 
 			~fixedsize_freelist() {
 				for(std::size_t i = 0; i < mPageCount; ++i) {
-					std::free(mPages[i]);
+					free(mPages[i]);
 				}
 			}
 
@@ -226,7 +226,7 @@ namespace smtrat {
 				 * If there is no next page, allocate a new page with malloc.
 				 * This page has twice the space of the previous page.
 				 */
-				void* newPage = std::malloc((first_page_size << mCurrentPage) << ChunkSizeShift);
+				void* newPage = malloc((first_page_size << mCurrentPage) << ChunkSizeShift);
 				if(newPage == nullptr) {
 					--mCurrentPage;
 					throw std::bad_alloc();
@@ -380,7 +380,7 @@ namespace smtrat {
 			dynarray_allocator() {}
 			~dynarray_allocator() {
 				for(auto &s : mStubs) {
-					std::free(s.mBuffer);
+					free(s.mBuffer);
 				}
 			}
 
@@ -404,7 +404,7 @@ namespace smtrat {
 					capacity = mStubs.back().mCapacity;
 					mStubs.pop_back();
 				} else {
-					buffer = static_cast<T*>(std::malloc(64 * sizeof(T)));
+					buffer = static_cast<T*>(malloc(64 * sizeof(T)));
 					capacity = 64;
 				}
 			}
@@ -450,7 +450,7 @@ namespace smtrat {
 			{}
 
 			dynarray(std::size_t initialCap) :
-				mPointer(static_cast<T*>(std::malloc(initialCap * sizeof(T)))),
+				mPointer(static_cast<T*>(malloc(initialCap * sizeof(T)))),
 				mSize(0),
 				mCapacity(initialCap)
 			{
@@ -608,16 +608,16 @@ namespace smtrat {
 
 			void P_realloc(std::size_t newCap) {
 				if(std::is_trivial<T>::value) {
-					mPointer = static_cast<T*>(std::realloc(mPointer, newCap * sizeof(T)));
+					mPointer = static_cast<T*>(realloc(mPointer, newCap * sizeof(T)));
 				} else {
-					T* ptr = static_cast<T*>(std::malloc(newCap * sizeof(T)));
+					T* ptr = static_cast<T*>(malloc(newCap * sizeof(T)));
 
 					for(std::size_t i = 0; i < mSize; ++i) {
 						new (&ptr[i]) T(std::move(mPointer[i]));
 						mPointer[i].~T();
 					}
 
-					std::free(mPointer);
+					free(mPointer);
 					mPointer = ptr;
 				}
 
