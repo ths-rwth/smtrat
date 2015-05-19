@@ -30,7 +30,7 @@ cmake_minimum_required (VERSION 2.8)
 project(smtrat CXX)
 
 set(PROJECT_FULLNAME "SMT-RAT")
-set(PROJECT_DESCRIPTION "Satisfiability-Modulo-Theories Real Algebra Toolbox")
+set(PROJECT_DESCRIPTION "Toolbox for Strategic and Parallel Satisfiability-Modulo-Theories Solving")
 set(smtrat_MAJORVERSION 2)
 set(smtrat_MINORVERSION 0)
 set(smtrat_MAINTENANCEVERSION 0)
