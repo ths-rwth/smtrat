@@ -180,7 +180,7 @@ namespace smtrat
 			}
 		}
 
-		return std::make_pair(mEQHelper.isConsistent(), stable);
+		return std::make_pair(mEQHelper.check(), stable);
 	}
 
 	template<class Settings>

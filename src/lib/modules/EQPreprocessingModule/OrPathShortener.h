@@ -77,7 +77,7 @@ namespace smtrat {
 					}
 
 					if(!mFacts.isAsserted(formula)) {
-						mFacts.assertSubformula(formula);
+						mFacts.add(formula);
 						mAsserted.push_back(formula);
 					}
 				}
@@ -122,7 +122,7 @@ namespace smtrat {
 					}
 
 					for(FormulaT& f : mAsserted) {
-						mFacts.removeSubformula(f);
+						mFacts.remove(f);
 					}
 					mAsserted.clear();
 				}

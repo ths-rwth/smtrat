@@ -24,7 +24,7 @@ namespace smtrat {
 
 		private:
 			void P_handle_arg(const carl::UEquality::Arg& arg, bool isUF) {
-				static const carl::Sort BOOL_SORT = carl::SortManager::getInstance().interpretedSort(carl::VariableType::VT_BOOL);
+				static const carl::Sort BOOL_SORT = carl::SortManager::getInstance().getInterpreted(carl::VariableType::VT_BOOL);
 
 				if(isUF) {
 					for(const carl::UVariable& var : boost::get<carl::UFInstance>(arg).args()) {
