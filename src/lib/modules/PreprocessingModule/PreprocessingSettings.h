@@ -12,19 +12,33 @@
 namespace smtrat 
 {
 struct PreprocessingSettings {
+#ifdef __VS
 	/**
 	 * Enables removing of redundant or obsolete factors.
 	 */
-	static constexpr bool removeFactors = true;
+	static const bool removeFactors = true;
 	/**
 	 * Enables removing of constraints that vanish within the variable bounds.
 	 */
-	static constexpr bool checkBounds = true;
+	static const bool checkBounds = true;
 	/**
 	 * Enables removing of constraints that vanish within the variable bounds.
 	 */
-	static constexpr bool splitSOS = true;
-	
+	static const bool splitSOS = true;
+#else
+    /**
+    * Enables removing of redundant or obsolete factors.
+    */
+    static constexpr bool removeFactors = true;
+    /**
+    * Enables removing of constraints that vanish within the variable bounds.
+    */
+    static constexpr bool checkBounds = true;
+    /**
+    * Enables removing of constraints that vanish within the variable bounds.
+    */
+    static constexpr bool splitSOS = true;
+#endif
 	static const bool dummy;
 };
 }
