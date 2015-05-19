@@ -1,0 +1,352 @@
+/*
+ * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
+ * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
+ *
+ * This file is part of SMT-RAT.
+ *
+ * SMT-RAT is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SMT-RAT is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+/**
+ * @file EQPreprocessingModule.tpp
+ * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ *
+ * @version 2014-12-05
+ * Created on 2014-12-05.
+ */
+
+#include "EQPreprocessingModule.h"
+
+namespace smtrat
+{
+	/**
+	 * Constructors.
+	 */
+	template<class Settings>
+		EQPreprocessingModule<Settings>::EQPreprocessingModule(ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager) :
+			Module(_type, _formula, _conditionals, _manager),
+			mEQHelper(MT_EQModule),
+			mBoolRewriter(nullptr)
+#ifdef SMTRAT_DEVOPTION_Statistics
+			,mStatistics(new EQPreprocessingStatistics())
+#endif
+	{}
+
+	/**
+	 * Destructor.
+	 */
+	template<class Settings>
+		EQPreprocessingModule<Settings>::~EQPreprocessingModule()
+	{
+		delete mBoolRewriter;
+	}
+
+	template<class Settings>
+		void EQPreprocessingModule<Settings>::P_rewrite_congruences()
+	{
+		if(Settings::rewriteFunctionInstances) {
+			for(old_to_new_iter i = mOldToNew.begin(), e = mOldToNew.end(); i != e; ++i) {
+				i->second = mRewriter.apply(i->second);
+			}
+
+#ifdef SMTRAT_DEVOPTION_Statistics
+			mStatistics->countCongruencesAdded(mRewriter.get().congruences().size());
+#endif
+
+			for(const FormulaT& cong : mRewriter.get().congruences()) {
+				mOldToNew.emplace(FormulaT(carl::TRUE), cong);
+			}
+		}
+	}
+
+	template<class Settings> template<typename Rewriter, typename... Args>
+		bool EQPreprocessingModule<Settings>::apply_rewriting(Args&&... args)
+	{
+		bool changed = false;
+
+		for(old_to_new_iter i = mOldToNew.begin(), e = mOldToNew.end(); i != e; ++i) {
+			changed |= apply_to_formula<Rewriter>(i, std::forward<Args>(args)...);
+		}
+
+		return changed;
+	}
+
+	template<class Settings> template<typename Rewriter, typename... Args>
+		bool EQPreprocessingModule<Settings>::apply_to_formula(old_to_new_iter formula, Args&&... args)
+	{
+		bool changed = false;
+
+		formula_rewriter<Rewriter> rewriter(std::forward<Args>(args)...);
+		FormulaT result(rewriter.apply(formula->second));
+
+		if(!(result == formula->second)) {
+			changed = true;
+			formula->second = result;
+		}
+
+		return changed;
+	}
+
+	template<class Settings>
+		void EQPreprocessingModule<Settings>::P_NNF_transform()
+	{
+		if(Settings::performNNF || Settings::rewriteBooleanDomainConstraints) {
+			apply_rewriting<NNFPreparation>();
+			apply_rewriting<NNFRewriter>();
+			apply_rewriting<JunctorMerger>();
+		}
+	}
+
+	template<class Settings>
+		void EQPreprocessingModule<Settings>::P_rewrite_bool_domain()
+	{
+		if(Settings::rewriteBooleanDomainConstraints) {
+			CollectBoolsInUEQs collector;
+
+			for(old_to_new_iter i = mOldToNew.begin(), e = mOldToNew.end(); i != e; ++i) {
+				collector.apply(i->second);
+			}
+
+			if(collector.foundBoolInUEQ()) {
+				if(mBoolRewriter == nullptr) {
+					mBoolRewriter = new formula_rewriter<BoolUEQRewriter>(std::move(collector));
+				} else {
+					mBoolRewriter->get().setCollected(std::move(collector));
+				}
+
+				for(old_to_new_iter i = mOldToNew.begin(), e = mOldToNew.end(); i != e; ++i) {
+					i->second = mBoolRewriter->apply(i->second);
+				}
+
+				mBoolRewriter->get().addFormulas(mOldToNew);
+				mBoolRewriter->get().addDomainConstraints(mOldToNew);
+			}
+		}
+	}
+
+	template<class Settings>
+		std::pair<bool,bool> EQPreprocessingModule<Settings>::P_collect_fact(const FormulaT& origin, const FormulaT& fact, bool negated)
+	{
+		std::unordered_map<FormulaT, bool>::iterator iter;
+		bool inserted;
+
+		std::tie(iter, inserted) = mFacts.emplace(fact, !negated);
+		if(inserted) {
+			FormulaT realFact(fact.uequality().lhs(), fact.uequality().rhs(), negated);
+			mFactOrigins.emplace(realFact, origin);
+			return std::make_pair(mEQHelper.assertSubformula(realFact), false);
+		} else {
+			if(negated == iter->second) {
+				FormulaT realFact(fact.uequality().lhs(), fact.uequality().rhs(), negated);
+				mFactOrigins.emplace(realFact, origin);
+				bool result = mEQHelper.assertSubformula(realFact);
+				assert(!result); (void)result;
+				return std::make_pair(false, false);
+			}
+		}
+
+		return std::make_pair(true, true);
+	}
+
+	template<class Settings>
+		std::pair<bool,bool> EQPreprocessingModule<Settings>::P_collect_facts()
+	{
+		bool stable = true;
+
+		for(auto&& value : mOldToNew) {
+			if(value.second.getType() == carl::UEQ) {
+				std::pair<bool,bool> r = P_collect_fact(value.first, value.second, false);
+				if(!r.first) {
+					return std::make_pair(false,false);
+				}
+
+				stable &= r.second;
+			} else if(value.second.getType() == carl::NOT && value.second.subformula().getType() == carl::UEQ) {
+				std::pair<bool,bool> r = P_collect_fact(value.first, value.second.subformula(), true);
+				if(!r.first) {
+					return std::make_pair(false,false);
+				}
+
+				stable &= r.second;
+			} else if(value.second.getType() == carl::AND) {
+				for(const FormulaT& fact : value.second.subformulas()) {
+					if(fact.getType() == carl::UEQ) {
+						std::pair<bool,bool> r = P_collect_fact(value.first, fact, false);
+						if(!r.first) {
+							return std::make_pair(false,false);
+						}
+
+						stable &= r.second;
+					} else if(fact.getType() == carl::NOT && fact.subformula().getType() == carl::UEQ) {
+						std::pair<bool,bool> r = P_collect_fact(value.first, fact.subformula(), true);
+						if(!r.first) {
+							return std::make_pair(false,false);
+						}
+
+						stable &= r.second;
+					}
+				}
+			}
+		}
+
+		return std::make_pair(mEQHelper.isConsistent(), stable);
+	}
+
+	template<class Settings>
+		void EQPreprocessingModule<Settings>::P_do_preprocessing()
+	{
+		for(auto&& formula : rReceivedFormula()) {
+			mOldToNew.emplace(formula.formula(), formula.formula());
+		}
+
+		P_NNF_transform();
+		P_rewrite_bool_domain();
+		P_rewrite_congruences();
+	}
+
+	template<class Settings>
+		Answer EQPreprocessingModule<Settings>::isConsistent()
+	{
+		if(Settings::printFormulas) {
+			for(auto&& f : rReceivedFormula()) {
+				std::cout << f.formula() << std::endl;
+			}
+		}
+
+		// run the actual pre-processing that is independent of fact collection
+		P_do_preprocessing();
+
+		bool changed;
+
+		do {
+			bool consistent, stable;
+			std::tie(consistent, stable) = P_collect_facts();
+
+			// collect facts (literals that are always true/false)
+			if(!consistent) {
+				// The formula is unsat; use the infeasible subset from the helper module
+				assert(mEQHelper.infeasibleSubsets().size() == 1);
+				const FormulasT& infeasible = mEQHelper.infeasibleSubsets().front();
+				FormulasT constructInfeasible;
+
+				for(const FormulaT& formula : infeasible) {
+					assert(mFactOrigins.count(formula));
+					const FormulaT& orig = mFactOrigins.find(formula)->second;
+
+					if(orig.getType() != carl::TRUE) {
+						constructInfeasible.insert(orig);
+					}
+				}
+
+				mInfeasibleSubsets.emplace_back(std::move(constructInfeasible));
+				return foundAnswer(False);
+			}
+
+			changed = !stable;
+			if(apply_rewriting<OrPathShortener>(mEQHelper)) {
+				changed = true;
+				apply_rewriting<JunctorMerger>();
+			}
+
+			if(Settings::rewriteUsingFacts) {
+				if(apply_rewriting<ReplaceVariablesRewriter>(mFacts, mEQHelper)) {
+					changed = true;
+					apply_rewriting<JunctorMerger>();
+				}
+			}
+		} while(changed);
+
+		// go through the output of the pre-processing and pass it on
+		for(ModuleInput::const_iterator i = rReceivedFormula().begin(), e = rReceivedFormula().end(); i != e; ++i) {
+			if(!(i->formula() == FormulaT(carl::TRUE))) {
+				old_to_new_iter f = mOldToNew.find(i->formula());
+
+				if(f == mOldToNew.end() || f->first == f->second) {
+					addReceivedSubformulaToPassedFormula(i);
+				} else {
+					if(!(f->first == FormulaT(carl::TRUE))) {
+						addSubformulaToPassedFormula(f->second, f->first);
+					}
+				}
+			}
+		}
+
+		old_to_new_iter abegin, aend;
+
+		for(std::tie(abegin, aend) = mOldToNew.equal_range(FormulaT(carl::TRUE)); abegin != aend; ++abegin) {
+			addSubformulaToPassedFormula(abegin->second);
+		}
+
+		if(Settings::printFormulas) {
+			std::cout << "Passed formula: " << std::endl;
+			for(auto&& f : rPassedFormula()) {
+				std::cout << f.formula() << std::endl;
+			}
+		}
+
+		// Call backends.
+		Answer answer = runBackends();
+		if(answer == False) {
+			getInfeasibleSubsets();
+		}
+
+		return foundAnswer(answer);
+	}
+
+	template<typename Settings>
+		void EQPreprocessingModule<Settings>::P_update_model()
+	{
+		clearModel();
+
+		if(solverState() == True) {
+			getBackendsModel();
+
+			if(Settings::rewriteFunctionInstances) {
+				for(auto&& pair : mRewriter.get().UFItoVar()) {
+					const UFInstance& instance = pair.first;
+					const UVariable& helper = pair.second;
+
+					UFModel &ufModel = boost::get<UFModel>(mModel.emplace(instance.uninterpretedFunction(), UFModel(instance.uninterpretedFunction())).first->second);
+
+					std::vector<SortValue> args;
+					args.reserve(instance.args().size());
+					for(std::size_t i = 0, s = instance.args().size(); i < s; ++i) {
+						const UVariable& var = instance.args()[i];
+						typename decltype(mModel)::const_iterator model_iter = mModel.find(var());
+						
+						if(model_iter == mModel.end()) {
+							// there is no model value for the variable, because it does not occur outside of function instances.
+							// this should really look different in the module (like not including the index at all), but we can just assume that all the values are distinct.
+							args.push_back(newSortValue(var.domain()));
+						} else {
+							// use the model value of the variable
+							args.push_back(boost::get<SortValue>(model_iter->second));
+						}
+					}
+
+					Model::const_iterator modelItr = mModel.find(helper());
+					assert(modelItr != mModel.end());
+					ufModel.extend(std::move(args), boost::get<SortValue>(modelItr->second));
+					mModel.erase(modelItr);
+				}
+			}
+		}
+	}
+
+	template<typename Settings>
+		void EQPreprocessingModule<Settings>::updateModel() const
+	{
+		const_cast<EQPreprocessingModule<Settings>&>(*this).P_update_model();
+	}
+}
