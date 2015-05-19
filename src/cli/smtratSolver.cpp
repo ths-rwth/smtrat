@@ -112,7 +112,6 @@ public:
 			error() << "The logic has already been set!";
 		} else {
 			this->solver->rLogic() = logic;
-			error() << "Setting logic to " << logic;
 		}
 	}
 	unsigned getExitCode() const {
