@@ -131,7 +131,7 @@ public:
 		if (attr.key == "name" || attr.key == "authors" || attr.key == "version") error() << "The info :" << attr.key << " is read-only.";
 		else this->infos[attr.key] = attr.value;
 	}
-	virtual void setLogic(const std::string&) = 0;
+	virtual void setLogic(const smtrat::Logic&) = 0;
 	void setOption(const Attribute& option)  {
 		std::string key = option.key;
 		if (this->options.count(key) > 0) warn() << "overwriting option for :" << key;
