@@ -97,7 +97,7 @@ public:
 	}
 	void exit() {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(exit)");
-		///@todo this->mInputStream->setstate(std::ios::eofbit);
+		this->mInputStream->setstate(std::ios::eofbit);
 		callHandler(&InstructionHandler::exit);
 	}
 	void getAssertions() {
