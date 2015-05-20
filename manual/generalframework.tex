@@ -30,7 +30,7 @@ provides this and more features, such as lemma exchange, which will be explained
 \label{fig:frameworkb}
 \end{figure}
 
-Based on \carl's data structures and basic functions, a rich set of SMT compliant implementations of \supportedLogics procedures is provided by \smtrat. Each procedure is encapsulated in a \emph{module}, which fixes a common interface, and they can then be composed to a solver according to a user defined \emph{strategy}. A \emph{manager} maintains their allocation to \emph{solving tasks} according to the strategy and provides the API, including the parsing of an \smtlibfile.
+A \emph{module} fixes a common interface for the SMT compliant implementations of procedures to tackle the satisfiability question of the supported logics of \smtrat. They can then be composed to a solver according to a user defined \emph{strategy}. A \emph{manager} maintains their allocation to \emph{solving tasks} according to the strategy and provides the API, including the parsing of an \smtlibfile.
 
 \section{Modules}
 A module $m$ holds a set of formulas, called its \emph{set of received formulas} and denoted by $\Crcv(m)$. The main function of a module is \texttt{check(bool full)}, which either decides whether $\Crcv(m)$ is satisfiable or not, returning \SAT or \UNSAT, respectively, or returns \UNKNOWN. A set of formulas is semantically defined by their conjunction. If the function's argument \texttt{full} is set to \false, the underlying procedure of $m$ is allowed to omit hard obstacles during solving at the cost of returning \UNKNOWN in more cases. We can manipulate $\Crcv(m)$ by adding (removing) formulas $\varphi$ to (from) it with \texttt{add($\varphi$)} (\texttt{remove($\varphi$)}). Usually, $\Crcv(m)$ is only slightly changed between two consecutive \texttt{check} calls, hence, the solver's performance can be significantly improved if a module works incrementally and supports backtracking. In case $m$ determines the unsatisfiability of $\Crcv(m)$, it has to compute at least one preferably small \emph{infeasible subset} $\Cinf(m)\subseteq \Crcv(m)$. Moreover, a module can specify \emph{lemmas}, which are valid formulas. They encapsulate information which can be extracted from a module's internal state and propagated among other modules. Furthermore, a module itself can ask other modules for the satisfiability of its \emph{set of passed formulas} denoted by $\Cpass(m)$, if it invokes the procedure \texttt{runBackends(bool full)} (controlled by the manager). It thereby delegates work to modules that	 may be more suitable for the problem at hand. 
@@ -50,13 +50,12 @@ The heart of an SMT solver usually forms a SAT solver. In \smtrat, the module \s
 
 \section{Infeasible subsets and lemmas}
 \label{sec::infsubset_lemmas}
-Infeasible subsets and lemmas, which contain only formulas from 
-$\Cpass(\SATM)$, prune the Boolean search space and hence the number of theory calls. 
+Infeasible subsets and lemmas, which contain only formulas from
+$\Cpass(\SATM)$ of a preceding \SATM, prune its Boolean search space and hence the number of theory calls. 
 Smaller infeasible subsets are usually more advantageous, because they make larger cuts 
-in the search space. Lemmas containing new constraints we call
-\emph{inventive lemmas} (\emph{non-inventive} otherwise). They might enlarge the 
-Boolean search space, but they can reduce the complexity of later theory calls.
+in the search space. We call lemmas containing new constraints \emph{inventive lemmas} (\emph{non-inventive} otherwise). 
+They might enlarge the Boolean search space, but they can reduce the complexity of later theory calls.
 When using inventive lemmas, it is important to ensure that the set possible
 constraints introduced in such lemmas is finite for a given module and a given 
-input formula. Otherwise, the termination of this procedure can not be guaranteed.
-
+input formula. Otherwise, the termination of this procedure cannot be guaranteed. In general, any module might contribute lemmas 
+and all preceding modules in the solving hierarchy can directly involve them in their search for satisfiability.
