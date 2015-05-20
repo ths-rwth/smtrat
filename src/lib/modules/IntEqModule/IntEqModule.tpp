@@ -323,7 +323,7 @@ namespace smtrat
                         }
                         ++iter_help;
                     }
-                    assert( mSubstitutions.size() == mVariables.size() );
+                    //assert( mSubstitutions.size() == mVariables.size() );
                 }
                 else
                 {
