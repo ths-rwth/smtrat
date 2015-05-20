@@ -96,8 +96,10 @@ namespace smtrat
                 {
                     if( *iter_subs != mSubstitutions.back() )
                     {
-                        assert( iter_recent != mRecent_Constraints.end() );
-                        iter_recent->insert( std::make_pair( temp_eq, origins ) );
+                        if( iter_recent != mRecent_Constraints.end() )
+                        {
+                            iter_recent->insert( std::make_pair( temp_eq, origins ) );
+                        }    
                     }
                     else
                     {
@@ -126,7 +128,11 @@ namespace smtrat
                 if( iter_recent != mRecent_Constraints.end() )
                 {
                     ++iter_recent;
-                }    
+                }
+                else
+                {
+                    break;
+                }
                 ++iter_subs;
             }
             #ifdef DEBUG_IntEqModule
@@ -165,6 +171,45 @@ namespace smtrat
         #endif
         if( _subformula->formula().constraint().relation() == carl::Relation::EQ )
         {
+            // Check whether _subformula was used to derive a substitution
+            auto iter_temp = mSubstitutions.begin(); 
+            auto iter_temp_two = mRecent_Constraints.begin();
+            bool derived_sub = false;
+            Poly maybe_sub = _subformula->formula().constraint().lhs();
+            while( iter_temp != mSubstitutions.end() )
+            {
+                if( maybe_sub.substitute( iter_temp->first, iter_temp->second ) == ZERO_POLYNOMIAL )
+                {
+                    derived_sub = true;
+                    #ifdef DEBUG_IntEqModule
+                    cout << "Is a substitution" << endl;
+                    #endif
+                    break;
+                }
+                ++iter_temp;   
+                if( iter_temp_two != mRecent_Constraints.end() )
+                {
+                    ++iter_temp_two;
+                }    
+            }
+            if( derived_sub )
+            {
+                while( iter_temp != mSubstitutions.end() )
+                {
+                    auto iter_help = mVariables.find( iter_temp->first );
+                    assert( iter_help != mVariables.end() );
+                    mVariables.erase( iter_help );
+                    iter_temp = mSubstitutions.erase( iter_temp );
+                }
+                if( iter_temp_two != mRecent_Constraints.end() )
+                {
+                    mRecent_Constraints.erase( iter_temp_two, mRecent_Constraints.end() );
+                    if( mRecent_Constraints.empty() )
+                    {
+                        mRecent_Constraints.push_back( Formula_Origins() );
+                    }
+                } 
+            }
             /* Iterate through all the processed constraints and delete all corresponding sets 
              * in the latter containing the element that has to be deleted. Delete a processed 
              * constraint if the corresponding vector is empty 
@@ -322,7 +367,7 @@ namespace smtrat
             cout << "Size of mSubstitutions: " << mSubstitutions.size() << endl;
             cout << "Size of mRecent_Constraints: " << mRecent_Constraints.size() << endl;
             #endif
-            assert( mSubstitutions.empty() || mSubstitutions.size() == mRecent_Constraints.size() );
+            //assert( mSubstitutions.empty() || mSubstitutions.size() == mRecent_Constraints.size() );
             mProc_Constraints = mRecent_Constraints.back();                
         }
     }
