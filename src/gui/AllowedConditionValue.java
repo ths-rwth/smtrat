@@ -60,7 +60,7 @@ public class AllowedConditionValue
             }
             else
             {
-                valueCPP = "PROP_" + value;
+                valueCPP = "carl::PROP_" + value;
             }
             valueXML = value;
         }

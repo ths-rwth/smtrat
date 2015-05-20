@@ -1,12 +1,12 @@
 /**
- * @file   GroebnerModule.h
+ * @file   GBModule.h
  *
  * @author Sebastian Junges
  *
  * The classes contained in here are
- * GroebnerModuleState
+ * GBModuleState
  * InequalitiesTable
- * GroebnerModule
+ * GBModule
  *
  * Since: 2012-01-18
  * Version: 2013-30-03
@@ -32,7 +32,7 @@
 #include "GBCalculationStatistics.h"
 #endif
 
-#include "GroebnerModuleState.h"
+#include "GBModuleState.h"
 #include "InequalitiesTable.h"
 
 namespace smtrat
@@ -44,7 +44,7 @@ namespace smtrat
  * @author Sebastian Junges
  */
 template<class Settings>
-class GroebnerModule : public Module
+class GBModule : public Module
 {
     friend class InequalitiesTable<Settings>;
 public:
@@ -59,7 +59,7 @@ protected:
     /// The vector of backtrack points, which has pointers to received constraints.
     std::vector<ModuleInput::const_iterator> mBacktrackPoints;
     /// Saves the relevant history to support backtracking
-    std::list<GroebnerModuleState<Settings> > mStateHistory;
+    std::list<GBModuleState<Settings> > mStateHistory;
     /// After popping in the history, it might be necessary to recalculate. This flag indicates this
     bool mRecalculateGB;
     /// A list of inequalities which were added after the last consistency check.
@@ -77,8 +77,8 @@ protected:
     FormulasT mGbEqualities;
 
 public:
-    GroebnerModule( ModuleType _type, const ModuleInput* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
-    virtual ~GroebnerModule( );
+    GBModule( ModuleType _type, const ModuleInput* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+    virtual ~GBModule( );
 
     bool addCore( ModuleInput::const_iterator _formula );
     virtual Answer checkCore( bool _full = true );
@@ -123,12 +123,12 @@ public:
 
 private:
     #ifdef SMTRAT_DEVOPTION_Statistics
-    GroebnerModuleStats* mStats;
+    GBModuleStats* mStats;
     GBCalculationStats* mGBStats;
     #endif //SMTRAT_DEVOPTION_Statistics
 
     typedef Module super;
 };
 } // namespace smtrat
-#include "GroebnerModule.tpp"
+#include "GBModule.tpp"
 #include "InequalitiesTable.tpp"

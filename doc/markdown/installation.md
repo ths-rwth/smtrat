@@ -4,28 +4,23 @@ Getting Started {#getting_started}
 Download
 --------
 Here are archived versions of SMT-RAT for download:
-- [latest](http://ths.informatik.rwth-aachen.de/releases/smtrat-latest.tgz)
+- [latest](https://github.com/smtrat/smtrat/releases)
 
-We mirror our master branch to github.com. If you want to use the newest bleeding edge version, you can checkout from https://github.com/nafur/smtrat.
+We mirror our master branch to github.com. If you want to use the newest bleeding edge version, you can checkout from https://github.com/smtrat/smtrat.
 Although we try to keep the master branch stable, there is a chance that the current revision is broken.
 You can check [here](https://travis-ci.org/nafur/smtrat/builds) if the current revision compiles.
 
 Quick installation guide
 --------------------------------------------
 - Make sure all @subpage dependencies "dependencies" are available.
-- Download the latest release or clone the git repository from https://srv-i2.informatik.rwth-aachen.de:8443/git/smtrat.git
+- Download the latest release or clone the git repository from https://github.com/smtrat/smtrat.git
 - Prepare the build.
 @code{.sh}
-$ mkdir build && cd build && cmake ../
+$ mkdir build && cd build && cmake ..
 @endcode
-- Build shipped dependencies if necessary.
-@code{.sh}
-$ make resources
-@endcode
-- Build carl (with tests and documentation).
+- Build SMT-RAT (with tests and documentation).
 @code{.sh}
 $ make
-$ make test doc
 @endcode
  
 Supported platforms
