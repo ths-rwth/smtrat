@@ -146,7 +146,7 @@ struct Theories {
 		}
 		TheoryError te;
 		for (auto& t: theories) {
-			if (t.second->resolveSymbol(identifier, result, te)) return result;
+			if (t.second->resolveSymbol(identifier, result, te(t.first))) return result;
 		}
 		SMTRAT_LOG_ERROR("smtrat.parser", "Tried to resolve symbol \"" << identifier << "\" which is unknown." << te);
 		HANDLE_ERROR
