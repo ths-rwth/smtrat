@@ -156,18 +156,18 @@ namespace parser {
 		}
 	}
 
-	struct BitvectorConstantParser: public qi::grammar<std::string::const_iterator, Rational()> {
+	struct BitvectorConstantParser: public qi::grammar<std::string::const_iterator, Integer()> {
 		BitvectorConstantParser(): BitvectorConstantParser::base_type(main, "bitvector literal") {
 			main = "bv" > number;
 		}
 		qi::uint_parser<Integer,10,1,-1> number;
-	    qi::rule<std::string::const_iterator, Rational()> main;
+	    qi::rule<std::string::const_iterator, Integer()> main;
 	};
 	
 	bool BitvectorTheory::resolveSymbol(const Identifier& identifier, types::TermType& result, TheoryError& errors) {
-		Rational r;
+		Integer integer;
 		const std::string& s = identifier.symbol;
-		if (qi::parse(s.begin(), s.end(), BitvectorConstantParser(), r)) {
+		if (qi::parse(s.begin(), s.end(), BitvectorConstantParser(), integer)) {
 			if (identifier.indices == nullptr) {
 				errors.next() << "Found a possible bitvector symbol \"" << identifier << "\" but no bit size was specified.";
 				return false;
@@ -177,14 +177,9 @@ namespace parser {
 				return false;
 			}
 			std::size_t bitsize = identifier.indices->at(0);
-			if (bitsize <= sizeof(std::size_t) * CHAR_BIT) {
-				carl::BVValue value(bitsize, carl::toInt<std::size_t>(r));
-				result = types::BVTerm(carl::BVTermType::CONSTANT, value);
-				return true;
-			} else {
-				errors.next() << "Bitvector constant was larger than " << sizeof(std::size_t) << " bits.";
-				return false;
-			}
+			carl::BVValue value(bitsize, integer);
+			result = types::BVTerm(carl::BVTermType::CONSTANT, value);
+			return true;
 		}
 		return false;
 	}
