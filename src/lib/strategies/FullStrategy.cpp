@@ -31,8 +31,8 @@ namespace smtrat
         addBackendIntoStrategyGraph( 3, MT_LRAModule, isCondition );
         addBackendIntoStrategyGraph( 4, MT_VSModule, isCondition );
         addBackendIntoStrategyGraph( 5, MT_CADModule, isCondition );
-        addBackendIntoStrategyGraph( 1, MT_SATModule, isCondition );
-        addBackendIntoStrategyGraph( 7, MT_CNFerModule, isCondition );
+        addBackendIntoStrategyGraph( 1, MT_CNFerModule, isCondition );
+        addBackendIntoStrategyGraph( 7, MT_SATModule, isCondition );
         addBackendIntoStrategyGraph( 8, MT_EQModule, isCondition );
         addBackendIntoStrategyGraph( 0, MT_BVModule, conditionEvaluation9 );
         addBackendIntoStrategyGraph( 10, MT_CNFerModule, isCondition );
