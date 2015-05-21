@@ -122,7 +122,7 @@ struct VariantVariantConverter: public boost::static_visitor<> {
  * Converts a vector of variants to a vector of some type using the Converter class.
  */
 template<typename Res>
-struct VectorVariantConverter: public boost::static_visitor<> {
+struct VectorVariantConverter {
 	typedef Res result_type;
 	template<typename... T>
 	bool operator()(const std::vector<boost::variant<T...>>& v, std::vector<Res>& result) const {
