@@ -65,7 +65,7 @@ struct TypeOfTerm : public boost::static_visitor<ExpressionType> {
 		}
 	}
 	ExpressionType operator()(const carl::Sort& v) const {
-		if (carl::SortManager::getInstance().isInterpreted(v)) return (*this)(carl::SortManager::getInstance().interpretedType(v));
+		if (carl::SortManager::getInstance().isInterpreted(v)) return (*this)(carl::SortManager::getInstance().getType(v));
 		else return ExpressionType::UNINTERPRETED;
 	}
 	template<typename T>
