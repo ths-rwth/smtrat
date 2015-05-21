@@ -41,6 +41,7 @@ namespace parser {
 		std::map<std::string, types::TermType> defined_constants;
 		std::map<std::string, const FunctionInstantiator*> defined_functions;
 		std::map<std::string, const IndexedFunctionInstantiator*> defined_indexed_functions;
+		std::map<std::string, const UserFunctionInstantiator*> defined_user_functions;
 	
 		//std::map<std::string, BooleanFunction> funmap_bool;
 		//std::map<std::string, ArithmeticFunction> funmap_arithmetic;
@@ -82,6 +83,7 @@ namespace parser {
 				else if (declared_functions.find(name) != declared_functions.end()) out << "\"" << name << "\" has already been declared as a function.";
 				else if (defined_functions.find(name) != defined_functions.end()) out << "\"" << name << "\" has already been defined as a function.";
 				else if (defined_indexed_functions.find(name) != defined_indexed_functions.end()) out << "\"" << name << "\" has already been defined as a function.";
+				else if (defined_user_functions.find(name) != defined_user_functions.end()) out << "\"" << name << "\" has already been defined as a function by the user.";
 				else return true;
 				if (output) SMTRAT_LOG_ERROR("smtrat.parser", out.str());
 				return false;
@@ -115,6 +117,13 @@ namespace parser {
 				return;
 			}
 			defined_indexed_functions.emplace(name, fi);
+		}
+		void registerFunction(const std::string& name, const UserFunctionInstantiator* fi) {
+			if (!isSymbolFree(name)) {
+				SMTRAT_LOG_ERROR("smtrat.parser", "Failed to register user function \"" << name << "\", name is already used.");
+				return;
+			}
+			defined_user_functions.emplace(name, fi);
 		}
 	};
 
