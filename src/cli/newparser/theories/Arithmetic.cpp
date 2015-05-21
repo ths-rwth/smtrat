@@ -152,6 +152,21 @@ namespace parser {
 			return FormulaT(p, rel);
 		}
 	}
+	
+	bool ArithmeticTheory::instantiate(carl::Variable::Arg var, const carl::Sort& sort, const types::TermType& replacement, types::TermType& result, TheoryError& errors) {
+		assert(var.getType() == carl::SortManager::getInstance().getType(sort));
+		if ((var.getType() != carl::VariableType::VT_INT) && (var.getType() != carl::VariableType::VT_REAL)) {
+			errors.next() << "Sort is neither \"Int\" nor \"Real\" but \"" << var.getType() << "\".";
+			return false;
+		}
+		Poly repl;
+		if (!convertTerm(replacement, repl)) {
+			errors.next() << "Could not convert argument \"" << replacement << "\" to an arithmetic expression.";
+			return false;
+		}
+		Instantiator<Poly> instantiator;
+		return instantiator.instantiate(var, repl, result);
+	}
 
 	bool ArithmeticTheory::functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
 		std::vector<Poly> args;
