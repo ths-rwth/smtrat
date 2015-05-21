@@ -32,13 +32,35 @@ struct IndexedFunctionInstantiator {
 		return false;
 	}
 };
-struct UserFunctionInstantiator: public FunctionInstantiator {
+
+template<typename T>
+struct Instantiator: public boost::static_visitor<bool> {
 private:
-	std::vector<std::pair<std::string, carl::Sort>> arguments;
+	carl::Variable var;
+	T replacement;
+public:
+	template<typename Res>
+	bool operator()(Res&) {
+		return false;
+	}
+	bool operator()(FormulaT& f) {
+		std::map<carl::Variable, T> r;
+		r.emplace(var, replacement);
+		f = f.substitute(r);
+		return true;
+	}
+	bool instantiate(carl::Variable::Arg v, const T& repl, types::TermType& result) {
+		var = v;
+		replacement = repl;
+		return boost::apply_visitor(*this, result);
+	}
+};
+
+struct UserFunctionInstantiator: public FunctionInstantiator {
+	std::vector<std::pair<carl::Variable, carl::Sort>> arguments;
 	carl::Sort sort;
 	types::TermType definition;
-public:
-	UserFunctionInstantiator(const std::vector<std::pair<std::string, carl::Sort>>& arguments, const carl::Sort& sort, const types::TermType& definition):
+	UserFunctionInstantiator(const std::vector<std::pair<carl::Variable, carl::Sort>>& arguments, const carl::Sort& sort, const types::TermType& definition):
 		arguments(arguments), sort(sort), definition(definition) {}
 };
 
