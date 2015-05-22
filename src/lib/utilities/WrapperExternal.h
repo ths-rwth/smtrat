@@ -20,7 +20,7 @@
 #define DLL_EXPORT 
 #endif
 
-#define SOLVER smtrat::RatOne
+#define SOLVER smtrat::StratSat
 
 namespace smtrat {
     class WrapperExternal

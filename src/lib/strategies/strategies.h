@@ -11,5 +11,5 @@
 #include "RatTwo.h"
 #include "RatThree.h"
 #include "RatFour.h"
-
+#include "StratSat.h"
 
