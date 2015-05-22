@@ -9,6 +9,7 @@
 #include "../strategies/strategies.h"
 #include "../modules/ModuleType.h"
 #include "../modules/Modules.h"
+#include "../modules/AddModules.h"
 #include "carl/util/stringparser.h"
 #include "carl/util/parser/Parser.h"
 #include "carl/util/Common.h"
@@ -19,7 +20,7 @@
 #define DLL_EXPORT 
 #endif
 
-#define SOLVER NRATSolver
+#define SOLVER smtrat::RatOne
 
 namespace smtrat {
     class WrapperExternal
@@ -32,13 +33,7 @@ namespace smtrat {
         DLL_EXPORT static WrapperExternal* createWrapper(){
             WrapperExternal* pWrapper = new WrapperExternal();
             pWrapper->solver = new SOLVER();
-            pWrapper->solver->rLogic() = Logic::QF_NRA;
-
-            //Add modules
-            pWrapper->solver->addModuleType(MT_CNFerModule, new StandardModuleFactory< CNFerModule >());
-            pWrapper->solver->addModuleType(MT_LRAModule, new StandardModuleFactory< LRAModule<LRASettings1> >());
-            pWrapper->solver->addModuleType(MT_SATModule, new StandardModuleFactory< SATModule<SATSettings1> >());
-            pWrapper->solver->addModuleType(MT_VSModule, new StandardModuleFactory< VSModule<VSSettings2346> >());
+            smtrat::addModules(pWrapper->solver);
 
             return pWrapper;
         }
