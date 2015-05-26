@@ -113,6 +113,7 @@ namespace smtrat
         mNumberOfTheoryCalls( 0 ),
         mConstraintLiteralMap(),
         mBooleanVarMap(),
+        mMinisatVarMap(),
         mFormulaClauseMap(),
         mLearntDeductions(),
         mChangedBooleans(),
@@ -597,6 +598,7 @@ namespace smtrat
             BooleanVarMap::iterator booleanVarPair = mBooleanVarMap.find(content.boolean());
             if( booleanVarPair != mBooleanVarMap.end() )
             {
+                assert(mMinisatVarMap.find(booleanVarPair->second) != mMinisatVarMap.end());
                 if( _decisionRelevant )
                     setDecisionVar( booleanVarPair->second, _decisionRelevant );
                 l = mkLit( booleanVarPair->second, negated );
@@ -605,6 +607,7 @@ namespace smtrat
             {
                 Var var = newVar( true, _decisionRelevant, content.activity() );
                 mBooleanVarMap[content.boolean()] = var;
+                mMinisatVarMap[var] = content.boolean();
                 mBooleanConstraintMap.push( std::make_pair( 
                     new Abstraction( passedFormulaEnd(), content ), 
                     new Abstraction( passedFormulaEnd(), negated ? _formula : FormulaT( carl::FormulaType::NOT, _formula ) ) ) );
@@ -1377,6 +1380,11 @@ SetWatches:
                 simplify();
                 if( !ok )
                     return confl;
+
+                // Build lemmas
+                if (Settings::compute_propagated_lemmas)
+                {
+                }
             }
             else
             {

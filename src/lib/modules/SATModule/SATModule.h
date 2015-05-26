@@ -200,6 +200,9 @@ namespace smtrat
             /// Maps the Boolean variables to their corresponding Minisat variable.
             typedef std::map<const carl::Variable, Minisat::Var> BooleanVarMap;
             
+            /// Maps the Minisat variables to their corresponding boolean variable.
+            typedef std::map<const Minisat::Var, carl::Variable> MinisatVarMap;
+
             /**
              * Maps each Minisat variable to a pair of Abstractions, one contains the abstraction information of the literal
              * being the variable and one contains the abstraction information of the literal being the variables negation.
@@ -364,6 +367,8 @@ namespace smtrat
             ConstraintLiteralsMap mConstraintLiteralMap;
             /// Maps the Boolean variables to their corresponding Minisat variable.
             BooleanVarMap mBooleanVarMap;
+            /// Maps the Minisat variables to their corresponding boolean variable.
+            MinisatVarMap mMinisatVarMap;
             /// Maps the clauses in the received formula to the corresponding Minisat clause.
             FormulaClauseMap mFormulaClauseMap;
             /// If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
