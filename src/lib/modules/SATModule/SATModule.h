@@ -201,7 +201,7 @@ namespace smtrat
             typedef std::map<const carl::Variable, Minisat::Var> BooleanVarMap;
             
             /// Maps the Minisat variables to their corresponding boolean variable.
-            typedef std::map<const Minisat::Var, carl::Variable> MinisatVarMap;
+            typedef std::map<const Minisat::Var, FormulaT> MinisatVarMap;
 
             /**
              * Maps each Minisat variable to a pair of Abstractions, one contains the abstraction information of the literal

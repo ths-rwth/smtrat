@@ -28,7 +28,7 @@
 #include "SATModule.h"
 #include <iomanip>
 
-#define DEBUG_SATMODULE
+//#define DEBUG_SATMODULE
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION
 //#define DEBUG_SAT_APPLY_VALID_SUBS
 //#define DEBUG_SAT_REPLACE_VARIABLE
@@ -628,7 +628,7 @@ namespace smtrat
             {
                 Var var = newVar( true, _decisionRelevant, content.activity() );
                 mBooleanVarMap[content.boolean()] = var;
-                mMinisatVarMap[var] = content.boolean();
+                mMinisatVarMap[var] = content;
                 mBooleanConstraintMap.push( std::make_pair( 
                     new Abstraction( passedFormulaEnd(), content ), 
                     new Abstraction( passedFormulaEnd(), negated ? _formula : FormulaT( carl::FormulaType::NOT, _formula ) ) ) );
@@ -1402,9 +1402,16 @@ SetWatches:
                 if( !ok )
                     return confl;
 
-                //Build lemmas
+                // Build lemmas
                 if ( Settings::compute_propagated_lemmas )
                 {
+                    for ( VarLemmaMap::const_iterator iter = mPropagatedLemmas.begin(); iter != mPropagatedLemmas.end(); ++iter )
+                    {
+                        // Construct formula
+                        FormulaT premise = FormulaT( carl::FormulaType::AND, std::move( iter->second ) );
+                        FormulaT lemma = FormulaT( carl::FormulaType::IMPLIES, premise, mMinisatVarMap.at( iter->first) );
+                        addDeduction( lemma );
+                    }
                 }
             }
             else
@@ -3146,7 +3153,7 @@ NextClause:
         _out << _init << " Propagated lemmas:" << endl;
         for( VarLemmaMap::const_iterator itFormulas = mPropagatedLemmas.begin(); itFormulas != mPropagatedLemmas.end(); ++itFormulas )
         {
-            _out << _init << " " << itFormulas->first << " <- { ";
+            _out << _init << " " << mMinisatVarMap.at( itFormulas->first ) << " <- { ";
             FormulasT formulas = itFormulas->second;
             for ( FormulasT::iterator iter = formulas.begin(); iter != formulas.end(); ++iter )
             {
