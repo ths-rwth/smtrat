@@ -12,31 +12,32 @@ namespace smtrat
         return ( (carl::PROP_CONTAINS_UNINTERPRETED_EQUATIONS <= _condition) );
     }
 
-    static bool conditionEvaluation1( carl::Condition _condition )
-    {
-        return (  !(carl::PROP_CONTAINS_UNINTERPRETED_EQUATIONS <= _condition) &&  !(carl::PROP_CONTAINS_BITVECTOR <= _condition) );
-    }
-
-    static bool conditionEvaluation9( carl::Condition _condition )
+    static bool conditionEvaluation4( carl::Condition _condition )
     {
         return ( (carl::PROP_CONTAINS_BITVECTOR <= _condition) );
+    }
+
+    static bool conditionEvaluation7( carl::Condition _condition )
+    {
+        return (  !(carl::PROP_CONTAINS_BITVECTOR <= _condition) &&  !(carl::PROP_CONTAINS_UNINTERPRETED_EQUATIONS <= _condition) );
     }
 
     FullStrategy::FullStrategy():
         Manager()
     {
         addBackendIntoStrategyGraph( 0, MT_EQPreprocessingModule, conditionEvaluation0 );
-        addBackendIntoStrategyGraph( 0, MT_CNFerModule, conditionEvaluation1 );
-        addBackendIntoStrategyGraph( 2, MT_SATModule, isCondition );
-        addBackendIntoStrategyGraph( 3, MT_LRAModule, isCondition );
-        addBackendIntoStrategyGraph( 4, MT_VSModule, isCondition );
-        addBackendIntoStrategyGraph( 5, MT_CADModule, isCondition );
         addBackendIntoStrategyGraph( 1, MT_CNFerModule, isCondition );
-        addBackendIntoStrategyGraph( 7, MT_SATModule, isCondition );
-        addBackendIntoStrategyGraph( 8, MT_EQModule, isCondition );
-        addBackendIntoStrategyGraph( 0, MT_BVModule, conditionEvaluation9 );
-        addBackendIntoStrategyGraph( 10, MT_CNFerModule, isCondition );
-        addBackendIntoStrategyGraph( 11, MT_SATModule, isCondition );
+        addBackendIntoStrategyGraph( 2, MT_SATModule, isCondition );
+        addBackendIntoStrategyGraph( 3, MT_EQModule, isCondition );
+        addBackendIntoStrategyGraph( 0, MT_BVModule, conditionEvaluation4 );
+        addBackendIntoStrategyGraph( 5, MT_CNFerModule, isCondition );
+        addBackendIntoStrategyGraph( 6, MT_SATModule, isCondition );
+        addBackendIntoStrategyGraph( 0, MT_PreprocessingModule, conditionEvaluation7 );
+        addBackendIntoStrategyGraph( 8, MT_CNFerModule, isCondition );
+        addBackendIntoStrategyGraph( 9, MT_SATModule, isCondition );
+        addBackendIntoStrategyGraph( 10, MT_LRAModule, isCondition );
+        addBackendIntoStrategyGraph( 11, MT_VSModule, isCondition );
+        addBackendIntoStrategyGraph( 12, MT_CADModule, isCondition );
     }
 
     FullStrategy::~FullStrategy(){}
