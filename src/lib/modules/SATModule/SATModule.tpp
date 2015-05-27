@@ -115,6 +115,7 @@ namespace smtrat
         mBooleanVarMap(),
         mMinisatVarMap(),
         mFormulaClauseMap(),
+        mClauseFormulaMap(),
         mLearntDeductions(),
         mChangedBooleans(),
         mAllActivitiesChanged( false ),
@@ -124,7 +125,8 @@ namespace smtrat
         mVarReplacements(),
         mSplittingVars(),
         mOldSplittingVars(),
-        mNewSplittingVars()
+        mNewSplittingVars(),
+        mPropagatedLemmas()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
         stringstream s;
@@ -160,9 +162,16 @@ namespace smtrat
     {
         if( carl::PROP_IS_A_CLAUSE <= _subformula->formula().properties() )
         {
-            if (mFormulaClauseMap.find( _subformula->formula() ) == mFormulaClauseMap.end())
+            FormulaClauseMap::iterator iter = mFormulaClauseMap.find( _subformula->formula() );
+            if (iter == mFormulaClauseMap.end())
             {
-                mFormulaClauseMap[_subformula->formula()] = addClause( _subformula->formula(), false );
+                CRef clause = addClause( _subformula->formula(), false );
+                mFormulaClauseMap[_subformula->formula()] = clause;
+                mClauseFormulaMap[clause] = _subformula->formula();
+            }
+            else
+            {
+                assert( mClauseFormulaMap.find( iter->second ) != mClauseFormulaMap.end() );
             }
         }
         if( !ok )
@@ -1994,6 +2003,18 @@ SetWatches:
         {
             vardata[var( p )] = mkVarData( from, decisionLevel() );
             trail.push_( p );
+        }
+
+        if (decisionLevel() == 0)
+        {
+            mPropagatedLemmas.growTo( var(p) + 1 );
+            //Find corresponding formula
+            if ( from != CRef_Undef) {
+                ClauseFormulaMap::iterator iter = mClauseFormulaMap.find( from );
+                assert( iter != mClauseFormulaMap.end() );
+                assert(mPropagatedLemmas.size() > var(p) );
+                mPropagatedLemmas[ var(p) ].insert( iter->second );
+            }
         }
     }
 

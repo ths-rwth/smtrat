@@ -212,6 +212,9 @@ namespace smtrat
             /// Maps the clauses in the received formula to the corresponding Minisat clause.
             typedef std::map<FormulaT, Minisat::CRef> FormulaClauseMap;
             
+            /// Maps the clauses in Minisat to the corresponding received formula.
+            typedef std::map<Minisat::CRef, FormulaT> ClauseFormulaMap;
+
             /// A vector of vectors of literals representing a vector of clauses.
             typedef std::vector<std::vector<Minisat::Lit>> ClauseVector;
             
@@ -371,6 +374,8 @@ namespace smtrat
             MinisatVarMap mMinisatVarMap;
             /// Maps the clauses in the received formula to the corresponding Minisat clause.
             FormulaClauseMap mFormulaClauseMap;
+            /// Maps the Minisat clauses to the corresponding received formula.
+            ClauseFormulaMap mClauseFormulaMap;
             /// If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
             ClauseSet mLearntDeductions;
             /// Stores all Literals for which the abstraction information might be changed.
@@ -391,6 +396,8 @@ namespace smtrat
             std::stack<signed> mOldSplittingVars;
             /// Stores the just introduced Boolean variables for theory splitting decisions.
             std::vector<signed> mNewSplittingVars;
+            /// Stores for each variable the corresponding formulas which control its value
+            Minisat::vec<FormulasT> mPropagatedLemmas;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
             SATModuleStatistics* mpStatistics;
