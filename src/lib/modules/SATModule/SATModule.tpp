@@ -28,7 +28,7 @@
 #include "SATModule.h"
 #include <iomanip>
 
-//#define DEBUG_SATMODULE
+#define DEBUG_SATMODULE
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION
 //#define DEBUG_SAT_APPLY_VALID_SUBS
 //#define DEBUG_SAT_REPLACE_VARIABLE
@@ -162,6 +162,18 @@ namespace smtrat
     {
         if( carl::PROP_IS_A_CLAUSE <= _subformula->formula().properties() )
         {
+            if ( Settings::compute_propagated_lemmas )
+            {
+                if ( _subformula->formula().propertyHolds(carl::PROP_IS_A_LITERAL) && _subformula->formula().propertyHolds(carl::PROP_CONTAINS_BOOLEAN) )
+                {
+                    // Add literal from unary clause to lemmas
+                    carl::Variables vars;
+                    _subformula->formula().booleanVars(vars);
+                    assert( vars.size() == 1);
+                    Minisat::Var var = mBooleanVarMap[ *vars.begin() ];
+                    mPropagatedLemmas[ var ].insert( _subformula->formula() );
+                }
+            }
             FormulaClauseMap::iterator iter = mFormulaClauseMap.find( _subformula->formula() );
             if (iter == mFormulaClauseMap.end())
             {
@@ -2007,15 +2019,18 @@ SetWatches:
             trail.push_( p );
         }
 
-        if (decisionLevel() == 0)
+        if (Settings::compute_propagated_lemmas && decisionLevel() == 0)
         {
-            mPropagatedLemmas.growTo( var(p) + 1 );
-            //Find corresponding formula
             if ( from != CRef_Undef) {
+                //Find corresponding formula
                 ClauseFormulaMap::iterator iter = mClauseFormulaMap.find( from );
                 assert( iter != mClauseFormulaMap.end() );
                 assert(mPropagatedLemmas.size() > var(p) );
                 mPropagatedLemmas[ var(p) ].insert( iter->second );
+            }
+            else
+            {
+                assert( mPropagatedLemmas[ var(p) ].size() > 0 );
             }
         }
     }
@@ -3107,19 +3122,17 @@ NextClause:
     void SATModule<Settings>::printPropagatedLemmas( ostream& _out, string _init ) const
     {
         _out << _init << " Propagated lemmas:" << endl;
-        for( size_t pos = 0; pos < mPropagatedLemmas.size(); ++pos )
+        for( VarLemmaMap::const_iterator itFormulas = mPropagatedLemmas.begin(); itFormulas != mPropagatedLemmas.end(); ++itFormulas )
         {
-            _out << _init << " " << pos << " <- { ";
-            if ( mPropagatedLemmas[pos].size() > 0 )
+            _out << _init << " " << itFormulas->first << " <- { ";
+            FormulasT formulas = itFormulas->second;
+            for ( FormulasT::iterator iter = formulas.begin(); iter != formulas.end(); ++iter )
             {
-                for ( FormulasT::iterator iter = mPropagatedLemmas[pos].begin(); iter != mPropagatedLemmas[pos].end(); ++iter )
+                if ( iter != formulas.begin() )
                 {
-                    if ( iter != mPropagatedLemmas[pos].begin() )
-                    {
-                        _out << ", ";
-                    }
-                    _out << *iter;
+                    _out << ", ";
                 }
+                _out << *iter;
             }
             _out << " }" << endl;
         }
