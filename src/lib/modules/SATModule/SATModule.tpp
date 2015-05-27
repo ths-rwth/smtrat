@@ -1402,8 +1402,8 @@ SetWatches:
                 if( !ok )
                     return confl;
 
-                // Build lemmas
-                if (Settings::compute_propagated_lemmas)
+                //Build lemmas
+                if ( Settings::compute_propagated_lemmas )
                 {
                 }
             }
@@ -2022,11 +2022,33 @@ SetWatches:
         if (Settings::compute_propagated_lemmas && decisionLevel() == 0)
         {
             if ( from != CRef_Undef) {
-                //Find corresponding formula
+                // Find corresponding formula
                 ClauseFormulaMap::iterator iter = mClauseFormulaMap.find( from );
                 assert( iter != mClauseFormulaMap.end() );
-                assert(mPropagatedLemmas.size() > var(p) );
-                mPropagatedLemmas[ var(p) ].insert( iter->second );
+                assert( mPropagatedLemmas.size() > var(p) );
+
+                // Try to substitute formulas
+                FormulaT formula = iter->second;
+                FormulasT* pFormulas = &mPropagatedLemmas[ var(p) ];
+                pFormulas->insert(formula);
+                assert( formula.propertyHolds(carl::PROP_IS_A_CLAUSE) && formula.propertyHolds(carl::PROP_CONTAINS_BOOLEAN) );
+
+                // Find formulas for contained variables
+                carl::Variables vars;
+                formula.booleanVars(vars);
+                for ( carl::Variables::const_iterator iter = vars.begin(); iter != vars.end(); ++iter )
+                {
+                    BooleanVarMap::const_iterator itVar = mBooleanVarMap.find( *iter );
+                    assert( itVar != mBooleanVarMap.end() );
+                    Minisat::Var var = itVar->second;
+                    // Find possible formulas for variable
+                    VarLemmaMap::const_iterator itFormulas = mPropagatedLemmas.find( var );
+                    if ( itFormulas != mPropagatedLemmas.end() )
+                    {
+                        // Insert formulas from contained variable into set for current variable
+                        pFormulas->insert( itFormulas->second.begin(), itFormulas->second.end() );
+                    }
+                }
             }
             else
             {
