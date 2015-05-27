@@ -20,12 +20,13 @@ namespace smtrat
 	template<typename Settings>
     class PreprocessingModule : public Module
     {
-		private:
-			// If anything that needs variable bounds is active, we shall collect the bounds.
-			static constexpr bool collectBounds = Settings::checkBounds;
-        protected:
+        private:
+			/// Bounds that have been added since the last call to isConsistent().
+			std::unordered_set<FormulaT> newBounds;
 			vb::VariableBounds<FormulaT> varbounds;
 			carl::FormulaVisitor<FormulaT> visitor;
+            std::unordered_map<FormulaT, bool> boolSubs;
+            std::map<carl::Variable,Poly> arithSubs;
 			
 			FormulasT tmpOrigins;
 			void accumulateBoundOrigins(const ConstraintT& constraint) {
@@ -71,9 +72,7 @@ namespace smtrat
 			void updateModel() const;
 
         protected:
-			/// Bounds that have been added since the last call to isConsistent().
-			std::set<FormulaT> newBounds;
-			bool addBounds(const FormulaT& formula);
+			void addBounds(const FormulaT& formula);
 			void removeBounds(const FormulaT& formula);
 			
 			/**
@@ -93,6 +92,11 @@ namespace smtrat
 			 */
 			FormulaT checkBounds(const FormulaT& formula);
 			std::function<FormulaT(FormulaT)> checkBoundsFunction;
+			
+			/**
+			 * Eliminates all equation forming a substitution of the form x = p with p not containing x.
+			 */
+			FormulaT elimSubstitutions(const FormulaT& _formula);
     };
 
 }    // namespace smtrat
