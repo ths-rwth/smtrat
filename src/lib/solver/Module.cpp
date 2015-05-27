@@ -239,6 +239,31 @@ namespace smtrat
         if( mSolverState == True )
         {
             getBackendsModel();
+            carl::Variables receivedVariables;
+            mpReceivedFormula->arithmeticVars( receivedVariables );
+            mpReceivedFormula->booleanVars( receivedVariables );
+            // TODO: Do the same for bv and uninterpreted variables and functions 
+            auto iterRV = receivedVariables.begin();
+            if( iterRV != receivedVariables.end() )
+            {
+                for( std::map<ModelVariable,ModelValue>::const_iterator iter = mModel.begin(); iter != mModel.end(); )
+                {
+                    if( iter->first.isVariable() )
+                    {
+                        auto tmp = std::find( iterRV, receivedVariables.end(), iter->first.asVariable() );
+                        if( tmp == receivedVariables.end() )
+                        {
+                            iter = mModel.erase( iter );
+                            continue;
+                        }
+                        else
+                        {   
+                            iterRV = tmp;
+                        }
+                    }
+                    ++iter;
+                }
+            }
         }
     }
 
