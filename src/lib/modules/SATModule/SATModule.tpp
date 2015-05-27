@@ -1412,6 +1412,8 @@ SetWatches:
             cout << "### " << endl;
             printDecisions( cout, "### " );
             cout << "### " << endl;
+            printPropagatedLemmas( cout, "### " );
+            cout << "### " << endl;
             #endif
 
             if( confl == CRef_Undef && (!Settings::try_full_lazy_call_first || mNumberOfFullLazyCalls > 0 || trail.size() == assigns.size()) )
@@ -3097,6 +3099,28 @@ NextClause:
             _out << _init << pos << " in {";
             for( CRef cr : mVarClausesMap[pos] )
                 _out << " " << cr;
+            _out << " }" << endl;
+        }
+    }
+
+    template<class Settings>
+    void SATModule<Settings>::printPropagatedLemmas( ostream& _out, string _init ) const
+    {
+        _out << _init << " Propagated lemmas:" << endl;
+        for( size_t pos = 0; pos < mPropagatedLemmas.size(); ++pos )
+        {
+            _out << _init << " " << pos << " <- { ";
+            if ( mPropagatedLemmas[pos].size() > 0 )
+            {
+                for ( FormulasT::iterator iter = mPropagatedLemmas[pos].begin(); iter != mPropagatedLemmas[pos].end(); ++iter )
+                {
+                    if ( iter != mPropagatedLemmas[pos].begin() )
+                    {
+                        _out << ", ";
+                    }
+                    _out << *iter;
+                }
+            }
             _out << " }" << endl;
         }
     }

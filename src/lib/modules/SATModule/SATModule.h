@@ -549,6 +549,13 @@ namespace smtrat
             void printVariableClausesMap( std::ostream& _out = std::cout, std::string _init = "" ) const;
 
             /**
+             * Prints the propagated lemmas for each variables which influence its value.
+             * @param _out  The output stream where the answer should be printed.
+             * @param _init The line initiation.
+             */
+            void printPropagatedLemmas( std::ostream& _out = std::cout, std::string _init = "" ) const;
+
+            /**
              * Collects the taken statistics.
              */
             void collectStats();
