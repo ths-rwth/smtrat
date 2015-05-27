@@ -61,8 +61,9 @@ namespace smtrat {
 				std::pair<std::size_t, std::size_t>,
 				T,
 				pairhash<std::size_t, std::size_t>,
-				std::equal_to<std::pair<std::size_t, std::size_t>>,
-				fixedsize_allocator<std::pair<std::size_t, std::size_t>>
+				std::equal_to<std::pair<std::size_t, std::size_t>>
+//                    ,
+//				fixedsize_allocator<std::pair<std::size_t, std::size_t>>
 			> mData;
 	};
 }

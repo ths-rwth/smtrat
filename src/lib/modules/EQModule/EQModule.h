@@ -629,8 +629,9 @@ namespace smtrat
 				std::pair<std::size_t, std::size_t>,
 				dynarray<ineq_edge_info*>,
 				pairhash<std::size_t, std::size_t>,
-				std::equal_to<std::pair<std::size_t,std::size_t>>,
-				fixedsize_allocator<std::pair<std::size_t, std::size_t>>
+				std::equal_to<std::pair<std::size_t,std::size_t>>
+//                    ,
+//				fixedsize_allocator<std::pair<std::size_t, std::size_t>>
 			> mIneqMatrix; ///< Implements a sparse matrix to check if inequality has to hold between two components
 
 			pmatrix<variable_pair_entry> mPairMatrix; // sparse matrix to count occurrences of implicit edges for deductions
