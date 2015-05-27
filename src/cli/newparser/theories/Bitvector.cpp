@@ -122,6 +122,7 @@ namespace parser {
 		state->registerFunction("bvurem", new BinaryBitvectorInstantiator<carl::BVTermType::MOD_U>());
 		state->registerFunction("bvsrem", new BinaryBitvectorInstantiator<carl::BVTermType::MOD_S1>());
 		state->registerFunction("bvsmod", new BinaryBitvectorInstantiator<carl::BVTermType::MOD_S2>());
+		state->registerFunction("bvcomp", new BinaryBitvectorInstantiator<carl::BVTermType::EQ>());
 		state->registerFunction("bvshl", new BinaryBitvectorInstantiator<carl::BVTermType::LSHIFT>());
 		state->registerFunction("bvlshr", new BinaryBitvectorInstantiator<carl::BVTermType::RSHIFT_LOGIC>());
 		state->registerFunction("bvashr", new BinaryBitvectorInstantiator<carl::BVTermType::RSHIFT_ARITH>());
