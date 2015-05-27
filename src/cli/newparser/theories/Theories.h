@@ -109,12 +109,13 @@ struct Theories {
 		}
 	}
 	
-	void declareFunctionArgument(const std::pair<std::string, carl::Sort>& arg) {
+	std::pair<carl::Variable, carl::Sort> declareFunctionArgument(const std::pair<std::string, carl::Sort>& arg) {
 		if (state->isSymbolFree(arg.first)) {
 			carl::SortManager& sm = carl::SortManager::getInstance();
 			if (sm.isInterpreted(arg.second)) {
 				carl::Variable v = carl::VariablePool::getInstance().getFreshVariable(arg.first, carl::SortManager::getInstance().getType(arg.second));
 				state->bindings.emplace(arg.first, v);
+				return std::make_pair(v, arg.second);
 			} else {
 				SMTRAT_LOG_ERROR("smtrat.parser", "Function argument \"" << arg.first << "\" is of uninterpreted type.");
 				HANDLE_ERROR
@@ -123,15 +124,16 @@ struct Theories {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Function argument \"" << arg.first << "\" will not be declared due to a name clash.");
 			HANDLE_ERROR
 		}
+		return std::make_pair(carl::Variable::NO_VARIABLE, arg.second);
 	}
 	
-	void defineFunction(const std::string& name, const std::vector<std::pair<std::string, carl::Sort>>& arguments, const carl::Sort& sort, const types::TermType& definition) {
+	void defineFunction(const std::string& name, const std::vector<std::pair<carl::Variable, carl::Sort>>& arguments, const carl::Sort& sort, const types::TermType& definition) {
 		if (state->isSymbolFree(name)) {
 			///@todo check that definition matches the sort
 			if (arguments.size() == 0) {
 				state->defined_constants.emplace(name, definition);
 			} else {
-				state->defined_functions.emplace(name, new UserFunctionInstantiator(arguments, sort, definition));
+				state->registerFunction(name, new UserFunctionInstantiator(arguments, sort, definition));
 			}
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Function \"" << name << "\" will not be defined due to a name clash.");
@@ -200,6 +202,31 @@ struct Theories {
 		return result;
 	}
 	
+	bool instantiateUserFunction(const UserFunctionInstantiator& function, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
+		if (function.arguments.size() != arguments.size()) {
+			errors.next() << "Function was expected to have " << function.arguments.size() << " arguments, but was instantiated with " << arguments.size() << ".";
+			return false;
+		}
+		result = function.definition;
+		for (std::size_t i = 0; i < arguments.size(); i++) {
+			TheoryError te;
+			bool wasInstantiated = false;
+			for (auto& t: theories) {
+				carl::Variable var = function.arguments[i].first;
+				if (t.second->instantiate(var, function.arguments[i].second, arguments[i], result, te(t.first))) {
+					wasInstantiated = true;
+					break;
+				}
+			}
+			if (!wasInstantiated) {
+				SMTRAT_LOG_ERROR("smtrat.parser", "Failed to instantiate argument \"" << function.arguments[i].first << "\": " << te);
+				HANDLE_ERROR
+				return false;
+			}
+		}
+		return true;
+	}
+	
 	types::TermType functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments) {
 		types::TermType result;
 		TheoryError te;
@@ -243,6 +270,22 @@ struct Theories {
 			}
 			SMTRAT_LOG_DEBUG("smtrat.parser", "Trying to call function \"" << identifier << "\" with arguments " << arguments << ".");
 			if ((*ideffunit->second)(*identifier.indices, arguments, result, te(identifier.symbol))) {
+				SMTRAT_LOG_DEBUG("smtrat.parser", "Success, result is \"" << result << "\".");
+				return result;
+			}
+			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to call function \"" << identifier << "\" with arguments " << arguments << ":" << te);
+			HANDLE_ERROR
+			return result;
+		}
+		auto udeffunit = state->defined_user_functions.find(identifier.symbol);
+		if (udeffunit != state->defined_user_functions.end()) {
+			if (identifier.indices != nullptr) {
+				SMTRAT_LOG_ERROR("smtrat.parser", "The function \"" << identifier << "\" should not have indices.");
+				HANDLE_ERROR
+				return result;
+			}
+			SMTRAT_LOG_DEBUG("smtrat.parser", "Trying to call function \"" << identifier << "\" with arguments " << arguments << ".");
+			if (instantiateUserFunction(*udeffunit->second, arguments, result, te(identifier.symbol))) {
 				SMTRAT_LOG_DEBUG("smtrat.parser", "Success, result is \"" << result << "\".");
 				return result;
 			}

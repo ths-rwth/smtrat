@@ -64,6 +64,13 @@ public:
 		return false;
 	}
 	/**
+	 * Instantiate a variable within a term.
+	 */
+	virtual bool instantiate(carl::Variable::Arg, const carl::Sort&, const types::TermType&, types::TermType&, TheoryError& errors) {
+		errors.next() << "Instantiation of arguments is not supported.";
+		return false;
+	}
+	/**
 	 * Resolve another unknown function call.
 	 */
 	virtual bool functionCall(const Identifier&, const std::vector<types::TermType>&, types::TermType&, TheoryError& errors) {
