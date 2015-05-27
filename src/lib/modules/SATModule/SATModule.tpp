@@ -123,7 +123,9 @@ namespace smtrat
         mVarReplacements(),
         mSplittingVars(),
         mOldSplittingVars(),
-        mNewSplittingVars()
+        mNewSplittingVars(),
+        mNonTseitinShadowedOccurrences(),
+        mTseitinVarShadows()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
         stringstream s;
@@ -135,6 +137,7 @@ namespace smtrat
     template<class Settings>
     SATModule<Settings>::~SATModule()
     {
+        std::cout << std::endl;
         while( mBooleanConstraintMap.size() > 0 )
         {
             Abstraction*& abstrAToDel = mBooleanConstraintMap.last().first;
@@ -157,11 +160,35 @@ namespace smtrat
     template<class Settings>
     bool SATModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-        if( carl::PROP_IS_A_CLAUSE <= _subformula->formula().properties() )
+        if( _subformula->formula().propertyHolds( carl::PROP_IS_A_CLAUSE ) )
         {
             if (mFormulaClauseMap.find( _subformula->formula() ) == mFormulaClauseMap.end())
             {
-                mFormulaClauseMap[_subformula->formula()] = addClause( _subformula->formula(), false );
+                CRef cl = addClause( _subformula->formula(), NORMAL_CLAUSE );
+                mFormulaClauseMap[_subformula->formula()] = cl;
+                if( Settings::formula_guided_decision_heuristic && _subformula->formula().isTseitinClause() )
+                {
+                    assert( cl != CRef_Undef );
+                    assert( _subformula->formula().getType() == carl::FormulaType::OR );
+                    const FormulaT& lastLit = *_subformula->formula().subformulas().rbegin();
+                    const FormulaT& tseitinVar = lastLit.getType() == carl::FormulaType::NOT ? lastLit.subformula() : lastLit;
+                    assert( tseitinVar.getType() == carl::FormulaType::BOOL );
+                    Minisat::Var v = mBooleanVarMap[tseitinVar.boolean()];
+                    auto iter = mTseitinVarShadows.find( (signed)v );
+                    if( iter == mTseitinVarShadows.end() )
+                    {
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                        ++mpStatistics->rNrTseitinVariables();
+                        #endif
+                        iter = mTseitinVarShadows.emplace( (signed)v, std::move(std::set<signed>()) ).first;
+                    }
+                    Clause& cla = ca[cl];
+                    for( int i = 0; i < cla.size(); ++i )
+                    {
+                        if( var(cla[i]) != v )
+                            iter->second.insert( var(cla[i]) );
+                    }
+                }
             }
         }
         if( !ok )
@@ -182,6 +209,17 @@ namespace smtrat
                 {
                     int lev = level( var( c[1] ) );
                     cancelUntil( lev );
+                }
+                if( Settings::formula_guided_decision_heuristic )
+                {
+                    assert( _subformula->formula().getType() == carl::FormulaType::OR );
+                    if( !_subformula->formula().isTseitinClause() )
+                    {
+                        for( int i = 0; i < c.size(); ++i )
+                        {
+                            decrementTseitinShadowOccurrences(var(c[i]));
+                        }
+                    }
                 }
                 removeClause( iter->second );
             }
@@ -209,6 +247,10 @@ namespace smtrat
     template<class Settings>
     Answer SATModule<Settings>::checkCore( bool )
     {
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        mpStatistics->rNrTotalVariablesBefore() = (size_t) nVars();
+        mpStatistics->rNrClauses() = (size_t) nClauses();
+        #endif
         if( carl::PROP_IS_IN_CNF <= rReceivedFormula().properties() )
         {
             if( !Settings::stop_search_after_first_unknown )
@@ -392,14 +434,15 @@ namespace smtrat
             {
                 assert( _formula.size() > 1 );
                 vec<Lit> clauseLits;
-                for( const FormulaT& subformula : _formula.subformulas() )
+                bool tseitinClause = Settings::formula_guided_decision_heuristic && _formula.isTseitinClause();
+                for( auto subformula = _formula.subformulas().begin(); subformula != _formula.subformulas().end(); ++subformula )
                 {
-                    switch( subformula.getType() )
+                    switch( subformula->getType() )
                     {
-                        assert( subformula.propertyHolds( carl::PROP_IS_A_LITERAL ) );
+                        assert( subformula->propertyHolds( carl::PROP_IS_A_LITERAL ) );
                         case carl::FormulaType::NOT:
                         {
-                            const FormulaT& subsubformula = subformula.back();
+                            const FormulaT& subsubformula = subformula->back();
                             switch( subsubformula.getType() )
                             {
                                 case carl::FormulaType::TRUE:
@@ -407,8 +450,8 @@ namespace smtrat
                                 case carl::FormulaType::FALSE:
                                     return CRef_Undef;
                                 default:
-                                    assert( subsubformula.getType() == carl::FormulaType::CONSTRAINT || subsubformula.getType() == carl::FormulaType::BOOL || subsubformula.getType() == carl::FormulaType::UEQ || subsubformula.getType() == carl::FormulaType::BITVECTOR );
-                                    clauseLits.push( getLiteral( subformula, _type == NORMAL_CLAUSE ? _formula : FormulaT( carl::FormulaType::TRUE ) ) );
+                                    assert( subsubformula.isAtom() );
+                                    clauseLits.push( getLiteral( *subformula, _type == NORMAL_CLAUSE ? _formula : FormulaT( carl::FormulaType::TRUE ), !tseitinClause, tseitinClause ) );
                             }
                             break;
                         }
@@ -417,8 +460,8 @@ namespace smtrat
                         case carl::FormulaType::FALSE:
                             break;
                         default:
-                            assert( subformula.getType() == carl::FormulaType::CONSTRAINT || subformula.getType() == carl::FormulaType::BOOL || subformula.getType() == carl::FormulaType::UEQ || subformula.getType() == carl::FormulaType::BITVECTOR );
-                            clauseLits.push( getLiteral( subformula, _type == NORMAL_CLAUSE ? _formula : FormulaT( carl::FormulaType::TRUE ) ) );
+                            assert( subformula->isAtom() );
+                            clauseLits.push( getLiteral( *subformula, _type == NORMAL_CLAUSE ? _formula : FormulaT( carl::FormulaType::TRUE ), !tseitinClause, tseitinClause ) );
                             break;
                     }
                 }
@@ -436,7 +479,7 @@ namespace smtrat
                     case carl::FormulaType::FALSE:
                         return CRef_Undef;
                     default:
-                        assert( subformula.getType() == carl::FormulaType::CONSTRAINT || subformula.getType() == carl::FormulaType::BOOL || subformula.getType() == carl::FormulaType::UEQ || subformula.getType() == carl::FormulaType::BITVECTOR );
+                        assert( subformula.isAtom() );
                         vec<Lit> learned_clause;
                         learned_clause.push( getLiteral( _formula, _type == NORMAL_CLAUSE ? _formula : FormulaT( carl::FormulaType::TRUE ) ) );
                         return addClause( learned_clause, _type ) ? (_type == NORMAL_CLAUSE ? clauses.last() : learnts.last() ) : CRef_Undef;
@@ -448,7 +491,7 @@ namespace smtrat
                 ok = false;
                 return CRef_Undef;
             default:
-                assert( _formula.getType() == carl::FormulaType::CONSTRAINT || _formula.getType() == carl::FormulaType::BOOL || _formula.getType() == carl::FormulaType::UEQ || _formula.getType() == carl::FormulaType::BITVECTOR );
+                assert( _formula.isAtom() );
                 vec<Lit> learned_clause;
                 learned_clause.push( getLiteral( _formula, _type == NORMAL_CLAUSE ? _formula : FormulaT( carl::FormulaType::TRUE ) ) );
                 return addClause( learned_clause, _type ) ? (_type == NORMAL_CLAUSE ? clauses.last() : learnts.last() ) : CRef_Undef;
@@ -586,7 +629,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    Lit SATModule<Settings>::getLiteral( const FormulaT& _formula, const FormulaT& _origin, bool _decisionRelevant )
+    Lit SATModule<Settings>::getLiteral( const FormulaT& _formula, const FormulaT& _origin, bool _decisionRelevant, bool _tseitinShadowed )
     {
         assert( _formula.propertyHolds( carl::PROP_IS_A_LITERAL ) );
         bool negated = _formula.getType() == carl::FormulaType::NOT;
@@ -597,13 +640,17 @@ namespace smtrat
             BooleanVarMap::iterator booleanVarPair = mBooleanVarMap.find(content.boolean());
             if( booleanVarPair != mBooleanVarMap.end() )
             {
+                if( Settings::formula_guided_decision_heuristic && !_tseitinShadowed )
+                {
+                    incrementTseitinShadowOccurrences(booleanVarPair->second);
+                }
                 if( _decisionRelevant )
                     setDecisionVar( booleanVarPair->second, _decisionRelevant );
                 l = mkLit( booleanVarPair->second, negated );
             }
             else
             {
-                Var var = newVar( true, _decisionRelevant, content.activity() );
+                Var var = newVar( true, _decisionRelevant, content.activity(), Settings::formula_guided_decision_heuristic && _tseitinShadowed );
                 mBooleanVarMap[content.boolean()] = var;
                 mBooleanConstraintMap.push( std::make_pair( 
                     new Abstraction( passedFormulaEnd(), content ), 
@@ -636,6 +683,10 @@ namespace smtrat
                 {
                     activity[abstractionVar] = maxActivity() + 1;
                     polarity[abstractionVar] = false;
+                }
+                if( Settings::formula_guided_decision_heuristic && !_tseitinShadowed )
+                {
+                    incrementTseitinShadowOccurrences(abstractionVar);
                 }
                 if( _decisionRelevant )
                     setDecisionVar( abstractionVar, _decisionRelevant );
@@ -704,7 +755,7 @@ namespace smtrat
                     constraint = content;
                     invertedConstraint = FormulaT( carl::FormulaType::NOT, content );
                 }
-                Var constraintAbstraction = newVar( !preferredToTSolver, _decisionRelevant, act );
+                Var constraintAbstraction = newVar( !preferredToTSolver, _decisionRelevant, act, Settings::formula_guided_decision_heuristic && _tseitinShadowed );
                 // map the abstraction variable to the abstraction information for the constraint and it's negation
                 mBooleanConstraintMap.push( std::make_pair( new Abstraction( passedFormulaEnd(), constraint ), new Abstraction( passedFormulaEnd(), invertedConstraint ) ) );
                 // add the constraint and its negation to the constraints to inform backends about
@@ -877,7 +928,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Var SATModule<Settings>::newVar( bool sign, bool dvar, double _activity )
+    Var SATModule<Settings>::newVar( bool sign, bool dvar, double _activity, bool _tseitinShadowed )
     {
         int v = nVars();
         watches.init( mkLit( v, false ) );
@@ -890,11 +941,21 @@ namespace smtrat
         polarity.push( sign );
         decision.push();
         trail.capacity( v + 1 );
-        setDecisionVar( v, dvar );
-        if( Settings::apply_valid_substitutions )
+        if( Settings::formula_guided_decision_heuristic )
         {
-            mVarClausesMap.push_back( std::move( std::set<CRef>() ) );
+            if( _tseitinShadowed )
+            {
+                setDecisionVar( v, false );
+                mNonTseitinShadowedOccurrences.push( 0 );
+            }
+            else
+            {
+                setDecisionVar( v, dvar );
+                mNonTseitinShadowedOccurrences.push( 1 );
+            }
         }
+        else
+            setDecisionVar( v, dvar );
         return v;
     }
 
@@ -1357,6 +1418,20 @@ SetWatches:
                         abstr.isDeduction = false;
                     }
                 }
+                if( Settings::formula_guided_decision_heuristic )
+                {
+                    if( assigns[x] == l_True )
+                    {
+                        auto iter = mTseitinVarShadows.find( (signed) x );
+                        if( iter != mTseitinVarShadows.end() )
+                        {
+                            for( signed v : iter->second )
+                            {
+                                decrementTseitinShadowOccurrences(v);
+                            }
+                        }
+                    }
+                }
                 assigns[x]  = l_Undef;
                 if( (phase_saving > 1 || (phase_saving == 1)) && c > trail_lim.last() )
                     polarity[x] = sign( trail[c] );
@@ -1795,7 +1870,7 @@ SetWatches:
         return next == var_Undef ? lit_Undef : mkLit( next, polarity[next] );
         //return next == var_Undef ? lit_Undef : mkLit( next, rnd_pol ? drand( random_seed ) < 0.5 : polarity[next] );
     }
-
+    
     template<class Settings>
     void SATModule<Settings>::analyze( CRef confl, vec<Lit>& out_learnt, int& out_btlevel )
     {
@@ -1992,6 +2067,17 @@ SetWatches:
         {
             vardata[var( p )] = mkVarData( from, decisionLevel() );
             trail.push_( p );
+        }
+        if( Settings::formula_guided_decision_heuristic && !sign( p ) )
+        {
+            auto iter = mTseitinVarShadows.find( (signed) var(p) );
+            if( iter != mTseitinVarShadows.end() )
+            {
+                for( signed v : iter->second )
+                {
+                    incrementTseitinShadowOccurrences(v);
+                }
+            }
         }
     }
 
@@ -3082,7 +3168,7 @@ NextClause:
     void SATModule<Settings>::collectStats()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
-        mpStatistics->rNrTotalVariables() = (size_t) nVars();
+        mpStatistics->rNrTotalVariablesAfter() = (size_t) nVars();
         mpStatistics->rNrClauses() = (size_t) nClauses();
         #endif
     }

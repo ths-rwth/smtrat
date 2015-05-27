@@ -386,6 +386,10 @@ namespace smtrat
             std::stack<signed> mOldSplittingVars;
             /// Stores the just introduced Boolean variables for theory splitting decisions.
             std::vector<signed> mNewSplittingVars;
+            ///
+            Minisat::vec<unsigned> mNonTseitinShadowedOccurrences;
+            ///
+            std::map<signed,std::set<signed>> mTseitinVarShadows;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
             SATModuleStatistics* mpStatistics;
@@ -550,9 +554,10 @@ namespace smtrat
              * @param polarity A flag, which is true, if the variable preferably is assigned to false.
              * @param dvar A flag, which is true, if the variable to create needs to considered in the solving.
              * @param _activity The initial activity of the variable to create.
+             * @param _tseitinShadowed A flag, which is true, if the variable to create is a sub-formula of a formula represented by a Tseitin variable.
              * @return The created Minisat variable.
              */
-            Minisat::Var newVar( bool polarity = true, bool dvar = true, double _activity = 0 );
+            Minisat::Var newVar( bool polarity = true, bool dvar = true, double _activity = 0, bool _tseitinShadowed = false );
 
             // Solving:
             
@@ -633,7 +638,6 @@ namespace smtrat
                     dec_vars++;
                 else if( !b && decision[v] )
                     dec_vars--;
-
                 decision[v] = b;
                 insertVarOrder( v );
             }
@@ -807,6 +811,27 @@ namespace smtrat
             inline void newDecisionLevel()
             {
                 trail_lim.push( trail.size() );
+            }
+            
+            void decrementTseitinShadowOccurrences( signed _var )
+            {
+                unsigned& ntso = mNonTseitinShadowedOccurrences[_var];
+                assert( ntso > 0 );
+                --ntso;
+                if( ntso == 0 )
+                {
+                    setDecisionVar( _var, false );
+                }
+            }
+            
+            void incrementTseitinShadowOccurrences( signed _var )
+            {
+                unsigned& ntso = mNonTseitinShadowedOccurrences[_var];
+                if( ntso == 0 )
+                {
+                    setDecisionVar( _var, true );
+                }
+                ++ntso;
             }
             
             /**
@@ -1202,6 +1227,8 @@ namespace smtrat
              */
             Minisat::CRef addFormula( const FormulaT&, unsigned _type );
             
+            bool isTseitinShadowed( const FormulaT& _var, const FormulaT& _clause ) const;
+            
             /**
              * Adds the Boolean abstraction of the given formula being a clause to the SAT solver.
              * @param _formula  The formula to abstract and add to the SAT solver. Note, that the
@@ -1223,7 +1250,7 @@ namespace smtrat
              * @param _decisionRelevant true, if the variable of the literal needs to be involved in the decision process of the SAT solving.
              * @return The corresponding literal.
              */
-            Minisat::Lit getLiteral( const FormulaT& _formula, const FormulaT& _origin, bool _decisionRelevant = true );
+            Minisat::Lit getLiteral( const FormulaT& _formula, const FormulaT& _origin, bool _decisionRelevant = true, bool _tseitinShadowed = false );
             
             /**
              * Adapts the passed formula according to the current assignment within the SAT solver.
