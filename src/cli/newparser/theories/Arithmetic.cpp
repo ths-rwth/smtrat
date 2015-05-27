@@ -84,6 +84,49 @@ namespace parser {
 			errors.next() << "Failed to construct ITE, the else-term \"" << elseterm << "\" is unsupported.";
 			return false;
 		}
+                if( thenpoly == elsepoly )
+                {
+                    result = thenpoly;
+                    return true;
+                }
+                if( ifterm.getType() == carl::FormulaType::CONSTRAINT )
+                {
+                    if( ifterm.constraint().relation() == carl::Relation::EQ )
+                    {
+                        if( ifterm.constraint() == ConstraintT( thenpoly-elsepoly, carl::Relation::EQ ) )
+                        {
+                            result = elsepoly;
+                            return true;
+                        }
+                    }
+                    else if( ifterm.constraint().relation() == carl::Relation::NEQ )
+                    {
+                        if( ifterm.constraint() == ConstraintT( thenpoly-elsepoly, carl::Relation::NEQ ) )
+                        {
+                            result = thenpoly;
+                            return true;
+                        }
+                    }
+                }
+                else if( ifterm.getType() == carl::FormulaType::NOT && ifterm.subformula().getType() == carl::FormulaType::CONSTRAINT )
+                {
+                    if( ifterm.subformula().constraint().relation() == carl::Relation::EQ )
+                    {
+                        if( ifterm.subformula().constraint() == ConstraintT( thenpoly-elsepoly, carl::Relation::EQ ) )
+                        {
+                            result = thenpoly;
+                            return true;
+                        }
+                    }
+                    else if( ifterm.subformula().constraint().relation() == carl::Relation::NEQ )
+                    {
+                        if( ifterm.subformula().constraint() == ConstraintT( thenpoly-elsepoly, carl::Relation::NEQ ) )
+                        {
+                            result = elsepoly;
+                            return true;
+                        }
+                    }   
+                }
 		carl::Variable auxVar = carl::freshRealVariable();
 		mITEs[auxVar] = std::make_tuple(ifterm, thenpoly, elsepoly);
 		result = carl::makePolynomial<Poly>(auxVar);
@@ -146,8 +189,9 @@ namespace parser {
 				FormulaT consThen = FormulaT(std::move(carl::makePolynomial<Poly>(v) - std::get<1>(t)), carl::Relation::EQ);
 				FormulaT consElse = FormulaT(std::move(carl::makePolynomial<Poly>(v) - std::get<2>(t)), carl::Relation::EQ);
 
-				state->mGlobalFormulas.emplace(FormulaT(carl::FormulaType::IMPLIES,std::get<0>(t), consThen));
-				state->mGlobalFormulas.emplace(FormulaT(carl::FormulaType::IMPLIES,FormulaT(carl::FormulaType::NOT,std::get<0>(t)), consElse));
+                                state->mGlobalFormulas.emplace(FormulaT(carl::FormulaType::ITE,std::get<0>(t),consThen,consElse));
+//				state->mGlobalFormulas.emplace(FormulaT(carl::FormulaType::IMPLIES,std::get<0>(t), consThen));
+//				state->mGlobalFormulas.emplace(FormulaT(carl::FormulaType::IMPLIES,FormulaT(carl::FormulaType::NOT,std::get<0>(t)), consElse));
 			}
 			return FormulaT(p, rel);
 		}
