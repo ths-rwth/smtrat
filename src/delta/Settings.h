@@ -36,7 +36,7 @@ public:
 			("help,h", "produce help message")
 			("input-file,i", bpo::value<std::string>()->required(), "input filename")
 			("output-file,o", bpo::value<std::string>()->default_value("delta.out.smt2"), "output filename")
-			("solver,s", bpo::value<std::string>()->default_value("./smtratSolver"), "solver executable")
+			("solver,s", bpo::value<std::string>()->default_value("./smtrat"), "solver executable")
 			("timeout,t", bpo::value<unsigned>()->default_value(15), "timeout in seconds")
 			("verbose,v", "be verbose")
 		;
