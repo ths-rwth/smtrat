@@ -67,7 +67,7 @@ public:
 	/**
 	 * Instantiate a variable within a term.
 	 */
-	virtual bool instantiate(carl::Variable::Arg, const carl::Sort&, const types::TermType&, types::TermType&, TheoryError& errors) {
+	virtual bool instantiate(types::VariableType, const types::TermType&, types::TermType&, TheoryError& errors) {
 		errors.next() << "Instantiation of arguments is not supported.";
 		return false;
 	}
