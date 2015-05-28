@@ -99,18 +99,13 @@ namespace parser {
 		}
 		return true;
 	}
-	
 	bool UninterpretedTheory::handleDistinct(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
 		std::vector<types::UninterpretedTheory::TermType> args;
 		if (!convertArguments(arguments, args, errors)) return false;
-		FormulasT subformulas;
 		EqualityGenerator<true> eg;
-		for (std::size_t i = 0; i < args.size() - 1; i++) {
-			for (std::size_t j = i + 1; j < args.size(); j++) {
-				subformulas.insert(boost::apply_visitor(eg, args[i], args[j]));
-			}
-		}
-		result = FormulaT(carl::FormulaType::AND, subformulas);
+		result = expandDistinct(args, [&eg](const types::UninterpretedTheory::TermType& a, const types::UninterpretedTheory::TermType& b){ 
+			return boost::apply_visitor(eg, a, b); 
+		});
 		return true;
 	}
 

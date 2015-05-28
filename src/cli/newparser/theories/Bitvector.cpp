@@ -222,6 +222,14 @@ namespace parser {
 		result = vart;
 		return true;
 	}
+	bool BitvectorTheory::handleDistinct(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
+		std::vector<carl::BVTerm> args;
+		if (!vectorConverter(arguments, args, errors)) return false;
+		result = expandDistinct(args, [](const carl::BVTerm& a, const carl::BVTerm& b){ 
+			return FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::NEQ, a, b)); 
+		});
+		return true;
+	}
 
 	bool BitvectorTheory::instantiate(types::VariableType var, const types::TermType& replacement, types::TermType& subject, TheoryError& errors) {
 		carl::BVVariable v;

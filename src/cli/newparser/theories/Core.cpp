@@ -124,13 +124,9 @@ namespace parser {
 	bool CoreTheory::handleDistinct(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
 		std::vector<FormulaT> args;
 		if (!convertArguments(arguments, args, errors)) return false;
-		FormulasT subformulas;
-		for (std::size_t i = 0; i < args.size() - 1; i++) {
-			for (std::size_t j = i + 1; j < args.size(); j++) {
-				subformulas.insert(FormulaT(carl::FormulaType::XOR, args[i], args[j]));
-			}
-		}
-		result = FormulaT(carl::FormulaType::AND, subformulas);
+		result = expandDistinct(args, [](const FormulaT& a, const FormulaT& b){ 
+			return FormulaT(carl::FormulaType::XOR, a, b);
+		});
 		return true;
 	}
 
