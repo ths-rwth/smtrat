@@ -272,10 +272,76 @@ namespace smtrat
 
             lbool result = checkFormula();
 
+            //TODO matthias: finish
             if ( Settings::find_all_dependent_variables )
             {
-            }
+                assert( result == l_True );
 
+                // Initialize set of all variables which are not tested yet for positive assignment
+                std::set<Minisat::Var> testVarsPositive;
+                Minisat::Var testCandidate;
+                for ( BooleanVarMap::const_iterator iter = mBooleanVarMap.begin(); iter != mBooleanVarMap.end(); ++iter )
+                {
+                    testVarsPositive.insert( iter->second );
+                }
+
+                while ( !testVarsPositive.empty() )
+                {
+                    cout << "Test candidates for positive variables (before): ";
+                    for ( Minisat::Var var : testVarsPositive )
+                    {
+                        cout << mMinisatVarMap.at( var ) << ", ";
+                    }
+                    cout << endl;
+                    printCurrentAssignment();
+
+                    for( int pos = 0; pos < assigns.size(); ++pos )
+                    {
+                        if ( assigns[ pos ] == l_True )
+                        {
+                            testVarsPositive.erase( pos );
+                        }
+                    }
+
+                    cout << "Test candidates for positive variables (after): ";
+                    for ( Minisat::Var var : testVarsPositive )
+                    {
+                        cout << mMinisatVarMap.at( var ) << ", ";
+                    }
+                    cout << endl;
+
+                    // Reset the state until level 0
+                    if (decisionLevel() > 0)
+                    {
+                        cancelAssignmentUntil( 0 );
+                        qhead = trail_lim[0];
+                        trail.shrink( trail.size() - trail_lim[0] );
+                        trail_lim.shrink( trail_lim.size() - 0 );
+                        ok = true;
+                    }
+
+                    if ( testVarsPositive.empty() )
+                    {
+                        break;
+                    }
+
+                    // Set new assignment and check again
+                    // TODO matthias: ignore Tseitin variables
+                    testCandidate = *testVarsPositive.begin();
+                    cout << "Test candidate: " << mMinisatVarMap.at( testCandidate ) << endl;
+                    Lit nextLit = mkLit( testCandidate, false );
+                    assumptions.push( nextLit );
+                    //uncheckedEnqueue( nextLit, CRef_Undef );
+                    result = checkFormula();
+                    cout << "Result: " << ( result == l_True ? "true" : ( result == l_False ? "false" : "unknown" ) ) << endl;
+                    if ( result == l_False )
+                    {
+                        //TODO matthias: remember unsat variables
+                        cout << "Unsat with variable: " << testCandidate << endl;
+                        testVarsPositive.erase( testCandidate );
+                    }
+                }
+            }
 
             #ifdef SATMODULE_WITH_CALL_NUMBER
             cout << endl << endl;
