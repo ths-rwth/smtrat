@@ -50,8 +50,8 @@ public:
 		if (qi::phrase_parse(begin, end, parser, skipper)) {
 			return true;
 		} else {
-			std::cout << "Remaining to parse:" << std::endl;
-			std::cout << std::string(begin, end) << std::endl;
+			//std::cout << "Remaining to parse:" << std::endl;
+			//std::cout << std::string(begin, end) << std::endl;
 			return false;
 		}
 	}

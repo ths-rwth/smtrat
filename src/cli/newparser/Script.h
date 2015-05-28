@@ -20,6 +20,25 @@ struct LogicParser: public qi::symbols<char, smtrat::Logic> {
 	    add("QF_BV", smtrat::Logic::QF_BV);
 	}
 };
+struct ErrorHandler {
+	template<typename> struct result { typedef qi::error_handler_result type; };
+	template<typename T1, typename T2, typename T3, typename T4>
+	qi::error_handler_result operator()(T1 b, T2 e, T3 where, T4 const& 
+        #ifdef LOGGING
+        what
+        #endif
+    ) const {
+		auto line_start = spirit::get_line_start(b, where);
+		auto line_end = std::find(where, e, '\n');
+		std::string line(++line_start, line_end);
+	
+		SMTRAT_LOG_ERROR("smtrat.parser", "Parsing error at " << spirit::get_line(where) << ":" << spirit::get_column(line_start, where));
+		SMTRAT_LOG_ERROR("smtrat.parser", "expected" << std::endl << "\t" << what.tag << ": " << what);
+		SMTRAT_LOG_ERROR("smtrat.parser", "but got" << std::endl << "\t" << std::string(where, line_end));
+		SMTRAT_LOG_ERROR("smtrat.parser", "in line " << spirit::get_line(where) << std::endl << "\t" << line);
+		return qi::fail;
+	}
+};
 
 template<typename Callee>
 struct ScriptParser: public qi::grammar<Iterator, Skipper> {
@@ -61,7 +80,8 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 			|	(qi::lit("set-logic") > logic > ")")[px::bind(&Callee::setLogic, px::ref(callee), qi::_1)]
 			|	(qi::lit("set-option") > attribute > ")")[px::bind(&Callee::setOption, px::ref(callee), qi::_1)]
 		);
-		main = *command >> qi::eoi;
+		main = *command > qi::eoi;
+		qi::on_error<qi::fail>(main, errorHandler(qi::_1, qi::_2, qi::_3, qi::_4));
 	}
 	
 	InstructionHandler* handler;
@@ -82,6 +102,8 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 	qi::rule<Iterator, Skipper> functionDefinition;
 	qi::rule<Iterator, Skipper> command;
 	qi::rule<Iterator, Skipper> main;
+	
+	px::function<ErrorHandler> errorHandler;
 };
 
 }
