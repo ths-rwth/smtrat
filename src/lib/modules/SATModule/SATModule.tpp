@@ -3143,7 +3143,7 @@ NextClause:
             {
                 _out << _init << "               ";
             }
-            _out << setw( 5 ) << pos;
+            _out << setw( 5 ) << mMinisatVarMap.at(pos);
             _out << "  (" << setw( 7 ) << activity[pos] << ") " << " -> ";
             if( assigns[pos] == l_True )
             {
