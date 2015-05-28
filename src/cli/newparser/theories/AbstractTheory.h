@@ -38,7 +38,8 @@ public:
 	/**
 	 * Declare a new variable with the given name and the given sort.
 	 */
-	virtual bool declareVariable(const std::string&, const carl::Sort&) {
+	virtual bool declareVariable(const std::string&, const carl::Sort&, types::VariableType&, TheoryError& errors) {
+		errors.next() << "Variable declaration is not supported.";
 		return false;
 	}
 	/**
