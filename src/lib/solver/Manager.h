@@ -245,7 +245,7 @@ namespace smtrat
              * formulas is satisfiable.
              * @param The stream to print on.
              */
-            void printAssignment( std::ostream& _out ) const
+            void printAssignment( std::ostream& _out = std::cout ) const
             {
                 mpPrimaryBackend->printModel( _out );
             }
