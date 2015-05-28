@@ -220,9 +220,10 @@ namespace smtrat
              * can be used in the same manner as infeasible subsets are used.
              * @return The lemmas/tautologies made during solving.
              */
-            std::vector<FormulaT> lemmas() const
+            std::vector<FormulaT> lemmas()
             {
                 std::vector<FormulaT> result;
+                mpPrimaryBackend->updateDeductions();
                 for( const auto& ded : mpPrimaryBackend->deductions() )
                 {
                     result.push_back( ded.first );
