@@ -72,8 +72,8 @@ namespace smtrat
 			void updateModel() const;
 
         protected:
-			void addBounds(const FormulaT& formula);
-			void removeBounds(const FormulaT& formula);
+			void addBounds(const FormulaT& formula, const FormulaT& _origin);
+			void removeBounds(const FormulaT& formula, const FormulaT& _origin);
 			
 			/**
 			 * Removes redundant or obsolete factors of polynomials from the formula.
