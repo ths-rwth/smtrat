@@ -77,7 +77,7 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 	SymbolParser symbol;
 	TermParser term;
 	
-	qi::rule<Iterator, std::pair<carl::Variable, carl::Sort>(), Skipper> functionDefinitionArg;
+	qi::rule<Iterator, types::VariableType(), Skipper> functionDefinitionArg;
 	qi::rule<Iterator, Skipper> functionDefinition;
 	qi::rule<Iterator, Skipper> command;
 	qi::rule<Iterator, Skipper> main;
