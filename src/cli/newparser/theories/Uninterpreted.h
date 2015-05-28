@@ -11,6 +11,7 @@ namespace parser {
  * Implements the theory of equalities and uninterpreted functions.
  */
 struct UninterpretedTheory: public AbstractTheory {
+	std::map<types::TermType, carl::UVariable> mInstantiatedArguments;
 	
 	static bool convertTerm(const types::TermType& term, types::UninterpretedTheory::TermType& result);
 	static bool convertArguments(const std::vector<types::TermType>& arguments, std::vector<types::UninterpretedTheory::TermType>& result, TheoryError& errors);

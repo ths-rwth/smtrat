@@ -34,7 +34,10 @@ namespace parser {
 
 	bool UninterpretedTheory::declareVariable(const std::string& name, const carl::Sort& sort, types::VariableType& result, TheoryError& errors) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
-		if (sm.isInterpreted(sort)) return false;
+		if (sm.isInterpreted(sort)) {
+			errors.next() << "The request sort is not uninterpreted but \"" << sort << "\".";
+			return false;
+		}
 		assert(state->isSymbolFree(name));
 		carl::Variable v = carl::freshVariable(name, carl::VariableType::VT_UNINTERPRETED);
 		carl::UVariable uv(v, sort);
@@ -61,8 +64,8 @@ namespace parser {
 	bool UninterpretedTheory::handleFunctionInstantiation(const carl::UninterpretedFunction& f, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
 		std::vector<carl::UVariable> vars;
 		for (const auto& v: arguments) {
-			auto it = state->mUninterpretedArguments.find(v);
-			if (it != state->mUninterpretedArguments.end()) {
+			auto it = mInstantiatedArguments.find(v);
+			if (it != mInstantiatedArguments.end()) {
 				vars.push_back(it->second);
 				continue;
 			} else if (const FormulaT* f = boost::get<FormulaT>(&v)) {
@@ -83,7 +86,7 @@ namespace parser {
 				SMTRAT_LOG_ERROR("smtrat.parser", "The function argument type for function " << f << " was invalid.");
 				continue;
 			}
-			state->mUninterpretedArguments[v] = vars.back();
+			mInstantiatedArguments[v] = vars.back();
 		}
 		carl::UFInstance ufi = carl::newUFInstance(f, vars);
 		carl::SortManager& sm = carl::SortManager::getInstance();

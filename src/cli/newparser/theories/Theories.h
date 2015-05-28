@@ -131,7 +131,7 @@ struct Theories {
 		if (state->isSymbolFree(name)) {
 			///@todo check that definition matches the sort
 			if (arguments.size() == 0) {
-				state->defined_constants.emplace(name, definition);
+				state->constants.emplace(name, definition);
 			} else {
 				SMTRAT_LOG_DEBUG("smtrat.parser", "Defining function \"" << name << "\" as \"" << definition << "\".");
 				state->registerFunction(name, new UserFunctionInstantiator(arguments, sort, definition));
@@ -156,11 +156,17 @@ struct Theories {
 		return types::TermType();
 	}
 	
-	void openScope(std::size_t n) {
-		for (; n > 0; n--) state->pushScope();
+	void pushExpressionScope(std::size_t n) {
+		for (; n > 0; n--) state->pushExpressionScope();
 	}
-	void closeScope(std::size_t n) {
-		for (; n > 0; n--) state->popScope();
+	void popExpressionScope(std::size_t n) {
+		for (; n > 0; n--) state->popExpressionScope();
+	}
+	void pushScriptScope(std::size_t n) {
+		for (; n > 0; n--) state->pushScriptScope();
+	}
+	void popScriptScope(std::size_t n) {
+		for (; n > 0; n--) state->popScriptScope();
 	}
 	
 	void handleLet(const std::string& symbol, const types::TermType& term) {
