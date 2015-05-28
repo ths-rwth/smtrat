@@ -111,22 +111,20 @@ struct Theories {
 		}
 	}
 	
-	std::pair<carl::Variable, carl::Sort> declareFunctionArgument(const std::pair<std::string, carl::Sort>& arg) {
+	types::VariableType declareFunctionArgument(const std::pair<std::string, carl::Sort>& arg) {
 		if (state->isSymbolFree(arg.first)) {
-			carl::SortManager& sm = carl::SortManager::getInstance();
-			if (sm.isInterpreted(arg.second)) {
-				carl::Variable v = carl::VariablePool::getInstance().getFreshVariable(arg.first, carl::SortManager::getInstance().getType(arg.second));
-				state->bindings.emplace(arg.first, v);
-				return std::make_pair(v, arg.second);
-			} else {
-				SMTRAT_LOG_ERROR("smtrat.parser", "Function argument \"" << arg.first << "\" is of uninterpreted type.");
-				HANDLE_ERROR
+			TheoryError te;
+			types::VariableType result;
+			for (auto& t: theories) {
+				if (t.second->declareVariable(arg.first, arg.second, result, te(t.first))) return result;
 			}
+			SMTRAT_LOG_ERROR("smtrat.parser", "Function argument \"" << arg.first << "\" could not be declared:" << te);
+			HANDLE_ERROR
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Function argument \"" << arg.first << "\" will not be declared due to a name clash.");
 			HANDLE_ERROR
 		}
-		return std::make_pair(carl::Variable::NO_VARIABLE, arg.second);
+		return types::VariableType(carl::Variable::NO_VARIABLE);
 	}
 	
 	void defineFunction(const std::string& name, const std::vector<std::pair<carl::Variable, carl::Sort>>& arguments, const carl::Sort& sort, const types::TermType& definition) {
