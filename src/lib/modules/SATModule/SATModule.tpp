@@ -229,7 +229,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    Answer SATModule<Settings>::checkCore( bool )
+    Answer SATModule<Settings>::checkCore( bool _full )
     {
         if( carl::PROP_IS_IN_CNF <= rReceivedFormula().properties() )
         {
@@ -270,54 +270,61 @@ namespace smtrat
                 return False;
             }
 
-            lbool result = l_Undef;
-            if( Settings::use_restarts )
-            {
-                mCurr_Restarts = 0;
-                int current_restarts = -1;
-                result = l_Undef;
-                while( current_restarts < mCurr_Restarts )
-                {
-                    current_restarts = mCurr_Restarts;
-                    double rest_base = luby_restart ? luby( restart_inc, mCurr_Restarts ) : pow( restart_inc, mCurr_Restarts );
-                    result = search( (int)rest_base * restart_first );
-                    // if( !withinBudget() ) break;
-                }
-            }
-            else
-            {
-                result = search();
-            }
+            return checkFormula( _full, Settings::find_all_dependent_variables );
+        }
+        else
+        {
+            return Unknown;
+        }
+    }
 
-            #ifdef SATMODULE_WITH_CALL_NUMBER
-            cout << endl << endl;
-            #endif
-            if( result == l_True )
+    template<class Settings>
+    Answer SATModule<Settings>::checkFormula( bool _full, bool _findPositiveVariables )
+    {
+        lbool result = l_Undef;
+
+        if( Settings::use_restarts )
+        {
+            mCurr_Restarts = 0;
+            int current_restarts = -1;
+            result = l_Undef;
+            while( current_restarts < mCurr_Restarts )
             {
-                #ifdef SMTRAT_DEVOPTION_Statistics
-                collectStats();
-                #endif
-                return True;
-            }
-            else if( result == l_False )
-            {
-                ok = false;
-                updateInfeasibleSubset();
-                #ifdef SMTRAT_DEVOPTION_Statistics
-                collectStats();
-                #endif
-                return False;
-            }
-            else
-            {
-                #ifdef SMTRAT_DEVOPTION_Statistics
-                collectStats();
-                #endif
-                return Unknown;
+                current_restarts = mCurr_Restarts;
+                double rest_base = luby_restart ? luby( restart_inc, mCurr_Restarts ) : pow( restart_inc, mCurr_Restarts );
+                result = search( (int)rest_base * restart_first );
+                // if( !withinBudget() ) break;
             }
         }
         else
         {
+            result = search();
+        }
+
+        #ifdef SATMODULE_WITH_CALL_NUMBER
+        cout << endl << endl;
+        #endif
+        if( result == l_True )
+        {
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            collectStats();
+            #endif
+            return True;
+        }
+        else if( result == l_False )
+        {
+            ok = false;
+            updateInfeasibleSubset();
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            collectStats();
+            #endif
+            return False;
+        }
+        else
+        {
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            collectStats();
+            #endif
             return Unknown;
         }
     }
@@ -1357,36 +1364,42 @@ SetWatches:
         #endif
         if( decisionLevel() > level )
         {
-            for( int c = trail.size() - 1; c >= trail_lim[level]; --c )
-            {
-                Var x       = var( trail[c] );
-                if( mBooleanConstraintMap[x].first != nullptr )
-                {
-                    assert( mBooleanConstraintMap[x].second != nullptr );
-                    Abstraction& abstr = sign( trail[c] ) ? *mBooleanConstraintMap[x].second : *mBooleanConstraintMap[x].first;
-                    if( abstr.position != rPassedFormula().end() )
-                    {
-                        if( abstr.updateInfo >=0 && --abstr.updateInfo < 0 )
-                            mChangedBooleans.push_back( x );
-                    }
-                    else if( abstr.consistencyRelevant ) abstr.updateInfo = 0;
-                    if( Settings::allow_theory_propagation && Settings::detect_deductions )
-                    {
-                        abstr.isDeduction = false;
-                    }
-                }
-                assigns[x]  = l_Undef;
-                if( (phase_saving > 1 || (phase_saving == 1)) && c > trail_lim.last() )
-                    polarity[x] = sign( trail[c] );
-                insertVarOrder( x );
-            }
+            cancelAssignmentUntil( level );
             qhead = trail_lim[level];
             trail.shrink( trail.size() - trail_lim[level] );
             trail_lim.shrink( trail_lim.size() - level );
             ok = true;
         }
     }
-    
+
+    template<class Settings>
+    void SATModule<Settings>::cancelAssignmentUntil( int level )
+    {
+        for( int c = trail.size() - 1; c >= trail_lim[level]; --c )
+        {
+            Var x = var( trail[c] );
+            if( mBooleanConstraintMap[x].first != nullptr )
+            {
+                assert( mBooleanConstraintMap[x].second != nullptr );
+                Abstraction& abstr = sign( trail[c] ) ? *mBooleanConstraintMap[x].second : *mBooleanConstraintMap[x].first;
+                if( abstr.position != rPassedFormula().end() )
+                {
+                    if( abstr.updateInfo >=0 && --abstr.updateInfo < 0 )
+                        mChangedBooleans.push_back( x );
+                }
+                else if( abstr.consistencyRelevant ) abstr.updateInfo = 0;
+                if( Settings::allow_theory_propagation && Settings::detect_deductions )
+                {
+                    abstr.isDeduction = false;
+                }
+            }
+            assigns[x] = l_Undef;
+            if( (phase_saving > 1 || (phase_saving == 1)) && c > trail_lim.last() )
+                polarity[x] = sign( trail[c] );
+            insertVarOrder( x );
+        }
+    }
+
     template<class Settings>
     CRef SATModule<Settings>::propagateConsistently( bool& _madeTheoryCall )
     {

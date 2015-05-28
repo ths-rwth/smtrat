@@ -866,12 +866,19 @@ namespace smtrat
             Minisat::CRef propagate();
             
             /**
-             * Revert to the state at given level (keeping all assignment at 'level' but not beyond).
+             * Revert to the state at given level (keeping all assignments at 'level' but not beyond).
              *
              * @param level The level to backtrack to.
              */
             void cancelUntil( int level );
             
+            /**
+             * Revert the variables assignment until a given level (keeping all assignments at 'level')
+             *
+             * @param level The level to backtrack to
+             */
+            void cancelAssignmentUntil( int level );
+
             /**
              *  analyze : (confl : Clause*) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->  [void]
              *
@@ -922,6 +929,17 @@ namespace smtrat
              */
             Minisat::CRef propagateConsistently( bool& _madeTheoryCall );
             
+            /**
+             * Checks the received formula for consistency.
+             * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
+             * @parama _findPositiveVariables if false, the search does not stop after finding a satisfying assignment and tries to find
+             *                                positive assignments for all variables
+             * @return True,    if the received formula is satisfiable;
+             *         False,   if the received formula is not satisfiable;
+             *         Unknown, otherwise.
+             */
+            Answer checkFormula( bool _full = true, bool _findPositiveVariables = false );
+
             /**
              * search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
              *
