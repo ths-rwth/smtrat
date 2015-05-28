@@ -85,8 +85,8 @@ struct Theories {
 	}
 	
 	void addGlobalFormulas(FormulasT& formulas) {
-		formulas.insert(state->mGlobalFormulas.begin(), state->mGlobalFormulas.end());
-		state->mGlobalFormulas.clear();
+		formulas.insert(state->global_formulas.begin(), state->global_formulas.end());
+		state->global_formulas.clear();
 	}
 	void declareVariable(const std::string& name, const carl::Sort& sort) {
 		if (state->isSymbolFree(name)) {
@@ -134,7 +134,9 @@ struct Theories {
 				state->constants.emplace(name, definition);
 			} else {
 				SMTRAT_LOG_DEBUG("smtrat.parser", "Defining function \"" << name << "\" as \"" << definition << "\".");
-				state->registerFunction(name, new UserFunctionInstantiator(arguments, sort, definition));
+				auto ufi = new UserFunctionInstantiator(arguments, sort, definition);
+				addGlobalFormulas(ufi->globalFormulas);
+				state->registerFunction(name, ufi);
 			}
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Function \"" << name << "\" will not be defined due to a name clash.");
@@ -221,6 +223,12 @@ struct Theories {
 			for (auto& t: theories) {
 				types::VariableType var = function.arguments[i];
 				if (t.second->instantiate(var, arguments[i], result, te(t.first))) {
+					for (const auto& f: function.globalFormulas) {
+						types::TermType tmp = f;
+						bool res = t.second->instantiate(var, arguments[i], tmp, te);
+						assert(res);
+						state->global_formulas.insert(boost::get<FormulaT>(tmp));
+					}
 					wasInstantiated = true;
 					break;
 				}
