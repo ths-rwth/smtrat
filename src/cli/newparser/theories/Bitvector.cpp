@@ -143,16 +143,23 @@ namespace parser {
 		state->registerFunction("bvsge", new BitvectorRelationInstantiator<carl::BVCompareRelation::SGE>());
 	}
 
-	bool BitvectorTheory::declareVariable(const std::string& name, const carl::Sort& sort) {
+	bool BitvectorTheory::declareVariable(const std::string& name, const carl::Sort& sort, types::VariableType& result, TheoryError& errors) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
 		switch (sm.getType(sort)) {
 			case carl::VariableType::VT_BITVECTOR: {
 				assert(state->isSymbolFree(name));
+				if ((sm.getIndices(sort) == nullptr) || (sm.getIndices(sort)->size() != 1)) {
+					errors.next() << "The sort \"" << sort << "\" should have a single index, being the bit size.";
+					return false;
+				}
 				carl::Variable v = carl::freshVariable(name, carl::VariableType::VT_BITVECTOR);
-				state->variables[name] = types::BVTerm(carl::BVTermType::VARIABLE, carl::BVVariable(v, sort));
+				carl::BVVariable bvv = carl::BVVariable(v, sort);
+				state->variables[name] = bvv;
+				result = bvv;
 				return true;
 			}
 			default:
+				errors.next() << "The requested sort is not a bitvector sort but \"" << sort << "\".";
 				return false;
 		}
 	}
@@ -210,12 +217,35 @@ namespace parser {
 		FormulaT consThen = FormulaT(types::BVConstraint::create(carl::BVCompareRelation::EQ, vart, thent));
 		FormulaT consElse = FormulaT(types::BVConstraint::create(carl::BVCompareRelation::EQ, vart, elset));
 		
-		state->mGlobalFormulas.emplace(FormulaT(carl::FormulaType::IMPLIES,ifterm, consThen));
-		state->mGlobalFormulas.emplace(FormulaT(carl::FormulaType::IMPLIES,FormulaT(carl::FormulaType::NOT,ifterm), consElse));
+		state->global_formulas.emplace(FormulaT(carl::FormulaType::IMPLIES,ifterm, consThen));
+		state->global_formulas.emplace(FormulaT(carl::FormulaType::IMPLIES,FormulaT(carl::FormulaType::NOT,ifterm), consElse));
 		result = vart;
 		return true;
 	}
+	bool BitvectorTheory::handleDistinct(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
+		std::vector<carl::BVTerm> args;
+		if (!vectorConverter(arguments, args, errors)) return false;
+		result = expandDistinct(args, [](const carl::BVTerm& a, const carl::BVTerm& b){ 
+			return FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::NEQ, a, b)); 
+		});
+		return true;
+	}
 
+	bool BitvectorTheory::instantiate(types::VariableType var, const types::TermType& replacement, types::TermType& subject, TheoryError& errors) {
+		carl::BVVariable v;
+		conversion::VariantConverter<carl::BVVariable> c;
+		if (!c(var, v)) {
+			errors.next() << "The variable is not a bitvector variable.";
+			return false;
+		}
+		carl::BVTerm repl;
+		if (!termConverter(replacement, repl)) {
+			errors.next() << "Could not convert argument \"" << replacement << "\" to a bitvector term.";
+			return false;
+		}
+		Instantiator<carl::BVVariable, carl::BVTerm> instantiator;
+		return instantiator.instantiate(v, repl, subject);
+	}
 	bool BitvectorTheory::functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
 		if (identifier.symbol == "=") {
 			if (arguments.size() == 2) {

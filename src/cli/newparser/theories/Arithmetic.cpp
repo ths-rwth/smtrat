@@ -60,15 +60,19 @@ namespace parser {
 		ops.emplace(">", OperatorType(carl::Relation::GREATER));
 	}
 
-	bool ArithmeticTheory::declareVariable(const std::string& name, const carl::Sort& sort) {
+	bool ArithmeticTheory::declareVariable(const std::string& name, const carl::Sort& sort, types::VariableType& result, TheoryError& errors) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
 		switch (sm.getType(sort)) {
 			case carl::VariableType::VT_INT:
-			case carl::VariableType::VT_REAL:
+			case carl::VariableType::VT_REAL: {
 				assert(state->isSymbolFree(name));
-				state->variables[name] = carl::freshVariable(name, sm.getType(sort));
+				carl::Variable var = carl::freshVariable(name, sm.getType(sort));
+				state->variables[name] = var;
+				result = var;
 				return true;
+			}
 			default:
+				errors.next() << "The requested sort was neither \"Int\" nor \"Real\" but \"" << sort << "\".";
 				return false;
 		}
 	}
@@ -189,18 +193,23 @@ namespace parser {
 				FormulaT consThen = FormulaT(std::move(carl::makePolynomial<Poly>(v) - std::get<1>(t)), carl::Relation::EQ);
 				FormulaT consElse = FormulaT(std::move(carl::makePolynomial<Poly>(v) - std::get<2>(t)), carl::Relation::EQ);
 
-                                state->mGlobalFormulas.emplace(FormulaT(carl::FormulaType::ITE,std::get<0>(t),consThen,consElse));
-//				state->mGlobalFormulas.emplace(FormulaT(carl::FormulaType::IMPLIES,std::get<0>(t), consThen));
-//				state->mGlobalFormulas.emplace(FormulaT(carl::FormulaType::IMPLIES,FormulaT(carl::FormulaType::NOT,std::get<0>(t)), consElse));
+                                state->global_formulas.emplace(FormulaT(carl::FormulaType::ITE,std::get<0>(t),consThen,consElse));
+//				state->global_formulas.emplace(FormulaT(carl::FormulaType::IMPLIES,std::get<0>(t), consThen));
+//				state->global_formulas.emplace(FormulaT(carl::FormulaType::IMPLIES,FormulaT(carl::FormulaType::NOT,std::get<0>(t)), consElse));
 			}
 			return FormulaT(p, rel);
 		}
 	}
 	
-	bool ArithmeticTheory::instantiate(carl::Variable::Arg var, const carl::Sort& sort, const types::TermType& replacement, types::TermType& result, TheoryError& errors) {
-		assert(var.getType() == carl::SortManager::getInstance().getType(sort));
-		if ((var.getType() != carl::VariableType::VT_INT) && (var.getType() != carl::VariableType::VT_REAL)) {
-			errors.next() << "Sort is neither \"Int\" nor \"Real\" but \"" << var.getType() << "\".";
+	bool ArithmeticTheory::instantiate(types::VariableType var, const types::TermType& replacement, types::TermType& result, TheoryError& errors) {
+		carl::Variable v;
+		conversion::VariantConverter<carl::Variable> c;
+		if (!c(var, v)) {
+			errors.next() << "The variable is not an arithmetic variable.";
+			return false;
+		}
+		if ((v.getType() != carl::VariableType::VT_INT) && (v.getType() != carl::VariableType::VT_REAL)) {
+			errors.next() << "Sort is neither \"Int\" nor \"Real\" but \"" << v.getType() << "\".";
 			return false;
 		}
 		Poly repl;
@@ -208,8 +217,8 @@ namespace parser {
 			errors.next() << "Could not convert argument \"" << replacement << "\" to an arithmetic expression.";
 			return false;
 		}
-		Instantiator<Poly> instantiator;
-		return instantiator.instantiate(var, repl, result);
+		Instantiator<carl::Variable,Poly> instantiator;
+		return instantiator.instantiate(v, repl, result);
 	}
 
 	bool ArithmeticTheory::functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {

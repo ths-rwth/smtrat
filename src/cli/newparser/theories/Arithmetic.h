@@ -23,13 +23,13 @@ struct ArithmeticTheory: public AbstractTheory  {
 	
 	ArithmeticTheory(ParserState* state);
 	
-	bool declareVariable(const std::string& name, const carl::Sort& sort);
+	bool declareVariable(const std::string& name, const carl::Sort& sort, types::VariableType& result, TheoryError& errors);
 
 	bool handleITE(const FormulaT& ifterm, const types::TermType& thenterm, const types::TermType& elseterm, types::TermType& result, TheoryError& errors);
 	
 	FormulaT makeConstraint(const Poly& lhs, const Poly& rhs, carl::Relation rel);
 
-	bool instantiate(carl::Variable::Arg var, const carl::Sort& sort, const types::TermType& replacement, types::TermType& result, TheoryError& errors);
+	bool instantiate(types::VariableType var, const types::TermType& replacement, types::TermType& result, TheoryError& errors);
 	bool functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors);
 };
 	

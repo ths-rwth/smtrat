@@ -85,15 +85,17 @@ struct Theories {
 	}
 	
 	void addGlobalFormulas(FormulasT& formulas) {
-		formulas.insert(state->mGlobalFormulas.begin(), state->mGlobalFormulas.end());
-		state->mGlobalFormulas.clear();
+		formulas.insert(state->global_formulas.begin(), state->global_formulas.end());
+		state->global_formulas.clear();
 	}
 	void declareVariable(const std::string& name, const carl::Sort& sort) {
 		if (state->isSymbolFree(name)) {
+			types::VariableType var;
+			TheoryError te;
 			for (auto& t: theories) {
-				if (t.second->declareVariable(name, sort)) return;
+				if (t.second->declareVariable(name, sort, var, te(t.first))) return;
 			}
-			SMTRAT_LOG_ERROR("smtrat.parser", "Variable \"" << name << "\" was declared with an invalid sort \"" << sort << "\".");
+			SMTRAT_LOG_ERROR("smtrat.parser", "Variable \"" << name << "\" was declared with an invalid sort \"" << sort << "\":" << te);
 			HANDLE_ERROR
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Variable \"" << name << "\" will not be declared due to a name clash.");
@@ -109,31 +111,32 @@ struct Theories {
 		}
 	}
 	
-	std::pair<carl::Variable, carl::Sort> declareFunctionArgument(const std::pair<std::string, carl::Sort>& arg) {
+	types::VariableType declareFunctionArgument(const std::pair<std::string, carl::Sort>& arg) {
 		if (state->isSymbolFree(arg.first)) {
-			carl::SortManager& sm = carl::SortManager::getInstance();
-			if (sm.isInterpreted(arg.second)) {
-				carl::Variable v = carl::VariablePool::getInstance().getFreshVariable(arg.first, carl::SortManager::getInstance().getType(arg.second));
-				state->bindings.emplace(arg.first, v);
-				return std::make_pair(v, arg.second);
-			} else {
-				SMTRAT_LOG_ERROR("smtrat.parser", "Function argument \"" << arg.first << "\" is of uninterpreted type.");
-				HANDLE_ERROR
+			TheoryError te;
+			types::VariableType result;
+			for (auto& t: theories) {
+				if (t.second->declareVariable(arg.first, arg.second, result, te(t.first))) return result;
 			}
+			SMTRAT_LOG_ERROR("smtrat.parser", "Function argument \"" << arg.first << "\" could not be declared:" << te);
+			HANDLE_ERROR
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Function argument \"" << arg.first << "\" will not be declared due to a name clash.");
 			HANDLE_ERROR
 		}
-		return std::make_pair(carl::Variable::NO_VARIABLE, arg.second);
+		return types::VariableType(carl::Variable::NO_VARIABLE);
 	}
 	
-	void defineFunction(const std::string& name, const std::vector<std::pair<carl::Variable, carl::Sort>>& arguments, const carl::Sort& sort, const types::TermType& definition) {
+	void defineFunction(const std::string& name, const std::vector<types::VariableType>& arguments, const carl::Sort& sort, const types::TermType& definition) {
 		if (state->isSymbolFree(name)) {
 			///@todo check that definition matches the sort
 			if (arguments.size() == 0) {
-				state->defined_constants.emplace(name, definition);
+				state->constants.emplace(name, definition);
 			} else {
-				state->registerFunction(name, new UserFunctionInstantiator(arguments, sort, definition));
+				SMTRAT_LOG_DEBUG("smtrat.parser", "Defining function \"" << name << "\" as \"" << definition << "\".");
+				auto ufi = new UserFunctionInstantiator(arguments, sort, definition);
+				addGlobalFormulas(ufi->globalFormulas);
+				state->registerFunction(name, ufi);
 			}
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Function \"" << name << "\" will not be defined due to a name clash.");
@@ -155,11 +158,17 @@ struct Theories {
 		return types::TermType();
 	}
 	
-	void openScope(std::size_t n) {
-		for (; n > 0; n--) state->pushScope();
+	void pushExpressionScope(std::size_t n) {
+		for (; n > 0; n--) state->pushExpressionScope();
 	}
-	void closeScope(std::size_t n) {
-		for (; n > 0; n--) state->popScope();
+	void popExpressionScope(std::size_t n) {
+		for (; n > 0; n--) state->popExpressionScope();
+	}
+	void pushScriptScope(std::size_t n) {
+		for (; n > 0; n--) state->pushScriptScope();
+	}
+	void popScriptScope(std::size_t n) {
+		for (; n > 0; n--) state->popScriptScope();
 	}
 	
 	void handleLet(const std::string& symbol, const types::TermType& term) {
@@ -212,14 +221,20 @@ struct Theories {
 			TheoryError te;
 			bool wasInstantiated = false;
 			for (auto& t: theories) {
-				carl::Variable var = function.arguments[i].first;
-				if (t.second->instantiate(var, function.arguments[i].second, arguments[i], result, te(t.first))) {
+				types::VariableType var = function.arguments[i];
+				if (t.second->instantiate(var, arguments[i], result, te(t.first))) {
+					for (const auto& f: function.globalFormulas) {
+						types::TermType tmp = f;
+						bool res = t.second->instantiate(var, arguments[i], tmp, te);
+						assert(res);
+						state->global_formulas.insert(boost::get<FormulaT>(tmp));
+					}
 					wasInstantiated = true;
 					break;
 				}
 			}
 			if (!wasInstantiated) {
-				SMTRAT_LOG_ERROR("smtrat.parser", "Failed to instantiate argument \"" << function.arguments[i].first << "\": " << te);
+				SMTRAT_LOG_ERROR("smtrat.parser", "Failed to instantiate argument \"" << function.arguments[i] << "\": " << te);
 				HANDLE_ERROR
 				return false;
 			}

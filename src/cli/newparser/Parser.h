@@ -50,8 +50,8 @@ public:
 		if (qi::phrase_parse(begin, end, parser, skipper)) {
 			return true;
 		} else {
-			std::cout << "Remaining to parse:" << std::endl;
-			std::cout << std::string(begin, end) << std::endl;
+			//std::cout << "Remaining to parse:" << std::endl;
+			//std::cout << std::string(begin, end) << std::endl;
 			return false;
 		}
 	}
@@ -129,12 +129,12 @@ public:
 	}
 	void pop(const Integer& n) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(pop " << n << ")");
-		theories.closeScope(carl::toInt<std::size_t>(n));
+		theories.popScriptScope(carl::toInt<std::size_t>(n));
 		callHandler(&InstructionHandler::pop, carl::toInt<std::size_t>(n));
 	}
 	void push(const Integer& n) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(push " << n << ")");
-		theories.openScope(carl::toInt<std::size_t>(n));
+		theories.pushScriptScope(carl::toInt<std::size_t>(n));
 		callHandler(&InstructionHandler::push, carl::toInt<std::size_t>(n));
 	}
 	void setInfo(const Attribute& attribute) {

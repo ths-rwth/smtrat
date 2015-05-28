@@ -29,6 +29,10 @@ struct Converter<types::BVTerm> {
 	bool operator()(const From&, types::BVTerm&) const {
 		return false;
 	}
+	bool operator()(const types::BVVariable& from, types::BVTerm& to) const {
+		to = types::BVTerm(carl::BVTermType::VARIABLE, from);
+		return true;
+	}
 	bool operator()(const types::BVTerm& from, types::BVTerm& to) const {
 		to = from;
 		return true;
