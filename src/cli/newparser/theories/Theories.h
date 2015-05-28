@@ -127,12 +127,13 @@ struct Theories {
 		return types::VariableType(carl::Variable::NO_VARIABLE);
 	}
 	
-	void defineFunction(const std::string& name, const std::vector<std::pair<carl::Variable, carl::Sort>>& arguments, const carl::Sort& sort, const types::TermType& definition) {
+	void defineFunction(const std::string& name, const std::vector<types::VariableType>& arguments, const carl::Sort& sort, const types::TermType& definition) {
 		if (state->isSymbolFree(name)) {
 			///@todo check that definition matches the sort
 			if (arguments.size() == 0) {
 				state->defined_constants.emplace(name, definition);
 			} else {
+				SMTRAT_LOG_DEBUG("smtrat.parser", "Defining function \"" << name << "\" as \"" << definition << "\".");
 				state->registerFunction(name, new UserFunctionInstantiator(arguments, sort, definition));
 			}
 		} else {
@@ -212,14 +213,14 @@ struct Theories {
 			TheoryError te;
 			bool wasInstantiated = false;
 			for (auto& t: theories) {
-				carl::Variable var = function.arguments[i].first;
-				if (t.second->instantiate(var, function.arguments[i].second, arguments[i], result, te(t.first))) {
+				types::VariableType var = function.arguments[i];
+				if (t.second->instantiate(var, arguments[i], result, te(t.first))) {
 					wasInstantiated = true;
 					break;
 				}
 			}
 			if (!wasInstantiated) {
-				SMTRAT_LOG_ERROR("smtrat.parser", "Failed to instantiate argument \"" << function.arguments[i].first << "\": " << te);
+				SMTRAT_LOG_ERROR("smtrat.parser", "Failed to instantiate argument \"" << function.arguments[i] << "\": " << te);
 				HANDLE_ERROR
 				return false;
 			}
