@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 #include "Conversions.h"
 
 namespace smtrat {
@@ -33,34 +35,52 @@ struct IndexedFunctionInstantiator {
 	}
 };
 
-template<typename T>
+template<typename V, typename T>
 struct Instantiator: public boost::static_visitor<bool> {
-private:
-	carl::Variable var;
+protected:
+	V var;
 	T replacement;
+	types::TermType result;
 public:
 	template<typename Res>
-	bool operator()(Res&) {
+	bool operator()(const Res&) {
 		return false;
 	}
-	bool operator()(FormulaT& f) {
-		std::map<carl::Variable, T> r;
-		r.emplace(var, replacement);
-		f = f.substitute(r);
+	bool operator()(const FormulaT& f) {
+		carl::FormulaSubstitutor<FormulaT> subs;
+		result = subs.substitute(f, var, replacement);
 		return true;
 	}
-	bool instantiate(carl::Variable::Arg v, const T& repl, types::TermType& result) {
+	template<typename VAR = V>
+	typename std::enable_if<std::is_same<VAR,types::BVVariable>::value, bool>::type
+	operator()(const types::BVVariable& v) {
+		if (v == var) result = replacement;
+		return true;
+	}
+	template<typename VAR = V>
+	typename std::enable_if<std::is_same<VAR,types::BVVariable>::value, bool>::type
+	operator()(const types::BVTerm& t) {
+		std::map<types::BVVariable,types::BVTerm> m;
+		m.emplace(var, replacement);
+		result = t.substitute(m);
+		return true;
+	}
+	bool instantiate(V v, const T& repl, types::TermType& subject) {
 		var = v;
 		replacement = repl;
-		return boost::apply_visitor(*this, result);
+		if (boost::apply_visitor(*this, subject)) {
+			subject = this->result;
+			return true;
+		}
+		return false;
 	}
 };
 
 struct UserFunctionInstantiator: public FunctionInstantiator {
-	std::vector<std::pair<carl::Variable, carl::Sort>> arguments;
+	std::vector<types::VariableType> arguments;
 	carl::Sort sort;
 	types::TermType definition;
-	UserFunctionInstantiator(const std::vector<std::pair<carl::Variable, carl::Sort>>& arguments, const carl::Sort& sort, const types::TermType& definition):
+	UserFunctionInstantiator(const std::vector<types::VariableType>& arguments, const carl::Sort& sort, const types::TermType& definition):
 		arguments(arguments), sort(sort), definition(definition) {}
 };
 
