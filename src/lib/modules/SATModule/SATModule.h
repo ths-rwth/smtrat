@@ -931,14 +931,11 @@ namespace smtrat
             
             /**
              * Checks the received formula for consistency.
-             * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
-             * @parama _findPositiveVariables if false, the search does not stop after finding a satisfying assignment and tries to find
-             *                                positive assignments for all variables
-             * @return True,    if the received formula is satisfiable;
-             *         False,   if the received formula is not satisfiable;
-             *         Unknown, otherwise.
+             * @return l_True,  if the received formula is satisfiable;
+             *         l_False, if the received formula is not satisfiable;
+             *         l_Undef, otherwise.
              */
-            Answer checkFormula( bool _full = true, bool _findPositiveVariables = false );
+            Minisat::lbool checkFormula();
 
             /**
              * search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]

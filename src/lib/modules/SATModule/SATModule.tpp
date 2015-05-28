@@ -270,7 +270,39 @@ namespace smtrat
                 return False;
             }
 
-            return checkFormula( _full, Settings::find_all_dependent_variables );
+            lbool result = checkFormula();
+
+            if ( Settings::find_all_dependent_variables )
+            {
+            }
+
+
+            #ifdef SATMODULE_WITH_CALL_NUMBER
+            cout << endl << endl;
+            #endif
+            if( result == l_True )
+            {
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                collectStats();
+                #endif
+                return True;
+            }
+            else if( result == l_False )
+            {
+                ok = false;
+                updateInfeasibleSubset();
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                collectStats();
+                #endif
+                return False;
+            }
+            else
+            {
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                collectStats();
+                #endif
+                return Unknown;
+            }
         }
         else
         {
@@ -279,15 +311,13 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer SATModule<Settings>::checkFormula( bool _full, bool _findPositiveVariables )
+    Minisat::lbool SATModule<Settings>::checkFormula()
     {
-        lbool result = l_Undef;
-
         if( Settings::use_restarts )
         {
             mCurr_Restarts = 0;
             int current_restarts = -1;
-            result = l_Undef;
+            lbool result = l_Undef;
             while( current_restarts < mCurr_Restarts )
             {
                 current_restarts = mCurr_Restarts;
@@ -295,37 +325,11 @@ namespace smtrat
                 result = search( (int)rest_base * restart_first );
                 // if( !withinBudget() ) break;
             }
+            return result;
         }
         else
         {
-            result = search();
-        }
-
-        #ifdef SATMODULE_WITH_CALL_NUMBER
-        cout << endl << endl;
-        #endif
-        if( result == l_True )
-        {
-            #ifdef SMTRAT_DEVOPTION_Statistics
-            collectStats();
-            #endif
-            return True;
-        }
-        else if( result == l_False )
-        {
-            ok = false;
-            updateInfeasibleSubset();
-            #ifdef SMTRAT_DEVOPTION_Statistics
-            collectStats();
-            #endif
-            return False;
-        }
-        else
-        {
-            #ifdef SMTRAT_DEVOPTION_Statistics
-            collectStats();
-            #endif
-            return Unknown;
+            return search();
         }
     }
 
