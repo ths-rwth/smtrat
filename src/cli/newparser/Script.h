@@ -33,10 +33,11 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 	{
 		functionDefinitionArg = sortedvariable[qi::_val = px::bind(&Theories::declareFunctionArgument, px::ref(theories), qi::_1)];
 		functionDefinition =
-			qi::eps[px::bind(&Theories::openScope, px::ref(theories), 1)] > (
-				symbol > "(" > *(functionDefinitionArg) > ")" > sort > term > ")"
-			)[px::bind(&Theories::defineFunction, px::ref(theories), qi::_1, qi::_2, qi::_3, qi::_4)] >
-			qi::eps[px::bind(&Theories::closeScope, px::ref(theories), 1)];
+			(
+				qi::eps[px::bind(&Theories::pushScriptScope, px::ref(theories), 1)] > 
+				symbol > "(" > *(functionDefinitionArg) > ")" > sort > term > ")" >
+				qi::eps[px::bind(&Theories::popScriptScope, px::ref(theories), 1)]
+			)[px::bind(&Theories::defineFunction, px::ref(theories), qi::_1, qi::_2, qi::_3, qi::_4)];
 		command = qi::lit("(") >> (
 				(qi::lit("assert") > term > ")")[px::bind(&Callee::add, px::ref(callee), qi::_1)]
 			|	(qi::lit("check-sat") > ")")[px::bind(&Callee::check, px::ref(callee))]
