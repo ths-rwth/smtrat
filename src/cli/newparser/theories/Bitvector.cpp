@@ -223,6 +223,22 @@ namespace parser {
 		return true;
 	}
 
+	bool BitvectorTheory::instantiate(types::VariableType var, const types::TermType& replacement, types::TermType& subject, TheoryError& errors) {
+		carl::BVVariable v;
+		conversion::VariantConverter<carl::BVVariable> c;
+		if (!c(var, v)) {
+			errors.next() << "The variable is not a bitvector variable.";
+			return false;
+		}
+		carl::BVTerm repl;
+		if (!termConverter(replacement, repl)) {
+			errors.next() << "Could not convert argument \"" << replacement << "\" to a bitvector term.";
+			return false;
+		}
+		Instantiator<carl::BVVariable, carl::BVTerm> instantiator;
+		std::cout << "Instantiating " << v << " as " << repl << " in " << subject << std::endl;
+		return instantiator.instantiate(v, repl, subject);
+	}
 	bool BitvectorTheory::functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
 		if (identifier.symbol == "=") {
 			if (arguments.size() == 2) {
