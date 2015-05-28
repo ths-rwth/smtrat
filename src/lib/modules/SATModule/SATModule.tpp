@@ -137,7 +137,6 @@ namespace smtrat
     template<class Settings>
     SATModule<Settings>::~SATModule()
     {
-        std::cout << std::endl;
         while( mBooleanConstraintMap.size() > 0 )
         {
             Abstraction*& abstrAToDel = mBooleanConstraintMap.last().first;
