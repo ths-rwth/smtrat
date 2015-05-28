@@ -236,7 +236,6 @@ namespace parser {
 			return false;
 		}
 		Instantiator<carl::BVVariable, carl::BVTerm> instantiator;
-		std::cout << "Instantiating " << v << " as " << repl << " in " << subject << std::endl;
 		return instantiator.instantiate(v, repl, subject);
 	}
 	bool BitvectorTheory::functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
