@@ -26,13 +26,13 @@ make          // Build the project, in particular, build the solver smtrat
 
 * Other targets to build
 
-make help     // Show a list of possible targets.
-make clean    // Force the build system to re-build everything.
-make install  // Install library to the specified (adjust via ccmake) system directory.
-make build-gui      // Make the java-based GUI.
-make run-gui  // Make/run the java-based GUI.
-make package  // Construct a package of the project.
-make doc      // Build the project API documentation.
+make help      // Show a list of possible targets.
+make clean     // Force the build system to re-build everything.
+make install   // Install library to the specified (adjust via ccmake) system directory.
+make build-gui // Make the java-based GUI.
+make run-gui   // Make/run the java-based GUI.
+make package   // Construct a package of the project.
+make doc       // Build the project API documentation.
 
 * Run the solver
 The excecutable solver smtrat can be found in the build directory. It accepts .smt2 files as described by the smtlib (http://www.smtlib.org/).
