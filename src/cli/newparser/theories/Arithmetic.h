@@ -23,7 +23,7 @@ struct ArithmeticTheory: public AbstractTheory  {
 	
 	ArithmeticTheory(ParserState* state);
 	
-	bool declareVariable(const std::string& name, const carl::Sort& sort);
+	bool declareVariable(const std::string& name, const carl::Sort& sort, types::VariableType& result, TheoryError& errors);
 
 	bool handleITE(const FormulaT& ifterm, const types::TermType& thenterm, const types::TermType& elseterm, types::TermType& result, TheoryError& errors);
 	

@@ -90,10 +90,12 @@ struct Theories {
 	}
 	void declareVariable(const std::string& name, const carl::Sort& sort) {
 		if (state->isSymbolFree(name)) {
+			types::VariableType var;
+			TheoryError te;
 			for (auto& t: theories) {
-				if (t.second->declareVariable(name, sort)) return;
+				if (t.second->declareVariable(name, sort, var, te(t.first))) return;
 			}
-			SMTRAT_LOG_ERROR("smtrat.parser", "Variable \"" << name << "\" was declared with an invalid sort \"" << sort << "\".");
+			SMTRAT_LOG_ERROR("smtrat.parser", "Variable \"" << name << "\" was declared with an invalid sort \"" << sort << "\":" << te);
 			HANDLE_ERROR
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Variable \"" << name << "\" will not be declared due to a name clash.");

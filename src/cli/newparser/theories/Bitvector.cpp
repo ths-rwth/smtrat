@@ -143,16 +143,23 @@ namespace parser {
 		state->registerFunction("bvsge", new BitvectorRelationInstantiator<carl::BVCompareRelation::SGE>());
 	}
 
-	bool BitvectorTheory::declareVariable(const std::string& name, const carl::Sort& sort) {
+	bool BitvectorTheory::declareVariable(const std::string& name, const carl::Sort& sort, types::VariableType& result, TheoryError& errors) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
 		switch (sm.getType(sort)) {
 			case carl::VariableType::VT_BITVECTOR: {
 				assert(state->isSymbolFree(name));
+				if ((sm.getIndices(sort) == nullptr) || (sm.getIndices(sort)->size() != 1)) {
+					errors.next() << "The sort \"" << sort << "\" should have a single index, being the bit size.";
+					return false;
+				}
 				carl::Variable v = carl::freshVariable(name, carl::VariableType::VT_BITVECTOR);
-				state->variables[name] = types::BVTerm(carl::BVTermType::VARIABLE, carl::BVVariable(v, sort));
+				carl::BVVariable bvv = carl::BVVariable(v, sort);
+				state->variables[name] = bvv;
+				result = bvv;
 				return true;
 			}
 			default:
+				errors.next() << "The requested sort is not a bitvector sort but \"" << sort << "\".";
 				return false;
 		}
 	}

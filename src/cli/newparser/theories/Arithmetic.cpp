@@ -60,15 +60,19 @@ namespace parser {
 		ops.emplace(">", OperatorType(carl::Relation::GREATER));
 	}
 
-	bool ArithmeticTheory::declareVariable(const std::string& name, const carl::Sort& sort) {
+	bool ArithmeticTheory::declareVariable(const std::string& name, const carl::Sort& sort, types::VariableType& result, TheoryError& errors) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
 		switch (sm.getType(sort)) {
 			case carl::VariableType::VT_INT:
-			case carl::VariableType::VT_REAL:
+			case carl::VariableType::VT_REAL: {
 				assert(state->isSymbolFree(name));
-				state->variables[name] = carl::freshVariable(name, sm.getType(sort));
+				carl::Variable var = carl::freshVariable(name, sm.getType(sort));
+				state->variables[name] = var;
+				result = var;
 				return true;
+			}
 			default:
+				errors.next() << "The requested sort was neither \"Int\" nor \"Real\" but \"" << sort << "\".";
 				return false;
 		}
 	}

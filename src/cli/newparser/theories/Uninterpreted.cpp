@@ -32,13 +32,14 @@ namespace parser {
 	UninterpretedTheory::UninterpretedTheory(ParserState* state): AbstractTheory(state) {
 	}
 
-	bool UninterpretedTheory::declareVariable(const std::string& name, const carl::Sort& sort) {
+	bool UninterpretedTheory::declareVariable(const std::string& name, const carl::Sort& sort, types::VariableType& result, TheoryError& errors) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
 		if (sm.isInterpreted(sort)) return false;
 		assert(state->isSymbolFree(name));
 		carl::Variable v = carl::freshVariable(name, carl::VariableType::VT_UNINTERPRETED);
 		carl::UVariable uv(v, sort);
 		state->variables[name] = uv;
+		result = uv;
 		return true;
 	}
 

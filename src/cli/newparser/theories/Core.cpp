@@ -91,14 +91,18 @@ namespace parser {
 		state->registerFunction("implies", new ImpliesCoreInstantiator());
 	}
 
-	bool CoreTheory::declareVariable(const std::string& name, const carl::Sort& sort) {
+	bool CoreTheory::declareVariable(const std::string& name, const carl::Sort& sort, types::VariableType& result, TheoryError& errors) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
 		switch (sm.getType(sort)) {
-			case carl::VariableType::VT_BOOL:
+			case carl::VariableType::VT_BOOL: {
 				assert(state->isSymbolFree(name));
-				state->variables[name] = carl::freshVariable(name, carl::VariableType::VT_BOOL);
+				carl::Variable var = carl::freshVariable(name, carl::VariableType::VT_BOOL);
+				state->variables[name] = var;
+				result = var;
 				return true;
+			}
 			default:
+				errors.next() << "The requested sort was not \"Bool\" but \"" << sort << "\".";
 				return false;
 		}
 	}
