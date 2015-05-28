@@ -64,6 +64,16 @@ public:
 		errors.next() << "Distinct is not supported.";
 		return false;
 	}
+	template<typename T, typename Builder>
+	FormulaT expandDistinct(const std::vector<T>& values, const Builder& neqBuilder) {
+		FormulasT subformulas;
+		for (std::size_t i = 0; i < values.size() - 1; i++) {
+			for (std::size_t j = i + 1; j < values.size(); j++) {
+				subformulas.insert(neqBuilder(values[i], values[j]));
+			}
+		}
+		return FormulaT(carl::FormulaType::AND, subformulas);
+	}
 	/**
 	 * Instantiate a variable within a term.
 	 */
