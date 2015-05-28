@@ -223,6 +223,7 @@ namespace smtrat
             std::vector<FormulaT> lemmas() const
             {
                 std::vector<FormulaT> result;
+                mpPrimaryBackend->updateDeductions();
                 for( const auto& ded : mpPrimaryBackend->deductions() )
                 {
                     result.push_back( ded.first );
