@@ -71,17 +71,17 @@ namespace parser {
 			} else if (const FormulaT* f = boost::get<FormulaT>(&v)) {
 				carl::Variable tmp = carl::freshBooleanVariable();
 				vars.push_back(carl::UVariable(tmp));
-				state->mGlobalFormulas.insert(FormulaT(carl::FormulaType::IFF, FormulaT(tmp), *f));
+				state->global_formulas.insert(FormulaT(carl::FormulaType::IFF, FormulaT(tmp), *f));
 			} else if (const Poly* p = boost::get<Poly>(&v)) {
 				carl::Variable tmp = carl::freshRealVariable();
 				vars.push_back(carl::UVariable(tmp));
-				state->mGlobalFormulas.insert(FormulaT(*p - carl::makePolynomial<Poly>(tmp), carl::Relation::EQ));
+				state->global_formulas.insert(FormulaT(*p - carl::makePolynomial<Poly>(tmp), carl::Relation::EQ));
 			} else if (const carl::UVariable* uv = boost::get<carl::UVariable>(&v)) {
 				vars.push_back(*uv);
 			} else if (const carl::UFInstance* uf = boost::get<carl::UFInstance>(&v)) {
 				carl::Variable tmp = carl::freshUninterpretedVariable();
 				vars.push_back(carl::UVariable(tmp, uf->uninterpretedFunction().codomain()));
-				state->mGlobalFormulas.insert(FormulaT(std::move(carl::UEquality(vars.back(), *uf, false))));
+				state->global_formulas.insert(FormulaT(std::move(carl::UEquality(vars.back(), *uf, false))));
 			} else {
 				SMTRAT_LOG_ERROR("smtrat.parser", "The function argument type for function " << f << " was invalid.");
 				continue;
@@ -92,7 +92,7 @@ namespace parser {
 		carl::SortManager& sm = carl::SortManager::getInstance();
 		if (sm.isInterpreted(f.codomain())) {
 			carl::Variable var = carl::freshVariable(sm.getType(f.codomain()));
-			state->mGlobalFormulas.insert(FormulaT(std::move(carl::UEquality(carl::UVariable(var), ufi, false))));
+			state->global_formulas.insert(FormulaT(std::move(carl::UEquality(carl::UVariable(var), ufi, false))));
 			result = var;
 		} else {
 			result = ufi;

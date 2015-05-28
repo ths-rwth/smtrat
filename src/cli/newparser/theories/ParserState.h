@@ -64,8 +64,7 @@ namespace parser {
 		std::map<std::string, const FunctionInstantiator*> defined_functions;
 		std::map<std::string, const IndexedFunctionInstantiator*> defined_indexed_functions;
 		std::map<std::string, const UserFunctionInstantiator*> defined_user_functions;
-	
-		FormulasT mGlobalFormulas;
+		FormulasT global_formulas;
 		
 		InstructionHandler* handler;
 		

@@ -193,9 +193,9 @@ namespace parser {
 				FormulaT consThen = FormulaT(std::move(carl::makePolynomial<Poly>(v) - std::get<1>(t)), carl::Relation::EQ);
 				FormulaT consElse = FormulaT(std::move(carl::makePolynomial<Poly>(v) - std::get<2>(t)), carl::Relation::EQ);
 
-                                state->mGlobalFormulas.emplace(FormulaT(carl::FormulaType::ITE,std::get<0>(t),consThen,consElse));
-//				state->mGlobalFormulas.emplace(FormulaT(carl::FormulaType::IMPLIES,std::get<0>(t), consThen));
-//				state->mGlobalFormulas.emplace(FormulaT(carl::FormulaType::IMPLIES,FormulaT(carl::FormulaType::NOT,std::get<0>(t)), consElse));
+                                state->global_formulas.emplace(FormulaT(carl::FormulaType::ITE,std::get<0>(t),consThen,consElse));
+//				state->global_formulas.emplace(FormulaT(carl::FormulaType::IMPLIES,std::get<0>(t), consThen));
+//				state->global_formulas.emplace(FormulaT(carl::FormulaType::IMPLIES,FormulaT(carl::FormulaType::NOT,std::get<0>(t)), consElse));
 			}
 			return FormulaT(p, rel);
 		}
