@@ -162,7 +162,7 @@ namespace smtrat
     {
         if( carl::PROP_IS_A_CLAUSE <= _subformula->formula().properties() )
         {
-            if ( Settings::compute_propagated_lemmas )
+            if ( Settings::compute_propagated_lemmas && decisionLevel() == 0 )
             {
                 if ( _subformula->formula().propertyHolds(carl::PROP_IS_A_LITERAL) && _subformula->formula().propertyHolds(carl::PROP_CONTAINS_BOOLEAN) )
                 {
@@ -316,6 +316,7 @@ namespace smtrat
                     trail.shrink( trail.size() - trail_lim[0] );
                     trail_lim.shrink( trail_lim.size() - 0 );
                     ok = true;
+                    mPropagatedLemmas.clear();
 
                     if ( testVarsPositive.empty() )
                     {
@@ -333,15 +334,16 @@ namespace smtrat
 
                     // Check again
                     result = checkFormula();
-                    mPropagatedLemmas.clear();
                     if ( result == l_False )
                     {
                         cout << "Unsat with variable: " << mMinisatVarMap.at( testCandidate ) << endl;
                         testVarsPositive.erase( testCandidate );
-                        //TODO matthias: construct better lemma via infeasible subset
+                        //Construct lemma via infeasible subset
+                        updateInfeasibleSubset();
                         FormulaT negation = FormulaT( carl::FormulaType::NOT, mMinisatVarMap.at( testCandidate) );
-                        FormulaT lemma = FormulaT( carl::FormulaType::IMPLIES, mMinisatVarMap.at( testCandidate ), negation );
-                        mPropagatedLemmas[ testCandidate ].insert( lemma );
+                        FormulaT infeasibleSubset = FormulaT( carl::FormulaType::AND, infeasibleSubsets()[0] );
+                        FormulaT lemma = FormulaT( carl::FormulaType::IMPLIES, infeasibleSubset, negation );
+                        addDeduction( lemma );
                     }
                     else
                     {
@@ -1500,8 +1502,18 @@ SetWatches:
                     {
                         // Construct formula
                         FormulaT premise = FormulaT( carl::FormulaType::AND, std::move( iter->second ) );
-                        FormulaT lemma = FormulaT( carl::FormulaType::IMPLIES, premise, mMinisatVarMap.at( iter->first) );
-                        addDeduction( lemma );
+                        if ( assigns[ iter->first ] == l_False )
+                        {
+                            FormulaT negation = FormulaT( carl::FormulaType::NOT, mMinisatVarMap.at( iter->first ) );
+                            FormulaT lemma = FormulaT( carl::FormulaType::IMPLIES, premise, negation );
+                            addDeduction( lemma );
+                        }
+                        else
+                        {
+                            assert( assigns[ iter->first ] == l_True );
+                            FormulaT lemma = FormulaT( carl::FormulaType::IMPLIES, premise, mMinisatVarMap.at( iter->first) );
+                            addDeduction( lemma );
+                        }
                     }
                 }
             }
