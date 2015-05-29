@@ -271,6 +271,7 @@ namespace smtrat
             }
 
             lbool result = checkFormula();
+            printCurrentAssignment();
 
             //TODO matthias: finish
             if ( Settings::find_all_dependent_variables )
@@ -293,7 +294,6 @@ namespace smtrat
                         cout << mMinisatVarMap.at( var ) << ", ";
                     }
                     cout << endl;
-                    printCurrentAssignment();
 
                     for( int pos = 0; pos < assigns.size(); ++pos )
                     {
@@ -311,34 +311,42 @@ namespace smtrat
                     cout << endl;
 
                     // Reset the state until level 0
-                    if (decisionLevel() > 0)
-                    {
-                        cancelAssignmentUntil( 0 );
-                        qhead = trail_lim[0];
-                        trail.shrink( trail.size() - trail_lim[0] );
-                        trail_lim.shrink( trail_lim.size() - 0 );
-                        ok = true;
-                    }
+                    cancelAssignmentUntil( 0 );
+                    qhead = trail_lim[0];
+                    trail.shrink( trail.size() - trail_lim[0] );
+                    trail_lim.shrink( trail_lim.size() - 0 );
+                    ok = true;
 
                     if ( testVarsPositive.empty() )
                     {
                         break;
                     }
 
-                    // Set new assignment and check again
+                    // Set new positive assignment
                     // TODO matthias: ignore Tseitin variables
                     testCandidate = *testVarsPositive.begin();
                     cout << "Test candidate: " << mMinisatVarMap.at( testCandidate ) << endl;
                     Lit nextLit = mkLit( testCandidate, false );
+                    assert( assumptions.size() <= 1 );
+                    assumptions.clear();
                     assumptions.push( nextLit );
-                    //uncheckedEnqueue( nextLit, CRef_Undef );
+
+                    // Check again
                     result = checkFormula();
-                    cout << "Result: " << ( result == l_True ? "true" : ( result == l_False ? "false" : "unknown" ) ) << endl;
+                    mPropagatedLemmas.clear();
                     if ( result == l_False )
                     {
-                        //TODO matthias: remember unsat variables
-                        cout << "Unsat with variable: " << testCandidate << endl;
+                        cout << "Unsat with variable: " << mMinisatVarMap.at( testCandidate ) << endl;
                         testVarsPositive.erase( testCandidate );
+                        //TODO matthias: construct better lemma via infeasible subset
+                        FormulaT negation = FormulaT( carl::FormulaType::NOT, mMinisatVarMap.at( testCandidate) );
+                        FormulaT lemma = FormulaT( carl::FormulaType::IMPLIES, mMinisatVarMap.at( testCandidate ), negation );
+                        mPropagatedLemmas[ testCandidate ].insert( lemma );
+                    }
+                    else
+                    {
+                        cout << "Sat with variable: " << mMinisatVarMap.at( testCandidate ) << endl;
+                        printCurrentAssignment();
                     }
                 }
             }
