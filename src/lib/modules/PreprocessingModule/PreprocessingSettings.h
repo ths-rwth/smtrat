@@ -27,7 +27,7 @@ struct PreprocessingSettings {
     /**
 	 * Enables the elimination of equations forming a substitution.
 	 */
-	static constexpr bool eliminateSubstitutions = true;
+	static constexpr bool eliminateSubstitutions = false;
 	
 	static const bool dummy;
 };

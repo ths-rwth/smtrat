@@ -61,6 +61,7 @@ namespace smtrat {
 	template<typename Settings>
     Answer PreprocessingModule<Settings>::checkCore( bool _full )
     {
+//        std::cout << ((FormulaT) rReceivedFormula()).toString( false, 1, "", true, false, true, true ) << std::endl;
 		if (Settings::checkBounds) {
 			// If bounds are collected, check if they are conflicting.
 			if (varbounds.isConflicting()) {
@@ -416,6 +417,8 @@ namespace smtrat {
                             }
                             else if( !sfSimplified.isTrue() )
                             {
+                                if( sf != sfSimplified )
+                                    foundNewSubstitution = true;
                                 sfs.insert( sfSimplified );
                                 if( sfSimplified.getType() == carl::FormulaType::NOT )
                                 {
@@ -425,7 +428,6 @@ namespace smtrat {
                                     assert( boolSubs.find( sfSimplified.subformula() ) == boolSubs.end() );
                                     assert( foundBooleanSubstitutions.find( sfSimplified ) == foundBooleanSubstitutions.end() );
                                     foundBooleanSubstitutions.emplace( sfSimplified, boolSubs.insert( std::make_pair( sfSimplified.subformula(), false ) ).first );
-                                    foundNewSubstitution = true;
                                 }
                                 else
                                 {
@@ -435,7 +437,6 @@ namespace smtrat {
                                     assert( boolSubs.find( sfSimplified ) == boolSubs.end() );
                                     assert( foundBooleanSubstitutions.find( sfSimplified ) == foundBooleanSubstitutions.end() );
                                     foundBooleanSubstitutions.emplace( sfSimplified, boolSubs.insert( std::make_pair( sfSimplified, true ) ).first );
-                                    foundNewSubstitution = true;
                                 }
                             }
                         }
