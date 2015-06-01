@@ -36,7 +36,8 @@ struct Theories {
 		
 		
 	Theories(ParserState* state):
-		state(state)
+		state(state),
+		theories()
 	{
 		theories.emplace("Core", new CoreTheory(state));
 #ifdef PARSER_ENABLE_ARITHMETIC
@@ -48,6 +49,13 @@ struct Theories {
 #ifdef PARSER_ENABLE_UNINTERPRETED
 		theories.emplace("Uninterpreted", new UninterpretedTheory(state));
 #endif	
+	}
+	~Theories() {
+		auto it = theories.begin();
+		while (it != theories.end()) {
+			delete it->second;
+			it = theories.erase(it);
+		}
 	}
 	
 	/**

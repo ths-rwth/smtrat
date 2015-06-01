@@ -83,7 +83,7 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 	InstructionHandler* handler;
 	Callee& callee;
 	ParserState state;
-	Theories theories;
+	Theories& theories;
 
 	LogicParser logic;
 	AttributeParser attribute;
