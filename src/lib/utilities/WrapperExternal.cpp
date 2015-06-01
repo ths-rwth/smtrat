@@ -74,6 +74,7 @@ namespace smtrat {
         else {
             assert(result.size() < bufferSize);
             strcpy_s(buffer, bufferSize, result.c_str());
+			return 0;
         }
     }
 
@@ -89,6 +90,7 @@ namespace smtrat {
         else {
             assert(result.size() < bufferSize);
             strcpy_s(buffer, bufferSize, result.c_str());
+			return 0;
         }
     }
 
@@ -104,6 +106,7 @@ namespace smtrat {
         else {
             assert(result.size() < bufferSize);
             strcpy_s(buffer, bufferSize, result.c_str());
+			return 0;
         }
     }
 
