@@ -21,10 +21,13 @@ namespace smtrat
     class PreprocessingModule : public Module
     {
         private:
+			carl::FormulaVisitor<FormulaT> visitor;
+		
 			/// Bounds that have been added since the last call to isConsistent().
 			std::unordered_set<FormulaT> newBounds;
+			/// Collection of bounds of all received formulas.
 			vb::VariableBounds<FormulaT> varbounds;
-			carl::FormulaVisitor<FormulaT> visitor;
+			
             std::unordered_map<FormulaT, bool> boolSubs;
             std::map<carl::Variable,Poly> arithSubs;
 			

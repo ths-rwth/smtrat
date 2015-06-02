@@ -19,9 +19,9 @@ namespace smtrat {
 	template<typename Settings>
 	PreprocessingModule<Settings>::PreprocessingModule( ModuleType _type, const ModuleInput* const _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
+        visitor(),
         newBounds(),
         varbounds(),
-        visitor(),
         boolSubs(),
         arithSubs()
     {
@@ -596,5 +596,3 @@ namespace smtrat {
         return result;
     }
 }
-
-
