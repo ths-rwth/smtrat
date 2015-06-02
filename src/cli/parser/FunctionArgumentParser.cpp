@@ -8,16 +8,17 @@
 #include <boost/spirit/include/phoenix_stl.hpp>
 
 #include "FormulaParser.h"
+#include "BitvectorParser.h"
 #include "PolynomialParser.h"
 #include "UninterpretedParser.h"
 
 namespace smtrat {
 namespace parser {
 
-FunctionArgumentParser::FunctionArgumentParser(FormulaParser* formulaPtr, UninterpretedParser* uninterpretedPtr, PolynomialParser* polynomialPtr):
+FunctionArgumentParser::FunctionArgumentParser(FormulaParser* formulaPtr, BitvectorParser* bitvectorPtr, UninterpretedParser* uninterpretedPtr, PolynomialParser* polynomialPtr):
 	FunctionArgumentParser::base_type(main, "argument")
 {
-	main = *formulaPtr | *uninterpretedPtr | *polynomialPtr;
+	main = *formulaPtr | *bitvectorPtr | *uninterpretedPtr | *polynomialPtr;
 }
 
 }

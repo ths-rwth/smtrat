@@ -24,6 +24,10 @@ struct PreprocessingSettings {
 	 * Enables removing of constraints that vanish within the variable bounds.
 	 */
 	static constexpr bool splitSOS = true;
+    /**
+	 * Enables the elimination of equations forming a substitution.
+	 */
+	static constexpr bool eliminateSubstitutions = false;
 	
 	static const bool dummy;
 };

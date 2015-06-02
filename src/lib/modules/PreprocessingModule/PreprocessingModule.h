@@ -20,12 +20,16 @@ namespace smtrat
 	template<typename Settings>
     class PreprocessingModule : public Module
     {
-		private:
-			// If anything that needs variable bounds is active, we shall collect the bounds.
-			static constexpr bool collectBounds = Settings::checkBounds;
-        protected:
-			vb::VariableBounds<FormulaT> varbounds;
+        private:
 			carl::FormulaVisitor<FormulaT> visitor;
+		
+			/// Bounds that have been added since the last call to isConsistent().
+			std::unordered_set<FormulaT> newBounds;
+			/// Collection of bounds of all received formulas.
+			vb::VariableBounds<FormulaT> varbounds;
+			
+            std::unordered_map<FormulaT, bool> boolSubs;
+            std::map<carl::Variable,Poly> arithSubs;
 			
 			FormulasT tmpOrigins;
 			void accumulateBoundOrigins(const ConstraintT& constraint) {
@@ -71,10 +75,8 @@ namespace smtrat
 			void updateModel() const;
 
         protected:
-			/// Bounds that have been added since the last call to isConsistent().
-			std::set<FormulaT> newBounds;
-			bool addBounds(const FormulaT& formula);
-			void removeBounds(const FormulaT& formula);
+			void addBounds(const FormulaT& formula, const FormulaT& _origin);
+			void removeBounds(const FormulaT& formula, const FormulaT& _origin);
 			
 			/**
 			 * Removes redundant or obsolete factors of polynomials from the formula.
@@ -93,6 +95,11 @@ namespace smtrat
 			 */
 			FormulaT checkBounds(const FormulaT& formula);
 			std::function<FormulaT(FormulaT)> checkBoundsFunction;
+			
+			/**
+			 * Eliminates all equation forming a substitution of the form x = p with p not containing x.
+			 */
+			FormulaT elimSubstitutions(const FormulaT& _formula);
     };
 
 }    // namespace smtrat

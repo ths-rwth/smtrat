@@ -50,8 +50,8 @@ public:
 		if (qi::phrase_parse(begin, end, parser, skipper)) {
 			return true;
 		} else {
-			std::cout << "Remaining to parse:" << std::endl;
-			std::cout << std::string(begin, end) << std::endl;
+			//std::cout << "Remaining to parse:" << std::endl;
+			//std::cout << std::string(begin, end) << std::endl;
 			return false;
 		}
 	}
@@ -71,7 +71,6 @@ public:
 			additional.insert(f);
 			f = FormulaT(carl::FormulaType::AND, std::move(additional));
 		}
-		std::cout << "Add " << f << std::endl;
 		callHandler(&InstructionHandler::add, f);
 	}
 	void check() {
@@ -98,7 +97,7 @@ public:
 	}
 	void exit() {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(exit)");
-		///@todo this->mInputStream->setstate(std::ios::eofbit);
+		this->mInputStream->setstate(std::ios::eofbit);
 		callHandler(&InstructionHandler::exit);
 	}
 	void getAssertions() {
@@ -130,19 +129,19 @@ public:
 	}
 	void pop(const Integer& n) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(pop " << n << ")");
-		theories.closeScope(carl::toInt<std::size_t>(n));
+		theories.popScriptScope(carl::toInt<std::size_t>(n));
 		callHandler(&InstructionHandler::pop, carl::toInt<std::size_t>(n));
 	}
 	void push(const Integer& n) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(push " << n << ")");
-		theories.openScope(carl::toInt<std::size_t>(n));
+		theories.pushScriptScope(carl::toInt<std::size_t>(n));
 		callHandler(&InstructionHandler::push, carl::toInt<std::size_t>(n));
 	}
 	void setInfo(const Attribute& attribute) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(set-info :" << attribute << ")");
 		callHandler(&InstructionHandler::setInfo, attribute);
 	}
-	void setLogic(const std::string& name) {
+	void setLogic(const smtrat::Logic& name) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(set-logic " << name << ")");
 		callHandler(&InstructionHandler::setLogic, name);
 	}

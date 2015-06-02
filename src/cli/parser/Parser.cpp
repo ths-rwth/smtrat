@@ -15,9 +15,10 @@ SMTLIBParser::SMTLIBParser(InstructionHandler* ih, bool queueInstructions, bool 
 	handler(ih),
 	queueInstructions(queueInstructions),
 	formula(state),
-	uninterpreted(state, &formula),
+	bitvector(state),
+	uninterpreted(state, &formula, &bitvector),
 	polynomial(state, &formula, &uninterpreted),
-	fun_argument(&formula, &uninterpreted, &polynomial)
+	fun_argument(&formula, &bitvector, &uninterpreted, &polynomial)
 {
 	sortedVar = "(" >> symbol >> sort >> ")";
 	sortedVar.name("sorted variable");
@@ -164,6 +165,21 @@ void SMTLIBParser::declareFun(const std::string& name, const std::vector<carl::S
 		}
 		break;
 	}
+	case ExpressionType::BITVECTOR: {
+		if (args.size() == 0) {
+			carl::Variable var = carl::freshVariable(name, carl::VariableType::VT_BITVECTOR);
+			auto indices = carl::SortManager::getInstance().getIndices(sort);
+			if (indices == nullptr || indices->size() != 1) {
+				SMTRAT_LOG_ERROR("smtrat.parser", "The bitvector sort \"BitVec\" must always be used with exactly one index, for example \"(_ BitVec 32)\".");
+			} else {
+				auto v = carl::BVVariable(var, (*indices)[0]);
+				state->var_bitvector.sym.add(name, v);
+				callHandler(&InstructionHandler::declareFun, var);
+			}
+		} else {
+			SMTRAT_LOG_ERROR("smtrat.parser", "Uninterpreted functions over bitvectors are not supported yet.");
+		}
+	}
 	default:
 		SMTRAT_LOG_ERROR("smtrat.parser", "Only functions of with a defined return type are allowed!");
 	}
@@ -209,6 +225,9 @@ void SMTLIBParser::defineFun(const std::string& name, const std::vector<carl::Va
 		break;
 	case ExpressionType::UNINTERPRETED:
 		SMTRAT_LOG_ERROR("smtrat.parser", "Functions of uninterpreted type are not allowed!");
+		break;
+	case ExpressionType::BITVECTOR:
+		SMTRAT_LOG_ERROR("smtrat.parser", "Functions of bitvector type are not allowed!");
 		break;
 	default:
 		SMTRAT_LOG_ERROR("smtrat.parser", "Unsupported function return type.");

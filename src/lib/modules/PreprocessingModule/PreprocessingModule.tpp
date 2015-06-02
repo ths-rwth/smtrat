@@ -12,12 +12,18 @@
 //#define REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION (Not working)
 //#define ADDLINEARDEDUCTIONS
 //#define PREPROCESSING_DEVELOP_MODE
+//#define DEBUG_ELIMINATE_SUBSTITUTIONS
 
 namespace smtrat {
 
 	template<typename Settings>
 	PreprocessingModule<Settings>::PreprocessingModule( ModuleType _type, const ModuleInput* const _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
-        Module( _type, _formula, _conditionals, _manager )
+        Module( _type, _formula, _conditionals, _manager ),
+        visitor(),
+        newBounds(),
+        varbounds(),
+        boolSubs(),
+        arithSubs()
     {
 		removeFactorsFunction = std::bind(&PreprocessingModule<Settings>::removeFactors, this, std::placeholders::_1);
 		checkBoundsFunction = std::bind(&PreprocessingModule<Settings>::checkBounds, this, std::placeholders::_1);
@@ -43,8 +49,8 @@ namespace smtrat {
      */
 	template<typename Settings>
     bool PreprocessingModule<Settings>::addCore(ModuleInput::const_iterator _subformula) {
-		if (collectBounds) {
-			if (addBounds(_subformula->formula())) newBounds.insert(_subformula->formula());
+		if (Settings::checkBounds) {
+			addBounds(_subformula->formula(), _subformula->formula());
 		}
         return true;
     }
@@ -55,7 +61,8 @@ namespace smtrat {
 	template<typename Settings>
     Answer PreprocessingModule<Settings>::checkCore( bool _full )
     {
-		if (collectBounds) {
+//        std::cout << ((FormulaT) rReceivedFormula()).toString( false, 1, "", true, false, true, true ) << std::endl;
+		if (Settings::checkBounds) {
 			// If bounds are collected, check if they are conflicting.
 			if (varbounds.isConflicting()) {
 				mInfeasibleSubsets.push_back(varbounds.getConflict());
@@ -63,18 +70,16 @@ namespace smtrat {
 			}
 		}
         auto receivedFormula = firstUncheckedReceivedSubformula();
-		
 		SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Bounds are " << varbounds.getEvalIntervalMap());
         while( receivedFormula != rReceivedFormula().end() )
         {
 			FormulaT formula = receivedFormula->formula();
 			
-			if (collectBounds) {
+			if (Settings::checkBounds) {
 				// If bounds are collected, check if next subformula is a bound.
 				// If so, pass on unchanged.
 				auto boundIt = newBounds.find(formula);
 				if (boundIt != newBounds.end()) {
-					newBounds.erase(boundIt);
 					addSubformulaToPassedFormula(formula, receivedFormula->formula());
 					++receivedFormula;
 					continue;
@@ -99,6 +104,11 @@ namespace smtrat {
 				formula = visitor.visit(formula, splitSOSFunction);
 			}
 			SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Split sum-of-square decompositions  " << formula);
+			if (Settings::eliminateSubstitutions) {
+				// Check if bounds make constraints vanish.
+				formula = elimSubstitutions(formula);
+			}
+			SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Eliminate substitutions  " << formula);
 			
 			formula = formula.toCNF();
 			FormulaT origins(carl::FormulaType::AND, tmpOrigins);
@@ -128,8 +138,8 @@ namespace smtrat {
      */
 	template<typename Settings>
     void PreprocessingModule<Settings>::removeCore(ModuleInput::const_iterator _subformula) {
-		if (collectBounds) {
-			removeBounds(_subformula->formula());
+		if (Settings::checkBounds) {
+			removeBounds(_subformula->formula(), _subformula->formula());
 		}
     }
 	
@@ -152,29 +162,43 @@ namespace smtrat {
     }
 	
 	template<typename Settings>
-    bool PreprocessingModule<Settings>::addBounds(const FormulaT& formula) {
-		switch (formula.getType()) {
-			case carl::CONSTRAINT:
-				return varbounds.addBound(formula.constraint(), formula);
-			case carl::AND: {
-				bool found = false;
-				for (const auto& f: formula.subformulas()) found |= addBounds(f);
-				return found;
+    void PreprocessingModule<Settings>::addBounds(const FormulaT& formula, const FormulaT& _origin) {
+		switch( formula.getType() )
+        {
+			case carl::FormulaType::CONSTRAINT:
+            {
+                if( varbounds.addBound(formula.constraint(), _origin) )
+                {
+                    newBounds.insert(formula);
+                }
+                break;
+            }
+			case carl::FormulaType::AND:
+            {
+				for (const auto& f: formula.subformulas()) addBounds(f, _origin);
+                break;
 			}
-			default: break;
+			default:
+                break;
 		}
-		return false;
 	}
+    
 	template<typename Settings>
-    void PreprocessingModule<Settings>::removeBounds(const FormulaT& formula) {
+    void PreprocessingModule<Settings>::removeBounds(const FormulaT& formula, const FormulaT& _origin) {
 		switch (formula.getType()) {
-			case carl::CONSTRAINT:
-				varbounds.removeBound(formula.constraint(), formula);
+			case carl::FormulaType::CONSTRAINT:
+            {
+				if( varbounds.removeBound(formula.constraint(), _origin) )
+                {
+                    newBounds.erase(formula);
+                }
 				break;
-			case carl::AND:
-				for (const auto& f: formula.subformulas()) removeBounds(f);
+            }
+			case carl::FormulaType::AND:
+				for (const auto& f: formula.subformulas()) removeBounds(f, _origin);
 				break;
-			default: break;
+			default:
+                break;
 		}
 	}
 	
@@ -284,7 +308,8 @@ namespace smtrat {
 	
 	template<typename Settings>
     FormulaT PreprocessingModule<Settings>::checkBounds(const FormulaT& formula) {
-		if(formula.getType() == carl::CONSTRAINT) {
+		if(formula.getType() == carl::CONSTRAINT && newBounds.find(formula) == newBounds.end())
+		{
 			unsigned result = formula.constraint().evaluate(completeBounds(formula.constraint()));
 			if (result == 0) {
 				accumulateBoundOrigins(formula.constraint());
@@ -315,6 +340,259 @@ namespace smtrat {
 		}
 		return formula;
 	}
+    
+    template<typename Settings>
+    FormulaT PreprocessingModule<Settings>::elimSubstitutions( const FormulaT& _formula ) 
+    {
+        auto iter = boolSubs.find( _formula );
+        if( iter != boolSubs.end() )
+        {
+            #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
+            std::cout << _formula << " ----> " << (iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE )) << std::endl;
+            #endif
+            return iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE );
+        }
+        FormulaT result = _formula;
+        switch( _formula.getType() )
+        {
+            case carl::FormulaType::AND:
+            {
+                std::vector<std::map<carl::Variable,Poly>::const_iterator> addedArithSubs;
+                std::unordered_map<FormulaT,std::unordered_map<FormulaT, bool>::const_iterator> foundBooleanSubstitutions;
+                bool foundNewSubstitution = true;
+                FormulasT foundSubstitutions;
+                FormulasT currentSubformulas = result.subformulas();
+                while( foundNewSubstitution )
+                {
+                    FormulasT sfs;
+                    foundNewSubstitution = false;
+                    // Process all equations first.
+                    for( const auto& sf : currentSubformulas )
+                    {
+                        if( sf.getType() == carl::FormulaType::CONSTRAINT && sf.constraint().relation() == carl::Relation::EQ )
+                        {
+                            FormulaT tmp = elimSubstitutions( sf );
+                            if( tmp.getType() == carl::FormulaType::FALSE )
+                            {
+                                result = tmp;
+                                goto Return;
+                            }
+                            else if( tmp.getType() != carl::FormulaType::TRUE )
+                            {
+                                carl::Variable subVar;
+                                Poly subPoly;
+                                if( tmp.constraint().getSubstitution( subVar, subPoly ) )
+                                {
+                                    #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
+                                    std::cout << __LINE__ << "   found substitution [" << subVar << " -> " << subPoly << "]" << std::endl;
+                                    #endif
+                                    assert( arithSubs.find( subVar ) == arithSubs.end() );
+                                    addedArithSubs.push_back( arithSubs.emplace( subVar, subPoly ).first );
+                                    foundSubstitutions.insert( tmp );
+                                    foundNewSubstitution = true;
+                                }
+                                else
+                                {
+                                    sfs.insert( tmp );
+                                }
+                            }
+                        }
+                    }
+                    // Now the other sub-formulas.
+                    for( const auto& sf : currentSubformulas )
+                    {
+                        if( sf.getType() != carl::FormulaType::CONSTRAINT || sf.constraint().relation() != carl::Relation::EQ )
+                        {
+                            auto iterC = foundBooleanSubstitutions.find( sf );
+                            if( iterC != foundBooleanSubstitutions.end() )
+                            {
+                                boolSubs.erase( iterC->second );
+                                foundBooleanSubstitutions.erase( iterC );
+                            }
+                            FormulaT sfSimplified = elimSubstitutions( sf );
+                            if( sfSimplified.isFalse() )
+                            {
+                                result = sfSimplified;
+                                goto Return;
+                            }
+                            else if( !sfSimplified.isTrue() )
+                            {
+                                if( sf != sfSimplified )
+                                    foundNewSubstitution = true;
+                                sfs.insert( sfSimplified );
+                                if( sfSimplified.getType() == carl::FormulaType::NOT )
+                                {
+                                    #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
+                                    std::cout <<  __LINE__ << "   found boolean substitution [" << sfSimplified.subformula() << " -> false]" << std::endl;
+                                    #endif
+                                    assert( boolSubs.find( sfSimplified.subformula() ) == boolSubs.end() );
+                                    assert( foundBooleanSubstitutions.find( sfSimplified ) == foundBooleanSubstitutions.end() );
+                                    foundBooleanSubstitutions.emplace( sfSimplified, boolSubs.insert( std::make_pair( sfSimplified.subformula(), false ) ).first );
+                                }
+                                else
+                                {
+                                    #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
+                                    std::cout <<  __LINE__ << "   found boolean substitution [" << sfSimplified << " -> true]" << std::endl;
+                                    #endif
+                                    assert( boolSubs.find( sfSimplified ) == boolSubs.end() );
+                                    assert( foundBooleanSubstitutions.find( sfSimplified ) == foundBooleanSubstitutions.end() );
+                                    foundBooleanSubstitutions.emplace( sfSimplified, boolSubs.insert( std::make_pair( sfSimplified, true ) ).first );
+                                }
+                            }
+                        }
+                    }
+                    currentSubformulas = std::move(sfs);
+                }
+                currentSubformulas.insert( foundSubstitutions.begin(), foundSubstitutions.end() );
+                result = currentSubformulas.empty() ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::AND, std::move(currentSubformulas) );
+            Return:
+                while( !addedArithSubs.empty() )
+                {
+                    assert( std::count( addedArithSubs.begin(), addedArithSubs.end(), addedArithSubs.back() ) == 1 );
+                    arithSubs.erase( addedArithSubs.back() );
+                    addedArithSubs.pop_back();
+                }
+                while( !foundBooleanSubstitutions.empty() )
+                {
+                    boolSubs.erase( foundBooleanSubstitutions.begin()->second );
+                    foundBooleanSubstitutions.erase( foundBooleanSubstitutions.begin() );
+                }
+                break;
+            }
+            case carl::FormulaType::ITE:
+            {
+                FormulaT cond = elimSubstitutions( _formula.condition() );
+                if( cond.getType() == carl::FormulaType::CONSTRAINT )
+                {
+                    carl::Variable subVar;
+                    Poly subPoly;
+                    if( cond.constraint().getSubstitution( subVar, subPoly, false ) )
+                    {
+                        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
+                        std::cout << __LINE__ << "   found substitution [" << subVar << " -> " << subPoly << "]" << std::endl;
+                        #endif
+                        auto addedBoolSub = cond.getType() == carl::FormulaType::NOT ? boolSubs.emplace( cond.subformula(), false ) : boolSubs.emplace( cond, true );
+                        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
+                        std::cout <<  __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" << std::endl;
+                        #endif
+                        assert( addedBoolSub.second );
+                        auto iterB = arithSubs.emplace( subVar, subPoly ).first;
+                        FormulaT firstCaseTmp = elimSubstitutions( _formula.firstCase() );
+                        arithSubs.erase( iterB );
+                        boolSubs.erase( addedBoolSub.first );
+                        addedBoolSub = cond.getType() == carl::FormulaType::NOT ? boolSubs.emplace( cond.subformula(), true ) : boolSubs.emplace( cond, false );
+                        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
+                        std::cout <<  __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" << std::endl;
+                        #endif
+                        assert( addedBoolSub.second );
+                        FormulaT secondCaseTmp = elimSubstitutions( _formula.secondCase() );
+                        boolSubs.erase( addedBoolSub.first );
+                        result = FormulaT( carl::FormulaType::ITE, cond, firstCaseTmp, secondCaseTmp );
+                        break;
+                    }
+                    else if( cond.constraint().getSubstitution( subVar, subPoly, true ) )
+                    {
+                        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
+                        std::cout << __LINE__ << "   found substitution [" << subVar << " -> " << subPoly << "]" << std::endl;
+                        #endif
+                        auto addedBoolSub = cond.getType() == carl::FormulaType::NOT ? boolSubs.emplace( cond.subformula(), false ) : boolSubs.emplace( cond, true );
+                        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
+                        std::cout <<  __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" << std::endl;
+                        #endif
+                        assert( addedBoolSub.second );
+                        FormulaT firstCaseTmp = elimSubstitutions( _formula.firstCase() );
+                        boolSubs.erase( addedBoolSub.first );
+                        addedBoolSub = cond.getType() == carl::FormulaType::NOT ? boolSubs.emplace( cond.subformula(), true ) : boolSubs.emplace( cond, false );
+                        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
+                        std::cout <<  __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" << std::endl;
+                        #endif
+                        assert( addedBoolSub.second );
+                        auto iterB = arithSubs.emplace( subVar, subPoly ).first;
+                        FormulaT secondCaseTmp = elimSubstitutions( _formula.secondCase() );
+                        arithSubs.erase( iterB );
+                        boolSubs.erase( addedBoolSub.first );
+                        result = FormulaT( carl::FormulaType::ITE, cond, firstCaseTmp, secondCaseTmp );
+                        break;
+                    }
+                }
+                auto addedBoolSub = cond.getType() == carl::FormulaType::NOT ? boolSubs.emplace( cond.subformula(), false ) : boolSubs.emplace( cond, true );
+                #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
+                std::cout <<  __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" << std::endl;
+                #endif
+                assert( addedBoolSub.second );
+                FormulaT firstCaseTmp = elimSubstitutions( _formula.firstCase() );
+                boolSubs.erase( addedBoolSub.first );
+                addedBoolSub = cond.getType() == carl::FormulaType::NOT ? boolSubs.emplace( cond.subformula(), true ) : boolSubs.emplace( cond, false );
+                #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
+                std::cout <<  __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" << std::endl;
+                #endif
+                assert( addedBoolSub.second );
+                FormulaT secondCaseTmp = elimSubstitutions( _formula.secondCase() );
+                boolSubs.erase( addedBoolSub.first );
+                result = FormulaT( carl::FormulaType::ITE, cond, firstCaseTmp, secondCaseTmp );
+                
+                break;
+            }
+            case carl::FormulaType::OR:
+            case carl::FormulaType::IFF:
+            case carl::FormulaType::XOR: {
+                FormulasT newSubformulas;
+                bool changed = false;
+                for (const auto& cur: _formula.subformulas()) {
+                    FormulaT newCur = elimSubstitutions(cur);
+                    if (newCur != cur) changed = true;
+                    newSubformulas.insert(newCur);
+                }
+                if (changed)
+                    result = FormulaT(_formula.getType(), newSubformulas);
+                break;
+            }
+            case carl::FormulaType::NOT: {
+                FormulaT cur = elimSubstitutions(_formula.subformula());
+                if (cur != _formula.subformula())
+                    result = FormulaT(carl::FormulaType::NOT, cur);
+                break;
+            }
+            case carl::FormulaType::IMPLIES: {
+                FormulaT prem = elimSubstitutions(_formula.premise());
+                FormulaT conc = elimSubstitutions(_formula.conclusion());
+                if ((prem != _formula.premise()) || (conc != _formula.conclusion()))
+                    result = FormulaT(carl::FormulaType::IMPLIES, prem, conc);
+                break;
+            }
+            case carl::FormulaType::CONSTRAINT: {
+                FormulaT tmp = result;
+                while( result != (tmp = tmp.substitute( arithSubs )) )
+                    result = tmp;
+                break;
+            }
+            case carl::FormulaType::BOOL:
+            case carl::FormulaType::BITVECTOR:
+            case carl::FormulaType::UEQ: 
+            case carl::FormulaType::TRUE:
+            case carl::FormulaType::FALSE:
+                #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
+                std::cout << _formula << " ----> " << result << std::endl;
+                #endif
+                return result;
+            case carl::FormulaType::EXISTS:
+            case carl::FormulaType::FORALL: {
+                FormulaT sub = elimSubstitutions(_formula.quantifiedFormula());
+                if (sub != _formula.quantifiedFormula())
+                    result = FormulaT(_formula.getType(), _formula.quantifiedVariables(), sub);
+            }
+        }
+        iter = boolSubs.find( result );
+        if( iter != boolSubs.end() )
+        {
+            #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
+            std::cout << _formula << " ----> " << (iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE )) << std::endl;
+            #endif
+            return iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE );
+        }
+        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
+        std::cout << _formula << " ----> " << result << std::endl;
+        #endif
+        return result;
+    }
 }
-
-

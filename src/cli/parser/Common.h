@@ -16,6 +16,8 @@
 #include <carl/formula/UFManager.h>
 #include <carl/formula/Formula.h>
 #include <carl/formula/FormulaPool.h>
+#include <carl/formula/bitvector/BVTerm.h>
+#include <carl/formula/bitvector/BVTermPool.h>
 namespace smtrat {
 	enum class Logic : unsigned { UNDEFINED, QF_NRA, QF_LRA, QF_NIA, QF_LIA };
 	typedef mpq_class Rational;

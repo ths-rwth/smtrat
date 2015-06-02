@@ -38,7 +38,7 @@ struct SortedVariableParser: public qi::grammar<Iterator, std::pair<std::string,
 };
 
 struct TermParser: public qi::grammar<Iterator, types::TermType(), Skipper> {
-	typedef VariantConverter<types::TermType> Converter;
+	typedef conversion::VariantVariantConverter<types::TermType> Converter;
 	TermParser(Theories* theories): TermParser::base_type(main, "term"), theories(theories) {
 		main =
 				specconstant[qi::_val = px::bind(&Converter::template convert<types::ConstType>, &converter, qi::_1)]
@@ -47,7 +47,7 @@ struct TermParser: public qi::grammar<Iterator, types::TermType(), Skipper> {
 		;
 		termop = 
 				(qualifiedidentifier >> +main)[qi::_val = px::bind(&Theories::functionCall, px::ref(*theories), qi::_1, qi::_2)]
-			|	(qi::lit("let")[px::bind(&Theories::openScope, px::ref(*theories), 1)] >> "(" >> +binding >> ")" >> main[qi::_val = qi::_1])[px::bind(&Theories::closeScope, px::ref(*theories), 1)]
+			|	(qi::lit("let")[px::bind(&Theories::pushExpressionScope, px::ref(*theories), 1)] >> "(" >> +binding >> ")" >> main[qi::_val = qi::_1])[px::bind(&Theories::popExpressionScope, px::ref(*theories), 1)]
 			|	(qi::lit("forall") >> "(" >> +sortedvariable >> ")" >> main)[qi::_val = qi::_2]
 			|	(qi::lit("exists") >> "(" >> +sortedvariable >> ")" >> main)[qi::_val = qi::_2]
 			//|	(qi::lit("!") >> main >> +attribute)

@@ -5,8 +5,8 @@ namespace smtrat {
 namespace parser {
 	void ArithmeticTheory::addSimpleSorts(qi::symbols<char, carl::Sort>& sorts) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
-		sorts.add("Int", sm.interpretedSort(carl::VariableType::VT_INT));
-		sorts.add("Real", sm.interpretedSort(carl::VariableType::VT_REAL));
+		sorts.add("Int", sm.getInterpreted(carl::VariableType::VT_INT));
+		sorts.add("Real", sm.getInterpreted(carl::VariableType::VT_REAL));
 	}
 
 	bool ArithmeticTheory::convertTerm(const types::TermType& term, Poly& result) {
@@ -45,8 +45,8 @@ namespace parser {
 
 	ArithmeticTheory::ArithmeticTheory(ParserState* state): AbstractTheory(state) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
-		sm.interpretedSort("Int", carl::VariableType::VT_INT);
-		sm.interpretedSort("Real", carl::VariableType::VT_REAL);
+		sm.addInterpretedSort("Int", carl::VariableType::VT_INT);
+		sm.addInterpretedSort("Real", carl::VariableType::VT_REAL);
 		
 		ops.emplace("+", OperatorType(Poly::ConstructorOperation::ADD));
 		ops.emplace("-", OperatorType(Poly::ConstructorOperation::SUB));
@@ -60,13 +60,21 @@ namespace parser {
 		ops.emplace(">", OperatorType(carl::Relation::GREATER));
 	}
 
-	bool ArithmeticTheory::declareVariable(const std::string& name, const carl::Sort& sort) {
+	bool ArithmeticTheory::declareVariable(const std::string& name, const carl::Sort& sort, types::VariableType& result, TheoryError& errors) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
-		if (!sm.isInterpreted(sort)) return false;
-		if ((sm.interpretedType(sort) != carl::VariableType::VT_REAL) && (sm.interpretedType(sort) != carl::VariableType::VT_INT)) return false;
-		assert(state->isSymbolFree(name));
-		state->variables[name] = carl::freshVariable(name, sm.interpretedType(sort));
-		return true;
+		switch (sm.getType(sort)) {
+			case carl::VariableType::VT_INT:
+			case carl::VariableType::VT_REAL: {
+				assert(state->isSymbolFree(name));
+				carl::Variable var = carl::freshVariable(name, sm.getType(sort));
+				state->variables[name] = var;
+				result = var;
+				return true;
+			}
+			default:
+				errors.next() << "The requested sort was neither \"Int\" nor \"Real\" but \"" << sort << "\".";
+				return false;
+		}
 	}
 
 	bool ArithmeticTheory::handleITE(const FormulaT& ifterm, const types::TermType& thenterm, const types::TermType& elseterm, types::TermType& result, TheoryError& errors) {
@@ -80,6 +88,49 @@ namespace parser {
 			errors.next() << "Failed to construct ITE, the else-term \"" << elseterm << "\" is unsupported.";
 			return false;
 		}
+                if( thenpoly == elsepoly )
+                {
+                    result = thenpoly;
+                    return true;
+                }
+                if( ifterm.getType() == carl::FormulaType::CONSTRAINT )
+                {
+                    if( ifterm.constraint().relation() == carl::Relation::EQ )
+                    {
+                        if( ifterm.constraint() == ConstraintT( thenpoly-elsepoly, carl::Relation::EQ ) )
+                        {
+                            result = elsepoly;
+                            return true;
+                        }
+                    }
+                    else if( ifterm.constraint().relation() == carl::Relation::NEQ )
+                    {
+                        if( ifterm.constraint() == ConstraintT( thenpoly-elsepoly, carl::Relation::NEQ ) )
+                        {
+                            result = thenpoly;
+                            return true;
+                        }
+                    }
+                }
+                else if( ifterm.getType() == carl::FormulaType::NOT && ifterm.subformula().getType() == carl::FormulaType::CONSTRAINT )
+                {
+                    if( ifterm.subformula().constraint().relation() == carl::Relation::EQ )
+                    {
+                        if( ifterm.subformula().constraint() == ConstraintT( thenpoly-elsepoly, carl::Relation::EQ ) )
+                        {
+                            result = thenpoly;
+                            return true;
+                        }
+                    }
+                    else if( ifterm.subformula().constraint().relation() == carl::Relation::NEQ )
+                    {
+                        if( ifterm.subformula().constraint() == ConstraintT( thenpoly-elsepoly, carl::Relation::NEQ ) )
+                        {
+                            result = elsepoly;
+                            return true;
+                        }
+                    }   
+                }
 		carl::Variable auxVar = carl::freshRealVariable();
 		mITEs[auxVar] = std::make_tuple(ifterm, thenpoly, elsepoly);
 		result = carl::makePolynomial<Poly>(auxVar);
@@ -137,16 +188,37 @@ namespace parser {
 			return res;
 		} else {
 			// There are many ITEs, we keep the auxiliary variables.
-			for (auto v: vars) {
+			for (const auto& v: vars) {
 				auto t = mITEs[v];
 				FormulaT consThen = FormulaT(std::move(carl::makePolynomial<Poly>(v) - std::get<1>(t)), carl::Relation::EQ);
 				FormulaT consElse = FormulaT(std::move(carl::makePolynomial<Poly>(v) - std::get<2>(t)), carl::Relation::EQ);
 
-				state->mGlobalFormulas.emplace(FormulaT(carl::FormulaType::IMPLIES,std::get<0>(t), consThen));
-				state->mGlobalFormulas.emplace(FormulaT(carl::FormulaType::IMPLIES,FormulaT(carl::FormulaType::NOT,std::get<0>(t)), consElse));
+                                state->global_formulas.emplace(FormulaT(carl::FormulaType::ITE,std::get<0>(t),consThen,consElse));
+//				state->global_formulas.emplace(FormulaT(carl::FormulaType::IMPLIES,std::get<0>(t), consThen));
+//				state->global_formulas.emplace(FormulaT(carl::FormulaType::IMPLIES,FormulaT(carl::FormulaType::NOT,std::get<0>(t)), consElse));
 			}
 			return FormulaT(p, rel);
 		}
+	}
+	
+	bool ArithmeticTheory::instantiate(types::VariableType var, const types::TermType& replacement, types::TermType& result, TheoryError& errors) {
+		carl::Variable v;
+		conversion::VariantConverter<carl::Variable> c;
+		if (!c(var, v)) {
+			errors.next() << "The variable is not an arithmetic variable.";
+			return false;
+		}
+		if ((v.getType() != carl::VariableType::VT_INT) && (v.getType() != carl::VariableType::VT_REAL)) {
+			errors.next() << "Sort is neither \"Int\" nor \"Real\" but \"" << v.getType() << "\".";
+			return false;
+		}
+		Poly repl;
+		if (!convertTerm(replacement, repl)) {
+			errors.next() << "Could not convert argument \"" << replacement << "\" to an arithmetic expression.";
+			return false;
+		}
+		Instantiator<carl::Variable,Poly> instantiator;
+		return instantiator.instantiate(v, repl, result);
 	}
 
 	bool ArithmeticTheory::functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
