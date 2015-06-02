@@ -34,6 +34,7 @@ protected:
 	ParserState* state;
 public:
 	AbstractTheory(ParserState* state): state(state) {}
+	virtual ~AbstractTheory() {}
 
 	/**
 	 * Declare a new variable with the given name and the given sort.

@@ -73,6 +73,15 @@ namespace parser {
 		
 		ParserState(InstructionHandler* ih): handler(ih) {
 		}
+		~ParserState() {
+			while (!scriptScopes.empty()) popScriptScope();
+			for (auto& it: defined_functions) delete it.second;
+			for (auto& it: defined_indexed_functions) delete it.second;
+			for (auto& it: defined_user_functions) delete it.second;
+			defined_functions.clear();
+			defined_indexed_functions.clear();
+			defined_user_functions.clear();
+		}
 		
 		void pushExpressionScope() {
 			expressionScopes.emplace(*this);
