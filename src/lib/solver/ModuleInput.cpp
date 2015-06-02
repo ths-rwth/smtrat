@@ -260,7 +260,8 @@ namespace smtrat
         }
     }
     
-    void annotateFormula( const FormulaT&, const vector<parser::Attribute>& )
+    template<typename AnnotationType>
+    void annotateFormula( const FormulaT&, const vector<AnnotationType>& )
     {
     }
 } // namespace smtrat
