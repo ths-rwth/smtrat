@@ -7,6 +7,7 @@
 
 #include <numeric>
 #include <iostream>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -145,6 +146,26 @@ struct Node {
 			}
 		}
 		return Node(std::make_tuple(name, newChildren, brackets));
+	}
+	
+	void collectNames(std::set<std::string>& names) const {
+		if (name == "declare-fun") return;
+		names.insert(name);
+		for (const auto& c: children) c.collectNames(names);
+	}
+	
+	void eliminateDefineFuns() {
+		std::set<std::string> names;
+		collectNames(names);
+		for (auto it = children.begin(); it != children.end(); ) {
+			if (it->name == "declare-fun") {
+				if (names.count(it->children[0].name) == 0) {
+					children.erase(it);
+					continue;
+				}
+			}
+			it++;
+		}
 	}
 };
 

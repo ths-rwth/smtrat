@@ -61,6 +61,9 @@ int main(int argc, char* argv[]) {
 	delta::Producer producer(c, s);
 	producerPtr = &producer;
 	unsigned iterations = producer(n);
+	if (s.as<bool>("delay-declare-fun")) {
+		n.eliminateDefineFuns();
+	}
 
 	// Print result and store to file.
 	if (s.has("verbose")) {
