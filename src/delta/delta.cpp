@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
 	// Parse file.
 	delta::Node n;
 	if (!delta::Parser::parse(input, n)) return 1;
-	unsigned originalSize = n.complexity();
+	std::size_t originalSize = n.complexity();
 
 	// Initialize checker.
 	std::cout << "Calculating original exit code..." << std::endl;
@@ -77,4 +77,3 @@ int main(int argc, char* argv[]) {
 	std::cout << "This run took " << std::chrono::duration_cast<seconds>(Clock::now() - start).count() << " seconds for " << iterations << " iterations." << std::endl;
 	return 0;
 }
-
