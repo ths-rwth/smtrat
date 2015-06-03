@@ -323,6 +323,7 @@ namespace smtrat
                 }    
                 ++iter_var;
             }
+            // Add the newly obtained constraints to mProc_Constraints
             auto iter_temp = temp_constr.begin();
             while( iter_temp != temp_constr.end() )
             {
@@ -539,13 +540,6 @@ namespace smtrat
                     ++iter_var;
                 }    
             }
-            if( false ) //mDeleted_Constraints.empty() || mProc_Constraints.empty() || mElim_Order.empty() )
-            {
-                #ifdef DEBUG_FouMoModule
-                cout << "Fresh start!" << endl;
-                #endif
-                fresh_start();                
-            }
         }
         else if( _subformula->formula().constraint().relation() == carl::Relation::EQ )
         {
@@ -621,6 +615,8 @@ namespace smtrat
         mModel.clear();
         if( solverState() == True )
         {
+            // For the case that the found solution is already correct, just
+            // store the assignments in mModel
             if( mCorrect_Solution )
             {
                 #ifdef DEBUG_FouMoModule
@@ -634,6 +630,7 @@ namespace smtrat
                     ++iter_ass;
                 }
             }
+            // Otherwise derive a solution from the backends' solution
             else
             {
                 Module::getBackendsModel();
@@ -816,7 +813,7 @@ namespace smtrat
                     }
                     else
                     {
-                        // Check whether the new constraint is already contained respectively
+                        // Check whether the new constraint is already contained, respectively
                         // adds new information in/to mProc_Constraints
                         auto iter_help = mProc_Constraints.find( new_formula );
                         if( iter_help == mProc_Constraints.end() )
@@ -886,7 +883,7 @@ namespace smtrat
         auto iter_constr = curr_constraints.begin();
         // Store which variables occur at least one time non-linear 
         std::set< carl::Variable > forbidden_fruits;
-        // Store which variables only occur as x^i for some fixed integer i
+        // Store which variables only occur as x^i for some fixed positive integer i
         std::map< carl::Variable, unsigned > suitable_monomials;
         while( iter_constr != curr_constraints.end() )
         {
@@ -1082,8 +1079,6 @@ namespace smtrat
                 // and determine the lowest upper bound in the current level
                 atomic_formula_upper = iter_constr_upper->first;
                 to_be_substituted_upper = atomic_formula_upper.constraint().lhs();
-                //typename Poly::PolyType afuExpanded = (typename Poly::PolyType)atomic_formula_upper.constraint().lhs();
-                //auto iter_poly_upper = afuExpanded.begin();
                 to_be_substituted_upper = to_be_substituted_upper.substitute( mVarAss );
                 #ifdef DEBUG_FouMoModule
                 cout << "Remaining polynomial: " << to_be_substituted_upper << endl;
@@ -1162,8 +1157,6 @@ namespace smtrat
                 // and determine the highest lower bound in the current level
                 atomic_formula_lower = iter_constr_lower->first;
                 to_be_substituted_lower = atomic_formula_lower.constraint().lhs();
-                //typename Poly::PolyType aflcExpanded = (typename Poly::PolyType)atomic_formula_lower.constraint().lhs();
-                //auto iter_poly_lower = aflcExpanded.begin();
                 to_be_substituted_lower = to_be_substituted_lower.substitute( mVarAss ); 
                 #ifdef DEBUG_FouMoModule
                 cout << "Remaining polynomial: " << to_be_substituted_lower << endl;
@@ -1226,7 +1219,7 @@ namespace smtrat
                 }
                 ++iter_constr_lower;    
             }
-            // Insert one of the found bounds into mVarAss respectively the arithmetic mean 
+            // Insert one of the found bounds into mVarAss, respectively the arithmetic mean 
             // due to the fact that this module also handles strict inequalities
             if( at_least_one_lower && at_least_one_upper )
             {
@@ -1380,36 +1373,5 @@ namespace smtrat
             ++iter_form;
         }
         return result;
-    }
-    
-    template<class Settings>
-    void FouMoModule<Settings>::fresh_start()
-    {
-        mProc_Constraints = FormulaOrigins();
-        mEqualities = FormulaOrigins();
-        mDisequalities = FormulaOrigins();
-        mElim_Order = std::vector<carl::Variable>();
-        mDeleted_Constraints = VariableUpperLower();  
-        mVarAss = std::map<carl::Variable, Rational>();
-        mCorrect_Solution = false; 
-        auto iter_constr = rReceivedFormula().begin();
-        while( iter_constr != rReceivedFormula().end() )
-        {
-            std::shared_ptr<std::vector<FormulaT>> origins( new std::vector<FormulaT>() );
-            origins->push_back( iter_constr->formula() );
-            if( iter_constr->formula().constraint().relation() == carl::Relation::LEQ || iter_constr->formula().constraint().relation() == carl::Relation::LESS )
-            {
-                mProc_Constraints.emplace( iter_constr->formula(), origins );                                
-            }
-            else if( iter_constr->formula().constraint().relation() == carl::Relation::EQ )
-            {
-                mEqualities.emplace( iter_constr->formula(), origins );                
-            }
-            else if( iter_constr->formula().constraint().relation() == carl::Relation::NEQ )
-            {
-                mDisequalities.emplace( iter_constr->formula(), origins );                
-            }
-            ++iter_constr;
-        }
     }   
 }
