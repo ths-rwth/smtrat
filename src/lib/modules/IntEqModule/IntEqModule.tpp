@@ -63,30 +63,13 @@ namespace smtrat
             auto iter_subs = mSubstitutions.begin();
             while( iter_subs != mSubstitutions.end() )
             {
-                /*
-                #ifdef DEBUG_IntEqModule
-                cout << "Substitute: " << iter_subs->first << endl;
-                cout << "by: " << iter_subs->second << endl;
-                #endif
-                */
                 Poly tmp_poly = new_poly;
                 new_poly = new_poly.substitute( (iter_subs)->first, (iter_subs)->second );
                 if( tmp_poly != new_poly )
                 {
                     auto iter_var = mVariables.find( iter_subs->first );
                     assert( iter_var != mVariables.end() );
-                    /*
-                    #ifdef DEBUG_IntEqModule
-                    cout << "Origins: " << *origins << endl;
-                    cout << "Substitution origins: " << *( iter_var->second ) << endl;
-                    #endif
-                    */
                     *origins = std::move( merge( *origins, *( iter_var->second ) ) );  
-                    /*
-                    #ifdef DEBUG_IntEqModule
-                    cout << "New origins: " << *origins << endl;
-                    #endif
-                    */
                 }
                 #ifdef DEBUG_IntEqModule
                 cout << "After temporary substitution: " << new_poly << endl;
@@ -156,7 +139,7 @@ namespace smtrat
                 return true;
             }
             #ifdef DEBUG_IntEqModule
-            //cout << mRecent_Constraints << endl;
+            cout << mRecent_Constraints << endl;
             #endif
             mProc_Constraints = mRecent_Constraints.back();
         }
@@ -533,7 +516,7 @@ namespace smtrat
                 *temp += carl::makePolynomial<Poly>(fresh_var);
             }
             // Substitute the reformulation of the found variable for all occurences
-            // of this variable in equations of proc_constraints
+            // of this variable in equations of mProc_Constraints
             #ifdef DEBUG_IntEqModule
             cout << "Substitute " << corr_var << " by: " << *temp << endl;
             #endif
@@ -545,22 +528,10 @@ namespace smtrat
                 mSubstitutions.push_back( *new_pair );
                 mVariables[ new_pair->first ] = origins;
             }
-            /*
-            else
-            {
-                #ifdef DEBUG_IntEqModule
-                cout << "Already found substitution" << endl;
-                #endif
-                break;
-            }
-            */
             Formula_Origins temp_proc_constraints;
             constr_iter = mProc_Constraints.begin();
             while( constr_iter != mProc_Constraints.end() )
             {
-                //#ifdef DEBUG_IntEqModule
-                //cout << "Substitute in: " << constr_iter->first.constraint().lhs() << endl;
-                //#endif
                 Poly new_poly = constr_iter->first.constraint().lhs();
                 Poly tmp_poly = new_poly;
                 new_poly = new_poly.substitute( new_pair->first, new_pair->second );
@@ -571,9 +542,6 @@ namespace smtrat
                     assert( iter_help != mVariables.end() );
                     *origins_new = ( std::move( merge( *( iter_help->second ), *( constr_iter->second ) ) ) );
                 }    
-                //#ifdef DEBUG_IntEqModule
-                //cout << "After substitution: " << new_poly << endl;
-                //#endif
                 FormulaT newEq( ConstraintT( new_poly, carl::Relation::EQ ) );          
                 // Check whether newEq is unsatisfiable
                 if( newEq.isFalse() )
@@ -604,7 +572,7 @@ namespace smtrat
                 mRecent_Constraints.push_back( mProc_Constraints );
             }   
             #ifdef DEBUG_IntEqModule
-            //cout << mRecent_Constraints << endl;  
+            cout << mRecent_Constraints << endl;  
             #endif 
         }
         #ifdef DEBUG_IntEqModule
@@ -702,6 +670,7 @@ namespace smtrat
         cout << "Auxiliaries: " << mAuxiliaries << endl;
         #endif
         // Determine the assignments of the variables that haven't been passed
+        // to the backends i.e. all variables for which substitutions exist
         auto iter_vars = mSubstitutions.end();
         if( mSubstitutions.empty() )
         {
