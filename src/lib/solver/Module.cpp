@@ -118,8 +118,10 @@ namespace smtrat
         #ifdef SMTRAT_DEVOPTION_Validation
         if( validationSettings->logTCalls() )
         {
-            if( result != Unknown )
+            if( result != Unknown && !mpReceivedFormula->empty() )
+            {
                 addAssumptionToCheck( *mpReceivedFormula, result == True, moduleName( type() ) );
+            }
         }
         #endif
         return result;

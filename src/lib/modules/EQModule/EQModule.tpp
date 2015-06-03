@@ -1506,7 +1506,11 @@ namespace smtrat {
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 				mStatistics->countDeducedUnassignedLiterals();
-#endif		
+#endif
+                #ifdef SMTRAT_DEVOPTION_Validation
+                if( validationSettings->logLemmata() )
+                    addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName( type() ) + "_lemma_1" );
+                #endif
 				addDeduction(or_);
 			} else {
 				std::size_t min, max;
@@ -1555,7 +1559,11 @@ namespace smtrat {
 #ifdef SMTRAT_DEVOPTION_Statistics
 					mStatistics->countDeducedUnassignedLiterals();
 #endif
-					addDeduction(or_);
+					#ifdef SMTRAT_DEVOPTION_Validation
+                    if( validationSettings->logLemmata() )
+                        addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName( type() ) + "_lemma_2" );
+                    #endif
+                    addDeduction(or_);
 				} else {
 					++entry;
 				}
@@ -1603,7 +1611,11 @@ namespace smtrat {
 							if(innerformulas.size() > 1) {
 								innerformulas.insert(rhs);
 								FormulaT or_(carl::OR, std::move(innerformulas));
-								addDeduction(or_);
+								#ifdef SMTRAT_DEVOPTION_Validation
+                                if( validationSettings->logLemmata() )
+                                    addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName( type() ) + "_lemma_3" );
+                                #endif
+                                addDeduction(or_);
 
 								if(Settings::printFormulas) {
 									std::cout << "Added implicit edge deduction for arguments: " << or_ << std::endl;
@@ -1615,6 +1627,10 @@ namespace smtrat {
 
 				outerformulas.insert(FormulaT(i->first, j->first, false));
 				FormulaT or_(carl::OR, std::move(outerformulas));
+                #ifdef SMTRAT_DEVOPTION_Validation
+                if( validationSettings->logLemmata() )
+                    addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName( type() ) + "_lemma_1" );
+                #endif
 				addDeduction(or_);
 
 				if(Settings::printFormulas) {
