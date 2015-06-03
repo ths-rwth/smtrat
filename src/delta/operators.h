@@ -86,9 +86,7 @@ NodeChangeSet number(const Node& n) {
 	if (regex_match(n.name, regex("[0-9]+\\.[0-9]+"))) {
 		std::size_t pos = n.name.find('.');
 		res.emplace_back(n.name.substr(0, pos), false);
-		for (std::size_t i = pos + 2; i < n.name.size(); i++) {
-			res.emplace_back(n.name.substr(0, i), false);
-		}
+		res.emplace_back(n.name.substr(0, n.name.size()-1));
 		return res;
 	}
 
