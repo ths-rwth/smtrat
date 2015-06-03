@@ -14,7 +14,6 @@
 #include <iterator>
 #include "../Common.h"
 #include "../datastructures/Assignment.h"
-#include "../../cli/newparser/Parser.h"
 #include "../config.h"
 
 namespace smtrat
@@ -402,5 +401,6 @@ namespace smtrat
         std::pair<iterator,bool> add( const FormulaT& _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins );
     };
     
-    void annotateFormula( const FormulaT&, const std::vector<parser::Attribute>& );
+    template<typename AnnotationType>
+    void annotateFormula( const FormulaT&, const std::vector<AnnotationType>& );
 }    // namespace smtrat

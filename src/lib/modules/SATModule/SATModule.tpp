@@ -2426,12 +2426,6 @@ NextClause:
                 }
             }
         }
-        while( !constraintBoundsAnd.empty() )
-        {
-            const Poly* toDel = constraintBoundsAnd.begin()->first;
-            constraintBoundsAnd.erase( constraintBoundsAnd.begin() );
-            delete toDel;
-        }
         if( varToSubstitute == carl::Variable::NO_VARIABLE || !ok )
             return false;
         // Apply the found substitution
