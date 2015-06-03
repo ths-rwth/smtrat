@@ -8,6 +8,7 @@ namespace smtrat {
 namespace parser {
 
 struct FunctionInstantiator {
+	virtual ~FunctionInstantiator() {}
 	template<typename T>
 	bool convert(const std::vector<types::TermType>& from, std::vector<T>& to) const {
 		conversion::VectorVariantConverter<T> converter;
@@ -24,6 +25,7 @@ struct FunctionInstantiator {
 	}
 };
 struct IndexedFunctionInstantiator {
+	virtual ~IndexedFunctionInstantiator() {}
 	template<typename T>
 	bool convert(const std::vector<types::TermType>& from, std::vector<T>& to) const {
 		conversion::VectorVariantConverter<T> converter;
