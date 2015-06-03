@@ -49,6 +49,30 @@ NodeChangeSet children(const Node& n) {
 }
 
 /**
+ * Node operator that merges nodes with one of its own children.
+ * @param n Node.
+ * @return A set of replacements.
+ */
+NodeChangeSet mergeChild(const Node& n) {
+	if (n.children.empty()) return NodeChangeSet();
+	if ((n.name == "and") || (n.name == "or")) {
+		NodeChangeSet res;
+		for (auto it = n.children.begin(); it != n.children.end();) {
+			std::vector<Node> newchildren;
+			newchildren.insert(newchildren.end(), n.children.begin(), it);
+			newchildren.insert(newchildren.end(), it->children.begin(), it->children.end());
+			it++;
+			if (it != n.children.end()) {
+				newchildren.insert(newchildren.end(), it, n.children.end());
+			}
+			res.emplace_back(std::make_tuple(n.name, newchildren, n.brackets));
+		}
+		return res;
+	}
+	return NodeChangeSet();
+}
+
+/**
  * Node operator that provides meaningful replacements for numbers.
  * @param n Node.
  * @return A set of replacements.

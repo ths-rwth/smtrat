@@ -49,6 +49,7 @@ public:
 		bpo::options_description operators("Node operators");
 		operators.add_options()
 			("no-children", "Disable replacement by children")
+			("no-merge", "Disable merging with children")
 			("no-constants", "Disable replacement by constants")
 			("no-numbers", "Disable simplification of numbers")
 			("no-lets", "Disable elimination of let expressions")
