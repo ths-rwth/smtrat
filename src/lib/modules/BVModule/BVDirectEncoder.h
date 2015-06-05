@@ -491,7 +491,7 @@ namespace smtrat
                 return encodeShiftNetwork(_first, _second, true);
             }
 
-            Bits encodeShiftNetwork(const Bits& _first, const Bits& _second, bool _left, bool _fillWith = false)
+            Bits encodeShiftNetwork(const Bits& _first, const Bits& _second, bool _left, bool _arithmetic = true)
             {
                 std::size_t firstSize = _first.size() - 1;
                 std::size_t highestRelevantPos = 0;
@@ -517,7 +517,7 @@ namespace smtrat
                         }
                         else
                         {
-                            shifted = _fillWith ? const1() : const0();
+                            shifted = _arithmetic ? _first[_first.size() - 1] : const0();
                         }
 
                         addEncoding(Formula(carl::FormulaType::IFF,
@@ -557,7 +557,7 @@ namespace smtrat
                                             Formula(out[i]),
                                             Formula(carl::FormulaType::ITE,
                                                     Formula(shiftOut),
-                                                    Formula(_fillWith ? const1() : const0()),
+                                                    Formula(_arithmetic ? _first[_first.size()-1] : const0()),
                                                     Formula(lastStage[i]))));
                     }
 
