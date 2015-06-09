@@ -15,12 +15,12 @@ namespace smtrat
         #ifdef SMTRAT_ENABLE_BVModule
         position = addBackendIntoStrategyGraph( position, MT_BVModule );
         #endif
-        #ifdef SMTRAT_ENABLE_CNFerModule
-        position = addBackendIntoStrategyGraph( position, MT_CNFerModule );
-        #endif
         #ifdef SMTRAT_ENABLE_PreprocessingModule
         position = addBackendIntoStrategyGraph( position, MT_PreprocessingModule );
 	#endif
+        #ifdef SMTRAT_ENABLE_CNFerModule
+        position = addBackendIntoStrategyGraph( position, MT_CNFerModule );
+        #endif
 	#ifdef SMTRAT_ENABLE_SATModule
         position = addBackendIntoStrategyGraph( position, MT_SATModule );
 	#endif
