@@ -153,4 +153,55 @@ NodeChangeSet letExpression(const Node& n) {
 	return res;
 }
 
+NodeChangeSet BV_zeroExtend(const Node& n) {
+	if (n.name != "") return NodeChangeSet();
+	if (n.children.size() != 2) return NodeChangeSet();
+	const Node& op = n.children[0];
+	const Node& arg = n.children[1];
+	if (op.name != "_") return NodeChangeSet();
+	if (op.children.size() != 2) return NodeChangeSet();
+	if (op.children[0].name != "zero_extend") return NodeChangeSet();
+	if (arg.name != "_") return NodeChangeSet();
+	if (arg.children.size() != 2) return NodeChangeSet();
+	
+	std::size_t ext = std::stoul(op.children[1].name);
+	std::size_t index = std::stoul(arg.children[1].name);
+	
+	NodeChangeSet res;
+	res.push_back(Node("_", { arg.children[0], Node(std::to_string(index+ext), false) }));
+	return res;
+}
+
+/**
+ * (bvlshr 
+ *   (bvlshr x (_ bv1 8)) 
+ *   (_ bv1 8)
+ * )
+ */
+NodeChangeSet BV_mergeShift(const Node& n) {
+	if (n.name == "bvshl" || n.name == "bvlshr") {
+		if (n.children.size() != 2) return NodeChangeSet();
+		const Node& c = n.children[0];
+		// Same operation
+		if (c.name != n.name) return NodeChangeSet();
+		if (c.children.size() != 2) return NodeChangeSet();
+		if (c.children[1].name != "_") return NodeChangeSet();
+		if (c.children[1].children.size() != 2) return NodeChangeSet();
+		if (n.children[1].name != "_") return NodeChangeSet();
+		if (n.children[1].children.size() != 2) return NodeChangeSet();
+		// Same bit-width
+		if (c.children[1].children[1].name != n.children[1].children[1].name) return NodeChangeSet();
+		if (!regex_match(n.children[1].children[0].name, regex("bv[0-9]+"))) return NodeChangeSet();
+		if (!regex_match(c.children[1].children[0].name, regex("bv[0-9]+"))) return NodeChangeSet();
+		
+		std::size_t inner = std::stoul(c.children[1].children[0].name.substr(2));
+		std::size_t outer = std::stoul(n.children[1].children[0].name.substr(2));
+		
+		NodeChangeSet res;
+		res.push_back(Node(n.name, { c.children[0], Node("_", { Node("bv" + std::to_string(inner + outer), false), n.children[1].children[1] }) }));
+		return res;
+	}
+	return NodeChangeSet();
+}
+
 }
