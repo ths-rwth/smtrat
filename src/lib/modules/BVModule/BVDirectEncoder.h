@@ -509,7 +509,7 @@ namespace smtrat
                 return encodeShiftNetwork(_first, _second, true);
             }
 
-            Bits encodeShiftNetwork(const Bits& _first, const Bits& _second, bool _left, bool _arithmetic = true)
+            Bits encodeShiftNetwork(const Bits& _first, const Bits& _second, bool _left, bool _arithmetic = false)
             {
                 std::size_t firstSize = _first.size() - 1;
                 std::size_t highestRelevantPos = 0;
