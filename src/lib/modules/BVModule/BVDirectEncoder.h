@@ -284,7 +284,7 @@ namespace smtrat
                 return encodeAdderNetwork(_first, encodeNot(_second), true);
             }
 
-            Bits encodeAdderNetwork(const Bits& _first, const Bits& _second, bool _carryInValue = false, bool _withCarryOut = false)
+            Bits encodeAdderNetwork(const Bits& _first, const Bits& _second, bool _carryInValue = false, bool _withCarryOut = false, bool _allowOverflow = true)
             {
                 Bits out = createBits(_first.size());
                 Bits carry = createBits(_first.size() - (_withCarryOut ? 0 : 1));
@@ -314,6 +314,9 @@ namespace smtrat
                                                         Formula(carry[i])))));
                 }
 
+                if(! _allowOverflow) {
+                    addEncoding(Formula(carl::FormulaType::NOT, Formula(carry[carry.size()-1])));
+                }
                 if(_withCarryOut) {
                     out.insert(out.end(), carry[carry.size()-1]);
                 }
@@ -322,6 +325,11 @@ namespace smtrat
             }
 
             Bits encodeMul(const Bits& _first, const Bits& _second)
+            {
+                return encodeMultiplicationNetwork(_first, _second);
+            }
+
+            Bits encodeMultiplicationNetwork(const Bits& _first, const Bits& _second, bool _allowOverflow = true)
             {
                 std::vector<Bits> summands(_first.size());
                 std::vector<Bits> sums(_first.size()-1);
@@ -337,11 +345,20 @@ namespace smtrat
                                                     Formula(_first[j]),
                                                     Formula(carl::FormulaType::FALSE))));
                     }
+
+                    if(! _allowOverflow) {
+                        for(std::size_t j=summands[i].size();j<_first.size();++j) {
+                            addEncoding(Formula(carl::FormulaType::OR,
+                                                Formula(carl::FormulaType::NOT, Formula(_second[i])),
+                                                Formula(carl::FormulaType::NOT, Formula(_first[j]))));
+                        }
+                    }
+
                     summands[i].insert(summands[i].begin(), i, const0());
                 }
 
                 for(std::size_t i=0;i<sums.size();++i) {
-                    sums[i] = encodeAdderNetwork((i == 0 ? summands[0] : sums[i-1]), summands[i+1]);
+                    sums[i] = encodeAdderNetwork((i == 0 ? summands[0] : sums[i-1]), summands[i+1], false, false, _allowOverflow);
                 }
 
                 if(sums.size() > 0) {
@@ -365,21 +382,22 @@ namespace smtrat
 
                 Bit summationCorrect = encodeEq(
                     _first,
-                    encodeAdd(
-                        encodeMul(out, _second),
-                        remainder
+                    encodeAdderNetwork(
+                        encodeMultiplicationNetwork(out, _second, false),
+                        remainder,
+                        false,
+                        false,
+                        false
                     )
                 );
 
                 Bit remainderLessThanDivisor = encodeUlt(remainder, _second);
-                Bit outLessThanFirst = encodeUle(out, _first);
 
                 addEncoding(Formula(carl::FormulaType::IMPLIES,
                                     Formula(wellDefined),
                                     Formula(carl::FormulaType::AND,
                                             Formula(summationCorrect),
-                                            Formula(remainderLessThanDivisor),
-                                            Formula(outLessThanFirst))));
+                                            Formula(remainderLessThanDivisor))));
 
                 return (_returnRemainder ? remainder : out);
             }
@@ -491,7 +509,7 @@ namespace smtrat
                 return encodeShiftNetwork(_first, _second, true);
             }
 
-            Bits encodeShiftNetwork(const Bits& _first, const Bits& _second, bool _left, bool _arithmetic = true)
+            Bits encodeShiftNetwork(const Bits& _first, const Bits& _second, bool _left, bool _arithmetic = false)
             {
                 std::size_t firstSize = _first.size() - 1;
                 std::size_t highestRelevantPos = 0;
