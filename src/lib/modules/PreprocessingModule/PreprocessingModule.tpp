@@ -345,8 +345,8 @@ namespace smtrat {
                 }
                 else
                 {
-                    for( auto vepIter = termIter->monomial()->begin(); vepIter != termIter->monomial()->end(); ++vepIter )
-                        mVariablesBounded.erase( vepIter );
+//                    for( auto vepIter = termIter->monomial()->begin(); vepIter != termIter->monomial()->end(); ++vepIter )
+//                        mVariablesBounded.erase( vepIter );
                 }
             }
 		}
