@@ -26,7 +26,8 @@ struct BitvectorTheory: public AbstractTheory  {
 	bool handleITE(const FormulaT& ifterm, const types::TermType& thenterm, const types::TermType& elseterm, types::TermType& result, TheoryError& errors);
 	bool handleDistinct(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors);
 	
-	bool instantiate(types::VariableType var, const types::TermType& replacement, types::TermType& subject, TheoryError& errors);
+	bool instantiate(const types::VariableType& var, const types::TermType& replacement, types::TermType& subject, TheoryError& errors);
+	bool refreshVariable(const types::VariableType& var, types::VariableType& subject, TheoryError& errors);
 	bool functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors);
 };
 	
