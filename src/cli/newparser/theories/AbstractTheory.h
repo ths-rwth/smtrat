@@ -78,8 +78,12 @@ public:
 	/**
 	 * Instantiate a variable within a term.
 	 */
-	virtual bool instantiate(types::VariableType, const types::TermType&, types::TermType&, TheoryError& errors) {
+	virtual bool instantiate(const types::VariableType&, const types::TermType&, types::TermType&, TheoryError& errors) {
 		errors.next() << "Instantiation of arguments is not supported.";
+		return false;
+	}
+	virtual bool refreshVariable(const types::VariableType&, types::VariableType&, TheoryError& errors) {
+		errors.next() << "Refreshing variables is not supported.";
 		return false;
 	}
 	/**
