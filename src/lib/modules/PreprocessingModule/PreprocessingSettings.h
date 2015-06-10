@@ -27,7 +27,15 @@ struct PreprocessingSettings {
     /**
 	 * Enables the elimination of equations forming a substitution.
 	 */
-	static constexpr bool eliminateSubstitutions = false;
+	static constexpr bool eliminateSubstitutions = true;
+    /**
+	 * Enables bound extraction of disjunctions of constraints with the same polynomial.
+	 */
+	static constexpr bool extractBounds = true;
+    /**
+	 * Enables removing of unbounded variables, which only occur linearly.
+	 */
+	static constexpr bool removeUnboundedVars = false;
 	
 	static const bool dummy;
 };
