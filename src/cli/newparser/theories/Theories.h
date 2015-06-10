@@ -142,7 +142,7 @@ struct Theories {
 				state->constants.emplace(name, definition);
 			} else {
 				SMTRAT_LOG_DEBUG("smtrat.parser", "Defining function \"" << name << "\" as \"" << definition << "\".");
-				auto ufi = new UserFunctionInstantiator(arguments, sort, definition);
+				auto ufi = new UserFunctionInstantiator(arguments, sort, definition, state->auxiliary_variables);
 				addGlobalFormulas(ufi->globalFormulas);
 				state->registerFunction(name, ufi);
 			}
@@ -219,33 +219,54 @@ struct Theories {
 		return result;
 	}
 	
+	bool instantiate(const UserFunctionInstantiator& function, const types::VariableType& var, const types::TermType& repl, types::TermType& subject) {
+		TheoryError errors;
+		bool wasInstantiated = false;
+		for (auto& t: theories) {
+			if (t.second->instantiate(var, repl, subject, errors(t.first))) {
+				for (const auto& f: function.globalFormulas) {
+					types::TermType tmp = f;
+					bool res = t.second->instantiate(var, repl, tmp, errors);
+					assert(res);
+					state->global_formulas.insert(boost::get<FormulaT>(tmp));
+				}
+				wasInstantiated = true;
+				break;
+			}
+		}
+		if (!wasInstantiated) {
+			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to instantiate variable \"" << var << "\": " << errors);
+			HANDLE_ERROR
+			return false;
+		}
+		return true;
+	}
+	
 	bool instantiateUserFunction(const UserFunctionInstantiator& function, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
 		if (function.arguments.size() != arguments.size()) {
 			errors.next() << "Function was expected to have " << function.arguments.size() << " arguments, but was instantiated with " << arguments.size() << ".";
 			return false;
 		}
 		result = function.definition;
-		for (std::size_t i = 0; i < arguments.size(); i++) {
+		for (const auto& aux: function.auxiliaries) {
 			TheoryError te;
-			bool wasInstantiated = false;
+			bool wasRefreshed = false;
+			types::VariableType repl;
 			for (auto& t: theories) {
-				types::VariableType var = function.arguments[i];
-				if (t.second->instantiate(var, arguments[i], result, te(t.first))) {
-					for (const auto& f: function.globalFormulas) {
-						types::TermType tmp = f;
-						bool res = t.second->instantiate(var, arguments[i], tmp, te);
-						assert(res);
-						state->global_formulas.insert(boost::get<FormulaT>(tmp));
-					}
-					wasInstantiated = true;
+				if (t.second->refreshVariable(aux, repl, te(t.first))) {
+					wasRefreshed = true;
 					break;
 				}
 			}
-			if (!wasInstantiated) {
-				SMTRAT_LOG_ERROR("smtrat.parser", "Failed to instantiate argument \"" << function.arguments[i] << "\": " << te);
+			if (!wasRefreshed) {
+				SMTRAT_LOG_ERROR("smtrat.parser", "Failed to refresh auxiliary variable \"" << aux << "\": " << te);
 				HANDLE_ERROR
 				return false;
 			}
+			if (!instantiate(function, aux, repl, result)) return false;
+		}
+		for (std::size_t i = 0; i < arguments.size(); i++) {
+			if (!instantiate(function, function.arguments[i], arguments[i], result)) return false;
 		}
 		return true;
 	}
