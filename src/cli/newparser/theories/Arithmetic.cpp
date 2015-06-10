@@ -201,7 +201,7 @@ namespace parser {
 		}
 	}
 	
-	bool ArithmeticTheory::instantiate(types::VariableType var, const types::TermType& replacement, types::TermType& result, TheoryError& errors) {
+	bool ArithmeticTheory::instantiate(const types::VariableType& var, const types::TermType& replacement, types::TermType& result, TheoryError& errors) {
 		carl::Variable v;
 		conversion::VariantConverter<carl::Variable> c;
 		if (!c(var, v)) {
