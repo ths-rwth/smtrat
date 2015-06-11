@@ -58,11 +58,12 @@ public:
 
 	void add(const types::TermType& t) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(assert " << t << ")");
-		if (boost::get<FormulaT>(&t) == nullptr) {
-			SMTRAT_LOG_INFO("smtrat.parser", "assert requires it's argument to be a formula, but it is \"" << t << "\".");
+		FormulaT f;
+		conversion::VariantConverter<FormulaT> conv;
+		if (!conv(t, f)) {
+			SMTRAT_LOG_ERROR("smtrat.parser", "assert requires it's argument to be a formula, but it is \"" << t << "\".");
 			return;
 		}
-		FormulaT f = boost::get<FormulaT>(t);
 		// Check if there are global formulas to be added.
 		// These may be due to ite expressions or alike.
 		FormulasT additional;

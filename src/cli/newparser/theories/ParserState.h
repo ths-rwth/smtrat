@@ -57,6 +57,7 @@ namespace parser {
 			}
 		};
 		
+		std::set<types::VariableType> auxiliary_variables;
 		std::map<std::string, types::TermType> bindings;
 		std::map<std::string, types::TermType> constants;
 		std::map<std::string, types::VariableType> variables;

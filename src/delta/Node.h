@@ -63,6 +63,10 @@ struct Node {
 	explicit Node(const std::tuple<std::string, std::vector<Node>, bool>& data): name(std::get<0>(data)), children(std::get<1>(data)), brackets(std::get<2>(data)), size(0) {
 		size = std::accumulate(children.begin(), children.end(), (std::size_t)1, [](std::size_t a, const Node& b){ return a + b.complexity(); });
 	}
+	
+	explicit Node(const std::string& name, const std::initializer_list<Node>& children, bool brackets = true): name(name), children(children), brackets(brackets), size(0) {
+		size = std::accumulate(children.begin(), children.end(), (std::size_t)1, [](std::size_t a, const Node& b){ return a + b.complexity(); });
+	}
 
 	/**
 	 * Streaming operator.
@@ -104,6 +108,10 @@ struct Node {
      */
 	std::string repr(bool longRepr = false) const {
 		if (longRepr) return String() << *this;
+		if (name == "_") {
+			assert(children.size() == 2);
+			return children[0].repr(longRepr) + "_" + children[1].repr(longRepr);
+		}
 		if (name != "") return name;
 		return "Node";
 	}

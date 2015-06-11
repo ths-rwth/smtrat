@@ -106,9 +106,6 @@ namespace smtrat
             cout << " " << subformula.formula().toString( false, true );
         cout << "))\n";
         #endif
-        mDeductions.clear();
-        mSplittings.clear();
-        mInfeasibleSubsets.clear();
         Answer result = foundAnswer( checkCore( _full ) );
         assert(result == Unknown || result == False || result == True);
         assert( result != False || hasValidInfeasibleSubset() );
@@ -306,29 +303,9 @@ namespace smtrat
         return res;
     }
     
-    pair<ModuleInput::iterator,bool> Module::addReceivedSubformulaToPassedFormula( ModuleInput::const_iterator _subformula )
+    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, bool _hasSingleOrigin, const FormulaT& _origin, const std::shared_ptr<std::vector<FormulaT>>& _origins, bool _mightBeConjunction )
     {
-        assert( mpReceivedFormula->contains( _subformula->formula() ) );
-        return addSubformulaToPassedFormula( _subformula->formula(), _subformula->formula() );
-    }
-    
-    std::pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula )
-    {
-        assert( mpReceivedFormula->size() != UINT_MAX );
-        auto res = mpPassedFormula->add( _formula );
-        if( res.second )
-        {
-            assert( res.first == --mpPassedFormula->end() );
-            if( mFirstSubformulaToPass == mpPassedFormula->end() )
-                mFirstSubformulaToPass = res.first;
-        }
-        return res;
-    }
-
-    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins )
-    {
-        assert( mpReceivedFormula->size() != UINT_MAX );
-        auto res = mpPassedFormula->add( _formula, _origins );
+        std::pair<ModuleInput::iterator,bool> res = mpPassedFormula->add( _formula, _hasSingleOrigin, _origin, _origins, _mightBeConjunction );
         if( res.second )
         {
             assert( res.first == --mpPassedFormula->end() );
@@ -361,24 +338,6 @@ namespace smtrat
             return true;
         }
         return false;
-    }
-
-    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, const FormulaT& _origin )
-    {
-        if( !originInReceivedFormula( _origin ) )
-        {
-            std::cout << _origin << std::endl;
-            print();
-        }
-        assert( originInReceivedFormula( _origin ) );
-        auto res = mpPassedFormula->add( _formula, _origin );
-        if( res.second )
-        {
-            assert( res.first == --mpPassedFormula->end() );
-            if( mFirstSubformulaToPass == mpPassedFormula->end() )
-                mFirstSubformulaToPass = res.first;
-        }
-        return res;
     }
 
     std::vector<FormulaT> Module::merge( const std::vector<FormulaT>& _vecSetA, const std::vector<FormulaT>& _vecSetB ) const
@@ -657,6 +616,9 @@ namespace smtrat
                     #ifdef SMTRAT_DEVOPTION_MeasureTime
                     (*module)->startAddTimer();
                     #endif
+                    (*module)->mDeductions.clear();
+                    (*module)->mSplittings.clear();
+                    (*module)->mInfeasibleSubsets.clear();
                     for( auto iter = mConstraintsToInform.begin(); iter != mConstraintsToInform.end(); ++iter )
                         (*module)->inform( *iter );
                     for( auto subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end(); ++subformula )
@@ -839,6 +801,10 @@ namespace smtrat
             assert( _formula.getType() == carl::FormulaType::AND );
             for( auto& subformula : _formula.subformulas() )
             {
+                if( !mpReceivedFormula->contains( subformula ) )
+                {
+                    std::cout << subformula << std::endl;
+                }   
                 assert( mpReceivedFormula->contains( subformula ) );
                 _origins.insert( subformula );
             }

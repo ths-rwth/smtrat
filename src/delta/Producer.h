@@ -49,6 +49,8 @@ public:
 		if (!settings.has("no-merge")) operators.emplace_back(&mergeChild, "Merged ", " with child ", ".");
 		if (!settings.has("no-numbers")) operators.emplace_back(&number, "Replaced number ", " by ", ".");
 		if (!settings.has("no-lets")) operators.emplace_back(&letExpression, "Eliminated ", " by ", ".");
+		operators.emplace_back(&BV_zeroExtend, "Eliminated zero_extend ", " by ", ".");
+		operators.emplace_back(&BV_mergeShift, "Merged ", " with ", ".");
 		verbose = settings.has("verbose");
 		delayDeclareFun = settings.as<bool>("delay-declare-fun");
 	}

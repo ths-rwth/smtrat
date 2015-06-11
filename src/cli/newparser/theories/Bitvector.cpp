@@ -212,6 +212,7 @@ namespace parser {
 		carl::SortManager& sm = carl::SortManager::getInstance();
 		carl::Variable var = carl::freshVariable(carl::VariableType::VT_BITVECTOR);
 		carl::BVVariable bvvar(var, sm.index(this->bvSort, {thent.width()}));
+		state->auxiliary_variables.insert(bvvar);
 		types::BVTerm vart = types::BVTerm(carl::BVTermType::VARIABLE, bvvar);
 		
 		FormulaT consThen = FormulaT(types::BVConstraint::create(carl::BVCompareRelation::EQ, vart, thent));
@@ -231,7 +232,7 @@ namespace parser {
 		return true;
 	}
 
-	bool BitvectorTheory::instantiate(types::VariableType var, const types::TermType& replacement, types::TermType& subject, TheoryError& errors) {
+	bool BitvectorTheory::instantiate(const types::VariableType& var, const types::TermType& replacement, types::TermType& subject, TheoryError& errors) {
 		carl::BVVariable v;
 		conversion::VariantConverter<carl::BVVariable> c;
 		if (!c(var, v)) {
@@ -245,6 +246,17 @@ namespace parser {
 		}
 		Instantiator<carl::BVVariable, carl::BVTerm> instantiator;
 		return instantiator.instantiate(v, repl, subject);
+	}
+	bool BitvectorTheory::refreshVariable(const types::VariableType& var, types::VariableType& subject, TheoryError& errors) {
+		carl::BVVariable v;
+		conversion::VariantConverter<carl::BVVariable> c;
+		if (!c(var, v)) {
+			errors.next() << "The variable is not a bitvector variable.";
+			return false;
+		}
+		subject = carl::BVVariable(carl::freshVariable(carl::VariableType::VT_BITVECTOR), v.sort());
+		return true;
+		
 	}
 	bool BitvectorTheory::functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
 		if (identifier.symbol == "=") {

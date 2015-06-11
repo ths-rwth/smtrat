@@ -29,7 +29,7 @@ struct ArithmeticTheory: public AbstractTheory  {
 	
 	FormulaT makeConstraint(const Poly& lhs, const Poly& rhs, carl::Relation rel);
 
-	bool instantiate(types::VariableType var, const types::TermType& replacement, types::TermType& result, TheoryError& errors);
+	bool instantiate(const types::VariableType& var, const types::TermType& replacement, types::TermType& result, TheoryError& errors);
 	bool functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors);
 };
 	

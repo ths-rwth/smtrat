@@ -155,7 +155,7 @@ namespace parser {
 			// There are no ITEs.
 			ConstraintT cons = ConstraintT(p, rel);
 			return FormulaT(cons);
-		} else if (n < 4) {
+		} else if (n < 1) {
 			// There are only a few ITEs, hence we expand them here directly to 2^n cases.
 			// 2^n Polynomials with values substituted.
 			std::vector<Poly> polys({p});
@@ -201,7 +201,7 @@ namespace parser {
 		}
 	}
 	
-	bool ArithmeticTheory::instantiate(types::VariableType var, const types::TermType& replacement, types::TermType& result, TheoryError& errors) {
+	bool ArithmeticTheory::instantiate(const types::VariableType& var, const types::TermType& replacement, types::TermType& result, TheoryError& errors) {
 		carl::Variable v;
 		conversion::VariantConverter<carl::Variable> c;
 		if (!c(var, v)) {

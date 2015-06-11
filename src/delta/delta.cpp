@@ -48,8 +48,10 @@ int main(int argc, char* argv[]) {
 
 	// Initialize checker.
 	std::cout << "Calculating original exit code..." << std::endl;
+	auto start_exit = Clock::now();
 	delta::Checker c(s.as<std::string>("solver"), s.as<unsigned>("timeout"), input);
 	std::cout << BGREEN << "Original exit code is " << c.expectedCode() << END << std::endl;
+	std::cout << "Calculation took " << std::chrono::duration_cast<seconds>(Clock::now() - start_exit).count() << " seconds, the configured timeout is " << s.as<unsigned>("timeout") << " seconds." << std::endl;
 	if (c.expectedCode() == 137) {
 		std::cout << BRED << "This exit code might be a timeout!" << END << std::endl;
 	}
