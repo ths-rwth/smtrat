@@ -1700,7 +1700,6 @@ Return:
         {
             return most_infeasible_var( _gc_support );
         }            
-        cout << "Branch at: " << branch_var->first << endl;
         if( result )
         {
             if( _gc_support )
