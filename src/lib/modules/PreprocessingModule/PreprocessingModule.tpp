@@ -361,7 +361,7 @@ namespace smtrat {
 				accumulateBoundOrigins(formula.constraint());
 				return FormulaT(carl::FormulaType::FALSE);
 			}
-			if (result == 4) {
+			if (result == 3) {
 				accumulateBoundOrigins(formula.constraint());
 				return FormulaT(carl::FormulaType::TRUE);
 			}
@@ -682,8 +682,18 @@ namespace smtrat {
                     }
                     currentSubformulas = std::move(sfs);
                 }
-                currentSubformulas.insert( foundSubstitutions.begin(), foundSubstitutions.end() );
-                result = currentSubformulas.empty() ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::AND, std::move(currentSubformulas) );
+                if( currentSubformulas.empty() )
+                {
+                    if( foundSubstitutions.empty() )
+                        result = FormulaT( carl::FormulaType::TRUE );
+//                    else
+//                        result = FormulaT( carl::FormulaType::AND, std::move(foundSubstitutions) );
+                }
+//                else
+//                {
+                    currentSubformulas.insert( foundSubstitutions.begin(), foundSubstitutions.end() );
+                    result = FormulaT( carl::FormulaType::AND, std::move(currentSubformulas) );
+//                }
             Return:
                 while( !addedArithSubs.empty() )
                 {
