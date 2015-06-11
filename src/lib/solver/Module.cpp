@@ -106,9 +106,6 @@ namespace smtrat
             cout << " " << subformula.formula().toString( false, true );
         cout << "))\n";
         #endif
-        mDeductions.clear();
-        mSplittings.clear();
-        mInfeasibleSubsets.clear();
         Answer result = foundAnswer( checkCore( _full ) );
         assert(result == Unknown || result == False || result == True);
         assert( result != False || hasValidInfeasibleSubset() );
@@ -619,6 +616,9 @@ namespace smtrat
                     #ifdef SMTRAT_DEVOPTION_MeasureTime
                     (*module)->startAddTimer();
                     #endif
+                    (*module)->mDeductions.clear();
+                    (*module)->mSplittings.clear();
+                    (*module)->mInfeasibleSubsets.clear();
                     for( auto iter = mConstraintsToInform.begin(); iter != mConstraintsToInform.end(); ++iter )
                         (*module)->inform( *iter );
                     for( auto subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end(); ++subformula )
