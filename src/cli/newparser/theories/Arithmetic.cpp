@@ -155,7 +155,7 @@ namespace parser {
 			// There are no ITEs.
 			ConstraintT cons = ConstraintT(p, rel);
 			return FormulaT(cons);
-		} else if (n < 4) {
+		} else if (n < 1) {
 			// There are only a few ITEs, hence we expand them here directly to 2^n cases.
 			// 2^n Polynomials with values substituted.
 			std::vector<Poly> polys({p});
