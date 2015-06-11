@@ -49,6 +49,15 @@ namespace smtrat {
             }
         }
 
+		/**
+		* Parse formula.
+		* @param input String to parse
+		* @param buffer Buffer for resulting string
+		* @param bufferSize Size of buffer
+		* @return needed buffersize if the current one is too small, 0 otherwise
+		*/
+		DLL_EXPORT int parseFormula(const char* input, char* buffer, int bufferSize);
+
         /**
         * Informs the solver about a constraint. Optimally, it should be informed about all constraints,
         * which it will receive eventually, before any of them is added as part of a formula with the

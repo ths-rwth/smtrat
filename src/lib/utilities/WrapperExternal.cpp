@@ -2,6 +2,20 @@
 #include <iostream>
 
 namespace smtrat {
+	int WrapperExternal::parseFormula(const char* input, char* buffer, int bufferSize)
+	{
+		FormulaT parseResult = parser.formula(input);
+		// Copy result in buffer for external program
+		string result = parseResult.toString();
+		if (result.size() > bufferSize) {
+			return result.size() + 1;
+		}
+		else {
+			assert(result.size() < bufferSize);
+			strcpy_s(buffer, bufferSize, result.c_str());
+			return 0;
+		}
+	}
 
     bool WrapperExternal::inform(const char* _constraint)
     {
