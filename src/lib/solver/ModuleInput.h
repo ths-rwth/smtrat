@@ -382,23 +382,22 @@ namespace smtrat
         
         bool removeOrigins( iterator _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins );
         
-        std::pair<iterator,bool> add( const FormulaT& _formula )
+        std::pair<iterator,bool> add( const FormulaT& _formula, bool _mightBeConjunction = true )
         {
-            iterator iter = find( _formula );
-            if( iter == end() )
-            {
-                mPropertiesUpdated = false;
-                emplace_back( _formula );
-                iterator pos = --end(); // TODO: maybe use reverse iterator for not decrementing here
-                mFormulaPositionMap[_formula] = pos;
-                return make_pair( pos, true );
-            }
-            return make_pair( iter, false );
+            return add( _formula, false, FormulaT( carl::FormulaType::FALSE ), nullptr, _mightBeConjunction );
         }
         
-        std::pair<iterator,bool> add( const FormulaT& _formula, const FormulaT& _origins );
+        std::pair<iterator,bool> add( const FormulaT& _formula, const FormulaT& _origins, bool _mightBeConjunction = true )
+        {
+            return add( _formula, true, _origins, nullptr, _mightBeConjunction );
+        }
         
-        std::pair<iterator,bool> add( const FormulaT& _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins );
+        std::pair<iterator,bool> add( const FormulaT& _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins, bool _mightBeConjunction = true )
+        {
+            return add( _formula, false, FormulaT( carl::FormulaType::FALSE ), _origins, _mightBeConjunction );
+        }
+        
+        std::pair<iterator,bool> add( const FormulaT& _formula, bool _hasSingleOrigin, const FormulaT& _origin, const std::shared_ptr<std::vector<FormulaT>>& _origins, bool _mightBeConjunction = true );
     };
     
     template<typename AnnotationType>
