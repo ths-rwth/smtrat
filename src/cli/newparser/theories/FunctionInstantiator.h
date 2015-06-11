@@ -82,9 +82,10 @@ struct UserFunctionInstantiator: public FunctionInstantiator {
 	std::vector<types::VariableType> arguments;
 	carl::Sort sort;
 	types::TermType definition;
+	std::set<types::VariableType> auxiliaries;
 	FormulasT globalFormulas;
-	UserFunctionInstantiator(const std::vector<types::VariableType>& arguments, const carl::Sort& sort, const types::TermType& definition):
-		arguments(arguments), sort(sort), definition(definition), globalFormulas() {}
+	UserFunctionInstantiator(const std::vector<types::VariableType>& arguments, const carl::Sort& sort, const types::TermType& definition, const std::set<types::VariableType>& auxiliaries):
+		arguments(arguments), sort(sort), definition(definition), auxiliaries(auxiliaries), globalFormulas() {}
 };
 
 }

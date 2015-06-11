@@ -49,7 +49,7 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 		functionDefinitionArg = sortedvariable[qi::_val = px::bind(&Theories::declareFunctionArgument, px::ref(theories), qi::_1)];
 		functionDefinition =
 			(
-				qi::eps[px::bind(&Theories::pushScriptScope, px::ref(theories), 1)] > 
+				qi::eps[px::bind(&ScriptParser::startFunctionDefinition, px::ref(*this))] > 
 				symbol > "(" > *(functionDefinitionArg) > ")" > sort > term > ")" >
 				qi::eps[px::bind(&Theories::popScriptScope, px::ref(theories), 1)]
 			)[px::bind(&Theories::defineFunction, px::ref(theories), qi::_1, qi::_2, qi::_3, qi::_4)];
@@ -100,6 +100,11 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 	qi::rule<Iterator, Skipper> main;
 	
 	px::function<ErrorHandler> errorHandler;
+	
+	void startFunctionDefinition() {
+		theories.pushScriptScope(1);
+		state.auxiliary_variables.clear();
+	}
 };
 
 }
