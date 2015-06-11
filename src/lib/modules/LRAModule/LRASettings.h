@@ -41,6 +41,10 @@ namespace smtrat
         /**
          * 
          */
+        static const bool pseudo_cost_branching = false;
+        /**
+         * 
+         */
         static const bool use_gomory_cuts = false;
         /**
          * 
