@@ -309,7 +309,6 @@ namespace smtrat
         std::pair<ModuleInput::iterator,bool> res = mpPassedFormula->add( _formula, _hasSingleOrigin, _origin, _origins, _mightBeConjunction );
         if( res.second )
         {
-            assert( res.first == --mpPassedFormula->end() );
             if( mFirstSubformulaToPass == mpPassedFormula->end() )
                 mFirstSubformulaToPass = res.first;
         }
