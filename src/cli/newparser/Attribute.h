@@ -8,6 +8,9 @@
 namespace smtrat {
 namespace parser {
 
+/**
+ * Represents an 
+ */
 class Attribute {
 public:
 	typedef types::AttributeValue AttributeValue;
@@ -20,6 +23,7 @@ public:
 	Attribute(const std::string& key, const boost::optional<AttributeValue>& value) : key(key) {
 		if (value.is_initialized()) this->value = value.get();
 	}
+	//Attribute(const std::string& key, bool value): key(key), value(FormulaT(value ? carl::FormulaType::TRUE : carl::FormulaType::FALSE)) {}
 
 	bool hasValue() const {
 		return boost::get<boost::spirit::qi::unused_type>(&value) == nullptr;
@@ -32,7 +36,7 @@ inline std::ostream& operator<<(std::ostream& os, const Attribute& attr) {
 }
 
 struct AttributeValueParser: public qi::grammar<Iterator, types::AttributeValue(), Skipper> {
-	typedef VariantConverter<types::AttributeValue> Converter;
+	typedef conversion::VariantVariantConverter<types::AttributeValue> Converter;
 	AttributeValueParser(): AttributeValueParser::base_type(main, "attribute value") {
 		main = 
 				specconstant[qi::_val = px::bind(&Converter::template convert<types::ConstType>, &converter, qi::_1)]

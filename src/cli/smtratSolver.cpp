@@ -23,7 +23,7 @@
 #endif //SMTRAT_DEVOPTION_Statistics
 
 
-#include "parser/Parser.h"
+#include "newparser/Parser.h"
 #include "../lib/Common.h"
 
 class Executor : public smtrat::parser::InstructionHandler {
@@ -72,9 +72,9 @@ public:
 		}
 	}
 	void declareFun(const carl::Variable& var) {
-		if (smtrat::parser::TypeOfTerm::get(var.getType()) == smtrat::parser::ExpressionType::THEORY) {
-			this->solver->quantifierManager().addUnquantifiedVariable(var);
-		}
+		//if (smtrat::parser::TypeOfTerm::get(var.getType()) == smtrat::parser::ExpressionType::THEORY) {
+		//	this->solver->quantifierManager().addUnquantifiedVariable(var);
+		//}
 	}
 	void declareSort(const std::string&, const unsigned&) {
 		//error() << "(declare-sort <name> <arity>) is not implemented.";
@@ -101,11 +101,11 @@ public:
 	void getValue(const std::vector<carl::Variable>&) {
 		error() << "(get-value <variables>) is not implemented.";
 	}
-	void pop(const unsigned& n) {
-		for (unsigned i = 0; i < n; i++) this->solver->pop();
+	void pop(std::size_t n) {
+		for (; n > 0; n--) this->solver->pop();
 	}
-	void push(const unsigned& n) {
-		for (unsigned i = 0; i < n; i++) this->solver->push();
+	void push(std::size_t n) {
+		for (; n > 0; n--) this->solver->push();
 	}
 	void setLogic(const smtrat::Logic& logic) {
 		if (this->solver->logic() != smtrat::Logic::UNDEFINED) {
@@ -141,7 +141,7 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
 	Executor* e = new Executor(solver);
 	{
 		smtrat::parser::SMTLIBParser parser(e, true);
-		bool parsingSuccessful = parser.parse(infile, pathToInputFile);
+		bool parsingSuccessful = parser.parse(infile);
 		if (!parsingSuccessful) {
 			std::cerr << "Parse error" << std::endl;
 			delete e;

@@ -104,8 +104,8 @@ There are three options how this module can answer: it either determines that th
 is satisfiable and returns \True, it determines unsatisfiability and returns
 \False, or it cannot give a conclusive answer and returns \Unknown. 
 A module has also the opportunity to reason about the conflicts
-occurred, if it determines unsatisfiability. For this purpose it has store at least one infeasible
-subsets of the set of so far received formulas. If the method \texttt{check} is called with its argument being \false, this module is allowed to omit hard obstacles during solving at the cost of returning \UNKNOWN in more cases, we refer to as a \emph{lightweight check}.
+occurred, if it determines unsatisfiability. For this purpose it has to store at least one infeasible
+subset of the set of so far received formulas. If the method \texttt{check} is called with its argument being \false, this module is allowed to omit hard obstacles during solving at the cost of returning \UNKNOWN in more cases, we refer to as a \emph{lightweight check}.
 
 \subsection{Updating the model/satisfying assignment}
 \begin{figure}[htb]
@@ -221,7 +221,7 @@ must be activated, which can be easily achieved when using, e.g., \ccmake.
 ) const 
 \end{verbatim}
 This method checks the infeasible subset at the given position for minimality, that is it checks whether there is a subset of it having maximally $n$ elements less while still being infeasible.
-As for some approaches it is computationally to hard to provide always a minimal infeasible subset, they rather provide infeasible subsets not necessarily being minimal. This method helps 
+As for some approaches it is computationally too hard to provide always a minimal infeasible subset, they rather provide infeasible subsets not necessarily being minimal. This method helps 
 to analyze how close the size of the encountered infeasible subsets is to a minimal one.
 
 \item Another important feature during the development of a new module is the collection of statistics. The script \writeModule for the creation of a new module automatically adds a class to maintain statistics in the same folder in which the module itself is located. The members of this class store the statistics usually represented by primitive data types as integers and floats. They can be extended as one pleases and be manipulated by methods, which have also to be implemented in this class. \smtrat collects and prints these statistics automatically, if its command line interface is called with the option \texttt{--statistics} or \texttt{-s}.

@@ -25,7 +25,7 @@ struct SpecConstantParser: public qi::grammar<Iterator, types::ConstType(), Skip
 };
 
 struct SExpressionParser: public qi::grammar<Iterator, SExpression<types::ConstType>(), Skipper> {
-	typedef VariantConverter<SExpression<types::ConstType>> Converter;
+	typedef conversion::VariantVariantConverter<SExpression<types::ConstType>> Converter;
 	SExpressionParser(): SExpressionParser::base_type(main, "sexpression") {
 		main = 
 				specconstant[qi::_val = px::bind(&Converter::template convert<types::ConstType>, &converter, qi::_1)]

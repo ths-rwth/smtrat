@@ -20,7 +20,7 @@ namespace parser {
 	struct FormulaParser;
 	
 	struct UninterpretedParser: public qi::grammar<Iterator, UninterpretedType(), Skipper> {
-		UninterpretedParser(ParserState* state, FormulaParser* formula);
+		UninterpretedParser(ParserState* state, FormulaParser* formula, BitvectorParser* bitvector);
 	private:
 		ParserState* state;
 

@@ -220,7 +220,7 @@ namespace smtrat
              * can be used in the same manner as infeasible subsets are used.
              * @return The lemmas/tautologies made during solving.
              */
-            std::vector<FormulaT> lemmas() const
+            std::vector<FormulaT> lemmas()
             {
                 std::vector<FormulaT> result;
                 mpPrimaryBackend->updateDeductions();
@@ -341,24 +341,6 @@ namespace smtrat
             Logic& rLogic()
             {
                 return mLogic;
-            }
-            
-            /**
-             * @return The string naming the logic this solver considers.
-             */
-            std::string logicToString() const
-            {
-                switch( mLogic )
-                {
-                    case Logic::QF_LIA:
-                        return "QF_LIA";
-                    case Logic::QF_NIA:
-                        return "QF_NIA";
-                    case Logic::QF_LRA:
-                        return "QF_LRA";
-                    default:
-                        return "QF_NRA";
-                }
             }
             
         protected:

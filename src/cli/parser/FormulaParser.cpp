@@ -14,9 +14,10 @@ namespace parser {
 FormulaParser::FormulaParser(ParserState* _state):
 	FormulaParser::base_type(formula, "formula"),
 	state(_state),
-	uninterpreted(_state, this),
+	bitvector(_state),
+	uninterpreted(_state, this, &bitvector),
 	polynomial(_state, this, &uninterpreted),
-	fun_argument(this, &uninterpreted, &polynomial)
+	fun_argument(this, &bitvector, &uninterpreted, &polynomial)
 {
 	binding = symbol[qi::_a = qi::_1] > (
 			polynomial[px::bind(&ParserState::addTheoryBinding, px::ref(state), qi::_a, qi::_1)]

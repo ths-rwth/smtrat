@@ -1,6 +1,6 @@
 \chapter{Embedding of an \smtrat solver composition}
 \label{chapter:embedding}
-In this section we show how to embed a solver composed as explained
+In this chapter we show how to embed a solver composed as explained
 in Chapter~\ref{chapter:composingats}, \eg using the default strategy
 solver \texttt{RatOne}. For instance, we could embed a theory solver composed with \smtrat 
 into an SMT solver in order to extend its supported logics by \supportedLogics (or any of its sub-logics) 
@@ -42,7 +42,7 @@ for satisfiability. Here we give an overview of all interfaces:
 	but for NRA it is actually always possible to define a strategy for a complete \smtrat solver) or it
 	communicates lemmas/tautologies, which can be obtained applying \texttt{lemmas()}. 
 	If we embed, e.g., a theory solver composed with \smtrat into an
-	SMT solver, these lemmas can be used in its sat solving process in the same way as infeasible subsets are 
+	SMT solver, these lemmas can be used in its SAT solving process in the same way as infeasible subsets are 
 	used. The strategy of an SMT solver composed with \smtrat has to involve a \satModule before any theory module
 	is used\footnote{It is possible to define a strategy using conditions in a way, that we achieve an SMT solver, even if for some cases no \satModule is involved before a theory module is applied.} and, therefore, the SMT solver never communicates these lemmas as they are already processed by the
 	\satModule. A better explanation on the modules and the strategy can be found in Chapter~\ref{chapter:generalframework} 

@@ -15,6 +15,8 @@
 #include <limits.h>
 #include <cmath>
 
+#include <boost/range/adaptor/reversed.hpp>
+
 #include "Manager.h"
 #include "Module.h"
 #include "ModuleFactory.h"
@@ -104,6 +106,7 @@ namespace smtrat
             cout << " " << subformula.formula().toString( false, true );
         cout << "))\n";
         #endif
+        if( rReceivedFormula().empty() ) return foundAnswer( True );
         Answer result = foundAnswer( checkCore( _full ) );
         assert(result == Unknown || result == False || result == True);
         assert( result != False || hasValidInfeasibleSubset() );
@@ -113,8 +116,11 @@ namespace smtrat
         #ifdef SMTRAT_DEVOPTION_Validation
         if( validationSettings->logTCalls() )
         {
-            if( result != Unknown )
+            if( result != Unknown && !mpReceivedFormula->empty() )
+            {
+//                std::cout  << "Add assumption to check in Line " << __LINE__ << " from " << moduleName( type() ) << ": " << ((FormulaT)*mpReceivedFormula) << std::endl;
                 addAssumptionToCheck( *mpReceivedFormula, result == True, moduleName( type() ) );
+            }
         }
         #endif
         return result;
@@ -237,6 +243,31 @@ namespace smtrat
         if( mSolverState == True )
         {
             getBackendsModel();
+            carl::Variables receivedVariables;
+            mpReceivedFormula->arithmeticVars( receivedVariables );
+            mpReceivedFormula->booleanVars( receivedVariables );
+            // TODO: Do the same for bv and uninterpreted variables and functions 
+            auto iterRV = receivedVariables.begin();
+            if( iterRV != receivedVariables.end() )
+            {
+                for( std::map<ModelVariable,ModelValue>::const_iterator iter = mModel.begin(); iter != mModel.end(); )
+                {
+                    if( iter->first.isVariable() )
+                    {
+                        auto tmp = std::find( iterRV, receivedVariables.end(), iter->first.asVariable() );
+                        if( tmp == receivedVariables.end() )
+                        {
+                            iter = mModel.erase( iter );
+                            continue;
+                        }
+                        else
+                        {   
+                            iterRV = tmp;
+                        }
+                    }
+                    ++iter;
+                }
+            }
         }
     }
 
@@ -273,32 +304,11 @@ namespace smtrat
         return res;
     }
     
-    pair<ModuleInput::iterator,bool> Module::addReceivedSubformulaToPassedFormula( ModuleInput::const_iterator _subformula )
+    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, bool _hasSingleOrigin, const FormulaT& _origin, const std::shared_ptr<std::vector<FormulaT>>& _origins, bool _mightBeConjunction )
     {
-        assert( mpReceivedFormula->contains( _subformula->formula() ) );
-        return addSubformulaToPassedFormula( _subformula->formula(), _subformula->formula() );
-    }
-    
-    std::pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula )
-    {
-        assert( mpReceivedFormula->size() != UINT_MAX );
-        auto res = mpPassedFormula->add( _formula );
+        std::pair<ModuleInput::iterator,bool> res = mpPassedFormula->add( _formula, _hasSingleOrigin, _origin, _origins, _mightBeConjunction );
         if( res.second )
         {
-            assert( res.first == --mpPassedFormula->end() );
-            if( mFirstSubformulaToPass == mpPassedFormula->end() )
-                mFirstSubformulaToPass = res.first;
-        }
-        return res;
-    }
-
-    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins )
-    {
-        assert( mpReceivedFormula->size() != UINT_MAX );
-        auto res = mpPassedFormula->add( _formula, _origins );
-        if( res.second )
-        {
-            assert( res.first == --mpPassedFormula->end() );
             if( mFirstSubformulaToPass == mpPassedFormula->end() )
                 mFirstSubformulaToPass = res.first;
         }
@@ -328,24 +338,6 @@ namespace smtrat
             return true;
         }
         return false;
-    }
-
-    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, const FormulaT& _origin )
-    {
-        if( !originInReceivedFormula( _origin ) )
-        {
-            std::cout << _origin << std::endl;
-            print();
-        }
-        assert( originInReceivedFormula( _origin ) );
-        auto res = mpPassedFormula->add( _formula, _origin );
-        if( res.second )
-        {
-            assert( res.first == --mpPassedFormula->end() );
-            if( mFirstSubformulaToPass == mpPassedFormula->end() )
-                mFirstSubformulaToPass = res.first;
-        }
-        return res;
     }
 
     std::vector<FormulaT> Module::merge( const std::vector<FormulaT>& _vecSetA, const std::vector<FormulaT>& _vecSetB ) const
@@ -624,6 +616,9 @@ namespace smtrat
                     #ifdef SMTRAT_DEVOPTION_MeasureTime
                     (*module)->startAddTimer();
                     #endif
+                    (*module)->mDeductions.clear();
+                    (*module)->mSplittings.clear();
+                    (*module)->mInfeasibleSubsets.clear();
                     for( auto iter = mConstraintsToInform.begin(); iter != mConstraintsToInform.end(); ++iter )
                         (*module)->inform( *iter );
                     for( auto subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end(); ++subformula )
@@ -761,7 +756,7 @@ namespace smtrat
     {
         mSolverState = _answer;
 //        if( !( _answer != True || checkModel() != 0 ) ) exit(1234);
-        assert( _answer != True || checkModel() != 0 );
+        //assert( _answer != True || checkModel() != 0 );
         // If we are in the SMT environment:
         if( mpManager != NULL && _answer != Unknown )
         {
@@ -790,10 +785,8 @@ namespace smtrat
                     addAssumptionToCheck( FormulaT( FormulaType::NOT, ded.first ), false, moduleName( (*module)->type() ) + "_lemma" );
             }
             #endif
-            std::move((*module)->mDeductions.begin(), (*module)->mDeductions.end(), std::back_inserter(mDeductions));
-            (*module)->mDeductions.clear();
-            std::move((*module)->mSplittings.begin(), (*module)->mSplittings.end(), std::back_inserter(mSplittings));
-            (*module)->mSplittings.clear();
+            mDeductions.insert( mDeductions.end(), (*module)->mDeductions.begin(), (*module)->mDeductions.end() );
+            mSplittings.insert( mSplittings.end(), (*module)->mSplittings.begin(), (*module)->mSplittings.end() );
         }
     }
     
@@ -808,6 +801,10 @@ namespace smtrat
             assert( _formula.getType() == carl::FormulaType::AND );
             for( auto& subformula : _formula.subformulas() )
             {
+                if( !mpReceivedFormula->contains( subformula ) )
+                {
+                    std::cout << subformula << std::endl;
+                }   
                 assert( mpReceivedFormula->contains( subformula ) );
                 _origins.insert( subformula );
             }
@@ -835,10 +832,8 @@ namespace smtrat
     {
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
-        std::stringstream os;
-        os << "(declare-fun " << _label << " () " << "Bool" << ")\n";
+        assumption += "(declare-fun " + _label + " () Bool)\n";
         assumption += _formula.toString( false, 1, "", true, false, true, true );
-        assumption += os.str();
         assumption += "(assert " + _label + ")\n";
         assumption += "(get-assertions)\n";
         assumption += "(check-sat)\n";
@@ -850,9 +845,7 @@ namespace smtrat
     {
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
-        std::stringstream os;
-        os << "(declare-fun " << _label << " () " << "Bool" << ")\n";
-        assumption += os.str();
+        assumption += "(declare-fun " + _label + " () Bool)\n";
         assumption += ((FormulaT) _subformulas).toString( false, 1, "", true, false, true, true );
         assumption += "(assert " + _label + ")\n";
         assumption += "(get-assertions)\n";
@@ -865,9 +858,7 @@ namespace smtrat
     {
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
-        std::stringstream os;
-        os << "(declare-fun " << _label << " () " << "Bool" << ")\n";
-        assumption += os.str();
+        assumption += "(declare-fun " + _label + " () Bool)\n";
         assumption += FormulaT(carl::FormulaType::AND, _formulas).toString( false, 1, "", true, false, true, true );
         assumption += "(assert " + _label + ")\n";
         assumption += "(get-assertions)\n";
@@ -911,13 +902,13 @@ namespace smtrat
         {
             ofstream smtlibFile;
             smtlibFile.open( validationSettings->path() );
-            for( const auto& assum : Module::mAssumptionToCheck )
+            for( const auto& assum : boost::adaptors::reverse(Module::mAssumptionToCheck) )
             { 
                 // For each assumption add a new solver-call by resetting the search state.
                 #ifndef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
-                smtlibFile << "(reset)\n";
+                smtlibFile << "\n(reset)\n";
                 #endif
-                smtlibFile << "(set-logic " << _manager.logicToString() << ")\n";
+                smtlibFile << "(set-logic " << _manager.logic() << ")\n";
                 #ifndef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
                 smtlibFile << "(set-option :interactive-mode true)\n";
                 #endif
@@ -966,7 +957,7 @@ namespace smtrat
                 nextbitvector = tmp | ((((tmp & -tmp) / (bitvector & -bitvector)) >> 1) - 1);
                 // For each assumption add a new solver-call by resetting the search state.
                 smtlibFile << "(reset)\n";
-                smtlibFile << "(set-logic " << mpManager->logicToString() << ")\n";
+                smtlibFile << "(set-logic " << mpManager->logic() << ")\n";
                 smtlibFile << "(set-option :interactive-mode true)\n";
                 smtlibFile << "(set-info :smt-lib-version 2.0)\n";
                 // Add all real-valued variables.

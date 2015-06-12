@@ -50,19 +50,20 @@ public:
 		if (qi::phrase_parse(begin, end, parser, skipper)) {
 			return true;
 		} else {
-			std::cout << "Remaining to parse:" << std::endl;
-			std::cout << std::string(begin, end) << std::endl;
+			//std::cout << "Remaining to parse:" << std::endl;
+			//std::cout << std::string(begin, end) << std::endl;
 			return false;
 		}
 	}
 
 	void add(const types::TermType& t) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(assert " << t << ")");
-		if (boost::get<FormulaT>(&t) == nullptr) {
-			SMTRAT_LOG_INFO("smtrat.parser", "assert requires it's argument to be a formula, but it is \"" << t << "\".");
+		FormulaT f;
+		conversion::VariantConverter<FormulaT> conv;
+		if (!conv(t, f)) {
+			SMTRAT_LOG_ERROR("smtrat.parser", "assert requires it's argument to be a formula, but it is \"" << t << "\".");
 			return;
 		}
-		FormulaT f = boost::get<FormulaT>(t);
 		// Check if there are global formulas to be added.
 		// These may be due to ite expressions or alike.
 		FormulasT additional;
@@ -71,7 +72,6 @@ public:
 			additional.insert(f);
 			f = FormulaT(carl::FormulaType::AND, std::move(additional));
 		}
-		std::cout << "Add " << f << std::endl;
 		callHandler(&InstructionHandler::add, f);
 	}
 	void check() {
@@ -98,7 +98,7 @@ public:
 	}
 	void exit() {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(exit)");
-		///@todo this->mInputStream->setstate(std::ios::eofbit);
+		this->mInputStream->setstate(std::ios::eofbit);
 		callHandler(&InstructionHandler::exit);
 	}
 	void getAssertions() {
@@ -130,19 +130,19 @@ public:
 	}
 	void pop(const Integer& n) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(pop " << n << ")");
-		theories.closeScope(carl::toInt<std::size_t>(n));
+		theories.popScriptScope(carl::toInt<std::size_t>(n));
 		callHandler(&InstructionHandler::pop, carl::toInt<std::size_t>(n));
 	}
 	void push(const Integer& n) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(push " << n << ")");
-		theories.openScope(carl::toInt<std::size_t>(n));
+		theories.pushScriptScope(carl::toInt<std::size_t>(n));
 		callHandler(&InstructionHandler::push, carl::toInt<std::size_t>(n));
 	}
 	void setInfo(const Attribute& attribute) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(set-info :" << attribute << ")");
 		callHandler(&InstructionHandler::setInfo, attribute);
 	}
-	void setLogic(const std::string& name) {
+	void setLogic(const smtrat::Logic& name) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(set-logic " << name << ")");
 		callHandler(&InstructionHandler::setLogic, name);
 	}

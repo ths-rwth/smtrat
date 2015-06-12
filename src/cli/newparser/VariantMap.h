@@ -19,11 +19,11 @@ template <class T> struct is_variant : std::false_type {};
 /**
  * States that `boost::variant` is indeed a `boost::variant`.
  */
-template <class... U> struct is_variant<boost::variant<U...>> : std::true_type {};
+template <BOOST_VARIANT_ENUM_PARAMS(typename U)> struct is_variant<boost::variant<BOOST_VARIANT_ENUM_PARAMS(U)>> : std::true_type {};
 /**
  * States that `const boost::variant` is indeed a `boost::variant`.
  */
-template <class... U> struct is_variant<const boost::variant<U...>> : std::true_type {};
+template <BOOST_VARIANT_ENUM_PARAMS(typename U)> struct is_variant<const boost::variant<BOOST_VARIANT_ENUM_PARAMS(U)>> : std::true_type {};
 
 /**
  * This class is a specialization of `std::map` where the keys are of arbitrary type and the values are of type `boost::variant`.

@@ -6,102 +6,177 @@
 #include "ParserState.h"
 #include "Core.h"
 #include "Arithmetic.h"
+#ifdef PARSER_ENABLE_BITVECTOR
+#include "Bitvector.h"
+#endif
+#ifdef PARSER_ENABLE_UNINTERPRETED
 #include "Uninterpreted.h"
-#ifdef PARSER_BITVECTOR
-#indlude "Bitvector.h"
 #endif
 
 namespace smtrat {
 namespace parser {
 
+/**
+ * The Theories class combines all implemented theories and provides a single interface to interact with all theories at once.
+ */
 struct Theories {
 	
-	static void addConstants(qi::symbols<char, types::ConstType>& constants) {
-		ArithmeticTheory::addConstants(constants);
-#ifdef PARSER_BITVECTOR
-		BitvectorTheory::addConstants(constants);
+	typedef boost::mpl::vector<
+		CoreTheory*,
+#ifdef PARSER_ENABLE_ARITHMETIC
+		ArithmeticTheory*,
 #endif
-		CoreTheory::addConstants(constants);
-		UninterpretedTheory::addConstants(constants);
-	}
-
-	static void addSimpleSorts(qi::symbols<char, carl::Sort>& sorts) {
-		ArithmeticTheory::addSimpleSorts(sorts);
-#ifdef PARSER_BITVECTOR
-		BitvectorTheory::addSimpleSorts(constants);
+#ifdef PARSER_ENABLE_BITVECTOR
+		BitvectorTheory*,
 #endif
-		CoreTheory::addSimpleSorts(sorts);
-		UninterpretedTheory::addSimpleSorts(sorts);
-	}
-	
+#ifdef PARSER_ENABLE_UNINTERPRETED
+		UninterpretedTheory*
+#endif	
+		>::type Modules;
+		
+		
 	Theories(ParserState* state):
-		state(state)
+		state(state),
+		theories()
 	{
+		theories.emplace("Core", new CoreTheory(state));
+#ifdef PARSER_ENABLE_ARITHMETIC
 		theories.emplace("Arithmetic", new ArithmeticTheory(state));
-#ifdef PARSER_BITVECTOR
+#endif
+#ifdef PARSER_ENABLE_BITVECTOR
 		theories.emplace("Bitvector", new BitvectorTheory(state));
 #endif
-		theories.emplace("Core", new CoreTheory(state));
+#ifdef PARSER_ENABLE_UNINTERPRETED
 		theories.emplace("Uninterpreted", new UninterpretedTheory(state));
+#endif	
+	}
+	~Theories() {
+		auto it = theories.begin();
+		while (it != theories.end()) {
+			delete it->second;
+			it = theories.erase(it);
+		}
+	}
+	
+	/**
+	 * Helper functor for addConstants() method.
+	 */
+	struct ConstantAdder {
+		qi::symbols<char, types::ConstType>& constants;
+		ConstantAdder(qi::symbols<char, types::ConstType>& constants): constants(constants) {}
+		template<typename T> void operator()(T*) {
+			T::addConstants(constants);
+		}
+	};
+	/**
+	 * Collects constants from all theory modules.
+	 */
+	static void addConstants(qi::symbols<char, types::ConstType>& constants) {
+		boost::mpl::for_each<Modules>(ConstantAdder(constants));
+	}
+
+	/**
+	 * Helper functor for addSimpleSorts() method.
+	 */
+	struct SimpleSortAdder {
+		qi::symbols<char, carl::Sort>& sorts;
+		SimpleSortAdder(qi::symbols<char, carl::Sort>& sorts): sorts(sorts) {}
+		template<typename T> void operator()(T*) {
+			T::addSimpleSorts(sorts);
+		}
+	};
+	/**
+	 * Collects simple sorts from all theory modules.
+	 */
+	static void addSimpleSorts(qi::symbols<char, carl::Sort>& sorts) {
+		boost::mpl::for_each<Modules>(SimpleSortAdder(sorts));
 	}
 	
 	void addGlobalFormulas(FormulasT& formulas) {
-		formulas.insert(state->mGlobalFormulas.begin(), state->mGlobalFormulas.end());
-		state->mGlobalFormulas.clear();
+		formulas.insert(state->global_formulas.begin(), state->global_formulas.end());
+		state->global_formulas.clear();
 	}
 	void declareVariable(const std::string& name, const carl::Sort& sort) {
 		if (state->isSymbolFree(name)) {
+			types::VariableType var;
+			TheoryError te;
 			for (auto& t: theories) {
-				if (t.second->declareVariable(name, sort)) return;
+				if (t.second->declareVariable(name, sort, var, te(t.first))) return;
 			}
-			SMTRAT_LOG_ERROR("smtrat.parser", "Variable \"" << name << "\" was declared with an invalid sort \"" << sort << "\".");
+			SMTRAT_LOG_ERROR("smtrat.parser", "Variable \"" << name << "\" was declared with an invalid sort \"" << sort << "\":" << te);
+			HANDLE_ERROR
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Variable \"" << name << "\" will not be declared due to a name clash.");
+			HANDLE_ERROR
 		}
 	}
 	void declareFunction(const std::string& name, const std::vector<carl::Sort>& args, const carl::Sort& sort) {
 		if (state->isSymbolFree(name)) {
-			for (auto& t: theories) {
-				if (t.second->declareFunction(name, args, sort)) return;
-			}
-			SMTRAT_LOG_ERROR("smtrat.parser", "Function \"" << name << "\" could not be declared.");
+			state->declared_functions[name] = carl::newUninterpretedFunction(name, args, sort);
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Function \"" << name << "\" will not be declared due to a name clash.");
+			HANDLE_ERROR
 		}
 	}
 	
-	void declareFunctionArgument(const std::pair<std::string, carl::Sort>& arg) {
+	types::VariableType declareFunctionArgument(const std::pair<std::string, carl::Sort>& arg) {
 		if (state->isSymbolFree(arg.first)) {
-			carl::SortManager& sm = carl::SortManager::getInstance();
-			if (sm.isInterpreted(arg.second)) {
-				carl::Variable v = carl::VariablePool::getInstance().getFreshVariable(arg.first, carl::SortManager::getInstance().interpretedType(arg.second));
-				state->bindings.emplace(arg.first, v);
-			} else {
-				SMTRAT_LOG_ERROR("smtrat.parser", "Function argument \"" << arg.first << "\" is of uninterpreted type.");
+			TheoryError te;
+			types::VariableType result;
+			for (auto& t: theories) {
+				if (t.second->declareVariable(arg.first, arg.second, result, te(t.first))) return result;
 			}
+			SMTRAT_LOG_ERROR("smtrat.parser", "Function argument \"" << arg.first << "\" could not be declared:" << te);
+			HANDLE_ERROR
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Function argument \"" << arg.first << "\" will not be declared due to a name clash.");
+			HANDLE_ERROR
 		}
+		return types::VariableType(carl::Variable::NO_VARIABLE);
 	}
 	
-	void defineFunction(const std::string& name, const carl::Sort& sort, const types::TermType& definition) {
-		SMTRAT_LOG_ERROR("smtrat.parser", "Defined \"" << sort << " " << name << " -> " << definition << "\".");
+	void defineFunction(const std::string& name, const std::vector<types::VariableType>& arguments, const carl::Sort& sort, const types::TermType& definition) {
+		if (state->isSymbolFree(name)) {
+			///@todo check that definition matches the sort
+			if (arguments.size() == 0) {
+				state->constants.emplace(name, definition);
+			} else {
+				SMTRAT_LOG_DEBUG("smtrat.parser", "Defining function \"" << name << "\" as \"" << definition << "\".");
+				auto ufi = new UserFunctionInstantiator(arguments, sort, definition, state->auxiliary_variables);
+				addGlobalFormulas(ufi->globalFormulas);
+				state->registerFunction(name, ufi);
+			}
+		} else {
+			SMTRAT_LOG_ERROR("smtrat.parser", "Function \"" << name << "\" will not be defined due to a name clash.");
+			HANDLE_ERROR
+		}
 	}
 
 	types::TermType resolveSymbol(const Identifier& identifier) const {
+		types::TermType result;
 		if (identifier.indices == nullptr) {
-			return state->resolveSymbol<types::TermType>(identifier.symbol);
-		} else {
-			SMTRAT_LOG_ERROR("smtrat.parser", "Indexed symbols are not supported yet.");
-			return types::TermType();
+			if (state->resolveSymbol(identifier.symbol, result)) return result;
 		}
+		TheoryError te;
+		for (auto& t: theories) {
+			if (t.second->resolveSymbol(identifier, result, te(t.first))) return result;
+		}
+		SMTRAT_LOG_ERROR("smtrat.parser", "Tried to resolve symbol \"" << identifier << "\" which is unknown." << te);
+		HANDLE_ERROR
+		return types::TermType();
 	}
 	
-	void openScope(std::size_t n) {
-		for (; n > 0; n--) state->pushScope();
+	void pushExpressionScope(std::size_t n) {
+		for (; n > 0; n--) state->pushExpressionScope();
 	}
-	void closeScope(std::size_t n) {
-		for (; n > 0; n--) state->popScope();
+	void popExpressionScope(std::size_t n) {
+		for (; n > 0; n--) state->popExpressionScope();
+	}
+	void pushScriptScope(std::size_t n) {
+		for (; n > 0; n--) state->pushScriptScope();
+	}
+	void popScriptScope(std::size_t n) {
+		for (; n > 0; n--) state->popScriptScope();
 	}
 	
 	void handleLet(const std::string& symbol, const types::TermType& term) {
@@ -112,13 +187,16 @@ struct Theories {
 		types::TermType result;
 		if (arguments.size() != 3) {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to construct ITE expression, only exactly three arguments are allowed, but \"" << arguments << "\" were given.");
+			HANDLE_ERROR
 			return result;
 		}
-		if (boost::get<FormulaT>(&arguments[0]) == nullptr) {
+		FormulaT ifterm;
+		conversion::VariantConverter<FormulaT> converter;
+		if (!converter(arguments[0], ifterm)) {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to construct ITE expression, the first argument must be a formula, but \"" << arguments[0] << "\" was given.");
+			HANDLE_ERROR
 			return result;
 		}
-		FormulaT ifterm = boost::get<FormulaT>(arguments[0]);
 		if (ifterm.isTrue()) return arguments[1];
 		if (ifterm.isFalse()) return arguments[2];
 		TheoryError te;
@@ -126,6 +204,7 @@ struct Theories {
 			if (t.second->handleITE(ifterm, arguments[1], arguments[2], result, te(t.first))) return result;
 		}
 		SMTRAT_LOG_ERROR("smtrat.parser", "Failed to construct ITE \"" << ifterm << "\" ? \"" << arguments[1] << "\" : \"" << arguments[2] << "\": " << te);
+		HANDLE_ERROR
 		return result;
 	}
 	
@@ -136,21 +215,133 @@ struct Theories {
 			if (t.second->handleDistinct(arguments, result, te(t.first))) return result;
 		}
 		SMTRAT_LOG_ERROR("smtrat.parser", "Failed to construct distinct for \"" << arguments << "\": " << te);
+		HANDLE_ERROR
 		return result;
 	}
 	
-	types::TermType functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments) {
-		if (identifier.symbol == "ite") {
-			return handleITE(arguments);
-		} else if (identifier.symbol == "distinct") {
-			return handleDistinct(arguments);
+	bool instantiate(const UserFunctionInstantiator& function, const types::VariableType& var, const types::TermType& repl, types::TermType& subject) {
+		TheoryError errors;
+		bool wasInstantiated = false;
+		for (auto& t: theories) {
+			if (t.second->instantiate(var, repl, subject, errors(t.first))) {
+				for (const auto& f: function.globalFormulas) {
+					types::TermType tmp = f;
+					bool res = t.second->instantiate(var, repl, tmp, errors);
+					assert(res);
+					state->global_formulas.insert(boost::get<FormulaT>(tmp));
+				}
+				wasInstantiated = true;
+				break;
+			}
 		}
+		if (!wasInstantiated) {
+			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to instantiate variable \"" << var << "\": " << errors);
+			HANDLE_ERROR
+			return false;
+		}
+		return true;
+	}
+	
+	bool instantiateUserFunction(const UserFunctionInstantiator& function, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
+		if (function.arguments.size() != arguments.size()) {
+			errors.next() << "Function was expected to have " << function.arguments.size() << " arguments, but was instantiated with " << arguments.size() << ".";
+			return false;
+		}
+		result = function.definition;
+		for (const auto& aux: function.auxiliaries) {
+			TheoryError te;
+			bool wasRefreshed = false;
+			types::VariableType repl;
+			for (auto& t: theories) {
+				if (t.second->refreshVariable(aux, repl, te(t.first))) {
+					wasRefreshed = true;
+					break;
+				}
+			}
+			if (!wasRefreshed) {
+				SMTRAT_LOG_ERROR("smtrat.parser", "Failed to refresh auxiliary variable \"" << aux << "\": " << te);
+				HANDLE_ERROR
+				return false;
+			}
+			if (!instantiate(function, aux, repl, result)) return false;
+		}
+		for (std::size_t i = 0; i < arguments.size(); i++) {
+			if (!instantiate(function, function.arguments[i], arguments[i], result)) return false;
+		}
+		return true;
+	}
+	
+	types::TermType functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments) {
 		types::TermType result;
 		TheoryError te;
+		if (identifier.symbol == "ite") {
+			if (identifier.indices != nullptr) {
+				SMTRAT_LOG_ERROR("smtrat.parser", "The function \"" << identifier << "\" should not have indices.");
+				HANDLE_ERROR
+				return result;
+			}
+			return handleITE(arguments);
+		} else if (identifier.symbol == "distinct") {
+			if (identifier.indices != nullptr) {
+				SMTRAT_LOG_ERROR("smtrat.parser", "The function \"" << identifier << "\" should not have indices.");
+				HANDLE_ERROR
+				return result;
+			}
+			return handleDistinct(arguments);
+		}
+		auto deffunit = state->defined_functions.find(identifier.symbol);
+		if (deffunit != state->defined_functions.end()) {
+			if (identifier.indices != nullptr) {
+				SMTRAT_LOG_ERROR("smtrat.parser", "The function \"" << identifier << "\" should not have indices.");
+				HANDLE_ERROR
+				return result;
+			}
+			SMTRAT_LOG_DEBUG("smtrat.parser", "Trying to call function \"" << identifier << "\" with arguments " << arguments << ".");
+			if ((*deffunit->second)(arguments, result, te(identifier.symbol))) {
+				SMTRAT_LOG_DEBUG("smtrat.parser", "Success, result is \"" << result << "\".");
+				return result;
+			}
+			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to call function \"" << identifier << "\" with arguments " << arguments << ":" << te);
+			HANDLE_ERROR
+			return result;
+		}
+		auto ideffunit = state->defined_indexed_functions.find(identifier.symbol);
+		if (ideffunit != state->defined_indexed_functions.end()) {
+			if (identifier.indices == nullptr) {
+				SMTRAT_LOG_ERROR("smtrat.parser", "The function \"" << identifier << "\" should have indices.");
+				HANDLE_ERROR
+				return result;
+			}
+			SMTRAT_LOG_DEBUG("smtrat.parser", "Trying to call function \"" << identifier << "\" with arguments " << arguments << ".");
+			if ((*ideffunit->second)(*identifier.indices, arguments, result, te(identifier.symbol))) {
+				SMTRAT_LOG_DEBUG("smtrat.parser", "Success, result is \"" << result << "\".");
+				return result;
+			}
+			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to call function \"" << identifier << "\" with arguments " << arguments << ":" << te);
+			HANDLE_ERROR
+			return result;
+		}
+		auto udeffunit = state->defined_user_functions.find(identifier.symbol);
+		if (udeffunit != state->defined_user_functions.end()) {
+			if (identifier.indices != nullptr) {
+				SMTRAT_LOG_ERROR("smtrat.parser", "The function \"" << identifier << "\" should not have indices.");
+				HANDLE_ERROR
+				return result;
+			}
+			SMTRAT_LOG_DEBUG("smtrat.parser", "Trying to call function \"" << identifier << "\" with arguments " << arguments << ".");
+			if (instantiateUserFunction(*udeffunit->second, arguments, result, te(identifier.symbol))) {
+				SMTRAT_LOG_DEBUG("smtrat.parser", "Success, result is \"" << result << "\".");
+				return result;
+			}
+			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to call function \"" << identifier << "\" with arguments " << arguments << ":" << te);
+			HANDLE_ERROR
+			return result;
+		}
 		for (auto& t: theories) {
 			if (t.second->functionCall(identifier, arguments, result, te(t.first))) return result;
 		}
 		SMTRAT_LOG_ERROR("smtrat.parser", "Failed to call \"" << identifier << "\" with arguments " << arguments << ":" << te);
+		HANDLE_ERROR
 		return result;
 	}
 private:

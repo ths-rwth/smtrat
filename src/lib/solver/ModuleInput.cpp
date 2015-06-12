@@ -206,61 +206,75 @@ namespace smtrat
         }
         mPropertiesUpdated = true;
     }
-    
-    pair<ModuleInput::iterator,bool> ModuleInput::add( const FormulaT& _formula, const FormulaT& _origin )
-    {
-        iterator iter = find( _formula );
-        if( iter == end() )
-        {
-            mPropertiesUpdated = false;
-            std::shared_ptr<std::vector<FormulaT>> vecOfOrigs = std::shared_ptr<std::vector<FormulaT>>( new std::vector<FormulaT>() );
-            vecOfOrigs->push_back( _origin );
-            emplace_back( _formula, std::move( vecOfOrigs ) );
-            iterator pos = --end();
-            mFormulaPositionMap.insert( make_pair( _formula, pos ) );
-            return make_pair( pos, true );
-        }
-        else
-        {
-            if( !iter->hasOrigins() )
-            {
-                iter->mOrigins = std::shared_ptr<std::vector<FormulaT>>( new std::vector<FormulaT>() );
-            }
-            iter->mOrigins->push_back( _origin );
-            return make_pair( iter, false );
-        }
-    }
 
-    pair<ModuleInput::iterator,bool> ModuleInput::add( const FormulaT& _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins )
+    pair<ModuleInput::iterator,bool> ModuleInput::add( const FormulaT& _formula, bool _hasSingleOrigin, const FormulaT& _origin, const std::shared_ptr<std::vector<FormulaT>>& _origins, bool _mightBeConjunction )
     {
-        iterator iter = find( _formula );
-        if( iter == end() )
+        if( _mightBeConjunction && _formula.getType() == carl::FormulaType::AND )
         {
-            mPropertiesUpdated = false;
-            emplace_back( _formula, _origins );
-            iterator pos = --end();
-            mFormulaPositionMap.insert( make_pair( _formula, pos ) );
-            return make_pair( pos, true );
+            std::pair<iterator,bool> res = std::pair<iterator,bool>(end(), false);
+            auto formulaIter = _formula.subformulas().begin();
+            while( !res.second && formulaIter != _formula.subformulas().end() )
+            {
+                res = add( *formulaIter, _hasSingleOrigin, _origin, _origins );
+                ++formulaIter;
+            }
+            while( formulaIter != _formula.subformulas().end() )
+            {
+                add( *formulaIter, _hasSingleOrigin, _origin, _origins );
+                ++formulaIter;
+            }
+            return res;
         }
         else
         {
-            if( _origins != nullptr )
+            iterator iter = find( _formula );
+            if( iter == end() )
             {
-                if( iter->hasOrigins() )
+                mPropertiesUpdated = false;
+                if( _hasSingleOrigin )
                 {
-                    iter->mOrigins = std::shared_ptr<std::vector<FormulaT>>( new std::vector<FormulaT>( *iter->mOrigins ) );
-                    iter->mOrigins->insert( iter->mOrigins->end(), _origins->begin(), _origins->end() );
+                    std::shared_ptr<std::vector<FormulaT>> vecOfOrigs = std::shared_ptr<std::vector<FormulaT>>( new std::vector<FormulaT>() );
+                    vecOfOrigs->push_back( _origin );
+                    emplace_back( _formula, std::move( vecOfOrigs ) );
                 }
                 else
                 {
-                    iter->mOrigins = _origins;
+                    emplace_back( _formula, _origins );
                 }
+                iterator pos = --end();
+                mFormulaPositionMap.insert( make_pair( _formula, pos ) );
+                return make_pair( pos, true );
             }
-            return make_pair( iter, false );
+            else
+            {
+                if( _hasSingleOrigin )
+                {
+                    if( !iter->hasOrigins() )
+                    {
+                        iter->mOrigins = std::shared_ptr<std::vector<FormulaT>>( new std::vector<FormulaT>() );
+                    }
+                    iter->mOrigins->push_back( _origin );
+                    return make_pair( iter, false );
+                }
+                if( _origins != nullptr )
+                {
+                    if( iter->hasOrigins() )
+                    {
+                        iter->mOrigins = std::shared_ptr<std::vector<FormulaT>>( new std::vector<FormulaT>( *iter->mOrigins ) );
+                        iter->mOrigins->insert( iter->mOrigins->end(), _origins->begin(), _origins->end() );
+                    }
+                    else
+                    {
+                        iter->mOrigins = _origins;
+                    }
+                }
+                return make_pair( iter, false );
+            }
         }
     }
     
-    void annotateFormula( const FormulaT&, const vector<parser::Attribute>& )
+    template<typename AnnotationType>
+    void annotateFormula( const FormulaT&, const vector<AnnotationType>& )
     {
     }
 } // namespace smtrat
