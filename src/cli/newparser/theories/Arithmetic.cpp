@@ -144,7 +144,7 @@ namespace parser {
                         }
                     }   
                 }
-		carl::Variable auxVar = carl::freshRealVariable();
+		carl::Variable auxVar = thenpoly.integerValued() && elsepoly.integerValued() ? carl::freshIntegerVariable() : carl::freshRealVariable();
 		mITEs[auxVar] = std::make_tuple(ifterm, thenpoly, elsepoly);
 		result = carl::makePolynomial<Poly>(auxVar);
 		return true;
