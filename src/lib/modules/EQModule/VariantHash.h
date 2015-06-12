@@ -23,18 +23,17 @@ namespace smtrat {
 }
 
 namespace std {
-	template<typename... Args> struct hash< boost::variant<Args...> > {
-		size_t operator()(const boost::variant<Args...>& var) const noexcept {
+	template<BOOST_VARIANT_ENUM_PARAMS(typename Args)> struct hash< boost::variant<BOOST_VARIANT_ENUM_PARAMS(Args)> > {
+		size_t operator()(const boost::variant<BOOST_VARIANT_ENUM_PARAMS(Args)>& var) const noexcept {
 			return boost::apply_visitor(smtrat::variant_hash_visitor(), var);
 		}
 	};
 
-	template<typename... Args> struct hash< const boost::variant<Args...> > {
-		size_t operator()(const boost::variant<Args...>& var) const noexcept {
+	template<BOOST_VARIANT_ENUM_PARAMS(typename Args)> struct hash< const boost::variant<BOOST_VARIANT_ENUM_PARAMS(Args)> > {
+		size_t operator()(const boost::variant<BOOST_VARIANT_ENUM_PARAMS(Args)>& var) const noexcept {
 			return boost::apply_visitor(smtrat::variant_hash_visitor(), var);
 		}
 	};
 }
 
 #endif
-
