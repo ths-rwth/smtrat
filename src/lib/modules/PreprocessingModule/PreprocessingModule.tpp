@@ -162,7 +162,14 @@ namespace smtrat {
 
         Answer ans = runBackends( _full );
         if (ans == False) {
-            getInfeasibleSubsets();
+            mInfeasibleSubsets.clear();
+            FormulasT infeasibleSubset;
+            // TODO: compute a better infeasible subset
+            for( auto subformula = rReceivedFormula().begin(); subformula != rReceivedFormula().end(); ++subformula )
+            {
+                infeasibleSubset.insert( subformula->formula() );
+            }
+            mInfeasibleSubsets.push_back( infeasibleSubset );
         }
         return ans;
     }
