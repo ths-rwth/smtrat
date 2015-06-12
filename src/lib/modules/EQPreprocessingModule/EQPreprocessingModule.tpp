@@ -220,6 +220,7 @@ namespace smtrat
 				const FormulasT& infeasible = mEQHelper.infeasibleSubsets().front();
 				FormulasT constructInfeasible;
 
+				/*
 				for(const FormulaT& formula : infeasible) {
 					assert(mFactOrigins.count(formula));
 					const FormulaT& orig = mFactOrigins.find(formula)->second;
@@ -227,6 +228,11 @@ namespace smtrat
 					if(orig.getType() != carl::TRUE) {
 						constructInfeasible.insert(orig);
 					}
+				}
+				std::cout << "Infeasible after conversion: " << constructInfeasible << std::endl;
+				*/
+				for (const auto& f: rReceivedFormula()) {
+					constructInfeasible.insert(f.formula());
 				}
 
 				mInfeasibleSubsets.emplace_back(std::move(constructInfeasible));
