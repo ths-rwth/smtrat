@@ -521,13 +521,16 @@ namespace smtrat
 					mRealPred(real_pred),
 					mRealSucc(real_succ),
 					mSupportingBucket(nullptr),
-					mIsProven(false)
+					mIsProven(false),
+					mID(mIDCounter++)
 				{}
 
 				g_iterator mRealPred; // the real predecessor of this implicit edge
 				g_iterator mRealSucc; // the real successor of this implicit edge, i.e. the function instance instead of the components representative
 				hash_bucket_type *mSupportingBucket; // the hash bucket supporting this edge. Note that this will be null for half the edges
 				bool mIsProven;       // is the implicit edge already shown for infeasible subset
+				std::size_t mID; // identifier to determine age of implicit edges
+				static std::atomic<std::size_t> mIDCounter;
 			};
 
 			struct bucket_list_entry {
@@ -839,6 +842,9 @@ namespace smtrat
 	extern template class EQModule<EQSettings1>;
 	extern template class EQModule<EQSettingsForPreprocessing>;
 }
+
+template<typename Settings>
+std::atomic<std::size_t> smtrat::EQModule<Settings>::implicit_edge_info::mIDCounter(0);
 
 #include "EQModule.tpp"
 #include "EQModulePrinting.tpp"
