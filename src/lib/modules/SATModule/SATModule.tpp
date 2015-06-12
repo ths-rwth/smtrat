@@ -307,7 +307,9 @@ namespace smtrat
             }
 
             lbool result = checkFormula();
+			#ifdef DEBUG_SATMODULE
             printCurrentAssignment();
+			#endif
 
             //TODO matthias: finish
             if ( Settings::find_all_dependent_variables )
