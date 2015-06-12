@@ -3,6 +3,17 @@
 
 namespace smtrat {
 namespace parser {
+	struct ToRealInstantiator: public FunctionInstantiator {
+		bool operator()(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) const {
+			if (arguments.size() != 1) {
+				errors.next() << "to_real should have a single argument";
+				return false;
+			}
+			result = arguments[0];
+			return true;
+		}
+	};
+	
 	void ArithmeticTheory::addSimpleSorts(qi::symbols<char, carl::Sort>& sorts) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
 		sorts.add("Int", sm.getInterpreted(carl::VariableType::VT_INT));
@@ -47,6 +58,8 @@ namespace parser {
 		carl::SortManager& sm = carl::SortManager::getInstance();
 		sm.addInterpretedSort("Int", carl::VariableType::VT_INT);
 		sm.addInterpretedSort("Real", carl::VariableType::VT_REAL);
+		
+		state->registerFunction("to_real", new ToRealInstantiator());
 		
 		ops.emplace("+", OperatorType(Poly::ConstructorOperation::ADD));
 		ops.emplace("-", OperatorType(Poly::ConstructorOperation::SUB));
@@ -223,6 +236,24 @@ namespace parser {
 
 	bool ArithmeticTheory::functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
 		std::vector<Poly> args;
+		if (identifier.symbol == "to_int") {
+			if (arguments.size() != 1) {
+				errors.next() << "to_int should have a single argument";
+				return false;
+			}
+			conversion::VariantConverter<carl::Variable> c;
+			carl::Variable arg;
+			if (!c(arguments[0], arg)) {
+				errors.next() << "to_int should be called with a variable";
+				return false;
+			}
+			carl::Variable v = carl::freshVariable(carl::VariableType::VT_INT);
+			FormulaT lower(Poly(v) - arg, carl::Relation::LEQ);
+			FormulaT greater(Poly(v) - arg - Rational(1), carl::Relation::GREATER);
+			state->global_formulas.emplace(FormulaT(carl::FormulaType::AND, lower, greater));
+			result = v;
+			return true;
+		}
 		auto it = ops.find(identifier.symbol);
 		if (it == ops.end()) {
 			errors.next() << "Invalid operator \"" << identifier << "\".";
