@@ -83,12 +83,12 @@ struct VariantConverter: public boost::static_visitor<> {
 	bool operator()(const T& t) {
 		return converter(t, result);
 	}
-	template<typename... T>
-	bool operator()(const boost::variant<T...>& t) {
+	template<BOOST_VARIANT_ENUM_PARAMS(typename T)>
+	bool operator()(const boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>& t) {
 		return boost::apply_visitor(*this, t);
 	}
-	template<typename... T>
-	bool operator()(const boost::variant<T...>& t, Res& r) {
+	template<BOOST_VARIANT_ENUM_PARAMS(typename T)>
+	bool operator()(const boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>& t, Res& r) {
 		if ((*this)(t)) {
 			r = result;
 			return true;
@@ -115,8 +115,8 @@ struct VariantVariantConverter: public boost::static_visitor<> {
 	Res operator()(const T& t) {
 		return Res(t);
 	}
-	template<typename... T>
-	Res convert(const boost::variant<T...>& t) {
+	template<BOOST_VARIANT_ENUM_PARAMS(typename T)>
+	Res convert(const boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>& t) {
 		return boost::apply_visitor(*this, t);
 	}
 };
@@ -128,8 +128,8 @@ struct VariantVariantConverter: public boost::static_visitor<> {
 template<typename Res>
 struct VectorVariantConverter {
 	typedef Res result_type;
-	template<typename... T>
-	bool operator()(const std::vector<boost::variant<T...>>& v, std::vector<Res>& result) const {
+	template<BOOST_VARIANT_ENUM_PARAMS(typename T)>
+	bool operator()(const std::vector<boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>>& v, std::vector<Res>& result) const {
 		result.clear();
 		VariantConverter<Res> vc;
 		for (const auto& val: v) {
@@ -138,8 +138,8 @@ struct VectorVariantConverter {
 		}
 		return true;
 	}
-	template<typename... T>
-	bool operator()(const std::vector<boost::variant<T...>>& v, std::vector<Res>& result, TheoryError& errors) const {
+	template<BOOST_VARIANT_ENUM_PARAMS(typename T)>
+	bool operator()(const std::vector<boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>>& v, std::vector<Res>& result, TheoryError& errors) const {
 		result.clear();
 		VariantConverter<Res> vc;
 		for (const auto& val: v) {
