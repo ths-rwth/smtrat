@@ -38,43 +38,52 @@ namespace smtrat {
 
     void WrapperExternal::push()
     {
-        solver->push();
+		std::cout << "Push" << std::endl;
+		solver->push();
     }
 
     bool WrapperExternal::pop()
     {
-        return solver->pop();
+		std::cout << "Pop (Not implemented yet)" << std::endl;
+		//TODO Matthias: fix failures with pop
+		//return solver->pop();
+		return true;
     }
 
     void WrapperExternal::infeasibleSubsets(char* bufferInfeasibleSubsets, int bufferSize) const
     {
         std::vector<FormulasT> infeasibleSubsets = solver->infeasibleSubsets();
         //TODO convert infeasibleSubsets into bufferInfeasibleSubsets
+		std::cout << "infeasibleSubsets (Not implemented yet)" << std::endl;
     }
 
     void WrapperExternal::getModelEqualities(char* bufferModelEqualities, int bufferSize) const
     {
         std::list<std::vector<carl::Variable>> modelEqualities = solver->getModelEqualities();
         //TODO convert modelEqualities into bufferModelEqualities
-    }
+		std::cout << "getModelEqualities (Not implemented yet)" << std::endl;
+	}
 
     void WrapperExternal::model(char* bufferModel, int bufferSize) const
     {
         Model model = solver->model();
         //TODO convert model into bufferModel
-    }
+		std::cout << "model (Not implemented yet)" << std::endl;
+	}
 
     void WrapperExternal::lemmas(char* bufferLemmas, int bufferSize) const
     {
         std::vector<FormulaT> lemmas = solver->lemmas();
         //TODO convert lemmas into bufferLemmas
-    }
+		std::cout << "lemmas (Not implemented yet)" << std::endl;
+	}
 
     void WrapperExternal::formula(char* bufferFormula, int buffersize) const
     {
         //ModuleInput formula = solver->formula();
         //TODO convert formula into bufferFormula
-    }
+		std::cout << "formula (Not implemented yet)" << std::endl;
+	}
 
     int WrapperExternal::getAssignmentString(char* buffer, int bufferSize) const
     {
