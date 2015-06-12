@@ -6,6 +6,7 @@
  */
 
 #include "PreprocessingModule.h"
+#include "../../solver/Manager.h"
 #include "../../../cli/ExitCodes.h"
 #include <limits.h>
 
@@ -70,7 +71,7 @@ namespace smtrat {
 				return False;
 			}
 		}
-        if (Settings::eliminateSubstitutions) {
+        if (Settings::eliminateSubstitutions && mpManager->logic() != Logic::QF_LIA) {
             // TODO: make this incremental
             FormulaT formula = (FormulaT) rReceivedFormula();
             SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Received        " << formula);
@@ -135,7 +136,7 @@ namespace smtrat {
                     formula = visitor.visit(formula, splitSOSFunction);
                 }
                 SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Remove unbounded variables  " << formula);
-                if (Settings::eliminateSubstitutions) {
+                if (Settings::eliminateSubstitutions && mpManager->logic() != Logic::QF_LIA) {
                     // Apply all substitutions in form of an equations or Boolean facts.
                     formula = elimSubstitutions(formula);
     //                std::cout << formula.toString( false, 1, "", true, false, true, true ) << std::endl;
