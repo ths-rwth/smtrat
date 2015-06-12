@@ -232,7 +232,9 @@ namespace smtrat
                                     const std::vector< const LRABound* >* uebounds = constrBoundIterB->second;
                                     assert( uebounds != NULL );
                                     assert( uebounds->size() >= 4 );
-                                    if( !(*uebounds)[0]->isActive() && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive() && !(*uebounds)[3]->isActive() )
+                                    bool intValued = (*bound)->neqRepresentation().constraint().integerValued();
+                                    if( (intValued && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive()) ||
+                                        (!intValued && !(*uebounds)[0]->isActive() && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive() && !(*uebounds)[3]->isActive()) )
                                     {
                                         auto pos = mActiveResolvedNEQConstraints.find( (*bound)->neqRepresentation() );
                                         if( pos != mActiveResolvedNEQConstraints.end() )
@@ -627,6 +629,10 @@ Return:
                         result = Unknown;
                         break;
                     }
+                }
+                if( !(result != True || assignmentCorrect()) )
+                {
+                    exit(1236);
                 }
                 assert( result != True || assignmentCorrect() );
             }
