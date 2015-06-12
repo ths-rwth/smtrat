@@ -375,8 +375,8 @@ namespace smtrat
                     {
                         #ifdef DEBUG_SATMODULE
                         cout << "Sat with variable: " << mMinisatVarMap.at( testCandidate ) << endl;
-                        #endif
                         printCurrentAssignment();
+                        #endif
                     }
                 }
             }
