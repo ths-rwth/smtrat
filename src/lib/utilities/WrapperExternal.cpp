@@ -20,14 +20,14 @@ namespace smtrat {
     bool WrapperExternal::inform(const char* _constraint)
     {
         FormulaT constraint = parser.formula(_constraint);
-        std::cout << "Informed: " << constraint << std::endl;
+        //std::cout << "Informed: " << constraint << std::endl;
         return solver->inform(constraint);
     }
 
     bool WrapperExternal::add(const char* _subformula)
     {
         FormulaT subformula = parser.formula(_subformula);
-        std::cout << "Added: " << subformula << std::endl;
+        //std::cout << "Added: " << subformula << std::endl;
         return solver->add(subformula);
     }
 
