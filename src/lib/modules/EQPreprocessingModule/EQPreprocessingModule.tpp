@@ -217,7 +217,7 @@ namespace smtrat
 			if(!consistent) {
 				// The formula is unsat; use the infeasible subset from the helper module
 				assert(mEQHelper.infeasibleSubsets().size() == 1);
-				const FormulasT& infeasible = mEQHelper.infeasibleSubsets().front();
+				//const FormulasT& infeasible = mEQHelper.infeasibleSubsets().front();
 				FormulasT constructInfeasible;
 
 				/*
