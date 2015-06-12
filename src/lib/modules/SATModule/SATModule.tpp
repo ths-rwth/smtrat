@@ -467,7 +467,7 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::updateInfeasibleSubset()
     {
-        assert( !ok );
+        assert( Settings::find_all_dependent_variables || !ok );
         mInfeasibleSubsets.clear();
         // Set the infeasible subset to the set of all clauses.
         FormulasT infeasibleSubset;
@@ -2210,13 +2210,14 @@ SetWatches:
                 // Find corresponding formula
                 ClauseFormulaMap::iterator iter = mClauseFormulaMap.find( from );
                 assert( iter != mClauseFormulaMap.end() );
-                assert( mPropagatedLemmas.find( var(p) ) != mPropagatedLemmas.end() );
-
-                // Try to substitute formulas
                 FormulaT formula = iter->second;
-                FormulasT* pFormulas = &mPropagatedLemmas[ var(p) ];
-                pFormulas->insert(formula);
                 assert( formula.propertyHolds(carl::PROP_IS_A_CLAUSE) && formula.propertyHolds(carl::PROP_CONTAINS_BOOLEAN) );
+
+                // Get lemmas for variable
+                // Notice: new pair is inserted if not already contained
+                FormulasT* pFormulas = &mPropagatedLemmas[ var(p) ];
+                // Insert reason for variable
+                pFormulas->insert( formula );
 
                 // Find formulas for contained variables
                 carl::Variables vars;
@@ -2234,10 +2235,6 @@ SetWatches:
                         pFormulas->insert( itFormulas->second.begin(), itFormulas->second.end() );
                     }
                 }
-            }
-            else
-            {
-                assert( mPropagatedLemmas[ var(p) ].size() > 0 );
             }
         }
 
@@ -3221,7 +3218,7 @@ NextClause:
 
         for( int i = 0; i < assumptions.size(); i++ )
         {
-            assert( value( assumptions[i] ) != l_False );
+            assert( Settings::find_all_dependent_variables || value( assumptions[i] ) != l_False );
             _out << _init << "  " << (sign( assumptions[i] ) ? "-" : "") << (mapVar( var( assumptions[i] ), map, max )) << endl;
         }
 
