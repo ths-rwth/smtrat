@@ -27,7 +27,8 @@ namespace smtrat
         mActiveResolvedNEQConstraints(),
         mActiveUnresolvedNEQConstraints(),
         mDelta( carl::freshRealVariable( "delta_" + to_string( id() ) ) ),
-        mBoundCandidatesToPass()
+        mBoundCandidatesToPass(),
+        mBranch_Success()    
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
         stringstream s;
@@ -376,6 +377,77 @@ namespace smtrat
                         }
                         if( !Settings::use_gomory_cuts && !Settings::use_cuts_from_proofs && branch_and_bound() )
                         {
+                            if( Settings::pseudo_cost_branching )
+                            {                                
+                                // Count how many integer variables violate their domain
+                                EvalRationalMap _rMap = getRationalModel();
+                                auto map_iterator = _rMap.begin();
+                                unsigned count = 0;
+                                for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
+                                {
+                                    assert( var->first == map_iterator->first );
+                                    Rational& ass = map_iterator->second;
+                                    if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
+                                    {
+                                        count++;
+                                    }
+                                    ++map_iterator;
+                                }    
+                                // Go through the received constraints and store for which variables we branch 'left' 
+                                // resp. 'right'
+                                auto iter_constr = rReceivedFormula().begin();
+                                while( iter_constr != rReceivedFormula().end() )
+                                {
+                                    Poly branching_poly = iter_constr->formula().constraint().lhs();
+                                    std::set< carl::Variable > occ_vars;
+                                    branching_poly.gatherVariables( occ_vars );
+                                    // Check whether the current constraint is a branching constraint
+                                    if( occ_vars.size() == 1 )
+                                    {
+                                        auto iter_poly = branching_poly.begin();
+                                        while( iter_poly != branching_poly.end() )
+                                        {
+                                            if( !iter_poly->isConstant() )
+                                            {    
+                                                if( iter_poly->isLinear() )
+                                                {
+                                                    // Update mBranch_Success
+                                                    auto iter_help = mBranch_Success.find( *( occ_vars.begin() ) );
+                                                    if( iter_help == mBranch_Success.end() )
+                                                    {
+                                                        std::pair< carl::Variable, std::pair< std::vector< unsigned >, std::vector< unsigned > > > to_be_ins;
+                                                        to_be_ins.first = *( occ_vars.begin() );
+                                                        std::pair< std::vector< unsigned >, std::vector< unsigned > > new_pair;
+                                                        if( branching_poly.begin()->coeff() < 0 )
+                                                        {                               
+                                                            new_pair.first = std::vector< unsigned >();
+                                                            new_pair.second = std::vector< unsigned >( count );
+                                                        }
+                                                        else
+                                                        {
+                                                            new_pair.second = std::vector< unsigned >();
+                                                            new_pair.first = std::vector< unsigned >( count );                                                                                                
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        if( branching_poly.begin()->coeff() < 0 )
+                                                        {
+                                                            iter_help->second.second.push_back( count );
+                                                        }
+                                                        else
+                                                        {
+                                                            iter_help->second.first.push_back( count );                                                    
+                                                        }                                                
+                                                    }
+                                                }
+                                            }
+                                            ++iter_poly;
+                                        }    
+                                    }
+                                    ++iter_constr;
+                                }
+                            }    
                             goto Return; // Unknown
                         }
                         result = True;
@@ -1317,6 +1389,7 @@ Return:
         MIN_PIVOT,
         MOST_FEASIBLE,
         MOST_INFEASIBLE,
+        PSEUDO_COST,
         NATIVE
     };
     
@@ -1342,6 +1415,10 @@ Return:
         {
             result = first_var( gc_support );
         }  
+        else if( strat == PSEUDO_COST )
+        {                        
+            result = pseudo_cost_branching( gc_support );
+        } 
         return result;
     }
     
@@ -1528,6 +1605,121 @@ Return:
             ++map_iterator;
         } 
         return false;
+    }
+    
+    template<class Settings>
+    bool LRAModule<Settings>::pseudo_cost_branching(bool _gc_support)
+    {
+        EvalRationalMap _rMap = getRationalModel();
+        auto map_iterator = _rMap.begin();
+        auto branch_var = mTableau.originalVars().begin();
+        Rational ass_;
+        Rational min_score;
+        bool result = false, first_round = true, at_least_one = false;
+        for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
+        {
+            assert( var->first == map_iterator->first );
+            Rational& ass = map_iterator->second; 
+            if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
+            {
+                result = true;
+                auto iter_succ = mBranch_Success.find( var->first );
+                if( iter_succ == mBranch_Success.end() )
+                {
+                    ++map_iterator;
+                    continue;
+                }
+                at_least_one = true;
+                unsigned sum_left = 0;
+                auto iter_left = iter_succ->second.first.begin();
+                while( iter_left != iter_succ->second.first.end() )
+                {
+                    sum_left += *iter_left;
+                    ++iter_left;
+                }
+                unsigned sum_right = 0;
+                auto iter_right = iter_succ->second.second.begin();
+                while( iter_right != iter_succ->second.second.end() )
+                {
+                    sum_right += *iter_right;
+                    ++iter_right;
+                }
+                Rational min_temp = 0;
+                Rational score_left = 0;
+                if( iter_succ->second.first.size() != 0 )
+                {
+                    score_left = Rational( sum_right )/Rational( iter_succ->second.first.size() );
+                }   
+                Rational score_right = 0;
+                if( iter_succ->second.second.size() != 0 )
+                {
+                    score_right = Rational( sum_left )/Rational( iter_succ->second.second.size() );
+                }
+                if( score_left < score_right )
+                {
+                    if( score_left != 0 )
+                    {
+                        min_temp = score_left;
+                    }
+                    else
+                    {
+                        min_temp = score_right;                        
+                    }
+                }
+                else
+                {
+                    if( score_right != 0 )
+                    {
+                        min_temp = score_right;
+                    }
+                    else
+                    {
+                        min_temp = score_left;
+                    }
+                }
+                assert( min_temp != 0 );
+                if( first_round )
+                {
+                    min_score = min_temp;  
+                    branch_var = var;
+                    ass_ = ass;
+                }
+                else
+                {
+                    if( min_temp < min_score )
+                    {
+                        min_score = min_temp;
+                        branch_var = var;
+                        ass_ = ass;
+                    }
+                }
+            }
+            ++map_iterator;
+        }
+        if( !at_least_one && result )
+        {
+            return most_infeasible_var( _gc_support );
+        }            
+        if( result )
+        {
+            if( _gc_support )
+            {
+                return maybeGomoryCut( branch_var->second, ass_ );
+            }
+//            FormulasT premises;
+//            mTableau.collect_premises( branch_var->second , premises  );
+//            FormulasT premisesOrigins;
+//            for( auto& pf : premises )
+//            {
+//                collectOrigins( pf, premisesOrigins );
+//            }            
+            branchAt( branch_var->second->expression(), true, ass_ );
+            return true;         
+        }
+        else
+        {
+            return false;
+        } 
     }
     
     template<class Settings>
