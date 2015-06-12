@@ -254,6 +254,39 @@ namespace parser {
 			result = v;
 			return true;
 		}
+		if (identifier.symbol == "mod") {
+			if (arguments.size() != 2) {
+				errors.next() << "mod should have exactly two arguments.";
+				return false;
+			}
+			conversion::VariantConverter<Rational> ci;
+			Rational modulus;
+			if (!ci(arguments[1], modulus)) {
+				errors.next() << "mod should be called with an integer as second argument.";
+				return false;
+			}
+			conversion::VariantConverter<carl::Variable> cv;
+			carl::Variable arg;
+			Rational rarg;
+			if (cv(arguments[0], arg)) {
+				carl::Variable v = carl::freshVariable(carl::VariableType::VT_INT);
+				carl::Variable u = carl::freshVariable(carl::VariableType::VT_INT);
+				FormulaT relation(Poly(v) - arg + u * modulus, carl::Relation::EQ);
+				FormulaT geq(Poly(v), carl::Relation::GEQ);
+				FormulaT less(Poly(v) - modulus, carl::Relation::LESS);
+				state->global_formulas.emplace(FormulaT(carl::FormulaType::AND, relation, geq, less));
+				result = v;
+				return true;
+			} else if (ci(arguments[0], rarg)) {
+				Integer lhs = carl::toInt<Integer>(rarg);
+				Integer rhs = carl::toInt<Integer>(modulus);
+				result = carl::mod(lhs, rhs);
+				return true;
+			} else {
+				errors.next() << "mod should be called with a variable as first argument.";
+				return false;
+			}
+		}
 		auto it = ops.find(identifier.symbol);
 		if (it == ops.end()) {
 			errors.next() << "Invalid operator \"" << identifier << "\".";
