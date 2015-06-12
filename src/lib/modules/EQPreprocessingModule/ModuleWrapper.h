@@ -32,8 +32,8 @@ namespace smtrat {
 				ModuleInput::iterator iter = input.find(formula);
 				if(iter != input.end()) {
 					asserted.erase(formula);
-                    input.erase(iter);
 					module.remove(iter);
+					input.erase(iter);
 				}
 			}
 
