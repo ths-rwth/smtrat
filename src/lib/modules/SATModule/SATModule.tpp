@@ -324,13 +324,6 @@ namespace smtrat
 
                 while ( !testVarsPositive.empty() )
                 {
-                    cout << "Test candidates for positive variables (before): ";
-                    for ( Minisat::Var var : testVarsPositive )
-                    {
-                        cout << mMinisatVarMap.at( var ) << ", ";
-                    }
-                    cout << endl;
-
                     for( int pos = 0; pos < assigns.size(); ++pos )
                     {
                         if ( assigns[ pos ] == l_True )
@@ -338,13 +331,6 @@ namespace smtrat
                             testVarsPositive.erase( pos );
                         }
                     }
-
-                    cout << "Test candidates for positive variables (after): ";
-                    for ( Minisat::Var var : testVarsPositive )
-                    {
-                        cout << mMinisatVarMap.at( var ) << ", ";
-                    }
-                    cout << endl;
 
                     // Reset the state until level 0
                     cancelAssignmentUntil( 0 );
@@ -362,7 +348,9 @@ namespace smtrat
                     // Set new positive assignment
                     // TODO matthias: ignore Tseitin variables
                     testCandidate = *testVarsPositive.begin();
+                    #ifdef DEBUG_SATMODULE
                     cout << "Test candidate: " << mMinisatVarMap.at( testCandidate ) << endl;
+                    #endif
                     Lit nextLit = mkLit( testCandidate, false );
                     assert( assumptions.size() <= 1 );
                     assumptions.clear();
@@ -372,7 +360,9 @@ namespace smtrat
                     result = checkFormula();
                     if ( result == l_False )
                     {
+                        #ifdef DEBUG_SATMODULE
                         cout << "Unsat with variable: " << mMinisatVarMap.at( testCandidate ) << endl;
+                        #endif
                         testVarsPositive.erase( testCandidate );
                         //Construct lemma via infeasible subset
                         updateInfeasibleSubset();
@@ -383,7 +373,9 @@ namespace smtrat
                     }
                     else
                     {
+                        #ifdef DEBUG_SATMODULE
                         cout << "Sat with variable: " << mMinisatVarMap.at( testCandidate ) << endl;
+                        #endif
                         printCurrentAssignment();
                     }
                 }
