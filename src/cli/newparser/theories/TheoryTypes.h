@@ -156,6 +156,7 @@ namespace types {
 			TermTypes,
 			boost::mpl::vector<
 				SExpressionSequence<types::ConstType>,
+				std::string,
 				bool,
 				boost::spirit::qi::unused_type
 			>

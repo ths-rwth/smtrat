@@ -115,8 +115,8 @@ struct VariantVariantConverter: public boost::static_visitor<> {
 	Res operator()(const T& t) {
 		return Res(t);
 	}
-	template<BOOST_VARIANT_ENUM_PARAMS(typename T)>
-	Res convert(const boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>& t) {
+	template<typename Variant>
+	Res convert(const Variant& t) {
 		return boost::apply_visitor(*this, t);
 	}
 };

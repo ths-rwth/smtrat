@@ -40,8 +40,8 @@ struct AttributeValueParser: public qi::grammar<Iterator, types::AttributeValue(
 	AttributeValueParser(): AttributeValueParser::base_type(main, "attribute value") {
 		main = 
 				specconstant[qi::_val = px::bind(&Converter::template convert<types::ConstType>, &converter, qi::_1)]
-			|	symbol[qi::_val = px::bind(&Converter::template convert<std::string>, px::ref(converter), qi::_1)]
-			|	(qi::lit("(") >> *sexpression >> qi::lit(")"))[qi::_val = px::bind(&Converter::template convert<SExpressionSequence<types::ConstType>>, px::ref(converter), px::construct<SExpressionSequence<types::ConstType>>(qi::_1))]
+			|	symbol[qi::_val = qi::_1]
+			|	(qi::lit("(") >> *sexpression >> qi::lit(")"))[qi::_val = px::construct<SExpressionSequence<types::ConstType>>(qi::_1)]
 		;
 	}
 	SpecConstantParser specconstant;
