@@ -106,6 +106,7 @@ namespace smtrat
             cout << " " << subformula.formula().toString( false, true );
         cout << "))\n";
         #endif
+        if( rReceivedFormula().empty() ) return foundAnswer( True );
         Answer result = foundAnswer( checkCore( _full ) );
         assert(result == Unknown || result == False || result == True);
         assert( result != False || hasValidInfeasibleSubset() );

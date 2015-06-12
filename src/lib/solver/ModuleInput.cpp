@@ -213,14 +213,14 @@ namespace smtrat
         {
             std::pair<iterator,bool> res = std::pair<iterator,bool>(end(), false);
             auto formulaIter = _formula.subformulas().begin();
-            while( formulaIter != _formula.subformulas().end() )
+            while( !res.second && formulaIter != _formula.subformulas().end() )
             {
                 res = add( *formulaIter, _hasSingleOrigin, _origin, _origins );
                 ++formulaIter;
             }
             while( formulaIter != _formula.subformulas().end() )
             {
-                res = add( *formulaIter, _hasSingleOrigin, _origin, _origins );
+                add( *formulaIter, _hasSingleOrigin, _origin, _origins );
                 ++formulaIter;
             }
             return res;

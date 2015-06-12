@@ -70,77 +70,94 @@ namespace smtrat {
 				return False;
 			}
 		}
-        auto receivedFormula = firstUncheckedReceivedSubformula();
-		SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Bounds are " << varbounds.getEvalIntervalMap());
-        while( receivedFormula != rReceivedFormula().end() )
+        if (Settings::eliminateSubstitutions) {
+            // TODO: make this incremental
+            FormulaT formula = (FormulaT) rReceivedFormula();
+            SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Received        " << formula);
+            if (Settings::removeFactors && formula.propertyHolds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL) ) {
+                // Remove redundant or obsolete factors of polynomials.
+                formula = visitor.visit(formula, removeFactorsFunction);
+            }
+            SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Removed factors " << formula);
+            if (Settings::splitSOS && formula.propertyHolds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL)) {
+                // Check if bounds make constraints vanish.
+                formula = visitor.visit(formula, splitSOSFunction);
+            }
+            // Apply all substitutions in form of an equations or Boolean facts.
+            formula = elimSubstitutions(formula);
+            SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Eliminate substitutions  " << formula);
+            if (Settings::extractBounds) {
+                // Check if bounds make constraints vanish.
+                formula = visitor.rvisit(formula, extractBoundsFunction);
+            }
+            SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Extract bounds  " << formula);
+            if (Settings::checkBounds) {
+                // Check if bounds make constraints vanish.
+                formula = visitor.visit(formula, checkBoundsFunction);
+                FormulasT bounds = varbounds.getOriginsOfBounds();
+                bounds.insert( formula );
+                formula = FormulaT( carl::FormulaType::AND, std::move( bounds ) );
+            }
+            SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Checked bounds  " << formula);
+//            std::cout << formula.toString( false, 1, "", true, false, true, true ) << std::endl;
+            formula = formula.toCNF( true, true, false );
+            addSubformulaToPassedFormula( formula );
+        }
+        else
         {
-			FormulaT formula = receivedFormula->formula();
-			
-			if (Settings::checkBounds) {
-				// If bounds are collected, check if next subformula is a bound.
-				// If so, pass on unchanged.
-				auto boundIt = newBounds.find(formula);
-				if (boundIt != newBounds.end()) {
-					addSubformulaToPassedFormula(formula, receivedFormula->formula());
-					++receivedFormula;
-					continue;
-				}
-			}
-			
-			tmpOrigins.clear();
-			tmpOrigins.insert(receivedFormula->formula());
-			SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Received        " << formula);
-			if (Settings::removeFactors && formula.propertyHolds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL) ) {
-				// Remove redundant or obsolete factors of polynomials.
-				formula = visitor.visit(formula, removeFactorsFunction);
-			}
-			SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Removed factors " << formula);
-			if (Settings::splitSOS && formula.propertyHolds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL)) {
-				// Check if bounds make constraints vanish.
-				formula = visitor.visit(formula, splitSOSFunction);
-			}
-			SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Split sum-of-square decompositions  " << formula);
-			if (Settings::removeUnboundedVars) {
-				// Remove constraints which are bounded by a variable being unbounded itself.
-                carl::Variables vars;
-				formula.arithmeticVars(vars);
-                while( !vars.empty() )
-                {
-                    for( auto var : vars )
-                        mVariablesBounded.emplace_hint( mVariablesBounded.end(), var, 0 );
-                    // To be implemented.
+            auto receivedFormula = firstUncheckedReceivedSubformula();
+            SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Bounds are " << varbounds.getEvalIntervalMap());
+            while( receivedFormula != rReceivedFormula().end() )
+            {
+                FormulaT formula = receivedFormula->formula();
+
+                if (Settings::checkBounds) {
+                    // If bounds are collected, check if next subformula is a bound.
+                    // If so, pass on unchanged.
+                    auto boundIt = newBounds.find(formula);
+                    if (boundIt != newBounds.end()) {
+                        addSubformulaToPassedFormula(formula, receivedFormula->formula());
+                        ++receivedFormula;
+                        continue;
+                    }
                 }
-			}
-			SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Remove unbounded variables  " << formula);
-			if (Settings::eliminateSubstitutions) {
-				// Apply all substitutions in form of an equations or Boolean facts.
-				formula = elimSubstitutions(formula);
-//                std::cout << formula.toString( false, 1, "", true, false, true, true ) << std::endl;
-			}
-			SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Eliminate substitutions  " << formula);
-			if (Settings::extractBounds) {
-				// Check if bounds make constraints vanish.
-				formula = visitor.rvisit(formula, extractBoundsFunction);
-			}
-			SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Extract bounds  " << formula);
-			if (Settings::checkBounds) {
-				// Check if bounds make constraints vanish.
-				formula = visitor.visit(formula, checkBoundsFunction);
-			}
-			SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Checked bounds  " << formula);
-			
-			formula = formula.toCNF( true, true, false );
-			FormulaT origins(carl::FormulaType::AND, tmpOrigins);
-			
-			if (formula.getType() == carl::FormulaType::AND) {
-				// If formula has multiple clauses, add separately.
-				for (const auto& f: formula.subformulas()) {
-					addSubformulaToPassedFormula(f, origins);
-				}
-			} else {
-				addSubformulaToPassedFormula(formula, origins);
-			}
-			++receivedFormula;
+
+                tmpOrigins.clear();
+                tmpOrigins.insert(receivedFormula->formula());
+                SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Received        " << formula);
+                if (Settings::removeFactors && formula.propertyHolds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL) ) {
+                    // Remove redundant or obsolete factors of polynomials.
+                    formula = visitor.visit(formula, removeFactorsFunction);
+                }
+                SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Removed factors " << formula);
+                if (Settings::splitSOS && formula.propertyHolds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL)) {
+                    // Check if bounds make constraints vanish.
+                    formula = visitor.visit(formula, splitSOSFunction);
+                }
+                SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Remove unbounded variables  " << formula);
+                if (Settings::eliminateSubstitutions) {
+                    // Apply all substitutions in form of an equations or Boolean facts.
+                    formula = elimSubstitutions(formula);
+    //                std::cout << formula.toString( false, 1, "", true, false, true, true ) << std::endl;
+                }
+                SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Eliminate substitutions  " << formula);
+                if (Settings::extractBounds) {
+                    // Check if bounds make constraints vanish.
+                    formula = visitor.rvisit(formula, extractBoundsFunction);
+                }
+                SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Extract bounds  " << formula);
+                if (Settings::checkBounds) {
+                    // Check if bounds make constraints vanish.
+                    formula = visitor.visit(formula, checkBoundsFunction);
+                }
+                SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Checked bounds  " << formula);
+
+                formula = formula.toCNF( true, true, false );
+                FormulaT origins(carl::FormulaType::AND, tmpOrigins);
+
+                addSubformulaToPassedFormula(formula, origins);
+                ++receivedFormula;
+            }
         }
 
         Answer ans = runBackends( _full );
