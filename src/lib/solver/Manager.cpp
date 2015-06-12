@@ -32,7 +32,8 @@ namespace smtrat
         mpPrimaryBackend( new Module( MT_Module, mpPassedFormula, mPrimaryBackendFoundAnswer, this ) ),
         mStrategyGraph(),
         mDebugOutputChannel( cout.rdbuf() ),
-        mLogic( Logic::UNDEFINED )
+        mLogic( Logic::UNDEFINED ),
+		mInformationRelevantFormula()
         #ifdef SMTRAT_DEVOPTION_Statistics
         ,
         mpStatistics( new GeneralStatistics() )

@@ -58,6 +58,8 @@ namespace smtrat
 			QuantifierManager mQuantifierManager;
             /// the logic this solver considers
             Logic mLogic;
+			/// List of formula which are relevant for certain tasks
+			std::queue<FormulaT> mInformationRelevantFormula;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all statistics for the solver this manager belongs to.
             GeneralStatistics* mpStatistics;
@@ -452,5 +454,42 @@ namespace smtrat
              */
             void checkBackendPriority( Module* _module );
             #endif
+
+			/**
+			 * Adds formula to end of InformationRelevantFormula
+             * @param formula Formula to add
+             */
+			inline void pushInformationRelevantFormula( FormulaT formula )
+			{
+				mInformationRelevantFormula.push( formula );
+			}
+
+			/**
+			 * Removes the first element of InformationRelevantFormula
+             */
+			inline void popInformationRelevantFormula()
+			{
+				assert( !isEmptyInformationRelevantFormula() );
+				mInformationRelevantFormula.pop();
+			}
+
+			/**
+			 * Gets the first element of InformationRelevantFormula
+             * @return First formula
+             */
+			inline FormulaT peekInformationRelevantFormula()
+			{
+				assert( !isEmptyInformationRelevantFormula() );
+				return mInformationRelevantFormula.front();
+			}
+
+			/**
+			 * Checks if InformationRelevantFormula is empty
+			 * @return true, if empty, false otherwise
+			 */
+			inline bool isEmptyInformationRelevantFormula()
+			{
+				return mInformationRelevantFormula.empty();
+			}
     };
 }    // namespace smtrat

@@ -529,7 +529,7 @@ namespace smtrat
             /**
              * Prints the collected assumptions in the assumption vector into _filename with an appropriate smt2 
              * header including all variables used.
-             * @param _manager The managaer object of this solver to store the assumptions for.
+             * @param _manager The manager object of this solver to store the assumptions for.
              */
             static void storeAssumptionsToCheck( const Manager& _manager );
             
@@ -904,6 +904,30 @@ namespace smtrat
              *         true, if it cannot be said whether the model satisfies the given formula.
              */
             unsigned checkModel() const;
+
+			/**
+			 * Adds a formula to the end of InformationRelevantFormula
+             * @param formula Formula to add
+             */
+			void pushInformationRelevantFormula( FormulaT formula );
+
+			/**
+			 * Removes the first element of InformationRelevantFormula
+             */
+			void popInformationRelevantFormula();
+
+			/**
+			 * Gets the first element of InformationRelevantFormula
+             * @return First formula
+             */
+			FormulaT peekInformationRelevantFormula();
+
+			/**
+			 * Checks if InformationRelevantFormula is empty
+             * @return true, if empty, false otherwise
+             */
+			bool isEmptyInformationRelevantFormula();
+
         public:
             // Printing methods.
             

@@ -985,6 +985,26 @@ namespace smtrat
         smtlibFile.close();
     }
 
+	void Module::pushInformationRelevantFormula( FormulaT formula )
+	{
+		mpManager->pushInformationRelevantFormula( formula );
+	}
+
+	void Module::popInformationRelevantFormula()
+	{
+		mpManager->popInformationRelevantFormula();
+	}
+
+	FormulaT Module::peekInformationRelevantFormula()
+	{
+		return mpManager->peekInformationRelevantFormula();
+	}
+
+	bool Module::isEmptyInformationRelevantFormula()
+	{
+		return mpManager->isEmptyInformationRelevantFormula();
+	}
+
     void Module::print( ostream& _out, const string _initiation ) const
     {
         _out << _initiation << "********************************************************************************" << endl;
