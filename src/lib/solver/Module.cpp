@@ -985,7 +985,7 @@ namespace smtrat
         smtlibFile.close();
     }
 
-	void Module::pushInformationRelevantFormula( FormulaT formula )
+	void Module::pushInformationRelevantFormula( const FormulaT& formula )
 	{
 		mpManager->pushInformationRelevantFormula( formula );
 	}
@@ -995,7 +995,7 @@ namespace smtrat
 		mpManager->popInformationRelevantFormula();
 	}
 
-	FormulaT Module::peekInformationRelevantFormula()
+	FormulaT& Module::peekInformationRelevantFormula()
 	{
 		return mpManager->peekInformationRelevantFormula();
 	}

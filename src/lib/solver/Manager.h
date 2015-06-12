@@ -344,7 +344,16 @@ namespace smtrat
             {
                 return mLogic;
             }
-            
+
+			/**
+			 * Adds formula to end of InformationRelevantFormula
+			 * @param formula Formula to add
+			 */
+			inline void pushInformationRelevantFormula( const FormulaT& formula )
+			{
+				mInformationRelevantFormula.push( formula );
+			}
+
         protected:
 
             /**
@@ -456,15 +465,6 @@ namespace smtrat
             #endif
 
 			/**
-			 * Adds formula to end of InformationRelevantFormula
-             * @param formula Formula to add
-             */
-			inline void pushInformationRelevantFormula( FormulaT formula )
-			{
-				mInformationRelevantFormula.push( formula );
-			}
-
-			/**
 			 * Removes the first element of InformationRelevantFormula
              */
 			inline void popInformationRelevantFormula()
@@ -477,7 +477,7 @@ namespace smtrat
 			 * Gets the first element of InformationRelevantFormula
              * @return First formula
              */
-			inline FormulaT peekInformationRelevantFormula()
+			inline FormulaT& peekInformationRelevantFormula()
 			{
 				assert( !isEmptyInformationRelevantFormula() );
 				return mInformationRelevantFormula.front();

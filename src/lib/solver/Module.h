@@ -909,7 +909,7 @@ namespace smtrat
 			 * Adds a formula to the end of InformationRelevantFormula
              * @param formula Formula to add
              */
-			void pushInformationRelevantFormula( FormulaT formula );
+			void pushInformationRelevantFormula( const FormulaT& formula );
 
 			/**
 			 * Removes the first element of InformationRelevantFormula
@@ -920,7 +920,7 @@ namespace smtrat
 			 * Gets the first element of InformationRelevantFormula
              * @return First formula
              */
-			FormulaT peekInformationRelevantFormula();
+			FormulaT& peekInformationRelevantFormula();
 
 			/**
 			 * Checks if InformationRelevantFormula is empty
