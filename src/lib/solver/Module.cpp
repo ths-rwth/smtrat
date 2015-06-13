@@ -605,7 +605,7 @@ namespace smtrat
         mUsedBackends = mpManager->getBackends( this, mBackendsFoundAnswer );
         mAllBackends = mpManager->getAllBackends( this );
         size_t numberOfUsedBackends = mUsedBackends.size();
-        if( numberOfUsedBackends>0 )
+        if( numberOfUsedBackends > 0 )
         {
             // Update the backends.
             if( mFirstSubformulaToPass != mpPassedFormula->end() )
