@@ -413,6 +413,11 @@ namespace smtrat
             {
                 return mSplittings;
             }
+            
+            void addSplittings( const std::vector<Splitting>& _splittings )
+            {
+                mSplittings.insert( mSplittings.end(), _splittings.begin(), _splittings.end() );
+            }
 
             /**
              * @return A constant reference to the deductions/lemmas being valid formulas this module or its backends made.

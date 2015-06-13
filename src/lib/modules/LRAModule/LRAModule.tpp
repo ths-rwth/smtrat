@@ -141,6 +141,9 @@ namespace smtrat
                             auto constrBoundIter = mTableau.constraintToBound().find( formula );
                             assert( constrBoundIter != mTableau.constraintToBound().end() );
                             const std::vector< const LRABound* >* bounds = constrBoundIter->second;
+//                            bool intValued = constraint.integerValued();
+//                            if( (intValued && ((*bounds)[1]->isActive() || (*bounds)[2]->isActive()))
+//                                || (!intValued && ((*bounds)[0]->isActive() || (*bounds)[1]->isActive() || (*bounds)[2]->isActive() || (*bounds)[3]->isActive())) )
                             if( (*bounds)[0]->isActive() || (*bounds)[1]->isActive() || (*bounds)[2]->isActive() || (*bounds)[3]->isActive() )
                             {
                                 Context context( formula, passedFormulaEnd() );
@@ -232,9 +235,10 @@ namespace smtrat
                                     const std::vector< const LRABound* >* uebounds = constrBoundIterB->second;
                                     assert( uebounds != NULL );
                                     assert( uebounds->size() >= 4 );
-                                    bool intValued = (*bound)->neqRepresentation().constraint().integerValued();
-                                    if( (intValued && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive()) ||
-                                        (!intValued && !(*uebounds)[0]->isActive() && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive() && !(*uebounds)[3]->isActive()) )
+//                                    bool intValued = (*bound)->neqRepresentation().constraint().integerValued();
+//                                    if( (intValued && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive()) ||
+//                                        (!intValued && !(*uebounds)[0]->isActive() && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive() && !(*uebounds)[3]->isActive()) )
+                                    if( !(*uebounds)[0]->isActive() && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive() && !(*uebounds)[3]->isActive() )
                                     {
                                         auto pos = mActiveResolvedNEQConstraints.find( (*bound)->neqRepresentation() );
                                         if( pos != mActiveResolvedNEQConstraints.end() )

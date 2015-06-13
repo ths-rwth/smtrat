@@ -514,6 +514,7 @@ namespace smtrat
             std::cout << " " << subformula;
             #endif
             ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( subformula );
+            if( constraintLiteralPair == mConstraintLiteralMap.end() ) exit(1245);
             assert( constraintLiteralPair != mConstraintLiteralMap.end() );
             clauseLits.push( mkLit( var( constraintLiteralPair->second.front() ), !sign( constraintLiteralPair->second.front() ) ) );
         }
@@ -1670,6 +1671,9 @@ SetWatches:
                 #endif
 
                 analyze( confl, learnt_clause, backtrack_level );
+                // Dirty hack for the SMT-COMP 2015
+                if( learnt_clause.size() == 0 )
+                    return l_Undef;
 
                 #ifdef DEBUG_SATMODULE
                 printClause( learnt_clause, true, cout, "### Asserting clause: " );

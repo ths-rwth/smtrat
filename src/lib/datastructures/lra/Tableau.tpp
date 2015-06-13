@@ -286,7 +286,7 @@ namespace smtrat
                         boundVector->push_back( result.first );
                         ctbInsertRes.first->second = boundVector;
                     }
-                    if( !constraint.integerValued() )
+//                    if( !constraint.integerValued() )
                         result.first->setNeqRepresentation( _constraint );
                     
                     std::vector< const Bound<T1,T2>* >* boundVectorB = new std::vector< const Bound<T1,T2>* >();
@@ -330,7 +330,7 @@ namespace smtrat
                         boundVector->push_back( result.first );
                         ctbInsertRes.first->second = boundVector;
                     }
-                    if( !constraint.integerValued() )
+//                    if( !constraint.integerValued() )
                         result.first->setNeqRepresentation( _constraint );
                     
                     boundVectorB->push_back( result.first );

@@ -136,12 +136,6 @@ namespace smtrat {
                     formula = visitor.visit(formula, splitSOSFunction);
                 }
                 SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Remove unbounded variables  " << formula);
-                if (Settings::eliminateSubstitutions && mpManager->logic() != Logic::QF_LIA) {
-                    // Apply all substitutions in form of an equations or Boolean facts.
-                    formula = elimSubstitutions(formula);
-    //                std::cout << formula.toString( false, 1, "", true, false, true, true ) << std::endl;
-                }
-                SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Eliminate substitutions  " << formula);
                 if (Settings::extractBounds) {
                     // Check if bounds make constraints vanish.
                     formula = visitor.rvisit(formula, extractBoundsFunction);
@@ -595,7 +589,7 @@ namespace smtrat {
 	}
     
     template<typename Settings>
-    FormulaT PreprocessingModule<Settings>::elimSubstitutions( const FormulaT& _formula ) 
+    FormulaT PreprocessingModule<Settings>::elimSubstitutions( const FormulaT& _formula, bool _elimSubstitutions ) 
     {
         auto iter = boolSubs.find( _formula );
         if( iter != boolSubs.end() )
@@ -711,14 +705,15 @@ namespace smtrat {
                 {
                     if( foundSubstitutions.empty() )
                         result = FormulaT( carl::FormulaType::TRUE );
-//                    else
-//                        result = FormulaT( carl::FormulaType::AND, std::move(foundSubstitutions) );
+                    else if( !_elimSubstitutions )
+                        result = FormulaT( carl::FormulaType::AND, std::move(foundSubstitutions) );
                 }
-//                else
-//                {
-                    currentSubformulas.insert( foundSubstitutions.begin(), foundSubstitutions.end() );
+                else
+                {
+                    if( !_elimSubstitutions )
+                        currentSubformulas.insert( foundSubstitutions.begin(), foundSubstitutions.end() );
                     result = FormulaT( carl::FormulaType::AND, std::move(currentSubformulas) );
-//                }
+                }
             Return:
                 while( !addedArithSubs.empty() )
                 {
