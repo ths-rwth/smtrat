@@ -605,7 +605,7 @@ namespace smtrat
         mUsedBackends = mpManager->getBackends( this, mBackendsFoundAnswer );
         mAllBackends = mpManager->getAllBackends( this );
         size_t numberOfUsedBackends = mUsedBackends.size();
-        if( numberOfUsedBackends>0 )
+        if( numberOfUsedBackends > 0 )
         {
             // Update the backends.
             if( mFirstSubformulaToPass != mpPassedFormula->end() )
@@ -618,6 +618,8 @@ namespace smtrat
                     #endif
                     (*module)->mDeductions.clear();
                     (*module)->mSplittings.clear();
+                    if( !(*module)->mInfeasibleSubsets.empty() )
+                        assertionFailed = true;
                     for( auto iter = mConstraintsToInform.begin(); iter != mConstraintsToInform.end(); ++iter )
                         (*module)->inform( *iter );
                     for( auto subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end(); ++subformula )

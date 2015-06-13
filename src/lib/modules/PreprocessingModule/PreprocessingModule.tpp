@@ -6,7 +6,6 @@
  */
 
 #include "PreprocessingModule.h"
-#include "../../solver/Manager.h"
 #include "../../../cli/ExitCodes.h"
 #include <limits.h>
 
@@ -71,7 +70,7 @@ namespace smtrat {
 				return False;
 			}
 		}
-        if (Settings::eliminateSubstitutions && mpManager->logic() != Logic::QF_LIA) {
+        if (Settings::eliminateSubstitutions) {
             // TODO: make this incremental
             FormulaT formula = (FormulaT) rReceivedFormula();
             SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Received        " << formula);

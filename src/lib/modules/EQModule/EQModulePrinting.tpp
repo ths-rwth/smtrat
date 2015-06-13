@@ -31,6 +31,8 @@ namespace smtrat {
 				out << ((implicit_edge_info*) edge)->mRealPred->first;
 				out << ",";
 				out << ((implicit_edge_info*) edge)->mRealSucc->first;
+				out << ",";
+				out << ((implicit_edge_info*) edge)->mID;
 				out << ") ";
 				out << "\"]";
 			}
