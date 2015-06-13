@@ -618,6 +618,8 @@ namespace smtrat
                     #endif
                     (*module)->mDeductions.clear();
                     (*module)->mSplittings.clear();
+                    if( !(*module)->mInfeasibleSubsets.empty() )
+                        assertionFailed = true;
                     for( auto iter = mConstraintsToInform.begin(); iter != mConstraintsToInform.end(); ++iter )
                         (*module)->inform( *iter );
                     for( auto subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end(); ++subformula )

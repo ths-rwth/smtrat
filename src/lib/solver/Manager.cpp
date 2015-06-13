@@ -191,7 +191,7 @@ namespace smtrat
                 {
                     pBackend->inform( *cons );
                 }
-                for( auto form = _requiredBy->rReceivedFormula().begin(); form != _requiredBy->firstUncheckedReceivedSubformula(); ++form )
+                for( auto form = _requiredBy->rPassedFormula().begin(); form != _requiredBy->firstSubformulaToPass(); ++form )
                 {
                     pBackend->add( form );
                 }
