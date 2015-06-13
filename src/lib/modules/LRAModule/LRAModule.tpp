@@ -634,10 +634,31 @@ Return:
                         break;
                     }
                 }
-                if( !(result != True || assignmentCorrect()) )
+                // TODO: This is a rather unfortunate hack, because I couldn't fix the efficient neq-constraint-handling with integer-valued constraints
+                if( result != Unknown && !rReceivedFormula().isRealConstraintConjunction() )
                 {
-                    exit(1236);
+                    for( auto iter = mActiveResolvedNEQConstraints.begin(); iter != mActiveResolvedNEQConstraints.end(); ++iter )
+                    {
+                        unsigned consistency = iter->first.satisfiedBy( ass );
+                        assert( consistency != 2 );
+                        if( consistency == 0 )
+                        {
+                            splitUnequalConstraint( iter->first );
+                            result = Unknown;
+                            break;
+                        }
+                    }
                 }
+//                if( !(result != True || assignmentCorrect()) )
+//                {
+//                    std::cout << "mActiveUnresolvedNEQConstraints:" << std::endl;
+//                    for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
+//                    {
+//                        std::cout << iter->first << std::endl;
+//                    }
+//                    printVariables();
+//                    exit(1236);
+//                }
                 assert( result != True || assignmentCorrect() );
             }
         }
