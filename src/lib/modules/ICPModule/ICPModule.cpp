@@ -67,7 +67,7 @@ namespace smtrat
         mIsBackendCalled(false),
         mTargetDiameter(0.1),
         mContractionThreshold(0.01),
-        mDefaultSplittingSize(10),
+        mDefaultSplittingSize(15),
         mNumberOfReusagesAfterTargetDiameterReached(1),
         mRelativeContraction(0),
         mAbsoluteContraction(0),
@@ -104,6 +104,8 @@ namespace smtrat
         if( _constraint.getType() == FormulaType::CONSTRAINT )
         {
             const ConstraintT& constraint = _constraint.constraint();
+            if( !constraint.integerValued() )
+                mDefaultSplittingSize = 1000;
             unsigned constraintConsistency = constraint.isConsistent();
             if( constraintConsistency == 2 && _constraint.constraint().relation() != carl::Relation::NEQ )
                 addConstraint( _constraint );
