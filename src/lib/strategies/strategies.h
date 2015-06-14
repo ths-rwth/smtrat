@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "FullStrategy3.h"
 #include "FullStrategy2.h"
 #include "FullStrategy.h"
 #include "RatOne.h"
