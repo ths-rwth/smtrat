@@ -551,7 +551,7 @@ namespace smtrat {
                                     foundLowerBound = boundValue;
                                     foundLowerBoundIsStrict = false;
                                 }
-                                else if(foundUpperBound <= boundValue)
+                                if(foundUpperBound <= boundValue)
                                 {
                                     foundUpperBound = boundValue;
                                     foundUpperBoundIsStrict = false;
@@ -615,7 +615,7 @@ namespace smtrat {
                     // Process all equations first.
                     for( const auto& sf : currentSubformulas )
                     {
-                        if( sf.getType() == carl::FormulaType::CONSTRAINT && sf.constraint().relation() == carl::Relation::EQ )
+                        if( sf.getType() == carl::FormulaType::CONSTRAINT && sf.constraint().relation() == carl::Relation::EQ && sf.constraint().lhs().isLinear() )
                         {
                             FormulaT tmp = elimSubstitutions( sf );
                             if( tmp.getType() == carl::FormulaType::FALSE )
@@ -647,7 +647,7 @@ namespace smtrat {
                     // Now the other sub-formulas.
                     for( const auto& sf : currentSubformulas )
                     {
-                        if( sf.getType() != carl::FormulaType::CONSTRAINT || sf.constraint().relation() != carl::Relation::EQ )
+                        if( sf.getType() != carl::FormulaType::CONSTRAINT || sf.constraint().relation() != carl::Relation::EQ || !sf.constraint().lhs().isLinear() )
                         {
                             auto iterC = foundBooleanSubstitutions.find( sf );
                             if( iterC != foundBooleanSubstitutions.end() )
