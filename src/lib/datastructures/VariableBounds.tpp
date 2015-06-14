@@ -593,9 +593,11 @@ namespace smtrat
         {
             std::set<T,carl::less<T,false>> originsOfBounds;
             auto varVarPair = mpVariableMap->find( _var );
-            assert( varVarPair != mpVariableMap->end() );
-            if( !varVarPair->second->infimum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->infimum().origins().begin() );
-            if( !varVarPair->second->supremum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->supremum().origins().begin() );
+            if( varVarPair != mpVariableMap->end() )
+            {
+                if( !varVarPair->second->infimum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->infimum().origins().begin() );
+                if( !varVarPair->second->supremum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->supremum().origins().begin() );
+            }
             return originsOfBounds;
         }
 
@@ -606,9 +608,11 @@ namespace smtrat
             for( auto var = _variables.begin(); var != _variables.end(); ++var )
             {
                 auto varVarPair = mpVariableMap->find( *var );
-                assert( varVarPair != mpVariableMap->end() );
-                if( !varVarPair->second->infimum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->infimum().origins().begin() );
-                if( !varVarPair->second->supremum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->supremum().origins().begin() );
+                if( varVarPair != mpVariableMap->end() )
+                {
+                    if( !varVarPair->second->infimum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->infimum().origins().begin() );
+                    if( !varVarPair->second->supremum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->supremum().origins().begin() );
+                }
             }
             return originsOfBounds;
         }
