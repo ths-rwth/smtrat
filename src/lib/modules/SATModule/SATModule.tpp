@@ -514,7 +514,6 @@ namespace smtrat
             std::cout << " " << subformula;
             #endif
             ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( subformula );
-            if( constraintLiteralPair == mConstraintLiteralMap.end() ) exit(1245);
             assert( constraintLiteralPair != mConstraintLiteralMap.end() );
             clauseLits.push( mkLit( var( constraintLiteralPair->second.front() ), !sign( constraintLiteralPair->second.front() ) ) );
         }
