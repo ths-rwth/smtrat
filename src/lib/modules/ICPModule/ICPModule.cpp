@@ -67,7 +67,7 @@ namespace smtrat
         mIsBackendCalled(false),
         mTargetDiameter(0.1),
         mContractionThreshold(0.01),
-        mDefaultSplittingSize(15),
+        mDefaultSplittingSize(16),
         mNumberOfReusagesAfterTargetDiameterReached(1),
         mRelativeContraction(0),
         mAbsoluteContraction(0),
