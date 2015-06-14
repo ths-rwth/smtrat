@@ -189,7 +189,6 @@ namespace smtrat
     {
         mProperties = Condition();
         mProperties |= PROP_IS_PURE_CONJUNCTION | PROP_IS_IN_CNF | PROP_IS_IN_NNF;
-        mProperties |= PROP_VARIABLE_DEGREE_LESS_THAN_THREE | PROP_VARIABLE_DEGREE_LESS_THAN_FOUR | PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
         for( const FormulaWithOrigins& fwo : *this )
         {
             Condition subFormulaConds = fwo.formula().properties();
