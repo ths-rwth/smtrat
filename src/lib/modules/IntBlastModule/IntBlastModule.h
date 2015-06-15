@@ -16,33 +16,29 @@
 
 namespace smtrat
 {
-    class BlastingParameters
+    class BlastedType
     {
     private:
-        carl::BVVariable mVariable;
+        std::size_t mWidth;
         bool mSigned;
         carl::Interval<Integer> mBounds;
 
     public:
-        BlastingParameters() :
-        mVariable(), mSigned(false), mBounds(0, 0)
+        BlastedType() :
+        mWidth(0), mSigned(false), mBounds(0, 0)
         {}
 
-        BlastingParameters( const carl::BVVariable& _variable, bool _signed ) :
-        mVariable(_variable), mSigned(_signed),
-        mBounds((_signed ? -carl::pow(2, _variable.width()-1) : 0), (_signed ? carl::pow(2, _variable.width()-1)-1 : carl::pow(2, width()) -1))
+        BlastedType( std::size_t _width, bool _signed ) :
+        mWidth(_width), mSigned(_signed),
+        mBounds((_signed ? -carl::pow(2, _width-1) : 0), (_signed ? carl::pow(2, _width-1)-1 : carl::pow(2, _width) -1))
         {}
 
-        const carl::BVVariable variable() const {
-            return mVariable;
+        std::size_t width() const {
+            return mWidth;
         }
 
         bool isSigned() const {
             return mSigned;
-        }
-
-        std::size_t width() const {
-            return mVariable.width();
         }
 
         const carl::Interval<Integer>& bounds() const {
@@ -57,12 +53,66 @@ namespace smtrat
             return mBounds.upper();
         }
 
-        static BlastingParameters createWithVariable(std::size_t _width, bool _signed)
+        static BlastedType forSum(BlastedType _summand1, BlastedType _summand2) {
+            std::size_t safeWidth1 = _summand1.width();
+            std::size_t safeWidth2 = _summand2.width();
+            bool makeSigned = (_summand1.isSigned() || _summand2.isSigned());
+
+            if(_summand1.isSigned() != _summand2.isSigned()) {
+                if(_summand1.isSigned()) {
+                    ++safeWidth2;
+                } else {
+                    ++safeWidth1;
+                }
+            }
+
+            std::size_t width = ((safeWidth1 > safeWidth2) ? safeWidth2 : safeWidth1) + 1;
+            return BlastedType(width, makeSigned);
+        }
+
+        static BlastedType forProduct(BlastedType _factor1, BlastedType _factor2) {
+            bool makeSigned = _factor1.isSigned() || _factor2.isSigned();
+            std::size_t width = _factor1.width() + _factor2.width() - (_factor1.isSigned() && _factor2.isSigned() ? 1 : 0);
+            return BlastedType(width, makeSigned);
+        }
+    };
+
+    class BlastedTerm
+    {
+    private:
+        BlastedType mType;
+        carl::BVTerm mTerm;
+
+    public:
+        BlastedTerm() :
+        mType(), mTerm()
+        {}
+
+        BlastedTerm(const BlastedType& _type, const carl::BVTerm& _term) :
+        mType(_type), mTerm(_term)
+        {
+            assert(_type.width() == _term.width());
+        }
+
+        BlastedTerm(const BlastedType& _type) :
+        mType(_type), mTerm()
         {
             carl::Variable var = carl::VariablePool::getInstance().getFreshVariable(carl::VariableType::VT_BITVECTOR);
-            carl::Sort bvSort = carl::SortManager::getInstance().getSort("BitVec", {_width});
+            carl::Sort bvSort = carl::SortManager::getInstance().getSort("BitVec", {_type.width()});
             carl::BVVariable bvVar(var, bvSort);
-            return BlastingParameters(bvVar, _signed);
+            mTerm = carl::BVTerm(carl::BVTermType::VARIABLE, bvVar);
+        }
+
+        const BlastedType& type() const {
+            return mType;
+        }
+
+        const carl::BVTerm& term() const {
+            return mTerm;
+        }
+
+        const carl::BVTerm& operator()() const {
+            return mTerm;
         }
     };
 
@@ -140,9 +190,8 @@ namespace smtrat
             BVSolver* mBVSolver;
             bool mLastSolutionFoundByBlasting;
 
-            std::map<carl::Variable, BlastingParameters> mBlastingParameters; // Map from integer variables (substitutes or input variables) to bit-vector terms
+            std::map<Poly, BlastedTerm> mBlastings; // Map from polynomials to bit-vector terms representing them in the blasted output
             std::map<Poly, carl::Variable> mSubstitutes; // Map from polynomials to integer variables representing them in the ICP input
-            // Members.
 
         public:
             IntBlastModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
@@ -205,17 +254,16 @@ namespace smtrat
     private:
             void createSubstitutes(const FormulaT& _formula);
             void createSubstitutes(const Poly& _poly);
-            void createSubstitutes(const TermT& _term);
-            void createSubstitutes(const carl::Variable::Arg variable, carl::exponent exponent);
             bool createSubstitute(const Poly& _poly);
             // void createMonomialSubstitutes(const FormulaT& _formula);
             PolyDecomposition decompose(const Poly& _polynomial) const;
-            void updateBlastingParameters();
-            BlastingParameters chooseBlastingParameters(const DoubleInterval _interval, std::size_t _maxWidth = 0) const;
+            void blastInputVariables();
+            BlastedType chooseBlastedType(const DoubleInterval _interval, std::size_t _maxWidth = 0) const;
             void blastSubstitutes();
-            void blastSum(const BlastingParameters& _summand1, const BlastingParameters& _summand2, const BlastingParameters& _sum);
-            void blastProduct(const BlastingParameters& _factor1, const BlastingParameters& _factor2, const BlastingParameters& _product);
-            void safeCast(const BlastingParameters& _from, const BlastingParameters& _to);
+            const BlastedTerm& blastedTermForPolynomial(const Poly& _poly);
+            void blastSum(const BlastedTerm& _summand1, const BlastedTerm& _summand2, const BlastedTerm& _sum);
+            void blastProduct(const BlastedTerm& _factor1, const BlastedTerm& _factor2, const BlastedTerm& _product);
+            void safeCast(const BlastedTerm& _from, const BlastedTerm& _to);
 
             void addSubformulaToICPFormula(const FormulaT& _formula, const FormulaT& _origin);
 

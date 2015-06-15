@@ -25,7 +25,7 @@ namespace smtrat
     mICP(MT_ICPModule, mICPInput, mICPRuntimeSettings, mICPFoundAnswer),
     mBVSolver(new BVSolver()),
     mLastSolutionFoundByBlasting(false),
-    mBlastingParameters(),
+    mBlastings(),
     mSubstitutes()
     {
         smtrat::addModules( mBVSolver );
@@ -138,54 +138,6 @@ namespace smtrat
             }
             polysToSubstitute.pop_front();
         }
-
-        return;
-
-        std::cout << "Back to normal..." << std::endl;
-
-        Poly currentPoly(_poly);
-        currentPoly -= currentPoly.constantPart();
-        currentPoly.makeOrdered();
-
-        while(! currentPoly.isZero()) {
-            auto lastTerm = currentPoly.rbegin();
-            assert(lastTerm != currentPoly.rend());
-            createSubstitutes(*lastTerm);
-            createSubstitute(currentPoly);
-            currentPoly -= *lastTerm;
-        }
-    }
-
-    void IntBlastModule::createSubstitutes(const TermT& _term)
-    {
-        const carl::Monomial::Arg monomial = _term.monomial();
-        assert(! monomial->isConstant());
-
-        Poly currentPoly(1);
-
-        for( auto variableAndExponent : *monomial ) {
-            createSubstitutes(variableAndExponent.first, variableAndExponent.second);
-            currentPoly *= carl::MonomialPool::getInstance().create(variableAndExponent.first, variableAndExponent.second);
-            createSubstitute(currentPoly);
-        }
-
-        assert(! currentPoly.isConstant());
-
-        Poly termPoly(_term);
-        createSubstitute(termPoly);
-    }
-
-    void IntBlastModule::createSubstitutes(const carl::Variable::Arg variable, carl::exponent exponent)
-    {
-        for(carl::exponent exp=exponent;exp>=1;--exp) {
-            Poly lookupPoly(carl::MonomialPool::getInstance().create(variable, exp));
-
-            if(exp == 1) {
-                mSubstitutes[lookupPoly] = variable;
-            } else {
-                createSubstitute(lookupPoly);
-            }
-        }
     }
 
     bool IntBlastModule::createSubstitute(const Poly& _poly)
@@ -258,13 +210,13 @@ namespace smtrat
         for(auto polyAndSubstitute : mSubstitutes) {
             std::cout << "Blasting: " << polyAndSubstitute.first << std::endl;
             PolyDecomposition decomposition = decompose(polyAndSubstitute.first);
-            BlastingParameters blastingParams = mBlastingParameters[polyAndSubstitute.second];
+            BlastedTerm blastedTerm = blastedTermForPolynomial(polyAndSubstitute.first);
 
             if(decomposition.type() == PolyDecomposition::Type::CONSTANT) {
-                carl::BVValue constant(blastingParams.width(), carl::getNum(decomposition.constant()));
-                carl::BVTerm varTerm(carl::BVTermType::VARIABLE, blastingParams.variable());
+                // TODO: Is this whole if-case actually needed? I do not think so.
+                carl::BVValue constant(blastedTerm.type().width(), carl::getNum(decomposition.constant()));
                 carl::BVTerm constTerm(carl::BVTermType::CONSTANT, constant);
-                carl::BVConstraint constr = carl::BVConstraint::create(carl::BVCompareRelation::EQ, varTerm, constTerm);
+                carl::BVConstraint constr = carl::BVConstraint::create(carl::BVCompareRelation::EQ, blastedTerm.term(), constTerm);
                 blastedFormulas.insert(FormulaT(constr));
 
                 for(auto blaFo : blastedFormulas) {
@@ -273,83 +225,103 @@ namespace smtrat
             } else if(decomposition.type() == PolyDecomposition::Type::VARIABLE) {
                 // nothing to do here
             } else {
-                BlastingParameters& left = mBlastingParameters[mSubstitutes[decomposition.left()]];
-                BlastingParameters& right = mBlastingParameters[mSubstitutes[decomposition.right()]];
+                const BlastedTerm& left = blastedTermForPolynomial(decomposition.left());
+                const BlastedTerm& right = blastedTermForPolynomial(decomposition.right());
 
                 if(decomposition.type() == PolyDecomposition::Type::SUM) {
-                    blastSum(left, right, blastingParams);
+                    blastSum(left, right, blastedTerm);
                 } else {
                     assert(decomposition.type() == PolyDecomposition::Type::PRODUCT);
-                    blastProduct(left, right, blastingParams);
+                    blastProduct(left, right, blastedTerm);
                 }
             }
         }
     }
 
-    void IntBlastModule::blastSum(const BlastingParameters& _summand1, const BlastingParameters& _summand2, const BlastingParameters& _sum)
+    const BlastedTerm& IntBlastModule::blastedTermForPolynomial(const Poly& _poly)
     {
-        FormulasT blastedFormulas;
+        auto foundBlasting = mBlastings.find(_poly);
 
-        // determine safe representation of result
-        std::size_t width1 = _summand1.width();
-        std::size_t width2 = _summand2.width();
-        bool anySigned = (_summand1.isSigned() || _summand2.isSigned());
+        if(foundBlasting != mBlastings.end()) {
+            return foundBlasting->second;
+        }
 
-        if(_summand1.isSigned() != _summand2.isSigned()) {
-            if(_summand1.isSigned()) {
-                ++width2;
+        BlastedTerm output;
+
+        PolyDecomposition decomposition = decompose(_poly);
+
+        if(decomposition.type() == PolyDecomposition::Type::CONSTANT) {
+            BlastedType blastedType = chooseBlastedType(DoubleInterval(decomposition.constant(), decomposition.constant()));
+            carl::BVValue constValue(blastedType.width(), carl::getNum(decomposition.constant()));
+            output = BlastedTerm(blastedType, carl::BVTerm(carl::BVTermType::CONSTANT, constValue));
+        } else {
+            carl::Variable variable;
+
+            if(decomposition.type() == PolyDecomposition::Type::VARIABLE) {
+                variable = decomposition.variable();
             } else {
-                ++width1;
+                variable = mSubstitutes[_poly];
+            }
+
+            const EvalDoubleIntervalMap& icpBounds = mBoundsInRestriction.getIntervalMap();
+            auto foundBound = icpBounds.find(variable);
+            if(foundBound != icpBounds.end()) {
+                output = BlastedTerm(chooseBlastedType(foundBound->second));
+            } else {
+                std::cout << "Unbounded :(" << std::endl;
+                assert(false);
             }
         }
 
-        std::size_t safeWidth = ((width1 > width2) ? width2 : width1) + 1;
+        mBlastings[_poly] = output;
+        return mBlastings[_poly];
+    }
 
-        BlastingParameters safeSum = BlastingParameters::createWithVariable(safeWidth, anySigned);
+    void IntBlastModule::blastSum(const BlastedTerm& _summand1, const BlastedTerm& _summand2, const BlastedTerm& _sum)
+    {
+        FormulasT blastedFormulas;
 
-        carl::BVTerm bvSummand1((_summand1.isSigned() ? carl::BVTermType::EXT_S : carl::BVTermType::EXT_U),
-                                carl::BVTerm(carl::BVTermType::VARIABLE, _summand1.variable()),
-                                safeWidth - _summand1.width());
-        carl::BVTerm bvSummand2((_summand2.isSigned() ? carl::BVTermType::EXT_S : carl::BVTermType::EXT_U),
-                                carl::BVTerm(carl::BVTermType::VARIABLE, _summand2.variable()),
-                                safeWidth - _summand2.width());
+        BlastedTerm safeSum(BlastedType::forSum(_summand1.type(), _summand2.type()));
+
+        carl::BVTerm bvSummand1((_summand1.type().isSigned() ? carl::BVTermType::EXT_S : carl::BVTermType::EXT_U),
+                                _summand1.term(),
+                                safeSum.type().width() - _summand1.type().width());
+        carl::BVTerm bvSummand2((_summand2.type().isSigned() ? carl::BVTermType::EXT_S : carl::BVTermType::EXT_U),
+                                _summand2.term(),
+                                safeSum.type().width() - _summand2.type().width());
 
         blastedFormulas.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
                                                                    carl::BVTerm(carl::BVTermType::ADD, bvSummand1, bvSummand2),
-                                                                   carl::BVTerm(carl::BVTermType::VARIABLE, safeSum.variable()))));
+                                                                   safeSum.term())));
         for(auto blaFo : blastedFormulas) {
             std::cout << "-> [Sum ] " << blaFo << std::endl;
         }
         safeCast(safeSum, _sum);
     }
 
-    void IntBlastModule::blastProduct(const BlastingParameters& _factor1, const BlastingParameters& _factor2, const BlastingParameters& _product)
+    void IntBlastModule::blastProduct(const BlastedTerm& _factor1, const BlastedTerm& _factor2, const BlastedTerm& _product)
     {
         FormulasT blastedFormulas;
 
-        // determine safe representation of result
-        bool anySigned = (_factor1.isSigned() || _factor2.isSigned());
-        std::size_t safeWidth = _factor1.width() + _factor2.width() - (_factor1.isSigned() && _factor2.isSigned() ? 1 : 0);
+        BlastedTerm safeProduct(BlastedType::forProduct(_factor1.type(), _factor2.type()));
 
-        BlastingParameters safeProduct = BlastingParameters::createWithVariable(safeWidth, anySigned);
-
-        carl::BVTerm bvFactor1(carl::BVTermType::VARIABLE, _factor1.variable());
-        if(safeWidth > _factor1.width()) {
-            bvFactor1 = carl::BVTerm((_factor1.isSigned() ? carl::BVTermType::EXT_S : carl::BVTermType::EXT_U),
-                                     carl::BVTerm(carl::BVTermType::VARIABLE, _factor1.variable()),
-                                     safeWidth - _factor1.width());
+        carl::BVTerm bvFactor1(_factor1.term());
+        if(safeProduct.type().width() > _factor1.type().width()) {
+            bvFactor1 = carl::BVTerm((_factor1.type().isSigned() ? carl::BVTermType::EXT_S : carl::BVTermType::EXT_U),
+                                     _factor1.term(),
+                                     safeProduct.type().width() - _factor1.type().width());
         }
 
-        carl::BVTerm bvFactor2(carl::BVTermType::VARIABLE, _factor2.variable());
-        if(safeWidth > _factor2.width()) {
-            bvFactor2 = carl::BVTerm((_factor2.isSigned() ? carl::BVTermType::EXT_S : carl::BVTermType::EXT_U),
-                                     carl::BVTerm(carl::BVTermType::VARIABLE, _factor2.variable()),
-                                     safeWidth - _factor2.width());
+        carl::BVTerm bvFactor2(_factor1.term());
+        if(safeProduct.type().width() > _factor2.type().width()) {
+            bvFactor2 = carl::BVTerm((_factor2.type().isSigned() ? carl::BVTermType::EXT_S : carl::BVTermType::EXT_U),
+                                     _factor2.term(),
+                                     safeProduct.type().width() - _factor2.type().width());
         }
 
         blastedFormulas.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
                                                                    carl::BVTerm(carl::BVTermType::MUL, bvFactor1, bvFactor2),
-                                                                   carl::BVTerm(carl::BVTermType::VARIABLE, safeProduct.variable()))));
+                                                                   safeProduct.term())));
 
         for(auto blaFo : blastedFormulas) {
             std::cout << "-> [Prod] " << blaFo << std::endl;
@@ -357,52 +329,52 @@ namespace smtrat
         safeCast(safeProduct, _product);
     }
 
-    void IntBlastModule::safeCast(const BlastingParameters& _from, const BlastingParameters& _to)
+    void IntBlastModule::safeCast(const BlastedTerm& _from, const BlastedTerm& _to)
     {
         FormulasT blastedFormulas;
 
         // cast to desired representation
-        if(_to.width() > _from.width()) {
+        if(_to.type().width() > _from.type().width()) {
             // unlikely...
             blastedFormulas.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                       carl::BVTerm((_from.isSigned() ? carl::BVTermType::EXT_S : carl::BVTermType::EXT_U), carl::BVTerm(carl::BVTermType::VARIABLE, _from.variable()), _to.width() - _from.width()),
-                                                                       carl::BVTerm(carl::BVTermType::VARIABLE, _to.variable()))));
-        } else if(_to.width() == _from.width()) {
+                                                                       carl::BVTerm((_from.type().isSigned() ? carl::BVTermType::EXT_S : carl::BVTermType::EXT_U), _from.term(), _to.type().width() - _from.type().width()),
+                                                                       _to.term())));
+        } else if(_to.type().width() == _from.type().width()) {
             blastedFormulas.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                       carl::BVTerm(carl::BVTermType::VARIABLE, _from.variable()),
-                                                                       carl::BVTerm(carl::BVTermType::VARIABLE, _to.variable()))));
+                                                                       _from.term(),
+                                                                       _to.term())));
         } else {
             blastedFormulas.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                       carl::BVTerm(carl::BVTermType::EXTRACT, carl::BVTerm(carl::BVTermType::VARIABLE, _from.variable()), _to.width()-1, 0),
-                                                                       carl::BVTerm(carl::BVTermType::VARIABLE, _to.variable()))));
+                                                                       carl::BVTerm(carl::BVTermType::EXTRACT, _from.term(), _to.type().width()-1, 0),
+                                                                       _to.term())));
         }
 
         // ensure safety
-        if(_to.isSigned()) {
+        if(_to.type().isSigned()) {
             // If bits have been removed, they must equal the msb of _to
-            if(_to.width() < _from.width()) {
+            if(_to.type().width() < _from.type().width()) {
                 blastedFormulas.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                           carl::BVTerm(carl::BVTermType::EXTRACT, carl::BVTerm(carl::BVTermType::VARIABLE, _from.variable()), _from.width()-1, _to.width()),
-                                                                           carl::BVTerm(carl::BVTermType::EXTRACT, carl::BVTerm(carl::BVTermType::VARIABLE, _from.variable()), _from.width()-2, _to.width()-1))));
+                                                                           carl::BVTerm(carl::BVTermType::EXTRACT, _from.term(), _from.type().width()-1, _to.type().width()),
+                                                                           carl::BVTerm(carl::BVTermType::EXTRACT, _from.term(), _from.type().width()-2, _to.type().width()-1))));
             }
             // If _from is unsigned, _to must be non-negative (i.e. the msb of _to must be zero)
             // (this check can be skipped if _to is wider than _from - in this case we had zero extension)
-            if(_to.width() <= _from.width()) {
+            if(_to.type().width() <= _from.type().width()) {
                 blastedFormulas.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                           carl::BVTerm(carl::BVTermType::EXTRACT, carl::BVTerm(carl::BVTermType::VARIABLE, _to.variable()), _to.width()-1, _to.width()-1),
+                                                                           carl::BVTerm(carl::BVTermType::EXTRACT, _to.term(), _to.type().width()-1, _to.type().width()-1),
                                                                            carl::BVTerm(carl::BVTermType::CONSTANT, carl::BVValue(1, 0)))));
             }
         } else { // ! _to.isSigned()
             // If bits have been removed, they must be zero
-            if(_to.width() < _from.width()) {
+            if(_to.type().width() < _from.type().width()) {
                 blastedFormulas.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                           carl::BVTerm(carl::BVTermType::EXTRACT, carl::BVTerm(carl::BVTermType::VARIABLE, _from.variable()), _from.width()-1, _to.width()),
-                                                                           carl::BVTerm(carl::BVTermType::CONSTANT, carl::BVValue(_from.width() - _to.width(), 0)))));
+                                                                           carl::BVTerm(carl::BVTermType::EXTRACT, _from.term(), _from.type().width()-1, _to.type().width()),
+                                                                           carl::BVTerm(carl::BVTermType::CONSTANT, carl::BVValue(_from.type().width() - _to.type().width(), 0)))));
             }
             // If _from is unsigned, it must be non-negative
-            if(! _from.isSigned()) {
+            if(! _from.type().isSigned()) {
                 blastedFormulas.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                           carl::BVTerm(carl::BVTermType::EXTRACT, carl::BVTerm(carl::BVTermType::VARIABLE, _from.variable()), _from.width()-1, _from.width()-1),
+                                                                           carl::BVTerm(carl::BVTermType::EXTRACT, _from.term(), _from.type().width()-1, _from.type().width()-1),
                                                                            carl::BVTerm(carl::BVTermType::CONSTANT, carl::BVValue(1, 0)))));
             }
         }
@@ -411,41 +383,6 @@ namespace smtrat
             std::cout << "-> [Cast] " << blaFo << std::endl;
         }
     }
-
-    /* FormulaT IntBlastModule::blast(const FormulaT& _formula)
-    {
-        if(_formula.getType() == carl::FormulaType::CONSTRAINT) {
-
-        } else {
-            return _formula;
-        }
-    } */
-
-    /*void IntBlastModule::createMonomialSubstitutes(const FormulaT& _formula)
-    {
-        const ConstraintT& constraint = _formula.constraint();
-        const Poly& poly = constraint.lhs();
-        for( auto var : constraint.variables() )
-        {
-            if( var.getType() == carl::VariableType::VT_INT )
-            {
-                std::size_t degree = poly.degree(var);
-                for(unsigned i=2;i<=degree;++i) {
-                    carl::Monomial::Arg monomial = carl::MonomialPool::getInstance().create(var, i);
-                    auto existingSubstitute = mSubstitutes.find(monomial);
-                    if(existingSubstitute == mSubstitutes.end()) {
-                        // create new substitute
-                        carl::Variable substitute = carl::VariablePool::getInstance().getFreshVariable(carl::VariableType::VT_INT);
-                        mSubstitutes[monomial] = substitute;
-
-                        // pass equation to ICP
-                        Poly substitution({TermT(monomial), TermT(-1, carl::MonomialPool::getInstance().create(substitute, 1))});
-                        addSubformulaToICPFormula(FormulaT(substitution, carl::Relation::EQ), _formula);
-                    }
-                }
-            }
-        }
-    } */
 
     void IntBlastModule::addSubformulaToICPFormula(const FormulaT& _formula, const FormulaT& _origin)
     {
@@ -458,9 +395,9 @@ namespace smtrat
         }
     }
 
-    void IntBlastModule::updateBlastingParameters()
+    void IntBlastModule::blastInputVariables()
     {
-        std::cout << "IBM: updateBlastingParameters()" << std::endl;
+        std::cout << "IBM: blastInputVariables()" << std::endl;
         carl::Variables newVariables;
 
         for(ModuleInput::const_iterator formula=firstUncheckedReceivedSubformula(); formula != rReceivedFormula().end(); ++formula)
@@ -474,10 +411,11 @@ namespace smtrat
 
             for(const carl::Variable& variable : newVariables)
             {
-                auto existingBlastingParameters = mBlastingParameters.find(variable);
-                if(existingBlastingParameters == mBlastingParameters.end())
+                Poly varPoly(variable);
+                auto previousBlasting = mBlastings.find(varPoly);
+                if(previousBlasting == mBlastings.end())
                 {
-                    std::cout << "Setting blasting parameters for " << variable << std::endl;
+                    std::cout << "Setting blasting type for " << variable << std::endl;
                     DoubleInterval varInterval;
 
                     auto varBounds = passedBounds.find(variable);
@@ -487,13 +425,13 @@ namespace smtrat
                     }
 
                     std::cout << "Natural interval: " << varInterval << std::endl;
-                    mBlastingParameters[variable] = chooseBlastingParameters(varInterval, 8); // TODO: Refactor 8 to a constant / setting
+                    mBlastings[varPoly] = BlastedTerm(chooseBlastedType(varInterval, 8)); // TODO: Refactor 8 to a constant / setting
 
-                    BlastingParameters& blastingParams = mBlastingParameters[variable];
-                    std::cout << "Encoding by " << blastingParams.variable() << " (width: " << blastingParams.width() << ", " << (blastingParams.isSigned() ? "signed" : "unsigned") << ") - range [" << blastingParams.lowerBound() << "," << blastingParams.upperBound() << "]" << std::endl;
+                    BlastedTerm& blastedTerm = mBlastings[varPoly];
+                    std::cout << "Encoding by " << blastedTerm.term() << " (width: " << blastedTerm.type().width() << ", " << (blastedTerm.type().isSigned() ? "signed" : "unsigned") << ") - range [" << blastedTerm.type().lowerBound() << "," << blastedTerm.type().upperBound() << "]" << std::endl;
 
-                    ConstraintT lowerBoundConstr(variable, carl::Relation::GEQ, blastingParams.lowerBound());
-                    ConstraintT upperBoundConstr(variable, carl::Relation::LEQ, blastingParams.upperBound());
+                    ConstraintT lowerBoundConstr(variable, carl::Relation::GEQ, blastedTerm.type().lowerBound());
+                    ConstraintT upperBoundConstr(variable, carl::Relation::LEQ, blastedTerm.type().upperBound());
 
                     addSubformulaToICPFormula(FormulaT(lowerBoundConstr), FormulaT()); // TODO: correct origin
                     addSubformulaToICPFormula(FormulaT(upperBoundConstr), FormulaT()); // TODO: correct origin
@@ -502,9 +440,9 @@ namespace smtrat
         }
     }
 
-    BlastingParameters IntBlastModule::chooseBlastingParameters(const DoubleInterval _interval, std::size_t _maxWidth) const
+    BlastedType IntBlastModule::chooseBlastedType(const DoubleInterval _interval, std::size_t _maxWidth) const
     {
-        std::cout << "Choosing blasting parameters for interval " << _interval << ", max width " << _maxWidth << std::endl;
+        std::cout << "Choosing blasted type for interval " << _interval << ", max width " << _maxWidth << std::endl;
         std::size_t width = _maxWidth;
         bool makeSigned = true;
 
@@ -529,23 +467,17 @@ namespace smtrat
 
         assert(width > 0);
 
-        return BlastingParameters::createWithVariable(width, makeSigned);
-        // Create fresh bitvector variable
-        /* carl::Variable var = carl::VariablePool::getInstance().getFreshVariable(carl::VariableType::VT_BITVECTOR);
-        carl::Sort bvSort = carl::SortManager::getInstance().getSort("BitVec", {width});
-        carl::BVVariable bvVar(var, bvSort);
-
-        return BlastingParameters(bvVar, makeSigned); */
+        return BlastedType(width, makeSigned);
     }
 
     Answer IntBlastModule::checkCore( bool _full )
     {
         std::cout << "IBM: checkCore()" << std::endl;
-        updateBlastingParameters();
+        blastInputVariables();
 
-        std::cout << "Blasting parameters:" << std::endl;
-        for(auto blaPa : mBlastingParameters) {
-            std::cout << blaPa.first << " --> " << blaPa.second.variable() << " (width " << blaPa.second.width() << ")" << std::endl;
+        std::cout << "Blastings:" << std::endl;
+        for(auto blaPa : mBlastings) {
+            std::cout << blaPa.first << " --> " << blaPa.second.term() << " (width " << blaPa.second.type().width() << ")" << std::endl;
         }
 
         std::cout << "Substitutes:" << std::endl;
@@ -572,6 +504,7 @@ namespace smtrat
                 mProcessedFormulasFromICP.insert(fwo->formula());
             }
 
+            /*
             std::cout << "Variable bounds from ICP:" << std::endl;
 
             const EvalDoubleIntervalMap& icpBounds = mBoundsInRestriction.getIntervalMap();
@@ -582,13 +515,15 @@ namespace smtrat
                 auto foundBound = icpBounds.find(polyAndSubstitute.second);
                 if(foundBound != icpBounds.end()) {
                     std::cout << *foundBound << std::endl;
-                    mBlastingParameters[polyAndSubstitute.second] = chooseBlastingParameters(foundBound->second);
-                    BlastingParameters& blastingParams = mBlastingParameters[polyAndSubstitute.second];
-                    std::cout << "--> " << blastingParams.variable() << " (width: " << blastingParams.width() << ", " << (blastingParams.isSigned() ? "signed" : "unsigned") << ") - range [" << blastingParams.lowerBound() << "," << blastingParams.upperBound() << "]" << std::endl;
+                    Poly substPoly(polyAndSubstitute.second);
+                    mBlastings[substPoly] = BlastedTerm(chooseBlastedType(foundBound->second));
+
+                    BlastedTerm& blastedTerm = mBlastings[substPoly];
+                    std::cout << "--> " << blastedTerm.term() << " (width: " << blastedTerm.type().width() << ", " << (blastedTerm.type().isSigned() ? "signed" : "unsigned") << ") - range [" << blastedTerm.type().lowerBound() << "," << blastedTerm.type().upperBound() << "]" << std::endl;
                 } else {
                     std::cout << "Unbounded :(" << std::endl;
                 }
-            }
+            } */
 
             std::cout << "Blasting substitutes!" << std::endl;
             blastSubstitutes();
