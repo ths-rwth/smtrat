@@ -6,7 +6,6 @@
  */
 
 #include "PreprocessingModule.h"
-#include "../../solver/Manager.h"
 #include "../../../cli/ExitCodes.h"
 #include <limits.h>
 
@@ -71,7 +70,7 @@ namespace smtrat {
 				return False;
 			}
 		}
-        if (Settings::eliminateSubstitutions && mpManager->logic() != Logic::QF_LIA) {
+        if (Settings::eliminateSubstitutions) {
             // TODO: make this incremental
             FormulaT formula = (FormulaT) rReceivedFormula();
             SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Received        " << formula);
@@ -136,12 +135,6 @@ namespace smtrat {
                     formula = visitor.visit(formula, splitSOSFunction);
                 }
                 SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Remove unbounded variables  " << formula);
-                if (Settings::eliminateSubstitutions && mpManager->logic() != Logic::QF_LIA) {
-                    // Apply all substitutions in form of an equations or Boolean facts.
-                    formula = elimSubstitutions(formula);
-    //                std::cout << formula.toString( false, 1, "", true, false, true, true ) << std::endl;
-                }
-                SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Eliminate substitutions  " << formula);
                 if (Settings::extractBounds) {
                     // Check if bounds make constraints vanish.
                     formula = visitor.rvisit(formula, extractBoundsFunction);
@@ -558,7 +551,7 @@ namespace smtrat {
                                     foundLowerBound = boundValue;
                                     foundLowerBoundIsStrict = false;
                                 }
-                                else if(foundUpperBound <= boundValue)
+                                if(foundUpperBound <= boundValue)
                                 {
                                     foundUpperBound = boundValue;
                                     foundUpperBoundIsStrict = false;
@@ -595,7 +588,7 @@ namespace smtrat {
 	}
     
     template<typename Settings>
-    FormulaT PreprocessingModule<Settings>::elimSubstitutions( const FormulaT& _formula ) 
+    FormulaT PreprocessingModule<Settings>::elimSubstitutions( const FormulaT& _formula, bool _elimSubstitutions ) 
     {
         auto iter = boolSubs.find( _formula );
         if( iter != boolSubs.end() )
@@ -622,7 +615,7 @@ namespace smtrat {
                     // Process all equations first.
                     for( const auto& sf : currentSubformulas )
                     {
-                        if( sf.getType() == carl::FormulaType::CONSTRAINT && sf.constraint().relation() == carl::Relation::EQ )
+                        if( sf.getType() == carl::FormulaType::CONSTRAINT && sf.constraint().relation() == carl::Relation::EQ && sf.constraint().lhs().isLinear() )
                         {
                             FormulaT tmp = elimSubstitutions( sf );
                             if( tmp.getType() == carl::FormulaType::FALSE )
@@ -654,7 +647,7 @@ namespace smtrat {
                     // Now the other sub-formulas.
                     for( const auto& sf : currentSubformulas )
                     {
-                        if( sf.getType() != carl::FormulaType::CONSTRAINT || sf.constraint().relation() != carl::Relation::EQ )
+                        if( sf.getType() != carl::FormulaType::CONSTRAINT || sf.constraint().relation() != carl::Relation::EQ || !sf.constraint().lhs().isLinear() )
                         {
                             auto iterC = foundBooleanSubstitutions.find( sf );
                             if( iterC != foundBooleanSubstitutions.end() )
@@ -711,14 +704,15 @@ namespace smtrat {
                 {
                     if( foundSubstitutions.empty() )
                         result = FormulaT( carl::FormulaType::TRUE );
-//                    else
-//                        result = FormulaT( carl::FormulaType::AND, std::move(foundSubstitutions) );
+                    else if( !_elimSubstitutions )
+                        result = FormulaT( carl::FormulaType::AND, std::move(foundSubstitutions) );
                 }
-//                else
-//                {
-                    currentSubformulas.insert( foundSubstitutions.begin(), foundSubstitutions.end() );
+                else
+                {
+                    if( !_elimSubstitutions )
+                        currentSubformulas.insert( foundSubstitutions.begin(), foundSubstitutions.end() );
                     result = FormulaT( carl::FormulaType::AND, std::move(currentSubformulas) );
-//                }
+                }
             Return:
                 while( !addedArithSubs.empty() )
                 {

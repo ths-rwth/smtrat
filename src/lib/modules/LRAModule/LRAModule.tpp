@@ -141,6 +141,9 @@ namespace smtrat
                             auto constrBoundIter = mTableau.constraintToBound().find( formula );
                             assert( constrBoundIter != mTableau.constraintToBound().end() );
                             const std::vector< const LRABound* >* bounds = constrBoundIter->second;
+//                            bool intValued = constraint.integerValued();
+//                            if( (intValued && ((*bounds)[1]->isActive() || (*bounds)[2]->isActive()))
+//                                || (!intValued && ((*bounds)[0]->isActive() || (*bounds)[1]->isActive() || (*bounds)[2]->isActive() || (*bounds)[3]->isActive())) )
                             if( (*bounds)[0]->isActive() || (*bounds)[1]->isActive() || (*bounds)[2]->isActive() || (*bounds)[3]->isActive() )
                             {
                                 Context context( formula, passedFormulaEnd() );
@@ -232,9 +235,10 @@ namespace smtrat
                                     const std::vector< const LRABound* >* uebounds = constrBoundIterB->second;
                                     assert( uebounds != NULL );
                                     assert( uebounds->size() >= 4 );
-                                    bool intValued = (*bound)->neqRepresentation().constraint().integerValued();
-                                    if( (intValued && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive()) ||
-                                        (!intValued && !(*uebounds)[0]->isActive() && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive() && !(*uebounds)[3]->isActive()) )
+//                                    bool intValued = (*bound)->neqRepresentation().constraint().integerValued();
+//                                    if( (intValued && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive()) ||
+//                                        (!intValued && !(*uebounds)[0]->isActive() && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive() && !(*uebounds)[3]->isActive()) )
+                                    if( !(*uebounds)[0]->isActive() && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive() && !(*uebounds)[3]->isActive() )
                                     {
                                         auto pos = mActiveResolvedNEQConstraints.find( (*bound)->neqRepresentation() );
                                         if( pos != mActiveResolvedNEQConstraints.end() )
@@ -630,10 +634,31 @@ Return:
                         break;
                     }
                 }
-                if( !(result != True || assignmentCorrect()) )
+                // TODO: This is a rather unfortunate hack, because I couldn't fix the efficient neq-constraint-handling with integer-valued constraints
+                if( result != Unknown && !rReceivedFormula().isRealConstraintConjunction() )
                 {
-                    exit(1236);
+                    for( auto iter = mActiveResolvedNEQConstraints.begin(); iter != mActiveResolvedNEQConstraints.end(); ++iter )
+                    {
+                        unsigned consistency = iter->first.satisfiedBy( ass );
+                        assert( consistency != 2 );
+                        if( consistency == 0 )
+                        {
+                            splitUnequalConstraint( iter->first );
+                            result = Unknown;
+                            break;
+                        }
+                    }
                 }
+//                if( !(result != True || assignmentCorrect()) )
+//                {
+//                    std::cout << "mActiveUnresolvedNEQConstraints:" << std::endl;
+//                    for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
+//                    {
+//                        std::cout << iter->first << std::endl;
+//                    }
+//                    printVariables();
+//                    exit(1236);
+//                }
                 assert( result != True || assignmentCorrect() );
             }
         }

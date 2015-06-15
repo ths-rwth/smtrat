@@ -1670,6 +1670,9 @@ SetWatches:
                 #endif
 
                 analyze( confl, learnt_clause, backtrack_level );
+                // Dirty hack for the SMT-COMP 2015
+                if( learnt_clause.size() == 0 )
+                    return l_Undef;
 
                 #ifdef DEBUG_SATMODULE
                 printClause( learnt_clause, true, cout, "### Asserting clause: " );

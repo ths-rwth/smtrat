@@ -1,8 +1,8 @@
 /**
- * @file FullStrategy.cpp
+ * @file FullStrategy2.cpp
  *
  */
-#include "FullStrategy.h"
+#include "FullStrategy2.h"
 
 namespace smtrat
 {
@@ -32,7 +32,12 @@ namespace smtrat
         return (  !(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL <= _condition) );
     }
 
-    FullStrategy::FullStrategy():
+    static bool conditionEvaluation14( carl::Condition _condition )
+    {
+        return ( (carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL <= _condition) );
+    }
+
+    FullStrategy2::FullStrategy2():
         Manager()
     {
         addBackendIntoStrategyGraph( 0, MT_EQPreprocessingModule, conditionEvaluation0 );
@@ -49,8 +54,10 @@ namespace smtrat
         addBackendIntoStrategyGraph( 11, MT_CADModule, isCondition );
         addBackendIntoStrategyGraph( 8, MT_SATModule, conditionEvaluation12 );
         addBackendIntoStrategyGraph( 13, MT_LRAModule, isCondition );
+        addBackendIntoStrategyGraph( 8, MT_SATModule, conditionEvaluation14 );
+        addBackendIntoStrategyGraph( 15, MT_ICPModule, isCondition );
     }
 
-    FullStrategy::~FullStrategy(){}
+    FullStrategy2::~FullStrategy2(){}
 
 }    // namespace smtrat

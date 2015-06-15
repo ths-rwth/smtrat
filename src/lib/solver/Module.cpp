@@ -444,10 +444,20 @@ namespace smtrat
         if( _integral )
         {
             Rational bound = carl::floor( _value );
-            constraintA = ConstraintT( std::move(_polynomial - bound), Relation::LEQ );
-            constraintB = ConstraintT( std::move(_polynomial - (++bound)), Relation::GEQ );
+            Rational boundp = bound;
+            if( _leftCaseWeak )
+            {
+                constraintA = ConstraintT( std::move(_polynomial - bound), Relation::LEQ );
+                constraintB = ConstraintT( std::move(_polynomial - (++bound)), Relation::GEQ );
+            }
+            else
+            {
+                constraintB = ConstraintT( std::move(_polynomial - bound), Relation::GEQ );
+                constraintA = ConstraintT( std::move(_polynomial - (--bound)), Relation::LEQ );
+            }
             #ifdef MODULE_VERBOSE_INTEGERS
             cout << "[" << moduleName(type()) << "]  branch at  " << constraintA << "  and  " << constraintB << endl;
+            cout << "Premise is: " << _premise << endl;
             #endif
         }
         else
@@ -516,13 +526,15 @@ namespace smtrat
         Model::const_iterator assignment = _modelA.begin();
         while( assignment != _modelA.end() )
         {
-            if( _modelB.find( assignment->first ) != _modelB.end() ) return false;
+            if( _modelB.find( assignment->first ) != _modelB.end() )
+                return false;
             ++assignment;
         }
         assignment = _modelB.begin();
         while( assignment != _modelB.end() )
         {
-            if( _modelA.find( assignment->first ) != _modelA.end() ) return false;
+            if( _modelA.find( assignment->first ) != _modelA.end() )
+                return false;
             ++assignment;
         }
         return true;
@@ -541,12 +553,31 @@ namespace smtrat
                 (*module)->updateModel();
                 for (auto ass: (*module)->model())
                 {
-                    if( mModel.count(ass.first) == 0 ) mModel.insert(ass);
+                    if( mModel.count(ass.first) == 0 )
+                        mModel.insert(ass);
                 }
                 break;
             }
             ++module;
         }
+    }
+    
+    vector<FormulaT>::const_iterator Module::findBestOrigin( const vector<FormulaT>& _origins ) const
+    {
+        // TODO: implement other heuristics for finding the best origin, e.g., activity or age based
+        // Find the smallest set of origins.
+        vector<FormulaT>::const_iterator smallestOrigin = _origins.begin();
+        vector<FormulaT>::const_iterator origin = _origins.begin();
+        while( origin != _origins.end() )
+        {
+            if( origin->size() == 1 )
+                return origin;
+            else if( origin->size() < smallestOrigin->size() )
+                smallestOrigin = origin;
+            ++origin;
+        }
+        assert( smallestOrigin != _origins.end() );
+        return smallestOrigin;
     }
 
     std::vector<FormulasT> Module::getInfeasibleSubsets( const Module& _backend ) const
@@ -559,37 +590,11 @@ namespace smtrat
             assert( !infSubSet->empty() );
             #ifdef SMTRAT_DEVOPTION_Validation
             if( validationSettings->logInfSubsets() )
-            {
                 addAssumptionToCheck( *infSubSet, false, moduleName( _backend.type() ) + "_infeasible_subset" );
-            }
             #endif
             result.emplace_back();
-            for( FormulasT::const_iterator cons = infSubSet->begin(); cons != infSubSet->end(); ++cons )
-            {
-                ModuleInput::const_iterator posInReceived = mpPassedFormula->find( *cons );
-                assert( posInReceived != mpPassedFormula->end() );
-                if( posInReceived->hasOrigins() )
-                {
-                    const std::vector<FormulaT>& formOrigins = posInReceived->origins();
-                    // Find the smallest set of origins.
-                    std::vector<FormulaT>::const_iterator smallestOrigin = formOrigins.begin();
-                    std::vector<FormulaT>::const_iterator origin = formOrigins.begin();
-                    while( origin != formOrigins.end() )
-                    {
-                        if( origin->size() == 1 )
-                        {
-                            smallestOrigin = origin;
-                            break;
-                        }
-                        else if( origin->size() < smallestOrigin->size() )
-                            smallestOrigin = origin;
-                        ++origin;
-                    }
-                    assert( smallestOrigin != formOrigins.end() );
-                    // Add its formulas to the infeasible subset.
-                    collectOrigins( *smallestOrigin, result.back() );
-                }
-            }
+            for( const auto& cons : *infSubSet )
+                getOrigins( cons, result.back() );
         }
         return result;
     }
@@ -787,7 +792,15 @@ namespace smtrat
             }
             #endif
             mDeductions.insert( mDeductions.end(), (*module)->mDeductions.begin(), (*module)->mDeductions.end() );
-            mSplittings.insert( mSplittings.end(), (*module)->mSplittings.begin(), (*module)->mSplittings.end() );
+            for( auto& sp : (*module)->mSplittings )
+            {
+                vector<FormulaT> premise;
+                for( const auto& form : sp.mPremise )
+                {
+                    getOrigins( form, premise );
+                    mSplittings.emplace_back( sp.mLeftCase, sp.mRightCase, std::move( premise ), sp.mPreferLeftCase );
+                }
+            }
         }
     }
     

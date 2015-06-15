@@ -413,6 +413,11 @@ namespace smtrat
             {
                 return mSplittings;
             }
+            
+            void addSplittings( const std::vector<Splitting>& _splittings )
+            {
+                mSplittings.insert( mSplittings.end(), _splittings.begin(), _splittings.end() );
+            }
 
             /**
              * @return A constant reference to the deductions/lemmas being valid formulas this module or its backends made.
@@ -768,6 +773,39 @@ namespace smtrat
              */
             std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, bool _hasSingleOrigin, const FormulaT& _origin, const std::shared_ptr<std::vector<FormulaT>>& _origins, bool _mightBeConjunction );
     protected:
+        
+            /**
+             * @param _origins
+             * @return
+             */
+            std::vector<FormulaT>::const_iterator findBestOrigin( const std::vector<FormulaT>& _origins ) const;
+        
+            /**
+             * 
+             * @param _formula
+             * @param _origins
+             */
+            void getOrigins( const FormulaT& _formula, FormulasT& _origins ) const
+            {
+                ModuleInput::const_iterator posInReceived = mpPassedFormula->find( _formula );
+                assert( posInReceived != mpPassedFormula->end() );
+                if( posInReceived->hasOrigins() )
+                    collectOrigins( *findBestOrigin( posInReceived->origins() ), _origins );
+            }
+
+            /**
+             * 
+             * @param _formula
+             * @param _origins
+             */
+            void getOrigins( const FormulaT& _formula, std::vector<FormulaT>& _origins ) const
+            {
+                ModuleInput::const_iterator posInReceived = mpPassedFormula->find( _formula );
+                assert( posInReceived != mpPassedFormula->end() );
+                if( posInReceived->hasOrigins() )
+                    collectOrigins( *findBestOrigin( posInReceived->origins() ), _origins );
+            }
+        
             /**
              * Copies the infeasible subsets of the passed formula
              */
