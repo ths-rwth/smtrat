@@ -444,8 +444,17 @@ namespace smtrat
         if( _integral )
         {
             Rational bound = carl::floor( _value );
-            constraintA = ConstraintT( std::move(_polynomial - bound), Relation::LEQ );
-            constraintB = ConstraintT( std::move(_polynomial - (++bound)), Relation::GEQ );
+            Rational boundp = bound;
+            if( _leftCaseWeak )
+            {
+                constraintA = ConstraintT( std::move(_polynomial - bound), Relation::LEQ );
+                constraintB = ConstraintT( std::move(_polynomial - (++bound)), Relation::GEQ );
+            }
+            else
+            {
+                constraintB = ConstraintT( std::move(_polynomial - bound), Relation::GEQ );
+                constraintA = ConstraintT( std::move(_polynomial - (--bound)), Relation::LEQ );
+            }
             #ifdef MODULE_VERBOSE_INTEGERS
             cout << "[" << moduleName(type()) << "]  branch at  " << constraintA << "  and  " << constraintB << endl;
             cout << "Premise is: " << _premise << endl;
