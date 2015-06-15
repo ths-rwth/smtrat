@@ -67,7 +67,7 @@ namespace smtrat
         mIsBackendCalled(false),
         mTargetDiameter(0.1),
         mContractionThreshold(0.01),
-        mDefaultSplittingSize(10),
+        mDefaultSplittingSize(16),
         mNumberOfReusagesAfterTargetDiameterReached(1),
         mRelativeContraction(0),
         mAbsoluteContraction(0),
@@ -104,6 +104,8 @@ namespace smtrat
         if( _constraint.getType() == FormulaType::CONSTRAINT )
         {
             const ConstraintT& constraint = _constraint.constraint();
+            if( !constraint.integerValued() )
+                mDefaultSplittingSize = 1000;
             unsigned constraintConsistency = constraint.isConsistent();
             if( constraintConsistency == 2 && _constraint.constraint().relation() != carl::Relation::NEQ )
                 addConstraint( _constraint );
@@ -401,6 +403,7 @@ namespace smtrat
                 // Full call of the backends, if no box has target diameter
                 if( checkAndPerformSplit( mOriginalVariableIntervalContracted ) == carl::Variable::NO_VARIABLE )
                     return callBackends( _full );
+                assert( splittings().size() == 1 );
                 assert( !splittings().empty() );
                 return Unknown; // Splitting required
             }
@@ -707,6 +710,13 @@ namespace smtrat
         #endif
         ++mCountBackendCalls;
         Answer a = runBackends( _full );
+        updateDeductions();
+        vector<Module*>::const_iterator backend = usedBackends().begin();
+        while( backend != usedBackends().end() )
+        {
+            (*backend)->clearDeductions();
+            ++backend;
+        }
         mIsBackendCalled = true;
         #ifdef ICP_MODULE_DEBUG_0
         cout << "  Backend's answer: " << ANSWER_TO_STRING( a ) << endl;
@@ -715,7 +725,7 @@ namespace smtrat
         {
             assert(infeasibleSubsets().empty());
             FormulasT contractionConstraints = this->createPremiseDeductions();
-            vector<Module*>::const_iterator backend = usedBackends().begin();
+            backend = usedBackends().begin();
             while( backend != usedBackends().end() )
             {
                 assert( !(*backend)->infeasibleSubsets().empty() );
@@ -1605,6 +1615,8 @@ namespace smtrat
                 addProgress( mInitialBoxSize - calculateCurrentBoxSize() );
                 #endif
             }
+            assert( variable != carl::Variable::NO_VARIABLE);
+            assert( splittings().size() == 0 );
             Module::branchAt( variable, bound, std::move(splitPremise), leftCaseWeak, preferLeftCase );
             #ifdef ICP_MODULE_DEBUG_0
             std::cout << std::endl << "Force split on " << variable << " at " << bound << "!" << std::endl;
@@ -1740,7 +1752,7 @@ namespace smtrat
         _answer = mLRA.check();
         
         // catch deductions
-        mLRA.updateDeductions();
+        mLRA.updateDeductions(); // TODO: remove this, it is doing nothing
         for( const auto& ded : mLRA.deductions() )
         {
             #ifdef ICP_MODULE_DEBUG_2
@@ -1752,6 +1764,7 @@ namespace smtrat
             cout << "Passed deduction: " << deduction << endl;
             #endif
         }
+        addSplittings( mLRA.splittings() );
         mLRA.clearDeductions();
         if( _answer == False )
         {

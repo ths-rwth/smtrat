@@ -192,6 +192,10 @@ namespace smtrat
                 {
                     pBackend->inform( *cons );
                 }
+                for( auto form = _requiredBy->rPassedFormula().begin(); form != _requiredBy->firstSubformulaToPass(); ++form )
+                {
+                    pBackend->add( form );
+                }
             }
         }
         return backends;

@@ -270,7 +270,18 @@ namespace smtrat {
 					assert(mUnionFind[indexCLhs]->second.mVisited);
 
 					// in case the two components are in the same class we have to delete some edge on the path from CLhs to CRhs to not introduce a cycle
-					P_destroy_implicit_edge(mUnionFind[indexRhs]->second.mImplicitPred);
+					// to make sure we do not delete an edge that is necessary to prove another implicit edge, we remove the newest one, according to its mID
+					g_iterator cur = mUnionFind[indexRhs];
+					implicit_edge_info* maxEdge = cur->second.mImplicitPred;
+					
+					while (true) {
+						if (cur->second.mImplicitPred->mPred == mUnionFind[indexLhs]) break;
+						if (cur->second.mImplicitPred->mID > maxEdge->mID) {
+							maxEdge = cur->second.mImplicitPred;
+						}
+						cur = cur->second.mImplicitPred->mPred;
+					}
+					P_destroy_implicit_edge(maxEdge);
 
 					if(indexCLhs == indexOld) {
 						// if old index was component component representative we have to update mComponentUnionFind, hash buckets and and inequality edges
@@ -1629,7 +1640,7 @@ namespace smtrat {
 				FormulaT or_(carl::OR, std::move(outerformulas));
                 #ifdef SMTRAT_DEVOPTION_Validation
                 if( validationSettings->logLemmata() )
-                    addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName( type() ) + "_lemma_1" );
+                    addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName( type() ) + "_lemma_4" );
                 #endif
 				addDeduction(or_);
 
