@@ -21,6 +21,9 @@ namespace smtrat
         #ifdef SMTRAT_ENABLE_PreprocessingModule
         position = addBackendIntoStrategyGraph( position, MT_PreprocessingModule );
 	#endif
+        #ifdef SMTRAT_ENABLE_IntBlastModule
+        position = addBackendIntoStrategyGraph( position, MT_IntBlastModule );
+        #endif
 	#ifdef SMTRAT_ENABLE_SATModule
         position = addBackendIntoStrategyGraph( position, MT_SATModule );
 	#endif
