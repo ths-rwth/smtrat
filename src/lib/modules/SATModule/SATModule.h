@@ -457,6 +457,11 @@ namespace smtrat
              * Updates the model, if the solver has detected the consistency of the received formula, beforehand.
              */
             void updateModel() const;
+
+			/**
+             * Updates all satisfying models, if the solver has detected the consistency of the received formula, beforehand.
+             */
+            void updateAllModels() const;
             
             /**
              * Updates the infeasible subset found by the SATModule, if the received formula is unsatisfiable.

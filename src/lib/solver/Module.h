@@ -137,6 +137,8 @@ namespace smtrat
             Manager* const mpManager;
             /// Stores the assignment of the current satisfiable result, if existent.
             mutable Model mModel;
+			/// Stores all satisfying assignments
+			mutable std::vector<Model> mAllModels;
 
         private:
             /// States whether the received formula is known to be satisfiable or unsatisfiable otherwise it is set to unknown.
@@ -250,6 +252,11 @@ namespace smtrat
              * Updates the model, if the solver has detected the consistency of the received formula, beforehand.
              */
             virtual void updateModel() const;
+
+			/**
+			 * Updates all satisfying models, if the solver has detected the consistency of the received formula, beforehand.
+			 */
+			virtual void updateAllModels() const;
             
 			/**
              * Partition the variables from the current model into equivalence classes according to their assigned value.
@@ -345,7 +352,15 @@ namespace smtrat
             {
                 return mModel;
             }
-            
+
+			/**
+			 * @return All satisfying assignments, if existent.
+			 */
+			inline const std::vector<Model>& allModels() const
+			{
+				return mAllModels;
+			}
+
             /**
              * @return The infeasible subsets of the set of received formulas (empty, if this module has not
              *          detected unsatisfiability of the conjunction of received formulas.
@@ -626,6 +641,19 @@ namespace smtrat
 				// the Assignments should not contain any values that must be deleted explicitly...
 				mModel.clear();
             }
+
+			/**
+			 * Clears all assignments, if any was found
+			 */
+			void clearModels() const
+			{
+			   // the Assignments should not contain any values that must be deleted explicitly...
+			   for ( Model model : mAllModels )
+			   {
+				   model.clear();
+			   }
+			   mAllModels.clear();
+			}
             
             /**
              * @return An iterator to the end of the passed formula.

@@ -216,6 +216,21 @@ namespace smtrat
                 mpPrimaryBackend->updateModel();
                 return mpPrimaryBackend->model();
             }
+
+			/**
+			 * @return A list of all assignments, such that they satisfy the conjunction of
+			 *          the so far added formulas.
+			 *
+			 * Note, that an assignment is only provided if the conjunction of so far added
+			 * formulas is satisfiable. Furthermore, when solving non-linear real arithmetic
+			 * formulas the assignment could contain other variables or freshly introduced
+			 * variables.
+			 */
+			const std::vector<Model> allModels() const
+			{
+				mpPrimaryBackend->updateAllModels();
+				return mpPrimaryBackend->allModels();
+			}
             
             /**
              * Returns the lemmas/tautologies which were made during the last solving provoked by check(). These lemmas

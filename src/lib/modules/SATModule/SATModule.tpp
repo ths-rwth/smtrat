@@ -457,6 +457,26 @@ namespace smtrat
             }
         }
     }
+
+	template<class Settings>
+    void SATModule<Settings>::updateAllModels() const
+    {
+        clearModels();
+        if( solverState() == True )
+        {
+			//TODO Matthias: set all assignments
+            /*for( BooleanVarMap::const_iterator bVar = mBooleanVarMap.begin(); bVar != mBooleanVarMap.end(); ++bVar )
+            {
+                ModelValue assignment = assigns[bVar->second] == l_True;
+                mModel.insert(std::make_pair(bVar->first, assignment));
+            }
+            Module::getBackendsModel();
+            for( auto varReplacement = mVarReplacements.begin(); varReplacement != mVarReplacements.end(); ++varReplacement )
+            {
+                mModel[varReplacement->first] = varReplacement->second;
+            }*/
+        }
+    }
     
     template<class Settings>
     void SATModule<Settings>::updateInfeasibleSubset()
