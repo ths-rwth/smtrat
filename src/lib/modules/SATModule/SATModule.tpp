@@ -106,6 +106,7 @@ namespace smtrat
         propagation_budget( -1 ),
         asynch_interrupt( false ),
         mChangedPassedFormula( false ),
+		mComputeAllSAT( false ),
         mCurrentAssignmentConsistent( True ),
         mSatisfiedClauses( 0 ),
         mNumberOfFullLazyCalls( 0 ),
@@ -461,21 +462,43 @@ namespace smtrat
 	template<class Settings>
     void SATModule<Settings>::updateAllModels() const
     {
+		#ifdef DEBUG_SATMODULE
+		std::cout << "Compute all models" << endl;
+		#endif
+		mComputeAllSAT = true;
         clearModels();
         if( solverState() == True )
         {
-			//TODO Matthias: set all assignments
-            /*for( BooleanVarMap::const_iterator bVar = mBooleanVarMap.begin(); bVar != mBooleanVarMap.end(); ++bVar )
-            {
-                ModelValue assignment = assigns[bVar->second] == l_True;
-                mModel.insert(std::make_pair(bVar->first, assignment));
-            }
+			// Set assignment (might be partial assignment)
+			Model model;
+			for ( int i = 0; i < assigns.size(); ++i )
+			{
+				if ( assigns[i] == l_Undef )
+				{
+					// Partial assignment
+					continue;
+				}
+				ModelValue assignment = assigns[i] == l_True;
+				carl::Variable var = mMinisatVarMap.at( i ).boolean();
+                model.insert( std::make_pair( var, assignment ) );
+			}
+			// Set variable replacements
             Module::getBackendsModel();
             for( auto varReplacement = mVarReplacements.begin(); varReplacement != mVarReplacements.end(); ++varReplacement )
             {
-                mModel[varReplacement->first] = varReplacement->second;
-            }*/
+				Model::iterator iter = model.find( varReplacement->first );
+				if ( iter != model.end() )
+				{
+					iter->second = varReplacement->second;
+				}
+			}
+			mAllModels.push_back( model );
+			// TODO Matthias: set all assignments
+			#ifdef DEBUG_SATMODULE
+			std::cout << "Compute more assignments" << std::endl;
+			#endif
         }
+		mComputeAllSAT = false;
     }
     
     template<class Settings>

@@ -855,6 +855,11 @@ namespace smtrat
             void getBackendsModel() const;
             
             /**
+             * Stores all models of a backend in the list of all models of this module.
+             */
+            void getBackendsAllModels() const;
+
+            /**
              * Runs the backend solvers on the passed formula.
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
              * @return True,    if the passed formula is consistent;

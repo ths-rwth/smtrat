@@ -348,6 +348,8 @@ namespace smtrat
             // Module related members.
             /// A flag, which is set to true, if anything has been changed in the passed formula between now and the last consistency check.
             bool mChangedPassedFormula;
+			/// A flag, which is set to true, if all satisfying assignments should be computed.
+			mutable bool mComputeAllSAT;
             /**
              * Stores gained information about the current assignment's consistency. If we know from the last consistency check, whether the
              * current assignment is consistent, this member is True, if we know that it is inconsistent it is False, otherwise Unknown.

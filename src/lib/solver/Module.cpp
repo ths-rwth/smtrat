@@ -277,8 +277,8 @@ namespace smtrat
         if( mSolverState == True )
         {
             //TODO Matthias: set all models
-			/*getBackendsModel();
-            carl::Variables receivedVariables;
+			getBackendsAllModels();
+            /*carl::Variables receivedVariables;
             mpReceivedFormula->arithmeticVars( receivedVariables );
             mpReceivedFormula->booleanVars( receivedVariables );
             // TODO: Do the same for bv and uninterpreted variables and functions
@@ -596,7 +596,28 @@ namespace smtrat
             ++module;
         }
     }
-    
+
+	void Module::getBackendsAllModels() const
+    {
+        auto module = mUsedBackends.begin();
+        while( module != mUsedBackends.end() )
+        {
+            assert( (*module)->solverState() != False );
+            if( (*module)->solverState() == True )
+            {
+				//@todo modules should be disjoint, but this breaks CAD on certain inputs.
+                //assert( modelsDisjoint( mModel, (*module)->model() ) );
+                (*module)->updateAllModels();
+                for (Model model: (*module)->allModels())
+                {
+					mAllModels.push_back( model );
+                }
+                break;
+            }
+            ++module;
+        }
+    }
+
     vector<FormulaT>::const_iterator Module::findBestOrigin( const vector<FormulaT>& _origins ) const
     {
         // TODO: implement other heuristics for finding the best origin, e.g., activity or age based
