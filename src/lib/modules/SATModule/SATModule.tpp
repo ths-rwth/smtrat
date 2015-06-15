@@ -1864,7 +1864,7 @@ SetWatches:
         mCurrentAssignmentConsistent = True;
         for( ; ; )
         {
-            if( anAnswerFound() )
+            if( !mComputeAllSAT && anAnswerFound() )
             {
                 return l_Undef;
             }
