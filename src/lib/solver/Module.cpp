@@ -608,7 +608,8 @@ namespace smtrat
 				//@todo modules should be disjoint, but this breaks CAD on certain inputs.
                 //assert( modelsDisjoint( mModel, (*module)->model() ) );
                 (*module)->updateAllModels();
-                for (Model model: (*module)->allModels())
+                //TODO Matthias: correct way?
+				for (Model model: (*module)->allModels())
                 {
 					mAllModels.push_back( model );
                 }
