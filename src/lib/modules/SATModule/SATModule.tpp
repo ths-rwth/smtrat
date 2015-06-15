@@ -374,13 +374,19 @@ namespace smtrat
                         FormulaT lemma = FormulaT( carl::FormulaType::IMPLIES, infeasibleSubset, negation );
                         addDeduction( lemma );
                     }
-                    else
+                    else if ( result == l_True )
                     {
                         #ifdef DEBUG_SATMODULE
                         cout << "Sat with variable: " << mMinisatVarMap.at( testCandidate ) << endl;
                         printCurrentAssignment();
                         #endif
                     }
+					else
+					{
+						#ifdef DEBUG_SATMODULE
+                        cout << "Unknown with variable: " << mMinisatVarMap.at( testCandidate ) << endl;
+                        #endif
+					}
                 }
             }
 
@@ -460,17 +466,12 @@ namespace smtrat
     }
 
 	template<class Settings>
-    void SATModule<Settings>::updateAllModels() const
+    void SATModule<Settings>::updateModel(Model& model) const
     {
-		#ifdef DEBUG_SATMODULE
-		std::cout << "Compute all models" << endl;
-		#endif
-		mComputeAllSAT = true;
-        clearModels();
-        if( solverState() == True )
-        {
+		model.clear();
+		if( solverState() == True )
+		{
 			// Set assignment (might be partial assignment)
-			Model model;
 			for ( int i = 0; i < assigns.size(); ++i )
 			{
 				if ( assigns[i] == l_Undef )
@@ -480,24 +481,112 @@ namespace smtrat
 				}
 				ModelValue assignment = assigns[i] == l_True;
 				carl::Variable var = mMinisatVarMap.at( i ).boolean();
-                model.insert( std::make_pair( var, assignment ) );
+				model.insert( std::make_pair( var, assignment ) );
 			}
 			// Set variable replacements
-            Module::getBackendsModel();
-            for( auto varReplacement = mVarReplacements.begin(); varReplacement != mVarReplacements.end(); ++varReplacement )
-            {
+			// TODO Matthias: correct way?
+			Module::getBackendsAllModels();
+			for( auto varReplacement = mVarReplacements.begin(); varReplacement != mVarReplacements.end(); ++varReplacement )
+			{
 				Model::iterator iter = model.find( varReplacement->first );
 				if ( iter != model.end() )
 				{
 					iter->second = varReplacement->second;
 				}
 			}
+}
+    }
+
+	template<class Settings>
+	void SATModule<Settings>::updateAllModels()
+	{
+		#ifdef DEBUG_SATMODULE
+		std::cout << "Update all models" << endl;
+		#endif
+		mComputeAllSAT = true;
+		clearModels();
+		if( solverState() == True )
+		{
+			// Compute assignment
+			Model model;
+			updateModel( model );
 			mAllModels.push_back( model );
-			// TODO Matthias: set all assignments
+
+			// Compute all satisfying assignments
 			#ifdef DEBUG_SATMODULE
 			std::cout << "Compute more assignments" << std::endl;
 			#endif
-        }
+			int status = 0;
+			carl::Variable var;
+			Minisat::Var testCandidate;
+			lbool result;
+			while ( !isEmptyInformationRelevantFormula() )
+			{
+				if ( status == 0 )
+				{
+					// Get next variable to test
+					var = peekInformationRelevantFormula().boolean();
+					testCandidate = mBooleanVarMap.at ( var );
+				}
+
+				// Reset the state until level 0
+				// TODO Matthias: only reset till first relevant variable
+				cancelAssignmentUntil( 0 );
+				qhead = trail_lim[0];
+				trail.shrink( trail.size() - trail_lim[0] );
+				trail_lim.shrink( trail_lim.size() - 0 );
+				ok = true;
+				mPropagatedLemmas.clear();
+
+				// Set new assignment
+				Lit nextLit = mkLit( testCandidate, ( status != 0 ) );
+				#ifdef DEBUG_SATMODULE
+				cout << "Test candidate: " << ( sign( nextLit ) ? "-" : "" ) << mMinisatVarMap.at( testCandidate ) << endl;
+				#endif
+				assert( assumptions.size() <= 1 );
+				assumptions.clear();
+				assumptions.push( nextLit );
+
+				// Check again
+				result = checkFormula();
+				if ( result == l_False )
+				{
+					#ifdef DEBUG_SATMODULE
+					cout << "Unsat with variable: " << ( sign( nextLit ) ? "-" : "" ) << mMinisatVarMap.at( testCandidate ) << endl;
+					#endif
+					// No model -> continue
+					// TODO Matthias: construct lemma via infeasible subset?
+					/*updateInfeasibleSubset();
+					FormulaT negation = FormulaT( carl::FormulaType::NOT, mMinisatVarMap.at( testCandidate) );
+					FormulaT infeasibleSubset = FormulaT( carl::FormulaType::AND, infeasibleSubsets()[0] );
+					FormulaT lemma = FormulaT( carl::FormulaType::IMPLIES, infeasibleSubset, negation );
+					addDeduction( lemma );*/
+				}
+				else if ( result == l_True )
+				{
+					#ifdef DEBUG_SATMODULE
+					cout << "Sat with variable: " << ( sign( nextLit ) ? "-" : "" ) << mMinisatVarMap.at( testCandidate ) << endl;
+					printCurrentAssignment();
+					#endif
+					// Add new model
+					updateModel( model );
+					mAllModels.push_back( model );
+				}
+				else
+				{
+					#ifdef DEBUG_SATMODULE
+                    cout << "Unknown with variable: " << ( sign( nextLit ) ? "-" : "" ) << mMinisatVarMap.at( testCandidate ) << endl;
+					#endif
+				}
+
+				++status;
+				if ( status > 1 )
+				{
+					// Tested both value of variable -> next variable
+					popInformationRelevantFormula();
+				}
+			}
+		}
 		mComputeAllSAT = false;
     }
     

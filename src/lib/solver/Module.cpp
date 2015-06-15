@@ -271,7 +271,7 @@ namespace smtrat
         }
     }
 
-	void Module::updateAllModels() const
+	void Module::updateAllModels()
     {
         clearModel();
         if( mSolverState == True )

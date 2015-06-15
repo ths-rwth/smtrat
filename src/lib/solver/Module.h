@@ -256,7 +256,7 @@ namespace smtrat
 			/**
 			 * Updates all satisfying models, if the solver has detected the consistency of the received formula, beforehand.
 			 */
-			virtual void updateAllModels() const;
+			virtual void updateAllModels();
             
 			/**
              * Partition the variables from the current model into equivalence classes according to their assigned value.
