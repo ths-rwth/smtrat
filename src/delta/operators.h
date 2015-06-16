@@ -145,6 +145,7 @@ NodeChangeSet constant(const Node& n) {
 NodeChangeSet letExpression(const Node& n) {
 	if (n.name != "let") return NodeChangeSet();
 	NodeChangeSet res;
+	if (n.children.size() < 2) return NodeChangeSet();
 	Node cur = n.children[1];
 	for (const auto& v: n.children[0].children) {
 		cur = cur.clone(v.name, &v.children[0]);

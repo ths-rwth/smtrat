@@ -66,6 +66,10 @@ int main(int argc, char* argv[]) {
 	if (s.as<bool>("delay-declare-fun")) {
 		n.eliminateDefineFuns();
 	}
+	if (c.getKilled() > 0) {
+		std::cout << std::endl << c.getKilled() << " runs during the last iterations have been killed." << std::endl;
+		std::cout << std::endl << "This may be due to a timeout." << std::endl;
+	}
 
 	// Print result and store to file.
 	if (s.has("verbose")) {

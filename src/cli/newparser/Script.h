@@ -12,14 +12,16 @@ namespace parser {
 
 struct LogicParser: public qi::symbols<char, smtrat::Logic> {
 	LogicParser() {
-	    add("QF_LIA", smtrat::Logic::QF_LIA);
+		add("QF_BV", smtrat::Logic::QF_BV);
+		add("QF_IDL", smtrat::Logic::QF_LIA);
+		add("QF_LIA", smtrat::Logic::QF_LIA);
 		add("QF_LIRA", smtrat::Logic::QF_LIA);
-	    add("QF_LRA", smtrat::Logic::QF_LRA);
-	    add("QF_NIA", smtrat::Logic::QF_NIA);
+		add("QF_LRA", smtrat::Logic::QF_LRA);
+		add("QF_NIA", smtrat::Logic::QF_NIA);
 		add("QF_NIRA", smtrat::Logic::QF_NIA);
-	    add("QF_NRA", smtrat::Logic::QF_NRA);
-	    add("QF_UF", smtrat::Logic::QF_UF);
-	    add("QF_BV", smtrat::Logic::QF_BV);
+		add("QF_NRA", smtrat::Logic::QF_NRA);
+		add("QF_RDL", smtrat::Logic::QF_LRA);
+		add("QF_UF", smtrat::Logic::QF_UF);
 	}
 };
 struct ErrorHandler {

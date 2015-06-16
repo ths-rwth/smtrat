@@ -54,17 +54,21 @@ struct Node {
 	 * @param data Tuple containing the children and the brackets flag.
 	 */
 	explicit Node(const std::tuple<std::vector<Node>, bool>& data): children(std::get<0>(data)), brackets(std::get<1>(data)), size(0) {
-		size = std::accumulate(children.begin(), children.end(), (std::size_t)1, [](std::size_t a, const Node& b){ return a + b.complexity(); });
+		recalculateSize();
 	}
 	/**
 	 * Create a node with a name and children.
 	 * @param data Tuple containing the name, the children and the brackets flag.
 	 */
 	explicit Node(const std::tuple<std::string, std::vector<Node>, bool>& data): name(std::get<0>(data)), children(std::get<1>(data)), brackets(std::get<2>(data)), size(0) {
-		size = std::accumulate(children.begin(), children.end(), (std::size_t)1, [](std::size_t a, const Node& b){ return a + b.complexity(); });
+		recalculateSize();
 	}
 	
 	explicit Node(const std::string& name, const std::initializer_list<Node>& children, bool brackets = true): name(name), children(children), brackets(brackets), size(0) {
+		recalculateSize();
+	}
+	
+	void recalculateSize() {
 		size = std::accumulate(children.begin(), children.end(), (std::size_t)1, [](std::size_t a, const Node& b){ return a + b.complexity(); });
 	}
 
@@ -174,6 +178,7 @@ struct Node {
 			}
 			it++;
 		}
+		recalculateSize();
 	}
 };
 
