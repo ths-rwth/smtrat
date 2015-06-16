@@ -149,6 +149,15 @@ namespace parser {
 		result = carl::makePolynomial<Poly>(auxVar);
 		return true;
 	}
+	bool ArithmeticTheory::handleDistinct(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
+		std::vector<Poly> args;
+		conversion::VectorVariantConverter<Poly> c;
+		if (!c(arguments, args, errors)) return false;
+		result = expandDistinct(args, [](const Poly& a, const Poly& b){ 
+			return FormulaT(a - b, carl::Relation::NEQ);
+		});
+		return true;
+	}
 
 	FormulaT ArithmeticTheory::makeConstraint(const Poly& lhs, const Poly& rhs, carl::Relation rel) {
 		Poly p = lhs - rhs;
