@@ -1283,6 +1283,8 @@ namespace smtrat
                 int lev = level( var( c[1] ) );
                 if( value(c[0]) != l_True || lev < level(var(c[0])) )
                 {
+					if ( value(c[0]) == l_False && lev < level(var(c[0])) )
+						lev = level(var(c[0]));
                     cancelUntil( lev );
                     arrangeForWatches( c );
                 }
