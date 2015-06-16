@@ -403,6 +403,8 @@ namespace smtrat
             std::vector<signed> mNewSplittingVars;
             /// Stores for each variable the corresponding formulas which control its value
             VarLemmaMap mPropagatedLemmas;
+			/// Stores Minisat indexes of all relevant variables
+			vector<int> mRelevantVariables;
             ///
             Minisat::vec<unsigned> mNonTseitinShadowedOccurrences;
             ///
@@ -1327,8 +1329,9 @@ namespace smtrat
 			/**
 			 * Updates the model, if the solver has detected the consistency of the received formula, beforehand.
 			 * @param model The model to update with the current assignment
+			 * @param only_relevant_variables If true, only variables in mRelevantVariables are part of the model
 			 */
-			void updateModel(Model& model) const;
+			void updateModel( Model& model, bool only_relevant_variables = false ) const;
     };
 }    // namespace smtrat
 

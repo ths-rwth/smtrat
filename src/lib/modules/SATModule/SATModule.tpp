@@ -128,6 +128,7 @@ namespace smtrat
         mOldSplittingVars(),
         mNewSplittingVars(),
         mPropagatedLemmas(),
+		mRelevantVariables(),
         mNonTseitinShadowedOccurrences(),
         mTseitinVarShadows()
     {
@@ -466,23 +467,38 @@ namespace smtrat
     }
 
 	template<class Settings>
-    void SATModule<Settings>::updateModel(Model& model) const
+    void SATModule<Settings>::updateModel( Model& model, bool only_relevant_variables ) const
     {
 		model.clear();
 		if( solverState() == True )
 		{
-			// Set assignment (might be partial assignment)
-			for ( int i = 0; i < assigns.size(); ++i )
+			if ( only_relevant_variables )
 			{
-				if ( assigns[i] == l_Undef )
+				// Set assignment for all relevant variables (might be partial assignment)
+				for ( int i = 0; i < mRelevantVariables.size(); ++i )
 				{
-					// Partial assignment
-					continue;
+					int index = mRelevantVariables[ i ];
+					ModelValue assignment = assigns[ index ] == l_True;
+					carl::Variable var = mMinisatVarMap.at( index ).boolean();
+					model.insert( std::make_pair( var, assignment ) );
 				}
-				ModelValue assignment = assigns[i] == l_True;
-				carl::Variable var = mMinisatVarMap.at( i ).boolean();
-				model.insert( std::make_pair( var, assignment ) );
 			}
+			else
+			{
+				// Set assignment for all defined variables (might be partial assignment)
+				for ( int i = 0; i < assigns.size(); ++i )
+				{
+					if ( assigns[i] == l_Undef )
+					{
+						// Partial assignment
+						continue;
+					}
+					ModelValue assignment = assigns[i] == l_True;
+					carl::Variable var = mMinisatVarMap.at( i ).boolean();
+					model.insert( std::make_pair( var, assignment ) );
+				}
+			}
+
 			// Set variable replacements
 			// TODO Matthias: correct way?
 			Module::getBackendsAllModels();
@@ -494,7 +510,7 @@ namespace smtrat
 					iter->second = varReplacement->second;
 				}
 			}
-}
+		}
     }
 
 	template<class Settings>
@@ -507,87 +523,71 @@ namespace smtrat
 		clearModels();
 		if( solverState() == True )
 		{
-			// Compute assignment
-			Model model;
-			updateModel( model );
-			mAllModels.push_back( model );
-
 			// Compute all satisfying assignments
 			#ifdef DEBUG_SATMODULE
 			std::cout << "Compute more assignments" << std::endl;
 			#endif
-			int status = 0;
-			carl::Variable var;
-			Minisat::Var testCandidate;
-			lbool result;
-			std::set<FormulaT>::const_iterator iterVar = getInformationRelevantFormulas().begin();
-			while ( iterVar != getInformationRelevantFormulas().end() )
+
+			// Construct list of all relevant variables
+			mRelevantVariables.clear();
+			for ( std::set<FormulaT>::const_iterator iterVar = getInformationRelevantFormulas().begin(); iterVar != getInformationRelevantFormulas().end(); ++iterVar )
 			{
-				if ( status == 0 )
-				{
-					// Get next variable to test
-					var = iterVar->boolean();
-					testCandidate = mBooleanVarMap.at ( var );
-				}
+				mRelevantVariables.push_back( mBooleanVarMap.at( iterVar->boolean() ) );
+			}
+			#ifdef DEBUG_SATMODULE
+			std::cout << "Relevant variables: ";
+			for ( int i = 0; i < mRelevantVariables.size(); ++i )
+			{
+				std::cout << mRelevantVariables[ i ] << " (" << mMinisatVarMap[ mRelevantVariables[ i ] ] << "), ";
+			}
+			std::cout << std::endl;
+			#endif
 
-				// Reset the state until level 0
-				// TODO Matthias: only reset till first relevant variable
-				cancelAssignmentUntil( 0 );
-				qhead = trail_lim[0];
-				trail.shrink( trail.size() - trail_lim[0] );
-				trail_lim.shrink( trail_lim.size() - 0 );
-				ok = true;
-				mPropagatedLemmas.clear();
-
-				// Set new assignment
-				Lit nextLit = mkLit( testCandidate, ( status != 0 ) );
+			lbool result;
+			Model model;
+			do
+			{
+				// Compute assignment
 				#ifdef DEBUG_SATMODULE
-				cout << "Test candidate: " << ( sign( nextLit ) ? "-" : "" ) << mMinisatVarMap.at( testCandidate ) << endl;
+				printCurrentAssignment();
 				#endif
-				assert( assumptions.size() <= 1 );
-				assumptions.clear();
-				assumptions.push( nextLit );
-
-				// Check again
-				result = checkFormula();
-				if ( result == l_False )
+				updateModel( model );
+				mAllModels.push_back( model );
+				#ifdef DEBUG_SATMODULE
+				std::cout << "Model: " << model << std::endl;
+				#endif
+				// Exclude assignment
+				// TODO Matthias: construct clause
+				vec<Lit> excludeClause;
+				int index;
+				for ( int i = 0; i < mRelevantVariables.size(); ++i )
 				{
-					#ifdef DEBUG_SATMODULE
-					cout << "Unsat with variable: " << ( sign( nextLit ) ? "-" : "" ) << mMinisatVarMap.at( testCandidate ) << endl;
-					#endif
-					// No model -> continue
-					// TODO Matthias: construct lemma via infeasible subset?
-					/*updateInfeasibleSubset();
-					FormulaT negation = FormulaT( carl::FormulaType::NOT, mMinisatVarMap.at( testCandidate) );
-					FormulaT infeasibleSubset = FormulaT( carl::FormulaType::AND, infeasibleSubsets()[0] );
-					FormulaT lemma = FormulaT( carl::FormulaType::IMPLIES, infeasibleSubset, negation );
-					addDeduction( lemma );*/
+					index = mRelevantVariables[ i ];
+					// Add negated literal
+					Lit lit = mkLit( index, assigns[ index ] == l_True);
+					excludeClause.push( lit );
 				}
-				else if ( result == l_True )
+				#ifdef DEBUG_SATMODULE
+				std::cout << "Added exclude: " << std::endl;
+				printClause( excludeClause );
+				#endif
+				CRef clause;
+				if ( addClause( excludeClause, DEDUCTED_CLAUSE ) )
 				{
-					#ifdef DEBUG_SATMODULE
-					cout << "Sat with variable: " << ( sign( nextLit ) ? "-" : "" ) << mMinisatVarMap.at( testCandidate ) << endl;
-					printCurrentAssignment();
-					#endif
-					// Add new model
-					updateModel( model );
-					mAllModels.push_back( model );
+					clause = learnts.last();
 				}
 				else
 				{
-					#ifdef DEBUG_SATMODULE
-                    cout << "Unknown with variable: " << ( sign( nextLit ) ? "-" : "" ) << mMinisatVarMap.at( testCandidate ) << endl;
-					#endif
+					assert( false );
 				}
+				handleConflict( clause, false );
 
-				++status;
-				if ( status > 1 )
-				{
-					// Tested both values of variable -> next variable
-					++iterVar;
-					status = 0;
-				}
-			}
+				// Check again
+				result = checkFormula();
+			} while ( result == l_True );
+			#ifdef DEBUG_SATMODULE
+			std::cout << ( result == l_False ? "UnSAT" : "Undef" ) << std::endl;
+			#endif
 		}
 		mComputeAllSAT = false;
     }
@@ -1994,6 +1994,7 @@ SetWatches:
 	template<class Settings>
 	Minisat::lbool SATModule<Settings>::handleConflict( Minisat::CRef confl, bool madeTheoryCall )
 	{
+		assert( confl != CRef_Undef );
 		//TODO: member for better performance?
 		int backtrack_level;
 		vec<Lit> learnt_clause;
@@ -2353,7 +2354,8 @@ SetWatches:
             trail.push_( p );
         }
 
-        if (Settings::compute_propagated_lemmas && decisionLevel() == 0)
+		// Save reasons (clauses) implicating a variable value
+        if (Settings::compute_propagated_lemmas && decisionLevel() == 0 && !mComputeAllSAT)
         {
             if ( from != CRef_Undef) {
                 // Find corresponding formula
