@@ -1050,6 +1050,8 @@ namespace smtrat
                 int lev = level( var( c[1] ) );
                 if( value(c[0]) != l_True || lev < level(var(c[0])) )
                 {
+                    if( value(c[0]) == l_False && lev < level(var(c[0])) )
+                        lev = level(var(c[0]));
                     cancelUntil( lev );
                     arrangeForWatches( c );
                 }
@@ -1444,9 +1446,10 @@ SetWatches:
     }
     
     template<class Settings>
-    CRef SATModule<Settings>::propagateConsistently( bool& _madeTheoryCall )
+    CRef SATModule<Settings>::propagateConsistently( bool& _madeTheoryCall, bool& _lemmasLearnt )
     {
         CRef confl = CRef_Undef;
+        _lemmasLearnt = false;
         bool deductionsLearned = true;
         while( deductionsLearned ) // || !mChangedBooleans.empty() )
         {
@@ -1569,8 +1572,11 @@ SetWatches:
                 {
                     qhead = trail_lim[decisionLevel()-1];
                 }
+                _lemmasLearnt = true;
             }
         }
+        if( decisionLevel() == 0 )
+            return CRef_Undef;
         return confl;
     }
 
@@ -1608,27 +1614,17 @@ SetWatches:
             }
             
             bool madeTheoryCall = false;
-            CRef confl = propagateConsistently( madeTheoryCall );
+            bool lemmasLearnt = false;
+            CRef confl = propagateConsistently( madeTheoryCall, lemmasLearnt );
             if( !ok )
-                return l_False;
-            if( !Settings::stop_search_after_first_unknown && madeTheoryCall && mCurrentAssignmentConsistent == Unknown )
             {
-                vec<Lit> learnt_clause;
-                if( rPassedFormula().size() > 1 )
+                std::cout << __func__ << ":" << __LINE__ << std::endl;
+                std::cout << "unknown_excludes.size() = " << unknown_excludes.size() << std::endl;
+                if( !Settings::stop_search_after_first_unknown && unknown_excludes.size() > 0 )
                 {
-                    for( auto subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
-                    {
-                        ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( subformula->formula() );
-                        assert( constraintLiteralPair != mConstraintLiteralMap.end() );
-                        Lit lit = mkLit( var( constraintLiteralPair->second.front() ), !sign( constraintLiteralPair->second.front() ) );
-                        learnt_clause.push( lit );
-                    }
-                    if( addClause( learnt_clause, DEDUCTED_CLAUSE ) )
-                    {
-                        unknown_excludes.push( learnts.last() );
-                        continue;
-                    }
+                    return l_Undef;
                 }
+                return l_False;
             }
             #ifdef SATMODULE_WITH_CALL_NUMBER
             #ifndef DEBUG_SATMODULE
@@ -1640,85 +1636,8 @@ SetWatches:
             cout.flush();
             #endif
             #endif
-            if( confl != CRef_Undef )
-            {
-                // CONFLICT
-                conflicts++;
-                conflictC++;
-                if( decisionLevel() == 0 )
-                {
-                    if( !Settings::stop_search_after_first_unknown && unknown_excludes.size() > 0 )
-                    {
-                        return l_Undef;
-                    }
-                    return l_False;
-                }
 
-                learnt_clause.clear();
-                assert( confl != CRef_Undef );
-                #ifdef DEBUG_SATMODULE
-                if( madeTheoryCall )
-                {
-                    cout << "### Conflict clause: ";
-                    printClause( confl );
-                }
-                else
-                {
-                    cout << "### SAT conflict!" << endl;
-                    printClause( confl );
-                }
-                #endif
-
-                analyze( confl, learnt_clause, backtrack_level );
-                // Dirty hack for the SMT-COMP 2015
-                if( learnt_clause.size() == 0 )
-                    return l_Undef;
-
-                #ifdef DEBUG_SATMODULE
-                printClause( learnt_clause, true, cout, "### Asserting clause: " );
-                cout << "### Backtrack to level " << backtrack_level << endl;
-                cout << "###" << endl;
-                #endif
-                cancelUntil( backtrack_level );
-
-                if( learnt_clause.size() == 1 )
-                {
-                    #ifdef SMTRAT_DEVOPTION_Validation
-                    // this is often an indication that something is wrong with our theory, so we do store our assumptions.
-                    if( value( learnt_clause[0] ) != l_Undef )
-                        Module::storeAssumptionsToCheck( *mpManager );
-                    #endif
-                    assert( value( learnt_clause[0] ) == l_Undef );
-                    uncheckedEnqueue( learnt_clause[0] );
-                }
-                else
-                {
-                    // learnt clause is the asserting clause.
-                    CRef cr = ca.alloc( learnt_clause, CONFLICT_CLAUSE );
-                    learnts.push( cr );
-                    attachClause( cr );
-                    mChangedActivities.push_back( cr );
-                    claBumpActivity( ca[cr] );
-                    #ifdef SMTRAT_DEVOPTION_Validation
-                    // this is often an indication that something is wrong with our theory, so we do store our assumptions.
-                    if( value( learnt_clause[0] ) != l_Undef )
-                        Module::storeAssumptionsToCheck( *mpManager );
-                    #endif
-                    assert( value( learnt_clause[0] ) == l_Undef );
-                    uncheckedEnqueue( learnt_clause[0], cr );
-                    
-                    decrementLearntSizeAdjustCnt();
-                }
-
-                varDecayActivity();
-                claDecayActivity();
-                
-                if( madeTheoryCall )
-                {
-                    mCurrentAssignmentConsistent = True;
-                }
-            }
-            else
+            if( confl == CRef_Undef )
             {
                 // NO CONFLICT
                 if( Settings::use_restarts && nof_conflicts >= 0 && (conflictC >= nof_conflicts) ) // ||!withinBudget()) )
@@ -1753,6 +1672,7 @@ SetWatches:
                     }
                     else if( value( p ) == l_False )
                     {
+                        std::cout << __func__ << ":" << __LINE__ << std::endl;
                         return l_False;
                     }
                     else
@@ -1781,15 +1701,102 @@ SetWatches:
                         else
                         {
                             assert( mCurrentAssignmentConsistent == Unknown );
-                            return l_Undef;
+                            if( !Settings::stop_search_after_first_unknown )
+                            {
+                                vec<Lit> learnt_clause;
+                                if( rPassedFormula().size() > 1 )
+                                {
+                                    for( auto subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
+                                    {
+                                        ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( subformula->formula() );
+                                        assert( constraintLiteralPair != mConstraintLiteralMap.end() );
+                                        Lit lit = mkLit( var( constraintLiteralPair->second.front() ), !sign( constraintLiteralPair->second.front() ) );
+                                        learnt_clause.push( lit );
+                                    }
+                                    if( addClause( learnt_clause, DEDUCTED_CLAUSE ) )
+                                    {
+                                        unknown_excludes.push( learnts.last() );
+                                        confl = learnts.last();
+                                    }
+                                    else
+                                        assert( false );
+                                }
+                            }
+                            if( Settings::stop_search_after_first_unknown || confl == CRef_Undef )
+                                return l_Undef;
                         }
                     }
                 }
+                if( Settings::stop_search_after_first_unknown || confl == CRef_Undef )
+                {
+                    // Increase decision level and enqueue 'next'
+                    newDecisionLevel();
+                    assert( value( next ) == l_Undef );
+                    #ifdef DEBUG_SATMODULE
+                    std::cout << "### Decide " <<  (sign(next) ? "-" : "" ) << var(next) << std::endl;
+                    #endif
+                    uncheckedEnqueue( next );
+                }
+            }
+            if( confl != CRef_Undef )
+            {
+                // CONFLICT
+                conflicts++;
+                conflictC++;
+                if( decisionLevel() == 0 )
+                {
+                    if( !Settings::stop_search_after_first_unknown && unknown_excludes.size() > 0 )
+                    {
+                        return l_Undef;
+                    }
+                    return l_False;
+                }
 
-                // Increase decision level and enqueue 'next'
-                newDecisionLevel();
-                assert( value( next ) == l_Undef );
-                uncheckedEnqueue( next );
+                learnt_clause.clear();
+                assert( confl != CRef_Undef );
+                #ifdef DEBUG_SATMODULE
+                if( madeTheoryCall ) { cout << "### Conflict clause: "; printClause( confl ); }
+                else { cout << "### SAT conflict!" << endl; printClause( confl );}
+                #endif
+
+                analyze( confl, learnt_clause, backtrack_level );
+                // Dirty hack for the SMT-COMP 2015
+                assert( learnt_clause.size() > 0 );
+
+                #ifdef DEBUG_SATMODULE
+                printClause( learnt_clause, true, cout, "### Asserting clause: " );
+                cout << "### Backtrack to level " << backtrack_level << endl;
+                cout << "###" << endl;
+                #endif
+                cancelUntil( backtrack_level );
+
+                #ifdef SMTRAT_DEVOPTION_Validation // this is often an indication that something is wrong with our theory, so we do store our assumptions.
+                if( value( learnt_clause[0] ) != l_Undef ) Module::storeAssumptionsToCheck( *mpManager );
+                #endif
+                assert( value( learnt_clause[0] ) == l_Undef );
+                if( learnt_clause.size() == 1 )
+                {
+                    uncheckedEnqueue( learnt_clause[0] );
+                }
+                else
+                {
+                    // learnt clause is the asserting clause.
+                    CRef cr = ca.alloc( learnt_clause, CONFLICT_CLAUSE );
+                    learnts.push( cr );
+                    attachClause( cr );
+                    mChangedActivities.push_back( cr );
+                    claBumpActivity( ca[cr] );
+                    uncheckedEnqueue( learnt_clause[0], cr );
+                    decrementLearntSizeAdjustCnt();
+                }
+
+                varDecayActivity();
+                claDecayActivity();
+                
+                if( madeTheoryCall )
+                {
+                    mCurrentAssignmentConsistent = True;
+                }
             }
         }
     }
@@ -2663,12 +2670,14 @@ NextClause:
             {
                 if( ded.first.getType() != carl::FormulaType::TRUE )
                 {
-                    deductionsLearned = true;
                     #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
                     cout << "Learned a theory deduction from a backend module!" << endl;
                     cout << ded.first.toString( false, 0, "", true, true, true ) << endl;
                     #endif
-                    addFormula( ded.first, DEDUCTED_CLAUSE );
+                    if( addFormula( ded.first, DEDUCTED_CLAUSE ) != CRef_Undef )
+                    {
+                        deductionsLearned = true;
+                    }
                 }
             }
             // Add the splittings.
@@ -2764,8 +2773,6 @@ NextClause:
                 {
                     if( betterConflict )
                         conflictClause = learnts.last();
-//                    cout << "Add conflict clause:" << endl;
-//                    printClause( learnts.last(), true );
                 }
                 else if( betterConflict )
                 {
@@ -2774,8 +2781,6 @@ NextClause:
             }
             ++backend;
         }
-        if( conflictClause != CRef_Undef && lowestLevel >= decisionLevel()+1 )
-            Module::storeAssumptionsToCheck( *mpManager );
         if( Settings::handle_theory_conflict_as_lemma )
         {
             if( numOfLowLevelLiterals == 1 )

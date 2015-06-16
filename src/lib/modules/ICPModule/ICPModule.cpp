@@ -1219,7 +1219,7 @@ namespace smtrat
             assert( varIt->second->var() == varIt->first );
             double value = 0;
             const DoubleInterval& interv = varIntervalIt->second; 
-            if( !interv.isUnbounded() )
+            if( !interv.isInfinite() )
             {
                 bool takeLower = false;
                 bool takeUpper = false;
@@ -1645,6 +1645,7 @@ namespace smtrat
             #endif
             return false;
         }
+        bool boxContainsOnlyOneSolution = true;
         auto origVarsIter = originalRealVariables.begin();
         EvalRationalIntervalMap lraVarBounds = mLRA.getVariableBounds();
         for( auto iter = antipoint.begin(); iter != antipoint.end(); ++iter )
@@ -1666,8 +1667,15 @@ namespace smtrat
             {
                 const RationalInterval& varBounds = lraVarBoundsIter->second;
                 assert( !varBounds.isEmpty() );
-                if( !varBounds.isPointInterval() )
+                if( varBounds.isPointInterval() )
                 {
+                    value = varBounds.lower();
+                }
+                else
+                {
+                    assert( iter->first.getType() != carl::VariableType::VT_INT || varBounds.isUnbounded() || varBounds.diameter() >= ONE_RATIONAL );
+                    if( iter->first.getType() != carl::VariableType::VT_INT )
+                        boxContainsOnlyOneSolution = false;
                     if( varBounds.lowerBoundType() != carl::BoundType::INFTY && value < varBounds.lower() )
                     {
                         if( varBounds.lowerBoundType() == carl::BoundType::STRICT )
@@ -1689,34 +1697,33 @@ namespace smtrat
             #endif
             mFoundSolution.insert( std::make_pair( iter->first, value ) );
         }
-        ContractionCandidates candidates;
-        for( auto iter = mLinearConstraints.begin(); iter != mLinearConstraints.end(); ++iter )
-        {
-            assert( !iter->second.empty() );
-            unsigned isSatisfied = iter->first->isSatisfiedBy( mFoundSolution );
-            assert( isSatisfied != 2 );
-            if( isSatisfied == 0 )
-                candidates.insert( iter->second.begin(), iter->second.end() );
-        }
         for( auto candidate = mActiveNonlinearConstraints.begin(); candidate != mActiveNonlinearConstraints.end(); ++candidate )
         {
             unsigned isSatisfied = (*candidate)->constraint().satisfiedBy( mFoundSolution );
             assert( isSatisfied != 2 );
             if( isSatisfied == 0 )
+            {
                 testSuccessful = false;
+                if( boxContainsOnlyOneSolution )
+                {
+                    
+                }
+                break;
+            }
         }
-        // if a change has happened we need to restart at the latest point possible
-        if( !candidates.empty() )
+        if( testSuccessful )
         {
-            testSuccessful = false;
-//            for( auto cand : candidates )
-//                addCandidateToRelevant( cand );
-//            mHistoryActual->propagateStateInfeasibleConstraints(mHistoryRoot);
-//            mHistoryActual->propagateStateInfeasibleVariables(mHistoryRoot);
-//            setBox( mHistoryRoot );
-            #ifdef ICP_MODULE_DEBUG_0
-            cout << "  Failed!" << endl << endl;
-            #endif
+            for( auto iter = mLinearConstraints.begin(); iter != mLinearConstraints.end(); ++iter )
+            {
+                assert( !iter->second.empty() );
+                unsigned isSatisfied = iter->first->isSatisfiedBy( mFoundSolution );
+                assert( isSatisfied != 2 );
+                if( isSatisfied == 0 )
+                {
+                    testSuccessful = false;
+                    break;
+                }
+            }
         }
         if( !testSuccessful )
             mFoundSolution.clear();

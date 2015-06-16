@@ -906,6 +906,16 @@ namespace smtrat
              */
             bool litRedundant( Minisat::Lit p, uint32_t abstract_levels );
             
+            bool existsUnassignedSplittingVar() const
+            {
+                for( signed v : mNewSplittingVars )
+                {
+                    if( value( v ) == l_Undef )
+                        return true;
+                }
+                return false;
+            }
+            
             /**
              * Adds clauses representing the lemmas which should be added to this SATModule. This may provoke backtracking.
              * @return true, if any clause has been added.
@@ -923,7 +933,7 @@ namespace smtrat
              * @param _madeTheoryCall A flag which is set to true, if at least one theory call has been made within this method.
              * @return A reference to a conflicting clause, if a clause has been added.
              */
-            Minisat::CRef propagateConsistently( bool& _madeTheoryCall );
+            Minisat::CRef propagateConsistently( bool& _madeTheoryCall, bool& _lemmasLearnt );
             
             /**
              * search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
