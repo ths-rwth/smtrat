@@ -580,7 +580,11 @@ namespace smtrat
 				{
 					assert( false );
 				}
-				handleConflict( clause, false );
+				if ( handleConflict( clause, false ) != l_True )
+				{
+					// Already UnSAT
+					break;
+				}
 
 				// Check again
 				result = checkFormula();
