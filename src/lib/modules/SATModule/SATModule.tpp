@@ -551,7 +551,7 @@ namespace smtrat
 				#ifdef DEBUG_SATMODULE
 				printCurrentAssignment();
 				#endif
-				updateModel( model );
+				updateModel( model, true );
 				mAllModels.push_back( model );
 				#ifdef DEBUG_SATMODULE
 				std::cout << "Model: " << model << std::endl;
