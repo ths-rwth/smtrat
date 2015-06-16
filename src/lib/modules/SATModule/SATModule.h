@@ -987,6 +987,14 @@ namespace smtrat
              *         l_Undef, if it could not been detected whether the given set of clauses is satisfiable or not.
              */
             Minisat::lbool search( int nof_conflicts = 100 );
+
+			/**
+			 * Handles conflict
+			 * @param conf conflict clause
+			 * @param madeTheoryCall Was theory call made
+			 * @return if return is not l_True, search can be aborted
+             */
+			Minisat::lbool handleConflict( Minisat::CRef conf, bool madeTheoryCall );
             
             /**
              * reduceDB : ()  ->  [void]

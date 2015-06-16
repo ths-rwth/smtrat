@@ -582,8 +582,9 @@ namespace smtrat
 				++status;
 				if ( status > 1 )
 				{
-					// Tested both value of variable -> next variable
+					// Tested both values of variable -> next variable
 					popInformationRelevantFormula();
+					status = 0;
 				}
 			}
 		}
@@ -1851,7 +1852,6 @@ SetWatches:
         cout << "###" << endl;
         #endif
         assert( ok );
-        int      backtrack_level;
         int      conflictC = 0;
         vec<Lit> learnt_clause;
         starts++;
@@ -1875,7 +1875,7 @@ SetWatches:
                 return l_False;
             if( !Settings::stop_search_after_first_unknown && madeTheoryCall && mCurrentAssignmentConsistent == Unknown )
             {
-                vec<Lit> learnt_clause;
+                learnt_clause.clear();
                 if( rPassedFormula().size() > 1 )
                 {
                     for( auto subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
@@ -1904,81 +1904,13 @@ SetWatches:
             #endif
             if( confl != CRef_Undef )
             {
-                // CONFLICT
-                conflicts++;
-                conflictC++;
-                if( decisionLevel() == 0 )
-                {
-                    if( !Settings::stop_search_after_first_unknown && unknown_excludes.size() > 0 )
-                    {
-                        return l_Undef;
-                    }
-                    return l_False;
-                }
-
-                learnt_clause.clear();
-                assert( confl != CRef_Undef );
-                #ifdef DEBUG_SATMODULE
-                if( madeTheoryCall )
-                {
-                    cout << "### Conflict clause: ";
-                    printClause( confl );
-                }
-                else
-                {
-                    cout << "### SAT conflict!" << endl;
-                    printClause( confl );
-                }
-                #endif
-
-                analyze( confl, learnt_clause, backtrack_level );
-                // Dirty hack for the SMT-COMP 2015
-                if( learnt_clause.size() == 0 )
-                    return l_Undef;
-
-                #ifdef DEBUG_SATMODULE
-                printClause( learnt_clause, true, cout, "### Asserting clause: " );
-                cout << "### Backtrack to level " << backtrack_level << endl;
-                cout << "###" << endl;
-                #endif
-                cancelUntil( backtrack_level );
-
-                if( learnt_clause.size() == 1 )
-                {
-                    #ifdef SMTRAT_DEVOPTION_Validation
-                    // this is often an indication that something is wrong with our theory, so we do store our assumptions.
-                    if( value( learnt_clause[0] ) != l_Undef )
-                        Module::storeAssumptionsToCheck( *mpManager );
-                    #endif
-                    assert( value( learnt_clause[0] ) == l_Undef );
-                    uncheckedEnqueue( learnt_clause[0] );
-                }
-                else
-                {
-                    // learnt clause is the asserting clause.
-                    CRef cr = ca.alloc( learnt_clause, CONFLICT_CLAUSE );
-                    learnts.push( cr );
-                    attachClause( cr );
-                    mChangedActivities.push_back( cr );
-                    claBumpActivity( ca[cr] );
-                    #ifdef SMTRAT_DEVOPTION_Validation
-                    // this is often an indication that something is wrong with our theory, so we do store our assumptions.
-                    if( value( learnt_clause[0] ) != l_Undef )
-                        Module::storeAssumptionsToCheck( *mpManager );
-                    #endif
-                    assert( value( learnt_clause[0] ) == l_Undef );
-                    uncheckedEnqueue( learnt_clause[0], cr );
-                    
-                    decrementLearntSizeAdjustCnt();
-                }
-
-                varDecayActivity();
-                claDecayActivity();
-                
-                if( madeTheoryCall )
-                {
-                    mCurrentAssignmentConsistent = True;
-                }
+				// CONFLICT
+				conflictC++;
+				lbool result = handleConflict( confl, madeTheoryCall );
+				if ( result != l_True )
+				{
+					return result;
+				}
             }
             else
             {
@@ -2055,6 +1987,91 @@ SetWatches:
             }
         }
     }
+
+	template<class Settings>
+	Minisat::lbool SATModule<Settings>::handleConflict( Minisat::CRef confl, bool madeTheoryCall )
+	{
+		//TODO: member for better performance?
+		int backtrack_level;
+		vec<Lit> learnt_clause;
+
+		conflicts++;
+		if( decisionLevel() == 0 )
+		{
+			if( !Settings::stop_search_after_first_unknown && unknown_excludes.size() > 0 )
+			{
+				return l_Undef;
+			}
+			return l_False;
+		}
+
+		learnt_clause.clear();
+		assert( confl != CRef_Undef );
+		#ifdef DEBUG_SATMODULE
+		if( madeTheoryCall )
+		{
+			cout << "### Conflict clause: ";
+			printClause( confl );
+		}
+		else
+		{
+			cout << "### SAT conflict!" << endl;
+			printClause( confl );
+		}
+		#endif
+
+		analyze( confl, learnt_clause, backtrack_level );
+		// Dirty hack for the SMT-COMP 2015
+		if( learnt_clause.size() == 0 )
+			return l_Undef;
+
+		#ifdef DEBUG_SATMODULE
+		printClause( learnt_clause, true, cout, "### Asserting clause: " );
+		cout << "### Backtrack to level " << backtrack_level << endl;
+		cout << "###" << endl;
+		#endif
+		cancelUntil( backtrack_level );
+
+		if( learnt_clause.size() == 1 )
+		{
+			#ifdef SMTRAT_DEVOPTION_Validation
+			// this is often an indication that something is wrong with our theory, so we do store our assumptions.
+			if( value( learnt_clause[0] ) != l_Undef )
+				Module::storeAssumptionsToCheck( *mpManager );
+			#endif
+			assert( value( learnt_clause[0] ) == l_Undef );
+			uncheckedEnqueue( learnt_clause[0] );
+		}
+		else
+		{
+			// learnt clause is the asserting clause.
+			CRef cr = ca.alloc( learnt_clause, CONFLICT_CLAUSE );
+			learnts.push( cr );
+			attachClause( cr );
+			mChangedActivities.push_back( cr );
+			claBumpActivity( ca[cr] );
+			#ifdef SMTRAT_DEVOPTION_Validation
+			// this is often an indication that something is wrong with our theory, so we do store our assumptions.
+			if( value( learnt_clause[0] ) != l_Undef )
+				Module::storeAssumptionsToCheck( *mpManager );
+			#endif
+			assert( value( learnt_clause[0] ) == l_Undef );
+			uncheckedEnqueue( learnt_clause[0], cr );
+
+			decrementLearntSizeAdjustCnt();
+		}
+
+		varDecayActivity();
+		claDecayActivity();
+
+		if( madeTheoryCall )
+		{
+			mCurrentAssignmentConsistent = True;
+		}
+
+		// For indicating no immediate abort
+		return l_True;
+	}
     
     template<class Settings>
     void SATModule<Settings>::decrementLearntSizeAdjustCnt()
