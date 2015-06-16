@@ -977,27 +977,16 @@ namespace smtrat
             unsigned checkModel() const;
 
 			/**
-			 * Adds a formula to the end of InformationRelevantFormula
+			 * Adds a formula to the InformationRelevantFormula
              * @param formula Formula to add
              */
-			void pushInformationRelevantFormula( const FormulaT& formula );
+			void addInformationRelevantFormula( const FormulaT& formula );
 
 			/**
-			 * Removes the first element of InformationRelevantFormula
+			 * Gets all InformationRelevantFormulas
+			 * @return Set of all formulas
              */
-			void popInformationRelevantFormula();
-
-			/**
-			 * Gets the first element of InformationRelevantFormula
-             * @return First formula
-             */
-			FormulaT& peekInformationRelevantFormula();
-
-			/**
-			 * Checks if InformationRelevantFormula is empty
-             * @return true, if empty, false otherwise
-             */
-			bool isEmptyInformationRelevantFormula();
+			const std::set<FormulaT>& getInformationRelevantFormulas();
 
         public:
             // Printing methods.

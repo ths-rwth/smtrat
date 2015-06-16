@@ -1056,24 +1056,14 @@ namespace smtrat
         smtlibFile.close();
     }
 
-	void Module::pushInformationRelevantFormula( const FormulaT& formula )
+	void Module::addInformationRelevantFormula( const FormulaT& formula )
 	{
-		mpManager->pushInformationRelevantFormula( formula );
+		mpManager->addInformationRelevantFormula( formula );
 	}
 
-	void Module::popInformationRelevantFormula()
+	const std::set<FormulaT>& Module::getInformationRelevantFormulas()
 	{
-		mpManager->popInformationRelevantFormula();
-	}
-
-	FormulaT& Module::peekInformationRelevantFormula()
-	{
-		return mpManager->peekInformationRelevantFormula();
-	}
-
-	bool Module::isEmptyInformationRelevantFormula()
-	{
-		return mpManager->isEmptyInformationRelevantFormula();
+		return mpManager->getInformationRelevantFormulas();
 	}
 
     void Module::print( ostream& _out, const string _initiation ) const

@@ -520,12 +520,13 @@ namespace smtrat
 			carl::Variable var;
 			Minisat::Var testCandidate;
 			lbool result;
-			while ( !isEmptyInformationRelevantFormula() )
+			std::set<FormulaT>::const_iterator iterVar = getInformationRelevantFormulas().begin();
+			while ( iterVar != getInformationRelevantFormulas().end() )
 			{
 				if ( status == 0 )
 				{
 					// Get next variable to test
-					var = peekInformationRelevantFormula().boolean();
+					var = iterVar->boolean();
 					testCandidate = mBooleanVarMap.at ( var );
 				}
 
@@ -583,7 +584,7 @@ namespace smtrat
 				if ( status > 1 )
 				{
 					// Tested both values of variable -> next variable
-					popInformationRelevantFormula();
+					++iterVar;
 					status = 0;
 				}
 			}

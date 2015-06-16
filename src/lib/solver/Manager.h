@@ -59,7 +59,7 @@ namespace smtrat
             /// the logic this solver considers
             Logic mLogic;
 			/// List of formula which are relevant for certain tasks
-			std::queue<FormulaT> mInformationRelevantFormula;
+			std::set<FormulaT> mInformationRelevantFormula;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all statistics for the solver this manager belongs to.
             GeneralStatistics* mpStatistics;
@@ -361,12 +361,12 @@ namespace smtrat
             }
 
 			/**
-			 * Adds formula to end of InformationRelevantFormula
+			 * Adds formula to InformationRelevantFormula
 			 * @param formula Formula to add
 			 */
-			inline void pushInformationRelevantFormula( const FormulaT& formula )
+			inline void addInformationRelevantFormula( const FormulaT& formula )
 			{
-				mInformationRelevantFormula.push( formula );
+				mInformationRelevantFormula.insert( formula );
 			}
 
         protected:
@@ -480,31 +480,12 @@ namespace smtrat
             #endif
 
 			/**
-			 * Removes the first element of InformationRelevantFormula
+			 * Gets all InformationRelevantFormulas
+			 * @return Set of all formulas
              */
-			inline void popInformationRelevantFormula()
+			inline const std::set<FormulaT>& getInformationRelevantFormulas()
 			{
-				assert( !isEmptyInformationRelevantFormula() );
-				mInformationRelevantFormula.pop();
-			}
-
-			/**
-			 * Gets the first element of InformationRelevantFormula
-             * @return First formula
-             */
-			inline FormulaT& peekInformationRelevantFormula()
-			{
-				assert( !isEmptyInformationRelevantFormula() );
-				return mInformationRelevantFormula.front();
-			}
-
-			/**
-			 * Checks if InformationRelevantFormula is empty
-			 * @return true, if empty, false otherwise
-			 */
-			inline bool isEmptyInformationRelevantFormula()
-			{
-				return mInformationRelevantFormula.empty();
+				return mInformationRelevantFormula;
 			}
     };
 }    // namespace smtrat
