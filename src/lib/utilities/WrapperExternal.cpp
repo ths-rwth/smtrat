@@ -20,38 +20,49 @@ namespace smtrat {
     bool WrapperExternal::inform(const char* _constraint)
     {
         FormulaT constraint = parser.formula(_constraint);
-        //std::cout << "Informed: " << constraint << std::endl;
-        return solver->inform(constraint);
+		#ifdef DEBUG_WRAPPER
+		std::cout << "Informed: " << constraint << std::endl;
+		#endif
+		return solver->inform(constraint);
     }
 
     bool WrapperExternal::add(const char* _subformula)
     {
         FormulaT subformula = parser.formula(_subformula);
-        //std::cout << "Added: " << subformula << std::endl;
-        return solver->add(subformula);
+		#ifdef DEBUG_WRAPPER
+		std::cout << "Added: " << subformula << std::endl;
+		#endif
+		return solver->add(subformula);
     }
 
 	void WrapperExternal::addInformationRelevantFormula(const char* _formula)
 	{
 		FormulaT formula = parser.formula(_formula);
+		#ifdef DEBUG_WRAPPER
 		std::cout << "Added informationRelevantFormula: " << formula << std::endl;
+		#endif
 		return solver->addInformationRelevantFormula(formula);
 	}
 
-    int WrapperExternal::check()
-    {
+	int WrapperExternal::check()
+	{
+		#ifdef DEBUG_WRAPPER
+		std::cout << "Check..." << std::endl;
+		#endif
         return solver->check();
     }
 
     void WrapperExternal::push()
     {
+		#ifdef DEBUG_WRAPPER
 		std::cout << "Push" << std::endl;
+		#endif
 		solver->push();
     }
 
     bool WrapperExternal::pop()
     {
-		std::cout << "Pop (Not implemented yet)" << std::endl;
+		std::cout << "Pop (Not yet implemented)" << std::endl;
 		//TODO Matthias: fix failures with pop
 		//return solver->pop();
 		return true;
@@ -61,7 +72,6 @@ namespace smtrat {
     {
         std::vector<FormulasT> infeasibleSubsets = solver->infeasibleSubsets();
 		std::ostringstream stream;
-		stream << "InfeasibleSubsets:" << std::endl;
 		for (FormulasT subset : infeasibleSubsets)
 		{
 			stream << subset << std::endl;
@@ -73,7 +83,6 @@ namespace smtrat {
     {
         std::list<std::vector<carl::Variable>> modelEqualities = solver->getModelEqualities();
 		std::ostringstream stream;
-		stream << "ModelEqualities:" << std::endl;
 		for (std::vector<carl::Variable> vars : modelEqualities)
 		{
 			for (carl::Variable var : vars)
@@ -89,7 +98,6 @@ namespace smtrat {
     {
         Model model = solver->model();
 		std::ostringstream stream;
-		stream << "Model" << model << std::endl;
 		return copyResult(stream, buffer, bufferSize);
 	}
 
@@ -97,7 +105,6 @@ namespace smtrat {
 	{
 		std::vector<Model> allModels = solver->allModels();
 		std::ostringstream stream;
-		stream << "AllModels:" << std::endl;
 		for (Model model : allModels)
 		{
 			stream << model << std::endl;
@@ -109,7 +116,6 @@ namespace smtrat {
     {
         std::vector<FormulaT> lemmas = solver->lemmas();
 		std::ostringstream stream;
-		stream << "Lemmas:" << std::endl;
 		for (FormulaT formula : lemmas)
 		{
 			stream << formula << std::endl;
@@ -122,7 +128,7 @@ namespace smtrat {
 		// TODO Matthias: fix linker error and activate again
         //ModuleInput formula = solver->formula();
         std::ostringstream stream;
-		//stream << "Formula:" << formula.toString() << std::endl;
+		//stream << formula.toString() << std::endl;
 		stream << "formula() not yet implemented" << std::endl;
 		return copyResult(stream, buffer, bufferSize);
 	}

@@ -14,6 +14,8 @@
 #include "carl/util/parser/Parser.h"
 #include "carl/util/Common.h"
 
+//#define DEBUG_WRAPPER
+
 #ifdef __WIN
 #define DLL_EXPORT __declspec(dllexport)
 #else
