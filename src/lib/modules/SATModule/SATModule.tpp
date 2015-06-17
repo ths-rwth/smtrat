@@ -911,7 +911,8 @@ namespace smtrat
         }
         else
         {
-            assert( content.getType() == carl::FormulaType::CONSTRAINT || content.getType() == carl::FormulaType::UEQ || content.getType() == carl::FormulaType::BITVECTOR );
+			// TODO Matthias: activate again
+            assert( content.getType() == carl::FormulaType::CONSTRAINT || content.getType() == carl::FormulaType::UEQ /*|| content.getType() == carl::FormulaType::BITVECTOR*/ );
             double act = fabs( _formula.activity() );
             bool preferredToTSolver = false; //(_formula.activity()<0)
             ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( _formula );
@@ -991,7 +992,8 @@ namespace smtrat
                 }
                 else
                 {
-                    assert( content.getType() == carl::FormulaType::BITVECTOR );
+					// TODO Matthias: activate again
+                    //assert( content.getType() == carl::FormulaType::BITVECTOR );
                     constraint = content;
                     invertedConstraint = FormulaT( carl::FormulaType::NOT, content );
                 }

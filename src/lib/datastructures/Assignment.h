@@ -140,7 +140,7 @@ namespace smtrat
             if( isVariable() )
             {
                 if( _mvar.isVariable() ) return asVariable() < _mvar.asVariable();
-                assert( _mvar.isBVVariable() || _mvar.isUVariable() || _mvar.isFunction() );
+                assert( /*_mvar.isBVVariable() ||*/ _mvar.isUVariable() || _mvar.isFunction() );
                 return true;
             }
             /*if( isBVVariable() )

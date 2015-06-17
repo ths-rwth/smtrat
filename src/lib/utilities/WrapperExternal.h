@@ -117,13 +117,13 @@ namespace smtrat {
         * Note, that the conjunction of the so far added formulas must be inconsistent to
         * receive an infeasible subset.
         */
-        DLL_EXPORT void infeasibleSubsets(char* bufferInfeasibleSubsets, int bufferSize) const;
+        DLL_EXPORT int infeasibleSubsets(char* buffer, int bufferSize) const;
 
         /**
         * Determines variables assigned by the currently found satisfying assignment to an equal value in their domain.
         * @return A list of vectors of variables, stating that the variables in one vector are assigned to equal values.
         */
-        DLL_EXPORT void getModelEqualities(char* bufferModelEqualities, int bufferSize) const;
+		DLL_EXPORT int getModelEqualities(char* buffer, int bufferSize) const;
 
         /**
         * @return An assignment of the variables, which occur in the so far added
@@ -135,7 +135,7 @@ namespace smtrat {
         * formulas the assignment could contain other variables or freshly introduced
         * variables.
         */
-        DLL_EXPORT void model(char* bufferModel, int bufferSize) const;
+		DLL_EXPORT int model(char* buffer, int bufferSize) const;
 
 		/**
 		* @return A list of all assignments, such that they satisfy the conjunction of
@@ -146,19 +146,19 @@ namespace smtrat {
 		* formulas the assignment could contain other variables or freshly introduced
 		* variables.
 		*/
-		DLL_EXPORT void allModels(char* bufferAllModels, int bufferSize) const;
+		DLL_EXPORT int allModels(char* buffer, int bufferSize) const;
 
         /**
         * Returns the lemmas/tautologies which were made during the last solving provoked by check(). These lemmas
         * can be used in the same manner as infeasible subsets are used.
         * @return The lemmas/tautologies made during solving.
         */
-        DLL_EXPORT void lemmas(char* bufferLemmas, int bufferSize) const;
+		DLL_EXPORT int lemmas(char* buffer, int bufferSize) const;
 
         /**
         * @return The conjunction of so far added formulas.
         */
-        DLL_EXPORT void formula(char* bufferFormula, int buffersize) const;
+		DLL_EXPORT int formula(char* buffer, int bufferSize) const;
 
         /**
         * Prints the currently found assignment of variables occurring in the so far
@@ -183,5 +183,15 @@ namespace smtrat {
         */
         DLL_EXPORT int getInfeasibleSubsetString(char* buffer, int bufferSize) const;
 
+	private:
+
+		/**
+		/* Writes a stream into a buffer for an external program.
+		 * @param stream The stream to write
+		 * @param buffer The buffer to write into.
+		 * @param buffersize The current buffersize.
+		 * @return needed buffersize if the current one is too small, 0 otherwise
+		 */
+		int copyResult(const std::ostringstream& stream, char* buffer, int bufferSize) const;
     };
 }

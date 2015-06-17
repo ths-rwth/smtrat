@@ -57,94 +57,107 @@ namespace smtrat {
 		return true;
     }
 
-    void WrapperExternal::infeasibleSubsets(char* bufferInfeasibleSubsets, int bufferSize) const
+    int WrapperExternal::infeasibleSubsets(char* buffer, int bufferSize) const
     {
         std::vector<FormulasT> infeasibleSubsets = solver->infeasibleSubsets();
-        //TODO convert infeasibleSubsets into bufferInfeasibleSubsets
-		std::cout << "infeasibleSubsets (Not implemented yet)" << std::endl;
-    }
+		std::ostringstream stream;
+		stream << "InfeasibleSubsets:" << std::endl;
+		for (FormulasT subset : infeasibleSubsets)
+		{
+			stream << subset << std::endl;
+		}
+		return copyResult(stream, buffer, bufferSize);
+	}
 
-    void WrapperExternal::getModelEqualities(char* bufferModelEqualities, int bufferSize) const
+    int WrapperExternal::getModelEqualities(char* buffer, int bufferSize) const
     {
         std::list<std::vector<carl::Variable>> modelEqualities = solver->getModelEqualities();
-        //TODO convert modelEqualities into bufferModelEqualities
-		std::cout << "getModelEqualities (Not implemented yet)" << std::endl;
+		std::ostringstream stream;
+		stream << "ModelEqualities:" << std::endl;
+		for (std::vector<carl::Variable> vars : modelEqualities)
+		{
+			for (carl::Variable var : vars)
+			{
+				stream << var << ", ";
+			}
+			stream << std::endl;
+		}
+		return copyResult(stream, buffer, bufferSize);
 	}
 
-    void WrapperExternal::model(char* bufferModel, int bufferSize) const
+    int WrapperExternal::model(char* buffer, int bufferSize) const
     {
         Model model = solver->model();
-        //TODO convert model into bufferModel
-		std::cout << "model (Not implemented yet)" << std::endl;
+		std::ostringstream stream;
+		stream << "Model" << model << std::endl;
+		return copyResult(stream, buffer, bufferSize);
 	}
 
-	void WrapperExternal::allModels(char* bufferAllModels, int bufferSize) const
+	int WrapperExternal::allModels(char* buffer, int bufferSize) const
 	{
 		std::vector<Model> allModels = solver->allModels();
-		//TODO convert allModels into bufferAllModels
-		std::cout << "model (Not implemented yet)" << std::endl;
+		std::ostringstream stream;
+		stream << "AllModels:" << std::endl;
+		for (Model model : allModels)
+		{
+			stream << model << std::endl;
+		}
+		return copyResult(stream, buffer, bufferSize);
 	}
 
-    void WrapperExternal::lemmas(char* bufferLemmas, int bufferSize) const
+    int WrapperExternal::lemmas(char* buffer, int bufferSize) const
     {
         std::vector<FormulaT> lemmas = solver->lemmas();
-        //TODO convert lemmas into bufferLemmas
-		std::cout << "lemmas (Not implemented yet)" << std::endl;
+		std::ostringstream stream;
+		stream << "Lemmas:" << std::endl;
+		for (FormulaT formula : lemmas)
+		{
+			stream << formula << std::endl;
+		}
+		return copyResult(stream, buffer, bufferSize);
 	}
 
-    void WrapperExternal::formula(char* bufferFormula, int buffersize) const
+	int WrapperExternal::formula(char* buffer, int bufferSize) const
     {
+		// TODO Matthias: fix linker error and activate again
         //ModuleInput formula = solver->formula();
-        //TODO convert formula into bufferFormula
-		std::cout << "formula (Not implemented yet)" << std::endl;
+        std::ostringstream stream;
+		//stream << "Formula:" << formula.toString() << std::endl;
+		stream << "formula() not yet implemented" << std::endl;
+		return copyResult(stream, buffer, bufferSize);
 	}
 
     int WrapperExternal::getAssignmentString(char* buffer, int bufferSize) const
     {
         std::ostringstream stream;
         solver->printAssignment(stream);
-        // Copy result in buffer for external program
-        string result = stream.str();
-        if (result.size() > bufferSize) {
-            return result.size() + 1;
-        }
-        else {
-            assert(result.size() < bufferSize);
-            strcpy_s(buffer, bufferSize, result.c_str());
-			return 0;
-        }
-    }
+		return copyResult(stream, buffer, bufferSize);
+	}
 
     int WrapperExternal::getAssertionsString(char* buffer, int bufferSize) const
     {
         std::ostringstream stream;
         solver->printAssertions(stream);
-        // Copy result in buffer for external program
-        string result = stream.str();
-        if (result.size() > bufferSize) {
-            return result.size() + 1;
-        }
-        else {
-            assert(result.size() < bufferSize);
-            strcpy_s(buffer, bufferSize, result.c_str());
-			return 0;
-        }
-    }
+		return copyResult(stream, buffer, bufferSize);
+	}
 
     int WrapperExternal::getInfeasibleSubsetString(char* buffer, int bufferSize) const
     {
         std::ostringstream stream;
         solver->printInfeasibleSubset(stream);
-        // Copy result in buffer for external program
-        string result = stream.str();
-        if (result.size() > bufferSize) {
-            return result.size() + 1;
-        }
-        else {
-            assert(result.size() < bufferSize);
-            strcpy_s(buffer, bufferSize, result.c_str());
-			return 0;
-        }
+		return copyResult(stream, buffer, bufferSize);
     }
 
+	int WrapperExternal::copyResult(const std::ostringstream& stream, char* buffer, int bufferSize) const
+	{
+		string result = stream.str();
+		if (result.size() > bufferSize) {
+			return result.size() + 1;
+		}
+		else {
+			assert(result.size() < bufferSize);
+			strcpy_s(buffer, bufferSize, result.c_str());
+			return 0;
+		}
+	}
 }
