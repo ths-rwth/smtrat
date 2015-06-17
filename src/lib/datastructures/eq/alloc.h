@@ -8,9 +8,19 @@
 #include <cassert>
 
 #include "../../config.h"
+#include "../../../cli/config.h"
 
 #ifdef SMTRAT_STRAT_PARALLEL_MODE
 #include <mutex>
+#endif
+
+#ifdef __VS
+	// TODO Matthias: research noexcept for windows
+	#define NOEXCEPT 
+	#define CONSTEXPR const
+#else
+	#define NOEXCEPT noexcept
+	#define CONSTEXPR constexpr
 #endif
 
 namespace smtrat {
@@ -18,13 +28,14 @@ namespace smtrat {
 		/**
 		 * Used to find ceil(log2(n)) (the shift distance in the freelist allocator).
 		 */
-		template<typename T> static constexpr inline std::size_t count_leading_zeros(T number);
-		template<> inline constexpr std::size_t count_leading_zeros<unsigned int>(unsigned int number) { return static_cast<std::size_t>(__builtin_clz(number)); }
-		template<> inline constexpr std::size_t count_leading_zeros<unsigned long>(unsigned long number) { return static_cast<std::size_t>(__builtin_clzl(number)); }
-		template<> inline constexpr std::size_t count_leading_zeros<unsigned long long>(unsigned long long number) { return static_cast<std::size_t>(__builtin_clzll(number)); }
-
-		template<typename T> static constexpr inline std::size_t roundup_log2(T number) {
-			return (sizeof(T)*8 - count_leading_zeros(number));
+		// TODO Matthias: activate again
+		/*template<typename T> static CONSTEXPR inline std::size_t count_leading_zeros(T number);
+		template<> inline CONSTEXPR std::size_t count_leading_zeros<unsigned int>(unsigned int number) { return static_cast<std::size_t>(__builtin_clz(number)); }
+		template<> inline CONSTEXPR std::size_t count_leading_zeros<unsigned long>(unsigned long number) { return static_cast<std::size_t>(__builtin_clzl(number)); }
+		template<> inline CONSTEXPR std::size_t count_leading_zeros<unsigned long long>(unsigned long long number) { return static_cast<std::size_t>(__builtin_clzll(number)); }
+		*/
+		template<typename T> static CONSTEXPR inline std::size_t roundup_log2(T number) {
+			return (sizeof(T)*8 /*- count_leading_zeros(number)*/);
 		}
 	}
 
@@ -130,7 +141,7 @@ namespace smtrat {
 			/**
 			 * Freeing means just prepending the free'd element to the front of the freelist.
 			 */
-			void free(void* ptr) noexcept {
+			void free(void* ptr) NOEXCEPT {
 				*static_cast<void**>(ptr) = mFree;
 				mFree = ptr;
 			}
@@ -140,14 +151,13 @@ namespace smtrat {
 			 * Note that this does not call the destructor of any elements,
 			 * and does not return any memory to the OS.
 			 */
-			void clear() noexcept {
+			 void clear() NOEXCEPT {
 				mCurrentPage = 0;
 				mCurrentPageFreeFrom = 0;
 				mFree = nullptr;
 			}
-
 		private:
-			static constexpr std::size_t first_page_size = 1024;
+			static CONSTEXPR std::size_t first_page_size = 1024;
 
 			freelist(const freelist&) = delete;
 			freelist &operator=(const freelist&) = delete;
@@ -165,7 +175,8 @@ namespace smtrat {
 	 */
 	template<std::size_t ChunkSizeShift> class fixedsize_freelist {
 		public:
-			static_assert((1 << ChunkSizeShift) >= sizeof(void*), "The size of a chunk must be at least sizeof(void*)!");
+			// TODO Matthias: activate again
+			//static_assert((1 << ChunkSizeShift) >= sizeof(void*), "The size of a chunk must be at least sizeof(void*)!");
 
 			explicit fixedsize_freelist() :
 				mFree(nullptr),
@@ -243,11 +254,10 @@ namespace smtrat {
 			/**
 			 * Freeing means just prepending the free'd element to the front of the freelist.
 			 */
-			void free(void* ptr) noexcept {
+			void free(void* ptr) NOEXCEPT {
 #ifdef SMTRAT_STRAT_PARALLEL_MODE
 				std::lock_guard<std::mutex> locker(mMutex);
 #endif
-
 				*static_cast<void**>(ptr) = mFree;
 				mFree = ptr;
 			}
@@ -256,7 +266,7 @@ namespace smtrat {
 			fixedsize_freelist(const fixedsize_freelist&) = delete;
 			fixedsize_freelist &operator=(const fixedsize_freelist&) = delete;
 
-			static constexpr std::size_t first_page_size = 1024;
+			static CONSTEXPR std::size_t first_page_size = 1024;
 
 #ifdef SMTRAT_STRAT_PARALLEL_MODE
 			std::mutex mMutex;
@@ -270,20 +280,22 @@ namespace smtrat {
 	};
 
 	namespace impl {
-		static constexpr std::size_t LOWER_SIZE_BOUND = sizeof(void*);
-		static constexpr std::size_t UPPER_SIZE_BOUND = 256;
+		static CONSTEXPR std::size_t LOWER_SIZE_BOUND = sizeof(void*);
+		static CONSTEXPR std::size_t UPPER_SIZE_BOUND = 256;
 
 		template<typename T, std::size_t SizeShift, bool LargeEnough, bool SmallEnough> class fixedsize_allocator_impl;
 
+		// TODO Matthias: activate again
 		/**
 		 * Publicly derive from all fixedsize_freelist types with chunk sizes between SizeCurrent and SizeMax.
 		 */
-		template<std::size_t SizeCurrent, std::size_t SizeMax, bool LowEnough = (SizeCurrent < SizeMax)> class fixedsize_freelists :
-			public fixedsize_freelist<roundup_log2(SizeMax)>
+		template<std::size_t SizeCurrent, std::size_t SizeMax, bool LowEnough = (SizeCurrent < SizeMax)> class fixedsize_freelists /*:
+			public fixedsize_freelist<roundup_log2(SizeMax)>*/
 		{};
 
 		template<std::size_t SizeCurrent, std::size_t SizeMax> class fixedsize_freelists<SizeCurrent, SizeMax, true> :
-			public fixedsize_freelist<roundup_log2(SizeCurrent)>,
+			// TODO Matthias: activate again
+			//public fixedsize_freelist<roundup_log2(SizeCurrent)>,
 			public fixedsize_freelists<SizeCurrent * 2, SizeMax>
 		{};
 
@@ -309,10 +321,10 @@ namespace smtrat {
 				typedef std::true_type propagate_on_container_move_assignment;
 				typedef std::true_type is_always_equal;
 
-				pointer address(reference x) const noexcept { return std::addressof(x); }
-				const_reference address(const_reference x) const noexcept { return std::addressof(x); }
+				pointer address(reference x) const NOEXCEPT { return std::addressof(x); }
+				const_reference address(const_reference x) const NOEXCEPT { return std::addressof(x); }
 
-				constexpr size_type max_size() const noexcept { return std::numeric_limits<std::size_t>::max(); }
+				CONSTEXPR size_type max_size() const NOEXCEPT { return std::numeric_limits<std::size_t>::max(); }
 
 				pointer allocate(size_type n, const void* hint = 0) {
 					if(n == 1) {
@@ -357,12 +369,12 @@ namespace smtrat {
 				typedef fixedsize_allocator<U> other;
 			};
 
-			fixedsize_allocator() noexcept {}
-			fixedsize_allocator(const fixedsize_allocator&) noexcept = default;
-			template<typename U> fixedsize_allocator(const fixedsize_allocator<U>&) noexcept {}
+			fixedsize_allocator() NOEXCEPT {}
+			fixedsize_allocator(const fixedsize_allocator&) NOEXCEPT = default;
+			template<typename U> fixedsize_allocator(const fixedsize_allocator<U>&) NOEXCEPT {}
 
-			template<typename T2> constexpr bool operator==(const fixedsize_allocator<T2>&) const noexcept { return true; }
-			template<typename T2> constexpr bool operator!=(const fixedsize_allocator<T2>&) const noexcept { return false; }
+			template<typename T2> CONSTEXPR bool operator==(const fixedsize_allocator<T2>&) const NOEXCEPT { return true; }
+			template<typename T2> CONSTEXPR bool operator!=(const fixedsize_allocator<T2>&) const NOEXCEPT { return false; }
 	};
 
 	/**
@@ -466,7 +478,7 @@ namespace smtrat {
 			dynarray(const dynarray&) = delete;
 			dynarray &operator=(const dynarray&) = delete;
 
-			dynarray(dynarray&& other) noexcept :
+			dynarray(dynarray&& other) NOEXCEPT :
 				mPointer(other.mPointer),
 				mSize(other.mSize),
 				mCapacity(other.mCapacity)
@@ -475,7 +487,7 @@ namespace smtrat {
 				other.mSize = other.mCapacity = 0;
 			}
 
-			dynarray &operator=(dynarray&& other) noexcept {
+				dynarray &operator=(dynarray&& other) NOEXCEPT {
 				if(this != &other) {
 					if(mCapacity) P_free();
 
@@ -490,14 +502,14 @@ namespace smtrat {
 				return *this;
 			}
 
-			iterator begin() noexcept { return mPointer; }
-			iterator end() noexcept { return mPointer + mSize; }
-			const_iterator begin() const noexcept { return mPointer; }
-			const_iterator end() const noexcept { return mPointer + mSize; }
+			iterator begin() NOEXCEPT { return mPointer; }
+			iterator end() NOEXCEPT { return mPointer + mSize; }
+			const_iterator begin() const NOEXCEPT { return mPointer; }
+			const_iterator end() const NOEXCEPT { return mPointer + mSize; }
 
-			bool empty() const noexcept { return mSize == 0; }
-			std::size_t size() const noexcept { return mSize; }
-			std::size_t capacity() const noexcept { return mCapacity; }
+			bool empty() const NOEXCEPT { return mSize == 0; }
+			std::size_t size() const NOEXCEPT { return mSize; }
+			std::size_t capacity() const NOEXCEPT { return mCapacity; }
 
 			void remove(const T& value) {
 				T* ptr = std::find(begin(), end(), value);
@@ -516,13 +528,13 @@ namespace smtrat {
 				return result;
 			}
 
-			void swap(dynarray<T>& other) noexcept {
+			void swap(dynarray<T>& other) NOEXCEPT {
 				std::swap(mPointer, other.mPointer);
 				std::swap(mSize, other.mSize);
 				std::swap(mCapacity, other.mCapacity);
 			}
 
-			void swap(dynarray<T>&& other) noexcept {
+			void swap(dynarray<T>&& other) NOEXCEPT {
 				std::swap(mPointer, other.mPointer);
 				std::swap(mSize, other.mSize);
 				std::swap(mCapacity, other.mCapacity);
@@ -548,24 +560,24 @@ namespace smtrat {
 				}
 			}
 
-			T& front() noexcept { assert(mSize != 0); return *mPointer; }
+			T& front() NOEXCEPT { assert(mSize != 0); return *mPointer; }
 
-			T& back() noexcept { assert(mSize != 0); return mPointer[mSize-1]; }
-			void pop_back() noexcept {
+			T& back() NOEXCEPT { assert(mSize != 0); return mPointer[mSize - 1]; }
+			void pop_back() NOEXCEPT {
 				mPointer[--mSize].~T();
 			}
 
-			reference operator[](std::size_t index) noexcept {
+			reference operator[](std::size_t index) NOEXCEPT {
 				assert(index < mSize);
 				return mPointer[index];
 			}
 
-			const_reference operator[](std::size_t index) const noexcept {
+			const_reference operator[](std::size_t index) const NOEXCEPT {
 				assert(index < mSize);
 				return mPointer[index];
 			}
 
-			void clear() noexcept {
+			void clear() NOEXCEPT {
 				if(!std::is_trivially_destructible<T>::value) {
 					for(std::size_t i = 0; i < mSize; ++i) {
 						mPointer[i].~T();
