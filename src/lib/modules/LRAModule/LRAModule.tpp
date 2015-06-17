@@ -1414,15 +1414,6 @@ Return:
         branchAt( var->first, (Rational)map_iterator->second );
         return true;
     }
-
-    enum BRANCH_STRATEGY
-    {
-        MIN_PIVOT,
-        MOST_FEASIBLE,
-        MOST_INFEASIBLE,
-        PSEUDO_COST,
-        NATIVE
-    };
     
     template<class Settings>
     bool LRAModule<Settings>::branch_and_bound()
@@ -1447,8 +1438,9 @@ Return:
             result = first_var( gc_support );
         }  
         else if( strat == PSEUDO_COST )
-        {                        
-            result = pseudo_cost_branching( gc_support );
+        {
+            BRANCH_STRATEGY alternative_strat = MOST_INFEASIBLE;
+            result = pseudo_cost_branching( gc_support, alternative_strat );
         } 
         return result;
     }
@@ -1639,7 +1631,7 @@ Return:
     }
     
     template<class Settings>
-    bool LRAModule<Settings>::pseudo_cost_branching(bool _gc_support)
+    bool LRAModule<Settings>::pseudo_cost_branching( bool _gc_support, BRANCH_STRATEGY strat )
     {
         EvalRationalMap _rMap = getRationalModel();
         auto map_iterator = _rMap.begin();
@@ -1654,6 +1646,10 @@ Return:
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
                 result = true;
+                // Check whether we already have data about the considered variable
+                // If so, determine its branching success according to the
+                // heuristic branching function that we apply.
+                // Otherwise, move on to the next variable.
                 auto iter_succ = mBranch_Success.find( var->first );
                 if( iter_succ == mBranch_Success.end() )
                 {
@@ -1729,8 +1725,26 @@ Return:
         }
         if( !at_least_one && result )
         {
-            return most_infeasible_var( _gc_support );
-        }            
+            assert( strat != PSEUDO_COST );
+            // If we don't have data about any of the violated variables but there
+            // exist violated ones, apply the branching heuristic specified by strat
+            if( strat == MIN_PIVOT )
+            {
+                result = minimal_row_var( _gc_support );            
+            }
+            else if( strat == MOST_FEASIBLE )
+            {
+                result = most_feasible_var( _gc_support );
+            }
+            else if( strat == MOST_INFEASIBLE )
+            {
+                result = most_infeasible_var( _gc_support );
+            }
+            else if( strat == NATIVE )
+            {
+                result = first_var( _gc_support );
+            }
+        }    
         if( result )
         {
             if( _gc_support )
