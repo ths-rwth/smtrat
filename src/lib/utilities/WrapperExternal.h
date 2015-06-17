@@ -78,6 +78,12 @@ namespace smtrat {
         */
         DLL_EXPORT bool add(const char* _subformula);
 
+		/**
+		* Adds formula as InformationRelevantFormula
+		* @param formula The formula to add.
+		*/
+		DLL_EXPORT void addInformationRelevantFormula(const char* _formula);
+
         /**
         * Checks the so far added formulas for satisfiability.
         * @return True, if the conjunction of the so far added formulas is satisfiable;
@@ -130,6 +136,17 @@ namespace smtrat {
         * variables.
         */
         DLL_EXPORT void model(char* bufferModel, int bufferSize) const;
+
+		/**
+		* @return A list of all assignments, such that they satisfy the conjunction of
+		*          the so far added formulas.
+		*
+		* Note, that an assignment is only provided if the conjunction of so far added
+		* formulas is satisfiable. Furthermore, when solving non-linear real arithmetic
+		* formulas the assignment could contain other variables or freshly introduced
+		* variables.
+		*/
+		DLL_EXPORT void allModels(char* bufferAllModels, int bufferSize) const;
 
         /**
         * Returns the lemmas/tautologies which were made during the last solving provoked by check(). These lemmas

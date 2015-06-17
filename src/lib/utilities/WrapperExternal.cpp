@@ -31,6 +31,13 @@ namespace smtrat {
         return solver->add(subformula);
     }
 
+	void WrapperExternal::addInformationRelevantFormula(const char* _formula)
+	{
+		FormulaT formula = parser.formula(_formula);
+		std::cout << "Added informationRelevantFormula: " << formula << std::endl;
+		return solver->addInformationRelevantFormula(formula);
+	}
+
     int WrapperExternal::check()
     {
         return solver->check();
@@ -68,6 +75,13 @@ namespace smtrat {
     {
         Model model = solver->model();
         //TODO convert model into bufferModel
+		std::cout << "model (Not implemented yet)" << std::endl;
+	}
+
+	void WrapperExternal::allModels(char* bufferAllModels, int bufferSize) const
+	{
+		std::vector<Model> allModels = solver->allModels();
+		//TODO convert allModels into bufferAllModels
 		std::cout << "model (Not implemented yet)" << std::endl;
 	}
 
