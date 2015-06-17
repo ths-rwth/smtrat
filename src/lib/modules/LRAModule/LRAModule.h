@@ -120,6 +120,15 @@ namespace smtrat
              * As the computation of these matrices is rather expensive, we try to omit this if possible.
              */
             std::set< std::vector<ConstraintT> > mProcessedDCMatrices;
+            // An enumeration type containing the names of the different branching strategies
+            enum BRANCH_STRATEGY
+            {
+                MIN_PIVOT,
+                MOST_FEASIBLE,
+                MOST_INFEASIBLE,
+                PSEUDO_COST,
+                NATIVE
+            };
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores the yet collected statistics of this LRAModule.
             LRAModuleStatistics* mpStatistics;
@@ -394,7 +403,7 @@ namespace smtrat
              * @return true,  if a branching occured with the first original variable that has to be fixed.
              *         false, if no branching occured.
              */
-            bool pseudo_cost_branching( bool _gc_support );
+            bool pseudo_cost_branching( bool _gc_support, BRANCH_STRATEGY strat );
             
             /**
              * Creates a cuts from proof lemma, if it could be found. Otherwise it creates a branch and bound lemma.
