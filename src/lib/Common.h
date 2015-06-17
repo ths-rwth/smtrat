@@ -26,10 +26,11 @@
 #include "carl/formula/FormulaPool.h"
 #include "carl/formula/UFManager.h"
 #include "carl/formula/UFInstanceManager.h"
-#include "carl/formula/bitvector/BVTerm.h"
-#include "carl/formula/bitvector/BVTermPool.h"
-#include "carl/formula/bitvector/BVConstraintPool.h"
-#include "carl/formula/bitvector/BVConstraint.h"
+// TODO Matthias: update carl for bitvector to work
+//#include "carl/formula/bitvector/BVTerm.h"
+//#include "carl/formula/bitvector/BVTermPool.h"
+//#include "carl/formula/bitvector/BVConstraintPool.h"
+//#include "carl/formula/bitvector/BVConstraint.h"
 
 namespace smtrat
 {

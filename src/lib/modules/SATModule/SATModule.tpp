@@ -184,7 +184,8 @@ namespace smtrat
                 CRef cl = addClause( _subformula->formula(), NORMAL_CLAUSE );
                 mFormulaClauseMap[_subformula->formula()] = cl;
                 mClauseFormulaMap[cl] = _subformula->formula();
-                if( Settings::formula_guided_decision_heuristic && _subformula->formula().isTseitinClause() )
+				// TODO Matthias: activate again
+				/*if (Settings::formula_guided_decision_heuristic && _subformula->formula().isTseitinClause())
                 {
                     assert( cl != CRef_Undef );
                     assert( _subformula->formula().getType() == carl::FormulaType::OR );
@@ -206,7 +207,7 @@ namespace smtrat
                         if( var(cla[i]) != v )
                             iter->second.insert( var(cla[i]) );
                     }
-                }
+                }*/
             }
         }
         if( !ok )
@@ -231,13 +232,14 @@ namespace smtrat
                 if( Settings::formula_guided_decision_heuristic )
                 {
                     assert( _subformula->formula().getType() == carl::FormulaType::OR );
-                    if( !_subformula->formula().isTseitinClause() )
+					// TODO Matthias: activate again
+					/*if (!_subformula->formula().isTseitinClause())
                     {
                         for( int i = 0; i < c.size(); ++i )
                         {
                             decrementTseitinShadowOccurrences(var(c[i]));
                         }
-                    }
+                    }*/
                 }
                 removeClause( iter->second );
             }
@@ -669,7 +671,8 @@ namespace smtrat
             {
                 assert( _formula.size() > 1 );
                 vec<Lit> clauseLits;
-                bool tseitinClause = Settings::formula_guided_decision_heuristic && _formula.isTseitinClause();
+				// TODO Matthias: activate again
+				bool tseitinClause = false;// Settings::formula_guided_decision_heuristic && _formula.isTseitinClause();
                 for( auto subformula = _formula.subformulas().begin(); subformula != _formula.subformulas().end(); ++subformula )
                 {
                     switch( subformula->getType() )
@@ -2322,7 +2325,8 @@ SetWatches:
         {
             assert( mBooleanConstraintMap[var( p )].second != nullptr );
             Abstraction& abstr = sign( p ) ? *mBooleanConstraintMap[var( p )].second : *mBooleanConstraintMap[var( p )].first;
-            if( !abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (abstr.reabstraction.getType() == carl::FormulaType::UEQ || abstr.reabstraction.getType() == carl::FormulaType::BITVECTOR || abstr.reabstraction.constraint().isConsistent() != 1)) 
+			// TODO Matthias: activate again
+            if( !abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (abstr.reabstraction.getType() == carl::FormulaType::UEQ /*|| abstr.reabstraction.getType() == carl::FormulaType::BITVECTOR*/ || abstr.reabstraction.constraint().isConsistent() != 1)) 
             {
                 if( ++abstr.updateInfo > 0 )
                     mChangedBooleans.push_back( var( p ) );
