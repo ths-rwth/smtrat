@@ -200,6 +200,9 @@ namespace smtrat
             /// Maps the Boolean variables to their corresponding Minisat variable.
             typedef std::map<const carl::Variable, Minisat::Var> BooleanVarMap;
             
+            /// Maps the Minisat variables to their corresponding boolean variable.
+            typedef std::map<const Minisat::Var, FormulaT> MinisatVarMap;
+
             /**
              * Maps each Minisat variable to a pair of Abstractions, one contains the abstraction information of the literal
              * being the variable and one contains the abstraction information of the literal being the variables negation.
@@ -209,6 +212,12 @@ namespace smtrat
             /// Maps the clauses in the received formula to the corresponding Minisat clause.
             typedef std::map<FormulaT, Minisat::CRef> FormulaClauseMap;
             
+            /// Maps the clauses in Minisat to the corresponding received formula.
+            typedef std::map<Minisat::CRef, FormulaT> ClauseFormulaMap;
+
+            /// Maps the minisat variable to the formulas which influence its value
+            typedef std::map<Minisat::Var, FormulasT> VarLemmaMap;
+
             /// A vector of vectors of literals representing a vector of clauses.
             typedef std::vector<std::vector<Minisat::Lit>> ClauseVector;
             
@@ -339,6 +348,8 @@ namespace smtrat
             // Module related members.
             /// A flag, which is set to true, if anything has been changed in the passed formula between now and the last consistency check.
             bool mChangedPassedFormula;
+			/// A flag, which is set to true, if all satisfying assignments should be computed.
+			bool mComputeAllSAT;
             /**
              * Stores gained information about the current assignment's consistency. If we know from the last consistency check, whether the
              * current assignment is consistent, this member is True, if we know that it is inconsistent it is False, otherwise Unknown.
@@ -364,8 +375,12 @@ namespace smtrat
             ConstraintLiteralsMap mConstraintLiteralMap;
             /// Maps the Boolean variables to their corresponding Minisat variable.
             BooleanVarMap mBooleanVarMap;
+            /// Maps the Minisat variables to their corresponding boolean variable.
+            MinisatVarMap mMinisatVarMap;
             /// Maps the clauses in the received formula to the corresponding Minisat clause.
             FormulaClauseMap mFormulaClauseMap;
+            /// Maps the Minisat clauses to the corresponding received formula.
+            ClauseFormulaMap mClauseFormulaMap;
             /// If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
             ClauseSet mLearntDeductions;
             /// Stores all Literals for which the abstraction information might be changed.
@@ -386,6 +401,14 @@ namespace smtrat
             std::stack<signed> mOldSplittingVars;
             /// Stores the just introduced Boolean variables for theory splitting decisions.
             std::vector<signed> mNewSplittingVars;
+            /// Stores for each variable the corresponding formulas which control its value
+            VarLemmaMap mPropagatedLemmas;
+			/// Stores Minisat indexes of all relevant variables
+			vector<int> mRelevantVariables;
+            ///
+            Minisat::vec<unsigned> mNonTseitinShadowedOccurrences;
+            ///
+            std::map<signed,std::set<signed>> mTseitinVarShadows;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
             SATModuleStatistics* mpStatistics;
@@ -438,6 +461,11 @@ namespace smtrat
              * Updates the model, if the solver has detected the consistency of the received formula, beforehand.
              */
             void updateModel() const;
+
+			/**
+             * Updates all satisfying models, if the solver has detected the consistency of the received formula, beforehand.
+             */
+            void updateAllModels();
             
             /**
              * Updates the infeasible subset found by the SATModule, if the received formula is unsatisfiable.
@@ -537,6 +565,13 @@ namespace smtrat
             void printVariableClausesMap( std::ostream& _out = std::cout, std::string _init = "" ) const;
 
             /**
+             * Prints the propagated lemmas for each variables which influence its value.
+             * @param _out  The output stream where the answer should be printed.
+             * @param _init The line initiation.
+             */
+            void printPropagatedLemmas( std::ostream& _out = std::cout, std::string _init = "" ) const;
+
+            /**
              * Collects the taken statistics.
              */
             void collectStats();
@@ -550,9 +585,10 @@ namespace smtrat
              * @param polarity A flag, which is true, if the variable preferably is assigned to false.
              * @param dvar A flag, which is true, if the variable to create needs to considered in the solving.
              * @param _activity The initial activity of the variable to create.
+             * @param _tseitinShadowed A flag, which is true, if the variable to create is a sub-formula of a formula represented by a Tseitin variable.
              * @return The created Minisat variable.
              */
-            Minisat::Var newVar( bool polarity = true, bool dvar = true, double _activity = 0 );
+            Minisat::Var newVar( bool polarity = true, bool dvar = true, double _activity = 0, bool _tseitinShadowed = false );
 
             // Solving:
             
@@ -633,7 +669,6 @@ namespace smtrat
                     dec_vars++;
                 else if( !b && decision[v] )
                     dec_vars--;
-
                 decision[v] = b;
                 insertVarOrder( v );
             }
@@ -809,6 +844,27 @@ namespace smtrat
                 trail_lim.push( trail.size() );
             }
             
+            void decrementTseitinShadowOccurrences( signed _var )
+            {
+                unsigned& ntso = mNonTseitinShadowedOccurrences[_var];
+                assert( ntso > 0 );
+                --ntso;
+                if( ntso == 0 )
+                {
+                    setDecisionVar( _var, false );
+                }
+            }
+            
+            void incrementTseitinShadowOccurrences( signed _var )
+            {
+                unsigned& ntso = mNonTseitinShadowedOccurrences[_var];
+                if( ntso == 0 )
+                {
+                    setDecisionVar( _var, true );
+                }
+                ++ntso;
+            }
+            
             /**
              * Enqueue a literal. Assumes value of literal is undefined.
              * @param p The literal to enqueue. (The variable in the literal is set to true, if the literal is positive,
@@ -844,12 +900,19 @@ namespace smtrat
             Minisat::CRef propagate();
             
             /**
-             * Revert to the state at given level (keeping all assignment at 'level' but not beyond).
+             * Revert to the state at given level (keeping all assignments at 'level' but not beyond).
              *
              * @param level The level to backtrack to.
              */
             void cancelUntil( int level );
             
+            /**
+             * Revert the variables assignment until a given level (keeping all assignments at 'level')
+             *
+             * @param level The level to backtrack to
+             */
+            void cancelAssignmentUntil( int level );
+
             /**
              *  analyze : (confl : Clause*) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->  [void]
              *
@@ -901,6 +964,14 @@ namespace smtrat
             Minisat::CRef propagateConsistently( bool& _madeTheoryCall );
             
             /**
+             * Checks the received formula for consistency.
+             * @return l_True,  if the received formula is satisfiable;
+             *         l_False, if the received formula is not satisfiable;
+             *         l_Undef, otherwise.
+             */
+            Minisat::lbool checkFormula();
+
+            /**
              * search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
              *
              *  Description:
@@ -918,6 +989,14 @@ namespace smtrat
              *         l_Undef, if it could not been detected whether the given set of clauses is satisfiable or not.
              */
             Minisat::lbool search( int nof_conflicts = 100 );
+
+			/**
+			 * Handles conflict
+			 * @param conf conflict clause
+			 * @param madeTheoryCall Was theory call made
+			 * @return if return is not l_True, search can be aborted
+             */
+			Minisat::lbool handleConflict( Minisat::CRef conf, bool madeTheoryCall );
             
             /**
              * reduceDB : ()  ->  [void]
@@ -1202,6 +1281,8 @@ namespace smtrat
              */
             Minisat::CRef addFormula( const FormulaT&, unsigned _type );
             
+            bool isTseitinShadowed( const FormulaT& _var, const FormulaT& _clause ) const;
+            
             /**
              * Adds the Boolean abstraction of the given formula being a clause to the SAT solver.
              * @param _formula  The formula to abstract and add to the SAT solver. Note, that the
@@ -1223,7 +1304,7 @@ namespace smtrat
              * @param _decisionRelevant true, if the variable of the literal needs to be involved in the decision process of the SAT solving.
              * @return The corresponding literal.
              */
-            Minisat::Lit getLiteral( const FormulaT& _formula, const FormulaT& _origin, bool _decisionRelevant = true );
+            Minisat::Lit getLiteral( const FormulaT& _formula, const FormulaT& _origin, bool _decisionRelevant = true, bool _tseitinShadowed = false );
             
             /**
              * Adapts the passed formula according to the current assignment within the SAT solver.
@@ -1244,6 +1325,13 @@ namespace smtrat
              *               are assigned to true.
              */
             bool passedFormulaCorrect() const;
+
+			/**
+			 * Updates the model, if the solver has detected the consistency of the received formula, beforehand.
+			 * @param model The model to update with the current assignment
+			 * @param only_relevant_variables If true, only variables in mRelevantVariables are part of the model
+			 */
+			void updateModel( Model& model, bool only_relevant_variables = false ) const;
     };
 }    // namespace smtrat
 

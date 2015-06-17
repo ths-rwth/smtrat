@@ -95,7 +95,7 @@ FormulaT ParserState::applyUninterpretedBooleanFunction(const carl::Uninterprete
 Poly ParserState::applyUninterpretedTheoryFunction(const carl::UninterpretedFunction& f, const Arguments& args) {
 	assert(carl::SortManager::getInstance().isInterpreted(f.codomain()));
 
-	carl::Variable v = carl::freshVariable(carl::SortManager::getInstance().interpretedType(f.codomain()));
+	carl::Variable v = carl::freshVariable(carl::SortManager::getInstance().getType(f.codomain()));
 	mUninterpretedEqualities.insert(FormulaT(std::move(carl::UEquality(carl::UVariable(v), applyUninterpretedFunction(f, args), false))));
 	return carl::makePolynomial<Poly>(v);
 }
@@ -109,7 +109,7 @@ carl::Variable ParserState::addVariableBinding(const std::pair<std::string, carl
 		return v;
 	}
 	case ExpressionType::THEORY: {
-		carl::Variable v = carl::VariablePool::getInstance().getFreshVariable(b.first, carl::SortManager::getInstance().interpretedType(b.second));
+		carl::Variable v = carl::VariablePool::getInstance().getFreshVariable(b.first, carl::SortManager::getInstance().getType(b.second));
 		bind_theory.sym.add(b.first, carl::makePolynomial<Poly>(v));
 		return v;
 	}

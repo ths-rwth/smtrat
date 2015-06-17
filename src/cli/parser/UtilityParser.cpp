@@ -22,6 +22,34 @@ TheoryOpParser::TheoryOpParser() {
     add("/", Poly::ConstructorOperation::DIV);
 }
 
+BitvectorUnaryOpParser::BitvectorUnaryOpParser() {
+    // http://smtlib.cs.uiowa.edu/theories/FixedSizeBitVectors.smt2
+    add("extract", carl::BVTermType::EXTRACT);
+    add("bvnot", carl::BVTermType::NOT);
+    add("bvneg", carl::BVTermType::NEG);
+}
+
+BitvectorBinaryOpParser::BitvectorBinaryOpParser() {
+    // http://smtlib.cs.uiowa.edu/theories/FixedSizeBitVectors.smt2
+    add("concat", carl::BVTermType::CONCAT);
+    add("bvand", carl::BVTermType::AND);
+    add("bvor", carl::BVTermType::OR);
+    add("bvxor", carl::BVTermType::XOR);
+    add("bvnand", carl::BVTermType::NAND);
+    add("bvnor", carl::BVTermType::NOR);
+    add("bvxnor", carl::BVTermType::XNOR);
+    add("bvadd", carl::BVTermType::ADD);
+    add("bvsub", carl::BVTermType::SUB);
+    add("bvmul", carl::BVTermType::MUL);
+    add("bvudiv", carl::BVTermType::DIV_U);
+    add("bvsdiv", carl::BVTermType::DIV_S);
+    add("bvurem", carl::BVTermType::MOD_U);
+    add("bvsrem", carl::BVTermType::MOD_S1);
+    add("bvsmod", carl::BVTermType::MOD_S2);
+    add("bvshl", carl::BVTermType::LSHIFT);
+    add("bvlshr", carl::BVTermType::RHIFT_LOGIC);
+}
+
 DomainParser::DomainParser() {
     add("Bool", carl::VariableType::VT_BOOL);
     add("Int", carl::VariableType::VT_INT);
@@ -41,6 +69,7 @@ LogicParser::LogicParser() {
     add("QF_NIA", smtrat::Logic::QF_NIA);
     add("QF_NRA", smtrat::Logic::QF_NRA);
     add("QF_UF", smtrat::Logic::QF_NRA);
+    add("QF_BV", smtrat::Logic::QF_NRA);
 }
 
 RelationParser::RelationParser() {

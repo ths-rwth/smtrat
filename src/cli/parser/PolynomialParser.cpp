@@ -24,7 +24,8 @@ namespace parser {
 	PolynomialParser::PolynomialParser(ParserState* _state, FormulaParser* formulaPtr, UninterpretedParser* uninterpreted):
 		PolynomialParser::base_type(polynomial, "polynomial"),
 		state(_state),
-		fun_argument(formulaPtr, uninterpreted, this)
+		bitvector(_state),
+		fun_argument(formulaPtr, &bitvector, uninterpreted, this)
 	{
 		polynomial_op = op_theory >> +polynomial;
 		polynomial_op.name("polynomial operation");

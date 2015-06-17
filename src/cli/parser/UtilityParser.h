@@ -28,6 +28,13 @@ struct TheoryOpParser: public qi::symbols<char, Poly::ConstructorOperation> {
     TheoryOpParser();
 };
 
+struct BitvectorUnaryOpParser: public qi::symbols<char, carl::BVTermType> {
+    BitvectorUnaryOpParser();
+};
+struct BitvectorBinaryOpParser: public qi::symbols<char, carl::BVTermType> {
+    BitvectorBinaryOpParser();
+};
+
 struct DomainParser: public qi::symbols<char, carl::VariableType> {
     DomainParser();
 };

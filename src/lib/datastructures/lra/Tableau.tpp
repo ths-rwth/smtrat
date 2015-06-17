@@ -279,10 +279,15 @@ namespace smtrat
                     FormulaT constraintLess = FormulaT( smtrat::ConstraintT( constraint.lhs(), carl::Relation::LESS ) );
                     Value<T1>* valueA = constraint.integerValued() ? new Value<T1>( boundValue - T1( 1 ) ) : new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
                     result = negative ? newVar->addLowerBound( valueA, mDefaultBoundPosition, constraintLess ) : newVar->addUpperBound( valueA, mDefaultBoundPosition, constraintLess );
-                    std::vector< const Bound<T1,T2>* >* boundVectorLess = new std::vector< const Bound<T1,T2>* >();
-                    boundVectorLess->push_back( result.first );
-                    mConstraintToBound.insert( std::make_pair( constraintLess, boundVectorLess ) );
-                    result.first->setNeqRepresentation( _constraint );
+                    auto ctbInsertRes = mConstraintToBound.insert( std::make_pair( constraintLess, nullptr ) );
+                    if( ctbInsertRes.second )
+                    {
+                        std::vector< const Bound<T1,T2>* >* boundVector = new std::vector< const Bound<T1,T2>* >();
+                        boundVector->push_back( result.first );
+                        ctbInsertRes.first->second = boundVector;
+                    }
+//                    if( !constraint.integerValued() )
+                        result.first->setNeqRepresentation( _constraint );
                     
                     std::vector< const Bound<T1,T2>* >* boundVectorB = new std::vector< const Bound<T1,T2>* >();
                     boundVectorB->push_back( result.first );
@@ -290,9 +295,13 @@ namespace smtrat
                     FormulaT constraintLeq = FormulaT( smtrat::ConstraintT( constraint.lhs(), carl::Relation::LEQ ) );
                     Value<T1>* valueB = new Value<T1>( boundValue );
                     result = negative ? newVar->addLowerBound( valueB, mDefaultBoundPosition, constraintLeq ) : newVar->addUpperBound( valueB, mDefaultBoundPosition, constraintLeq );
-                    std::vector< const Bound<T1,T2>* >* boundVectorLeq = new std::vector< const Bound<T1,T2>* >();
-                    boundVectorLeq->push_back( result.first );
-                    mConstraintToBound.insert( std::make_pair( constraintLeq, boundVectorLeq ) );
+                    ctbInsertRes = mConstraintToBound.insert( std::make_pair( constraintLeq, nullptr ) );
+                    if( ctbInsertRes.second )
+                    {
+                        std::vector< const Bound<T1,T2>* >* boundVector = new std::vector< const Bound<T1,T2>* >();
+                        boundVector->push_back( result.first );
+                        ctbInsertRes.first->second = boundVector;
+                    }
                     result.first->setNeqRepresentation( _constraint );
                     
                     boundVectorB->push_back( result.first );
@@ -300,9 +309,13 @@ namespace smtrat
                     FormulaT constraintGeq = FormulaT( smtrat::ConstraintT( constraint.lhs(), carl::Relation::GEQ ) );
                     Value<T1>* valueC = new Value<T1>( boundValue );
                     result = negative ? newVar->addUpperBound( valueC, mDefaultBoundPosition, constraintGeq ) : newVar->addLowerBound( valueC, mDefaultBoundPosition, constraintGeq );
-                    std::vector< const Bound<T1,T2>* >* boundVectorGeq = new std::vector< const Bound<T1,T2>* >();
-                    boundVectorGeq->push_back( result.first );
-                    mConstraintToBound.insert( std::make_pair( constraintGeq, boundVectorGeq ) );
+                    ctbInsertRes = mConstraintToBound.insert( std::make_pair( constraintGeq, nullptr ) );
+                    if( ctbInsertRes.second )
+                    {
+                        std::vector< const Bound<T1,T2>* >* boundVector = new std::vector< const Bound<T1,T2>* >();
+                        boundVector->push_back( result.first );
+                        ctbInsertRes.first->second = boundVector;
+                    }
                     result.first->setNeqRepresentation( _constraint );
                     
                     boundVectorB->push_back( result.first );
@@ -310,10 +323,15 @@ namespace smtrat
                     FormulaT constraintGreater = FormulaT( smtrat::ConstraintT( constraint.lhs(), carl::Relation::GREATER ) );
                     Value<T1>* valueD = constraint.integerValued() ? new Value<T1>( boundValue + T1( 1 ) ) : new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
                     result = negative ? newVar->addUpperBound( valueD, mDefaultBoundPosition, constraintGreater ) : newVar->addLowerBound( valueD, mDefaultBoundPosition, constraintGreater );
-                    std::vector< const Bound<T1,T2>* >* boundVectorGreater = new std::vector< const Bound<T1,T2>* >();
-                    boundVectorGreater->push_back( result.first );
-                    mConstraintToBound.insert( std::make_pair( constraintGreater, boundVectorGreater ) );
-                    result.first->setNeqRepresentation( _constraint );
+                    ctbInsertRes = mConstraintToBound.insert( std::make_pair( constraintGreater, nullptr ) );
+                    if( ctbInsertRes.second )
+                    {
+                        std::vector< const Bound<T1,T2>* >* boundVector = new std::vector< const Bound<T1,T2>* >();
+                        boundVector->push_back( result.first );
+                        ctbInsertRes.first->second = boundVector;
+                    }
+//                    if( !constraint.integerValued() )
+                        result.first->setNeqRepresentation( _constraint );
                     
                     boundVectorB->push_back( result.first );
                     assert( mConstraintToBound.find( _constraint ) == mConstraintToBound.end() );

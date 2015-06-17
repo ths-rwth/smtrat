@@ -36,7 +36,8 @@ namespace smtrat
         mpPrimaryBackend( new Module( MT_Module, mpPassedFormula, mPrimaryBackendFoundAnswer, this ) ),
         mStrategyGraph(),
         mDebugOutputChannel( cout.rdbuf() ),
-        mLogic( Logic::UNDEFINED )
+        mLogic( Logic::UNDEFINED ),
+		mInformationRelevantFormula()
         #ifdef SMTRAT_DEVOPTION_Statistics
         ,
         mpStatistics( new GeneralStatistics() )
@@ -202,6 +203,10 @@ namespace smtrat
                 for( auto cons = _requiredBy->informedConstraints().begin(); cons != _requiredBy->informedConstraints().end(); ++cons )
                 {
                     pBackend->inform( *cons );
+                }
+                for( auto form = _requiredBy->rPassedFormula().begin(); form != _requiredBy->firstSubformulaToPass(); ++form )
+                {
+                    pBackend->add( form );
                 }
             }
         }

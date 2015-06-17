@@ -58,6 +58,8 @@ namespace smtrat
 			QuantifierManager mQuantifierManager;
             /// the logic this solver considers
             Logic mLogic;
+			/// List of formula which are relevant for certain tasks
+			std::set<FormulaT> mInformationRelevantFormula;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all statistics for the solver this manager belongs to.
             GeneralStatistics* mpStatistics;
@@ -214,15 +216,31 @@ namespace smtrat
                 mpPrimaryBackend->updateModel();
                 return mpPrimaryBackend->model();
             }
+
+			/**
+			 * @return A list of all assignments, such that they satisfy the conjunction of
+			 *          the so far added formulas.
+			 *
+			 * Note, that an assignment is only provided if the conjunction of so far added
+			 * formulas is satisfiable. Furthermore, when solving non-linear real arithmetic
+			 * formulas the assignment could contain other variables or freshly introduced
+			 * variables.
+			 */
+			const std::vector<Model> allModels() const
+			{
+				mpPrimaryBackend->updateAllModels();
+				return mpPrimaryBackend->allModels();
+			}
             
             /**
              * Returns the lemmas/tautologies which were made during the last solving provoked by check(). These lemmas
              * can be used in the same manner as infeasible subsets are used.
              * @return The lemmas/tautologies made during solving.
              */
-            std::vector<FormulaT> lemmas() const
+            std::vector<FormulaT> lemmas()
             {
                 std::vector<FormulaT> result;
+                mpPrimaryBackend->updateDeductions();
                 for( const auto& ded : mpPrimaryBackend->deductions() )
                 {
                     result.push_back( ded.first );
@@ -244,7 +262,7 @@ namespace smtrat
              * formulas is satisfiable.
              * @param The stream to print on.
              */
-            void printAssignment( std::ostream& _out ) const
+            void printAssignment( std::ostream& _out = std::cout ) const
             {
                 mpPrimaryBackend->printModel( _out );
             }
@@ -341,25 +359,16 @@ namespace smtrat
             {
                 return mLogic;
             }
-            
-            /**
-             * @return The string naming the logic this solver considers.
-             */
-            std::string logicToString() const
-            {
-                switch( mLogic )
-                {
-                    case Logic::QF_LIA:
-                        return "QF_LIA";
-                    case Logic::QF_NIA:
-                        return "QF_NIA";
-                    case Logic::QF_LRA:
-                        return "QF_LRA";
-                    default:
-                        return "QF_NRA";
-                }
-            }
-            
+
+			/**
+			 * Adds formula to InformationRelevantFormula
+			 * @param formula Formula to add
+			 */
+			inline void addInformationRelevantFormula( const FormulaT& formula )
+			{
+				mInformationRelevantFormula.insert( formula );
+			}
+
         protected:
 
             /**
@@ -473,5 +482,14 @@ namespace smtrat
              */
             void checkBackendPriority( Module* _module );
             #endif
+
+			/**
+			 * Gets all InformationRelevantFormulas
+			 * @return Set of all formulas
+             */
+			inline const std::set<FormulaT>& getInformationRelevantFormulas()
+			{
+				return mInformationRelevantFormula;
+			}
     };
 }    // namespace smtrat

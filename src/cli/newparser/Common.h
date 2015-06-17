@@ -15,10 +15,12 @@
 #ifdef __VS
 #pragma warning(push, 0)
 #include <boost/algorithm/string.hpp>
+#include <boost/fusion/include/std_pair.hpp>
+#include <boost/mpl/for_each.hpp>
 #include <boost/mpl/vector.hpp>
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 #include <boost/spirit/include/qi.hpp>
-#include <boost/fusion/include/std_pair.hpp>
+#include <boost/spirit/include/qi_parse.hpp>
 #include <boost/spirit/include/phoenix_bind.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_object.hpp>
@@ -46,48 +48,19 @@
 
 #define PARSER_BITVECTOR
 
+#define EXIT_ON_ERROR
+#ifdef EXIT_ON_ERROR
+#define HANDLE_ERROR exit(123);
+#else
+#define HANDLE_ERROR
+#endif
+
 namespace smtrat {
 namespace parser {
 	namespace spirit = boost::spirit;
 	namespace qi = boost::spirit::qi;
 	namespace px = boost::phoenix;
 	namespace mpl = boost::mpl;
-	
-	template<typename Res>
-	struct VariantConverter: public boost::static_visitor<> {
-		typedef Res result_type;
-		template<typename T>
-		Res operator()(const T& t) const {
-			return Res(t);
-		}
-		template<typename T>
-		Res convertOne(const T& t) const {
-			return Res(t);
-		}
-		template<typename... T>
-		Res convert(const boost::variant<T...>& t) const {
-			return boost::apply_visitor(*this, t);
-		}
-	};
-	
-	template<typename Res>
-	struct VectorVariantConverter: public boost::static_visitor<> {
-		typedef Res result_type;
-		template<typename T>
-		Res operator()(const T& t) const {
-			return Res(t);
-		}
-		template<typename... T>
-		bool convert(const std::vector<boost::variant<T...>>& v, std::vector<Res>& result) const {
-			result.clear();
-			for (const auto& val: v) {
-				if (boost::get<Res>(&val) == nullptr) return false;
-				result.push_back(boost::get<Res>(val));
-			}
-			return true;
-		}
-	};
-	
 		
 	struct Identifier {
 		std::string symbol;

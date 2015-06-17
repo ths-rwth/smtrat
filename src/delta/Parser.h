@@ -70,7 +70,7 @@ struct SymbolParser : public qi::grammar<Iterator, std::string(), Skipper> {
 		quoted = qi::char_('|') > qi::no_skip[+(~qi::char_("|")) > qi::char_('|')];
 		quoted.name("quoted symbol");
 		// Attention: "-" must be the first or last character!
-		simple = qi::lexeme[ (qi::alnum | qi::char_("~\":!@$%^&*_+=<>.?/-")) > *(qi::alnum | qi::char_("~\":!@$%^&*_+=<>.?/-"))];
+		simple = qi::lexeme[ (qi::alnum | qi::char_("#~\":!@$%^&*_+=<>.?/-")) > *(qi::alnum | qi::char_("~\":!@$%^&*_+=<>.?/-"))];
 		simple.name("simple symbol");
 	}
 	qi::rule<Iterator, std::string(), Skipper> main;

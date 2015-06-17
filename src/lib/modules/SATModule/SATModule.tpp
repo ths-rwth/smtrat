@@ -106,6 +106,7 @@ namespace smtrat
         propagation_budget( -1 ),
         asynch_interrupt( false ),
         mChangedPassedFormula( false ),
+		mComputeAllSAT( false ),
         mCurrentAssignmentConsistent( True ),
         mSatisfiedClauses( 0 ),
         mNumberOfFullLazyCalls( 0 ),
@@ -113,7 +114,9 @@ namespace smtrat
         mNumberOfTheoryCalls( 0 ),
         mConstraintLiteralMap(),
         mBooleanVarMap(),
+        mMinisatVarMap(),
         mFormulaClauseMap(),
+        mClauseFormulaMap(),
         mLearntDeductions(),
         mChangedBooleans(),
         mAllActivitiesChanged( false ),
@@ -123,7 +126,11 @@ namespace smtrat
         mVarReplacements(),
         mSplittingVars(),
         mOldSplittingVars(),
-        mNewSplittingVars()
+        mNewSplittingVars(),
+        mPropagatedLemmas(),
+		mRelevantVariables(),
+        mNonTseitinShadowedOccurrences(),
+        mTseitinVarShadows()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
         stringstream s;
@@ -157,11 +164,49 @@ namespace smtrat
     template<class Settings>
     bool SATModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-        if( carl::PROP_IS_A_CLAUSE <= _subformula->formula().properties() )
+        if( _subformula->formula().propertyHolds( carl::PROP_IS_A_CLAUSE ) )
         {
+            if ( Settings::compute_propagated_lemmas && decisionLevel() == 0 )
+            {
+                if ( _subformula->formula().propertyHolds(carl::PROP_IS_A_LITERAL) && _subformula->formula().propertyHolds(carl::PROP_CONTAINS_BOOLEAN) )
+                {
+                    // Add literal from unary clause to lemmas
+                    carl::Variables vars;
+                    _subformula->formula().booleanVars(vars);
+                    assert( vars.size() == 1);
+                    Minisat::Var var = mBooleanVarMap[ *vars.begin() ];
+                    mPropagatedLemmas[ var ].insert( _subformula->formula() );
+                }
+            }
+
             if (mFormulaClauseMap.find( _subformula->formula() ) == mFormulaClauseMap.end())
             {
-                mFormulaClauseMap[_subformula->formula()] = addClause( _subformula->formula(), false );
+                CRef cl = addClause( _subformula->formula(), NORMAL_CLAUSE );
+                mFormulaClauseMap[_subformula->formula()] = cl;
+                mClauseFormulaMap[cl] = _subformula->formula();
+                if( Settings::formula_guided_decision_heuristic && _subformula->formula().isTseitinClause() )
+                {
+                    assert( cl != CRef_Undef );
+                    assert( _subformula->formula().getType() == carl::FormulaType::OR );
+                    const FormulaT& lastLit = *_subformula->formula().subformulas().rbegin();
+                    const FormulaT& tseitinVar = lastLit.getType() == carl::FormulaType::NOT ? lastLit.subformula() : lastLit;
+                    assert( tseitinVar.getType() == carl::FormulaType::BOOL );
+                    Minisat::Var v = mBooleanVarMap[tseitinVar.boolean()];
+                    auto iter = mTseitinVarShadows.find( (signed)v );
+                    if( iter == mTseitinVarShadows.end() )
+                    {
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                        ++mpStatistics->rNrTseitinVariables();
+                        #endif
+                        iter = mTseitinVarShadows.emplace( (signed)v, std::move(std::set<signed>()) ).first;
+                    }
+                    Clause& cla = ca[cl];
+                    for( int i = 0; i < cla.size(); ++i )
+                    {
+                        if( var(cla[i]) != v )
+                            iter->second.insert( var(cla[i]) );
+                    }
+                }
             }
         }
         if( !ok )
@@ -182,6 +227,17 @@ namespace smtrat
                 {
                     int lev = level( var( c[1] ) );
                     cancelUntil( lev );
+                }
+                if( Settings::formula_guided_decision_heuristic )
+                {
+                    assert( _subformula->formula().getType() == carl::FormulaType::OR );
+                    if( !_subformula->formula().isTseitinClause() )
+                    {
+                        for( int i = 0; i < c.size(); ++i )
+                        {
+                            decrementTseitinShadowOccurrences(var(c[i]));
+                        }
+                    }
                 }
                 removeClause( iter->second );
             }
@@ -207,8 +263,12 @@ namespace smtrat
     }
     
     template<class Settings>
-    Answer SATModule<Settings>::checkCore( bool )
+    Answer SATModule<Settings>::checkCore( bool _full )
     {
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        mpStatistics->rNrTotalVariablesBefore() = (size_t) nVars();
+        mpStatistics->rNrClauses() = (size_t) nClauses();
+        #endif
         if( carl::PROP_IS_IN_CNF <= rReceivedFormula().properties() )
         {
             if( !Settings::stop_search_after_first_unknown )
@@ -248,23 +308,87 @@ namespace smtrat
                 return False;
             }
 
-            lbool result = l_Undef;
-            if( Settings::use_restarts )
+            lbool result = checkFormula();
+			#ifdef DEBUG_SATMODULE
+            printCurrentAssignment();
+			#endif
+
+            //TODO matthias: finish
+            if ( Settings::find_all_dependent_variables )
             {
-                mCurr_Restarts = 0;
-                int current_restarts = -1;
-                result = l_Undef;
-                while( current_restarts < mCurr_Restarts )
+                assert( result == l_True );
+
+                // Initialize set of all variables which are not tested yet for positive assignment
+                std::set<Minisat::Var> testVarsPositive;
+                Minisat::Var testCandidate;
+                for ( BooleanVarMap::const_iterator iter = mBooleanVarMap.begin(); iter != mBooleanVarMap.end(); ++iter )
                 {
-                    current_restarts = mCurr_Restarts;
-                    double rest_base = luby_restart ? luby( restart_inc, mCurr_Restarts ) : pow( restart_inc, mCurr_Restarts );
-                    result = search( (int)rest_base * restart_first );
-                    // if( !withinBudget() ) break;
+                    testVarsPositive.insert( iter->second );
                 }
-            }
-            else
-            {
-                result = search();
+
+                while ( !testVarsPositive.empty() )
+                {
+                    for( int pos = 0; pos < assigns.size(); ++pos )
+                    {
+                        if ( assigns[ pos ] == l_True )
+                        {
+                            testVarsPositive.erase( pos );
+                        }
+                    }
+
+                    // Reset the state until level 0
+                    cancelAssignmentUntil( 0 );
+                    qhead = trail_lim[0];
+                    trail.shrink( trail.size() - trail_lim[0] );
+                    trail_lim.shrink( trail_lim.size() - 0 );
+                    ok = true;
+                    mPropagatedLemmas.clear();
+
+                    if ( testVarsPositive.empty() )
+                    {
+                        break;
+                    }
+
+                    // Set new positive assignment
+                    // TODO matthias: ignore Tseitin variables
+                    testCandidate = *testVarsPositive.begin();
+                    #ifdef DEBUG_SATMODULE
+                    cout << "Test candidate: " << mMinisatVarMap.at( testCandidate ) << endl;
+                    #endif
+                    Lit nextLit = mkLit( testCandidate, false );
+                    assert( assumptions.size() <= 1 );
+                    assumptions.clear();
+                    assumptions.push( nextLit );
+
+                    // Check again
+                    result = checkFormula();
+                    if ( result == l_False )
+                    {
+                        #ifdef DEBUG_SATMODULE
+                        cout << "Unsat with variable: " << mMinisatVarMap.at( testCandidate ) << endl;
+                        #endif
+                        testVarsPositive.erase( testCandidate );
+                        //Construct lemma via infeasible subset
+                        updateInfeasibleSubset();
+                        FormulaT negation = FormulaT( carl::FormulaType::NOT, mMinisatVarMap.at( testCandidate) );
+                        FormulaT infeasibleSubset = FormulaT( carl::FormulaType::AND, infeasibleSubsets()[0] );
+                        FormulaT lemma = FormulaT( carl::FormulaType::IMPLIES, infeasibleSubset, negation );
+                        addDeduction( lemma );
+                    }
+                    else if ( result == l_True )
+                    {
+                        #ifdef DEBUG_SATMODULE
+                        cout << "Sat with variable: " << mMinisatVarMap.at( testCandidate ) << endl;
+                        printCurrentAssignment();
+                        #endif
+                    }
+					else
+					{
+						#ifdef DEBUG_SATMODULE
+                        cout << "Unknown with variable: " << mMinisatVarMap.at( testCandidate ) << endl;
+                        #endif
+					}
+                }
             }
 
             #ifdef SATMODULE_WITH_CALL_NUMBER
@@ -301,6 +425,29 @@ namespace smtrat
     }
 
     template<class Settings>
+    Minisat::lbool SATModule<Settings>::checkFormula()
+    {
+        if( Settings::use_restarts )
+        {
+            mCurr_Restarts = 0;
+            int current_restarts = -1;
+            lbool result = l_Undef;
+            while( current_restarts < mCurr_Restarts )
+            {
+                current_restarts = mCurr_Restarts;
+                double rest_base = luby_restart ? luby( restart_inc, mCurr_Restarts ) : pow( restart_inc, mCurr_Restarts );
+                result = search( (int)rest_base * restart_first );
+                // if( !withinBudget() ) break;
+            }
+            return result;
+        }
+        else
+        {
+            return search();
+        }
+    }
+
+    template<class Settings>
     void SATModule<Settings>::updateModel() const
     {
         clearModel();
@@ -318,11 +465,141 @@ namespace smtrat
             }
         }
     }
+
+	template<class Settings>
+    void SATModule<Settings>::updateModel( Model& model, bool only_relevant_variables ) const
+    {
+		model.clear();
+		if( solverState() == True )
+		{
+			if ( only_relevant_variables )
+			{
+				// Set assignment for all relevant variables (might be partial assignment)
+				for ( int i = 0; i < mRelevantVariables.size(); ++i )
+				{
+					int index = mRelevantVariables[ i ];
+					ModelValue assignment = assigns[ index ] == l_True;
+					carl::Variable var = mMinisatVarMap.at( index ).boolean();
+					model.insert( std::make_pair( var, assignment ) );
+				}
+			}
+			else
+			{
+				// Set assignment for all defined variables (might be partial assignment)
+				for ( int i = 0; i < assigns.size(); ++i )
+				{
+					if ( assigns[i] == l_Undef )
+					{
+						// Partial assignment
+						continue;
+					}
+					ModelValue assignment = assigns[i] == l_True;
+					carl::Variable var = mMinisatVarMap.at( i ).boolean();
+					model.insert( std::make_pair( var, assignment ) );
+				}
+			}
+
+			// Set variable replacements
+			// TODO Matthias: correct way?
+			Module::getBackendsAllModels();
+			for( auto varReplacement = mVarReplacements.begin(); varReplacement != mVarReplacements.end(); ++varReplacement )
+			{
+				Model::iterator iter = model.find( varReplacement->first );
+				if ( iter != model.end() )
+				{
+					iter->second = varReplacement->second;
+				}
+			}
+		}
+    }
+
+	template<class Settings>
+	void SATModule<Settings>::updateAllModels()
+	{
+		#ifdef DEBUG_SATMODULE
+		std::cout << "Update all models" << endl;
+		#endif
+		mComputeAllSAT = true;
+		clearModels();
+		if( solverState() == True )
+		{
+			// Compute all satisfying assignments
+			#ifdef DEBUG_SATMODULE
+			std::cout << "Compute more assignments" << std::endl;
+			#endif
+
+			// Construct list of all relevant variables
+			mRelevantVariables.clear();
+			for ( std::set<FormulaT>::const_iterator iterVar = getInformationRelevantFormulas().begin(); iterVar != getInformationRelevantFormulas().end(); ++iterVar )
+			{
+				mRelevantVariables.push_back( mBooleanVarMap.at( iterVar->boolean() ) );
+			}
+			#ifdef DEBUG_SATMODULE
+			std::cout << "Relevant variables: ";
+			for ( int i = 0; i < mRelevantVariables.size(); ++i )
+			{
+				std::cout << mRelevantVariables[ i ] << " (" << mMinisatVarMap[ mRelevantVariables[ i ] ] << "), ";
+			}
+			std::cout << std::endl;
+			#endif
+
+			lbool result;
+			Model model;
+			do
+			{
+				// Compute assignment
+				#ifdef DEBUG_SATMODULE
+				printCurrentAssignment();
+				#endif
+				updateModel( model, true );
+				mAllModels.push_back( model );
+				#ifdef DEBUG_SATMODULE
+				std::cout << "Model: " << model << std::endl;
+				#endif
+				// Exclude assignment
+				// TODO Matthias: construct clause
+				vec<Lit> excludeClause;
+				int index;
+				for ( int i = 0; i < mRelevantVariables.size(); ++i )
+				{
+					index = mRelevantVariables[ i ];
+					// Add negated literal
+					Lit lit = mkLit( index, assigns[ index ] == l_True);
+					excludeClause.push( lit );
+				}
+				#ifdef DEBUG_SATMODULE
+				std::cout << "Added exclude: " << std::endl;
+				printClause( excludeClause );
+				#endif
+				CRef clause;
+				if ( addClause( excludeClause, DEDUCTED_CLAUSE ) )
+				{
+					clause = learnts.last();
+				}
+				else
+				{
+					assert( false );
+				}
+				if ( handleConflict( clause, false ) != l_True )
+				{
+					// Already UnSAT
+					break;
+				}
+
+				// Check again
+				result = checkFormula();
+			} while ( result == l_True );
+			#ifdef DEBUG_SATMODULE
+			std::cout << ( result == l_False ? "UnSAT" : "Undef" ) << std::endl;
+			#endif
+		}
+		mComputeAllSAT = false;
+    }
     
     template<class Settings>
     void SATModule<Settings>::updateInfeasibleSubset()
     {
-        assert( !ok );
+        assert( Settings::find_all_dependent_variables || !ok );
         mInfeasibleSubsets.clear();
         // Set the infeasible subset to the set of all clauses.
         FormulasT infeasibleSubset;
@@ -392,14 +669,15 @@ namespace smtrat
             {
                 assert( _formula.size() > 1 );
                 vec<Lit> clauseLits;
-                for( const FormulaT& subformula : _formula.subformulas() )
+                bool tseitinClause = Settings::formula_guided_decision_heuristic && _formula.isTseitinClause();
+                for( auto subformula = _formula.subformulas().begin(); subformula != _formula.subformulas().end(); ++subformula )
                 {
-                    switch( subformula.getType() )
+                    switch( subformula->getType() )
                     {
-                        assert( subformula.propertyHolds( carl::PROP_IS_A_LITERAL ) );
+                        assert( subformula->propertyHolds( carl::PROP_IS_A_LITERAL ) );
                         case carl::FormulaType::NOT:
                         {
-                            const FormulaT& subsubformula = subformula.back();
+                            const FormulaT& subsubformula = subformula->back();
                             switch( subsubformula.getType() )
                             {
                                 case carl::FormulaType::TRUE:
@@ -407,8 +685,8 @@ namespace smtrat
                                 case carl::FormulaType::FALSE:
                                     return CRef_Undef;
                                 default:
-                                    assert( subsubformula.getType() == carl::FormulaType::CONSTRAINT || subsubformula.getType() == carl::FormulaType::BOOL || subsubformula.getType() == carl::FormulaType::UEQ );
-                                    clauseLits.push( getLiteral( subformula, _type == NORMAL_CLAUSE ? _formula : FormulaT( carl::FormulaType::TRUE ) ) );
+                                    assert( subsubformula.isAtom() );
+                                    clauseLits.push( getLiteral( *subformula, _type == NORMAL_CLAUSE ? _formula : FormulaT( carl::FormulaType::TRUE ), !tseitinClause, tseitinClause ) );
                             }
                             break;
                         }
@@ -417,8 +695,8 @@ namespace smtrat
                         case carl::FormulaType::FALSE:
                             break;
                         default:
-                            assert( subformula.getType() == carl::FormulaType::CONSTRAINT || subformula.getType() == carl::FormulaType::BOOL || subformula.getType() == carl::FormulaType::UEQ );
-                            clauseLits.push( getLiteral( subformula, _type == NORMAL_CLAUSE ? _formula : FormulaT( carl::FormulaType::TRUE ) ) );
+                            assert( subformula->isAtom() );
+                            clauseLits.push( getLiteral( *subformula, _type == NORMAL_CLAUSE ? _formula : FormulaT( carl::FormulaType::TRUE ), !tseitinClause, tseitinClause ) );
                             break;
                     }
                 }
@@ -436,7 +714,7 @@ namespace smtrat
                     case carl::FormulaType::FALSE:
                         return CRef_Undef;
                     default:
-                        assert( subformula.getType() == carl::FormulaType::CONSTRAINT || subformula.getType() == carl::FormulaType::BOOL || subformula.getType() == carl::FormulaType::UEQ );
+                        assert( subformula.isAtom() );
                         vec<Lit> learned_clause;
                         learned_clause.push( getLiteral( _formula, _type == NORMAL_CLAUSE ? _formula : FormulaT( carl::FormulaType::TRUE ) ) );
                         return addClause( learned_clause, _type ) ? (_type == NORMAL_CLAUSE ? clauses.last() : learnts.last() ) : CRef_Undef;
@@ -448,7 +726,7 @@ namespace smtrat
                 ok = false;
                 return CRef_Undef;
             default:
-                assert( _formula.getType() == carl::FormulaType::CONSTRAINT || _formula.getType() == carl::FormulaType::BOOL || _formula.getType() == carl::FormulaType::UEQ );
+                assert( _formula.isAtom() );
                 vec<Lit> learned_clause;
                 learned_clause.push( getLiteral( _formula, _type == NORMAL_CLAUSE ? _formula : FormulaT( carl::FormulaType::TRUE ) ) );
                 return addClause( learned_clause, _type ) ? (_type == NORMAL_CLAUSE ? clauses.last() : learnts.last() ) : CRef_Undef;
@@ -586,7 +864,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    Lit SATModule<Settings>::getLiteral( const FormulaT& _formula, const FormulaT& _origin, bool _decisionRelevant )
+    Lit SATModule<Settings>::getLiteral( const FormulaT& _formula, const FormulaT& _origin, bool _decisionRelevant, bool _tseitinShadowed )
     {
         assert( _formula.propertyHolds( carl::PROP_IS_A_LITERAL ) );
         bool negated = _formula.getType() == carl::FormulaType::NOT;
@@ -597,14 +875,20 @@ namespace smtrat
             BooleanVarMap::iterator booleanVarPair = mBooleanVarMap.find(content.boolean());
             if( booleanVarPair != mBooleanVarMap.end() )
             {
+                assert(mMinisatVarMap.find(booleanVarPair->second) != mMinisatVarMap.end());
+                if( Settings::formula_guided_decision_heuristic && !_tseitinShadowed )
+                {
+                    incrementTseitinShadowOccurrences(booleanVarPair->second);
+                }
                 if( _decisionRelevant )
                     setDecisionVar( booleanVarPair->second, _decisionRelevant );
                 l = mkLit( booleanVarPair->second, negated );
             }
             else
             {
-                Var var = newVar( true, _decisionRelevant, content.activity() );
+                Var var = newVar( true, _decisionRelevant, content.activity(), Settings::formula_guided_decision_heuristic && _tseitinShadowed );
                 mBooleanVarMap[content.boolean()] = var;
+                mMinisatVarMap[var] = content;
                 mBooleanConstraintMap.push( std::make_pair( 
                     new Abstraction( passedFormulaEnd(), content ), 
                     new Abstraction( passedFormulaEnd(), negated ? _formula : FormulaT( carl::FormulaType::NOT, _formula ) ) ) );
@@ -624,7 +908,7 @@ namespace smtrat
         }
         else
         {
-            assert( content.getType() == carl::FormulaType::CONSTRAINT || content.getType() == carl::FormulaType::UEQ );
+            assert( content.getType() == carl::FormulaType::CONSTRAINT || content.getType() == carl::FormulaType::UEQ || content.getType() == carl::FormulaType::BITVECTOR );
             double act = fabs( _formula.activity() );
             bool preferredToTSolver = false; //(_formula.activity()<0)
             ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( _formula );
@@ -636,6 +920,10 @@ namespace smtrat
                 {
                     activity[abstractionVar] = maxActivity() + 1;
                     polarity[abstractionVar] = false;
+                }
+                if( Settings::formula_guided_decision_heuristic && !_tseitinShadowed )
+                {
+                    incrementTseitinShadowOccurrences(abstractionVar);
                 }
                 if( _decisionRelevant )
                     setDecisionVar( abstractionVar, _decisionRelevant );
@@ -692,13 +980,19 @@ namespace smtrat
                         invertedConstraint = FormulaT( constraintLhs, carl::invertRelation( cons.relation() ) );
                     }
                 }
-                else // content.getType() == carl::FormulaType::UEQ
+                else if( content.getType() == carl::FormulaType::UEQ )
                 {
                     constraint = content;
                     const carl::UEquality& ueq = content.uequality();
                     invertedConstraint = FormulaT( ueq.lhs(), ueq.rhs(), !ueq.negated() );
                 }
-                Var constraintAbstraction = newVar( !preferredToTSolver, _decisionRelevant, act );
+                else
+                {
+                    assert( content.getType() == carl::FormulaType::BITVECTOR );
+                    constraint = content;
+                    invertedConstraint = FormulaT( carl::FormulaType::NOT, content );
+                }
+                Var constraintAbstraction = newVar( !preferredToTSolver, _decisionRelevant, act, Settings::formula_guided_decision_heuristic && _tseitinShadowed );
                 // map the abstraction variable to the abstraction information for the constraint and it's negation
                 mBooleanConstraintMap.push( std::make_pair( new Abstraction( passedFormulaEnd(), constraint ), new Abstraction( passedFormulaEnd(), invertedConstraint ) ) );
                 // add the constraint and its negation to the constraints to inform backends about
@@ -871,7 +1165,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Var SATModule<Settings>::newVar( bool sign, bool dvar, double _activity )
+    Var SATModule<Settings>::newVar( bool sign, bool dvar, double _activity, bool _tseitinShadowed )
     {
         int v = nVars();
         watches.init( mkLit( v, false ) );
@@ -884,11 +1178,21 @@ namespace smtrat
         polarity.push( sign );
         decision.push();
         trail.capacity( v + 1 );
-        setDecisionVar( v, dvar );
-        if( Settings::apply_valid_substitutions )
+        if( Settings::formula_guided_decision_heuristic )
         {
-            mVarClausesMap.push_back( std::move( std::set<CRef>() ) );
+            if( _tseitinShadowed )
+            {
+                setDecisionVar( v, false );
+                mNonTseitinShadowedOccurrences.push( 0 );
+            }
+            else
+            {
+                setDecisionVar( v, dvar );
+                mNonTseitinShadowedOccurrences.push( 1 );
+            }
         }
+        else
+            setDecisionVar( v, dvar );
         return v;
     }
 
@@ -984,6 +1288,8 @@ namespace smtrat
                 int lev = level( var( c[1] ) );
                 if( value(c[0]) != l_True || lev < level(var(c[0])) )
                 {
+					if ( value(c[0]) == l_False && lev < level(var(c[0])) )
+						lev = level(var(c[0]));
                     cancelUntil( lev );
                     arrangeForWatches( c );
                 }
@@ -1333,36 +1639,56 @@ SetWatches:
         #endif
         if( decisionLevel() > level )
         {
-            for( int c = trail.size() - 1; c >= trail_lim[level]; --c )
-            {
-                Var x       = var( trail[c] );
-                if( mBooleanConstraintMap[x].first != nullptr )
-                {
-                    assert( mBooleanConstraintMap[x].second != nullptr );
-                    Abstraction& abstr = sign( trail[c] ) ? *mBooleanConstraintMap[x].second : *mBooleanConstraintMap[x].first;
-                    if( abstr.position != rPassedFormula().end() )
-                    {
-                        if( abstr.updateInfo >=0 && --abstr.updateInfo < 0 )
-                            mChangedBooleans.push_back( x );
-                    }
-                    else if( abstr.consistencyRelevant ) abstr.updateInfo = 0;
-                    if( Settings::allow_theory_propagation && Settings::detect_deductions )
-                    {
-                        abstr.isDeduction = false;
-                    }
-                }
-                assigns[x]  = l_Undef;
-                if( (phase_saving > 1 || (phase_saving == 1)) && c > trail_lim.last() )
-                    polarity[x] = sign( trail[c] );
-                insertVarOrder( x );
-            }
+            cancelAssignmentUntil( level );
             qhead = trail_lim[level];
             trail.shrink( trail.size() - trail_lim[level] );
             trail_lim.shrink( trail_lim.size() - level );
             ok = true;
         }
     }
-    
+
+    template<class Settings>
+    void SATModule<Settings>::cancelAssignmentUntil( int level )
+    {
+        for( int c = trail.size() - 1; c >= trail_lim[level]; --c )
+        {
+            Var x = var( trail[c] );
+            if( mBooleanConstraintMap[x].first != nullptr )
+            {
+                assert( mBooleanConstraintMap[x].second != nullptr );
+                Abstraction& abstr = sign( trail[c] ) ? *mBooleanConstraintMap[x].second : *mBooleanConstraintMap[x].first;
+                if( abstr.position != rPassedFormula().end() )
+                {
+                    if( abstr.updateInfo >=0 && --abstr.updateInfo < 0 )
+                        mChangedBooleans.push_back( x );
+                }
+                else if( abstr.consistencyRelevant ) abstr.updateInfo = 0;
+                if( Settings::allow_theory_propagation && Settings::detect_deductions )
+                {
+                    abstr.isDeduction = false;
+                }
+            }
+            if( Settings::formula_guided_decision_heuristic )
+            {
+                if( assigns[x] == l_True )
+                {
+                    auto iter = mTseitinVarShadows.find( (signed) x );
+                    if( iter != mTseitinVarShadows.end() )
+                    {
+                        for( signed v : iter->second )
+                        {
+                            decrementTseitinShadowOccurrences(v);
+                        }
+                    }
+                }
+            }
+            assigns[x] = l_Undef;
+            if( (phase_saving > 1 || (phase_saving == 1)) && c > trail_lim.last() )
+                polarity[x] = sign( trail[c] );
+            insertVarOrder( x );
+        }
+    }
+
     template<class Settings>
     CRef SATModule<Settings>::propagateConsistently( bool& _madeTheoryCall )
     {
@@ -1377,6 +1703,28 @@ SetWatches:
                 simplify();
                 if( !ok )
                     return confl;
+
+                // Build lemmas
+                if ( Settings::compute_propagated_lemmas )
+                {
+                    for ( VarLemmaMap::const_iterator iter = mPropagatedLemmas.begin(); iter != mPropagatedLemmas.end(); ++iter )
+                    {
+                        // Construct formula
+                        FormulaT premise = FormulaT( carl::FormulaType::AND, std::move( iter->second ) );
+                        if ( assigns[ iter->first ] == l_False )
+                        {
+                            FormulaT negation = FormulaT( carl::FormulaType::NOT, mMinisatVarMap.at( iter->first ) );
+                            FormulaT lemma = FormulaT( carl::FormulaType::IMPLIES, premise, negation );
+                            addDeduction( lemma );
+                        }
+                        else
+                        {
+                            assert( assigns[ iter->first ] == l_True );
+                            FormulaT lemma = FormulaT( carl::FormulaType::IMPLIES, premise, mMinisatVarMap.at( iter->first) );
+                            addDeduction( lemma );
+                        }
+                    }
+                }
             }
             else
             {
@@ -1394,6 +1742,8 @@ SetWatches:
             printCurrentAssignment( cout, "### " );
             cout << "### " << endl;
             printDecisions( cout, "### " );
+            cout << "### " << endl;
+            printPropagatedLemmas( cout, "### " );
             cout << "### " << endl;
             #endif
 
@@ -1509,7 +1859,6 @@ SetWatches:
         cout << "###" << endl;
         #endif
         assert( ok );
-        int      backtrack_level;
         int      conflictC = 0;
         vec<Lit> learnt_clause;
         starts++;
@@ -1522,7 +1871,7 @@ SetWatches:
         mCurrentAssignmentConsistent = True;
         for( ; ; )
         {
-            if( anAnswerFound() )
+            if( !mComputeAllSAT && anAnswerFound() )
             {
                 return l_Undef;
             }
@@ -1533,7 +1882,7 @@ SetWatches:
                 return l_False;
             if( !Settings::stop_search_after_first_unknown && madeTheoryCall && mCurrentAssignmentConsistent == Unknown )
             {
-                vec<Lit> learnt_clause;
+                learnt_clause.clear();
                 if( rPassedFormula().size() > 1 )
                 {
                     for( auto subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
@@ -1562,78 +1911,13 @@ SetWatches:
             #endif
             if( confl != CRef_Undef )
             {
-                // CONFLICT
-                conflicts++;
-                conflictC++;
-                if( decisionLevel() == 0 )
-                {
-                    if( !Settings::stop_search_after_first_unknown && unknown_excludes.size() > 0 )
-                    {
-                        return l_Undef;
-                    }
-                    return l_False;
-                }
-
-                learnt_clause.clear();
-                assert( confl != CRef_Undef );
-                #ifdef DEBUG_SATMODULE
-                if( madeTheoryCall )
-                {
-                    cout << "### Conflict clause: ";
-                    printClause( confl );
-                }
-                else
-                {
-                    cout << "### SAT conflict!" << endl;
-                    printClause( confl );
-                }
-                #endif
-
-                analyze( confl, learnt_clause, backtrack_level );
-
-                #ifdef DEBUG_SATMODULE
-                printClause( learnt_clause, true, cout, "### Asserting clause: " );
-                cout << "### Backtrack to level " << backtrack_level << endl;
-                cout << "###" << endl;
-                #endif
-                cancelUntil( backtrack_level );
-
-                if( learnt_clause.size() == 1 )
-                {
-                    #ifdef SMTRAT_DEVOPTION_Validation
-                    // this is often an indication that something is wrong with our theory, so we do store our assumptions.
-                    if( value( learnt_clause[0] ) != l_Undef )
-                        Module::storeAssumptionsToCheck( *mpManager );
-                    #endif
-                    assert( value( learnt_clause[0] ) == l_Undef );
-                    uncheckedEnqueue( learnt_clause[0] );
-                }
-                else
-                {
-                    // learnt clause is the asserting clause.
-                    CRef cr = ca.alloc( learnt_clause, CONFLICT_CLAUSE );
-                    learnts.push( cr );
-                    attachClause( cr );
-                    mChangedActivities.push_back( cr );
-                    claBumpActivity( ca[cr] );
-                    #ifdef SMTRAT_DEVOPTION_Validation
-                    // this is often an indication that something is wrong with our theory, so we do store our assumptions.
-                    if( value( learnt_clause[0] ) != l_Undef )
-                        Module::storeAssumptionsToCheck( *mpManager );
-                    #endif
-                    assert( value( learnt_clause[0] ) == l_Undef );
-                    uncheckedEnqueue( learnt_clause[0], cr );
-                    
-                    decrementLearntSizeAdjustCnt();
-                }
-
-                varDecayActivity();
-                claDecayActivity();
-                
-                if( madeTheoryCall )
-                {
-                    mCurrentAssignmentConsistent = True;
-                }
+				// CONFLICT
+				conflictC++;
+				lbool result = handleConflict( confl, madeTheoryCall );
+				if ( result != l_True )
+				{
+					return result;
+				}
             }
             else
             {
@@ -1710,6 +1994,92 @@ SetWatches:
             }
         }
     }
+
+	template<class Settings>
+	Minisat::lbool SATModule<Settings>::handleConflict( Minisat::CRef confl, bool madeTheoryCall )
+	{
+		assert( confl != CRef_Undef );
+		//TODO: member for better performance?
+		int backtrack_level;
+		vec<Lit> learnt_clause;
+
+		conflicts++;
+		if( decisionLevel() == 0 )
+		{
+			if( !Settings::stop_search_after_first_unknown && unknown_excludes.size() > 0 )
+			{
+				return l_Undef;
+			}
+			return l_False;
+		}
+
+		learnt_clause.clear();
+		assert( confl != CRef_Undef );
+		#ifdef DEBUG_SATMODULE
+		if( madeTheoryCall )
+		{
+			cout << "### Conflict clause: ";
+			printClause( confl );
+		}
+		else
+		{
+			cout << "### SAT conflict!" << endl;
+			printClause( confl );
+		}
+		#endif
+
+		analyze( confl, learnt_clause, backtrack_level );
+		// Dirty hack for the SMT-COMP 2015
+		if( learnt_clause.size() == 0 )
+			return l_Undef;
+
+		#ifdef DEBUG_SATMODULE
+		printClause( learnt_clause, true, cout, "### Asserting clause: " );
+		cout << "### Backtrack to level " << backtrack_level << endl;
+		cout << "###" << endl;
+		#endif
+		cancelUntil( backtrack_level );
+
+		if( learnt_clause.size() == 1 )
+		{
+			#ifdef SMTRAT_DEVOPTION_Validation
+			// this is often an indication that something is wrong with our theory, so we do store our assumptions.
+			if( value( learnt_clause[0] ) != l_Undef )
+				Module::storeAssumptionsToCheck( *mpManager );
+			#endif
+			assert( value( learnt_clause[0] ) == l_Undef );
+			uncheckedEnqueue( learnt_clause[0] );
+		}
+		else
+		{
+			// learnt clause is the asserting clause.
+			CRef cr = ca.alloc( learnt_clause, CONFLICT_CLAUSE );
+			learnts.push( cr );
+			attachClause( cr );
+			mChangedActivities.push_back( cr );
+			claBumpActivity( ca[cr] );
+			#ifdef SMTRAT_DEVOPTION_Validation
+			// this is often an indication that something is wrong with our theory, so we do store our assumptions.
+			if( value( learnt_clause[0] ) != l_Undef )
+				Module::storeAssumptionsToCheck( *mpManager );
+			#endif
+			assert( value( learnt_clause[0] ) == l_Undef );
+			uncheckedEnqueue( learnt_clause[0], cr );
+
+			decrementLearntSizeAdjustCnt();
+		}
+
+		varDecayActivity();
+		claDecayActivity();
+
+		if( madeTheoryCall )
+		{
+			mCurrentAssignmentConsistent = True;
+		}
+
+		// For indicating no immediate abort
+		return l_True;
+	}
     
     template<class Settings>
     void SATModule<Settings>::decrementLearntSizeAdjustCnt()
@@ -1789,7 +2159,7 @@ SetWatches:
         return next == var_Undef ? lit_Undef : mkLit( next, polarity[next] );
         //return next == var_Undef ? lit_Undef : mkLit( next, rnd_pol ? drand( random_seed ) < 0.5 : polarity[next] );
     }
-
+    
     template<class Settings>
     void SATModule<Settings>::analyze( CRef confl, vec<Lit>& out_learnt, int& out_btlevel )
     {
@@ -1952,7 +2322,7 @@ SetWatches:
         {
             assert( mBooleanConstraintMap[var( p )].second != nullptr );
             Abstraction& abstr = sign( p ) ? *mBooleanConstraintMap[var( p )].second : *mBooleanConstraintMap[var( p )].first;
-            if( !abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (abstr.reabstraction.getType() == carl::FormulaType::UEQ || abstr.reabstraction.constraint().isConsistent() != 1)) 
+            if( !abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (abstr.reabstraction.getType() == carl::FormulaType::UEQ || abstr.reabstraction.getType() == carl::FormulaType::BITVECTOR || abstr.reabstraction.constraint().isConsistent() != 1)) 
             {
                 if( ++abstr.updateInfo > 0 )
                     mChangedBooleans.push_back( var( p ) );
@@ -1986,6 +2356,53 @@ SetWatches:
         {
             vardata[var( p )] = mkVarData( from, decisionLevel() );
             trail.push_( p );
+        }
+
+		// Save reasons (clauses) implicating a variable value
+        if (Settings::compute_propagated_lemmas && decisionLevel() == 0 && !mComputeAllSAT)
+        {
+            if ( from != CRef_Undef) {
+                // Find corresponding formula
+                ClauseFormulaMap::iterator iter = mClauseFormulaMap.find( from );
+                assert( iter != mClauseFormulaMap.end() );
+                FormulaT formula = iter->second;
+                assert( formula.propertyHolds(carl::PROP_IS_A_CLAUSE) && formula.propertyHolds(carl::PROP_CONTAINS_BOOLEAN) );
+
+                // Get lemmas for variable
+                // Notice: new pair is inserted if not already contained
+                FormulasT* pFormulas = &mPropagatedLemmas[ var(p) ];
+                // Insert reason for variable
+                pFormulas->insert( formula );
+
+                // Find formulas for contained variables
+                carl::Variables vars;
+                formula.booleanVars(vars);
+                for ( carl::Variables::const_iterator iter = vars.begin(); iter != vars.end(); ++iter )
+                {
+                    BooleanVarMap::const_iterator itVar = mBooleanVarMap.find( *iter );
+                    assert( itVar != mBooleanVarMap.end() );
+                    Minisat::Var var = itVar->second;
+                    // Find possible formulas for variable
+                    VarLemmaMap::const_iterator itFormulas = mPropagatedLemmas.find( var );
+                    if ( itFormulas != mPropagatedLemmas.end() )
+                    {
+                        // Insert formulas from contained variable into set for current variable
+                        pFormulas->insert( itFormulas->second.begin(), itFormulas->second.end() );
+                    }
+                }
+            }
+        }
+
+        if( Settings::formula_guided_decision_heuristic && !sign( p ) )
+        {
+            auto iter = mTseitinVarShadows.find( (signed) var(p) );
+            if( iter != mTseitinVarShadows.end() )
+            {
+                for( signed v : iter->second )
+                {
+                    incrementTseitinShadowOccurrences(v);
+                }
+            }
         }
     }
 
@@ -2334,12 +2751,6 @@ NextClause:
                     }
                 }
             }
-        }
-        while( !constraintBoundsAnd.empty() )
-        {
-            const Poly* toDel = constraintBoundsAnd.begin()->first;
-            constraintBoundsAnd.erase( constraintBoundsAnd.begin() );
-            delete toDel;
         }
         if( varToSubstitute == carl::Variable::NO_VARIABLE || !ok )
             return false;
@@ -2962,7 +3373,7 @@ NextClause:
 
         for( int i = 0; i < assumptions.size(); i++ )
         {
-            assert( value( assumptions[i] ) != l_False );
+            assert( Settings::find_all_dependent_variables || value( assumptions[i] ) != l_False );
             _out << _init << "  " << (sign( assumptions[i] ) ? "-" : "") << (mapVar( var( assumptions[i] ), map, max )) << endl;
         }
 
@@ -2985,7 +3396,7 @@ NextClause:
             {
                 _out << _init << "               ";
             }
-            _out << setw( 5 ) << pos;
+            _out << setw( 5 ) << mMinisatVarMap.at(pos);
             _out << "  (" << setw( 7 ) << activity[pos] << ") " << " -> ";
             if( assigns[pos] == l_True )
             {
@@ -3073,10 +3484,30 @@ NextClause:
     }
 
     template<class Settings>
+    void SATModule<Settings>::printPropagatedLemmas( ostream& _out, string _init ) const
+    {
+        _out << _init << " Propagated lemmas:" << endl;
+        for( VarLemmaMap::const_iterator itFormulas = mPropagatedLemmas.begin(); itFormulas != mPropagatedLemmas.end(); ++itFormulas )
+        {
+            _out << _init << " " << mMinisatVarMap.at( itFormulas->first ) << " <- { ";
+            FormulasT formulas = itFormulas->second;
+            for ( FormulasT::iterator iter = formulas.begin(); iter != formulas.end(); ++iter )
+            {
+                if ( iter != formulas.begin() )
+                {
+                    _out << ", ";
+                }
+                _out << *iter;
+            }
+            _out << " }" << endl;
+        }
+    }
+
+    template<class Settings>
     void SATModule<Settings>::collectStats()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
-        mpStatistics->rNrTotalVariables() = (size_t) nVars();
+        mpStatistics->rNrTotalVariablesAfter() = (size_t) nVars();
         mpStatistics->rNrClauses() = (size_t) nClauses();
         #endif
     }

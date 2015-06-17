@@ -20,16 +20,18 @@ namespace smtrat
 	template<typename Settings>
     class PreprocessingModule : public Module
     {
-		private:
-			// If anything that needs variable bounds is active, we shall collect the bounds.
-#ifdef __VS
-			static const bool collectBounds = Settings::checkBounds;
-#else
-            static constexpr bool collectBounds = Settings::checkBounds;
-#endif
-        protected:
-			vb::VariableBounds<FormulaT> varbounds;
+        private:
 			carl::FormulaVisitor<FormulaT> visitor;
+		
+			/// Bounds that have been added since the last call to isConsistent().
+			std::unordered_set<FormulaT> newBounds;
+			/// Collection of bounds of all received formulas.
+			vb::VariableBounds<FormulaT> varbounds;
+			
+            std::unordered_map<FormulaT, bool> boolSubs;
+            std::map<carl::Variable,Poly> arithSubs;
+            
+            std::map<carl::Variable,int> mVariablesBounded;
 			
 			FormulasT tmpOrigins;
 			void accumulateBoundOrigins(const ConstraintT& constraint) {
@@ -75,10 +77,8 @@ namespace smtrat
 			void updateModel() const;
 
         protected:
-			/// Bounds that have been added since the last call to isConsistent().
-			std::set<FormulaT> newBounds;
-			bool addBounds(const FormulaT& formula);
-			void removeBounds(const FormulaT& formula);
+			void addBounds(const FormulaT& formula, const FormulaT& _origin);
+			void removeBounds(const FormulaT& formula, const FormulaT& _origin);
 			
 			/**
 			 * Removes redundant or obsolete factors of polynomials from the formula.
@@ -93,10 +93,29 @@ namespace smtrat
 			std::function<FormulaT(FormulaT)> splitSOSFunction;
 			
 			/**
+			 * Collect the upper and lower bounds of all variables x which only appear as monomial x^i. 
+			 */
+			void collectUnboundedVars(const FormulaT& formula);
+			std::function<void(FormulaT)> collectUnboundedVarsFunction;
+			FormulaT removeUnboundedVars(const FormulaT& formula);
+			std::function<FormulaT(FormulaT)> removeUnboundedVarsFunction;
+			
+			/**
 			 * Checks if constraints vanish using the variable bounds.
 			 */
 			FormulaT checkBounds(const FormulaT& formula);
 			std::function<FormulaT(FormulaT)> checkBoundsFunction;
+			
+			/**
+			 * Extracts the bounds of a polynomial if it is the only polynomial occurring in a disjunction of constraints.
+			 */
+			FormulaT extractBounds(const FormulaT& formula);
+			std::function<FormulaT(FormulaT)> extractBoundsFunction;
+			
+			/**
+			 * Eliminates all equation forming a substitution of the form x = p with p not containing x.
+			 */
+			FormulaT elimSubstitutions(const FormulaT& _formula, bool _elimSubstitutions = false );
     };
 
 }    // namespace smtrat

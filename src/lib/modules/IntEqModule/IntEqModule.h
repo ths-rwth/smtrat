@@ -15,8 +15,8 @@ namespace smtrat
     typedef std::map< FormulaT, std::shared_ptr< std::vector<FormulaT> > > Formula_Origins;
         
     /**
-     * A module which checks whether the equations contained in the received formula 
-     * have an integer solution.
+     * A module which checks whether the equations contained in the received 
+     * (linear integer) formula have a solution.
      */    
     template<typename Settings>
     class IntEqModule : public Module
@@ -24,13 +24,13 @@ namespace smtrat
         private:
             // Stores the current equations of the received constraints and their origins
             Formula_Origins mProc_Constraints;
-            // Stores the equations of the every iteration step
+            // Stores the equations of every iteration step
             std::vector< Formula_Origins > mRecent_Constraints;
-            // Stores the calculated substitutions
+            // Stores the calculated substitutions in the order they occured
             std::vector< std::pair< carl::Variable, Poly > >  mSubstitutions;
             // Stores the origins of the calculated substitutions
             std::map< carl::Variable, std::shared_ptr< std::vector<FormulaT> > > mVariables;
-            // Stores the auxiliary variables
+            // Stores the auxiliary variables that are possibly created during the algorithm
             std::set< carl::Variable > mAuxiliaries;
             // Stores the determined (temporary) model 
             mutable Model mTemp_Model;
@@ -39,7 +39,7 @@ namespace smtrat
             bool mNew_Substitution;
             
             /*
-             * This module constructs a solution when it's possible and returns
+             * This method constructs a solution when it's possible and returns
              * true in this case. Otherwise, e.g. if a disequality is not satisfied,
              * it returns false.
              */

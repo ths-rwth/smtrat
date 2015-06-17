@@ -78,7 +78,7 @@ struct TypeOfTerm : public boost::static_visitor<ExpressionType> {
 		}
 	}
 	ExpressionType operator()(const carl::Sort& v) const {
-		if (carl::SortManager::getInstance().isInterpreted(v)) return (*this)(carl::SortManager::getInstance().interpretedType(v));
+		if (carl::SortManager::getInstance().isInterpreted(v)) return (*this)(carl::SortManager::getInstance().getType(v));
 		else return ExpressionType::UNINTERPRETED;
 	}
 	template<typename T>
@@ -280,7 +280,11 @@ struct SuccessHandlerPtr {
 struct ErrorHandler {
 	template<typename> struct result { typedef qi::error_handler_result type; };
 	template<typename Parser, typename T1, typename T2, typename T3, typename T4>
-	qi::error_handler_result operator()(const Parser& p, T1 b, T2 e, T3 where, T4 const& what) const {
+	qi::error_handler_result operator()(const Parser& p, T1 b, T2 e, T3 where, T4 const& 
+        #ifdef LOGGING
+        what
+        #endif
+    ) const {
 		auto line_start = spirit::get_line_start(b, where);
 		auto line_end = std::find(where, e, '\n');
 		std::string line(++line_start, line_end);

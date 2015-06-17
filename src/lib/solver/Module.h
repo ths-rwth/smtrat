@@ -142,6 +142,8 @@ namespace smtrat
             Manager* const mpManager;
             /// Stores the assignment of the current satisfiable result, if existent.
             mutable Model mModel;
+			/// Stores all satisfying assignments
+			mutable std::vector<Model> mAllModels;
 
         private:
             /// States whether the received formula is known to be satisfiable or unsatisfiable otherwise it is set to unknown.
@@ -259,6 +261,11 @@ namespace smtrat
              * Updates the model, if the solver has detected the consistency of the received formula, beforehand.
              */
             virtual void updateModel() const;
+
+			/**
+			 * Updates all satisfying models, if the solver has detected the consistency of the received formula, beforehand.
+			 */
+			virtual void updateAllModels();
             
 			/**
              * Partition the variables from the current model into equivalence classes according to their assigned value.
@@ -354,7 +361,15 @@ namespace smtrat
             {
                 return mModel;
             }
-            
+
+			/**
+			 * @return All satisfying assignments, if existent.
+			 */
+			inline const std::vector<Model>& allModels() const
+			{
+				return mAllModels;
+			}
+
             /**
              * @return The infeasible subsets of the set of received formulas (empty, if this module has not
              *          detected unsatisfiability of the conjunction of received formulas.
@@ -421,6 +436,11 @@ namespace smtrat
             const std::vector<Splitting>& splittings() const
             {
                 return mSplittings;
+            }
+            
+            void addSplittings( const std::vector<Splitting>& _splittings )
+            {
+                mSplittings.insert( mSplittings.end(), _splittings.begin(), _splittings.end() );
             }
 
             /**
@@ -538,7 +558,7 @@ namespace smtrat
             /**
              * Prints the collected assumptions in the assumption vector into _filename with an appropriate smt2 
              * header including all variables used.
-             * @param _manager The managaer object of this solver to store the assumptions for.
+             * @param _manager The manager object of this solver to store the assumptions for.
              */
             static void storeAssumptionsToCheck( const Manager& _manager );
             
@@ -630,6 +650,19 @@ namespace smtrat
 				// the Assignments should not contain any values that must be deleted explicitly...
 				mModel.clear();
             }
+
+			/**
+			 * Clears all assignments, if any was found
+			 */
+			void clearModels() const
+			{
+			   // the Assignments should not contain any values that must be deleted explicitly...
+			   for ( Model model : mAllModels )
+			   {
+				   model.clear();
+			   }
+			   mAllModels.clear();
+			}
             
             /**
              * @return An iterator to the end of the passed formula.
@@ -712,7 +745,11 @@ namespace smtrat
              * the received formulas, which are responsible for its occurrence.
              * @param _subformula The sub-formula of the received formula to copy.
              */
-            std::pair<ModuleInput::iterator,bool> addReceivedSubformulaToPassedFormula( ModuleInput::const_iterator _subformula );
+            std::pair<ModuleInput::iterator,bool> addReceivedSubformulaToPassedFormula( ModuleInput::const_iterator _subformula )
+            {
+                assert( _subformula->formula().getType() != carl::FormulaType::AND );
+                return addSubformulaToPassedFormula( _subformula->formula(), true, _subformula->formula(), nullptr, false );
+            }
             
             bool originInReceivedFormula( const FormulaT& _origin ) const;
             
@@ -720,25 +757,92 @@ namespace smtrat
              * Adds the given formula to the passed formula with no origin. Note that in the next call of this module's removeSubformula, 
              * all formulas in the passed formula without origins will be removed.
              * @param _formula The formula to add to the passed formula.
+             * @return A pair to the position where the formula to add has been inserted (or its first sub-formula 
+             *         which has not yet been in the passed formula, in case the formula to add is a conjunction), 
+             *         and a Boolean stating whether anything has been added to the passed formula.
              */
-            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula );
+            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula )
+            {
+                return addSubformulaToPassedFormula( _formula, false, FormulaT( carl::FormulaType::FALSE ), nullptr, true );
+            }
             
             /**
              * Adds the given formula to the passed formula.
              * @param _formula The formula to add to the passed formula.
              * @param _origins The link of the formula to add to the passed formula to sub-formulas 
              *         of the received formulas, which are responsible for its occurrence
+             * @return A pair to the position where the formula to add has been inserted (or its first sub-formula 
+             *         which has not yet been in the passed formula, in case the formula to add is a conjunction), 
+             *         and a Boolean stating whether anything has been added to the passed formula.
              */
-            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins );
+            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins )
+            {
+                return addSubformulaToPassedFormula( _formula, false, FormulaT( carl::FormulaType::FALSE ), _origins, true );
+            }
             
             /**
              * Adds the given formula to the passed formula.
              * @param _formula The formula to add to the passed formula.
              * @param _origin The sub-formula of the received formula being responsible for the
              *        occurrence of the formula to add to the passed formula.
+             * @return A pair to the position where the formula to add has been inserted (or its first sub-formula 
+             *         which has not yet been in the passed formula, in case the formula to add is a conjunction), 
+             *         and a Boolean stating whether anything has been added to the passed formula.
              */
-            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, const FormulaT& _origin );
+            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, const FormulaT& _origin )
+            {
+                return addSubformulaToPassedFormula( _formula, true, _origin, nullptr, true );
+            }
             
+    private:
+            /**
+             * This method actually implements the adding of a formula to the passed formula
+             * @param _formula The formula to add to the passed formula.
+             * @param _hasOrigin true, if the next argument contains the formula being the single origin.
+             * @param _origin The sub-formula of the received formula being responsible for the
+             *        occurrence of the formula to add to the passed formula.
+             * @param _origins The link of the formula to add to the passed formula to sub-formulas 
+             *         of the received formulas, which are responsible for its occurrence
+             * @param _mightBeConjunction true, if the formula to add might be a conjunction.
+             * @return A pair to the position where the formula to add has been inserted (or its first sub-formula 
+             *         which has not yet been in the passed formula, in case the formula to add is a conjunction), 
+             *         and a Boolean stating whether anything has been added to the passed formula.
+             */
+            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, bool _hasSingleOrigin, const FormulaT& _origin, const std::shared_ptr<std::vector<FormulaT>>& _origins, bool _mightBeConjunction );
+    protected:
+        
+            /**
+             * @param _origins
+             * @return
+             */
+            std::vector<FormulaT>::const_iterator findBestOrigin( const std::vector<FormulaT>& _origins ) const;
+        
+            /**
+             * 
+             * @param _formula
+             * @param _origins
+             */
+            void getOrigins( const FormulaT& _formula, FormulasT& _origins ) const
+            {
+                ModuleInput::const_iterator posInReceived = mpPassedFormula->find( _formula );
+                assert( posInReceived != mpPassedFormula->end() );
+                if( posInReceived->hasOrigins() )
+                    collectOrigins( *findBestOrigin( posInReceived->origins() ), _origins );
+            }
+
+            /**
+             * 
+             * @param _formula
+             * @param _origins
+             */
+            void getOrigins( const FormulaT& _formula, std::vector<FormulaT>& _origins ) const
+            {
+                ModuleInput::const_iterator posInReceived = mpPassedFormula->find( _formula );
+                assert( posInReceived != mpPassedFormula->end() );
+                if( posInReceived->hasOrigins() )
+                    collectOrigins( *findBestOrigin( posInReceived->origins() ), _origins );
+            }
+        
             /**
              * Copies the infeasible subsets of the passed formula
              */
@@ -759,6 +863,11 @@ namespace smtrat
              */
             void getBackendsModel() const;
             
+            /**
+             * Stores all models of a backend in the list of all models of this module.
+             */
+            void getBackendsAllModels() const;
+
             /**
              * Runs the backend solvers on the passed formula.
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
@@ -879,6 +988,19 @@ namespace smtrat
              *         true, if it cannot be said whether the model satisfies the given formula.
              */
             unsigned checkModel() const;
+
+			/**
+			 * Adds a formula to the InformationRelevantFormula
+             * @param formula Formula to add
+             */
+			void addInformationRelevantFormula( const FormulaT& formula );
+
+			/**
+			 * Gets all InformationRelevantFormulas
+			 * @return Set of all formulas
+             */
+			const std::set<FormulaT>& getInformationRelevantFormulas();
+
         public:
             // Printing methods.
             

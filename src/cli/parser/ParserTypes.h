@@ -87,14 +87,14 @@ typedef boost::spirit::line_pos_iterator<BaseIteratorType> PositionIteratorType;
 typedef PositionIteratorType Iterator;
 
 
+typedef carl::BVTerm BitvectorType;
+typedef carl::BVTermPool BitvectorPool;
 typedef boost::variant<carl::UVariable, carl::UFInstance> UninterpretedType;
 typedef boost::variant<FormulaT, Poly, carl::UVariable, carl::UFInstance> Argument;
 typedef std::vector<Argument> Arguments;
 
 typedef std::tuple<std::string, std::vector<carl::Variable>, FormulaT> BooleanFunction;
 typedef std::tuple<std::string, std::vector<carl::Variable>, Poly> TheoryFunction;
-
-
 
 struct Skipper: public boost::spirit::qi::grammar<Iterator> {
 	Skipper(): Skipper::base_type(main, "skipper") {

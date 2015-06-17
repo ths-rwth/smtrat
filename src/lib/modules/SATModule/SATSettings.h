@@ -40,11 +40,21 @@ namespace smtrat
          * 
          */
         static const bool stop_search_after_first_unknown = true; //TODO: repair this when deactivated (see qf_lra/bugs/bug_sat_dont_stop_by_first_unknown.smt2)
+        /**
+         * 
+         */
+        static const bool formula_guided_decision_heuristic = false;
     };
     
     struct SATSettings2 : SATSettings1
     {
         static const bool detect_deductions = true;
     };
+
+    struct SATSettings3 : SATSettings1
+    {
+        static const bool compute_propagated_lemmas = true;
+        static const bool find_all_dependent_variables = false;
+	};
 }
 

@@ -12,11 +12,11 @@
 namespace smtrat {
 namespace parser {
 
-UninterpretedParser::UninterpretedParser(ParserState* _state, FormulaParser* formula):
+UninterpretedParser::UninterpretedParser(ParserState* _state, FormulaParser* formula, BitvectorParser* bitvector):
 	UninterpretedParser::base_type(uninterpreted, "uninterpreted"),
 	state(_state),
 	polynomial(_state, formula, this),
-	fun_argument(formula, this, &polynomial)
+	fun_argument(formula, bitvector, this, &polynomial)
 {
 	uninterpreted = (
 			state->var_uninterpreted[qi::_val = qi::_1]

@@ -28,12 +28,12 @@
 namespace smtrat
 {
 
-    class ModelVariable : public boost::variant<carl::Variable,carl::UVariable,carl::UninterpretedFunction>
+    class ModelVariable : public boost::variant<carl::Variable,carl::BVVariable,carl::UVariable,carl::UninterpretedFunction>
     {
         /**
          * Base type we are deriving from.
          */
-        typedef boost::variant<carl::Variable,carl::UVariable,carl::UninterpretedFunction> Super;
+        typedef boost::variant<carl::Variable,carl::BVVariable,carl::UVariable,carl::UninterpretedFunction> Super;
         
     public:
         /**
@@ -70,13 +70,21 @@ namespace smtrat
         }
         
         /**
-         * @return true, if the stored value is a variable.
+         * @return true, if the stored value is a bitvector variable.
+         */
+        bool isBVVariable() const
+        {
+            return type() == typeid(carl::BVVariable);
+        }
+
+        /**
+         * @return true, if the stored value is an uninterpreted variable.
          */
         bool isUVariable() const
         {
             return type() == typeid(carl::UVariable);
         }
-        
+
         /**
          * @return true, if the stored value is a function.
          */
@@ -95,7 +103,16 @@ namespace smtrat
         }
         
         /**
-         * @return The stored value as a variable.
+         * @return The stored value as a bitvector variable.
+         */
+        const carl::BVVariable& asBVVariable() const
+        {
+            assert( isBVVariable() );
+            return boost::get<carl::BVVariable>(*this);
+        }
+
+        /**
+         * @return The stored value as an uninterpreted variable.
          */
         const carl::UVariable& asUVariable() const
         {
@@ -111,7 +128,7 @@ namespace smtrat
             assert( isFunction() );
             return boost::get<carl::UninterpretedFunction>(*this);
         }
-        
+
         /**
          * @return true, if the first argument is a variable and the second is a function 
          *                or if both are variables and the first is smaller (lower id)
@@ -119,20 +136,32 @@ namespace smtrat
          */
         bool operator<( const ModelVariable& _mvar ) const
         {
-           if( isVariable() )
+            if( isVariable() )
             {
                 if( _mvar.isVariable() ) return asVariable() < _mvar.asVariable();
+                assert( _mvar.isBVVariable() || _mvar.isUVariable() || _mvar.isFunction() );
+                return true;
+            }
+            if( isBVVariable() )
+            {
+                if( _mvar.isVariable() ) return false;
+                if( _mvar.isBVVariable() ) return asBVVariable() < _mvar.asBVVariable();
+                assert( _mvar.isUVariable() || _mvar.isFunction() );
                 return true;
             }
             if( isUVariable() )
             {
-                if( _mvar.isVariable() ) return false;
-                if( _mvar.isFunction() ) return true;
-                assert( isUVariable() );
-                return asUVariable() < _mvar.asUVariable();
+                if( _mvar.isVariable() || _mvar.isBVVariable() ) return false;
+                if( _mvar.isUVariable() ) return asUVariable() < _mvar.asUVariable();
+                assert( _mvar.isFunction() );
+                return true;
             }
-            assert( isFunction() );
-            if( _mvar.isFunction() ) return asFunction() < _mvar.asFunction();
+            if( isFunction() )
+            {
+                if( _mvar.isVariable() || _mvar.isBVVariable() || _mvar.isUVariable() ) return false;
+                if( _mvar.isFunction() ) return asFunction() < _mvar.asFunction();
+            }
+            assert( false );
             return false;
         }
         
@@ -146,6 +175,11 @@ namespace smtrat
             if( isVariable() )
             {
                 if( _mvar.isVariable() ) return asVariable() == _mvar.asVariable();
+                return false;
+            }
+            if( isBVVariable() )
+            {
+                if( _mvar.isBVVariable() ) return asBVVariable() == _mvar.asBVVariable();
                 return false;
             }
             if( isUVariable() )
@@ -173,7 +207,23 @@ namespace smtrat
      *                or if both are function and the first smaller (lower id).
      */
     bool operator<( const carl::Variable& _var, const ModelVariable& _mvar );
-    
+
+    /**
+     * @return true, if the first argument is a bitvector variable that is smaller
+     *               than the second argument (by id),
+     *               or if the first argument has another type that is ordered
+     *               before the bitvector variable type.
+     */
+    bool operator<( const ModelVariable& _mvar, const carl::BVVariable& _bvvar );
+
+    /**
+     * @return true, if the second argument is a bitvector variable and the first argument
+     *               is smaller (by id),
+     *               or if the second argument has another type and the bitvector
+     *               variable type is ordered before the type of the second argument.
+     */
+    bool operator<( const carl::BVVariable& _bvvar, const ModelVariable& _mvar );
+
     /**
      * @return true, if the first argument is a variable and the second is a function 
      *                or if both are variables and the first is smaller (lower id)
@@ -207,12 +257,12 @@ namespace smtrat
      * It is implemented as subclass of a boost::variant.
      * Possible value types are bool, vs::SqrtEx and carl::RealAlgebraicNumberPtr.
      */
-    class ModelValue : public boost::variant<bool, vs::SqrtEx, carl::RealAlgebraicNumberPtr<smtrat::Rational>, SortValue, UFModel>
+    class ModelValue : public boost::variant<bool, vs::SqrtEx, carl::RealAlgebraicNumberPtr<smtrat::Rational>, carl::BVValue, SortValue, UFModel>
     {
         /**
          * Base type we are deriving from.
          */
-        typedef boost::variant<bool, vs::SqrtEx, carl::RealAlgebraicNumberPtr<smtrat::Rational>, SortValue, UFModel> Super;
+        typedef boost::variant<bool, vs::SqrtEx, carl::RealAlgebraicNumberPtr<smtrat::Rational>, carl::BVValue, SortValue, UFModel> Super;
         
     public:
         /**
@@ -264,6 +314,10 @@ namespace smtrat
             {
                 return std::equal_to<carl::RealAlgebraicNumberPtr<smtrat::Rational>>()(asRAN(), _mval.asRAN());
             }
+            else if( isBVValue() && _mval.isBVValue() )
+            {
+                return asBVValue() == _mval.asBVValue();
+            }
             else if( isSortValue() & _mval.isSortValue() )
             {
                 return asSortValue() == _mval.asSortValue();
@@ -299,6 +353,14 @@ namespace smtrat
             return type() == typeid(carl::RealAlgebraicNumberPtr<smtrat::Rational>);
         }
         
+        /**
+         * @return true, if the stored value is a bitvector literal.
+         */
+        bool isBVValue() const
+        {
+            return type() == typeid(carl::BVValue);
+        }
+
         /**
          * @return true, if the stored value is a sort value.
          */
@@ -341,6 +403,15 @@ namespace smtrat
             return boost::get<carl::RealAlgebraicNumberPtr<smtrat::Rational>>(*this);
         }
         
+        /**
+         * @return The stored value as a real algebraic number.
+         */
+        const carl::BVValue& asBVValue() const
+        {
+            assert( isBVValue() );
+            return boost::get<carl::BVValue>(*this);
+        }
+
         /**
          * @return The stored value as a sort value.
          */

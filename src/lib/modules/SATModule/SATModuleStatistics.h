@@ -17,7 +17,9 @@ namespace smtrat
     {
     private:
         // Members.
-        size_t mNrTotalVariables;
+        size_t mNrTotalVariablesBefore;
+        size_t mNrTotalVariablesAfter;
+        size_t mNrTseitinVariables;
         size_t mNrClauses;
         size_t mNrLearnedLemmas;
         size_t mVarsWithPolarityTrue;
@@ -28,7 +30,9 @@ namespace smtrat
     public:
         SATModuleStatistics( const std::string& _name ) : 
             Statistics( _name, this ),
-            mNrTotalVariables( 0 ),
+            mNrTotalVariablesBefore( 0 ),
+            mNrTotalVariablesAfter( 0 ),
+            mNrTseitinVariables( 0 ),
             mNrClauses( 0 ),
             mNrLearnedLemmas( 0 ), 
             mVarsWithPolarityTrue( 0 ), 
@@ -41,8 +45,10 @@ namespace smtrat
 
         void collect()
         {
-            Statistics::addKeyValuePair( "literals", mNrTotalVariables );
-            Statistics::addKeyValuePair( "literals_initally_true", mVarsWithPolarityTrue );
+            Statistics::addKeyValuePair( "variables", mNrTotalVariablesBefore );
+            Statistics::addKeyValuePair( "introduced_variables", mNrTotalVariablesAfter-mNrTotalVariablesBefore );
+            Statistics::addKeyValuePair( "tseitin_variables", mNrTseitinVariables );
+            Statistics::addKeyValuePair( "variables_preferably_set_to_true", mVarsWithPolarityTrue );
             Statistics::addKeyValuePair( "clauses", mNrClauses );
             Statistics::addKeyValuePair( "lemmas_learned", mNrLearnedLemmas );
             Statistics::addKeyValuePair( "propagations", mPropagations );
@@ -80,9 +86,19 @@ namespace smtrat
             return mNrClauses;
         }
         
-        size_t& rNrTotalVariables()
+        size_t& rNrTotalVariablesBefore()
         {
-            return mNrTotalVariables;
+            return mNrTotalVariablesBefore;
+        }
+        
+        size_t& rNrTotalVariablesAfter()
+        {
+            return mNrTotalVariablesAfter;
+        }
+        
+        size_t& rNrTseitinVariables()
+        {
+            return mNrTseitinVariables;
         }
 
     };
