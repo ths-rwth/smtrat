@@ -1639,7 +1639,7 @@ Return:
     }
     
     template<class Settings>
-    bool LRAModule<Settings>::pseudo_cost_branching(bool _gc_support)
+    bool LRAModule<Settings>::pseudo_cost_branching( bool _gc_support )
     {
         EvalRationalMap _rMap = getRationalModel();
         auto map_iterator = _rMap.begin();
@@ -1654,6 +1654,10 @@ Return:
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
                 result = true;
+                // Check whether we already have data about the considered variable
+                // If so, determine its branching success according to the
+                // heuristic branching function that we apply.
+                // Otherwise, move on to the next variable.
                 auto iter_succ = mBranch_Success.find( var->first );
                 if( iter_succ == mBranch_Success.end() )
                 {
@@ -1729,6 +1733,8 @@ Return:
         }
         if( !at_least_one && result )
         {
+            // If we don't have data about any of the violated variables but there
+            // exist violated ones, apply some other branching heuristic
             return most_infeasible_var( _gc_support );
         }            
         if( result )
