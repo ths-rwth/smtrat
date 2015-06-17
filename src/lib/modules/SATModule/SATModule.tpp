@@ -1618,8 +1618,6 @@ SetWatches:
             CRef confl = propagateConsistently( madeTheoryCall, lemmasLearnt );
             if( !ok )
             {
-                std::cout << __func__ << ":" << __LINE__ << std::endl;
-                std::cout << "unknown_excludes.size() = " << unknown_excludes.size() << std::endl;
                 if( !Settings::stop_search_after_first_unknown && unknown_excludes.size() > 0 )
                 {
                     return l_Undef;
