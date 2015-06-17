@@ -15,7 +15,8 @@
 #endif
 
 #ifdef __VS
-	// TODO Matthias: research noexcept for windows
+	// Visual studio does neither support noexcept nor constexpr
+	// TODO Matthias: Introduce project-wide
 	#define NOEXCEPT 
 	#define CONSTEXPR const
 #else
@@ -28,7 +29,8 @@ namespace smtrat {
 		/**
 		 * Used to find ceil(log2(n)) (the shift distance in the freelist allocator).
 		 */
-		// TODO Matthias: activate again
+		// TODO Matthias: workaround for other compilers
+		// VS: https://stackoverflow.com/questions/355967/how-to-use-msvc-intrinsics-to-get-the-equivalent-of-this-gcc-code
 		/*template<typename T> static CONSTEXPR inline std::size_t count_leading_zeros(T number);
 		template<> inline CONSTEXPR std::size_t count_leading_zeros<unsigned int>(unsigned int number) { return static_cast<std::size_t>(__builtin_clz(number)); }
 		template<> inline CONSTEXPR std::size_t count_leading_zeros<unsigned long>(unsigned long number) { return static_cast<std::size_t>(__builtin_clzl(number)); }
