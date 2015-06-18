@@ -1462,9 +1462,7 @@ SetWatches:
                     return confl;
             }
             else
-            {
                 confl = propagate();
-            }
 
             #ifdef DEBUG_SATMODULE
             cout << "### Sat iteration" << endl;
@@ -1487,75 +1485,73 @@ SetWatches:
                 // Check constraints corresponding to the positively assigned Boolean variables for consistency.
                 // TODO: Do not call the theory solver on instances which have already been proved to be consistent.
                 //       (Happens if the Boolean assignment is extended by assignments to false only)
-                if( pickSplittingVar() == var_Undef )
+                adaptPassedFormula();
+                if( mChangedPassedFormula )
                 {
-                    adaptPassedFormula();
-                    if( mChangedPassedFormula )
+                    _madeTheoryCall = true;
+                    #ifdef DEBUG_SATMODULE
+                    cout << "### Check the constraints: ";
+                    #endif
+                    #ifdef SATMODULE_WITH_CALL_NUMBER
+                    #ifdef DEBUG_SATMODULE
+                    cout << "#" << mNumberOfTheoryCalls << "  ";
+                    #else
+                    ++mNumberOfTheoryCalls;
+                    #endif
+                    #endif
+                    #ifdef DEBUG_SATMODULE
+                    cout << "{ ";
+                    for( ModuleInput::const_iterator subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
+                        cout << subformula->formula() << " ";
+                    cout << "}" << endl;
+                    #endif
+                    mChangedPassedFormula = false;
+                    mCurrentAssignmentConsistent = runBackends();
+                    switch( mCurrentAssignmentConsistent )
                     {
-                        _madeTheoryCall = true;
-                        #ifdef DEBUG_SATMODULE
-                        cout << "### Check the constraints: ";
-                        #endif
-                        #ifdef SATMODULE_WITH_CALL_NUMBER
-                        #ifdef DEBUG_SATMODULE
-                        cout << "#" << mNumberOfTheoryCalls << "  ";
-                        #else
-                        ++mNumberOfTheoryCalls;
-                        #endif
-                        #endif
-                        #ifdef DEBUG_SATMODULE
-                        cout << "{ ";
-                        for( ModuleInput::const_iterator subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
-                            cout << subformula->formula() << " ";
-                        cout << "}" << endl;
-                        #endif
-                        mChangedPassedFormula = false;
-                        mCurrentAssignmentConsistent = runBackends();
-                        switch( mCurrentAssignmentConsistent )
+                        case True:
                         {
-                            case True:
+                            if( Settings::allow_theory_propagation )
                             {
-                                if( Settings::allow_theory_propagation )
-                                {
-                                    //Theory propagation.
-                                    deductionsLearned = processLemmas();
-                                }
-                                #ifdef DEBUG_SATMODULE
-                                cout << "### Result: True!" << endl;
-                                #endif
-                                break;
+                                //Theory propagation.
+                                deductionsLearned = processLemmas();
                             }
-                            case False:
+                            #ifdef DEBUG_SATMODULE
+                            cout << "### Result: True!" << endl;
+                            #endif
+                            break;
+                        }
+                        case False:
+                        {
+                            #ifdef DEBUG_SATMODULE
+                            cout << "### Result: False!" << endl;
+                            #endif
+                            confl = learnTheoryConflict();
+                            if( confl == CRef_Undef )
                             {
-                                #ifdef DEBUG_SATMODULE
-                                cout << "### Result: False!" << endl;
-                                #endif
-                                confl = learnTheoryConflict();
-                                if( confl == CRef_Undef )
-                                {
-                                    if( !ok ) return CRef_Undef;
-                                    processLemmas();
-                                }
-                                break;
+                                if( !ok )
+                                    return CRef_Undef;
+                                processLemmas();
                             }
-                            case Unknown:
+                            break;
+                        }
+                        case Unknown:
+                        {
+                            #ifdef DEBUG_SATMODULE
+                            cout << "### Result: Unknown!" << endl;
+                            #endif
+                            if( Settings::allow_theory_propagation )
                             {
-                                #ifdef DEBUG_SATMODULE
-                                cout << "### Result: Unknown!" << endl;
-                                #endif
-                                if( Settings::allow_theory_propagation )
-                                {
-                                    //Theory propagation.
-                                    deductionsLearned = processLemmas();
-                                }
-                                break;
+                                //Theory propagation.
+                                deductionsLearned = processLemmas();
                             }
-                            default:
-                            {
-                                cerr << "Backend returns undefined answer!" << endl;
-                                assert( false );
-                                return CRef_Undef;
-                            }
+                            break;
+                        }
+                        default:
+                        {
+                            cerr << "Backend returns undefined answer!" << endl;
+                            assert( false );
+                            return CRef_Undef;
                         }
                     }
                 }
@@ -1575,8 +1571,6 @@ SetWatches:
                 _lemmasLearnt = true;
             }
         }
-        if( decisionLevel() == 0 )
-            return CRef_Undef;
         return confl;
     }
 
@@ -1618,8 +1612,6 @@ SetWatches:
             CRef confl = propagateConsistently( madeTheoryCall, lemmasLearnt );
             if( !ok )
             {
-                std::cout << __func__ << ":" << __LINE__ << std::endl;
-                std::cout << "unknown_excludes.size() = " << unknown_excludes.size() << std::endl;
                 if( !Settings::stop_search_after_first_unknown && unknown_excludes.size() > 0 )
                 {
                     return l_Undef;
@@ -1672,7 +1664,6 @@ SetWatches:
                     }
                     else if( value( p ) == l_False )
                     {
-                        std::cout << __func__ << ":" << __LINE__ << std::endl;
                         return l_False;
                     }
                     else
@@ -2775,9 +2766,7 @@ NextClause:
                         conflictClause = learnts.last();
                 }
                 else if( betterConflict )
-                {
                     conflictClause = CRef_Undef;
-                }
             }
             ++backend;
         }
@@ -2785,6 +2774,7 @@ NextClause:
         {
             if( numOfLowLevelLiterals == 1 )
             {
+                // If the clause is asserting in the next lower level, backtrack to that level
                 cancelUntil(lowestLevel == 0 ? 0 : lowestLevel-1);
                 return CRef_Undef;
             }

@@ -386,8 +386,9 @@ namespace smtrat
         return index_min;
     }
     
-    bool Module::probablyLooping( const typename Poly::PolyType& _branchingPolynomial, const Rational& _branchingValue )
+    bool Module::probablyLooping( const typename Poly::PolyType& _branchingPolynomial, const Rational& _branchingValue ) const
     {
+        if( mpManager == NULL ) return false;
         assert( _branchingPolynomial.constantPart() == 0 );
         auto iter = mLastBranches.begin();
         for( ; iter != mLastBranches.end(); ++iter )
@@ -815,10 +816,6 @@ namespace smtrat
             assert( _formula.getType() == carl::FormulaType::AND );
             for( auto& subformula : _formula.subformulas() )
             {
-                if( !mpReceivedFormula->contains( subformula ) )
-                {
-                    std::cout << subformula << std::endl;
-                }   
                 assert( mpReceivedFormula->contains( subformula ) );
                 _origins.insert( subformula );
             }
