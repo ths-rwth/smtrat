@@ -10,6 +10,7 @@
 namespace benchmax {
 	using boost::regex;
 	using boost::regex_match;
+	using boost::smatch;
 	using boost::regex_iterator;
 }
 #else
@@ -18,6 +19,7 @@ namespace benchmax {
 namespace benchmax {
 	using std::regex;
 	using std::regex_match;
-	using regex_iterator = std::sregex_iterator;
+	using std::smatch;
+	using std::sregex_iterator;
 }
 #endif
