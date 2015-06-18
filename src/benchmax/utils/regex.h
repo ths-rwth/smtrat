@@ -20,6 +20,6 @@ namespace benchmax {
 	using std::regex;
 	using std::regex_match;
 	using std::smatch;
-	using regex_iterator = std::sregex_iterator;
+	using std::sregex_iterator;
 }
 #endif
