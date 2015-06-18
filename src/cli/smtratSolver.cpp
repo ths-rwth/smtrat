@@ -102,11 +102,14 @@ public:
 		error() << "(get-value <variables>) is not implemented.";
 	}
 	void pop(std::size_t n) {
-		for (; n > 0; n--) this->solver->pop();
+		this->solver->pop(n);
 	}
 	void push(std::size_t n) {
 		for (; n > 0; n--) this->solver->push();
 	}
+        void reset() {
+            this->solver->reset();
+        }
 	void setLogic(const smtrat::Logic& logic) {
 		if (this->solver->logic() != smtrat::Logic::UNDEFINED) {
 			error() << "The logic has already been set!";
