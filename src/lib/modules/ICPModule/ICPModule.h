@@ -19,12 +19,14 @@
 #include "../../Common.h"
 #include "../../datastructures/VariableBounds.h"
 #include "IcpVariable.h"
+#include "ICPSettings.h"
 #include "utils.h"
 #include "HistoryNode.h"
 #include <fstream>
 
 namespace smtrat
 {
+    template<class Settings>
     class ICPModule:
         public Module
     {
@@ -32,8 +34,7 @@ namespace smtrat
         using Contractor = carl::Contraction<Operator, Poly>;
         
         public:
-
-            enum class SplittingHeuristic : unsigned { IMPACT, UNSATISFIABILITY, SATISFIABILITY };
+            
             /**
              * Typedefs:
              */
@@ -497,3 +498,5 @@ namespace smtrat
             void printContraction( const icp::ContractionCandidate& _cc, const DoubleInterval& _before, const DoubleInterval& _afterA, const DoubleInterval& _afterB = DoubleInterval::emptyInterval(), std::ostream& _out = std::cout ) const;
     };
 }    // namespace smtrat
+    
+#include "ICPModule.tpp"
