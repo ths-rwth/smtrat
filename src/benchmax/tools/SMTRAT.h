@@ -31,8 +31,8 @@ public:
 	std::map<std::string,std::string> parseOptions(const std::string& options) const {
 		std::map<std::string,std::string> res;
 		regex r("^(.+) = (.+)\n");
-		auto begin = sregex_iterator(options.begin(), options.end(), r);
-		auto end = sregex_iterator();
+		auto begin = regex_iterator(options.begin(), options.end(), r);
+		auto end = regex_iterator();
 		for (auto i = begin; i != end; ++i) {
 			res[(*i)[1]] = (*i)[2];
 		}

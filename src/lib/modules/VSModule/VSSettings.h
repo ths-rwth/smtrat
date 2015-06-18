@@ -5,8 +5,7 @@
  * @version 2014-09-18
  */
 
-#ifndef VSSETTINGS_H
-#define	VSSETTINGS_H
+#pragma once
 
 #include "../../config.h"
     
@@ -128,6 +127,4 @@ namespace smtrat
         static const bool sturm_sequence_for_root_check                         = use_variable_bounds && true;
     };
 }
-
-#endif	/* VSSETTINGS_H */
 

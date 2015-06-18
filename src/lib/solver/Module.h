@@ -880,7 +880,7 @@ namespace smtrat
              * @return true, if this branching is probably part of an infinite loop of branchings;
              *         false, otherwise.
              */
-            static bool probablyLooping( const typename Poly::PolyType& _branchingPolynomial, const Rational& _branchingValue );
+            bool probablyLooping( const typename Poly::PolyType& _branchingPolynomial, const Rational& _branchingValue ) const;
             
             /**
              * Adds a deductions which provoke a branching for the given variable at the given value,
