@@ -138,6 +138,10 @@ public:
 		theories.pushScriptScope(carl::toInt<std::size_t>(n));
 		callHandler(&InstructionHandler::push, carl::toInt<std::size_t>(n));
 	}
+	void reset() {
+		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(reset)");
+		callHandler(&InstructionHandler::reset);
+	}
 	void setInfo(const Attribute& attribute) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(set-info :" << attribute << ")");
 		callHandler(&InstructionHandler::setInfo, attribute);
