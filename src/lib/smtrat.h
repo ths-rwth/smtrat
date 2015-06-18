@@ -17,13 +17,7 @@
 
 #pragma once
 
-#include "Constraint.h"
-#include "ConstraintPool.h"
-#include "Manager.h"
-#include "modules/AddModules.h"
 #include "strategies/strategies.h"
-#include "Module.h"
-#include "ModuleFactory.h"
 
 
 
