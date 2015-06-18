@@ -17,8 +17,9 @@
 # B. Options.
 # C. Find system tools and libraries.
 # D. Write information files.
-# E. Invoke subdirectories.
-# F. CPack
+# F. Invoke subdirectories.
+# G. Export Compile Information
+# H. CPack
 # # # # # # # # # # # # # # # # # # # # # #
 
 
@@ -133,6 +134,22 @@ if(SMTRAT_STRAT_PARALLEL_MODE)
     set(libraries ${libraries} pthread)
 endif()
 
+if(WIN32 AND NOT CYGWIN)
+  set(DEF_INSTALL_CMAKE_DIR CMake)
+else()
+  set(DEF_INSTALL_CMAKE_DIR lib/CMake/carl)
+endif()
+set(CMAKE_INSTALL_DIR ${DEF_INSTALL_CMAKE_DIR} CACHE PATH  "Installation directory for CMake files")
+
+
+foreach(p LIB BIN INCLUDE CMAKE)
+  set(var ${p}_INSTALL_DIR)
+  if(NOT IS_ABSOLUTE "${${var}}")
+    set(${var} "${CMAKE_INSTALL_PREFIX}/${${var}}")
+  endif()
+endforeach()
+
+
 # path to put in the executables
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 
@@ -223,9 +240,46 @@ endif(ADDITIONAL_LINK_DIRS)
 # # # # # # # # # # # # # # # # # # # # # #
 
 add_subdirectory(src)
+# # # # # # # # # # # # # # # # # # # # # #
+# G. Export Compile Information
+# # # # # # # # # # # # # # # # # # # # # #
+
+# Add all targets to the build-tree export set
+export(TARGETS ${SMTRAT_TARGETS} FILE "${PROJECT_BINARY_DIR}/smtratTargets.cmake")
+ 
+# Export the package for use from the build-tree
+# (this registers the build-tree with a global CMake-registry)
+export(PACKAGE smtrat)
+ 
+include(CMakePackageConfigHelpers)
+# Create the carlConfig.cmake and carlConfigVersion files
+file(RELATIVE_PATH REL_INCLUDE_DIR "${CMAKE_INSTALL_DIR}" "${INCLUDE_INSTALL_DIR}")
+message("${CMAKE_INSTALL_DIR}")
+message("${INCLUDE_INSTALL_DIR}")
+# ... for the build tree
+set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/src")
+configure_package_config_file(cmake/smtratConfig.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/smtratConfig.cmake
+							  INSTALL_DESTINATION ${CMAKE_INSTALL_DIR}
+							  PATH_VARS INCLUDE_INSTALL_DIR #SYSCONFIG_INSTALL_DIR
+							 )
+# ... for the install tree
+set(CONF_INCLUDE_DIRS "\${smtrat_CMAKE_DIR}/${REL_INCLUDE_DIR}")
+configure_package_config_file(cmake/smtratConfig.cmake.in ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/smtratConfig.cmake
+							  INSTALL_DESTINATION ${CMAKE_INSTALL_DIR}
+							  PATH_VARS INCLUDE_INSTALL_DIR #SYSCONFIG_INSTALL_DIR
+							 )
+write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/smtratConfigVersion.cmake
+								 VERSION ${smtrat_VERSION}
+								 COMPATIBILITY SameMajorVersion )
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/smtratConfig.cmake ${CMAKE_CURRENT_BINARY_DIR}/smtratConfigVersion.cmake
+		DESTINATION ${CMAKE_INSTALL_DIR} )
+ 
+# Install the export set for use with the install-tree
+install(EXPORT smtratTargets DESTINATION ${CMAKE_INSTALL_DIR} COMPONENT dev)
+
 
 # # # # # # # # # # # # # # # # # # # # # #
-# G. CPack
+# H. CPack
 # # # # # # # # # # # # # # # # # # # # # #
 
 set( CPACK_GENERATOR "TGZ" )
