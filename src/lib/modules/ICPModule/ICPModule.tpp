@@ -376,7 +376,6 @@ namespace smtrat
                 assert( !splittings().empty() );
                 return Unknown;
             }
-            if( !splittings().empty() ) exit(2346);
             assert( splittings().empty() );
             if( tryTestPoints() )
             {
