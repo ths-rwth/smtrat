@@ -178,7 +178,7 @@ namespace smtrat
         // Delete all infeasible subsets in which the constraint to delete occurs.
         for( size_t pos = 0; pos < mInfeasibleSubsets.size(); )
         {
-            if( mInfeasibleSubsets[pos].find( _receivedSubformula->formula() ) != mInfeasibleSubsets[pos].end() )
+            if( std::find(mInfeasibleSubsets[pos].begin(), mInfeasibleSubsets[pos].end(), _receivedSubformula->formula() ) != mInfeasibleSubsets[pos].end() )
             {
                 mInfeasibleSubsets[pos] = std::move(mInfeasibleSubsets.back());
                 mInfeasibleSubsets.pop_back();
@@ -233,7 +233,7 @@ namespace smtrat
                 backend->inform( *iter );
             backend->init();
         }
-        mInformedConstraints.insert( mConstraintsToInform.begin(), mConstraintsToInform.end() );
+        mInformedConstraints.insert(mInformedConstraints.end(), mConstraintsToInform.begin(), mConstraintsToInform.end() );
         mConstraintsToInform.clear();
     }
 
@@ -326,13 +326,13 @@ namespace smtrat
             {
                 const FormulaT& subform = fwo->formula();
                 if( subform.getType() == carl::FormulaType::AND )
-                    subFormulasInRF.insert( subform.subformulas().begin(), subform.subformulas().end() );
+                    subFormulasInRF.insert(subFormulasInRF.end(), subform.subformulas().begin(), subform.subformulas().end() );
                 else
-                    subFormulasInRF.insert( subform );
+                    subFormulasInRF.push_back( subform );
             }
             for( auto& f : _origin.subformulas() )
             {
-                if( subFormulasInRF.find( f ) == subFormulasInRF.end() )
+                if( std::find(subFormulasInRF.begin(), subFormulasInRF.end(), f ) == subFormulasInRF.end() )
                     return false;
             }
             return true;
@@ -353,11 +353,11 @@ namespace smtrat
                 if( originSetA->getType() == carl::FormulaType::AND )
                     subformulas = originSetA->subformulas();
                 else
-                    subformulas.insert( *originSetA );
+                    subformulas.push_back( *originSetA );
                 if( originSetB->getType() == carl::FormulaType::AND )
-                    subformulas.insert( originSetB->begin(), originSetB->end() );
+                    subformulas.insert(subformulas.end(), originSetB->begin(), originSetB->end() );
                 else
-                    subformulas.insert( *originSetB );
+                    subformulas.push_back( *originSetB );
                 result.push_back( FormulaT( carl::FormulaType::AND, std::move( subformulas ) ) );
                 ++originSetB;
             }
@@ -489,9 +489,9 @@ namespace smtrat
         FormulaT notGreaterConstraint = FormulaT( FormulaType::NOT, greaterConstraint );
         // (not p!=0 or p<0 or p>0)
         FormulasT subformulas;
-        subformulas.insert( FormulaT( FormulaType::NOT, _unequalConstraint ) );
-        subformulas.insert( lessConstraint );
-        subformulas.insert( greaterConstraint );
+        subformulas.push_back( FormulaT( FormulaType::NOT, _unequalConstraint ) );
+        subformulas.push_back( lessConstraint );
+        subformulas.push_back( greaterConstraint );
         addDeduction( FormulaT( FormulaType::OR, std::move( subformulas ) ) );
         // (not p<0 or p!=0)
         addDeduction( FormulaT( FormulaType::OR, notLessConstraint, _unequalConstraint ) );
@@ -638,7 +638,7 @@ namespace smtrat
                     #endif
                 }
                 mFirstSubformulaToPass = mpPassedFormula->end();
-                mInformedConstraints.insert( mConstraintsToInform.begin(), mConstraintsToInform.end() );
+                mInformedConstraints.insert(mInformedConstraints.end(), mConstraintsToInform.begin(), mConstraintsToInform.end() );
                 mConstraintsToInform.clear();
                 if( assertionFailed )
                 {
@@ -809,7 +809,7 @@ namespace smtrat
     {
         if( mpReceivedFormula->contains( _formula ) )
         {
-            _origins.insert( _formula );
+            _origins.push_back( _formula );
         }
         else
         {
@@ -817,12 +817,12 @@ namespace smtrat
             for( auto& subformula : _formula.subformulas() )
             {
                 assert( mpReceivedFormula->contains( subformula ) );
-                _origins.insert( subformula );
+                _origins.push_back( subformula );
             }
         }
     }
     
-    void Module::collectOrigins( const FormulaT& _formula, std::vector<FormulaT>& _origins ) const
+/*    void Module::collectOrigins( const FormulaT& _formula, std::vector<FormulaT>& _origins ) const
     {
         if( mpReceivedFormula->contains( _formula ) )
         {
@@ -838,7 +838,7 @@ namespace smtrat
             }
         }
     }
-
+*/
     void Module::addAssumptionToCheck( const FormulaT& _formula, bool _consistent, const string& _label )
     {
         string assumption = "";
