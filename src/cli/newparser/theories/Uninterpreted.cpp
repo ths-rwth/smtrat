@@ -29,7 +29,12 @@ namespace parser {
 		return true;
 	}
 
-	UninterpretedTheory::UninterpretedTheory(ParserState* state): AbstractTheory(state) {
+	UninterpretedTheory::UninterpretedTheory(ParserState* state):
+		AbstractTheory(state), 
+		mBoolSort(carl::SortManager::getInstance().addSort("UF_Bool", carl::VariableType::VT_UNINTERPRETED)),
+		mTrue(carl::freshVariable(carl::VariableType::VT_UNINTERPRETED), mBoolSort),
+		mFalse(carl::freshVariable(carl::VariableType::VT_UNINTERPRETED), mBoolSort)
+	{
 	}
 
 	bool UninterpretedTheory::declareVariable(const std::string& name, const carl::Sort& sort, types::VariableType& result, TheoryError& errors) {
@@ -91,9 +96,19 @@ namespace parser {
 		carl::UFInstance ufi = carl::newUFInstance(f, vars);
 		carl::SortManager& sm = carl::SortManager::getInstance();
 		if (sm.isInterpreted(f.codomain())) {
-			carl::Variable var = carl::freshVariable(sm.getType(f.codomain()));
-			state->global_formulas.insert(FormulaT(std::move(carl::UEquality(carl::UVariable(var), ufi, false))));
-			result = var;
+			carl::VariableType type = sm.getType(f.codomain());
+			if (type == carl::VariableType::VT_BOOL) {
+				carl::UVariable uvar(carl::freshVariable(carl::VariableType::VT_UNINTERPRETED), mBoolSort);
+				state->global_formulas.emplace_back(std::move(carl::UEquality(uvar, ufi, false)));
+				state->global_formulas.push_back(FormulaT(carl::FormulaType::OR, {
+					FormulaT(std::move(carl::UEquality(uvar, mTrue, false))),
+					FormulaT(std::move(carl::UEquality(uvar, mFalse, false)))
+				}));
+			} else {
+				carl::Variable var = carl::freshVariable(type);
+				state->global_formulas.emplace_back(FormulaT(std::move(carl::UEquality(carl::UVariable(var), ufi, false))));
+				result = var;
+			}
 		} else {
 			result = ufi;
 		}
