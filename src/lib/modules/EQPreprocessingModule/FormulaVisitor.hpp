@@ -48,7 +48,8 @@ namespace smtrat {
 			typedef Allocator allocator_type;
 
 			typedef std::set<result_type, compare_type, allocator_type> set_type;
-			typedef std::multiset<result_type, compare_type, allocator_type> multiset_type;
+			//typedef std::multiset<result_type, compare_type, allocator_type> multiset_type;
+			typedef FormulasMultiT multiset_type;
 
 			ResultType apply(const FormulaT& formula) {
 				return P_dispatch(formula);
@@ -961,8 +962,8 @@ namespace smtrat {
 		public formula_visitor<
 			formula_rewriter<RewriterType>, // the visitor shall use the rewriter as concrete type
 			FormulaT,                       // the result of the rewriter is a formula
-			typename FormulasT::value_compare, // use the comparator
-			typename FormulasT::allocator_type // and allocator from FormulasT
+			typename FormulaSetT::value_compare, // use the comparator
+			typename FormulaSetT::allocator_type // and allocator from FormulaSetT
 		>
 	{
 		public:
@@ -979,15 +980,15 @@ namespace smtrat {
 			friend class formula_visitor<
 				formula_rewriter<RewriterType>,
 				FormulaT,
-				typename FormulasT::value_compare,
-				typename FormulasT::allocator_type
+				typename FormulaSetT::value_compare,
+				typename FormulaSetT::allocator_type
 			>;
 
 			typedef formula_visitor<
 				formula_rewriter<RewriterType>,
 				FormulaT,
-				typename FormulasT::value_compare,
-				typename FormulasT::allocator_type
+				typename FormulaSetT::value_compare,
+				typename FormulaSetT::allocator_type
 			> super_type;
 
 			typedef typename super_type::set_type set_type;

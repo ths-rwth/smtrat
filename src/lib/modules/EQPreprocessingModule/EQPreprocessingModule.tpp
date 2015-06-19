@@ -217,7 +217,7 @@ namespace smtrat
 			if(!consistent) {
 				// The formula is unsat; use the infeasible subset from the helper module
 				assert(mEQHelper.infeasibleSubsets().size() == 1);
-				//const FormulasT& infeasible = mEQHelper.infeasibleSubsets().front();
+				//const FormulaSetT& infeasible = mEQHelper.infeasibleSubsets().front();
 				FormulasT constructInfeasible;
 
 				/*
@@ -232,7 +232,7 @@ namespace smtrat
 				std::cout << "Infeasible after conversion: " << constructInfeasible << std::endl;
 				*/
 				for (const auto& f: rReceivedFormula()) {
-					constructInfeasible.insert(f.formula());
+					constructInfeasible.push_back(f.formula());
 				}
 
 				mInfeasibleSubsets.emplace_back(std::move(constructInfeasible));

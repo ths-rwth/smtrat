@@ -41,7 +41,7 @@ namespace smtrat {
 				return changed ? FormulaT(*lhs, *rhs, ueq.negated()) : formula;
 			}
 
-			const FormulasT& congruences() const noexcept { return mCongruences; }
+			const FormulaSetT& congruences() const noexcept { return mCongruences; }
 
 			const std::unordered_map<UFInstance, UVariable>& UFItoVar() const noexcept { return mUFIToVar; }
 
@@ -62,7 +62,7 @@ namespace smtrat {
 						const std::vector<UVariable>& iargs = instance.args();
 
 						for(const UFInstance& other : fniter->second) {
-							FormulasT disj;
+							FormulaSetT disj;
 							const std::vector<UVariable>& oargs = other.args();
 
 							disj.emplace(FormulaT(iter->second, mUFIToVar.find(other)->second, false));
@@ -89,7 +89,7 @@ namespace smtrat {
 			std::unordered_map<UVariable, UFInstance> mVarToUFI;
 
 			// additional formulas (without origins) for functional congruence
-			FormulasT mCongruences;
+			FormulaSetT mCongruences;
 	};
 }
 

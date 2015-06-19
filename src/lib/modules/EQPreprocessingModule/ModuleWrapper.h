@@ -50,7 +50,7 @@ namespace smtrat {
 			}
 
 		private:
-			FormulasT asserted;
+			FormulaSetT asserted;
 			Conditionals conditionals;
 			ModuleInput input;
 			M module;
