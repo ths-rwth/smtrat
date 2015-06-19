@@ -69,7 +69,7 @@ public:
 		FormulasT additional;
 		theories.addGlobalFormulas(additional);
 		if (!additional.empty()) {
-			additional.insert(f);
+			additional.push_back(f);
 			f = FormulaT(carl::FormulaType::AND, std::move(additional));
 		}
 		callHandler(&InstructionHandler::add, f);
