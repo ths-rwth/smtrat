@@ -12,10 +12,12 @@
 namespace smtrat 
 {
 struct PreprocessingSettings {
+	static constexpr bool printChanges = false;
 	/**
 	 * Enables removing of redundant or obsolete factors.
 	 */
 	static constexpr bool removeFactors = true;
+	static constexpr bool eliminateMonomialEquation = true;
 	/**
 	 * Enables removing of constraints that vanish within the variable bounds.
 	 */

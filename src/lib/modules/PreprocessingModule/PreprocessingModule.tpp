@@ -26,6 +26,7 @@ namespace smtrat {
         arithSubs()
     {
 		removeFactorsFunction = std::bind(&PreprocessingModule<Settings>::removeFactors, this, std::placeholders::_1);
+		eliminateMonomialEquationFunction = std::bind(&PreprocessingModule<Settings>::eliminateMonomialEquation, this, std::placeholders::_1);
 		checkBoundsFunction = std::bind(&PreprocessingModule<Settings>::checkBounds, this, std::placeholders::_1);
 		extractBoundsFunction = std::bind(&PreprocessingModule<Settings>::extractBounds, this, std::placeholders::_1);
 		splitSOSFunction = std::bind(&PreprocessingModule<Settings>::splitSOS, this, std::placeholders::_1);
@@ -73,6 +74,9 @@ namespace smtrat {
         if (Settings::eliminateSubstitutions) {
             // TODO: make this incremental
             FormulaT formula = (FormulaT) rReceivedFormula();
+			if (Settings::eliminateMonomialEquation) {
+				formula = visitor.visit(formula, eliminateMonomialEquationFunction);
+			}
             SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Received        " << formula);
             if (Settings::removeFactors && formula.propertyHolds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL) ) {
                 // Remove redundant or obsolete factors of polynomials.
@@ -95,12 +99,15 @@ namespace smtrat {
                 // Check if bounds make constraints vanish.
                 formula = visitor.visit(formula, checkBoundsFunction);
                 FormulasT bounds = varbounds.getOriginsOfBounds();
-                bounds.insert( formula );
+                bounds.push_back( formula );
                 formula = FormulaT( carl::FormulaType::AND, std::move( bounds ) );
             }
             SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Checked bounds  " << formula);
 //            std::cout << formula.toString( false, 1, "", true, false, true, true ) << std::endl;
             formula = formula.toCNF( true, true, false );
+			if (Settings::printChanges) {
+				std::cout << (FormulaT)rReceivedFormula() << " -> " << formula << std::endl;
+			}
             addSubformulaToPassedFormula( formula );
         }
         else
@@ -110,7 +117,10 @@ namespace smtrat {
             while( receivedFormula != rReceivedFormula().end() )
             {
                 FormulaT formula = receivedFormula->formula();
-
+				
+				if (Settings::eliminateMonomialEquation) {
+					formula = visitor.visit(formula, eliminateMonomialEquationFunction);
+				}
                 if (Settings::checkBounds) {
                     // If bounds are collected, check if next subformula is a bound.
                     // If so, pass on unchanged.
@@ -149,6 +159,9 @@ namespace smtrat {
                 formula = formula.toCNF( true, true, false );
                 FormulaT origins(carl::FormulaType::AND, tmpOrigins);
 
+				if (Settings::printChanges) {
+					std::cout << receivedFormula->formula() << " -> " << formula << std::endl;
+				}
                 addSubformulaToPassedFormula(formula, origins);
                 ++receivedFormula;
             }
@@ -161,7 +174,7 @@ namespace smtrat {
             // TODO: compute a better infeasible subset
             for( auto subformula = rReceivedFormula().begin(); subformula != rReceivedFormula().end(); ++subformula )
             {
-                infeasibleSubset.insert( subformula->formula() );
+                infeasibleSubset.push_back( subformula->formula() );
             }
             mInfeasibleSubsets.push_back( infeasibleSubset );
         }
@@ -275,6 +288,23 @@ namespace smtrat {
 	}
 	
 	template<typename Settings>
+    FormulaT PreprocessingModule<Settings>::eliminateMonomialEquation(const FormulaT& formula) {
+		if (formula.getType() != carl::FormulaType::CONSTRAINT) return formula;
+		auto c = formula.constraint();
+		if (c.relation() != carl::Relation::EQ) return formula;
+		auto p = c.lhs();
+		if (p.nrTerms() != 1) return formula;
+		carl::Monomial::Arg m = p.lmon();
+		if (m->isConstant()) return formula;
+		FormulaSetT res;
+		for (const auto& exp: *m) {
+			res.emplace(Poly(exp.first), carl::Relation::EQ);
+		}
+		//std::cout << "Monomial elimination!" << std::endl;
+		return FormulaT(carl::FormulaType::OR, std::move(res));
+	}
+	
+	template<typename Settings>
     FormulaT PreprocessingModule<Settings>::splitSOS(const FormulaT& formula) {
 		if(formula.getType() == carl::FormulaType::CONSTRAINT) {
             std::vector<std::pair<Rational,Poly>> sosDec;
@@ -334,7 +364,7 @@ namespace smtrat {
                         boolOp = carl::FormulaType::OR;
                     }
             }
-            FormulasT subformulas;
+            FormulaSetT subformulas;
 			for (auto it = sosDec.begin(); it != sosDec.end(); ++it) {
                 subformulas.emplace(it->second, rel);
 			}
@@ -386,7 +416,7 @@ namespace smtrat {
 			/*if (result == 1 || result == 2) {
 				if (carl::isZero(formula.constraint().constantPart())) {
 					if (formula.constraint().lhs().nrTerms() <= 1) return formula;
-					FormulasT monomials;
+					FormulaSetT monomials;
 					carl::Sign sign = carl::sgn(formula.constraint().lhs().lcoeff());
 					for (TermT t: formula.constraint().lhs()) {
 						auto i = carl::IntervalEvaluation::evaluate(t, varbounds.getEvalIntervalMap());
@@ -570,7 +600,7 @@ namespace smtrat {
                 }
             }
             assert( !leftOpen || !rightOpen );
-            FormulasT sfs;
+            FormulaSetT sfs;
             if( !leftOpen )
             {
                 sfs.insert( FormulaT( foundPoly-foundLowerBound, foundLowerBoundIsStrict ? carl::Relation::GREATER : carl::Relation::GEQ ) );
@@ -606,7 +636,7 @@ namespace smtrat {
                 std::vector<std::map<carl::Variable,Poly>::const_iterator> addedArithSubs;
                 std::unordered_map<FormulaT,std::unordered_map<FormulaT, bool>::const_iterator> foundBooleanSubstitutions;
                 bool foundNewSubstitution = true;
-                FormulasT foundSubstitutions;
+                FormulaSetT foundSubstitutions;
                 FormulasT currentSubformulas = result.subformulas();
                 while( foundNewSubstitution )
                 {
@@ -639,7 +669,7 @@ namespace smtrat {
                                 }
                                 else
                                 {
-                                    sfs.insert( tmp );
+                                    sfs.push_back( tmp );
                                 }
                             }
                         }
@@ -668,14 +698,14 @@ namespace smtrat {
                                     foundNewSubstitution = true;
                                     if( sfSimplified.getType() == carl::FormulaType::AND )
                                     {
-                                        sfs.insert( sfSimplified.subformulas().begin(), sfSimplified.subformulas().end() );
+                                        sfs.insert(sfs.end(), sfSimplified.subformulas().begin(), sfSimplified.subformulas().end() );
                                     }
                                     else
-                                        sfs.insert( sfSimplified );
+                                        sfs.push_back( sfSimplified );
                                 }
                                 else
                                 {
-                                    sfs.insert( sfSimplified );
+                                    sfs.push_back( sfSimplified );
                                     if( sfSimplified.getType() == carl::FormulaType::NOT )
                                     {
                                         #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
@@ -710,7 +740,7 @@ namespace smtrat {
                 else
                 {
                     if( !_elimSubstitutions )
-                        currentSubformulas.insert( foundSubstitutions.begin(), foundSubstitutions.end() );
+                        currentSubformulas.insert(currentSubformulas.end(), foundSubstitutions.begin(), foundSubstitutions.end() );
                     result = FormulaT( carl::FormulaType::AND, std::move(currentSubformulas) );
                 }
             Return:
@@ -814,7 +844,7 @@ namespace smtrat {
             case carl::FormulaType::OR:
             case carl::FormulaType::IFF:
             case carl::FormulaType::XOR: {
-                FormulasT newSubformulas;
+                FormulaSetT newSubformulas;
                 bool changed = false;
                 for (const auto& cur: _formula.subformulas()) {
                     FormulaT newCur = elimSubstitutions(cur);
