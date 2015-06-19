@@ -127,17 +127,30 @@ set_target_properties( lib_${PROJECT_NAME} PROPERTIES
         ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 if(STATICLIB_SWITCH)
+        set(SMTRAT_TARGETS lib_smtrat CACHE STRING INTERNAL FORCE)
 	target_link_libraries( lib_${PROJECT_NAME} lib_carl_static ${libraries} ) # libraries definied in top-level CMakeLists.txt
 else()
+        set(SMTRAT_TARGETS lib_smtrat CACHE STRING INTERNAL FORCE)
 	target_link_libraries( lib_${PROJECT_NAME} lib_carl ${libraries} ) # libraries definied in top-level CMakeLists.txt
 endif()
+
+
 
 
 # Install destination and permissions for the library
 # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-install( TARGETS lib_${PROJECT_NAME} DESTINATION lib PERMISSIONS
-    OWNER_READ OWNER_WRITE OWNER_EXECUTE
-    GROUP_READ GROUP_EXECUTE
-    WORLD_READ WORLD_EXECUTE
+
+install( TARGETS ${SMTRAT_TARGETS}
+	EXPORT smtratTargets
+	LIBRARY DESTINATION "${LIB_INSTALL_DIR}"
+        ARCHIVE DESTINATION "${LIB_INSTALL_DIR}"
+        COMPONENT shlib
+	PERMISSIONS
+		OWNER_READ OWNER_WRITE OWNER_EXECUTE
+		GROUP_READ GROUP_EXECUTE
+		WORLD_READ WORLD_EXECUTE
 )
+
+
+
