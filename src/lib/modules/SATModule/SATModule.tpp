@@ -377,7 +377,7 @@ namespace smtrat
             // TODO: compute a better infeasible subset
             for( auto subformula = rReceivedFormula().begin(); subformula != rReceivedFormula().end(); ++subformula )
             {
-                infeasibleSubset.insert( subformula->formula() );
+                infeasibleSubset.push_back( subformula->formula() );
             }
 //        }
         mInfeasibleSubsets.push_back( infeasibleSubset );
@@ -3164,4 +3164,3 @@ NextClause:
         #endif
     }
 }    // namespace smtrat
-
