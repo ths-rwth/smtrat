@@ -81,7 +81,7 @@ namespace smtrat
             std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> mActiveLinearConstraints; // linear candidates considered
             std::map<const LRAVariable*, ContractionCandidates> mLinearConstraints; // all linear candidates
             std::map<ConstraintT, ContractionCandidates> mNonlinearConstraints; // all nonlinear candidates
-			FormulasT mNotEqualConstraints;
+			FormulaSetT mNotEqualConstraints;
             
             std::map<carl::Variable, icp::IcpVariable*> mVariables; // list of occurring variables
             EvalDoubleIntervalMap mIntervals; // actual intervals relevant for contraction
@@ -103,7 +103,7 @@ namespace smtrat
             LRAModule<LRASettings1> mLRA; // internal LRA module
             
             icp::ContractionCandidate* mLastCandidate; // the last applied candidate
-            std::queue<FormulasT> mBoxStorage; // keeps the box before contraction
+            std::queue<FormulaSetT> mBoxStorage; // keeps the box before contraction
             bool mIsIcpInitialized; // initialized ICPModule?
             bool mSplitOccurred;
             bool mOriginalVariableIntervalContracted;
@@ -315,7 +315,7 @@ namespace smtrat
              * 
              * @return 
              */
-            FormulasT createBoxFormula();
+            FormulaSetT createBoxFormula();
                         
             /**
              * 
@@ -367,21 +367,21 @@ namespace smtrat
              * @param _reasons
              * @return 
              */
-            FormulasT variableReasonHull( icp::set_icpVariable& _reasons );
+            FormulaSetT variableReasonHull( icp::set_icpVariable& _reasons );
             
             /**
              * Compute hull of defining origins for set of constraints.
              * @param _map
              * @return 
              */
-            FormulasT constraintReasonHull( const std::set<ConstraintT>& _reasons );
+            FormulaSetT constraintReasonHull( const std::set<ConstraintT>& _reasons );
             
             
             /**
              * creates constraints for the actual bounds of the original variables.
              * @return 
              */
-            FormulasT createConstraintsFromBounds( const EvalDoubleIntervalMap& _map, bool _isOriginal = true );
+            FormulaSetT createConstraintsFromBounds( const EvalDoubleIntervalMap& _map, bool _isOriginal = true );
             
             /**
              * Parses obtained deductions from the LRA module and maps them to original constraints or introduces new ones.

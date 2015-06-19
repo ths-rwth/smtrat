@@ -40,7 +40,7 @@ namespace icp
             carl::Variable               mVar;
             bool                               mOriginal;
             ContractionCandidates              mCandidates;
-            FormulasT                          mOriginalConstraints;
+            FormulaSetT                          mOriginalConstraints;
             const LRAVariable*                 mLraVar;
             unsigned                           mActivity;
             bool                               mLinear;
