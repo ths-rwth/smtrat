@@ -56,11 +56,8 @@ namespace smtrat
             const ConstraintT& constraint = _constraint.constraint();
             if( !constraint.lhs().isConstant() && constraint.lhs().isLinear() )
             {
-                bool elementInserted = mLinearConstraints.insert( _constraint ).second;
-                if( elementInserted )
-                {
-                    setBound( _constraint );
-                }
+                mLinearConstraints.push_back( _constraint );
+                setBound( _constraint );
             }
             return constraint.isConsistent() != 0;
         }
@@ -78,7 +75,7 @@ namespace smtrat
             case carl::FormulaType::FALSE:
             {
                 FormulasT infSubSet;
-                infSubSet.insert( _subformula->formula() );
+                infSubSet.push_back( _subformula->formula() );
                 mInfeasibleSubsets.push_back( infSubSet );
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 mpStatistics->addConflict( mInfeasibleSubsets );
@@ -164,7 +161,7 @@ namespace smtrat
                     else
                     {
                         addSubformulaToPassedFormula( formula, formula );
-                        mNonlinearConstraints.insert( formula );
+                        mNonlinearConstraints.push_back( formula );
                         return true;
                     }
                 }
@@ -311,7 +308,7 @@ namespace smtrat
                 }
                 else
                 {
-                    auto nonLinearConstraint = mNonlinearConstraints.find( pformula );
+                    auto nonLinearConstraint = std::find(mNonlinearConstraints.begin(), mNonlinearConstraints.end(), pformula);
                     assert( nonLinearConstraint != mNonlinearConstraints.end() );
                     mNonlinearConstraints.erase( nonLinearConstraint );
                 }
@@ -509,7 +506,7 @@ namespace smtrat
                     // Learn all bounds which have been deduced during the pivoting process.
                     while( !mTableau.rNewLearnedBounds().empty() )
                     {
-                        FormulasT originSet;
+                        FormulaSetT originSet;
                         typename LRATableau::LearnedBound& learnedBound = mTableau.rNewLearnedBounds().back()->second;
                         mTableau.rNewLearnedBounds().pop_back();
                         std::vector<const LRABound*>& bounds = learnedBound.premise;
@@ -747,7 +744,7 @@ Return:
     {
         for( auto iter = mTableau.rLearnedLowerBounds().begin(); iter != mTableau.rLearnedLowerBounds().end(); ++iter )
         {
-            FormulasT subformulas;
+            FormulaSetT subformulas;
             for( auto bound = iter->second.premise.begin(); bound != iter->second.premise.end(); ++bound )
             {
                 const FormulaT& origin = *(*bound)->origins().begin();
@@ -775,7 +772,7 @@ Return:
         mTableau.rLearnedLowerBounds().clear();
         for( auto iter = mTableau.rLearnedUpperBounds().begin(); iter != mTableau.rLearnedUpperBounds().end(); ++iter )
         {
-            FormulasT subformulas;
+            FormulaSetT subformulas;
             for( auto bound = iter->second.premise.begin(); bound != iter->second.premise.end(); ++bound )
             {
                 const FormulaT& origin = *(*bound)->origins().begin();
@@ -918,8 +915,8 @@ Return:
     template<class Settings>
     void LRAModule<Settings>::activateStrictBound( const FormulaT& _neqOrigin, const LRABound& _weakBound, const LRABound* _strictBound )
     {
-        FormulasT involvedConstraints;
-        FormulasT originSet;
+        FormulaSetT involvedConstraints;
+        FormulaSetT originSet;
         originSet.insert( _neqOrigin );
         auto iter = _weakBound.origins().begin();
         assert( iter != _weakBound.origins().end() );
@@ -939,7 +936,7 @@ Return:
         ++iter;
         while( iter != _weakBound.origins().end() )
         {
-            FormulasT originSetB;
+            FormulaSetT originSetB;
             originSetB.insert( _neqOrigin );
             if( iter->getType() == carl::FormulaType::AND )
             {
@@ -1009,7 +1006,7 @@ Return:
                 {
                     if( _exhaustively && (*currentBound)->pInfo()->exists )
                     {
-                        FormulasT subformulas;
+                        FormulaSetT subformulas;
                         subformulas.insert( FormulaT( carl::FormulaType::NOT, (*currentBound)->asConstraint() ) );
                         subformulas.insert( _boundNeq ? _bound->neqRepresentation() : _bound->asConstraint() );
                         addDeduction( FormulaT( carl::FormulaType::OR, subformulas ) );
@@ -1027,7 +1024,7 @@ Return:
                 {
                     if( (*currentBound)->pInfo()->exists && (*currentBound)->type() != LRABound::Type::EQUAL )
                     {
-                        FormulasT subformulas;
+                        FormulaSetT subformulas;
                         subformulas.insert( FormulaT( carl::FormulaType::NOT, _bound->asConstraint() ) );
                         subformulas.insert( (*currentBound)->asConstraint() );
                         addDeduction( FormulaT( carl::FormulaType::OR, subformulas ) );
@@ -1055,7 +1052,7 @@ Return:
                 {
                     if( (*currentBound)->pInfo()->exists && (*currentBound)->type() != LRABound::Type::EQUAL )
                     {
-                        FormulasT subformulas;
+                        FormulaSetT subformulas;
                         subformulas.insert( FormulaT( carl::FormulaType::NOT, _bound->asConstraint() ) );
                         subformulas.insert( (*currentBound)->asConstraint() );
                         addDeduction( FormulaT( carl::FormulaType::OR, subformulas ) );
@@ -1074,7 +1071,7 @@ Return:
                 {
                     if( (*currentBound)->pInfo()->exists )
                     {
-                        FormulasT subformulas;
+                        FormulaSetT subformulas;
                         subformulas.insert( FormulaT( carl::FormulaType::NOT, (*currentBound)->asConstraint() ) );
                         subformulas.insert( _boundNeq ? _bound->neqRepresentation() : _bound->asConstraint() );
                         addDeduction( FormulaT( carl::FormulaType::OR, subformulas ) );
@@ -1091,7 +1088,7 @@ Return:
     template<class Settings>
     void LRAModule<Settings>::addSimpleBoundConflict( const LRABound& _caseA, const LRABound& _caseB, bool _caseBneq )
     {
-        FormulasT subformulas;
+        FormulaSetT subformulas;
         subformulas.insert( FormulaT( carl::FormulaType::NOT, _caseA.asConstraint() ) );
         subformulas.insert( FormulaT( carl::FormulaType::NOT, _caseBneq ? _caseB.neqRepresentation() : _caseB.asConstraint() ) );
         addDeduction( FormulaT( carl::FormulaType::OR, subformulas ) );
@@ -1213,14 +1210,14 @@ Return:
                         assert( !gomory_constr.satisfiedBy( rMap_ ) );
                         assert( !neg_gomory_constr.satisfiedBy( rMap_ ) );
                         /*
-                        FormulasT subformulas; 
+                        FormulaSetT subformulas; 
                         mTableau.collect_premises( basicVar, subformulas );
-                        FormulasT premisesOrigins;
+                        FormulaSetT premisesOrigins;
                         for( auto& pf : subformulas )
                         {
                             collectOrigins( pf, premisesOrigins );
                         }
-                        FormulasT premise;
+                        FormulaSetT premise;
                         for( const Formula* pre : premisesOrigins )
                         {
                             premise.insert( FormulaT( carl::FormulaType::NOT, pre ) );
@@ -1228,7 +1225,7 @@ Return:
                         */
                         FormulaT gomory_formula = FormulaT( gomory_constr );
                         FormulaT neg_gomory_formula = FormulaT( neg_gomory_constr );
-                        FormulasT subformulas;
+                        FormulaSetT subformulas;
                         subformulas.insert( gomory_formula );
                         subformulas.insert( neg_gomory_formula );
                         FormulaT branch_formula = FormulaT( carl::FormulaType::OR, std::move( subformulas ) );
@@ -1384,12 +1381,12 @@ Return:
                     cons1.setActivity( -numeric_limits<double>::infinity() );
                     FormulaT cons2 = FormulaT( cut_constraint2 );
                     cons2.setActivity( -numeric_limits<double>::infinity() );
-                    FormulasT subformulasA;
+                    FormulaSetT subformulasA;
                     subformulasA.insert( cons1 );
                     subformulasA.insert( cons2 );
                     addDeduction( FormulaT( carl::FormulaType::OR, std::move( subformulasA ) ) );   
                     // (not(p<=I-1) or not(p>=I))
-                    FormulasT subformulasB;
+                    FormulaSetT subformulasB;
                     subformulasB.insert( FormulaT( carl::FormulaType::NOT, cons1 ) );
                     subformulasB.insert( FormulaT( carl::FormulaType::NOT, cons2 ) );
                     addDeduction( FormulaT( carl::FormulaType::OR, std::move( subformulasB ) ) );
@@ -1488,9 +1485,9 @@ Return:
             {
                 return maybeGomoryCut( branch_var->second, ass_ );
             }
-//            FormulasT premises;
+//            FormulaSetT premises;
 //            mTableau.collect_premises( branch_var->second , premises  ); 
-//            FormulasT premisesOrigins;
+//            FormulaSetT premisesOrigins;
 //            for( auto& pf : premises )
 //            {
 //                collectOrigins( pf, premisesOrigins );
@@ -1536,9 +1533,9 @@ Return:
             {
                 return maybeGomoryCut( branch_var->second, ass_ );
             }
-//            FormulasT premises;
+//            FormulaSetT premises;
 //            mTableau.collect_premises( branch_var->second , premises  );
-//            FormulasT premisesOrigins;
+//            FormulaSetT premisesOrigins;
 //            for( auto& pf : premises )
 //            {
 //                collectOrigins( pf, premisesOrigins );
@@ -1584,9 +1581,9 @@ Return:
             {
                 return maybeGomoryCut( branch_var->second, ass_ );
             }
-//            FormulasT premises;
+//            FormulaSetT premises;
 //            mTableau.collect_premises( branch_var->second , premises  ); 
-//            FormulasT premisesOrigins;
+//            FormulaSetT premisesOrigins;
 //            for( auto& pf : premises )
 //            {
 //                collectOrigins( pf, premisesOrigins );
@@ -1880,4 +1877,3 @@ Return:
         mTableau.printVariables( true, _out, _init );
     }
 }    // namespace smtrat
-

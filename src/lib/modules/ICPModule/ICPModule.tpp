@@ -118,7 +118,7 @@ namespace smtrat
             case carl::FormulaType::FALSE:
             {
                 FormulasT infSubSet;
-                infSubSet.insert( _formula->formula() );
+                infSubSet.push_back( _formula->formula() );
                 mInfeasibleSubsets.push_back( infSubSet );
                 mFoundSolution.clear();
                 return false;
@@ -603,7 +603,7 @@ namespace smtrat
                 if( iter != mVariables.end() )
                     icpVariables.insert( iter->second );
             }
-            FormulasT box = variableReasonHull(icpVariables);
+            FormulaSetT box = variableReasonHull(icpVariables);
             mBoxStorage.push(box);
             #ifdef ICP_MODULE_DEBUG_1
             std::cout << "********************** [ICP] Contraction **********************" << std::endl;
@@ -719,9 +719,9 @@ namespace smtrat
                     for( auto subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                     {
                         if( !subformula->constraint().isBound() )
-                            newInfSubset.insert( newInfSubset.end(), *subformula );
+                            newInfSubset.push_back( *subformula );
                     }
-                    newInfSubset.insert( contractionConstraints.begin(), contractionConstraints.end() );
+                    newInfSubset.insert( newInfSubset.end(), contractionConstraints.begin(), contractionConstraints.end() );
                     mInfeasibleSubsets.push_back( newInfSubset );
                 }
                 ++backend;
@@ -1033,21 +1033,21 @@ namespace smtrat
             }
             mHistoryActual->addContraction(_selection, variables);
             /// create prequesites: ((oldBox AND CCs) -> newBox) in CNF: (oldBox OR CCs) OR newBox 
-            FormulasT subformulas;
+            FormulaSetT subformulas;
             std::vector<FormulaT> splitPremise = createPremise();
             for( const FormulaT& subformula : splitPremise )
                 subformulas.insert( FormulaT( carl::FormulaType::NOT, subformula ) );
             // construct new box
-            FormulasT boxFormulas = createBoxFormula();
+            FormulaSetT boxFormulas = createBoxFormula();
             // push deduction
             if( boxFormulas.size() > 1 )
             {
                 auto lastFormula = --boxFormulas.end();
                 for( auto iter = boxFormulas.begin(); iter != lastFormula; ++iter )
                 {
-                    FormulasT subformulasTmp = subformulas;
-                    subformulasTmp.insert( *iter );
-                    addDeduction( FormulaT( carl::FormulaType::OR, subformulasTmp ) );
+                    FormulaSetT subFormulaSetTmp = subformulas;
+                    subFormulaSetTmp.insert( *iter );
+                    addDeduction( FormulaT( carl::FormulaType::OR, subFormulaSetTmp ) );
                 }
             }
             #ifdef ICP_MODULE_SHOW_PROGRESS
@@ -1431,8 +1431,8 @@ namespace smtrat
         FormulasT contractions = mHistoryActual->appliedConstraints();
         // collect original box
         assert( mBoxStorage.size() > 0 );
-        const FormulasT& box = mBoxStorage.front();
-        contractions.insert( box.begin(), box.end() );
+        const FormulaSetT& box = mBoxStorage.front();
+        contractions.insert(contractions.end(), box.begin(), box.end() );
         mBoxStorage.pop();
         return contractions;
     }
@@ -1452,11 +1452,11 @@ namespace smtrat
     }
     
     template<class Settings>
-    FormulasT ICPModule<Settings>::createBoxFormula()
+    FormulaSetT ICPModule<Settings>::createBoxFormula()
     {
         carl::Variables originalRealVariables;
         rReceivedFormula().realValuedVars(originalRealVariables); // TODO: store original variables as member, updating them efficiently with assert and remove
-        FormulasT subformulas;
+        FormulaSetT subformulas;
         for( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
         {
             if( originalRealVariables.find( (*intervalIt).first ) != originalRealVariables.end() )
@@ -1500,7 +1500,7 @@ namespace smtrat
             std::vector<FormulaT> splitPremise = createPremise();
             if( _contractionApplied )
             {
-                FormulasT subformulas;
+                FormulaSetT subformulas;
                 for( auto formulaIt = splitPremise.begin(); formulaIt != splitPremise.end(); ++formulaIt )
                     subformulas.insert( FormulaT( carl::FormulaType::NOT, *formulaIt ) );
                 // construct new box
@@ -2142,7 +2142,7 @@ namespace smtrat
     template<class Settings>
     bool ICPModule<Settings>::checkBoxAgainstLinearFeasibleRegion()
     {
-        FormulasT addedBoundaries = createConstraintsFromBounds(mIntervals,false);
+        FormulaSetT addedBoundaries = createConstraintsFromBounds(mIntervals,false);
         for( auto formulaIt = addedBoundaries.begin(); formulaIt != addedBoundaries.end();  )
         {
             auto res = mValidationFormula->add( *formulaIt );
@@ -2390,9 +2390,9 @@ namespace smtrat
     }
     
     template<class Settings>
-    FormulasT ICPModule<Settings>::variableReasonHull( icp::set_icpVariable& _reasons )
+    FormulaSetT ICPModule<Settings>::variableReasonHull( icp::set_icpVariable& _reasons )
     {
-        FormulasT reasons;
+        FormulaSetT reasons;
         for( auto variableIt = _reasons.begin(); variableIt != _reasons.end(); ++variableIt )
         {
             if ((*variableIt)->lraVar() != nullptr)
@@ -2444,9 +2444,9 @@ namespace smtrat
     }
     
     template<class Settings>
-    FormulasT ICPModule<Settings>::constraintReasonHull( const std::set<ConstraintT>& _reasons )
+    FormulaSetT ICPModule<Settings>::constraintReasonHull( const std::set<ConstraintT>& _reasons )
     {
-        FormulasT reasons;
+        FormulaSetT reasons;
         for ( auto constraintIt = _reasons.begin(); constraintIt != _reasons.end(); ++constraintIt )
         {
             for ( auto formulaIt = rReceivedFormula().begin(); formulaIt != rReceivedFormula().end(); ++formulaIt )
@@ -2462,9 +2462,9 @@ namespace smtrat
     }
     
     template<class Settings>
-    FormulasT ICPModule<Settings>::createConstraintsFromBounds( const EvalDoubleIntervalMap& _map, bool _onlyOriginals )
+    FormulaSetT ICPModule<Settings>::createConstraintsFromBounds( const EvalDoubleIntervalMap& _map, bool _onlyOriginals )
     {
-        FormulasT addedBoundaries;
+        FormulaSetT addedBoundaries;
         for ( auto variablesIt = mVariables.begin(); variablesIt != mVariables.end(); ++variablesIt )
         {
             if( (_onlyOriginals && !variablesIt->second->isOriginal()) || !variablesIt->second->isActive() )
@@ -2554,7 +2554,7 @@ namespace smtrat
         }
         else if( _deduction.isBooleanCombination() )
         {
-            FormulasT subformulas;
+            FormulaSetT subformulas;
             for( const FormulaT& subformula : _deduction.subformulas() )
             {
                 subformulas.insert( getReceivedFormulas( subformula ) );
@@ -2582,7 +2582,7 @@ namespace smtrat
                 assert( delinIt != mDeLinearizations.end() );
                 if( rReceivedFormula().contains( delinIt->second ) )
                 {
-                    newSet.insert( delinIt->second );
+                    newSet.push_back( delinIt->second );
                 }
             }
             assert(newSet.size() == (*infSetIt).size());

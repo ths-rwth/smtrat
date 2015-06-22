@@ -84,7 +84,7 @@ namespace smtrat {
 //				}
 			}
 
-			FormulaT rewrite_and(const FormulaT&/* formula*/, FormulasT&& subformulas) {
+			FormulaT rewrite_and(const FormulaT&/* formula*/, FormulaSetT&& subformulas) {
 //				for(const FormulaT& asserted : mAssertions.back()) {
 //					mEQHelper.removeSubformula(asserted);
 //				}

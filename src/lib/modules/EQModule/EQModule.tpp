@@ -1258,13 +1258,13 @@ namespace smtrat {
 
 			assert(pReceivedFormula()->contains(cur->mFormula));
 			
-			infeasible.insert(cur->mFormula);
+			infeasible.push_back(cur->mFormula);
 			current = cur->mPred;
 		}
 	}
 	
 	template<typename Settings>
-		void EQModule<Settings>::P_add_explicit_path_to_infeasible_neg(g_iterator start, g_iterator target, FormulasT& infeasible)
+		void EQModule<Settings>::P_add_explicit_path_to_infeasible_neg(g_iterator start, g_iterator target, FormulaSetT& infeasible)
 	{
 		g_iterator current = target;
 
@@ -1366,7 +1366,7 @@ namespace smtrat {
 
 
 	template<typename Settings>
-		void EQModule<Settings>::P_construct_proof_neg(FormulasT& output, g_iterator start, g_iterator target)
+		void EQModule<Settings>::P_construct_proof_neg(FormulaSetT& output, g_iterator start, g_iterator target)
 	{
 		mImplicitEdgeQueue.push_back(bfs_todo_entry(start, target));
 
@@ -1471,7 +1471,7 @@ namespace smtrat {
 
 		mInfeasibleSubsets.emplace_back();
 		FormulasT& infeasible = mInfeasibleSubsets.back();
-		infeasible.insert(inequality);
+		infeasible.push_back(inequality);
 		
 		P_construct_proof(infeasible, start, target);
 		P_clear_proven();
@@ -1495,7 +1495,7 @@ namespace smtrat {
 
 			// we can deduce an equality
 			if(indexLhs == indexRhs) {
-				FormulasT formulas;
+				FormulaSetT formulas;
 
 				P_construct_proof_neg(formulas, itrRhs, itrLhs);
 				P_clear_proven();
@@ -1545,7 +1545,7 @@ namespace smtrat {
 				if(matrix_entry != mIneqMatrix.end() && !matrix_entry->second.empty()) {
 					ineq_edge_info* ineq_edge = matrix_entry->second.front();
 
-					FormulasT formulas;
+					FormulaSetT formulas;
 					formulas.insert(FormulaT(carl::NOT, ineq_edge->mFormula));
 
 					P_construct_proof_neg(formulas, itrMin, ineq_edge->mRealPred);
@@ -1597,7 +1597,7 @@ namespace smtrat {
 				mStatistics->countImplicitEdgeDeduction();
 #endif
 
-				FormulasT outerformulas;
+				FormulaSetT outerformulas;
 
 				++mGlobalPairSetAge;
 				for(std::size_t arg = 0, s = arityof(i); arg < s; ++arg) {
@@ -1614,7 +1614,7 @@ namespace smtrat {
 							FormulaT rhs(farg->first, sarg->first, false);
 							outerformulas.insert(FormulaT(carl::NOT, rhs));
 
-							FormulasT innerformulas;
+							FormulaSetT innerformulas;
 
 							P_construct_proof_neg(innerformulas, farg, sarg);
 							P_clear_proven();

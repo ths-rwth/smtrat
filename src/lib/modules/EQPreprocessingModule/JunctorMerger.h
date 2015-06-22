@@ -7,11 +7,11 @@
 namespace smtrat {
 	struct JunctorMerger {
 		public:
-			FormulaT rewrite_or (const FormulaT& formula, FormulasT&& subformulas) {
+			FormulaT rewrite_or (const FormulaT& formula, FormulaSetT&& subformulas) {
 				return P_merge(formula.getType(), std::move(subformulas));
 			}
 
-			FormulaT rewrite_and(const FormulaT& formula, FormulasT&& subformulas) {
+			FormulaT rewrite_and(const FormulaT& formula, FormulaSetT&& subformulas) {
 				return P_merge(formula.getType(), std::move(subformulas));
 			}
 

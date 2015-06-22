@@ -14,7 +14,7 @@ namespace cad {
 		const CADModule& mCAD;
 		void addBoundConstraints(FormulasT& mis) const {
 			FormulasT boundConstraints = mCAD.variableBounds().getOriginsOfBounds();
-			mis.insert(boundConstraints.begin(), boundConstraints.end());
+			mis.insert(mis.end(), boundConstraints.begin(), boundConstraints.end());
 		}
 	public:
 		MISGeneration(const CADModule& cad): mCAD(cad) {}
@@ -25,7 +25,7 @@ namespace cad {
 	void MISGeneration<MISHeuristic::TRIVIAL>::operator()(std::vector<FormulasT>& mis) {
 		mis.push_back(FormulasT());
 		addBoundConstraints(mis.back());
-		for (const auto& i: mCAD.constraints()) mis.back().insert(i.first);
+		for (const auto& i: mCAD.constraints()) mis.back().push_back(i.first);
 	}
 	
 	template<>
@@ -35,7 +35,7 @@ namespace cad {
 		auto cg = mCAD.conflictGraph();
 		while (cg.hasRemainingSamples()) {
 			std::size_t c = cg.getMaxDegreeConstraint();
-			mis.back().insert(mCAD.formulaFor(cg.getConstraint(c)));
+			mis.back().push_back(mCAD.formulaFor(cg.getConstraint(c)));
 			cg.selectConstraint(c);
 		}
 	}

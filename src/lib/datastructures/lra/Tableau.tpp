@@ -3126,11 +3126,11 @@ namespace smtrat
                 const Variable<T1, T2>& nonBasicVar = *(*row_iterator).columnVar();
                 if( nonBasicVar.infimum() == nonBasicVar.assignment() )
                 {
-                    premises.insert( (*row_iterator).columnVar()->infimum().origins().front() );
+                    premises.push_back( (*row_iterator).columnVar()->infimum().origins().front() );
                 }
                 else if( nonBasicVar.supremum() == nonBasicVar.assignment() )
                 {
-                    premises.insert( (*row_iterator).columnVar()->supremum().origins().front() );
+                    premises.push_back( (*row_iterator).columnVar()->supremum().origins().front() );
                 }
                 if( !row_iterator.hEnd( false ) )
                 {
@@ -3475,4 +3475,3 @@ namespace smtrat
         }
     }    // end namspace lra
 }    // end namspace smtrat
-

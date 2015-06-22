@@ -221,11 +221,11 @@ namespace smtrat
             FormulasT result;
             if( !infimum().isInfinite() )
             {
-                result.insert( infimum().origins().front() );
+                result.push_back( infimum().origins().front() );
             }
             if( !supremum().isInfinite() )
             {
-                result.insert( supremum().origins().front() );
+                result.push_back( supremum().origins().front() );
             }
             return result;
         }
@@ -265,5 +265,3 @@ namespace smtrat
         }
     }    // end namspace lra
 } // end namespace smtrat
-
-
