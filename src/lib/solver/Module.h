@@ -407,11 +407,24 @@ namespace smtrat
             }
 
             /**
+             * Deletes all yet found deductions/lemmas.
+             */
+            void clearSplittings()
+            {
+                mSplittings.clear();
+            }
+
+            /**
              * @return A constant reference to the splitting decisions this module or its backends made.
              */
             const std::vector<Splitting>& splittings() const
             {
                 return mSplittings;
+            }
+            
+            void addSplitting( const FormulaT& _leftCase, const FormulaT& _rightCase, std::vector<FormulaT>&& _premise, bool _preferLeftCase )
+            {
+                mSplittings.emplace_back( _leftCase, _rightCase, std::move( _premise ), _preferLeftCase );
             }
             
             void addSplittings( const std::vector<Splitting>& _splittings )

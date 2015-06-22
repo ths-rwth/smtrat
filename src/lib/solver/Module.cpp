@@ -799,7 +799,7 @@ namespace smtrat
                 for( const auto& form : sp.mPremise )
                 {
                     getOrigins( form, premise );
-                    mSplittings.emplace_back( sp.mLeftCase, sp.mRightCase, std::move( premise ), sp.mPreferLeftCase );
+                    addSplitting( sp.mLeftCase, sp.mRightCase, std::move( premise ), sp.mPreferLeftCase );
                 }
             }
         }
