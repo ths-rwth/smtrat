@@ -66,7 +66,7 @@ namespace smtrat
             /// contains all threads to assign jobs to
             ThreadPool* mpThreadPool;
             /// the number of branches occurring in the strategy (the same as the number of leaves)
-            unsigned mNumberOfBranches;
+            size_t mNumberOfBranches;
             /// the number of cores of the system we run on
             unsigned mNumberOfCores;
             /// a flag indicating whether we might run in parallel eventually
