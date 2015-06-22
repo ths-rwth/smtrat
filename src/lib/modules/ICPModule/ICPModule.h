@@ -275,6 +275,8 @@ namespace smtrat
              */
             void contraction( icp::ContractionCandidate* _selection );
             
+            void setContraction( icp::ContractionCandidate* _selection, icp::IcpVariable& _icpVar, const DoubleInterval& _interval, const DoubleInterval& _contractedInterval );
+            
             /**
              * 
              * @param _interval
@@ -301,7 +303,7 @@ namespace smtrat
              * @param _targetDiameter
              * @return 
              */
-            double calculateSplittingImpact( std::map<carl::Variable, icp::IcpVariable*>::const_iterator _varIcpVarMapIter ) const;
+            double sizeBasedSplittingImpact( std::map<carl::Variable, icp::IcpVariable*>::const_iterator _varIcpVarMapIter ) const;
             
             /**
              * 
@@ -325,6 +327,8 @@ namespace smtrat
              */
             bool performSplit( bool _contractionApplied, bool& _moreContractionFound );
             
+            bool splitToBoundedIntervalsWithoutZero( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase ) const;
+            
             /**
              * 
              * @param _variable
@@ -332,7 +336,7 @@ namespace smtrat
              * @param _leftCaseWeak
              * @param _preferLeftCase
              */
-            void impactBasedSplitting( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase ) const;
+            void sizeBasedSplitting( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase ) const;
             
             /**
              * 
@@ -342,7 +346,9 @@ namespace smtrat
              * @param _preferLeftCase
              * @return 
              */
-            bool satBasedSplitting( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase, bool _goForSatisfiability ) const;
+            bool satBasedSplitting( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase ) const;
+            
+            double satBasedSplittingImpact( const EvalDoubleIntervalMap& _intervals, bool _calculateImpact ) const;
 
             /**
              * 
@@ -386,7 +392,7 @@ namespace smtrat
             /**
              * Parses obtained deductions from the LRA module and maps them to original constraints or introduces new ones.
              */
-            FormulaT transformDeductions( const FormulaT& _deduction );
+            FormulaT getReceivedFormulas( const FormulaT& _deduction );
             
             /**
              * Sets the own infeasible subset according to the infeasible subset of the internal lra module.
@@ -402,6 +408,8 @@ namespace smtrat
              * @param _selection the Node which contains the new context
              */
             void setBox( icp::HistoryNode* _selection );
+            
+            bool intervalsEmpty( const EvalDoubleIntervalMap& _intervals ) const;
             
             bool intervalsEmpty( bool _original = false) const;
             
