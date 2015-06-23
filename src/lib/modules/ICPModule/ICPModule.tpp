@@ -1832,8 +1832,8 @@ namespace smtrat
         #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
         if ( boxCheck == False )
         {
-            FormulaT* actualAssumptions = new FormulaT(*mValidationFormula);
-            Module::addAssumptionToCheck(*actualAssumptions,false,"ICP_BoxValidation");
+            FormulaT actualAssumptions = FormulaT(*mValidationFormula);
+            Module::addAssumptionToCheck(actualAssumptions,false,"ICP_BoxValidation");
         }
         #endif
         if( boxCheck != Unknown )
