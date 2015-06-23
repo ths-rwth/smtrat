@@ -645,6 +645,14 @@ namespace smtrat
                     return False;
                 }
             }
+            else
+            {
+                for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
+                {
+                    (*module)->mDeductions.clear();
+                    (*module)->mSplittings.clear();
+                }
+            }
 
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
             if( mpManager->runsParallel() )
