@@ -30,7 +30,7 @@ namespace smtrat {
         carl::parser::Parser<Poly> parser;
     public:
 
-        DLL_EXPORT static WrapperExternal* createWrapper(){
+		DLL_EXPORT static WrapperExternal* createWrapper(const char* logFile){
             WrapperExternal* pWrapper = new WrapperExternal();
             pWrapper->solver = new SOLVER();
             smtrat::addModules(pWrapper->solver);
@@ -40,7 +40,7 @@ namespace smtrat {
 			// Initialize logging
 			std::cout << "LOGGING" << std::endl;
 			if (!carl::logging::logger().has("smtrat")) {
-				carl::logging::logger().configure("smtrat", "smtrat.log");
+				carl::logging::logger().configure("smtrat", logFile);
 			}
 			if (!carl::logging::logger().has("stdout")) {
 				carl::logging::logger().configure("stdout", std::cout);
