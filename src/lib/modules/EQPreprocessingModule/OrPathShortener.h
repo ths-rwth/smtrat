@@ -21,7 +21,7 @@ namespace smtrat {
 				mFacts(facts)
 			{}
 
-			FormulaT rewrite_or(const FormulaT& formula, FormulasT&& subformulas) {
+			FormulaT rewrite_or(const FormulaT& formula, FormulaSetT&& subformulas) {
 				return P_do_rewrite(formula, std::move(subformulas));
 			}
 
@@ -127,13 +127,14 @@ namespace smtrat {
 					mAsserted.clear();
 				}
 
-				FormulasT addFormulas;
+				FormulaSetT addFormulas;
 				for(auto i = varIndex.begin(), e = varIndex.end(); i != e; ++i) {
 					auto j = i; ++j;
 					for(; j != e; ++j) {
 						if(pairMap.at(std::min(i->second, j->second), std::max(i->second, j->second)).cnt == subformulas.size()) {
 							FormulaT eq(i->first, j->first, false);
-							if(mStack.empty() || mStack.back().getType() != carl::AND || !mStack.back().subformulas().count(eq)) {
+							const FormulasT& sub = mStack.back().subformulas();
+							if(mStack.empty() || mStack.back().getType() != carl::AND || !std::count(sub.begin(), sub.end(), eq)) {
 								addFormulas.insert(eq);
 							}
 						}

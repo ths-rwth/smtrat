@@ -12,6 +12,9 @@ namespace parser {
  */
 struct UninterpretedTheory: public AbstractTheory {
 	std::map<types::TermType, carl::UVariable> mInstantiatedArguments;
+	carl::Sort mBoolSort;
+	carl::UVariable mTrue;
+	carl::UVariable mFalse;
 	
 	static bool convertTerm(const types::TermType& term, types::UninterpretedTheory::TermType& result);
 	static bool convertArguments(const std::vector<types::TermType>& arguments, std::vector<types::UninterpretedTheory::TermType>& result, TheoryError& errors);

@@ -407,11 +407,24 @@ namespace smtrat
             }
 
             /**
+             * Deletes all yet found deductions/lemmas.
+             */
+            void clearSplittings()
+            {
+                mSplittings.clear();
+            }
+
+            /**
              * @return A constant reference to the splitting decisions this module or its backends made.
              */
             const std::vector<Splitting>& splittings() const
             {
                 return mSplittings;
+            }
+            
+            void addSplitting( const FormulaT& _leftCase, const FormulaT& _rightCase, std::vector<FormulaT>&& _premise, bool _preferLeftCase )
+            {
+                mSplittings.emplace_back( _leftCase, _rightCase, std::move( _premise ), _preferLeftCase );
             }
             
             void addSplittings( const std::vector<Splitting>& _splittings )
@@ -481,7 +494,7 @@ namespace smtrat
              * @param _origins The set in which to store the origins.
              */
             void collectOrigins( const FormulaT& _formula, FormulasT& _origins ) const;
-            void collectOrigins( const FormulaT& _formula, std::vector<FormulaT>& _origins ) const;
+            //void collectOrigins( const FormulaT& _formula, std::vector<FormulaT>& _origins ) const;
 
             // Methods for debugging purposes.
             /**
@@ -798,13 +811,13 @@ namespace smtrat
              * @param _formula
              * @param _origins
              */
-            void getOrigins( const FormulaT& _formula, std::vector<FormulaT>& _origins ) const
+            /*void getOrigins( const FormulaT& _formula, std::vector<FormulaT>& _origins ) const
             {
                 ModuleInput::const_iterator posInReceived = mpPassedFormula->find( _formula );
                 assert( posInReceived != mpPassedFormula->end() );
                 if( posInReceived->hasOrigins() )
                     collectOrigins( *findBestOrigin( posInReceived->origins() ), _origins );
-            }
+            }*/
         
             /**
              * Copies the infeasible subsets of the passed formula

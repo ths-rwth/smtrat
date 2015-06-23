@@ -707,7 +707,7 @@ namespace smtrat
 			void P_add_explicit_path_to_infeasible(g_iterator start, g_iterator target, FormulasT& infeasible);
 			
 			// add the negated equalities on the path from start to target to infeasible subset
-			void P_add_explicit_path_to_infeasible_neg(g_iterator start, g_iterator target, FormulasT& infeasible);
+			void P_add_explicit_path_to_infeasible_neg(g_iterator start, g_iterator target, FormulaSetT& infeasible);
 			
 			// construction of infeasible subset 
 			void P_construct_infeasible_subset(g_iterator start, g_iterator target, const FormulaT& inequality);
@@ -745,7 +745,7 @@ namespace smtrat
 			void P_construct_proof(FormulasT& output, g_iterator start, g_iterator target);
 			
 			// constructs a proof for the equality using negated formulas
-			void P_construct_proof_neg(FormulasT& output, g_iterator start, g_iterator target);
+			void P_construct_proof_neg(FormulaSetT& output, g_iterator start, g_iterator target);
 			
 			// forget which implicit edges we had proven
 			void P_clear_proven();

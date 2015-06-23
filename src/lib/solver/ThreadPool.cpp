@@ -13,7 +13,7 @@ using namespace std;
 
 namespace smtrat
 {
-    ThreadPool::ThreadPool( unsigned _numberOfThreads, unsigned _numberOfCores ):
+    ThreadPool::ThreadPool( size_t _numberOfThreads, unsigned _numberOfCores ):
         mDone( false ),
         mPossibleOversubscription( _numberOfCores<_numberOfThreads ),
         mNumberOfCores( _numberOfCores ),

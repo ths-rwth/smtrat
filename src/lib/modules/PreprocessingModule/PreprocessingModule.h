@@ -33,7 +33,7 @@ namespace smtrat
             
             std::map<carl::Variable,int> mVariablesBounded;
 			
-			FormulasT tmpOrigins;
+			FormulaSetT tmpOrigins;
 			void accumulateBoundOrigins(const ConstraintT& constraint) {
 				auto tmp = varbounds.getOriginsOfBounds(constraint.variables());
 				tmpOrigins.insert(tmp.begin(), tmp.end());
@@ -85,6 +85,9 @@ namespace smtrat
              */
 			FormulaT removeFactors(const FormulaT& formula);
 			std::function<FormulaT(FormulaT)> removeFactorsFunction;
+			
+			FormulaT eliminateMonomialEquation(const FormulaT& formula);
+			std::function<FormulaT(FormulaT)> eliminateMonomialEquationFunction;
 			
 			/**
 			 * Splits the sum-of-squares (sos) decomposition, if the given formula is a constraint with a sos as left-hand side.

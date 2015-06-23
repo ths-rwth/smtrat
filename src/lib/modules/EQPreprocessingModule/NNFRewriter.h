@@ -22,9 +22,9 @@ namespace smtrat {
 			);
 		}
 
-		FormulaT rewrite_iff(const FormulaT&, FormulasT&& subformulas) {
+		FormulaT rewrite_iff(const FormulaT&, FormulaSetT&& subformulas) {
 			// A <=> B <=> ... ----> (A & B & ...) v (!A & !B & ...)
-			FormulasT negs;
+			FormulaSetT negs;
 
 			for(const FormulaT& formula : subformulas) {
 				negs.emplace(carl::NOT, formula);
@@ -114,7 +114,7 @@ namespace smtrat {
 				}
 			}
 
-			FormulaT rewrite_or(const FormulaT& formula, FormulasT&& subformulas) {
+			FormulaT rewrite_or(const FormulaT& formula, FormulaSetT&& subformulas) {
 				remove_xor_first_arg remover(*this, formula);
 
 				if(notCount % 2) {
@@ -124,7 +124,7 @@ namespace smtrat {
 				}
 			}
 
-			FormulaT rewrite_and(const FormulaT& formula, FormulasT&& subformulas) {
+			FormulaT rewrite_and(const FormulaT& formula, FormulaSetT&& subformulas) {
 				remove_xor_first_arg remover(*this, formula);
 
 				if(notCount % 2) {

@@ -122,13 +122,13 @@ namespace smtrat
                     case carl::FormulaType::FALSE: {
 			this->hasFalse = true;
 			FormulasT infSubSet;
-			infSubSet.insert(_subformula->formula());
+			infSubSet.push_back(_subformula->formula());
 			mInfeasibleSubsets.push_back(infSubSet);
 			return false;
                     }
                     case carl::FormulaType::CONSTRAINT: {
 			if (this->hasFalse) {
-				this->subformulaQueue.insert(_subformula->formula());
+				this->subformulaQueue.push_back(_subformula->formula());
 				return false;
 			} else {
 				return this->addConstraintFormula(_subformula->formula());
@@ -228,7 +228,7 @@ namespace smtrat
 				for (const auto& j: i) SMTRAT_LOG_DEBUG("smtrat.cad", "\t" << j);
                 #endif
 				mInfeasibleSubsets.push_back(i);
-				mInfeasibleSubsets.back().insert(boundConstraints.begin(), boundConstraints.end());
+				mInfeasibleSubsets.back().insert(mInfeasibleSubsets.back().end(), boundConstraints.begin(), boundConstraints.end());
 			}
             #ifdef SMTRAT_DEVOPTION_Validation
 			std::vector<FormulasT> ours;
@@ -290,7 +290,7 @@ namespace smtrat
 			this->hasFalse = false;
 			return;
                     case carl::FormulaType::CONSTRAINT: {
-			auto it = this->subformulaQueue.find(_subformula->formula());
+			auto it = std::find(this->subformulaQueue.begin(), this->subformulaQueue.end(), _subformula->formula());
 			if (it != this->subformulaQueue.end()) {
 				this->subformulaQueue.erase(it);
 				return;
@@ -478,7 +478,7 @@ namespace smtrat
 	{
 		// initialize MIS with the last constraint
 		std::vector<FormulasT> mis = std::vector<FormulasT>(1, FormulasT());
-		mis.front().insert(getConstraintAt((unsigned)(mConstraints.size() - 1)));	// the last constraint is assumed to be always in the MIS
+		mis.front().push_back(getConstraintAt((unsigned)(mConstraints.size() - 1)));	// the last constraint is assumed to be always in the MIS
 		if (mConstraints.size() > 1) {
 			// construct set cover by greedy heuristic
 			std::list<ConflictGraph<smtrat::Rational>::Vertex> setCover;
@@ -494,7 +494,7 @@ namespace smtrat
 			}
 			// collect constraints according to the vertex cover
 			for (auto v: setCover)
-				mis.front().insert(getConstraintAt((unsigned)(v)));
+				mis.front().push_back(getConstraintAt((unsigned)(v)));
 		}
 		return mis;
 	}

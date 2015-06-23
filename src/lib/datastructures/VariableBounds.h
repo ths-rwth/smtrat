@@ -449,19 +449,19 @@ namespace smtrat
                  * @param _var The variable to get origins of the bounds for.
                  * @return The origin constraints of the supremum and infimum of the given variable.
                  */
-                std::set<T,carl::less<T,false>> getOriginsOfBounds( const carl::Variable& _var ) const;
+                std::vector<T> getOriginsOfBounds( const carl::Variable& _var ) const;
                 
                 /**
                  * @param _variables The variables to get origins of the bounds for.
                  * @return The origin constraints of the supremum and infimum of the given variables.
                  */
-                std::set<T,carl::less<T,false>> getOriginsOfBounds( const carl::Variables& _variables ) const;
+                std::vector<T> getOriginsOfBounds( const carl::Variables& _variables ) const;
                 
                 /**
                  * Collect the origins to the supremums and infimums of all variables.
                  * @return A set of origins corresponding to the supremums and infimums of all variables.
                  */
-                std::set<T,carl::less<T,false>> getOriginsOfBounds() const;
+                std::vector<T> getOriginsOfBounds() const;
                 
                 /**
                  * @return The deductions which this variable bounds manager has detected.
@@ -488,13 +488,13 @@ namespace smtrat
                 /**
                  * @return The origins which cause the conflict. This method can only be called, if there is a conflict.
                  */
-                std::set<T,carl::less<T,false>> getConflict() const
+                std::vector<T> getConflict() const
                 {
                     assert( isConflicting() );
                     assert( !mpConflictingVariable->infimum().isInfinite() && !mpConflictingVariable->supremum().isInfinite() );
-                    std::set<T,carl::less<T,false>> conflict;
-                    conflict.insert( *mpConflictingVariable->infimum().origins().begin() );
-                    conflict.insert( *mpConflictingVariable->supremum().origins().begin() );
+                    std::vector<T> conflict;
+                    conflict.push_back( *mpConflictingVariable->infimum().origins().begin() );
+                    conflict.push_back( *mpConflictingVariable->supremum().origins().begin() );
                     return conflict;
                 }
         };

@@ -140,7 +140,7 @@ namespace smtrat
                     {
                         for( auto originIt = (*candidateIt)->origin().begin(); originIt != (*candidateIt)->origin().end(); ++originIt )
                         {
-                            appliedConstraints.insert(*originIt);
+                            appliedConstraints.push_back(*originIt);
                         }
                     }
                     return appliedConstraints;

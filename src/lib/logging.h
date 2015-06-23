@@ -23,10 +23,10 @@
 #else
 	#define SMTRAT_LOG_FATAL(channel, msg) std::cerr << "FATAL " << channel << ": " << msg << std::endl;
 	#define SMTRAT_LOG_ERROR(channel, msg) std::cerr << "ERROR " << channel << ": " << msg << std::endl;
-	#define SMTRAT_LOG_WARN(channel, msg)
-	#define SMTRAT_LOG_INFO(channel, msg)
-	#define SMTRAT_LOG_DEBUG(channel, msg)
-	#define SMTRAT_LOG_TRACE(channel, msg)
+	#define SMTRAT_LOG_WARN(channel, msg) {}
+	#define SMTRAT_LOG_INFO(channel, msg) {}
+	#define SMTRAT_LOG_DEBUG(channel, msg) {}
+	#define SMTRAT_LOG_TRACE(channel, msg) {}
 
 	#define SMTRAT_LOG_FUNC(channel, args)
 	#define SMTRAT_LOG_ASSERT(channel, condition, msg) assert(condition)
