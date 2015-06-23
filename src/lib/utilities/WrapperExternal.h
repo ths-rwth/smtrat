@@ -34,11 +34,9 @@ namespace smtrat {
             WrapperExternal* pWrapper = new WrapperExternal();
             pWrapper->solver = new SOLVER();
             smtrat::addModules(pWrapper->solver);
-			std::wcout << "createWrapper" << std::endl;
 
 #ifdef LOGGING
 			// Initialize logging
-			std::cout << "LOGGING" << std::endl;
 			if (!carl::logging::logger().has("smtrat")) {
 				carl::logging::logger().configure("smtrat", logFile);
 			}
