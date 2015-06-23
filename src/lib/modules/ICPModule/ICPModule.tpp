@@ -441,7 +441,7 @@ namespace smtrat
                 }
             }
             // actual preprocessing
-            FormulaT linearFormula;
+            FormulaT linearFormula = FormulaT( carl::FormulaType::TRUE );
             if( constr.isLinear() )
                 linearFormula = _formula;
             else
@@ -1088,7 +1088,7 @@ namespace smtrat
         updateRelativeContraction( _interval, _contractedInterval );
         updateAbsoluteContraction( _interval, _contractedInterval );
         #ifdef ICP_MODULE_DEBUG_0
-        printContraction( *_selection, icpVarIntervalBefore, _contractedInterval );
+        printContraction( *_selection, _interval, _contractedInterval );
         #endif
         if (mRelativeContraction > 0 || mAbsoluteContraction > 0)
         {
@@ -2405,7 +2405,7 @@ namespace smtrat
                         }
                         Poly leftEx = carl::makePolynomial<Poly>( tmpSymbol ) - Poly(bound);
 
-                        FormulaT leftTmp;
+                        FormulaT leftTmp = FormulaT( carl::FormulaType::TRUE );
                         switch( boundType )
                         {
                             case carl::BoundType::STRICT:
@@ -2451,7 +2451,7 @@ namespace smtrat
                             }
                         }
                         Poly rightEx = carl::makePolynomial<Poly>( tmpSymbol ) - Poly( bound );
-                        FormulaT rightTmp;
+                        FormulaT rightTmp = FormulaT( carl::FormulaType::TRUE );
                         switch( boundType )
                         {
                             case carl::BoundType::STRICT:
