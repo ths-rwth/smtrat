@@ -100,10 +100,7 @@ namespace smtrat
     
     Answer Module::check( bool _full )
     {   
-        #ifdef MODULE_VERBOSE
-        cout << endl << "Check " << (_full ? "full" : "lazy" ) << " with " << moduleName( type() ) << endl;
-        print( cout, " ");
-        #endif
+		SMTRAT_LOG_DEBUG("smtrat.module", "Check " << (_full ? "full" : "lazy") << " with " << moduleName(type()));
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         startCheckTimer();
         ++(mNrConsistencyChecks);

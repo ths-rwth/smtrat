@@ -29,8 +29,7 @@
 #include "ValidationSettings.h"
 #include "ThreadPool.h"
 #include "../config.h"
-
-
+#include "../logging.h"
 
 namespace smtrat
 {

@@ -32,9 +32,6 @@ namespace smtrat {
 
 		DLL_EXPORT static WrapperExternal* createWrapper(const char* logFile){
             WrapperExternal* pWrapper = new WrapperExternal();
-            pWrapper->solver = new SOLVER();
-            smtrat::addModules(pWrapper->solver);
-
 #ifdef LOGGING
 			// Initialize logging
 			if (!carl::logging::logger().has("smtrat")) {
@@ -46,15 +43,20 @@ namespace smtrat {
 			carl::logging::logger().filter("smtrat")
 				("smtrat", carl::logging::LogLevel::LVL_INFO)
 				("smtrat.wrapper", carl::logging::LogLevel::LVL_ALL)
+				("smtrat.module", carl::logging::LogLevel::LVL_DEBUG)
+				("smtrat.sat", carl::logging::LogLevel::LVL_ALL)
 				("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
 				;
 			carl::logging::logger().filter("stdout")
 				("smtrat", carl::logging::LogLevel::LVL_INFO)
 				("smtrat.wrapper", carl::logging::LogLevel::LVL_ALL)
+				("smtrat.module", carl::logging::LogLevel::LVL_DEBUG)
+				("smtrat.sat", carl::logging::LogLevel::LVL_ALL)
 				("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
 				;
 #endif
-
+            pWrapper->solver = new SOLVER();
+            smtrat::addModules(pWrapper->solver);
             return pWrapper;
         }
 

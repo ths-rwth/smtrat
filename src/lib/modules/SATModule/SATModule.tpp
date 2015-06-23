@@ -164,6 +164,7 @@ namespace smtrat
     template<class Settings>
     bool SATModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
+		SMTRAT_LOG_TRACE("smtrat.sat", "Add: " << _subformula->formula());
         if( _subformula->formula().propertyHolds( carl::PROP_IS_A_CLAUSE ) )
         {
             if ( Settings::compute_propagated_lemmas && decisionLevel() == 0 )
@@ -267,6 +268,7 @@ namespace smtrat
     template<class Settings>
     Answer SATModule<Settings>::checkCore( bool _full )
     {
+		SMTRAT_LOG_TRACE("smtrat.sat", "");
         #ifdef SMTRAT_DEVOPTION_Statistics
         mpStatistics->rNrTotalVariablesBefore() = (size_t) nVars();
         mpStatistics->rNrClauses() = (size_t) nClauses();
@@ -318,6 +320,7 @@ namespace smtrat
             //TODO matthias: finish
             if ( Settings::find_all_dependent_variables )
             {
+				SMTRAT_LOG_TRACE("smtrat.sat", "Find all dependent variables");
                 assert( result == l_True );
 
                 // Initialize set of all variables which are not tested yet for positive assignment
@@ -354,9 +357,7 @@ namespace smtrat
                     // Set new positive assignment
                     // TODO matthias: ignore Tseitin variables
                     testCandidate = *testVarsPositive.begin();
-                    #ifdef DEBUG_SATMODULE
-                    cout << "Test candidate: " << mMinisatVarMap.at( testCandidate ) << endl;
-                    #endif
+                    SMTRAT_LOG_DEBUG("smtrat.sat", "Test candidate: " << mMinisatVarMap.at( testCandidate ));
                     Lit nextLit = mkLit( testCandidate, false );
                     assert( assumptions.size() <= 1 );
                     assumptions.clear();
@@ -366,9 +367,7 @@ namespace smtrat
                     result = checkFormula();
                     if ( result == l_False )
                     {
-                        #ifdef DEBUG_SATMODULE
-                        cout << "Unsat with variable: " << mMinisatVarMap.at( testCandidate ) << endl;
-                        #endif
+						SMTRAT_LOG_DEBUG("smtrat.sat", "Unsat with variable: " << mMinisatVarMap.at( testCandidate ));
                         testVarsPositive.erase( testCandidate );
                         //Construct lemma via infeasible subset
                         updateInfeasibleSubset();
@@ -379,16 +378,14 @@ namespace smtrat
                     }
                     else if ( result == l_True )
                     {
-                        #ifdef DEBUG_SATMODULE
-                        cout << "Sat with variable: " << mMinisatVarMap.at( testCandidate ) << endl;
-                        printCurrentAssignment();
+                        SMTRAT_LOG_DEBUG("smtrat.sat", "Sat with variable: " << mMinisatVarMap.at( testCandidate ));
+						#ifdef DEBUG_SATMODULE
+						printCurrentAssignment();
                         #endif
                     }
 					else
 					{
-						#ifdef DEBUG_SATMODULE
-                        cout << "Unknown with variable: " << mMinisatVarMap.at( testCandidate ) << endl;
-                        #endif
+						SMTRAT_LOG_TRACE("smtrat.sat", "Unknown with variable: " << mMinisatVarMap.at( testCandidate ));
 					}
                 }
             }
@@ -518,17 +515,13 @@ namespace smtrat
 	template<class Settings>
 	void SATModule<Settings>::updateAllModels()
 	{
-		#ifdef DEBUG_SATMODULE
-		std::cout << "Update all models" << endl;
-		#endif
+		SMTRAT_LOG_TRACE("smtrat.sat", "Update all models");
 		mComputeAllSAT = true;
 		clearModels();
 		if( solverState() == True )
 		{
 			// Compute all satisfying assignments
-			#ifdef DEBUG_SATMODULE
-			std::cout << "Compute more assignments" << std::endl;
-			#endif
+			SMTRAT_LOG_TRACE("smtrat.sat", "Compute more assignments");
 
 			// Construct list of all relevant variables
 			mRelevantVariables.clear();
@@ -555,9 +548,7 @@ namespace smtrat
 				#endif
 				updateModel( model, true );
 				mAllModels.push_back( model );
-				#ifdef DEBUG_SATMODULE
-				std::cout << "Model: " << model << std::endl;
-				#endif
+				SMTRAT_LOG_TRACE("smtrat.sat", "Model: " << model);
 				// Exclude assignment
 				// TODO Matthias: construct clause
 				vec<Lit> excludeClause;
@@ -591,9 +582,7 @@ namespace smtrat
 				// Check again
 				result = checkFormula();
 			} while ( result == l_True );
-			#ifdef DEBUG_SATMODULE
-			std::cout << ( result == l_False ? "UnSAT" : "Undef" ) << std::endl;
-			#endif
+			SMTRAT_LOG_TRACE("smtrat.sat", ( result == l_False ? "UnSAT" : "Undef" ));
 		}
 		mComputeAllSAT = false;
     }
@@ -1639,9 +1628,7 @@ SetWatches:
     template<class Settings>
     void SATModule<Settings>::cancelUntil( int level )
     {
-        #ifdef DEBUG_SATMODULE
-        cout << "### cancel until " << level << endl;
-        #endif
+		SMTRAT_LOG_TRACE("smtrat.sat", "cancel until " << level);
         if( decisionLevel() > level )
         {
             cancelAssignmentUntil( level );
@@ -1792,16 +1779,12 @@ SetWatches:
                                     //Theory propagation.
                                     deductionsLearned = processLemmas();
                                 }
-                                #ifdef DEBUG_SATMODULE
-                                cout << "### Result: True!" << endl;
-                                #endif
+								SMTRAT_LOG_DEBUG("smtrat.sat", "Result: True!");
                                 break;
                             }
                             case False:
                             {
-                                #ifdef DEBUG_SATMODULE
-                                cout << "### Result: False!" << endl;
-                                #endif
+                                SMTRAT_LOG_TRACE("smtrat.sat", "Result: False!");
                                 confl = learnTheoryConflict();
                                 if( confl == CRef_Undef )
                                 {
@@ -1812,9 +1795,7 @@ SetWatches:
                             }
                             case Unknown:
                             {
-                                #ifdef DEBUG_SATMODULE
-                                cout << "### Result: Unknown!" << endl;
-                                #endif
+								SMTRAT_LOG_TRACE("smtrat.sat", "Result: Unknown!");
                                 if( Settings::allow_theory_propagation )
                                 {
                                     //Theory propagation.
@@ -1929,9 +1910,7 @@ SetWatches:
                 // NO CONFLICT
                 if( Settings::use_restarts && nof_conflicts >= 0 && (conflictC >= nof_conflicts) ) // ||!withinBudget()) )
                 {
-                    #ifdef DEBUG_SATMODULE
-                    cout << "###" << endl << "### Restart." << endl << "###" << endl;
-                    #endif
+					SMTRAT_LOG_TRACE("smtrat.sat", "Restart.");
                     // Reached bound on number of conflicts:
                     progress_estimate = progressEstimate();
                     cancelUntil( 0 );
@@ -2317,9 +2296,7 @@ SetWatches:
     template<class Settings>
     void SATModule<Settings>::uncheckedEnqueue( Lit p, CRef from )
     {
-        #ifdef DEBUG_SATMODULE
-        cout << __func__ << " " << (sign(p) ? "-" : "") << var(p) << "  from " << from << endl;
-        #endif
+		SMTRAT_LOG_TRACE("smtrat.sat", (sign(p) ? "-" : "") << var(p) << "  from " << from);
         assert( value( p ) == l_Undef );
         assigns[var( p )] = lbool( !sign( p ) );
         bool hasAbstraction = mBooleanConstraintMap[var( p )].first != nullptr;
@@ -2415,9 +2392,7 @@ SetWatches:
     template<class Settings>
     CRef SATModule<Settings>::propagate()
     {
-        #ifdef DEBUG_SATMODULE
-        cout << "### Propagate" << endl;
-        #endif
+		SMTRAT_LOG_TRACE("smtrat.sat", "Propagate");
         CRef confl = CRef_Undef;
         int num_props = 0;
         watches.cleanAll();
@@ -2679,7 +2654,7 @@ NextClause:
     {
         assert( decisionLevel() == 0 );
         #ifdef DEBUG_SATMODULE
-        std::cout << __func__ << std::endl;
+		SMTRAT_LOG_TRACE("smtrat.sat", "Simplify");
         #endif
         bool appliedValidSubstitution = false;
         while( ok )
