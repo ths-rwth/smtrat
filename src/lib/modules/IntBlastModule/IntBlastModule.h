@@ -21,6 +21,7 @@ namespace smtrat
     private:
         std::size_t mWidth;
         bool mSigned;
+        Integer mOffset;
         carl::Interval<Integer> mBounds;
 
     public:
@@ -28,9 +29,9 @@ namespace smtrat
         mWidth(0), mSigned(false), mBounds(0, 0)
         {}
 
-        BlastedType( std::size_t _width, bool _signed ) :
-        mWidth(_width), mSigned(_signed),
-        mBounds((_signed ? -carl::pow(2, _width-1) : 0), (_signed ? carl::pow(2, _width-1)-1 : carl::pow(2, _width) -1))
+        BlastedType( std::size_t _width, bool _signed, Integer _offset = 0 ) :
+        mWidth(_width), mSigned(_signed), mOffset(_offset),
+        mBounds(_offset + (_signed ? -carl::pow(2, _width-1) : 0), _offset + (_signed ? carl::pow(2, _width-1)-1 : carl::pow(2, _width) -1))
         {}
 
         std::size_t width() const {
@@ -39,6 +40,18 @@ namespace smtrat
 
         bool isSigned() const {
             return mSigned;
+        }
+
+        bool isConstant() const {
+            return mBounds.lower() == mBounds.upper();
+        }
+
+        bool hasOffset() const {
+            return ! carl::isZero(mOffset);
+        }
+
+        const Integer& offset() const {
+            return mOffset;
         }
 
         const carl::Interval<Integer>& bounds() const {
@@ -67,13 +80,18 @@ namespace smtrat
             }
 
             std::size_t width = ((safeWidth1 > safeWidth2) ? safeWidth2 : safeWidth1) + 1;
-            return BlastedType(width, makeSigned);
+            return BlastedType(width, makeSigned, _summand1.offset() + _summand2.offset());
         }
 
         static BlastedType forProduct(BlastedType _factor1, BlastedType _factor2) {
+            assert(! _factor1.hasOffset() && ! _factor2.hasOffset());
             bool makeSigned = _factor1.isSigned() || _factor2.isSigned();
             std::size_t width = _factor1.width() + _factor2.width() - (_factor1.isSigned() && _factor2.isSigned() ? 1 : 0);
             return BlastedType(width, makeSigned);
+        }
+
+        friend std::ostream& operator<<( std::ostream& _out, const BlastedType& _type ) {
+            return (_out << "[" << (_type.mSigned ? "s" : "u") << _type.mWidth << "]");
         }
     };
 
@@ -114,6 +132,10 @@ namespace smtrat
         const carl::BVTerm& operator()() const {
             return mTerm;
         }
+
+        friend std::ostream& operator<<( std::ostream& _out, const BlastedTerm& _term ) {
+            return (_out << _term.mTerm << " " << _term.mType);
+        }
     };
 
     class PolyDecomposition
@@ -122,9 +144,10 @@ namespace smtrat
         enum class Type : unsigned { VARIABLE, CONSTANT, SUM, PRODUCT };
 
     private:
+        // TODO: Union
         Type mType;
         carl::Variable mVariable;
-        Rational mConstant;
+        Integer mConstant;
         Poly mLeft;
         Poly mRight;
 
@@ -135,7 +158,7 @@ namespace smtrat
             assert(_type == Type::VARIABLE);
         }
 
-        PolyDecomposition( Type _type, const Rational& _constant ) :
+        PolyDecomposition( Type _type, const Integer& _constant ) :
         mType(_type), mVariable(), mConstant(_constant), mLeft(), mRight()
         {
             assert(_type == Type::CONSTANT);
@@ -162,7 +185,7 @@ namespace smtrat
             return mVariable;
         }
 
-        const Rational& constant() {
+        const Integer& constant() {
             assert(mType == Type::CONSTANT);
             return mConstant;
         }
@@ -255,15 +278,16 @@ namespace smtrat
             void createSubstitutes(const FormulaT& _formula);
             void createSubstitutes(const Poly& _poly);
             bool createSubstitute(const Poly& _poly);
-            // void createMonomialSubstitutes(const FormulaT& _formula);
             PolyDecomposition decompose(const Poly& _polynomial) const;
             void blastInputVariables();
             BlastedType chooseBlastedType(const DoubleInterval _interval, std::size_t _maxWidth = 0) const;
-            void blastSubstitutes();
             const BlastedTerm& blastedTermForPolynomial(const Poly& _poly);
-            void blastSum(const BlastedTerm& _summand1, const BlastedTerm& _summand2, const BlastedTerm& _sum);
-            void blastProduct(const BlastedTerm& _factor1, const BlastedTerm& _factor2, const BlastedTerm& _product);
-            void safeCast(const BlastedTerm& _from, const BlastedTerm& _to);
+            BlastedTerm blastConstantWithType(Rational _constant, const BlastedType& _type) const;
+            FormulasT blastSubstitutes();
+            FormulasT blastSum(const BlastedTerm& _summand1, const BlastedTerm& _summand2, const BlastedTerm& _sum);
+            FormulasT blastProduct(const BlastedTerm& _factor1, const BlastedTerm& _factor2, const BlastedTerm& _product);
+            FormulasT safeCast(const BlastedTerm& _from, const BlastedTerm& _to);
+            FormulasT blastConstraint(const ConstraintT& _constraint);
 
             void addSubformulaToICPFormula(const FormulaT& _formula, const FormulaT& _origin);
 
