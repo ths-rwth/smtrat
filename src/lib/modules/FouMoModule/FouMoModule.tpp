@@ -685,6 +685,11 @@ namespace smtrat
     template<class Settings>
     Answer FouMoModule<Settings>::checkCore( bool _full )
     {
+        // Check whether a module which has been called on the same instance in parallel, has found an answer
+        if( anAnswerFound() )
+        {
+            return Unknown;
+        }
         #ifdef DEBUG_FouMoModule
         cout << "Apply the Fourier-Motzkin-Algorithm" << endl;
         #endif

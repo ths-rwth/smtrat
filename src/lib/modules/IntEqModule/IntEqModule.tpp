@@ -372,6 +372,11 @@ namespace smtrat
         {
             return Unknown;
         }
+        // Check whether a module which has been called on the same instance in parallel, has found an answer
+        if( anAnswerFound() )
+        {
+            return Unknown;
+        }
         // Execute the algorithm until unsatisfiability or a parametric solution
         // is detected
         #ifdef DEBUG_IntEqModule
