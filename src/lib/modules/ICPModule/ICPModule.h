@@ -277,6 +277,8 @@ namespace smtrat
             
             void setContraction( icp::ContractionCandidate* _selection, icp::IcpVariable& _icpVar, const DoubleInterval& _interval, const DoubleInterval& _contractedInterval );
             
+            icp::ContractionCandidate* getContractionCandidate( const FormulaT& _constraint, carl::Variable::Arg _var ) const;
+            
             /**
              * 
              * @param _interval
@@ -327,7 +329,7 @@ namespace smtrat
              */
             bool performSplit( bool _contractionApplied, bool& _moreContractionFound );
             
-            bool splitToBoundedIntervalsWithoutZero( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase ) const;
+            bool splitToBoundedIntervalsWithoutZero( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase );
             
             /**
              * 
@@ -336,7 +338,7 @@ namespace smtrat
              * @param _leftCaseWeak
              * @param _preferLeftCase
              */
-            void sizeBasedSplitting( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase ) const;
+            void sizeBasedSplitting( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase );
             
             /**
              * 
@@ -346,9 +348,9 @@ namespace smtrat
              * @param _preferLeftCase
              * @return 
              */
-            bool satBasedSplitting( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase ) const;
+            bool satBasedSplitting( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase );
             
-            double satBasedSplittingImpact( const EvalDoubleIntervalMap& _intervals, bool _calculateImpact ) const;
+            double satBasedSplittingImpact( const EvalDoubleIntervalMap& _intervals, FormulaT& _violatedConstraint, bool _calculateImpact ) const;
 
             /**
              * 

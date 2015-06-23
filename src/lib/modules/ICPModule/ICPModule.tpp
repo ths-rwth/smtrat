@@ -29,8 +29,6 @@
 #endif
 #endif
 
-#define ICP_PROLONG_CONTRACTION
-
 namespace smtrat
 {
     template<class Settings>
@@ -311,95 +309,99 @@ namespace smtrat
             else
                 return Unknown;
         }
-
-        // Debug Outputs of linear and nonlinear Tables
-        #ifdef ICP_MODULE_DEBUG_0
-        #ifdef ICP_MODULE_DEBUG_1
-        printIcpVariables();
-        #else
-        std::cout << "Constraints after preprocessing:" << std::endl;
-        printPreprocessedInput( "    " );
-        std::cout << std::endl;
-        #endif
-        #endif
-        for( icp::ContractionCandidate* cc : mActiveLinearConstraints )
-            cc->resetReusagesAfterTargetDiameterReached();
-        for( icp::ContractionCandidate* cc : mActiveNonlinearConstraints )
-            cc->resetReusagesAfterTargetDiameterReached();
-        Answer lraAnswer = Unknown;
-        if( initialLinearCheck( lraAnswer ) )
+        for(;;)
         {
-            if( lraAnswer == True ) {
-                carl::Variables originalRealVariables;
-                rReceivedFormula().realValuedVars(originalRealVariables); // TODO: store original variables as member, updating them efficiently with assert and remove
-                for( auto var : originalRealVariables )
-                    mFoundSolution.emplace( var, ZERO_RATIONAL ); // Note, that it is only stored 0 as solution, if the variable has not yet a solution
-                if( checkNotEqualConstraints() )
-                    return True;
-                else
-                    return Unknown;
-            }
-            return lraAnswer;
-        }
-        #ifdef ICP_MODULE_SHOW_PROGRESS
-        if( mGlobalBoxSize == 0.0 ) mGlobalBoxSize = calculateCurrentBoxSize();
-        mInitialBoxSize = calculateCurrentBoxSize();
-        #endif
-        #ifdef ICP_MODULE_DEBUG_0
-        std::cout << "Start with the intervals" << std::endl;
-        printIntervals( false );
-        #endif
-        bool invalidBox = contractCurrentBox();
-        #ifdef ICP_MODULE_DEBUG_0
-        std::cout << std::endl;
-        #endif
-        // when one interval is empty, we can skip validation and chose next box.
-        if( invalidBox ) // box contains no solution
-        {
+            // Debug Outputs of linear and nonlinear Tables
             #ifdef ICP_MODULE_DEBUG_0
-            std::cout << "Whole box contains no solution! Return False." << std::endl;
+            #ifdef ICP_MODULE_DEBUG_1
+            printIcpVariables();
+            #else
+            std::cout << "Constraints after preprocessing:" << std::endl;
+            printPreprocessedInput( "    " );
+            std::cout << std::endl;
             #endif
-            // whole box forms infeasible subset
-            mInfeasibleSubsets.push_back( createPremiseDeductions() );
+            #endif
+            for( icp::ContractionCandidate* cc : mActiveLinearConstraints )
+                cc->resetReusagesAfterTargetDiameterReached();
+            for( icp::ContractionCandidate* cc : mActiveNonlinearConstraints )
+                cc->resetReusagesAfterTargetDiameterReached();
+            Answer lraAnswer = Unknown;
+            if( initialLinearCheck( lraAnswer ) )
+            {
+                if( lraAnswer == True ) {
+                    carl::Variables originalRealVariables;
+                    rReceivedFormula().realValuedVars(originalRealVariables); // TODO: store original variables as member, updating them efficiently with assert and remove
+                    for( auto var : originalRealVariables )
+                        mFoundSolution.emplace( var, ZERO_RATIONAL ); // Note, that it is only stored 0 as solution, if the variable has not yet a solution
+                    if( checkNotEqualConstraints() )
+                        return True;
+                    else
+                        return Unknown;
+                }
+                return lraAnswer;
+            }
             #ifdef ICP_MODULE_SHOW_PROGRESS
-            addProgress( mInitialBoxSize );
+            if( mGlobalBoxSize == 0.0 ) mGlobalBoxSize = calculateCurrentBoxSize();
+            mInitialBoxSize = calculateCurrentBoxSize();
             #endif
-            return False;
-        }
-        else
-        {
-            assert( !intervalsEmpty() );
-            if( mSplitOccurred )
+            #ifdef ICP_MODULE_DEBUG_0
+            std::cout << "Start with the intervals" << std::endl;
+            printIntervals( false );
+            #endif
+            bool invalidBox = contractCurrentBox();
+            #ifdef ICP_MODULE_DEBUG_0
+            std::cout << std::endl;
+            #endif
+            // when one interval is empty, we can skip validation and chose next box.
+            if( invalidBox ) // box contains no solution
             {
                 #ifdef ICP_MODULE_DEBUG_0
-                std::cout << "Return unknown, raise deductions for split." << std::endl;
+                std::cout << "Whole box contains no solution! Return False." << std::endl;
                 #endif
-                assert( !splittings().empty() );
-                return Unknown;
-            }
-            assert( splittings().empty() );
-            if( tryTestPoints() )
-            {
-                if( checkNotEqualConstraints() )
-                    return True;
-                else
-                    return Unknown;
+                // whole box forms infeasible subset
+                mInfeasibleSubsets.push_back( createPremiseDeductions() );
+                #ifdef ICP_MODULE_SHOW_PROGRESS
+                addProgress( mInitialBoxSize );
+                #endif
+                return False;
             }
             else
             {
-                // create Bounds and set them, add to passedFormula
-                pushBoundsToPassedFormula();
-                // lazy call of the backends on found box
-                Answer lazyResult = callBackends( false );
-                // if it led to a result or the backends require a splitting
-                if( lazyResult != Unknown || !splittings().empty() )
-                    return lazyResult;
-                // Full call of the backends, if no box has target diameter
-                bool furtherContractionOccurred = false;
-                if( !performSplit( mOriginalVariableIntervalContracted, furtherContractionOccurred ) )
-                    return callBackends( _full );
-                assert( splittings().size() == 1 );
-                return Unknown; // Splitting required
+                assert( !intervalsEmpty() );
+                if( mSplitOccurred )
+                {
+                    #ifdef ICP_MODULE_DEBUG_0
+                    std::cout << "Return unknown, raise deductions for split." << std::endl;
+                    #endif
+                    assert( !splittings().empty() );
+                    return Unknown;
+                }
+                assert( splittings().empty() );
+                if( tryTestPoints() )
+                {
+                    if( checkNotEqualConstraints() )
+                        return True;
+                    else
+                        return Unknown;
+                }
+                else
+                {
+                    // create Bounds and set them, add to passedFormula
+                    pushBoundsToPassedFormula();
+                    // lazy call of the backends on found box
+                    Answer lazyResult = callBackends( false );
+                    // if it led to a result or the backends require a splitting
+                    if( lazyResult != Unknown || !splittings().empty() )
+                        return lazyResult;
+                    // Full call of the backends, if no box has target diameter
+                    bool furtherContractionOccurred = false;
+                    if( !performSplit( mOriginalVariableIntervalContracted, furtherContractionOccurred ) )
+                        return callBackends( _full );
+                    if( furtherContractionOccurred )
+                        continue;
+                    assert( splittings().size() == 1 );
+                    return Unknown; // Splitting required
+                }
             }
         }
     }
@@ -1102,6 +1104,33 @@ namespace smtrat
     }
     
     template<class Settings>
+    icp::ContractionCandidate* ICPModule<Settings>::getContractionCandidate( const FormulaT& _constraint, carl::Variable::Arg _var ) const
+    {
+        if( _constraint.constraint().lhs().isLinear() )
+        {
+            auto iter = mLinearConstraints.find( mLRA.getSlackVariable( _constraint ) );
+            assert( iter != mLinearConstraints.end() );
+            for( const auto& cc : iter->second )
+            {
+                if( cc->lhs() == _var )
+                    return cc;
+            }
+        }
+        else
+        {
+            assert( _constraint.getType() == carl::FormulaType::CONSTRAINT );
+            auto iter = mNonlinearConstraints.find( _constraint.constraint() );
+            assert( iter != mNonlinearConstraints.end() );
+            for( const auto& cc : iter->second )
+            {
+                if( cc->lhs() == _var )
+                    return cc;
+            }
+        }
+        return nullptr;
+    }
+    
+    template<class Settings>
     void ICPModule<Settings>::updateRelativeContraction( const DoubleInterval& _interval, const DoubleInterval& _contractedInterval )
     {
         assert( _interval == _contractedInterval || _interval.contains( _contractedInterval ) );
@@ -1524,7 +1553,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    bool ICPModule<Settings>::splitToBoundedIntervalsWithoutZero( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase ) const
+    bool ICPModule<Settings>::splitToBoundedIntervalsWithoutZero( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase )
     {
         double valueAsDouble = 0;
         for( const auto& varIcpvarPair : mVariables )
@@ -1586,13 +1615,26 @@ namespace smtrat
                 {
                     if( mSplittingHeuristic == SplittingHeuristic::SATISFIABILITY || mSplittingHeuristic == SplittingHeuristic::UNSATISFIABILITY )
                     {
+                        FormulaT violatedConstraint;
                         EvalDoubleIntervalMap intervals = mIntervals;
                         intervals[_variable] = DoubleInterval( varInterval.lower(), varInterval.lowerBoundType(), valueAsDouble, (_leftCaseWeak ? carl::BoundType::WEAK : carl::BoundType::STRICT) );
-                        if( satBasedSplittingImpact( intervals, false ) < 0 )
+                        if( satBasedSplittingImpact( intervals, violatedConstraint, false ) < 0 )
+                        {
+                            assert( violatedConstraint.getType() == carl::FormulaType::CONSTRAINT );
+                            icp::ContractionCandidate* cc = getContractionCandidate( violatedConstraint, _variable );
+                            assert( cc != nullptr );
+                            setContraction( cc, *varIcpvarPair.second, varInterval, intervals[_variable] );
                             return true;
+                        }
                         intervals[_variable] = DoubleInterval( valueAsDouble, (_leftCaseWeak ? carl::BoundType::STRICT : carl::BoundType::WEAK), varInterval.upper(), varInterval.upperBoundType() );
-                        if( satBasedSplittingImpact( intervals, false ) < 0 )
+                        if( satBasedSplittingImpact( intervals, violatedConstraint, false ) < 0 )
+                        {
+                            assert( violatedConstraint.getType() == carl::FormulaType::CONSTRAINT );
+                            icp::ContractionCandidate* cc = getContractionCandidate( violatedConstraint, _variable );
+                            assert( cc != nullptr );
+                            setContraction( cc, *varIcpvarPair.second, varInterval, intervals[_variable] );
                             return true;
+                        }
                     }
                     _value = carl::rationalize<Rational>( valueAsDouble );
                     return false;
@@ -1603,7 +1645,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    void ICPModule<Settings>::sizeBasedSplitting( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase ) const
+    void ICPModule<Settings>::sizeBasedSplitting( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase )
     {
         _value = ZERO_RATIONAL;
         _leftCaseWeak = true;
@@ -1640,7 +1682,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    bool ICPModule<Settings>::satBasedSplitting( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase ) const
+    bool ICPModule<Settings>::satBasedSplitting( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase )
     {
         _value = ZERO_RATIONAL;
         _leftCaseWeak = true;
@@ -1666,14 +1708,27 @@ namespace smtrat
             if( valueAsDouble == varInterval.upper() )
                 leftCaseWeak = false;
             EvalDoubleIntervalMap intervals = mIntervals;
-            intervals[_variable] = DoubleInterval( varInterval.lower(), varInterval.lowerBoundType(), valueAsDouble, leftCaseWeak ? carl::BoundType::WEAK : carl::BoundType::STRICT );
-            double impactLeftCase = satBasedSplittingImpact( intervals, true );
+            intervals[varIcpvarPair.first] = DoubleInterval( varInterval.lower(), varInterval.lowerBoundType(), valueAsDouble, leftCaseWeak ? carl::BoundType::WEAK : carl::BoundType::STRICT );
+            FormulaT violatedConstraint;
+            double impactLeftCase = satBasedSplittingImpact( intervals, violatedConstraint, true );
             if( impactLeftCase < 0 )
+            {
+                assert( violatedConstraint.getType() == carl::FormulaType::CONSTRAINT );
+                icp::ContractionCandidate* cc = getContractionCandidate( violatedConstraint, varIcpvarPair.first );
+                assert( cc != nullptr );
+                setContraction( cc, *varIcpvarPair.second, varInterval, intervals[varIcpvarPair.first] );
                 return true;
-            intervals[_variable] = DoubleInterval( valueAsDouble, leftCaseWeak ? carl::BoundType::STRICT : carl::BoundType::WEAK, varInterval.upper(), varInterval.upperBoundType() );
-            double impactRightCase = satBasedSplittingImpact( intervals, true );
+            }
+            intervals[varIcpvarPair.first] = DoubleInterval( valueAsDouble, leftCaseWeak ? carl::BoundType::STRICT : carl::BoundType::WEAK, varInterval.upper(), varInterval.upperBoundType() );
+            double impactRightCase = satBasedSplittingImpact( intervals, violatedConstraint, true );
             if( impactRightCase < 0 )
+            {
+                assert( violatedConstraint.getType() == carl::FormulaType::CONSTRAINT );
+                icp::ContractionCandidate* cc = getContractionCandidate( violatedConstraint, varIcpvarPair.first );
+                assert( cc != nullptr );
+                setContraction( cc, *varIcpvarPair.second, varInterval, intervals[varIcpvarPair.first] );
                 return true;
+            }
             if( impactLeftCase > impactRightCase )
             {
                 if( impactLeftCase > maximalImpact )
@@ -1701,9 +1756,8 @@ namespace smtrat
 //    #define ICP_SAT_BASED_SPLITTING_DEBUG
     
     template<class Settings>
-    double ICPModule<Settings>::satBasedSplittingImpact( const EvalDoubleIntervalMap& _intervals, bool _calculateImpact ) const
+    double ICPModule<Settings>::satBasedSplittingImpact( const EvalDoubleIntervalMap& _intervals, FormulaT& _violatedConstraint, bool _calculateImpact ) const
     {
-        if( intervalsEmpty( _intervals ) ) exit(1458);
         assert( !intervalsEmpty( _intervals ) );
         assert( mSplittingHeuristic == SplittingHeuristic::SATISFIABILITY || mSplittingHeuristic == SplittingHeuristic::UNSATISFIABILITY );
         double result = 0;
@@ -1737,6 +1791,7 @@ namespace smtrat
                             }
                             if( !_calculateImpact )
                                 break;
+                            assert( (solutionSpace.diameter()/rReceivedFormula().size()) >= (double) 0 );
                             result += (solutionSpace.diameter()/rReceivedFormula().size());
                         }
                     }
@@ -1745,6 +1800,7 @@ namespace smtrat
                         #ifdef ICP_SAT_BASED_SPLITTING_DEBUG
                         std::cout << "Result: -1" << std::endl;
                         #endif
+                        _violatedConstraint = rec.formula();
                         return -1;
                     }
                     break;
@@ -1754,6 +1810,7 @@ namespace smtrat
                         #ifdef ICP_SAT_BASED_SPLITTING_DEBUG
                         std::cout << "Result: -1" << std::endl;
                         #endif
+                        _violatedConstraint = rec.formula();
                         return -1;
                     }
                     else
@@ -1770,9 +1827,15 @@ namespace smtrat
                             if( !_calculateImpact )
                                 break;
                             if( solutionSpace.upperBoundType() != carl::BoundType::INFTY && solutionSpace.upper() < (double) 0 )
+                            {
+                                assert( (solutionSpace.diameter()/rReceivedFormula().size()) >= (double) 0 );
                                 result += (solutionSpace.diameter()/rReceivedFormula().size());
+                            }
                             else
-                                result += (solutionSpace.lower()/rReceivedFormula().size());
+                            {
+                                assert( (-solutionSpace.lower()/rReceivedFormula().size()) >= (double) 0 );
+                                result += (-solutionSpace.lower()/rReceivedFormula().size());
+                            }
                         }
                         else
                         {
@@ -1785,8 +1848,12 @@ namespace smtrat
                             }
                             if( !_calculateImpact )
                                 break;
-                            assert( solutionSpace.lowerBoundType() == carl::BoundType::INFTY || solutionSpace.lower() <= (double) 0 );
-                            result += (solutionSpace.upper()/rReceivedFormula().size());
+                            if( solutionSpace.upper() > (double) 0 )
+                            {
+                                assert( solutionSpace.lowerBoundType() == carl::BoundType::INFTY || solutionSpace.lower() <= (double) 0 );
+                                assert( (solutionSpace.upper()/rReceivedFormula().size()) >= (double) 0 );
+                                result += (solutionSpace.upper()/rReceivedFormula().size());
+                            }
                         }
                     }
                     break;
@@ -1796,6 +1863,7 @@ namespace smtrat
                         #ifdef ICP_SAT_BASED_SPLITTING_DEBUG
                         std::cout << "Result: -1" << std::endl;
                         #endif
+                        _violatedConstraint = rec.formula();
                         return -1;
                     }
                     else
@@ -1812,9 +1880,15 @@ namespace smtrat
                             if( !_calculateImpact )
                                 break;
                             if( solutionSpace.lowerBoundType() != carl::BoundType::INFTY && solutionSpace.lower() > (double) 0 )
+                            {
+                                assert( (solutionSpace.diameter()/rReceivedFormula().size()) >= (double) 0 );
                                 result += (solutionSpace.diameter()/rReceivedFormula().size());
+                            }
                             else
+                            {
+                                assert( (solutionSpace.upper()/rReceivedFormula().size()) >= (double) 0 );
                                 result += (solutionSpace.upper()/rReceivedFormula().size());
+                            }
                         }
                         else
                         {
@@ -1827,8 +1901,12 @@ namespace smtrat
                             }
                             if( !_calculateImpact )
                                 break;
-                            assert( solutionSpace.upperBoundType() == carl::BoundType::INFTY || solutionSpace.upper() <= (double) 0 );
-                            result += (solutionSpace.lower()/rReceivedFormula().size());
+                            if( solutionSpace.lower() < (double) 0 )
+                            {
+                                assert( solutionSpace.upperBoundType() == carl::BoundType::INFTY || solutionSpace.upper() <= (double) 0 );
+                                assert( (-solutionSpace.lower()/rReceivedFormula().size()) >= (double) 0 );
+                                result += (-solutionSpace.lower()/rReceivedFormula().size());
+                            }
                         }
                     }
                     break;
@@ -1838,6 +1916,7 @@ namespace smtrat
                         #ifdef ICP_SAT_BASED_SPLITTING_DEBUG
                         std::cout << "Result: -1" << std::endl;
                         #endif
+                        _violatedConstraint = rec.formula();
                         return -1;
                     }
                     else
@@ -1854,9 +1933,15 @@ namespace smtrat
                             if( !_calculateImpact )
                                 break;
                             if( solutionSpace.upperBoundType() != carl::BoundType::INFTY && solutionSpace.upper() < (double) 0 )
+                            {
+                                assert( (solutionSpace.diameter()/rReceivedFormula().size()) >= (double) 0 );
                                 result += (solutionSpace.diameter()/rReceivedFormula().size());
+                            }
                             else
-                                result += (solutionSpace.lower()/rReceivedFormula().size());
+                            {
+                                assert( (-solutionSpace.lower()/rReceivedFormula().size()) >= (double) 0 );
+                                result += (-solutionSpace.lower()/rReceivedFormula().size());
+                            }
                         }
                         else
                         {
@@ -1869,8 +1954,12 @@ namespace smtrat
                             }
                             if( !_calculateImpact )
                                 break;
-                            assert( solutionSpace.lowerBoundType() == carl::BoundType::INFTY || solutionSpace.lower() < (double) 0 );
-                            result += (solutionSpace.upper()/rReceivedFormula().size());
+                            if( solutionSpace.upper() > (double) 0 )
+                            {
+                                assert( solutionSpace.lowerBoundType() == carl::BoundType::INFTY || solutionSpace.lower() < (double) 0 );
+                                assert( (solutionSpace.upper()/rReceivedFormula().size()) >= (double) 0 );
+                                result += (solutionSpace.upper()/rReceivedFormula().size());
+                            }
                         }
                     }
                     break;
@@ -1880,6 +1969,7 @@ namespace smtrat
                         #ifdef ICP_SAT_BASED_SPLITTING_DEBUG
                         std::cout << "Result: -1" << std::endl;
                         #endif
+                        _violatedConstraint = rec.formula();
                         return -1;
                     }
                     else
@@ -1896,9 +1986,15 @@ namespace smtrat
                             if( !_calculateImpact )
                                 break;
                             if( solutionSpace.lowerBoundType() != carl::BoundType::INFTY && solutionSpace.lower() > (double) 0 )
+                            {
+                                assert( (solutionSpace.diameter()/rReceivedFormula().size()) >= (double) 0 );
                                 result += (solutionSpace.diameter()/rReceivedFormula().size());
+                            }
                             else
+                            {
+                                assert( (solutionSpace.upper()/rReceivedFormula().size()) >= (double) 0 );
                                 result += (solutionSpace.upper()/rReceivedFormula().size());
+                            }
                         }
                         else
                         {
@@ -1911,8 +2007,12 @@ namespace smtrat
                             }
                             if( !_calculateImpact )
                                 break;
-                            assert( solutionSpace.upperBoundType() == carl::BoundType::INFTY || solutionSpace.upper() < (double) 0 );
-                            result += (solutionSpace.lower()/rReceivedFormula().size());
+                            if( solutionSpace.lower() < (double) 0 )
+                            {
+                                assert( solutionSpace.upperBoundType() == carl::BoundType::INFTY || solutionSpace.upper() < (double) 0 );
+                                assert( (-solutionSpace.lower()/rReceivedFormula().size()) >= (double) 0 );
+                                result += (-solutionSpace.lower()/rReceivedFormula().size());
+                            }
                         }
                     }
                     break;
@@ -2196,8 +2296,7 @@ namespace smtrat
                     }
                 }
             }
-            #ifdef ICP_PROLONG_CONTRACTION
-            else
+            else if( Settings::prolong_contraction )
             {
                 EvalRationalIntervalMap bounds = mLRA.getVariableBounds();
                 #ifdef ICP_MODULE_DEBUG_1
@@ -2249,7 +2348,6 @@ namespace smtrat
                     }
                 }
             }
-            #endif
         }
         // remove boundaries from mLRA module after boxChecking.
         for( auto boundIt = addedBoundaries.begin(); boundIt != addedBoundaries.end(); )
