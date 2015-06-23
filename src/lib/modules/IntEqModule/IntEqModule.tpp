@@ -38,7 +38,7 @@ namespace smtrat
         if( _subformula->formula().isFalse() )
         {
             FormulasT infSubSet;
-            infSubSet.insert( _subformula->formula() );
+            infSubSet.push_back( _subformula->formula() );
             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
             return false;            
         } 

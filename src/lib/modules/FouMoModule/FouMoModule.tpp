@@ -64,7 +64,7 @@ namespace smtrat
             cout << "Asserted formula: " << _subformula->formula().constraint() << "is false" << endl;
             #endif
             FormulasT infSubSet;
-            infSubSet.insert( _subformula->formula() );
+            infSubSet.push_back( _subformula->formula() );
             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
             return false;            
         }
