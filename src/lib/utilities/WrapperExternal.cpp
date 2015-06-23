@@ -20,49 +20,40 @@ namespace smtrat {
     bool WrapperExternal::inform(const char* _constraint)
     {
         FormulaT constraint = parser.formula(_constraint);
-		#ifdef DEBUG_WRAPPER
-		std::cout << "Informed: " << constraint << std::endl;
-		#endif
+		SMTRAT_LOG_DEBUG("smtrat.wrapper", "Informed: " << constraint);
 		return solver->inform(constraint);
     }
 
     bool WrapperExternal::add(const char* _subformula)
     {
         FormulaT subformula = parser.formula(_subformula);
-		#ifdef DEBUG_WRAPPER
-		std::cout << "Added: " << subformula << std::endl;
-		#endif
+		SMTRAT_LOG_DEBUG("smtrat.wrapper", "Added: " << subformula);
 		return solver->add(subformula);
     }
 
 	void WrapperExternal::addInformationRelevantFormula(const char* _formula)
 	{
 		FormulaT formula = parser.formula(_formula);
-		#ifdef DEBUG_WRAPPER
-		std::cout << "Added informationRelevantFormula: " << formula << std::endl;
-		#endif
+		SMTRAT_LOG_DEBUG("smtrat.wrapper", "Added informationRelevantFormula: " << formula);
 		return solver->addInformationRelevantFormula(formula);
 	}
 
 	int WrapperExternal::check()
 	{
-		#ifdef DEBUG_WRAPPER
-		std::cout << "Check..." << std::endl;
-		#endif
+		SMTRAT_LOG_DEBUG("smtrat.wrapper", "Check...");
         return solver->check();
     }
 
     void WrapperExternal::push()
     {
-		#ifdef DEBUG_WRAPPER
-		std::cout << "Push" << std::endl;
-		#endif
+		SMTRAT_LOG_DEBUG("smtrat.wrapper", "Push");
 		solver->push();
     }
 
     bool WrapperExternal::pop()
     {
-		std::cout << "Pop (Not yet implemented)" << std::endl;
+		SMTRAT_LOG_DEBUG("smtrat.wrapper", "Pop");
+		SMTRAT_LOG_NOTIMPLEMENTED();
 		//TODO Matthias: fix failures with pop
 		//return solver->pop();
 		return true;
@@ -129,7 +120,8 @@ namespace smtrat {
         //ModuleInput formula = solver->formula();
         std::ostringstream stream;
 		//stream << formula.toString() << std::endl;
-		stream << "formula() not yet implemented" << std::endl;
+		SMTRAT_LOG_DEBUG("smtrat.wrapper", "formula()");
+		SMTRAT_LOG_NOTIMPLEMENTED();
 		return copyResult(stream, buffer, bufferSize);
 	}
 

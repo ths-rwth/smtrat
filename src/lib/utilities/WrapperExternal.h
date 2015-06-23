@@ -14,8 +14,6 @@
 #include "carl/util/parser/Parser.h"
 #include "carl/util/Common.h"
 
-//#define DEBUG_WRAPPER
-
 #ifdef __WIN
 #define DLL_EXPORT __declspec(dllexport)
 #else
@@ -36,6 +34,28 @@ namespace smtrat {
             WrapperExternal* pWrapper = new WrapperExternal();
             pWrapper->solver = new SOLVER();
             smtrat::addModules(pWrapper->solver);
+			std::wcout << "createWrapper" << std::endl;
+
+#ifdef LOGGING
+			// Initialize logging
+			std::cout << "LOGGING" << std::endl;
+			if (!carl::logging::logger().has("smtrat")) {
+				carl::logging::logger().configure("smtrat", "smtrat.log");
+			}
+			if (!carl::logging::logger().has("stdout")) {
+				carl::logging::logger().configure("stdout", std::cout);
+			}
+			carl::logging::logger().filter("smtrat")
+				("smtrat", carl::logging::LogLevel::LVL_INFO)
+				("smtrat.wrapper", carl::logging::LogLevel::LVL_ALL)
+				("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
+				;
+			carl::logging::logger().filter("stdout")
+				("smtrat", carl::logging::LogLevel::LVL_INFO)
+				("smtrat.wrapper", carl::logging::LogLevel::LVL_ALL)
+				("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
+				;
+#endif
 
             return pWrapper;
         }
