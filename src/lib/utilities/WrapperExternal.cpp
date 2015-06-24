@@ -117,12 +117,10 @@ namespace smtrat {
 			return 0;
 		SMTRAT_LOG_DEBUG("smtrat.wrapper", "lemmas");
         std::vector<FormulaT> lemmas = solver->lemmas();
-		SMTRAT_LOG_DEBUG("smtrat.wrapper", "after lemmas");
 		std::ostringstream stream;
 		for (FormulaT formula : lemmas)
 		{
 			stream << formula << std::endl;
-			SMTRAT_LOG_DEBUG("smtrat.wrapper", formula);
 		}
 		return copyResult(stream, buffer, bufferSize);
 	}
