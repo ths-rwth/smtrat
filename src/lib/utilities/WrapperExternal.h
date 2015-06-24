@@ -28,6 +28,7 @@ namespace smtrat {
     private:
         SOLVER* solver;
         carl::parser::Parser<Poly> parser;
+		mutable std::string lastBuffer = "";
     public:
 
 		DLL_EXPORT static WrapperExternal* createWrapper(const char* logFile){
@@ -57,7 +58,7 @@ namespace smtrat {
 #endif
             pWrapper->solver = new SOLVER();
             smtrat::addModules(pWrapper->solver);
-            return pWrapper;
+			return pWrapper;
         }
 
         DLL_EXPORT static void disposeWrapper(WrapperExternal* wrapper) {
@@ -215,5 +216,13 @@ namespace smtrat {
 		 * @return needed buffersize if the current one is too small, 0 otherwise
 		 */
 		int copyResult(const std::ostringstream& stream, char* buffer, int bufferSize) const;
+
+		/**
+		/* Tries to write lastBuffer into a buffer for an external program.
+		* @param buffer The buffer to write into.
+		* @param buffersize The current buffersize.
+		* @return true, if there was something to write, false otherwise
+		*/
+		bool tryCopyOld(char* buffer, int bufferSize) const;
     };
 }
