@@ -103,7 +103,7 @@ namespace smtrat
             LRAModule<LRASettings1> mLRA; // internal LRA module
             
             icp::ContractionCandidate* mLastCandidate; // the last applied candidate
-            std::queue<FormulaSetT> mBoxStorage; // keeps the box before contraction
+            std::queue<FormulasT> mBoxStorage; // keeps the box before contraction
             bool mIsIcpInitialized; // initialized ICPModule?
             bool mSplitOccurred;
             bool mOriginalVariableIntervalContracted;
@@ -319,7 +319,7 @@ namespace smtrat
              * 
              * @return 
              */
-            FormulaSetT createBoxFormula();
+            FormulasT createBoxFormula();
                         
             /**
              * 
@@ -375,21 +375,14 @@ namespace smtrat
              * @param _reasons
              * @return 
              */
-            FormulaSetT variableReasonHull( icp::set_icpVariable& _reasons );
-            
-            /**
-             * Compute hull of defining origins for set of constraints.
-             * @param _map
-             * @return 
-             */
-            FormulaSetT constraintReasonHull( const std::set<ConstraintT>& _reasons );
+            FormulasT variableReasonHull( icp::set_icpVariable& _reasons );
             
             
             /**
              * creates constraints for the actual bounds of the original variables.
              * @return 
              */
-            FormulaSetT createConstraintsFromBounds( const EvalDoubleIntervalMap& _map, bool _isOriginal = true );
+            FormulasT createConstraintsFromBounds( const EvalDoubleIntervalMap& _map, bool _isOriginal = true );
             
             /**
              * Parses obtained deductions from the LRA module and maps them to original constraints or introduces new ones.

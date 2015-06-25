@@ -296,9 +296,9 @@ namespace smtrat {
 		if (p.nrTerms() != 1) return formula;
 		carl::Monomial::Arg m = p.lmon();
 		if (m->isConstant()) return formula;
-		FormulaSetT res;
+		FormulasT res;
 		for (const auto& exp: *m) {
-			res.emplace(Poly(exp.first), carl::Relation::EQ);
+			res.emplace_back(Poly(exp.first), carl::Relation::EQ);
 		}
 		//std::cout << "Monomial elimination!" << std::endl;
 		return FormulaT(carl::FormulaType::OR, std::move(res));
@@ -364,9 +364,9 @@ namespace smtrat {
                         boolOp = carl::FormulaType::OR;
                     }
             }
-            FormulaSetT subformulas;
+            FormulasT subformulas;
 			for (auto it = sosDec.begin(); it != sosDec.end(); ++it) {
-                subformulas.emplace(it->second, rel);
+                subformulas.emplace_back(it->second, rel);
 			}
 			return FormulaT(boolOp, subformulas);
 		}
@@ -600,16 +600,16 @@ namespace smtrat {
                 }
             }
             assert( !leftOpen || !rightOpen );
-            FormulaSetT sfs;
+            FormulasT sfs;
             if( !leftOpen )
             {
-                sfs.insert( FormulaT( foundPoly-foundLowerBound, foundLowerBoundIsStrict ? carl::Relation::GREATER : carl::Relation::GEQ ) );
+                sfs.emplace_back( foundPoly-foundLowerBound, foundLowerBoundIsStrict ? carl::Relation::GREATER : carl::Relation::GEQ );
             }
             if( !rightOpen )
             {
-                sfs.insert( FormulaT( foundPoly-foundUpperBound, foundUpperBoundIsStrict ? carl::Relation::LESS : carl::Relation::LEQ ) );
+                sfs.emplace_back( foundPoly-foundUpperBound, foundUpperBoundIsStrict ? carl::Relation::LESS : carl::Relation::LEQ );
             }
-            sfs.insert( formula );
+            sfs.push_back( formula );
             FormulaT result( carl::FormulaType::AND, std::move(sfs) );
 //            std::cout << "  ---> " << result << std::endl;
             return result;
@@ -844,15 +844,15 @@ namespace smtrat {
             case carl::FormulaType::OR:
             case carl::FormulaType::IFF:
             case carl::FormulaType::XOR: {
-                FormulaSetT newSubformulas;
+                FormulasT newSubformulas;
                 bool changed = false;
                 for (const auto& cur: _formula.subformulas()) {
                     FormulaT newCur = elimSubstitutions(cur);
                     if (newCur != cur) changed = true;
-                    newSubformulas.insert(newCur);
+                    newSubformulas.push_back(newCur);
                 }
                 if (changed)
-                    result = FormulaT(_formula.getType(), newSubformulas);
+                    result = FormulaT(_formula.getType(), std::move(newSubformulas));
                 break;
             }
             case carl::FormulaType::NOT: {

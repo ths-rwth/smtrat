@@ -605,7 +605,7 @@ namespace smtrat
                 if( iter != mVariables.end() )
                     icpVariables.insert( iter->second );
             }
-            FormulaSetT box = variableReasonHull(icpVariables);
+            FormulasT box = variableReasonHull(icpVariables);
             mBoxStorage.push(box);
             #ifdef ICP_MODULE_DEBUG_1
             std::cout << "********************** [ICP] Contraction **********************" << std::endl;
@@ -1035,21 +1035,21 @@ namespace smtrat
             }
             mHistoryActual->addContraction(_selection, variables);
             /// create prequesites: ((oldBox AND CCs) -> newBox) in CNF: (oldBox OR CCs) OR newBox 
-            FormulaSetT subformulas;
+            FormulasT subformulas;
             std::vector<FormulaT> splitPremise = createPremise();
             for( const FormulaT& subformula : splitPremise )
-                subformulas.insert( FormulaT( carl::FormulaType::NOT, subformula ) );
+                subformulas.emplace_back( carl::FormulaType::NOT, subformula );
             // construct new box
-            FormulaSetT boxFormulas = createBoxFormula();
+            FormulasT boxFormulas = createBoxFormula();
             // push deduction
             if( boxFormulas.size() > 1 )
             {
                 auto lastFormula = --boxFormulas.end();
                 for( auto iter = boxFormulas.begin(); iter != lastFormula; ++iter )
                 {
-                    FormulaSetT subFormulaSetTmp = subformulas;
-                    subFormulaSetTmp.insert( *iter );
-                    addDeduction( FormulaT( carl::FormulaType::OR, subFormulaSetTmp ) );
+                    FormulasT subFormulaSetTmp = subformulas;
+                    subFormulaSetTmp.push_back( *iter );
+                    addDeduction( FormulaT( carl::FormulaType::OR, std::move(subFormulaSetTmp) ) );
                 }
             }
             #ifdef ICP_MODULE_SHOW_PROGRESS
@@ -1460,41 +1460,40 @@ namespace smtrat
         FormulasT contractions = mHistoryActual->appliedConstraints();
         // collect original box
         assert( mBoxStorage.size() > 0 );
-        const FormulaSetT& box = mBoxStorage.front();
+        const FormulasT& box = mBoxStorage.front();
         contractions.insert(contractions.end(), box.begin(), box.end() );
         mBoxStorage.pop();
         return contractions;
     }
 
     template<class Settings>
-    std::vector<FormulaT> ICPModule<Settings>::createPremise()
+    FormulasT ICPModule<Settings>::createPremise()
     {
         // collect applied contractions
-        std::vector<FormulaT> contractions;
+        FormulasT contractions;
         mHistoryActual->appliedConstraints( contractions );
         // collect original box
         assert( mBoxStorage.size() > 0 );
-        for( const FormulaT& f : mBoxStorage.front() )
-            contractions.push_back( f );
+        contractions.insert( contractions.end(), mBoxStorage.front().begin(), mBoxStorage.front().end() );
         mBoxStorage.pop();
         return contractions;
     }
     
     template<class Settings>
-    FormulaSetT ICPModule<Settings>::createBoxFormula()
+    FormulasT ICPModule<Settings>::createBoxFormula()
     {
         carl::Variables originalRealVariables;
         rReceivedFormula().realValuedVars(originalRealVariables); // TODO: store original variables as member, updating them efficiently with assert and remove
-        FormulaSetT subformulas;
+        FormulasT subformulas;
         for( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
         {
             if( originalRealVariables.find( (*intervalIt).first ) != originalRealVariables.end() )
             {
                 std::pair<ConstraintT, ConstraintT> boundaries = icp::intervalToConstraint(carl::makePolynomial<Poly>((*intervalIt).first), (*intervalIt).second);
                 if( boundaries.first != ConstraintT() )
-                    subformulas.insert( FormulaT( boundaries.first ) );
+                    subformulas.emplace_back( boundaries.first );
                 if( boundaries.second != ConstraintT() )
-                    subformulas.insert( FormulaT( boundaries.second ) );
+                    subformulas.emplace_back( boundaries.second );
             }
         }
         return subformulas;
@@ -1529,11 +1528,12 @@ namespace smtrat
             std::vector<FormulaT> splitPremise = createPremise();
             if( _contractionApplied )
             {
-                FormulaSetT subformulas;
+                FormulasT subformulas;
+                subformulas.reserve(splitPremise.size()+1);
                 for( auto formulaIt = splitPremise.begin(); formulaIt != splitPremise.end(); ++formulaIt )
-                    subformulas.insert( FormulaT( carl::FormulaType::NOT, *formulaIt ) );
+                    subformulas.emplace_back( carl::FormulaType::NOT, *formulaIt );
                 // construct new box
-                subformulas.insert( FormulaT( carl::FormulaType::AND, std::move( createBoxFormula() ) ) ); // TODO: only add this deduction if any contraction took place!!!
+                subformulas.emplace_back( carl::FormulaType::AND, std::move( createBoxFormula() ) ); // TODO: only add this deduction if any contraction took place!!!
                 // push deduction
                 addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
                 #ifdef ICP_MODULE_SHOW_PROGRESS
@@ -2242,7 +2242,7 @@ namespace smtrat
     template<class Settings>
     bool ICPModule<Settings>::checkBoxAgainstLinearFeasibleRegion()
     {
-        FormulaSetT addedBoundaries = createConstraintsFromBounds(mIntervals,false);
+        FormulasT addedBoundaries = createConstraintsFromBounds(mIntervals,false);
         for( auto formulaIt = addedBoundaries.begin(); formulaIt != addedBoundaries.end();  )
         {
             auto res = mValidationFormula->add( *formulaIt );
@@ -2488,9 +2488,9 @@ namespace smtrat
     }
     
     template<class Settings>
-    FormulaSetT ICPModule<Settings>::variableReasonHull( icp::set_icpVariable& _reasons )
+    FormulasT ICPModule<Settings>::variableReasonHull( icp::set_icpVariable& _reasons )
     {
-        FormulaSetT reasons;
+        FormulasT reasons;
         for( auto variableIt = _reasons.begin(); variableIt != _reasons.end(); ++variableIt )
         {
             if ((*variableIt)->lraVar() != nullptr)
@@ -2523,7 +2523,7 @@ namespace smtrat
                         {
                             if( receivedFormulaIt->formula().constraint().hasVariable((*variableIt)->var()) && receivedFormulaIt->formula().constraint().isBound() )
                             {
-                                reasons.insert( receivedFormulaIt->formula() );
+                                reasons.push_back( receivedFormulaIt->formula() );
                                 // std::cout << "Also add: " << **receivedFormulaIt << std::endl;
                             }
                         }
@@ -2533,7 +2533,7 @@ namespace smtrat
                         // std::cout << "No additional variables." << std::endl;
                         auto replacementIt = mDeLinearizations.find( *formulaIt );
                         assert( replacementIt != mDeLinearizations.end() ); // TODO (from Florian): Do we need this?
-                        reasons.insert((*replacementIt).second);
+                        reasons.push_back((*replacementIt).second);
                     } // has no additional variables
                 } // for all definingOrigins
             }
@@ -2542,27 +2542,9 @@ namespace smtrat
     }
     
     template<class Settings>
-    FormulaSetT ICPModule<Settings>::constraintReasonHull( const std::set<ConstraintT>& _reasons )
+    FormulasT ICPModule<Settings>::createConstraintsFromBounds( const EvalDoubleIntervalMap& _map, bool _onlyOriginals )
     {
-        FormulaSetT reasons;
-        for ( auto constraintIt = _reasons.begin(); constraintIt != _reasons.end(); ++constraintIt )
-        {
-            for ( auto formulaIt = rReceivedFormula().begin(); formulaIt != rReceivedFormula().end(); ++formulaIt )
-            {
-                if ( *constraintIt == formulaIt->formula().constraint() )
-                {
-                    reasons.insert( formulaIt->formula() );
-                    break;
-                }
-            }
-        }
-        return reasons;
-    }
-    
-    template<class Settings>
-    FormulaSetT ICPModule<Settings>::createConstraintsFromBounds( const EvalDoubleIntervalMap& _map, bool _onlyOriginals )
-    {
-        FormulaSetT addedBoundaries;
+        FormulasT addedBoundaries;
         for ( auto variablesIt = mVariables.begin(); variablesIt != mVariables.end(); ++variablesIt )
         {
             if( (_onlyOriginals && !variablesIt->second->isOriginal()) || !variablesIt->second->isActive() )
@@ -2577,7 +2559,7 @@ namespace smtrat
                     {
                         assert( boundaries.second.isConsistent() == 2 );
                         FormulaT rightBound = FormulaT(boundaries.second);
-                        addedBoundaries.insert(rightBound);
+                        addedBoundaries.push_back(rightBound);
                         #ifdef ICP_MODULE_DEBUG_2
                         std::cout << "Created upper boundary constraint: " << rightBound << std::endl;
                         #endif
@@ -2586,7 +2568,7 @@ namespace smtrat
                     {
                         assert( boundaries.first.isConsistent() == 2 );
                         FormulaT leftBound = FormulaT(boundaries.first);
-                        addedBoundaries.insert(leftBound);
+                        addedBoundaries.push_back(leftBound);
                         #ifdef ICP_MODULE_DEBUG_2
                         std::cout << "Created lower boundary constraint: " << leftBound << std::endl;
                         #endif
@@ -2594,8 +2576,8 @@ namespace smtrat
                 }
 //                if( (*variablesIt).second->isInternalBoundsSet() == icp::Updated::BOTH && (*variablesIt).second->isInternalUpdated() == icp::Updated::NONE )
 //                {
-//                    addedBoundaries.insert((*variablesIt).second->internalLeftBound());
-//                    addedBoundaries.insert((*variablesIt).second->internalRightBound());
+//                    addedBoundaries.push_back((*variablesIt).second->internalLeftBound());
+//                    addedBoundaries.push_back((*variablesIt).second->internalRightBound());
 //                }
 //                else if( variablesIt->second->lraVar() != nullptr )
 //                {
@@ -2608,7 +2590,7 @@ namespace smtrat
 //                        assert( boundaries.second.isConsistent() == 2 );
 //                        FormulaT rightBound = FormulaT(boundaries.second);
 //                        (*variablesIt).second->setInternalRightBound(rightBound);
-//                        addedBoundaries.insert(rightBound);
+//                        addedBoundaries.push_back(rightBound);
 //                        #ifdef ICP_MODULE_DEBUG_2
 //                        std::cout << "Created upper boundary constraint: " << rightBound << std::endl;
 //                        #endif
@@ -2619,7 +2601,7 @@ namespace smtrat
 //                        assert( boundaries.first.isConsistent() == 2 );
 //                        FormulaT leftBound = FormulaT(boundaries.first);
 //                        (*variablesIt).second->setInternalLeftBound(leftBound);
-//                        addedBoundaries.insert(leftBound);
+//                        addedBoundaries.push_back(leftBound);
 //                        #ifdef ICP_MODULE_DEBUG_2
 //                        std::cout << "Created lower boundary constraint: " << leftBound << std::endl;
 //                        #endif
@@ -2652,10 +2634,10 @@ namespace smtrat
         }
         else if( _deduction.isBooleanCombination() )
         {
-            FormulaSetT subformulas;
+            FormulasT subformulas;
             for( const FormulaT& subformula : _deduction.subformulas() )
             {
-                subformulas.insert( getReceivedFormulas( subformula ) );
+                subformulas.push_back( getReceivedFormulas( subformula ) );
             }
             return FormulaT( _deduction.getType(), subformulas );
         }
