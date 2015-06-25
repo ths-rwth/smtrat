@@ -329,7 +329,7 @@ namespace smtrat
              */
             bool performSplit( bool _contractionApplied, bool& _moreContractionFound );
             
-            bool splitToBoundedIntervalsWithoutZero( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase );
+            bool splitToBoundedIntervalsWithoutZero( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase, std::vector<std::map<carl::Variable, icp::IcpVariable*>::const_iterator>& _suitableVariables );
             
             /**
              * 
