@@ -1463,7 +1463,9 @@ SetWatches:
             }
             else
                 confl = propagate();
-
+            // If a Boolean conflict occurred of a splitting decision is asked for
+            if( confl != CRef_Undef || existsUnassignedSplittingVar() )
+                break;
             #ifdef DEBUG_SATMODULE
             cout << "### Sat iteration" << endl;
             cout << "######################################################################" << endl;
@@ -1478,7 +1480,7 @@ SetWatches:
             cout << "### " << endl;
             #endif
 
-            if( confl == CRef_Undef && (!Settings::try_full_lazy_call_first || mNumberOfFullLazyCalls > 0 || trail.size() == assigns.size()) )
+            if( !Settings::try_full_lazy_call_first || mNumberOfFullLazyCalls > 0 || trail.size() == assigns.size() )
             {
                 if( Settings::try_full_lazy_call_first && trail.size() == assigns.size() )
                     ++mNumberOfFullLazyCalls;
