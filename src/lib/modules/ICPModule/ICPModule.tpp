@@ -1112,7 +1112,7 @@ namespace smtrat
             assert( iter != mLinearConstraints.end() );
             for( const auto& cc : iter->second )
             {
-                if( cc->lhs() == _var )
+                if( cc->derivationVar() == _var )
                     return cc;
             }
         }
@@ -1123,7 +1123,7 @@ namespace smtrat
             assert( iter != mNonlinearConstraints.end() );
             for( const auto& cc : iter->second )
             {
-                if( cc->lhs() == _var )
+                if( cc->derivationVar() == _var )
                     return cc;
             }
         }
@@ -1521,7 +1521,7 @@ namespace smtrat
             default:
                 assert(false);
         }
-        if( variable != carl::Variable::NO_VARIABLE )
+        if( !_furtherContractionApplied && variable != carl::Variable::NO_VARIABLE )
         {
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
             // first the premise: ((oldBox AND CCs) -> newBox) in CNF: (oldBox OR CCs) OR newBox 
@@ -1553,13 +1553,13 @@ namespace smtrat
     }
     
     template<class Settings>
-    bool ICPModule<Settings>::splitToBoundedIntervalsWithoutZero( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase )
+    bool ICPModule<Settings>::splitToBoundedIntervalsWithoutZero( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase, std::vector<std::map<carl::Variable, icp::IcpVariable*>::const_iterator>& _suitableVariables )
     {
         double valueAsDouble = 0;
-        for( const auto& varIcpvarPair : mVariables )
+        for( auto varIcpvarIter = mVariables.begin(); varIcpvarIter != mVariables.end(); ++varIcpvarIter )
         {
-            const auto& varInterval = varIcpvarPair.second->interval();
-            if( varIcpvarPair.second->isOriginal() && varIcpvarPair.second->isActive() && !varInterval.isPointInterval() )
+            const auto& varInterval = varIcpvarIter->second->interval();
+            if( varIcpvarIter->second->isOriginal() && varIcpvarIter->second->isActive() && !varInterval.isPointInterval() )
             {
                 if( varInterval.upperBoundType() == carl::BoundType::INFTY )
                 {
@@ -1569,47 +1569,56 @@ namespace smtrat
                         assert( mDefaultSplittingSize > 0 );
                         if( varInterval.lower() < mDefaultSplittingSize )
                         {
-                            _variable = varIcpvarPair.first;
+                            _variable = varIcpvarIter->first;
                             valueAsDouble = mDefaultSplittingSize;
                             _leftCaseWeak = true;
                             _preferLeftCase = true;
+                            _suitableVariables.push_back(varIcpvarIter);
                         }
                     }
                     else // otherwise the interval is (-oo,oo) so keep 0
                     {
-                        _variable = varIcpvarPair.first;
+                        _variable = varIcpvarIter->first;
                         valueAsDouble = mDefaultSplittingSize;
                         _leftCaseWeak = true;
                         _preferLeftCase = true;
+                        _suitableVariables.push_back(varIcpvarIter);
                     }
                     
                 }
                 else if( varInterval.lowerBoundType() == carl::BoundType::INFTY ) // Variable interval is (-oo,a> and a finite
                 {
                     // if b = -mDefaultSplittingSize is not in the interval give up otherwise split to (-oo,b) and [b,a>
-                    if( varInterval.upper() <= -mDefaultSplittingSize )
+                    if( varInterval.upper() > -mDefaultSplittingSize )
                     {
-                        _variable = varIcpvarPair.first;
+                        _variable = varIcpvarIter->first;
                         valueAsDouble = -mDefaultSplittingSize;
                         _preferLeftCase = false;
                         _leftCaseWeak = false;
+                        _suitableVariables.push_back(varIcpvarIter);
                     }
                 }
                 else if( varInterval.lowerBoundType() == carl::BoundType::WEAK && varInterval.lower() == 0 )
                 {
                     // Variable interval is [0,a> => split it to [0,0] and (0,a> 
-                    _variable = varIcpvarPair.first;
+                    _variable = varIcpvarIter->first;
                     valueAsDouble = varInterval.lower();
                     _preferLeftCase = true;
                     _leftCaseWeak = true;
+                    _suitableVariables.push_back(varIcpvarIter);
                 }
                 else if( varInterval.upperBoundType() == carl::BoundType::WEAK && varInterval.upper() == 0 )
                 {
                     // Variable interval is <a,0] => split it to <a,0) and [0,0]
-                    _variable = varIcpvarPair.first;
+                    _variable = varIcpvarIter->first;
                     valueAsDouble = varInterval.upper();
                     _preferLeftCase = false;
                     _leftCaseWeak = false;
+                    _suitableVariables.push_back(varIcpvarIter);
+                }
+                else
+                {
+                    _suitableVariables.push_back(varIcpvarIter);
                 }
                 if( _variable != carl::Variable::NO_VARIABLE )
                 {
@@ -1623,7 +1632,7 @@ namespace smtrat
                             assert( violatedConstraint.getType() == carl::FormulaType::CONSTRAINT );
                             icp::ContractionCandidate* cc = getContractionCandidate( violatedConstraint, _variable );
                             assert( cc != nullptr );
-                            setContraction( cc, *varIcpvarPair.second, varInterval, intervals[_variable] );
+                            setContraction( cc, *varIcpvarIter->second, varInterval, intervals[_variable] );
                             return true;
                         }
                         intervals[_variable] = DoubleInterval( valueAsDouble, (_leftCaseWeak ? carl::BoundType::STRICT : carl::BoundType::WEAK), varInterval.upper(), varInterval.upperBoundType() );
@@ -1632,7 +1641,7 @@ namespace smtrat
                             assert( violatedConstraint.getType() == carl::FormulaType::CONSTRAINT );
                             icp::ContractionCandidate* cc = getContractionCandidate( violatedConstraint, _variable );
                             assert( cc != nullptr );
-                            setContraction( cc, *varIcpvarPair.second, varInterval, intervals[_variable] );
+                            setContraction( cc, *varIcpvarIter->second, varInterval, intervals[_variable] );
                             return true;
                         }
                     }
@@ -1650,25 +1659,31 @@ namespace smtrat
         _value = ZERO_RATIONAL;
         _leftCaseWeak = true;
         _preferLeftCase = true;
-        if( Settings::first_split_to_bounded_intervals_without_zero )
-        {
-            splitToBoundedIntervalsWithoutZero( _variable, _value, _leftCaseWeak, _preferLeftCase );
-            if( _variable != carl::Variable::NO_VARIABLE )
-                return;
-        }
+        std::vector<std::map<carl::Variable, icp::IcpVariable*>::const_iterator> suitableVariables;
+        splitToBoundedIntervalsWithoutZero( _variable, _value, _leftCaseWeak, _preferLeftCase, suitableVariables );
+        if( suitableVariables.empty() || _variable != carl::Variable::NO_VARIABLE )
+            return;
         assert( _variable == carl::Variable::NO_VARIABLE );
         double maximalImpact = 0;
-        auto bestVar = mVariables.end();
-        auto varIcpvarIter = mVariables.begin();
-        for( ; varIcpvarIter != mVariables.end(); ++varIcpvarIter )
+        double valueAsDouble = 0;
+        std::map<carl::Variable, icp::IcpVariable*>::const_iterator bestVar = mVariables.end();
+        for( const auto& varIcpvarIter : suitableVariables )
         {
-            if( !fulfillsTarget(varIcpvarIter->second->interval()) )
+            if( varIcpvarIter->second->isOriginal() && varIcpvarIter->second->isActive() && !varIcpvarIter->second->interval().isPointInterval() )
             {
-                double actualImpact = sizeBasedSplittingImpact( varIcpvarIter );
-                if( actualImpact > maximalImpact )
+                if( !fulfillsTarget(varIcpvarIter->second->interval()) )
                 {
-                    bestVar = varIcpvarIter;
-                    maximalImpact = actualImpact;
+                    double actualImpact = sizeBasedSplittingImpact( varIcpvarIter );
+                    if( actualImpact > maximalImpact )
+                    {
+                        valueAsDouble = varIcpvarIter->second->interval().sample( false );
+                        if( valueAsDouble == std::numeric_limits<double>::infinity() || valueAsDouble == -std::numeric_limits<double>::infinity() )
+                        {
+                            continue;
+                        }
+                        bestVar = varIcpvarIter;
+                        maximalImpact = actualImpact;
+                    }
                 }
             }
         }
@@ -1676,7 +1691,8 @@ namespace smtrat
         {
             // split at a nice number c in the interval: <a,c] and (c,b> 
             _variable = bestVar->first;
-            _value = carl::rationalize<Rational>( bestVar->second->interval().sample( false ) );
+            assert( !Settings::first_split_to_bounded_intervals_without_zero || !bestVar->second->interval().isUnbounded() );
+            _value = carl::rationalize<Rational>( valueAsDouble );
         }
         return;
     }
@@ -1687,46 +1703,52 @@ namespace smtrat
         _value = ZERO_RATIONAL;
         _leftCaseWeak = true;
         _preferLeftCase = true;
-        if( Settings::first_split_to_bounded_intervals_without_zero )
-        {
-            if( splitToBoundedIntervalsWithoutZero( _variable, _value, _leftCaseWeak, _preferLeftCase ) )
-                return true;
-            if( _variable != carl::Variable::NO_VARIABLE )
-                return false;
-        }
+        std::vector<std::map<carl::Variable, icp::IcpVariable*>::const_iterator> suitableVariables;
+        if( splitToBoundedIntervalsWithoutZero( _variable, _value, _leftCaseWeak, _preferLeftCase, suitableVariables ) )
+            return true;
+        if( suitableVariables.empty() || _variable != carl::Variable::NO_VARIABLE )
+            return false;
         assert( _variable == carl::Variable::NO_VARIABLE );
         _leftCaseWeak = true;
         double valueAsDouble = 0;
         double maximalImpact = -1;
-        for( const auto& varIcpvarPair : mVariables )
+        for( const auto& varIcpvarIter : suitableVariables )
         {
-            const auto& varInterval = varIcpvarPair.second->interval();
-            if( fulfillsTarget(varInterval) )
+            const auto& varInterval = varIcpvarIter->second->interval();
+            if( !varIcpvarIter->second->isOriginal() || !varIcpvarIter->second->isActive() 
+                    || varIcpvarIter->second->interval().isPointInterval() || fulfillsTarget(varInterval) )
+            {
                 continue;
+            }
+            assert( !Settings::first_split_to_bounded_intervals_without_zero || !varInterval.isUnbounded() );
             valueAsDouble = varInterval.sample( false );
+            if( valueAsDouble == std::numeric_limits<double>::infinity() || valueAsDouble == -std::numeric_limits<double>::infinity() )
+            {
+                continue;
+            }
             bool leftCaseWeak = true;
             if( valueAsDouble == varInterval.upper() )
                 leftCaseWeak = false;
             EvalDoubleIntervalMap intervals = mIntervals;
-            intervals[varIcpvarPair.first] = DoubleInterval( varInterval.lower(), varInterval.lowerBoundType(), valueAsDouble, leftCaseWeak ? carl::BoundType::WEAK : carl::BoundType::STRICT );
+            intervals[varIcpvarIter->first] = DoubleInterval( varInterval.lower(), varInterval.lowerBoundType(), valueAsDouble, leftCaseWeak ? carl::BoundType::WEAK : carl::BoundType::STRICT );
             FormulaT violatedConstraint;
             double impactLeftCase = satBasedSplittingImpact( intervals, violatedConstraint, true );
             if( impactLeftCase < 0 )
             {
                 assert( violatedConstraint.getType() == carl::FormulaType::CONSTRAINT );
-                icp::ContractionCandidate* cc = getContractionCandidate( violatedConstraint, varIcpvarPair.first );
+                icp::ContractionCandidate* cc = getContractionCandidate( violatedConstraint, varIcpvarIter->first );
                 assert( cc != nullptr );
-                setContraction( cc, *varIcpvarPair.second, varInterval, intervals[varIcpvarPair.first] );
+                setContraction( cc, *varIcpvarIter->second, varInterval, intervals[varIcpvarIter->first] );
                 return true;
             }
-            intervals[varIcpvarPair.first] = DoubleInterval( valueAsDouble, leftCaseWeak ? carl::BoundType::STRICT : carl::BoundType::WEAK, varInterval.upper(), varInterval.upperBoundType() );
+            intervals[varIcpvarIter->first] = DoubleInterval( valueAsDouble, leftCaseWeak ? carl::BoundType::STRICT : carl::BoundType::WEAK, varInterval.upper(), varInterval.upperBoundType() );
             double impactRightCase = satBasedSplittingImpact( intervals, violatedConstraint, true );
             if( impactRightCase < 0 )
             {
                 assert( violatedConstraint.getType() == carl::FormulaType::CONSTRAINT );
-                icp::ContractionCandidate* cc = getContractionCandidate( violatedConstraint, varIcpvarPair.first );
+                icp::ContractionCandidate* cc = getContractionCandidate( violatedConstraint, varIcpvarIter->first );
                 assert( cc != nullptr );
-                setContraction( cc, *varIcpvarPair.second, varInterval, intervals[varIcpvarPair.first] );
+                setContraction( cc, *varIcpvarIter->second, varInterval, intervals[varIcpvarIter->first] );
                 return true;
             }
             if( impactLeftCase > impactRightCase )
@@ -1734,7 +1756,7 @@ namespace smtrat
                 if( impactLeftCase > maximalImpact )
                 {
                     maximalImpact = impactLeftCase;
-                    _variable = varIcpvarPair.first;
+                    _variable = varIcpvarIter->first;
                     _preferLeftCase = true;
                     _value = carl::rationalize<Rational>( valueAsDouble );
                 }
@@ -1744,7 +1766,7 @@ namespace smtrat
                 if( impactRightCase > maximalImpact )
                 {
                     maximalImpact = impactRightCase;
-                    _variable = varIcpvarPair.first;
+                    _variable = varIcpvarIter->first;
                     _preferLeftCase = false;
                     _value = carl::rationalize<Rational>( valueAsDouble );
                 }
@@ -2266,8 +2288,8 @@ namespace smtrat
         #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
         if ( boxCheck == False )
         {
-            FormulaT* actualAssumptions = new FormulaT(*mValidationFormula);
-            Module::addAssumptionToCheck(*actualAssumptions,false,"ICP_BoxValidation");
+            FormulaT actualAssumptions = FormulaT(*mValidationFormula);
+            Module::addAssumptionToCheck(actualAssumptions,false,"ICP_BoxValidation");
         }
         #endif
         if( boxCheck != Unknown )
