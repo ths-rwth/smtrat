@@ -58,6 +58,7 @@ namespace smtrat
 		setting = carl::cad::CADSettings::getSettings(carl::cad::CADSettingsType::BOUNDED); // standard
 		setting.simplifyByFactorization = true;
 		setting.simplifyByRootcounting  = true;
+		setting.splitInteger = false;
 
 		#ifdef SMTRAT_CAD_DISABLE_MIS
 			setting.computeConflictGraph = false;
@@ -188,9 +189,9 @@ namespace smtrat
 			if (vPos != eiMap.end())
 				boundMap[v] = vPos->second;
 		}
-		bool status = mCAD.check(mConstraints, mRealAlgebraicSolution, mConflictGraph, boundMap, false, true);
+		carl::cad::Answer status = mCAD.check(mConstraints, mRealAlgebraicSolution, mConflictGraph, boundMap, false, true);
 		if (anAnswerFound()) return Unknown;
-		if (!status) {
+		if (status == carl::cad::Answer::False) {
 			#ifdef SMTRAT_CAD_DISABLE_MIS
 			// construct a trivial infeasible subset
 			std::cout << "Trivial" << std::endl;
@@ -266,15 +267,13 @@ namespace smtrat
 		SMTRAT_LOG_TRACE("smtrat.cad", "Solution point: " << mRealAlgebraicSolution);
 		mInfeasibleSubsets.clear();
 #ifdef SMTRAT_CAD_ENABLE_INTEGER
-		if (rReceivedFormula().isIntegerConstraintConjunction()) {
-			// Check whether the found assignment is integer.
-			std::vector<carl::Variable> vars(mCAD.getVariables());
-			for (unsigned d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
-				auto r = this->mRealAlgebraicSolution[d]->branchingPoint();
-				if (!carl::isInteger(r)) {
-					branchAt(vars[d], r);
-					return Unknown;
-				}
+		// Check whether the found assignment is integer.
+		std::vector<carl::Variable> vars(mCAD.getVariables());
+		for (unsigned d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
+			auto r = this->mRealAlgebraicSolution[d]->branchingPoint();
+			if (!carl::isInteger(r)) {
+				branchAt(vars[d], r);
+				return Unknown;
 			}
 		}
 #endif
