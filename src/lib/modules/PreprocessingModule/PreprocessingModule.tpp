@@ -296,9 +296,9 @@ namespace smtrat {
 		if (p.nrTerms() != 1) return formula;
 		carl::Monomial::Arg m = p.lmon();
 		if (m->isConstant()) return formula;
-		FormulaSetT res;
+		FormulasT res;
 		for (const auto& exp: *m) {
-			res.emplace(Poly(exp.first), carl::Relation::EQ);
+			res.emplace_back(Poly(exp.first), carl::Relation::EQ);
 		}
 		//std::cout << "Monomial elimination!" << std::endl;
 		return FormulaT(carl::FormulaType::OR, std::move(res));
