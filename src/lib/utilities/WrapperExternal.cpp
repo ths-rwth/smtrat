@@ -13,17 +13,19 @@ namespace smtrat {
 		return copyResult(stream, buffer, bufferSize);
 	}
 
-    bool WrapperExternal::inform(const char* _constraint)
+    bool WrapperExternal::inform(const char* _constraint, const char* _name)
     {
         FormulaT constraint = parser.formula(_constraint);
-		SMTRAT_LOG_DEBUG("smtrat.wrapper", "Informed: " << constraint);
+		SMTRAT_LOG_DEBUG("smtrat.wrapper", "Informed: " << constraint << "(" << _name << ")");
+		//TODO Matthias: set name
 		return solver->inform(constraint);
     }
 
-    bool WrapperExternal::add(const char* _subformula)
+    bool WrapperExternal::add(const char* _subformula, const char* _name)
     {
         FormulaT subformula = parser.formula(_subformula);
-		SMTRAT_LOG_DEBUG("smtrat.wrapper", "Added: " << subformula);
+		SMTRAT_LOG_DEBUG("smtrat.wrapper", "Added: " << subformula << "(" << _name << ")");
+		//TODO Matthias: set name
 		return solver->add(subformula);
     }
 
@@ -49,10 +51,7 @@ namespace smtrat {
     bool WrapperExternal::pop()
     {
 		SMTRAT_LOG_DEBUG("smtrat.wrapper", "Pop");
-		SMTRAT_LOG_NOTIMPLEMENTED();
-		//TODO Matthias: fix failures with pop
-		//return solver->pop();
-		return true;
+		return solver->pop();
     }
 
     int WrapperExternal::infeasibleSubsets(char* buffer, int bufferSize) const

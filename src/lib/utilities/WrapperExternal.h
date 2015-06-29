@@ -22,6 +22,12 @@
 
 #define SOLVER smtrat::StratSat
 
+#ifdef DEBUG
+#define DEFAULT_LVL carl::logging::LogLevel::LVL
+#else
+#define DEFAULT_LVL carl::logging::LogLevel::LVL_DEFAULT
+#endif
+
 namespace smtrat {
     class WrapperExternal
     {
@@ -42,18 +48,18 @@ namespace smtrat {
 				carl::logging::logger().configure("stdout", std::cout);
 			}
 			carl::logging::logger().filter("smtrat")
-				("smtrat", carl::logging::LogLevel::LVL_INFO)
-				("smtrat.wrapper", carl::logging::LogLevel::LVL_ALL)
-				("smtrat.module", carl::logging::LogLevel::LVL_DEBUG)
-				("smtrat.sat", carl::logging::LogLevel::LVL_ALL)
-				("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
+				("smtrat", DEFAULT_LVL)
+				("smtrat.wrapper", DEFAULT_LVL)
+				("smtrat.module", DEFAULT_LVL)
+				("smtrat.sat", DEFAULT_LVL)
+				("smtrat.preprocessing", DEFAULT_LVL)
 				;
 			carl::logging::logger().filter("stdout")
-				("smtrat", carl::logging::LogLevel::LVL_INFO)
-				("smtrat.wrapper", carl::logging::LogLevel::LVL_ALL)
-				("smtrat.module", carl::logging::LogLevel::LVL_DEBUG)
-				("smtrat.sat", carl::logging::LogLevel::LVL_ALL)
-				("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
+				("smtrat", DEFAULT_LVL)
+				("smtrat.wrapper", DEFAULT_LVL)
+				("smtrat.module", DEFAULT_LVL)
+				("smtrat.sat", DEFAULT_LVL)
+				("smtrat.preprocessing", DEFAULT_LVL)
 				;
 #endif
             pWrapper->solver = new SOLVER();
@@ -86,20 +92,22 @@ namespace smtrat {
         * which it will receive eventually, before any of them is added as part of a formula with the
         * interface add(..).
         * @param _constraint The constraint to inform about.
+		* @param _name       The name of the constraint used as a label.
         * @return false, if it is easy to decide (for any module used of this solver), whether
         *          the constraint itself is inconsistent;
         *          true, otherwise.
         */
-        DLL_EXPORT bool inform(const char* _constraint);
+        DLL_EXPORT bool inform(const char* _constraint, const char* _name);
 
         /**
         * Adds the given formula to the conjunction of formulas, which will be considered for the next
         * satisfiability check.
         * @param _subformula The formula to add.
+        * @param _name       The name of the constraint used as a label.
         * @return false, if it is easy to decide whether adding this formula creates a conflict;
         *          true, otherwise.
         */
-        DLL_EXPORT bool add(const char* _subformula);
+        DLL_EXPORT bool add(const char* _subformula, const char* _name);
 
 		/**
 		* Adds formula as InformationRelevantFormula
