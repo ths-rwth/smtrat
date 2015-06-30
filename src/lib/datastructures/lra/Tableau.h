@@ -717,6 +717,8 @@ namespace smtrat
                  */
                 bool rowCorrect( size_t _rowNumber ) const;
                 
+                bool isConflicting() const;
+                
                 /**
                  * Checks whether a constraint is a defining constraint. 
                  * @param row_index

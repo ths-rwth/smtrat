@@ -68,7 +68,7 @@ namespace smtrat
     bool LRAModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
         #ifdef DEBUG_LRA_MODULE
-        cout << "LRAModule::assertSubformula  " << "add " << _subformula->formula() << endl;
+        cout << "LRAModule::add " << _subformula->formula() << endl;
         #endif
         switch( _subformula->formula().getType() )
         {
@@ -176,7 +176,7 @@ namespace smtrat
     void LRAModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
         #ifdef DEBUG_LRA_MODULE
-        cout << "remove " << _subformula->formula() << endl;
+        cout << "LRAModule::remove " << _subformula->formula() << endl;
         #endif
         const FormulaT& formula = _subformula->formula();
         if( formula.getType() == carl::FormulaType::CONSTRAINT )
@@ -253,6 +253,13 @@ namespace smtrat
                                     {
                                         mStrongestBoundsRemoved = true;
                                     }
+                                    if( var.isConflicting() )
+                                    {
+                                        FormulasT infsubset;
+                                        collectOrigins( *var.supremum().origins().begin(), infsubset );
+                                        collectOrigins( var.infimum().pOrigins()->back(), infsubset );
+                                        mInfeasibleSubsets.push_back( std::move(infsubset) );
+                                    }
                                 }
                                 else
                                 {
@@ -267,6 +274,13 @@ namespace smtrat
                                         {
                                             mTableau.updateBasicAssignments( var.position(), LRAValue( var.infimum().limit() - var.assignment() ) );
                                             var.rAssignment() = var.infimum().limit();
+                                        }
+                                        if( var.isConflicting() )
+                                        {
+                                            FormulasT infsubset;
+                                            collectOrigins( *var.supremum().origins().begin(), infsubset );
+                                            collectOrigins( var.infimum().pOrigins()->back(), infsubset );
+                                            mInfeasibleSubsets.push_back( std::move(infsubset) );
                                         }
                                     }
                                 }
@@ -320,7 +334,7 @@ namespace smtrat
     Answer LRAModule<Settings>::checkCore( bool _full )
     {
         #ifdef DEBUG_LRA_MODULE
-        cout << "check for consistency" << endl;
+        cout << "LRAModule::check" << endl;
         printReceivedFormula();
         #endif
         Answer result = Unknown;
@@ -333,6 +347,7 @@ namespace smtrat
             result = False;
             goto Return;
         }
+        assert( !mTableau.isConflicting() );
         #ifdef LRA_USE_PIVOTING_STRATEGY
         mTableau.setBlandsRuleStart( 1000 );//(unsigned) mTableau.columns().size() );
         #endif
@@ -646,16 +661,6 @@ Return:
                         }
                     }
                 }
-//                if( !(result != True || assignmentCorrect()) )
-//                {
-//                    std::cout << "mActiveUnresolvedNEQConstraints:" << std::endl;
-//                    for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
-//                    {
-//                        std::cout << iter->first << std::endl;
-//                    }
-//                    printVariables();
-//                    exit(1236);
-//                }
                 assert( result != True || assignmentCorrect() );
             }
         }
@@ -880,7 +885,7 @@ Return:
                 FormulasT infsubset;
                 collectOrigins( *bound.origins().begin(), infsubset );
                 collectOrigins( inf.pOrigins()->back(), infsubset );
-                mInfeasibleSubsets.push_back( infsubset );
+                mInfeasibleSubsets.push_back( std::move(infsubset) );
             }
             if( sup > bound )
             {
@@ -896,7 +901,7 @@ Return:
                 FormulasT infsubset;
                 collectOrigins( *bound.origins().begin(), infsubset );
                 collectOrigins( sup.pOrigins()->back(), infsubset );
-                mInfeasibleSubsets.push_back( infsubset );
+                mInfeasibleSubsets.push_back( std::move(infsubset) );
             }
             if( inf < bound )
             {
