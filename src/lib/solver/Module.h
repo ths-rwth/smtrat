@@ -857,6 +857,8 @@ namespace smtrat
              */
             virtual ModuleInput::iterator eraseSubformulaFromPassedFormula( ModuleInput::iterator _subformula, bool _ignoreOrigins = false );
             
+            void clearPassedFormula();
+            
             /**
              * Get the infeasible subsets the given backend provides. Note, that an infeasible subset
              * in a backend contains sub formulas of the passed formula and an infeasible subset of
