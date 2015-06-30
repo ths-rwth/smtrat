@@ -79,6 +79,28 @@ namespace smtrat {
         }
 
 		/**
+		* Set flag for setting compute_propagated_lemmas.
+		* @param _compute_propagated_lemmas if true, the flag is activated, otherwise it is deactivated
+		*/
+		DLL_EXPORT void setComputePropagatedLemmas(bool _compute_propagated_lemmas)
+		{
+			SMTRAT_LOG_DEBUG("smtrat.wrapper", "set compute_propagated_lemmas: " << _compute_propagated_lemmas);
+			//TODO Matthias: implement
+			SMTRAT_LOG_NOTIMPLEMENTED();
+		}
+
+		/**
+		* Set flag for setting find_all_dependent_variables.
+		* @param _find_all_dependent_variables if true, the flag is activated, otherwise it is deactivated
+		*/
+		DLL_EXPORT void setFindAllDependentVariables(bool _find_all_dependent_variables)
+		{
+			SMTRAT_LOG_DEBUG("smtrat.wrapper", "set find_all_dependent_variables: " << _find_all_dependent_variables);
+			//TODO Matthias: implement
+			SMTRAT_LOG_NOTIMPLEMENTED();
+		}
+
+		/**
 		* Parse formula.
 		* @param input String to parse
 		* @param buffer Buffer for resulting string
