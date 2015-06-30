@@ -317,7 +317,7 @@ namespace smtrat
             printCurrentAssignment();
 			#endif
 
-            //TODO matthias: finish
+            //TODO Matthias: finish
             if ( Settings::find_all_dependent_variables )
             {
 				SMTRAT_LOG_TRACE("smtrat.sat", "Find all dependent variables");
@@ -374,7 +374,8 @@ namespace smtrat
                         FormulaT negation = FormulaT( carl::FormulaType::NOT, mMinisatVarMap.at( testCandidate) );
                         FormulaT infeasibleSubset = FormulaT( carl::FormulaType::AND, infeasibleSubsets()[0] );
                         FormulaT lemma = FormulaT( carl::FormulaType::IMPLIES, infeasibleSubset, negation );
-                        addDeduction( lemma );
+						SMTRAT_LOG_DEBUG("smtrat.sat", "Add propagated lemma: " << lemma);
+						addDeduction(lemma);
                     }
                     else if ( result == l_True )
                     {
@@ -388,6 +389,8 @@ namespace smtrat
 						SMTRAT_LOG_TRACE("smtrat.sat", "Unknown with variable: " << mMinisatVarMap.at( testCandidate ));
 					}
                 }
+				// Avoid returning l_False from last call
+				return True;
             }
 
             #ifdef SATMODULE_WITH_CALL_NUMBER
@@ -1707,12 +1710,14 @@ SetWatches:
                         {
                             FormulaT negation = FormulaT( carl::FormulaType::NOT, mMinisatVarMap.at( iter->first ) );
                             FormulaT lemma = FormulaT( carl::FormulaType::IMPLIES, premise, negation );
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Add propagated lemma: " << lemma);
                             addDeduction( lemma );
                         }
                         else
                         {
                             assert( assigns[ iter->first ] == l_True );
                             FormulaT lemma = FormulaT( carl::FormulaType::IMPLIES, premise, mMinisatVarMap.at( iter->first) );
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Add propagated lemma: " << lemma);
                             addDeduction( lemma );
                         }
                     }
