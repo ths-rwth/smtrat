@@ -43,11 +43,11 @@ namespace smtrat
         /**
          * 
          */
-        static constexpr SplittingHeuristic splitting_heuristic_nia = SplittingHeuristic::SIZE;
+        static constexpr SplittingHeuristic splitting_heuristic_nia = SplittingHeuristic::UNSATISFIABILITY;
         /**
          * 
          */
-        static constexpr SplittingHeuristic splitting_heuristic_nra = SplittingHeuristic::SIZE; // Because we currently cannot change the settings within one strategy
+        static constexpr SplittingHeuristic splitting_heuristic_nra = SplittingHeuristic::UNSATISFIABILITY; // Because we currently cannot change the settings within one strategy
         /**
          * 
          */

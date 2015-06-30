@@ -102,10 +102,10 @@ namespace smtrat
             RuntimeSettings* mLraRuntimeSettings;
             LRAModule<LRASettings1> mLRA; // internal LRA module
             
-            icp::ContractionCandidate* mLastCandidate; // the last applied candidate
             std::queue<FormulasT> mBoxStorage; // keeps the box before contraction
             bool mIsIcpInitialized; // initialized ICPModule?
             bool mSplitOccurred;
+            bool mInvalidBox;
             bool mOriginalVariableIntervalContracted;
             double mTargetDiameter;
             double mContractionThreshold;
@@ -217,9 +217,8 @@ namespace smtrat
             /**
              * 
              * @param _splitOccurred
-             * @return 
              */
-            bool contractCurrentBox();
+            void contractCurrentBox();
             
             /**
              * 
@@ -275,9 +274,9 @@ namespace smtrat
              */
             void contraction( icp::ContractionCandidate* _selection );
             
-            void setContraction( icp::ContractionCandidate* _selection, icp::IcpVariable& _icpVar, const DoubleInterval& _interval, const DoubleInterval& _contractedInterval );
+            void setContraction( icp::ContractionCandidate* _selection, icp::IcpVariable& _icpVar, const DoubleInterval& _contractedInterval );
             
-            icp::ContractionCandidate* getContractionCandidate( const FormulaT& _constraint, carl::Variable::Arg _var ) const;
+            void setContraction( const FormulaT& _constraint, icp::IcpVariable& _icpVar, const DoubleInterval& _contractedInterval, bool _allCCs );
             
             /**
              * 
@@ -350,7 +349,9 @@ namespace smtrat
              */
             bool satBasedSplitting( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase );
             
-            double satBasedSplittingImpact( const EvalDoubleIntervalMap& _intervals, FormulaT& _violatedConstraint, bool _calculateImpact ) const;
+            double satBasedSplittingImpact( icp::IcpVariable& _icpVariable, const EvalDoubleIntervalMap& _intervals, const DoubleInterval& _seperatedPart, bool _calculateImpact );
+            
+            void splittingBasedContraction( icp::IcpVariable& _icpVar, const FormulaT& _violatedConstraint, const DoubleInterval& _contractedInterval );
 
             /**
              * 
