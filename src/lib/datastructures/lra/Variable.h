@@ -292,6 +292,11 @@ namespace smtrat
                 {
                     mPosition = _position;
                 }
+                
+                bool isConflicting() const
+                {
+                    return *mpInfimum > *mpSupremum;
+                }
 
                 /**
                  * @return 

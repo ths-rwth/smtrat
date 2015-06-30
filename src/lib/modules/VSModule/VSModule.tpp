@@ -221,12 +221,12 @@ namespace smtrat
                 std::vector<pair<vector<ConstraintT>, ConstraintT>> bDeds = mpStateTree->variableBounds().getBoundDeductions();
                 for( auto bDed = bDeds.begin(); bDed != bDeds.end(); ++bDed )
                 {
-                    FormulaSetT subformulas;
+                    FormulasT subformulas;
                     for( auto cons = bDed->first.begin(); cons != bDed->first.end(); ++cons )
                     {
-                        subformulas.insert( FormulaT( carl::FormulaType::NOT, FormulaT( *cons ) ) ); // @todo store formulas and do not generate a formula here
+                        subformulas.emplace_back( carl::FormulaType::NOT, FormulaT( *cons ) ); // @todo store formulas and do not generate a formula here
                     }
-                    subformulas.insert( FormulaT( bDed->second ) );
+                    subformulas.emplace_back( bDed->second );
                     addDeduction( FormulaT( carl::FormulaType::OR, std::move( subformulas ) ) );
                 }
             }
