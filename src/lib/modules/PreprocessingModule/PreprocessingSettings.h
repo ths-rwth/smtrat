@@ -38,7 +38,9 @@ struct PreprocessingSettings {
 	 * Enables removing of unbounded variables, which only occur linearly.
 	 */
 	static constexpr bool removeUnboundedVars = false;
-	
-	static const bool dummy;
+	/**
+     * Enables enumeration of integers with a domains of this size (0 for disabling).
+     */
+	static constexpr unsigned enumerate_integers_domain_size = 0;
 };
 }
