@@ -20,16 +20,3 @@ foreach (variableName ${variableNames})
 		set(VARLIST "${VARLIST}\n\tp(\"${variableName}\", R\"VAR(${${variableName}})VAR\");")
 	endif()
 endforeach()
-configure_file( ${CMAKE_SOURCE_DIR}/src/lib/utilities/CMakeOptions.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/utilities/CMakeOptions.cpp )
-
-set(lib_utilities_headers
-	stats/Statistics.h
-	stats/CollectStatistics.h
-	stats/StatisticSettings.h
-)
-
-set(lib_utilities_src
-	utilities/stats/CollectStatistics.cpp
-	utilities/stats/StatisticSettings.cpp
-	utilities/CMakeOptions.cpp
-PARENT_SCOPE)

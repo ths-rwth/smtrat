@@ -11,6 +11,10 @@
 # Version: 2013-03-31                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+foreach(name datastructures solver strategies utilities)
+  collect_files(lib ${name})
+endforeach()
+
 include_directories( ${carl_INCLUDE_DIR} )
 
 # Core library
@@ -26,71 +30,9 @@ set(lib_core_headers
 #######################
 add_subdirectory(modules)
 
-# Include strategies
-#######################
-add_subdirectory(strategies)
-
 # write config.h
 #######################
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/config.h.in ${CMAKE_SOURCE_DIR}/src/lib/config.h )
-
-# write CompileInfo.cpp
-configure_file( ${CMAKE_SOURCE_DIR}/src/lib/solver/CompileInfo.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/solver/CompileInfo.cpp )
-
-
-set(lib_datastructures_headers
-        datastructures/Assignment.h
-        datastructures/SortValue.h
-        datastructures/SortValueManager.h
-        datastructures/UFModel.h
-        datastructures/VariableBounds.h
-	datastructures/lra/Bound.h
-	datastructures/lra/Tableau.h
-	datastructures/lra/TableauSettings.h
-	datastructures/lra/Value.h
-	datastructures/lra/Variable.h
-	datastructures/lra/Numeric.h
-	datastructures/vs/SqrtEx.h
-    datastructures/eq/alloc.h
-    datastructures/eq/union_find.h
-)
-
-set(lib_datastructures_src
-        datastructures/Assignment.cpp
-        datastructures/SortValue.cpp
-        datastructures/SortValueManager.cpp
-        datastructures/UFModel.cpp
-        datastructures/lra/Bound.tpp
-	datastructures/lra/Numeric.cpp
-	datastructures/lra/Tableau.tpp
-	datastructures/lra/Value.tpp
-	datastructures/lra/Variable.tpp
-	datastructures/vs/SqrtEx.cpp
-    datastructures/eq/alloc.cpp
-)
-
-set(lib_solver_headers
-	solver/debug.h
-        solver/Manager.h
-        solver/Module.h
-        solver/ModuleInput.h
-        solver/StrategyGraph.h
-        solver/ModuleFactory.h
-        solver/RuntimeSettings.h
-        solver/ThreadPool.h
-        solver/ValidationSettings.h
-)
-
-set(lib_solver_src
-	solver/Manager.cpp
-	solver/Module.cpp
-	solver/ModuleInput.cpp
-        solver/StrategyGraph.cpp
-        solver/RuntimeSettings.cpp
-        solver/ThreadPool.cpp
-        solver/ValidationSettings.cpp
-        solver/CompileInfo.cpp
-)
 
 add_subdirectory(utilities)
 
@@ -151,6 +93,3 @@ install( TARGETS ${SMTRAT_TARGETS}
 		GROUP_READ GROUP_EXECUTE
 		WORLD_READ WORLD_EXECUTE
 )
-
-
-
