@@ -2103,6 +2103,23 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
+        bool Tableau<Settings,T1,T2>::isConflicting() const
+        {
+            for( Variable<T1,T2>* rowVar : mRows )
+            {
+                if( rowVar != NULL )
+                {
+                    if( rowVar->isConflicting() ) return true;
+                }
+            }
+            for( Variable<T1,T2>* columnVar : mColumns )
+            {
+                if( columnVar->isConflicting() ) return true;
+            }
+            return false;
+        }
+        
+        template<class Settings, typename T1, typename T2>
         ConstraintT Tableau<Settings,T1,T2>::isDefining( size_t row_index, std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, T2& lcm, T2& max_value ) const
         {
             const Variable<T1, T2>& basic_var = *mRows.at(row_index);

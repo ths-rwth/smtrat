@@ -102,10 +102,10 @@ namespace smtrat
             RuntimeSettings* mLraRuntimeSettings;
             LRAModule<LRASettings1> mLRA; // internal LRA module
             
-            icp::ContractionCandidate* mLastCandidate; // the last applied candidate
-            std::queue<FormulaSetT> mBoxStorage; // keeps the box before contraction
+            std::queue<FormulasT> mBoxStorage; // keeps the box before contraction
             bool mIsIcpInitialized; // initialized ICPModule?
             bool mSplitOccurred;
+            bool mInvalidBox;
             bool mOriginalVariableIntervalContracted;
             double mTargetDiameter;
             double mContractionThreshold;
@@ -217,9 +217,8 @@ namespace smtrat
             /**
              * 
              * @param _splitOccurred
-             * @return 
              */
-            bool contractCurrentBox();
+            void contractCurrentBox();
             
             /**
              * 
@@ -275,9 +274,9 @@ namespace smtrat
              */
             void contraction( icp::ContractionCandidate* _selection );
             
-            void setContraction( icp::ContractionCandidate* _selection, icp::IcpVariable& _icpVar, const DoubleInterval& _interval, const DoubleInterval& _contractedInterval );
+            void setContraction( icp::ContractionCandidate* _selection, icp::IcpVariable& _icpVar, const DoubleInterval& _contractedInterval );
             
-            icp::ContractionCandidate* getContractionCandidate( const FormulaT& _constraint, carl::Variable::Arg _var ) const;
+            void setContraction( const FormulaT& _constraint, icp::IcpVariable& _icpVar, const DoubleInterval& _contractedInterval, bool _allCCs );
             
             /**
              * 
@@ -319,7 +318,7 @@ namespace smtrat
              * 
              * @return 
              */
-            FormulaSetT createBoxFormula();
+            FormulasT createBoxFormula();
                         
             /**
              * 
@@ -350,7 +349,9 @@ namespace smtrat
              */
             bool satBasedSplitting( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase );
             
-            double satBasedSplittingImpact( const EvalDoubleIntervalMap& _intervals, FormulaT& _violatedConstraint, bool _calculateImpact ) const;
+            double satBasedSplittingImpact( icp::IcpVariable& _icpVariable, const EvalDoubleIntervalMap& _intervals, const DoubleInterval& _seperatedPart, bool _calculateImpact );
+            
+            void splittingBasedContraction( icp::IcpVariable& _icpVar, const FormulaT& _violatedConstraint, const DoubleInterval& _contractedInterval );
 
             /**
              * 
@@ -375,21 +376,14 @@ namespace smtrat
              * @param _reasons
              * @return 
              */
-            FormulaSetT variableReasonHull( icp::set_icpVariable& _reasons );
-            
-            /**
-             * Compute hull of defining origins for set of constraints.
-             * @param _map
-             * @return 
-             */
-            FormulaSetT constraintReasonHull( const std::set<ConstraintT>& _reasons );
+            FormulasT variableReasonHull( icp::set_icpVariable& _reasons );
             
             
             /**
              * creates constraints for the actual bounds of the original variables.
              * @return 
              */
-            FormulaSetT createConstraintsFromBounds( const EvalDoubleIntervalMap& _map, bool _isOriginal = true );
+            FormulasT createConstraintsFromBounds( const EvalDoubleIntervalMap& _map, bool _isOriginal = true );
             
             /**
              * Parses obtained deductions from the LRA module and maps them to original constraints or introduces new ones.

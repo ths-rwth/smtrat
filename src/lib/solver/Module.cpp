@@ -766,6 +766,11 @@ namespace smtrat
         #endif
         return result;
     }
+    
+    void Module::clearPassedFormula()
+    {
+        while( eraseSubformulaFromPassedFormula( mpPassedFormula->begin(), true ) != mpPassedFormula->end() );
+    }
 
     Answer Module::foundAnswer( Answer _answer )
     {

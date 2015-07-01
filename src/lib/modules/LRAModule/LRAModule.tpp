@@ -68,7 +68,7 @@ namespace smtrat
     bool LRAModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
         #ifdef DEBUG_LRA_MODULE
-        cout << "LRAModule::assertSubformula  " << "add " << _subformula->formula() << endl;
+        cout << "LRAModule::add " << _subformula->formula() << endl;
         #endif
         switch( _subformula->formula().getType() )
         {
@@ -176,7 +176,7 @@ namespace smtrat
     void LRAModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
         #ifdef DEBUG_LRA_MODULE
-        cout << "remove " << _subformula->formula() << endl;
+        cout << "LRAModule::remove " << _subformula->formula() << endl;
         #endif
         const FormulaT& formula = _subformula->formula();
         if( formula.getType() == carl::FormulaType::CONSTRAINT )
@@ -253,6 +253,13 @@ namespace smtrat
                                     {
                                         mStrongestBoundsRemoved = true;
                                     }
+                                    if( var.isConflicting() )
+                                    {
+                                        FormulasT infsubset;
+                                        collectOrigins( *var.supremum().origins().begin(), infsubset );
+                                        collectOrigins( var.infimum().pOrigins()->back(), infsubset );
+                                        mInfeasibleSubsets.push_back( std::move(infsubset) );
+                                    }
                                 }
                                 else
                                 {
@@ -267,6 +274,13 @@ namespace smtrat
                                         {
                                             mTableau.updateBasicAssignments( var.position(), LRAValue( var.infimum().limit() - var.assignment() ) );
                                             var.rAssignment() = var.infimum().limit();
+                                        }
+                                        if( var.isConflicting() )
+                                        {
+                                            FormulasT infsubset;
+                                            collectOrigins( *var.supremum().origins().begin(), infsubset );
+                                            collectOrigins( var.infimum().pOrigins()->back(), infsubset );
+                                            mInfeasibleSubsets.push_back( std::move(infsubset) );
                                         }
                                     }
                                 }
@@ -320,7 +334,7 @@ namespace smtrat
     Answer LRAModule<Settings>::checkCore( bool _full )
     {
         #ifdef DEBUG_LRA_MODULE
-        cout << "check for consistency" << endl;
+        cout << "LRAModule::check" << endl;
         printReceivedFormula();
         #endif
         Answer result = Unknown;
@@ -333,6 +347,7 @@ namespace smtrat
             result = False;
             goto Return;
         }
+        assert( !mTableau.isConflicting() );
         #ifdef LRA_USE_PIVOTING_STRATEGY
         mTableau.setBlandsRuleStart( 1000 );//(unsigned) mTableau.columns().size() );
         #endif
@@ -506,7 +521,7 @@ namespace smtrat
                     // Learn all bounds which have been deduced during the pivoting process.
                     while( !mTableau.rNewLearnedBounds().empty() )
                     {
-                        FormulaSetT originSet;
+                        FormulasT originSet;
                         typename LRATableau::LearnedBound& learnedBound = mTableau.rNewLearnedBounds().back()->second;
                         mTableau.rNewLearnedBounds().pop_back();
                         std::vector<const LRABound*>& bounds = learnedBound.premise;
@@ -515,7 +530,7 @@ namespace smtrat
                             const FormulaT& boundOrigins = *(*bound)->origins().begin(); 
                             if( boundOrigins.getType() == carl::FormulaType::AND )
                             {
-                                originSet.insert( boundOrigins.subformulas().begin(), boundOrigins.subformulas().end() );
+                                originSet.insert( originSet.end(), boundOrigins.subformulas().begin(), boundOrigins.subformulas().end() );
                                 for( auto origin = boundOrigins.subformulas().begin(); origin != boundOrigins.subformulas().end(); ++origin )
                                 {
                                     auto constrBoundIter = mTableau.rConstraintToBound().find( boundOrigins );
@@ -530,7 +545,7 @@ namespace smtrat
                             else
                             {
                                 assert( boundOrigins.getType() == carl::FormulaType::CONSTRAINT );
-                                originSet.insert( boundOrigins );
+                                originSet.push_back( boundOrigins );
                                 auto constrBoundIter = mTableau.rConstraintToBound().find( boundOrigins );
                                 assert( constrBoundIter != mTableau.constraintToBound().end() );
                                 std::vector< const LRABound* >* constraintToBounds = constrBoundIter->second;
@@ -540,7 +555,7 @@ namespace smtrat
                                 #endif
                             }
                         }
-                        FormulaT origin = FormulaT( carl::FormulaType::AND, originSet );
+                        FormulaT origin = FormulaT( carl::FormulaType::AND, std::move(originSet) );
                         activateBound( learnedBound.nextWeakerBound, origin );
                         #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
                         if( learnedBound.newBound != NULL )
@@ -646,16 +661,6 @@ Return:
                         }
                     }
                 }
-//                if( !(result != True || assignmentCorrect()) )
-//                {
-//                    std::cout << "mActiveUnresolvedNEQConstraints:" << std::endl;
-//                    for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
-//                    {
-//                        std::cout << iter->first << std::endl;
-//                    }
-//                    printVariables();
-//                    exit(1236);
-//                }
                 assert( result != True || assignmentCorrect() );
             }
         }
@@ -744,7 +749,7 @@ Return:
     {
         for( auto iter = mTableau.rLearnedLowerBounds().begin(); iter != mTableau.rLearnedLowerBounds().end(); ++iter )
         {
-            FormulaSetT subformulas;
+            FormulasT subformulas;
             for( auto bound = iter->second.premise.begin(); bound != iter->second.premise.end(); ++bound )
             {
                 const FormulaT& origin = *(*bound)->origins().begin();
@@ -753,17 +758,17 @@ Return:
                     for( auto& subformula : origin.subformulas() )
                     {
                         assert( subformula.getType() == carl::VariableType::CONSTRAINT );
-                        subformulas.insert( FormulaT( carl::FormulaType::NOT, subformula ) );
+                        subformulas.emplace_back( carl::FormulaType::NOT, subformula );
                     }
                 }
                 else
                 {
                     assert( origin.getType() == carl::VariableType::CONSTRAINT );
-                    subformulas.insert( FormulaT( carl::FormulaType::NOT, origin ) )
+                    subformulas.emplace_back( carl::FormulaType::NOT, origin )
                 }
             }
-            subformulas.insert( iter->second.nextWeakerBound->asConstraint() );
-            addDeduction( FormulaT( carl::FormulaType::OR, subformulas ) );
+            subformulas.push_back( iter->second.nextWeakerBound->asConstraint() );
+            addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->addRefinement();
             mpStatistics->addDeduction();
@@ -772,7 +777,7 @@ Return:
         mTableau.rLearnedLowerBounds().clear();
         for( auto iter = mTableau.rLearnedUpperBounds().begin(); iter != mTableau.rLearnedUpperBounds().end(); ++iter )
         {
-            FormulaSetT subformulas;
+            FormulasT subformulas;
             for( auto bound = iter->second.premise.begin(); bound != iter->second.premise.end(); ++bound )
             {
                 const FormulaT& origin = *(*bound)->origins().begin();
@@ -781,17 +786,17 @@ Return:
                     for( auto& subformula : origin.subformulas() )
                     {
                         assert( subformula.getType() == carl::VariableType::CONSTRAINT );
-                        subformulas.insert( FormulaT( carl::FormulaType::NOT, subformula ) );
+                        subformulas.emplace_back( carl::FormulaType::NOT, subformula );
                     }
                 }
                 else
                 {
                     assert( origin.getType() == carl::VariableType::CONSTRAINT );
-                    subformulas.insert( FormulaT( carl::FormulaType::NOT, origin ) )
+                    subformulas.emplace_back( carl::FormulaType::NOT, origin );
                 }
             }
-            subformulas.insert( iter->second.nextWeakerBound->asConstraint() );
-            addDeduction( FormulaT( carl::FormulaType::OR, subformulas ) );
+            subformulas.push_back( iter->second.nextWeakerBound->asConstraint() );
+            addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->addRefinement();
             mpStatistics->addDeduction();
@@ -880,7 +885,7 @@ Return:
                 FormulasT infsubset;
                 collectOrigins( *bound.origins().begin(), infsubset );
                 collectOrigins( inf.pOrigins()->back(), infsubset );
-                mInfeasibleSubsets.push_back( infsubset );
+                mInfeasibleSubsets.push_back( std::move(infsubset) );
             }
             if( sup > bound )
             {
@@ -896,7 +901,7 @@ Return:
                 FormulasT infsubset;
                 collectOrigins( *bound.origins().begin(), infsubset );
                 collectOrigins( sup.pOrigins()->back(), infsubset );
-                mInfeasibleSubsets.push_back( infsubset );
+                mInfeasibleSubsets.push_back( std::move(infsubset) );
             }
             if( inf < bound )
             {
@@ -916,40 +921,40 @@ Return:
     void LRAModule<Settings>::activateStrictBound( const FormulaT& _neqOrigin, const LRABound& _weakBound, const LRABound* _strictBound )
     {
         FormulaSetT involvedConstraints;
-        FormulaSetT originSet;
-        originSet.insert( _neqOrigin );
+        FormulasT originSet;
+        originSet.push_back( _neqOrigin );
         auto iter = _weakBound.origins().begin();
         assert( iter != _weakBound.origins().end() );
         if( iter->getType() == carl::FormulaType::AND )
         {
-            originSet.insert( iter->subformulas().begin(), iter->subformulas().end() );
+            originSet.insert( originSet.end(), iter->subformulas().begin(), iter->subformulas().end() );
             involvedConstraints.insert( iter->subformulas().begin(), iter->subformulas().end() );
         }
         else
         {
             assert( iter->getType() == carl::FormulaType::CONSTRAINT );
-            originSet.insert( *iter );
+            originSet.push_back( *iter );
             involvedConstraints.insert( *iter );
         }
-        FormulaT origin = FormulaT( carl::FormulaType::AND, originSet );
+        FormulaT origin = FormulaT( carl::FormulaType::AND, std::move(originSet) );
         activateBound( _strictBound, origin );
         ++iter;
         while( iter != _weakBound.origins().end() )
         {
-            FormulaSetT originSetB;
-            originSetB.insert( _neqOrigin );
+            FormulasT originSetB;
+            originSetB.push_back( _neqOrigin );
             if( iter->getType() == carl::FormulaType::AND )
             {
-                originSetB.insert( iter->subformulas().begin(), iter->subformulas().end() );
+                originSetB.insert( originSetB.end(), iter->subformulas().begin(), iter->subformulas().end() );
                 involvedConstraints.insert( iter->subformulas().begin(), iter->subformulas().end() );
             }
             else
             {
                 assert( iter->getType() == carl::FormulaType::CONSTRAINT );
-                originSetB.insert( *iter );
+                originSetB.push_back( *iter );
                 involvedConstraints.insert( *iter );
             }
-            FormulaT originB = FormulaT( carl::FormulaType::AND, originSet );
+            FormulaT originB = FormulaT( carl::FormulaType::AND, std::move(originSet) );
             _strictBound->pOrigins()->push_back( originB );
             ++iter;
         }
@@ -1006,10 +1011,12 @@ Return:
                 {
                     if( _exhaustively && (*currentBound)->pInfo()->exists )
                     {
-                        FormulaSetT subformulas;
-                        subformulas.insert( FormulaT( carl::FormulaType::NOT, (*currentBound)->asConstraint() ) );
-                        subformulas.insert( _boundNeq ? _bound->neqRepresentation() : _bound->asConstraint() );
-                        addDeduction( FormulaT( carl::FormulaType::OR, subformulas ) );
+                        FormulasT subformulas
+                        {
+                            std::move(FormulaT(carl::FormulaType::NOT, (*currentBound)->asConstraint())), 
+                            (_boundNeq ? _bound->neqRepresentation() : _bound->asConstraint())
+                        };
+                        addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
                         #ifdef SMTRAT_DEVOPTION_Statistics
                         mpStatistics->addDeduction();
                         #endif
@@ -1024,10 +1031,12 @@ Return:
                 {
                     if( (*currentBound)->pInfo()->exists && (*currentBound)->type() != LRABound::Type::EQUAL )
                     {
-                        FormulaSetT subformulas;
-                        subformulas.insert( FormulaT( carl::FormulaType::NOT, _bound->asConstraint() ) );
-                        subformulas.insert( (*currentBound)->asConstraint() );
-                        addDeduction( FormulaT( carl::FormulaType::OR, subformulas ) );
+                        FormulasT subformulas
+                        {
+                            std::move( FormulaT( carl::FormulaType::NOT, _bound->asConstraint() ) ),
+                            (*currentBound)->asConstraint()
+                        };
+                        addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
                         #ifdef SMTRAT_DEVOPTION_Statistics
                         mpStatistics->addDeduction();
                         #endif
@@ -1052,10 +1061,12 @@ Return:
                 {
                     if( (*currentBound)->pInfo()->exists && (*currentBound)->type() != LRABound::Type::EQUAL )
                     {
-                        FormulaSetT subformulas;
-                        subformulas.insert( FormulaT( carl::FormulaType::NOT, _bound->asConstraint() ) );
-                        subformulas.insert( (*currentBound)->asConstraint() );
-                        addDeduction( FormulaT( carl::FormulaType::OR, subformulas ) );
+                        FormulasT subformulas
+                        {
+                            std::move( FormulaT( carl::FormulaType::NOT, _bound->asConstraint() ) ),
+                            (*currentBound)->asConstraint()
+                        };
+                        addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
                         #ifdef SMTRAT_DEVOPTION_Statistics
                         mpStatistics->addDeduction();
                         #endif
@@ -1071,10 +1082,12 @@ Return:
                 {
                     if( (*currentBound)->pInfo()->exists )
                     {
-                        FormulaSetT subformulas;
-                        subformulas.insert( FormulaT( carl::FormulaType::NOT, (*currentBound)->asConstraint() ) );
-                        subformulas.insert( _boundNeq ? _bound->neqRepresentation() : _bound->asConstraint() );
-                        addDeduction( FormulaT( carl::FormulaType::OR, subformulas ) );
+                        FormulasT subformulas
+                        {
+                            std::move( FormulaT( carl::FormulaType::NOT, (*currentBound)->asConstraint() ) ),
+                            ( _boundNeq ? _bound->neqRepresentation() : _bound->asConstraint() )
+                        };
+                        addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
                         #ifdef SMTRAT_DEVOPTION_Statistics
                         mpStatistics->addDeduction();
                         #endif
@@ -1088,10 +1101,12 @@ Return:
     template<class Settings>
     void LRAModule<Settings>::addSimpleBoundConflict( const LRABound& _caseA, const LRABound& _caseB, bool _caseBneq )
     {
-        FormulaSetT subformulas;
-        subformulas.insert( FormulaT( carl::FormulaType::NOT, _caseA.asConstraint() ) );
-        subformulas.insert( FormulaT( carl::FormulaType::NOT, _caseBneq ? _caseB.neqRepresentation() : _caseB.asConstraint() ) );
-        addDeduction( FormulaT( carl::FormulaType::OR, subformulas ) );
+        FormulasT subformulas
+        {
+            std::move( FormulaT( carl::FormulaType::NOT, _caseA.asConstraint() ) ),
+            std::move( FormulaT( carl::FormulaType::NOT, _caseBneq ? _caseB.neqRepresentation() : _caseB.asConstraint() ) )
+        };
+        addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
         #ifdef SMTRAT_DEVOPTION_Statistics
         mpStatistics->addDeduction();
         #endif
@@ -1225,9 +1240,7 @@ Return:
                         */
                         FormulaT gomory_formula = FormulaT( gomory_constr );
                         FormulaT neg_gomory_formula = FormulaT( neg_gomory_constr );
-                        FormulaSetT subformulas;
-                        subformulas.insert( gomory_formula );
-                        subformulas.insert( neg_gomory_formula );
+                        FormulasT subformulas = { gomory_formula, neg_gomory_formula };
                         FormulaT branch_formula = FormulaT( carl::FormulaType::OR, std::move( subformulas ) );
                         //premise.insert( gomory_formula );
                         addDeduction( branch_formula );
@@ -1381,14 +1394,9 @@ Return:
                     cons1.setActivity( -numeric_limits<double>::infinity() );
                     FormulaT cons2 = FormulaT( cut_constraint2 );
                     cons2.setActivity( -numeric_limits<double>::infinity() );
-                    FormulaSetT subformulasA;
-                    subformulasA.insert( cons1 );
-                    subformulasA.insert( cons2 );
-                    addDeduction( FormulaT( carl::FormulaType::OR, std::move( subformulasA ) ) );   
+                    addDeduction( FormulaT( carl::FormulaType::OR, std::move( FormulasT{ cons1, cons2 } ) ) );   
                     // (not(p<=I-1) or not(p>=I))
-                    FormulaSetT subformulasB;
-                    subformulasB.insert( FormulaT( carl::FormulaType::NOT, cons1 ) );
-                    subformulasB.insert( FormulaT( carl::FormulaType::NOT, cons2 ) );
+                    FormulasT subformulasB{ std::move(FormulaT( carl::FormulaType::NOT, cons1 )), std::move(FormulaT( carl::FormulaType::NOT, cons2 )) };
                     addDeduction( FormulaT( carl::FormulaType::OR, std::move( subformulasB ) ) );
                     #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                     cout << "After adding proof of unsatisfiability:" << endl;
