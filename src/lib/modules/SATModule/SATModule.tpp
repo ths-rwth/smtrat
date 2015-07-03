@@ -167,19 +167,6 @@ namespace smtrat
 		SMTRAT_LOG_TRACE("smtrat.sat", "Add: " << _subformula->formula());
         if( _subformula->formula().propertyHolds( carl::PROP_IS_A_CLAUSE ) )
         {
-            if ( Settings::compute_propagated_lemmas && decisionLevel() == 0 )
-            {
-                if ( _subformula->formula().propertyHolds(carl::PROP_IS_A_LITERAL) && _subformula->formula().propertyHolds(carl::PROP_CONTAINS_BOOLEAN) )
-                {
-                    // Add literal from unary clause to lemmas
-                    carl::Variables vars;
-                    _subformula->formula().booleanVars(vars);
-                    assert( vars.size() == 1);
-                    Minisat::Var var = mBooleanVarMap[ *vars.begin() ];
-                    mPropagatedLemmas[ var ].insert( _subformula->formula() );
-                }
-            }
-
             if (mFormulaClauseMap.find( _subformula->formula() ) == mFormulaClauseMap.end())
             {
                 CRef cl = addClause( _subformula->formula(), NORMAL_CLAUSE );
@@ -210,6 +197,25 @@ namespace smtrat
                     }
                 }*/
             }
+
+			if (Settings::compute_propagated_lemmas && decisionLevel() == 0)
+			{
+				if (_subformula->formula().propertyHolds(carl::PROP_IS_A_LITERAL) && _subformula->formula().propertyHolds(carl::PROP_CONTAINS_BOOLEAN))
+				{
+					// Add literal from unary clause to lemmas
+					carl::Variables vars;
+					_subformula->formula().booleanVars(vars);
+					assert(vars.size() == 1);
+					// Get corresponding Minisat variable
+					BooleanVarMap::const_iterator itVar = mBooleanVarMap.find(*vars.begin());
+					assert(itVar != mBooleanVarMap.end());
+					Minisat::Var var = itVar->second;
+					// Insert new propagated lemma
+					mPropagatedLemmas[var].insert(_subformula->formula());
+					SMTRAT_LOG_TRACE("smtrat.sat", "Inserted propagated lemma for " << *vars.begin() << ": " << _subformula->formula());
+				}
+			}
+
         }
         if( !ok )
             updateInfeasibleSubset();
