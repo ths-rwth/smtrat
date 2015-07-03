@@ -23,7 +23,7 @@
 #define SOLVER smtrat::StratSat
 
 #ifdef DEBUG
-#define DEFAULT_LVL carl::logging::LogLevel::LVL
+#define DEFAULT_LVL carl::logging::LogLevel::LVL_DEBUG
 #else
 #define DEFAULT_LVL carl::logging::LogLevel::LVL_DEFAULT
 #endif

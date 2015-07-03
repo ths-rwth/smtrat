@@ -174,7 +174,7 @@ namespace smtrat {
 			return lastBuffer.size() + 1;
 		}
 		else {
-			assert(result.size() < bufferSize);
+			assert(lastBuffer.size() < bufferSize);
 			strcpy_s(buffer, bufferSize, lastBuffer.c_str());
 			lastBuffer = "";
 			return 0;
