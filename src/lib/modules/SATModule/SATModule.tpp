@@ -113,6 +113,7 @@ namespace smtrat
         mNumberOfTheoryCalls( 0 ),
         mConstraintLiteralMap(),
         mBooleanVarMap(),
+        mFormulaAssumptionMap(),
         mFormulaClauseMap(),
         mLearntDeductions(),
         mChangedBooleans(),
@@ -159,33 +160,46 @@ namespace smtrat
     template<class Settings>
     bool SATModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-        if( _subformula->formula().propertyHolds( carl::PROP_IS_A_CLAUSE ) )
+        if( _subformula->formula().isFalse() )
         {
-            if (mFormulaClauseMap.find( _subformula->formula() ) == mFormulaClauseMap.end())
+            return false;
+        }
+        else if( !_subformula->formula().isTrue() )
+        {
+            if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
             {
-                CRef cl = addClause( _subformula->formula(), NORMAL_CLAUSE );
-                mFormulaClauseMap[_subformula->formula()] = cl;
-                if( Settings::formula_guided_decision_heuristic && _subformula->formula().isTseitinClause() )
+                assumptions.push( getLiteral( _subformula->formula(), _subformula->formula() ) );
+                assert( mFormulaAssumptionMap.find( _subformula->formula() ) == mFormulaAssumptionMap.end() );
+                mFormulaAssumptionMap.emplace( _subformula->formula(), assumptions.last() );
+            }
+            else if( _subformula->formula().propertyHolds( carl::PROP_IS_A_CLAUSE ) )
+            {
+                if (mFormulaClauseMap.find( _subformula->formula() ) == mFormulaClauseMap.end())
                 {
-                    assert( cl != CRef_Undef );
-                    assert( _subformula->formula().getType() == carl::FormulaType::OR );
-                    const FormulaT& lastLit = *_subformula->formula().subformulas().rbegin();
-                    const FormulaT& tseitinVar = lastLit.getType() == carl::FormulaType::NOT ? lastLit.subformula() : lastLit;
-                    assert( tseitinVar.getType() == carl::FormulaType::BOOL );
-                    Minisat::Var v = mBooleanVarMap[tseitinVar.boolean()];
-                    auto iter = mTseitinVarShadows.find( (signed)v );
-                    if( iter == mTseitinVarShadows.end() )
+                    CRef cl = addClause( _subformula->formula(), NORMAL_CLAUSE );
+                    mFormulaClauseMap[_subformula->formula()] = cl;
+                    if( Settings::formula_guided_decision_heuristic && _subformula->formula().isTseitinClause() )
                     {
-                        #ifdef SMTRAT_DEVOPTION_Statistics
-                        ++mpStatistics->rNrTseitinVariables();
-                        #endif
-                        iter = mTseitinVarShadows.emplace( (signed)v, std::move(std::set<signed>()) ).first;
-                    }
-                    Clause& cla = ca[cl];
-                    for( int i = 0; i < cla.size(); ++i )
-                    {
-                        if( var(cla[i]) != v )
-                            iter->second.insert( var(cla[i]) );
+                        assert( cl != CRef_Undef );
+                        assert( _subformula->formula().getType() == carl::FormulaType::OR );
+                        const FormulaT& lastLit = *_subformula->formula().subformulas().rbegin();
+                        const FormulaT& tseitinVar = lastLit.getType() == carl::FormulaType::NOT ? lastLit.subformula() : lastLit;
+                        assert( tseitinVar.getType() == carl::FormulaType::BOOL );
+                        Minisat::Var v = mBooleanVarMap[tseitinVar.boolean()];
+                        auto iter = mTseitinVarShadows.find( (signed)v );
+                        if( iter == mTseitinVarShadows.end() )
+                        {
+                            #ifdef SMTRAT_DEVOPTION_Statistics
+                            ++mpStatistics->rNrTseitinVariables();
+                            #endif
+                            iter = mTseitinVarShadows.emplace( (signed)v, std::move(std::set<signed>()) ).first;
+                        }
+                        Clause& cla = ca[cl];
+                        for( int i = 0; i < cla.size(); ++i )
+                        {
+                            if( var(cla[i]) != v )
+                                iter->second.insert( var(cla[i]) );
+                        }
                     }
                 }
             }
@@ -198,29 +212,45 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
-        FormulaClauseMap::iterator iter = mFormulaClauseMap.find( _subformula->formula() );
-        if( iter != mFormulaClauseMap.end() )
+        if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
         {
-            if( iter->second != CRef_Undef )
+            cancelUntil(0);
+            auto iter = mFormulaAssumptionMap.find( _subformula->formula() );
+            assert( iter != mFormulaAssumptionMap.end() );
+            int i = 0;
+            while( assumptions[i] != iter->second ) ++i;
+            while( i < assumptions.size() - 1 )
             {
-                Clause& c = ca[iter->second];
-                if( value( c[1] ) != l_Undef )
+                assumptions[i] = assumptions[i+1];
+                ++i;
+            }
+        }
+        else if( _subformula->formula().propertyHolds( carl::PROP_IS_A_CLAUSE ) )
+        {
+            FormulaClauseMap::iterator iter = mFormulaClauseMap.find( _subformula->formula() );
+            if( iter != mFormulaClauseMap.end() )
+            {
+                if( iter->second != CRef_Undef )
                 {
-                    int lev = level( var( c[1] ) );
-                    cancelUntil( lev );
-                }
-                if( Settings::formula_guided_decision_heuristic )
-                {
-                    assert( _subformula->formula().getType() == carl::FormulaType::OR );
-                    if( !_subformula->formula().isTseitinClause() )
+                    Clause& c = ca[iter->second];
+                    if( value( c[1] ) != l_Undef )
                     {
-                        for( int i = 0; i < c.size(); ++i )
+                        int lev = level( var( c[1] ) );
+                        cancelUntil( lev );
+                    }
+                    if( Settings::formula_guided_decision_heuristic )
+                    {
+                        assert( _subformula->formula().getType() == carl::FormulaType::OR );
+                        if( !_subformula->formula().isTseitinClause() )
                         {
-                            decrementTseitinShadowOccurrences(var(c[i]));
+                            for( int i = 0; i < c.size(); ++i )
+                            {
+                                decrementTseitinShadowOccurrences(var(c[i]));
+                            }
                         }
                     }
+                    removeClause( iter->second );
                 }
-                removeClause( iter->second );
             }
         }
     }
@@ -252,25 +282,8 @@ namespace smtrat
         #endif
         if( carl::PROP_IS_IN_CNF <= rReceivedFormula().properties() )
         {
-            if( !Settings::stop_search_after_first_unknown )
-            {
-                // Remove all clauses which were only introduced in order to exclude this combination 
-                // of constraints, which couldn't be solved by any backend, as a theory call.
-                while( unknown_excludes.size() > 0 )
-                {
-                    Clause& c = ca[unknown_excludes.last()];
-                    if( value( c[1] ) != l_Undef )
-                    {
-                        int lev = level( var( c[1] ) );
-                        cancelUntil( lev );
-                    }
-                    removeClause( unknown_excludes.last() );
-                    unknown_excludes.pop();
-                }
-            }
-
             budgetOff();
-            assumptions.clear();
+//            assumptions.clear();
             Module::init();
             processLemmas();
 
@@ -307,7 +320,12 @@ namespace smtrat
             {
                 result = search();
             }
-
+            if( !Settings::stop_search_after_first_unknown )
+            {
+                unknown_excludes.clear();
+            }
+            cancelUntil(0);
+            learnts.clear();
             #ifdef SATMODULE_WITH_CALL_NUMBER
             cout << endl << endl;
             #endif
@@ -3047,7 +3065,7 @@ NextClause:
 
         for( int i = 0; i < assumptions.size(); i++ )
         {
-            assert( value( assumptions[i] ) != l_False );
+//            assert( value( assumptions[i] ) != l_False );
             _out << _init << "  " << (sign( assumptions[i] ) ? "-" : "") << (mapVar( var( assumptions[i] ), map, max )) << endl;
         }
 

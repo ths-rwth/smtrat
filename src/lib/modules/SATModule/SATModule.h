@@ -364,6 +364,8 @@ namespace smtrat
             ConstraintLiteralsMap mConstraintLiteralMap;
             /// Maps the Boolean variables to their corresponding Minisat variable.
             BooleanVarMap mBooleanVarMap;
+            ///
+            carl::FastMap<FormulaT, Minisat::Lit> mFormulaAssumptionMap;
             /// Maps the clauses in the received formula to the corresponding Minisat clause.
             FormulaClauseMap mFormulaClauseMap;
             /// If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
