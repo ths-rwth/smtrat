@@ -80,7 +80,8 @@ namespace Minisat
             // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
             T& operator []( Ref r )
             {
-                assert( r >= 0 && r < sz );
+                assert( r >= 0 );
+                assert( r < sz );
                 return memory[r];
             }
 
