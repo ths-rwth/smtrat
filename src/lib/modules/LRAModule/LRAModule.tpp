@@ -337,6 +337,7 @@ namespace smtrat
         cout << "LRAModule::check" << endl;
         printReceivedFormula();
         #endif
+        bool backendsResultUnknown = true;
         Answer result = Unknown;
         if( !rReceivedFormula().isConstraintConjunction() )
         {
@@ -483,6 +484,8 @@ namespace smtrat
                         if( a == False )
                             getInfeasibleSubsets();
                         result = a;
+                        if( a != Unknown )
+                            backendsResultUnknown = false;
                         goto Return;
                     }
                 }
@@ -630,7 +633,7 @@ Return:
         if( result != Unknown )
         {
             mTableau.resetNumberOfPivotingSteps();
-            if( result == True )
+            if( result == True && backendsResultUnknown )
             {
                 // If there are unresolved notequal-constraints and the found satisfying assignment
                 // conflicts this constraint, resolve it by creating the lemma (p<0 or p>0) <-> p!=0 ) and return Unknown.
