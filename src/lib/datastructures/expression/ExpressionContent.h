@@ -59,7 +59,9 @@ namespace expression {
 		
 		BinaryExpression(BinaryType _type, Expression&& _lhs, Expression&& _rhs):
 			type(_type), lhs(std::move(_lhs)), rhs(std::move(_rhs))
-		{}
+		{
+			//if (rhs < lhs) std::swap(lhs, rhs);
+		}
 	};
 	inline std::ostream& operator<<(std::ostream& os, const BinaryExpression& expr) {
 		return os << "(" << expr.type << " " << expr.lhs << " " << expr.rhs << ")";
@@ -71,10 +73,19 @@ namespace expression {
 		
 		NaryExpression(NaryType _type, Expressions&& _expressions):
 			type(_type), expressions(std::move(_expressions))
-		{}
+		{
+			normalize();
+		}
 		NaryExpression(NaryType _type, const std::initializer_list<Expression>& _expressions):
 			type(_type), expressions(_expressions)
-		{}
+		{
+			normalize();
+		}
+		void normalize() {
+			if (type == AND || type == OR || type == XOR || type == IFF) {
+				std::sort(expressions.begin(), expressions.end());
+			}
+		}
 	};
 	inline std::ostream& operator<<(std::ostream& os, const NaryExpression& expr) {
 		os << "(" << expr.type;
