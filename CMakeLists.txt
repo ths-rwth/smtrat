@@ -23,7 +23,7 @@
 # # # # # # # # # # # # # # # # # # # # # #
 
 
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 2.8.12)
 
 # # # # # # # # # # # # # # # # # # # # # #
 # A. Project properties
@@ -114,15 +114,12 @@ if(STATICLIB_SWITCH)
     if (APPLE)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mmacosx-version-min=10.7")
     else()
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIE")
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+	set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
+	set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
     endif()
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
-    set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS)       # remove -Wl,-Bdynamic
-    set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
-    set(CMAKE_SHARED_LIBRARY_C_FLAGS)         # remove -fPIC
-    set(CMAKE_SHARED_LIBRARY_CXX_FLAGS)
-    set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS)    # remove -rdynamic
-    set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS)
 endif()
 
 if(SMTRAT_STRAT_PARALLEL_MODE)
@@ -246,11 +243,11 @@ add_subdirectory(src)
 
 # Add all targets to the build-tree export set
 export(TARGETS ${SMTRAT_TARGETS} FILE "${PROJECT_BINARY_DIR}/smtratTargets.cmake")
- 
+
 # Export the package for use from the build-tree
 # (this registers the build-tree with a global CMake-registry)
 export(PACKAGE smtrat)
- 
+
 include(CMakePackageConfigHelpers)
 # Create the carlConfig.cmake and carlConfigVersion files
 file(RELATIVE_PATH REL_INCLUDE_DIR "${CMAKE_INSTALL_DIR}" "${INCLUDE_INSTALL_DIR}")
@@ -273,7 +270,7 @@ write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/smtratConfigVersion
 								 COMPATIBILITY SameMajorVersion )
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/smtratConfig.cmake ${CMAKE_CURRENT_BINARY_DIR}/smtratConfigVersion.cmake
 		DESTINATION ${CMAKE_INSTALL_DIR} )
- 
+
 # Install the export set for use with the install-tree
 install(EXPORT smtratTargets DESTINATION ${CMAKE_INSTALL_DIR} COMPONENT dev)
 
