@@ -36,6 +36,9 @@ namespace expression {
 		const ExpressionContent& getContent() const {
 			return *mContent;
 		}
+		const ExpressionContent* getContentPtr() const {
+			return mContent;
+		}
 		
 		bool isITE() const;
 		const ITEExpression& getITE() const;
