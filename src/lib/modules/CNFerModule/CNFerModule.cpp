@@ -15,7 +15,13 @@ namespace smtrat
 {
     CNFerModule::CNFerModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager )
-    {}
+    {
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        stringstream s;
+        s << moduleName( type() ) << "_" << id();
+        mpStatistics = new CNFerModuleStatistics( s.str() );
+        #endif
+    }
 
     CNFerModule::~CNFerModule(){}
 
@@ -49,11 +55,17 @@ namespace smtrat
                 {
                     for( const FormulaT& subFormula : formulaToAssertInCnf.subformulas()  )
                     {
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                        mpStatistics->addClauseOfSize( subFormula.size() );
+                        #endif
                         addSubformulaToPassedFormula( subFormula, receivedSubformula->formula() );
                     }
                 }
                 else
                 {
+                    #ifdef SMTRAT_DEVOPTION_Statistics
+                    mpStatistics->addClauseOfSize( receivedSubformula->formula().size() );
+                    #endif
                     addSubformulaToPassedFormula( formulaToAssertInCnf, receivedSubformula->formula() );
                 }
             }
@@ -65,6 +77,14 @@ namespace smtrat
         }
         else
         {
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            carl::Variables avars;
+            rPassedFormula().arithmeticVars( avars );
+            mpStatistics->nrOfArithVariables() = avars.size();
+            carl::Variables bvars;
+            rPassedFormula().booleanVars( bvars );
+            mpStatistics->nrOfBoolVariables() = bvars.size();
+            #endif
             Answer a = runBackends( _full );
 
             if( a == False )
