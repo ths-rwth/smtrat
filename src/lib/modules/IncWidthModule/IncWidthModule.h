@@ -18,10 +18,12 @@ namespace smtrat
     {
         private:
             // Members.
+            ///
+            bool mRestartCheck;
             /// Stores the current width for the variable domains.
             Rational mHalfOfCurrentWidth;
             /// Stores the substitutions of variables to variable plus a value, being the shift used to arrange the variable's domain.
-            carl::FastMap<carl::Variable,Poly> mVariableShifts;
+            std::map<carl::Variable,Poly> mVariableShifts;
             /// Collection of bounds of all received formulas.
 			vb::VariableBounds<FormulaT> mVarBounds;
 
@@ -31,23 +33,6 @@ namespace smtrat
             ~IncWidthModule();
 
             // Main interfaces.
-
-            /**
-             * Informs the module about the given constraint. It should be tried to inform this
-             * module about any constraint it could receive eventually before assertSubformula
-             * is called (preferably for the first time, but at least before adding a formula
-             * containing that constraint).
-             * @param _constraint The constraint to inform about.
-             * @return false, if it can be easily decided whether the given constraint is inconsistent;
-             *          true, otherwise.
-             */
-            bool informCore( const FormulaT& _constraint );
-
-            /**
-             * Informs all backends about the so far encountered constraints, which have not yet been communicated.
-             * This method must not and will not be called more than once and only before the first runBackends call.
-             */
-	        void init();
 
             /**
              * The module has to take the given sub-formula of the received formula into account.
