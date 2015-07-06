@@ -8,6 +8,7 @@ constexpr bool smtrat::PreprocessingSettings::splitSOS;
 constexpr bool smtrat::PreprocessingSettings::eliminateSubstitutions;
 constexpr bool smtrat::PreprocessingSettings::extractBounds;
 constexpr bool smtrat::PreprocessingSettings::removeUnboundedVars;
+constexpr unsigned smtrat::PreprocessingSettings::enumerate_integers_domain_size;
 
 const bool smtrat::PreprocessingSettings::dummy = SettingsManager::addModule("Preprocessing",
 	"printChanges", false, smtrat::PreprocessingSettings::printChanges,
@@ -17,5 +18,6 @@ const bool smtrat::PreprocessingSettings::dummy = SettingsManager::addModule("Pr
 	"splitSOS", true, smtrat::PreprocessingSettings::splitSOS,
 	"eliminateSubstitutions", false, smtrat::PreprocessingSettings::eliminateSubstitutions,
 	"extractBounds", true, smtrat::PreprocessingSettings::extractBounds,
-	"removeUnboundedVars", true, smtrat::PreprocessingSettings::removeUnboundedVars
+	"removeUnboundedVars", true, smtrat::PreprocessingSettings::removeUnboundedVars,
+    "enumerate_integers_domain_size", unsigned(0), smtrat::PreprocessingSettings::enumerate_integers_domain_size
 );
