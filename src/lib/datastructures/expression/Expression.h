@@ -29,6 +29,7 @@ namespace expression {
 		explicit Expression(ITEType _type, Expression&& _if, Expression&& _then, Expression&& _else);
 		explicit Expression(QuantifierType _type, std::vector<carl::Variable>&& _variables, Expression&& _expression);
 		explicit Expression(UnaryType _type, Expression&& _expression);
+		explicit Expression(UnaryType _type, const Expression& _expression): Expression(_type, Expression(_expression)) {}
 		explicit Expression(BinaryType _type, Expression&& _lhs, Expression&& _rhs);
 		explicit Expression(NaryType _type, Expressions&& _expressions);
 		explicit Expression(NaryType _type, const std::initializer_list<Expression>& _expressions);
@@ -39,6 +40,8 @@ namespace expression {
 		const ExpressionContent* getContentPtr() const {
 			return mContent;
 		}
+		
+		const ExpressionContent* getNegationPtr() const;
 		
 		bool isITE() const;
 		const ITEExpression& getITE() const;

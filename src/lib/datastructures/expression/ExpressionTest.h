@@ -3,6 +3,7 @@
 #include "Expression.h"
 #include "ExpressionPool.h"
 #include "ExpressionVisitor.h"
+#include "ExpressionConverter.h"
 
 namespace smtrat {
 	
@@ -16,15 +17,18 @@ namespace smtrat {
 		
 		expression::Expression e2(expression::NaryType::AND, { e, e });
 		expression::Expression e3(expression::NaryType::AND, { e, e, e2 });
+		expression::Expression e4(expression::UnaryType::NOT, e3);
+		expression::Expression e5(expression::UnaryType::NOT, e4);
 		
-		e.isITE();
-		
-		std::cout << e2 << std::endl;
 		std::cout << e3 << std::endl;
+		std::cout << e4 << std::endl;
+		std::cout << e5 << std::endl;
 		
-		expression::ExpressionVisitor visitor;
-		visitor.setPre(expression::ExpressionVisitor::VisitorFunction(&visiting));
-		visitor.visit(e2);
+		expression::ExpressionConverter c;
+		
+		FormulaT f = c(e3);
+		
+		std::cout << f << std::endl;
 	}
 	
 } 

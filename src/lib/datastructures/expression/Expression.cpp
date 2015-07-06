@@ -39,6 +39,10 @@ namespace expression {
 	Expression::Expression(NaryType _type, const std::initializer_list<Expression>& _expressions):
 		mContent(ExpressionPool::getInstance().create(_type, _expressions))
 	{}
+		
+	const ExpressionContent* Expression::getNegationPtr() const {
+		return mContent->negation;
+	}
 	
 	bool Expression::isITE() const {
 		return isType<ITEExpression>();

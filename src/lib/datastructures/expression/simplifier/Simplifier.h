@@ -2,14 +2,18 @@
 
 #include <tuple>
 
+#include "DuplicateSimplifier.h"
 #include "MergeSimplifier.h"
+#include "SingletonSimplifier.h"
 
 namespace smtrat {
 namespace expression {
 namespace simplifier {
 	
 	typedef std::tuple<
-		MergeSimplifier
+		MergeSimplifier,
+		DuplicateSimplifier,
+		SingletonSimplifier
 	> SimplifierChain;
 	
 	template<std::size_t chainID = std::tuple_size<SimplifierChain>::value - 1>
@@ -18,7 +22,7 @@ namespace simplifier {
 		const ExpressionContent* operator()(const ExpressionContent* _ec, const SimplifierChain& _chain) const {
 			const ExpressionContent* tmp = std::get<chainID>(_chain)(_ec);
 			if (tmp == nullptr) tmp = _ec;
-			return recurse(tmp);
+			return recurse(tmp, _chain);
 		}
 	};
 	template<>
@@ -39,7 +43,9 @@ namespace simplifier {
 		
 	public:
 		const ExpressionContent* operator()(const ExpressionContent* _ec) const {
-			return mCaller(_ec, mChain);
+			const ExpressionContent* res = mCaller(_ec, mChain);
+			if (res != _ec) return res;
+			return nullptr;
 		}
 	};
 

@@ -107,6 +107,7 @@ namespace expression {
 		Content content;
 		std::size_t id;
 		std::size_t hash;
+		const ExpressionContent* negation;
 		
 		template<typename... T>
 		ExpressionContent(T&&... t): content(std::forward<T>(t)...), id(0), hash(0) {
@@ -117,6 +118,9 @@ namespace expression {
 	};
 	inline std::ostream& operator<<(std::ostream& os, const ExpressionContent& expr) {
 		return os << expr.content;
+	}
+	inline std::ostream& operator<<(std::ostream& os, const ExpressionContent* expr) {
+		return os << expr->content;
 	}
 		
 	template<typename T>

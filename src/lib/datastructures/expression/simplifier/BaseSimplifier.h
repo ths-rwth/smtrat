@@ -27,7 +27,9 @@ namespace simplifier {
 		}
 		
 		const ExpressionContent* operator()(const ExpressionContent* _ec) const {
-			return boost::apply_visitor(*this, _ec->content);
+			const ExpressionContent* res = boost::apply_visitor(*this, _ec->content);
+			if (res == _ec) return nullptr;
+			return res;
 		}
 		
 	protected:
