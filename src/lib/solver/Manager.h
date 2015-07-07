@@ -68,7 +68,7 @@ namespace smtrat
             /// contains all threads to assign jobs to
             ThreadPool* mpThreadPool;
             /// the number of branches occurring in the strategy (the same as the number of leaves)
-            unsigned mNumberOfBranches;
+            size_t mNumberOfBranches;
             /// the number of cores of the system we run on
             unsigned mNumberOfCores;
             /// a flag indicating whether we might run in parallel eventually
@@ -143,9 +143,6 @@ namespace smtrat
              */
             Answer check( bool _full = true )
             {
-                #ifdef SMTRAT_STRAT_PARALLEL_MODE
-                initialize();
-                #endif
                 *mPrimaryBackendFoundAnswer.back() = false;
                 mpPassedFormula->updateProperties();
                 return mpPrimaryBackend->check( _full );
@@ -180,6 +177,14 @@ namespace smtrat
                 mBacktrackPoints.pop_back();
                 return true;
             }
+            
+            void pop( size_t _levels )
+            {
+                for( ; _levels > 0; --_levels )
+                    if( !pop() ) return;
+            }
+            
+            void reset();
             
             /**
              * @return All infeasible subsets of the set so far added formulas.

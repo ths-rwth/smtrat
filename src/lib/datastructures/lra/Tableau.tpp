@@ -2103,6 +2103,23 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
+        bool Tableau<Settings,T1,T2>::isConflicting() const
+        {
+            for( Variable<T1,T2>* rowVar : mRows )
+            {
+                if( rowVar != NULL )
+                {
+                    if( rowVar->isConflicting() ) return true;
+                }
+            }
+            for( Variable<T1,T2>* columnVar : mColumns )
+            {
+                if( columnVar->isConflicting() ) return true;
+            }
+            return false;
+        }
+        
+        template<class Settings, typename T1, typename T2>
         ConstraintT Tableau<Settings,T1,T2>::isDefining( size_t row_index, std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, T2& lcm, T2& max_value ) const
         {
             const Variable<T1, T2>& basic_var = *mRows.at(row_index);
@@ -3126,11 +3143,11 @@ namespace smtrat
                 const Variable<T1, T2>& nonBasicVar = *(*row_iterator).columnVar();
                 if( nonBasicVar.infimum() == nonBasicVar.assignment() )
                 {
-                    premises.insert( (*row_iterator).columnVar()->infimum().origins().front() );
+                    premises.push_back( (*row_iterator).columnVar()->infimum().origins().front() );
                 }
                 else if( nonBasicVar.supremum() == nonBasicVar.assignment() )
                 {
-                    premises.insert( (*row_iterator).columnVar()->supremum().origins().front() );
+                    premises.push_back( (*row_iterator).columnVar()->supremum().origins().front() );
                 }
                 if( !row_iterator.hEnd( false ) )
                 {
@@ -3475,4 +3492,3 @@ namespace smtrat
         }
     }    // end namspace lra
 }    // end namspace smtrat
-

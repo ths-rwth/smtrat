@@ -34,7 +34,7 @@ template<typename T>
 void createTools(const std::vector<std::string>& arguments, std::vector<Tool*>& tools) {
 	regex r("([^ ]+)(.*)");
 	for (const auto& arg: arguments) {
-		std::smatch matches;
+		smatch matches;
 		if (regex_match(arg, matches, r)) {
 			fs::path path(matches[1]);
 			fs::file_status status = fs::status(path);

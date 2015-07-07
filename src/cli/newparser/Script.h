@@ -12,14 +12,16 @@ namespace parser {
 
 struct LogicParser: public qi::symbols<char, smtrat::Logic> {
 	LogicParser() {
-	    add("QF_LIA", smtrat::Logic::QF_LIA);
+		add("QF_BV", smtrat::Logic::QF_BV);
+		add("QF_IDL", smtrat::Logic::QF_LIA);
+		add("QF_LIA", smtrat::Logic::QF_LIA);
 		add("QF_LIRA", smtrat::Logic::QF_LIA);
-	    add("QF_LRA", smtrat::Logic::QF_LRA);
-	    add("QF_NIA", smtrat::Logic::QF_NIA);
+		add("QF_LRA", smtrat::Logic::QF_LRA);
+		add("QF_NIA", smtrat::Logic::QF_NIA);
 		add("QF_NIRA", smtrat::Logic::QF_NIA);
-	    add("QF_NRA", smtrat::Logic::QF_NRA);
-	    add("QF_UF", smtrat::Logic::QF_UF);
-	    add("QF_BV", smtrat::Logic::QF_BV);
+		add("QF_NRA", smtrat::Logic::QF_NRA);
+		add("QF_RDL", smtrat::Logic::QF_LRA);
+		add("QF_UF", smtrat::Logic::QF_UF);
 	}
 };
 struct ErrorHandler {
@@ -74,6 +76,7 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 			|	(qi::lit("get-value") > +term > ")")[px::bind(&Callee::getValue, px::ref(callee), qi::_1)]
 			|	(qi::lit("pop") > (numeral | qi::attr(carl::constant_one<Integer>::get())) > ")")[px::bind(&Callee::pop, px::ref(callee), qi::_1)]
 			|	(qi::lit("push") > (numeral | qi::attr(carl::constant_one<Integer>::get())) > ")")[px::bind(&Callee::push, px::ref(callee), qi::_1)]
+			|	(qi::lit("reset") > ")")[px::bind(&Callee::reset, px::ref(callee))]
 			|	(qi::lit("set-info") > attribute > ")")[px::bind(&Callee::setInfo, px::ref(callee), qi::_1)]
 			|	(qi::lit("set-logic") > logic > ")")[px::bind(&Callee::setLogic, px::ref(callee), qi::_1)]
 			|	(qi::lit("set-option") > attribute > ")")[px::bind(&Callee::setOption, px::ref(callee), qi::_1)]

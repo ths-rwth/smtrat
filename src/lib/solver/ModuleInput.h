@@ -348,7 +348,7 @@ namespace smtrat
         {
             FormulasT subFormulas;
             for( auto& fwo : *this )
-                subFormulas.insert( fwo.formula() );
+                subFormulas.push_back( fwo.formula() );
             return FormulaT( carl::FormulaType::AND, subFormulas );
         }
         

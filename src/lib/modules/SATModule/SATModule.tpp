@@ -115,6 +115,7 @@ namespace smtrat
         mConstraintLiteralMap(),
         mBooleanVarMap(),
         mMinisatVarMap(),
+        mFormulaAssumptionMap(),
         mFormulaClauseMap(),
         mClauseFormulaMap(),
         mLearntDeductions(),
@@ -165,35 +166,47 @@ namespace smtrat
     bool SATModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
 		SMTRAT_LOG_TRACE("smtrat.sat", "Add: " << _subformula->formula());
-        if( _subformula->formula().propertyHolds( carl::PROP_IS_A_CLAUSE ) )
+        if( _subformula->formula().isFalse() )
         {
-            if (mFormulaClauseMap.find( _subformula->formula() ) == mFormulaClauseMap.end())
+            return false;
+        }
+        else if( !_subformula->formula().isTrue() )
+        {
+            if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
             {
-                CRef cl = addClause( _subformula->formula(), NORMAL_CLAUSE );
-                mFormulaClauseMap[_subformula->formula()] = cl;
-                mClauseFormulaMap[cl] = _subformula->formula();
-				// TODO Matthias: activate again
-				/*if (Settings::formula_guided_decision_heuristic && _subformula->formula().isTseitinClause())
+                assumptions.push( getLiteral( _subformula->formula(), _subformula->formula() ) );
+                assert( mFormulaAssumptionMap.find( _subformula->formula() ) == mFormulaAssumptionMap.end() );
+                mFormulaAssumptionMap.emplace( _subformula->formula(), assumptions.last() );
+            }
+            else if( _subformula->formula().propertyHolds( carl::PROP_IS_A_CLAUSE ) )
+            {
+                if (mFormulaClauseMap.find( _subformula->formula() ) == mFormulaClauseMap.end())
                 {
-                    assert( cl != CRef_Undef );
-                    assert( _subformula->formula().getType() == carl::FormulaType::OR );
-                    const FormulaT& lastLit = *_subformula->formula().subformulas().rbegin();
-                    const FormulaT& tseitinVar = lastLit.getType() == carl::FormulaType::NOT ? lastLit.subformula() : lastLit;
-                    assert( tseitinVar.getType() == carl::FormulaType::BOOL );
-                    Minisat::Var v = mBooleanVarMap[tseitinVar.boolean()];
-                    auto iter = mTseitinVarShadows.find( (signed)v );
-                    if( iter == mTseitinVarShadows.end() )
+                    CRef cl = addClause( _subformula->formula(), NORMAL_CLAUSE );
+                    mFormulaClauseMap[_subformula->formula()] = cl;
+					mClauseFormulaMap[cl] = _subformula->formula();
+					if (Settings::formula_guided_decision_heuristic && _subformula->formula().isTseitinClause())
                     {
-                        #ifdef SMTRAT_DEVOPTION_Statistics
-                        ++mpStatistics->rNrTseitinVariables();
-                        #endif
-                        iter = mTseitinVarShadows.emplace( (signed)v, std::move(std::set<signed>()) ).first;
-                    }
-                    Clause& cla = ca[cl];
-                    for( int i = 0; i < cla.size(); ++i )
-                    {
-                        if( var(cla[i]) != v )
-                            iter->second.insert( var(cla[i]) );
+                        assert( cl != CRef_Undef );
+                        assert( _subformula->formula().getType() == carl::FormulaType::OR );
+                        const FormulaT& lastLit = *_subformula->formula().subformulas().rbegin();
+                        const FormulaT& tseitinVar = lastLit.getType() == carl::FormulaType::NOT ? lastLit.subformula() : lastLit;
+                        assert( tseitinVar.getType() == carl::FormulaType::BOOL );
+                        Minisat::Var v = mBooleanVarMap[tseitinVar.boolean()];
+                        auto iter = mTseitinVarShadows.find( (signed)v );
+                        if( iter == mTseitinVarShadows.end() )
+                        {
+                            #ifdef SMTRAT_DEVOPTION_Statistics
+                            ++mpStatistics->rNrTseitinVariables();
+                            #endif
+                            iter = mTseitinVarShadows.emplace( (signed)v, std::move(std::set<signed>()) ).first;
+                        }
+                        Clause& cla = ca[cl];
+                        for( int i = 0; i < cla.size(); ++i )
+                        {
+                            if( var(cla[i]) != v )
+                                iter->second.insert( var(cla[i]) );
+                        }
                     }
                 }*/
             }
@@ -225,30 +238,45 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
-        FormulaClauseMap::iterator iter = mFormulaClauseMap.find( _subformula->formula() );
-        if( iter != mFormulaClauseMap.end() )
+        if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
         {
-            if( iter->second != CRef_Undef )
+            cancelUntil(0);
+            auto iter = mFormulaAssumptionMap.find( _subformula->formula() );
+            assert( iter != mFormulaAssumptionMap.end() );
+            int i = 0;
+            while( assumptions[i] != iter->second ) ++i;
+            while( i < assumptions.size() - 1 )
             {
-                Clause& c = ca[iter->second];
-                if( value( c[1] ) != l_Undef )
+                assumptions[i] = assumptions[i+1];
+                ++i;
+            }
+        }
+        else if( _subformula->formula().propertyHolds( carl::PROP_IS_A_CLAUSE ) )
+        {
+            FormulaClauseMap::iterator iter = mFormulaClauseMap.find( _subformula->formula() );
+            if( iter != mFormulaClauseMap.end() )
+            {
+                if( iter->second != CRef_Undef )
                 {
-                    int lev = level( var( c[1] ) );
-                    cancelUntil( lev );
-                }
-                if( Settings::formula_guided_decision_heuristic )
-                {
-                    assert( _subformula->formula().getType() == carl::FormulaType::OR );
-					// TODO Matthias: activate again
-					/*if (!_subformula->formula().isTseitinClause())
+                    Clause& c = ca[iter->second];
+                    if( value( c[1] ) != l_Undef )
                     {
-                        for( int i = 0; i < c.size(); ++i )
+                        int lev = level( var( c[1] ) );
+                        cancelUntil( lev );
+                    }
+                    if( Settings::formula_guided_decision_heuristic )
+                    {
+                        assert( _subformula->formula().getType() == carl::FormulaType::OR );
+                        if( !_subformula->formula().isTseitinClause() )
                         {
-                            decrementTseitinShadowOccurrences(var(c[i]));
+                            for( int i = 0; i < c.size(); ++i )
+                            {
+                                decrementTseitinShadowOccurrences(var(c[i]));
+                            }
                         }
-                    }*/
+                    }
+                    removeClause( iter->second );
                 }
-                removeClause( iter->second );
             }
         }
     }
@@ -281,25 +309,8 @@ namespace smtrat
         #endif
         if( carl::PROP_IS_IN_CNF <= rReceivedFormula().properties() )
         {
-            if( !Settings::stop_search_after_first_unknown )
-            {
-                // Remove all clauses which were only introduced in order to exclude this combination 
-                // of constraints, which couldn't be solved by any backend, as a theory call.
-                while( unknown_excludes.size() > 0 )
-                {
-                    Clause& c = ca[unknown_excludes.last()];
-                    if( value( c[1] ) != l_Undef )
-                    {
-                        int lev = level( var( c[1] ) );
-                        cancelUntil( lev );
-                    }
-                    removeClause( unknown_excludes.last() );
-                    unknown_excludes.pop();
-                }
-            }
-
             budgetOff();
-            assumptions.clear();
+//            assumptions.clear();
             Module::init();
             processLemmas();
 
@@ -398,7 +409,12 @@ namespace smtrat
 				// Avoid returning l_False from last call
 				return True;
             }
-
+            if( !Settings::stop_search_after_first_unknown )
+            {
+                unknown_excludes.clear();
+            }
+            cancelUntil(0);
+            learnts.clear();
             #ifdef SATMODULE_WITH_CALL_NUMBER
             cout << endl << endl;
             #endif
@@ -613,7 +629,7 @@ namespace smtrat
             // TODO: compute a better infeasible subset
             for( auto subformula = rReceivedFormula().begin(); subformula != rReceivedFormula().end(); ++subformula )
             {
-                infeasibleSubset.insert( subformula->formula() );
+                infeasibleSubset.push_back( subformula->formula() );
             }
 //        }
         mInfeasibleSubsets.push_back( infeasibleSubset );
@@ -1291,8 +1307,8 @@ namespace smtrat
                 int lev = level( var( c[1] ) );
                 if( value(c[0]) != l_True || lev < level(var(c[0])) )
                 {
-					if ( value(c[0]) == l_False && lev < level(var(c[0])) )
-						lev = level(var(c[0]));
+                    if( value(c[0]) == l_False && lev < level(var(c[0])) )
+                        lev = level(var(c[0]));
                     cancelUntil( lev );
                     arrangeForWatches( c );
                 }
@@ -1691,9 +1707,10 @@ SetWatches:
     }
 
     template<class Settings>
-    CRef SATModule<Settings>::propagateConsistently( bool& _madeTheoryCall )
+    CRef SATModule<Settings>::propagateConsistently( bool& _madeTheoryCall, bool& _lemmasLearnt )
     {
         CRef confl = CRef_Undef;
+        _lemmasLearnt = false;
         bool deductionsLearned = true;
         while( deductionsLearned ) // || !mChangedBooleans.empty() )
         {
@@ -1730,10 +1747,10 @@ SetWatches:
                 }
             }
             else
-            {
                 confl = propagate();
-            }
-
+            // If a Boolean conflict occurred of a splitting decision is asked for
+            if( confl != CRef_Undef || existsUnassignedSplittingVar() )
+                break;
             #ifdef DEBUG_SATMODULE
             cout << "### Sat iteration" << endl;
             cout << "######################################################################" << endl;
@@ -1750,76 +1767,80 @@ SetWatches:
             cout << "### " << endl;
             #endif
 
-            if( confl == CRef_Undef && (!Settings::try_full_lazy_call_first || mNumberOfFullLazyCalls > 0 || trail.size() == assigns.size()) )
+            if( !Settings::try_full_lazy_call_first || mNumberOfFullLazyCalls > 0 || trail.size() == assigns.size() )
             {
                 if( Settings::try_full_lazy_call_first && trail.size() == assigns.size() )
                     ++mNumberOfFullLazyCalls;
                 // Check constraints corresponding to the positively assigned Boolean variables for consistency.
                 // TODO: Do not call the theory solver on instances which have already been proved to be consistent.
                 //       (Happens if the Boolean assignment is extended by assignments to false only)
-                if( pickSplittingVar() == var_Undef )
+                adaptPassedFormula();
+                if( mChangedPassedFormula )
                 {
-                    adaptPassedFormula();
-                    if( mChangedPassedFormula )
+                    _madeTheoryCall = true;
+                    #ifdef DEBUG_SATMODULE
+                    cout << "### Check the constraints: ";
+                    #endif
+                    #ifdef SATMODULE_WITH_CALL_NUMBER
+                    #ifdef DEBUG_SATMODULE
+                    cout << "#" << mNumberOfTheoryCalls << "  ";
+                    #else
+                    ++mNumberOfTheoryCalls;
+                    #endif
+                    #endif
+                    #ifdef DEBUG_SATMODULE
+                    cout << "{ ";
+                    for( ModuleInput::const_iterator subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
+                        cout << subformula->formula() << " ";
+                    cout << "}" << endl;
+                    #endif
+                    mChangedPassedFormula = false;
+                    mCurrentAssignmentConsistent = runBackends();
+                    switch( mCurrentAssignmentConsistent )
                     {
-                        _madeTheoryCall = true;
-                        #ifdef DEBUG_SATMODULE
-                        cout << "### Check the constraints: ";
-                        #endif
-                        #ifdef SATMODULE_WITH_CALL_NUMBER
-                        #ifdef DEBUG_SATMODULE
-                        cout << "#" << mNumberOfTheoryCalls << "  ";
-                        #else
-                        ++mNumberOfTheoryCalls;
-                        #endif
-                        #endif
-                        #ifdef DEBUG_SATMODULE
-                        cout << "{ ";
-                        for( ModuleInput::const_iterator subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
-                            cout << subformula->formula() << " ";
-                        cout << "}" << endl;
-                        #endif
-                        mChangedPassedFormula = false;
-                        mCurrentAssignmentConsistent = runBackends();
-                        switch( mCurrentAssignmentConsistent )
+                        case True:
                         {
-                            case True:
+                            if( Settings::allow_theory_propagation )
                             {
-                                if( Settings::allow_theory_propagation )
-                                {
-                                    //Theory propagation.
-                                    deductionsLearned = processLemmas();
-                                }
-								SMTRAT_LOG_DEBUG("smtrat.sat", "Result: True!");
-                                break;
+                                //Theory propagation.
+                                deductionsLearned = processLemmas();
                             }
-                            case False:
+                            #ifdef DEBUG_SATMODULE
+                            cout << "### Result: True!" << endl;
+                            #endif
+                            break;
+                        }
+                        case False:
+                        {
+                            #ifdef DEBUG_SATMODULE
+                            cout << "### Result: False!" << endl;
+                            #endif
+                            confl = learnTheoryConflict();
+                            if( confl == CRef_Undef )
                             {
-                                SMTRAT_LOG_TRACE("smtrat.sat", "Result: False!");
-                                confl = learnTheoryConflict();
-                                if( confl == CRef_Undef )
-                                {
-                                    if( !ok ) return CRef_Undef;
-                                    processLemmas();
-                                }
-                                break;
+                                if( !ok )
+                                    return CRef_Undef;
+                                processLemmas();
                             }
-                            case Unknown:
+                            break;
+                        }
+                        case Unknown:
+                        {
+                            #ifdef DEBUG_SATMODULE
+                            cout << "### Result: Unknown!" << endl;
+                            #endif
+                            if( Settings::allow_theory_propagation )
                             {
-								SMTRAT_LOG_TRACE("smtrat.sat", "Result: Unknown!");
-                                if( Settings::allow_theory_propagation )
-                                {
-                                    //Theory propagation.
-                                    deductionsLearned = processLemmas();
-                                }
-                                break;
+                                //Theory propagation.
+                                deductionsLearned = processLemmas();
                             }
-                            default:
-                            {
-                                cerr << "Backend returns undefined answer!" << endl;
-                                assert( false );
-                                return CRef_Undef;
-                            }
+                            break;
+                        }
+                        default:
+                        {
+                            cerr << "Backend returns undefined answer!" << endl;
+                            assert( false );
+                            return CRef_Undef;
                         }
                     }
                 }
@@ -1836,6 +1857,7 @@ SetWatches:
                 {
                     qhead = trail_lim[decisionLevel()-1];
                 }
+                _lemmasLearnt = true;
             }
         }
         return confl;
@@ -1874,27 +1896,15 @@ SetWatches:
             }
             
             bool madeTheoryCall = false;
-            CRef confl = propagateConsistently( madeTheoryCall );
+            bool lemmasLearnt = false;
+            CRef confl = propagateConsistently( madeTheoryCall, lemmasLearnt );
             if( !ok )
-                return l_False;
-            if( !Settings::stop_search_after_first_unknown && madeTheoryCall && mCurrentAssignmentConsistent == Unknown )
             {
-                learnt_clause.clear();
-                if( rPassedFormula().size() > 1 )
+                if( !Settings::stop_search_after_first_unknown && unknown_excludes.size() > 0 )
                 {
-                    for( auto subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
-                    {
-                        ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( subformula->formula() );
-                        assert( constraintLiteralPair != mConstraintLiteralMap.end() );
-                        Lit lit = mkLit( var( constraintLiteralPair->second.front() ), !sign( constraintLiteralPair->second.front() ) );
-                        learnt_clause.push( lit );
-                    }
-                    if( addClause( learnt_clause, DEDUCTED_CLAUSE ) )
-                    {
-                        unknown_excludes.push( learnts.last() );
-                        continue;
-                    }
+                    return l_Undef;
                 }
+                return l_False;
             }
             #ifdef SATMODULE_WITH_CALL_NUMBER
             #ifndef DEBUG_SATMODULE
@@ -1906,17 +1916,8 @@ SetWatches:
             cout.flush();
             #endif
             #endif
-            if( confl != CRef_Undef )
-            {
-				// CONFLICT
-				conflictC++;
-				lbool result = handleConflict( confl, madeTheoryCall );
-				if ( result != l_True )
-				{
-					return result;
-				}
-            }
-            else
+
+            if( confl == CRef_Undef )
             {
                 // NO CONFLICT
                 if( Settings::use_restarts && nof_conflicts >= 0 && (conflictC >= nof_conflicts) ) // ||!withinBudget()) )
@@ -1977,15 +1978,102 @@ SetWatches:
                         else
                         {
                             assert( mCurrentAssignmentConsistent == Unknown );
-                            return l_Undef;
+                            if( !Settings::stop_search_after_first_unknown )
+                            {
+                                vec<Lit> learnt_clause;
+                                if( rPassedFormula().size() > 1 )
+                                {
+                                    for( auto subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
+                                    {
+                                        ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( subformula->formula() );
+                                        assert( constraintLiteralPair != mConstraintLiteralMap.end() );
+                                        Lit lit = mkLit( var( constraintLiteralPair->second.front() ), !sign( constraintLiteralPair->second.front() ) );
+                                        learnt_clause.push( lit );
+                                    }
+                                    if( addClause( learnt_clause, DEDUCTED_CLAUSE ) )
+                                    {
+                                        unknown_excludes.push( learnts.last() );
+                                        confl = learnts.last();
+                                    }
+                                    else
+                                        assert( false );
+                                }
+                            }
+                            if( Settings::stop_search_after_first_unknown || confl == CRef_Undef )
+                                return l_Undef;
                         }
                     }
                 }
+                if( Settings::stop_search_after_first_unknown || confl == CRef_Undef )
+                {
+                    // Increase decision level and enqueue 'next'
+                    newDecisionLevel();
+                    assert( value( next ) == l_Undef );
+                    #ifdef DEBUG_SATMODULE
+                    std::cout << "### Decide " <<  (sign(next) ? "-" : "" ) << var(next) << std::endl;
+                    #endif
+                    uncheckedEnqueue( next );
+                }
+            }
+            if( confl != CRef_Undef )
+            {
+                // CONFLICT
+                conflicts++;
+                conflictC++;
+                if( decisionLevel() == 0 )
+                {
+                    if( !Settings::stop_search_after_first_unknown && unknown_excludes.size() > 0 )
+                    {
+                        return l_Undef;
+                    }
+                    return l_False;
+                }
 
-                // Increase decision level and enqueue 'next'
-                newDecisionLevel();
-                assert( value( next ) == l_Undef );
-                uncheckedEnqueue( next );
+                learnt_clause.clear();
+                assert( confl != CRef_Undef );
+                #ifdef DEBUG_SATMODULE
+                if( madeTheoryCall ) { cout << "### Conflict clause: "; printClause( confl ); }
+                else { cout << "### SAT conflict!" << endl; printClause( confl );}
+                #endif
+
+                analyze( confl, learnt_clause, backtrack_level );
+                // Dirty hack for the SMT-COMP 2015
+                assert( learnt_clause.size() > 0 );
+
+                #ifdef DEBUG_SATMODULE
+                printClause( learnt_clause, true, cout, "### Asserting clause: " );
+                cout << "### Backtrack to level " << backtrack_level << endl;
+                cout << "###" << endl;
+                #endif
+                cancelUntil( backtrack_level );
+
+                #ifdef SMTRAT_DEVOPTION_Validation // this is often an indication that something is wrong with our theory, so we do store our assumptions.
+                if( value( learnt_clause[0] ) != l_Undef ) Module::storeAssumptionsToCheck( *mpManager );
+                #endif
+                assert( value( learnt_clause[0] ) == l_Undef );
+                if( learnt_clause.size() == 1 )
+                {
+                    uncheckedEnqueue( learnt_clause[0] );
+                }
+                else
+                {
+                    // learnt clause is the asserting clause.
+                    CRef cr = ca.alloc( learnt_clause, CONFLICT_CLAUSE );
+                    learnts.push( cr );
+                    attachClause( cr );
+                    mChangedActivities.push_back( cr );
+                    claBumpActivity( ca[cr] );
+                    uncheckedEnqueue( learnt_clause[0], cr );
+                    decrementLearntSizeAdjustCnt();
+                }
+
+                varDecayActivity();
+                claDecayActivity();
+                
+                if( madeTheoryCall )
+                {
+                    mCurrentAssignmentConsistent = True;
+                }
             }
         }
     }
@@ -2978,12 +3066,14 @@ NextClause:
             {
                 if( ded.first.getType() != carl::FormulaType::TRUE )
                 {
-                    deductionsLearned = true;
                     #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
                     cout << "Learned a theory deduction from a backend module!" << endl;
                     cout << ded.first.toString( false, 0, "", true, true, true ) << endl;
                     #endif
-                    addFormula( ded.first, DEDUCTED_CLAUSE );
+                    if( addFormula( ded.first, DEDUCTED_CLAUSE ) != CRef_Undef )
+                    {
+                        deductionsLearned = true;
+                    }
                 }
             }
             // Add the splittings.
@@ -3079,22 +3169,17 @@ NextClause:
                 {
                     if( betterConflict )
                         conflictClause = learnts.last();
-//                    cout << "Add conflict clause:" << endl;
-//                    printClause( learnts.last(), true );
                 }
                 else if( betterConflict )
-                {
                     conflictClause = CRef_Undef;
-                }
             }
             ++backend;
         }
-        if( conflictClause != CRef_Undef && lowestLevel >= decisionLevel()+1 )
-            Module::storeAssumptionsToCheck( *mpManager );
         if( Settings::handle_theory_conflict_as_lemma )
         {
             if( numOfLowLevelLiterals == 1 )
             {
+                // If the clause is asserting in the next lower level, backtrack to that level
                 cancelUntil(lowestLevel == 0 ? 0 : lowestLevel-1);
                 return CRef_Undef;
             }
@@ -3365,7 +3450,7 @@ NextClause:
 
         for( int i = 0; i < assumptions.size(); i++ )
         {
-            assert( Settings::find_all_dependent_variables || value( assumptions[i] ) != l_False );
+//            assert( Settings::find_all_dependent_variables || value( assumptions[i] ) != l_False );
             _out << _init << "  " << (sign( assumptions[i] ) ? "-" : "") << (mapVar( var( assumptions[i] ), map, max )) << endl;
         }
 
@@ -3504,4 +3589,3 @@ NextClause:
         #endif
     }
 }    // namespace smtrat
-

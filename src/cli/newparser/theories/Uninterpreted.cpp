@@ -29,7 +29,12 @@ namespace parser {
 		return true;
 	}
 
-	UninterpretedTheory::UninterpretedTheory(ParserState* state): AbstractTheory(state) {
+	UninterpretedTheory::UninterpretedTheory(ParserState* state):
+		AbstractTheory(state), 
+		mBoolSort(carl::SortManager::getInstance().addSort("UF_Bool", carl::VariableType::VT_UNINTERPRETED)),
+		mTrue(carl::freshVariable(carl::VariableType::VT_UNINTERPRETED), mBoolSort),
+		mFalse(carl::freshVariable(carl::VariableType::VT_UNINTERPRETED), mBoolSort)
+	{
 	}
 
 	bool UninterpretedTheory::declareVariable(const std::string& name, const carl::Sort& sort, types::VariableType& result, TheoryError& errors) {
@@ -71,17 +76,17 @@ namespace parser {
 			} else if (const FormulaT* f = boost::get<FormulaT>(&v)) {
 				carl::Variable tmp = carl::freshBooleanVariable();
 				vars.push_back(carl::UVariable(tmp));
-				state->global_formulas.insert(FormulaT(carl::FormulaType::IFF, FormulaT(tmp), *f));
+				state->global_formulas.emplace_back(FormulaT(carl::FormulaType::IFF, FormulaT(tmp), *f));
 			} else if (const Poly* p = boost::get<Poly>(&v)) {
 				carl::Variable tmp = carl::freshRealVariable();
 				vars.push_back(carl::UVariable(tmp));
-				state->global_formulas.insert(FormulaT(*p - carl::makePolynomial<Poly>(tmp), carl::Relation::EQ));
+				state->global_formulas.emplace_back(FormulaT(*p - carl::makePolynomial<Poly>(tmp), carl::Relation::EQ));
 			} else if (const carl::UVariable* uv = boost::get<carl::UVariable>(&v)) {
 				vars.push_back(*uv);
 			} else if (const carl::UFInstance* uf = boost::get<carl::UFInstance>(&v)) {
 				carl::Variable tmp = carl::freshUninterpretedVariable();
 				vars.push_back(carl::UVariable(tmp, uf->uninterpretedFunction().codomain()));
-				state->global_formulas.insert(FormulaT(std::move(carl::UEquality(vars.back(), *uf, false))));
+				state->global_formulas.emplace_back(FormulaT(std::move(carl::UEquality(vars.back(), *uf, false))));
 			} else {
 				SMTRAT_LOG_ERROR("smtrat.parser", "The function argument type for function " << f << " was invalid.");
 				continue;
@@ -91,9 +96,19 @@ namespace parser {
 		carl::UFInstance ufi = carl::newUFInstance(f, vars);
 		carl::SortManager& sm = carl::SortManager::getInstance();
 		if (sm.isInterpreted(f.codomain())) {
-			carl::Variable var = carl::freshVariable(sm.getType(f.codomain()));
-			state->global_formulas.insert(FormulaT(std::move(carl::UEquality(carl::UVariable(var), ufi, false))));
-			result = var;
+			carl::VariableType type = sm.getType(f.codomain());
+			if (type == carl::VariableType::VT_BOOL) {
+				carl::UVariable uvar(carl::freshVariable(carl::VariableType::VT_UNINTERPRETED), mBoolSort);
+				state->global_formulas.emplace_back(std::move(carl::UEquality(uvar, ufi, false)));
+				state->global_formulas.push_back(FormulaT(carl::FormulaType::OR, {
+					FormulaT(std::move(carl::UEquality(uvar, mTrue, false))),
+					FormulaT(std::move(carl::UEquality(uvar, mFalse, false)))
+				}));
+			} else {
+				carl::Variable var = carl::freshVariable(type);
+				state->global_formulas.emplace_back(FormulaT(std::move(carl::UEquality(carl::UVariable(var), ufi, false))));
+				result = var;
+			}
 		} else {
 			result = ufi;
 		}
@@ -120,7 +135,7 @@ namespace parser {
 			FormulasT subformulas;
 			EqualityGenerator<false> eg;
 			for (std::size_t i = 0; i < args.size() - 1; i++) {
-				subformulas.insert(boost::apply_visitor(eg, args[i], args[i+1]));
+				subformulas.push_back(boost::apply_visitor(eg, args[i], args[i+1]));
 			}
 			result = FormulaT(carl::FormulaType::AND, subformulas);
 			return true;

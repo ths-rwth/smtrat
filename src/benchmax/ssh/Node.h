@@ -122,7 +122,7 @@ class Node
 				{
 					command << "-s ";
 				}
-				if(Settings::ValidationTool != NULL)
+				if(Settings::ValidationTool)
 				{
 					command << "-W " << Settings::RemoteOutputDirectory << "wrong_results_" << callID << "/ ";
 					//command << "-V " << Settings::ValidationTool->path() << " ";

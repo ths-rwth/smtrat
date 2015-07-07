@@ -56,6 +56,26 @@ struct Converter<types::BVTerm> {
 };
 
 template<>
+struct Converter<Poly> {
+	template<typename From>
+	bool operator()(const From&, Poly&) const {
+		return false;
+	}
+	bool operator()(const Poly& from, Poly& to) const {
+		to = from;
+		return true;
+	}
+	bool operator()(const carl::Variable& from, Poly& to) const {
+		to = Poly(from);
+		return true;
+	}
+	bool operator()(const Rational& from, Poly& to) const {
+		to = Poly(from);
+		return true;
+	}
+};
+
+template<>
 struct Converter<FormulaT> {
 	template<typename From>
 	bool operator()(const From&, FormulaT&) const {

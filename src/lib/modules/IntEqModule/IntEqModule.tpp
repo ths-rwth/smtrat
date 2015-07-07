@@ -38,7 +38,7 @@ namespace smtrat
         if( _subformula->formula().isFalse() )
         {
             FormulasT infSubSet;
-            infSubSet.insert( _subformula->formula() );
+            infSubSet.push_back( _subformula->formula() );
             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
             return false;            
         } 
@@ -369,6 +369,11 @@ namespace smtrat
     Answer IntEqModule<Settings>::checkCore( bool _full )
     {
         if( !rReceivedFormula().isConstraintConjunction() )
+        {
+            return Unknown;
+        }
+        // Check whether a module which has been called on the same instance in parallel, has found an answer
+        if( anAnswerFound() )
         {
             return Unknown;
         }

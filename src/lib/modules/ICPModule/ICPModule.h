@@ -19,12 +19,14 @@
 #include "../../Common.h"
 #include "../../datastructures/VariableBounds.h"
 #include "IcpVariable.h"
+#include "ICPSettings.h"
 #include "utils.h"
 #include "HistoryNode.h"
 #include <fstream>
 
 namespace smtrat
 {
+    template<class Settings>
     class ICPModule:
         public Module
     {
@@ -32,7 +34,7 @@ namespace smtrat
         using Contractor = carl::Contraction<Operator, Poly>;
         
         public:
-
+            
             /**
              * Typedefs:
              */
@@ -79,7 +81,7 @@ namespace smtrat
             std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> mActiveLinearConstraints; // linear candidates considered
             std::map<const LRAVariable*, ContractionCandidates> mLinearConstraints; // all linear candidates
             std::map<ConstraintT, ContractionCandidates> mNonlinearConstraints; // all nonlinear candidates
-			FormulasT mNotEqualConstraints;
+			FormulaSetT mNotEqualConstraints;
             
             std::map<carl::Variable, icp::IcpVariable*> mVariables; // list of occurring variables
             EvalDoubleIntervalMap mIntervals; // actual intervals relevant for contraction
@@ -100,18 +102,15 @@ namespace smtrat
             RuntimeSettings* mLraRuntimeSettings;
             LRAModule<LRASettings1> mLRA; // internal LRA module
             
-            std::set<ConstraintT> mCenterConstraints; // keeps actual centerConstaints for deletion
-            FormulasT mCreatedDeductions; // keeps pointers to the created deductions for deletion
-            icp::ContractionCandidate* mLastCandidate; // the last applied candidate
             std::queue<FormulasT> mBoxStorage; // keeps the box before contraction
             bool mIsIcpInitialized; // initialized ICPModule?
-            unsigned mCurrentId; // keeps the currentId of the state nodes
-            bool mIsBackendCalled; // has a backend already been called in the actual run?
             bool mSplitOccurred;
+            bool mInvalidBox;
             bool mOriginalVariableIntervalContracted;
             double mTargetDiameter;
             double mContractionThreshold;
             double mDefaultSplittingSize;
+            SplittingHeuristic mSplittingHeuristic;
             unsigned mNumberOfReusagesAfterTargetDiameterReached;
             double mRelativeContraction;
             double mAbsoluteContraction;
@@ -165,8 +164,11 @@ namespace smtrat
              */
             
             /**
+             * @brief Reset to state before application of this cc.
+             * @details Reset the current state to a state before this contraction was applied. As we only have two states, we check, if this cc has been
+             * used yet and if so, we reset the state, else the state remains unchanged.
              * 
-             * @param 
+             * @param _cc [description]
              */
             void resetHistory( icp::ContractionCandidate* );
             
@@ -215,9 +217,8 @@ namespace smtrat
             /**
              * 
              * @param _splitOccurred
-             * @return 
              */
-            bool contractCurrentBox();
+            void contractCurrentBox();
             
             /**
              * 
@@ -236,16 +237,6 @@ namespace smtrat
              * @param _origin
              */
             void createLinearCCs( const FormulaT& _constraint );
-            
-            /**
-             * Initiates weights for contractions   
-             */
-            void initiateWeights();
-            
-            /**
-             * 
-             */
-            void activateLinearEquations();
             
             /**
              * Fills the IcpRelevantCandidates with all nonlinear and all active linear ContractionCandidates.
@@ -283,6 +274,10 @@ namespace smtrat
              */
             void contraction( icp::ContractionCandidate* _selection );
             
+            void setContraction( icp::ContractionCandidate* _selection, icp::IcpVariable& _icpVar, const DoubleInterval& _contractedInterval );
+            
+            void setContraction( const FormulaT& _constraint, icp::IcpVariable& _icpVar, const DoubleInterval& _contractedInterval, bool _allCCs );
+            
             /**
              * 
              * @param _interval
@@ -305,18 +300,11 @@ namespace smtrat
             std::map<carl::Variable, double> createModel( bool antipoint = false ) const;
             
             /**
-             * Calls the actual contraction on a separate map to check, whether contraction is possible. Returns the node, where insertion makes sense.
-             * @param _selection
-             * @param _intervals
-             */
-            void tryContraction( icp::ContractionCandidate* _selection, const EvalDoubleIntervalMap& _intervals );
-            
-            /**
              * Selects the next splitting direction according to different heuristics.
              * @param _targetDiameter
              * @return 
              */
-            double calculateSplittingImpact( std::map<carl::Variable, icp::IcpVariable*>::const_iterator _varIcpVarMapIter ) const;
+            double sizeBasedSplittingImpact( std::map<carl::Variable, icp::IcpVariable*>::const_iterator _varIcpVarMapIter ) const;
             
             /**
              * 
@@ -333,12 +321,37 @@ namespace smtrat
             FormulasT createBoxFormula();
                         
             /**
-             * Checks if there is a need for a split and manages the splitting and branching in the
-             * historyTree.
-             * @param _targetDiameter
-             * @return if a split has happened and in which dimension.
+             * 
+             * @param _contractionApplied
+             * @param _moreConstactionFound
+             * @return If a split has happened.
              */
-            carl::Variable checkAndPerformSplit( bool );
+            bool performSplit( bool _contractionApplied, bool& _moreContractionFound );
+            
+            bool splitToBoundedIntervalsWithoutZero( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase, std::vector<std::map<carl::Variable, icp::IcpVariable*>::const_iterator>& _suitableVariables );
+            
+            /**
+             * 
+             * @param _variable
+             * @param _value
+             * @param _leftCaseWeak
+             * @param _preferLeftCase
+             */
+            void sizeBasedSplitting( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase );
+            
+            /**
+             * 
+             * @param _variable
+             * @param _value
+             * @param _leftCaseWeak
+             * @param _preferLeftCase
+             * @return 
+             */
+            bool satBasedSplitting( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase );
+            
+            double satBasedSplittingImpact( icp::IcpVariable& _icpVariable, const EvalDoubleIntervalMap& _intervals, const DoubleInterval& _seperatedPart, bool _calculateImpact );
+            
+            void splittingBasedContraction( icp::IcpVariable& _icpVar, const FormulaT& _violatedConstraint, const DoubleInterval& _contractedInterval );
 
             /**
              * 
@@ -348,39 +361,10 @@ namespace smtrat
             bool tryTestPoints();
             
             /**
-             * Validates the actual intervals against the linear feasible region returned by the mLRA module.
-             * @param 
-             * @return 
-             */
-            bool validateSolution( bool& _newConstraintAdded );
-            
-            /**
-             * 
-             * @param _infSubsetsInLinearization
-             * @param _candidates
-             * @return 
-             */
-            bool updateIcpRelevantCandidates( const std::vector<FormulasT>& _infSubsetsInLinearization );
-            
-            /**
-             * Removes all centerconstraints from the validation formula - needed before adding actual centerconstraints
-             * and before a new contraction sequence starts in order to check linear feasibility.
-             */
-            void clearCenterConstraintsFromValidationFormula();
-            
-            /**
              * Checks the actual intervalBox with the LRASolver
              * @return 
              */
             bool checkBoxAgainstLinearFeasibleRegion();
-            
-            /**
-             * Selects and sets the next possible interval box from the history nodes. If there is no new box, 
-             * the infeasible subset is updated accordingly.
-             * @return true, if there is a new box;
-             *         false, otherwise.
-             */
-            bool chooseBox();
             
             /**
              * Creates Bounds and passes them to PassedFormula for the Backends.
@@ -394,13 +378,6 @@ namespace smtrat
              */
             FormulasT variableReasonHull( icp::set_icpVariable& _reasons );
             
-            /**
-             * Compute hull of defining origins for set of constraints.
-             * @param _map
-             * @return 
-             */
-            FormulasT constraintReasonHull( const std::set<ConstraintT>& _reasons );
-            
             
             /**
              * creates constraints for the actual bounds of the original variables.
@@ -411,7 +388,7 @@ namespace smtrat
             /**
              * Parses obtained deductions from the LRA module and maps them to original constraints or introduces new ones.
              */
-            FormulaT transformDeductions( const FormulaT& _deduction );
+            FormulaT getReceivedFormulas( const FormulaT& _deduction );
             
             /**
              * Sets the own infeasible subset according to the infeasible subset of the internal lra module.
@@ -423,29 +400,12 @@ namespace smtrat
             void addProgress( double _progress );
             
             /**
-             * Selects and sets the next possible interval box from the history nodes.
-             * @param _basis
-             * @return 
-             */
-            icp::HistoryNode* chooseBox( icp::HistoryNode* _basis );
-            
-            /**
              * Set all parameters of the module according to the selected HistoryNode
              * @param _selection the Node which contains the new context
              */
             void setBox( icp::HistoryNode* _selection );
             
-            /**
-             * Finds position, where to add a set of Contraction candidates into the HistoryTree and sets the actual node.
-             * @param _candidate
-             * @return 
-             */
-            icp::HistoryNode* tryToAddConstraint( const ContractionCandidates& _candidates, icp::HistoryNode* _node );
-            
-            /**
-             * generates and sets the infeasible subset
-             */
-            FormulasT collectReasons( icp::HistoryNode* _node );
+            bool intervalsEmpty( const EvalDoubleIntervalMap& _intervals ) const;
             
             bool intervalsEmpty( bool _original = false) const;
             
@@ -542,3 +502,5 @@ namespace smtrat
             void printContraction( const icp::ContractionCandidate& _cc, const DoubleInterval& _before, const DoubleInterval& _afterA, const DoubleInterval& _afterB = DoubleInterval::emptyInterval(), std::ostream& _out = std::cout ) const;
     };
 }    // namespace smtrat
+    
+#include "ICPModule.tpp"

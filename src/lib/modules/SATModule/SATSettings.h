@@ -39,7 +39,7 @@ namespace smtrat
         /**
          * 
          */
-        static const bool stop_search_after_first_unknown = true; //TODO: repair this when deactivated (see qf_lra/bugs/bug_sat_dont_stop_by_first_unknown.smt2)
+        static const bool stop_search_after_first_unknown = false; //TODO: repair this when deactivated (see qf_lra/bugs/bug_sat_dont_stop_by_first_unknown.smt2)
         /**
          * 
          */

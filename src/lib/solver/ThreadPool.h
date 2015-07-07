@@ -91,7 +91,7 @@ namespace smtrat
             std::atomic_bool mPossibleOversubscription;
 #endif
             unsigned mNumberOfCores;
-            unsigned mNumberOfThreads;
+            size_t mNumberOfThreads;
             unsigned mNumberOfRunningThreads;
             std::vector<std::thread*> mThreads;
             std::vector<std::condition_variable> mConditionVariables;
@@ -105,7 +105,7 @@ namespace smtrat
 
         public:
             // Constructor and destructor.
-            ThreadPool( unsigned, unsigned );
+            ThreadPool( size_t, unsigned );
             ~ThreadPool();
 
             // Public methods.

@@ -99,8 +99,8 @@ namespace smtrat
             removeStatesFromRanking( *mpStateTree );
             mIDCounter = 0;
             mInfeasibleSubsets.clear();
-            mInfeasibleSubsets.push_back( FormulasT() );
-            mInfeasibleSubsets.back().insert( _subformula->formula() );
+            mInfeasibleSubsets.emplace_back();
+            mInfeasibleSubsets.back().push_back( _subformula->formula() );
             mInconsistentConstraintAdded = true;
             assert( checkRanking() );
             return false;
@@ -224,9 +224,9 @@ namespace smtrat
                     FormulasT subformulas;
                     for( auto cons = bDed->first.begin(); cons != bDed->first.end(); ++cons )
                     {
-                        subformulas.insert( FormulaT( carl::FormulaType::NOT, FormulaT( *cons ) ) ); // @todo store formulas and do not generate a formula here
+                        subformulas.emplace_back( carl::FormulaType::NOT, FormulaT( *cons ) ); // @todo store formulas and do not generate a formula here
                     }
-                    subformulas.insert( FormulaT( bDed->second ) );
+                    subformulas.emplace_back( bDed->second );
                     addDeduction( FormulaT( carl::FormulaType::OR, std::move( subformulas ) ) );
                 }
             }
@@ -1137,7 +1137,7 @@ namespace smtrat
                     if( _currentState->pOriginalCondition() != NULL )
                         condSet.insert( _currentState->pOriginalCondition() );
                     #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                    carl::PointerSet<vs::Condition> conflictingBounds = _currentState->father().variableBounds().getOriginsOfBounds( conflVars );
+                    auto conflictingBounds = _currentState->father().variableBounds().getOriginsOfBounds( conflVars );
                     condSet.insert( conflictingBounds.begin(), conflictingBounds.end() );
                     #endif
                     conflictSet.insert( condSet );
@@ -1515,7 +1515,7 @@ namespace smtrat
                 ++receivedConstraint;
             }
             assert( receivedConstraint != rReceivedFormula().end() );
-            result.insert( receivedConstraint->formula() );
+            result.push_back( receivedConstraint->formula() );
         }
         return result;
     }
@@ -1564,9 +1564,9 @@ namespace smtrat
         if( !Settings::infeasible_subset_generation )
         {
             // Set the infeasible subset to the set of all received constraints.
-            mInfeasibleSubsets.push_back( FormulasT() );
+            mInfeasibleSubsets.emplace_back();
             for( auto cons = rReceivedFormula().begin(); cons != rReceivedFormula().end(); ++cons )
-                mInfeasibleSubsets.back().insert( cons->formula() );
+                mInfeasibleSubsets.back().push_back( cons->formula() );
             return;
         }
         // Determine the minimum covering sets of the conflict sets, i.e. the infeasible subsets of the root.

@@ -35,7 +35,7 @@ namespace smtrat
             carl::Variable mLhs;
             carl::Variable mDerivationVar;
             Poly mDerivative;
-            FormulasT mOrigin;
+            FormulaSetT mOrigin;
             unsigned mId;
             bool mIsLinear;
             bool mDerived;
@@ -151,12 +151,12 @@ namespace smtrat
                 return mLhs;
             }
 
-            const FormulasT& origin() const
+            const FormulaSetT& origin() const
             {
                 return mOrigin;
             }
 
-            FormulasT& rOrigin()
+            FormulaSetT& rOrigin()
             {
                 return mOrigin;
             }

@@ -12,36 +12,12 @@
 namespace smtrat 
 {
 struct PreprocessingSettings {
-#ifdef __VS
-	/**
-	 * Enables removing of redundant or obsolete factors.
-	 */
-	static const bool removeFactors = true;
-	/**
-	 * Enables removing of constraints that vanish within the variable bounds.
-	 */
-	static const bool checkBounds = true;
-	/**
-	 * Enables removing of constraints that vanish within the variable bounds.
-	 */
-	static const bool splitSOS = true;
-    /**
-	 * Enables the elimination of equations forming a substitution.
-	 */
-	static const bool eliminateSubstitutions = true;
-    /**
-	 * Enables bound extraction of disjunctions of constraints with the same polynomial.
-	 */
-	static const bool extractBounds = true;
-    /**
-	 * Enables removing of unbounded variables, which only occur linearly.
-	 */
-	static const bool removeUnboundedVars = false;
-#else
+	static constexpr bool printChanges = false;
 	/**
 	 * Enables removing of redundant or obsolete factors.
 	 */
 	static constexpr bool removeFactors = true;
+	static constexpr bool eliminateMonomialEquation = true;
 	/**
 	 * Enables removing of constraints that vanish within the variable bounds.
 	 */
@@ -62,7 +38,11 @@ struct PreprocessingSettings {
 	 * Enables removing of unbounded variables, which only occur linearly.
 	 */
 	static constexpr bool removeUnboundedVars = false;
-#endif	
+	/**
+     * Enables enumeration of integers with a domains of this size (0 for disabling).
+     */
+	static constexpr unsigned enumerate_integers_domain_size = 0;
+	
 	static const bool dummy;
 };
 }

@@ -282,13 +282,13 @@ Answer GBModule<Settings>::checkCore( bool _full )
 					
                     if( origIt.get( ) )
                     {
-                        mInfeasibleSubsets.back( ).insert( (*it)->formula() );
+                        mInfeasibleSubsets.back( ).push_back( (*it)->formula() );
                     }
                     origIt++;
                 }
                 else
                 {
-                    mInfeasibleSubsets.back( ).insert( (*it)->formula() );
+                    mInfeasibleSubsets.back( ).push_back( (*it)->formula() );
                 }
             }
 
@@ -324,7 +324,7 @@ Answer GBModule<Settings>::checkCore( bool _full )
             for( ModuleInput::iterator i = passedFormulaBegin( ); i != rPassedFormula().end( ); )
             {
                 // assert( i->formula().getType( ) == carl::FormulaType::CONSTRAINT ); // TODO: Assure, not to add TRUE to the passed formula.
-                if( mGbEqualities.count(i->formula()) == 1 )
+                if( std::count(mGbEqualities.begin(), mGbEqualities.end(), i->formula()) == 1 )
                 {
                     i = super::eraseSubformulaFromPassedFormula( i, true );
                 }
@@ -592,12 +592,12 @@ void GBModule<Settings>::knownConstraintDeduction(const std::list<std::pair<carl
 
             for( auto jt =  originalsWithoutDeduced.begin(); jt != originalsWithoutDeduced.end(); ++jt )
             {
-                subformulas.insert( FormulaT( carl::FormulaType::NOT, *jt ) );
+                subformulas.push_back( FormulaT( carl::FormulaType::NOT, *jt ) );
             }
 
             for( auto jt =  deduced.begin(); jt != deduced.end(); ++jt )
             {
-                subformulas.insert( *jt );
+                subformulas.push_back( *jt );
             }
 
             addDeduction( FormulaT( carl::FormulaType::OR, subformulas ) );
@@ -891,7 +891,7 @@ void GBModule<Settings>::passGB( )
             // Add the constraint if it is of a type that it was handled by the gb.
             if( constraintByGB(it->formula().constraint( ).relation( )) )
             {
-                originals.insert( it->formula() );
+                originals.push_back( it->formula() );
             }
         }
 		assert(!originals.empty());
@@ -915,7 +915,7 @@ void GBModule<Settings>::passGB( )
         assert(!simplIt->isConstant());
         auto res = addSubformulaToPassedFormula( FormulaT( carl::makePolynomial<Poly>(typename smtrat::Poly::PolyType((*simplIt))), carl::Relation::EQ ), FormulaT( carl::FormulaType::AND, originals ) );
         if( res.second )
-            mGbEqualities.insert(res.first->formula());
+            mGbEqualities.push_back(res.first->formula());
     }
 }
 
@@ -945,7 +945,7 @@ FormulasT GBModule<Settings>::generateReasons( const carl::BitVector& reasons )
         // we add the polynomial.
         if( origIt.get( ) )
         {
-            origins.insert( (*it)->formula() );
+            origins.push_back( (*it)->formula() );
         }
         origIt++;
     }
@@ -1029,8 +1029,3 @@ void GBModule<Settings>::printRewriteRules( )
 
 
 } // namespace smtrat
-
-
-
-
-

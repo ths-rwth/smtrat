@@ -218,8 +218,8 @@ namespace parser {
 		FormulaT consThen = FormulaT(types::BVConstraint::create(carl::BVCompareRelation::EQ, vart, thent));
 		FormulaT consElse = FormulaT(types::BVConstraint::create(carl::BVCompareRelation::EQ, vart, elset));
 		
-		state->global_formulas.emplace(FormulaT(carl::FormulaType::IMPLIES,ifterm, consThen));
-		state->global_formulas.emplace(FormulaT(carl::FormulaType::IMPLIES,FormulaT(carl::FormulaType::NOT,ifterm), consElse));
+		state->global_formulas.emplace_back(FormulaT(carl::FormulaType::IMPLIES,ifterm, consThen));
+		state->global_formulas.emplace_back(FormulaT(carl::FormulaType::IMPLIES,FormulaT(carl::FormulaType::NOT,ifterm), consElse));
 		result = vart;
 		return true;
 	}

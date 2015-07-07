@@ -377,6 +377,8 @@ namespace smtrat
             BooleanVarMap mBooleanVarMap;
             /// Maps the Minisat variables to their corresponding boolean variable.
             MinisatVarMap mMinisatVarMap;
+            ///
+            carl::FastMap<FormulaT, Minisat::Lit> mFormulaAssumptionMap;
             /// Maps the clauses in the received formula to the corresponding Minisat clause.
             FormulaClauseMap mFormulaClauseMap;
             /// Maps the Minisat clauses to the corresponding received formula.
@@ -390,7 +392,7 @@ namespace smtrat
             /// Stores all clauses in which the activities have been changed.
             std::vector<Minisat::CRef> mChangedActivities;
             /// Maps arithmetic variables to the constraints they occur in (only used by the valid-substitutions optimization).
-            std::map<carl::Variable,FormulasT> mVarOccurrences;
+            std::map<carl::Variable,FormulaSetT> mVarOccurrences;
             /// Maps Minisat variables to the clauses they occur in (only used by the valid-substitutions optimization).
             std::vector<std::set<Minisat::CRef>> mVarClausesMap;
             /// Maps the arithmetic variables to the terms they have been replaced by a valid substitution (only used by the valid-substitutions optimization).
@@ -944,6 +946,16 @@ namespace smtrat
              */
             bool litRedundant( Minisat::Lit p, uint32_t abstract_levels );
             
+            bool existsUnassignedSplittingVar() const
+            {
+                for( signed v : mNewSplittingVars )
+                {
+                    if( value( v ) == l_Undef )
+                        return true;
+                }
+                return false;
+            }
+            
             /**
              * Adds clauses representing the lemmas which should be added to this SATModule. This may provoke backtracking.
              * @return true, if any clause has been added.
@@ -961,7 +973,7 @@ namespace smtrat
              * @param _madeTheoryCall A flag which is set to true, if at least one theory call has been made within this method.
              * @return A reference to a conflicting clause, if a clause has been added.
              */
-            Minisat::CRef propagateConsistently( bool& _madeTheoryCall );
+            Minisat::CRef propagateConsistently( bool& _madeTheoryCall, bool& _lemmasLearnt );
             
             /**
              * Checks the received formula for consistency.

@@ -24,13 +24,12 @@
 #include "carl/io/streamingOperators.h"
 #include "carl/util/Common.h"
 #include "carl/formula/FormulaPool.h"
-#include "carl/formula/UFManager.h"
-#include "carl/formula/UFInstanceManager.h"
-// TODO Matthias: update carl for bitvector to work
-//#include "carl/formula/bitvector/BVTerm.h"
-//#include "carl/formula/bitvector/BVTermPool.h"
-//#include "carl/formula/bitvector/BVConstraintPool.h"
-//#include "carl/formula/bitvector/BVConstraint.h"
+#include "carl/formula/uninterpreted/UFManager.h"
+#include "carl/formula/uninterpreted/UFInstanceManager.h"
+#include "carl/formula/bitvector/BVTerm.h"
+#include "carl/formula/bitvector/BVTermPool.h"
+#include "carl/formula/bitvector/BVConstraintPool.h"
+#include "carl/formula/bitvector/BVConstraint.h"
 
 namespace smtrat
 {
@@ -75,6 +74,8 @@ namespace smtrat
     typedef carl::Formula<Poly> FormulaT;
     
     typedef carl::Formulas<Poly> FormulasT;
+	
+	typedef carl::FormulaSet<Poly> FormulaSetT;
 
 	typedef carl::FormulasMulti<Poly> FormulasMultiT;
 

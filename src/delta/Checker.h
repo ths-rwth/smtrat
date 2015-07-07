@@ -26,6 +26,8 @@ class Checker {
 	unsigned timeout;
 	/// Expected exit code.
 	int expected;
+	/// Flag is some process has been killed.
+	mutable std::atomic<std::size_t> killed;
 
 	/**
 	 * Execute the solver on the given filename and return the exit code.
@@ -44,7 +46,9 @@ class Checker {
 		ss << executable << " " << filename << " 2> /dev/null > /dev/null";
 		ss << "\" 2> /dev/null";
 		int code = system(ss.str().c_str());
-		return WEXITSTATUS(code);
+		int exitcode = WEXITSTATUS(code);
+		if (exitcode > 128) killed++;
+		return exitcode;
 #endif
 	}
 public:
@@ -55,7 +59,7 @@ public:
 	 * @param original Filename of the original file to obtain the expected exit code.
 	 */
 	Checker(const std::string& exec, unsigned timeout, const std::string& original):
-		executable(exec), timeout(timeout), expected(execute(original))
+		executable(exec), timeout(timeout), expected(execute(original)), killed(0)
 	{}
 
 	/**
@@ -77,6 +81,13 @@ public:
      */
 	int expectedCode() const {
 		return expected;
+	}
+	
+	std::size_t getKilled() const {
+		return killed;
+	}
+	void resetKilled() const {
+		killed = 0;
 	}
 };
 

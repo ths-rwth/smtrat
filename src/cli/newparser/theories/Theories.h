@@ -93,7 +93,7 @@ struct Theories {
 	}
 	
 	void addGlobalFormulas(FormulasT& formulas) {
-		formulas.insert(state->global_formulas.begin(), state->global_formulas.end());
+		formulas.insert(formulas.end(), state->global_formulas.begin(), state->global_formulas.end());
 		state->global_formulas.clear();
 	}
 	void declareVariable(const std::string& name, const carl::Sort& sort) {
@@ -228,7 +228,7 @@ struct Theories {
 					types::TermType tmp = f;
 					bool res = t.second->instantiate(var, repl, tmp, errors);
 					assert(res);
-					state->global_formulas.insert(boost::get<FormulaT>(tmp));
+					state->global_formulas.push_back(boost::get<FormulaT>(tmp));
 				}
 				wasInstantiated = true;
 				break;

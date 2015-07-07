@@ -44,7 +44,7 @@ namespace smtrat
         #endif
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         ,
-        mpThreadPool( NULL ),
+        mpThreadPool( nullptr ),
         mNumberOfBranches( 0 ),
         mNumberOfCores( 1 ),
         mRunsParallel( false )
@@ -56,6 +56,9 @@ namespace smtrat
         typedef void (*Func)( Module*, const FormulaT& );
         Func f = [] ( Module* _module, const FormulaT& _constraint ) { _module->inform( _constraint ); };
         carl::FormulaPool<Poly>::getInstance().forallDo<Module>( f, mpPrimaryBackend );
+        #ifdef SMTRAT_STRAT_PARALLEL_MODE
+        initialize();
+        #endif
     }
 
     // Destructor.
@@ -90,10 +93,32 @@ namespace smtrat
             delete toDelete;
         }
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
-        if( mpThreadPool!=NULL )
+        if( mpThreadPool != nullptr )
             delete mpThreadPool;
         #endif
         delete mpPassedFormula;
+    }
+    
+    void Manager::reset()
+    {
+        while( pop() );
+        assert( mpPassedFormula->empty() );
+        mBackendsOfModules.clear();
+        while( !mGeneratedModules.empty() )
+        {
+            Module* ptsmodule = mGeneratedModules.back();
+            mGeneratedModules.pop_back();
+            delete ptsmodule;
+        }
+        while( mPrimaryBackendFoundAnswer.size() > 1 )
+        {
+            std::atomic_bool* toDelete = mPrimaryBackendFoundAnswer.back();
+            mPrimaryBackendFoundAnswer.pop_back();
+            delete toDelete;
+        }
+        mLogic = Logic::UNDEFINED;
+        mpPrimaryBackend = new Module( MT_Module, mpPassedFormula, mPrimaryBackendFoundAnswer, this );
+        mGeneratedModules.push_back( mpPrimaryBackend );
     }
 
     // Methods.

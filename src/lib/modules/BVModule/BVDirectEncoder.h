@@ -87,13 +87,13 @@ namespace smtrat
             {
                 if(mCurrentTerm) {
                     mTermEncodings.insert(std::make_pair(*mCurrentTerm, FormulasT()));
-                    mTermEncodings[*mCurrentTerm].insert(_formula);
+                    mTermEncodings[*mCurrentTerm].push_back(_formula);
                 } else if(mCurrentConstraint) {
                     mConstraintEncodings.insert(std::make_pair(*mCurrentConstraint, FormulasT()));
-                    mConstraintEncodings[*mCurrentConstraint].insert(_formula);
+                    mConstraintEncodings[*mCurrentConstraint].push_back(_formula);
                 }
 
-                mCurrentEncodings.insert(_formula);
+                mCurrentEncodings.push_back(_formula);
             }
 
             Bits encodeConstant(const carl::BVValue& _value)
@@ -656,7 +656,7 @@ namespace smtrat
                 auto it = mTermEncodings.find(_term);
                 if(it != mTermEncodings.end())
                 {
-                    mCurrentEncodings.insert(it->second.begin(), it->second.end());
+                    mCurrentEncodings.insert(mCurrentEncodings.end(), it->second.begin(), it->second.end());
                     return mTermBits[_term];
                 }
 
@@ -744,7 +744,7 @@ namespace smtrat
                 auto it = mConstraintEncodings.find(_constraint);
                 if(it != mConstraintEncodings.end())
                 {
-                    mCurrentEncodings.insert(it->second.begin(), it->second.end());
+                    mCurrentEncodings.insert(mCurrentEncodings.end(), it->second.begin(), it->second.end());
                     return mConstraintBits[_constraint];
                 }
 
@@ -945,7 +945,7 @@ namespace smtrat
                 carl::FormulaVisitor<FormulaT> visitor;
                 std::function<FormulaT(FormulaT)> encodeConstraints = std::bind(&BVDirectEncoder::encodeBVConstraints, this, std::placeholders::_1);
                 FormulaT passedFormula = visitor.visit(_inputFormula, encodeConstraints);
-                mCurrentEncodings.insert(passedFormula);
+                mCurrentEncodings.push_back(passedFormula);
                 return mCurrentEncodings;
             }
 

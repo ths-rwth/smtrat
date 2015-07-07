@@ -8,12 +8,18 @@
 #pragma once
 
 #include "../../solver/Module.h"
+#include "CNFerModuleStatistics.h"
 
 namespace smtrat
 {
     class CNFerModule:
         public Module
     {
+        private:
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            /// Stores all collected statistics during solving.
+            CNFerModuleStatistics* mpStatistics;
+            #endif
         public:
 
             /**
