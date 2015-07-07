@@ -1,14 +1,14 @@
 #include "PreprocessingSettings.h"
 
-constexpr bool smtrat::PreprocessingSettings::printChanges;
-constexpr bool smtrat::PreprocessingSettings::removeFactors;
-constexpr bool smtrat::PreprocessingSettings::eliminateMonomialEquation;
-constexpr bool smtrat::PreprocessingSettings::checkBounds;
-constexpr bool smtrat::PreprocessingSettings::splitSOS;
-constexpr bool smtrat::PreprocessingSettings::eliminateSubstitutions;
-constexpr bool smtrat::PreprocessingSettings::extractBounds;
-constexpr bool smtrat::PreprocessingSettings::removeUnboundedVars;
-constexpr unsigned smtrat::PreprocessingSettings::enumerate_integers_domain_size;
+CONSTEXPR bool smtrat::PreprocessingSettings::printChanges;
+CONSTEXPR bool smtrat::PreprocessingSettings::removeFactors;
+CONSTEXPR bool smtrat::PreprocessingSettings::eliminateMonomialEquation;
+CONSTEXPR bool smtrat::PreprocessingSettings::checkBounds;
+CONSTEXPR bool smtrat::PreprocessingSettings::splitSOS;
+CONSTEXPR bool smtrat::PreprocessingSettings::eliminateSubstitutions;
+CONSTEXPR bool smtrat::PreprocessingSettings::extractBounds;
+CONSTEXPR bool smtrat::PreprocessingSettings::removeUnboundedVars;
+CONSTEXPR unsigned smtrat::PreprocessingSettings::enumerate_integers_domain_size;
 
 const bool smtrat::PreprocessingSettings::dummy = SettingsManager::addModule("Preprocessing",
 	"printChanges", false, smtrat::PreprocessingSettings::printChanges,

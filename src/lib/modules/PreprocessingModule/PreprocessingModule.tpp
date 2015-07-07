@@ -75,17 +75,17 @@ namespace smtrat {
             // TODO: make this incremental
             FormulaT formula = (FormulaT) rReceivedFormula();
 			if (Settings::eliminateMonomialEquation) {
-				formula = visitor.visit(formula, eliminateMonomialEquationFunction);
+				formula = visitor.visitResult(formula, eliminateMonomialEquationFunction);
 			}
             SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Received        " << formula);
             if (Settings::removeFactors && formula.propertyHolds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL) ) {
                 // Remove redundant or obsolete factors of polynomials.
-                formula = visitor.visit(formula, removeFactorsFunction);
+                formula = visitor.visitResult(formula, removeFactorsFunction);
             }
             SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Removed factors " << formula);
             if (Settings::splitSOS && formula.propertyHolds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL)) {
                 // Check if bounds make constraints vanish.
-                formula = visitor.visit(formula, splitSOSFunction);
+                formula = visitor.visitResult(formula, splitSOSFunction);
             }
             // Apply all substitutions in form of an equations or Boolean facts.
             formula = elimSubstitutions(formula);
@@ -97,7 +97,7 @@ namespace smtrat {
             SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Extract bounds  " << formula);
             if (Settings::checkBounds) {
                 // Check if bounds make constraints vanish.
-                formula = visitor.visit(formula, checkBoundsFunction);
+                formula = visitor.visitResult(formula, checkBoundsFunction);
                 FormulasT bounds = varbounds.getOriginsOfBounds();
                 bounds.push_back( formula );
                 formula = FormulaT( carl::FormulaType::AND, std::move( bounds ) );
@@ -119,7 +119,7 @@ namespace smtrat {
                 FormulaT formula = receivedFormula->formula();
 				
 				if (Settings::eliminateMonomialEquation) {
-					formula = visitor.visit(formula, eliminateMonomialEquationFunction);
+					formula = visitor.visitResult(formula, eliminateMonomialEquationFunction);
 				}
                 if (Settings::checkBounds) {
                     // If bounds are collected, check if next subformula is a bound.
@@ -137,12 +137,12 @@ namespace smtrat {
                 SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Received        " << formula);
                 if (Settings::removeFactors && formula.propertyHolds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL) ) {
                     // Remove redundant or obsolete factors of polynomials.
-                    formula = visitor.visit(formula, removeFactorsFunction);
+                    formula = visitor.visitResult(formula, removeFactorsFunction);
                 }
                 SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Removed factors " << formula);
                 if (Settings::splitSOS && formula.propertyHolds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL)) {
                     // Check if bounds make constraints vanish.
-                    formula = visitor.visit(formula, splitSOSFunction);
+                    formula = visitor.visitResult(formula, splitSOSFunction);
                 }
                 SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Remove unbounded variables  " << formula);
                 if (Settings::extractBounds) {
@@ -152,7 +152,7 @@ namespace smtrat {
                 SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Extract bounds  " << formula);
                 if (Settings::checkBounds) {
                     // Check if bounds make constraints vanish.
-                    formula = visitor.visit(formula, checkBoundsFunction);
+                    formula = visitor.visitResult(formula, checkBoundsFunction);
                 }
                 SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Checked bounds  " << formula);
 

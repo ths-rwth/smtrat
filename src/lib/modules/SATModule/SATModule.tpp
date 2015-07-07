@@ -224,7 +224,7 @@ namespace smtrat
 					assert(itVar != mBooleanVarMap.end());
 					Minisat::Var var = itVar->second;
 					// Insert new propagated lemma
-					mPropagatedLemmas[var].insert(_subformula->formula());
+					mPropagatedLemmas[var].push_back(_subformula->formula());
 					SMTRAT_LOG_TRACE("smtrat.sat", "Inserted propagated lemma for " << *vars.begin() << ": " << _subformula->formula());
 				}
 			}
@@ -1875,6 +1875,7 @@ SetWatches:
         #endif
         assert( ok );
         int      conflictC = 0;
+		int backtrack_level;
         vec<Lit> learnt_clause;
         starts++;
         #ifdef SATMODULE_WITH_CALL_NUMBER
@@ -2449,7 +2450,7 @@ SetWatches:
                 // Notice: new pair is inserted if not already contained
                 FormulasT* pFormulas = &mPropagatedLemmas[ var(p) ];
                 // Insert reason for variable
-                pFormulas->insert( formula );
+                pFormulas->push_back( formula );
 
                 // Find formulas for contained variables
                 carl::Variables vars;
