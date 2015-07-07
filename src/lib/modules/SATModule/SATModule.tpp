@@ -208,7 +208,7 @@ namespace smtrat
                                 iter->second.insert( var(cla[i]) );
                         }
                     }
-                }*/
+                }
             }
 
 			if (Settings::compute_propagated_lemmas && decisionLevel() == 0)
@@ -575,7 +575,6 @@ namespace smtrat
 				mAllModels.push_back( model );
 				SMTRAT_LOG_TRACE("smtrat.sat", "Model: " << model);
 				// Exclude assignment
-				// TODO Matthias: construct clause
 				vec<Lit> excludeClause;
 				int index;
 				for ( int i = 0; i < mRelevantVariables.size(); ++i )
@@ -685,8 +684,7 @@ namespace smtrat
             {
                 assert( _formula.size() > 1 );
                 vec<Lit> clauseLits;
-				// TODO Matthias: activate again
-				bool tseitinClause = false;// Settings::formula_guided_decision_heuristic && _formula.isTseitinClause();
+				bool tseitinClause = Settings::formula_guided_decision_heuristic && _formula.isTseitinClause();
                 for( auto subformula = _formula.subformulas().begin(); subformula != _formula.subformulas().end(); ++subformula )
                 {
                     switch( subformula->getType() )
@@ -925,8 +923,7 @@ namespace smtrat
         }
         else
         {
-			// TODO Matthias: activate again
-            assert( content.getType() == carl::FormulaType::CONSTRAINT || content.getType() == carl::FormulaType::UEQ /*|| content.getType() == carl::FormulaType::BITVECTOR*/ );
+			assert( content.getType() == carl::FormulaType::CONSTRAINT || content.getType() == carl::FormulaType::UEQ || content.getType() == carl::FormulaType::BITVECTOR );
             double act = fabs( _formula.activity() );
             bool preferredToTSolver = false; //(_formula.activity()<0)
             ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( _formula );
@@ -1006,8 +1003,7 @@ namespace smtrat
                 }
                 else
                 {
-					// TODO Matthias: activate again
-                    //assert( content.getType() == carl::FormulaType::BITVECTOR );
+					assert( content.getType() == carl::FormulaType::BITVECTOR );
                     constraint = content;
                     invertedConstraint = FormulaT( carl::FormulaType::NOT, content );
                 }
@@ -2403,8 +2399,7 @@ SetWatches:
         {
             assert( mBooleanConstraintMap[var( p )].second != nullptr );
             Abstraction& abstr = sign( p ) ? *mBooleanConstraintMap[var( p )].second : *mBooleanConstraintMap[var( p )].first;
-			// TODO Matthias: activate again
-            if( !abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (abstr.reabstraction.getType() == carl::FormulaType::UEQ /*|| abstr.reabstraction.getType() == carl::FormulaType::BITVECTOR*/ || abstr.reabstraction.constraint().isConsistent() != 1)) 
+			if( !abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (abstr.reabstraction.getType() == carl::FormulaType::UEQ || abstr.reabstraction.getType() == carl::FormulaType::BITVECTOR || abstr.reabstraction.constraint().isConsistent() != 1)) 
             {
                 if( ++abstr.updateInfo > 0 )
                     mChangedBooleans.push_back( var( p ) );

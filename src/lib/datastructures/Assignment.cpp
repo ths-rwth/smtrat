@@ -24,8 +24,7 @@ namespace smtrat
         return true;
     }
     
-	// TODO Matthias: activate again
-	/*bool operator<(const ModelVariable& _mvar, const carl::BVVariable& _bvvar)
+	bool operator<(const ModelVariable& _mvar, const carl::BVVariable& _bvvar)
     {
         if( _mvar.isBVVariable() )
             return _mvar.asBVVariable() < _bvvar;
@@ -37,7 +36,7 @@ namespace smtrat
         if( _mvar.isBVVariable() )
             return _bvvar < _mvar.asBVVariable();
         return !_mvar.isVariable();
-    }*/
+    }
 
     bool operator<( const ModelVariable& _mvar, const carl::UVariable& _uv )
     {
@@ -160,12 +159,11 @@ namespace smtrat
             {
                 return _formula.constraint().satisfiedBy( _assignment );
             }
-			// TODO Matthias: activate again
-			/*case carl::FormulaType::BITVECTOR:
+			case carl::FormulaType::BITVECTOR:
             {
                 ///@todo do something here
                 return 2;
-            }*/
+            }
             case carl::FormulaType::NOT:
             {
                 switch( satisfies( _model, _assignment, _formula.subformula() ) )
@@ -372,8 +370,7 @@ namespace smtrat
         for( Model::const_iterator ass = _model.begin(); ass != _model.end(); ++ass )
         {
             if (ass != _model.begin()) _out << " ";
-			// TODO Matthias: activate again
-			if (ass->first.isVariable() /*|| ass->first.isBVVariable()*/)
+			if (ass->first.isVariable() || ass->first.isBVVariable())
                 _out << "(" << ass->first << " " << ass->second << ")" << endl;
             else if( ass->first.isUVariable() )
                 _out << "(define-fun " << ass->first << " () " << ass->first.asUVariable().domain() << " " << ass->second << ")" << endl;

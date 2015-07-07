@@ -17,8 +17,7 @@ namespace smtrat
         assert( ret.second || ret.first->second == _value ); // Checks if the same arguments are not tried to map to different values.
         return ret.second; // Mainly because of not getting a warning, but maybe some needs this return value.
     }
-    
-    SortValue UFModel::get( const std::vector<SortValue>& _args ) const
+	SortValue UFModel::get( const std::vector<SortValue>& _args ) const
     {
         auto iter = find( _args );
         if( iter != end() )

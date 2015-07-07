@@ -937,7 +937,7 @@ namespace smtrat
              *         false, otherwise.
              */
 #ifdef __VS
-            bool probablyLooping( const typename Poly::PolyType& _branchingPolynomial, const Rational& _branchingValue ) const;
+            bool probablyLooping( const Poly::PolyType& _branchingPolynomial, const Rational& _branchingValue ) const;
 #else
             bool probablyLooping( const typename Poly::PolyType& _branchingPolynomial, const Rational& _branchingValue ) const;
 #endif
