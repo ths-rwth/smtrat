@@ -29,7 +29,7 @@ namespace smtrat
         mWidth(0), mSigned(false), mBounds(0, 0)
         {}
 
-        BlastedType( std::size_t _width, bool _signed, Integer _offset = 0 ) :
+        BlastedType(std::size_t _width, bool _signed, Integer _offset = 0) :
         mWidth(_width), mSigned(_signed), mOffset(_offset),
         mBounds(_offset + (_signed ? -carl::pow(2, _width-1) : 0), _offset + (_signed ? carl::pow(2, _width-1)-1 : carl::pow(2, _width) -1))
         {}
@@ -48,6 +48,14 @@ namespace smtrat
 
         bool hasOffset() const {
             return ! carl::isZero(mOffset);
+        }
+
+        BlastedType withOffset(Integer _newOffset) const {
+            return BlastedType(mWidth, mSigned, _newOffset);
+        }
+
+        BlastedType withWidth(std::size_t _width) const {
+            return BlastedType(_width, mSigned, mOffset);
         }
 
         const Integer& offset() const {
@@ -112,6 +120,10 @@ namespace smtrat
             assert(_type.width() == _term.width());
         }
 
+        BlastedTerm(std::size_t _width, bool _signed, Integer _offset = 0) :
+        BlastedTerm(BlastedType(_width, _signed, _offset))
+        { }
+
         BlastedTerm(const BlastedType& _type) :
         mType(_type), mTerm()
         {
@@ -138,7 +150,115 @@ namespace smtrat
         }
     };
 
-    class PolyDecomposition
+    class BlastedPoly
+    {
+    private:
+        bool mIsConstant;
+        Integer mConstant;
+        BlastedTerm mTerm;
+        FormulasT mConstraints;
+
+    public:
+        BlastedPoly() :
+        mIsConstant(true), mConstant(), mTerm(), mConstraints()
+        { }
+
+        BlastedPoly(Integer _constant) :
+        mIsConstant(true), mConstant(_constant), mTerm(), mConstraints()
+        { }
+
+        BlastedPoly(Integer _constant, FormulasT _constraints) :
+        mIsConstant(true), mConstant(_constant), mTerm(), mConstraints(_constraints)
+        { }
+
+        BlastedPoly(BlastedTerm _term) :
+        mIsConstant(false), mConstant(), mTerm(_term), mConstraints()
+        { }
+
+        BlastedPoly(BlastedTerm _term, FormulasT _constraints) :
+        mIsConstant(false), mConstant(), mTerm(_term), mConstraints(_constraints)
+        { }
+
+        bool isConstant() const {
+            return mIsConstant;
+        }
+
+        const Integer& constant() const {
+            assert(mIsConstant);
+            return mConstant;
+        }
+
+        const BlastedTerm& term() const {
+            assert(! mIsConstant);
+            return mTerm;
+        }
+
+        const FormulasT& constraints() const {
+            assert(! mIsConstant);
+            return mConstraints;
+        }
+
+        const Integer& lowerBound() const {
+            if(mIsConstant) {
+                return mConstant;
+            } else {
+                return mTerm.type().lowerBound();
+            }
+        }
+
+        const Integer& upperBound() const {
+            if(mIsConstant) {
+                return mConstant;
+            } else {
+                return mTerm.type().upperBound();
+            }
+        }
+
+        friend std::ostream& operator<<( std::ostream& _out, const BlastedPoly& _poly ) {
+            if(_poly.isConstant()) {
+                return (_out << carl::toString(_poly.constant(), false) << " (const)");
+            } else {
+                return (_out << _poly.term());
+            }
+        }
+    };
+
+    class BlastedConstr
+    {
+    private:
+        FormulaT mFormula;
+        FormulasT mConstraints;
+
+    public:
+        BlastedConstr() : mFormula(), mConstraints()
+        { }
+
+        BlastedConstr(const FormulaT& _formula, const FormulasT& _constraints) :
+        mFormula(_formula), mConstraints(_constraints)
+        { }
+
+        BlastedConstr(const FormulaT& _formula) :
+        mFormula(_formula), mConstraints()
+        { }
+
+        BlastedConstr(bool _satisfied) :
+        BlastedConstr(FormulaT(_satisfied ? carl::FormulaType::TRUE : carl::FormulaType::FALSE))
+        { }
+
+        const FormulaT& formula() const {
+            return mFormula;
+        }
+
+        const FormulasT& constraints() const {
+            return mConstraints;
+        }
+
+        friend std::ostream& operator<<( std::ostream& _out, const BlastedConstr& _constr ) {
+            return (_out << _constr.formula() << " (&" << _constr.constraints().size() << "cs)");
+        }
+    };
+
+    class PolyTree
     {
     public:
         enum class Type : unsigned { VARIABLE, CONSTANT, SUM, PRODUCT };
@@ -148,50 +268,143 @@ namespace smtrat
         Type mType;
         carl::Variable mVariable;
         Integer mConstant;
-        Poly mLeft;
-        Poly mRight;
+        const PolyTree* mLeft;
+        const PolyTree* mRight;
+        Poly mPoly;
 
     public:
-        PolyDecomposition( Type _type, carl::Variable::Arg _variable ) :
-        mType(_type), mVariable(_variable), mConstant(), mLeft(), mRight()
-        {
-            assert(_type == Type::VARIABLE);
+        PolyTree( const Poly& _poly ) : mType(Type::VARIABLE), mVariable(), mConstant(), mLeft(nullptr), mRight(nullptr), mPoly(_poly) {
+            Poly poly(_poly);
+            poly.makeOrdered();
+
+            std::size_t nrTerms = poly.nrTerms();
+
+            if(nrTerms == 0) {
+                mType = Type::CONSTANT;
+                mConstant = 0;
+                return;
+            }
+            if(nrTerms > 1) {
+                auto lastTerm = poly.rbegin();
+                mType = Type::SUM;
+                mLeft = new PolyTree(poly - *lastTerm);
+                mRight = new PolyTree(Poly(*lastTerm));
+                return;
+            }
+
+            const TermT& term = poly[0];
+            Rational coeff = term.coeff();
+
+            if(term.isConstant()) {
+                mType = Type::CONSTANT;
+                mConstant = coeff;
+                return;
+            }
+
+            const carl::Monomial::Arg monomial = term.monomial();
+
+            if(! carl::isOne(coeff)) {
+                mType = Type::PRODUCT;
+                mLeft = new PolyTree(Poly(coeff));
+                mRight = new PolyTree(Poly(monomial));
+                return;
+            }
+
+            auto variableAndExponent = *(monomial->begin());
+
+            if(monomial->nrVariables() > 1) {
+                carl::Monomial::Arg head = carl::MonomialPool::getInstance().create(variableAndExponent.first, variableAndExponent.second);
+                carl::Monomial::Arg tail = monomial->dropVariable(variableAndExponent.first);
+                mType = Type::PRODUCT;
+                mLeft = new PolyTree(Poly(head));
+                mRight = new PolyTree(Poly(tail));
+                return;
+            }
+
+            if(variableAndExponent.second > 1) {
+                carl::Monomial::Arg remainder = carl::MonomialPool::getInstance().create(variableAndExponent.first, variableAndExponent.second - 1);
+                mType = Type::PRODUCT;
+                mLeft = new PolyTree(Poly(remainder));
+                mRight = new PolyTree(Poly(variableAndExponent.first));
+                return;
+            }
+
+            mType = Type::VARIABLE;
+            mVariable = variableAndExponent.first;
         }
 
-        PolyDecomposition( Type _type, const Integer& _constant ) :
-        mType(_type), mVariable(), mConstant(_constant), mLeft(), mRight()
-        {
-            assert(_type == Type::CONSTANT);
+        ~PolyTree() {
+            delete mLeft;
+            delete mRight;
         }
 
-        PolyDecomposition( Type _type, const Poly& _left, const Poly& _right ) :
-        mType(_type), mVariable(), mConstant(), mLeft(_left), mRight(_right)
-        {
-            assert(_type == Type::SUM || _type == Type::PRODUCT);
+        const PolyTree& left() const {
+            assert(mLeft != nullptr);
+            return *mLeft;
         }
 
-        const Poly& left() {
-            assert(mType == Type::SUM || mType == Type::PRODUCT);
-            return mLeft;
+        const PolyTree& right() const {
+            assert(mRight != nullptr);
+            return *mRight;
         }
 
-        const Poly& right() {
-            assert(mType == Type::SUM || mType == Type::PRODUCT);
-            return mRight;
-        }
-
-        carl::Variable::Arg variable() {
+        carl::Variable::Arg variable() const {
             assert(mType == Type::VARIABLE);
             return mVariable;
         }
 
-        const Integer& constant() {
+        const Integer& constant() const {
             assert(mType == Type::CONSTANT);
             return mConstant;
         }
 
-        Type type() {
+        Type type() const {
             return mType;
+        }
+
+        const Poly& poly() const {
+            return mPoly;
+        }
+    };
+
+    class ConstrTree
+    {
+    private:
+        carl::Relation mRelation;
+        PolyTree* mpLeftPoly;
+        PolyTree* mpRightPoly;
+        ConstraintT mConstraint;
+
+    public:
+        ConstrTree(const ConstraintT& _constraint) :
+        mRelation(_constraint.relation()), mpLeftPoly(nullptr), mpRightPoly(nullptr), mConstraint(_constraint)
+        {
+            Poly rightPoly(- _constraint.constantPart());
+            Poly leftPoly(_constraint.lhs() - _constraint.constantPart());
+
+            mpLeftPoly = new PolyTree(leftPoly);
+            mpRightPoly = new PolyTree(rightPoly);
+        }
+
+        ~ConstrTree() {
+            delete mpLeftPoly;
+            delete mpRightPoly;
+        }
+
+        carl::Relation relation() const {
+            return mRelation;
+        }
+
+        const PolyTree& left() const {
+            return *mpLeftPoly;
+        }
+
+        const PolyTree& right() const {
+            return *mpRightPoly;
+        }
+
+        const ConstraintT& constraint() const {
+            return mConstraint;
         }
     };
 
@@ -200,21 +413,32 @@ namespace smtrat
     {
         private:
             typedef smtrat::vb::VariableBounds<FormulaT> VariableBounds;
+            typedef carl::Interval<Integer> IntegerInterval;
+            enum class SolutionOrigin : unsigned { NONE, ICP, BV, BACKEND };
 
             VariableBounds mBoundsFromInput;
             VariableBounds mBoundsInRestriction;
 
-            ModuleInput* mICPInput; // ReceivedFormula of the internal ICP Module
+            ModuleInput* mpICPInput; // ReceivedFormula of the internal ICP Module
             std::vector<std::atomic_bool*> mICPFoundAnswer;
-            RuntimeSettings* mICPRuntimeSettings;
+            RuntimeSettings* mpICPRuntimeSettings;
             ICPModule mICP;
+            FormulaT mConstraintFromBounds;
             FormulasT mProcessedFormulasFromICP;
 
-            BVSolver* mBVSolver;
-            bool mLastSolutionFoundByBlasting;
+            ModuleInput* mpBVInput; // Input of the internal BV solver
+            BVSolver* mpBVSolver;
+            std::list<FormulaT> mFormulasToEncode;
 
-            std::map<Poly, BlastedTerm> mBlastings; // Map from polynomials to bit-vector terms representing them in the blasted output
+            FormulaT mOutsideRestriction;
+            const FormulaT mOutsideRestrictionOrigin;
+
+            SolutionOrigin mSolutionOrigin;
+
+            std::map<Poly, BlastedPoly> mPolyBlastings; // Map from polynomials to bit-vector terms representing them in the blasted output
+            std::map<ConstraintT, BlastedConstr> mConstrBlastings;
             std::map<Poly, carl::Variable> mSubstitutes; // Map from polynomials to integer variables representing them in the ICP input
+            std::map<carl::Variable, FormulaT> mSubstituteConstraints;
 
         public:
             IntBlastModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
@@ -275,22 +499,31 @@ namespace smtrat
             Answer checkCore( bool _full );
 
     private:
-            void createSubstitutes(const FormulaT& _formula);
-            void createSubstitutes(const Poly& _poly);
-            bool createSubstitute(const Poly& _poly);
-            PolyDecomposition decompose(const Poly& _polynomial) const;
-            void blastInputVariables();
-            BlastedType chooseBlastedType(const DoubleInterval _interval, std::size_t _maxWidth = 0) const;
-            const BlastedTerm& blastedTermForPolynomial(const Poly& _poly);
-            BlastedTerm blastConstantWithType(Rational _constant, const BlastedType& _type) const;
-            FormulasT blastSubstitutes();
-            FormulasT blastSum(const BlastedTerm& _summand1, const BlastedTerm& _summand2, const BlastedTerm& _sum);
-            FormulasT blastProduct(const BlastedTerm& _factor1, const BlastedTerm& _factor2, const BlastedTerm& _product);
-            FormulasT safeCast(const BlastedTerm& _from, const BlastedTerm& _to);
+
+            BlastedPoly blastSum(const BlastedPoly& _summand1, const BlastedPoly& _summand2);
+            BlastedPoly blastProduct(const BlastedPoly& _factor1, const BlastedPoly& _factor2);
+            bool reblastingNeeded(const BlastedPoly& _previousBlasting, const IntegerInterval& _interval, bool _linear) const;
+            void unblastVariable(const carl::Variable& _variable);
+            void blastVariable(const carl::Variable& _variable, const IntegerInterval& _interval, bool _allowOffset);
+            std::size_t chooseWidth(const Integer& _numberToCover, std::size_t _maxWidth, bool _signed) const;
+            void updateBoundsFromICP();
+            void updateOutsideRestrictionConstraint(const carl::Variables& _variables);
+            void addFormulaToICP(const FormulaT& _formula, const FormulaT& _origin);
+            void addConstraintToICP(FormulaT _formula);
+            void removeFormulaFromICP(const FormulaT& _formula, const FormulaT& _origin);
+            void removeOriginFromICP(const FormulaT& _origin);
+            void removeOriginFromBV(const FormulaT& _origin);
+            void updateModelFromICP() const;
+            void updateModelFromBV() const;
+            carl::BVTerm encodeBVConstant(const Integer& _constant, const BlastedType& _type) const;
+            carl::BVTerm resizeBVTerm(const BlastedTerm& _term, std::size_t _width) const;
+            BlastedPoly reduceToRange(const BlastedPoly& _input, const IntegerInterval& _interval) const;
+            bool evaluateRelation(carl::Relation _relation, const Integer& _first, const Integer& _second) const;
             FormulasT blastConstraint(const ConstraintT& _constraint);
-
-            void addSubformulaToICPFormula(const FormulaT& _formula, const FormulaT& _origin);
-
-
+            const BlastedPoly& blastPolyTree(const PolyTree& _poly, FormulasT& _collectedFormulas);
+            const BlastedConstr& blastConstrTree(const ConstrTree& _constraint, FormulasT& _collectedFormulas);
+            void addBoundRestrictionsToICP(carl::Variable _variable, const BlastedType& blastedType);
+            void removeBoundRestrictionsFromICP(carl::Variable _variable);
+            IntegerInterval getNum(const RationalInterval& _interval) const;
     };
 }

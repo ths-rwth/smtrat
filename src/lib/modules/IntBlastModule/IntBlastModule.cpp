@@ -19,16 +19,24 @@ namespace smtrat
     Module( _type, _formula, _conditionals, _manager ),
     mBoundsFromInput(),
     mBoundsInRestriction(),
-    mICPInput(new ModuleInput()),
+    mpICPInput(new ModuleInput()),
     mICPFoundAnswer( vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
-    mICPRuntimeSettings(new RuntimeSettings()),
-    mICP(MT_ICPModule, mICPInput, mICPRuntimeSettings, mICPFoundAnswer),
-    mBVSolver(new BVSolver()),
-    mLastSolutionFoundByBlasting(false),
-    mBlastings(),
-    mSubstitutes()
+    mpICPRuntimeSettings(new RuntimeSettings()),
+    mICP(MT_ICPModule, mpICPInput, mpICPRuntimeSettings, mICPFoundAnswer),
+    mConstraintFromBounds(carl::freshBooleanVariable()),
+    mProcessedFormulasFromICP(),
+    mpBVInput(new ModuleInput()),
+    mpBVSolver(new BVSolver()),
+    mFormulasToEncode(),
+    mOutsideRestriction(carl::FormulaType::TRUE),
+    mOutsideRestrictionOrigin(carl::freshBooleanVariable()),
+    mSolutionOrigin(SolutionOrigin::NONE),
+    mPolyBlastings(),
+    mConstrBlastings(),
+    mSubstitutes(),
+    mSubstituteConstraints()
     {
-        smtrat::addModules( mBVSolver );
+        smtrat::addModules(mpBVSolver);
         // TODO: Do we have to do some more initialization stuff here? Settings?
 
         std::cout << "IBM: initialization" << std::endl;
@@ -40,6 +48,7 @@ namespace smtrat
 
     IntBlastModule::~IntBlastModule()
     {
+        delete mpICPInput;
         while( !mICPFoundAnswer.empty() )
         {
             std::atomic_bool* toDel = mICPFoundAnswer.back();
@@ -47,9 +56,10 @@ namespace smtrat
             delete toDel;
         }
         mICPFoundAnswer.clear();
-        delete mICPRuntimeSettings;
-        delete mICPInput;
-        delete mBVSolver;
+        delete mpICPRuntimeSettings;
+
+        delete mpBVSolver;
+        delete mpBVInput;
     };
 
     bool IntBlastModule::informCore( const FormulaT& _constraint )
@@ -63,480 +73,416 @@ namespace smtrat
 
     bool IntBlastModule::addCore( ModuleInput::const_iterator _subformula )
     {
-        std::cout << "IBM: addCore(" << _subformula->formula() << ")" << std::endl;
         const FormulaT& formula = _subformula->formula();
-        if( formula.getType() == carl::FormulaType::CONSTRAINT ) {
-            mBoundsFromInput.addBound( formula.constraint(), formula );
-            createSubstitutes( formula );
-            addSubformulaToICPFormula(formula, formula);
-        }
+        assert(formula.getType() == carl::FormulaType::CONSTRAINT);
+        assert(formula.constraint().integerValued());
 
-        addReceivedSubformulaToPassedFormula(_subformula);
+        // Update mBoundsFromInput using the new formula
+        mBoundsFromInput.addBound(formula.constraint(), formula);
+
+        // Schedule formula for encoding to BV logic
+        mFormulasToEncode.push_back(formula);
+
+        // Pass new formula to ICP, generating substitutes
+        addConstraintToICP(formula);
+
         return ! mBoundsFromInput.isConflicting();
     }
 
     void IntBlastModule::removeCore( ModuleInput::const_iterator _subformula )
     {
-        std::cout << "IBM: removeCore(" << _subformula->formula() << ")" << std::endl;
         const FormulaT& formula = _subformula->formula();
-        if( formula.getType() == carl::FormulaType::CONSTRAINT ) {
-            mBoundsFromInput.removeBound( formula.constraint(), formula );
-        }
+
+        mBoundsFromInput.removeBound(formula.constraint(), formula);
+        // mBoundsInRestriction: updated by updateBoundsFromICP() in next check
+
+        removeOriginFromICP(formula);
+        removeOriginFromBV(formula);
+
+        mFormulasToEncode.remove(formula);
     }
 
     void IntBlastModule::updateModel() const
     {
         mModel.clear();
-        if( solverState() == True )
+        if(solverState() == True)
         {
-            if(mLastSolutionFoundByBlasting)
-            {
-                // TODO: Your code.
-            }
-            else
-            {
-                getBackendsModel();
+            switch(mSolutionOrigin) {
+                case SolutionOrigin::ICP:
+                    updateModelFromICP();
+                    break;
+                case SolutionOrigin::BV:
+                    updateModelFromBV();
+                    break;
+                case SolutionOrigin::BACKEND:
+                    getBackendsModel();
+                    break;
+                default:
+                    assert(false);
             }
         }
     }
 
-    void IntBlastModule::createSubstitutes(const FormulaT& _formula)
+    carl::BVTerm IntBlastModule::encodeBVConstant(const Integer& _constant, const BlastedType& _type) const
     {
-        if(_formula.getType() == carl::FormulaType::CONSTRAINT)
-        {
-            createSubstitutes(_formula.constraint().lhs());
+        assert(_constant >= _type.lowerBound() && _constant <= _type.upperBound());
+        carl::BVValue constValue(_type.width(), _constant - _type.offset());
+        return carl::BVTerm(carl::BVTermType::CONSTANT, constValue);
+    }
+
+    carl::BVTerm IntBlastModule::resizeBVTerm(const BlastedTerm& _term, std::size_t _width) const
+    {
+        assert(_width >= _term.type().width());
+
+        if(_width == _term.type().width()) {
+            return _term.term();
+        } else {
+            carl::BVTermType ext = (_term.type().isSigned() ? carl::BVTermType::EXT_S : carl::BVTermType::EXT_U);
+            return carl::BVTerm(ext, _term.term(), _width - _term.type().width());
         }
     }
 
-    void IntBlastModule::createSubstitutes(const Poly& _poly)
+    BlastedPoly IntBlastModule::blastSum(const BlastedPoly& _summand1, const BlastedPoly& _summand2)
     {
-        std::list<Poly> polysToSubstitute;
-        Poly polyWithoutConstantPart(_poly);
-        polyWithoutConstantPart -= polyWithoutConstantPart.constantPart();
-        polysToSubstitute.push_back(polyWithoutConstantPart);
+        if(_summand1.isConstant() && _summand2.isConstant()) {
+            return BlastedPoly(_summand1.constant() + _summand2.constant());
+        } else if(_summand1.isConstant() || _summand2.isConstant()) {
+            const BlastedPoly& constantSummand = (_summand1.isConstant() ? _summand1 : _summand2);
+            const BlastedPoly& termSummand     = (_summand1.isConstant() ? _summand2 : _summand1);
+            const BlastedType& termType        = termSummand.term().type();
 
-        while(! polysToSubstitute.empty()) {
-            const Poly& currentPoly = polysToSubstitute.front();
-            PolyDecomposition decomposition = decompose(currentPoly);
+            return BlastedPoly(BlastedTerm(termType.withOffset(termType.offset() + constantSummand.constant()), termSummand.term().term()));
+        } else {
+            FormulasT constraints;
+            BlastedTerm sum(BlastedType::forSum(_summand1.term().type(), _summand2.term().type()));
 
-            if(decomposition.type() == PolyDecomposition::Type::VARIABLE) {
-                std::cout << "* " << currentPoly << " is a variable leaf (" << decomposition.variable() << ")" << std::endl;
-            } else if(decomposition.type() == PolyDecomposition::Type::CONSTANT) {
-                std::cout << "* " << currentPoly << " is a constant leaf (" << decomposition.constant() << ")" << std::endl;
-            } else {
-                std::cout << "* " << currentPoly << " equals ";
-                std::cout << decomposition.left();
-                std::cout << (decomposition.type() == PolyDecomposition::Type::SUM ? " + " : " * ");
-                std::cout << decomposition.right() << std::endl;
-            }
+            carl::BVTerm bvSummand1 = resizeBVTerm(_summand1.term(), sum.type().width());
+            carl::BVTerm bvSummand2 = resizeBVTerm(_summand2.term(), sum.type().width());
 
-            if(decomposition.type() == PolyDecomposition::Type::SUM || decomposition.type() == PolyDecomposition::Type::PRODUCT) {
-                if(createSubstitute(currentPoly)) {
-                    polysToSubstitute.push_back(decomposition.left());
-                    polysToSubstitute.push_back(decomposition.right());
+            constraints.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
+                                                                   carl::BVTerm(carl::BVTermType::ADD, bvSummand1, bvSummand2),
+                                                                   sum.term())));
+            return BlastedPoly(sum, constraints);
+        }
+    }
+
+    BlastedPoly IntBlastModule::blastProduct(const BlastedPoly& _factor1, const BlastedPoly& _factor2)
+    {
+        if(_factor1.isConstant() && _factor2.isConstant()) {
+            return BlastedPoly(_factor1.constant() * _factor2.constant());
+        } else if(_factor1.isConstant() || _factor2.isConstant()) {
+            const BlastedPoly& constantFactor = (_factor1.isConstant() ? _factor1 : _factor2);
+            const BlastedPoly& variableFactor = (_factor1.isConstant() ? _factor2 : _factor1);
+            const BlastedType& variableType   = variableFactor.term().type();
+
+            BlastedType constantType(chooseWidth(constantFactor.constant(), 0, variableType.isSigned()), variableType.isSigned(), 0);
+            BlastedTerm product(BlastedType::forProduct(variableType.withOffset(0), constantType).withOffset(variableType.offset() * constantFactor.constant()));
+
+            carl::BVTerm bvConstantFactor = encodeBVConstant(constantFactor.constant(), product.type());
+            carl::BVTerm bvVariableFactor = resizeBVTerm(variableFactor.term(), product.type().width());
+
+            FormulasT constraints;
+            constraints.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
+                                                                   carl::BVTerm(carl::BVTermType::MUL, bvConstantFactor, bvVariableFactor),
+                                                                   product.term())));
+            return BlastedPoly(product, constraints);
+        } else {
+            FormulasT constraints;
+            BlastedTerm product(BlastedType::forProduct(_factor1.term().type(), _factor2.term().type()));
+
+            carl::BVTerm bvFactor1 = resizeBVTerm(_factor1.term(), product.type().width());
+            carl::BVTerm bvFactor2 = resizeBVTerm(_factor2.term(), product.type().width());
+
+            constraints.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
+                                                                   carl::BVTerm(carl::BVTermType::MUL, bvFactor1, bvFactor2),
+                                                                   product.term())));
+            return BlastedPoly(product, constraints);
+        }
+    }
+
+    const BlastedConstr& IntBlastModule::blastConstrTree(const ConstrTree& _constraint, FormulasT& _collectedFormulas)
+    {
+        const BlastedPoly& left = blastPolyTree(_constraint.left(), _collectedFormulas);
+        const BlastedPoly& right = blastPolyTree(_constraint.right(), _collectedFormulas);
+
+        auto blastedConstrIt = mConstrBlastings.find(_constraint.constraint());
+
+        if(blastedConstrIt != mConstrBlastings.end()) {
+            // This tree has already been encoded. Add its formulas to _collectedFormulas
+            // and return the previously blasted node.
+            const FormulasT& constraints = blastedConstrIt->second.constraints();
+            _collectedFormulas.insert(constraints.begin(), constraints.end());
+            return blastedConstrIt->second;
+        }
+
+        BlastedConstr blasted;
+        bool simpleBlast = false;
+
+        if(left.isConstant() && right.isConstant()) {
+            blasted = BlastedConstr(evaluateRelation(_constraint.relation(), left.constant(), right.constant()));
+            simpleBlast = true;
+        } else {
+            assert(left.isConstant() || right.isConstant()); // Our ConstrTree is constructed like that
+
+            const BlastedPoly& constantPol = left.isConstant() ? left : right;
+            const BlastedPoly& variablePol = left.isConstant() ? right : left;
+            const Integer& constant = constantPol.constant();
+
+            // Assuming "constant op variable" now (i.e., constant is on the left side)
+            carl::Relation relation = left.isConstant() ? _constraint.relation() : carl::turnAroundRelation(_constraint.relation());
+
+            if(relation == carl::Relation::EQ || relation == carl::Relation::NEQ) {
+                // is the constant outside the range of the variable?
+                if(constant < variablePol.lowerBound() || constant > variablePol.upperBound()) {
+                    blasted = BlastedConstr(_constraint.relation() == carl::Relation::NEQ);
+                    simpleBlast = true;
+                }
+            } else { // relation is one of LESS, GREATER, LEQ, GEQ
+                bool lowerEvaluation = evaluateRelation(_constraint.relation(), constant, right.lowerBound());
+                bool upperEvaluation = evaluateRelation(_constraint.relation(), constant, right.upperBound());
+
+                if(lowerEvaluation == upperEvaluation) {
+                    blasted = BlastedConstr(lowerEvaluation);
+                    simpleBlast = true;
                 }
             }
-            polysToSubstitute.pop_front();
-        }
-    }
 
-    bool IntBlastModule::createSubstitute(const Poly& _poly)
-    {
-        std::cout << "createSubstitute(" << _poly << ")";
-        auto substituteLookup = mSubstitutes.find(_poly);
-        if(substituteLookup != mSubstitutes.end()) {
-            std::cout << " - old." << std::endl;
-            return false; // substituteLookup->second;
-        }
-        std::cout << " - FRESH." << std::endl;
-        carl::Variable freshSubstitute = carl::VariablePool::getInstance().getFreshVariable(carl::VariableType::VT_INT);
-        mSubstitutes[_poly] = freshSubstitute;
+            if(! simpleBlast) {
+                // The constraint cannot be decided from the range of variablePol alone.
+                // Translate into BV logic
 
-        // pass equation to ICP
-        Poly polyMinusSubstitute(_poly);
-        polyMinusSubstitute -= freshSubstitute;
-        addSubformulaToICPFormula(FormulaT(polyMinusSubstitute, carl::Relation::EQ), FormulaT()); // TODO: Correct origin
-        return true; // freshSubstitute;
-    }
+                carl::BVTerm bvConstant = encodeBVConstant(constantPol.constant(), variablePol.term().type());
 
-    PolyDecomposition IntBlastModule::decompose(const Poly& _polynomial) const
-    {
-        Poly poly(_polynomial);
-        poly.makeOrdered();
+                carl::BVCompareRelation rel;
 
-        std::size_t nrTerms = poly.nrTerms();
+                switch(relation) {
+                    case carl::Relation::EQ:
+                        rel = carl::BVCompareRelation::EQ;
+                        break;
+                    case carl::Relation::NEQ:
+                        rel = carl::BVCompareRelation::NEQ;
+                        break;
+                    case carl::Relation::LESS:
+                        rel = (variablePol.term().type().isSigned() ? carl::BVCompareRelation::SLT : carl::BVCompareRelation::ULT);
+                        break;
+                    case carl::Relation::GREATER:
+                        rel = (variablePol.term().type().isSigned() ? carl::BVCompareRelation::SGT : carl::BVCompareRelation::UGT);
+                        break;
+                    case carl::Relation::LEQ:
+                        rel = (variablePol.term().type().isSigned() ? carl::BVCompareRelation::SLE : carl::BVCompareRelation::ULE);
+                        break;
+                    case carl::Relation::GEQ:
+                        rel = (variablePol.term().type().isSigned() ? carl::BVCompareRelation::SGE : carl::BVCompareRelation::UGE);
+                        break;
+                    default:
+                        assert(false);
+                }
 
-        if(nrTerms == 0) {
-            return PolyDecomposition(PolyDecomposition::Type::CONSTANT, 0);
-        }
-        if(nrTerms > 1) {
-            auto lastTerm = poly.rbegin();
-            return PolyDecomposition(PolyDecomposition::Type::SUM, poly - *lastTerm, Poly(*lastTerm));
-        }
-
-        const TermT& term = poly[0];
-        Rational coeff = term.coeff();
-
-        if(term.isConstant()) {
-            return PolyDecomposition(PolyDecomposition::Type::CONSTANT, coeff);
-        }
-
-        const carl::Monomial::Arg monomial = term.monomial();
-
-        if(! carl::isOne(coeff)) {
-            return PolyDecomposition(PolyDecomposition::Type::PRODUCT, Poly(coeff), Poly(monomial));
-        }
-
-        auto variableAndExponent = *(monomial->begin());
-
-        if(monomial->nrVariables() > 1) {
-            carl::Monomial::Arg head = carl::MonomialPool::getInstance().create(variableAndExponent.first, variableAndExponent.second);
-            carl::Monomial::Arg tail = monomial->dropVariable(variableAndExponent.first);
-            return PolyDecomposition(PolyDecomposition::Type::PRODUCT, Poly(head), Poly(tail));
-        }
-
-        if(variableAndExponent.second > 1) {
-            carl::Monomial::Arg remainder = carl::MonomialPool::getInstance().create(variableAndExponent.first, variableAndExponent.second - 1);
-            return PolyDecomposition(PolyDecomposition::Type::PRODUCT, Poly(remainder), Poly(variableAndExponent.first));
-        }
-
-        return PolyDecomposition(PolyDecomposition::Type::VARIABLE, variableAndExponent.first);
-    }
-
-    const BlastedTerm& IntBlastModule::blastedTermForPolynomial(const Poly& _poly)
-    {
-        auto foundBlasting = mBlastings.find(_poly);
-
-        if(foundBlasting != mBlastings.end()) {
-            return foundBlasting->second;
-        }
-
-        BlastedTerm output;
-
-        PolyDecomposition decomposition = decompose(_poly);
-
-        if(decomposition.type() == PolyDecomposition::Type::CONSTANT) {
-            BlastedType constType(0, false, decomposition.constant());
-            output = BlastedTerm(blastedType, carl::BVTerm());
-            /* BlastedType blastedType = chooseBlastedType(DoubleInterval(decomposition.constant(), decomposition.constant()));
-            output = blastConstantWithType(carl::getNum(decomposition.constant()), blastedType); */
-            /* carl::BVValue constValue(blastedType.width(), carl::getNum(decomposition.constant()));
-            output = BlastedTerm(blastedType, carl::BVTerm(carl::BVTermType::CONSTANT, constValue)); */
-        } else {
-            carl::Variable variable;
-
-            if(decomposition.type() == PolyDecomposition::Type::VARIABLE) {
-                variable = decomposition.variable();
-            } else {
-                variable = mSubstitutes[_poly];
+                blasted = BlastedConstr(FormulaT(carl::BVConstraint::create(rel, bvConstant, right.term().term())));
             }
+        }
 
-            const EvalDoubleIntervalMap& icpBounds = mBoundsInRestriction.getIntervalMap();
-            auto foundBound = icpBounds.find(variable);
-            if(foundBound != icpBounds.end()) {
-                output = BlastedTerm(chooseBlastedType(foundBound->second));
-            } else {
-                std::cout << "Unbounded :(" << std::endl;
+        _collectedFormulas.insert(blasted.constraints().begin(), blasted.constraints().end());
+        return mConstrBlastings.insert(std::make_pair(_constraint.constraint(), blasted)).first->second;
+    }
+
+    bool IntBlastModule::evaluateRelation(carl::Relation _relation, const Integer& _first, const Integer& _second) const
+    {
+        switch(_relation) {
+            case carl::Relation::EQ:      return _first == _second;
+            case carl::Relation::NEQ:     return _first != _second;
+            case carl::Relation::LESS:    return _first <  _second;
+            case carl::Relation::GREATER: return _first >  _second;
+            case carl::Relation::LEQ:     return _first <= _second;
+            case carl::Relation::GEQ:     return _first >= _second;
+        }
+        assert(false);
+    }
+
+    const BlastedPoly& IntBlastModule::blastPolyTree(const PolyTree& _poly, FormulasT& _collectedFormulas)
+    {
+        const BlastedPoly* left = nullptr;
+        const BlastedPoly* right = nullptr;
+
+        if(_poly.type() == PolyTree::Type::SUM || _poly.type() == PolyTree::Type::PRODUCT) {
+            left = &(blastPolyTree(_poly.left(), _collectedFormulas));
+            right = &(blastPolyTree(_poly.right(), _collectedFormulas));
+        }
+
+        auto blastedPolyIt = mPolyBlastings.find(_poly.poly());
+
+        if(blastedPolyIt != mPolyBlastings.end()) {
+            // This tree has already been encoded. Add its formulas to _collectedFormulas
+            // and return the previously blasted node.
+            const FormulasT& constraints = blastedPolyIt->second.constraints();
+            _collectedFormulas.insert(constraints.begin(), constraints.end());
+            return blastedPolyIt->second;
+        }
+
+        // Tree has not yet been encoded (only its subtrees, if any).
+
+        BlastedPoly blasted;
+
+        switch(_poly.type()) {
+            case PolyTree::Type::CONSTANT: {
+                blasted = BlastedPoly(_poly.constant());
+                break;
+            }
+            case PolyTree::Type::VARIABLE: {
+                // This should not happen.
+                // Variables should have been blasted by 'blastVariable' method upfront.
+                assert(false);
+                break;
+            }
+            case PolyTree::Type::SUM:
+            case PolyTree::Type::PRODUCT: {
+                BlastedPoly intermediate = (_poly.type() == PolyTree::Type::SUM) ?
+                                            blastSum(*left, *right) :
+                                            blastProduct(*left, *right);
+
+                // Obtain range from ICP substitute
+                carl::Variable substitute = mSubstitutes.at(_poly.poly());
+                IntegerInterval interval = getNum(mBoundsInRestriction.getInterval(substitute));
+                assert(interval.lowerBoundType() == carl::BoundType::WEAK && interval.upperBoundType() == carl::BoundType::WEAK);
+
+                blasted = reduceToRange(intermediate, interval);
+                // TODO: If blasted != intermediate, remember the ICP range
+                // (such that we can add the negation to the outsideRestrictionConstraint,
+                // if the used substitute range increases before the next satisfiability check)
+                break;
+            }
+            default: {
                 assert(false);
             }
         }
 
-        mBlastings[_poly] = output;
-        return mBlastings[_poly];
+        _collectedFormulas.insert(blasted.constraints().begin(), blasted.constraints().end());
+        return mPolyBlastings.insert(std::make_pair(_poly.poly(), blasted)).first->second;
     }
 
-    BlastedTerm IntBlastModule::blastConstantWithType(Rational _constant, const BlastedType& _type) const
+    BlastedPoly IntBlastModule::reduceToRange(const BlastedPoly& _input, const IntegerInterval& _interval) const
     {
-        assert(_constant >= _type.lowerBound() && _constant <= _type.upperBound());
-        carl::BVValue constValue(_type.width(), carl::getNum(_constant));
-        return BlastedTerm(_type, carl::BVTerm(carl::BVTermType::CONSTANT, constValue));
-    }
+        if(_interval.lowerBoundType() != carl::BoundType::WEAK || _interval.upperBoundType() != carl::BoundType::WEAK) {
+            assert(false);
+        }
 
-    FormulasT IntBlastModule::blastSubstitutes()
-    {
-        FormulasT blastedFormulas;
+        assert(_input.lowerBound() <= _interval.lower() && _input.upperBound() >= _interval.upper());
 
-        for(auto polyAndSubstitute : mSubstitutes) {
-            std::cout << "Blasting: " << polyAndSubstitute.first << std::endl;
-            PolyDecomposition decomposition = decompose(polyAndSubstitute.first);
-            BlastedTerm blastedTerm = blastedTermForPolynomial(polyAndSubstitute.first);
-
-            if(decomposition.type() == PolyDecomposition::Type::CONSTANT) {
-                // TODO: Is this whole if-case actually needed? I do not think so.
-                assert(false); // So, let's check this ;)
-                carl::BVValue constant(blastedTerm.type().width(), carl::getNum(decomposition.constant()));
-                carl::BVTerm constTerm(carl::BVTermType::CONSTANT, constant);
-                carl::BVConstraint constr = carl::BVConstraint::create(carl::BVCompareRelation::EQ, blastedTerm.term(), constTerm);
-                blastedFormulas.insert(FormulaT(constr));
-
-                std::cout << "-> [Subs] " << FormulaT(constr) << std::endl;
-            } else if(decomposition.type() == PolyDecomposition::Type::VARIABLE) {
-                // nothing to do here
+        if(_interval.isPointInterval()) {
+            if(_input.isConstant()) {
+                return _input;
             } else {
-                const BlastedTerm& left = blastedTermForPolynomial(decomposition.left());
-                const BlastedTerm& right = blastedTermForPolynomial(decomposition.right());
-
-                if(decomposition.type() == PolyDecomposition::Type::SUM) {
-                    FormulasT sumFormulas = blastSum(left, right, blastedTerm);
-                    blastedFormulas.insert(sumFormulas.begin(), sumFormulas.end());
-                } else {
-                    assert(decomposition.type() == PolyDecomposition::Type::PRODUCT);
-                    FormulasT productFormulas = blastProduct(left, right, blastedTerm);
-                    blastedFormulas.insert(productFormulas.begin(), productFormulas.end());
-                }
+                FormulasT constraints(_input.constraints());
+                carl::BVTerm bvConstant = encodeBVConstant(_interval.lower(), _input.term().type());
+                constraints.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ, _input.term().term(), bvConstant)));
+                return BlastedPoly(_interval.lower(), constraints);
             }
         }
 
-        return blastedFormulas;
-    }
+        // Interval is not a point interval, and interval is included in _input interval.
+        // This also implies that _input is not constant.
+        // Let's see whether resizing actually has any benefits.
 
-    FormulasT IntBlastModule::blastSum(const BlastedTerm& _summand1, const BlastedTerm& _summand2, const BlastedTerm& _sum)
-    {
-        FormulasT blastedFormulas;
+        const BlastedType& inputType = _input.term().type();
 
-        BlastedTerm safeSum(BlastedType::forSum(_summand1.type(), _summand2.type()));
+        std::size_t newWidth = std::max(
+            chooseWidth(_interval.lower() - inputType.offset(), 0, inputType.isSigned()),
+            chooseWidth(_interval.upper() - inputType.offset(), 0, inputType.isSigned())
+        );
 
-        carl::BVTerm bvSummand1((_summand1.type().isSigned() ? carl::BVTermType::EXT_S : carl::BVTermType::EXT_U),
-                                _summand1.term(),
-                                safeSum.type().width() - _summand1.type().width());
-        carl::BVTerm bvSummand2((_summand2.type().isSigned() ? carl::BVTermType::EXT_S : carl::BVTermType::EXT_U),
-                                _summand2.term(),
-                                safeSum.type().width() - _summand2.type().width());
-
-        blastedFormulas.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                   carl::BVTerm(carl::BVTermType::ADD, bvSummand1, bvSummand2),
-                                                                   safeSum.term())));
-        for(auto blaFo : blastedFormulas) {
-            std::cout << "-> [Sum ] " << blaFo << std::endl;
-        }
-        FormulasT castFormulas = safeCast(safeSum, _sum);
-        blastedFormulas.insert(castFormulas.begin(), castFormulas.end());
-        return blastedFormulas;
-    }
-
-    FormulasT IntBlastModule::blastProduct(const BlastedTerm& _factor1, const BlastedTerm& _factor2, const BlastedTerm& _product)
-    {
-        FormulasT blastedFormulas;
-
-        BlastedTerm safeProduct(BlastedType::forProduct(_factor1.type(), _factor2.type()));
-
-        carl::BVTerm bvFactor1(_factor1.term());
-        if(safeProduct.type().width() > _factor1.type().width()) {
-            bvFactor1 = carl::BVTerm((_factor1.type().isSigned() ? carl::BVTermType::EXT_S : carl::BVTermType::EXT_U),
-                                     _factor1.term(),
-                                     safeProduct.type().width() - _factor1.type().width());
+        assert(newWidth <= inputType.width());
+        if(newWidth == inputType.width()) {
+            // Resizing is not possible, return _input without modifications
+            return _input;
         }
 
-        carl::BVTerm bvFactor2(_factor1.term());
-        if(safeProduct.type().width() > _factor2.type().width()) {
-            bvFactor2 = carl::BVTerm((_factor2.type().isSigned() ? carl::BVTermType::EXT_S : carl::BVTermType::EXT_U),
-                                     _factor2.term(),
-                                     safeProduct.type().width() - _factor2.type().width());
+        // Resize to a new, smaller BlastedPoly
+        FormulasT constraints(_input.constraints());
+        BlastedTerm newTerm(inputType.withWidth(newWidth));
+
+        constraints.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
+                                                                carl::BVTerm(carl::BVTermType::EXTRACT, _input.term().term(), newWidth-1, 0),
+                                                                newTerm.term())));
+
+        // add constraints which ensure a safe resizing
+        if(inputType.isSigned()) {
+            // All removed bits must equal the msb of newTerm.term()
+            constraints.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
+                                                                    carl::BVTerm(carl::BVTermType::EXTRACT, _input.term().term(), inputType.width()-1, newWidth),
+                                                                    carl::BVTerm(carl::BVTermType::EXTRACT, _input.term().term(), inputType.width()-2, newWidth-1))));
+        } else { // type is unsigned
+            // All removed bits must be zero
+            constraints.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
+                                                                    carl::BVTerm(carl::BVTermType::EXTRACT, _input.term().term(), inputType.width()-1, newWidth),
+                                                                    carl::BVTerm(carl::BVTermType::CONSTANT, carl::BVValue(inputType.width() - newWidth, 0)))));
         }
 
-        blastedFormulas.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                   carl::BVTerm(carl::BVTermType::MUL, bvFactor1, bvFactor2),
-                                                                   safeProduct.term())));
-
-        for(auto blaFo : blastedFormulas) {
-            std::cout << "-> [Prod] " << blaFo << std::endl;
-        }
-        FormulasT castFormulas = safeCast(safeProduct, _product);
-        blastedFormulas.insert(castFormulas.begin(), castFormulas.end());
-        return blastedFormulas;
-    }
-
-    FormulasT IntBlastModule::safeCast(const BlastedTerm& _from, const BlastedTerm& _to)
-    {
-        FormulasT blastedFormulas;
-
-        std::cout << "Cast FROM " << _from << " TO " << _to << std::endl;
-
-        // cast to desired representation
-        if(_to.type().width() > _from.type().width()) {
-            // unlikely...
-            blastedFormulas.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                       carl::BVTerm((_from.type().isSigned() ? carl::BVTermType::EXT_S : carl::BVTermType::EXT_U), _from.term(), _to.type().width() - _from.type().width()),
-                                                                       _to.term())));
-        } else if(_to.type().width() == _from.type().width()) {
-            blastedFormulas.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                       _from.term(),
-                                                                       _to.term())));
-        } else {
-            blastedFormulas.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                       carl::BVTerm(carl::BVTermType::EXTRACT, _from.term(), _to.type().width()-1, 0),
-                                                                       _to.term())));
-        }
-
-        // ensure safety
-        if(_to.type().isSigned()) {
-            // If bits have been removed, they must equal the msb of _to
-            if(_to.type().width() < _from.type().width()) {
-                blastedFormulas.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                           carl::BVTerm(carl::BVTermType::EXTRACT, _from.term(), _from.type().width()-1, _to.type().width()),
-                                                                           carl::BVTerm(carl::BVTermType::EXTRACT, _from.term(), _from.type().width()-2, _to.type().width()-1))));
-            }
-            // If _from is unsigned, _to must be non-negative (i.e. the msb of _to must be zero)
-            // (this check can be skipped if _to is wider than _from - in this case we had zero extension)
-            if(! _from.type().isSigned() && _to.type().width() <= _from.type().width()) {
-                blastedFormulas.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                           carl::BVTerm(carl::BVTermType::EXTRACT, _to.term(), _to.type().width()-1, _to.type().width()-1),
-                                                                           carl::BVTerm(carl::BVTermType::CONSTANT, carl::BVValue(1, 0)))));
-            }
-        } else { // ! _to.isSigned()
-            // If bits have been removed, they must be zero
-            if(_to.type().width() < _from.type().width()) {
-                blastedFormulas.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                           carl::BVTerm(carl::BVTermType::EXTRACT, _from.term(), _from.type().width()-1, _to.type().width()),
-                                                                           carl::BVTerm(carl::BVTermType::CONSTANT, carl::BVValue(_from.type().width() - _to.type().width(), 0)))));
-            }
-            // If _from is signed, it must be non-negative
-            if(_from.type().isSigned()) {
-                blastedFormulas.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                           carl::BVTerm(carl::BVTermType::EXTRACT, _from.term(), _from.type().width()-1, _from.type().width()-1),
-                                                                           carl::BVTerm(carl::BVTermType::CONSTANT, carl::BVValue(1, 0)))));
-            }
-        }
-
-        for(auto blaFo : blastedFormulas) {
-            std::cout << "-> [Cast] " << blaFo << std::endl;
-        }
-        return blastedFormulas;
+        return BlastedPoly(newTerm, constraints);
     }
 
     FormulasT IntBlastModule::blastConstraint(const ConstraintT& _constraint)
     {
-        Poly polyWithoutConstantPart(_constraint.lhs());
-        Rational constantPart = polyWithoutConstantPart.constantPart();
-        polyWithoutConstantPart -= constantPart;
-
-        const BlastedTerm& blastedPoly = blastedTermForPolynomial(polyWithoutConstantPart);
-        const BlastedTerm& blastedConstant = blastConstantWithType(-constantPart, blastedPoly.type());
-
-        carl::BVCompareRelation rel;
-
-        switch(_constraint.relation()) {
-            case carl::Relation::EQ:
-                rel = carl::BVCompareRelation::EQ;
-                break;
-            case carl::Relation::NEQ:
-                rel = carl::BVCompareRelation::NEQ;
-                break;
-            case carl::Relation::LESS:
-                rel = (blastedConstant.type().isSigned() ? carl::BVCompareRelation::SLT : carl::BVCompareRelation::ULT);
-                break;
-            case carl::Relation::GREATER:
-                rel = (blastedConstant.type().isSigned() ? carl::BVCompareRelation::SGT : carl::BVCompareRelation::UGT);
-                break;
-            case carl::Relation::LEQ:
-                rel = (blastedConstant.type().isSigned() ? carl::BVCompareRelation::SLE : carl::BVCompareRelation::ULE);
-                break;
-            case carl::Relation::GEQ:
-                rel = (blastedConstant.type().isSigned() ? carl::BVCompareRelation::SGE : carl::BVCompareRelation::UGE);
-                break;
-            default:
-                assert(false);
-        }
-
+        ConstrTree constraintTree(_constraint);
         FormulasT blastedFormulas;
-        blastedFormulas.insert(FormulaT(carl::BVConstraint::create(rel, blastedPoly.term(), blastedConstant.term())));
+
+        blastConstrTree(_constraint, blastedFormulas);
         return blastedFormulas;
     }
 
-    void IntBlastModule::addSubformulaToICPFormula(const FormulaT& _formula, const FormulaT& _origin)
+    Answer IntBlastModule::checkCore(bool _full)
     {
-        mICP.inform(_formula); // TODO: Use result somehow?
-        auto insertion = mICPInput->add(_formula, _origin);
+        mSolutionOrigin = SolutionOrigin::NONE;
 
-        if(insertion.second)
-        {
-            mICP.add(insertion.first);
-        }
-    }
+        carl::Variables inputVariables;
+        carl::Variables nonlinearInputVariables;
 
-    void IntBlastModule::blastInputVariables()
-    {
-        std::cout << "IBM: blastInputVariables()" << std::endl;
-        carl::Variables newVariables;
+        for(auto& formulaWithOrigins : rReceivedFormula()) {
+            // TODO: Constantly keep track of (linearity of) input variables
+            // on every call to addCore / removeCore.
+            // This removes the need to iterate over all received formulas
+            // at this point.
 
-        for(ModuleInput::const_iterator formula=firstUncheckedReceivedSubformula(); formula != rReceivedFormula().end(); ++formula)
-        {
-            formula->formula().integerValuedVars(newVariables);
-        }
+            const FormulaT& formula = formulaWithOrigins.formula();
 
-        if(! newVariables.empty())
-        {
-            const EvalDoubleIntervalMap& passedBounds = mBoundsFromInput.getIntervalMap();
+            // Retrieve all integer-valued variables in formula
+            carl::Variables variablesInFormula;
+            formula.integerValuedVars(variablesInFormula);
 
-            for(const carl::Variable& variable : newVariables)
-            {
-                Poly varPoly(variable);
-                auto previousBlasting = mBlastings.find(varPoly);
-                if(previousBlasting == mBlastings.end())
-                {
-                    std::cout << "Setting blasting type for " << variable << std::endl;
-                    DoubleInterval varInterval;
-
-                    auto varBounds = passedBounds.find(variable);
-                    if(varBounds != passedBounds.end())
-                    {
-                        varInterval = varBounds->second;
-                    }
-
-                    std::cout << "Natural interval: " << varInterval << std::endl;
-                    mBlastings[varPoly] = BlastedTerm(chooseBlastedType(varInterval, 8)); // TODO: Refactor 8 to a constant / setting
-
-                    BlastedTerm& blastedTerm = mBlastings[varPoly];
-                    std::cout << "Encoding by " << blastedTerm.term() << " (width: " << blastedTerm.type().width() << ", " << (blastedTerm.type().isSigned() ? "signed" : "unsigned") << ") - range [" << blastedTerm.type().lowerBound() << "," << blastedTerm.type().upperBound() << "]" << std::endl;
-
-                    ConstraintT lowerBoundConstr(variable, carl::Relation::GEQ, blastedTerm.type().lowerBound());
-                    ConstraintT upperBoundConstr(variable, carl::Relation::LEQ, blastedTerm.type().upperBound());
-
-                    addSubformulaToICPFormula(FormulaT(lowerBoundConstr), FormulaT()); // TODO: correct origin
-                    addSubformulaToICPFormula(FormulaT(upperBoundConstr), FormulaT()); // TODO: correct origin
+            // Update 'inputVariables' and 'nonlinearInputVariables' sets
+            inputVariables.insert(variablesInFormula.begin(), variablesInFormula.end());
+            for(auto variable : variablesInFormula) {
+                // TODO: This check does not suffice
+                if(formula.constraint().maxDegree(variable) > 1) {
+                    nonlinearInputVariables.insert(variable);
                 }
             }
         }
-    }
 
-    BlastedType IntBlastModule::chooseBlastedType(const DoubleInterval _interval, std::size_t _maxWidth) const
-    {
-        std::cout << "Choosing blasted type for interval " << _interval << ", max width " << _maxWidth << std::endl;
-        std::size_t width = _maxWidth;
-        bool makeSigned = true;
+        // Choose blastings for new variables,
+        // and ensure compatibility of previous blastings for all variables
 
-        if(_interval.isSemiPositive())
+        for(auto variable : inputVariables)
         {
-            makeSigned = false;
-        }
+            auto nonlinearIt = nonlinearInputVariables.find(variable);
+            bool linear = (nonlinearIt == nonlinearInputVariables.end());
+            IntegerInterval interval = getNum(mBoundsFromInput.getInterval(variable));
 
-        if(_interval.lowerBoundType() != carl::BoundType::INFTY && _interval.upperBoundType() != carl::BoundType::INFTY)
-        {
-            // Reduce width if interval is small enough
-            std::size_t smallWidth = 1;
-            DoubleInterval smallInterval((makeSigned ? -1 : 0), (makeSigned ? 0 : 1));
+            Poly variablePoly(variable);
+            auto blastingIt = mPolyBlastings.find(variablePoly);
+            bool needsBlasting = (blastingIt == mPolyBlastings.end() || reblastingNeeded(blastingIt->second, interval, linear));
 
-            while((smallWidth < _maxWidth || _maxWidth == 0) && ! smallInterval.contains(_interval)) {
-                ++smallWidth;
-                smallInterval.setLower(smallInterval.lower() * 2);
-                smallInterval.setUpper((smallInterval.upper()+1)*2 - 1);
+            if(needsBlasting)
+            {
+                if(blastingIt != mPolyBlastings.end()) {
+                    unblastVariable(variable);
+                }
+                blastVariable(variable, interval, linear);
             }
-            width = smallWidth;
         }
-
-        assert(width > 0);
-
-        return BlastedType(width, makeSigned);
-    }
-
-    Answer IntBlastModule::checkCore( bool _full )
-    {
-        std::cout << "IBM: checkCore()" << std::endl;
-        blastInputVariables();
 
         std::cout << "Blastings:" << std::endl;
-        for(auto blaPa : mBlastings) {
-            std::cout << blaPa.first << " --> " << blaPa.second.term() << " (width " << blaPa.second.type().width() << ")" << std::endl;
+        for(auto blaPa : mPolyBlastings) {
+            std::cout << blaPa.first << " --> " << blaPa.second << std::endl;
         }
 
         std::cout << "Substitutes:" << std::endl;
@@ -544,98 +490,355 @@ namespace smtrat
             std::cout << substi.first << " --> " << substi.second << std::endl;
         }
 
-
-
+        // Run ICP
         Answer icpAnswer = mICP.check();
         std::cout << "icpAnswer: " << (icpAnswer == True ? "True" : (icpAnswer == False ? "False" : "Unknown")) << std::endl;
 
         if(icpAnswer == True) {
+            mSolutionOrigin = SolutionOrigin::ICP;
             return True;
-            // TODO: Remember to receive model from mICP
-        } else if(icpAnswer != False) {
-            // TODO: This is not very incremental
-            for(const FormulaT formula : mProcessedFormulasFromICP) {
-                mBoundsInRestriction.removeBound(formula.constraint(), formula);
-            }
-            mProcessedFormulasFromICP.clear();
-            for(ModuleInput::const_iterator fwo=mICP.rPassedFormula().begin(); fwo != mICP.rPassedFormula().end(); fwo++) {
-                mBoundsInRestriction.addBound(fwo->formula().constraint(), fwo->formula());
-                mProcessedFormulasFromICP.insert(fwo->formula());
-            }
-
-            /*
-            std::cout << "Variable bounds from ICP:" << std::endl;
-
-            const EvalDoubleIntervalMap& icpBounds = mBoundsInRestriction.getIntervalMap();
-
-            for(auto polyAndSubstitute : mSubstitutes) {
-                std::cout << polyAndSubstitute.first << " (" << polyAndSubstitute.second << "): ";
-
-                auto foundBound = icpBounds.find(polyAndSubstitute.second);
-                if(foundBound != icpBounds.end()) {
-                    std::cout << *foundBound << std::endl;
-                    Poly substPoly(polyAndSubstitute.second);
-                    mBlastings[substPoly] = BlastedTerm(chooseBlastedType(foundBound->second));
-
-                    BlastedTerm& blastedTerm = mBlastings[substPoly];
-                    std::cout << "--> " << blastedTerm.term() << " (width: " << blastedTerm.type().width() << ", " << (blastedTerm.type().isSigned() ? "signed" : "unsigned") << ") - range [" << blastedTerm.type().lowerBound() << "," << blastedTerm.type().upperBound() << "]" << std::endl;
-                } else {
-                    std::cout << "Unbounded :(" << std::endl;
-                }
-            } */
-
-            std::cout << "Blasting substitutes!" << std::endl;
-            FormulasT formulasForBVSolver = blastSubstitutes();
-
-            for(auto blasting : mBlastings) {
-                std::cout << "| " << blasting.first << " | " << blasting.second.term() << " (w " << blasting.second.type().width() << ", " << (blasting.second.type().isSigned() ? "signed" : "unsigned") << ")" << std::endl;
-            }
-
-            auto receivedSubformula = firstUncheckedReceivedSubformula();
-            while(receivedSubformula != rReceivedFormula().end())
-            {
-                const FormulaWithOrigins& fwo = *receivedSubformula;
-                const FormulaT& formula = fwo.formula();
-
-                assert(formula.getType() == carl::FormulaType::CONSTRAINT);
-
-                FormulasT formulas = blastConstraint(formula.constraint());
-                formulasForBVSolver.insert(formulas.begin(), formulas.end());
-
-                std::cout << "***** BV FORMULAS FOR: " << formula.constraint() << " ********************" << std::endl;
-                for(auto formula : formulas) {
-                    std::cout << "- " << formula << std::endl;
-                }
-                std::cout << "******************************************************" << std::endl;
-
-                ++receivedSubformula;
-            }
-
-            // Pass all generated formulas to BV solver
-            std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
-            for(auto formula : formulasForBVSolver) {
-                std::cout << formula << std::endl;
-                mBVSolver->inform(formula);
-                mBVSolver->add(formula);
-                // TODO: Work with return value
-            }
-            std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
-
-            std::cout << "Running BV solver." << std::endl;
-            Answer answerFromBVSolver = mBVSolver->check();
-            std::cout << "Answer from BV solver: " << (answerFromBVSolver == False ? "False" : (answerFromBVSolver == True ? "True" : "Unknown")) << std::endl;
         }
 
+        if(icpAnswer == Unknown) {
+            updateBoundsFromICP();
 
-        // BV solver was unable to derive an answer.
-        // Fall back to backend.
-        mLastSolutionFoundByBlasting = false;
+            while(! mFormulasToEncode.empty()) {
+                const FormulaT& formulaToEncode = mFormulasToEncode.front();
+
+                FormulasT blastedFormulas = blastConstraint(formulaToEncode.constraint());
+                for(auto blastedFormula : blastedFormulas) {
+                    auto insertionResult = mpBVInput->add(blastedFormula, formulaToEncode);
+                    if(insertionResult.second) { // The formula was fresh
+                        mpBVSolver->inform(blastedFormula);
+                        mpBVSolver->add(blastedFormula);
+                    }
+                }
+            }
+
+            std::cout << "Running BV solver." << std::endl;
+
+            Answer bvAnswer = mpBVSolver->check();
+            std::cout << "Answer from BV solver: " << (bvAnswer == False ? "False" : (bvAnswer == True ? "True" : "Unknown")) << std::endl;
+
+            if(bvAnswer == True) {
+                 mSolutionOrigin = SolutionOrigin::BV;
+                 return True;
+            }
+        }
+
+        // At this point, the restriction is unsatisfiable
+        // (determined either by the ICP module or by the BV solver).
+        // Call backend
+
+        updateOutsideRestrictionConstraint(inputVariables);
+
         Answer backendAnswer = runBackends(_full);
-        if(backendAnswer == False)
-        {
+        mSolutionOrigin = SolutionOrigin::BACKEND;
+
+        if(backendAnswer == False) {
             getInfeasibleSubsets();
+            // TODO: This does not suffice. The infeasible subsets from the backend
+            // may include the "outside restriction"-contraint.
+            // Merge this with infeasible subsets from ICP or BV solver.
         }
 
         return backendAnswer;
+    }
+
+    bool IntBlastModule::reblastingNeeded(const BlastedPoly& _previousBlasting, const IntegerInterval& _interval, bool _linear) const
+    {
+        if(_previousBlasting.isConstant()) {
+            return ! _interval.isPointInterval() || _interval.lower() != _previousBlasting.constant();
+        }
+
+        const BlastedType previousType = _previousBlasting.term().type();
+
+        if(previousType.hasOffset() && ! _linear) {
+            return true;
+        }
+
+        // Here we might choose different strategies.
+        // For now, do a reblasting only if the new and the previous interval are disjoint.
+        return ! previousType.bounds().intersectsWith(_interval);
+    }
+
+    void IntBlastModule::unblastVariable(const carl::Variable& _variable)
+    {
+        removeBoundRestrictionsFromICP(_variable);
+
+        // Remove all blastings of polynomes in which _variable occurs
+        auto polyIt = mPolyBlastings.begin();
+        while(polyIt != mPolyBlastings.end()) {
+            if(polyIt->first.has(_variable)) {
+                polyIt = mPolyBlastings.erase(polyIt);
+            } else {
+                ++polyIt;
+            }
+        }
+
+        // Remove all blastings of constraints in which _variable occurs
+        auto constrIt = mConstrBlastings.begin();
+        while(constrIt != mConstrBlastings.end()) {
+            if(constrIt->first.lhs().has(_variable)) {
+                constrIt = mConstrBlastings.erase(constrIt);
+            } else {
+                ++constrIt;
+            }
+        }
+    }
+
+    void IntBlastModule::blastVariable(const carl::Variable& _variable, const IntegerInterval& _interval, bool _allowOffset)
+    {
+        Poly variablePoly(_variable);
+        if(_interval.isPointInterval()) {
+            mPolyBlastings[variablePoly] = BlastedPoly(_interval.lower());
+        }
+
+        std::size_t maxWidth = 8; // TODO: Extract to a constant/setting
+
+        // If interval is unbounded:
+        //   Start with no offset, signed, maximum width (tempType)
+        //     If offset is not allowed
+        //       Remove sign if interval is semi-positive
+        //     Else:
+        //       If lower bound of interval is higher than tempType's lower bound, shift range using offset and remove sign
+        //       (similar for upper bound)
+
+        // If interval is bounded:
+        //   If offset allowed:
+        //     Lower bound as offset, width "as small as possible" (at most maximum width), unsigned
+        //   Else:
+        //     Make signed iff interval not semipositive
+        //     Width "as small as possible" (at most maximum width)
+
+        BlastedType blastedType;
+
+        if(_interval.lowerBoundType() == carl::BoundType::INFTY || _interval.upperBoundType() == carl::BoundType::INFTY) {
+            if(! _allowOffset) {
+                blastedType = BlastedType(maxWidth, ! _interval.isSemiPositive(), 0);
+            } else {
+                BlastedType tempType(maxWidth, true, 0);
+
+                if(_interval.lowerBoundType() != carl::BoundType::INFTY && _interval.lower() > tempType.lowerBound()) {
+                    blastedType = BlastedType(maxWidth, false, _interval.lower());
+                } else if(_interval.upperBoundType() != carl::BoundType::INFTY && _interval.upper() < tempType.upperBound()) {
+                    blastedType = BlastedType(maxWidth, false, _interval.upper() - (tempType.upperBound() - tempType.lowerBound()));
+                }
+            }
+        } else {
+            // interval is bounded
+            if(_allowOffset) {
+                std::size_t width = chooseWidth(_interval.upper() - _interval.lower(), maxWidth, false);
+                blastedType = BlastedType(width, false, _interval.lower());
+            } else {
+                if(_interval.isSemiPositive()) {
+                    std::size_t width = chooseWidth(_interval.upper(), maxWidth, false);
+                    blastedType = BlastedType(width, false, 0);
+                } else {
+                    std::size_t widthForUpper = chooseWidth(_interval.upper(), maxWidth, true);
+                    std::size_t widthForLower = chooseWidth(_interval.lower(), maxWidth, true);
+                    blastedType = BlastedType(std::max(widthForUpper, widthForLower), true, 0);
+                }
+            }
+        }
+
+        addBoundRestrictionsToICP(_variable, blastedType);
+
+        mPolyBlastings[variablePoly] = BlastedPoly(BlastedTerm(blastedType));
+    }
+
+    void IntBlastModule::addBoundRestrictionsToICP(carl::Variable _variable, const BlastedType& blastedType)
+    {
+        addFormulaToICP(FormulaT(ConstraintT(_variable, carl::Relation::GEQ, blastedType.lowerBound())), mConstraintFromBounds);
+        addFormulaToICP(FormulaT(ConstraintT(_variable, carl::Relation::LEQ, blastedType.upperBound())), mConstraintFromBounds);
+    }
+
+    void IntBlastModule::removeBoundRestrictionsFromICP(carl::Variable _variable)
+    {
+        auto& blastedVariable = mPolyBlastings.at(Poly(_variable));
+
+        if(! blastedVariable.isConstant()) {
+            const BlastedType& blastedType = blastedVariable.term().type();
+
+            removeFormulaFromICP(FormulaT(ConstraintT(_variable, carl::Relation::GEQ, blastedType.lowerBound())), mConstraintFromBounds);
+            removeFormulaFromICP(FormulaT(ConstraintT(_variable, carl::Relation::LEQ, blastedType.upperBound())), mConstraintFromBounds);
+        }
+    }
+
+    std::size_t IntBlastModule::chooseWidth(const Integer& _numberToCover, std::size_t _maxWidth, bool _signed) const
+    {
+        std::size_t width = 1;
+        carl::Interval<Integer> interval(Integer(_signed ? -1 : 0), Integer(_signed ? 0 : 1));
+
+        while((width < _maxWidth || _maxWidth == 0) && ! interval.contains(_numberToCover)) {
+            ++width;
+            interval.setLower(interval.lower() * 2);
+            interval.setUpper((interval.upper()+1)*2 - 1);
+        }
+        return width;
+    }
+
+    void IntBlastModule::updateBoundsFromICP()
+    {
+        // TODO: This is not very incremental
+        for(const FormulaT formula : mProcessedFormulasFromICP) {
+            mBoundsInRestriction.removeBound(formula.constraint(), formula);
+        }
+        mProcessedFormulasFromICP.clear();
+        for(ModuleInput::const_iterator fwo=mICP.rPassedFormula().begin(); fwo != mICP.rPassedFormula().end(); fwo++) {
+            mBoundsInRestriction.addBound(fwo->formula().constraint(), fwo->formula());
+            mProcessedFormulasFromICP.insert(fwo->formula());
+        }
+    }
+
+    void IntBlastModule::updateOutsideRestrictionConstraint(const carl::Variables& _variables)
+    {
+        FormulasT outsideConstraints;
+
+        auto& inputBounds = mBoundsFromInput.getEvalIntervalMap();
+        for(auto& variable : _variables) {
+            auto& blastedVar = mPolyBlastings.at(Poly(variable));
+            Integer blastedLowerBound = (blastedVar.isConstant() ? blastedVar.constant() : blastedVar.term().type().lowerBound());
+            Integer blastedUpperBound = (blastedVar.isConstant() ? blastedVar.constant() : blastedVar.term().type().upperBound());
+            auto inputBoundsIt = inputBounds.find(variable);
+
+            if(inputBoundsIt == inputBounds.end() || getNum(inputBoundsIt->second).contains(blastedLowerBound - 1)) {
+                outsideConstraints.insert(FormulaT(ConstraintT(variable, carl::Relation::LESS, blastedLowerBound)));
+            }
+
+            if(inputBoundsIt == inputBounds.end() || getNum(inputBoundsIt->second).contains(blastedUpperBound + 1)) {
+                outsideConstraints.insert(FormulaT(ConstraintT(variable, carl::Relation::GREATER, blastedUpperBound)));
+            }
+        }
+
+        FormulaT newOutsideConstraint(carl::FormulaType::OR, outsideConstraints);
+
+        if(mOutsideRestriction != newOutsideConstraint) {
+            // This is a hack. We need a non-const iterator to the old passed constraint,
+            // so we retrieve it by inserting the constraint (a possibly second time) before.
+            auto oldFormulaInPassedFormula = addSubformulaToPassedFormula(mOutsideRestriction, mOutsideRestrictionOrigin);
+            removeOrigin(oldFormulaInPassedFormula.first, mOutsideRestrictionOrigin);
+        }
+        addSubformulaToPassedFormula(newOutsideConstraint, mOutsideRestrictionOrigin);
+        mOutsideRestriction = newOutsideConstraint;
+    }
+
+    void IntBlastModule::addFormulaToICP(const FormulaT& _formula, const FormulaT& _origin)
+    {
+        auto insertionResult = mpICPInput->add(_formula, _origin);
+
+        if(insertionResult.second) {
+            mICP.add(insertionResult.first);
+        }
+    }
+
+    void IntBlastModule::addConstraintToICP(FormulaT _formula)
+    {
+        // First, add the formula itself to ICP
+        mpICPInput->add(_formula, _formula);
+
+        // Now we create a substitute for every node of the constraint tree of _formula
+        // (except for the root, variable nodes and constant nodes)
+        // in order to receive bounds from ICP for these expressions
+
+        const ConstraintT& constraint = _formula.constraint();
+        ConstrTree constraintTree(constraint);
+
+        // Walk through the ConstraintTree in a breadth-first search
+        std::list<const PolyTree*> nodesForSubstitution;
+        nodesForSubstitution.push_back(&(constraintTree.left()));
+        nodesForSubstitution.push_back(&(constraintTree.right()));
+
+        while(! nodesForSubstitution.empty()) {
+            const PolyTree& currentPoly = *(nodesForSubstitution.front());
+            nodesForSubstitution.pop_front();
+
+            if(currentPoly.type() == PolyTree::Type::SUM || currentPoly.type() == PolyTree::Type::PRODUCT) {
+                // Find or create new substitute for the polynomial
+                carl::Variable substitute;
+
+                auto substituteLookup = mSubstitutes.find(currentPoly.poly());
+                if(substituteLookup != mSubstitutes.end()) {
+                    substitute = substituteLookup->second;
+                } else {
+                    substitute = carl::VariablePool::getInstance().getFreshVariable(carl::VariableType::VT_INT);
+                    mSubstitutes[currentPoly.poly()] = substitute;
+                }
+
+                // pass "substitute_variable = polynome" equation to ICP
+                // (normalized: polynome - substitute_variable = 0)
+                Poly polyMinusSubstitute(currentPoly.poly());
+                polyMinusSubstitute -= substitute;
+                FormulaT constraintForICP(polyMinusSubstitute, carl::Relation::EQ);
+
+                mpICPInput->add(constraintForICP, _formula);
+
+                // Schedule left and right subtree of current PolyTree
+                // for being visited in the breadth-first search
+                nodesForSubstitution.push_back(&(currentPoly.left()));
+                nodesForSubstitution.push_back(&(currentPoly.right()));
+            }
+        }
+    }
+
+    void IntBlastModule::removeFormulaFromICP(const FormulaT& _formula, const FormulaT& _origin)
+    {
+        auto formulaInInput = mpICPInput->find(_formula);
+        if(formulaInInput != mpICPInput->end()) {
+            if(mpICPInput->removeOrigin(formulaInInput, _origin)) {
+                mICP.remove(formulaInInput);
+                mpICPInput->erase(formulaInInput);
+            }
+        }
+    }
+
+    void IntBlastModule::removeOriginFromICP(const FormulaT& _origin)
+    {
+        ModuleInput::iterator icpFormula = mpICPInput->begin();
+        while(icpFormula != mpICPInput->end())
+        {
+            // Remove the given formula from the set of origins.
+            if(mpICPInput->removeOrigin(icpFormula, _origin)) {
+                mICP.remove(icpFormula);
+                icpFormula = mpICPInput->erase(icpFormula);
+            } else {
+                ++icpFormula;
+            }
+        }
+    }
+
+    void IntBlastModule::removeOriginFromBV(const FormulaT& _origin)
+    {
+        ModuleInput::iterator bvFormula = mpBVInput->begin();
+        while(bvFormula != mpBVInput->end())
+        {
+            // Remove the given formula from the set of origins.
+            if(mpBVInput->removeOrigin(bvFormula, _origin)) {
+                mpBVSolver->removeFormula(bvFormula->formula());
+                bvFormula = mpBVInput->erase(bvFormula);
+            } else {
+                ++bvFormula;
+            }
+        }
+    }
+
+    void IntBlastModule::updateModelFromICP() const
+    {
+        clearModel();
+        mICP.updateModel();
+        mModel = mICP.model();
+    }
+
+    void IntBlastModule::updateModelFromBV() const
+    {
+        // TODO: Implement
+    }
+
+    IntBlastModule::IntegerInterval IntBlastModule::getNum(const RationalInterval& _interval) const
+    {
+        return IntegerInterval(
+            carl::getNum(_interval.lower()), _interval.lowerBoundType(),
+            carl::getNum(_interval.upper()), _interval.upperBoundType()
+        );
     }
 }
