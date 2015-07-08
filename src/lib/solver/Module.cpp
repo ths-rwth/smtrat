@@ -91,7 +91,7 @@ namespace smtrat
     }
     
     Answer Module::check( bool _full )
-    {   
+    {
         #ifdef MODULE_VERBOSE
         cout << endl << "Check " << (_full ? "full" : "lazy" ) << " with " << moduleName( type() ) << endl;
         print( cout, " ");
@@ -512,7 +512,7 @@ namespace smtrat
         vector<Module*>::const_iterator backend = mUsedBackends.begin();
         while( backend != mUsedBackends.end() )
         {
-            if( !(*backend)->infeasibleSubsets().empty() )
+            if( (*backend)->solverState() == False )
             {
                 std::vector<FormulasT> infsubsets = getInfeasibleSubsets( **backend );
                 mInfeasibleSubsets.insert( mInfeasibleSubsets.end(), infsubsets.begin(), infsubsets.end() );
@@ -769,7 +769,8 @@ namespace smtrat
     
     void Module::clearPassedFormula()
     {
-        while( eraseSubformulaFromPassedFormula( mpPassedFormula->begin(), true ) != mpPassedFormula->end() );
+        while( !mpPassedFormula->empty() )
+            eraseSubformulaFromPassedFormula( mpPassedFormula->begin(), false );
     }
 
     Answer Module::foundAnswer( Answer _answer )
@@ -783,6 +784,9 @@ namespace smtrat
             if( !anAnswerFound() )
                 *mFoundAnswer.back() = true;
         }
+        #ifdef MODULE_VERBOSE 
+        cout << "Results in: " << ANSWER_TO_STRING( _answer ) << endl;
+        #endif
         return _answer;
     }
 

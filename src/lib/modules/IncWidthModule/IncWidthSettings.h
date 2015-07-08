@@ -16,10 +16,14 @@ namespace smtrat
         /**
          * The increment of the width of the intervals specifying the variable domains.
          */
-        static const Rational increment = Rational(2);
+        static constexpr unsigned increment = 2;
         /**
          * The half of the starting width of the intervals specifying the variable domains. Starting interval domains are then: [-half_of_start_width,half_of_start_width]
          */
-        static const Rational half_of_start_width = Rational(2);
+        static constexpr unsigned half_of_start_width = 2;
+        /**
+         * The half of the maximal width of the intervals specifying the variable domains.
+         */
+        static constexpr unsigned half_of_max_width = 1000;
     };
 }

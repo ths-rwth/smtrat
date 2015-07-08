@@ -166,7 +166,8 @@ namespace smtrat {
                 ++receivedFormula;
             }
         }
-		enumerateIntegers();
+        if( Settings::enumerate_integers_domain_size > 0 )
+            enumerateIntegers();
 
         Answer ans = runBackends( _full );
         if (ans == False) {
@@ -910,7 +911,7 @@ namespace smtrat {
 	{
 		for (const auto& bound: varbounds.getEvalIntervalMap()) {
 			if (bound.first.getType() != carl::VariableType::VT_INT) continue;
-			if (bound.second.diameter() > 3) continue;
+			if (bound.second.isUnbounded() || bound.second.diameter() > Settings::enumerate_integers_domain_size) continue;
 			FormulasT curEnum;
 			Rational lower = carl::ceil(bound.second.lower());
 			Rational upper = carl::floor(bound.second.upper());
