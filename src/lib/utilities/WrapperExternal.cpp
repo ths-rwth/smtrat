@@ -175,7 +175,11 @@ namespace smtrat {
 		}
 		else {
 			assert(lastBuffer.size() < bufferSize);
+#ifdef __WIN
 			strcpy_s(buffer, bufferSize, lastBuffer.c_str());
+#else
+			strncpy(buffer, lastBuffer.c_str(), bufferSize);
+#endif
 			lastBuffer = "";
 			return 0;
 		}
@@ -186,7 +190,11 @@ namespace smtrat {
 		if (lastBuffer != "")
 		{
 			assert(lastBuffer.size() < bufferSize);
+#ifdef __WIN
 			strcpy_s(buffer, bufferSize, lastBuffer.c_str());
+#else
+			strncpy(buffer, lastBuffer.c_str(), bufferSize);
+#endif
 			lastBuffer = "";
 			return true;
 		}
