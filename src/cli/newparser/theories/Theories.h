@@ -12,6 +12,7 @@
 #ifdef PARSER_ENABLE_UNINTERPRETED
 #include "Uninterpreted.h"
 #endif
+#include <boost/mpl/for_each.hpp>
 
 namespace smtrat {
 namespace parser {
