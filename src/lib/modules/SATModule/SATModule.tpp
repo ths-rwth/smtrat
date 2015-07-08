@@ -2465,7 +2465,7 @@ SetWatches:
                     if ( itFormulas != mPropagatedLemmas.end() )
                     {
                         // Insert formulas from contained variable into set for current variable
-                        pFormulas->insert( itFormulas->second.begin(), itFormulas->second.end() );
+						pFormulas->insert( pFormulas->end(), itFormulas->second.begin(), itFormulas->second.end() );
                     }
                 }
             }
