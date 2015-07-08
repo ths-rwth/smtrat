@@ -61,9 +61,14 @@ private:
      */
 	std::string demangle(const char* t) const {
 		int status;
+#ifdef __VS
+		//TODO Matthias: demangle in VS as well
+		std::string type(t);
+#else
 		char* res = abi::__cxa_demangle(t, 0, 0, &status);
 		std::string type(res);
 		std::free(res);
+#endif
 		return type;
 	}
 public:
