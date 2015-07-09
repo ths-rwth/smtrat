@@ -76,18 +76,18 @@ namespace smtrat
                 {
                     ConditionList condVectorA;
                     condVectorA.push_back( new vs::Condition( ConstraintT( constraint.lhs(), carl::Relation::LESS ), mpConditionIdAllocator->get(), 0, false, oConds ) );
-                    subResult.push_back( condVectorA );
+                    subResult.push_back( std::move(condVectorA) );
                     ConditionList condVectorB;
                     condVectorB.push_back( new vs::Condition( ConstraintT( constraint.lhs(), carl::Relation::GREATER ), mpConditionIdAllocator->get(), 0, false, oConds ) );
-                    subResult.push_back( condVectorB );
+                    subResult.push_back( std::move(condVectorB) );
                 }
                 else
                 {
                     ConditionList condVector;
                     condVector.push_back( new vs::Condition( constraint, mpConditionIdAllocator->get(), 0, false, oConds ) );
-                    subResult.push_back( condVector );
+                    subResult.push_back( std::move(condVector) );
                 }
-                subResults.push_back( subResult );
+                subResults.push_back( std::move(subResult) );
                 mpStateTree->addSubstitutionResults( std::move(subResults) );
                 addStateToRanking( mpStateTree );
                 insertTooHighDegreeStatesInRanking( mpStateTree );
@@ -127,7 +127,10 @@ namespace smtrat
                 condsToDelete.insert( condToDelete );
                 mpStateTree->deleteOrigins( condsToDelete, mRanking );
                 mpStateTree->rType() = State::COMBINE_SUBRESULTS;
-                mpStateTree->rTakeSubResultCombAgain() = true;
+                if( mpStateTree->hasSubResultsCombination() )
+                    mpStateTree->rTakeSubResultCombAgain() = true;
+                else
+                    mpStateTree->rTakeSubResultCombAgain() = false;
                 addStateToRanking( mpStateTree );
                 insertTooHighDegreeStatesInRanking( mpStateTree );
             }

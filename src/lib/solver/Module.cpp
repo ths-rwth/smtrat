@@ -588,6 +588,24 @@ namespace smtrat
         return true;
     }
 
+    Model Module::backendsModel() const
+    {
+        auto module = mUsedBackends.begin();
+        while( module != mUsedBackends.end() )
+        {
+            assert( (*module)->solverState() != False );
+            if( (*module)->solverState() == True )
+            {
+		//@todo models should be disjoint, but this breaks CAD on certain inputs.
+                //assert( modelsDisjoint( mModel, (*module)->model() ) );
+                (*module)->updateModel();
+                return (*module)->model();
+            }
+            ++module;
+        }
+        return Model();
+    }
+
     void Module::getBackendsModel() const
     {
         auto module = mUsedBackends.begin();
@@ -596,7 +614,7 @@ namespace smtrat
             assert( (*module)->solverState() != False );
             if( (*module)->solverState() == True )
             {
-		//@todo modules should be disjoint, but this breaks CAD on certain inputs.
+		//@todo models should be disjoint, but this breaks CAD on certain inputs.
                 //assert( modelsDisjoint( mModel, (*module)->model() ) );
                 (*module)->updateModel();
                 for (auto ass: (*module)->model())

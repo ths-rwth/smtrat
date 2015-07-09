@@ -113,7 +113,11 @@ struct Theories {
 	}
 	void declareFunction(const std::string& name, const std::vector<carl::Sort>& args, const carl::Sort& sort) {
 		if (state->isSymbolFree(name)) {
-			state->declared_functions[name] = carl::newUninterpretedFunction(name, args, sort);
+			if (carl::SortManager::getInstance().getType(sort) == carl::VariableType::VT_BOOL) {
+				state->declared_functions[name] = carl::newUninterpretedFunction(name, args, carl::SortManager::getInstance().getSort("UF_Bool"));
+			} else {
+				state->declared_functions[name] = carl::newUninterpretedFunction(name, args, sort);
+			}
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Function \"" << name << "\" will not be declared due to a name clash.");
 			HANDLE_ERROR
@@ -236,7 +240,7 @@ struct Theories {
 			}
 		}
 		if (!wasInstantiated) {
-			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to instantiate variable \"" << var << "\": " << errors);
+			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to instantiate function: " << errors);
 			HANDLE_ERROR
 			return false;
 		}
