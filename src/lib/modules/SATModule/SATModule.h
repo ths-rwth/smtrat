@@ -808,6 +808,11 @@ namespace smtrat
             Minisat::Lit pickBranchLit();
             
             /**
+             * @return The best decision variable under consideration of the decision heuristic.
+             */
+            Minisat::Lit bestBranchLit( bool _conflictFirst );
+            
+            /**
              * Begins a new decision level.
              */
             inline void newDecisionLevel()
@@ -935,7 +940,7 @@ namespace smtrat
              * @param _madeTheoryCall A flag which is set to true, if at least one theory call has been made within this method.
              * @return A reference to a conflicting clause, if a clause has been added.
              */
-            Minisat::CRef propagateConsistently( bool& _madeTheoryCall, bool& _lemmasLearnt );
+            Minisat::CRef propagateConsistently( bool& _madeTheoryCall );
             
             /**
              * search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]

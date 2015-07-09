@@ -10,6 +10,8 @@
     
 namespace smtrat
 {
+    enum class TheoryGuidedDecisionHeuristicLevel : unsigned { CONFLICT_FIRST, NON_SATISFIED_FIRST, DISABLED };
+    
     struct SATSettings1
     {
         /**
@@ -31,19 +33,19 @@ namespace smtrat
         /**
          * 
          */
-        static const bool handle_theory_conflict_as_lemma = true;
-        /**
-         * 
-         */
         static const bool use_restarts = true;
         /**
          * 
          */
-        static const bool stop_search_after_first_unknown = false; //TODO: repair this when deactivated (see qf_lra/bugs/bug_sat_dont_stop_by_first_unknown.smt2)
+        static const bool stop_search_after_first_unknown = false;
         /**
          * 
          */
         static const bool formula_guided_decision_heuristic = false;
+        /**
+         * 
+         */
+        static constexpr TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic = TheoryGuidedDecisionHeuristicLevel::DISABLED;
     };
     
     struct SATSettings2 : SATSettings1
