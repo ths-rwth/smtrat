@@ -497,14 +497,13 @@ namespace vs
                         }
                         subResult = mpSubstitutionResults->erase( subResult );
                         if( fixedPosWasEndBefore ) fixedConditions = mpSubstitutionResults->end();
-                        if( mpSubResultCombination != NULL )
+                        if( hasSubResultsCombination() )
                         {
-                            if( mpSubResultCombination->size() > 0 )
-                            {
-                                mTakeSubResultCombAgain = true;
-                            }
+                            mTakeSubResultCombAgain = true;
                             assert( mpSubResultCombination->size() <= mpSubstitutionResults->size() );
                         }
+                        else
+                            mTakeSubResultCombAgain = false;
                     }
                     else
                     {
@@ -1098,10 +1097,6 @@ namespace vs
     ConditionList State::getCurrentSubresultCombination() const
     {
         ConditionList currentSubresultCombination;
-        if( !hasSubResultsCombination() )
-        {
-            printAlone();
-        }
         assert( hasSubResultsCombination() );
         auto iter = mpSubResultCombination->begin();
         while( iter != mpSubResultCombination->end() )
@@ -1897,6 +1892,14 @@ namespace vs
                     ++subResult;
                     ++subResultIndex;
                 }
+            }
+            if( hasSubResultsCombination() )
+            {
+                mTakeSubResultCombAgain = true;
+            }
+            else
+            {
+                mTakeSubResultCombAgain = false;
             }
         }
     }
