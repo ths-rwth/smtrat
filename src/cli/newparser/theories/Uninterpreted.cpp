@@ -32,8 +32,8 @@ namespace parser {
 	UninterpretedTheory::UninterpretedTheory(ParserState* state):
 		AbstractTheory(state), 
 		mBoolSort(carl::SortManager::getInstance().addSort("UF_Bool", carl::VariableType::VT_UNINTERPRETED)),
-		mTrue(carl::freshVariable(carl::VariableType::VT_UNINTERPRETED), mBoolSort),
-		mFalse(carl::freshVariable(carl::VariableType::VT_UNINTERPRETED), mBoolSort)
+		mTrue(carl::freshVariable("UF_TRUE", carl::VariableType::VT_UNINTERPRETED), mBoolSort),
+		mFalse(carl::freshVariable("UF_FALSE", carl::VariableType::VT_UNINTERPRETED), mBoolSort)
 	{
 	}
 
@@ -98,17 +98,20 @@ namespace parser {
 		if (sm.isInterpreted(f.codomain())) {
 			carl::VariableType type = sm.getType(f.codomain());
 			if (type == carl::VariableType::VT_BOOL) {
-				carl::UVariable uvar(carl::freshVariable(carl::VariableType::VT_UNINTERPRETED), mBoolSort);
-				state->global_formulas.emplace_back(std::move(carl::UEquality(uvar, ufi, false)));
-				state->global_formulas.push_back(FormulaT(carl::FormulaType::OR, {
-					FormulaT(std::move(carl::UEquality(uvar, mTrue, false))),
-					FormulaT(std::move(carl::UEquality(uvar, mFalse, false)))
-				}));
+				SMTRAT_LOG_ERROR("smtrat.parser", "Boolan functions should be abstracted to be of sort " << mBoolSort);
 			} else {
 				carl::Variable var = carl::freshVariable(type);
 				state->global_formulas.emplace_back(FormulaT(std::move(carl::UEquality(carl::UVariable(var), ufi, false))));
 				result = var;
 			}
+		} else if (f.codomain() == mBoolSort) {
+			carl::UVariable uvar(carl::freshVariable(carl::VariableType::VT_UNINTERPRETED), mBoolSort);
+			state->global_formulas.emplace_back(std::move(carl::UEquality(uvar, ufi, false)));
+			state->global_formulas.push_back(FormulaT(carl::FormulaType::OR, {
+				FormulaT(std::move(carl::UEquality(uvar, mTrue, false))),
+				FormulaT(std::move(carl::UEquality(uvar, mFalse, false)))
+			}));
+			result = FormulaT(std::move(carl::UEquality(uvar, mTrue, false)));
 		} else {
 			result = ufi;
 		}
