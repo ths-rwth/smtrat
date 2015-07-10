@@ -882,7 +882,8 @@ namespace smtrat
             }
         }
         mChangedActivities.clear();
-        mCurrentAssignmentConsistent = True;
+        if( mChangedPassedFormula )
+            mCurrentAssignmentConsistent = True;
         assert( passedFormulaCorrect() );
     }
     
