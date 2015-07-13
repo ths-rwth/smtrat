@@ -165,6 +165,8 @@ namespace smtrat
         cout << __func__ << " in " << this << " with name " << moduleName( mType ) << ":" << endl << endl;
         cout << " " << _receivedSubformula->formula() << endl << endl;
         #endif
+		SMTRAT_LOG_DEBUG("smtrat.module", __func__ << " in " << this << " with name " << moduleName(mType) << ":");
+		SMTRAT_LOG_DEBUG("smtrat.module", " " << _receivedSubformula->formula());
         removeCore( _receivedSubformula );
         if( mFirstUncheckedReceivedSubformula == _receivedSubformula )
             ++mFirstUncheckedReceivedSubformula;
