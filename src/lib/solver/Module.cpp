@@ -100,10 +100,7 @@ namespace smtrat
     
     Answer Module::check( bool _full )
     {
-        #ifdef MODULE_VERBOSE
-        cout << endl << "Check " << (_full ? "full" : "lazy" ) << " with " << moduleName( type() ) << endl;
-        print( cout, " ");
-        #endif
+		SMTRAT_LOG_TRACE("smtrat.module", "Check " << (_full ? "full" : "lazy") << " with " << moduleName(type()));
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         startCheckTimer();
         ++(mNrConsistencyChecks);
@@ -136,19 +133,14 @@ namespace smtrat
 
     bool Module::inform( const FormulaT& _constraint )
     {
-        #ifdef MODULE_VERBOSE
-        cout << __func__ << " in " << this << " with name " << moduleName( mType ) << ": " << _constraint << endl;
-        #endif
-        addConstraintToInform( _constraint );
+		SMTRAT_LOG_TRACE("smtrat.module", __func__ << " in " << this << " with name " << moduleName(mType) << ": " << _constraint);
+		addConstraintToInform( _constraint );
         return informCore( _constraint );
     }
     
     bool Module::add( ModuleInput::const_iterator _receivedSubformula )
     {
-        #ifdef MODULE_VERBOSE
-        cout << __func__ << " in " << this << " with name " << moduleName( mType ) << ":" << endl << endl;
-        cout << " " << _receivedSubformula->formula() << endl << endl;
-        #endif
+        SMTRAT_LOG_TRACE("smtrat.module", __func__ << " in " << this << " with name " << moduleName(mType) << ": " << _receivedSubformula->formula());
         if( mFirstUncheckedReceivedSubformula == mpReceivedFormula->end() )
         {
             mFirstUncheckedReceivedSubformula = _receivedSubformula;
@@ -161,12 +153,7 @@ namespace smtrat
     
     void Module::remove( ModuleInput::const_iterator _receivedSubformula )
     {
-        #ifdef MODULE_VERBOSE
-        cout << __func__ << " in " << this << " with name " << moduleName( mType ) << ":" << endl << endl;
-        cout << " " << _receivedSubformula->formula() << endl << endl;
-        #endif
-		SMTRAT_LOG_DEBUG("smtrat.module", __func__ << " in " << this << " with name " << moduleName(mType) << ":");
-		SMTRAT_LOG_DEBUG("smtrat.module", " " << _receivedSubformula->formula());
+        SMTRAT_LOG_TRACE("smtrat.module", __func__ << " in " << this << " with name " << moduleName(mType) << ": " << _receivedSubformula->formula());
         removeCore( _receivedSubformula );
         if( mFirstUncheckedReceivedSubformula == _receivedSubformula )
             ++mFirstUncheckedReceivedSubformula;
@@ -753,16 +740,16 @@ namespace smtrat
                 vector< std::future<Answer> > futures( highestIndex );
                 for( size_t i=0; i<highestIndex; ++i )
                 {
-                    #ifdef MODULE_VERBOSE
-                    cout << endl << "Call to module " << moduleName( mUsedBackends[ i ]->type() ) << endl;
-                    mUsedBackends[ i ]->print( cout, " ");
+					SMTRAT_LOG_TRACE("smtrat.module", "Call to module " << moduleName( mUsedBackends[ i ]->type() ));
+					#ifdef MODULE_VERBOSE
+					mUsedBackends[ i ]->print( cout, " ");
                     #endif
                     futures[ i ] = mpManager->submitBackend( mUsedBackends[ i ], _full );
                 }
                 mpManager->checkBackendPriority( mUsedBackends[ highestIndex ] );
-                #ifdef MODULE_VERBOSE
-                cout << endl << "Call to module " << moduleName( mUsedBackends[ highestIndex ]->type() ) << endl;
-                mUsedBackends[ highestIndex ]->print( cout, " ");
+				SMTRAT_LOG_TRACE("smtrat.module", "Call to module " << moduleName( mUsedBackends[ highestIndex ]->type() ));
+				#ifdef MODULE_VERBOSE
+				mUsedBackends[ highestIndex ]->print( cout, " ");
                 #endif
                 result = mUsedBackends[ highestIndex ]->check( _full );
                 mUsedBackends[ highestIndex ]->receivedFormulaChecked();
@@ -794,9 +781,7 @@ namespace smtrat
             }
             #endif
         }
-        #ifdef MODULE_VERBOSE
-//        cout << "Result:   " << ANSWER_TO_STRING( result ) << endl;
-        #endif
+		SMTRAT_LOG_TRACE("smtrat.module", "Result: " << ANSWER_TO_STRING(result));
         return result;
     }
 
@@ -873,10 +858,8 @@ namespace smtrat
             if( !anAnswerFound() )
                 *mFoundAnswer.back() = true;
         }
-        #ifdef MODULE_VERBOSE 
-        cout << "Results in: " << ANSWER_TO_STRING( _answer ) << endl;
-        #endif
-        return _answer;
+        SMTRAT_LOG_TRACE("smtrat.module", "Results in: " << ANSWER_TO_STRING( _answer ));
+		return _answer;
     }
 
     void Module::addConstraintToInform( const FormulaT& constraint )
