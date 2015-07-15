@@ -408,6 +408,143 @@ namespace smtrat
         }
     };
 
+    template<typename Element, typename Origin>
+    class ElementWithOrigins
+    {
+        private:
+            Element mElement;
+            std::set<Origin> mOrigins;
+
+        public:
+            ElementWithOrigins(const Element& _element) :
+            mElement(_element), mOrigins()
+            { }
+
+            ElementWithOrigins(const Element& _element, const Origin& _origin) :
+            mElement(_element), mOrigins({ _origin })
+            { }
+
+            const Element& element() const {
+                return mElement;
+            }
+
+            const std::list<Origin> origins() const {
+                return mOrigins;
+            }
+
+            void addOrigin(const Origin& _origin) {
+                mOrigins.insert(_origin);
+            }
+
+            bool removeOrigin(const Origin& _origin) {
+                if(mOrigins.erase(_origin) == 1 && mOrigins.empty()) {
+                    return true;
+                }
+
+                return false;
+            }
+
+            bool hasOrigins() {
+                return ! mOrigins.empty();
+            }
+    };
+
+    template<typename Element, typename Origin>
+    class CollectionWithOrigins
+    {
+        private:
+            typedef ElementWithOrigins<Element, Origin> ElementWO;
+            typedef std::list<ElementWO> Super;
+
+            Super mItems;
+            carl::FastMap<Element, typename Super::iterator> mElementPositions;
+            carl::FastMap<Origin, std::list<typename Super::iterator> > mOriginOccurings;
+            std::set<Element> mElementsWithoutOrigins;
+
+        public:
+            typedef typename Super::iterator iterator;
+            typedef typename Super::const_iterator const_iterator;
+
+            CollectionWithOrigins() :
+            mItems(), mElementPositions(), mOriginOccurings()
+            { }
+
+            bool contains(const Element& _element) {
+                return mElementPositions.find(_element) != mElementPositions.end();
+            }
+
+            bool add(const Element& _element, const Origin& _origin) {
+                auto lookup = mElementPositions.find(_element);
+
+                if(lookup == mElementPositions.end()) {
+                    ElementWO newElement(_element, _origin);
+                    mItems.push_back(newElement);
+                    auto inserted = std::prev(mItems.end());
+                    mElementPositions[_element] = inserted;
+                    mOriginOccurings[_origin].push_back(inserted);
+                    return true;
+                } else {
+                    lookup->second->addOrigin(_origin);
+                    mOriginOccurings[_origin].push_back(lookup->second);
+                    return false;
+                }
+            }
+
+            bool removeOrigin(const Origin& _origin) {
+                auto originIt = mOriginOccurings.find(_origin);
+
+                if(originIt != mOriginOccurings.end()) {
+                    std::list<typename Super::iterator>& occurings = originIt->second;
+
+                    for(auto& item : occurings) {
+                        if(item->removeOrigin(_origin)) {
+                            mElementsWithoutOrigins.insert(item->element());
+                            mElementPositions.erase(item->element());
+                            mItems.erase(item);
+                        }
+                    }
+                    mOriginOccurings.erase(originIt);
+                    return true;
+                }
+                return false;
+            }
+
+            bool removeOrigins(const std::set<Origin>& _origins) {
+                bool removedAnything = false;
+
+                for(auto& it = _origins.begin();it != _origins.end();++it) {
+                    removedAnything = removedAnything || removeOrigin(*it);
+                }
+
+                return removedAnything;
+            }
+
+            iterator begin() {
+                return mItems.begin();
+            }
+
+            iterator end() {
+                return mItems.end();
+            }
+
+            const_iterator cbegin() const {
+                return mItems.cbegin();
+            }
+
+            const_iterator cend() const {
+                return mItems.cend();
+            }
+
+            const std::set<Element>& elementsWithoutOrigins() const {
+                return mElementsWithoutOrigins;
+            }
+
+            void clearElementsWithoutOrigins() {
+                mElementsWithoutOrigins.clear();
+            }
+
+    };
+
 
     class IntBlastModule : public Module
     {
@@ -418,6 +555,9 @@ namespace smtrat
 
             VariableBounds mBoundsFromInput;
             VariableBounds mBoundsInRestriction;
+
+            CollectionWithOrigins<carl::Variable, FormulaT> mInputVariables;
+            CollectionWithOrigins<carl::Variable, FormulaT> mNonlinearInputVariables;
 
             ModuleInput* mpICPInput; // ReceivedFormula of the internal ICP Module
             std::vector<std::atomic_bool*> mICPFoundAnswer;
@@ -438,7 +578,7 @@ namespace smtrat
             std::map<Poly, BlastedPoly> mPolyBlastings; // Map from polynomials to bit-vector terms representing them in the blasted output
             std::map<ConstraintT, BlastedConstr> mConstrBlastings;
             std::map<Poly, carl::Variable> mSubstitutes; // Map from polynomials to integer variables representing them in the ICP input
-            std::map<carl::Variable, FormulaT> mSubstituteConstraints;
+            CollectionWithOrigins<Poly, FormulaT> mSubstitutedPolys;
 
         public:
             IntBlastModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
@@ -507,7 +647,7 @@ namespace smtrat
             void blastVariable(const carl::Variable& _variable, const IntegerInterval& _interval, bool _allowOffset);
             std::size_t chooseWidth(const Integer& _numberToCover, std::size_t _maxWidth, bool _signed) const;
             void updateBoundsFromICP();
-            void updateOutsideRestrictionConstraint(const carl::Variables& _variables);
+            void updateOutsideRestrictionConstraint(bool _includeSubstitutes);
             void addFormulaToICP(const FormulaT& _formula, const FormulaT& _origin);
             void addConstraintToICP(FormulaT _formula);
             void removeFormulaFromICP(const FormulaT& _formula, const FormulaT& _origin);
@@ -516,6 +656,7 @@ namespace smtrat
             void updateModelFromICP() const;
             void updateModelFromBV() const;
             carl::BVTerm encodeBVConstant(const Integer& _constant, const BlastedType& _type) const;
+            Integer decodeBVConstant(const carl::BVValue& _value, const BlastedType& _type) const;
             carl::BVTerm resizeBVTerm(const BlastedTerm& _term, std::size_t _width) const;
             BlastedPoly reduceToRange(const BlastedPoly& _input, const IntegerInterval& _interval) const;
             bool evaluateRelation(carl::Relation _relation, const Integer& _first, const Integer& _second) const;

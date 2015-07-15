@@ -19,6 +19,8 @@ namespace smtrat
     Module( _type, _formula, _conditionals, _manager ),
     mBoundsFromInput(),
     mBoundsInRestriction(),
+    mInputVariables(),
+    mNonlinearInputVariables(),
     mpICPInput(new ModuleInput()),
     mICPFoundAnswer( vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
     mpICPRuntimeSettings(new RuntimeSettings()),
@@ -34,7 +36,7 @@ namespace smtrat
     mPolyBlastings(),
     mConstrBlastings(),
     mSubstitutes(),
-    mSubstituteConstraints()
+    mSubstitutedPolys()
     {
         smtrat::addModules(mpBVSolver);
         // TODO: Do we have to do some more initialization stuff here? Settings?
@@ -77,6 +79,25 @@ namespace smtrat
         assert(formula.getType() == carl::FormulaType::CONSTRAINT);
         assert(formula.constraint().integerValued());
 
+        // Retrieve all integer-valued variables in formula
+        carl::Variables variablesInFormula;
+        carl::Variables nonlinearVariablesInFormula;
+        const Poly& poly = formula.constraint().lhs();
+        formula.integerValuedVars(variablesInFormula);
+        for(auto termIt = poly.begin();termIt != poly.end();++termIt) {
+            if(termIt->getNrVariables() > 1 || ! termIt->isLinear()) {
+                termIt->gatherVariables(nonlinearVariablesInFormula);
+            }
+        }
+
+        // Update 'mInputVariables' and 'mNonlinearInputVariables' sets
+        for(auto& variable : variablesInFormula) {
+            mInputVariables.add(variable, formula);
+        }
+        for(auto& variable : variablesInFormula) {
+            mNonlinearInputVariables.add(variable, formula);
+        }
+
         // Update mBoundsFromInput using the new formula
         mBoundsFromInput.addBound(formula.constraint(), formula);
 
@@ -92,6 +113,9 @@ namespace smtrat
     void IntBlastModule::removeCore( ModuleInput::const_iterator _subformula )
     {
         const FormulaT& formula = _subformula->formula();
+
+        mInputVariables.removeOrigin(formula);
+        mNonlinearInputVariables.removeOrigin(formula);
 
         mBoundsFromInput.removeBound(formula.constraint(), formula);
         // mBoundsInRestriction: updated by updateBoundsFromICP() in next check
@@ -128,6 +152,27 @@ namespace smtrat
         assert(_constant >= _type.lowerBound() && _constant <= _type.upperBound());
         carl::BVValue constValue(_type.width(), _constant - _type.offset());
         return carl::BVTerm(carl::BVTermType::CONSTANT, constValue);
+    }
+
+    Integer IntBlastModule::decodeBVConstant(const carl::BVValue& _value, const BlastedType& _type) const
+    {
+        Integer summand(1);
+        Integer converted(0);
+
+        // Unsigned conversion from binary to integer
+        for(std::size_t position = 0;position<_value.width();++position) {
+            if(_value[position]) {
+                converted += summand;
+            }
+            summand *= 2;
+        }
+
+        // For negative numbers in two's complement, substract 2^width from result
+        if(_type.isSigned() && _value[_value.width()-1]) {
+            converted -= summand;
+        }
+
+        return converted + _type.offset();
     }
 
     carl::BVTerm IntBlastModule::resizeBVTerm(const BlastedTerm& _term, std::size_t _width) const
@@ -346,9 +391,6 @@ namespace smtrat
                 assert(interval.lowerBoundType() == carl::BoundType::WEAK && interval.upperBoundType() == carl::BoundType::WEAK);
 
                 blasted = reduceToRange(intermediate, interval);
-                // TODO: If blasted != intermediate, remember the ICP range
-                // (such that we can add the negation to the outsideRestrictionConstraint,
-                // if the used substitute range increases before the next satisfiability check)
                 break;
             }
             default: {
@@ -425,7 +467,7 @@ namespace smtrat
         ConstrTree constraintTree(_constraint);
         FormulasT blastedFormulas;
 
-        blastConstrTree(_constraint, blastedFormulas);
+        blastConstrTree(constraintTree, blastedFormulas);
         return blastedFormulas;
     }
 
@@ -433,38 +475,13 @@ namespace smtrat
     {
         mSolutionOrigin = SolutionOrigin::NONE;
 
-        carl::Variables inputVariables;
-        carl::Variables nonlinearInputVariables;
-
-        for(auto& formulaWithOrigins : rReceivedFormula()) {
-            // TODO: Constantly keep track of (linearity of) input variables
-            // on every call to addCore / removeCore.
-            // This removes the need to iterate over all received formulas
-            // at this point.
-
-            const FormulaT& formula = formulaWithOrigins.formula();
-
-            // Retrieve all integer-valued variables in formula
-            carl::Variables variablesInFormula;
-            formula.integerValuedVars(variablesInFormula);
-
-            // Update 'inputVariables' and 'nonlinearInputVariables' sets
-            inputVariables.insert(variablesInFormula.begin(), variablesInFormula.end());
-            for(auto variable : variablesInFormula) {
-                // TODO: This check does not suffice
-                if(formula.constraint().maxDegree(variable) > 1) {
-                    nonlinearInputVariables.insert(variable);
-                }
-            }
-        }
-
         // Choose blastings for new variables,
         // and ensure compatibility of previous blastings for all variables
 
-        for(auto variable : inputVariables)
+        for(auto variableWO : mInputVariables)
         {
-            auto nonlinearIt = nonlinearInputVariables.find(variable);
-            bool linear = (nonlinearIt == nonlinearInputVariables.end());
+            const carl::Variable& variable = variableWO.element();
+            bool linear = ! mNonlinearInputVariables.contains(variable);
             IntegerInterval interval = getNum(mBoundsFromInput.getInterval(variable));
 
             Poly variablePoly(variable);
@@ -530,16 +547,47 @@ namespace smtrat
         // (determined either by the ICP module or by the BV solver).
         // Call backend
 
-        updateOutsideRestrictionConstraint(inputVariables);
+        updateOutsideRestrictionConstraint(icpAnswer == Unknown);
 
         Answer backendAnswer = runBackends(_full);
         mSolutionOrigin = SolutionOrigin::BACKEND;
 
         if(backendAnswer == False) {
             getInfeasibleSubsets();
-            // TODO: This does not suffice. The infeasible subsets from the backend
-            // may include the "outside restriction"-contraint.
+            // The infeasible subsets from the backend may include the "outside restriction"-contraint.
             // Merge this with infeasible subsets from ICP or BV solver.
+
+            std::vector<FormulasT> infeasibleInRestriction;
+
+            if(icpAnswer == False) {
+                infeasibleInRestriction.insert(infeasibleInRestriction.end(), mICP.infeasibleSubsets().begin(), mICP.infeasibleSubsets().end());
+            } else {
+                infeasibleInRestriction.insert(infeasibleInRestriction.end(), mpBVSolver->infeasibleSubsets().begin(), mpBVSolver->infeasibleSubsets().end());
+            }
+            assert(! infeasibleInRestriction.empty());
+
+            std::vector<FormulasT> newInfeasibleSubsets;
+
+            for(auto subsetIt=mInfeasibleSubsets.begin();subsetIt != mInfeasibleSubsets.end(); ) {
+                auto& infeasibleSubset = *subsetIt;
+                auto outsideRestriction = infeasibleSubset.find(mOutsideRestriction);
+
+                if(outsideRestriction != infeasibleSubset.end()) {
+                    infeasibleSubset.erase(outsideRestriction);
+                    FormulasT newInfSubset(infeasibleSubset);
+                    subsetIt = mInfeasibleSubsets.erase(subsetIt);
+
+                    for(auto& infInRestriction : infeasibleInRestriction) {
+                        FormulasT combinedInfSubset(newInfSubset);
+                        combinedInfSubset.insert(infInRestriction.begin(), infInRestriction.end());
+                        newInfeasibleSubsets.push_back(combinedInfSubset);
+                    }
+                } else {
+                    ++subsetIt;
+                }
+            }
+
+            mInfeasibleSubsets.insert(mInfeasibleSubsets.end(), newInfeasibleSubsets.begin(), newInfeasibleSubsets.end());
         }
 
         return backendAnswer;
@@ -691,12 +739,13 @@ namespace smtrat
         }
     }
 
-    void IntBlastModule::updateOutsideRestrictionConstraint(const carl::Variables& _variables)
+    void IntBlastModule::updateOutsideRestrictionConstraint(bool _includeSubstitutes)
     {
         FormulasT outsideConstraints;
 
         auto& inputBounds = mBoundsFromInput.getEvalIntervalMap();
-        for(auto& variable : _variables) {
+        for(auto& variableWithOrigins : mInputVariables) {
+            const carl::Variable& variable = variableWithOrigins.element();
             auto& blastedVar = mPolyBlastings.at(Poly(variable));
             Integer blastedLowerBound = (blastedVar.isConstant() ? blastedVar.constant() : blastedVar.term().type().lowerBound());
             Integer blastedUpperBound = (blastedVar.isConstant() ? blastedVar.constant() : blastedVar.term().type().upperBound());
@@ -708,6 +757,38 @@ namespace smtrat
 
             if(inputBoundsIt == inputBounds.end() || getNum(inputBoundsIt->second).contains(blastedUpperBound + 1)) {
                 outsideConstraints.insert(FormulaT(ConstraintT(variable, carl::Relation::GREATER, blastedUpperBound)));
+            }
+        }
+
+        if(_includeSubstitutes) {
+            auto& icpBounds = mBoundsInRestriction.getEvalIntervalMap();
+
+            for(auto& polyWithOrigins : mSubstitutedPolys) {
+                const Poly& poly = polyWithOrigins.element();
+
+                // Compare "natural" bounds (bounds from ICP) to encoding bounds
+                // (bounds from BV encodings).
+                // Usually, the encoding bounds contain the natural bounds.
+                // However, due to incrementality, the natural bounds may broaden
+                // after the corresponding encoding bounds have been set. In this case,
+                // we need to add further constraints to the backend.
+
+                auto& blastedPoly = mPolyBlastings.at(poly);
+                auto& substitute = mSubstitutes.at(poly);
+
+                Integer blastedLowerBound = (blastedPoly.isConstant() ? blastedPoly.constant() : blastedPoly.term().type().lowerBound());
+                Integer blastedUpperBound = (blastedPoly.isConstant() ? blastedPoly.constant() : blastedPoly.term().type().upperBound());
+                auto icpBoundsIt = icpBounds.find(substitute);
+
+                if(icpBoundsIt == icpBounds.end() || getNum(icpBoundsIt->second).contains(blastedLowerBound - 1)) {
+                    // poly < blastedLowerBound  <=>  poly - blastedLowerBound < 0
+                    outsideConstraints.insert(FormulaT(ConstraintT(poly - Poly(blastedLowerBound), carl::Relation::LESS)));
+                }
+
+                if(icpBoundsIt == icpBounds.end() || getNum(icpBoundsIt->second).contains(blastedUpperBound + 1)) {
+                    // poly > blastedUpperBound  <=>  poly - blastedUpperBound > 0
+                    outsideConstraints.insert(FormulaT(ConstraintT(poly - Poly(blastedUpperBound), carl::Relation::GREATER)));
+                }
             }
         }
 
@@ -773,6 +854,9 @@ namespace smtrat
 
                 mpICPInput->add(constraintForICP, _formula);
 
+                // Remember that the polynome originates from _formula
+                mSubstitutedPolys.add(currentPoly.poly(), _formula);
+
                 // Schedule left and right subtree of current PolyTree
                 // for being visited in the breadth-first search
                 nodesForSubstitution.push_back(&(currentPoly.left()));
@@ -794,6 +878,8 @@ namespace smtrat
 
     void IntBlastModule::removeOriginFromICP(const FormulaT& _origin)
     {
+        mSubstitutedPolys.removeOrigin(_origin);
+
         ModuleInput::iterator icpFormula = mpICPInput->begin();
         while(icpFormula != mpICPInput->end())
         {
@@ -831,7 +917,35 @@ namespace smtrat
 
     void IntBlastModule::updateModelFromBV() const
     {
-        // TODO: Implement
+        clearModel();
+        const Model& bvModel = mpBVSolver->model();
+
+        // Transfer all non-bitvector assignments
+        for(auto& varAndValue : bvModel) {
+            if(! varAndValue.first.isBVVariable()) {
+                mModel.insert(varAndValue);
+            }
+        }
+
+        // For each input variable, look up bitvector value and convert it back to integer
+        for(auto inputVariableIt = mInputVariables.cbegin();inputVariableIt != mInputVariables.cend();++inputVariableIt) {
+            auto& inputVariable = *inputVariableIt;
+            const carl::Variable& variable = inputVariable.element();
+            const BlastedPoly& blasting = mPolyBlastings.at(Poly(variable));
+
+            if(blasting.isConstant()) {
+                auto modelValue = carl::RealAlgebraicNumberNR<Rational>::create(blasting.constant(), false);
+                mModel[ModelVariable(variable)] = ModelValue(modelValue);
+            } else {
+                const carl::BVTerm& blastedTerm = blasting.term().term();
+                assert(blastedTerm.type() == carl::BVTermType::VARIABLE);
+                const carl::BVVariable& bvVariable = blastedTerm.variable();
+                const carl::BVValue& bvValue = mModel.at(ModelVariable(bvVariable)).asBVValue();
+                Integer integerValue = decodeBVConstant(bvValue, blasting.term().type());
+                auto modelValue = carl::RealAlgebraicNumberNR<Rational>::create(integerValue, false);
+                mModel[ModelVariable(variable)] = ModelValue(modelValue);
+            }
+        }
     }
 
     IntBlastModule::IntegerInterval IntBlastModule::getNum(const RationalInterval& _interval) const
