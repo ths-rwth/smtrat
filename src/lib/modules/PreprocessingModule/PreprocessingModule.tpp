@@ -12,7 +12,6 @@
 //#define REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION (Not working)
 //#define ADDLINEARDEDUCTIONS
 //#define PREPROCESSING_DEVELOP_MODE
-//#define DEBUG_ELIMINATE_SUBSTITUTIONS
 
 namespace smtrat {
 
@@ -625,9 +624,7 @@ namespace smtrat {
         auto iter = boolSubs.find( _formula );
         if( iter != boolSubs.end() )
         {
-            #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-            std::cout << _formula << " ----> " << (iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE )) << std::endl;
-            #endif
+			SMTRAT_LOG_DEBUG("smtrat.preprocessing", _formula << " ----> " << (iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE )));
             return iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE );
         }
         FormulaT result = _formula;
@@ -661,9 +658,7 @@ namespace smtrat {
                                 Poly subPoly;
                                 if( tmp.constraint().getSubstitution( subVar, subPoly ) )
                                 {
-                                    #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                                    std::cout << __LINE__ << "   found substitution [" << subVar << " -> " << subPoly << "]" << std::endl;
-                                    #endif
+									SMTRAT_LOG_DEBUG("smtrat.preprocessing", "found substitution [" << subVar << " -> " << subPoly << "]");
                                     assert( arithSubs.find( subVar ) == arithSubs.end() );
                                     addedArithSubs.push_back( arithSubs.emplace( subVar, subPoly ).first );
                                     foundSubstitutions.insert( tmp );
@@ -710,18 +705,14 @@ namespace smtrat {
                                     sfs.push_back( sfSimplified );
                                     if( sfSimplified.getType() == carl::FormulaType::NOT )
                                     {
-                                        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                                        std::cout <<  __LINE__ << "   found boolean substitution [" << sfSimplified.subformula() << " -> false]" << std::endl;
-                                        #endif
+										SMTRAT_LOG_DEBUG("smtrat.preprocessing", "found boolean substitution [" << sfSimplified.subformula() << " -> false]");
                                         assert( boolSubs.find( sfSimplified.subformula() ) == boolSubs.end() );
                                         assert( foundBooleanSubstitutions.find( sfSimplified ) == foundBooleanSubstitutions.end() );
                                         foundBooleanSubstitutions.emplace( sfSimplified, boolSubs.insert( std::make_pair( sfSimplified.subformula(), false ) ).first );
                                     }
                                     else
                                     {
-                                        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                                        std::cout <<  __LINE__ << "   found boolean substitution [" << sfSimplified << " -> true]" << std::endl;
-                                        #endif
+										SMTRAT_LOG_DEBUG("smtrat.preprocessing", "found boolean substitution [" << sfSimplified << " -> true]");
                                         assert( boolSubs.find( sfSimplified ) == boolSubs.end() );
                                         assert( foundBooleanSubstitutions.find( sfSimplified ) == foundBooleanSubstitutions.end() );
                                         foundBooleanSubstitutions.emplace( sfSimplified, boolSubs.insert( std::make_pair( sfSimplified, true ) ).first );
@@ -768,22 +759,16 @@ namespace smtrat {
                     Poly subPoly;
                     if( cond.constraint().getSubstitution( subVar, subPoly, false ) )
                     {
-                        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                        std::cout << __LINE__ << "   found substitution [" << subVar << " -> " << subPoly << "]" << std::endl;
-                        #endif
+						SMTRAT_LOG_DEBUG("smtrat.preprocessing", "found substitution [" << subVar << " -> " << subPoly << "]");
                         auto addedBoolSub = cond.getType() == carl::FormulaType::NOT ? boolSubs.emplace( cond.subformula(), false ) : boolSubs.emplace( cond, true );
-                        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                        std::cout <<  __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" << std::endl;
-                        #endif
+                        SMTRAT_LOG_DEBUG("smtrat.preprocessing", "found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]");
                         assert( addedBoolSub.second );
                         auto iterB = arithSubs.emplace( subVar, subPoly ).first;
                         FormulaT firstCaseTmp = elimSubstitutions( _formula.firstCase() );
                         arithSubs.erase( iterB );
                         boolSubs.erase( addedBoolSub.first );
                         addedBoolSub = cond.getType() == carl::FormulaType::NOT ? boolSubs.emplace( cond.subformula(), true ) : boolSubs.emplace( cond, false );
-                        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                        std::cout <<  __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" << std::endl;
-                        #endif
+						SMTRAT_LOG_DEBUG("smtrat.preprocessing", "found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]");
                         assert( addedBoolSub.second );
                         FormulaT secondCaseTmp = elimSubstitutions( _formula.secondCase() );
                         boolSubs.erase( addedBoolSub.first );
@@ -792,20 +777,14 @@ namespace smtrat {
                     }
                     else if( cond.constraint().getSubstitution( subVar, subPoly, true ) )
                     {
-                        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                        std::cout << __LINE__ << "   found substitution [" << subVar << " -> " << subPoly << "]" << std::endl;
-                        #endif
+				        SMTRAT_LOG_DEBUG("smtrat.preprocessing", "found substitution [" << subVar << " -> " << subPoly << "]");
                         auto addedBoolSub = cond.getType() == carl::FormulaType::NOT ? boolSubs.emplace( cond.subformula(), false ) : boolSubs.emplace( cond, true );
-                        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                        std::cout <<  __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" << std::endl;
-                        #endif
+						SMTRAT_LOG_DEBUG("smtrat.preprocessing", "found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]");
                         assert( addedBoolSub.second );
                         FormulaT firstCaseTmp = elimSubstitutions( _formula.firstCase() );
                         boolSubs.erase( addedBoolSub.first );
                         addedBoolSub = cond.getType() == carl::FormulaType::NOT ? boolSubs.emplace( cond.subformula(), true ) : boolSubs.emplace( cond, false );
-                        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                        std::cout <<  __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" << std::endl;
-                        #endif
+						SMTRAT_LOG_DEBUG("smtrat.preprocessing", "found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]");
                         assert( addedBoolSub.second );
                         auto iterB = arithSubs.emplace( subVar, subPoly ).first;
                         FormulaT secondCaseTmp = elimSubstitutions( _formula.secondCase() );
@@ -826,16 +805,12 @@ namespace smtrat {
                 else
                 {
                     auto addedBoolSub = cond.getType() == carl::FormulaType::NOT ? boolSubs.emplace( cond.subformula(), false ) : boolSubs.emplace( cond, true );
-                    #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                    std::cout <<  __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" << std::endl;
-                    #endif
+					SMTRAT_LOG_DEBUG("smtrat.preprocessing", "found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]");
                     assert( addedBoolSub.second );
                     FormulaT firstCaseTmp = elimSubstitutions( _formula.firstCase() );
                     boolSubs.erase( addedBoolSub.first );
                     addedBoolSub = cond.getType() == carl::FormulaType::NOT ? boolSubs.emplace( cond.subformula(), true ) : boolSubs.emplace( cond, false );
-                    #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                    std::cout <<  __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" << std::endl;
-                    #endif
+					SMTRAT_LOG_DEBUG("smtrat.preprocessing", "found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]");
                     assert( addedBoolSub.second );
                     FormulaT secondCaseTmp = elimSubstitutions( _formula.secondCase() );
                     boolSubs.erase( addedBoolSub.first );
@@ -881,9 +856,7 @@ namespace smtrat {
             case carl::FormulaType::UEQ: 
             case carl::FormulaType::TRUE:
             case carl::FormulaType::FALSE:
-                #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                std::cout << _formula << " ----> " << result << std::endl;
-                #endif
+				SMTRAT_LOG_DEBUG("smtrat.preprocessing", _formula << " ----> " << result);
                 return result;
             case carl::FormulaType::EXISTS:
             case carl::FormulaType::FORALL: {
@@ -895,14 +868,10 @@ namespace smtrat {
         iter = boolSubs.find( result );
         if( iter != boolSubs.end() )
         {
-            #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-            std::cout << _formula << " ----> " << (iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE )) << std::endl;
-            #endif
+			SMTRAT_LOG_DEBUG("smtrat.preprocessing", _formula << " ----> " << (iter->second ? FormulaT(carl::FormulaType::TRUE) : FormulaT(carl::FormulaType::FALSE)));
             return iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE );
         }
-        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-        std::cout << _formula << " ----> " << result << std::endl;
-        #endif
+		SMTRAT_LOG_DEBUG("smtrat.preprocessing", _formula << " ----> " << result);
         return result;
     }
 	
