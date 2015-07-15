@@ -99,7 +99,7 @@ namespace smtrat
         }
 
         friend std::ostream& operator<<( std::ostream& _out, const BlastedType& _type ) {
-            return (_out << "[" << (_type.mSigned ? "s" : "u") << _type.mWidth << "]");
+            return (_out << "[" << (_type.mSigned ? "s" : "u") << _type.mWidth << "+" << _type.mOffset << "]");
         }
     };
 
@@ -194,7 +194,6 @@ namespace smtrat
         }
 
         const FormulasT& constraints() const {
-            assert(! mIsConstant);
             return mConstraints;
         }
 
@@ -652,6 +651,7 @@ namespace smtrat
             void addConstraintToICP(FormulaT _formula);
             void removeFormulaFromICP(const FormulaT& _formula, const FormulaT& _origin);
             void removeOriginFromICP(const FormulaT& _origin);
+            void addFormulaToBV(const FormulaT& _formula, const FormulaT& _origin);
             void removeOriginFromBV(const FormulaT& _origin);
             void updateModelFromICP() const;
             void updateModelFromBV() const;

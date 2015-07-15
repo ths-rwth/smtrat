@@ -220,7 +220,8 @@ namespace smtrat
             const BlastedPoly& variableFactor = (_factor1.isConstant() ? _factor2 : _factor1);
             const BlastedType& variableType   = variableFactor.term().type();
 
-            BlastedType constantType(chooseWidth(constantFactor.constant(), 0, variableType.isSigned()), variableType.isSigned(), 0);
+            bool constantNegative = constantFactor.constant() < 0;
+            BlastedType constantType(chooseWidth(constantFactor.constant(), 0, constantNegative), constantNegative, 0);
             BlastedTerm product(BlastedType::forProduct(variableType.withOffset(0), constantType).withOffset(variableType.offset() * constantFactor.constant()));
 
             carl::BVTerm bvConstantFactor = encodeBVConstant(constantFactor.constant(), product.type());
@@ -273,8 +274,8 @@ namespace smtrat
             const BlastedPoly& variablePol = left.isConstant() ? right : left;
             const Integer& constant = constantPol.constant();
 
-            // Assuming "constant op variable" now (i.e., constant is on the left side)
-            carl::Relation relation = left.isConstant() ? _constraint.relation() : carl::turnAroundRelation(_constraint.relation());
+            // Assuming "variable op constant" now (i.e., constant is on the right side)
+            carl::Relation relation = left.isConstant() ? carl::turnAroundRelation(_constraint.relation()) : _constraint.relation();
 
             if(relation == carl::Relation::EQ || relation == carl::Relation::NEQ) {
                 // is the constant outside the range of the variable?
@@ -283,8 +284,8 @@ namespace smtrat
                     simpleBlast = true;
                 }
             } else { // relation is one of LESS, GREATER, LEQ, GEQ
-                bool lowerEvaluation = evaluateRelation(_constraint.relation(), constant, right.lowerBound());
-                bool upperEvaluation = evaluateRelation(_constraint.relation(), constant, right.upperBound());
+                bool lowerEvaluation = evaluateRelation(_constraint.relation(), left.lowerBound(), constant);
+                bool upperEvaluation = evaluateRelation(_constraint.relation(), left.upperBound(), constant);
 
                 if(lowerEvaluation == upperEvaluation) {
                     blasted = BlastedConstr(lowerEvaluation);
@@ -323,10 +324,13 @@ namespace smtrat
                         assert(false);
                 }
 
-                blasted = BlastedConstr(FormulaT(carl::BVConstraint::create(rel, bvConstant, right.term().term())));
+                blasted = BlastedConstr(FormulaT(carl::BVConstraint::create(rel, left.term().term(), bvConstant)));
             }
         }
 
+        if(! blasted.formula().isTrue()) {
+            _collectedFormulas.insert(blasted.formula());
+        }
         _collectedFormulas.insert(blasted.constraints().begin(), blasted.constraints().end());
         return mConstrBlastings.insert(std::make_pair(_constraint.constraint(), blasted)).first->second;
     }
@@ -517,19 +521,21 @@ namespace smtrat
         }
 
         if(icpAnswer == Unknown) {
+            std::cout << "Updating bounds from ICP." << std::endl;
             updateBoundsFromICP();
 
             while(! mFormulasToEncode.empty()) {
+                std::cout << "Formula " << mFormulasToEncode.front() << " encoded to BV:" << std::endl;
                 const FormulaT& formulaToEncode = mFormulasToEncode.front();
 
                 FormulasT blastedFormulas = blastConstraint(formulaToEncode.constraint());
                 for(auto blastedFormula : blastedFormulas) {
-                    auto insertionResult = mpBVInput->add(blastedFormula, formulaToEncode);
-                    if(insertionResult.second) { // The formula was fresh
-                        mpBVSolver->inform(blastedFormula);
-                        mpBVSolver->add(blastedFormula);
-                    }
+                    std::cout << " - " << blastedFormula << std::endl;
                 }
+                for(auto blastedFormula : blastedFormulas) {
+                    addFormulaToBV(blastedFormula, formulaToEncode);
+                }
+                mFormulasToEncode.pop_front();
             }
 
             std::cout << "Running BV solver." << std::endl;
@@ -715,6 +721,7 @@ namespace smtrat
 
     std::size_t IntBlastModule::chooseWidth(const Integer& _numberToCover, std::size_t _maxWidth, bool _signed) const
     {
+        assert(_numberToCover >= 0 || _signed);
         std::size_t width = 1;
         carl::Interval<Integer> interval(Integer(_signed ? -1 : 0), Integer(_signed ? 0 : 1));
 
@@ -806,9 +813,11 @@ namespace smtrat
 
     void IntBlastModule::addFormulaToICP(const FormulaT& _formula, const FormulaT& _origin)
     {
+        std::cout << "-[ICP+]-> " << _formula << std::endl;
         auto insertionResult = mpICPInput->add(_formula, _origin);
 
         if(insertionResult.second) {
+            mICP.inform(_formula);
             mICP.add(insertionResult.first);
         }
     }
@@ -816,7 +825,7 @@ namespace smtrat
     void IntBlastModule::addConstraintToICP(FormulaT _formula)
     {
         // First, add the formula itself to ICP
-        mpICPInput->add(_formula, _formula);
+        addFormulaToICP(_formula, _formula);
 
         // Now we create a substitute for every node of the constraint tree of _formula
         // (except for the root, variable nodes and constant nodes)
@@ -852,7 +861,7 @@ namespace smtrat
                 polyMinusSubstitute -= substitute;
                 FormulaT constraintForICP(polyMinusSubstitute, carl::Relation::EQ);
 
-                mpICPInput->add(constraintForICP, _formula);
+                addFormulaToICP(constraintForICP, _formula);
 
                 // Remember that the polynome originates from _formula
                 mSubstitutedPolys.add(currentPoly.poly(), _formula);
@@ -890,6 +899,17 @@ namespace smtrat
             } else {
                 ++icpFormula;
             }
+        }
+    }
+
+    void IntBlastModule::addFormulaToBV(const FormulaT& _formula, const FormulaT& _origin)
+    {
+        std::cout << "-[BV +]-> " << _formula << std::endl;
+
+        auto insertionResult = mpBVInput->add(_formula, _origin);
+        if(insertionResult.second) { // The formula was fresh
+            mpBVSolver->inform(_formula);
+            mpBVSolver->add(_formula);
         }
     }
 
