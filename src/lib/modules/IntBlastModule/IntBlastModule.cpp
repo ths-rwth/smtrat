@@ -204,9 +204,9 @@ namespace smtrat
             carl::BVTerm bvSummand1 = resizeBVTerm(_summand1.term(), sum.type().width());
             carl::BVTerm bvSummand2 = resizeBVTerm(_summand2.term(), sum.type().width());
 
-            constraints.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                   carl::BVTerm(carl::BVTermType::ADD, bvSummand1, bvSummand2),
-                                                                   sum.term())));
+            constraints.push_back(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
+                                                                      carl::BVTerm(carl::BVTermType::ADD, bvSummand1, bvSummand2),
+                                                                      sum.term())));
             return BlastedPoly(sum, constraints);
         }
     }
@@ -228,9 +228,9 @@ namespace smtrat
             carl::BVTerm bvVariableFactor = resizeBVTerm(variableFactor.term(), product.type().width());
 
             FormulasT constraints;
-            constraints.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                   carl::BVTerm(carl::BVTermType::MUL, bvConstantFactor, bvVariableFactor),
-                                                                   product.term())));
+            constraints.push_back(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
+                                                                      carl::BVTerm(carl::BVTermType::MUL, bvConstantFactor, bvVariableFactor),
+                                                                      product.term())));
             return BlastedPoly(product, constraints);
         } else {
             FormulasT constraints;
@@ -239,9 +239,9 @@ namespace smtrat
             carl::BVTerm bvFactor1 = resizeBVTerm(_factor1.term(), product.type().width());
             carl::BVTerm bvFactor2 = resizeBVTerm(_factor2.term(), product.type().width());
 
-            constraints.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                   carl::BVTerm(carl::BVTermType::MUL, bvFactor1, bvFactor2),
-                                                                   product.term())));
+            constraints.push_back(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
+                                                                      carl::BVTerm(carl::BVTermType::MUL, bvFactor1, bvFactor2),
+                                                                      product.term())));
             return BlastedPoly(product, constraints);
         }
     }
@@ -257,7 +257,7 @@ namespace smtrat
             // This tree has already been encoded. Add its formulas to _collectedFormulas
             // and return the previously blasted node.
             const FormulasT& constraints = blastedConstrIt->second.constraints();
-            _collectedFormulas.insert(constraints.begin(), constraints.end());
+            _collectedFormulas.insert(_collectedFormulas.end(), constraints.begin(), constraints.end());
             return blastedConstrIt->second;
         }
 
@@ -329,9 +329,9 @@ namespace smtrat
         }
 
         if(! blasted.formula().isTrue()) {
-            _collectedFormulas.insert(blasted.formula());
+            _collectedFormulas.push_back(blasted.formula());
         }
-        _collectedFormulas.insert(blasted.constraints().begin(), blasted.constraints().end());
+        _collectedFormulas.insert(_collectedFormulas.end(), blasted.constraints().begin(), blasted.constraints().end());
         return mConstrBlastings.insert(std::make_pair(_constraint.constraint(), blasted)).first->second;
     }
 
@@ -364,7 +364,7 @@ namespace smtrat
             // This tree has already been encoded. Add its formulas to _collectedFormulas
             // and return the previously blasted node.
             const FormulasT& constraints = blastedPolyIt->second.constraints();
-            _collectedFormulas.insert(constraints.begin(), constraints.end());
+            _collectedFormulas.insert(_collectedFormulas.end(), constraints.begin(), constraints.end());
             return blastedPolyIt->second;
         }
 
@@ -402,7 +402,7 @@ namespace smtrat
             }
         }
 
-        _collectedFormulas.insert(blasted.constraints().begin(), blasted.constraints().end());
+        _collectedFormulas.insert(_collectedFormulas.end(), blasted.constraints().begin(), blasted.constraints().end());
         return mPolyBlastings.insert(std::make_pair(_poly.poly(), blasted)).first->second;
     }
 
@@ -420,7 +420,7 @@ namespace smtrat
             } else {
                 FormulasT constraints(_input.constraints());
                 carl::BVTerm bvConstant = encodeBVConstant(_interval.lower(), _input.term().type());
-                constraints.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ, _input.term().term(), bvConstant)));
+                constraints.push_back(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ, _input.term().term(), bvConstant)));
                 return BlastedPoly(_interval.lower(), constraints);
             }
         }
@@ -446,21 +446,21 @@ namespace smtrat
         FormulasT constraints(_input.constraints());
         BlastedTerm newTerm(inputType.withWidth(newWidth));
 
-        constraints.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                carl::BVTerm(carl::BVTermType::EXTRACT, _input.term().term(), newWidth-1, 0),
-                                                                newTerm.term())));
+        constraints.push_back(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
+                                                                  carl::BVTerm(carl::BVTermType::EXTRACT, _input.term().term(), newWidth-1, 0),
+                                                                  newTerm.term())));
 
         // add constraints which ensure a safe resizing
         if(inputType.isSigned()) {
             // All removed bits must equal the msb of newTerm.term()
-            constraints.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                    carl::BVTerm(carl::BVTermType::EXTRACT, _input.term().term(), inputType.width()-1, newWidth),
-                                                                    carl::BVTerm(carl::BVTermType::EXTRACT, _input.term().term(), inputType.width()-2, newWidth-1))));
+            constraints.push_back(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
+                                                                      carl::BVTerm(carl::BVTermType::EXTRACT, _input.term().term(), inputType.width()-1, newWidth),
+                                                                      carl::BVTerm(carl::BVTermType::EXTRACT, _input.term().term(), inputType.width()-2, newWidth-1))));
         } else { // type is unsigned
             // All removed bits must be zero
-            constraints.insert(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                    carl::BVTerm(carl::BVTermType::EXTRACT, _input.term().term(), inputType.width()-1, newWidth),
-                                                                    carl::BVTerm(carl::BVTermType::CONSTANT, carl::BVValue(inputType.width() - newWidth, 0)))));
+            constraints.push_back(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
+                                                                      carl::BVTerm(carl::BVTermType::EXTRACT, _input.term().term(), inputType.width()-1, newWidth),
+                                                                      carl::BVTerm(carl::BVTermType::CONSTANT, carl::BVValue(inputType.width() - newWidth, 0)))));
         }
 
         return BlastedPoly(newTerm, constraints);
@@ -576,7 +576,7 @@ namespace smtrat
 
             for(auto subsetIt=mInfeasibleSubsets.begin();subsetIt != mInfeasibleSubsets.end(); ) {
                 auto& infeasibleSubset = *subsetIt;
-                auto outsideRestriction = infeasibleSubset.find(mOutsideRestriction);
+                auto outsideRestriction = std::find(infeasibleSubset.begin(), infeasibleSubset.end(), mOutsideRestriction);
 
                 if(outsideRestriction != infeasibleSubset.end()) {
                     infeasibleSubset.erase(outsideRestriction);
@@ -585,7 +585,7 @@ namespace smtrat
 
                     for(auto& infInRestriction : infeasibleInRestriction) {
                         FormulasT combinedInfSubset(newInfSubset);
-                        combinedInfSubset.insert(infInRestriction.begin(), infInRestriction.end());
+                        combinedInfSubset.insert(combinedInfSubset.end(), infInRestriction.begin(), infInRestriction.end());
                         newInfeasibleSubsets.push_back(combinedInfSubset);
                     }
                 } else {
@@ -742,7 +742,7 @@ namespace smtrat
         mProcessedFormulasFromICP.clear();
         for(ModuleInput::const_iterator fwo=mICP.rPassedFormula().begin(); fwo != mICP.rPassedFormula().end(); fwo++) {
             mBoundsInRestriction.addBound(fwo->formula().constraint(), fwo->formula());
-            mProcessedFormulasFromICP.insert(fwo->formula());
+            mProcessedFormulasFromICP.push_back(fwo->formula());
         }
     }
 
@@ -759,11 +759,11 @@ namespace smtrat
             auto inputBoundsIt = inputBounds.find(variable);
 
             if(inputBoundsIt == inputBounds.end() || getNum(inputBoundsIt->second).contains(blastedLowerBound - 1)) {
-                outsideConstraints.insert(FormulaT(ConstraintT(variable, carl::Relation::LESS, blastedLowerBound)));
+                outsideConstraints.push_back(FormulaT(ConstraintT(variable, carl::Relation::LESS, blastedLowerBound)));
             }
 
             if(inputBoundsIt == inputBounds.end() || getNum(inputBoundsIt->second).contains(blastedUpperBound + 1)) {
-                outsideConstraints.insert(FormulaT(ConstraintT(variable, carl::Relation::GREATER, blastedUpperBound)));
+                outsideConstraints.push_back(FormulaT(ConstraintT(variable, carl::Relation::GREATER, blastedUpperBound)));
             }
         }
 
@@ -789,12 +789,12 @@ namespace smtrat
 
                 if(icpBoundsIt == icpBounds.end() || getNum(icpBoundsIt->second).contains(blastedLowerBound - 1)) {
                     // poly < blastedLowerBound  <=>  poly - blastedLowerBound < 0
-                    outsideConstraints.insert(FormulaT(ConstraintT(poly - Poly(blastedLowerBound), carl::Relation::LESS)));
+                    outsideConstraints.push_back(FormulaT(ConstraintT(poly - Poly(blastedLowerBound), carl::Relation::LESS)));
                 }
 
                 if(icpBoundsIt == icpBounds.end() || getNum(icpBoundsIt->second).contains(blastedUpperBound + 1)) {
                     // poly > blastedUpperBound  <=>  poly - blastedUpperBound > 0
-                    outsideConstraints.insert(FormulaT(ConstraintT(poly - Poly(blastedUpperBound), carl::Relation::GREATER)));
+                    outsideConstraints.push_back(FormulaT(ConstraintT(poly - Poly(blastedUpperBound), carl::Relation::GREATER)));
                 }
             }
         }

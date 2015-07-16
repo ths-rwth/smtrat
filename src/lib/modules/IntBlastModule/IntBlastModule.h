@@ -561,7 +561,7 @@ namespace smtrat
             ModuleInput* mpICPInput; // ReceivedFormula of the internal ICP Module
             std::vector<std::atomic_bool*> mICPFoundAnswer;
             RuntimeSettings* mpICPRuntimeSettings;
-            ICPModule mICP;
+            ICPModule<ICPSettings1> mICP;
             FormulaT mConstraintFromBounds;
             FormulasT mProcessedFormulasFromICP;
 
