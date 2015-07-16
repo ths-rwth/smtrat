@@ -24,14 +24,18 @@ link_directories( ${PROJECT_BINARY_DIR}/src/lib
 
 # write config.h
 #######################
+file(STRINGS ${CMAKE_SOURCE_DIR}/LICENSE LICENSE_CONTENT_IN)
+
 configure_file( ${CMAKE_SOURCE_DIR}/src/cli/config.h.in ${CMAKE_SOURCE_DIR}/src/cli/config.h )
 
-configure_file( ${CMAKE_SOURCE_DIR}/src/cli/newparser/theories/config.h.in ${CMAKE_SOURCE_DIR}/src/cli/newparser/theories/config.h )
+foreach(name newparser parser)
+  collect_files(cli ${name})
+endforeach()
 
 # executable solver
 # # # # # # # # # #
 
-add_executable( smtratSolver
+add_executable( smtrat
     newparser/theories/Arithmetic.cpp
 	newparser/theories/Bitvector.cpp
     newparser/theories/Core.cpp
@@ -40,15 +44,12 @@ add_executable( smtratSolver
 	RuntimeSettingsManager.cpp
 )
 
-target_link_libraries( smtratSolver
+target_link_libraries( smtrat
                         lib_${PROJECT_NAME} # smtrat library
                         ${libraries} # libraries definied in top-level CMakeLists.txt
 )
 
-if(${USE_GINAC} STREQUAL "ON")
-	target_link_libraries( smtratSolver ginac)
-endif()
-set_target_properties( smtratSolver PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
+set_target_properties( smtrat PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
 
 add_library( smtlibParser
 	${CMAKE_SOURCE_DIR}/src/cli/smtratSolver.cpp

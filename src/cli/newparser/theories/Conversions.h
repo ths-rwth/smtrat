@@ -29,6 +29,10 @@ struct Converter<types::BVTerm> {
 	bool operator()(const From&, types::BVTerm&) const {
 		return false;
 	}
+	bool operator()(const types::BVVariable& from, types::BVTerm& to) const {
+		to = types::BVTerm(carl::BVTermType::VARIABLE, from);
+		return true;
+	}
 	bool operator()(const types::BVTerm& from, types::BVTerm& to) const {
 		to = from;
 		return true;
@@ -47,6 +51,26 @@ struct Converter<types::BVTerm> {
 			}
 		}
 		to = types::BVTerm(carl::BVTermType::CONSTANT, value);
+		return true;
+	}
+};
+
+template<>
+struct Converter<Poly> {
+	template<typename From>
+	bool operator()(const From&, Poly&) const {
+		return false;
+	}
+	bool operator()(const Poly& from, Poly& to) const {
+		to = from;
+		return true;
+	}
+	bool operator()(const carl::Variable& from, Poly& to) const {
+		to = Poly(from);
+		return true;
+	}
+	bool operator()(const Rational& from, Poly& to) const {
+		to = Poly(from);
 		return true;
 	}
 };
@@ -79,12 +103,12 @@ struct VariantConverter: public boost::static_visitor<> {
 	bool operator()(const T& t) {
 		return converter(t, result);
 	}
-	template<typename... T>
-	bool operator()(const boost::variant<T...>& t) {
+	template<BOOST_VARIANT_ENUM_PARAMS(typename T)>
+	bool operator()(const boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>& t) {
 		return boost::apply_visitor(*this, t);
 	}
-	template<typename... T>
-	bool operator()(const boost::variant<T...>& t, Res& r) {
+	template<BOOST_VARIANT_ENUM_PARAMS(typename T)>
+	bool operator()(const boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>& t, Res& r) {
 		if ((*this)(t)) {
 			r = result;
 			return true;
@@ -111,8 +135,8 @@ struct VariantVariantConverter: public boost::static_visitor<> {
 	Res operator()(const T& t) {
 		return Res(t);
 	}
-	template<typename... T>
-	Res convert(const boost::variant<T...>& t) {
+	template<typename Variant>
+	Res convert(const Variant& t) {
 		return boost::apply_visitor(*this, t);
 	}
 };
@@ -122,10 +146,10 @@ struct VariantVariantConverter: public boost::static_visitor<> {
  * Converts a vector of variants to a vector of some type using the Converter class.
  */
 template<typename Res>
-struct VectorVariantConverter: public boost::static_visitor<> {
+struct VectorVariantConverter {
 	typedef Res result_type;
-	template<typename... T>
-	bool operator()(const std::vector<boost::variant<T...>>& v, std::vector<Res>& result) const {
+	template<BOOST_VARIANT_ENUM_PARAMS(typename T)>
+	bool operator()(const std::vector<boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>>& v, std::vector<Res>& result) const {
 		result.clear();
 		VariantConverter<Res> vc;
 		for (const auto& val: v) {
@@ -134,8 +158,8 @@ struct VectorVariantConverter: public boost::static_visitor<> {
 		}
 		return true;
 	}
-	template<typename... T>
-	bool operator()(const std::vector<boost::variant<T...>>& v, std::vector<Res>& result, TheoryError& errors) const {
+	template<BOOST_VARIANT_ENUM_PARAMS(typename T)>
+	bool operator()(const std::vector<boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>>& v, std::vector<Res>& result, TheoryError& errors) const {
 		result.clear();
 		VariantConverter<Res> vc;
 		for (const auto& val: v) {

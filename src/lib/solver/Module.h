@@ -407,11 +407,29 @@ namespace smtrat
             }
 
             /**
+             * Deletes all yet found deductions/lemmas.
+             */
+            void clearSplittings()
+            {
+                mSplittings.clear();
+            }
+
+            /**
              * @return A constant reference to the splitting decisions this module or its backends made.
              */
             const std::vector<Splitting>& splittings() const
             {
                 return mSplittings;
+            }
+            
+            void addSplitting( const FormulaT& _leftCase, const FormulaT& _rightCase, std::vector<FormulaT>&& _premise, bool _preferLeftCase )
+            {
+                mSplittings.emplace_back( _leftCase, _rightCase, std::move( _premise ), _preferLeftCase );
+            }
+            
+            void addSplittings( const std::vector<Splitting>& _splittings )
+            {
+                mSplittings.insert( mSplittings.end(), _splittings.begin(), _splittings.end() );
             }
 
             /**
@@ -476,7 +494,7 @@ namespace smtrat
              * @param _origins The set in which to store the origins.
              */
             void collectOrigins( const FormulaT& _formula, FormulasT& _origins ) const;
-            void collectOrigins( const FormulaT& _formula, std::vector<FormulaT>& _origins ) const;
+            //void collectOrigins( const FormulaT& _formula, std::vector<FormulaT>& _origins ) const;
 
             // Methods for debugging purposes.
             /**
@@ -703,7 +721,11 @@ namespace smtrat
              * the received formulas, which are responsible for its occurrence.
              * @param _subformula The sub-formula of the received formula to copy.
              */
-            std::pair<ModuleInput::iterator,bool> addReceivedSubformulaToPassedFormula( ModuleInput::const_iterator _subformula );
+            std::pair<ModuleInput::iterator,bool> addReceivedSubformulaToPassedFormula( ModuleInput::const_iterator _subformula )
+            {
+                assert( _subformula->formula().getType() != carl::FormulaType::AND );
+                return addSubformulaToPassedFormula( _subformula->formula(), true, _subformula->formula(), nullptr, false );
+            }
             
             bool originInReceivedFormula( const FormulaT& _origin ) const;
             
@@ -711,25 +733,92 @@ namespace smtrat
              * Adds the given formula to the passed formula with no origin. Note that in the next call of this module's removeSubformula, 
              * all formulas in the passed formula without origins will be removed.
              * @param _formula The formula to add to the passed formula.
+             * @return A pair to the position where the formula to add has been inserted (or its first sub-formula 
+             *         which has not yet been in the passed formula, in case the formula to add is a conjunction), 
+             *         and a Boolean stating whether anything has been added to the passed formula.
              */
-            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula );
+            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula )
+            {
+                return addSubformulaToPassedFormula( _formula, false, FormulaT( carl::FormulaType::FALSE ), nullptr, true );
+            }
             
             /**
              * Adds the given formula to the passed formula.
              * @param _formula The formula to add to the passed formula.
              * @param _origins The link of the formula to add to the passed formula to sub-formulas 
              *         of the received formulas, which are responsible for its occurrence
+             * @return A pair to the position where the formula to add has been inserted (or its first sub-formula 
+             *         which has not yet been in the passed formula, in case the formula to add is a conjunction), 
+             *         and a Boolean stating whether anything has been added to the passed formula.
              */
-            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins );
+            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins )
+            {
+                return addSubformulaToPassedFormula( _formula, false, FormulaT( carl::FormulaType::FALSE ), _origins, true );
+            }
             
             /**
              * Adds the given formula to the passed formula.
              * @param _formula The formula to add to the passed formula.
              * @param _origin The sub-formula of the received formula being responsible for the
              *        occurrence of the formula to add to the passed formula.
+             * @return A pair to the position where the formula to add has been inserted (or its first sub-formula 
+             *         which has not yet been in the passed formula, in case the formula to add is a conjunction), 
+             *         and a Boolean stating whether anything has been added to the passed formula.
              */
-            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, const FormulaT& _origin );
+            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, const FormulaT& _origin )
+            {
+                return addSubformulaToPassedFormula( _formula, true, _origin, nullptr, true );
+            }
             
+    private:
+            /**
+             * This method actually implements the adding of a formula to the passed formula
+             * @param _formula The formula to add to the passed formula.
+             * @param _hasOrigin true, if the next argument contains the formula being the single origin.
+             * @param _origin The sub-formula of the received formula being responsible for the
+             *        occurrence of the formula to add to the passed formula.
+             * @param _origins The link of the formula to add to the passed formula to sub-formulas 
+             *         of the received formulas, which are responsible for its occurrence
+             * @param _mightBeConjunction true, if the formula to add might be a conjunction.
+             * @return A pair to the position where the formula to add has been inserted (or its first sub-formula 
+             *         which has not yet been in the passed formula, in case the formula to add is a conjunction), 
+             *         and a Boolean stating whether anything has been added to the passed formula.
+             */
+            std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, bool _hasSingleOrigin, const FormulaT& _origin, const std::shared_ptr<std::vector<FormulaT>>& _origins, bool _mightBeConjunction );
+    protected:
+        
+            /**
+             * @param _origins
+             * @return
+             */
+            std::vector<FormulaT>::const_iterator findBestOrigin( const std::vector<FormulaT>& _origins ) const;
+        
+            /**
+             * 
+             * @param _formula
+             * @param _origins
+             */
+            void getOrigins( const FormulaT& _formula, FormulasT& _origins ) const
+            {
+                ModuleInput::const_iterator posInReceived = mpPassedFormula->find( _formula );
+                assert( posInReceived != mpPassedFormula->end() );
+                if( posInReceived->hasOrigins() )
+                    collectOrigins( *findBestOrigin( posInReceived->origins() ), _origins );
+            }
+
+            /**
+             * 
+             * @param _formula
+             * @param _origins
+             */
+            /*void getOrigins( const FormulaT& _formula, std::vector<FormulaT>& _origins ) const
+            {
+                ModuleInput::const_iterator posInReceived = mpPassedFormula->find( _formula );
+                assert( posInReceived != mpPassedFormula->end() );
+                if( posInReceived->hasOrigins() )
+                    collectOrigins( *findBestOrigin( posInReceived->origins() ), _origins );
+            }*/
+        
             /**
              * Copies the infeasible subsets of the passed formula
              */
@@ -748,6 +837,7 @@ namespace smtrat
              * Stores the model of a backend which determined satisfiability of the passed 
              * formula in the model of this module.
              */
+            Model backendsModel() const;
             void getBackendsModel() const;
             
             /**
@@ -767,6 +857,8 @@ namespace smtrat
              * @return 
              */
             virtual ModuleInput::iterator eraseSubformulaFromPassedFormula( ModuleInput::iterator _subformula, bool _ignoreOrigins = false );
+            
+            void clearPassedFormula();
             
             /**
              * Get the infeasible subsets the given backend provides. Note, that an infeasible subset
@@ -804,7 +896,7 @@ namespace smtrat
              * @return true, if this branching is probably part of an infinite loop of branchings;
              *         false, otherwise.
              */
-            static bool probablyLooping( const typename Poly::PolyType& _branchingPolynomial, const Rational& _branchingValue );
+            bool probablyLooping( const typename Poly::PolyType& _branchingPolynomial, const Rational& _branchingValue ) const;
             
             /**
              * Adds a deductions which provoke a branching for the given variable at the given value,

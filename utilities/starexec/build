@@ -2,6 +2,7 @@
 
 echo "Copying smtrat from build/"
 cp ../../build/smtrat bin/smtrat
+strip bin/smtrat
 
 echo "Creating archive"
 tar -czf smtrat.tgz bin/

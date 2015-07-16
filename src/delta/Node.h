@@ -7,6 +7,7 @@
 
 #include <numeric>
 #include <iostream>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -31,32 +32,45 @@ struct Node {
 	std::vector<Node> children;
 	/// Flag if the node was contained in brackets.
 	bool brackets;
+	std::size_t size;
 
 	/**
 	 * Create an empty node.
 	 */
-	explicit Node(): brackets(false) {}
+	explicit Node(): brackets(false), size(1) {}
 	/**
 	 * Create a node with a name.
 	 * @param name Name of the node.
 	 * @param brackets If not is contained in brackets.
 	 */
-	explicit Node(const std::string& name, bool brackets = true): name(name), brackets(brackets) {}
+	explicit Node(const std::string& name, bool brackets = true): name(name), brackets(brackets), size(1) {}
 	/**
 	 * Create a node with a name.
 	 * @param data Tuple containing the name and the brackets flag.
 	 */
-	explicit Node(const std::tuple<std::string, bool>& data): name(std::get<0>(data)), brackets(std::get<1>(data)) {}
+	explicit Node(const std::tuple<std::string, bool>& data): name(std::get<0>(data)), brackets(std::get<1>(data)), size(1) {}
 	/**
 	 * Create a node with children.
 	 * @param data Tuple containing the children and the brackets flag.
 	 */
-	explicit Node(const std::tuple<std::vector<Node>, bool>& data): children(std::get<0>(data)), brackets(std::get<1>(data)) {}
+	explicit Node(const std::tuple<std::vector<Node>, bool>& data): children(std::get<0>(data)), brackets(std::get<1>(data)), size(0) {
+		recalculateSize();
+	}
 	/**
 	 * Create a node with a name and children.
 	 * @param data Tuple containing the name, the children and the brackets flag.
 	 */
-	explicit Node(const std::tuple<std::string, std::vector<Node>, bool>& data): name(std::get<0>(data)), children(std::get<1>(data)), brackets(std::get<2>(data)) {}
+	explicit Node(const std::tuple<std::string, std::vector<Node>, bool>& data): name(std::get<0>(data)), children(std::get<1>(data)), brackets(std::get<2>(data)), size(0) {
+		recalculateSize();
+	}
+	
+	explicit Node(const std::string& name, const std::initializer_list<Node>& children, bool brackets = true): name(name), children(children), brackets(brackets), size(0) {
+		recalculateSize();
+	}
+	
+	void recalculateSize() {
+		size = std::accumulate(children.begin(), children.end(), (std::size_t)1, [](std::size_t a, const Node& b){ return a + b.complexity(); });
+	}
 
 	/**
 	 * Streaming operator.
@@ -69,7 +83,7 @@ struct Node {
 		if (n.brackets) os << "(";
 		os << n.name;
 		for (auto c: n.children) {
-			if (n.name == "") os << c << std::endl;
+			if (n.name == "") os << c << (n.brackets ? ' ' : '\n');
 			else os << " " << c;
 		}
 		if (n.brackets) os << ")";
@@ -80,8 +94,8 @@ struct Node {
 	 * Calculates the number of nodes.
      * @return Number of nodes.
      */
-	unsigned complexity() const {
-		return std::accumulate(children.begin(), children.end(), (unsigned)1, [](unsigned a, const Node& b){ return a + b.complexity(); });
+	std::size_t complexity() const {
+		return size;
 	}
 	/**
 	 * Checks if this node is immutable.
@@ -98,6 +112,10 @@ struct Node {
      */
 	std::string repr(bool longRepr = false) const {
 		if (longRepr) return String() << *this;
+		if (name == "_") {
+			assert(children.size() == 2);
+			return children[0].repr(longRepr) + "_" + children[1].repr(longRepr);
+		}
 		if (name != "") return name;
 		return "Node";
 	}
@@ -140,6 +158,27 @@ struct Node {
 			}
 		}
 		return Node(std::make_tuple(name, newChildren, brackets));
+	}
+	
+	void collectNames(std::set<std::string>& names) const {
+		if (name == "declare-fun") return;
+		names.insert(name);
+		for (const auto& c: children) c.collectNames(names);
+	}
+	
+	void eliminateDefineFuns() {
+		std::set<std::string> names;
+		collectNames(names);
+		for (auto it = children.begin(); it != children.end(); ) {
+			if (it->name == "declare-fun") {
+				if (names.count(it->children[0].name) == 0) {
+					children.erase(it);
+					continue;
+				}
+			}
+			it++;
+		}
+		recalculateSize();
 	}
 };
 

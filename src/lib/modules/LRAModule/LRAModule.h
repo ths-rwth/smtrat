@@ -111,11 +111,24 @@ namespace smtrat
             carl::Variable mDelta;
             /// Stores the bounds, which would influence a backend call because of recent changes.
             std::vector<const LRABound* > mBoundCandidatesToPass;
+            // Stores for each variable the number of violated integer variables in the left resp. 
+            // right branch ( first component of the pair for the left branch and second component for
+            // the right branch ) after the i-th step in the corresponding direction
+            std::map< carl::Variable, std::pair< std::vector< unsigned >, std::vector< unsigned > > > mBranch_Success; 
             /**
              * Stores all set of constraints which have already led to defining constraint matrices. 
              * As the computation of these matrices is rather expensive, we try to omit this if possible.
              */
             std::set< std::vector<ConstraintT> > mProcessedDCMatrices;
+            // An enumeration type containing the names of the different branching strategies
+            enum BRANCH_STRATEGY
+            {
+                MIN_PIVOT,
+                MOST_FEASIBLE,
+                MOST_INFEASIBLE,
+                PSEUDO_COST,
+                NATIVE
+            };
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores the yet collected statistics of this LRAModule.
             LRAModuleStatistics* mpStatistics;
@@ -384,6 +397,13 @@ namespace smtrat
              *         false, if no branching occured.
              */    
             bool first_var( bool _gc_support );
+            
+            /**
+             * @param gc_support true, if gomory cut construction is enabled.
+             * @return true,  if a branching occured with the first original variable that has to be fixed.
+             *         false, if no branching occured.
+             */
+            bool pseudo_cost_branching( bool _gc_support, BRANCH_STRATEGY strat );
             
             /**
              * Creates a cuts from proof lemma, if it could be found. Otherwise it creates a branch and bound lemma.

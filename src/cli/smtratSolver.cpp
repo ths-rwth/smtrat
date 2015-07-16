@@ -34,6 +34,7 @@ public:
 	Executor(CMakeStrategySolver* solver) : smtrat::parser::InstructionHandler(), solver(solver) {}
 	void add(const smtrat::FormulaT& f) {
 		this->solver->add(f);
+		SMTRAT_LOG_DEBUG("smtrat", "Asserting " << f);
 	}
 	void check() {
 		this->lastAnswer = this->solver->check();
@@ -102,17 +103,20 @@ public:
 		error() << "(get-value <variables>) is not implemented.";
 	}
 	void pop(std::size_t n) {
-		for (; n > 0; n--) this->solver->pop();
+		this->solver->pop(n);
 	}
 	void push(std::size_t n) {
 		for (; n > 0; n--) this->solver->push();
 	}
-	void setLogic(const std::string& logic) {
-		/*if (this->solver->logic() != smtrat::Logic::UNDEFINED) {
+	void reset() {
+		this->solver->reset();
+	}
+	void setLogic(const smtrat::Logic& logic) {
+		if (this->solver->logic() != smtrat::Logic::UNDEFINED) {
 			error() << "The logic has already been set!";
 		} else {
 			this->solver->rLogic() = logic;
-		}*/
+		}
 	}
 	unsigned getExitCode() const {
 		return this->exitCode;
@@ -192,7 +196,8 @@ int main( int argc, char* argv[] )
 		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
 	;
 	carl::logging::logger().filter("stdout")
-		("smtrat", carl::logging::LogLevel::LVL_INFO)
+		("smtrat", carl::logging::LogLevel::LVL_DEBUG)
+		("smtrat.parser", carl::logging::LogLevel::LVL_INFO)
 		("smtrat.cad", carl::logging::LogLevel::LVL_DEBUG)
 		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
 	;

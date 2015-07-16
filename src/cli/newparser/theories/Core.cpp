@@ -91,14 +91,18 @@ namespace parser {
 		state->registerFunction("implies", new ImpliesCoreInstantiator());
 	}
 
-	bool CoreTheory::declareVariable(const std::string& name, const carl::Sort& sort) {
+	bool CoreTheory::declareVariable(const std::string& name, const carl::Sort& sort, types::VariableType& result, TheoryError& errors) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
 		switch (sm.getType(sort)) {
-			case carl::VariableType::VT_BOOL:
+			case carl::VariableType::VT_BOOL: {
 				assert(state->isSymbolFree(name));
-				state->variables[name] = carl::freshVariable(name, carl::VariableType::VT_BOOL);
+				carl::Variable var = carl::freshVariable(name, carl::VariableType::VT_BOOL);
+				state->variables[name] = var;
+				result = var;
 				return true;
+			}
 			default:
+				errors.next() << "The requested sort was not \"Bool\" but \"" << sort << "\".";
 				return false;
 		}
 	}
@@ -120,13 +124,9 @@ namespace parser {
 	bool CoreTheory::handleDistinct(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
 		std::vector<FormulaT> args;
 		if (!convertArguments(arguments, args, errors)) return false;
-		FormulasT subformulas;
-		for (std::size_t i = 0; i < args.size() - 1; i++) {
-			for (std::size_t j = i + 1; j < args.size(); j++) {
-				subformulas.insert(FormulaT(carl::FormulaType::XOR, args[i], args[j]));
-			}
-		}
-		result = FormulaT(carl::FormulaType::AND, subformulas);
+		result = expandDistinct(args, [](const FormulaT& a, const FormulaT& b){ 
+			return FormulaT(carl::FormulaType::XOR, a, b);
+		});
 		return true;
 	}
 

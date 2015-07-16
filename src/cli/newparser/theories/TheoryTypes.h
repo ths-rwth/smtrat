@@ -66,16 +66,17 @@ namespace types {
 #ifdef PARSER_ENABLE_BITVECTOR
     /// Typedef for bitvector term.
 	typedef carl::BVTerm BVTerm;
+	typedef carl::BVVariable BVVariable;
     /// Typedef for bitvector constraint.
 	typedef carl::BVConstraint BVConstraint;
     /**
      *  Types of the theory of bitvectors.
      */
 	struct BitvectorTheory {
-		typedef mpl::vector<carl::BVVariable, FixedWidthConstant<Integer>, BVTerm> ConstTypes;
-		typedef mpl::vector<carl::BVVariable, BVTerm> VariableTypes;
-		typedef mpl::vector<carl::BVVariable, FixedWidthConstant<Integer>, BVTerm, BVConstraint> ExpressionTypes;
-		typedef mpl::vector<carl::BVVariable, FixedWidthConstant<Integer>, BVTerm, BVConstraint> TermTypes;
+		typedef mpl::vector<BVVariable, FixedWidthConstant<Integer>, BVTerm> ConstTypes;
+		typedef mpl::vector<BVVariable> VariableTypes;
+		typedef mpl::vector<BVVariable, FixedWidthConstant<Integer>, BVTerm, BVConstraint> ExpressionTypes;
+		typedef mpl::vector<BVVariable, FixedWidthConstant<Integer>, BVTerm, BVConstraint> TermTypes;
 		typedef carl::mpl_variant_of<TermTypes>::type TermType;
 	};
 #endif
@@ -155,6 +156,7 @@ namespace types {
 			TermTypes,
 			boost::mpl::vector<
 				SExpressionSequence<types::ConstType>,
+				std::string,
 				bool,
 				boost::spirit::qi::unused_type
 			>

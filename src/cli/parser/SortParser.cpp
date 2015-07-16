@@ -14,10 +14,10 @@ namespace parser {
 			|	("(" >> identifier >> +sort >> ")")[qi::_val = px::bind(&SortParser::getSort, px::ref(*this), qi::_1, qi::_2)]
 		;
 		sort.name("sort");
-		simpleSort.add("Bool", carl::SortManager::getInstance().interpretedSort("Bool", carl::VariableType::VT_BOOL));
-		simpleSort.add("Int", carl::SortManager::getInstance().interpretedSort("Int", carl::VariableType::VT_INT));
-		simpleSort.add("Real", carl::SortManager::getInstance().interpretedSort("Real", carl::VariableType::VT_REAL));
-		simpleSort.add("BitVec", carl::SortManager::getInstance().interpretedSort("BitVec", carl::VariableType::VT_BITVECTOR));
+		simpleSort.add("Bool", carl::SortManager::getInstance().addInterpretedSort("Bool", carl::VariableType::VT_BOOL));
+		simpleSort.add("Int", carl::SortManager::getInstance().addInterpretedSort("Int", carl::VariableType::VT_INT));
+		simpleSort.add("Real", carl::SortManager::getInstance().addInterpretedSort("Real", carl::VariableType::VT_REAL));
+		simpleSort.add("BitVec", carl::SortManager::getInstance().addInterpretedSort("BitVec", carl::VariableType::VT_BITVECTOR));
 	}
 	
 	void SortParser::setParameters(const std::vector<std::string>& params) {

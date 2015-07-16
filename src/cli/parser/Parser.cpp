@@ -116,7 +116,7 @@ void SMTLIBParser::declareConst(const std::string& name, const carl::Sort& sort)
 		if (state->var_theory.sym.find(name) != nullptr) {
 			SMTRAT_LOG_WARN("smtrat.parser", "A theory variable with name '" << name << "' has already been defined.");
 		}
-		carl::Variable var = carl::freshVariable(name, carl::SortManager::getInstance().interpretedType(sort));
+		carl::Variable var = carl::freshVariable(name, carl::SortManager::getInstance().getType(sort));
 		state->var_theory.sym.add(name, var);
 		break;
 	}
@@ -145,7 +145,7 @@ void SMTLIBParser::declareFun(const std::string& name, const std::vector<carl::S
 	}
 	case ExpressionType::THEORY: {
 		if (args.size() == 0) {
-			carl::Variable var = carl::freshVariable(name, carl::SortManager::getInstance().interpretedType(sort));
+			carl::Variable var = carl::freshVariable(name, carl::SortManager::getInstance().getType(sort));
 			state->var_theory.sym.add(name, var);
 			callHandler(&InstructionHandler::declareFun, var);
 		} else {

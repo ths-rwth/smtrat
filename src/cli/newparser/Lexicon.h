@@ -96,7 +96,7 @@ struct SymbolParser: public qi::grammar<Iterator, std::string(), Skipper> {
     SymbolParser(): SymbolParser::base_type(main, "symbol") {
         main = quoted | simple;
         main.name("symbol");
-        quoted = qi::lit('|') > qi::no_skip[+(~qi::char_("|")) > qi::lit('|')];
+        quoted = qi::lit('|') > qi::no_skip[*(~qi::char_("|")) > qi::lit('|')];
         quoted.name("quoted symbol");
     }
     qi::rule<Iterator, std::string(), Skipper> main;

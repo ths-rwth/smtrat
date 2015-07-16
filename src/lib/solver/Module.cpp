@@ -15,6 +15,8 @@
 #include <limits.h>
 #include <cmath>
 
+#include <boost/range/adaptor/reversed.hpp>
+
 #include "Manager.h"
 #include "Module.h"
 #include "ModuleFactory.h"
@@ -89,7 +91,7 @@ namespace smtrat
     }
     
     Answer Module::check( bool _full )
-    {   
+    {
         #ifdef MODULE_VERBOSE
         cout << endl << "Check " << (_full ? "full" : "lazy" ) << " with " << moduleName( type() ) << endl;
         print( cout, " ");
@@ -104,6 +106,7 @@ namespace smtrat
             cout << " " << subformula.formula().toString( false, true );
         cout << "))\n";
         #endif
+        if( rReceivedFormula().empty() ) return foundAnswer( True );
         Answer result = foundAnswer( checkCore( _full ) );
         assert(result == Unknown || result == False || result == True);
         assert( result != False || hasValidInfeasibleSubset() );
@@ -113,8 +116,11 @@ namespace smtrat
         #ifdef SMTRAT_DEVOPTION_Validation
         if( validationSettings->logTCalls() )
         {
-            if( result != Unknown )
+            if( result != Unknown && !mpReceivedFormula->empty() )
+            {
+//                std::cout  << "Add assumption to check in Line " << __LINE__ << " from " << moduleName( type() ) << ": " << ((FormulaT)*mpReceivedFormula) << std::endl;
                 addAssumptionToCheck( *mpReceivedFormula, result == True, moduleName( type() ) );
+            }
         }
         #endif
         return result;
@@ -172,7 +178,7 @@ namespace smtrat
         // Delete all infeasible subsets in which the constraint to delete occurs.
         for( size_t pos = 0; pos < mInfeasibleSubsets.size(); )
         {
-            if( mInfeasibleSubsets[pos].find( _receivedSubformula->formula() ) != mInfeasibleSubsets[pos].end() )
+            if( std::find(mInfeasibleSubsets[pos].begin(), mInfeasibleSubsets[pos].end(), _receivedSubformula->formula() ) != mInfeasibleSubsets[pos].end() )
             {
                 mInfeasibleSubsets[pos] = std::move(mInfeasibleSubsets.back());
                 mInfeasibleSubsets.pop_back();
@@ -227,7 +233,7 @@ namespace smtrat
                 backend->inform( *iter );
             backend->init();
         }
-        mInformedConstraints.insert( mConstraintsToInform.begin(), mConstraintsToInform.end() );
+        mInformedConstraints.insert(mInformedConstraints.end(), mConstraintsToInform.begin(), mConstraintsToInform.end() );
         mConstraintsToInform.clear();
     }
 
@@ -237,6 +243,31 @@ namespace smtrat
         if( mSolverState == True )
         {
             getBackendsModel();
+            carl::Variables receivedVariables;
+            mpReceivedFormula->arithmeticVars( receivedVariables );
+            mpReceivedFormula->booleanVars( receivedVariables );
+            // TODO: Do the same for bv and uninterpreted variables and functions 
+            auto iterRV = receivedVariables.begin();
+            if( iterRV != receivedVariables.end() )
+            {
+                for( std::map<ModelVariable,ModelValue>::const_iterator iter = mModel.begin(); iter != mModel.end(); )
+                {
+                    if( iter->first.isVariable() )
+                    {
+                        auto tmp = std::find( iterRV, receivedVariables.end(), iter->first.asVariable() );
+                        if( tmp == receivedVariables.end() )
+                        {
+                            iter = mModel.erase( iter );
+                            continue;
+                        }
+                        else
+                        {   
+                            iterRV = tmp;
+                        }
+                    }
+                    ++iter;
+                }
+            }
         }
     }
 
@@ -273,32 +304,11 @@ namespace smtrat
         return res;
     }
     
-    pair<ModuleInput::iterator,bool> Module::addReceivedSubformulaToPassedFormula( ModuleInput::const_iterator _subformula )
+    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, bool _hasSingleOrigin, const FormulaT& _origin, const std::shared_ptr<std::vector<FormulaT>>& _origins, bool _mightBeConjunction )
     {
-        assert( mpReceivedFormula->contains( _subformula->formula() ) );
-        return addSubformulaToPassedFormula( _subformula->formula(), _subformula->formula() );
-    }
-    
-    std::pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula )
-    {
-        assert( mpReceivedFormula->size() != UINT_MAX );
-        auto res = mpPassedFormula->add( _formula );
+        std::pair<ModuleInput::iterator,bool> res = mpPassedFormula->add( _formula, _hasSingleOrigin, _origin, _origins, _mightBeConjunction );
         if( res.second )
         {
-            assert( res.first == --mpPassedFormula->end() );
-            if( mFirstSubformulaToPass == mpPassedFormula->end() )
-                mFirstSubformulaToPass = res.first;
-        }
-        return res;
-    }
-
-    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins )
-    {
-        assert( mpReceivedFormula->size() != UINT_MAX );
-        auto res = mpPassedFormula->add( _formula, _origins );
-        if( res.second )
-        {
-            assert( res.first == --mpPassedFormula->end() );
             if( mFirstSubformulaToPass == mpPassedFormula->end() )
                 mFirstSubformulaToPass = res.first;
         }
@@ -316,36 +326,18 @@ namespace smtrat
             {
                 const FormulaT& subform = fwo->formula();
                 if( subform.getType() == carl::FormulaType::AND )
-                    subFormulasInRF.insert( subform.subformulas().begin(), subform.subformulas().end() );
+                    subFormulasInRF.insert(subFormulasInRF.end(), subform.subformulas().begin(), subform.subformulas().end() );
                 else
-                    subFormulasInRF.insert( subform );
+                    subFormulasInRF.push_back( subform );
             }
             for( auto& f : _origin.subformulas() )
             {
-                if( subFormulasInRF.find( f ) == subFormulasInRF.end() )
+                if( std::find(subFormulasInRF.begin(), subFormulasInRF.end(), f ) == subFormulasInRF.end() )
                     return false;
             }
             return true;
         }
         return false;
-    }
-
-    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, const FormulaT& _origin )
-    {
-        if( !originInReceivedFormula( _origin ) )
-        {
-            std::cout << _origin << std::endl;
-            print();
-        }
-        assert( originInReceivedFormula( _origin ) );
-        auto res = mpPassedFormula->add( _formula, _origin );
-        if( res.second )
-        {
-            assert( res.first == --mpPassedFormula->end() );
-            if( mFirstSubformulaToPass == mpPassedFormula->end() )
-                mFirstSubformulaToPass = res.first;
-        }
-        return res;
     }
 
     std::vector<FormulaT> Module::merge( const std::vector<FormulaT>& _vecSetA, const std::vector<FormulaT>& _vecSetB ) const
@@ -361,11 +353,11 @@ namespace smtrat
                 if( originSetA->getType() == carl::FormulaType::AND )
                     subformulas = originSetA->subformulas();
                 else
-                    subformulas.insert( *originSetA );
+                    subformulas.push_back( *originSetA );
                 if( originSetB->getType() == carl::FormulaType::AND )
-                    subformulas.insert( originSetB->begin(), originSetB->end() );
+                    subformulas.insert(subformulas.end(), originSetB->begin(), originSetB->end() );
                 else
-                    subformulas.insert( *originSetB );
+                    subformulas.push_back( *originSetB );
                 result.push_back( FormulaT( carl::FormulaType::AND, std::move( subformulas ) ) );
                 ++originSetB;
             }
@@ -394,8 +386,9 @@ namespace smtrat
         return index_min;
     }
     
-    bool Module::probablyLooping( const typename Poly::PolyType& _branchingPolynomial, const Rational& _branchingValue )
+    bool Module::probablyLooping( const typename Poly::PolyType& _branchingPolynomial, const Rational& _branchingValue ) const
     {
+        if( mpManager == NULL ) return false;
         assert( _branchingPolynomial.constantPart() == 0 );
         auto iter = mLastBranches.begin();
         for( ; iter != mLastBranches.end(); ++iter )
@@ -452,10 +445,20 @@ namespace smtrat
         if( _integral )
         {
             Rational bound = carl::floor( _value );
-            constraintA = ConstraintT( std::move(_polynomial - bound), Relation::LEQ );
-            constraintB = ConstraintT( std::move(_polynomial - (++bound)), Relation::GEQ );
+            Rational boundp = bound;
+            if( _leftCaseWeak )
+            {
+                constraintA = ConstraintT( std::move(_polynomial - bound), Relation::LEQ );
+                constraintB = ConstraintT( std::move(_polynomial - (++bound)), Relation::GEQ );
+            }
+            else
+            {
+                constraintB = ConstraintT( std::move(_polynomial - bound), Relation::GEQ );
+                constraintA = ConstraintT( std::move(_polynomial - (--bound)), Relation::LEQ );
+            }
             #ifdef MODULE_VERBOSE_INTEGERS
             cout << "[" << moduleName(type()) << "]  branch at  " << constraintA << "  and  " << constraintB << endl;
+            cout << "Premise is: " << _premise << endl;
             #endif
         }
         else
@@ -486,9 +489,9 @@ namespace smtrat
         FormulaT notGreaterConstraint = FormulaT( FormulaType::NOT, greaterConstraint );
         // (not p!=0 or p<0 or p>0)
         FormulasT subformulas;
-        subformulas.insert( FormulaT( FormulaType::NOT, _unequalConstraint ) );
-        subformulas.insert( lessConstraint );
-        subformulas.insert( greaterConstraint );
+        subformulas.push_back( FormulaT( FormulaType::NOT, _unequalConstraint ) );
+        subformulas.push_back( lessConstraint );
+        subformulas.push_back( greaterConstraint );
         addDeduction( FormulaT( FormulaType::OR, std::move( subformulas ) ) );
         // (not p<0 or p!=0)
         addDeduction( FormulaT( FormulaType::OR, notLessConstraint, _unequalConstraint ) );
@@ -509,7 +512,7 @@ namespace smtrat
         vector<Module*>::const_iterator backend = mUsedBackends.begin();
         while( backend != mUsedBackends.end() )
         {
-            if( !(*backend)->infeasibleSubsets().empty() )
+            if( (*backend)->solverState() == False )
             {
                 std::vector<FormulasT> infsubsets = getInfeasibleSubsets( **backend );
                 mInfeasibleSubsets.insert( mInfeasibleSubsets.end(), infsubsets.begin(), infsubsets.end() );
@@ -524,16 +527,36 @@ namespace smtrat
         Model::const_iterator assignment = _modelA.begin();
         while( assignment != _modelA.end() )
         {
-            if( _modelB.find( assignment->first ) != _modelB.end() ) return false;
+            if( _modelB.find( assignment->first ) != _modelB.end() )
+                return false;
             ++assignment;
         }
         assignment = _modelB.begin();
         while( assignment != _modelB.end() )
         {
-            if( _modelA.find( assignment->first ) != _modelA.end() ) return false;
+            if( _modelA.find( assignment->first ) != _modelA.end() )
+                return false;
             ++assignment;
         }
         return true;
+    }
+
+    Model Module::backendsModel() const
+    {
+        auto module = mUsedBackends.begin();
+        while( module != mUsedBackends.end() )
+        {
+            assert( (*module)->solverState() != False );
+            if( (*module)->solverState() == True )
+            {
+		//@todo models should be disjoint, but this breaks CAD on certain inputs.
+                //assert( modelsDisjoint( mModel, (*module)->model() ) );
+                (*module)->updateModel();
+                return (*module)->model();
+            }
+            ++module;
+        }
+        return Model();
     }
 
     void Module::getBackendsModel() const
@@ -544,17 +567,36 @@ namespace smtrat
             assert( (*module)->solverState() != False );
             if( (*module)->solverState() == True )
             {
-		//@todo modules should be disjoint, but this breaks CAD on certain inputs.
+		//@todo models should be disjoint, but this breaks CAD on certain inputs.
                 //assert( modelsDisjoint( mModel, (*module)->model() ) );
                 (*module)->updateModel();
                 for (auto ass: (*module)->model())
                 {
-                    if( mModel.count(ass.first) == 0 ) mModel.insert(ass);
+                    if( mModel.count(ass.first) == 0 )
+                        mModel.insert(ass);
                 }
                 break;
             }
             ++module;
         }
+    }
+    
+    vector<FormulaT>::const_iterator Module::findBestOrigin( const vector<FormulaT>& _origins ) const
+    {
+        // TODO: implement other heuristics for finding the best origin, e.g., activity or age based
+        // Find the smallest set of origins.
+        vector<FormulaT>::const_iterator smallestOrigin = _origins.begin();
+        vector<FormulaT>::const_iterator origin = _origins.begin();
+        while( origin != _origins.end() )
+        {
+            if( origin->size() == 1 )
+                return origin;
+            else if( origin->size() < smallestOrigin->size() )
+                smallestOrigin = origin;
+            ++origin;
+        }
+        assert( smallestOrigin != _origins.end() );
+        return smallestOrigin;
     }
 
     std::vector<FormulasT> Module::getInfeasibleSubsets( const Module& _backend ) const
@@ -567,37 +609,11 @@ namespace smtrat
             assert( !infSubSet->empty() );
             #ifdef SMTRAT_DEVOPTION_Validation
             if( validationSettings->logInfSubsets() )
-            {
                 addAssumptionToCheck( *infSubSet, false, moduleName( _backend.type() ) + "_infeasible_subset" );
-            }
             #endif
             result.emplace_back();
-            for( FormulasT::const_iterator cons = infSubSet->begin(); cons != infSubSet->end(); ++cons )
-            {
-                ModuleInput::const_iterator posInReceived = mpPassedFormula->find( *cons );
-                assert( posInReceived != mpPassedFormula->end() );
-                if( posInReceived->hasOrigins() )
-                {
-                    const std::vector<FormulaT>& formOrigins = posInReceived->origins();
-                    // Find the smallest set of origins.
-                    std::vector<FormulaT>::const_iterator smallestOrigin = formOrigins.begin();
-                    std::vector<FormulaT>::const_iterator origin = formOrigins.begin();
-                    while( origin != formOrigins.end() )
-                    {
-                        if( origin->size() == 1 )
-                        {
-                            smallestOrigin = origin;
-                            break;
-                        }
-                        else if( origin->size() < smallestOrigin->size() )
-                            smallestOrigin = origin;
-                        ++origin;
-                    }
-                    assert( smallestOrigin != formOrigins.end() );
-                    // Add its formulas to the infeasible subset.
-                    collectOrigins( *smallestOrigin, result.back() );
-                }
-            }
+            for( const auto& cons : *infSubSet )
+                getOrigins( cons, result.back() );
         }
         return result;
     }
@@ -613,7 +629,7 @@ namespace smtrat
         mUsedBackends = mpManager->getBackends( this, mBackendsFoundAnswer );
         mAllBackends = mpManager->getAllBackends( this );
         size_t numberOfUsedBackends = mUsedBackends.size();
-        if( numberOfUsedBackends>0 )
+        if( numberOfUsedBackends > 0 )
         {
             // Update the backends.
             if( mFirstSubformulaToPass != mpPassedFormula->end() )
@@ -624,6 +640,10 @@ namespace smtrat
                     #ifdef SMTRAT_DEVOPTION_MeasureTime
                     (*module)->startAddTimer();
                     #endif
+                    (*module)->mDeductions.clear();
+                    (*module)->mSplittings.clear();
+                    if( !(*module)->mInfeasibleSubsets.empty() )
+                        assertionFailed = true;
                     for( auto iter = mConstraintsToInform.begin(); iter != mConstraintsToInform.end(); ++iter )
                         (*module)->inform( *iter );
                     for( auto subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end(); ++subformula )
@@ -636,11 +656,19 @@ namespace smtrat
                     #endif
                 }
                 mFirstSubformulaToPass = mpPassedFormula->end();
-                mInformedConstraints.insert( mConstraintsToInform.begin(), mConstraintsToInform.end() );
+                mInformedConstraints.insert(mInformedConstraints.end(), mConstraintsToInform.begin(), mConstraintsToInform.end() );
                 mConstraintsToInform.clear();
                 if( assertionFailed )
                 {
                     return False;
+                }
+            }
+            else
+            {
+                for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
+                {
+                    (*module)->mDeductions.clear();
+                    (*module)->mSplittings.clear();
                 }
             }
 
@@ -756,18 +784,27 @@ namespace smtrat
         #endif
         return result;
     }
+    
+    void Module::clearPassedFormula()
+    {
+        while( !mpPassedFormula->empty() )
+            eraseSubformulaFromPassedFormula( mpPassedFormula->begin(), false );
+    }
 
     Answer Module::foundAnswer( Answer _answer )
     {
         mSolverState = _answer;
 //        if( !( _answer != True || checkModel() != 0 ) ) exit(1234);
-        assert( _answer != True || checkModel() != 0 );
+        //assert( _answer != True || checkModel() != 0 );
         // If we are in the SMT environment:
         if( mpManager != NULL && _answer != Unknown )
         {
             if( !anAnswerFound() )
                 *mFoundAnswer.back() = true;
         }
+        #ifdef MODULE_VERBOSE 
+        cout << "Results in: " << ANSWER_TO_STRING( _answer ) << endl;
+        #endif
         return _answer;
     }
 
@@ -790,31 +827,20 @@ namespace smtrat
                     addAssumptionToCheck( FormulaT( FormulaType::NOT, ded.first ), false, moduleName( (*module)->type() ) + "_lemma" );
             }
             #endif
-            std::move((*module)->mDeductions.begin(), (*module)->mDeductions.end(), std::back_inserter(mDeductions));
-            (*module)->mDeductions.clear();
-            std::move((*module)->mSplittings.begin(), (*module)->mSplittings.end(), std::back_inserter(mSplittings));
-            (*module)->mSplittings.clear();
-        }
-    }
-    
-    void Module::collectOrigins( const FormulaT& _formula, FormulasT& _origins ) const
-    {
-        if( mpReceivedFormula->contains( _formula ) )
-        {
-            _origins.insert( _formula );
-        }
-        else
-        {
-            assert( _formula.getType() == carl::FormulaType::AND );
-            for( auto& subformula : _formula.subformulas() )
+            mDeductions.insert( mDeductions.end(), (*module)->mDeductions.begin(), (*module)->mDeductions.end() );
+            for( auto& sp : (*module)->mSplittings )
             {
-                assert( mpReceivedFormula->contains( subformula ) );
-                _origins.insert( subformula );
+                vector<FormulaT> premise;
+                for( const auto& form : sp.mPremise )
+                {
+                    getOrigins( form, premise );
+                    addSplitting( sp.mLeftCase, sp.mRightCase, std::move( premise ), sp.mPreferLeftCase );
+                }
             }
         }
     }
     
-    void Module::collectOrigins( const FormulaT& _formula, std::vector<FormulaT>& _origins ) const
+    void Module::collectOrigins( const FormulaT& _formula, FormulasT& _origins ) const
     {
         if( mpReceivedFormula->contains( _formula ) )
         {
@@ -830,24 +856,32 @@ namespace smtrat
             }
         }
     }
-
+    
+/*    void Module::collectOrigins( const FormulaT& _formula, std::vector<FormulaT>& _origins ) const
+    {
+        if( mpReceivedFormula->contains( _formula ) )
+        {
+            _origins.push_back( _formula );
+        }
+        else
+        {
+            assert( _formula.getType() == carl::FormulaType::AND );
+            for( auto& subformula : _formula.subformulas() )
+            {
+                assert( mpReceivedFormula->contains( subformula ) );
+                _origins.push_back( subformula );
+            }
+        }
+    }
+*/
     void Module::addAssumptionToCheck( const FormulaT& _formula, bool _consistent, const string& _label )
     {
         string assumption = "";
-        #ifdef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
-        assumption += "(assert ";
-        #else
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
-        assumption += "(assert (and ";
-        #endif
-        assumption += _formula.toString( false, 1, "", true, false, true );
-        #ifdef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
-        assumption += ")\n";
-        #else
-        assumption += " " + _label;
-        assumption += "))\n";
+        assumption += "(declare-fun " + _label + " () Bool)\n";
+        assumption += _formula.toString( false, 1, "", true, false, true, true );
+        assumption += "(assert " + _label + ")\n";
         assumption += "(get-assertions)\n";
-        #endif
         assumption += "(check-sat)\n";
         mAssumptionToCheck.push_back( assumption );
         mVariablesInAssumptionToCheck.insert( _label );
@@ -857,11 +891,9 @@ namespace smtrat
     {
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
-        assumption += "(assert (and";
-        for( auto formula = _subformulas.begin(); formula != _subformulas.end(); ++formula )
-            assumption += " " + formula->formula().toString( false, 1, "", true, false, true );
-        assumption += " " + _label;
-        assumption += "))\n";
+        assumption += "(declare-fun " + _label + " () Bool)\n";
+        assumption += ((FormulaT) _subformulas).toString( false, 1, "", true, false, true, true );
+        assumption += "(assert " + _label + ")\n";
         assumption += "(get-assertions)\n";
         assumption += "(check-sat)\n";
         mAssumptionToCheck.push_back( assumption );
@@ -872,11 +904,9 @@ namespace smtrat
     {
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
-        assumption += "(assert (and";
-        for( auto formula = _formulas.begin(); formula != _formulas.end(); ++formula )
-            assumption += " " + formula->toString( false, 1, "", true, false, true );
-        assumption += " " + _label;
-        assumption += "))\n";
+        assumption += "(declare-fun " + _label + " () Bool)\n";
+        assumption += FormulaT(carl::FormulaType::AND, _formulas).toString( false, 1, "", true, false, true, true );
+        assumption += "(assert " + _label + ")\n";
         assumption += "(get-assertions)\n";
         assumption += "(check-sat)\n";
         mAssumptionToCheck.push_back( assumption );
@@ -887,6 +917,15 @@ namespace smtrat
     {
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
+        carl::Variables vars;
+        for(const auto& c : _constraints)
+            for( auto var : c.variables() )
+                vars.insert( var );
+        std::stringstream os;
+        os << "(declare-fun " << _label << " () " << "Bool" << ")\n";
+        for( auto var : vars )
+            os << "(declare-fun " << var << " () " << var.getType() << ")\n";
+        assumption += os.str();
         assumption += "(assert (and";
         for( auto constraint = _constraints.begin(); constraint != _constraints.end(); ++constraint )
             assumption += " " + constraint->toString( 1, false, true );
@@ -909,33 +948,18 @@ namespace smtrat
         {
             ofstream smtlibFile;
             smtlibFile.open( validationSettings->path() );
-            for( auto assum = Module::mAssumptionToCheck.begin(); assum != Module::mAssumptionToCheck.end(); ++assum )
+            for( const auto& assum : boost::adaptors::reverse(Module::mAssumptionToCheck) )
             { 
                 // For each assumption add a new solver-call by resetting the search state.
                 #ifndef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
-                smtlibFile << "(reset)\n";
+                smtlibFile << "\n(reset)\n";
                 #endif
-                smtlibFile << "(set-logic " << _manager.logicToString() << ")\n";
+                smtlibFile << "(set-logic " << _manager.logic() << ")\n";
                 #ifndef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
                 smtlibFile << "(set-option :interactive-mode true)\n";
                 #endif
                 smtlibFile << "(set-info :smt-lib-version 2.0)\n";
-                // Add all real-valued variables.
-				for (std::size_t varID = 1; varID <= carl::VariablePool::getInstance().nrVariables(carl::VariableType::VT_BOOL); varID++) {
-					smtlibFile << "(declare-fun " << carl::Variable(varID, carl::VariableType::VT_BOOL) << " () " << carl::VariableType::VT_BOOL << ")\n";
-				}
-				for (std::size_t varID = 1; varID <= carl::VariablePool::getInstance().nrVariables(carl::VariableType::VT_REAL); varID++) {
-					smtlibFile << "(declare-fun " << carl::Variable(varID, carl::VariableType::VT_REAL) << " () " << carl::VariableType::VT_REAL << ")\n";
-				}
-				for (std::size_t varID = 1; varID <= carl::VariablePool::getInstance().nrVariables(carl::VariableType::VT_INT); varID++) {
-					smtlibFile << "(declare-fun " << carl::Variable(varID, carl::VariableType::VT_INT) << " () " << carl::VariableType::VT_INT << ")\n";
-				}
-                #ifndef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
-                // Add module name variables.
-                for( auto invMod = Module::mVariablesInAssumptionToCheck.begin(); invMod != Module::mVariablesInAssumptionToCheck.end(); ++invMod )
-                    smtlibFile << "(declare-fun " << *invMod << " () Bool)\n";
-                #endif
-                smtlibFile << *assum;
+                smtlibFile << assum;
             }
             smtlibFile << "(exit)";
             smtlibFile.close();
@@ -979,7 +1003,7 @@ namespace smtrat
                 nextbitvector = tmp | ((((tmp & -tmp) / (bitvector & -bitvector)) >> 1) - 1);
                 // For each assumption add a new solver-call by resetting the search state.
                 smtlibFile << "(reset)\n";
-                smtlibFile << "(set-logic " << mpManager->logicToString() << ")\n";
+                smtlibFile << "(set-logic " << mpManager->logic() << ")\n";
                 smtlibFile << "(set-option :interactive-mode true)\n";
                 smtlibFile << "(set-info :smt-lib-version 2.0)\n";
                 // Add all real-valued variables.

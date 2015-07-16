@@ -23,8 +23,8 @@
 #include "carl/io/streamingOperators.h"
 #include "carl/util/Common.h"
 #include "carl/formula/FormulaPool.h"
-#include "carl/formula/UFManager.h"
-#include "carl/formula/UFInstanceManager.h"
+#include "carl/formula/uninterpreted/UFManager.h"
+#include "carl/formula/uninterpreted/UFInstanceManager.h"
 #include "carl/formula/bitvector/BVTerm.h"
 #include "carl/formula/bitvector/BVTermPool.h"
 #include "carl/formula/bitvector/BVConstraintPool.h"
@@ -38,7 +38,7 @@ namespace smtrat
     
     enum class Variable_Domain: unsigned { BOOLEAN = 0, REAL = 1, INTEGER = 2 };
     
-    enum class Logic : unsigned { UNDEFINED, QF_NRA, QF_LRA, QF_NIA, QF_LIA };
+    enum class Logic : unsigned { UNDEFINED, QF_NRA, QF_LRA, QF_NIA, QF_LIA, QF_UF, QF_BV };
 	inline std::ostream& operator<<(std::ostream& os, const Logic& l) {
 	switch (l) {
 		case Logic::UNDEFINED:	os << "undefined"; break;
@@ -46,6 +46,8 @@ namespace smtrat
 		case Logic::QF_LRA:		os << "QF_LRA"; break;
 		case Logic::QF_NIA:		os << "QF_NIA"; break;
 		case Logic::QF_LIA:		os << "QF_LIA"; break;
+		case Logic::QF_UF:		os << "QF_UF"; break;
+		case Logic::QF_BV:		os << "QF_BV"; break;
 	}
 	return os;
 }
@@ -71,6 +73,8 @@ namespace smtrat
     typedef carl::Formula<Poly> FormulaT;
     
     typedef carl::Formulas<Poly> FormulasT;
+	
+	typedef carl::FormulaSet<Poly> FormulaSetT;
 
 	typedef carl::FormulasMulti<Poly> FormulasMultiT;
 

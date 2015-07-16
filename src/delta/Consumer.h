@@ -29,7 +29,7 @@ private:
 	/// Filename generator.
 	TempFilenameGenerator temp;
 	// Checker object.
-	Checker checker;
+	const Checker& checker;
 	/// List of job results not checked yet.
 	std::queue<std::future<void>> jobs;
 	/// Flag if a call was successful.
@@ -111,6 +111,7 @@ public:
 	 * Waits for all jobs to finish and resets the internal status.
      */
 	void reset() {
+		checker.resetKilled();
 		while (!jobs.empty()) wait();
 		found = false;
 		result = std::make_tuple(Node(), "", 0);
@@ -121,7 +122,7 @@ public:
 	 * Checks if at least one job was successful.
      * @return If a result is there.
      */
-	bool hasResult() {
+	bool hasResult() const {
 		return found;
 	}
 	/**

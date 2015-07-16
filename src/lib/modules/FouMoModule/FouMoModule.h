@@ -54,9 +54,10 @@ namespace smtrat
             
             
             /**
-             * @param curr_constraints Contains the constraints for which a possibly good
+             * @param curr_constraints Contains the constraints for which a preferably good
              *                         variable is chosen
-             * @param var_corr_constr  Contains the chosen variable and the constraints for the elimination step
+             * @param var_corr_constr  After the procedure contains the chosen variable and 
+             *                         the constraints for the elimination step
              */
             void gatherUpperLower( FormulaOrigins& curr_constraints, VariableUpperLower& var_corr_constr );
             
@@ -71,13 +72,14 @@ namespace smtrat
             /*
              * Tries to construct a solution by backtracking through the computation steps
              * and returns whether this was successful
+             * * @param temp_solution Contains assignments that have possibly been determined by the backends
              */            
             bool constructSolution( std::map< carl::Variable, Rational > temp_solution );
             
             /*
              * Depending on whether we work on integer or rational instances, it
              * sends the corresponding set of constraints to the backends and returns
-             * the answer obtained by the backends
+             * the answer obtained by the latter
              */
             Answer callBackends( bool _full );
             
@@ -89,11 +91,6 @@ namespace smtrat
              *         indicates whether the formula belonging to new_poly would add new information to formula_map.
              */
             std::pair< FormulaT, bool > worthInserting( FormulaOrigins& formula_map, const Poly& new_poly );
-            
-            /*
-             * Resets all data structures of this module to the initial assignments
-             */
-            void fresh_start();
             
         public:
             FouMoModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );

@@ -126,12 +126,13 @@ public:
 	virtual void getValue(const std::vector<carl::Variable>&) = 0;
 	virtual void pop(std::size_t) = 0;
 	virtual void push(std::size_t) = 0;
+	virtual void reset() = 0;
 	void setInfo(const Attribute& attr) {
 		if (this->infos.count(attr.key) > 0) warn() << "overwriting info for :" << attr.key;
 		if (attr.key == "name" || attr.key == "authors" || attr.key == "version") error() << "The info :" << attr.key << " is read-only.";
 		else this->infos[attr.key] = attr.value;
 	}
-	virtual void setLogic(const std::string&) = 0;
+	virtual void setLogic(const smtrat::Logic&) = 0;
 	void setOption(const Attribute& option)  {
 		std::string key = option.key;
 		if (this->options.count(key) > 0) warn() << "overwriting option for :" << key;

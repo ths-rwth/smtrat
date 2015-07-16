@@ -7,12 +7,12 @@ namespace smtrat
      * @param module
      */
     template<class Settings>
-    InequalitiesTable<Settings>::InequalitiesTable( GroebnerModule<Settings>* module ) : mModule( module )
+    InequalitiesTable<Settings>::InequalitiesTable( GBModule<Settings>* module ) : mModule( module )
     {
         mBtnumber = 0;
         mNewConstraints = mReducedInequalities.begin( );
         #ifdef SMTRAT_DEVOPTION_Statistics
-        mStats = GroebnerModuleStats::getInstance(Settings::identifier);
+        mStats = GBModuleStats::getInstance(Settings::identifier);
         #endif
     }
 
@@ -91,7 +91,7 @@ namespace smtrat
                             
                             // TODO (from Florian): store the reasons formula somewhere, such that we only construct it if the reasons vector has been changed
                             FormulasT subformulas = mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() );
-                            subformulas.insert( it->first->formula() );
+                            subformulas.push_back( it->first->formula() );
                             FormulaT origin = FormulaT( carl::FormulaType::AND, subformulas );
                             mModule->removeOrigin( std::get < 0 > (it->second), origin ); 
 //                            mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
@@ -114,7 +114,7 @@ namespace smtrat
                                 else
                                 {
                                     FormulasT sformulas = mModule->generateReasons(reasons);
-                                    sformulas.insert( it->first->formula() );
+                                    sformulas.push_back( it->first->formula() );
                                     FormulaT originals = FormulaT( carl::FormulaType::AND, sformulas);
                                     // we update the reference to the passed formula again
                                     std::get < 0 > (it->second) = mModule->addSubformulaToPassedFormula( simplifiedConstraint, originals ).first;
@@ -309,7 +309,7 @@ namespace smtrat
                     {
                         // TODO (from Florian): store the reasons formula somewhere, such that we only construct it if the reasons vector has been changed
                         FormulasT subformulas = mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() );
-                        subformulas.insert( it->first->formula() );
+                        subformulas.push_back( it->first->formula() );
                         FormulaT origin = FormulaT( carl::FormulaType::AND, subformulas );
                         mModule->removeOrigin( std::get < 0 > (it->second), origin ); 
 //                        mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
@@ -343,7 +343,7 @@ namespace smtrat
                 {
 
                     FormulasT infeasibleSubset( mModule->generateReasons( reduced.getReasons( ) ) );
-                    infeasibleSubset.insert( it->first->formula() );
+                    infeasibleSubset.push_back( it->first->formula() );
                     #ifdef SMTRAT_DEVOPTION_Statistics
                     mStats->EffectivenessOfConflicts(infeasibleSubset.size()/mModule->rReceivedFormula().size());
                     #endif //SMTRAT_DEVOPTION_Statistics
@@ -368,7 +368,7 @@ namespace smtrat
                     
                     // TODO (from Florian): store the reasons formula somewhere, such that we only construct it if the reasons vector has been changed
                     FormulasT subformulas = mModule->generateReasons(std::get<2>(it->second).back( ).second.getReasons() );
-                    subformulas.insert( it->first->formula() );
+                    subformulas.push_back( it->first->formula() );
                     FormulaT origin = FormulaT( carl::FormulaType::AND, subformulas );
                     mModule->removeOrigin( std::get < 0 > (it->second), origin ); 
 //                    mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
@@ -387,7 +387,7 @@ namespace smtrat
                         case carl::FormulaType::FALSE:
                         {
                             FormulasT infeasibleSubset( mModule->generateReasons( reduced.getReasons( ) ) );
-                            infeasibleSubset.insert( it->first->formula() );
+                            infeasibleSubset.push_back( it->first->formula() );
                             #ifdef SMTRAT_DEVOPTION_Statistics
                             mStats->EffectivenessOfConflicts(infeasibleSubset.size()/mModule->rReceivedFormula().size());
                             #endif //SMTRAT_DEVOPTION_Statistics
@@ -403,7 +403,7 @@ namespace smtrat
                             assert( redResult.getType() == carl::FormulaType::CONSTRAINT );
                             // get the reason set for the reduced polynomial
                             FormulasT originals = mModule->generateReasons( reduced.getReasons( ) );
-                            originals.insert( it->first->formula() );
+                            originals.push_back( it->first->formula() );
 
                             //pass the result
                             //TODO: replace "Formula::constraintPool().variables()" by a smaller approximations of the variables contained in "reduced.toEx( )"

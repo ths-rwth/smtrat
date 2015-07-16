@@ -34,11 +34,13 @@ protected:
 	ParserState* state;
 public:
 	AbstractTheory(ParserState* state): state(state) {}
+	virtual ~AbstractTheory() {}
 
 	/**
 	 * Declare a new variable with the given name and the given sort.
 	 */
-	virtual bool declareVariable(const std::string&, const carl::Sort&) {
+	virtual bool declareVariable(const std::string&, const carl::Sort&, types::VariableType&, TheoryError& errors) {
+		errors.next() << "Variable declaration is not supported.";
 		return false;
 	}
 	/**
@@ -61,6 +63,27 @@ public:
 	 */
 	virtual bool handleDistinct(const std::vector<types::TermType>&, types::TermType&, TheoryError& errors) {
 		errors.next() << "Distinct is not supported.";
+		return false;
+	}
+	template<typename T, typename Builder>
+	FormulaT expandDistinct(const std::vector<T>& values, const Builder& neqBuilder) {
+		FormulasT subformulas;
+		for (std::size_t i = 0; i < values.size() - 1; i++) {
+			for (std::size_t j = i + 1; j < values.size(); j++) {
+				subformulas.push_back(neqBuilder(values[i], values[j]));
+			}
+		}
+		return FormulaT(carl::FormulaType::AND, subformulas);
+	}
+	/**
+	 * Instantiate a variable within a term.
+	 */
+	virtual bool instantiate(const types::VariableType&, const types::TermType&, types::TermType&, TheoryError& errors) {
+		errors.next() << "Instantiation of arguments is not supported.";
+		return false;
+	}
+	virtual bool refreshVariable(const types::VariableType&, types::VariableType&, TheoryError& errors) {
+		errors.next() << "Refreshing variables is not supported.";
 		return false;
 	}
 	/**

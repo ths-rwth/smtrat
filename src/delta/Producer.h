@@ -32,6 +32,7 @@ class Producer {
 	Settings settings;
 	/// Verbose flag.
 	bool verbose;
+	bool delayDeclareFun;
 	/// Interrupt flat.
 	mutable bool interrupted;
 public:
@@ -45,9 +46,13 @@ public:
 	{
 		if (!settings.has("no-constants")) operators.emplace_back(&constant, "Replaced variable ", " by constant ", ".");
 		if (!settings.has("no-children")) operators.emplace_back(&children, "Replaced ", " by child ", ".");
+		if (!settings.has("no-merge")) operators.emplace_back(&mergeChild, "Merged ", " with child ", ".");
 		if (!settings.has("no-numbers")) operators.emplace_back(&number, "Replaced number ", " by ", ".");
 		if (!settings.has("no-lets")) operators.emplace_back(&letExpression, "Eliminated ", " by ", ".");
+		operators.emplace_back(&BV_zeroExtend, "Eliminated zero_extend ", " by ", ".");
+		operators.emplace_back(&BV_mergeShift, "Merged ", " with ", ".");
 		verbose = settings.has("verbose");
+		delayDeclareFun = settings.as<bool>("delay-declare-fun");
 	}
 
 	void interrupt() const {
@@ -81,6 +86,9 @@ public:
 			} else if (skip > 0) {
 				skip = 0;
 				std::cout << BGREEN << "Finished successful iteration, starting over." << END << std::endl << std::endl;
+				std::ofstream out("delta.last.smt2");
+				out << root;
+				out.close();
 			} else {
 				std::cout << std::endl << BRED << "No further simplifications found." << END << std::endl;
 				return i;
@@ -143,12 +151,15 @@ private:
 	void process(const Node& root, const Node& n, std::size_t num) {
 		if (n.immutable()) return;
 		if (&root == &n) return;
+		if (delayDeclareFun) {
+			if (n.name == "declare-fun") return;
+		}
 		if (!settings.has("no-removal")) {
 			consumer.consume(root.clone(&n, nullptr), String() << "Removed \"" << n.repr(verbose) << "\"", num);
 		}
-		for (auto op: operators) {
+		for (const auto& op: operators) {
 			auto changes = std::get<0>(op)(n);
-			for (auto& c: changes) {
+			for (const auto& c: changes) {
 				consumer.consume(root.clone(&n, &c), String() << std::get<1>(op) << "\"" << n.repr(verbose) << "\"" << std::get<2>(op) << "\"" << c.repr(verbose) << "\"" << std::get<3>(op), num);
 			}
 		}

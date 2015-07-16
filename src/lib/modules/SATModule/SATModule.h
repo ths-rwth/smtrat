@@ -364,6 +364,8 @@ namespace smtrat
             ConstraintLiteralsMap mConstraintLiteralMap;
             /// Maps the Boolean variables to their corresponding Minisat variable.
             BooleanVarMap mBooleanVarMap;
+            ///
+            carl::FastMap<FormulaT, Minisat::Lit> mFormulaAssumptionMap;
             /// Maps the clauses in the received formula to the corresponding Minisat clause.
             FormulaClauseMap mFormulaClauseMap;
             /// If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
@@ -375,7 +377,7 @@ namespace smtrat
             /// Stores all clauses in which the activities have been changed.
             std::vector<Minisat::CRef> mChangedActivities;
             /// Maps arithmetic variables to the constraints they occur in (only used by the valid-substitutions optimization).
-            std::map<carl::Variable,FormulasT> mVarOccurrences;
+            std::map<carl::Variable,FormulaSetT> mVarOccurrences;
             /// Maps Minisat variables to the clauses they occur in (only used by the valid-substitutions optimization).
             std::vector<std::set<Minisat::CRef>> mVarClausesMap;
             /// Maps the arithmetic variables to the terms they have been replaced by a valid substitution (only used by the valid-substitutions optimization).
@@ -386,6 +388,10 @@ namespace smtrat
             std::stack<signed> mOldSplittingVars;
             /// Stores the just introduced Boolean variables for theory splitting decisions.
             std::vector<signed> mNewSplittingVars;
+            ///
+            Minisat::vec<unsigned> mNonTseitinShadowedOccurrences;
+            ///
+            std::map<signed,std::set<signed>> mTseitinVarShadows;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
             SATModuleStatistics* mpStatistics;
@@ -550,9 +556,10 @@ namespace smtrat
              * @param polarity A flag, which is true, if the variable preferably is assigned to false.
              * @param dvar A flag, which is true, if the variable to create needs to considered in the solving.
              * @param _activity The initial activity of the variable to create.
+             * @param _tseitinShadowed A flag, which is true, if the variable to create is a sub-formula of a formula represented by a Tseitin variable.
              * @return The created Minisat variable.
              */
-            Minisat::Var newVar( bool polarity = true, bool dvar = true, double _activity = 0 );
+            Minisat::Var newVar( bool polarity = true, bool dvar = true, double _activity = 0, bool _tseitinShadowed = false );
 
             // Solving:
             
@@ -633,7 +640,6 @@ namespace smtrat
                     dec_vars++;
                 else if( !b && decision[v] )
                     dec_vars--;
-
                 decision[v] = b;
                 insertVarOrder( v );
             }
@@ -802,11 +808,37 @@ namespace smtrat
             Minisat::Lit pickBranchLit();
             
             /**
+             * @return The best decision variable under consideration of the decision heuristic.
+             */
+            Minisat::Lit bestBranchLit( bool _conflictFirst );
+            
+            /**
              * Begins a new decision level.
              */
             inline void newDecisionLevel()
             {
                 trail_lim.push( trail.size() );
+            }
+            
+            void decrementTseitinShadowOccurrences( signed _var )
+            {
+                unsigned& ntso = mNonTseitinShadowedOccurrences[_var];
+                assert( ntso > 0 );
+                --ntso;
+                if( ntso == 0 )
+                {
+                    setDecisionVar( _var, false );
+                }
+            }
+            
+            void incrementTseitinShadowOccurrences( signed _var )
+            {
+                unsigned& ntso = mNonTseitinShadowedOccurrences[_var];
+                if( ntso == 0 )
+                {
+                    setDecisionVar( _var, true );
+                }
+                ++ntso;
             }
             
             /**
@@ -880,6 +912,16 @@ namespace smtrat
              * @return [Minisat related code]
              */
             bool litRedundant( Minisat::Lit p, uint32_t abstract_levels );
+            
+            bool existsUnassignedSplittingVar() const
+            {
+                for( signed v : mNewSplittingVars )
+                {
+                    if( value( v ) == l_Undef )
+                        return true;
+                }
+                return false;
+            }
             
             /**
              * Adds clauses representing the lemmas which should be added to this SATModule. This may provoke backtracking.
@@ -1202,6 +1244,8 @@ namespace smtrat
              */
             Minisat::CRef addFormula( const FormulaT&, unsigned _type );
             
+            bool isTseitinShadowed( const FormulaT& _var, const FormulaT& _clause ) const;
+            
             /**
              * Adds the Boolean abstraction of the given formula being a clause to the SAT solver.
              * @param _formula  The formula to abstract and add to the SAT solver. Note, that the
@@ -1223,7 +1267,7 @@ namespace smtrat
              * @param _decisionRelevant true, if the variable of the literal needs to be involved in the decision process of the SAT solving.
              * @return The corresponding literal.
              */
-            Minisat::Lit getLiteral( const FormulaT& _formula, const FormulaT& _origin, bool _decisionRelevant = true );
+            Minisat::Lit getLiteral( const FormulaT& _formula, const FormulaT& _origin, bool _decisionRelevant = true, bool _tseitinShadowed = false );
             
             /**
              * Adapts the passed formula according to the current assignment within the SAT solver.

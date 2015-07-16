@@ -17,12 +17,13 @@
 # B. Options.
 # C. Find system tools and libraries.
 # D. Write information files.
-# E. Invoke subdirectories.
-# F. CPack
+# F. Invoke subdirectories.
+# G. Export Compile Information
+# H. CPack
 # # # # # # # # # # # # # # # # # # # # # #
 
 
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 2.8.12)
 
 # # # # # # # # # # # # # # # # # # # # # #
 # A. Project properties
@@ -30,7 +31,7 @@ cmake_minimum_required (VERSION 2.8)
 project(smtrat CXX)
 
 set(PROJECT_FULLNAME "SMT-RAT")
-set(PROJECT_DESCRIPTION "Satisfiability-Modulo-Theories Real Algebra Toolbox")
+set(PROJECT_DESCRIPTION "Toolbox for Strategic and Parallel Satisfiability-Modulo-Theories Solving")
 set(smtrat_MAJORVERSION 2)
 set(smtrat_MINORVERSION 0)
 set(smtrat_MAINTENANCEVERSION 0)
@@ -66,12 +67,15 @@ option(SMTRAT_DEVOPTION_Validation "Output intermediate states in an smt2 file" 
 option(SMTRAT_DEVOPTION_MeasureTime "Measure times and number of calls" OFF)
 option(SMTRAT_DEVOPTION_Statistics "Use the Statistics gathering" OFF)
 
-if (CMAKE_BUILD_TYPE)
+if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE "RELEASE")
 endif()
 
 # path to find own modules
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
+set(SMTRAT_MANUAL_PATH ${PROJECT_SOURCE_DIR}/manual/manual_${PROJECT_NAME}-${PROJECT_VERSION}.pdf)
+set(SMTRAT_MODULES_PATH ${PROJECT_SOURCE_DIR}/src/lib/modules)
 # Include own macros.
 include( smtratmacros )
 # TODO: iteratively search for cmake files and include them here.
@@ -106,21 +110,42 @@ message("-- CXX Debug Flags: ${CMAKE_CXX_DEBUG_FLAGS}")
 message("-- CXX Release Flags: ${CMAKE_CXX_RELEASE_FLAGS}")
 
 if(STATICLIB_SWITCH)
-	message("-- linking static")
+    message("-- linking static")
+    if (APPLE)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mmacosx-version-min=10.7")
+    else()
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIE")
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
-	set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
-	set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS)       # remove -Wl,-Bdynamic
-	set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
-	set(CMAKE_SHARED_LIBRARY_C_FLAGS)         # remove -fPIC
-	set(CMAKE_SHARED_LIBRARY_CXX_FLAGS)
-	set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS)    # remove -rdynamic
-	set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS)
+	set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
+	set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
+    endif()
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
 endif()
 
 if(SMTRAT_STRAT_PARALLEL_MODE)
+    if (APPLE)
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl -lpthread -Wl")
+    else()
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--whole-archive -lpthread -Wl,--no-whole-archive")
-	set(libraries ${libraries} pthread)
+    endif()
+    set(libraries ${libraries} pthread)
 endif()
+
+if(WIN32 AND NOT CYGWIN)
+  set(DEF_INSTALL_CMAKE_DIR CMake)
+else()
+  set(DEF_INSTALL_CMAKE_DIR lib/CMake/smtrat)
+endif()
+set(CMAKE_INSTALL_DIR ${DEF_INSTALL_CMAKE_DIR} CACHE PATH  "Installation directory for CMake files")
+
+
+foreach(p LIB BIN INCLUDE CMAKE)
+  set(var ${p}_INSTALL_DIR)
+  if(NOT IS_ABSOLUTE "${${var}}")
+    set(${var} "${CMAKE_INSTALL_PREFIX}/${${var}}")
+  endif()
+endforeach()
+
 
 # path to put in the executables
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
@@ -154,14 +179,6 @@ set( libraries ${libraries} boost_system)
 # # # # # # # # # # # # # # # # # # # # # #
 # C.2. required libraries
 # # # # # # # # # # # # # # # # # # # # # #
-
-find_package(ReallyNull)
-if(ReallyNull_FOUND)
-	set(USE_NSS 1)
-	set(libraries ${libraries} ${ReallyNull_LIBRARY})
-else()
-	set(USE_NSS 0)
-endif()
 
 # # # # # # # # # # # # # # # # # # # # # #
 # C.4. Required libraries for GUI.
@@ -220,15 +237,52 @@ endif(ADDITIONAL_LINK_DIRS)
 # # # # # # # # # # # # # # # # # # # # # #
 
 add_subdirectory(src)
+# # # # # # # # # # # # # # # # # # # # # #
+# G. Export Compile Information
+# # # # # # # # # # # # # # # # # # # # # #
+
+# Add all targets to the build-tree export set
+export(TARGETS ${SMTRAT_TARGETS} FILE "${PROJECT_BINARY_DIR}/smtratTargets.cmake")
+
+# Export the package for use from the build-tree
+# (this registers the build-tree with a global CMake-registry)
+export(PACKAGE smtrat)
+
+include(CMakePackageConfigHelpers)
+# Create the carlConfig.cmake and carlConfigVersion files
+file(RELATIVE_PATH REL_INCLUDE_DIR "${CMAKE_INSTALL_DIR}" "${INCLUDE_INSTALL_DIR}")
+message("${CMAKE_INSTALL_DIR}")
+message("${INCLUDE_INSTALL_DIR}")
+# ... for the build tree
+set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/src")
+configure_package_config_file(cmake/smtratConfig.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/smtratConfig.cmake
+							  INSTALL_DESTINATION ${CMAKE_INSTALL_DIR}
+							  PATH_VARS INCLUDE_INSTALL_DIR #SYSCONFIG_INSTALL_DIR
+							 )
+# ... for the install tree
+set(CONF_INCLUDE_DIRS "\${smtrat_CMAKE_DIR}/${REL_INCLUDE_DIR}")
+configure_package_config_file(cmake/smtratConfig.cmake.in ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/smtratConfig.cmake
+							  INSTALL_DESTINATION ${CMAKE_INSTALL_DIR}
+							  PATH_VARS INCLUDE_INSTALL_DIR #SYSCONFIG_INSTALL_DIR
+							 )
+write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/smtratConfigVersion.cmake
+								 VERSION ${smtrat_VERSION}
+								 COMPATIBILITY SameMajorVersion )
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/smtratConfig.cmake ${CMAKE_CURRENT_BINARY_DIR}/smtratConfigVersion.cmake
+		DESTINATION ${CMAKE_INSTALL_DIR} )
+
+# Install the export set for use with the install-tree
+install(EXPORT smtratTargets DESTINATION ${CMAKE_INSTALL_DIR} COMPONENT dev)
+
 
 # # # # # # # # # # # # # # # # # # # # # #
-# G. CPack
+# H. CPack
 # # # # # # # # # # # # # # # # # # # # # #
 
 set( CPACK_GENERATOR "TGZ" )
 set( CPACK_PACKAGE_FILE_README "${CMAKE_CURRENT_SOURCE_DIROPTIONAL}/README" )
 set( CPACK_PACKAGE_DESCRIPTION_SUMMARY ${PROJECT_DESCRIPTION} )
-set( CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING" )
+set( CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE" )
 set( CPACK_PACKAGE_VERSION_MAJOR ${smtrat_MAJORVERSION})
 set( CPACK_PACKAGE_VERSION_MINOR ${smtrat_MINORVERSION})
 set( CPACK_PACKAGE_VERSION_PATCH ${smtrat_MAINTENANCEVERSION})

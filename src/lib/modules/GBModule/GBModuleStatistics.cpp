@@ -5,22 +5,22 @@
 namespace smtrat 
 {
 
-std::map<unsigned,GroebnerModuleStats*> GroebnerModuleStats::instances = std::map<unsigned,GroebnerModuleStats*>();
+std::map<unsigned,GBModuleStats*> GBModuleStats::instances = std::map<unsigned,GBModuleStats*>();
 
-GroebnerModuleStats* GroebnerModuleStats::getInstance(unsigned key)
+GBModuleStats* GBModuleStats::getInstance(unsigned key)
 {
   if( instances[key] == 0 )
-    instances[key] = new GroebnerModuleStats();
+    instances[key] = new GBModuleStats();
   return instances[key];
 }
 
-void GroebnerModuleStats::printAll(std::ostream& os) {
+void GBModuleStats::printAll(std::ostream& os) {
     for(auto stats = instances.begin(); stats != instances.end(); ++stats ) {
         stats->second->print(os);
     }
 }
 
-void GroebnerModuleStats::print(std::ostream& os) {
+void GBModuleStats::print(std::ostream& os) {
     os << "Groebner module statistics:\n";
     os << "Times called:\t\t\t\t\t "                              << mNrCalls               << std::endl;
     os << "Times constant gb found:\t\t\t "                       << mNrConstantGBs         << std::endl;

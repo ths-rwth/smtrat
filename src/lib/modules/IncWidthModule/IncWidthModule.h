@@ -1,0 +1,77 @@
+/**
+ * @file IncWidthModule.h
+ * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ *
+ * @version 2015-06-29
+ * Created on 2015-06-29.
+ */
+
+#pragma once
+
+#include "../../solver/Module.h"
+#include "IncWidthStatistics.h"
+#include "IncWidthSettings.h"
+namespace smtrat
+{
+    template<typename Settings>
+    class IncWidthModule : public Module
+    {
+        private:
+            // Members.
+            ///
+            bool mRestartCheck;
+            /// Stores the current width for the variable domains.
+            Rational mHalfOfCurrentWidth;
+            /// Stores the substitutions of variables to variable plus a value, being the shift used to arrange the variable's domain.
+            std::map<carl::Variable,Poly> mVariableShifts;
+            /// Collection of bounds of all received formulas.
+			vb::VariableBounds<FormulaT> mVarBounds;
+
+        public:
+            IncWidthModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
+
+            ~IncWidthModule();
+
+            // Main interfaces.
+
+            /**
+             * The module has to take the given sub-formula of the received formula into account.
+             *
+             * @param _subformula The sub-formula to take additionally into account.
+             * @return false, if it can be easily decided that this sub-formula causes a conflict with
+             *          the already considered sub-formulas;
+             *          true, otherwise.
+             */
+            bool addCore( ModuleInput::const_iterator _subformula );
+
+            /**
+             * Removes the subformula of the received formula at the given position to the considered ones of this module.
+             * Note that this includes every stored calculation which depended on this subformula, but should keep the other
+             * stored calculation, if possible, untouched.
+             *
+             * @param _subformula The position of the subformula to remove.
+             */
+            void removeCore( ModuleInput::const_iterator _subformula );
+
+            /**
+             * Updates the current assignment into the model.
+             * Note, that this is a unique but possibly symbolic assignment maybe containing newly introduced variables.
+             */
+            void updateModel() const;
+
+            /**
+             * Checks the received formula for consistency.
+             * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
+             * @return True,    if the received formula is satisfiable;
+             *         False,   if the received formula is not satisfiable;
+             *         Unknown, otherwise.
+             */
+            Answer checkCore( bool _full );
+            
+        private:
+            void reset();
+
+    };
+}
+
+#include "IncWidthModule.tpp"

@@ -14,6 +14,7 @@ import java.awt.Point;
 import java.awt.Shape;
 import java.awt.Stroke;
 import java.awt.Toolkit;
+import java.awt.Desktop;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
@@ -48,7 +49,7 @@ public class GUI extends JFrame implements WindowListener
     // GUI
     public static final String TITLE = "SMT-XRAT";
 // HTML_ABOUT to be changed
-    public static final String HTML_ABOUT = "<html><p>" + TITLE + " is a graphical user interface to<br />export and manage NRA Solvers according<br />to a user-defined strategy.<br /><br />Support:<br />Ulrich Loup (<a href=\"mailto:loup@cs.rwth-aachen.de\">loup@cs.rwth-aachen.de</a>)<br />Florian Corzilius (<a href=\"mailto:corzilius@cs.rwth-aachen.de\">corzilius@cs.rwth-aachen.de</a>)<br /><br />GUI by Henrik Schmitz.<br /><br />Copyright (C) 2012<br />Florian Corzilius, Ulrich Loup, Erika Abraham,<br />Sebastian Junges</p></html>";
+    public static final String HTML_ABOUT = "<html><p>" + TITLE + " is a graphical user interface to<br />export and manage SMT Solvers according<br />to a user-defined strategy.<br /><br />Support:<br />Florian Corzilius [<a href=\"mailto:corzilius@cs.rwth-aachen.de\">corzilius@cs.rwth-aachen.de</a>]<br />Gereon Kremer [<a href=\"mailto:gereon.kremer@cs.rwth-aachen.de\">gereon.kremer@cs.rwth-aachen.de</a>]<br />Sebastian Junges [<a href=\"mailto:sebastian.junges@cs.rwth-aachen.de\">sebastian.junges@cs.rwth-aachen.de</a>]<br />Stefan Schupp [<a href=\"mailto:stefan.schupp@cs.rwth-aachen.de\">stefan.schupp@cs.rwth-aachen.de</a>]<br /><br />GUI by Henrik Schmitz.<br /><br />Copyright (C) 2015<br />Florian Corzilius, Gereon Kremer, Sebastian Junges,<br />Stefan Schupp, Erika Abraham</p></html>";
     public static final String PATH_ICON_ABOUT = IOTools.SMTRAT_GRAPHICS_DIR + File.separator + "logoBig.png";
     public static final String PATH_ICON_GUI = IOTools.SMTRAT_GRAPHICS_DIR + File.separator + "icon.png";
     
@@ -423,8 +424,42 @@ public class GUI extends JFrame implements WindowListener
                 }
                 else if( ae.getSource()==instructionsMenuItem )
                 {
-// To be implemented
-                    System.out.println( "instructions" );
+                    try
+                    {
+                        Config config = new Config();
+                        File file = new File(config.getManualPath());
+                        String os = System.getProperty("os.name").toLowerCase();
+                        boolean isWindows = os.contains("win");
+                        boolean isLinux = os.contains("nux") || os.contains("nix");
+                        boolean isMac = os.contains("mac");
+                        if (isWindows)
+                        {
+                            Runtime.getRuntime().exec(new String[]
+                            {"rundll32", "url.dll,FileProtocolHandler",
+                             file.getAbsolutePath()});
+                        }
+                        else if (isLinux || isMac)
+                        {
+                            Runtime.getRuntime().exec(new String[]{"/usr/bin/open", file.getAbsolutePath()});
+                        }
+                        else
+                        {
+                            // Unknown OS, try with desktop
+                            if (Desktop.isDesktopSupported())
+                            {
+                                Desktop.getDesktop().open(file);
+                            }
+                            else
+                            {
+                                System.out.println( "Cannot open manual." );
+                            }
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        e.printStackTrace(System.err);
+                        System.out.println( "Cannot open manual." );
+                    }
                 }
                 else if( ae.getSource()==licenseMenuItem )
                 {

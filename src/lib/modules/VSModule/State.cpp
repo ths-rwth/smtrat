@@ -497,14 +497,13 @@ namespace vs
                         }
                         subResult = mpSubstitutionResults->erase( subResult );
                         if( fixedPosWasEndBefore ) fixedConditions = mpSubstitutionResults->end();
-                        if( mpSubResultCombination != NULL )
+                        if( hasSubResultsCombination() )
                         {
-                            if( mpSubResultCombination->size() > 0 )
-                            {
-                                mTakeSubResultCombAgain = true;
-                            }
+                            mTakeSubResultCombAgain = true;
                             assert( mpSubResultCombination->size() <= mpSubstitutionResults->size() );
                         }
+                        else
+                            mTakeSubResultCombAgain = false;
                     }
                     else
                     {
@@ -593,7 +592,8 @@ namespace vs
                     {
                         case 0:
                         {
-                            carl::PointerSet<Condition> condSet = mpVariableBounds->getOriginsOfBounds( constr.variables() );
+                            auto tmp = mpVariableBounds->getOriginsOfBounds( constr.variables() );
+                            carl::PointerSet<Condition> condSet(tmp.begin(), tmp.end()); 
                             condSet.insert( *iter );
                             _conflictSet.insert( std::move( condSet ) );
                             break;
@@ -607,7 +607,8 @@ namespace vs
                         {
                             if( stricterRelation != constr.relation() )
                             {
-                                carl::PointerSet<Condition> vbcondSet = mpVariableBounds->getOriginsOfBounds( constr.variables() );
+                                auto tmp = mpVariableBounds->getOriginsOfBounds( constr.variables() );
+                                carl::PointerSet<Condition> vbcondSet(tmp.begin(), tmp.end());
                                 size_t nValuation = (*iter)->valuation();
                                 bool nFlag = (*iter)->flag();
                                 smtrat::ConstraintT nConstraint = smtrat::ConstraintT( constr.lhs(), stricterRelation );
@@ -632,7 +633,8 @@ namespace vs
                                 }
                                 else if( nConstraint.isConsistent() == 0 )
                                 {
-                                    carl::PointerSet<Condition> condSet = mpVariableBounds->getOriginsOfBounds( constr.variables() );
+                                    auto tmp = mpVariableBounds->getOriginsOfBounds( constr.variables() );
+                                    carl::PointerSet<Condition> condSet(tmp.begin(), tmp.end());
                                     condSet.insert( *iter );
                                     _conflictSet.insert( std::move( condSet ) );
                                 }
@@ -1095,10 +1097,6 @@ namespace vs
     ConditionList State::getCurrentSubresultCombination() const
     {
         ConditionList currentSubresultCombination;
-        if( !hasSubResultsCombination() )
-        {
-            printAlone();
-        }
         assert( hasSubResultsCombination() );
         auto iter = mpSubResultCombination->begin();
         while( iter != mpSubResultCombination->end() )
@@ -1895,6 +1893,14 @@ namespace vs
                     ++subResultIndex;
                 }
             }
+            if( hasSubResultsCombination() )
+            {
+                mTakeSubResultCombAgain = true;
+            }
+            else
+            {
+                mTakeSubResultCombAgain = false;
+            }
         }
     }
 
@@ -2256,7 +2262,7 @@ namespace vs
                 result.push_back( smtrat::DoubleInterval::unboundedInterval() );
             else
             {
-                carl::PointerSet<Condition> conflictBounds = father().variableBounds().getOriginsOfBounds( substitution().variable() );
+                auto conflictBounds = father().variableBounds().getOriginsOfBounds( substitution().variable() );
                 _conflictReason.insert( conflictBounds.begin(), conflictBounds.end() );
             }
             return result;
@@ -2267,7 +2273,7 @@ namespace vs
                 result.push_back( smtrat::DoubleInterval::unboundedInterval() );
             else
             {
-                carl::PointerSet<Condition> conflictBounds = father().variableBounds().getOriginsOfBounds( substitution().variable() );
+                auto conflictBounds = father().variableBounds().getOriginsOfBounds( substitution().variable() );
                 assert( !conflictBounds.empty() );
                 _conflictReason.insert( conflictBounds.begin(), conflictBounds.end() );
             }
@@ -2337,7 +2343,7 @@ namespace vs
             {
                 carl::Variables conflictVars = substitution().termVariables();
                 conflictVars.insert( substitution().variable() );
-                carl::PointerSet<Condition> conflictBounds = father().variableBounds().getOriginsOfBounds( conflictVars );
+                auto conflictBounds = father().variableBounds().getOriginsOfBounds( conflictVars );
                 _conflictReason.insert( conflictBounds.begin(), conflictBounds.end() );
                 _conflictReason.insert( substitution().originalConditions().begin(), substitution().originalConditions().end() );
             }
@@ -2430,7 +2436,7 @@ namespace vs
                 {
                     carl::PointerSet<Condition> origins;
                     origins.insert( _condition );
-                    carl::PointerSet<Condition> conflictingBounds = variableBounds().getOriginsOfBounds( index() );
+                    auto conflictingBounds = variableBounds().getOriginsOfBounds( index() );
                     origins.insert( conflictingBounds.begin(), conflictingBounds.end() );
                     ConditionSetSet conflicts;
                     conflicts.insert( std::move(origins) );
@@ -2470,7 +2476,7 @@ namespace vs
             constraintInconsistent = true;
         carl::PointerSet<Condition> origins;
         origins.insert( _condition );
-        carl::PointerSet<Condition> conflictingBounds = variableBounds().getOriginsOfBounds( cons.variables() );
+        auto conflictingBounds = variableBounds().getOriginsOfBounds( cons.variables() );
         origins.insert( conflictingBounds.begin(), conflictingBounds.end() );
         ConditionSetSet conflicts;
         conflicts.insert( std::move(origins) );

@@ -66,7 +66,7 @@ namespace smtrat
             /// contains all threads to assign jobs to
             ThreadPool* mpThreadPool;
             /// the number of branches occurring in the strategy (the same as the number of leaves)
-            unsigned mNumberOfBranches;
+            size_t mNumberOfBranches;
             /// the number of cores of the system we run on
             unsigned mNumberOfCores;
             /// a flag indicating whether we might run in parallel eventually
@@ -139,14 +139,11 @@ namespace smtrat
              *          False, if it not satisfiable;
              *          Unknown, if this solver cannot decide whether it is satisfiable or not.
              */
-            Answer check()
+            Answer check( bool _full = true )
             {
-                #ifdef SMTRAT_STRAT_PARALLEL_MODE
-                initialize();
-                #endif
                 *mPrimaryBackendFoundAnswer.back() = false;
                 mpPassedFormula->updateProperties();
-                return mpPrimaryBackend->check();
+                return mpPrimaryBackend->check( _full );
             }
             
             /**
@@ -178,6 +175,14 @@ namespace smtrat
                 mBacktrackPoints.pop_back();
                 return true;
             }
+            
+            void pop( size_t _levels )
+            {
+                for( ; _levels > 0; --_levels )
+                    if( !pop() ) return;
+            }
+            
+            void reset();
             
             /**
              * @return All infeasible subsets of the set so far added formulas.
@@ -220,9 +225,10 @@ namespace smtrat
              * can be used in the same manner as infeasible subsets are used.
              * @return The lemmas/tautologies made during solving.
              */
-            std::vector<FormulaT> lemmas() const
+            std::vector<FormulaT> lemmas()
             {
                 std::vector<FormulaT> result;
+                mpPrimaryBackend->updateDeductions();
                 for( const auto& ded : mpPrimaryBackend->deductions() )
                 {
                     result.push_back( ded.first );
@@ -340,24 +346,6 @@ namespace smtrat
             Logic& rLogic()
             {
                 return mLogic;
-            }
-            
-            /**
-             * @return The string naming the logic this solver considers.
-             */
-            std::string logicToString() const
-            {
-                switch( mLogic )
-                {
-                    case Logic::QF_LIA:
-                        return "QF_LIA";
-                    case Logic::QF_NIA:
-                        return "QF_NIA";
-                    case Logic::QF_LRA:
-                        return "QF_LRA";
-                    default:
-                        return "QF_NRA";
-                }
             }
             
         protected:

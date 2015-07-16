@@ -589,39 +589,43 @@ namespace smtrat
         }
 
         template<typename T>
-        std::set<T,carl::less<T,false>> VariableBounds<T>::getOriginsOfBounds( const carl::Variable& _var ) const
+        std::vector<T> VariableBounds<T>::getOriginsOfBounds( const carl::Variable& _var ) const
         {
-            std::set<T,carl::less<T,false>> originsOfBounds;
+            std::vector<T> originsOfBounds;
             auto varVarPair = mpVariableMap->find( _var );
-            assert( varVarPair != mpVariableMap->end() );
-            if( !varVarPair->second->infimum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->infimum().origins().begin() );
-            if( !varVarPair->second->supremum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->supremum().origins().begin() );
+            if( varVarPair != mpVariableMap->end() )
+            {
+                if( !varVarPair->second->infimum().isInfinite() ) originsOfBounds.push_back( *varVarPair->second->infimum().origins().begin() );
+                if( !varVarPair->second->supremum().isInfinite() ) originsOfBounds.push_back( *varVarPair->second->supremum().origins().begin() );
+            }
             return originsOfBounds;
         }
 
         template<typename T>
-        std::set<T,carl::less<T,false>> VariableBounds<T>::getOriginsOfBounds( const carl::Variables& _variables ) const
+        std::vector<T> VariableBounds<T>::getOriginsOfBounds( const carl::Variables& _variables ) const
         {
-            std::set<T,carl::less<T,false>> originsOfBounds;
+            std::vector<T> originsOfBounds;
             for( auto var = _variables.begin(); var != _variables.end(); ++var )
             {
                 auto varVarPair = mpVariableMap->find( *var );
-                assert( varVarPair != mpVariableMap->end() );
-                if( !varVarPair->second->infimum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->infimum().origins().begin() );
-                if( !varVarPair->second->supremum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->supremum().origins().begin() );
+                if( varVarPair != mpVariableMap->end() )
+                {
+                    if( !varVarPair->second->infimum().isInfinite() ) originsOfBounds.push_back( *varVarPair->second->infimum().origins().begin() );
+                    if( !varVarPair->second->supremum().isInfinite() ) originsOfBounds.push_back( *varVarPair->second->supremum().origins().begin() );
+                }
             }
             return originsOfBounds;
         }
 		
         template<typename T>
-        std::set<T,carl::less<T,false>> VariableBounds<T>::getOriginsOfBounds() const
+        std::vector<T> VariableBounds<T>::getOriginsOfBounds() const
         {
-            std::set<T,carl::less<T,false>> originsOfBounds;
+            std::vector<T> originsOfBounds;
             for( auto varVarPair = mpVariableMap->begin(); varVarPair != mpVariableMap->end(); ++varVarPair )
             {
                 const Variable<T>& var = *varVarPair->second;
-                if( !var.infimum().isInfinite() ) originsOfBounds.insert( *var.infimum().origins().begin() );
-                if( !var.supremum().isInfinite() ) originsOfBounds.insert( *var.supremum().origins().begin() );
+                if( !var.infimum().isInfinite() ) originsOfBounds.push_back( *var.infimum().origins().begin() );
+                if( !var.supremum().isInfinite() ) originsOfBounds.push_back( *var.supremum().origins().begin() );
             }
             return originsOfBounds;
         }

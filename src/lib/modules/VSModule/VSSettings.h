@@ -5,8 +5,7 @@
  * @version 2014-09-18
  */
 
-#ifndef VSSETTINGS_H
-#define	VSSETTINGS_H
+#pragma once
 
 #include "../../config.h"
     
@@ -33,7 +32,7 @@ namespace smtrat
         static const bool branch_and_bound                                      = false;
         static const bool split_neq_constraints                                 = false;
         static const size_t int_max_range                                       = 1;
-        static const size_t lazy_check_threshold                                = 4;
+        static const size_t lazy_check_threshold                                = 1;
         static const bool try_first_lazy                                        = false;
     };
     
@@ -128,6 +127,4 @@ namespace smtrat
         static const bool sturm_sequence_for_root_check                         = use_variable_bounds && true;
     };
 }
-
-#endif	/* VSSETTINGS_H */
 

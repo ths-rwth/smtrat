@@ -36,18 +36,20 @@ public:
 			("help,h", "produce help message")
 			("input-file,i", bpo::value<std::string>()->required(), "input filename")
 			("output-file,o", bpo::value<std::string>()->default_value("delta.out.smt2"), "output filename")
-			("solver,s", bpo::value<std::string>()->default_value("./smtratSolver"), "solver executable")
+			("solver,s", bpo::value<std::string>()->default_value("./smtrat"), "solver executable")
 			("timeout,t", bpo::value<unsigned>()->default_value(15), "timeout in seconds")
 			("verbose,v", "be verbose")
 		;
 		bpo::options_description finetuning("Finetuning");
 		finetuning.add_options()
 			("dfs,d", "use DFS instead of BFS")
+			("delay-declare-fun", bpo::value<bool>()->default_value(true), "delay removal of declare-fun")
 			("temp-file,T", bpo::value<std::string>()->default_value(".delta.smt2"), "temporary filename")
 		;
 		bpo::options_description operators("Node operators");
 		operators.add_options()
 			("no-children", "Disable replacement by children")
+			("no-merge", "Disable merging with children")
 			("no-constants", "Disable replacement by constants")
 			("no-numbers", "Disable simplification of numbers")
 			("no-lets", "Disable elimination of let expressions")
