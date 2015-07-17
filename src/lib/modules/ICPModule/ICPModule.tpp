@@ -57,17 +57,25 @@ namespace smtrat
         mIsIcpInitialized(false),
         mSplitOccurred(false),
         mInvalidBox(false),
-        mTargetDiameter(mpManager->logic() == Logic::QF_NIA ? Settings::target_diameter_nia : Settings::target_diameter_nra),
-        mContractionThreshold(mpManager->logic() == Logic::QF_NIA ? Settings::contraction_threshold_nia : Settings::contraction_threshold_nra),
-        mDefaultSplittingSize(mpManager->logic() == Logic::QF_NIA ? Settings::default_splitting_size_nia : Settings::default_splitting_size_nra),
-        mSplittingHeuristic(mpManager->logic() == Logic::QF_NIA ? Settings::splitting_heuristic_nia : Settings::splitting_heuristic_nra),
+        mTargetDiameter(Settings::target_diameter_nra),
+        mContractionThreshold(Settings::contraction_threshold_nra),
+        mDefaultSplittingSize(Settings::default_splitting_size_nra),
+        mSplittingHeuristic(Settings::splitting_heuristic_nra),
         mNumberOfReusagesAfterTargetDiameterReached(Settings::number_of_reusages_after_target_diameter_reached),
         mRelativeContraction(0),
         mAbsoluteContraction(0),
         mCountBackendCalls(0),
         mGlobalBoxSize(0.0),
         mInitialBoxSize(0.0)
-    {}
+    {
+        if( mpManager != nullptr && mpManager->logic() == Logic::QF_NIA )
+        {
+            mTargetDiameter = Settings::target_diameter_nia;
+            mContractionThreshold = Settings::contraction_threshold_nia;
+            mDefaultSplittingSize = Settings::default_splitting_size_nia;
+            mSplittingHeuristic = Settings::splitting_heuristic_nia;
+        }
+    }
 
     template<class Settings>
     ICPModule<Settings>::~ICPModule()
