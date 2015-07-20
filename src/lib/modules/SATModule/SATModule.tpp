@@ -251,6 +251,9 @@ namespace smtrat
                 assumptions[i] = assumptions[i+1];
                 ++i;
             }
+			// Delete references
+			assumptions.pop();
+			mFormulaAssumptionMap.erase( iter );
         }
         else if( _subformula->formula().propertyHolds( carl::PROP_IS_A_CLAUSE ) )
         {
