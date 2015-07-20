@@ -101,7 +101,7 @@ namespace smtrat
         simpDB_props( 0 ),
         order_heap( VarOrderLt( activity ) ),
         progress_estimate( 0 ),
-        remove_satisfied( true ),
+        remove_satisfied( Settings::remove_satisfied ),
         // Resource constraints:
         conflict_budget( -1 ),
         propagation_budget( -1 ),
