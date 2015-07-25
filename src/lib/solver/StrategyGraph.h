@@ -32,14 +32,14 @@ namespace smtrat
                     static size_t mPriorityAllocator;
                     size_t mSuccessorVertex;
                     size_t mThreadId;
-                    size_t mPriority;
+//                  size_t mPriority;
                     ConditionEvaluation mpConditionEvaluation;
 
                 public:
                     Edge( size_t _to, ConditionEvaluation _conditionEvaluation ):
                         mSuccessorVertex( _to ),
                         mThreadId( 0 ),
-                        mPriority( mPriorityAllocator++ ),
+//                      mPriority( mPriorityAllocator++ ),
                         mpConditionEvaluation( _conditionEvaluation )
                     {}
 
@@ -60,10 +60,12 @@ namespace smtrat
                         mThreadId = _threadId;
                     }
 
+/*
                     size_t priority() const
                     {
                         return mPriority;
                     }
+*/
 
                     ConditionEvaluation conditionEvaluation() const
                     {
