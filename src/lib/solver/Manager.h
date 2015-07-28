@@ -374,6 +374,14 @@ namespace smtrat
 				mInformationRelevantFormula.insert( formula );
 			}
 
+			/**
+			* Deletes all InformationRelevantFormula
+			*/
+			inline void clearInformationRelevantFormula()
+			{
+				mInformationRelevantFormula.clear();
+			}
+
         protected:
 
             /**

@@ -137,6 +137,11 @@ namespace smtrat {
 		*/
 		DLL_EXPORT void addInformationRelevantFormula(const char* _formula);
 
+		/**
+		* Clear all InformationRelevantFormula
+		*/
+		DLL_EXPORT void clearInformationRelevantFormula();
+
         /**
         * Checks the so far added formulas for satisfiability.
         * @return True, if the conjunction of the so far added formulas is satisfiable;

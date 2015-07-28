@@ -36,6 +36,12 @@ namespace smtrat {
 		return solver->addInformationRelevantFormula(formula);
 	}
 
+	void WrapperExternal::clearInformationRelevantFormula()
+	{
+		SMTRAT_LOG_DEBUG("smtrat.wrapper", "Clear informationRelevantFormula");
+		return solver->clearInformationRelevantFormula();
+	}
+
 	int WrapperExternal::check()
 	{
 		SMTRAT_LOG_DEBUG("smtrat.wrapper", "Check...");
