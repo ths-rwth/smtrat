@@ -79,6 +79,10 @@ namespace smtrat
             getBackendsModel();
         }
 
+        for(const auto& modelInspect : mModel) {
+            std::cout << "[BVModule] model | " << modelInspect.first << " --> " << modelInspect.second << std::endl;
+        }
+
         // Build bitvector values from the values of the single bits
         auto& blastings = mEncoder.bitvectorBlastings();
 
@@ -112,10 +116,12 @@ namespace smtrat
             const FormulaWithOrigins& fwo = *receivedSubformula;
             const FormulaT& formula = fwo.formula();
 
+            std::cout << "[BVModule] encoding: " << formula << std::endl;
             const FormulasT& formulasToPass = mEncoder.encode(formula);
 
             for(const FormulaT formulaToPass : formulasToPass)
             {
+                std::cout << "[BVModule] - " << formulaToPass << std::endl;
                 addSubformulaToPassedFormula(formulaToPass, formula);
             }
             ++receivedSubformula;
