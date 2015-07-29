@@ -82,7 +82,7 @@ endforeach()
 configure_file ( ${CMAKE_SOURCE_DIR}/src/lib/modules/AddModules.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/AddModules.h )
 
 # write ModuleType.h
-foreach(moduleType ${moduleTypesSettings})
+foreach(moduleType ${allModuleTypes})
 	set(moduleTypeList "${moduleTypeList} MT_${moduleType},\n")
 endforeach()
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/ModuleType.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/ModuleType.h )
