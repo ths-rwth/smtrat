@@ -213,6 +213,8 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
+        cancelUntil(0);
+        learnts.clear();
         if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
         {
             cancelUntil(0);
@@ -325,8 +327,6 @@ namespace smtrat
             {
                 unknown_excludes.clear();
             }
-            cancelUntil(0);
-            learnts.clear();
             #ifdef SATMODULE_WITH_CALL_NUMBER
             cout << endl << endl;
             #endif
@@ -2929,7 +2929,7 @@ NextClause:
     {
         // Initialize the next region to a size corresponding to the estimated utilization degree. This
         // is not precise but should avoid some unnecessary reallocations for the new region:
-        ClauseAllocator to( ca.size() - (ca.wasted() <= ca.size() ? ca.wasted() : ca.wasted() - ca.size()) );
+        ClauseAllocator to(ca.size() > ca.wasted() ? ca.size() - ca.wasted() : 0 );
 
         relocAll( to );
         if( verbosity >= 2 )
