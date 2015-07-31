@@ -40,8 +40,6 @@ namespace smtrat
     {
         smtrat::addModules(mpBVSolver);
         // TODO: Do we have to do some more initialization stuff here? Settings?
-
-        std::cout << "IBM: initialization" << std::endl;
     }
 
     /**
@@ -960,12 +958,10 @@ namespace smtrat
                 const carl::BVTerm& blastedTerm = blasting.term().term();
                 assert(blastedTerm.type() == carl::BVTermType::VARIABLE);
                 const carl::BVVariable& bvVariable = blastedTerm.variable();
-                std::cerr << "Looking up backend model value for bv variable " << bvVariable << std::endl;
                 const carl::BVValue& bvValue = bvModel.at(ModelVariable(bvVariable)).asBVValue();
                 Integer integerValue = decodeBVConstant(bvValue, blasting.term().type());
                 auto modelValue = carl::RealAlgebraicNumberNR<Rational>::create(integerValue, false);
                 mModel[ModelVariable(variable)] = ModelValue(modelValue);
-                std::cerr << "found (" << bvValue << ", converted to " << integerValue << ")" << std::endl;
             }
         }
     }

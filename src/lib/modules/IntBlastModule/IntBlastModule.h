@@ -137,6 +137,7 @@ namespace smtrat
             return mType;
         }
 
+        // TODO: Rename to bvTerm or similar, to distinguish from BlastedPoly::term()
         const carl::BVTerm& term() const {
             return mTerm;
         }
