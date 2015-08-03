@@ -3316,13 +3316,14 @@ NextClause:
     {
         // Initialize the next region to a size corresponding to the estimated utilization degree. This
         // is not precise but should avoid some unnecessary reallocations for the new region:
-        ClauseAllocator to(ca.size() > ca.wasted() ? ca.size() - ca.wasted() : 0 );
+        // TODO Matthias: activate again when garbageCollect is fixed
+		/*ClauseAllocator to(ca.size() > ca.wasted() ? ca.size() - ca.wasted() : 0 );
         relocAll( to );
         if( verbosity >= 2 )
             printf( "|  Garbage collection:   %12d bytes => %12d bytes             |\n",
                     ca.size() * ClauseAllocator::Unit_Size,
                     to.size() * ClauseAllocator::Unit_Size );
-        to.moveTo( ca );
+        to.moveTo( ca );*/
     }
 
     template<class Settings>
