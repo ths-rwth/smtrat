@@ -105,6 +105,9 @@ namespace smtrat
         // Pass new formula to ICP, generating substitutes
         addConstraintToICP(formula);
 
+        // Add new formula to backend
+        addReceivedSubformulaToPassedFormula(_subformula);
+
         return ! mBoundsFromInput.isConflicting();
     }
 
