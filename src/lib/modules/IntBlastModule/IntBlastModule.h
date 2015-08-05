@@ -382,6 +382,12 @@ namespace smtrat
             Poly rightPoly(- _constraint.constantPart());
             Poly leftPoly(_constraint.lhs() - _constraint.constantPart());
 
+            if(leftPoly.lcoeff() < 0) {
+                rightPoly *= Rational(-1);
+                leftPoly *= Rational(-1);
+                mRelation = carl::turnAroundRelation(mRelation);
+            }
+
             mpLeftPoly = new PolyTree(leftPoly);
             mpRightPoly = new PolyTree(rightPoly);
         }
