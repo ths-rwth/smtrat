@@ -678,6 +678,8 @@ namespace smtrat
                     blastedType = BlastedType(maxWidth, false, _interval.lower());
                 } else if(_interval.upperBoundType() != carl::BoundType::INFTY && _interval.upper() < tempType.upperBound()) {
                     blastedType = BlastedType(maxWidth, false, _interval.upper() - (tempType.upperBound() - tempType.lowerBound()));
+                } else {
+                    blastedType = tempType;
                 }
             }
         } else {
