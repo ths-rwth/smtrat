@@ -22,6 +22,9 @@ namespace smtrat
         position = addBackendIntoStrategyGraph( position, MT_CNFerModule );
         #endif
         #endif
+        #ifdef SMTRAT_ENABLED_ICPModule
+        position = addBackendIntoStrategyGraph( position, MT_ICPModule );
+        #endif
         #ifdef SMTRAT_ENABLE_IntBlastModule
         position = addBackendIntoStrategyGraph( position, MT_IntBlastModule );
         #endif
