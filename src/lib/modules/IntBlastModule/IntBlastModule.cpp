@@ -30,8 +30,6 @@ namespace smtrat
     mpBVInput(new ModuleInput()),
     mpBVSolver(new BVSolver()),
     mFormulasToEncode(),
-    mOutsideRestriction(carl::FormulaType::TRUE),
-    mOutsideRestrictionOrigin(carl::freshBooleanVariable()),
     mSolutionOrigin(SolutionOrigin::NONE),
     mPolyBlastings(),
     mConstrBlastings(),
@@ -554,47 +552,15 @@ namespace smtrat
         // (determined either by the ICP module or by the BV solver).
         // Call backend
 
-        updateOutsideRestrictionConstraint(icpAnswer == Unknown);
+        updateOutsideRestrictionConstraint(icpAnswer != Unknown);
 
+        std::cout << "Running backend." << std::endl;
         Answer backendAnswer = runBackends(_full);
+        std::cout << "Answer from backend: " << (backendAnswer == False ? "False" : (backendAnswer == True ? "True" : "Unknown")) << std::endl;
         mSolutionOrigin = SolutionOrigin::BACKEND;
 
         if(backendAnswer == False) {
             getInfeasibleSubsets();
-            // The infeasible subsets from the backend may include the "outside restriction"-contraint.
-            // Merge this with infeasible subsets from ICP or BV solver.
-
-            std::vector<FormulasT> infeasibleInRestriction;
-
-            if(icpAnswer == False) {
-                infeasibleInRestriction.insert(infeasibleInRestriction.end(), mICP.infeasibleSubsets().begin(), mICP.infeasibleSubsets().end());
-            } else {
-                infeasibleInRestriction.insert(infeasibleInRestriction.end(), mpBVSolver->infeasibleSubsets().begin(), mpBVSolver->infeasibleSubsets().end());
-            }
-            assert(! infeasibleInRestriction.empty());
-
-            std::vector<FormulasT> newInfeasibleSubsets;
-
-            for(auto subsetIt=mInfeasibleSubsets.begin();subsetIt != mInfeasibleSubsets.end(); ) {
-                auto& infeasibleSubset = *subsetIt;
-                auto outsideRestriction = std::find(infeasibleSubset.begin(), infeasibleSubset.end(), mOutsideRestriction);
-
-                if(outsideRestriction != infeasibleSubset.end()) {
-                    infeasibleSubset.erase(outsideRestriction);
-                    FormulasT newInfSubset(infeasibleSubset);
-                    subsetIt = mInfeasibleSubsets.erase(subsetIt);
-
-                    for(auto& infInRestriction : infeasibleInRestriction) {
-                        FormulasT combinedInfSubset(newInfSubset);
-                        combinedInfSubset.insert(combinedInfSubset.end(), infInRestriction.begin(), infInRestriction.end());
-                        newInfeasibleSubsets.push_back(combinedInfSubset);
-                    }
-                } else {
-                    ++subsetIt;
-                }
-            }
-
-            mInfeasibleSubsets.insert(mInfeasibleSubsets.end(), newInfeasibleSubsets.begin(), newInfeasibleSubsets.end());
         }
 
         return backendAnswer;
@@ -749,7 +715,7 @@ namespace smtrat
         }
     }
 
-    void IntBlastModule::updateOutsideRestrictionConstraint(bool _includeSubstitutes)
+    void IntBlastModule::updateOutsideRestrictionConstraint(bool _fromICPOnly)
     {
         FormulasT outsideConstraints;
 
@@ -770,7 +736,7 @@ namespace smtrat
             }
         }
 
-        if(_includeSubstitutes) {
+        if(! _fromICPOnly) {
             auto& icpBounds = mBoundsInRestriction.getEvalIntervalMap();
 
             for(auto& polyWithOrigins : mSubstitutedPolys) {
@@ -804,14 +770,35 @@ namespace smtrat
 
         FormulaT newOutsideConstraint(carl::FormulaType::OR, outsideConstraints);
 
-        if(mOutsideRestriction != newOutsideConstraint) {
-            // This is a hack. We need a non-const iterator to the old passed constraint,
-            // so we retrieve it by inserting the constraint (a possibly second time) before.
-            auto oldFormulaInPassedFormula = addSubformulaToPassedFormula(mOutsideRestriction, mOutsideRestrictionOrigin);
-            removeOrigin(oldFormulaInPassedFormula.first, mOutsideRestrictionOrigin);
+        // Construct origins of the "outside restriction" constraint.
+        // For each infeasible subset from the ICP module (or the BV module, respectively),
+        // the origins of the constraints are turned into a conjunction and inserted as
+        // one origin of the "outside restriction" constraint.
+
+        const std::vector<FormulasT>& infeasibleInRestriction = (_fromICPOnly ? mICP.infeasibleSubsets() : mpBVSolver->infeasibleSubsets());
+        ModuleInput* restrictionInput = (_fromICPOnly ? mpICPInput : mpBVInput);
+
+        auto origins = std::make_shared<std::vector<FormulaT>>();
+
+        for(const FormulasT& infeasibleSubset : infeasibleInRestriction) {
+            FormulasT originsOfInfSubset;
+            for(const FormulaT& infSubsetElement : infeasibleSubset) {
+                // Collect origins of element (i.e. subformulas of the received formula of IntBlastModule)
+                ModuleInput::const_iterator posInModuleInput = restrictionInput->find(infSubsetElement);
+                assert(posInModuleInput != restrictionInput->end());
+                if(posInModuleInput->hasOrigins()) {
+                    collectOrigins(*findBestOrigin(posInModuleInput->origins()), originsOfInfSubset);
+                }
+            }
+            origins->push_back(FormulaT(carl::FormulaType::AND, originsOfInfSubset));
         }
-        addSubformulaToPassedFormula(newOutsideConstraint, mOutsideRestrictionOrigin);
-        mOutsideRestriction = newOutsideConstraint;
+
+        std::cout << "'outside restriction' formula has origins:" << std::endl;
+        for(const FormulaT& origin : *origins) {
+            std::cout << "- " << origin << std::endl;
+        }
+
+        addSubformulaToPassedFormula(newOutsideConstraint, origins);
     }
 
     void IntBlastModule::addFormulaToICP(const FormulaT& _formula, const FormulaT& _origin)

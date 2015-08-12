@@ -576,9 +576,6 @@ namespace smtrat
             BVSolver* mpBVSolver;
             std::list<FormulaT> mFormulasToEncode;
 
-            FormulaT mOutsideRestriction;
-            const FormulaT mOutsideRestrictionOrigin;
-
             SolutionOrigin mSolutionOrigin;
 
             std::map<Poly, BlastedPoly> mPolyBlastings; // Map from polynomials to bit-vector terms representing them in the blasted output
@@ -653,7 +650,7 @@ namespace smtrat
             void blastVariable(const carl::Variable& _variable, const IntegerInterval& _interval, bool _allowOffset);
             std::size_t chooseWidth(const Integer& _numberToCover, std::size_t _maxWidth, bool _signed) const;
             void updateBoundsFromICP();
-            void updateOutsideRestrictionConstraint(bool _includeSubstitutes);
+            void updateOutsideRestrictionConstraint(bool _fromICPOnly);
             void addFormulaToICP(const FormulaT& _formula, const FormulaT& _origin);
             void addConstraintToICP(FormulaT _formula);
             void removeFormulaFromICP(const FormulaT& _formula, const FormulaT& _origin);
