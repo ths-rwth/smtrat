@@ -94,7 +94,7 @@ namespace smtrat
         static BlastedType forProduct(BlastedType _factor1, BlastedType _factor2) {
             assert(! _factor1.hasOffset() && ! _factor2.hasOffset());
             bool makeSigned = _factor1.isSigned() || _factor2.isSigned();
-            std::size_t width = _factor1.width() + _factor2.width() - (_factor1.isSigned() && _factor2.isSigned() ? 1 : 0);
+            std::size_t width = _factor1.width() + _factor2.width();
             return BlastedType(width, makeSigned);
         }
 
