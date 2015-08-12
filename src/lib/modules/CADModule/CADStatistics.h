@@ -20,14 +20,20 @@ namespace smtrat {
 class CADStatistics : public Statistics
 {
 private:
+    std::size_t mCalls = 0;
     std::size_t mMISCount;
     std::size_t mMISBaseSize;
     std::size_t mMISSize;
+    std::size_t mSamples = 0;
+    std::size_t mSkippedSamples = 0;
     
     void collect() {
+        Statistics::addKeyValuePair("calls", mCalls);
         Statistics::addKeyValuePair("mis-count", mMISCount);
         Statistics::addKeyValuePair("mis-basesize", mMISBaseSize);
         Statistics::addKeyValuePair("mis-size", mMISSize);
+        Statistics::addKeyValuePair("samples", mSamples);
+        Statistics::addKeyValuePair("skippedsamples", mSkippedSamples);
     }
  public:
     CADStatistics() : Statistics("CADModule", this),
@@ -40,6 +46,16 @@ private:
         mMISCount++;
         mMISBaseSize += baseSize;
         mMISSize += size;
+    }
+    
+    void addCall() {
+        mCalls++;
+    }
+    void setSamples(std::size_t samples) {
+        mSamples = samples;
+    }
+    void setSkipped(std::size_t skippedSamples) {
+        mSkippedSamples = skippedSamples;
     }
 };
 
