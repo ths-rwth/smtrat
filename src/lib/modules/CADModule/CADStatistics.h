@@ -30,7 +30,7 @@ private:
         Statistics::addKeyValuePair("mis-size", mMISSize);
     }
  public:
-    CADStatistics() : Statistics("CAD Statistics", this),
+    CADStatistics() : Statistics("CADModule", this),
         mMISCount(0),
         mMISBaseSize(0),
         mMISSize(0)
