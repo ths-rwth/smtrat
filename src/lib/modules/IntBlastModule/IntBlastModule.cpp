@@ -77,6 +77,7 @@ namespace smtrat
     bool IntBlastModule::addCore( ModuleInput::const_iterator _subformula )
     {
         const FormulaT& formula = _subformula->formula();
+        INTBLAST_DEBUG("ADD " << formula);
         assert(formula.getType() == carl::FormulaType::CONSTRAINT);
         assert(formula.constraint().integerValued());
 
@@ -117,6 +118,7 @@ namespace smtrat
     void IntBlastModule::removeCore( ModuleInput::const_iterator _subformula )
     {
         const FormulaT& formula = _subformula->formula();
+        INTBLAST_DEBUG("REMOVE " << formula);
 
         mInputVariables.removeOrigin(formula);
         mNonlinearInputVariables.removeOrigin(formula);
@@ -396,9 +398,14 @@ namespace smtrat
                 // Obtain range from ICP substitute
                 carl::Variable substitute = mSubstitutes.at(_poly.poly());
                 IntegerInterval interval = getNum(mBoundsInRestriction.getInterval(substitute));
-                assert(interval.lowerBoundType() == carl::BoundType::WEAK && interval.upperBoundType() == carl::BoundType::WEAK);
+                if(interval.lowerBoundType() == carl::BoundType::WEAK && interval.upperBoundType() == carl::BoundType::WEAK) {
+                    blasted = reduceToRange(intermediate, interval);
+                } else {
+                    INTBLAST_DEBUG("Bad ICP interval for " << _poly.poly() << ": " << interval);
+                    // assert(false);
+                    blasted = intermediate;
+                }
 
-                blasted = reduceToRange(intermediate, interval);
                 break;
             }
             default: {
@@ -510,19 +517,29 @@ namespace smtrat
             }
         }
 
-        #ifdef INTBLAST_DEBUG_ENABLED
-        INTBLAST_DEBUG("Blastings:");
-        for(auto blaPa : mPolyBlastings) {
-            INTBLAST_DEBUG(blaPa.first << " --> " << blaPa.second);
-        }
+        if(INTBLAST_DEBUG_ENABLED) {
+            INTBLAST_DEBUG("Blastings:");
+            for(auto blaPa : mPolyBlastings) {
+                INTBLAST_DEBUG(blaPa.first << " --> " << blaPa.second);
+            }
 
-        INTBLAST_DEBUG("Substitutes:");
-        for(auto substi : mSubstitutes) {
-            INTBLAST_DEBUG(substi.first << " --> " << substi.second);
+            INTBLAST_DEBUG("Substitutes:");
+            for(auto substi : mSubstitutes) {
+                INTBLAST_DEBUG(substi.first << " --> " << substi.second);
+            }
         }
-        #endif
 
         // Run ICP
+        if(INTBLAST_DEBUG_ENABLED) {
+            INTBLAST_DEBUG("Running ICP on these formulas:");
+
+            for(const auto& formulaWO : *mpICPInput) {
+                INTBLAST_DEBUG(" - " << formulaWO.formula());
+                for(const auto& origin : formulaWO.origins()) {
+                    INTBLAST_DEBUG("    (o) " << origin);
+                }
+            }
+        }
         Answer icpAnswer = mICP.check();
         INTBLAST_DEBUG("icpAnswer: " << (icpAnswer == True ? "True" : (icpAnswer == False ? "False" : "Unknown")));
 
@@ -533,6 +550,13 @@ namespace smtrat
 
         if(icpAnswer == Unknown) {
             INTBLAST_DEBUG("Updating bounds from ICP.");
+
+            if(INTBLAST_DEBUG_ENABLED) {
+                for(ModuleInput::const_iterator fwo=mICP.rPassedFormula().begin(); fwo != mICP.rPassedFormula().end(); fwo++) {
+                    INTBLAST_DEBUG("from ICP: " << fwo->formula());
+                }
+            }
+
             updateBoundsFromICP();
 
             while(! mFormulasToEncode.empty()) {
@@ -832,12 +856,12 @@ namespace smtrat
             origins.insert(FormulaT(carl::FormulaType::AND, allInputFormulas));
         }
 
-        #ifdef INTBLAST_DEBUG_ENABLED
-        INTBLAST_DEBUG("'outside restriction' formula has origins:");
-        for(const FormulaT& origin : origins) {
-            INTBLAST_DEBUG("- " << origin);
+        if(INTBLAST_DEBUG_ENABLED) {
+            INTBLAST_DEBUG("'outside restriction' formula has origins:");
+            for(const FormulaT& origin : origins) {
+                INTBLAST_DEBUG("- " << origin);
+            }
         }
-        #endif
 
         addSubformulaToPassedFormula(newOutsideConstraint, std::make_shared<std::vector<FormulaT>>(origins.begin(), origins.end()));
     }
@@ -845,6 +869,7 @@ namespace smtrat
     void IntBlastModule::addFormulaToICP(const FormulaT& _formula, const FormulaT& _origin)
     {
         INTBLAST_DEBUG("-[ICP+]-> " << _formula);
+        INTBLAST_DEBUG("          (origin: " << _origin << ")");
         auto insertionResult = mpICPInput->add(_formula, _origin);
 
         if(insertionResult.second) {
@@ -910,6 +935,7 @@ namespace smtrat
         auto formulaInInput = mpICPInput->find(_formula);
         if(formulaInInput != mpICPInput->end()) {
             if(mpICPInput->removeOrigin(formulaInInput, _origin)) {
+                INTBLAST_DEBUG("-[ICP-]-> " << _formula);
                 mICP.remove(formulaInInput);
                 mpICPInput->erase(formulaInInput);
             }
@@ -925,6 +951,7 @@ namespace smtrat
         {
             // Remove the given formula from the set of origins.
             if(mpICPInput->removeOrigin(icpFormula, _origin)) {
+                INTBLAST_DEBUG("-[ICP-]-> " << icpFormula->formula());
                 mICP.remove(icpFormula);
                 icpFormula = mpICPInput->erase(icpFormula);
             } else {
@@ -936,6 +963,7 @@ namespace smtrat
     void IntBlastModule::addFormulaToBV(const FormulaT& _formula, const FormulaT& _origin)
     {
         INTBLAST_DEBUG("-[BV +]-> " << _formula);
+        INTBLAST_DEBUG("          (origin: " << _origin << ")");
 
         auto insertionResult = mpBVInput->add(_formula, _origin);
         if(insertionResult.second) { // The formula was fresh
