@@ -1,6 +1,6 @@
 /**
  * @file IntBlastModule.h
- * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ * @author Andreas Krueger <andreas.krueger@rwth-aachen.de>
  *
  * @version 2015-05-12
  * Created on 2015-05-12.
@@ -87,7 +87,7 @@ namespace smtrat
                 }
             }
 
-            std::size_t width = ((safeWidth1 > safeWidth2) ? safeWidth2 : safeWidth1) + 1;
+            std::size_t width = ((safeWidth1 > safeWidth2) ? safeWidth1 : safeWidth2) + 1;
             return BlastedType(width, makeSigned, _summand1.offset() + _summand2.offset());
         }
 
@@ -434,7 +434,7 @@ namespace smtrat
                 return mElement;
             }
 
-            const std::list<Origin> origins() const {
+            const std::set<Origin>& origins() const {
                 return mOrigins;
             }
 
@@ -574,7 +574,7 @@ namespace smtrat
 
             ModuleInput* mpBVInput; // Input of the internal BV solver
             BVSolver* mpBVSolver;
-            std::list<FormulaT> mFormulasToEncode;
+            FormulaSetT mFormulasToEncode;
 
             SolutionOrigin mSolutionOrigin;
 

@@ -1,6 +1,6 @@
 /**
  * @file IntBlastModule.cpp
- * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ * @author Andreas Krueger <andreas.krueger@rwth-aachen.de>
  *
  * @version 2015-05-12
  * Created on 2015-05-12.
@@ -8,6 +8,11 @@
 
 #include "IntBlastModule.h"
 #include "../AddModules.h"
+
+#define INTBLAST_DEBUG_ENABLED 0
+#define INTBLAST_DEBUG(x) do { \
+  if (INTBLAST_DEBUG_ENABLED) { std::cerr << "[IntBlast] " << x << std::endl; } \
+} while (0)
 
 namespace smtrat
 {
@@ -98,7 +103,7 @@ namespace smtrat
         mBoundsFromInput.addBound(formula.constraint(), formula);
 
         // Schedule formula for encoding to BV logic
-        mFormulasToEncode.push_back(formula);
+        mFormulasToEncode.insert(formula);
 
         // Pass new formula to ICP, generating substitutes
         addConstraintToICP(formula);
@@ -122,7 +127,7 @@ namespace smtrat
         removeOriginFromICP(formula);
         removeOriginFromBV(formula);
 
-        mFormulasToEncode.remove(formula);
+        mFormulasToEncode.erase(formula);
     }
 
     void IntBlastModule::updateModel() const
@@ -495,24 +500,31 @@ namespace smtrat
             {
                 if(blastingIt != mPolyBlastings.end()) {
                     unblastVariable(variable);
+
+                    // Schedule all formulas containing the updated variable for re-encoding
+                    for(const auto& formulaToReencode : variableWO.origins()) {
+                        mFormulasToEncode.insert(formulaToReencode);
+                    }
                 }
                 blastVariable(variable, interval, linear);
             }
         }
 
-        std::cout << "Blastings:" << std::endl;
+        #ifdef INTBLAST_DEBUG_ENABLED
+        INTBLAST_DEBUG("Blastings:");
         for(auto blaPa : mPolyBlastings) {
-            std::cout << blaPa.first << " --> " << blaPa.second << std::endl;
+            INTBLAST_DEBUG(blaPa.first << " --> " << blaPa.second);
         }
 
-        std::cout << "Substitutes:" << std::endl;
+        INTBLAST_DEBUG("Substitutes:");
         for(auto substi : mSubstitutes) {
-            std::cout << substi.first << " --> " << substi.second << std::endl;
+            INTBLAST_DEBUG(substi.first << " --> " << substi.second);
         }
+        #endif
 
         // Run ICP
         Answer icpAnswer = mICP.check();
-        std::cout << "icpAnswer: " << (icpAnswer == True ? "True" : (icpAnswer == False ? "False" : "Unknown")) << std::endl;
+        INTBLAST_DEBUG("icpAnswer: " << (icpAnswer == True ? "True" : (icpAnswer == False ? "False" : "Unknown")));
 
         if(icpAnswer == True) {
             mSolutionOrigin = SolutionOrigin::ICP;
@@ -520,27 +532,25 @@ namespace smtrat
         }
 
         if(icpAnswer == Unknown) {
-            std::cout << "Updating bounds from ICP." << std::endl;
+            INTBLAST_DEBUG("Updating bounds from ICP.");
             updateBoundsFromICP();
 
             while(! mFormulasToEncode.empty()) {
-                std::cout << "Formula " << mFormulasToEncode.front() << " encoded to BV:" << std::endl;
-                const FormulaT& formulaToEncode = mFormulasToEncode.front();
+                auto firstFormulaToEncode = mFormulasToEncode.begin();
+                const FormulaT& formulaToEncode = *firstFormulaToEncode;
+                INTBLAST_DEBUG("Formula " << formulaToEncode << " encoded to BV:");
 
                 FormulasT blastedFormulas = blastConstraint(formulaToEncode.constraint());
                 for(auto blastedFormula : blastedFormulas) {
-                    std::cout << " - " << blastedFormula << std::endl;
-                }
-                for(auto blastedFormula : blastedFormulas) {
                     addFormulaToBV(blastedFormula, formulaToEncode);
                 }
-                mFormulasToEncode.pop_front();
+                mFormulasToEncode.erase(firstFormulaToEncode);
             }
 
-            std::cout << "Running BV solver." << std::endl;
+            INTBLAST_DEBUG("Running BV solver.");
 
             Answer bvAnswer = mpBVSolver->check();
-            std::cout << "Answer from BV solver: " << (bvAnswer == False ? "False" : (bvAnswer == True ? "True" : "Unknown")) << std::endl;
+            INTBLAST_DEBUG("Answer from BV solver: " << (bvAnswer == False ? "False" : (bvAnswer == True ? "True" : "Unknown")));
 
             if(bvAnswer == True) {
                  mSolutionOrigin = SolutionOrigin::BV;
@@ -554,9 +564,9 @@ namespace smtrat
 
         updateOutsideRestrictionConstraint(icpAnswer != Unknown);
 
-        std::cout << "Running backend." << std::endl;
+        INTBLAST_DEBUG("Running backend.");
         Answer backendAnswer = runBackends(_full);
-        std::cout << "Answer from backend: " << (backendAnswer == False ? "False" : (backendAnswer == True ? "True" : "Unknown")) << std::endl;
+        INTBLAST_DEBUG("Answer from backend: " << (backendAnswer == False ? "False" : (backendAnswer == True ? "True" : "Unknown")));
         mSolutionOrigin = SolutionOrigin::BACKEND;
 
         if(backendAnswer == False) {
@@ -771,39 +781,70 @@ namespace smtrat
         FormulaT newOutsideConstraint(carl::FormulaType::OR, outsideConstraints);
 
         // Construct origins of the "outside restriction" constraint.
-        // For each infeasible subset from the ICP module (or the BV module, respectively),
-        // the origins of the constraints are turned into a conjunction and inserted as
+        // They should be picked in a suitable way for the infeasible subset derivation.
+
+        // If the ICP module has returned False, we can use the infeasible subset from ICP.
+        // The origins of the constraints are turned into a conjunction and inserted as
         // one origin of the "outside restriction" constraint.
 
-        const std::vector<FormulasT>& infeasibleInRestriction = (_fromICPOnly ? mICP.infeasibleSubsets() : mpBVSolver->infeasibleSubsets());
-        ModuleInput* restrictionInput = (_fromICPOnly ? mpICPInput : mpBVInput);
+        // If the ICP module has returned Unknown, and the BV module has returned False,
+        // the infeasible subset of the BV module is not sufficient: When encoding into
+        // Bitvector logic, the contracted bounds from ICP are used and become an implicit
+        // constraint of the Bitvector problem. However, the ICP module currently does not
+        // give us any insights about the constraints which have been used to contract
+        // a certain clause. Therefore, we cannot create a reasonable infeasible subset here.
+        // Instead, we use the conjunction of all input formulas as origin of the
+        // "outside restriction" constraint.
 
-        auto origins = std::make_shared<std::vector<FormulaT>>();
+        FormulaSetT origins;
 
-        for(const FormulasT& infeasibleSubset : infeasibleInRestriction) {
-            FormulasT originsOfInfSubset;
-            for(const FormulaT& infSubsetElement : infeasibleSubset) {
-                // Collect origins of element (i.e. subformulas of the received formula of IntBlastModule)
-                ModuleInput::const_iterator posInModuleInput = restrictionInput->find(infSubsetElement);
-                assert(posInModuleInput != restrictionInput->end());
-                if(posInModuleInput->hasOrigins()) {
-                    collectOrigins(*findBestOrigin(posInModuleInput->origins()), originsOfInfSubset);
+        if(_fromICPOnly) {
+            const std::vector<FormulasT>& infeasibleInRestriction = mICP.infeasibleSubsets();
+            ModuleInput* restrictionInput = mpICPInput;
+
+            for(const FormulasT& infeasibleSubset : infeasibleInRestriction) {
+                FormulasT originsOfInfSubset;
+                for(const FormulaT& infSubsetElement : infeasibleSubset) {
+                    // Collect origins of element (i.e. subformulas of the received formula of IntBlastModule)
+                    ModuleInput::const_iterator posInModuleInput = restrictionInput->find(infSubsetElement);
+                    assert(posInModuleInput != restrictionInput->end());
+                    if(posInModuleInput->hasOrigins()) {
+                        bool isConstraintFromRestriction = false;
+                        for(const auto& origin : posInModuleInput->origins()) {
+                            if(origin == mConstraintFromBounds) {
+                                isConstraintFromRestriction = true;
+                                break;
+                            }
+                        }
+
+                        if(! isConstraintFromRestriction) {
+                            collectOrigins(*findBestOrigin(posInModuleInput->origins()), originsOfInfSubset);
+                        }
+                    }
                 }
+                origins.insert(FormulaT(carl::FormulaType::AND, originsOfInfSubset));
             }
-            origins->push_back(FormulaT(carl::FormulaType::AND, originsOfInfSubset));
+        } else {
+            FormulasT allInputFormulas;
+            for(const auto& inputFormula : rReceivedFormula()) {
+                allInputFormulas.push_back(inputFormula.formula());
+            }
+            origins.insert(FormulaT(carl::FormulaType::AND, allInputFormulas));
         }
 
-        std::cout << "'outside restriction' formula has origins:" << std::endl;
-        for(const FormulaT& origin : *origins) {
-            std::cout << "- " << origin << std::endl;
+        #ifdef INTBLAST_DEBUG_ENABLED
+        INTBLAST_DEBUG("'outside restriction' formula has origins:");
+        for(const FormulaT& origin : origins) {
+            INTBLAST_DEBUG("- " << origin);
         }
+        #endif
 
-        addSubformulaToPassedFormula(newOutsideConstraint, origins);
+        addSubformulaToPassedFormula(newOutsideConstraint, std::make_shared<std::vector<FormulaT>>(origins.begin(), origins.end()));
     }
 
     void IntBlastModule::addFormulaToICP(const FormulaT& _formula, const FormulaT& _origin)
     {
-        std::cout << "-[ICP+]-> " << _formula << std::endl;
+        INTBLAST_DEBUG("-[ICP+]-> " << _formula);
         auto insertionResult = mpICPInput->add(_formula, _origin);
 
         if(insertionResult.second) {
@@ -894,7 +935,7 @@ namespace smtrat
 
     void IntBlastModule::addFormulaToBV(const FormulaT& _formula, const FormulaT& _origin)
     {
-        std::cout << "-[BV +]-> " << _formula << std::endl;
+        INTBLAST_DEBUG("-[BV +]-> " << _formula);
 
         auto insertionResult = mpBVInput->add(_formula, _origin);
         if(insertionResult.second) { // The formula was fresh
@@ -950,8 +991,18 @@ namespace smtrat
                 const carl::BVTerm& blastedTerm = blasting.term().term();
                 assert(blastedTerm.type() == carl::BVTermType::VARIABLE);
                 const carl::BVVariable& bvVariable = blastedTerm.variable();
-                const carl::BVValue& bvValue = bvModel.at(ModelVariable(bvVariable)).asBVValue();
-                Integer integerValue = decodeBVConstant(bvValue, blasting.term().type());
+
+                Integer integerValue(0);
+
+                auto bvValueInModel = bvModel.find(ModelVariable(bvVariable));
+                if(bvValueInModel != bvModel.end()) {
+                    const carl::BVValue& bvValue = bvValueInModel->second.asBVValue();
+                    integerValue = decodeBVConstant(bvValue, blasting.term().type());
+                }
+                // If the bitvector variable does not appear in the model of the
+                // BV solver, the BV solver has not received any constraints
+                // containing this variable. This implies that an arbitrary value is allowed.
+                // We simply use constant 0.
                 auto modelValue = carl::RealAlgebraicNumberNR<Rational>::create(integerValue, false);
                 mModel[ModelVariable(variable)] = ModelValue(modelValue);
             }
