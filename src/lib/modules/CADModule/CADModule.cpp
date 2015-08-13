@@ -151,7 +151,9 @@ namespace smtrat
 	 */
 	Answer CADModule::checkCore( bool _full )
 	{
-		mStats->addCall();
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            mStats->addCall();
+            #endif
             if( !_full )
             {
                 return Unknown;
