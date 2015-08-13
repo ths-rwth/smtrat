@@ -167,6 +167,9 @@ namespace smtrat
         }
         else if( !_subformula->formula().isTrue() )
         {
+            //TODO Matthias: better solution?
+            cancelUntil( assumptions.size() );
+
             if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
             {
                 assumptions.push( getLiteral( _subformula->formula(), _subformula->formula() ) );
@@ -213,15 +216,15 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
-        cancelUntil(0);
+        cancelUntil( assumptions.size() );
         learnts.clear();
         if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
         {
-            cancelUntil(0);
             auto iter = mFormulaAssumptionMap.find( _subformula->formula() );
             assert( iter != mFormulaAssumptionMap.end() );
             int i = 0;
             while( assumptions[i] != iter->second ) ++i;
+            int pos = (i < 1 ? 0 : i-1);
             while( i < assumptions.size() - 1 )
             {
                 assumptions[i] = assumptions[i+1];
@@ -229,6 +232,7 @@ namespace smtrat
             }
             assumptions.pop();
             mFormulaAssumptionMap.erase( iter );
+            cancelUntil(pos, true);
         }
         else if( _subformula->formula().propertyHolds( carl::PROP_IS_A_CLAUSE ) )
         {
@@ -1415,9 +1419,9 @@ SetWatches:
     }
 
     template<class Settings>
-    void SATModule<Settings>::cancelUntil( int level )
+    void SATModule<Settings>::cancelUntil( int level, bool force )
     {
-        if( level < assumptions.size() )
+        if( level < assumptions.size() && !force )
             level = assumptions.size();
         #ifdef DEBUG_SATMODULE
         cout << "### cancel until " << level << endl;
