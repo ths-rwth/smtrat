@@ -52,6 +52,7 @@ option( DEVELOPER "Compile with extra warnings" OFF )
 option( STATICLIB_SWITCH "Compile a statically linked version of the library." OFF )
 option( LOGGING "Enable logging within the carl library" OFF )
 option( LOGGING_CARL "Compile with the logging facility of the carl library" OFF )
+option( USE_COTIRE "Use cotire to generate and use precompiled headers" OFF )
 option( BUILD_SOLVER "Build the SMT-RAT Solver" ON )
 option( BUILD_GUI "Build the GUI" OFF )
 option( USE_GINAC "If disabled, all implementations using the ginac library are disabled." OFF )
@@ -79,6 +80,17 @@ set(SMTRAT_MODULES_PATH ${PROJECT_SOURCE_DIR}/src/lib/modules)
 # Include own macros.
 include( smtratmacros )
 # TODO: iteratively search for cmake files and include them here.
+
+if(USE_COTIRE)
+	# We use cotire, simply include it
+	message("-- using cotire")
+	include(cotire)
+else()
+	# We do not use cotire, create dummy function.
+	message("-- not using cotire")
+	function(cotire)
+	endfunction(cotire)
+endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     if (APPLE)
@@ -116,8 +128,12 @@ if(STATICLIB_SWITCH)
     else()
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIE")
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+	set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS "")
+	set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS "")
 	set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
 	set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
+	set(LINK_SEARCH_START_STATIC "")
+	set(LINK_SEARCH_END_STATIC "")
     endif()
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
 endif()
@@ -166,7 +182,7 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 
 # use carl, carl pulls in the required libraries.
 find_package( carl REQUIRED )
-message("-- Using CArL from ${carl_INCLUDE_DIR}")
+message(STATUS "Using CArL from ${carl_INCLUDE_DIR}")
 
 if(STATICLIB_SWITCH)
 	set( libraries ${libraries} lib_carl_static)

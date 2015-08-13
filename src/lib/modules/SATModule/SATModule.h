@@ -880,7 +880,7 @@ namespace smtrat
              *
              * @param level The level to backtrack to.
              */
-            void cancelUntil( int level );
+            void cancelUntil( int level, bool force = false );
             
             /**
              *  analyze : (confl : Clause*) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->  [void]

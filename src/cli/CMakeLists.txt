@@ -51,6 +51,7 @@ target_link_libraries( smtrat
 
 set_target_properties( smtrat PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
 
+
 add_library( smtlibParser
 	${CMAKE_SOURCE_DIR}/src/cli/smtratSolver.cpp
 )
@@ -66,3 +67,7 @@ set_target_properties( smtlibParser PROPERTIES
 		# CLEAN_DIRECT_OUTPUT 1
 		# avoid conflicts between library and binary target names
 )
+
+if(USE_COTIRE)
+    cotire( smtlibParser )
+endif()
