@@ -216,7 +216,7 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
-        cancelUntil( assumptions.size() );
+        cancelUntil( assumptions.size() );  // can we do better than this?
         learnts.clear();
         if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
         {
@@ -1410,7 +1410,6 @@ SetWatches:
                 const FormulaT& reabstraction = sign( c[i] ) ? mBooleanConstraintMap[var(c[i])].second->reabstraction : mBooleanConstraintMap[var(c[i])].first->reabstraction;
                 if( reabstraction.isTrue() )
                 {
-                    std::cout << "reabstraction of " << (sign( c[i] ) ? "-" : "") << var(c[i]) << " is true"<< std::endl;
                     return true;
                 }
             }
@@ -2870,6 +2869,9 @@ NextClause:
     template<class Settings>
     void SATModule<Settings>::relocAll( ClauseAllocator& to )
     {
+        // relocate clauses in mFormulaClauseMap
+        for( auto& iter : mFormulaClauseMap )
+            ca.reloc( iter.second, to );
         if( Settings::apply_valid_substitutions )
         {
             // variable to clauses mapping:
