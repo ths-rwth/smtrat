@@ -2776,7 +2776,6 @@ NextClause:
             {
                 addSplitting( splitting );
             }
-            (*backend)->clearDeductions();
             ++backend;
         }
         return deductionsLearned;
