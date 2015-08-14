@@ -31,7 +31,7 @@ namespace smtrat
 
         BlastedType(std::size_t _width, bool _signed, Integer _offset = 0) :
         mWidth(_width), mSigned(_signed), mOffset(_offset),
-        mBounds(_offset + (_signed ? -carl::pow(2, _width-1) : 0), _offset + (_signed ? carl::pow(2, _width-1)-1 : carl::pow(2, _width) -1))
+        mBounds(_offset + (_signed ? carl::pow(Integer(2), _width-1)*(-1) : Integer(0)), _offset + (_signed ? carl::pow(Integer(2), _width-1)-1 : carl::pow(Integer(2), _width)-1))
         {}
 
         std::size_t width() const {
