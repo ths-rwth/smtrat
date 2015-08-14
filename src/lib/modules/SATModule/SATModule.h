@@ -911,7 +911,7 @@ namespace smtrat
              *
              * @param level The level to backtrack to.
              */
-            void cancelUntil( int level );
+            void cancelUntil( int level, bool force = false );
             
             /**
              * Revert the variables assignment until a given level (keeping all assignments at 'level')

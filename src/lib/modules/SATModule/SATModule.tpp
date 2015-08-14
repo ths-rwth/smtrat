@@ -173,6 +173,9 @@ namespace smtrat
         }
         else if( !_subformula->formula().isTrue() )
         {
+            //TODO Matthias: better solution?
+            cancelUntil( assumptions.size() );
+
             if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
             {
                 assumptions.push( getLiteral( _subformula->formula(), _subformula->formula() ) );
@@ -239,21 +242,24 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
+        cancelUntil( assumptions.size() );  // can we do better than this?
+        learnts.clear();
         if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
         {
-            cancelUntil(0);
             auto iter = mFormulaAssumptionMap.find( _subformula->formula() );
             assert( iter != mFormulaAssumptionMap.end() );
             int i = 0;
             while( assumptions[i] != iter->second ) ++i;
+            int pos = (i < 1 ? 0 : i-1);
             while( i < assumptions.size() - 1 )
             {
                 assumptions[i] = assumptions[i+1];
                 ++i;
             }
-			// Delete references
-			assumptions.pop();
-			mFormulaAssumptionMap.erase( iter );
+	    // Delete references
+            assumptions.pop();
+            mFormulaAssumptionMap.erase( iter );
+            cancelUntil(pos, true);
         }
         else if( _subformula->formula().propertyHolds( carl::PROP_IS_A_CLAUSE ) )
         {
@@ -417,8 +423,6 @@ namespace smtrat
             {
                 unknown_excludes.clear();
             }
-            cancelUntil(0);
-            learnts.clear();
             #ifdef SATMODULE_WITH_CALL_NUMBER
             cout << endl << endl;
             #endif
@@ -1120,7 +1124,8 @@ namespace smtrat
             }
         }
         mChangedActivities.clear();
-        mCurrentAssignmentConsistent = True;
+        if( mChangedPassedFormula )
+            mCurrentAssignmentConsistent = True;
         assert( passedFormulaCorrect() );
     }
     
@@ -1641,7 +1646,6 @@ SetWatches:
                 const FormulaT& reabstraction = sign( c[i] ) ? mBooleanConstraintMap[var(c[i])].second->reabstraction : mBooleanConstraintMap[var(c[i])].first->reabstraction;
                 if( reabstraction.isTrue() )
                 {
-                    std::cout << "reabstraction of " << (sign( c[i] ) ? "-" : "") << var(c[i]) << " is true"<< std::endl;
                     return true;
                 }
             }
@@ -1650,9 +1654,9 @@ SetWatches:
     }
 
     template<class Settings>
-    void SATModule<Settings>::cancelUntil( int level )
+    void SATModule<Settings>::cancelUntil( int level, bool force )
     {
-        if( level < assumptions.size() )
+        if( level < assumptions.size() && !force )
             level = assumptions.size();
         #ifdef DEBUG_SATMODULE
 	SMTRAT_LOG_TRACE("smtrat.sat", "cancel until " << level);
@@ -1769,7 +1773,7 @@ SetWatches:
             cout << "### " << endl;
             #endif
 
-            if( !Settings::try_full_lazy_call_first || mNumberOfFullLazyCalls > 0 || trail.size() == assigns.size() )
+            if( decisionLevel() >= assumptions.size() && (!Settings::try_full_lazy_call_first || mNumberOfFullLazyCalls > 0 || trail.size() == assigns.size()) )
             {
                 if( Settings::try_full_lazy_call_first && trail.size() == assigns.size() )
                     ++mNumberOfFullLazyCalls;
@@ -3251,6 +3255,9 @@ NextClause:
     template<class Settings>
     void SATModule<Settings>::relocAll( ClauseAllocator& to )
     {
+        // relocate clauses in mFormulaClauseMap
+        for( auto& iter : mFormulaClauseMap )
+            ca.reloc( iter.second, to );
         if( Settings::apply_valid_substitutions )
         {
             // variable to clauses mapping:
@@ -3316,8 +3323,7 @@ NextClause:
     {
         // Initialize the next region to a size corresponding to the estimated utilization degree. This
         // is not precise but should avoid some unnecessary reallocations for the new region:
-        // TODO Matthias: activate again when garbageCollect is fixed
-		/*ClauseAllocator to(ca.size() > ca.wasted() ? ca.size() - ca.wasted() : 0 );
+        ClauseAllocator to(ca.size() > ca.wasted() ? ca.size() - ca.wasted() : 0 );
         relocAll( to );
         if( verbosity >= 2 )
             printf( "|  Garbage collection:   %12d bytes => %12d bytes             |\n",

@@ -149,6 +149,7 @@ MACRO(EndDefineModule enabled)
 
 	option(SMTRAT_ENABLE_${mod_name} "Compile " ${mod_default_enable})
 
+	set(allModuleTypes ${allModuleTypes} ${mod_name} PARENT_SCOPE)
 	if(SMTRAT_ENABLE_${mod_name})
 		# Number of modules (for determining this modules number)
 		list(LENGTH moduleTypes mod_index)

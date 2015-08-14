@@ -71,12 +71,7 @@ namespace smtrat
         bool result = true;
         for( auto ass = _model.begin(); ass != _model.end(); ++ass )
         {   
-            if (ass->second.isBool())
-            {
-                assert( ass->first.isVariable() );
-                _rationalAssigns.insert( _rationalAssigns.end(), std::make_pair( ass->first.asVariable(), (ass->second.asBool() ? ONE_RATIONAL : ZERO_RATIONAL) ) );
-            }
-            else if (ass->second.isSqrtEx())
+            if (ass->second.isSqrtEx())
             {
                 if( ass->second.asSqrtEx().isConstant() && !ass->second.asSqrtEx().hasSqrt() )
                 {
@@ -97,11 +92,6 @@ namespace smtrat
                     assert( ass->first.isVariable() );
                     _rationalAssigns.insert( _rationalAssigns.end(), std::make_pair(ass->first.asVariable(), ass->second.asRAN()->value()) );
                 }
-            }
-            else if (ass->second.isSortValue())
-            {
-                assert( ass->first.isVariable() );
-                _rationalAssigns.insert( _rationalAssigns.end(), std::make_pair(ass->first.asVariable(), ass->second.asSortValue().id()) );
             }
         }
         return result;
@@ -152,8 +142,8 @@ namespace smtrat
             }
             case carl::FormulaType::BOOL:
             {
-                auto ass = _assignment.find( _formula.boolean() );
-                return ass == _assignment.end() ? 2 : (ass->second == ONE_RATIONAL ? 1 : 0);
+                auto ass = _model.find( _formula.boolean() );
+                return ass == _model.end() ? 2 : (ass->second.asBool() ? 1 : 0);
             }
             case carl::FormulaType::CONSTRAINT:
             {
