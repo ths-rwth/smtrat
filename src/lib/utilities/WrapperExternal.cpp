@@ -29,6 +29,27 @@ namespace smtrat {
 		return solver->add(subformula);
     }
 
+	int WrapperExternal::addWithVariables(const char* _subformula, const char* _name, char* buffer, int bufferSize)
+	{
+		if (tryCopyOld(buffer, bufferSize))
+			return 0;
+		//Add formula
+		FormulaT subformula = parser.formula(_subformula);
+		SMTRAT_LOG_DEBUG("smtrat.wrapper", "Added: " << subformula << "(" << _name << ")");
+		//TODO Matthias: set name
+		solver->add(subformula);
+		//Return variables
+		std::ostringstream stream;
+		stream << subformula << std::endl;
+		carl::Variables variables;
+		subformula.booleanVars(variables);
+		for (carl::Variables::iterator iter = variables.begin(); iter != variables.end(); iter++)
+		{
+			stream << *iter << std::endl;
+		}
+		return copyResult(stream, buffer, bufferSize);
+	}
+
 	void WrapperExternal::addInformationRelevantFormula(const char* _formula)
 	{
 		FormulaT formula = parser.formula(_formula);

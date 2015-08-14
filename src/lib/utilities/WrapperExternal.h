@@ -132,6 +132,16 @@ namespace smtrat {
         DLL_EXPORT bool add(const char* _subformula, const char* _name);
 
 		/**
+		* Adds the given formula to the conjunction of formulas, which will be considered for the next
+		* satisfiability check. It also returns the formula and the set of variables.
+		* @param _subformula The formula to add.
+		* @param _name       The name of the constraint used as a label.
+		* @param buffer      The stream to print on.
+		* @return needed buffersize if the current one is too small, 0 otherwise
+		*/
+		DLL_EXPORT int addWithVariables(const char* _subformula, const char* _name, char* buffer, int bufferSize);
+
+		/**
 		* Adds formula as InformationRelevantFormula
 		* @param formula The formula to add.
 		*/
