@@ -132,7 +132,7 @@ namespace smtrat
         auto iter = origs.begin();
         while( iter != origs.end() )
         {
-            if( *iter == _origin || iter->contains( _origin ) )
+            if( *iter == _origin /*|| iter->contains( _origin )*/ )
             {
                 if (iter != --origs.end())
                 {

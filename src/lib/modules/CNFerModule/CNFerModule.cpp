@@ -71,7 +71,8 @@ namespace smtrat
             }
             ++receivedSubformula;
         }
-        if( rPassedFormula().empty() )
+        //No given formulas is SAT but only if no other run was before
+        if( rPassedFormula().empty() && solverState() == Unknown )
         {
             return True;
         }

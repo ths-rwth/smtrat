@@ -194,6 +194,9 @@ namespace smtrat
 
     Answer Module::checkCore( bool _full )
     {
+        if ( !mInfeasibleSubsets.empty() )
+            return False;
+
         assert( mInfeasibleSubsets.empty() );
 
         // Copy the received formula to the passed formula.
