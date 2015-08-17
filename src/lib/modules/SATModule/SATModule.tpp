@@ -349,7 +349,7 @@ namespace smtrat
             {
 				SMTRAT_LOG_TRACE("smtrat.sat", "Find all dependent variables");
                 assert( result == l_True );
-
+                int assumptionSizeStart = assumptions.size();
                 // Initialize set of all variables which are not tested yet for positive assignment
                 std::set<Minisat::Var> testVarsPositive;
                 Minisat::Var testCandidate;
@@ -369,11 +369,7 @@ namespace smtrat
                     }
 
                     // Reset the state until level 0
-                    cancelAssignmentUntil( 0 );
-                    qhead = trail_lim[0];
-                    trail.shrink( trail.size() - trail_lim[0] );
-                    trail_lim.shrink( trail_lim.size() - 0 );
-                    ok = true;
+                    cancelUntil(0, true);
                     mPropagatedLemmas.clear();
 
                     if ( testVarsPositive.empty() )
@@ -382,13 +378,13 @@ namespace smtrat
                     }
 
                     // Set new positive assignment
-                    // TODO matthias: ignore Tseitin variables
+                    // TODO matthias: ignore other variables as "Oxxxx"
                     testCandidate = *testVarsPositive.begin();
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Test candidate: " << mMinisatVarMap.at( testCandidate ));
                     Lit nextLit = mkLit( testCandidate, false );
-                    assert( assumptions.size() <= 1 );
-                    assumptions.clear();
-                    assumptions.push( nextLit );
+                    assert(assumptions.size() <= assumptionSizeStart + 1);
+                    assumptions.shrink(assumptions.size() - assumptionSizeStart);
+                    assumptions.push(nextLit);
 
                     // Check again
                     result = checkFormula();
