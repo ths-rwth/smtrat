@@ -675,6 +675,8 @@ namespace smtrat
             result.emplace_back();
             for( const auto& cons : *infSubSet )
                 getOrigins( cons, result.back() );
+			std::sort(result.back().begin(), result.back().end());
+			result.back().erase(std::unique(result.back().begin(), result.back().end()), result.back().end());
         }
         return result;
     }
