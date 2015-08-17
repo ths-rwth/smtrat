@@ -37,7 +37,8 @@ namespace smtrat
         mStrategyGraph(),
         mDebugOutputChannel( cout.rdbuf() ),
         mLogic( Logic::UNDEFINED ),
-		mInformationRelevantFormula()
+        mInformationRelevantFormula(),
+        mLemmaLevel(LemmaLevel::NONE)
         #ifdef SMTRAT_DEVOPTION_Statistics
         ,
         mpStatistics( new GeneralStatistics() )

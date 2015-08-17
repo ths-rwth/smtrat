@@ -79,26 +79,13 @@ namespace smtrat {
         }
 
 		/**
-		* Set flag for setting compute_propagated_lemmas.
-		* @param _compute_propagated_lemmas if true, the flag is activated, otherwise it is deactivated
+		* Set level for lemma generation.
+		* @param _level Level with correspondence:
+		*                      0 -> NONE
+		*                      1 -> NORMAL
+		*                      2 -> ADVANCED
 		*/
-		DLL_EXPORT void setComputePropagatedLemmas(bool _compute_propagated_lemmas)
-		{
-			SMTRAT_LOG_DEBUG("smtrat.wrapper", "set compute_propagated_lemmas: " << _compute_propagated_lemmas);
-			//TODO Matthias: implement
-			SMTRAT_LOG_NOTIMPLEMENTED();
-		}
-
-		/**
-		* Set flag for setting find_all_dependent_variables.
-		* @param _find_all_dependent_variables if true, the flag is activated, otherwise it is deactivated
-		*/
-		DLL_EXPORT void setFindAllDependentVariables(bool _find_all_dependent_variables)
-		{
-			SMTRAT_LOG_DEBUG("smtrat.wrapper", "set find_all_dependent_variables: " << _find_all_dependent_variables);
-			//TODO Matthias: implement
-			SMTRAT_LOG_NOTIMPLEMENTED();
-		}
+		DLL_EXPORT void setLemmaLevel(int _level);
 
 		/**
 		* Parse formula.
@@ -178,6 +165,11 @@ namespace smtrat {
         * a theory solver constructed with SMT-RAT into them.
         */
         DLL_EXPORT bool pop();
+
+		/**
+		* Resets the solver.
+		*/
+		DLL_EXPORT void reset();
 
         /**
         * @return All infeasible subsets of the set so far added formulas.

@@ -215,7 +215,7 @@ namespace smtrat
                 }
             }
 
-			if (Settings::compute_propagated_lemmas && decisionLevel() == 0)
+			if (isLemmaLevel(NORMAL) && decisionLevel() == 0)
 			{
 				if (_subformula->formula().propertyHolds(carl::PROP_IS_A_LITERAL) && _subformula->formula().propertyHolds(carl::PROP_CONTAINS_BOOLEAN))
 				{
@@ -345,7 +345,7 @@ namespace smtrat
 			#endif
 
             //TODO Matthias: finish
-            if ( Settings::find_all_dependent_variables )
+            if ( isLemmaLevel(LemmaLevel::ADVANCED) )
             {
 				SMTRAT_LOG_TRACE("smtrat.sat", "Find all dependent variables");
                 assert( result == l_True );
@@ -622,7 +622,7 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::updateInfeasibleSubset()
     {
-        assert( Settings::find_all_dependent_variables || !ok );
+        assert( isLemmaLevel(LemmaLevel::ADVANCED) || !ok );
         mInfeasibleSubsets.clear();
         // Set the infeasible subset to the set of all clauses.
         FormulasT infeasibleSubset;
@@ -1729,7 +1729,7 @@ SetWatches:
                     return confl;
 
                 // Build lemmas
-                if ( Settings::compute_propagated_lemmas )
+                if ( isLemmaLevel(LemmaLevel::NORMAL) )
                 {
                     for ( VarLemmaMap::const_iterator iter = mPropagatedLemmas.begin(); iter != mPropagatedLemmas.end(); ++iter )
                     {
@@ -2518,7 +2518,7 @@ SetWatches:
         }
 
 		// Save reasons (clauses) implicating a variable value
-        if (Settings::compute_propagated_lemmas && decisionLevel() == 0 && !mComputeAllSAT)
+        if (isLemmaLevel(LemmaLevel::NORMAL) && decisionLevel() == 0 && !mComputeAllSAT)
         {
             if ( from != CRef_Undef) {
                 // Find corresponding formula
@@ -3492,7 +3492,7 @@ NextClause:
 
         for( int i = 0; i < assumptions.size(); i++ )
         {
-//            assert( Settings::find_all_dependent_variables || value( assumptions[i] ) != l_False );
+//            assert( isLemmaLevel(LemmaLevel::ADVANCED) || value( assumptions[i] ) != l_False );
             _out << _init << "  " << (sign( assumptions[i] ) ? "-" : "") << var( assumptions[i] ) << std::endl;//(mapVar( var( assumptions[i] ), map, max )) << endl;
         }
 

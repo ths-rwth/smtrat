@@ -2,6 +2,15 @@
 #include <iostream>
 
 namespace smtrat {
+
+	void WrapperExternal::setLemmaLevel(int _level)
+	{
+		assert(_level >= 0 && _level <= 2);
+		LemmaLevel level = static_cast<LemmaLevel>(_level);
+		SMTRAT_LOG_DEBUG("smtrat.wrapper", "Set lemma level: " << level);
+		solver->setLemmaLevel(level);
+	}
+
 	int WrapperExternal::parseFormula(const char* input, char* buffer, int bufferSize)
 	{
 		if (tryCopyOld(buffer, bufferSize))
@@ -80,6 +89,12 @@ namespace smtrat {
 		SMTRAT_LOG_DEBUG("smtrat.wrapper", "Pop");
 		return solver->pop();
     }
+
+	void WrapperExternal::reset()
+	{
+		SMTRAT_LOG_DEBUG("smtrat.wrapper", "Reset");
+		return solver->reset();
+	}
 
     int WrapperExternal::infeasibleSubsets(char* buffer, int bufferSize) const
     {

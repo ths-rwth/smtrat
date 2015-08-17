@@ -1016,6 +1016,12 @@ namespace smtrat
              */
 			const std::set<FormulaT>& getInformationRelevantFormulas();
 
+			/**
+			* Checks if current lemma level is greater or equal to given level.
+			* @param level Level to check.
+			*/
+			bool isLemmaLevel(LemmaLevel level);
+
         public:
             // Printing methods.
             

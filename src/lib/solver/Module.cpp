@@ -1098,6 +1098,11 @@ namespace smtrat
 		return mpManager->getInformationRelevantFormulas();
 	}
 
+	bool Module::isLemmaLevel(LemmaLevel level)
+	{
+		return mpManager->isLemmaLevel(level);
+	}
+
     void Module::print( ostream& _out, const string _initiation ) const
     {
         _out << _initiation << "********************************************************************************" << endl;

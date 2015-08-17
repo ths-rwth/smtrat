@@ -60,6 +60,8 @@ namespace smtrat
             Logic mLogic;
 			/// List of formula which are relevant for certain tasks
 			std::set<FormulaT> mInformationRelevantFormula;
+			/// Level of lemma generation
+			LemmaLevel mLemmaLevel;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all statistics for the solver this manager belongs to.
             GeneralStatistics* mpStatistics;
@@ -380,6 +382,24 @@ namespace smtrat
 			inline void clearInformationRelevantFormula()
 			{
 				mInformationRelevantFormula.clear();
+			}
+
+			/**
+			 * Sets the current level for lemma generation
+			 * @param level Level
+			 */
+			inline void setLemmaLevel(LemmaLevel level)
+			{
+				mLemmaLevel = level;
+			}
+
+			/**
+			 * Checks if current lemma level is greater or equal to given level.
+			 * @param level Level to check.
+			 */
+			inline bool isLemmaLevel(LemmaLevel level)
+			{
+				return level <= mLemmaLevel;
 			}
 
         protected:

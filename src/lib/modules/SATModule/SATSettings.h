@@ -59,8 +59,6 @@ namespace smtrat
 
     struct SATSettings3 : SATSettings1
     {
-        static const bool compute_propagated_lemmas = false;
-        static const bool find_all_dependent_variables = false;
 		static const bool remove_satisfied = false;
 	};
 }
