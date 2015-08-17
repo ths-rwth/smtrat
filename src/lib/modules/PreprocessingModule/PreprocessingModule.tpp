@@ -195,21 +195,26 @@ namespace smtrat {
     }
 	
 	template<typename Settings>
-	void PreprocessingModule<Settings>::updateModel() const {
+	void PreprocessingModule<Settings>::updateModel() const
+    {
         clearModel();
-        if (solverState() == True) {
+        if( solverState() == True )
+        {
             getBackendsModel();
+            for( const auto& iter : boolSubs )
+            {
+                if( iter.first.getType() == carl::FormulaType::BOOL )
+                {
+                    assert( mModel.find( iter.first.boolean() ) == mModel.end() );
+                    mModel.emplace( iter.first.boolean(), iter.second );
+                }
+            }
+            for( const auto& iter : arithSubs )
+            {
+                assert( mModel.find( iter.first ) == mModel.end() );
+                mModel.emplace( iter.first, vs::SqrtEx( iter.second ) );
+            }
         }
-		carl::Variables vars;
-		rReceivedFormula().arithmeticVars(vars);
-		for (const auto& it: model()) {
-			if (!it.first.isVariable()) continue;
-			carl::Variable v = it.first.asVariable();
-			vars.erase(v);
-		}
-		for (carl::Variable::Arg v: vars) {
-			mModel.emplace(v, vs::SqrtEx());
-		}
     }
 	
 	template<typename Settings>

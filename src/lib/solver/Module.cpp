@@ -111,6 +111,7 @@ namespace smtrat
             cout << " " << subformula.formula().toString( false, true );
         cout << "))\n";
         #endif
+        clearDeductions();
         if( rReceivedFormula().empty() ) return foundAnswer( True );
         Answer result = foundAnswer( checkCore( _full ) );
         assert(result == Unknown || result == False || result == True);
@@ -675,8 +676,8 @@ namespace smtrat
             result.emplace_back();
             for( const auto& cons : *infSubSet )
                 getOrigins( cons, result.back() );
-			std::sort(result.back().begin(), result.back().end());
-			result.back().erase(std::unique(result.back().begin(), result.back().end()), result.back().end());
+            std::sort(result.back().begin(), result.back().end());
+            result.back().erase(std::unique(result.back().begin(), result.back().end()), result.back().end());
         }
         return result;
     }
