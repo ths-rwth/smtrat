@@ -353,9 +353,20 @@ namespace smtrat
                 // Initialize set of all variables which are not tested yet for positive assignment
                 std::set<Minisat::Var> testVarsPositive;
                 Minisat::Var testCandidate;
-                for ( BooleanVarMap::const_iterator iter = mBooleanVarMap.begin(); iter != mBooleanVarMap.end(); ++iter )
+                if (getInformationRelevantFormulas().empty())
                 {
-                    testVarsPositive.insert( iter->second );
+                    // If non are selected, all variables are relevant
+                    for (BooleanVarMap::const_iterator iterVar = mBooleanVarMap.begin(); iterVar != mBooleanVarMap.end(); ++iterVar)
+                    {
+                        testVarsPositive.insert(iterVar->second);
+                    }
+                }
+                else
+                {
+                    for (std::set<FormulaT>::const_iterator iterVar = getInformationRelevantFormulas().begin(); iterVar != getInformationRelevantFormulas().end(); ++iterVar)
+                    {
+                        testVarsPositive.insert(mBooleanVarMap.at(iterVar->boolean()));
+                    }
                 }
 
                 while ( !testVarsPositive.empty() )
