@@ -554,9 +554,20 @@ namespace smtrat
 
 			// Construct list of all relevant variables
 			mRelevantVariables.clear();
-			for ( std::set<FormulaT>::const_iterator iterVar = getInformationRelevantFormulas().begin(); iterVar != getInformationRelevantFormulas().end(); ++iterVar )
+			if (getInformationRelevantFormulas().empty())
 			{
-				mRelevantVariables.push_back( mBooleanVarMap.at( iterVar->boolean() ) );
+				// If non are selected, all variables are relevant
+				for ( BooleanVarMap::const_iterator iterVar = mBooleanVarMap.begin(); iterVar != mBooleanVarMap.end(); ++ iterVar)
+				{
+					mRelevantVariables.push_back( iterVar->second );
+				}
+			}
+			else
+			{
+				for ( std::set<FormulaT>::const_iterator iterVar = getInformationRelevantFormulas().begin(); iterVar != getInformationRelevantFormulas().end(); ++iterVar )
+				{
+					mRelevantVariables.push_back( mBooleanVarMap.at( iterVar->boolean() ) );
+				}
 			}
 			#ifdef DEBUG_SATMODULE
 			std::cout << "Relevant variables: ";
