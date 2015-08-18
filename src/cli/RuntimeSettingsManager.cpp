@@ -149,6 +149,10 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
             {
                 mPrintModel = true;
             }
+            else if(optionName == "all-model" || optionName == "a")
+            {
+                mPrintAllModels = true;
+            }
             else if(optionName == "statistics" || optionName == "s")
             {
                 mPrintStatistics = true;
@@ -214,7 +218,8 @@ void RuntimeSettingsManager::printHelp() const
     std::cout << "\t --license \t\t prints the license." << std::endl;
     std::cout << "\t --toc  \t\t\t prints the terms of condition" << std::endl;
     std::cout << "\t --info \t\t\t prints information about the binary" << std::endl;
-    std::cout << "\t --model (-m) \t\t\t prints a model is printed if the example is found to be satisfiable" << std::endl;
+    std::cout << "\t --model (-m) \t\t\t prints a model if the example is found to be satisfiable" << std::endl;
+    std::cout << "\t --all-models (-a) \t\t\t prints all models if the example is found to be satisfiable" << std::endl;
     std::cout << "\t --statistics (-s) \t\t\t prints any statistics collected in the solving process" << std::endl;
     std::cout << std::endl;
     std::cout << "Developer options:" <<std::endl;

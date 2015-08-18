@@ -273,6 +273,17 @@ namespace smtrat
             {
                 mpPrimaryBackend->printModel( _out );
             }
+            
+            /**
+             * Prints all assignments of variables occurring in the so far 
+             * added formulas to values of their domains, if the conjunction of these 
+             * formulas is satisfiable.
+             * @param The stream to print on.
+             */
+            void printAllAssignments( std::ostream& _out = std::cout )
+            {
+                mpPrimaryBackend->printAllModels( _out );
+            }
     
             /**
              * Prints the so far added formulas.

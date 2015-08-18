@@ -1177,4 +1177,13 @@ namespace smtrat
             _out << model();
         }
     }
+    
+    void Module::printAllModels( ostream& _out )
+    {
+        this->updateAllModels();
+        for( const auto& m : mAllModels )
+        {
+            _out << m;
+        }
+    }
 } // namespace smtrat

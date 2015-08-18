@@ -23,6 +23,7 @@ namespace smtrat
         std::map<std::string, RuntimeSettings*> mSettingObjects;
         bool mDoPrintTimings;
         bool mPrintModel;
+        bool mPrintAllModels;
         bool mPrintStatistics;
     public:
         RuntimeSettingsManager();
@@ -41,6 +42,11 @@ namespace smtrat
         bool printModel() const
         {
             return mPrintModel;
+        }
+        
+        bool printAllModels() const
+        {
+            return mPrintAllModels;
         }
         
         bool printStatistics() const

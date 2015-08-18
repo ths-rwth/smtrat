@@ -1059,6 +1059,13 @@ namespace smtrat
              * @param _out The stream to print the assignment on.
              */
             void printModel( std::ostream& = std::cout ) const;
+            
+            /**
+             * Prints all assignments of this module satisfying its received formula if it satisfiable
+             * and this module could find an assignment.
+             * @param _out The stream to print the assignment on.
+             */
+            void printAllModels( std::ostream& = std::cout );
         private:
             
             /**

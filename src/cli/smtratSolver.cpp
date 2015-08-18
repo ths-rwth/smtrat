@@ -96,6 +96,11 @@ public:
 			this->solver->printAssignment(std::cout);
 		}
 	}
+	void getAllAssignments() {
+		if (this->lastAnswer == smtrat::True) {
+			this->solver->printAllAssignments(std::cout);
+		}
+	}
 	void getProof() {
 		error() << "(get-proof) is not implemented.";
 	}
@@ -166,6 +171,11 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
 	{
 		std::cout << std::endl;
 		solver->printAssignment( std::cout );
+	}
+	if( settingsManager.printAllModels() && e->lastAnswer == smtrat::True )
+	{
+		std::cout << std::endl;
+		solver->printAllAssignments( std::cout );
 	}
 	delete e;
 	return exitCode;
