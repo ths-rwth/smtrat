@@ -216,11 +216,16 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
+        if( _subformula->formula().isFalse() || _subformula->formula().isTrue() )
+        {
+            return;
+        }
         cancelUntil( assumptions.size() );  // can we do better than this?
         learnts.clear();
         if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
         {
             auto iter = mFormulaAssumptionMap.find( _subformula->formula() );
+            if( iter == mFormulaAssumptionMap.end() ) exit(1458);
             assert( iter != mFormulaAssumptionMap.end() );
             int i = 0;
             while( assumptions[i] != iter->second ) ++i;
@@ -260,6 +265,7 @@ namespace smtrat
                     }
                     removeClause( iter->second );
                 }
+                mFormulaClauseMap.erase(iter);
             }
         }
     }
