@@ -18,13 +18,17 @@ namespace smtrat
         unsigned result = 1;
         for( const FormulaWithOrigins& fwo : *this )
         {
+            std::cout << fwo.formula() << " -> ";
             switch( fwo.formula().satisfiedBy( _assignment ) )
             {
                 case 0:
+                    std::cout << "0" << std::endl;
                     return 0;
                 case 1:
+                    std::cout << "1" << std::endl;
                     break;
                 default:
+                    std::cout << "2" << std::endl;
                     if( result != 2 ) result = 2;
             }
         }
@@ -36,6 +40,9 @@ namespace smtrat
         EvalRationalMap rationalAssigns;
         getRationalAssignmentsFromModel( _assignment, rationalAssigns );
         unsigned result = 1;
+//        std::cout << "Assignment:" << std::endl;
+//        for( const auto& a : _assignment )
+//            std::cout << a.first << " -> " << a.second << std::endl;
 //        std::cout << "Rational assignment:" << std::endl;
 //        for( const auto& ra : rationalAssigns )
 //            std::cout << ra.first << " -> " << ra.second << std::endl;
