@@ -50,6 +50,10 @@ namespace smtrat
 #else
         static constexpr TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic = TheoryGuidedDecisionHeuristicLevel::DISABLED;
 #endif
+		/**
+		 *
+		 */
+		static const bool remove_satisfied = true;
     };
     
     struct SATSettings2 : SATSettings1
