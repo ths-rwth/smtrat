@@ -246,7 +246,7 @@ namespace smtrat {
 	private:
 
 		/**
-		/* Writes a stream into a buffer for an external program.
+		 * Writes a stream into a buffer for an external program.
 		 * @param stream The stream to write
 		 * @param buffer The buffer to write into.
 		 * @param buffersize The current buffersize.
@@ -255,11 +255,11 @@ namespace smtrat {
 		int copyResult(const std::ostringstream& stream, char* buffer, int bufferSize) const;
 
 		/**
-		/* Tries to write lastBuffer into a buffer for an external program.
-		* @param buffer The buffer to write into.
-		* @param buffersize The current buffersize.
-		* @return true, if there was something to write, false otherwise
-		*/
+		 * Tries to write lastBuffer into a buffer for an external program.
+		 * @param buffer The buffer to write into.
+		 * @param buffersize The current buffersize.
+		 * @return true, if there was something to write, false otherwise
+		 */
 		bool tryCopyOld(char* buffer, int bufferSize) const;
     };
 }
