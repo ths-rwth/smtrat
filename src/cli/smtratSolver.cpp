@@ -25,18 +25,33 @@
 
 #include "newparser/Parser.h"
 #include "../lib/Common.h"
+#include <carl/formula/DIMACSExporter.h>
+#include <carl/formula/DIMACSImporter.h>
 
 class Executor : public smtrat::parser::InstructionHandler {
 	CMakeStrategySolver* solver;
 	unsigned exitCode;
+	carl::DIMACSExporter<smtrat::Poly> dimacs;
+	std::size_t dimacsID = 0;
 public:
+	bool exportDIMACS = false;
 	smtrat::Answer lastAnswer;
 	Executor(CMakeStrategySolver* solver) : smtrat::parser::InstructionHandler(), solver(solver) {}
+	~Executor() {
+	}
 	void add(const smtrat::FormulaT& f) {
+		if (exportDIMACS) { dimacs(f); return; }
 		this->solver->add(f);
 		SMTRAT_LOG_DEBUG("smtrat", "Asserting " << f);
 	}
 	void check() {
+		if (exportDIMACS) {
+			dimacsID++;
+			std::ofstream out("dimacs_" + std::to_string(dimacsID) + ".dimacs");
+			out << dimacs << std::endl;
+			out.close();
+			return;
+		}
 		this->lastAnswer = this->solver->check();
 		switch (this->lastAnswer) {
 			case smtrat::Answer::True: {
@@ -104,6 +119,7 @@ public:
 	}
 	void pop(std::size_t n) {
 		this->solver->pop(n);
+		if (exportDIMACS) dimacs.clear();
 	}
 	void push(std::size_t n) {
 		for (; n > 0; n--) this->solver->push();
@@ -130,7 +146,6 @@ public:
  * @param options Save options from the smt2 file here.
  */
 unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* solver, const smtrat::RuntimeSettingsManager& settingsManager) {
-
 	// Increase stack size to the maximum.
 	rlimit rl;
 	getrlimit(RLIMIT_STACK, &rl);
@@ -143,6 +158,7 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
 		exit(SMTRAT_EXIT_NOSUCHFILE);
 	}
 	Executor* e = new Executor(solver);
+	if (settingsManager.exportDIMACS()) e->exportDIMACS = true;
 	{
 		smtrat::parser::SMTLIBParser parser(e, true);
 		bool parsingSuccessful = parser.parse(infile);
@@ -177,12 +193,14 @@ void printTimings(smtrat::Manager* solver)
     std::cout << "**********************************************" << std::endl;
 }
 
+//#include "../lib/datastructures/expression/ExpressionTest.h"
 
 /**
  *
  */
 int main( int argc, char* argv[] )
 {
+	//smtrat::testExpression();
 #ifdef LOGGING
 	if (!carl::logging::logger().has("smtrat")) {
 		carl::logging::logger().configure("smtrat", "smtrat.log");
@@ -237,8 +255,40 @@ int main( int argc, char* argv[] )
     settingsManager.addSettingsObject( settingsObjects );
     settingsObjects.clear();
 	
-	// Parse input.
-    unsigned exitCode = executeFile(pathToInputFile, solver, settingsManager);
+	
+	unsigned exitCode = 0;
+	if (settingsManager.readDIMACS()) {
+		carl::DIMACSImporter<smtrat::Poly> dimacs(pathToInputFile);
+		while (dimacs.hasNext()) {
+			solver->add(dimacs.next());
+			switch (solver->check()) {
+				case smtrat::Answer::True: {
+					std::cout << "sat" << std::endl;
+					exitCode = SMTRAT_EXIT_SAT;
+					break;
+				}
+				case smtrat::Answer::False: {
+					std::cout << "unsat" << std::endl;
+					exitCode = SMTRAT_EXIT_UNSAT;
+					break;
+				}
+				case smtrat::Answer::Unknown: {
+					std::cout << "unknown" << std::endl;
+					exitCode = SMTRAT_EXIT_UNKNOWN;
+					break;
+				}
+				default: {
+					std::cerr << "unexpected output!";
+					exitCode = SMTRAT_EXIT_UNEXPECTED_ANSWER;
+					break;
+				}
+			}
+			if (dimacs.hasNext()) solver->reset();
+		}
+	} else {
+		// Parse input.
+    	exitCode = executeFile(pathToInputFile, solver, settingsManager);
+	}
 
     if( settingsManager.doPrintTimings() )
     {
