@@ -35,7 +35,9 @@ RuntimeSettingsManager::RuntimeSettingsManager() :
     mDoPrintTimings( false ), 
     mPrintModel( false ),
     mPrintStatistics( false ),
-    mPrintAllModels( false )
+    mPrintAllModels( false ),
+    mExportDIMACS( false ),
+    mReadDIMACS( false )
 {}
 
 /**
@@ -119,6 +121,14 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
                 std::cout << "CMake options used for SMT-RAT:" << std::endl;
                 smtrat::printCMakeOptions(std::cout);
                 std::cout << std::endl;
+            }
+            else if(optionName == "export-dimacs")
+            {
+                mExportDIMACS = true;
+            }
+            else if(optionName == "dimacs")
+            {
+                mReadDIMACS = true;
             }
             else if(optionName == "license") 
             {

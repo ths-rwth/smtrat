@@ -25,6 +25,8 @@ namespace smtrat
         bool mPrintModel;
         bool mPrintAllModels;
         bool mPrintStatistics;
+        bool mExportDIMACS;
+        bool mReadDIMACS;
     public:
         RuntimeSettingsManager();
         virtual ~RuntimeSettingsManager() {}
@@ -54,6 +56,15 @@ namespace smtrat
             return mPrintStatistics;
         }
         
+        bool exportDIMACS() const
+        {
+            return mExportDIMACS;
+        }
+        bool readDIMACS() const
+        {
+            return mReadDIMACS;
+        }
+        
     protected:
         void printHelp() const;
         void printLicense() const;
@@ -63,6 +74,3 @@ namespace smtrat
         
     };  
 }
-
-
-
