@@ -274,7 +274,7 @@ namespace smtrat
 
 	void Module::updateAllModels()
     {
-        clearModel();
+        clearModels();
         if( mSolverState == True )
         {
             //TODO Matthias: set all models
