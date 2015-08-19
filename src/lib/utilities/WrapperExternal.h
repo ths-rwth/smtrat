@@ -215,6 +215,12 @@ namespace smtrat {
         */
 		DLL_EXPORT int lemmas(char* buffer, int bufferSize) const;
 
+		/**
+		* Returns the implied variables which were generated through the lemmas.
+		* @return The implied variables from the lemmas.
+		*/
+		DLL_EXPORT int impliedVariables(bool onlyNegative, char* buffer, int bufferSize) const;
+
         /**
         * @return The conjunction of so far added formulas.
         */

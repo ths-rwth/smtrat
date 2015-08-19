@@ -166,6 +166,40 @@ namespace smtrat {
 		return copyResult(stream, buffer, bufferSize);
 	}
 
+	int WrapperExternal::impliedVariables(bool onlyNegative, char* buffer, int bufferSize) const
+	{
+		if (tryCopyOld(buffer, bufferSize))
+			return 0;
+		SMTRAT_LOG_DEBUG("smtrat.wrapper", "impliedVariables: " + (onlyNegative ? "only negative" : "all"));
+		std::vector<FormulaT> lemmas = solver->lemmas();
+		FormulaSetT impliedVariables;
+		for (FormulaT formula : lemmas)
+		{
+			// Implied variables are conclusions in implications
+			if (formula.getType() == carl::FormulaType::IMPLIES)
+			{
+				if (onlyNegative)
+				{
+					FormulaT conclusion = formula.conclusion();
+					if (conclusion.getType() == carl::FormulaType::NOT)
+					{
+						impliedVariables.insert(conclusion.subformula());
+					}
+				}
+				else
+				{
+					impliedVariables.insert(formula.conclusion().subformula());
+				}
+			}
+		}
+		std::ostringstream stream;
+		for (FormulaSetT::iterator iter = impliedVariables.begin(); iter != impliedVariables.end(); ++iter)
+		{
+			stream << *iter << std::endl;
+		}
+		return copyResult(stream, buffer, bufferSize);
+	}
+
 	int WrapperExternal::formula(char* buffer, int bufferSize) const
 	{
 		if (tryCopyOld(buffer, bufferSize))
