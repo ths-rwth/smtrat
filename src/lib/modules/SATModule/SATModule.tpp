@@ -243,7 +243,7 @@ namespace smtrat
     void SATModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
         cancelUntil( assumptions.size() );  // can we do better than this?
-        learnts.clear();
+        clearLearnts( 0 );
         if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
         {
             auto iter = mFormulaAssumptionMap.find( _subformula->formula() );
@@ -558,6 +558,7 @@ namespace smtrat
 		SMTRAT_LOG_TRACE("smtrat.sat", "Update all models");
 		mComputeAllSAT = true;
 		clearModels();
+		size_t sizeLearntsStart = learnts.size();
 		if( solverState() == True )
 		{
 			// Compute all satisfying assignments
@@ -580,6 +581,7 @@ namespace smtrat
 					mRelevantVariables.push_back( mBooleanVarMap.at( iterVar->boolean() ) );
 				}
 			}
+			assert( mRelevantVariables.size() > 0);
 			#ifdef DEBUG_SATMODULE
 			std::cout << "Relevant variables: ";
 			for ( int i = 0; i < mRelevantVariables.size(); ++i )
@@ -589,7 +591,7 @@ namespace smtrat
 			std::cout << std::endl;
 			#endif
 
-			lbool result;
+			lbool result = l_False;
 			Model model;
 			do
 			{
@@ -615,7 +617,7 @@ namespace smtrat
 				printClause( excludeClause );
 				#endif
 				CRef clause;
-				if ( addClause( excludeClause, DEDUCTED_CLAUSE ) )
+				if ( addClause( excludeClause, DEDUCTED_CLAUSE, true ) )
 				{
 					clause = learnts.last();
 				}
@@ -634,7 +636,10 @@ namespace smtrat
 			} while ( result == l_True );
 			SMTRAT_LOG_TRACE("smtrat.sat", ( result == l_False ? "UnSAT" : "Undef" ));
 		}
+		// Remove clauses for excluded assignments
+		clearLearnts( sizeLearntsStart );
 		mComputeAllSAT = false;
+		cancelUntil(0, true);
     }
     
     template<class Settings>
@@ -1240,7 +1245,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    bool SATModule<Settings>::addClause( vec<Lit>& _clause, unsigned _type )
+    bool SATModule<Settings>::addClause( vec<Lit>& _clause, unsigned _type, bool force )
     {
         if( _type == DEDUCTED_CLAUSE )
         {
@@ -1250,10 +1255,10 @@ namespace smtrat
             clause.reserve( (size_t)_clause.size() );
             for( int i = 0; i < _clause.size(); ++i )
                 clause.push_back( _clause[i].x );
-            if( !mLearntDeductions.insert( clause ).second ) // TODO: update this when forgetting clauses
+            /*if( !mLearntDeductions.insert( clause ).second ) // TODO: update this when forgetting clauses
             {
-                return false;
-            }
+			    return false;
+            }*/
         }
         assert( _clause.size() != 0 );
         assert(_type <= 2);
@@ -1288,7 +1293,7 @@ namespace smtrat
         if( add_tmp.size() == 1 )
         {
             // Do not store the clause as it is of size one and implies an assignment directly
-            cancelUntil( assumptions.size() );
+            cancelUntil( assumptions.size(), force );
             if( value( add_tmp[0] ) == l_Undef )
             {
                 uncheckedEnqueue( add_tmp[0] );
@@ -1332,7 +1337,7 @@ namespace smtrat
                     {
                         lev = level(var(c[0]));
                     }
-                    cancelUntil( lev );
+                    cancelUntil( lev, force );
                     arrangeForWatches( c );
                     assert( !(value(c[0]) == l_False && value( c[1] ) == l_Undef) );
                     if( value(c[0]) == l_Undef && value( c[1] ) == l_False )
@@ -2100,12 +2105,8 @@ SetWatches:
 		vec<Lit> learnt_clause;
 
 		conflicts++;
-		if( decisionLevel() == 0 )
+		if( decisionLevel() <= assumptions.size() )
 		{
-			if( !Settings::stop_search_after_first_unknown && unknown_excludes.size() > 0 )
-			{
-				return l_Undef;
-			}
 			return l_False;
 		}
 
@@ -2705,6 +2706,16 @@ NextClause:
         learnts.shrink( i - j );
         mLearntDeductions.clear();
         checkGarbage();
+    }
+	
+    template<class Settings>
+    void SATModule<Settings>::clearLearnts( size_t n )
+    {
+        for( int i = n; i < learnts.size(); ++i )
+        {
+            removeClause( learnts[i] );
+        }
+        learnts.shrink( learnts.size() - n );
     }
 
     template<class Settings>

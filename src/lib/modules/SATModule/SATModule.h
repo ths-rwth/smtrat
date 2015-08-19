@@ -621,7 +621,7 @@ namespace smtrat
              * @return  true, if a clause has been added;
              *          false, otherwise.
              */
-            bool addClause( Minisat::vec<Minisat::Lit>& _clause, unsigned _type = 0 );
+            bool addClause( Minisat::vec<Minisat::Lit>& _clause, unsigned _type = 0, bool force = false );
             
             /**
              * Checks the correctness of the watches in a clause.
@@ -1023,6 +1023,12 @@ namespace smtrat
              *   clauses are clauses that are reason to some assignment. Binary clauses are never removed.
              */
             void reduceDB();
+
+            /**
+             * Remove all learned clauses such that only the first n elements are kept
+             * @param n #elements which are kept
+             */
+            void clearLearnts( size_t n = 0 );
             
             // Shrink 'cs' to contain only non-satisfied clauses.
             
