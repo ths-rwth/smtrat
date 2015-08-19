@@ -212,12 +212,14 @@ int main( int argc, char* argv[] )
 		("smtrat", carl::logging::LogLevel::LVL_INFO)
 		("smtrat.cad", carl::logging::LogLevel::LVL_DEBUG)
 		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
+		("smtrat.sat", carl::logging::LogLevel::LVL_DEBUG)
 	;
 	carl::logging::logger().filter("stdout")
 		("smtrat", carl::logging::LogLevel::LVL_DEBUG)
 		("smtrat.parser", carl::logging::LogLevel::LVL_INFO)
 		("smtrat.cad", carl::logging::LogLevel::LVL_DEBUG)
 		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
+		("smtrat.sat", carl::logging::LogLevel::LVL_DEBUG)
 	;
 #endif
 	SMTRAT_LOG_INFO("smtrat", "Starting smtrat.");
