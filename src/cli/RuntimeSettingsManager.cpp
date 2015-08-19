@@ -34,7 +34,8 @@ RuntimeSettingsManager::RuntimeSettingsManager() :
     mSettingObjects(),
     mDoPrintTimings( false ), 
     mPrintModel( false ),
-    mPrintStatistics( false )
+    mPrintStatistics( false ),
+    mPrintAllModels( false )
 {}
 
 /**
