@@ -170,7 +170,7 @@ namespace smtrat {
 	{
 		if (tryCopyOld(buffer, bufferSize))
 			return 0;
-		SMTRAT_LOG_DEBUG("smtrat.wrapper", "impliedVariables: " + (onlyNegative ? "only negative" : "all"));
+		SMTRAT_LOG_DEBUG("smtrat.wrapper", "impliedVariables: " << (onlyNegative ? "only negative" : "all"));
 		std::vector<FormulaT> lemmas = solver->lemmas();
 		FormulaSetT impliedVariables;
 		for (FormulaT formula : lemmas)
