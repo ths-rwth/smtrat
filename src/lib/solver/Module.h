@@ -402,6 +402,13 @@ namespace smtrat
              */
             void clearDeductions()
             {
+                if( mpManager != nullptr )
+                {
+                    for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
+                    {
+                        (*module)->clearDeductions();
+                    }
+                }
                 mDeductions.clear();
                 mSplittings.clear();
             }

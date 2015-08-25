@@ -646,8 +646,8 @@ namespace smtrat
                     #ifdef SMTRAT_DEVOPTION_MeasureTime
                     (*module)->startAddTimer();
                     #endif
-                    (*module)->mDeductions.clear();
-                    (*module)->mSplittings.clear();
+                    (*module)->mDeductions.clear(); // TODO: this might be removed, as it is now done in check as well
+                    (*module)->mSplittings.clear(); // TODO: this might be removed, as it is now done in check as well
                     if( !(*module)->mInfeasibleSubsets.empty() )
                         assertionFailed = true;
                     for( auto iter = mConstraintsToInform.begin(); iter != mConstraintsToInform.end(); ++iter )
@@ -671,6 +671,7 @@ namespace smtrat
             }
             else
             {
+                // TODO: this might be removed, as it is now done in check as well
                 for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
                 {
                     (*module)->mDeductions.clear();
