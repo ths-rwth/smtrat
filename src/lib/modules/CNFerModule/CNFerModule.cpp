@@ -44,8 +44,8 @@ namespace smtrat
             }
             else if( formulaToAssertInCnf.getType() == FALSE )
             {
-                FormulasT reason;
-                reason.push_back( receivedSubformula->formula() );
+                FormulaSetT reason;
+                reason.insert( receivedSubformula->formula() );
                 mInfeasibleSubsets.push_back( reason );
                 return False;
             }

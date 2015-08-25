@@ -179,9 +179,10 @@ namespace smtrat
         // Delete all infeasible subsets in which the constraint to delete occurs.
         for( size_t pos = 0; pos < mInfeasibleSubsets.size(); )
         {
-            if( std::find(mInfeasibleSubsets[pos].begin(), mInfeasibleSubsets[pos].end(), _receivedSubformula->formula() ) != mInfeasibleSubsets[pos].end() )
+            auto& infsubset = mInfeasibleSubsets[pos];
+            if( infsubset.find( _receivedSubformula->formula() ) != infsubset.end() )
             {
-                mInfeasibleSubsets[pos] = std::move(mInfeasibleSubsets.back());
+                infsubset = std::move(mInfeasibleSubsets.back());
                 mInfeasibleSubsets.pop_back();
             }
             else
@@ -518,7 +519,7 @@ namespace smtrat
         {
             if( (*backend)->solverState() == False )
             {
-                std::vector<FormulasT> infsubsets = getInfeasibleSubsets( **backend );
+                std::vector<FormulaSetT> infsubsets = getInfeasibleSubsets( **backend );
                 mInfeasibleSubsets.insert( mInfeasibleSubsets.end(), infsubsets.begin(), infsubsets.end() );
                 // return;
             }
@@ -603,12 +604,12 @@ namespace smtrat
         return smallestOrigin;
     }
 
-    std::vector<FormulasT> Module::getInfeasibleSubsets( const Module& _backend ) const
+    std::vector<FormulaSetT> Module::getInfeasibleSubsets( const Module& _backend ) const
     {
-        std::vector<FormulasT> result;
-        const std::vector<FormulasT>& backendsInfsubsets = _backend.infeasibleSubsets();
+        std::vector<FormulaSetT> result;
+        const std::vector<FormulaSetT>& backendsInfsubsets = _backend.infeasibleSubsets();
         assert( !backendsInfsubsets.empty() );
-        for( std::vector<FormulasT>::const_iterator infSubSet = backendsInfsubsets.begin(); infSubSet != backendsInfsubsets.end(); ++infSubSet )
+        for( std::vector<FormulaSetT>::const_iterator infSubSet = backendsInfsubsets.begin(); infSubSet != backendsInfsubsets.end(); ++infSubSet )
         {
             assert( !infSubSet->empty() );
             #ifdef SMTRAT_DEVOPTION_Validation
@@ -618,8 +619,6 @@ namespace smtrat
             result.emplace_back();
             for( const auto& cons : *infSubSet )
                 getOrigins( cons, result.back() );
-            std::sort(result.back().begin(), result.back().end());
-            result.back().erase(std::unique(result.back().begin(), result.back().end()), result.back().end());
         }
         return result;
     }
@@ -864,11 +863,11 @@ namespace smtrat
         }
     }
     
-/*    void Module::collectOrigins( const FormulaT& _formula, std::vector<FormulaT>& _origins ) const
+    void Module::collectOrigins( const FormulaT& _formula, FormulaSetT& _origins ) const
     {
         if( mpReceivedFormula->contains( _formula ) )
         {
-            _origins.push_back( _formula );
+            _origins.insert( _formula );
         }
         else
         {
@@ -876,11 +875,11 @@ namespace smtrat
             for( auto& subformula : _formula.subformulas() )
             {
                 assert( mpReceivedFormula->contains( subformula ) );
-                _origins.push_back( subformula );
+                _origins.insert( subformula );
             }
         }
     }
-*/
+    
     void Module::addAssumptionToCheck( const FormulaT& _formula, bool _consistent, const string& _label )
     {
         string assumption = "";
@@ -918,6 +917,14 @@ namespace smtrat
         assumption += "(check-sat)\n";
         mAssumptionToCheck.push_back( assumption );
         mVariablesInAssumptionToCheck.insert( _label );
+    }
+
+    void Module::addAssumptionToCheck( const FormulaSetT& _formulas, bool _consistent, const string& _label )
+    {
+        FormulasT assumption;
+        for( auto& f : _formulas )
+            assumption.emplace_back( f );
+        addAssumptionToCheck( assumption, _consistent, _label );
     }
 
     void Module::addAssumptionToCheck( const ConstraintsT& _constraints, bool _consistent, const string& _label )

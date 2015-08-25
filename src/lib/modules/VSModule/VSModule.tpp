@@ -100,7 +100,7 @@ namespace smtrat
             mIDCounter = 0;
             mInfeasibleSubsets.clear();
             mInfeasibleSubsets.emplace_back();
-            mInfeasibleSubsets.back().push_back( _subformula->formula() );
+            mInfeasibleSubsets.back().insert( _subformula->formula() );
             mInconsistentConstraintAdded = true;
             assert( checkRanking() );
             return false;
@@ -1486,9 +1486,9 @@ namespace smtrat
     }
 
     template<class Settings>
-    FormulasT VSModule<Settings>::getReasons( const carl::PointerSet<vs::Condition>& _conditions ) const
+    FormulaSetT VSModule<Settings>::getReasons( const carl::PointerSet<vs::Condition>& _conditions ) const
     {
-        FormulasT result;
+        FormulaSetT result;
         if( _conditions.empty() ) return result;
         // Get the original conditions of the root of the root state leading to the given set of conditions.
         carl::PointerSet<vs::Condition> conds = _conditions;
@@ -1518,7 +1518,7 @@ namespace smtrat
                 ++receivedConstraint;
             }
             assert( receivedConstraint != rReceivedFormula().end() );
-            result.push_back( receivedConstraint->formula() );
+            result.insert( receivedConstraint->formula() );
         }
         return result;
     }
@@ -1569,7 +1569,7 @@ namespace smtrat
             // Set the infeasible subset to the set of all received constraints.
             mInfeasibleSubsets.emplace_back();
             for( auto cons = rReceivedFormula().begin(); cons != rReceivedFormula().end(); ++cons )
-                mInfeasibleSubsets.back().push_back( cons->formula() );
+                mInfeasibleSubsets.back().insert( cons->formula() );
             return;
         }
         // Determine the minimum covering sets of the conflict sets, i.e. the infeasible subsets of the root.

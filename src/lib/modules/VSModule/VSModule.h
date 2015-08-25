@@ -164,7 +164,7 @@ namespace smtrat
             
             bool checkRanking() const;
             
-            FormulasT getReasons( const carl::PointerSet<vs::Condition>& _conditions ) const;
+            FormulaSetT getReasons( const carl::PointerSet<vs::Condition>& _conditions ) const;
             std::vector<FormulaT> getReasonsAsVector( const carl::PointerSet<vs::Condition>& _conditions ) const;
             
             /**

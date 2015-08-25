@@ -225,7 +225,6 @@ namespace smtrat
         if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
         {
             auto iter = mFormulaAssumptionMap.find( _subformula->formula() );
-            if( iter == mFormulaAssumptionMap.end() ) exit(1458);
             assert( iter != mFormulaAssumptionMap.end() );
             int i = 0;
             while( assumptions[i] != iter->second ) ++i;
@@ -397,7 +396,7 @@ namespace smtrat
         assert( !ok );
         mInfeasibleSubsets.clear();
         // Set the infeasible subset to the set of all clauses.
-        FormulasT infeasibleSubset;
+        FormulaSetT infeasibleSubset;
 //        if( mpReceivedFormula->isConstraintConjunction() )
 //        {
 //            getInfeasibleSubsets();
@@ -408,10 +407,10 @@ namespace smtrat
             // TODO: compute a better infeasible subset
             for( auto subformula = rReceivedFormula().begin(); subformula != rReceivedFormula().end(); ++subformula )
             {
-                infeasibleSubset.push_back( subformula->formula() );
+                infeasibleSubset.insert( subformula->formula() );
             }
 //        }
-        mInfeasibleSubsets.push_back( infeasibleSubset );
+        mInfeasibleSubsets.push_back( std::move(infeasibleSubset) );
     }
     
     template<class Settings>
@@ -615,6 +614,7 @@ namespace smtrat
             mNewSplittingVars.push_back( leftCase );
         else
             mNewSplittingVars.push_back( rightCase );
+        assert( decision[mNewSplittingVars.back()] );
         #ifdef DEBUG_ADD_SPLITTING
         std::cout << "add the clause: ";
         printClause( clauseLits );
@@ -1745,10 +1745,6 @@ SetWatches:
                 {
                     // Increase decision level and enqueue 'next'
                     newDecisionLevel();
-//                    if( value( next ) != l_Undef )
-//                    {
-//                        exit(115);
-//                    }
                     assert( value( next ) == l_Undef );
                     #ifdef DEBUG_SATMODULE
                     std::cout << "### Decide " <<  (sign(next) ? "-" : "" ) << var(next) << std::endl;
@@ -2334,11 +2330,6 @@ NextClause:
         {
             if( assigns[mSplittingVars[i]] != l_Undef )
             {
-                assigns[mSplittingVars[i]] = l_Undef;
-                decision[mSplittingVars[i]] = false;
-                mOldSplittingVars.push(mSplittingVars[i]);
-                mSplittingVars[i] = mSplittingVars.back();
-                mSplittingVars.pop_back();
                 for( auto iter = mNewSplittingVars.begin(); iter != mNewSplittingVars.end(); ++iter )
                 {
                     if( *iter == mSplittingVars[i] )
@@ -2349,6 +2340,11 @@ NextClause:
                         break;
                     }
                 }
+                assigns[mSplittingVars[i]] = l_Undef;
+                decision[mSplittingVars[i]] = false;
+                mOldSplittingVars.push(mSplittingVars[i]);
+                mSplittingVars[i] = mSplittingVars.back();
+                mSplittingVars.pop_back();
             }
             else
             {
@@ -2782,6 +2778,7 @@ NextClause:
             {
                 addSplitting( splitting );
             }
+            (*backend)->clearDeductions();
             ++backend;
         }
         return deductionsLearned;
@@ -2795,7 +2792,7 @@ NextClause:
         std::vector<Module*>::const_iterator backend = usedBackends().begin();
         while( backend != usedBackends().end() )
         {
-            const std::vector<FormulasT>& infSubsets = (*backend)->infeasibleSubsets();
+            const std::vector<FormulaSetT>& infSubsets = (*backend)->infeasibleSubsets();
             assert( (*backend)->solverState() != False || !infSubsets.empty() );
             for( auto infsubset = infSubsets.begin(); infsubset != infSubsets.end(); ++infsubset )
             {

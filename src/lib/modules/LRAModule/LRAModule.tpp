@@ -74,8 +74,8 @@ namespace smtrat
         {
             case carl::FormulaType::FALSE:
             {
-                FormulasT infSubSet;
-                infSubSet.push_back( _subformula->formula() );
+                FormulaSetT infSubSet;
+                infSubSet.insert( _subformula->formula() );
                 mInfeasibleSubsets.push_back( infSubSet );
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 mpStatistics->addConflict( mInfeasibleSubsets );
@@ -255,7 +255,7 @@ namespace smtrat
                                     }
                                     if( var.isConflicting() )
                                     {
-                                        FormulasT infsubset;
+                                        FormulaSetT infsubset;
                                         collectOrigins( *var.supremum().origins().begin(), infsubset );
                                         collectOrigins( var.infimum().pOrigins()->back(), infsubset );
                                         mInfeasibleSubsets.push_back( std::move(infsubset) );
@@ -277,7 +277,7 @@ namespace smtrat
                                         }
                                         if( var.isConflicting() )
                                         {
-                                            FormulasT infsubset;
+                                            FormulaSetT infsubset;
                                             collectOrigins( *var.supremum().origins().begin(), infsubset );
                                             collectOrigins( var.infimum().pOrigins()->back(), infsubset );
                                             mInfeasibleSubsets.push_back( std::move(infsubset) );
@@ -589,7 +589,7 @@ namespace smtrat
                 if( Settings::one_conflict_reason )
                 {
                     std::vector< const LRABound* > conflict = mTableau.getConflict( pivotingElement.first );
-                    FormulasT infSubSet;
+                    FormulaSetT infSubSet;
                     for( auto bound = conflict.begin(); bound != conflict.end(); ++bound )
                     {
                         assert( (*bound)->isActive() );
@@ -602,7 +602,7 @@ namespace smtrat
                     std::vector< std::set< const LRABound* > > conflictingBounds = mTableau.getConflictsFrom( pivotingElement.first );
                     for( auto conflict = conflictingBounds.begin(); conflict != conflictingBounds.end(); ++conflict )
                     {
-                        FormulasT infSubSet;
+                        FormulaSetT infSubSet;
                         for( auto bound = conflict->begin(); bound != conflict->end(); ++bound )
                         {
                             assert( (*bound)->isActive() );
@@ -885,7 +885,7 @@ Return:
         {
             if( inf > bound.limit() && !bound.deduced() )
             {
-                FormulasT infsubset;
+                FormulaSetT infsubset;
                 collectOrigins( *bound.origins().begin(), infsubset );
                 collectOrigins( inf.pOrigins()->back(), infsubset );
                 mInfeasibleSubsets.push_back( std::move(infsubset) );
@@ -901,7 +901,7 @@ Return:
         {
             if( sup < bound.limit() && !bound.deduced() )
             {
-                FormulasT infsubset;
+                FormulaSetT infsubset;
                 collectOrigins( *bound.origins().begin(), infsubset );
                 collectOrigins( sup.pOrigins()->back(), infsubset );
                 mInfeasibleSubsets.push_back( std::move(infsubset) );
