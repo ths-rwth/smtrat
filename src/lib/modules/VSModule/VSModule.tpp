@@ -70,9 +70,7 @@ namespace smtrat
                 std::vector<DisjunctionOfConditionConjunctions> subResults;
                 DisjunctionOfConditionConjunctions subResult;
 
-                if( Settings::int_constraints_allowed && Settings::split_neq_constraints
-                    && constraint.hasIntegerValuedVariable() && !constraint.hasRealValuedVariable()
-                    && constraint.relation() == carl::Relation::NEQ )
+                if( Settings::split_neq_constraints && constraint.hasIntegerValuedVariable() && !constraint.hasRealValuedVariable() && constraint.relation() == carl::Relation::NEQ )
                 {
                     ConditionList condVectorA;
                     condVectorA.push_back( new vs::Condition( ConstraintT( constraint.lhs(), carl::Relation::LESS ), mpConditionIdAllocator->get(), 0, false, oConds ) );
@@ -167,7 +165,7 @@ namespace smtrat
         }
         if( !rReceivedFormula().isConstraintConjunction() )
             return Unknown;
-        if( Settings::int_constraints_allowed && !(rReceivedFormula().isIntegerConstraintConjunction() || rReceivedFormula().isRealConstraintConjunction()) )
+        if( !(rReceivedFormula().isIntegerConstraintConjunction() || rReceivedFormula().isRealConstraintConjunction()) )
             return Unknown;
         if( !mConditionsChanged && (!_full || mLastCheckFull) )
         {
@@ -175,12 +173,9 @@ namespace smtrat
             {
                 if( solverState() == True )
                 {
-                    if( Settings::int_constraints_allowed && !solutionInDomain() )
+                    if( !solutionInDomain() )
                     {
-                        if( Settings::branch_and_bound )
-                        {
-                            return Unknown;
-                        }
+                        return Unknown;
                     }
                     else
                     {
@@ -199,12 +194,9 @@ namespace smtrat
         mLastCheckFull = _full;
         if( rReceivedFormula().empty() )
         {
-            if( Settings::int_constraints_allowed && !solutionInDomain() )
+            if( !solutionInDomain() )
             {
-                if( Settings::branch_and_bound )
-                {
-                    return Unknown;
-                }
+                return Unknown;
             }
             else
             {
@@ -272,7 +264,7 @@ namespace smtrat
             cout << "Simplifing results in " << endl;
             currentState->printAlone( "*** ", cout );
             #endif
-//            if( Settings::int_constraints_allowed && !Settings::split_neq_constraints && !currentState->isInconsistent() && !currentState->takeSubResultCombAgain() )
+//            if( !Settings::split_neq_constraints && !currentState->isInconsistent() && !currentState->takeSubResultCombAgain() )
 //            {
 //                for( auto cond = currentState->conditions().begin(); cond != currentState->conditions().end(); ++cond )
 //                {
@@ -484,35 +476,6 @@ namespace smtrat
                                 {
                                     if( !(*currentState).cannotBeSolved( mLazyMode ) && currentState->tooHighDegreeConditions().empty() )
                                     {
-                                        // It is a state, where no more elimination could be applied to the conditions.
-                                        if( Settings::int_constraints_allowed && !Settings::branch_and_bound && currentState->index().getType() == carl::VariableType::VT_INT )
-                                        {
-                                            if( !currentState->hasInfinityChild() )
-                                            {
-                                                if( !Settings::use_variable_bounds || currentState->variableBounds().getDoubleInterval( currentState->index() ).lowerBoundType() == carl::BoundType::INFTY )
-                                                {
-                                                    // Create state ( Conditions, [x -> -infinity]):
-                                                    carl::PointerSet<vs::Condition> oConditions;
-                                                    for( auto cond : currentState->conditions() )
-                                                        oConditions.insert( cond );
-                                                    Substitution sub = Substitution( currentState->index(), Substitution::MINUS_INFINITY, std::move(oConditions) );
-                                                    std::vector<State*> addedChildren = currentState->addChild( sub );
-                                                    if( !addedChildren.empty() )
-                                                    {
-                                                        // Add its valuation to the current ranking.
-                                                        currentState->setInfinityChild( currentState->rChildren().back() );
-                                                        while( !addedChildren.empty() )
-                                                        {
-                                                            addStatesToRanking( addedChildren.back() );
-                                                            addedChildren.pop_back();
-                                                        }
-                                                        #ifdef VS_DEBUG
-                                                        currentState->rChildren().back()->print( "   ", cout );
-                                                        #endif
-                                                    }
-                                                }
-                                            }
-                                        }
                                         if( currentState->conditions().empty() )
                                         {
                                             #ifdef VS_DEBUG
@@ -537,12 +500,9 @@ namespace smtrat
                                             }
                                             else // Solution.
                                             {
-                                                if( Settings::int_constraints_allowed && !solutionInDomain() )
+                                                if( !solutionInDomain() )
                                                 {
-                                                    if( Settings::branch_and_bound )
-                                                    {
-                                                        return Unknown;
-                                                    }
+                                                    return Unknown;
                                                 }
                                                 else
                                                 {
@@ -622,12 +582,9 @@ namespace smtrat
                                                     }
                                                     else // Solution.
                                                     {
-                                                        if( Settings::int_constraints_allowed && !solutionInDomain() )
+                                                        if( !solutionInDomain() )
                                                         {
-                                                            if( Settings::branch_and_bound )
-                                                            {
-                                                                return Unknown;
-                                                            }
+                                                            return Unknown;
                                                         }
                                                         else
                                                         {
@@ -661,8 +618,7 @@ namespace smtrat
                                 // Generate test candidates for the chosen variable and the chosen condition.
                                 else
                                 {
-                                    if( Settings::local_conflict_search && Settings::int_constraints_allowed
-                                        && currentState->index().getType() == carl::VariableType::VT_REAL && currentState->hasLocalConflict() )
+                                    if( Settings::local_conflict_search && currentState->index().getType() == carl::VariableType::VT_REAL && currentState->hasLocalConflict() )
                                     {
                                         removeStatesFromRanking( *currentState );
                                         addStateToRanking( currentState );
@@ -1007,29 +963,26 @@ namespace smtrat
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
         }
         #endif
-        if( !Settings::int_constraints_allowed || Settings::branch_and_bound || _eliminationVar.getType() != carl::VariableType::VT_INT )
+        if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
         {
-            if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
+            // Create state ( Conditions, [x -> -infinity]):
+            Substitution sub = Substitution( _eliminationVar, Substitution::MINUS_INFINITY, std::move(carl::PointerSet<vs::Condition>(oConditions)) );
+            std::vector<State*> addedChildren = _currentState->addChild( sub );
+            if( !addedChildren.empty() )
             {
-                // Create state ( Conditions, [x -> -infinity]):
-                Substitution sub = Substitution( _eliminationVar, Substitution::MINUS_INFINITY, std::move(carl::PointerSet<vs::Condition>(oConditions)) );
-                std::vector<State*> addedChildren = _currentState->addChild( sub );
-                if( !addedChildren.empty() )
+                // Add its valuation to the current ranking.
+                while( !addedChildren.empty() )
                 {
-                    // Add its valuation to the current ranking.
-                    while( !addedChildren.empty() )
-                    {
-                        addStatesToRanking( addedChildren.back() );
-                        addedChildren.pop_back();
-                    }
-                    numberOfAddedChildren++;
-                    #ifdef VS_DEBUG
-                    (*(*_currentState).rChildren().back()).print( "   ", cout );
-                    #endif
+                    addStatesToRanking( addedChildren.back() );
+                    addedChildren.pop_back();
                 }
+                numberOfAddedChildren++;
+                #ifdef VS_DEBUG
+                (*(*_currentState).rChildren().back()).print( "   ", cout );
+                #endif
             }
         }
-        if( Settings::int_constraints_allowed && Settings::branch_and_bound && _eliminationVar.getType() == carl::VariableType::VT_INT )
+        if( _eliminationVar.getType() == carl::VariableType::VT_INT )
         {
             if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
             {
@@ -1592,56 +1545,6 @@ namespace smtrat
     }
     
     template<class Settings>
-    EvalRationalMap VSModule<Settings>::getIntervalAssignment( const State* _state ) const
-    {
-        EvalRationalMap varSolutions;
-        // The variables have 0 as default assignment, which is going to be overwritten
-        // if the variable has been eliminated by virtual substitution. Note, that it is
-        // possible that variables are eliminated as a side effect of the elimination of 
-        // a different variable, which means that we can choose the assignment of that 
-        // variable arbitrarily.
-        carl::Variables vars;
-        _state->father().variables( vars );
-        vars.erase( _state->substitution().variable() );
-        while( !vars.empty() )
-        {
-            varSolutions[*vars.begin()] = ZERO_RATIONAL;
-            vars.erase( vars.begin() );
-        }
-        // Find all assignments of the variables occurring in the conditions
-        // of the state's father except of the variable being the index currentState.
-        const State* successorState = mRanking.begin()->second;
-        if( successorState->cannotBeSolved( mLazyMode ) )
-        {
-            Model bmodel = backendsModel();
-            for( auto& ass : bmodel )
-            {
-                if( ass.second.isSqrtEx() )
-                {
-                    assert( ass.second.asSqrtEx().isConstant() && carl::isInteger( ass.second.asSqrtEx().constantPart().constantPart() ) );
-                    varSolutions[ass.first.asVariable()] = ass.second.asSqrtEx().constantPart().constantPart();
-                }
-                else if( ass.second.isRAN() )
-                {
-                    assert( ass.second.asRAN()->isNumeric() && carl::isInteger( ass.second.asRAN()->value() ) );
-                    varSolutions[ass.first.asVariable()] = ass.second.asRAN()->value();
-                }
-            }
-        }
-        while( successorState != _state )
-        {
-            assert( !successorState->isRoot() );
-            assert( successorState->substitution().variable().getType() == carl::VariableType::VT_INT );
-            assert( successorState->substitution().type() == Substitution::NORMAL );
-            Rational subTermEvaluated;
-            successorState->substitution().term().evaluate( subTermEvaluated, varSolutions );
-            varSolutions[successorState->substitution().variable()] = subTermEvaluated;
-            successorState = successorState->pFather();
-        }
-        return varSolutions;
-    }
-    
-    template<class Settings>
     bool VSModule<Settings>::solutionInDomain()
     {
         assert( solverState() != False );
@@ -1649,11 +1552,12 @@ namespace smtrat
         {
             std::vector<carl::Variable> varOrder;
             State* currentState = mRanking.begin()->second;
+            EvalRationalMap varSolutions;
             while( !currentState->isRoot() )
             {
                 if( currentState->substitution().variable().getType() == carl::VariableType::VT_INT )
                 {
-                    if( Settings::branch_and_bound && (currentState->substitution().type() == Substitution::MINUS_INFINITY || currentState->substitution().type() == Substitution::PLUS_INFINITY ) )
+                    if( currentState->substitution().type() == Substitution::MINUS_INFINITY || currentState->substitution().type() == Substitution::PLUS_INFINITY )
                     {
                         Rational nextIntTCinRange;
                         if( currentState->getNextIntTestCandidate( nextIntTCinRange, Settings::int_max_range ) )
@@ -1671,26 +1575,22 @@ namespace smtrat
                     else
                     {
                         assert( currentState->substitution().type() != Substitution::PLUS_EPSILON );
-                        EvalRationalMap varSolutions = getIntervalAssignment( currentState );
-                        if( Settings::branch_and_bound )
+                        EvalRationalMap partialVarSolutions;
+                        const Poly& substitutionPoly = (*currentState->substitution().originalConditions().begin())->constraint().lhs();
+                        for( auto var = varOrder.rbegin(); var != varOrder.rend(); ++var )
                         {
-                            EvalRationalMap partialVarSolutions;
-                            const Poly& substitutionPoly = (*currentState->substitution().originalConditions().begin())->constraint().lhs();
-                            for( auto var = varOrder.rbegin(); var != varOrder.rend(); ++var )
+                            assert( varSolutions.find( *var ) != varSolutions.end() );
+                            partialVarSolutions[*var] = varSolutions[*var];
+                            Poly subPolyPartiallySubstituted = substitutionPoly.substitute( partialVarSolutions );
+                            Rational cp = subPolyPartiallySubstituted.coprimeFactorWithoutConstant();
+                            assert( carl::getNum( cp ) == ONE_RATIONAL || carl::getNum( cp ) == MINUS_ONE_RATIONAL );
+                            Rational g = carl::getDenom( cp );
+                            if( g > ZERO_RATIONAL && carl::mod( Integer( subPolyPartiallySubstituted.constantPart() ), Integer( g ) ) != 0 )
                             {
-                                assert( varSolutions.find( *var ) != varSolutions.end() );
-                                partialVarSolutions[*var] = varSolutions[*var];
-                                Poly subPolyPartiallySubstituted = substitutionPoly.substitute( partialVarSolutions );
-                                Rational cp = subPolyPartiallySubstituted.coprimeFactorWithoutConstant();
-                                assert( carl::getNum( cp ) == ONE_RATIONAL || carl::getNum( cp ) == MINUS_ONE_RATIONAL );
-                                Rational g = carl::getDenom( cp );
-                                if( g > ZERO_RATIONAL && carl::mod( Integer( subPolyPartiallySubstituted.constantPart() ), Integer( g ) ) != 0 )
-                                {
-                                    Poly branchEx = (subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * cp;
-                                    Rational branchValue = subPolyPartiallySubstituted.constantPart() * cp;
-                                    branchAt( branchEx, true, branchValue, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
+                                Poly branchEx = (subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * cp;
+                                Rational branchValue = subPolyPartiallySubstituted.constantPart() * cp;
+                                if( branchAt( branchEx, true, branchValue, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) ) )
                                     return false;
-                                }
                             }
                         }
                         // Insert the (integer!) assignments of the other variables.
@@ -1707,37 +1607,11 @@ namespace smtrat
                         assIsInteger &= carl::isInteger( evaluatedSubTerm );
                         if( !assIsInteger )
                         {
-                            if( Settings::branch_and_bound )
-                            {
-                                branchAt( currentState->substitution().variable(), evaluatedSubTerm, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
-                            }
-                            else
-                            {
-                                // Add test candidate to father, being the next greater integer than the found non-integer assignment of the
-                                // substituted variable of the current state.
-                                State* toRemove = mRanking.begin()->second;
-                                const Substitution& currSub = currentState->substitution();
-                                SqrtEx t = SqrtEx( Poly( carl::floor( evaluatedSubTerm ) + Rational(1) ) );
-                                Substitution newSub = Substitution( currSub.variable(), t, Substitution::Type::NORMAL, std::move(carl::PointerSet<vs::Condition>(currSub.originalConditions())) );
-                                std::vector<State*> addedChildren = currentState->rFather().addChild( newSub );
-                                if( !addedChildren.empty() )
-                                {
-                                    // Add its valuation to the current ranking.
-                                    while( !addedChildren.empty() )
-                                    {
-                                        addStatesToRanking( addedChildren.back() );
-                                        addedChildren.pop_back();
-                                    }
-                                    #ifdef VS_DEBUG
-                                    currentState->rFather().rChildren().back()->print( "   ", cout );
-                                    #endif
-                                }
-                                removeStatesFromRanking( *toRemove );
-                                toRemove->rFather().rChildren().remove( toRemove );
-                                delete toRemove;  // DELETE STATE
-                            }
+                            branchAt( currentState->substitution().variable(), evaluatedSubTerm, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
                             return false;
                         }
+                        assert( varSolutions.find( currentState->substitution().variable() ) == varSolutions.end() );
+                        varSolutions.insert( std::make_pair( currentState->substitution().variable(), evaluatedSubTerm ) );
                     }
                 }
                 varOrder.push_back( currentState->substitution().variable() );

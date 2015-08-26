@@ -442,7 +442,7 @@ namespace smtrat
         return false;
     }
     
-    void Module::branchAt( const Poly& _polynomial, bool _integral, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak, bool _preferLeftCase )
+    bool Module::branchAt( const Poly& _polynomial, bool _integral, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak, bool _preferLeftCase )
     {
         assert( !_polynomial.hasConstantTerm() );
         ConstraintT constraintA;
@@ -480,7 +480,13 @@ namespace smtrat
                 constraintB = ConstraintT( std::move(constraintLhs), Relation::GEQ );   
             }
         }
-        mSplittings.emplace_back( FormulaT( constraintA ), FormulaT( constraintB ), std::move( _premise ), _preferLeftCase );
+        if( constraintA.isConsistent() == 2 )
+        {
+            mSplittings.emplace_back( FormulaT( constraintA ), FormulaT( constraintB ), std::move( _premise ), _preferLeftCase );
+            return true;
+        }
+        assert( constraintB.isConsistent() != 2  );
+        return false;
     }
     
     void Module::splitUnequalConstraint( const FormulaT& _unequalConstraint )
