@@ -285,8 +285,20 @@ namespace smtrat
                             }
                         }
                     }
+                    // Remove from clauses
+                    int i, j;
+                    for( i = j = 0; i < clauses.size(); i++ )
+                    {
+                        if (iter->second != clauses[i])
+                        {
+                            clauses[j++] = clauses[i];							
+                        }
+                    }
+                    assert( j + 1 == i);
+                    clauses.shrink( i - j );
                     removeClause( iter->second );
                 }
+                mFormulaClauseMap.erase( iter );
             }
         }
     }
