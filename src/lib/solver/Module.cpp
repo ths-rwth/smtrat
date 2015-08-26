@@ -81,7 +81,8 @@ namespace smtrat
     
     Module::~Module()
     {
-        clearDeductions();
+        mDeductions.clear();
+        mSplittings.clear();
         clearModel();
         mConstraintsToInform.clear();
         mInformedConstraints.clear();
