@@ -723,6 +723,7 @@ namespace smtrat
             assert( !mRanking.empty() );
             carl::Variables allVarsInRoot;
             mpStateTree->variables( allVarsInRoot );
+            EvalRationalMap rationalAssignments;
             const State* state = mRanking.begin()->second;
             while( !state->isRoot() )
             {
@@ -733,19 +734,15 @@ namespace smtrat
                 else
                 {
                     assert( sub.type() != Substitution::PLUS_INFINITY );
-                    if( state->substitution().variable().getType() == carl::VariableType::VT_INT )
+                    ass = SqrtEx( sub.term().substitute( rationalAssignments ) );
+                    if( sub.type() == Substitution::PLUS_EPSILON )
                     {
-                        Rational valueRational;
-                        sub.term().evaluate( valueRational, getIntervalAssignment( state ), 0 );
-                        ass = SqrtEx( Poly( valueRational ) );
-                    }
-                    else
-                    {
-                        ass = SqrtEx( sub.term() );
-                        if( sub.type() == Substitution::PLUS_EPSILON )
-                            ass = ass.asSqrtEx() + SqrtEx( mVariableVector.at( state->treeDepth()-1 ).second );
+                        assert( state->substitution().variable().getType() != carl::VariableType::VT_INT );
+                        ass = ass.asSqrtEx() + SqrtEx( mVariableVector.at( state->treeDepth()-1 ).second );
                     }
                 }
+                if( ass.asSqrtEx().isConstant() )
+                    rationalAssignments.insert(std::make_pair(state->substitution().variable(), ass.asSqrtEx().constantPart().constantPart()));
                 mModel.insert(std::make_pair(state->substitution().variable(), ass));
                 state = state->pFather();
             }
@@ -1616,8 +1613,8 @@ namespace smtrat
         const State* successorState = mRanking.begin()->second;
         if( successorState->cannotBeSolved( mLazyMode ) )
         {
-            Module::getBackendsModel();
-            for( auto& ass : mModel )
+            Model bmodel = backendsModel();
+            for( auto& ass : bmodel )
             {
                 if( ass.second.isSqrtEx() )
                 {
@@ -1630,7 +1627,6 @@ namespace smtrat
                     varSolutions[ass.first.asVariable()] = ass.second.asRAN()->value();
                 }
             }
-            mModel.clear();
         }
         while( successorState != _state )
         {

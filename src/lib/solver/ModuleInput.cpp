@@ -18,17 +18,13 @@ namespace smtrat
         unsigned result = 1;
         for( const FormulaWithOrigins& fwo : *this )
         {
-            std::cout << fwo.formula() << " -> ";
             switch( fwo.formula().satisfiedBy( _assignment ) )
             {
                 case 0:
-                    std::cout << "0" << std::endl;
                     return 0;
                 case 1:
-                    std::cout << "1" << std::endl;
                     break;
                 default:
-                    std::cout << "2" << std::endl;
                     if( result != 2 ) result = 2;
             }
         }

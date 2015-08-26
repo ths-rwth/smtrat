@@ -577,8 +577,7 @@ namespace smtrat
                 (*module)->updateModel();
                 for (auto ass: (*module)->model())
                 {
-                    if( mModel.count(ass.first) == 0 )
-                        mModel.insert(ass);
+                    mModel.insert(ass);
                 }
                 break;
             }
