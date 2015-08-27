@@ -12,7 +12,8 @@ ModuleDefaultEnabled()
 EndDefineModule(vsEnabled)
 
 if(${vsEnabled})
-	# do something
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/VSModule/VSModule.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/VSModule/VSModule.cpp )
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/VSModule/VSModuleIntantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/VSModule/VSModuleIntantiation.h )
 endif()
 
 option(SMTRAT_VS_VARIABLEBOUNDS "VS using variable bounds" ON)

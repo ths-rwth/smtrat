@@ -6,6 +6,7 @@
  */
 
 #include "ModuleInput.h"
+#include "../datastructures/Assignment.h"
 
 using namespace std;
 using namespace carl;

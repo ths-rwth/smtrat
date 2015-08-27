@@ -28,13 +28,14 @@
 #include "ModuleInput.h"
 #include "ValidationSettings.h"
 #include "ThreadPool.h"
+#include "../datastructures/Assignment.h"
 #include "../config.h"
 
 
 
 namespace smtrat
 {
-    class Manager;
+    class Manager; // forward declaration
 
     /// A vector of atomic bool pointers.
     typedef std::vector<std::atomic_bool*> Conditionals;

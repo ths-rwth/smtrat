@@ -75,3 +75,4 @@ namespace smtrat
 }
 
 #include "IncWidthModule.tpp"
+#include "IncWidthModuleIntantiation.h"

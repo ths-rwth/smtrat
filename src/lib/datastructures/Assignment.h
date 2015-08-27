@@ -424,7 +424,7 @@ namespace smtrat
     };
     
     /// Data type for a assignment assigning a variable, represented as a string, a real algebraic number, represented as a string.
-    typedef std::map<ModelVariable,ModelValue> Model;
+    class Model : public std::map<ModelVariable,ModelValue> {};
     
     /**
      * Obtains all assignments which can be transformed to rationals and stores them in the passed map.

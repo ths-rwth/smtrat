@@ -439,3 +439,4 @@ namespace smtrat
 }    // namespace smtrat
 
 #include "LRAModule.tpp"
+#include "LRAModuleIntantiation.h"

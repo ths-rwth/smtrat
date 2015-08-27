@@ -12,5 +12,6 @@ ModuleDefaultEnabled()
 EndDefineModule(moduleEnabled)
 
 if(${moduleEnabled})
-	# do something
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/ICPModule/ICPModule.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/ICPModule/ICPModule.cpp )
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/ICPModule/ICPModuleIntantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/ICPModule/ICPModuleIntantiation.h )
 endif()

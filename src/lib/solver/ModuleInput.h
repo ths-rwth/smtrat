@@ -13,7 +13,6 @@
 #include <set>
 #include <iterator>
 #include "../Common.h"
-#include "../datastructures/Assignment.h"
 #include "../config.h"
 
 namespace smtrat
@@ -124,9 +123,7 @@ namespace smtrat
         }
     };
     
-    class Manager; // Forward declaration.
-    
-    class Module; // Forward declaration.
+    class Model; // forward declaration
     
     /**
      * The input formula a module has to consider for it's satisfiability check. It is a list of formulas

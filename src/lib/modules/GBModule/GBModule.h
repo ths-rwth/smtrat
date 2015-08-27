@@ -115,7 +115,7 @@ protected:
     void removeReceivedFormulaFromNewInequalities( ModuleInput::const_iterator _formula );
     void removeSubformulaFromPassedFormula( ModuleInput::iterator _formula );
 
-	GBPolynomial rewriteVariable(const GBPolynomial&, const carl::Variable&, const TermT&, const BitVector&);
+	GBPolynomial rewriteVariable(const GBPolynomial&, const carl::Variable&, const TermT&, const BitVector&){/*TODO*/return GBPolynomial();}
     bool validityCheck( );
 public:
     void printStateHistory( );
@@ -133,3 +133,4 @@ private:
 } // namespace smtrat
 #include "GBModule.tpp"
 #include "InequalitiesTable.tpp"
+#include "GBModuleIntantiation.h"

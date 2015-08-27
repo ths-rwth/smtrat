@@ -1038,7 +1038,7 @@ void GBModule<Settings>::printStateHistory( )
     for( auto it = mStateHistory.begin( ); it != mStateHistory.end( ); ++it )
     {
         std::cout << (*btp)->formula() << ": ";
-        it->getBasis( ).getGbIdeal( ).print( );
+        it->getBasis( ).getIdeal( ).print( );
         std::cout << "," << std::endl;
         btp++;
     }

@@ -504,3 +504,4 @@ namespace smtrat
 }    // namespace smtrat
     
 #include "ICPModule.tpp"
+#include "ICPModuleIntantiation.h"

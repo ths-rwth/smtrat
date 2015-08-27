@@ -43,7 +43,7 @@ def checkName(m, p):
   return result
 
 def settingsContent(m, p):
-  result = license(p + 'Settings.h') + '\n\n\
+  result = license(p + 'Settings.h') + '\n\
 #pragma once\n\n\
 namespace smtrat\n\
 {\n\
@@ -55,6 +55,23 @@ namespace smtrat\n\
         static const bool example_setting = true;\n\
     };\n\
 }\n'
+  return result
+
+def expliciteTemplateDeclarationContent(m, p):
+  result = license(m + '.h') + '\n\n\
+namespace smtrat\n\
+{\n\
+    extern template class '+p+'Module<'+p+'Settings@SMTRAT_'+p+'_Settings@>;\n\
+}'
+  return result
+
+def expliciteTemplateDefinitionContent(m, p):
+  result = license(m + '.h') + '\n\n\
+#include "'+p+'Module.h"\n\n\
+namespace smtrat\n\
+{\n\
+    template class '+p+'Module<'+p+'Settings@SMTRAT_'+p+'_Settings@>;\n\
+}'
   return result
 
 def statisticsContent(m, p):
@@ -113,6 +130,7 @@ ModuleName('+m+')\n'
 EndDefineModule(moduleEnabled)\n\
 \n\
 if(${moduleEnabled})\n\
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/'+m+'/'+m+'.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/'+m+'/'+m+'.cpp )\n\
     # do something\n\
 endif()'
   return result
@@ -193,6 +211,7 @@ namespace smtrat\n\
 }\n'
   if(s):
     result = result + '\n#include "'+m+'.tpp"\n'
+    result = result + '\n#include "'+m+'Instantiation.h"\n'
   return result
 
 def sourceContent(m, s):
@@ -345,6 +364,14 @@ if(withSettings):
   print('Writing ' + moduleDirectory + '/' + moduleNamePref + 'Settings.h ...')
   settingsFile.write(settingsContent(moduleName,moduleNamePref))
   settingsFile.close()
+  expTempDecl = open(moduleDirectory + '/' + moduleName + 'Intantiation.h', 'w')
+  print('Writing ' + moduleDirectory + '/' + moduleName + 'Intantiation.h ...')
+  expTempDecl.write(expliciteTemplateDeclarationContent(moduleName,moduleNamePref))
+  expTempDecl.close()
+  expTempDef = open(moduleDirectory + '/' + moduleName + '.cpp', 'w')
+  print('Writing ' + moduleDirectory + '/' + moduleName + '.cpp ...')
+  expTempDef.write(expliciteTemplateDefinitionContent(moduleName,moduleNamePref))
+  expTempDef.close()
   
 statisticsFile = open(moduleDirectory + '/' + moduleNamePref + 'Statistics.h', 'w')
 print('Writing ' + moduleDirectory + '/' + moduleNamePref + 'Statistics.h ...')
