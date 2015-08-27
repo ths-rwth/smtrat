@@ -93,6 +93,7 @@ protected:
     bool saveState( );
 
     FormulasT generateReasons( const carl::BitVector& reasons );
+    FormulaSetT generateReasonSet( const carl::BitVector& reasons );
     void passGB( );
     
     void knownConstraintDeduction( const std::list<std::pair<carl::BitVector, carl::BitVector> >& deductions );

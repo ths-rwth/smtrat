@@ -165,7 +165,7 @@ namespace smtrat
         _out << "(";
         if( !mpPrimaryBackend->infeasibleSubsets().empty() )
         {
-            const FormulasT& infSubSet = *mpPrimaryBackend->infeasibleSubsets().begin();
+            const FormulaSetT& infSubSet = *mpPrimaryBackend->infeasibleSubsets().begin();
             if( infSubSet.size() == 1 )
             {
                 _out << *infSubSet.begin();

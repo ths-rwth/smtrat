@@ -310,7 +310,7 @@ namespace smtrat
              * 
              * @return 
              */
-            FormulasT createPremiseDeductions();
+            FormulaSetT createPremiseDeductions();
             
             std::vector<FormulaT> createPremise();
             

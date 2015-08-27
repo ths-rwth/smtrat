@@ -27,9 +27,7 @@ namespace smtrat
         static const bool infeasible_subset_generation                          = true;
         static const bool virtual_substitution_according_paper                  = false;
         static const bool prefer_equation_over_all                              = false;
-        static const bool int_constraints_allowed                               = false;
         static const bool mixed_int_real_constraints_allowed                    = false;
-        static const bool branch_and_bound                                      = false;
         static const bool split_neq_constraints                                 = false;
         static const size_t int_max_range                                       = 1;
         static const size_t lazy_check_threshold                                = 1;
@@ -52,21 +50,9 @@ namespace smtrat
         static const bool prefer_equation_over_all                              = true;
     };
     
-    struct VSSettings2346 : VSSettings234
-    {
-        static const bool int_constraints_allowed                               = true;
-        static const bool branch_and_bound                                      = true;
-    };
-    
     struct VSSettings2345 : VSSettings234
     {
         static const bool sturm_sequence_for_root_check                         = use_variable_bounds && true;
-    };
-    
-    struct VSSettings23456 : VSSettings2345
-    {
-        static const bool int_constraints_allowed                               = true;
-        static const bool branch_and_bound                                      = true;
     };
     
     struct VSSettings235 : VSSettings23

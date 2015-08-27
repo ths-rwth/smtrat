@@ -132,8 +132,8 @@ namespace smtrat
         {
             case carl::FormulaType::FALSE:
             {
-                FormulasT infSubSet;
-                infSubSet.push_back( _formula->formula() );
+                FormulaSetT infSubSet;
+                infSubSet.insert( _formula->formula() );
                 mInfeasibleSubsets.push_back( infSubSet );
                 mFoundSolution.clear();
                 return false;
@@ -740,7 +740,7 @@ namespace smtrat
         if( a == False )
         {
             assert(infeasibleSubsets().empty());
-            FormulasT contractionConstraints = this->createPremiseDeductions();
+            FormulaSetT contractionConstraints = this->createPremiseDeductions();
             backend = usedBackends().begin();
             while( backend != usedBackends().end() )
             {
@@ -750,14 +750,14 @@ namespace smtrat
                 #endif
                 for( auto infsubset = (*backend)->infeasibleSubsets().begin(); infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
                 {
-                    FormulasT newInfSubset;
+                    FormulaSetT newInfSubset;
                     for( auto subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                     {
                         if( !subformula->constraint().isBound() )
-                            newInfSubset.push_back( *subformula );
+                            newInfSubset.insert( *subformula );
                     }
-                    newInfSubset.insert( newInfSubset.end(), contractionConstraints.begin(), contractionConstraints.end() );
-                    mInfeasibleSubsets.push_back( newInfSubset );
+                    newInfSubset.insert( contractionConstraints.begin(), contractionConstraints.end() );
+                    mInfeasibleSubsets.push_back( std::move(newInfSubset) );
                 }
                 ++backend;
             }
@@ -1535,14 +1535,15 @@ namespace smtrat
     }
 
     template<class Settings>
-    FormulasT ICPModule<Settings>::createPremiseDeductions()
+    FormulaSetT ICPModule<Settings>::createPremiseDeductions()
     {
         // collect applied contractions
-        FormulasT contractions = mHistoryActual->appliedConstraints();
+        FormulaSetT contractions = mHistoryActual->appliedConstraints();
         // collect original box
         assert( mBoxStorage.size() > 0 );
         const FormulasT& box = mBoxStorage.front();
-        contractions.insert(contractions.end(), box.begin(), box.end() );
+        for( auto& f : box )
+            contractions.insert( f );
         mBoxStorage.pop();
         return contractions;
     }
@@ -2364,7 +2365,7 @@ namespace smtrat
         {
             if( boxCheck != True )
             {
-                std::vector<FormulasT> tmpSet = mLRA.infeasibleSubsets();
+                std::vector<FormulaSetT> tmpSet = mLRA.infeasibleSubsets();
                 for ( auto infSetIt = tmpSet.begin(); infSetIt != tmpSet.end(); ++infSetIt )
                 {
                     for ( auto formulaIt = (*infSetIt).begin(); formulaIt != (*infSetIt).end(); ++formulaIt )
@@ -2742,17 +2743,17 @@ namespace smtrat
     template<class Settings>
     void ICPModule<Settings>::remapAndSetLraInfeasibleSubsets()
     {
-        const std::vector<FormulasT>& tmpSet = mLRA.infeasibleSubsets();
+        const std::vector<FormulaSetT>& tmpSet = mLRA.infeasibleSubsets();
         for ( auto infSetIt = tmpSet.begin(); infSetIt != tmpSet.end(); ++infSetIt )
         {
-            FormulasT newSet;
+            FormulaSetT newSet;
             for( auto formulaIt = (*infSetIt).begin(); formulaIt != (*infSetIt).end(); ++formulaIt )
             {
                 auto delinIt = mDeLinearizations.find(*formulaIt);
                 assert( delinIt != mDeLinearizations.end() );
                 if( rReceivedFormula().contains( delinIt->second ) )
                 {
-                    newSet.push_back( delinIt->second );
+                    newSet.insert( delinIt->second );
                 }
             }
             assert(newSet.size() == (*infSetIt).size());

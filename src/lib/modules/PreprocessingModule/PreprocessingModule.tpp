@@ -171,13 +171,13 @@ namespace smtrat {
         Answer ans = runBackends( _full );
         if (ans == False) {
             mInfeasibleSubsets.clear();
-            FormulasT infeasibleSubset;
+            FormulaSetT infeasibleSubset;
             // TODO: compute a better infeasible subset
             for( auto subformula = rReceivedFormula().begin(); subformula != rReceivedFormula().end(); ++subformula )
             {
-                infeasibleSubset.push_back( subformula->formula() );
+                infeasibleSubset.insert( subformula->formula() );
             }
-            mInfeasibleSubsets.push_back( infeasibleSubset );
+            mInfeasibleSubsets.push_back( std::move(infeasibleSubset) );
         }
         return ans;
     }

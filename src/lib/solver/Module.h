@@ -136,7 +136,7 @@ namespace smtrat
             ModuleInput* mpPassedFormula;
         protected:
             /// Stores the infeasible subsets.
-            std::vector<FormulasT> mInfeasibleSubsets;
+            std::vector<FormulaSetT> mInfeasibleSubsets;
             /// A reference to the manager.
             Manager* const mpManager;
             /// Stores the assignment of the current satisfiable result, if existent.
@@ -373,7 +373,7 @@ namespace smtrat
              * @return The infeasible subsets of the set of received formulas (empty, if this module has not
              *          detected unsatisfiability of the conjunction of received formulas.
              */
-            inline const std::vector<FormulasT>& infeasibleSubsets() const
+            inline const std::vector<FormulaSetT>& infeasibleSubsets() const
             {
                 return mInfeasibleSubsets;
             }
@@ -425,6 +425,13 @@ namespace smtrat
              */
             void clearDeductions()
             {
+                if( mpManager != nullptr )
+                {
+                    for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
+                    {
+                        (*module)->clearDeductions();
+                    }
+                }
                 mDeductions.clear();
                 mSplittings.clear();
             }
@@ -517,7 +524,7 @@ namespace smtrat
              * @param _origins The set in which to store the origins.
              */
             void collectOrigins( const FormulaT& _formula, FormulasT& _origins ) const;
-            //void collectOrigins( const FormulaT& _formula, std::vector<FormulaT>& _origins ) const;
+            void collectOrigins( const FormulaT& _formula, FormulaSetT& _origins ) const;
 
             // Methods for debugging purposes.
             /**
@@ -555,6 +562,7 @@ namespace smtrat
              * @see Module::storeAssumptionsToCheck
              */
             static void addAssumptionToCheck( const FormulasT& _formulas, bool _consistent, const std::string& _label );
+            static void addAssumptionToCheck( const FormulaSetT& _formulas, bool _consistent, const std::string& _label );
             /**
              * Add a conjunction of _constraints to the assumption vector and its predetermined consistency status.
              * @param _constraints The constraints, whose conjunction should be consistent/inconsistent.
@@ -841,19 +849,19 @@ namespace smtrat
                 if( posInReceived->hasOrigins() )
                     collectOrigins( *findBestOrigin( posInReceived->origins() ), _origins );
             }
-
+            
             /**
              * 
              * @param _formula
              * @param _origins
              */
-            /*void getOrigins( const FormulaT& _formula, std::vector<FormulaT>& _origins ) const
+            void getOrigins( const FormulaT& _formula, FormulaSetT& _origins ) const
             {
                 ModuleInput::const_iterator posInReceived = mpPassedFormula->find( _formula );
                 assert( posInReceived != mpPassedFormula->end() );
                 if( posInReceived->hasOrigins() )
                     collectOrigins( *findBestOrigin( posInReceived->origins() ), _origins );
-            }*/
+            }
         
             /**
              * Copies the infeasible subsets of the passed formula
@@ -909,7 +917,7 @@ namespace smtrat
              * @param _backend The backend from which to obtain the infeasible subsets.
              * @return The infeasible subsets the given backend provides.
              */
-            std::vector<FormulasT> getInfeasibleSubsets( const Module& _backend ) const;
+            std::vector<FormulaSetT> getInfeasibleSubsets( const Module& _backend ) const;
             
             /**
              * Merges the two vectors of sets into the first one.
@@ -959,33 +967,33 @@ namespace smtrat
              *                        false, otherwise.
              * @param _isolateBranchValue true, if a branching in the form of (or (= p b) (< p b) (> p b)) is desired. (Currently only supported for reals)
              */
-            void branchAt( const Poly& _polynomial, bool _integral, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak = true, bool _preferLeftCase = true );
+            bool branchAt( const Poly& _polynomial, bool _integral, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak = true, bool _preferLeftCase = true );
             
-            void branchAt( const Poly& _polynomial, bool _integral, const Rational& _value, bool _leftCaseWeak = true, bool _preferLeftCase = true, const std::vector<FormulaT>& _premise = std::vector<FormulaT>() )
+            bool branchAt( const Poly& _polynomial, bool _integral, const Rational& _value, bool _leftCaseWeak = true, bool _preferLeftCase = true, const std::vector<FormulaT>& _premise = std::vector<FormulaT>() )
             {
-                branchAt( _polynomial, _integral, _value, std::move( std::vector<FormulaT>( _premise ) ), _leftCaseWeak, _preferLeftCase );
+                return branchAt( _polynomial, _integral, _value, std::move( std::vector<FormulaT>( _premise ) ), _leftCaseWeak, _preferLeftCase );
             }
             
-            void branchAt( carl::Variable::Arg _var, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak = true, bool _preferLeftCase = true )
+            bool branchAt( carl::Variable::Arg _var, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak = true, bool _preferLeftCase = true )
             {
-                branchAt( carl::makePolynomial<Poly>( _var ), _var.getType() == carl::VariableType::VT_INT, _value, std::move( _premise ), _leftCaseWeak, _preferLeftCase );
+                return branchAt( carl::makePolynomial<Poly>( _var ), _var.getType() == carl::VariableType::VT_INT, _value, std::move( _premise ), _leftCaseWeak, _preferLeftCase );
             }
             
-            void branchAt( carl::Variable::Arg _var, const Rational& _value, bool _leftCaseWeak = true, bool _preferLeftCase = true, const std::vector<FormulaT>& _premise = std::vector<FormulaT>() )
+            bool branchAt( carl::Variable::Arg _var, const Rational& _value, bool _leftCaseWeak = true, bool _preferLeftCase = true, const std::vector<FormulaT>& _premise = std::vector<FormulaT>() )
             {
-                branchAt( carl::makePolynomial<Poly>( _var ), _var.getType() == carl::VariableType::VT_INT, _value, std::move( std::vector<FormulaT>( _premise ) ), _leftCaseWeak, _preferLeftCase );
-            }
-            
-            template<typename P = Poly, carl::EnableIf<carl::needs_cache<P>> = carl::dummy>
-            void branchAt( const typename P::PolyType& _poly, bool _integral, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak = true, bool _preferLeftCase = true )
-            {
-                branchAt( carl::makePolynomial<P>( _poly ), _integral, _value, std::move( _premise ), _leftCaseWeak, _preferLeftCase );
+                return branchAt( carl::makePolynomial<Poly>( _var ), _var.getType() == carl::VariableType::VT_INT, _value, std::move( std::vector<FormulaT>( _premise ) ), _leftCaseWeak, _preferLeftCase );
             }
             
             template<typename P = Poly, carl::EnableIf<carl::needs_cache<P>> = carl::dummy>
-            void branchAt( const typename P::PolyType& _poly, bool _integral, const Rational& _value, bool _leftCaseWeak = true, bool _preferLeftCase = true, const std::vector<FormulaT>& _premise = std::vector<FormulaT>() )
+            bool branchAt( const typename P::PolyType& _poly, bool _integral, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak = true, bool _preferLeftCase = true )
             {
-                branchAt( carl::makePolynomial<P>( _poly ), _integral, _value, std::move( std::vector<FormulaT>( _premise ) ), _leftCaseWeak, _preferLeftCase );
+                return branchAt( carl::makePolynomial<P>( _poly ), _integral, _value, std::move( _premise ), _leftCaseWeak, _preferLeftCase );
+            }
+            
+            template<typename P = Poly, carl::EnableIf<carl::needs_cache<P>> = carl::dummy>
+            bool branchAt( const typename P::PolyType& _poly, bool _integral, const Rational& _value, bool _leftCaseWeak = true, bool _preferLeftCase = true, const std::vector<FormulaT>& _premise = std::vector<FormulaT>() )
+            {
+                return branchAt( carl::makePolynomial<P>( _poly ), _integral, _value, std::move( std::vector<FormulaT>( _premise ) ), _leftCaseWeak, _preferLeftCase );
             }
             
             /**
