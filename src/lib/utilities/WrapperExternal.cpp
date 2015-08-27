@@ -101,11 +101,14 @@ namespace smtrat {
 		if (tryCopyOld(buffer, bufferSize))
 			return 0;
 		SMTRAT_LOG_DEBUG("smtrat.wrapper", "infeasibleSubsets");
-        std::vector<FormulasT> infeasibleSubsets = solver->infeasibleSubsets();
+		std::vector<FormulaSetT> infeasibleSubsets = solver->infeasibleSubsets();
 		std::ostringstream stream;
-		for (FormulasT subset : infeasibleSubsets)
+		if (!infeasibleSubsets.empty())
 		{
-			stream << subset << std::endl;
+			for (FormulaT subset : *infeasibleSubsets.begin())
+			{
+				stream << subset << std::endl;
+			}
 		}
 		return copyResult(stream, buffer, bufferSize);
 	}
