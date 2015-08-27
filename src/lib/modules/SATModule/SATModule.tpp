@@ -363,8 +363,9 @@ namespace smtrat
             //TODO Matthias: finish
             if ( isLemmaLevel(LemmaLevel::ADVANCED) )
             {
-				SMTRAT_LOG_TRACE("smtrat.sat", "Find all dependent variables");
+                SMTRAT_LOG_TRACE("smtrat.sat", "Find all dependent variables");
                 assert( result == l_True );
+                clearDeductions();
                 int assumptionSizeStart = assumptions.size();
                 // Initialize set of all variables which are not tested yet for positive assignment
                 std::set<Minisat::Var> testVarsPositive;
