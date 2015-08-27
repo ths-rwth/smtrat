@@ -1553,10 +1553,30 @@ namespace smtrat
             std::vector<carl::Variable> varOrder;
             State* currentState = mRanking.begin()->second;
             EvalRationalMap varSolutions;
+            if( currentState->cannotBeSolved( mLazyMode ) )
+            {
+                Model bmodel = backendsModel();
+                for( auto& ass : bmodel )
+                {
+                    if( ass.second.isSqrtEx() )
+                    {
+                        assert( ass.second.asSqrtEx().isConstant() && carl::isInteger( ass.second.asSqrtEx().constantPart().constantPart() ) );
+                        varSolutions[ass.first.asVariable()] = ass.second.asSqrtEx().constantPart().constantPart();
+                    }
+                    else if( ass.second.isRAN() )
+                    {
+                        assert( ass.second.asRAN()->isNumeric() && carl::isInteger( ass.second.asRAN()->value() ) );
+                        varSolutions[ass.first.asVariable()] = ass.second.asRAN()->value();
+                    }
+                }
+            }
             while( !currentState->isRoot() )
             {
+                const carl::Variables& tVars = currentState->substitution().termVariables();
                 if( currentState->substitution().variable().getType() == carl::VariableType::VT_INT )
                 {
+                    for( carl::Variable::Arg v : tVars )
+                        varSolutions.insert( std::make_pair( v, ZERO_RATIONAL ) );
                     if( currentState->substitution().type() == Substitution::MINUS_INFINITY || currentState->substitution().type() == Substitution::PLUS_INFINITY )
                     {
                         Rational nextIntTCinRange;
@@ -1596,14 +1616,7 @@ namespace smtrat
                         // Insert the (integer!) assignments of the other variables.
                         const SqrtEx& subTerm = currentState->substitution().term();
                         Rational evaluatedSubTerm;
-//                        std::cout << "replace variable in  " << subTerm << "  by" << std::endl;
-//                        for( const auto& vs : varSolutions )
-//                            std::cout << "   " << vs.first << " -> " << vs.second << std::endl;
-//                        logConditions( *currentState, true, "VS_SOLUTION_IN_DOMAIN", false );
-//                        if( !currentState->isRoot() )
-//                            logConditions( currentState->father(), true, "VS_SOLUTION_IN_DOMAIN_FATHER", false );
                         bool assIsInteger = subTerm.evaluate( evaluatedSubTerm, varSolutions, -1 );
-//                        std::cout << "results in " << evaluatedSubTerm << std::endl;
                         assIsInteger &= carl::isInteger( evaluatedSubTerm );
                         if( !assIsInteger )
                         {

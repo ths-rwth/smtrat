@@ -291,7 +291,6 @@ namespace vs
         smtrat::Poly denomEvaluated = denominator().substitute( _evalMap );
         assert( denomEvaluated.isConstant() );
         smtrat::Rational denomValue = denomEvaluated.constantPart();
-//        if( carl::isZero( denomValue ) ) exit(1236);
         assert( !carl::isZero( denomValue ) );
         // Check whether the resulting assignment is integer.
         bool rounded = true;
