@@ -1,0 +1,11 @@
+/**
+ * @file PreprocessingModuleIntantiation.h
+ * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
+ *
+ * @version 2015-08-27
+ * Created on 2015-08-27.
+ */
+
+namespace smtrat {
+    extern template class PreprocessingModule<PreprocessingSettings@SMTRAT_Preprocessing_Settings@>;
+}

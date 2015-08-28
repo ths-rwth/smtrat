@@ -6,6 +6,7 @@
  */
 
 #include "ModuleInput.h"
+#include "../datastructures/Assignment.h"
 
 using namespace std;
 using namespace carl;
@@ -36,6 +37,9 @@ namespace smtrat
         EvalRationalMap rationalAssigns;
         getRationalAssignmentsFromModel( _assignment, rationalAssigns );
         unsigned result = 1;
+//        std::cout << "Assignment:" << std::endl;
+//        for( const auto& a : _assignment )
+//            std::cout << a.first << " -> " << a.second << std::endl;
 //        std::cout << "Rational assignment:" << std::endl;
 //        for( const auto& ra : rationalAssigns )
 //            std::cout << ra.first << " -> " << ra.second << std::endl;

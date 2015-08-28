@@ -12,5 +12,6 @@ ModuleDefaultEnabled()
 EndDefineModule(lraEnabled)
 
 if(${lraEnabled})
-	# do something
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/LRAModule/LRAModule.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/LRAModule/LRAModule.cpp )
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/LRAModule/LRAModuleIntantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/LRAModule/LRAModuleIntantiation.h )
 endif()

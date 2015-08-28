@@ -80,6 +80,7 @@ foreach(modIndex RANGE ${maxModIndex})
   endif()
 endforeach()
 configure_file ( ${CMAKE_SOURCE_DIR}/src/lib/modules/AddModules.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/AddModules.h )
+configure_file ( ${CMAKE_SOURCE_DIR}/src/lib/modules/AddModules.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/AddModules.cpp )
 
 # write ModuleType.h
 foreach(moduleType ${allModuleTypes})
@@ -101,6 +102,7 @@ configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/ModuleType.cpp.in ${CMAKE_SO
 # propagate and enhance source file definitions
 set(lib_modules_src
 	${moduleSources}
+	modules/AddModules.cpp
 	modules/ModuleType.cpp
 	modules/Modules.cpp
 	PARENT_SCOPE)

@@ -198,6 +198,8 @@ namespace vs
             
             bool evaluate( smtrat::Rational& _result, const smtrat::EvalRationalMap& _evalMap, int _rounding = 0 ) const;
             
+            SqrtEx substitute( const smtrat::EvalRationalMap& _evalMap ) const;
+            
             /**
              * Substitutes a variable in an expression by a square root expression, which results in a square root expression.
              * @param _substituteIn The polynomial to substitute in.

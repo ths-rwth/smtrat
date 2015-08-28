@@ -1249,7 +1249,7 @@ namespace smtrat {
 	}
 	
 	template<typename Settings>
-		void EQModule<Settings>::P_add_explicit_path_to_infeasible(g_iterator start, g_iterator target, FormulasT& infeasible)
+		void EQModule<Settings>::P_add_explicit_path_to_infeasible(g_iterator start, g_iterator target, FormulaSetT& infeasible)
 	{
 		g_iterator current = target;
 		
@@ -1258,7 +1258,7 @@ namespace smtrat {
 
 			assert(pReceivedFormula()->contains(cur->mFormula));
 			
-			infeasible.push_back(cur->mFormula);
+			infeasible.insert(cur->mFormula);
 			current = cur->mPred;
 		}
 	}
@@ -1279,7 +1279,7 @@ namespace smtrat {
 	}
 
 	template<typename Settings>
-		void EQModule<Settings>::P_construct_proof(FormulasT& output, g_iterator start, g_iterator target)
+		void EQModule<Settings>::P_construct_proof(FormulaSetT& output, g_iterator start, g_iterator target)
 	{
 		mImplicitEdgeQueue.push_back(bfs_todo_entry(start, target));
 				
@@ -1470,8 +1470,8 @@ namespace smtrat {
 #endif
 
 		mInfeasibleSubsets.emplace_back();
-		FormulasT& infeasible = mInfeasibleSubsets.back();
-		infeasible.push_back(inequality);
+		FormulaSetT& infeasible = mInfeasibleSubsets.back();
+		infeasible.insert(inequality);
 		
 		P_construct_proof(infeasible, start, target);
 		P_clear_proven();

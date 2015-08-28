@@ -17,6 +17,7 @@
 
 //#define CHECK_SMALLER_MUSES
 //#define SEARCH_FOR_RADICALMEMBERS
+//#define GB_OUTPUT_METHODS
 //#define GB_OUTPUT
 
 using std::set;
@@ -263,7 +264,7 @@ Answer GBModule<Settings>::checkCore( bool _full )
                 assert( witness.isZero( ) );
             }
             #endif
-            mInfeasibleSubsets.push_back( FormulasT() );
+            mInfeasibleSubsets.emplace_back();
             // The equalities we used for the basis-computation are the infeasible subset
 
 			assert(!Settings::getReasonsForInfeasibility || !witness.getReasons().empty());
@@ -282,13 +283,13 @@ Answer GBModule<Settings>::checkCore( bool _full )
 					
                     if( origIt.get( ) )
                     {
-                        mInfeasibleSubsets.back( ).push_back( (*it)->formula() );
+                        mInfeasibleSubsets.back( ).insert( (*it)->formula() );
                     }
                     origIt++;
                 }
                 else
                 {
-                    mInfeasibleSubsets.back( ).push_back( (*it)->formula() );
+                    mInfeasibleSubsets.back( ).insert( (*it)->formula() );
                 }
             }
 
@@ -953,6 +954,39 @@ FormulasT GBModule<Settings>::generateReasons( const carl::BitVector& reasons )
 
 }
 
+/**
+ * Generate reason sets from reason vectors
+ * @param reasons The reasons vector.
+ * @return The reason set.
+ */
+template<class Settings>
+FormulaSetT GBModule<Settings>::generateReasonSet( const carl::BitVector& reasons )
+{
+    if(reasons.empty())
+    {
+        return FormulaSetT();
+    }
+    
+    carl::BitVector::const_iterator origIt = reasons.begin( );
+	origIt++;
+    FormulaSetT origins;
+
+    auto it = mBacktrackPoints.begin( );
+    for( ++it; it != mBacktrackPoints.end( ); ++it )
+    {
+        assert( (*it)->formula().getType( ) == carl::FormulaType::CONSTRAINT );
+        assert( Settings::transformIntoEqualities != NO_INEQUALITIES || (*it)->formula().constraint( ).relation( ) == carl::Relation::EQ );
+        // If the corresponding entry in the reason vector is set,
+        // we add the polynomial.
+        if( origIt.get( ) )
+        {
+            origins.insert( (*it)->formula() );
+        }
+        origIt++;
+    }
+    return origins;
+
+}
 
 /**
  * A validity check of the data structures which can be used to assert valid behaviour.
@@ -993,6 +1027,7 @@ void GBModule<Settings>::removeSubformulaFromPassedFormula( ModuleInput::iterato
     super::eraseSubformulaFromPassedFormula( _formula, true );
 }
 
+#ifdef GB_OUTPUT_METHODS
 
 /**
  *  Prints the state history.
@@ -1005,7 +1040,7 @@ void GBModule<Settings>::printStateHistory( )
     for( auto it = mStateHistory.begin( ); it != mStateHistory.end( ); ++it )
     {
         std::cout << (*btp)->formula() << ": ";
-        it->getBasis( ).getGbIdeal( ).print( );
+        it->getBasis( ).getIdeal( ).print( );
         std::cout << "," << std::endl;
         btp++;
     }
@@ -1025,7 +1060,7 @@ void GBModule<Settings>::printRewriteRules( )
         std::cout <<  "]" << std::endl;
     }
 }
-
+#endif
 
 
 } // namespace smtrat

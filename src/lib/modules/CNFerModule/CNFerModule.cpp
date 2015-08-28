@@ -5,7 +5,6 @@
  * Created on 02. May 2012, 20:53
  */
 
-#include "../../solver/Manager.h"
 #include "CNFerModule.h"
 
 using namespace std;
@@ -34,9 +33,6 @@ namespace smtrat
              * Add the currently considered formula of the received constraint as clauses
              * to the passed formula.
              */
-//            const Formula* formulaQF = (*receivedSubformula)->toQF(mpManager->quantifiedVariables());
-//            const Formula* formulaToAssertInCnf = formulaQF->toCNF( true );
-//            cout << (**receivedSubformula) << endl;
             FormulaT formulaToAssertInCnf = receivedSubformula->formula().toCNF( true, true, true );
             if( formulaToAssertInCnf.getType() == TRUE )
             {
@@ -44,8 +40,8 @@ namespace smtrat
             }
             else if( formulaToAssertInCnf.getType() == FALSE )
             {
-                FormulasT reason;
-                reason.push_back( receivedSubformula->formula() );
+                FormulaSetT reason;
+                reason.insert( receivedSubformula->formula() );
                 mInfeasibleSubsets.push_back( reason );
                 return False;
             }

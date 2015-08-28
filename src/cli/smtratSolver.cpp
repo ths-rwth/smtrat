@@ -16,6 +16,8 @@
 #include CMakeStrategyHeader
 #include "RuntimeSettingsManager.h"
 #include "../lib/modules/AddModules.h"
+#include "../lib/solver/Module.h"
+#include "../lib/Common.h"
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "../lib/utilities/stats/CollectStatistics.h"

@@ -488,13 +488,13 @@ namespace smtrat
                 /**
                  * @return The origins which cause the conflict. This method can only be called, if there is a conflict.
                  */
-                std::vector<T> getConflict() const
+                std::set<T> getConflict() const
                 {
                     assert( isConflicting() );
                     assert( !mpConflictingVariable->infimum().isInfinite() && !mpConflictingVariable->supremum().isInfinite() );
-                    std::vector<T> conflict;
-                    conflict.push_back( *mpConflictingVariable->infimum().origins().begin() );
-                    conflict.push_back( *mpConflictingVariable->supremum().origins().begin() );
+                    std::set<T> conflict;
+                    conflict.insert( *mpConflictingVariable->infimum().origins().begin() );
+                    conflict.insert( *mpConflictingVariable->supremum().origins().begin() );
                     return conflict;
                 }
         };

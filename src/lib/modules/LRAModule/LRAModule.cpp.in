@@ -1,0 +1,13 @@
+/**
+ * @file LRAModule.cpp
+ * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
+ *
+ * @version 2015-08-27
+ * Created on 2015-08-27.
+ */
+
+#include "LRAModule.h"
+
+namespace smtrat {
+    template class LRAModule<LRASettings@SMTRAT_LRA_Settings@>;
+}

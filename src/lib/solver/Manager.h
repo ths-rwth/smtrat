@@ -13,17 +13,19 @@
 
 #include <vector>
 
-#include "ModuleFactory.h"
 #include "StrategyGraph.h"
 #include "../modules/ModuleType.h"
-#include "Module.h"
 #include "../config.h"
-#include "../modules/StandardModuleFactory.h"
+#include "ModuleInput.h"
 #include "GeneralStatistics.h"
 #include "QuantifierManager.h"
 
 namespace smtrat
 {   
+    class Module; // forward declaration
+    class ModuleFactory; // forward declaration
+    class Model; // forward declaration
+    
     /**
      * Base class for solvers. This is the interface to the user.
      **/
@@ -102,10 +104,7 @@ namespace smtrat
              *          the constraint itself is inconsistent;
              *          true, otherwise.
              */
-            bool inform( const FormulaT& _constraint )
-            {
-                return mpPrimaryBackend->inform( _constraint );
-            }
+            bool inform( const FormulaT& _constraint );
 
             /**
              * Adds the given formula to the conjunction of formulas, which will be considered for the next 
@@ -114,24 +113,7 @@ namespace smtrat
              * @return false, if it is easy to decide whether adding this formula creates a conflict;
              *          true, otherwise.
              */
-            bool add( const FormulaT& _subformula )
-            {
-                auto res = mpPassedFormula->add( _subformula );
-                if( res.second )
-                {
-                    auto btp = mBacktrackPoints.end();
-                    while( btp != mBacktrackPoints.begin() )
-                    {
-                        --btp;
-                        if( *btp == mpPassedFormula->end() )
-                            *btp = res.first;
-                        else
-                            break;
-                    }
-                    return mpPrimaryBackend->add( res.first );
-                }
-                return true;
-            }
+            bool add( const FormulaT& _subformula );
 
             /**
              * Checks the so far added formulas for satisfiability.
@@ -139,12 +121,7 @@ namespace smtrat
              *          False, if it not satisfiable;
              *          Unknown, if this solver cannot decide whether it is satisfiable or not.
              */
-            Answer check( bool _full = true )
-            {
-                *mPrimaryBackendFoundAnswer.back() = false;
-                mpPassedFormula->updateProperties();
-                return mpPrimaryBackend->check( _full );
-            }
+            Answer check( bool _full = true );
             
             /**
              * Pushes a backtrack point to the stack of backtrack points.
@@ -190,19 +167,13 @@ namespace smtrat
              * Note, that the conjunction of the so far added formulas must be inconsistent to
              * receive an infeasible subset.
              */
-            const std::vector<FormulasT>& infeasibleSubsets() const
-            {
-                return mpPrimaryBackend->infeasibleSubsets();
-            }
+            const std::vector<FormulaSetT>& infeasibleSubsets() const;
 
             /**
              * Determines variables assigned by the currently found satisfying assignment to an equal value in their domain.
              * @return A list of vectors of variables, stating that the variables in one vector are assigned to equal values.
              */
-			std::list<std::vector<carl::Variable>> getModelEqualities() const
-			{
-				return mpPrimaryBackend->getModelEqualities();
-			}
+			std::list<std::vector<carl::Variable>> getModelEqualities() const;
 
             /**
              * @return An assignment of the variables, which occur in the so far added
@@ -214,27 +185,14 @@ namespace smtrat
              * formulas the assignment could contain other variables or freshly introduced
              * variables.
              */
-            const Model model() const
-            {
-                mpPrimaryBackend->updateModel();
-                return mpPrimaryBackend->model();
-            }
+            const Model& model() const;
             
             /**
              * Returns the lemmas/tautologies which were made during the last solving provoked by check(). These lemmas
              * can be used in the same manner as infeasible subsets are used.
              * @return The lemmas/tautologies made during solving.
              */
-            std::vector<FormulaT> lemmas()
-            {
-                std::vector<FormulaT> result;
-                mpPrimaryBackend->updateDeductions();
-                for( const auto& ded : mpPrimaryBackend->deductions() )
-                {
-                    result.push_back( ded.first );
-                }
-                return result;
-            }
+            std::vector<FormulaT> lemmas();
 
             /**
              * @return The conjunction of so far added formulas.
@@ -250,10 +208,7 @@ namespace smtrat
              * formulas is satisfiable.
              * @param The stream to print on.
              */
-            void printAssignment( std::ostream& _out ) const
-            {
-                mpPrimaryBackend->printModel( _out );
-            }
+            void printAssignment( std::ostream& _out ) const;
     
             /**
              * Prints the so far added formulas.
@@ -359,12 +314,7 @@ namespace smtrat
              *          end of the conjunction of formulas, which will be considered for the 
              *          next satisfiability check is returned.
              */
-            ModuleInput::iterator remove( ModuleInput::iterator _subformula )
-            {
-                assert( _subformula != mpPassedFormula->end() );
-                mpPrimaryBackend->remove( _subformula );
-                return mpPassedFormula->erase( _subformula );
-            }
+            ModuleInput::iterator remove( ModuleInput::iterator _subformula );
 
             /**
              * @return A reference to the graph representing the solving strategy.

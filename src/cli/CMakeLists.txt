@@ -52,22 +52,22 @@ target_link_libraries( smtrat
 set_target_properties( smtrat PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
 
 
-add_library( smtlibParser
-	${CMAKE_SOURCE_DIR}/src/cli/smtratSolver.cpp
-)
+#add_library( smtlibParser
+#	${CMAKE_SOURCE_DIR}/src/cli/smtratSolver.cpp
+#)
 
-# add linking libraries. This is an over-approximation.
-target_link_libraries( smtlibParser ${libraries})
-
-set_target_properties( smtlibParser PROPERTIES
-		# create *nix style library versions + symbolic links
-		VERSION "${${PROJECT_NAME}_MAJORVERSION}.${${PROJECT_NAME}_MINORVERSION}.${${PROJECT_NAME}_MAINTENANCEVERSION}"
-		SOVERSION "${${PROJECT_NAME}_MAJORVERSION}.${${PROJECT_NAME}_MINORVERSION}.${${PROJECT_NAME}_MAINTENANCEVERSION}"
-		# allow creating static and shared libs without conflicts
-		# CLEAN_DIRECT_OUTPUT 1
-		# avoid conflicts between library and binary target names
-)
-
-if(USE_COTIRE)
-    cotire( smtlibParser )
-endif()
+## add linking libraries. This is an over-approximation.
+#target_link_libraries( smtlibParser ${libraries})
+#
+#set_target_properties( smtlibParser PROPERTIES
+#		# create *nix style library versions + symbolic links
+#		VERSION "${${PROJECT_NAME}_MAJORVERSION}.${${PROJECT_NAME}_MINORVERSION}.${${PROJECT_NAME}_MAINTENANCEVERSION}"
+#		SOVERSION "${${PROJECT_NAME}_MAJORVERSION}.${${PROJECT_NAME}_MINORVERSION}.${${PROJECT_NAME}_MAINTENANCEVERSION}"
+#		# allow creating static and shared libs without conflicts
+#		# CLEAN_DIRECT_OUTPUT 1
+#		# avoid conflicts between library and binary target names
+#)
+#
+#if(USE_COTIRE)
+#    cotire( smtlibParser )
+#endif()

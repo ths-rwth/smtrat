@@ -28,6 +28,7 @@
 #include "SATModule.h"
 #include <iomanip>
 
+//#define DEBUG_METHODS_SATMODULE
 //#define DEBUG_SATMODULE
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION
 //#define DEBUG_SATMODULE_DECISION_HEURISTIC
@@ -216,6 +217,10 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
+        if( _subformula->formula().isFalse() || _subformula->formula().isTrue() )
+        {
+            return;
+        }
         cancelUntil( assumptions.size() );  // can we do better than this?
         learnts.clear();
         if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
@@ -260,6 +265,7 @@ namespace smtrat
                     }
                     removeClause( iter->second );
                 }
+                mFormulaClauseMap.erase(iter);
             }
         }
     }
@@ -391,7 +397,7 @@ namespace smtrat
         assert( !ok );
         mInfeasibleSubsets.clear();
         // Set the infeasible subset to the set of all clauses.
-        FormulasT infeasibleSubset;
+        FormulaSetT infeasibleSubset;
 //        if( mpReceivedFormula->isConstraintConjunction() )
 //        {
 //            getInfeasibleSubsets();
@@ -402,10 +408,10 @@ namespace smtrat
             // TODO: compute a better infeasible subset
             for( auto subformula = rReceivedFormula().begin(); subformula != rReceivedFormula().end(); ++subformula )
             {
-                infeasibleSubset.push_back( subformula->formula() );
+                infeasibleSubset.insert( subformula->formula() );
             }
 //        }
-        mInfeasibleSubsets.push_back( infeasibleSubset );
+        mInfeasibleSubsets.push_back( std::move(infeasibleSubset) );
     }
     
     template<class Settings>
@@ -609,6 +615,7 @@ namespace smtrat
             mNewSplittingVars.push_back( leftCase );
         else
             mNewSplittingVars.push_back( rightCase );
+        assert( decision[mNewSplittingVars.back()] );
         #ifdef DEBUG_ADD_SPLITTING
         std::cout << "add the clause: ";
         printClause( clauseLits );
@@ -695,6 +702,11 @@ namespace smtrat
         }
         else
         {
+            if( !(content.getType() == carl::FormulaType::CONSTRAINT || content.getType() == carl::FormulaType::UEQ || content.getType() == carl::FormulaType::BITVECTOR) )
+            {
+                std::cout << content << std::endl;
+                exit(1679);
+            }
             assert( content.getType() == carl::FormulaType::CONSTRAINT || content.getType() == carl::FormulaType::UEQ || content.getType() == carl::FormulaType::BITVECTOR );
             double act = fabs( _formula.activity() );
             bool preferredToTSolver = false; //(_formula.activity()<0)
@@ -1739,10 +1751,6 @@ SetWatches:
                 {
                     // Increase decision level and enqueue 'next'
                     newDecisionLevel();
-//                    if( value( next ) != l_Undef )
-//                    {
-//                        exit(115);
-//                    }
                     assert( value( next ) == l_Undef );
                     #ifdef DEBUG_SATMODULE
                     std::cout << "### Decide " <<  (sign(next) ? "-" : "" ) << var(next) << std::endl;
@@ -2328,11 +2336,6 @@ NextClause:
         {
             if( assigns[mSplittingVars[i]] != l_Undef )
             {
-                assigns[mSplittingVars[i]] = l_Undef;
-                decision[mSplittingVars[i]] = false;
-                mOldSplittingVars.push(mSplittingVars[i]);
-                mSplittingVars[i] = mSplittingVars.back();
-                mSplittingVars.pop_back();
                 for( auto iter = mNewSplittingVars.begin(); iter != mNewSplittingVars.end(); ++iter )
                 {
                     if( *iter == mSplittingVars[i] )
@@ -2343,6 +2346,11 @@ NextClause:
                         break;
                     }
                 }
+                assigns[mSplittingVars[i]] = l_Undef;
+                decision[mSplittingVars[i]] = false;
+                mOldSplittingVars.push(mSplittingVars[i]);
+                mSplittingVars[i] = mSplittingVars.back();
+                mSplittingVars.pop_back();
             }
             else
             {
@@ -2776,6 +2784,7 @@ NextClause:
             {
                 addSplitting( splitting );
             }
+            (*backend)->clearDeductions();
             ++backend;
         }
         return deductionsLearned;
@@ -2789,7 +2798,7 @@ NextClause:
         std::vector<Module*>::const_iterator backend = usedBackends().begin();
         while( backend != usedBackends().end() )
         {
-            const std::vector<FormulasT>& infSubsets = (*backend)->infeasibleSubsets();
+            const std::vector<FormulaSetT>& infSubsets = (*backend)->infeasibleSubsets();
             assert( (*backend)->solverState() != False || !infSubsets.empty() );
             for( auto infsubset = infSubsets.begin(); infsubset != infSubsets.end(); ++infsubset )
             {
@@ -2956,6 +2965,8 @@ NextClause:
         }
         return map[x];
     }
+    
+    #ifdef DEBUG_METHODS_SATMODULE
 
     template<class Settings>
     void SATModule<Settings>::print( ostream& _out, const string _init ) const
@@ -3215,6 +3226,8 @@ NextClause:
             _out << " }" << endl;
         }
     }
+    
+    #endif
 
     template<class Settings>
     void SATModule<Settings>::collectStats()

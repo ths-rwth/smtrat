@@ -20,6 +20,7 @@ include_directories( ${carl_INCLUDE_DIR} )
 # Core library
 # # # # # # # # # # #
 set(lib_core_src
+    Common.cpp
 )
 
 set(lib_core_headers

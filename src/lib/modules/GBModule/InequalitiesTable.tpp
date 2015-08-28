@@ -342,8 +342,8 @@ namespace smtrat
                 else // we have a conflict
                 {
 
-                    FormulasT infeasibleSubset( mModule->generateReasons( reduced.getReasons( ) ) );
-                    infeasibleSubset.push_back( it->first->formula() );
+                    FormulaSetT infeasibleSubset( mModule->generateReasonSet( reduced.getReasons( ) ) );
+                    infeasibleSubset.insert( it->first->formula() );
                     #ifdef SMTRAT_DEVOPTION_Statistics
                     mStats->EffectivenessOfConflicts(infeasibleSubset.size()/mModule->rReceivedFormula().size());
                     #endif //SMTRAT_DEVOPTION_Statistics
@@ -386,8 +386,8 @@ namespace smtrat
                         }
                         case carl::FormulaType::FALSE:
                         {
-                            FormulasT infeasibleSubset( mModule->generateReasons( reduced.getReasons( ) ) );
-                            infeasibleSubset.push_back( it->first->formula() );
+                            FormulaSetT infeasibleSubset( mModule->generateReasonSet( reduced.getReasons( ) ) );
+                            infeasibleSubset.insert( it->first->formula() );
                             #ifdef SMTRAT_DEVOPTION_Statistics
                             mStats->EffectivenessOfConflicts(infeasibleSubset.size()/mModule->rReceivedFormula().size());
                             #endif //SMTRAT_DEVOPTION_Statistics

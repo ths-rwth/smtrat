@@ -1,4 +1,4 @@
-set(SMTRAT_VS_Settings "2346" CACHE STRING "Number of setting used for VSModule")
+set(SMTRAT_VS_Settings "234" CACHE STRING "Number of setting used for VSModule")
 BeginDefineModule()
 ModuleMainHeader(VSModule/VSModule.h)
 FILE(GLOB_RECURSE sources *.cpp)
@@ -12,7 +12,8 @@ ModuleDefaultEnabled()
 EndDefineModule(vsEnabled)
 
 if(${vsEnabled})
-	# do something
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/VSModule/VSModule.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/VSModule/VSModule.cpp )
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/VSModule/VSModuleIntantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/VSModule/VSModuleIntantiation.h )
 endif()
 
 option(SMTRAT_VS_VARIABLEBOUNDS "VS using variable bounds" ON)
