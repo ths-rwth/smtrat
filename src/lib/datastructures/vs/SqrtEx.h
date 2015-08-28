@@ -111,6 +111,14 @@ namespace vs
                 return mConstantPart.isConstant() && mDenominator.isConstant() && mFactor.isConstant() && mRadicand.isConstant();
             }
 
+            /**
+             * @return true, if there is no variable in this square root expression;
+             *          false, otherwise.
+             */
+            bool isRational() const
+            {
+                return mConstantPart.isConstant() && mDenominator.isConstant() && mRadicand == smtrat::ZERO_POLYNOMIAL;
+            }
             
         private:
             

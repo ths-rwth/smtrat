@@ -34,13 +34,14 @@ namespace vs
         mRadicand( mFactor.isZero() ? mFactor : std::move( _radicand ) )
     {
         assert( !mDenominator.isZero() );
+//        if( !( !mRadicand.isConstant() || mRadicand.isZero() || smtrat::ZERO_RATIONAL <= mRadicand.trailingTerm().coeff() ) )
+//            exit(1569);
         assert( !mRadicand.isConstant() || mRadicand.isZero() || smtrat::ZERO_RATIONAL <= mRadicand.trailingTerm().coeff() );
         normalize();
     }
 
     void SqrtEx::normalize()
     {
-//        cout << endl << __func__ << ": " << *this << endl;
         smtrat::Poly gcdA;
         if( mFactor.isZero() )
         {

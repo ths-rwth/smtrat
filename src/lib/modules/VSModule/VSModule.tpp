@@ -11,7 +11,7 @@
 using namespace vs;
 
 #ifdef VS_STATE_DEBUG_METHODS
-//#define VS_DEBUG_METHODS
+#define VS_DEBUG_METHODS
 #endif
 //#define VS_DEBUG
 //#define VS_MODULE_VERBOSE_INTEGERS
@@ -700,8 +700,8 @@ namespace smtrat
                         ass = ass.asSqrtEx() + SqrtEx( mVariableVector.at( state->treeDepth()-1 ).second );
                     }
                 }
-                if( ass.asSqrtEx().isConstant() )
-                    rationalAssignments.insert(std::make_pair(state->substitution().variable(), ass.asSqrtEx().constantPart().constantPart()));
+                if( ass.asSqrtEx().isRational() )
+                    rationalAssignments.insert(std::make_pair(state->substitution().variable(), ass.asSqrtEx().constantPart().constantPart()/ass.asSqrtEx().denominator().constantPart()));
                 mModel.insert(std::make_pair(state->substitution().variable(), ass));
                 state = state->pFather();
             }
@@ -1550,6 +1550,8 @@ namespace smtrat
     template<class Settings>
     bool VSModule<Settings>::solutionInDomain()
     {
+        if( rReceivedFormula().isRealConstraintConjunction() )
+            return true;
         assert( solverState() != False );
         if( !mRanking.empty() )
         {
