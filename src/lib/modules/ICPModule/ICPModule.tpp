@@ -12,6 +12,7 @@
 #include "../../solver/Manager.h"
 #include "ICPModule.h"
 
+//#define ICP_MODULE_DEBUG_METHODS
 //#define ICP_MODULE_DEBUG_0
 //#define ICP_MODULE_DEBUG_1
 //#define ICP_MODULE_DEBUG_2
@@ -302,6 +303,7 @@ namespace smtrat
     template<class Settings>
     Answer ICPModule<Settings>::checkCore( bool _full )
     {
+        bool test = true;
         #ifdef ICP_MODULE_DEBUG_0
         std::cout << "##############################################################" << std::endl;
         std::cout << "Start consistency check with the ICPModule on the constraints " << std::endl;
@@ -2821,6 +2823,7 @@ namespace smtrat
         return false;
     }
     
+    #ifdef ICP_MODULE_DEBUG_METHODS
     template<class Settings>
     void ICPModule<Settings>::debugPrint() const
     {
@@ -2993,4 +2996,5 @@ namespace smtrat
         _out << "  ->  " << std::setw(20) << std::left << s2.str();
         _out << std::right << " with " << _cc.rhs() << std::endl;
     }
+    #endif
 } // namespace smtrat

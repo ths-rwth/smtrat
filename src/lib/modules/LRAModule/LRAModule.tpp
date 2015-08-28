@@ -9,6 +9,9 @@
 
 #include "LRAModule.h"
 
+#ifdef DEBUG_METHODS_TABLEAU
+//#define DEBUG_METHODS_LRA_MODULE
+#endif
 //#define DEBUG_LRA_MODULE
 
 using namespace smtrat::lra;
@@ -333,6 +336,7 @@ namespace smtrat
     template<class Settings>
     Answer LRAModule<Settings>::checkCore( bool _full )
     {
+        bool test = true;
         #ifdef DEBUG_LRA_MODULE
         cout << "LRAModule::check" << endl;
         printReceivedFormula();
@@ -712,7 +716,7 @@ Return:
     template<class Settings>
     EvalRationalIntervalMap LRAModule<Settings>::getVariableBounds() const
     {
-        EvalRationalIntervalMap result = EvalRationalIntervalMap();
+        EvalRationalIntervalMap result;
         for( auto iter = mTableau.originalVars().begin(); iter != mTableau.originalVars().end(); ++iter )
         {
             const LRAVariable& var = *iter->second;
@@ -1814,6 +1818,8 @@ Return:
         }
         return true;
     }
+    
+    #ifdef DEBUG_METHODS_LRA_MODULE
 
     template<class Settings>
     void LRAModule<Settings>::printLinearConstraints( ostream& _out, const string _init ) const
@@ -1887,4 +1893,5 @@ Return:
     {
         mTableau.printVariables( true, _out, _init );
     }
+    #endif
 }    // namespace smtrat

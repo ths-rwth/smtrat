@@ -17,6 +17,7 @@
 
 //#define CHECK_SMALLER_MUSES
 //#define SEARCH_FOR_RADICALMEMBERS
+//#define GB_OUTPUT_METHODS
 //#define GB_OUTPUT
 
 using std::set;
@@ -1026,6 +1027,7 @@ void GBModule<Settings>::removeSubformulaFromPassedFormula( ModuleInput::iterato
     super::eraseSubformulaFromPassedFormula( _formula, true );
 }
 
+#ifdef GB_OUTPUT_METHODS
 
 /**
  *  Prints the state history.
@@ -1058,7 +1060,7 @@ void GBModule<Settings>::printRewriteRules( )
         std::cout <<  "]" << std::endl;
     }
 }
-
+#endif
 
 
 } // namespace smtrat

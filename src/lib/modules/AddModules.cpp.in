@@ -10,6 +10,7 @@
 #include "ModuleType.h"
 #include "Modules.h"
 #include "AddModules.h"
+#include "StandardModuleFactory.h"
 
 namespace smtrat
 {

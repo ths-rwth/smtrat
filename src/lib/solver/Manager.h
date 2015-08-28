@@ -13,11 +13,9 @@
 
 #include <vector>
 
-#include "ModuleFactory.h"
 #include "StrategyGraph.h"
 #include "../modules/ModuleType.h"
 #include "../config.h"
-#include "../modules/StandardModuleFactory.h"
 #include "ModuleInput.h"
 #include "GeneralStatistics.h"
 #include "QuantifierManager.h"
@@ -25,6 +23,7 @@
 namespace smtrat
 {   
     class Module; // forward declaration
+    class ModuleFactory; // forward declaration
     class Model; // forward declaration
     
     /**

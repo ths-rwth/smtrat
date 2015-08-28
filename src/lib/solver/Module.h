@@ -27,7 +27,6 @@
 #include "../modules/ModuleType.h"
 #include "ModuleInput.h"
 #include "ValidationSettings.h"
-#include "ThreadPool.h"
 #include "../datastructures/Assignment.h"
 #include "../config.h"
 

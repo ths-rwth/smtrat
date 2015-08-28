@@ -9,11 +9,11 @@
 
 #pragma once
 
+#include "../Common.h"
 #include <map>
 #include <boost/variant.hpp>
-#include "../Common.h"
+#include <carl/core/RealAlgebraicNumber.h>
 #include "vs/SqrtEx.h"
-#include "carl/core/RealAlgebraicNumber.h"
 #include "SortValue.h"
 #include "UFModel.h"
 

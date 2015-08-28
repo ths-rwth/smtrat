@@ -26,7 +26,7 @@ namespace smtrat
         /// The formula.
         FormulaT mFormula;
         /// The formulas origins.
-        std::shared_ptr<std::vector<FormulaT>> mOrigins;
+        std::shared_ptr<FormulasT> mOrigins;
         /// The deduction flag, which indicates, that this formula g is a direct sub-formula of
         /// a conjunction of formulas (and g f_1 .. f_n), and, that (implies (and f_1 .. f_n) g) holds.
         mutable bool mDeducted;
@@ -50,7 +50,7 @@ namespace smtrat
          * @param _formula The formula of the formula with origins to construct.
          * @param _origins The origins of the formula with origins to construct.
          */
-        FormulaWithOrigins( const FormulaT& _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins ):
+        FormulaWithOrigins( const FormulaT& _formula, const std::shared_ptr<FormulasT>& _origins ):
             mFormula( _formula ),
             mOrigins( _origins ),
             mDeducted( false )
@@ -99,7 +99,7 @@ namespace smtrat
         /**
          * @return A constant reference to the origins.
          */
-        const std::vector<FormulaT>& origins() const
+        const FormulasT& origins() const
         {
             return *mOrigins;
         }
@@ -354,7 +354,7 @@ namespace smtrat
             assert( _formula != end() );
             if( !_formula->hasOrigins() )
             {
-                _formula->mOrigins = std::shared_ptr<std::vector<FormulaT>>( new std::vector<FormulaT>() );
+                _formula->mOrigins = std::shared_ptr<FormulasT>( new FormulasT() );
             }
             _formula->mOrigins->push_back( _origin );
         }
@@ -377,7 +377,7 @@ namespace smtrat
         
         bool removeOrigin( iterator _formula, const FormulaT& _origin );
         
-        bool removeOrigins( iterator _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins );
+        bool removeOrigins( iterator _formula, const std::shared_ptr<FormulasT>& _origins );
         
         std::pair<iterator,bool> add( const FormulaT& _formula, bool _mightBeConjunction = true )
         {
@@ -389,12 +389,12 @@ namespace smtrat
             return add( _formula, true, _origins, nullptr, _mightBeConjunction );
         }
         
-        std::pair<iterator,bool> add( const FormulaT& _formula, const std::shared_ptr<std::vector<FormulaT>>& _origins, bool _mightBeConjunction = true )
+        std::pair<iterator,bool> add( const FormulaT& _formula, const std::shared_ptr<FormulasT>& _origins, bool _mightBeConjunction = true )
         {
             return add( _formula, false, FormulaT( carl::FormulaType::FALSE ), _origins, _mightBeConjunction );
         }
         
-        std::pair<iterator,bool> add( const FormulaT& _formula, bool _hasSingleOrigin, const FormulaT& _origin, const std::shared_ptr<std::vector<FormulaT>>& _origins, bool _mightBeConjunction = true );
+        std::pair<iterator,bool> add( const FormulaT& _formula, bool _hasSingleOrigin, const FormulaT& _origin, const std::shared_ptr<FormulasT>& _origins, bool _mightBeConjunction = true );
     };
     
     template<typename AnnotationType>

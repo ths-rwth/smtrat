@@ -98,6 +98,8 @@ namespace smtrat
     
     typedef carl::Factors<Poly> Factorization;
     
+    typedef std::pair<unsigned, unsigned> thread_priority;
+    
     // Constants.
     ///@todo move static variables to own cpp
     static const Rational ZERO_RATIONAL = Rational( 0 );

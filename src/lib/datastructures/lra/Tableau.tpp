@@ -9,6 +9,7 @@
 
 #include "Tableau.h"
 
+//#define DEBUG_METHODS_TABLEAU
 //#define LRA_DEBUG_CUTS_FROM_PROOFS
 
 namespace smtrat
@@ -3159,6 +3160,8 @@ namespace smtrat
                 }              
             }            
         }
+        
+        #ifdef DEBUG_METHODS_TABLEAU
 
         template<class Settings, typename T1, typename T2>
         void Tableau<Settings,T1,T2>::printHeap( std::ostream& _out, int _maxEntryLength, const std::string _init ) const
@@ -3490,5 +3493,6 @@ namespace smtrat
             _out << std::endl;
             _out << std::setfill( ' ' );
         }
+        #endif
     }    // end namspace lra
 }    // end namspace smtrat

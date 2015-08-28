@@ -17,6 +17,8 @@
 #define SMTRAT_VS_VARIABLEBOUNDS_B
 #endif
 
+//#define VS_STATE_DEBUG_METHODS
+
 namespace vs
 {
     
@@ -1049,6 +1051,8 @@ namespace vs
          *          false, otherwise.
          */
         bool hasRootsInVariableBounds( const Condition* _condition, bool _useSturmSequence );
+        
+        #ifdef VS_STATE_DEBUG_METHODS
 
         /**
          * Prints the conditions, the substitution and the substitution results of this state and 
@@ -1099,6 +1103,8 @@ namespace vs
          * @param _out The stream to print on.
          */
         void printConflictSets( const std::string _initiation = "***", std::ostream& _out = std::cout ) const;
+        
+        #endif
 
         /**
          * Finds a covering set of a vector of sets of sets due to some heuristics.

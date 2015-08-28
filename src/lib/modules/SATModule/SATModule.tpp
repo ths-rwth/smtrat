@@ -28,6 +28,7 @@
 #include "SATModule.h"
 #include <iomanip>
 
+//#define DEBUG_METHODS_SATMODULE
 //#define DEBUG_SATMODULE
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION
 //#define DEBUG_SATMODULE_DECISION_HEURISTIC
@@ -2964,6 +2965,8 @@ NextClause:
         }
         return map[x];
     }
+    
+    #ifdef DEBUG_METHODS_SATMODULE
 
     template<class Settings>
     void SATModule<Settings>::print( ostream& _out, const string _init ) const
@@ -3223,6 +3226,8 @@ NextClause:
             _out << " }" << endl;
         }
     }
+    
+    #endif
 
     template<class Settings>
     void SATModule<Settings>::collectStats()

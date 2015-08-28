@@ -19,7 +19,6 @@
 
 #include "Manager.h"
 #include "Module.h"
-#include "ModuleFactory.h"
 
 // Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE

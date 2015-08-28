@@ -11,6 +11,7 @@
 
 #include "Manager.h"
 #include "StrategyGraph.h"
+#include "ModuleFactory.h"
 #include "../modules/Modules.h"
 #include <functional>
 

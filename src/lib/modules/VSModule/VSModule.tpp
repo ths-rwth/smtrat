@@ -10,6 +10,9 @@
 
 using namespace vs;
 
+#ifdef VS_STATE_DEBUG_METHODS
+//#define VS_DEBUG_METHODS
+#endif
 //#define VS_DEBUG
 //#define VS_MODULE_VERBOSE_INTEGERS
 
@@ -1924,6 +1927,8 @@ namespace smtrat
             }
         }
     }
+    
+    #ifdef VS_DEBUG_METHODS
 
     template<class Settings>
     void VSModule<Settings>::printAll( const string& _init, ostream& _out ) const
@@ -1977,4 +1982,5 @@ namespace smtrat
         }
         _out << endl;
     }
+    #endif
 }    // end namespace smtrat
