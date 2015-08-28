@@ -135,4 +135,4 @@ namespace smtrat
 }
 
 #include "FouMoModule.tpp"
-#include "FouMoModuleIntantiation.h"
+#include "FouMoModuleInstantiation.h"

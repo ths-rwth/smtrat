@@ -1292,4 +1292,4 @@ namespace smtrat
 }    // namespace smtrat
 
 #include "SATModule.tpp"
-#include "SATModuleIntantiation.h"
+#include "SATModuleInstantiation.h"

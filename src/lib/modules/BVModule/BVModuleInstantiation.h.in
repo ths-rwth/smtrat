@@ -1,5 +1,5 @@
 /**
- * @file ICPModuleIntantiation.h
+ * @file BVModuleInstantiation.h
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  *
  * @version 2015-08-27
@@ -7,5 +7,5 @@
  */
 
 namespace smtrat {
-    extern template class ICPModule<ICPSettings@SMTRAT_ICP_Settings@>;
+    extern template class BVModule<BVSettings@SMTRAT_BV_SETTINGS@>;
 }

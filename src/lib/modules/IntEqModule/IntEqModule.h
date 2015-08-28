@@ -87,4 +87,4 @@ namespace smtrat
     };
 }
 #include "IntEqModule.tpp"
-#include "IntEqModuleIntantiation.h"
+#include "IntEqModuleInstantiation.h"

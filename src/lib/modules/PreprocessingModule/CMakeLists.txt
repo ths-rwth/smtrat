@@ -15,5 +15,5 @@ EndDefineModule(moduleEnabled)
 
 if(${moduleEnabled})
     configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/PreprocessingModule/PreprocessingModule.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/PreprocessingModule/PreprocessingModule.cpp )
-    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/PreprocessingModule/PreprocessingModuleIntantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/PreprocessingModule/PreprocessingModuleIntantiation.h )
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/PreprocessingModule/PreprocessingModuleInstantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/PreprocessingModule/PreprocessingModuleInstantiation.h )
 endif()

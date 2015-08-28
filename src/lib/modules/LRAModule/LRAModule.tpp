@@ -336,7 +336,6 @@ namespace smtrat
     template<class Settings>
     Answer LRAModule<Settings>::checkCore( bool _full )
     {
-        bool test = true;
         #ifdef DEBUG_LRA_MODULE
         cout << "LRAModule::check" << endl;
         printReceivedFormula();

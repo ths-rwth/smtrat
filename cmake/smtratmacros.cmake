@@ -205,3 +205,18 @@ function(collect_files prefix name)
 	set(${prefix}_${name}_headers ${${prefix}_${name}_headers} PARENT_SCOPE)
 	set(${prefix}_${name}_src ${${prefix}_${name}_src} PARENT_SCOPE)
 endfunction(collect_files)
+
+MACRO(ADD_PRECOMPILED_HEADER PrecompiledHeader PrecompiledSource SourcesVar)
+  GET_FILENAME_COMPONENT(PrecompiledBasename ${PrecompiledHeader} NAME_WE)
+  SET(PrecompiledBinary "${CMAKE_CURRENT_BINARY_DIR}/${PrecompiledBasename}.pch")
+  SET(Sources ${${SourcesVar}})
+
+  SET_SOURCE_FILES_PROPERTIES(${PrecompiledSource}
+                              PROPERTIES COMPILE_FLAGS "/Yc\"${PrecompiledHeader}\" /Fp\"${PrecompiledBinary}\""
+                                         OBJECT_OUTPUTS "${PrecompiledBinary}")
+  SET_SOURCE_FILES_PROPERTIES(${Sources}
+                              PROPERTIES COMPILE_FLAGS "/Yu\"${PrecompiledHeader}\" /FI\"${PrecompiledHeader}\" /Fp\"${PrecompiledBinary}\""
+                                         OBJECT_DEPENDS "${PrecompiledBinary}")  
+  # Add precompiled header to SourcesVar
+  LIST(APPEND ${SourcesVar} ${PrecompiledSource})
+ENDMACRO(ADD_PRECOMPILED_HEADER)

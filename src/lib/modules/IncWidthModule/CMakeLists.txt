@@ -12,5 +12,5 @@ EndDefineModule(moduleEnabled)
 
 if(${moduleEnabled})
     configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/IncWidthModule/IncWidthModule.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/IncWidthModule/IncWidthModule.cpp )
-    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/IncWidthModule/IncWidthModuleIntantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/IncWidthModule/IncWidthModuleIntantiation.h )
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/IncWidthModule/IncWidthModuleInstantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/IncWidthModule/IncWidthModuleInstantiation.h )
 endif()

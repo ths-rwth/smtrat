@@ -105,4 +105,4 @@ namespace smtrat
 }
 
 #include "BVModule.tpp"
-#include "BVModuleIntantiation.h"
+#include "BVModuleInstantiation.h"

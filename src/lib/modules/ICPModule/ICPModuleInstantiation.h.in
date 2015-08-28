@@ -1,5 +1,5 @@
 /**
- * @file SATModuleIntantiation.h
+ * @file ICPModuleInstantiation.h
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  *
  * @version 2015-08-27
@@ -7,5 +7,5 @@
  */
 
 namespace smtrat {
-    extern template class SATModule<SATSettings@SMTRAT_SAT_Settings@>;
+    extern template class ICPModule<ICPSettings@SMTRAT_ICP_Settings@>;
 }

@@ -78,6 +78,11 @@ else()
 endif()
 
 
+if(USE_COTIRE)
+    cotire( lib_${PROJECT_NAME} )
+endif()
+
+
 
 
 # Install destination and permissions for the library

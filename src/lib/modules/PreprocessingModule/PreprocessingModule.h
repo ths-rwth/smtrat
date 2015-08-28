@@ -126,4 +126,4 @@ namespace smtrat
 }    // namespace smtrat
 
 #include "PreprocessingModule.tpp"
-#include "PreprocessingModuleIntantiation.h"
+#include "PreprocessingModuleInstantiation.h"

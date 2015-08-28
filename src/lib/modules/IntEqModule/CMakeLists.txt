@@ -12,5 +12,5 @@ EndDefineModule(moduleEnabled)
 
 if(${moduleEnabled})
     configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/IntEqModule/IntEqModule.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/IntEqModule/IntEqModule.cpp )
-    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/IntEqModule/IntEqModuleIntantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/IntEqModule/IntEqModuleIntantiation.h )
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/IntEqModule/IntEqModuleInstantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/IntEqModule/IntEqModuleInstantiation.h )
 endif()

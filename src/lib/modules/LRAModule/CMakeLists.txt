@@ -13,5 +13,5 @@ EndDefineModule(lraEnabled)
 
 if(${lraEnabled})
     configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/LRAModule/LRAModule.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/LRAModule/LRAModule.cpp )
-    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/LRAModule/LRAModuleIntantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/LRAModule/LRAModuleIntantiation.h )
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/LRAModule/LRAModuleInstantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/LRAModule/LRAModuleInstantiation.h )
 endif()

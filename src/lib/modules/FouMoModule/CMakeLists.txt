@@ -12,5 +12,5 @@ EndDefineModule(moduleEnabled)
 
 if(${moduleEnabled})
     configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/FouMoModule/FouMoModule.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/FouMoModule/FouMoModule.cpp )
-    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/FouMoModule/FouMoModuleIntantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/FouMoModule/FouMoModuleIntantiation.h )
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/FouMoModule/FouMoModuleInstantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/FouMoModule/FouMoModuleInstantiation.h )
 endif()

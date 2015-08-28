@@ -1,5 +1,5 @@
 /**
- * @file IncWidthModuleIntantiation.h
+ * @file FouMoModuleInstantiation.h
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  *
  * @version 2015-08-27
@@ -7,5 +7,5 @@
  */
 
 namespace smtrat {
-    extern template class IncWidthModule<IncWidthSettings@SMTRAT_IncWidth_Settings@>;
+    extern template class FouMoModule<FouMoSettings@SMTRAT_FouMo_SETTINGS@>;
 }

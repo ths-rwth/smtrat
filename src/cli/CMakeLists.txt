@@ -49,6 +49,10 @@ target_link_libraries( smtrat
                         ${libraries} # libraries definied in top-level CMakeLists.txt
 )
 
+#if(USE_COTIRE)
+#    cotire( smtrat )
+#endif()
+
 set_target_properties( smtrat PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
 
 

@@ -133,4 +133,4 @@ private:
 } // namespace smtrat
 #include "GBModule.tpp"
 #include "InequalitiesTable.tpp"
-#include "GBModuleIntantiation.h"
+#include "GBModuleInstantiation.h"

@@ -1,5 +1,5 @@
 /**
- * @file GBModuleIntantiation.h
+ * @file VSModuleInstantiation.h
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  *
  * @version 2015-08-27
@@ -7,5 +7,5 @@
  */
 
 namespace smtrat {
-    extern template class GBModule<GBSettings@SMTRAT_GB_Settings@>;
+    extern template class VSModule<VSSettings@SMTRAT_VS_Settings@>;
 }

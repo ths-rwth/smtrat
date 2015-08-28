@@ -13,5 +13,5 @@ EndDefineModule(moduleEnabled)
 
 if(${moduleEnabled})
     configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/BVModule/BVModule.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/BVModule/BVModule.cpp )
-    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/BVModule/BVModuleIntantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/BVModule/BVModuleIntantiation.h )
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/BVModule/BVModuleInstantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/BVModule/BVModuleInstantiation.h )
 endif()

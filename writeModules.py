@@ -57,20 +57,20 @@ namespace smtrat\n\
 }\n'
   return result
 
-def expliciteTemplateDeclarationContent(m, p):
-  result = license(m + '.h') + '\n\n\
+def explicitTemplateDeclarationContent(m, p):
+  result = license(m + 'Instantiation.h') + '\n\n\
 namespace smtrat\n\
 {\n\
-    extern template class '+p+'Module<'+p+'Settings@SMTRAT_'+p+'_Settings@>;\n\
+    extern template class '+p+'Module<'+p+'Settings@SMTRAT_'+p+'_SETTINGS@>;\n\
 }'
   return result
 
-def expliciteTemplateDefinitionContent(m, p):
-  result = license(m + '.h') + '\n\n\
+def explicitTemplateDefinitionContent(m, p):
+  result = license(m + '.cpp') + '\n\n\
 #include "'+p+'Module.h"\n\n\
 namespace smtrat\n\
 {\n\
-    template class '+p+'Module<'+p+'Settings@SMTRAT_'+p+'_Settings@>;\n\
+    template class '+p+'Module<'+p+'Settings@SMTRAT_'+p+'_SETTINGS@>;\n\
 }'
   return result
 
@@ -131,6 +131,7 @@ EndDefineModule(moduleEnabled)\n\
 \n\
 if(${moduleEnabled})\n\
     configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/'+m+'/'+m+'.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/'+m+'/'+m+'.cpp )\n\
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/'+m+'/'+m+'Instantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/'+m+'/'+m+'Instantiation.h )\n\
     # do something\n\
 endif()'
   return result
@@ -364,19 +365,21 @@ if(withSettings):
   print('Writing ' + moduleDirectory + '/' + moduleNamePref + 'Settings.h ...')
   settingsFile.write(settingsContent(moduleName,moduleNamePref))
   settingsFile.close()
-  expTempDecl = open(moduleDirectory + '/' + moduleName + 'Intantiation.h', 'w')
-  print('Writing ' + moduleDirectory + '/' + moduleName + 'Intantiation.h ...')
-  expTempDecl.write(expliciteTemplateDeclarationContent(moduleName,moduleNamePref))
+  expTempDecl = open(moduleDirectory + '/' + moduleName + 'Instantiation.h.in', 'w')
+  print('Writing ' + moduleDirectory + '/' + moduleName + 'Instantiation.h.in ...')
+  expTempDecl.write(explicitTemplateDeclarationContent(moduleName,moduleNamePref))
   expTempDecl.close()
-  expTempDef = open(moduleDirectory + '/' + moduleName + '.cpp', 'w')
-  print('Writing ' + moduleDirectory + '/' + moduleName + '.cpp ...')
-  expTempDef.write(expliciteTemplateDefinitionContent(moduleName,moduleNamePref))
+  expTempDef = open(moduleDirectory + '/' + moduleName + '.cpp.in', 'w')
+  print('Writing ' + moduleDirectory + '/' + moduleName + '.cpp.in ...')
+  expTempDef.write(explicitTemplateDefinitionContent(moduleName,moduleNamePref))
   expTempDef.close()
   
 statisticsFile = open(moduleDirectory + '/' + moduleNamePref + 'Statistics.h', 'w')
 print('Writing ' + moduleDirectory + '/' + moduleNamePref + 'Statistics.h ...')
 statisticsFile.write(statisticsContent(moduleName,moduleNamePref))
 statisticsFile.close()
+
+print('\nPlease remove the File CMakeCache.txt in your build directory and set the compiler flag SMTRAT_ENABLE_' + moduleNamePref + 'Module to ON (for instance by the use of ccmake ..)')
 
 sys.exit(1)
 

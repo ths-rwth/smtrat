@@ -13,5 +13,5 @@ EndDefineModule(moduleEnabled)
 
 if(${moduleEnabled})
     configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/ICPModule/ICPModule.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/ICPModule/ICPModule.cpp )
-    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/ICPModule/ICPModuleIntantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/ICPModule/ICPModuleIntantiation.h )
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/ICPModule/ICPModuleInstantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/ICPModule/ICPModuleInstantiation.h )
 endif()

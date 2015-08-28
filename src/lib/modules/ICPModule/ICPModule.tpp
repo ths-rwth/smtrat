@@ -303,7 +303,7 @@ namespace smtrat
     template<class Settings>
     Answer ICPModule<Settings>::checkCore( bool _full )
     {
-        bool test = true;
+        
         #ifdef ICP_MODULE_DEBUG_0
         std::cout << "##############################################################" << std::endl;
         std::cout << "Start consistency check with the ICPModule on the constraints " << std::endl;
