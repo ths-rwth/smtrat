@@ -9,5 +9,5 @@
 #include "IncWidthModule.h"
 
 namespace smtrat {
-    template class IncWidthModule<IncWidthSettings@SMTRAT_IncWidth_Settings@>;
+    template class IncWidthModule<IncWidthSettings@SMTRAT_IncWidth_SETTINGS@>;
 }

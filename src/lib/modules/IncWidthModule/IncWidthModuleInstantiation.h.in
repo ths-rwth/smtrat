@@ -7,5 +7,5 @@
  */
 
 namespace smtrat {
-    extern template class IncWidthModule<IncWidthSettings@SMTRAT_IncWidth_Settings@>;
+    extern template class IncWidthModule<IncWidthSettings@SMTRAT_IncWidth_SETTINGS@>;
 }

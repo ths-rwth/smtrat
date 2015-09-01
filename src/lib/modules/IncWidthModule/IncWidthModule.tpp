@@ -259,9 +259,9 @@ namespace smtrat
                 {
                     if( (*backend)->solverState() == False )
                     {
-                        const std::vector<FormulasT>& backendsInfsubsets = (*backend)->infeasibleSubsets();
+                        const std::vector<FormulaSetT>& backendsInfsubsets = (*backend)->infeasibleSubsets();
                         assert( !backendsInfsubsets.empty() );
-                        for( std::vector<FormulasT>::const_iterator infSubSet = backendsInfsubsets.begin(); infSubSet != backendsInfsubsets.end(); ++infSubSet )
+                        for( std::vector<FormulaSetT>::const_iterator infSubSet = backendsInfsubsets.begin(); infSubSet != backendsInfsubsets.end(); ++infSubSet )
                         {
                             auto addedBound = addedBounds.begin();
                             for( ; addedBound != addedBounds.end(); ++addedBound )
@@ -304,11 +304,11 @@ namespace smtrat
         if( ans == False )
         {
             mInfeasibleSubsets.clear();
-            FormulasT infeasibleSubset;
+            FormulaSetT infeasibleSubset;
             // TODO: compute a better infeasible subset
             for( auto subformula = rReceivedFormula().begin(); subformula != rReceivedFormula().end(); ++subformula )
             {
-                infeasibleSubset.push_back( subformula->formula() );
+                infeasibleSubset.insert( subformula->formula() );
             }
             mInfeasibleSubsets.push_back( infeasibleSubset );
         }

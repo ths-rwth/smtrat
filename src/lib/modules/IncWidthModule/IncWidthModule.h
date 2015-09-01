@@ -9,6 +9,7 @@
 #pragma once
 
 #include "../../solver/Module.h"
+#include "../../datastructures/VariableBounds.h"
 #include "IncWidthStatistics.h"
 #include "IncWidthSettings.h"
 namespace smtrat
