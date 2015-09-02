@@ -162,6 +162,8 @@ namespace smtrat
     template<class Settings>
     bool SATModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
+//        std::cout << __func__ << std::endl;
+//        printDecisions();
         if( _subformula->formula().isFalse() )
         {
             return false;
@@ -170,6 +172,7 @@ namespace smtrat
         {
             //TODO Matthias: better solution?
             cancelUntil( assumptions.size() );
+//            adaptPassedFormula();
 
             if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
             {
@@ -217,11 +220,14 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
+//        std::cout << __func__ << std::endl;
+//        printDecisions();
         if( _subformula->formula().isFalse() || _subformula->formula().isTrue() )
         {
             return;
         }
         cancelUntil( assumptions.size() );  // can we do better than this?
+//        adaptPassedFormula();
         learnts.clear();
         if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
         {
@@ -238,6 +244,21 @@ namespace smtrat
             assumptions.pop();
             mFormulaAssumptionMap.erase( iter );
             cancelUntil(pos, true);
+//            adaptPassedFormula();
+//            ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( _subformula->formula() );
+//            assert( constraintLiteralPair != mConstraintLiteralMap.end() );
+//            int abstractionVar = var(constraintLiteralPair->second.front());
+//            auto& abstrPair = mBooleanConstraintMap[abstractionVar];
+//            assert( abstrPair.first != nullptr && abstrPair.second != nullptr );
+//            Abstraction& abstr = sign(constraintLiteralPair->second.front()) ? *abstrPair.second : *abstrPair.first;
+//            if( abstr.origins != nullptr )
+//            {
+//                assert( !abstr.origins->empty() );
+//                if( abstr.origins->size() == 1 )
+//                {
+//                    delete 
+//                }
+//            }
         }
         else if( _subformula->formula().propertyHolds( carl::PROP_IS_A_CLAUSE ) )
         {
@@ -291,6 +312,8 @@ namespace smtrat
     template<class Settings>
     Answer SATModule<Settings>::checkCore( bool )
     {
+//        std::cout << __func__ << std::endl;
+//        printDecisions();
         #ifdef SMTRAT_DEVOPTION_Statistics
         mpStatistics->rNrTotalVariablesBefore() = (size_t) nVars();
         mpStatistics->rNrClauses() = (size_t) nClauses();
@@ -335,6 +358,8 @@ namespace smtrat
             {
                 result = search();
             }
+            
+//            printDecisions();
             if( !Settings::stop_search_after_first_unknown )
             {
                 unknown_excludes.clear();
@@ -702,11 +727,6 @@ namespace smtrat
         }
         else
         {
-            if( !(content.getType() == carl::FormulaType::CONSTRAINT || content.getType() == carl::FormulaType::UEQ || content.getType() == carl::FormulaType::BITVECTOR) )
-            {
-                std::cout << content << std::endl;
-                exit(1679);
-            }
             assert( content.getType() == carl::FormulaType::CONSTRAINT || content.getType() == carl::FormulaType::UEQ || content.getType() == carl::FormulaType::BITVECTOR );
             double act = fabs( _formula.activity() );
             bool preferredToTSolver = false; //(_formula.activity()<0)
@@ -732,7 +752,9 @@ namespace smtrat
                 Abstraction& abstr = sign(constraintLiteralPair->second.front()) ? *abstrPair.second : *abstrPair.first;
                 if( !_origin.isTrue() || !negated )
                 {
-                    assert( abstr.origins == nullptr || std::find( abstr.origins->begin(), abstr.origins->end(), _origin ) == abstr.origins->end() );
+//                    if( abstr.origins != nullptr )
+//                        std::cout << *abstr.origins << std::endl;
+//                    assert( abstr.origins == nullptr || std::find( abstr.origins->begin(), abstr.origins->end(), _origin ) == abstr.origins->end() );
                     if( !abstr.consistencyRelevant )
                     {
                         addConstraintToInform( abstr.reabstraction );
