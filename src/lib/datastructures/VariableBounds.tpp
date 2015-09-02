@@ -629,6 +629,48 @@ namespace smtrat
             }
             return originsOfBounds;
         }
+		
+        template<typename T>
+        std::set<T> VariableBounds<T>::getOriginSetOfBounds() const
+        {
+            std::set<T> originsOfBounds;
+            for( auto varVarPair = mpVariableMap->begin(); varVarPair != mpVariableMap->end(); ++varVarPair )
+            {
+                const Variable<T>& var = *varVarPair->second;
+                if( !var.infimum().isInfinite() ) originsOfBounds.insert( *var.infimum().origins().begin() );
+                if( !var.supremum().isInfinite() ) originsOfBounds.insert( *var.supremum().origins().begin() );
+            }
+            return originsOfBounds;
+        }
+
+        template<typename T>
+        std::set<T> VariableBounds<T>::getOriginSetOfBounds( const carl::Variable& _var ) const
+        {
+            std::set<T> originsOfBounds;
+            auto varVarPair = mpVariableMap->find( _var );
+            if( varVarPair != mpVariableMap->end() )
+            {
+                if( !varVarPair->second->infimum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->infimum().origins().begin() );
+                if( !varVarPair->second->supremum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->supremum().origins().begin() );
+            }
+            return originsOfBounds;
+        }
+
+        template<typename T>
+        std::set<T> VariableBounds<T>::getOriginSetOfBounds( const carl::Variables& _variables ) const
+        {
+            std::set<T> originsOfBounds;
+            for( auto var = _variables.begin(); var != _variables.end(); ++var )
+            {
+                auto varVarPair = mpVariableMap->find( *var );
+                if( varVarPair != mpVariableMap->end() )
+                {
+                    if( !varVarPair->second->infimum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->infimum().origins().begin() );
+                    if( !varVarPair->second->supremum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->supremum().origins().begin() );
+                }
+            }
+            return originsOfBounds;
+        }
         
         template<typename T>
         std::vector<std::pair<std::vector<ConstraintT>, ConstraintT>> VariableBounds<T>::getBoundDeductions() const

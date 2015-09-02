@@ -235,7 +235,7 @@ namespace smtrat
 				mInfeasibleSubsets.back().insert(boundConstraints.begin(), boundConstraints.end());
 			}
             #ifdef SMTRAT_DEVOPTION_Validation
-			std::vector<FormulasT> ours;
+			std::vector<FormulaSetT> ours;
 			cad::MISGeneration<cad::MISHeuristic::GREEDY> tmp(*this);
 			tmp(ours);
 			//std::cout << "MIS: " << mInfeasibleSubsets << std::endl;

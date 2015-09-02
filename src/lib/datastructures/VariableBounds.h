@@ -450,18 +450,21 @@ namespace smtrat
                  * @return The origin constraints of the supremum and infimum of the given variable.
                  */
                 std::vector<T> getOriginsOfBounds( const carl::Variable& _var ) const;
+                std::set<T> getOriginSetOfBounds( const carl::Variable& _var ) const;
                 
                 /**
                  * @param _variables The variables to get origins of the bounds for.
                  * @return The origin constraints of the supremum and infimum of the given variables.
                  */
                 std::vector<T> getOriginsOfBounds( const carl::Variables& _variables ) const;
+                std::set<T> getOriginSetOfBounds( const carl::Variables& _variables ) const;
                 
                 /**
                  * Collect the origins to the supremums and infimums of all variables.
                  * @return A set of origins corresponding to the supremums and infimums of all variables.
                  */
                 std::vector<T> getOriginsOfBounds() const;
+                std::set<T> getOriginSetOfBounds() const;
                 
                 /**
                  * @return The deductions which this variable bounds manager has detected.
