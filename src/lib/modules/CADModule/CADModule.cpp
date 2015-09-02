@@ -151,6 +151,7 @@ namespace smtrat
 	 */
 	Answer CADModule::checkCore( bool _full )
 	{
+		SMTRAT_LOG_FUNC("smtrat.cad", _full);
             #ifdef SMTRAT_DEVOPTION_Statistics
             mStats->addCall();
             #endif
@@ -285,6 +286,7 @@ namespace smtrat
 
 	void CADModule::removeCore(ModuleInput::const_iterator _subformula)
 	{
+		SMTRAT_LOG_FUNC("smtrat.cad", _subformula->formula());
 		switch (_subformula->formula().getType()) {
                     case carl::FormulaType::TRUE:
 			return;
@@ -357,6 +359,7 @@ namespace smtrat
 	 */
 	void CADModule::updateModel() const
 	{
+		SMTRAT_LOG_FUNC("smtrat.cad", "");
 		clearModel();
 		if (this->solverState() == True) {
 			// bound-independent part of the model
