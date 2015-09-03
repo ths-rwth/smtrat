@@ -1046,7 +1046,7 @@ namespace smtrat
         carl::Variable variable = _selection->derivationVar();
         assert( mVariables.find( variable ) != mVariables.end() );
         icp::IcpVariable& icpVar = *mVariables.find( variable )->second;
-        const DoubleInterval icpVarIntervalBefore = icpVar.interval();
+        DoubleInterval icpVarIntervalBefore = icpVar.interval();
         mSplitOccurred = _selection->contract( mIntervals, resultA, resultB );
         if( mSplitOccurred )
         {
@@ -1108,15 +1108,12 @@ namespace smtrat
     template<class Settings>
     void ICPModule<Settings>::setContraction( icp::ContractionCandidate* _selection, icp::IcpVariable& _icpVar, const DoubleInterval& _contractedInterval )
     {
-        _icpVar.setInterval( _contractedInterval );
-        #ifdef ICP_MODULE_DEBUG_1
-        std::cout << "      New interval: " << variable << " = " << mIntervals.at(variable) << std::endl;
-        #endif
         updateRelativeContraction( _icpVar.interval(), _contractedInterval );
         updateAbsoluteContraction( _icpVar.interval(), _contractedInterval );
         #ifdef ICP_MODULE_DEBUG_0
         printContraction( *_selection, _icpVar.interval(), _contractedInterval );
         #endif
+        _icpVar.setInterval( _contractedInterval );
         if (mRelativeContraction > 0 || mAbsoluteContraction > 0)
         {
             mHistoryActual->addInterval(_selection->lhs(), mIntervals.at(_selection->lhs()));
