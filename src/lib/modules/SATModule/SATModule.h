@@ -609,6 +609,8 @@ namespace smtrat
              */
             void arrangeForWatches( Minisat::Clause& _clause );
             
+            void removeLiteralOrigin( Minisat::Lit _litToRemove, const FormulaT& _origin );
+            
             /**
              * @return FALSE means solver is in a conflicting state
              */
