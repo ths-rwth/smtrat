@@ -310,7 +310,7 @@ namespace smtrat
              * 
              * @return 
              */
-            FormulasT createPremiseDeductions();
+            FormulaSetT createPremiseDeductions();
             
             std::vector<FormulaT> createPremise();
             
@@ -504,3 +504,4 @@ namespace smtrat
 }    // namespace smtrat
     
 #include "ICPModule.tpp"
+#include "ICPModuleInstantiation.h"

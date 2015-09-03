@@ -122,8 +122,8 @@ namespace smtrat
 			return true;
                     case carl::FormulaType::FALSE: {
 			this->hasFalse = true;
-			FormulasT infSubSet;
-			infSubSet.push_back(_subformula->formula());
+			FormulaSetT infSubSet;
+			infSubSet.insert(_subformula->formula());
 			mInfeasibleSubsets.push_back(infSubSet);
 			return false;
                     }
@@ -151,6 +151,7 @@ namespace smtrat
 	 */
 	Answer CADModule::checkCore( bool _full )
 	{
+		SMTRAT_LOG_FUNC("smtrat.cad", _full);
             #ifdef SMTRAT_DEVOPTION_Statistics
             mStats->addCall();
             #endif
@@ -223,7 +224,7 @@ namespace smtrat
 			for (auto j: mConstraints) SMTRAT_LOG_DEBUG("smtrat.cad", "\t" << j);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Bounds: " << mVariableBounds);
 				
-			std::vector<FormulasT> infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics(g);
+			std::vector<FormulaSetT> infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics(g);
 
 			FormulasT boundConstraints = mVariableBounds.getOriginsOfBounds();
 			for (const auto& i: infeasibleSubsets) {
@@ -232,10 +233,10 @@ namespace smtrat
 				for (const auto& j: i) SMTRAT_LOG_DEBUG("smtrat.cad", "\t" << j);
                 #endif
 				mInfeasibleSubsets.push_back(i);
-				mInfeasibleSubsets.back().insert(mInfeasibleSubsets.back().end(), boundConstraints.begin(), boundConstraints.end());
+				mInfeasibleSubsets.back().insert(boundConstraints.begin(), boundConstraints.end());
 			}
             #ifdef SMTRAT_DEVOPTION_Validation
-			std::vector<FormulasT> ours;
+			std::vector<FormulaSetT> ours;
 			cad::MISGeneration<cad::MISHeuristic::GREEDY> tmp(*this);
 			tmp(ours);
 			//std::cout << "MIS: " << mInfeasibleSubsets << std::endl;
@@ -285,6 +286,7 @@ namespace smtrat
 
 	void CADModule::removeCore(ModuleInput::const_iterator _subformula)
 	{
+		SMTRAT_LOG_FUNC("smtrat.cad", _subformula->formula());
 		switch (_subformula->formula().getType()) {
                     case carl::FormulaType::TRUE:
 			return;
@@ -357,6 +359,7 @@ namespace smtrat
 	 */
 	void CADModule::updateModel() const
 	{
+		SMTRAT_LOG_FUNC("smtrat.cad", "");
 		clearModel();
 		if (this->solverState() == True) {
 			// bound-independent part of the model
@@ -476,11 +479,11 @@ namespace smtrat
 	 * @param conflictGraph the conflict graph is destroyed during the computation
 	 * @return an infeasible subset of the current set of constraints
 	 */
-	inline std::vector<FormulasT> CADModule::extractMinimalInfeasibleSubsets_GreedyHeuristics( ConflictGraph<smtrat::Rational>& conflictGraph )
+	inline std::vector<FormulaSetT> CADModule::extractMinimalInfeasibleSubsets_GreedyHeuristics( ConflictGraph<smtrat::Rational>& conflictGraph )
 	{
 		// initialize MIS with the last constraint
-		std::vector<FormulasT> mis = std::vector<FormulasT>(1, FormulasT());
-		mis.front().push_back(getConstraintAt((unsigned)(mConstraints.size() - 1)));	// the last constraint is assumed to be always in the MIS
+		std::vector<FormulaSetT> mis = std::vector<FormulaSetT>(1, FormulaSetT());
+		mis.front().insert(getConstraintAt((unsigned)(mConstraints.size() - 1)));	// the last constraint is assumed to be always in the MIS
 		if (mConstraints.size() > 1) {
 			// construct set cover by greedy heuristic
 			std::list<ConflictGraph<smtrat::Rational>::Vertex> setCover;
@@ -496,7 +499,7 @@ namespace smtrat
 			}
 			// collect constraints according to the vertex cover
 			for (auto v: setCover)
-				mis.front().push_back(getConstraintAt((unsigned)(v)));
+				mis.front().insert(getConstraintAt((unsigned)(v)));
 		}
 		return mis;
 	}

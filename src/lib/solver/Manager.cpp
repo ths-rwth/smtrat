@@ -11,6 +11,7 @@
 
 #include "Manager.h"
 #include "StrategyGraph.h"
+#include "ModuleFactory.h"
 #include "../modules/Modules.h"
 #include <functional>
 
@@ -90,6 +91,76 @@ namespace smtrat
         delete mpPassedFormula;
     }
     
+    bool Manager::inform( const FormulaT& _constraint )
+    {
+        return mpPrimaryBackend->inform( _constraint );
+    }
+    
+    bool Manager::add( const FormulaT& _subformula )
+    {
+        auto res = mpPassedFormula->add( _subformula );
+        if( res.second )
+        {
+            auto btp = mBacktrackPoints.end();
+            while( btp != mBacktrackPoints.begin() )
+            {
+                --btp;
+                if( *btp == mpPassedFormula->end() )
+                    *btp = res.first;
+                else
+                    break;
+            }
+            return mpPrimaryBackend->add( res.first );
+        }
+        return true;
+    }
+    
+    Answer Manager::check( bool _full )
+    {
+        *mPrimaryBackendFoundAnswer.back() = false;
+        mpPassedFormula->updateProperties();
+        return mpPrimaryBackend->check( _full );
+    }
+    
+    const std::vector<FormulaSetT>& Manager::infeasibleSubsets() const
+    {
+        return mpPrimaryBackend->infeasibleSubsets();
+    }
+    
+    std::list<std::vector<carl::Variable>> Manager::getModelEqualities() const
+    {
+        return mpPrimaryBackend->getModelEqualities();
+    }
+    
+    const Model& Manager::model() const
+    {
+        mpPrimaryBackend->updateModel();
+        return mpPrimaryBackend->model();
+    }
+    
+    std::vector<FormulaT> Manager::lemmas()
+    {
+        std::vector<FormulaT> result;
+        mpPrimaryBackend->updateDeductions();
+        for( const auto& ded : mpPrimaryBackend->deductions() )
+        {
+            result.push_back( ded.first );
+        }
+        return result;
+    }
+    
+    void Manager::printAssignment( std::ostream& _out ) const
+    {
+        mpPrimaryBackend->printModel( _out );
+    }
+    
+    ModuleInput::iterator Manager::remove( ModuleInput::iterator _subformula )
+    {
+        assert( _subformula != mpPassedFormula->end() );
+        mpPrimaryBackend->remove( _subformula );
+        return mpPassedFormula->erase( _subformula );
+    }
+    
     void Manager::reset()
     {
         while( pop() );
@@ -155,7 +226,7 @@ namespace smtrat
         _out << "(";
         if( !mpPrimaryBackend->infeasibleSubsets().empty() )
         {
-            const FormulasT& infSubSet = *mpPrimaryBackend->infeasibleSubsets().begin();
+            const FormulaSetT& infSubSet = *mpPrimaryBackend->infeasibleSubsets().begin();
             if( infSubSet.size() == 1 )
             {
                 _out << *infSubSet.begin();

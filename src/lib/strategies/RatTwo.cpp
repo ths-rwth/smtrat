@@ -17,17 +17,17 @@ namespace smtrat
         #endif
         #ifdef SMTRAT_ENABLE_PreprocessingModule
         position = addBackendIntoStrategyGraph( position, MT_PreprocessingModule );
-	#endif
-	#ifdef SMTRAT_ENABLE_SATModule
+    	#endif
+    	#ifdef SMTRAT_ENABLE_SATModule
         position = addBackendIntoStrategyGraph( position, MT_SATModule );
-	#endif
+    	#endif
         #ifdef SMTRAT_ENABLE_IntEqModule
 //        position = addBackendIntoStrategyGraph( position, MT_IntEqModule );
         #endif
         #ifdef SMTRAT_ENABLE_FouMoModule
 //        position = addBackendIntoStrategyGraph( position, MT_FouMoModule );
         #endif
-        #ifdef SMTRAT_ENABLE_LRAModule
+        #ifdef SMTRAT_ENABLE_ICPModule
         position = addBackendIntoStrategyGraph( position, MT_ICPModule );
         #endif
         #ifdef SMTRAT_ENABLE_GroebnerModule

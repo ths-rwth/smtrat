@@ -20,6 +20,7 @@ include_directories( ${carl_INCLUDE_DIR} )
 # Core library
 # # # # # # # # # # #
 set(lib_core_src
+    Common.cpp
 )
 
 set(lib_core_headers
@@ -74,6 +75,11 @@ if(STATICLIB_SWITCH)
 else()
         set(SMTRAT_TARGETS lib_smtrat CACHE STRING INTERNAL FORCE)
 	target_link_libraries( lib_${PROJECT_NAME} lib_carl ${libraries} ) # libraries definied in top-level CMakeLists.txt
+endif()
+
+
+if(USE_COTIRE)
+    cotire( lib_${PROJECT_NAME} )
 endif()
 
 

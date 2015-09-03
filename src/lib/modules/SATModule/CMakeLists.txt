@@ -12,5 +12,6 @@ ModuleDefaultEnabled()
 EndDefineModule(satEnabled)
 
 if(${satEnabled})
-	# do something
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/SATModule/SATModule.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/SATModule/SATModule.cpp )
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/SATModule/SATModuleInstantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/SATModule/SATModuleInstantiation.h )
 endif()

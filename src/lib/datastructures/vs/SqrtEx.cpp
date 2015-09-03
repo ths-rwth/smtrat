@@ -34,13 +34,14 @@ namespace vs
         mRadicand( mFactor.isZero() ? mFactor : std::move( _radicand ) )
     {
         assert( !mDenominator.isZero() );
+//        if( !( !mRadicand.isConstant() || mRadicand.isZero() || smtrat::ZERO_RATIONAL <= mRadicand.trailingTerm().coeff() ) )
+//            exit(1569);
         assert( !mRadicand.isConstant() || mRadicand.isZero() || smtrat::ZERO_RATIONAL <= mRadicand.trailingTerm().coeff() );
         normalize();
     }
 
     void SqrtEx::normalize()
     {
-//        cout << endl << __func__ << ": " << *this << endl;
         smtrat::Poly gcdA;
         if( mFactor.isZero() )
         {
@@ -291,7 +292,6 @@ namespace vs
         smtrat::Poly denomEvaluated = denominator().substitute( _evalMap );
         assert( denomEvaluated.isConstant() );
         smtrat::Rational denomValue = denomEvaluated.constantPart();
-//        if( carl::isZero( denomValue ) ) exit(1236);
         assert( !carl::isZero( denomValue ) );
         // Check whether the resulting assignment is integer.
         bool rounded = true;
@@ -341,6 +341,24 @@ namespace vs
         }
         _result = (constantPartValue + factorValue * sqrtExValue) / denomValue;
         return rounded;
+    }
+    
+    SqrtEx SqrtEx::substitute( const smtrat::EvalRationalMap& _evalMap ) const
+    {
+        smtrat::Poly radicandEvaluated = radicand().substitute( _evalMap );
+        smtrat::Poly factorEvaluated = factor().substitute( _evalMap );
+        smtrat::Poly constantPartEvaluated = constantPart().substitute( _evalMap );
+        smtrat::Poly denomEvaluated = denominator().substitute( _evalMap );
+        assert( !denomEvaluated.isConstant() || !carl::isZero( denomEvaluated.constantPart() ) );
+        smtrat::Rational sqrtExValue;
+        if( radicandEvaluated.isConstant() && carl::sqrtp( radicandEvaluated.constantPart(), sqrtExValue ) )
+        {
+            return SqrtEx(std::move(smtrat::Poly(constantPartEvaluated + factorEvaluated * sqrtExValue)), 
+                    std::move(smtrat::Poly(smtrat::ZERO_POLYNOMIAL)), 
+                    std::move(denomEvaluated), 
+                    std::move(smtrat::Poly(smtrat::ZERO_POLYNOMIAL)));
+        }
+        return SqrtEx( std::move(constantPartEvaluated), std::move(factorEvaluated), std::move(denomEvaluated), std::move(radicandEvaluated) );
     }
 
     SqrtEx SqrtEx::subBySqrtEx( const smtrat::Poly& _substituteIn, const carl::Variable& _varToSubstitute, const SqrtEx& _substituteBy )

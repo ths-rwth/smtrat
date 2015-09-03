@@ -11,5 +11,6 @@ ModuleVersion(0 0 1)
 EndDefineModule(moduleEnabled)
 
 if(${moduleEnabled})
-    # do something
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/IntEqModule/IntEqModule.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/IntEqModule/IntEqModule.cpp )
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/IntEqModule/IntEqModuleInstantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/IntEqModule/IntEqModuleInstantiation.h )
 endif()

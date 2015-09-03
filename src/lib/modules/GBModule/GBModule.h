@@ -93,6 +93,7 @@ protected:
     bool saveState( );
 
     FormulasT generateReasons( const carl::BitVector& reasons );
+    FormulaSetT generateReasonSet( const carl::BitVector& reasons );
     void passGB( );
     
     void knownConstraintDeduction( const std::list<std::pair<carl::BitVector, carl::BitVector> >& deductions );
@@ -114,7 +115,7 @@ protected:
     void removeReceivedFormulaFromNewInequalities( ModuleInput::const_iterator _formula );
     void removeSubformulaFromPassedFormula( ModuleInput::iterator _formula );
 
-	GBPolynomial rewriteVariable(const GBPolynomial&, const carl::Variable&, const TermT&, const BitVector&);
+	GBPolynomial rewriteVariable(const GBPolynomial&, const carl::Variable&, const TermT&, const BitVector&){/*TODO*/return GBPolynomial();}
     bool validityCheck( );
 public:
     void printStateHistory( );
@@ -132,3 +133,4 @@ private:
 } // namespace smtrat
 #include "GBModule.tpp"
 #include "InequalitiesTable.tpp"
+#include "GBModuleInstantiation.h"

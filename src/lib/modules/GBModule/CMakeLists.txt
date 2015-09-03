@@ -14,5 +14,6 @@ ModuleDefaultEnabled()
 EndDefineModule(gbEnabled)
 
 if(${gbEnabled})
-	# do something
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/GBModule/GBModule.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/GBModule/GBModule.cpp )
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/GBModule/GBModuleInstantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/GBModule/GBModuleInstantiation.h )
 endif()

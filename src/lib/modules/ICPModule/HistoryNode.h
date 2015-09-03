@@ -133,14 +133,14 @@ namespace smtrat
                     return mAppliedContractions;
                 }
                 
-                FormulasT appliedConstraints()
+                FormulaSetT appliedConstraints()
                 {
-                    FormulasT appliedConstraints;
+                    FormulaSetT appliedConstraints;
                     for( std::set<const ContractionCandidate*>::iterator candidateIt = mAppliedContractions.begin(); candidateIt != mAppliedContractions.end(); ++candidateIt )
                     {
                         for( auto originIt = (*candidateIt)->origin().begin(); originIt != (*candidateIt)->origin().end(); ++originIt )
                         {
-                            appliedConstraints.push_back(*originIt);
+                            appliedConstraints.insert(*originIt);
                         }
                     }
                     return appliedConstraints;

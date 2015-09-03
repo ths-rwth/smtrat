@@ -68,7 +68,7 @@ namespace smtrat
         {
         }
         
-        void addConflict( const std::vector<FormulasT>& _infSubSets )
+        void addConflict( const std::vector<FormulaSetT>& _infSubSets )
         {
             for( auto iss = _infSubSets.begin(); iss != _infSubSets.end(); ++iss )
             {

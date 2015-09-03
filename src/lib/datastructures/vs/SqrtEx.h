@@ -111,6 +111,14 @@ namespace vs
                 return mConstantPart.isConstant() && mDenominator.isConstant() && mFactor.isConstant() && mRadicand.isConstant();
             }
 
+            /**
+             * @return true, if there is no variable in this square root expression;
+             *          false, otherwise.
+             */
+            bool isRational() const
+            {
+                return mConstantPart.isConstant() && mDenominator.isConstant() && mRadicand == smtrat::ZERO_POLYNOMIAL;
+            }
             
         private:
             
@@ -197,6 +205,8 @@ namespace vs
             std::string toString( bool _infix = false, bool _friendlyNames = true ) const;
             
             bool evaluate( smtrat::Rational& _result, const smtrat::EvalRationalMap& _evalMap, int _rounding = 0 ) const;
+            
+            SqrtEx substitute( const smtrat::EvalRationalMap& _evalMap ) const;
             
             /**
              * Substitutes a variable in an expression by a square root expression, which results in a square root expression.

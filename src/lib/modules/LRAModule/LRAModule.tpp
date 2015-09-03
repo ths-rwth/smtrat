@@ -9,6 +9,9 @@
 
 #include "LRAModule.h"
 
+#ifdef DEBUG_METHODS_TABLEAU
+//#define DEBUG_METHODS_LRA_MODULE
+#endif
 //#define DEBUG_LRA_MODULE
 
 using namespace smtrat::lra;
@@ -74,8 +77,8 @@ namespace smtrat
         {
             case carl::FormulaType::FALSE:
             {
-                FormulasT infSubSet;
-                infSubSet.push_back( _subformula->formula() );
+                FormulaSetT infSubSet;
+                infSubSet.insert( _subformula->formula() );
                 mInfeasibleSubsets.push_back( infSubSet );
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 mpStatistics->addConflict( mInfeasibleSubsets );
@@ -255,7 +258,7 @@ namespace smtrat
                                     }
                                     if( var.isConflicting() )
                                     {
-                                        FormulasT infsubset;
+                                        FormulaSetT infsubset;
                                         collectOrigins( *var.supremum().origins().begin(), infsubset );
                                         collectOrigins( var.infimum().pOrigins()->back(), infsubset );
                                         mInfeasibleSubsets.push_back( std::move(infsubset) );
@@ -277,7 +280,7 @@ namespace smtrat
                                         }
                                         if( var.isConflicting() )
                                         {
-                                            FormulasT infsubset;
+                                            FormulaSetT infsubset;
                                             collectOrigins( *var.supremum().origins().begin(), infsubset );
                                             collectOrigins( var.infimum().pOrigins()->back(), infsubset );
                                             mInfeasibleSubsets.push_back( std::move(infsubset) );
@@ -589,7 +592,7 @@ namespace smtrat
                 if( Settings::one_conflict_reason )
                 {
                     std::vector< const LRABound* > conflict = mTableau.getConflict( pivotingElement.first );
-                    FormulasT infSubSet;
+                    FormulaSetT infSubSet;
                     for( auto bound = conflict.begin(); bound != conflict.end(); ++bound )
                     {
                         assert( (*bound)->isActive() );
@@ -602,7 +605,7 @@ namespace smtrat
                     std::vector< std::set< const LRABound* > > conflictingBounds = mTableau.getConflictsFrom( pivotingElement.first );
                     for( auto conflict = conflictingBounds.begin(); conflict != conflictingBounds.end(); ++conflict )
                     {
-                        FormulasT infSubSet;
+                        FormulaSetT infSubSet;
                         for( auto bound = conflict->begin(); bound != conflict->end(); ++bound )
                         {
                             assert( (*bound)->isActive() );
@@ -712,7 +715,7 @@ Return:
     template<class Settings>
     EvalRationalIntervalMap LRAModule<Settings>::getVariableBounds() const
     {
-        EvalRationalIntervalMap result = EvalRationalIntervalMap();
+        EvalRationalIntervalMap result;
         for( auto iter = mTableau.originalVars().begin(); iter != mTableau.originalVars().end(); ++iter )
         {
             const LRAVariable& var = *iter->second;
@@ -885,7 +888,7 @@ Return:
         {
             if( inf > bound.limit() && !bound.deduced() )
             {
-                FormulasT infsubset;
+                FormulaSetT infsubset;
                 collectOrigins( *bound.origins().begin(), infsubset );
                 collectOrigins( inf.pOrigins()->back(), infsubset );
                 mInfeasibleSubsets.push_back( std::move(infsubset) );
@@ -901,7 +904,7 @@ Return:
         {
             if( sup < bound.limit() && !bound.deduced() )
             {
-                FormulasT infsubset;
+                FormulaSetT infsubset;
                 collectOrigins( *bound.origins().begin(), infsubset );
                 collectOrigins( sup.pOrigins()->back(), infsubset );
                 mInfeasibleSubsets.push_back( std::move(infsubset) );
@@ -1814,6 +1817,8 @@ Return:
         }
         return true;
     }
+    
+    #ifdef DEBUG_METHODS_LRA_MODULE
 
     template<class Settings>
     void LRAModule<Settings>::printLinearConstraints( ostream& _out, const string _init ) const
@@ -1841,7 +1846,7 @@ Return:
         _out << _init << "Mapping of constraints to bounds:" << endl;
         for( auto iter = mTableau.constraintToBound().begin(); iter != mTableau.constraintToBound().end(); ++iter )
         {
-            _out << _init << "   " << iter->first->toString() << endl;
+            _out << _init << "   " << iter->first.toString() << endl;
             for( auto iter2 = iter->second->begin(); iter2 != iter->second->end(); ++iter2 )
             {
                 _out << _init << "        ";
@@ -1887,4 +1892,5 @@ Return:
     {
         mTableau.printVariables( true, _out, _init );
     }
+    #endif
 }    // namespace smtrat

@@ -704,7 +704,7 @@ namespace smtrat
 			void P_clear_bfs_markings();
 			
 			// add the path from start to target to infeasible subset
-			void P_add_explicit_path_to_infeasible(g_iterator start, g_iterator target, FormulasT& infeasible);
+			void P_add_explicit_path_to_infeasible(g_iterator start, g_iterator target, FormulaSetT& infeasible);
 			
 			// add the negated equalities on the path from start to target to infeasible subset
 			void P_add_explicit_path_to_infeasible_neg(g_iterator start, g_iterator target, FormulaSetT& infeasible);
@@ -742,7 +742,7 @@ namespace smtrat
 			void P_split_buckets();
 			
 			// constructs a proof for the equality
-			void P_construct_proof(FormulasT& output, g_iterator start, g_iterator target);
+			void P_construct_proof(FormulaSetT& output, g_iterator start, g_iterator target);
 			
 			// constructs a proof for the equality using negated formulas
 			void P_construct_proof_neg(FormulaSetT& output, g_iterator start, g_iterator target);
@@ -759,7 +759,7 @@ namespace smtrat
 			void P_print_graph();
 			
 			// prints a single edge together with its start and end node
-			template<typename EdgeType> void P_print_edge(std::ostream& out, EdgeType* edge, FormulasT& infeasible, std::unordered_set< g_iterator, by_address_hasher<g_iterator> >& inserted_nodes);
+			template<typename EdgeType> void P_print_edge(std::ostream& out, EdgeType* edge, FormulaSetT& infeasible, std::unordered_set< g_iterator, by_address_hasher<g_iterator> >& inserted_nodes);
 
 			// print infeasible subset into an smt2 file
 			void P_print_infeasible_subset();

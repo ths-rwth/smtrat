@@ -2495,6 +2495,8 @@ namespace vs
         #endif
         return false;
     }
+    
+    #ifdef VS_STATE_DEBUG_METHODS
 
     void State::print( const string _initiation, ostream& _out ) const
     {
@@ -2736,6 +2738,8 @@ namespace vs
             }
         }
     }
+    
+    #endif
 
     size_t State::coveringSet( const ConditionSetSetSet& _conflictSets, carl::PointerSet<Condition>& _coveringSet, unsigned _currentTreeDepth )
     {
