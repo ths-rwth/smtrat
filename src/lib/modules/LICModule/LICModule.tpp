@@ -66,16 +66,11 @@ namespace smtrat
     Answer LICModule<Settings>::checkCore( bool _full )
     {
         while (true) {
-            std::cout << "Constraints: " << mConstraints << std::endl;
-            std::cout << "Other: " << mOtherFormulas << std::endl;
-            
             Answer res = processConstraints();
             if (res == False) return False;
             
-            std::cout << "Inferred assignments: " << mAssignments << std::endl;
             for (const auto& a: mAssignments) {
                 FormulaT lemma(a.first - a.second, carl::Relation::EQ);
-                std::cout << "Adding lemma " << lemma << std::endl;
                 addSubformulaToPassedFormula(lemma);
             }
             break;
