@@ -280,13 +280,13 @@ namespace smtrat
         Vertex cur = root;
         std::size_t component = g[cur].component;
         std::vector<Vertex> cycle; // Variables on the cycle
+        std::vector<Vertex> edges; // Edges on the cycle
         std::vector<Vertex> others; // Variables adjacent to the cycle
-        FormulaSetT constraintSet; // Constraints forming the cycle
         while (true) {
             cycle.push_back(cur);
             // Get edge node
             Vertex edgeNode = nextInComponent(g, cur, component);
-            constraintSet.insert(FormulaT(g[edgeNode].constraint));
+            edges.push_back(edgeNode);
             // Get next variable node
             Vertex targetNode = nextInComponent(g, edgeNode, component, &others);
             sum += g[edgeNode].coeff;
@@ -296,7 +296,8 @@ namespace smtrat
         if (carl::isZero(sum.r)) {
             if (sum.strict) {
                 // Sum is zero but there is a strict inequality -> UNSAT
-                mInfeasibleSubsets.push_back(std::move(constraintSet));
+                mInfeasibleSubsets.emplace_back();
+                std::transform(edges.begin(), edges.end(), std::inserter(mInfeasibleSubsets.back(), mInfeasibleSubsets.back().begin()), [&g](const Vertex& v){ return g[v].constraint; });
                 return False;
             } else {
                 // Sum is zero and all inequalities are weak
@@ -305,7 +306,7 @@ namespace smtrat
                 for (std::size_t i = 1; i < cycle.size(); i++) {
                     carl::Variable a = g[cycle[i-1]].var;
                     carl::Variable b = g[cycle[i]].var;
-                    FormulaT lemma(Poly(a)-b, carl::Relation::EQ);
+                    FormulaT lemma(Poly(a)-b + g[edges[i-1]].coeff.r, carl::Relation::EQ);
                     addSubformulaToPassedFormula(lemma);
                 }
                 return True;
@@ -313,7 +314,8 @@ namespace smtrat
         } else if (sum.r > 0) {
             std::cout << "What to do? sum > 0" << std::endl;
         } else if (sum.r < 0) {
-            mInfeasibleSubsets.push_back(std::move(constraintSet));
+            mInfeasibleSubsets.emplace_back();
+            std::transform(edges.begin(), edges.end(), std::inserter(mInfeasibleSubsets.back(), mInfeasibleSubsets.back().begin()), [&g](const Vertex& v){ return g[v].constraint; });
             return False;
         }
         return True;
