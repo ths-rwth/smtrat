@@ -573,6 +573,13 @@ namespace smtrat
              * @param _maxSizeDifference The maximal difference between the sizes of the subsets compared to the size of the infeasible subset.
              */
             void checkInfSubsetForMinimality( std::vector<FormulasT>::const_iterator _infsubset, const std::string& _filename = "smaller_muses", unsigned _maxSizeDifference = 1 ) const;
+            
+            /**
+             * @return A pair of a Boolean and a formula, where the Boolean is true, if the received formula 
+             *         could be simplified to an equisatisfiable formula. The formula is equisatisfiable to this
+             *         module's reveived formula, if the Boolean is true.
+             */
+            std::pair<bool,FormulaT> getReceivedFormulaSimplified();
 
         protected:
 
