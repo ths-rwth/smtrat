@@ -99,8 +99,7 @@ namespace smtrat
                 mRWA(1),
                 mLastRWA(1),
                 mLastPayoff(0)
-            {
-            }
+            {}
 
             /**
             * Destructor:
