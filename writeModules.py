@@ -147,7 +147,7 @@ def headerContent(m, p, s):
 #include "../../solver/Module.h"\n\
 #include "'+p+'Statistics.h"\n'
   if(s):
-    result = result + '#include "'+p+'Settings.h"'
+    result = result + '#include "'+p+'Settings.h"\n'
   result = result + '\n\
 namespace smtrat\n\
 {\n'
@@ -226,26 +226,17 @@ def sourceContent(m, s):
   if(s):
     result = license(m + '.tpp')
   else:
-    result = license(m + '.cpp')
-  result = result + '\n#include "'+m+'.h"\n\
-\n\
+    result = license(m + '.cpp') + '\n#include "'+m+'.h"\n'
+  result = result + '\n\
 namespace smtrat\n\
-{\n\
-    /**\n\
-     * Constructors.\n\
-     */\n\
+{\
 \n'+templatePrefix+'\
     '+m+templateInst+'::'+m+'( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):\n\
-        Module( _type, _formula, _conditionals, _manager ) \n\
+        Module( _type, _formula, _conditionals, _manager )\n\
     {}\n\
-\n\
-    /**\n\
-     * Destructor.\n\
-     */\n\
 \n'+templatePrefix+'\
     '+m+templateInst+'::~'+m+'()\n\
     {}\n\
-\n\
 \n'+templatePrefix+'\
     bool '+m+templateInst+'::informCore( const FormulaT& _constraint )\n\
     {\n\
