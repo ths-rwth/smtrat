@@ -1,0 +1,18 @@
+set(SMTRAT_EM_SETTINGS "1" CACHE STRING "Number of setting used for EMModule")
+BeginDefineModule()
+ModuleMainHeader(EMModule/EMModule.h)
+FILE(GLOB_RECURSE sources *.cpp)
+foreach(src ${sources})
+    AddModuleSource(${src})
+endforeach()
+ModuleName(EMModule)
+ModuleClass(EMModule<EMSettings${SMTRAT_EM_SETTINGS}>)
+ModuleVersion(0 0 1)
+ModuleDefaultEnabled()
+EndDefineModule(moduleEnabled)
+
+if(${moduleEnabled})
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/EMModule/EMModule.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/EMModule/EMModule.cpp )
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/EMModule/EMModuleInstantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/EMModule/EMModuleInstantiation.h )
+    # do something
+endif()

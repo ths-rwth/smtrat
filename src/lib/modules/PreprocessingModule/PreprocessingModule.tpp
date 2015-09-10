@@ -6,12 +6,7 @@
  */
 
 #include "PreprocessingModule.h"
-#include "../../../cli/ExitCodes.h"
-#include <limits.h>
 
-//#define REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION (Not working)
-//#define ADDLINEARDEDUCTIONS
-//#define PREPROCESSING_DEVELOP_MODE
 //#define DEBUG_ELIMINATE_SUBSTITUTIONS
 
 namespace smtrat {

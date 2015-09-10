@@ -1,0 +1,13 @@
+/**
+ * @file EMModuleInstantiation.h
+ * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ *
+ * @version 2015-09-10
+ * Created on 2015-09-10.
+ */
+
+
+namespace smtrat
+{
+    extern template class EMModule<EMSettings@SMTRAT_EM_SETTINGS@>;
+}

@@ -8,6 +8,7 @@ endforeach()
 ModuleName(LICModule)
 ModuleClass(LICModule<LICSettings${SMTRAT_LIC_SETTINGS}>)
 ModuleVersion(0 0 1)
+ModuleDefaultEnabled()
 EndDefineModule(moduleEnabled)
 
 if(${moduleEnabled})
