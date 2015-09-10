@@ -1,33 +1,11 @@
-\documentclass[a4paper,10pt,titlepage]{scrbook}
-\usepackage{color}
-\usepackage{mathptmx}
-\input{packages.tex}
-\thispagestyle{empty}
-
-\definecolor{ratBordeaux1}{HTML}{A11035}
-\definecolor{ratBordeaux2}{HTML}{B65256}
-\definecolor{ratBordeaux3}{HTML}{CD8B87}
-\definecolor{ratRed1}{HTML}{CC071E}
-\definecolor{ratRed2}{HTML}{D85C41}
-\definecolor{ratRed3}{HTML}{E69679}
-\definecolor{ratLila}{HTML}{7A6FAC}
-\definecolor{ratGreen}{HTML}{57AB27}
-\definecolor{ratLila2}{HTML}{9B91C1}
-\definecolor{ratGreen2}{HTML}{8DC060}
-\definecolor{ratMagenta}{HTML}{E30066}
-\definecolor{ratViolett3}{HTML}{D2C0CD}
-\definecolor{ratViolett}{HTML}{7A6FAC}
-\definecolor{ratOrange}{HTML}{F6A800}
-\definecolor{ratYellow}{HTML}{FFED00}
-\definecolor{ratTurquoise}{HTML}{00B1B7}
-\definecolor{ratLimeGreen}{HTML}{BDCD00}
-\definecolor{ratLimeGreen}{HTML}{BDCD00}
-\definecolor{ratGray}{HTML}{9C9E9F}
-
-\begin{document}
-\begin{center}
-\begin{tikzpicture}[scale=.5,rotate=285]
-    \node (smt) at (7,12) {\color{ratGray}\fontsize{120}{100} \selectfont \textbf{SMT}};
+\begin{tikzpicture}[scale=.25,rotate=285]
+    \node[] (s) at (-2.8,3.3) {\color{ratGray}\fontsize{70}{70}\fontfamily{cmss} \fontseries{sbc} \selectfont \textbf{S}};
+    \node[] (m) [node distance = -27pt, right = of s] {\color{ratGray}\fontsize{70}{70}\fontfamily{cmss} \fontseries{sbc} \selectfont \textbf{M}};
+    \node[] (t) [node distance = -27pt, right = of m] {\color{ratGray}\fontsize{70}{70}\fontfamily{cmss} \fontseries{sbc} \selectfont \textbf{T}};
+    \node[] (a) [node distance = -10pt, below = of t] {\color{ratGray}\fontsize{70}{70}\fontfamily{cmss} \fontseries{sbc} \selectfont \textbf{A}};
+    \node[] (r) [node distance = -27pt, left = of a]  {\color{ratGray}\fontsize{70}{70}\fontfamily{cmss} \fontseries{sbc} \selectfont \textbf{R}};
+    \node[] (minus) [node distance = -27pt, left = of r] {\color{ratGray}\fontsize{70}{70}\fontfamily{cmss} \fontseries{sbc} \selectfont \textbf{-}};
+        \node[] [node distance = -10pt, below = of a] {\color{ratGray}\fontsize{70}{70}\fontfamily{cmss} \fontseries{sbc} \selectfont \textbf{T}};
     \fill [draw=black, thick, fill=ratBordeaux1] (0,1) -- (3,3) -- (3,2) -- (0,1);
     \fill [draw=black, thick, fill=ratRed2] (3,3) -- (5,2) -- (5,1) -- (3,2) -- (3,3);
     \fill [draw=black, thick, fill=ratBordeaux2] (5,2) -- (8.6,3) -- (8.6,1.5) -- (5,1) -- (5,2);
@@ -40,5 +18,3 @@
     \fill [draw=black, thick, fill=ratBordeaux3] (14.5,12) -- (16,13.5) -- (18,12.5) -- (16.5,10.5) -- (14.5,12);
     \fill [draw=black, thick, fill=ratRed2] (16,13.5) -- (17.5,14) -- (18,13) -- (17.8,12.6) -- (16,13.5);
 \end{tikzpicture}
-\end{center}
-\end{document}
