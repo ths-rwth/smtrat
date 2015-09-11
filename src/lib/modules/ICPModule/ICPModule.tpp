@@ -35,6 +35,7 @@ namespace smtrat
     template<class Settings>
     ICPModule<Settings>::ICPModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* , Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
+        mContractors(),
         mCandidateManager(),
         mActiveNonlinearConstraints(),
         mActiveLinearConstraints(),
@@ -806,9 +807,11 @@ namespace smtrat
                 std::cout << "New replacement: " << monom << " -> " << mVariableLinearizations.at(monom) << std::endl;
                 #endif
                 // Create equation m_i - v_i = 0, where m_i is the nonlinear monomial x_{i,1}^e_{i,1}*..*x_{i,n}^e_{i,n} being replaced by the freshly introduced variable v_i
-                const Poly rhs = monom - carl::makePolynomial<Poly>(newVar);
+                Poly rhs = monom - carl::makePolynomial<Poly>(newVar);
                 if( mContractors.find(rhs) == mContractors.end() )
-                    mContractors.insert(std::make_pair(rhs, Contractor<carl::SimpleNewton>(rhs)));
+                {
+                    mContractors.emplace( std::move(Poly(rhs)), std::move(Contractor<carl::SimpleNewton>(rhs)) );
+                }
                 
                 ConstraintT tmp = ConstraintT( rhs, carl::Relation::EQ );
                 for( auto varIndex = variables.begin(); varIndex != variables.end(); ++varIndex )
@@ -894,11 +897,13 @@ namespace smtrat
             icp::IcpVariable* icpVar = getIcpVariable( newVar, false, slackvariable );
             mHistoryRoot->addInterval( newVar, DoubleInterval::unboundedInterval() );
             // Create equation a_1'*x_1 + .. + a_k'*x_k = 0, with a_i' = a_i/gcd(a_1,..,a_k)*sgn(a_1)
-            const Poly rhs = carl::makePolynomial<Poly>(slackvariable->expression()) - carl::makePolynomial<Poly>(newVar);
+            Poly rhs = carl::makePolynomial<Poly>(slackvariable->expression()) - carl::makePolynomial<Poly>(newVar);
             ConstraintT tmpConstr = ConstraintT( rhs, carl::Relation::EQ );
             auto iter = mContractors.find( rhs );
             if( iter == mContractors.end() )
-                iter = mContractors.insert( std::make_pair( rhs, Contractor<carl::SimpleNewton>(rhs, _original) ) ).first;
+            {
+                iter = mContractors.emplace( std::move(Poly(rhs)), std::move(Contractor<carl::SimpleNewton>(rhs, _original)) ).first;
+            }
             ContractionCandidates ccs;
             // Create candidates for every possible variable:
             for( auto var = variables.begin(); var != variables.end(); ++var )

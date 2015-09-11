@@ -32,7 +32,7 @@ namespace icp{
         ContractionCandidateManager();
         
         ~ContractionCandidateManager()
-        {   
+        {
             while( !mCandidates.empty() )
             {
                 ContractionCandidate* toDelete = mCandidates.back();

@@ -76,6 +76,7 @@ namespace smtrat
             /**
              * Members:
              */
+            carl::FastMap<Poly, Contractor<carl::SimpleNewton>> mContractors;
             icp::ContractionCandidateManager mCandidateManager; // keeps all candidates
             std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> mActiveNonlinearConstraints; // nonlinear candidates considered
             std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> mActiveLinearConstraints; // linear candidates considered
@@ -92,7 +93,6 @@ namespace smtrat
             carl::FastMap<FormulaT,FormulaT> mDeLinearizations; // linearized constraint -> original constraint
             carl::FastMap<Poly, carl::Variable> mVariableLinearizations; // monome -> variable
             std::map<carl::Variable, Poly> mSubstitutions; // variable -> monome/variable
-            carl::FastMap<Poly, Contractor<carl::SimpleNewton>> mContractors;
             
             icp::HistoryNode* mHistoryRoot; // Root-Node of the state-tree
             icp::HistoryNode* mHistoryActual; // Actual node of the state-tree
