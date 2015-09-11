@@ -480,6 +480,16 @@ namespace smtrat
             }
             
             /**
+             * @return true, if this module is a preprocessor that is a module, which simplifies
+             *         its received formula to an equisatisfiable formula being passed to its backends.
+             *         The simplified formula can be obtained with getReceivedFormulaSimplified().
+             */
+            bool isPreprocessor() const
+            {
+                return false;
+            }
+            
+            /**
              * @param _moduleType The module type to return the name as string for. 
              * @return The name of the given module type as name.
              */

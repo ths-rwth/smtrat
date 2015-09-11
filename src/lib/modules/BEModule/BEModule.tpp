@@ -10,7 +10,7 @@ namespace smtrat
 {
     template<class Settings>
     BEModule<Settings>::BEModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-        Module( _type, _formula, _conditionals, _manager ),
+        PModule( _type, _formula, _conditionals, _manager ),
         mVisitor()
     {
         extractBoundsFunction = std::bind(&BEModule<Settings>::extractBounds, this, std::placeholders::_1);
@@ -19,27 +19,6 @@ namespace smtrat
     template<class Settings>
     BEModule<Settings>::~BEModule()
     {}
-
-    template<class Settings>
-    bool BEModule<Settings>::informCore( const FormulaT& _constraint )
-    {
-        return true;
-    }
-
-    template<class Settings>
-    void BEModule<Settings>::init()
-    {}
-
-    template<class Settings>
-    bool BEModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
-    {
-        return true;
-    }
-
-    template<class Settings>
-    void BEModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
-    {
-    }
 
     template<class Settings>
     Answer BEModule<Settings>::checkCore( bool _full )

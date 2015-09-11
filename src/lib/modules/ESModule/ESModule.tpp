@@ -12,7 +12,7 @@ namespace smtrat
 {
     template<class Settings>
     ESModule<Settings>::ESModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-        Module( _type, _formula, _conditionals, _manager ),
+        PModule( _type, _formula, _conditionals, _manager ),
         mBoolSubs(),
         mArithSubs()
     {}
@@ -22,36 +22,25 @@ namespace smtrat
     {}
 
     template<class Settings>
-    bool ESModule<Settings>::informCore( const FormulaT& _constraint )
-    {
-        // Your code.
-        return true; // This should be adapted according to your implementation.
-    }
-
-    template<class Settings>
-    void ESModule<Settings>::init()
-    {}
-
-    template<class Settings>
-    bool ESModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
-    {
-        // Your code.
-        return true; // This should be adapted according to your implementation.
-    }
-
-    template<class Settings>
-    void ESModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
-    {
-        // Your code.
-    }
-
-    template<class Settings>
     void ESModule<Settings>::updateModel() const
     {
-        mModel.clear();
-        if( solverState() == True )
+        clearModel();
+        if( solverState() == True || (solverState() != False && appliedPreprocessing()) )
         {
-            // Your code.
+            getBackendsModel();
+            for( const auto& iter : mBoolSubs )
+            {
+                if( iter.first.getType() == carl::FormulaType::BOOL )
+                {
+                    assert( mModel.find( iter.first.boolean() ) == mModel.end() );
+                    mModel.emplace( iter.first.boolean(), iter.second );
+                }
+            }
+            for( const auto& iter : mArithSubs )
+            {
+                assert( mModel.find( iter.first ) == mModel.end() );
+                mModel.emplace( iter.first, vs::SqrtEx( iter.second ) );
+            }
         }
     }
 

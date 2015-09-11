@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "../../solver/Module.h"
+#include "../../solver/PModule.h"
 #include "../../datastructures/VariableBounds.h"
 #include "LICStatistics.h"
 #include "LICSettings.h"
@@ -21,7 +21,7 @@
 namespace smtrat
 {
     template<typename Settings>
-    class LICModule : public Module
+    class LICModule : public PModule
     {
             struct Coefficient {
                 Rational r;

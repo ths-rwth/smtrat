@@ -11,7 +11,7 @@ namespace smtrat
 {
     template<class Settings>
     EMModule<Settings>::EMModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-        Module( _type, _formula, _conditionals, _manager ),
+        PModule( _type, _formula, _conditionals, _manager ),
         mVisitor()
     {
 		eliminateMonomialEquationFunction = std::bind(&EMModule<Settings>::eliminateMonomialEquation, this, std::placeholders::_1);
@@ -20,27 +20,6 @@ namespace smtrat
     template<class Settings>
     EMModule<Settings>::~EMModule()
     {}
-
-    template<class Settings>
-    bool EMModule<Settings>::informCore( const FormulaT& _constraint )
-    {
-        return true;
-    }
-
-    template<class Settings>
-    void EMModule<Settings>::init()
-    {}
-
-    template<class Settings>
-    bool EMModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
-    {
-        return true;
-    }
-
-    template<class Settings>
-    void EMModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
-    {
-    }
     
     template<class Settings>
     Answer EMModule<Settings>::checkCore( bool _full )

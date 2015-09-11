@@ -13,7 +13,7 @@ using namespace carl;
 namespace smtrat
 {
     CNFerModule::CNFerModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
-        Module( _type, _formula, _conditionals, _manager )
+        PModule( _type, _formula, _conditionals, _manager )
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
         stringstream s;

@@ -11,7 +11,7 @@ namespace smtrat
 {
     template<class Settings>
     CBModule<Settings>::CBModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-        Module( _type, _formula, _conditionals, _manager ),
+        PModule( _type, _formula, _conditionals, _manager ),
         visitor(),
         newBounds(),
         varbounds()
@@ -22,17 +22,7 @@ namespace smtrat
     template<class Settings>
     CBModule<Settings>::~CBModule()
     {}
-
-    template<class Settings>
-    bool CBModule<Settings>::informCore( const FormulaT& _constraint )
-    {
-        return true;
-    }
-
-    template<class Settings>
-    void CBModule<Settings>::init()
-    {}
-
+    
     template<class Settings>
     bool CBModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {

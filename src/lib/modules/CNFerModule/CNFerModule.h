@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include "../../solver/Module.h"
+#include "../../solver/PModule.h"
 #include "CNFerModuleStatistics.h"
 
 namespace smtrat
 {
     class CNFerModule:
-        public Module
+        public PModule
     {
         private:
             #ifdef SMTRAT_DEVOPTION_Statistics

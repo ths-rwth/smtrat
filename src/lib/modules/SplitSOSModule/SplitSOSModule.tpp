@@ -10,7 +10,7 @@ namespace smtrat
 {
     template<class Settings>
     SplitSOSModule<Settings>::SplitSOSModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-        Module( _type, _formula, _conditionals, _manager ),
+        PModule( _type, _formula, _conditionals, _manager ),
         mVisitor()
     {
 		splitSOSFunction = std::bind(&SplitSOSModule<Settings>::splitSOS, this, std::placeholders::_1);
@@ -19,27 +19,6 @@ namespace smtrat
     template<class Settings>
     SplitSOSModule<Settings>::~SplitSOSModule()
     {}
-
-    template<class Settings>
-    bool SplitSOSModule<Settings>::informCore( const FormulaT& _constraint )
-    {
-        return true;
-    }
-
-    template<class Settings>
-    void SplitSOSModule<Settings>::init()
-    {}
-
-    template<class Settings>
-    bool SplitSOSModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
-    {
-        return true;
-    }
-
-    template<class Settings>
-    void SplitSOSModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
-    {
-    }
 
     template<class Settings>
     Answer SplitSOSModule<Settings>::checkCore( bool _full )
