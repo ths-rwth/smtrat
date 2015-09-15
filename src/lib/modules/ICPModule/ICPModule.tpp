@@ -501,7 +501,7 @@ namespace smtrat
             std::cout << "[mLRA] inform: " << linearizedConstraint << std::endl;
             #endif
             if( !linearizedConstraint.isBound() )
-                createLinearCCs( linearFormula, constr );
+                createLinearCCs( linearFormula );
             // set the lra variables for the icp variables regarding variables (introduced and original ones)
             // TODO: Refactor this last part - it seems to be too complicated
             for( auto var = linearizedConstraint.variables().begin(); var != linearizedConstraint.variables().end(); ++var )
@@ -867,7 +867,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    void ICPModule<Settings>::createLinearCCs( const FormulaT& _constraint, const Poly& _original)
+    void ICPModule<Settings>::createLinearCCs( const FormulaT& _constraint)
     {
         /*
          * Create all icp variables and contraction candidates for the given linear constraint:
@@ -902,7 +902,7 @@ namespace smtrat
             auto iter = mContractors.find( rhs );
             if( iter == mContractors.end() )
             {
-                iter = mContractors.emplace( std::move(Poly(rhs)), std::move(Contractor<carl::SimpleNewton>(rhs, _original)) ).first;
+                iter = mContractors.emplace( std::move(Poly(rhs)), std::move(Contractor<carl::SimpleNewton>(rhs, rhs.substitute( mSubstitutions ))) ).first;
             }
             ContractionCandidates ccs;
             // Create candidates for every possible variable:

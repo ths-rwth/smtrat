@@ -236,7 +236,7 @@ namespace smtrat
              * @param _constraint
              * @param _origin
              */
-            void createLinearCCs( const FormulaT& _constraint, const Poly& _original );
+            void createLinearCCs( const FormulaT& _constraint );
             
             /**
              * Fills the IcpRelevantCandidates with all nonlinear and all active linear ContractionCandidates.
