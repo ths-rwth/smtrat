@@ -58,7 +58,7 @@ namespace smtrat
         #endif
         if( !_externalModuleFactoryAdding )
         {
-            addModules( this );
+            addModules( *this );
         }
     }
 
