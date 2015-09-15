@@ -24,11 +24,9 @@ namespace smtrat
     Answer BEModule<Settings>::checkCore( bool _full )
     {
         auto receivedFormula = firstUncheckedReceivedSubformula();
-        SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Bounds are " << varbounds.getEvalIntervalMap());
-        FormulaT formula;
         while( receivedFormula != rReceivedFormula().end() )
         {
-            formula = mVisitor.rvisit( receivedFormula->formula(), extractBoundsFunction );
+            FormulaT formula = mVisitor.rvisit( receivedFormula->formula(), extractBoundsFunction );
             if( formula.isFalse() )
             {
                 mInfeasibleSubsets.clear();
@@ -37,7 +35,8 @@ namespace smtrat
                 mInfeasibleSubsets.push_back( std::move(infeasibleSubset) );
                 return False;
             }
-            addSubformulaToPassedFormula( formula, receivedFormula->formula() );
+            if( !formula.isTrue() )
+                addSubformulaToPassedFormula( formula, receivedFormula->formula() );
             ++receivedFormula;
         }
         Answer ans = runBackends( _full );

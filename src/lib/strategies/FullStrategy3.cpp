@@ -22,8 +22,8 @@ namespace smtrat
         return (  !(carl::PROP_CONTAINS_BITVECTOR <= _condition) &&  !(carl::PROP_CONTAINS_UNINTERPRETED_EQUATIONS <= _condition) );
     }
 
-    FullStrategy3::FullStrategy3():
-        Manager()
+    FullStrategy3::FullStrategy3( bool _externalModuleFactoryAdding ):
+        Manager( _externalModuleFactoryAdding )
     {
         addBackendIntoStrategyGraph( 0, MT_EQPreprocessingModule, conditionEvaluation0 );
         addBackendIntoStrategyGraph( 1, MT_CNFerModule, isCondition );

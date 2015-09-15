@@ -89,7 +89,7 @@ public:
 			}
 		}
 	}
-	void declareFun(const carl::Variable& var) {
+	void declareFun(const carl::Variable&) {
 		//if (smtrat::parser::TypeOfTerm::get(var.getType()) == smtrat::parser::ExpressionType::THEORY) {
 		//	this->solver->quantifierManager().addUnquantifiedVariable(var);
 		//}
@@ -245,7 +245,7 @@ int main( int argc, char* argv[] )
     #endif
 
     // Construct solver.
-    CMakeStrategySolver* solver = new CMakeStrategySolver();
+    CMakeStrategySolver* solver = new CMakeStrategySolver( true );
 	
     std::list<std::pair<std::string, smtrat::RuntimeSettings*> > settingsObjects = smtrat::addModules( solver );
     

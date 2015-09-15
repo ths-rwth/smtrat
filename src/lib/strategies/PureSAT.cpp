@@ -8,8 +8,8 @@
 namespace smtrat
 {
 
-    PureSAT::PureSAT():
-        Manager()
+    PureSAT::PureSAT( bool _externalModuleFactoryAdding ):
+        Manager( _externalModuleFactoryAdding )
     {
         addBackendIntoStrategyGraph( 0, MT_SATModule );
     }

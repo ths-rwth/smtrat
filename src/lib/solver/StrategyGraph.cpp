@@ -12,6 +12,11 @@ using namespace std;
 
 namespace smtrat
 {
+    bool isCondition( carl::Condition _condition )
+    {
+        return carl::PROP_TRUE <= _condition;
+    }
+    
     size_t StrategyGraph::Edge::mPriorityAllocator = 1;
 
     StrategyGraph::StrategyGraph():

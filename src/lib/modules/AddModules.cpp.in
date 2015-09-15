@@ -26,6 +26,14 @@ namespace smtrat
         // Return he list of settings objects, so any method managing them gets them.
         return settingsObjects;
     }
+
+    void addModules(Manager& manager)
+    {
+        //
+        // Add all existing modules
+        //
+        @addModuleListNoSettings@
+    }
 }
 
 

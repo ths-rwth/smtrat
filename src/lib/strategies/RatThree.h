@@ -12,7 +12,7 @@ namespace smtrat
         public Manager
     {
         public:
-            RatThree();
+            RatThree( bool _externalModuleFactoryAdding = false );
             ~RatThree();
     };
 }    // namespace smtrat

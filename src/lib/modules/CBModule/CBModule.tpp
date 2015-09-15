@@ -45,7 +45,6 @@ namespace smtrat
     Answer CBModule<Settings>::checkCore( bool _full )
     {   
         auto receivedFormula = firstUncheckedReceivedSubformula();
-        FormulaT formula;
         while( receivedFormula != rReceivedFormula().end() )
         {
             // If bounds are collected, check if next subformula is a bound.
@@ -59,7 +58,7 @@ namespace smtrat
             
             tmpOrigins.clear();
             tmpOrigins.insert(receivedFormula->formula());
-            formula = visitor.visit(receivedFormula->formula(), checkBoundsFunction);
+            FormulaT formula = visitor.visit(receivedFormula->formula(), checkBoundsFunction);
             
             if( formula.isFalse() )
             {
@@ -69,7 +68,8 @@ namespace smtrat
                 mInfeasibleSubsets.push_back( std::move(infeasibleSubset) );
                 return False;
             }
-            addSubformulaToPassedFormula( formula, receivedFormula->formula() );
+            if( !formula.isTrue() )
+                addSubformulaToPassedFormula( formula, receivedFormula->formula() );
             ++receivedFormula;
         }
         Answer ans = runBackends( _full );
