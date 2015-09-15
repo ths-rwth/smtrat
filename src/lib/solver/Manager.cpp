@@ -56,10 +56,10 @@ namespace smtrat
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         initialize();
         #endif
-//        if( !_externalModuleFactoryAdding )
-//        {
-//            addModules( this );
-//        }
+        if( !_externalModuleFactoryAdding )
+        {
+            addModules( this );
+        }
     }
 
     // Destructor.
