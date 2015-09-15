@@ -16,12 +16,11 @@ namespace smtrat
     {
         return carl::PROP_TRUE <= _condition;
     }
-    
-    size_t StrategyGraph::Edge::mPriorityAllocator = 1;
 
     StrategyGraph::StrategyGraph():
         mStrategyGraph(),
-        mNumberOfBranches( 1 )
+        mNumberOfBranches( 1 ),
+        mPriorityAllocator( 1 )
     {
         mStrategyGraph.push_back( new Vertex() );
     }
@@ -47,7 +46,7 @@ namespace smtrat
         {
             mNumberOfBranches++;
         }
-        mStrategyGraph[ _from ]->addSuccessorVertex( _to, _conditionEvaluation );
+        mStrategyGraph[ _from ]->addSuccessorVertex( _to, _conditionEvaluation, mPriorityAllocator++ );
     }
 
     size_t StrategyGraph::setThreadIds( size_t _from, size_t _threadId )
@@ -96,7 +95,13 @@ namespace smtrat
     // Returns module types ordered by priority, highest priority (lowest value) first
     vector< pair< thread_priority, ModuleType > > StrategyGraph::getNextModuleTypes( size_t _from, carl::Condition _condition )
     {
-        vector< pair< thread_priority, ModuleType > > result = vector< pair< thread_priority, ModuleType > >();
+        vector< pair< thread_priority, ModuleType > > result;
+        if( !( _from < mStrategyGraph.size() ) )
+        {
+            std::cout << "mStrategyGraph.size() = " << mStrategyGraph.size() << std::endl;
+            std::cout << "_from = " << _from << std::endl;
+        }
+        assert( _from < mStrategyGraph.size() );
         const vector<Edge>& edges = mStrategyGraph[ _from ]->edgeList();
         for( auto edge = edges.begin(); edge!=edges.end(); ++edge )
         {

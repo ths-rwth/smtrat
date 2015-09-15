@@ -26,17 +26,16 @@ namespace smtrat
             class Edge
             {
                 private:
-                    static size_t mPriorityAllocator;
                     size_t mSuccessorVertex;
                     size_t mThreadId;
                     size_t mPriority;
                     ConditionEvaluation mpConditionEvaluation;
 
                 public:
-                    Edge( size_t _to, ConditionEvaluation _conditionEvaluation ):
+                    Edge( size_t _to, ConditionEvaluation _conditionEvaluation, size_t _priority ):
                         mSuccessorVertex( _to ),
                         mThreadId( 0 ),
-                        mPriority( mPriorityAllocator++ ),
+                        mPriority( _priority ),
                         mpConditionEvaluation( _conditionEvaluation )
                     {}
 
@@ -112,15 +111,16 @@ namespace smtrat
                         return mModuleType;
                     }
 
-                    void addSuccessorVertex( size_t _to, ConditionEvaluation _conditionEvaluation )
+                    void addSuccessorVertex( size_t _to, ConditionEvaluation _conditionEvaluation, size_t _priority )
                     {
                         assert( !successorVertexExists( _to ) );
-                        mpEdgeList->push_back( Edge( _to, _conditionEvaluation ) );
+                        mpEdgeList->push_back( Edge( _to, _conditionEvaluation, _priority ) );
                     }
             };
 
             std::vector<Vertex*> mStrategyGraph;
             size_t mNumberOfBranches;
+            size_t mPriorityAllocator;
 
             void addCondition( size_t, size_t, ConditionEvaluation );
             size_t setThreadIds( size_t, size_t );
