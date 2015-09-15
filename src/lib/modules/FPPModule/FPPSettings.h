@@ -7,6 +7,7 @@
  */
 
 #pragma once
+#include "../../strategies/strategies.h"
 
 namespace smtrat
 {
@@ -17,5 +18,7 @@ namespace smtrat
          * If this number is negative, this procedure stops only if it indeed reached a fix point.
          */
         static const int max_iterations = 1;
+        
+        typedef PreprocessingOne Preprocessor;
     };
 }

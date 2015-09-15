@@ -19,7 +19,7 @@ namespace smtrat
         public Manager
     {
         public:
-            CADOnly();
+            CADOnly( bool _externalModuleFactoryAdding = false );
             ~CADOnly();
 
     };

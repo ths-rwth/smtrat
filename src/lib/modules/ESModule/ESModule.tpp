@@ -49,8 +49,7 @@ namespace smtrat
     {
         mBoolSubs.clear();
         mArithSubs.clear();
-        FormulaT formula = (FormulaT) rReceivedFormula();
-        formula = elimSubstitutions( formula );
+        FormulaT formula = elimSubstitutions( (FormulaT) rReceivedFormula() );
         Answer ans = True;
         if( formula.isFalse() )
             ans = False;

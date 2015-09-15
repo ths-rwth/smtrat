@@ -8,8 +8,8 @@
 namespace smtrat
 {
 
-    CADOnly::CADOnly():
-        Manager()
+    CADOnly::CADOnly( bool _externalModuleFactoryAdding ):
+        Manager( _externalModuleFactoryAdding )
     {
         size_t position = 0;
 	    #ifdef SMTRAT_ENABLE_CNFerModule

@@ -1,5 +1,5 @@
 /**
- * @file RatOne.h
+ * @file PreprocessingOne.h
  */
 #pragma once
 
@@ -15,13 +15,15 @@ namespace smtrat
      * @version
      *
      */
-    class RatOne:
+    class PreprocessingOne:
         public Manager
     {
         public:
-            RatOne( bool _externalModuleFactoryAdding = false );
-            ~RatOne();
+            PreprocessingOne( bool _externalModuleFactoryAdding = false );
+            ~PreprocessingOne();
 
     };
 
 }    // namespace smtrat
+
+

@@ -32,8 +32,8 @@ namespace smtrat
         return (  !(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL <= _condition) );
     }
 
-    FullStrategy::FullStrategy():
-        Manager()
+    FullStrategy::FullStrategy( bool _externalModuleFactoryAdding ):
+        Manager( _externalModuleFactoryAdding )
     {
         addBackendIntoStrategyGraph( 0, MT_EQPreprocessingModule, conditionEvaluation0 );
         addBackendIntoStrategyGraph( 1, MT_CNFerModule, isCondition );

@@ -7,8 +7,8 @@
 namespace smtrat
 {
 
-    RatThree::RatThree():
-        Manager()
+    RatThree::RatThree( bool _externalModuleFactoryAdding ):
+        Manager( _externalModuleFactoryAdding )
     {
         addBackendIntoStrategyGraph( 0, MT_CNFerModule, isCondition );
         addBackendIntoStrategyGraph( 1, MT_PreprocessingModule, isCondition );

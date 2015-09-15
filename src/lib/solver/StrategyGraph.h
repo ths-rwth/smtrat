@@ -18,10 +18,7 @@ namespace smtrat
 {
     typedef bool (*ConditionEvaluation)( carl::Condition );
 
-    static inline bool isCondition( carl::Condition _condition )
-    {
-        return carl::PROP_TRUE <= _condition;
-    }
+    bool isCondition( carl::Condition _condition );
 
     class StrategyGraph
     {

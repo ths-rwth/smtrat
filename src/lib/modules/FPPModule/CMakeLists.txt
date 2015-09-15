@@ -8,6 +8,7 @@ endforeach()
 ModuleName(FPPModule)
 ModuleClass(FPPModule<FPPSettings${SMTRAT_FPP_SETTINGS}>)
 ModuleVersion(0 0 1)
+ModuleDefaultEnabled()
 EndDefineModule(moduleEnabled)
 
 if(${moduleEnabled})

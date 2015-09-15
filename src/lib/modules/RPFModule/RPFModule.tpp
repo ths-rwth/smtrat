@@ -26,11 +26,13 @@ namespace smtrat
     Answer RPFModule<Settings>::checkCore( bool _full )
     {
         auto receivedFormula = firstUncheckedReceivedSubformula();
-        FormulaT formula;
         while( receivedFormula != rReceivedFormula().end() )
         {
+            FormulaT formula = receivedFormula->formula();
             if( receivedFormula->formula().propertyHolds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL) )
+            {
                 formula = visitor.visit( receivedFormula->formula(), removeFactorsFunction );
+            }
             if( formula.isFalse() )
             {
                 mInfeasibleSubsets.clear();
@@ -39,7 +41,10 @@ namespace smtrat
                 mInfeasibleSubsets.push_back( std::move(infeasibleSubset) );
                 return False;
             }
-            addSubformulaToPassedFormula( formula, receivedFormula->formula() );
+            if( !formula.isTrue() )
+            {
+                addSubformulaToPassedFormula( formula, receivedFormula->formula() );
+            }
             ++receivedFormula;
         }
         Answer ans = runBackends( _full );
