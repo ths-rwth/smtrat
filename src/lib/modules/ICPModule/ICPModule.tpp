@@ -1358,13 +1358,21 @@ namespace smtrat
                     {
                         if( interv.lowerBoundType() == carl::BoundType::WEAK )
                             value = interv.lower();
-                        else
+                        else if( interv.upperBoundType() != carl::BoundType::INFTY )
                         {
                             value = std::nextafter( interv.lower(), INFINITY );
                             // Check if the interval does contain any double. If not, return an empty model.
                             if( value > interv.upper() || (interv.upperBoundType() == carl::BoundType::STRICT && value == interv.upper()) )
+                            {
                                 return std::map<carl::Variable, double>();
+                            }
                         }
+                        else
+                        {
+                            if( interv.lower() == std::numeric_limits<double>::max() )
+                                return std::map<carl::Variable, double>();
+                            value = std::nextafter( interv.lower(), INFINITY );
+                        }  
                     }
                 }
                 else
@@ -1380,13 +1388,22 @@ namespace smtrat
                     {
                         if( interv.upperBoundType() == carl::BoundType::WEAK )
                             value = interv.upper();
-                        else
+                        else if( interv.lowerBoundType() != carl::BoundType::INFTY )
                         {
                             value = std::nextafter( interv.upper(), -INFINITY );
                             // Check if the interval does contain any double. If not, return an empty model.
                             if( value < interv.lower() || (interv.lowerBoundType() == carl::BoundType::STRICT && value == interv.lower()) )
+                            {
+                                std::cout << __func__ << ":" << __LINE__ << std::endl;
                                 return std::map<carl::Variable, double>();
+                            }
                         }
+                        else
+                        {
+                            if( interv.upper() == std::numeric_limits<double>::min() )
+                                return std::map<carl::Variable, double>();
+                            value = std::nextafter( interv.upper(), -INFINITY );
+                        }  
                     }
                 }
             }
