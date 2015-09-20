@@ -398,6 +398,24 @@ namespace smtrat
             }
 
             /**
+             * Checks whether this module or any of its backends provides any lemmas or splitting decisions.
+             */
+            bool hasDeductions()
+            {
+                if( !mDeductions.empty() || !mSplittings.empty() )
+                    return true;
+                if( mpManager != nullptr )
+                {
+                    for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
+                    {
+                        if( (*module)->hasDeductions() )
+                            return true;
+                    }
+                }
+                return false;
+            }
+
+            /**
              * Deletes all yet found deductions/lemmas.
              */
             void clearDeductions()
@@ -589,7 +607,7 @@ namespace smtrat
              *         could be simplified to an equisatisfiable formula. The formula is equisatisfiable to this
              *         module's reveived formula, if the Boolean is true.
              */
-            std::pair<bool,FormulaT> getReceivedFormulaSimplified();
+            virtual std::pair<bool,FormulaT> getReceivedFormulaSimplified();
 
         protected:
 
@@ -793,6 +811,27 @@ namespace smtrat
             std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, const FormulaT& _origin )
             {
                 return addSubformulaToPassedFormula( _formula, true, _origin, nullptr, true );
+            }
+            
+            /**
+             * Stores the trivial infeasible subset being the set of received formulas.
+             */
+            void generateTrivialInfeasibleSubset()
+            {
+                FormulaSetT infeasibleSubset;
+                for( auto subformula = rReceivedFormula().begin(); subformula != rReceivedFormula().end(); ++subformula )
+                    infeasibleSubset.insert( subformula->formula() );
+                mInfeasibleSubsets.push_back( std::move(infeasibleSubset) );
+            }
+            
+            /**
+             * Stores an infeasible subset consisting only of the given received formula.
+             */
+            void receivedFormulasAsInfeasibleSubset( ModuleInput::const_iterator _subformula )
+            {
+                FormulaSetT infeasibleSubset;
+                infeasibleSubset.insert( _subformula->formula() );
+                mInfeasibleSubsets.push_back( std::move(infeasibleSubset) );
             }
             
     private:

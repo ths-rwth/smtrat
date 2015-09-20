@@ -855,6 +855,17 @@ namespace smtrat
     {
         if( mSolverState == False )
             return make_pair( true, FormulaT( carl::FormulaType::FALSE ) );
+        if( mType == MT_Module )
+        {
+            for( auto& backend : usedBackends() )
+            {
+                pair<bool,FormulaT> simplifiedPassedFormula = backend->getReceivedFormulaSimplified();
+                if( simplifiedPassedFormula.first )
+                {
+                    return simplifiedPassedFormula;
+                }
+            }
+        }
         return make_pair( false, FormulaT( carl::FormulaType::TRUE ) );
     }
     

@@ -34,10 +34,7 @@ namespace smtrat
             }
             if( formula.isFalse() )
             {
-                mInfeasibleSubsets.clear();
-                FormulaSetT infeasibleSubset;
-                infeasibleSubset.insert( receivedFormula->formula() );
-                mInfeasibleSubsets.push_back( std::move(infeasibleSubset) );
+                receivedFormulasAsInfeasibleSubset( receivedFormula );
                 return False;
             }
             if( !formula.isTrue() )
@@ -48,16 +45,7 @@ namespace smtrat
         }
         Answer ans = runBackends( _full );
         if( ans == False )
-        {
-            mInfeasibleSubsets.clear();
-            FormulaSetT infeasibleSubset;
-            // TODO: compute a better infeasible subset
-            for( auto subformula = rReceivedFormula().begin(); subformula != rReceivedFormula().end(); ++subformula )
-            {
-                infeasibleSubset.insert( subformula->formula() );
-            }
-            mInfeasibleSubsets.push_back( std::move(infeasibleSubset) );
-        }
+            generateTrivialInfeasibleSubset(); // TODO: compute a better infeasible subset
         return ans;
     }
     

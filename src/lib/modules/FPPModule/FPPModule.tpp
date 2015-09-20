@@ -63,28 +63,40 @@ namespace smtrat
         mIterations = 0;
         Answer ans = Unknown;
         FormulaT formulaBeforePreprocessing = (FormulaT) rReceivedFormula();
-        while( mIterations < Settings::max_iterations )
+        while( Settings::max_iterations < 0 || mIterations < Settings::max_iterations )
         {
             if( mIterations > 0 )
                 mPreprocessor.pop();
             ++mIterations;
             // call the preprocessing on the current formula
             mPreprocessor.push();
+//            std::cout << "Try to preprocess:" << std::endl;
+//            std::cout << formulaBeforePreprocessing << std::endl;
             mPreprocessor.add( formulaBeforePreprocessing );
             ans = mPreprocessor.check( _full );
             // preprocessing detects satisfiabilty or unsatisfiability
             if( ans != Unknown )
                 break;
             std::pair<bool,FormulaT> res = mPreprocessor.getInputSimplified();
+//                std::cout << "Preprocessing step led to: " << std::endl;
             if( res.first )
+            {
                 mFormulaAfterPreprocessing = res.second;
+//                std::cout << mFormulaAfterPreprocessing << std::endl;
+            }
             else
+            {
+//                std::cout << "No change:" << std::endl;
+//                std::cout << mFormulaAfterPreprocessing << std::endl;
                 break;
+            }
             // after preprocessing is before preprocessing
             formulaBeforePreprocessing = mFormulaAfterPreprocessing;
         }
+//        std::cout << "ans after preprocessing: " << ans << std::endl; 
         if( ans == Unknown )
         {
+//            std::cout << "ask backends" << std::endl;
             // run the backends on the fix point of the iterative application of preprocessing
             // TODO: make this incremental
             clearPassedFormula();
@@ -93,16 +105,7 @@ namespace smtrat
         }
         // obtain an infeasible subset, if the received formula is unsatisfiable
         if( ans == False )
-        {
-            mInfeasibleSubsets.clear();
-            FormulaSetT infeasibleSubset;
-            // TODO: compute a better infeasible subset
-            for( auto subformula = rReceivedFormula().begin(); subformula != rReceivedFormula().end(); ++subformula )
-            {
-                infeasibleSubset.insert( subformula->formula() );
-            }
-            mInfeasibleSubsets.push_back( std::move(infeasibleSubset) );
-        }
+            generateTrivialInfeasibleSubset(); // TODO: compute a better infeasible subset
         return ans;
     }
 }
