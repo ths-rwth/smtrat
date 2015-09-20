@@ -323,21 +323,21 @@ namespace smtrat
                 
                 void propagateStateInfeasibleConstraints(HistoryNode* _target) const
                 {
-                        for( std::set<ConstraintT>::iterator constraintIt = mStateInfeasibleConstraints.begin(); constraintIt != mStateInfeasibleConstraints.end(); ++constraintIt )
-                            _target->addInfeasibleConstraint(*constraintIt);
+                    for( std::set<ConstraintT>::iterator constraintIt = mStateInfeasibleConstraints.begin(); constraintIt != mStateInfeasibleConstraints.end(); ++constraintIt )
+                        _target->addInfeasibleConstraint(*constraintIt);
                 }
                 
                 void propagateStateInfeasibleVariables(HistoryNode* _target) const
                 {
-                        set_icpVariable result;
-                        for( set_icpVariable::iterator variableIt = mStateInfeasibleVariables.begin(); variableIt != mStateInfeasibleVariables.end(); ++variableIt )
+                    set_icpVariable result;
+                    for( set_icpVariable::iterator variableIt = mStateInfeasibleVariables.begin(); variableIt != mStateInfeasibleVariables.end(); ++variableIt )
+                    {
+                        gatherVariables((*variableIt)->var(), result);
+                        for( set_icpVariable::iterator collectedVarIt = result.begin(); collectedVarIt != result.end(); ++collectedVarIt )
                         {
-                            gatherVariables((*variableIt)->var(), result);
-                            for( set_icpVariable::iterator collectedVarIt = result.begin(); collectedVarIt != result.end(); ++collectedVarIt )
-                            {
-                                _target->addInfeasibleVariable(*collectedVarIt);
-                            }
+                            _target->addInfeasibleVariable(*collectedVarIt);
                         }
+                    }
                 }
 
                 void print( std::ostream& _out = std::cout ) const

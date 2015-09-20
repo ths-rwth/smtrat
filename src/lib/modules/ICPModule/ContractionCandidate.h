@@ -39,6 +39,7 @@ namespace smtrat
             unsigned mId;
             bool mIsLinear;
             bool mDerived;
+            bool mUsePropagation;
             std::set<IcpVariable*> mIcpVariables;
             unsigned mReusagesAfterTargetDiameterReached;
 
@@ -59,7 +60,7 @@ namespace smtrat
             ContractionCandidate( const ContractionCandidate& _original ) = delete;
 			ContractionCandidate( ) = delete;
 
-            ContractionCandidate( carl::Variable _lhs, const Poly _rhs, const ConstraintT& _constraint, carl::Variable _derivationVar, Contractor<carl::SimpleNewton>& _contractor, const FormulaT& _origin, unsigned _id ):
+            ContractionCandidate( carl::Variable _lhs, const Poly _rhs, const ConstraintT& _constraint, carl::Variable _derivationVar, Contractor<carl::SimpleNewton>& _contractor, const FormulaT& _origin, unsigned _id, bool _usePropagation ):
                 mRhs(_rhs),
                 mConstraint(_constraint),
                 mContractor(_contractor),
@@ -70,6 +71,7 @@ namespace smtrat
                 mId(_id),
                 mIsLinear(true),
                 mDerived(false),
+                mUsePropagation(_usePropagation),
 				mIcpVariables(),
                 mReusagesAfterTargetDiameterReached(0),
                 mRWA(1),
@@ -83,7 +85,7 @@ namespace smtrat
              * @param _constraint
              * @param _derivationVar
              */
-            ContractionCandidate( carl::Variable _lhs, const Poly _rhs, const ConstraintT& _constraint, carl::Variable _derivationVar, Contractor<carl::SimpleNewton>& _contractor, unsigned _id ):
+            ContractionCandidate( carl::Variable _lhs, const Poly _rhs, const ConstraintT& _constraint, carl::Variable _derivationVar, Contractor<carl::SimpleNewton>& _contractor, unsigned _id, bool _usePropagation ):
                 mRhs(_rhs),
                 mConstraint(_constraint),
                 mContractor(_contractor),
@@ -94,6 +96,7 @@ namespace smtrat
                 mId(_id),
                 mIsLinear(false),
                 mDerived(false),
+                mUsePropagation(_usePropagation),
 				mIcpVariables(),
                 mReusagesAfterTargetDiameterReached(0),
                 mRWA(1),
@@ -128,7 +131,7 @@ namespace smtrat
             
             bool contract(EvalDoubleIntervalMap& _intervals, DoubleInterval& _resA, DoubleInterval& _resB)
             {
-                return mContractor(_intervals, mDerivationVar, _resA, _resB, true, true);
+                return mContractor(_intervals, mDerivationVar, _resA, _resB, true, mUsePropagation);
             }
 
             carl::Variable::Arg derivationVar() const
@@ -278,7 +281,7 @@ namespace smtrat
 
             void print( std::ostream& _out = std::cout ) const
             {
-                _out << mId << ": \t" << mRhs << ", LHS = " << mLhs <<  ", VAR = " << mDerivationVar << ", DERIVATIVE = " << mDerivative;
+                _out << mId << ": \t" << mContractor.polynomial() << ", LHS = " << mLhs <<  ", VAR = " << mDerivationVar << ", DERIVATIVE = " << mDerivative;
 //                _out << mId << ": \t" << ", LHS = " << mLhs <<  ", VAR = " << mDerivationVar << ", DERIVATIVE = " << mDerivative;
 #ifdef CCPRINTORIGINS
                 cout << endl << "Origins(" << mOrigin.size()<< "): " << endl;

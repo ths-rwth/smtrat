@@ -57,7 +57,8 @@ namespace icp{
                                                 const Poly _rhs,
                                                 const ConstraintT& _constraint,
                                                 carl::Variable _derivationVar,
-                                                Contractor<carl::SimpleNewton>& _contractor );
+                                                Contractor<carl::SimpleNewton>& _contractor,
+                                                bool _usePropagation );
         
         /**
          * Returns the id of the given contraction candidate

@@ -86,7 +86,6 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
     {
         printWelcome();
     }
-    
     // Iterate over the given arguments.
     for(int argi = 1; argi < argc; ++argi) 
     {
@@ -120,6 +119,7 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
                 std::cout << "CMake options used for SMT-RAT:" << std::endl;
                 smtrat::printCMakeOptions(std::cout);
                 std::cout << std::endl;
+                exit(SMTRAT_EXIT_SUCCESS);
             }
             else if(optionName == "export-dimacs")
             {
@@ -134,11 +134,11 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
                 printLicense();
                 exit(SMTRAT_EXIT_SUCCESS);
             }
-            else if(optionName == "toc") 
-            {
-                printToC();
-                exit(SMTRAT_EXIT_SUCCESS);
-            }
+//            else if(optionName == "toc") 
+//            {
+//                printToC();
+//                exit(SMTRAT_EXIT_SUCCESS);
+//            }
             else if(optionName == "list-modules")
             {
                 printModulesInfo();
@@ -149,12 +149,12 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
             {
                 mDoPrintTimings = true;
             }
+            #endif
             else if(optionName == "info")
             {
                 printInfo();
                 exit(SMTRAT_EXIT_SUCCESS);
             }
-            #endif
             else if(optionName == "model" || optionName == "m")
             {
                 mPrintModel = true;
@@ -213,19 +213,19 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
 void RuntimeSettingsManager::printHelp() const
 {
     // Print usage examples.
-    std::cout << "Usage: ./solver [GlobalOptions] [ModuleOptions] inputfile" << std::endl;
-    std::cout << "Example: ./solver --help. Prints this help." << std::endl;
-    std::cout << "Example ./solver --parser:s example.smt2. Runs the solver on example.smt2 with tracing enabled for the parser." << std::endl;
+    std::cout << "Usage: ./smtrat [GlobalOptions] [ModuleOptions] inputfile" << std::endl;
+    std::cout << "Example: ./smtrat --help. Prints this help." << std::endl;
+    std::cout << "Example ./smtrat --parser:s example.smt2. Runs SMT-RAT on example.smt2 with tracing enabled for the parser." << std::endl;
     std::cout << std::endl;
     // Print help for the global options.
     std::cout << "Global options:" << std::endl;
     std::cout << "\t --help (-h) \t\t prints this help." << std::endl;
-	std::cout << "\t --cmake \t\t print cmake options." << std::endl;
+    std::cout << "\t --cmake \t\t print cmake options." << std::endl;
     std::cout << "\t --license \t\t prints the license." << std::endl;
-    std::cout << "\t --toc  \t\t\t prints the terms of condition" << std::endl;
-    std::cout << "\t --info \t\t\t prints information about the binary" << std::endl;
-    std::cout << "\t --model (-m) \t\t\t prints a model is printed if the example is found to be satisfiable" << std::endl;
-    std::cout << "\t --statistics (-s) \t\t\t prints any statistics collected in the solving process" << std::endl;
+//    std::cout << "\t --toc  \t\t\t prints the terms of condition" << std::endl;
+    std::cout << "\t --info \t\t prints information about the binary" << std::endl;
+    std::cout << "\t --model (-m) \t\t prints a model is printed if the example is found to be satisfiable" << std::endl;
+    std::cout << "\t --statistics (-s) \t prints any statistics collected in the solving process" << std::endl;
     std::cout << std::endl;
     std::cout << "Developer options:" <<std::endl;
     std::cout << "\t --list-modules \t prints all compiled modules" << std::endl;
