@@ -11,6 +11,7 @@
 # Version: 2013-05-29                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+set(SMTRAT_CAD_SETTINGS "1" CACHE STRING "Number of setting used for CADModule")
 BeginDefineModule()
 ModuleMainHeader(CADModule/CADModule.h)
 FILE(GLOB_RECURSE sources *.cpp)
@@ -18,7 +19,7 @@ foreach(src ${sources})
     AddModuleSource(${src})
 endforeach()
 ModuleName(CADModule)
-ModuleClass(CADModule)
+ModuleClass(CADModule<CADSettings${SMTRAT_CAD_SETTINGS}>)
 ModuleVersion(0 7 0)
 ModuleDefaultEnabled()
 EndDefineModule(enabled)
@@ -63,4 +64,6 @@ if(${enabled})
     endif()
 
     configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/CADModule/config.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/CADModule/config.h )
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/CADModule/CADModule.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/CADModule/CADModule.cpp )
+    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/CADModule/CADModuleInstantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/CADModule/CADModuleInstantiation.h )
 endif()

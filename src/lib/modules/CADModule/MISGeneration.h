@@ -11,31 +11,33 @@ namespace cad {
 	template<MISHeuristic heuristic>
 	class MISGeneration {
 	private:
-		const CADModule& mCAD;
-		void addBoundConstraints(FormulaSetT& mis) const {
-			FormulaSetT boundConstraints = mCAD.variableBounds().getOriginSetOfBounds();
+		template<typename CADModule>
+		void addBoundConstraints(const CADModule& CAD, FormulaSetT& mis) const {
+			FormulaSetT boundConstraints = CAD.variableBounds().getOriginSetOfBounds();
 			mis.insert(boundConstraints.begin(), boundConstraints.end());
 		}
 	public:
-		MISGeneration(const CADModule& cad): mCAD(cad) {}
-		void operator()(std::vector<FormulaSetT>& mis);
+		template<typename CADModule>
+		void operator()(const CADModule& CAD, std::vector<FormulaSetT>& mis);
 	};
 	
 	template<>
-	void MISGeneration<MISHeuristic::TRIVIAL>::operator()(std::vector<FormulaSetT>& mis) {
+	template<typename CADModule>
+	void MISGeneration<MISHeuristic::TRIVIAL>::operator()(const CADModule& CAD, std::vector<FormulaSetT>& mis) {
 		mis.emplace_back();
-		addBoundConstraints(mis.back());
-		for (const auto& i: mCAD.constraints()) mis.back().insert(i.first);
+		addBoundConstraints(CAD, mis.back());
+		for (const auto& i: CAD.constraints()) mis.back().insert(i.first);
 	}
 	
 	template<>
-	void MISGeneration<MISHeuristic::GREEDY>::operator()(std::vector<FormulaSetT>& mis) {
+	template<typename CADModule>
+	void MISGeneration<MISHeuristic::GREEDY>::operator()(const CADModule& CAD, std::vector<FormulaSetT>& mis) {
 		mis.emplace_back();
-		addBoundConstraints(mis.back());
-		auto cg = mCAD.conflictGraph();
+		addBoundConstraints(CAD, mis.back());
+		auto cg = CAD.conflictGraph();
 		while (cg.hasRemainingSamples()) {
 			std::size_t c = cg.getMaxDegreeConstraint();
-			mis.back().insert(mCAD.formulaFor(cg.getConstraint(c)));
+			mis.back().insert(CAD.formulaFor(cg.getConstraint(c)));
 			cg.selectConstraint(c);
 		}
 	}
