@@ -4,9 +4,6 @@
 
 namespace smtrat {
 namespace cad {
-	enum class MISHeuristic {
-		TRIVIAL, GREEDY
-	};
 	
 	template<MISHeuristic heuristic>
 	class MISGeneration {
