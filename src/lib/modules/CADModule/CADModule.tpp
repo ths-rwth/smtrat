@@ -274,17 +274,25 @@ namespace smtrat
 		SMTRAT_LOG_TRACE("smtrat.cad", "CAD complete: " << mCAD.isComplete());
 		SMTRAT_LOG_TRACE("smtrat.cad", "Solution point: " << mRealAlgebraicSolution);
 		mInfeasibleSubsets.clear();
-#ifdef SMTRAT_CAD_ENABLE_INTEGER
-		// Check whether the found assignment is integer.
-		std::vector<carl::Variable> vars(mCAD.getVariables());
-		for (unsigned d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
-			auto r = this->mRealAlgebraicSolution[d]->branchingPoint();
-			if (!carl::isInteger(r)) {
-				branchAt(vars[d], r);
-				return Unknown;
+		if (Settings::integer_handling == IntegerHandling::SPLIT_SOLUTION) {
+			// Check whether the found assignment is integer.
+			const std::vector<carl::Variable>& vars = mCAD.getVariables();
+			for (unsigned d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
+				if (vars[d].getType() != carl::VariableType::VT_INT) continue;
+				auto r = this->mRealAlgebraicSolution[d]->branchingPoint();
+				if (!carl::isInteger(r)) {
+					branchAt(vars[d], r);
+					return Unknown;
+				}
+			}
+		} else {
+			const std::vector<carl::Variable>& vars = mCAD.getVariables();
+			for (unsigned d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
+				if (vars[d].getType() != carl::VariableType::VT_INT) continue;
+				auto r = this->mRealAlgebraicSolution[d]->branchingPoint();
+				assert(carl::isInteger(r));
 			}
 		}
-#endif
 		return True;
 	}
 
