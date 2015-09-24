@@ -111,7 +111,7 @@ namespace smtrat
             const FormulaWithOrigins& fwo = *receivedSubformula;
             const FormulaT& formula = fwo.formula();
 
-            const FormulasT& formulasToPass = mEncoder.encode(formula);
+            const FormulaSetT& formulasToPass = mEncoder.encode(formula);
 
             for(const FormulaT formulaToPass : formulasToPass)
             {

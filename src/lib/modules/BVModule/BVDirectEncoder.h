@@ -58,11 +58,11 @@ namespace smtrat
 
             // Created formulas ("encodings")
             //  - for terms
-            carl::FastMap<BitVecTerm, FormulasT> mTermEncodings;
+            carl::FastMap<BitVecTerm, FormulaSetT> mTermEncodings;
             //  - for constraints (not including the encodings for the contained terms)
-            carl::FastMap<BitVecConstr, FormulasT> mConstraintEncodings;
+            carl::FastMap<BitVecConstr, FormulaSetT> mConstraintEncodings;
             //  - for terms and constraints originating from the current input formula
-            FormulasT mCurrentEncodings;
+            FormulaSetT mCurrentEncodings;
 
             // Encoding state (remember currently encoded constraint/term)
             boost::optional<BitVecConstr> mCurrentConstraint;
@@ -86,14 +86,14 @@ namespace smtrat
             void addEncoding(const Formula& _formula)
             {
                 if(mCurrentTerm) {
-                    mTermEncodings.insert(std::make_pair(*mCurrentTerm, FormulasT()));
-                    mTermEncodings[*mCurrentTerm].push_back(_formula);
+                    mTermEncodings.insert(std::make_pair(*mCurrentTerm, FormulaSetT()));
+                    mTermEncodings[*mCurrentTerm].insert(_formula);
                 } else if(mCurrentConstraint) {
-                    mConstraintEncodings.insert(std::make_pair(*mCurrentConstraint, FormulasT()));
-                    mConstraintEncodings[*mCurrentConstraint].push_back(_formula);
+                    mConstraintEncodings.insert(std::make_pair(*mCurrentConstraint, FormulaSetT()));
+                    mConstraintEncodings[*mCurrentConstraint].insert(_formula);
                 }
 
-                mCurrentEncodings.push_back(_formula);
+                mCurrentEncodings.insert(_formula);
             }
 
             Bits encodeConstant(const carl::BVValue& _value)
@@ -656,7 +656,7 @@ namespace smtrat
                 auto it = mTermEncodings.find(_term);
                 if(it != mTermEncodings.end())
                 {
-                    mCurrentEncodings.insert(mCurrentEncodings.end(), it->second.begin(), it->second.end());
+                    mCurrentEncodings.insert(it->second.begin(), it->second.end());
                     return mTermBits[_term];
                 }
 
@@ -744,7 +744,7 @@ namespace smtrat
                 auto it = mConstraintEncodings.find(_constraint);
                 if(it != mConstraintEncodings.end())
                 {
-                    mCurrentEncodings.insert(mCurrentEncodings.end(), it->second.begin(), it->second.end());
+                    mCurrentEncodings.insert(it->second.begin(), it->second.end());
                     return mConstraintBits[_constraint];
                 }
 
@@ -939,13 +939,13 @@ namespace smtrat
 
         public:
 
-            const FormulasT& encode(const FormulaT& _inputFormula)
+            const FormulaSetT& encode(const FormulaT& _inputFormula)
             {
                 mCurrentEncodings.clear();
                 carl::FormulaVisitor<FormulaT> visitor;
                 std::function<FormulaT(FormulaT)> encodeConstraints = std::bind(&BVDirectEncoder::encodeBVConstraints, this, std::placeholders::_1);
                 FormulaT passedFormula = visitor.visit(_inputFormula, encodeConstraints);
-                mCurrentEncodings.push_back(passedFormula);
+                mCurrentEncodings.insert(passedFormula);
                 return mCurrentEncodings;
             }
 
