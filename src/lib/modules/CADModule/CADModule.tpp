@@ -29,10 +29,6 @@ using namespace std;
 // CAD settings
 //#define SMTRAT_CAD_GENERIC_SETTING
 #define SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
-//#define SMTRAT_CAD_DISABLE_MIS
-//#define CHECK_SMALLER_MUSES
-//#define SMTRAT_CAD_ONEMOSTDEGREEVERTEX_MISHEURISTIC
-//#define SMTRAT_CAD_TWOMOSTDEGREEVERTICES_MISHEURISTIC
 
 namespace smtrat
 {
@@ -200,68 +196,13 @@ namespace smtrat
 		carl::cad::Answer status = mCAD.check(mConstraints, mRealAlgebraicSolution, mConflictGraph, boundMap, false, true);
 		if (anAnswerFound()) return Unknown;
 		if (status == carl::cad::Answer::False) {
-			#ifdef SMTRAT_CAD_DISABLE_MIS
-			// construct a trivial infeasible subset
-			std::cout << "Trivial" << std::endl;
-			cad::MISGeneration<MISHeuristic::TRIVIAL> tmp(*this);
-			tmp(mInfeasibleSubsets);
-			#else
-			// construct an infeasible subset
-			assert(mCAD.getSetting().computeConflictGraph);
-			// copy conflict graph for destructive heuristics and invert it
-			ConflictGraph<smtrat::Rational> g(mConflictGraph);
-			g.invert();
-			#if defined SMTRAT_CAD_ONEMOSTDEGREEVERTEX_MISHEURISTIC
-				// remove the lowest-degree vertex (highest degree in inverted graph)
-				g.removeConstraintVertex(g.maxDegreeVertex());
-			#elif defined SMTRAT_CAD_TWOMOSTDEGREEVERTICES_MISHEURISTIC
-				// remove the two lowest-degree vertices (highest degree in inverted graph)
-				g.removeConstraintVertex(g.maxDegreeVertex());
-				g.removeConstraintVertex(g.maxDegreeVertex());
-			#else
-				// remove last vertex, assuming it is part of the MIS
-				assert(mConstraints.size() > 0);
-				g.removeConstraintVertex(mConstraints.size() - 1);
-			#endif
 			
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Input: " << mConstraints);
-			for (auto j: mConstraints) SMTRAT_LOG_DEBUG("smtrat.cad", "\t" << j);
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Bounds: " << mVariableBounds);
-				
-			std::vector<FormulaSetT> infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics(g);
+			cad::MISGeneration<Settings::mis_heuristic> mis;
+			mis(*this, mInfeasibleSubsets);
 
-			FormulasT boundConstraints = mVariableBounds.getOriginsOfBounds();
-			for (const auto& i: infeasibleSubsets) {
-                #ifdef LOGGING_CARL
-				SMTRAT_LOG_DEBUG("smtrat.cad", "Infeasible:");
-				for (const auto& j: i) SMTRAT_LOG_DEBUG("smtrat.cad", "\t" << j);
-                #endif
-				mInfeasibleSubsets.push_back(i);
-				mInfeasibleSubsets.back().insert(boundConstraints.begin(), boundConstraints.end());
+			if (Settings::checkMISForMinimality) {
+				Module::checkInfSubsetForMinimality(mInfeasibleSubsets.begin());
 			}
-            #ifdef SMTRAT_DEVOPTION_Validation
-			std::vector<FormulaSetT> ours;
-			cad::MISGeneration<Settings::mis_heuristic> tmp(*this);
-			tmp(ours);
-			//std::cout << "MIS: " << mInfeasibleSubsets << std::endl;
-			//std::cout << "MIS2: " << ours << std::endl;
-			if (ours != mInfeasibleSubsets) {
-				//std::cout << "old = " << mInfeasibleSubsets << std::endl;
-				//std::cout << "new = " << ours << std::endl;
-				addAssumptionToCheck(ours.back(), false, "new");
-				addAssumptionToCheck(mInfeasibleSubsets.back(), false, "old");
-				storeAssumptionsToCheck(*mpManager);
-			}
-			//assert(ours == mInfeasibleSubsets);
-			#ifdef SMTRAT_DEVOPTION_Statistics
-			mStats->addMIS(constraints().size() + variableBounds().getOriginsOfBounds().size(), ours.size());
-			#endif
-            #endif
-
-			#ifdef CHECK_SMALLER_MUSES
-			Module::checkInfSubsetForMinimality(mInfeasibleSubsets->begin());
-			#endif
-			#endif
 			mRealAlgebraicSolution = carl::RealAlgebraicPoint<smtrat::Rational>();
 			return False;
 		}
