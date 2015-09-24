@@ -203,7 +203,7 @@ namespace smtrat
 			#ifdef SMTRAT_CAD_DISABLE_MIS
 			// construct a trivial infeasible subset
 			std::cout << "Trivial" << std::endl;
-			cad::MISGeneration<cad::MISHeuristic::TRIVIAL> tmp(*this);
+			cad::MISGeneration<MISHeuristic::TRIVIAL> tmp(*this);
 			tmp(mInfeasibleSubsets);
 			#else
 			// construct an infeasible subset
@@ -241,7 +241,7 @@ namespace smtrat
 			}
             #ifdef SMTRAT_DEVOPTION_Validation
 			std::vector<FormulaSetT> ours;
-			cad::MISGeneration<cad::MISHeuristic::GREEDY> tmp(*this);
+			cad::MISGeneration<Settings::mis_heuristic> tmp(*this);
 			tmp(ours);
 			//std::cout << "MIS: " << mInfeasibleSubsets << std::endl;
 			//std::cout << "MIS2: " << ours << std::endl;
