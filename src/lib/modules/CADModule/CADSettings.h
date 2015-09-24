@@ -44,7 +44,10 @@ namespace smtrat
     struct CADSettings1
     {
         static constexpr IntegerHandling integer_handling = IntegerHandling::SPLIT_EARLY;
+        
         static constexpr MISHeuristic mis_heuristic = MISHeuristic::GREEDY;
+        static constexpr bool computeConflictGraph = (mis_heuristic != MISHeuristic::TRIVIAL);
+        static constexpr bool checkMISForMinimality = false;
         
         static const bool dummy;
     };
