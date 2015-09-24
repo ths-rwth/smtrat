@@ -50,17 +50,17 @@ namespace smtrat
 
             // Substituted fresh variables
             //  - for bitvector variables (one variable for each bitvector bit)
-            std::map<BitVec, Bits> mBitVecBits;
+            carl::FastMap<BitVec, Bits> mBitVecBits;
             //  - for bitvector terms (likewise, one variable for each bitvector bit)
-            std::map<BitVecTerm, Bits> mTermBits;
+            carl::FastMap<BitVecTerm, Bits> mTermBits;
             //  - for bitvector constraints (a single variable)
-            std::map<BitVecConstr, Bit> mConstraintBits;
+            carl::FastMap<BitVecConstr, Bit> mConstraintBits;
 
             // Created formulas ("encodings")
             //  - for terms
-            std::map<BitVecTerm, FormulasT> mTermEncodings;
+            carl::FastMap<BitVecTerm, FormulasT> mTermEncodings;
             //  - for constraints (not including the encodings for the contained terms)
-            std::map<BitVecConstr, FormulasT> mConstraintEncodings;
+            carl::FastMap<BitVecConstr, FormulasT> mConstraintEncodings;
             //  - for terms and constraints originating from the current input formula
             FormulasT mCurrentEncodings;
 
@@ -110,7 +110,7 @@ namespace smtrat
 
             Bits encodeVariable(const BitVec& _variable)
             {
-                std::map<BitVec, Bits>::iterator it = mBitVecBits.find(_variable);
+                carl::FastMap<BitVec, Bits>::iterator it = mBitVecBits.find(_variable);
 
                 if(it == mBitVecBits.end())
                 {
@@ -954,7 +954,7 @@ namespace smtrat
                 return mIntroducedBits;
             }
 
-            const std::map<BitVec, Bits> bitvectorBlastings() const
+            const carl::FastMap<BitVec, Bits> bitvectorBlastings() const
             {
                 return mBitVecBits;
             }
