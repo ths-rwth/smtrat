@@ -610,7 +610,7 @@ public class IOTools
                     }
                 }
                 implementationString.append( conditionsString );
-                implementationString.append( nl ).append( tab ).append( solverName ).append( "::" ).append( solverName ).append( "( bool _externalModuleFactoryAdding ):" ).append( nl ).append( tab ).append( tab ).append( "Manager( externalModuleFactoryAdding )" ).append( nl ).append( tab ).append( "{" ).append( nl );
+                implementationString.append( nl ).append( tab ).append( solverName ).append( "::" ).append( solverName ).append( "( bool _externalModuleFactoryAdding ):" ).append( nl ).append( tab ).append( tab ).append( "Manager( _externalModuleFactoryAdding )" ).append( nl ).append( tab ).append( "{" ).append( nl );
                 implementationString.append( graphString );
                 implementationString.append( tab ).append( "}" ).append( nl ).append( nl ).append( tab ).append( solverName ).append( "::~" ).append( solverName ).append( "(){}" ).append( nl ).append( nl ).append( "}" ).append( tab ).append( "// namespace smtrat" );
 
