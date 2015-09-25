@@ -20,7 +20,7 @@
  */
 /**
  * @file BVModule.tpp
- * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ * @author Andreas Krueger <andreas.krueger@rwth-aachen.de>
  *
  * @version 2015-02-05
  * Created on 2015-02-05.
@@ -94,7 +94,7 @@ namespace smtrat
         }
 
         // Remove internal variables which have been introduced by blasting
-        auto& introducedVariables = mEncoder.introducedBits();
+        auto& introducedVariables = mEncoder.introducedVariables();
 
         for(auto const & introducedVariable : introducedVariables)
         {
@@ -111,10 +111,12 @@ namespace smtrat
             const FormulaWithOrigins& fwo = *receivedSubformula;
             const FormulaT& formula = fwo.formula();
 
+            // std::cerr << "Encoding: " << formula << std::endl;
             const FormulaSetT& formulasToPass = mEncoder.encode(formula);
 
             for(const FormulaT formulaToPass : formulasToPass)
             {
+                // std::cerr << "-> " << formulaToPass << std::endl;
                 addSubformulaToPassedFormula(formulaToPass, formula);
             }
             ++receivedSubformula;
