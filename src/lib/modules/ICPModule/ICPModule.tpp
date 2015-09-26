@@ -175,7 +175,12 @@ namespace smtrat
                     // TODO: here or somewhere later in isConsistent: remove constraints from passed formula which are implied by the current box
                     addSubformulaToPassedFormula( _formula->formula(), _formula->formula() );
                     for( auto& var : _formula->formula().constraint().variables() )
-                        mVariables.at(var)->addOriginalConstraint( _formula->formula() );
+                    {
+                        auto iter = mVariables.find( var );
+                        if( Settings::original_polynomial_contraction && iter == mVariables.end() )
+                            continue;
+                        iter->second->addOriginalConstraint( _formula->formula() );
+                    }
                 }
                 // activate associated nonlinear contraction candidates
                 if( !constr.lhs().isLinear() )
@@ -304,7 +309,8 @@ namespace smtrat
     template<class Settings>
     Answer ICPModule<Settings>::checkCore( bool _full )
     {
-        
+        if( !rReceivedFormula().isConstraintConjunction() )
+			return Unknown;
         #ifdef ICP_MODULE_DEBUG_0
         std::cout << "##############################################################" << std::endl;
         std::cout << "Start consistency check with the ICPModule on the constraints " << std::endl;
