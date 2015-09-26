@@ -600,7 +600,7 @@ namespace smtrat
              * @param _filename The name of the file to store the infeasible subsets in order to be able to check their infeasibility.
              * @param _maxSizeDifference The maximal difference between the sizes of the subsets compared to the size of the infeasible subset.
              */
-            void checkInfSubsetForMinimality( std::vector<FormulasT>::const_iterator _infsubset, const std::string& _filename = "smaller_muses", unsigned _maxSizeDifference = 1 ) const;
+            void checkInfSubsetForMinimality( std::vector<FormulaSetT>::const_iterator _infsubset, const std::string& _filename = "smaller_muses", unsigned _maxSizeDifference = 1 ) const;
             
             /**
              * @return A pair of a Boolean and a formula, where the Boolean is true, if the received formula 
