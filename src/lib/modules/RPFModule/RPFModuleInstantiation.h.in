@@ -1,0 +1,13 @@
+/**
+ * @file RPFModuleInstantiation.h
+ * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ *
+ * @version 2015-09-10
+ * Created on 2015-09-10.
+ */
+
+
+namespace smtrat
+{
+    extern template class RPFModule<RPFSettings@SMTRAT_RPF_SETTINGS@>;
+}

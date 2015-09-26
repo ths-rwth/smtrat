@@ -1,0 +1,13 @@
+/**
+ * @file BEModuleInstantiation.h
+ * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ *
+ * @version 2015-09-09
+ * Created on 2015-09-09.
+ */
+
+
+namespace smtrat
+{
+    extern template class BEModule<BESettings@SMTRAT_BE_SETTINGS@>;
+}

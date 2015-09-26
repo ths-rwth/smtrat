@@ -550,7 +550,7 @@ public class IOTools
 
                 String license = "";
 
-                String headerString = license + "/**" + nl + " * @file " + solverName + ".h" + nl + " *" + nl + " */" + nl + "#ifndef SMTRAT_" + solverNameUpperCase + "_H" + nl + "#define SMTRAT_" + solverNameUpperCase + "_H" + nl + nl + "#include \"../solver/Manager.h\"" + nl + nl + "namespace smtrat" + nl + "{" + nl + tab + "class " + solverName + ":" + nl + tab + tab + "public Manager" + nl + tab + "{" + nl + tab + tab + "public:" + nl + tab + tab + tab + solverName + "();" + nl + tab + tab + tab + "~" + solverName + "();" + nl + tab + "};" + nl + "}" + tab + "// namespace smtrat" + nl + "#endif" + tab + "/** SMTRAT_" + solverNameUpperCase + "_H */" + nl;
+                String headerString = license + "/**" + nl + " * @file " + solverName + ".h" + nl + " *" + nl + " */" + nl + "#ifndef SMTRAT_" + solverNameUpperCase + "_H" + nl + "#define SMTRAT_" + solverNameUpperCase + "_H" + nl + nl + "#include \"../solver/Manager.h\"" + nl + nl + "namespace smtrat" + nl + "{" + nl + tab + "class " + solverName + ":" + nl + tab + tab + "public Manager" + nl + tab + "{" + nl + tab + tab + "public:" + nl + tab + tab + tab + solverName + "( bool _externalModuleFactoryAdding = false );" + nl + tab + tab + tab + "~" + solverName + "();" + nl + tab + "};" + nl + "}" + tab + "// namespace smtrat" + nl + "#endif" + tab + "/** SMTRAT_" + solverNameUpperCase + "_H */" + nl;
 
                 StringBuilder conditionsString = new StringBuilder();
                 StringBuilder graphString = new StringBuilder();
@@ -610,7 +610,7 @@ public class IOTools
                     }
                 }
                 implementationString.append( conditionsString );
-                implementationString.append( nl ).append( tab ).append( solverName ).append( "::" ).append( solverName ).append( "():" ).append( nl ).append( tab ).append( tab ).append( "Manager()" ).append( nl ).append( tab ).append( "{" ).append( nl );
+                implementationString.append( nl ).append( tab ).append( solverName ).append( "::" ).append( solverName ).append( "( bool _externalModuleFactoryAdding ):" ).append( nl ).append( tab ).append( tab ).append( "Manager( externalModuleFactoryAdding )" ).append( nl ).append( tab ).append( "{" ).append( nl );
                 implementationString.append( graphString );
                 implementationString.append( tab ).append( "}" ).append( nl ).append( nl ).append( tab ).append( solverName ).append( "::~" ).append( solverName ).append( "(){}" ).append( nl ).append( nl ).append( "}" ).append( tab ).append( "// namespace smtrat" );
 

@@ -8,8 +8,8 @@
 namespace smtrat
 {
 
-    RatTwo::RatTwo():
-        Manager()
+    RatTwo::RatTwo( bool _externalModuleFactoryAdding ):
+        Manager( _externalModuleFactoryAdding )
     {
         size_t position = 0;
         #ifdef SMTRAT_ENABLE_CNFerModule

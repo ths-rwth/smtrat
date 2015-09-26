@@ -162,8 +162,6 @@ namespace smtrat
     template<class Settings>
     bool SATModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-//        std::cout << __func__ << std::endl;
-//        printDecisions();
         if( _subformula->formula().isFalse() )
         {
             return false;
@@ -172,7 +170,7 @@ namespace smtrat
         {
             //TODO Matthias: better solution?
             cancelUntil( assumptions.size() );
-//            adaptPassedFormula();
+            adaptPassedFormula();
 
             if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
             {
@@ -220,14 +218,12 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
-//        std::cout << __func__ << std::endl;
-//        printDecisions();
         if( _subformula->formula().isFalse() || _subformula->formula().isTrue() )
         {
             return;
         }
         cancelUntil( assumptions.size() );  // can we do better than this?
-//        adaptPassedFormula();
+        adaptPassedFormula();
         learnts.clear();
         if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
         {
@@ -244,21 +240,10 @@ namespace smtrat
             assumptions.pop();
             mFormulaAssumptionMap.erase( iter );
             cancelUntil(pos, true);
-//            adaptPassedFormula();
-//            ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( _subformula->formula() );
-//            assert( constraintLiteralPair != mConstraintLiteralMap.end() );
-//            int abstractionVar = var(constraintLiteralPair->second.front());
-//            auto& abstrPair = mBooleanConstraintMap[abstractionVar];
-//            assert( abstrPair.first != nullptr && abstrPair.second != nullptr );
-//            Abstraction& abstr = sign(constraintLiteralPair->second.front()) ? *abstrPair.second : *abstrPair.first;
-//            if( abstr.origins != nullptr )
-//            {
-//                assert( !abstr.origins->empty() );
-//                if( abstr.origins->size() == 1 )
-//                {
-//                    delete 
-//                }
-//            }
+            adaptPassedFormula();
+            ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( _subformula->formula() );
+            assert( constraintLiteralPair != mConstraintLiteralMap.end() );
+            removeLiteralOrigin( constraintLiteralPair->second.front(), _subformula->formula() );
         }
         else if( _subformula->formula().propertyHolds( carl::PROP_IS_A_CLAUSE ) )
         {
@@ -287,6 +272,51 @@ namespace smtrat
                     removeClause( iter->second );
                 }
                 mFormulaClauseMap.erase(iter);
+                for( auto subformula = _subformula->formula().subformulas().begin(); subformula != _subformula->formula().subformulas().end(); ++subformula )
+                {
+                    ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( *subformula );
+                    assert( constraintLiteralPair != mConstraintLiteralMap.end() );
+                    removeLiteralOrigin( constraintLiteralPair->second.front(), _subformula->formula() );
+                }
+                    
+            }
+        }
+    }
+    
+    template<class Settings>
+    void SATModule<Settings>::removeLiteralOrigin( Lit _litToRemove, const FormulaT& _origin )
+    {
+        int abstractionVar = var(_litToRemove);
+        auto& abstrPair = mBooleanConstraintMap[abstractionVar];
+        assert( abstrPair.first != nullptr && abstrPair.second != nullptr );
+        Abstraction& abstr = sign(_litToRemove) ? *abstrPair.second : *abstrPair.first;
+        if( abstr.origins != nullptr )
+        {
+            auto& origs = *abstr.origins;
+            auto iter = origs.begin();
+            while( iter != origs.end() )
+            {
+                if( *iter == _origin || (iter->getType() == carl::FormulaType::AND && iter->contains( _origin )) )
+                {
+                    if (iter != --origs.end())
+                    {
+                        *iter = origs.back();
+                        origs.pop_back();
+                    }
+                    else
+                    {
+                        origs.pop_back();
+                        break;
+                    }
+                }
+                else
+                {
+                    ++iter;
+                }
+            }
+            if( origs.empty() )
+            {
+                abstr.origins = nullptr;
             }
         }
     }
@@ -312,8 +342,6 @@ namespace smtrat
     template<class Settings>
     Answer SATModule<Settings>::checkCore( bool )
     {
-//        std::cout << __func__ << std::endl;
-//        printDecisions();
         #ifdef SMTRAT_DEVOPTION_Statistics
         mpStatistics->rNrTotalVariablesBefore() = (size_t) nVars();
         mpStatistics->rNrClauses() = (size_t) nClauses();
@@ -359,7 +387,6 @@ namespace smtrat
                 result = search();
             }
             
-//            printDecisions();
             if( !Settings::stop_search_after_first_unknown )
             {
                 unknown_excludes.clear();

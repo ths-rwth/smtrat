@@ -53,6 +53,8 @@ foreach(modIndex RANGE ${maxModIndex})
 	# no settings instances
 	set(addModuleList "${addModuleList}
 		manager->addModuleType( MT_${modType}, new StandardModuleFactory< ${modClass} >( ) ); \n")
+	set(addModuleListNoSettings "${addModuleListNoSettings}
+		manager.addModuleType( MT_${modType}, new StandardModuleFactory< ${modClass} >( ) ); \n")
     # modType unchanged
 	set(moduleTypesSettings ${moduleTypesSettings} ${modType})
   else()

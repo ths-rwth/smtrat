@@ -13,7 +13,7 @@ using namespace carl;
 namespace smtrat
 {
     CNFerModule::CNFerModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
-        Module( _type, _formula, _conditionals, _manager )
+        PModule( _type, _formula, _conditionals, _manager )
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
         stringstream s;
@@ -40,9 +40,7 @@ namespace smtrat
             }
             else if( formulaToAssertInCnf.getType() == FALSE )
             {
-                FormulaSetT reason;
-                reason.insert( receivedSubformula->formula() );
-                mInfeasibleSubsets.push_back( reason );
+                receivedFormulasAsInfeasibleSubset( receivedSubformula );
                 return False;
             }
             else

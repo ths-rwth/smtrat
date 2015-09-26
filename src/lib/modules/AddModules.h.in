@@ -17,6 +17,7 @@
 namespace smtrat
 {
     std::list<std::pair<std::string, RuntimeSettings*> > addModules( Manager* manager );
+    void addModules( Manager& manager );
 }
 
 

@@ -86,7 +86,7 @@ namespace smtrat
             /**
              * Constructs a manager.
              */
-            Manager();
+            Manager( bool _externalModuleFactoryAdding = false );
             
             /**
              * Destructs a manager.
@@ -157,6 +157,11 @@ namespace smtrat
             {
                 for( ; _levels > 0; --_levels )
                     if( !pop() ) return;
+            }
+            
+            void clear()
+            {
+                while( pop() );
             }
             
             void reset();
@@ -302,6 +307,13 @@ namespace smtrat
             {
                 return mLogic;
             }
+            
+            /**
+             * @return A pair of a Boolean and a formula, where the Boolean is true, if the input formula 
+             *         could be simplified to an equisatisfiable formula. The formula is equisatisfiable to this
+             *         solver's input formula, if the Boolean is true.
+             */
+            std::pair<bool,FormulaT> getInputSimplified();
             
         protected:
 

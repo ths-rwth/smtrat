@@ -51,7 +51,7 @@ namespace parser {
 		return true;
 	}
 
-	bool UninterpretedTheory::handleITE(const FormulaT& ifterm, const types::TermType& thenterm, const types::TermType& elseterm, types::TermType& result, TheoryError& errors) {
+	bool UninterpretedTheory::handleITE(const FormulaT&, const types::TermType& thenterm, const types::TermType& elseterm, types::TermType&, TheoryError& errors) {
 		types::UninterpretedTheory::TermType thenf;
 		types::UninterpretedTheory::TermType elsef;
 		if (!convertTerm(thenterm, thenf)) {
@@ -66,7 +66,7 @@ namespace parser {
 		return false;
 	}
 	
-	bool UninterpretedTheory::handleFunctionInstantiation(const carl::UninterpretedFunction& f, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
+	bool UninterpretedTheory::handleFunctionInstantiation(const carl::UninterpretedFunction& f, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError&) {
 		std::vector<carl::UVariable> vars;
 		for (const auto& v: arguments) {
 			auto it = mInstantiatedArguments.find(v);

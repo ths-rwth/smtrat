@@ -8,8 +8,8 @@
 namespace smtrat
 {
 
-    RatOne::RatOne():
-        Manager()
+    RatOne::RatOne( bool _externalModuleFactoryAdding ):
+        Manager( _externalModuleFactoryAdding )
     {
         size_t position = 0;
         #ifdef SMTRAT_ENABLE_BVModule

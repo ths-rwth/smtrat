@@ -13,7 +13,7 @@ namespace smtrat
         public Manager
     {
         public:
-            FullStrategy();
+            FullStrategy( bool _externalModuleFactoryAdding = false );
             ~FullStrategy();
     };
 }    // namespace smtrat

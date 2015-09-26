@@ -19,7 +19,7 @@ namespace smtrat
         public Manager
     {
         public:
-            PureSAT();
+            PureSAT( bool _externalModuleFactoryAdding = false );
             ~PureSAT();
 
     };

@@ -14,7 +14,7 @@ namespace parser {
 	};
 	template<carl::FormulaType type>
 	struct NaryCoreInstantiator: public CoreInstantiator {
-		bool apply(const std::vector<FormulaT>& arguments, types::TermType& result, TheoryError& errors) const {
+		bool apply(const std::vector<FormulaT>& arguments, types::TermType& result, TheoryError& ) const {
 			result = FormulaT(type, arguments);
 			return true;
 		}

@@ -1,0 +1,13 @@
+/**
+ * @file CADModuleInstantiation.h
+ * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ *
+ * @version 2015-09-10
+ * Created on 2015-09-10.
+ */
+
+
+namespace smtrat
+{
+    extern template class CADModule<CADSettings@SMTRAT_CAD_SETTINGS@>;
+}

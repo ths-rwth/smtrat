@@ -13,6 +13,7 @@
 #include "StrategyGraph.h"
 #include "ModuleFactory.h"
 #include "../modules/Modules.h"
+#include "../modules/AddModules.h"
 #include <functional>
 
 #include <typeinfo>
@@ -24,7 +25,7 @@ namespace smtrat
     
     // Constructor.
     
-    Manager::Manager():
+    Manager::Manager( bool _externalModuleFactoryAdding ):
         mPrimaryBackendFoundAnswer( std::vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
         mpPassedFormula( new ModuleInput() ),
         mBacktrackPoints(),
@@ -55,6 +56,10 @@ namespace smtrat
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         initialize();
         #endif
+        if( !_externalModuleFactoryAdding )
+        {
+            addModules( *this );
+        }
     }
 
     // Destructor.
@@ -147,6 +152,11 @@ namespace smtrat
             result.push_back( ded.first );
         }
         return result;
+    }
+    
+    std::pair<bool,FormulaT> Manager::getInputSimplified()
+    {
+        return mpPrimaryBackend->getReceivedFormulaSimplified();
     }
     
     void Manager::printAssignment( std::ostream& _out ) const

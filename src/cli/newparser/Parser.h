@@ -125,7 +125,11 @@ public:
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-unsat-core)");
 		callHandler(&InstructionHandler::getUnsatCore);
 	}
-	void getValue(const std::vector<types::TermType>& vars) {
+	void getValue(const std::vector<types::TermType>&
+        #if defined LOGGING
+        vars
+        #endif
+    ) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-value " << vars << ")");
 	}
 	void pop(const Integer& n) {

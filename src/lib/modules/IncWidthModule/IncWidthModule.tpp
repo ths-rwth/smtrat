@@ -73,6 +73,7 @@ namespace smtrat
                     }
                     else // ass.second.isRAN()
                     {
+                        assert(false); // TODO: How to add a value to a RAN
                         carl::RealAlgebraicNumberPtr<smtrat::Rational> bound = carl::RealAlgebraicNumberNR<smtrat::Rational>::create(-varShiftIter->second.constantPart());
 //                        ass.second = ass.second.asRAN()->add( bound );
                     }
@@ -114,38 +115,38 @@ namespace smtrat
                 if( vb.second.lowerBoundType() != carl::BoundType::INFTY )
                 {
                     // (a,b) -> (0,b-a)  or  (a,oo) -> (0,oo)
-                    if( vb.second.lower() < ZERO_RATIONAL )
-                    {
-                        mVariableShifts[vb.first] = carl::makePolynomial<smtrat::Poly>( vb.first ) + vb.second.lower();
-                        #ifdef DEBUG_INC_WIDTH_MODULE
-                        std::cout << "   " << mVariableShifts[vb.first] << std::endl;
-                        #endif
-                    }
-                    else if( vb.second.lower() > ZERO_RATIONAL )
-                    {
+//                    if( vb.second.lower() < ZERO_RATIONAL )
+//                    {
+//                        mVariableShifts[vb.first] = carl::makePolynomial<smtrat::Poly>( vb.first ) + vb.second.lower();
+//                        #ifdef DEBUG_INC_WIDTH_MODULE
+//                        std::cout << "   " << mVariableShifts[vb.first] << std::endl;
+//                        #endif
+//                    }
+//                    else if( vb.second.lower() > ZERO_RATIONAL )
+//                    {
                         mVariableShifts[vb.first] = carl::makePolynomial<smtrat::Poly>( vb.first ) - vb.second.lower();
                         #ifdef DEBUG_INC_WIDTH_MODULE
                         std::cout << "   " << mVariableShifts[vb.first] << std::endl;
                         #endif
-                    }
+//                    }
                 }
                 else if( vb.second.upperBoundType() != carl::BoundType::INFTY )
                 {
                     // (-oo,b) -> (-oo,0)
-                    if( vb.second.upper() < ZERO_RATIONAL )
-                    {
-                        mVariableShifts[vb.first] = carl::makePolynomial<smtrat::Poly>( vb.first ) + vb.second.upper();
-                        #ifdef DEBUG_INC_WIDTH_MODULE
-                        std::cout << "   " << mVariableShifts[vb.first] << std::endl;
-                        #endif
-                    }
-                    else if( vb.second.upper() > ZERO_RATIONAL )
-                    {
+//                    if( vb.second.upper() < ZERO_RATIONAL )
+//                    {
+//                        mVariableShifts[vb.first] = carl::makePolynomial<smtrat::Poly>( vb.first ) + vb.second.upper();
+//                        #ifdef DEBUG_INC_WIDTH_MODULE
+//                        std::cout << "   " << mVariableShifts[vb.first] << std::endl;
+//                        #endif
+//                    }
+//                    else if( vb.second.upper() > ZERO_RATIONAL )
+//                    {
                         mVariableShifts[vb.first] = carl::makePolynomial<smtrat::Poly>( vb.first ) - vb.second.upper();
                         #ifdef DEBUG_INC_WIDTH_MODULE
                         std::cout << "   " << mVariableShifts[vb.first] << std::endl;
                         #endif
-                    }
+//                    }
                 }
             }
         }

@@ -398,6 +398,24 @@ namespace smtrat
             }
 
             /**
+             * Checks whether this module or any of its backends provides any lemmas or splitting decisions.
+             */
+            bool hasDeductions()
+            {
+                if( !mDeductions.empty() || !mSplittings.empty() )
+                    return true;
+                if( mpManager != nullptr )
+                {
+                    for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
+                    {
+                        if( (*module)->hasDeductions() )
+                            return true;
+                    }
+                }
+                return false;
+            }
+
+            /**
              * Deletes all yet found deductions/lemmas.
              */
             void clearDeductions()
@@ -477,6 +495,16 @@ namespace smtrat
             const std::vector< std::atomic_bool* >& answerFound() const
             {
                 return mFoundAnswer;
+            }
+            
+            /**
+             * @return true, if this module is a preprocessor that is a module, which simplifies
+             *         its received formula to an equisatisfiable formula being passed to its backends.
+             *         The simplified formula can be obtained with getReceivedFormulaSimplified().
+             */
+            bool isPreprocessor() const
+            {
+                return false;
             }
             
             /**
@@ -573,6 +601,13 @@ namespace smtrat
              * @param _maxSizeDifference The maximal difference between the sizes of the subsets compared to the size of the infeasible subset.
              */
             void checkInfSubsetForMinimality( std::vector<FormulasT>::const_iterator _infsubset, const std::string& _filename = "smaller_muses", unsigned _maxSizeDifference = 1 ) const;
+            
+            /**
+             * @return A pair of a Boolean and a formula, where the Boolean is true, if the received formula 
+             *         could be simplified to an equisatisfiable formula. The formula is equisatisfiable to this
+             *         module's reveived formula, if the Boolean is true.
+             */
+            virtual std::pair<bool,FormulaT> getReceivedFormulaSimplified();
 
         protected:
 
@@ -776,6 +811,27 @@ namespace smtrat
             std::pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula( const FormulaT& _formula, const FormulaT& _origin )
             {
                 return addSubformulaToPassedFormula( _formula, true, _origin, nullptr, true );
+            }
+            
+            /**
+             * Stores the trivial infeasible subset being the set of received formulas.
+             */
+            void generateTrivialInfeasibleSubset()
+            {
+                FormulaSetT infeasibleSubset;
+                for( auto subformula = rReceivedFormula().begin(); subformula != rReceivedFormula().end(); ++subformula )
+                    infeasibleSubset.insert( subformula->formula() );
+                mInfeasibleSubsets.push_back( std::move(infeasibleSubset) );
+            }
+            
+            /**
+             * Stores an infeasible subset consisting only of the given received formula.
+             */
+            void receivedFormulasAsInfeasibleSubset( ModuleInput::const_iterator _subformula )
+            {
+                FormulaSetT infeasibleSubset;
+                infeasibleSubset.insert( _subformula->formula() );
+                mInfeasibleSubsets.push_back( std::move(infeasibleSubset) );
             }
             
     private:

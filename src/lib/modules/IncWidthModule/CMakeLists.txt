@@ -8,6 +8,7 @@ endforeach()
 ModuleName(IncWidthModule)
 ModuleClass(IncWidthModule<IncWidthSettings${SMTRAT_IncWidth_SETTINGS}>)
 ModuleVersion(0 0 1)
+ModuleDefaultEnabled()
 EndDefineModule(moduleEnabled)
 
 if(${moduleEnabled})
