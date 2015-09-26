@@ -12,7 +12,7 @@ using namespace std;
 
 namespace smtrat
 {
-    // size_t StrategyGraph::Edge::mPriorityAllocator = 1;
+    size_t StrategyGraph::Edge::mPriorityAllocator = 1;
 
     StrategyGraph::StrategyGraph():
         mStrategyGraph(),
@@ -97,7 +97,7 @@ namespace smtrat
         {
             if ( edge->conditionEvaluation()( _condition ) )
             {
-                thread_priority threadPriority = thread_priority( edge->threadId(), edge->successorVertex() );
+                thread_priority threadPriority = thread_priority( edge->threadId(), edge->priority() );
                 result.push_back( pair< thread_priority, ModuleType >( threadPriority, mStrategyGraph[ edge->successorVertex() ]->moduleType() ) );
             }
         }
