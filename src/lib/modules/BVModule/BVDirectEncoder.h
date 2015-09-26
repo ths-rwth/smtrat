@@ -28,6 +28,8 @@
 
 #pragma once
 
+#define SMTRAT_BV_INCREMENTAL_MODE
+
 #include "boost/optional/optional.hpp"
 #include "../../Common.h"
 #include "carl/formula/bitvector/BVConstraint.h"
@@ -59,10 +61,13 @@ namespace smtrat
             carl::FastMap<BitVecConstr, Bit> mConstraintBits;
 
             // Created formulas ("encodings")
+
+            #ifdef SMTRAT_BV_INCREMENTAL_MODE
             //  - for terms
             carl::FastMap<BitVecTerm, FormulaSetT> mTermEncodings;
             //  - for constraints (not including the encodings for the contained terms)
             carl::FastMap<BitVecConstr, FormulaSetT> mConstraintEncodings;
+            #endif
             //  - for terms and constraints originating from the current input formula
             FormulaSetT mCurrentEncodings;
 
@@ -91,6 +96,7 @@ namespace smtrat
 
             void boolAssert(const Formula& _formula)
             {
+                #ifdef SMTRAT_BV_INCREMENTAL_MODE
                 if(mCurrentTerm) {
                     mTermEncodings.insert(std::make_pair(*mCurrentTerm, FormulaSetT()));
                     mTermEncodings[*mCurrentTerm].insert(_formula);
@@ -98,6 +104,7 @@ namespace smtrat
                     mConstraintEncodings.insert(std::make_pair(*mCurrentConstraint, FormulaSetT()));
                     mConstraintEncodings[*mCurrentConstraint].insert(_formula);
                 }
+                #endif
 
                 mCurrentEncodings.insert(_formula);
             }
@@ -578,6 +585,13 @@ namespace smtrat
 
             Bits encodeTerm(const BitVecTerm& _term)
             {
+                #ifndef SMTRAT_BV_INCREMENTAL_MODE
+                auto it = mTermBits.find(_term);
+                if(it != mTermBits.end()) {
+                    return it->second;
+                }
+                #endif
+
                 Bits subTerm1;
                 Bits subTerm2;
                 carl::BVTermType type = _term.type();
@@ -590,12 +604,14 @@ namespace smtrat
                     subTerm2 = encodeTerm(_term.second());
                 }
 
+                #ifdef SMTRAT_BV_INCREMENTAL_MODE
                 auto it = mTermEncodings.find(_term);
                 if(it != mTermEncodings.end())
                 {
                     mCurrentEncodings.insert(it->second.begin(), it->second.end());
                     return mTermBits[_term];
                 }
+                #endif
 
                 // The term has not been encoded yet. Encode it now
                 mCurrentTerm = _term;
@@ -672,18 +688,28 @@ namespace smtrat
 
             Bit encodeConstraint(const BitVecConstr& _constraint)
             {
-                // Always call encodeTerm() on both subterms, even if we have
+                #ifndef SMTRAT_BV_INCREMENTAL_MODE
+                auto it = mConstraintBits.find(_constraint);
+                if(it != mConstraintBits.end()) {
+                    return it->second;
+                }
+                #endif
+
+                // In incremental mode,
+                // always call encodeTerm() on both subterms, even if we have
                 // already encoded _constraint. This way the mCurrentEncodings
                 // set is built correctly.
                 Bits lhs = encodeTerm(_constraint.lhs());
                 Bits rhs = encodeTerm(_constraint.rhs());
 
+                #ifdef SMTRAT_BV_INCREMENTAL_MODE
                 auto it = mConstraintEncodings.find(_constraint);
                 if(it != mConstraintEncodings.end())
                 {
                     mCurrentEncodings.insert(it->second.begin(), it->second.end());
                     return mConstraintBits[_constraint];
                 }
+                #endif
 
                 // The constraint has not been encoded yet. Encode it now
                 mCurrentConstraint = _constraint;
