@@ -20,6 +20,7 @@
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "CADStatistics.h"
 #endif
+#include "CADSettings.h"
 
 namespace smtrat
 {
@@ -41,8 +42,8 @@ namespace smtrat
      * @version 2012-11-29
      *
      */
-    class CADModule:
-        public Module
+    template<typename Settings>
+    class CADModule: public Module
     {
 		typedef std::unordered_map<FormulaT, unsigned> ConstraintIndexMap;
 		typedef smtrat::vb::VariableBounds< FormulaT > VariableBounds;
@@ -110,3 +111,6 @@ namespace smtrat
     };
 
 }    // namespace smtrat
+
+#include "CADModule.tpp"
+#include "CADModuleInstantiation.h"

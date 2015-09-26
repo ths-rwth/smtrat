@@ -1,5 +1,5 @@
 /**
- * @file CADModule.cpp
+ * @file CADModuleInstantiation.h
  * @author YOUR NAME <YOUR EMAIL ADDRESS>
  *
  * @version 2015-09-10
@@ -7,9 +7,7 @@
  */
 
 
-#include "CADModule.h"
-
 namespace smtrat
 {
-    template class CADModule<CADSettings1>;
+    extern template class CADModule<CADSettings@SMTRAT_CAD_SETTINGS@>;
 }

@@ -28,6 +28,8 @@
 
 #pragma once
 
+#define SMTRAT_BV_INCREMENTAL_MODE
+
 #include "boost/optional/optional.hpp"
 #include "../../Common.h"
 #include "carl/formula/bitvector/BVConstraint.h"
@@ -37,134 +39,132 @@ namespace smtrat
 {
     class BVDirectEncoder
     {
-        typedef carl::Variable Bit;
-        typedef std::vector<carl::Variable> Bits;
+        typedef carl::Variable Variable;
+        typedef std::vector<Variable> Variables;
+        typedef FormulaT Bit;
+        typedef std::vector<Bit> Bits;
         typedef carl::BVTerm BitVecTerm;
         typedef carl::BVConstraint BitVecConstr;
         typedef carl::BVVariable BitVec;
         typedef FormulaT Formula;
 
         private:
-            // Set of all bits that have been introduced by the encoder
-            std::set<Bit> mIntroducedBits;
+            // Set of all propositional variables that have been introduced by the encoder
+            std::set<Variable> mIntroducedVariables;
 
             // Substituted fresh variables
             //  - for bitvector variables (one variable for each bitvector bit)
-            std::map<BitVec, Bits> mBitVecBits;
+            carl::FastMap<BitVec, Variables> mBitVecBits;
             //  - for bitvector terms (likewise, one variable for each bitvector bit)
-            std::map<BitVecTerm, Bits> mTermBits;
+            carl::FastMap<BitVecTerm, Bits> mTermBits;
             //  - for bitvector constraints (a single variable)
-            std::map<BitVecConstr, Bit> mConstraintBits;
+            carl::FastMap<BitVecConstr, Bit> mConstraintBits;
 
             // Created formulas ("encodings")
+
+            #ifdef SMTRAT_BV_INCREMENTAL_MODE
             //  - for terms
-            std::map<BitVecTerm, FormulasT> mTermEncodings;
+            carl::FastMap<BitVecTerm, FormulaSetT> mTermEncodings;
             //  - for constraints (not including the encodings for the contained terms)
-            std::map<BitVecConstr, FormulasT> mConstraintEncodings;
+            carl::FastMap<BitVecConstr, FormulaSetT> mConstraintEncodings;
+            #endif
             //  - for terms and constraints originating from the current input formula
-            FormulasT mCurrentEncodings;
+            FormulaSetT mCurrentEncodings;
 
             // Encoding state (remember currently encoded constraint/term)
             boost::optional<BitVecConstr> mCurrentConstraint;
             boost::optional<BitVecTerm> mCurrentTerm;
 
+            /*
             Bit mConst0;
             Bit mConst1;
+            */
 
             const Bit const0()
             {
-                addEncoding(Formula(carl::FormulaType::NOT, Formula(mConst0)));
-                return mConst0;
+                return createBit(FormulaT(carl::FormulaType::FALSE));
+                /* boolAssert(boolNot(mConst0));
+                return mConst0; */
             }
 
             const Bit const1()
             {
-                addEncoding(Formula(mConst1));
-                return mConst1;
+                return createBit(FormulaT(carl::FormulaType::TRUE));
+                /* boolAssert(mConst1);
+                return mConst1; */
             }
 
-            void addEncoding(const Formula& _formula)
+            void boolAssert(const Formula& _formula)
             {
+                #ifdef SMTRAT_BV_INCREMENTAL_MODE
                 if(mCurrentTerm) {
-                    mTermEncodings.insert(std::make_pair(*mCurrentTerm, FormulasT()));
-                    mTermEncodings[*mCurrentTerm].push_back(_formula);
+                    mTermEncodings.insert(std::make_pair(*mCurrentTerm, FormulaSetT()));
+                    mTermEncodings[*mCurrentTerm].insert(_formula);
                 } else if(mCurrentConstraint) {
-                    mConstraintEncodings.insert(std::make_pair(*mCurrentConstraint, FormulasT()));
-                    mConstraintEncodings[*mCurrentConstraint].push_back(_formula);
+                    mConstraintEncodings.insert(std::make_pair(*mCurrentConstraint, FormulaSetT()));
+                    mConstraintEncodings[*mCurrentConstraint].insert(_formula);
                 }
+                #endif
 
-                mCurrentEncodings.push_back(_formula);
+                mCurrentEncodings.insert(_formula);
             }
 
             Bits encodeConstant(const carl::BVValue& _value)
             {
                 Bits out;
-
                 for(size_t i=0;i<_value.width();++i)
                 {
                     out.push_back(_value[i] ? const1() : const0());
                 }
-
                 return out;
             }
 
             Bits encodeVariable(const BitVec& _variable)
             {
-                std::map<BitVec, Bits>::iterator it = mBitVecBits.find(_variable);
+                Variables boolVariables;
+                carl::FastMap<BitVec, Variables>::iterator it = mBitVecBits.find(_variable);
 
                 if(it == mBitVecBits.end())
                 {
-                    Bits out = createBits(_variable.width());
-                    mBitVecBits[_variable] = out;
-                    return out;
+                    boolVariables = createVariables(_variable.width());
+                    mBitVecBits[_variable] = boolVariables;
                 }
                 else
                 {
-                    return it->second;
+                    boolVariables = it->second;
                 }
+
+                return createBits(boolVariables);
             }
 
             Bits encodeIte(const Bit& _condition, const Bits& _then, const Bits& _else)
             {
-                Bits out = createBits(_then.size());
-
-                for(std::size_t i=0;i<out.size();++i)
+                Bits out;
+                for(std::size_t i=0;i<_then.size();++i)
                 {
-                    addEncoding(Formula(carl::FormulaType::IFF,
-                                        Formula(out[i]),
-                                        Formula(carl::FormulaType::ITE,
-                                                Formula(_condition),
-                                                Formula(_then[i]),
-                                                Formula(_else[i]))));
+                    out.push_back(createBit(boolIte(_condition, _then[i], _else[i])));
                 }
-
                 return out;
             }
 
             Bits encodeConcat(const Bits& _first, const Bits& _second)
             {
-                Bits out(_second);
-                out.insert(out.end(), _first.begin(), _first.end());
-
-                return out;
+                Bits concatenated(_second);
+                concatenated.insert(concatenated.end(), _first.begin(), _first.end());
+                return createBits(concatenated);
             }
 
             Bits encodeExtract(const Bits& _operand, std::size_t _highest, std::size_t _lowest)
             {
-                return Bits(&_operand[_lowest], &_operand[_highest+1]);
+                return createBits(Bits(&_operand[_lowest], &_operand[_highest+1]));
             }
 
             Bits encodeNot(const Bits& _operand)
             {
-                Bits out = createBits(_operand.size());
-
-                for(std::size_t i=0;i<out.size();++i)
-                {
-                    addEncoding(Formula(carl::FormulaType::XOR,
-                                        Formula(_operand[i]),
-                                        Formula(out[i])));
+                Bits out;
+                for(const Bit& bit : _operand) {
+                    out.push_back(createBit(boolNot(bit)));
                 }
-
                 return out;
             }
 
@@ -173,27 +173,19 @@ namespace smtrat
                 // Arithmetic negation = Bitwise negation + increment
                 Bits negated = encodeNot(_operand);
 
-                Bits carry = createBits(_operand.size() - 1);
-                carry.insert(carry.begin(), const1());
+                Bits carry;
+                carry.push_back(const1());
 
                 for(size_t i=1;i<_operand.size();++i)
                 {
-                    addEncoding(Formula(carl::FormulaType::IFF,
-                                        Formula(carry[i]),
-                                        Formula(carl::FormulaType::AND,
-                                                Formula(carry[i-1]),
-                                                Formula(negated[i-1]))));
+                    carry.push_back(createBit(boolAnd(carry[i-1], negated[i-1])));
                 }
 
-                Bits out = createBits(_operand.size());
+                Bits out;
 
                 for(size_t i=0;i<_operand.size();++i)
                 {
-                    addEncoding(Formula(carl::FormulaType::IFF,
-                                        Formula(out[i]),
-                                        Formula(carl::FormulaType::XOR,
-                                                Formula(carry[i]),
-                                                Formula(negated[i]))));
+                    out.push_back(createBit(boolXor(carry[i], negated[i])));
                 }
 
                 return out;
@@ -201,76 +193,55 @@ namespace smtrat
 
             Bits encodeAnd(const Bits& _first, const Bits& _second)
             {
-                return encodeLogicalBinary(carl::BVTermType::AND, _first, _second);
+                Bits out;
+                for(std::size_t i = 0; i < _first.size(); ++i) {
+                    out.push_back(createBit(boolAnd(_first[i], _second[i])));
+                }
+                return out;
             }
 
             Bits encodeOr(const Bits& _first, const Bits& _second)
             {
-                return encodeLogicalBinary(carl::BVTermType::OR, _first, _second);
+                Bits out;
+                for(std::size_t i = 0; i < _first.size(); ++i) {
+                    out.push_back(createBit(boolOr(_first[i], _second[i])));
+                }
+                return out;
             }
 
             Bits encodeXor(const Bits& _first, const Bits& _second)
             {
-                return encodeLogicalBinary(carl::BVTermType::XOR, _first, _second);
+                Bits out;
+                for(std::size_t i = 0; i < _first.size(); ++i) {
+                    out.push_back(createBit(boolXor(_first[i], _second[i])));
+                }
+                return out;
             }
 
             Bits encodeNand(const Bits& _first, const Bits& _second)
             {
-                return encodeLogicalBinary(carl::BVTermType::NAND, _first, _second);
+                Bits out;
+                for(std::size_t i = 0; i < _first.size(); ++i) {
+                    out.push_back(createBit(boolNot(boolAnd(_first[i], _second[i]))));
+                }
+                return out;
             }
 
             Bits encodeNor(const Bits& _first, const Bits& _second)
             {
-                return encodeLogicalBinary(carl::BVTermType::NOR, _first, _second);
+                Bits out;
+                for(std::size_t i = 0; i < _first.size(); ++i) {
+                    out.push_back(createBit(boolNot(boolOr(_first[i], _second[i]))));
+                }
+                return out;
             }
 
             Bits encodeXnor(const Bits& _first, const Bits& _second)
             {
-                return encodeLogicalBinary(carl::BVTermType::XNOR, _first, _second);
-            }
-
-
-            Bits encodeLogicalBinary(carl::BVTermType _type, const Bits& _first, const Bits& _second)
-            {
-                Bits out = createBits(_first.size());
-
-                carl::FormulaType innerConnector;
-
-                switch(_type)
-                {
-                    case carl::BVTermType::AND:
-                    case carl::BVTermType::NAND:
-                        innerConnector = carl::FormulaType::AND;
-                        break;
-                    case carl::BVTermType::OR:
-                    case carl::BVTermType::NOR:
-                        innerConnector = carl::FormulaType::OR;
-                        break;
-                    case carl::BVTermType::XOR:
-                    case carl::BVTermType::XNOR:
-                        innerConnector = carl::FormulaType::XOR;
-                        break;
-                    default:
-                        assert(false);
+                Bits out;
+                for(std::size_t i = 0; i < _first.size(); ++i) {
+                    out.push_back(createBit(boolIff(_first[i], _second[i])));
                 }
-
-                carl::FormulaType outerConnector = carl::FormulaType::IFF;
-
-                if(_type == carl::BVTermType::NAND || _type == carl::BVTermType::NOR || _type == carl::BVTermType::XNOR)
-                {
-                    outerConnector = carl::FormulaType::XOR;
-                }
-
-                for(size_t i=0;i<out.size();++i) {
-                    addEncoding(
-                        Formula(outerConnector,
-                                Formula(out[i]),
-                                Formula(innerConnector,
-                                        Formula(_first[i]),
-                                        Formula(_second[i])))
-                    );
-                }
-
                 return out;
             }
 
@@ -286,39 +257,35 @@ namespace smtrat
 
             Bits encodeAdderNetwork(const Bits& _first, const Bits& _second, bool _carryInValue = false, bool _withCarryOut = false, bool _allowOverflow = true)
             {
-                Bits out = createBits(_first.size());
-                Bits carry = createBits(_first.size() - (_withCarryOut ? 0 : 1));
+                Bits out;
+                Bits carry;
 
-                carry.insert(carry.begin(), (_carryInValue ? const1() : const0()));
-                for(std::size_t i=1;i<carry.size();++i) {
-                    addEncoding(Formula(carl::FormulaType::IFF,
-                                        Formula(carry[i]),
-                                        Formula(carl::FormulaType::OR,
-                                                Formula(carl::FormulaType::AND,
-                                                        Formula(_first[i-1]),
-                                                        Formula(_second[i-1])),
-                                                Formula(carl::FormulaType::AND,
-                                                        Formula(carl::FormulaType::XOR,
-                                                                Formula(_first[i-1]),
-                                                                Formula(_second[i-1])),
-                                                        Formula(carry[i-1])))));
+                carry.push_back(_carryInValue ? const1() : const0());
+                std::size_t carryBitCount = _first.size() + ((_withCarryOut || ! _allowOverflow) ? 1 : 0);
+
+                for(std::size_t i=1;i<carryBitCount;++i) {
+                    carry.push_back(createBit(
+                        boolOr(
+                            boolAnd(_first[i-1], _second[i-1]),
+                            boolAnd(
+                                boolXor(_first[i-1], _second[i-1]),
+                                carry[i-1]
+                            )
+                        )
+                    ));
                 }
 
-                for(std::size_t i=0;i<out.size();++i) {
-                    addEncoding(Formula(carl::FormulaType::IFF,
-                                        Formula(out[i]),
-                                        Formula(carl::FormulaType::XOR,
-                                                Formula(_first[i]),
-                                                Formula(carl::FormulaType::XOR,
-                                                        Formula(_second[i]),
-                                                        Formula(carry[i])))));
+                for(std::size_t i=0;i<_first.size();++i) {
+                    out.push_back(createBit(
+                        boolXor(_first[i], boolXor(_second[i], carry[i]))
+                    ));
                 }
 
                 if(! _allowOverflow) {
-                    addEncoding(Formula(carl::FormulaType::NOT, Formula(carry[carry.size()-1])));
+                    boolAssert(boolNot(carry[carry.size()-1]));
                 }
                 if(_withCarryOut) {
-                    out.insert(out.end(), carry[carry.size()-1]);
+                    out.push_back(carry[carry.size()-1]);
                 }
 
                 return out;
@@ -335,26 +302,19 @@ namespace smtrat
                 std::vector<Bits> sums(_first.size()-1);
 
                 for(std::size_t i=0;i<summands.size();++i) {
-                    summands[i] = createBits(_first.size() - i);
-
-                    for(std::size_t j=0;j<summands[i].size();++j) {
-                        addEncoding(Formula(carl::FormulaType::IFF,
-                                            Formula(summands[i][j]),
-                                            Formula(carl::FormulaType::ITE,
-                                                    Formula(_second[i]),
-                                                    Formula(_first[j]),
-                                                    Formula(carl::FormulaType::FALSE))));
-                    }
-
-                    if(! _allowOverflow) {
-                        for(std::size_t j=summands[i].size();j<_first.size();++j) {
-                            addEncoding(Formula(carl::FormulaType::OR,
-                                                Formula(carl::FormulaType::NOT, Formula(_second[i])),
-                                                Formula(carl::FormulaType::NOT, Formula(_first[j]))));
+                    for(std::size_t j=0;j<_first.size();++j) {
+                        if(j < i) {
+                            summands[i].push_back(const0());
+                        } else {
+                            summands[i].push_back(createBit(boolAnd(_second[i], _first[j-i])));
                         }
                     }
 
-                    summands[i].insert(summands[i].begin(), i, const0());
+                    if(! _allowOverflow) {
+                        for(std::size_t j=_first.size();j<_first.size()+i;++j) {
+                            boolAssert(boolNot(boolAnd(_second[i], _first[j-i])));
+                        }
+                    }
                 }
 
                 for(std::size_t i=0;i<sums.size();++i) {
@@ -375,15 +335,15 @@ namespace smtrat
 
             Bits encodeDivisionNetwork(const Bits& _first, const Bits& _second, bool _returnRemainder = false)
             {
-                Bits out = createBits(_first.size());
+                Bits quotient = createBits(_first.size());
                 Bits remainder = createBits(_first.size());
 
-                Bit wellDefined = encodeNeq(_second, encodeConstant(carl::BVValue(_second.size(), 0)));
+                Bit wellDefined = boolOr(_second);
 
                 Bit summationCorrect = encodeEq(
                     _first,
                     encodeAdderNetwork(
-                        encodeMultiplicationNetwork(out, _second, false),
+                        encodeMultiplicationNetwork(quotient, _second, false),
                         remainder,
                         false,
                         false,
@@ -393,13 +353,9 @@ namespace smtrat
 
                 Bit remainderLessThanDivisor = encodeUlt(remainder, _second);
 
-                addEncoding(Formula(carl::FormulaType::IMPLIES,
-                                    Formula(wellDefined),
-                                    Formula(carl::FormulaType::AND,
-                                            Formula(summationCorrect),
-                                            Formula(remainderLessThanDivisor))));
+                boolAssert(boolImplies(wellDefined, boolAnd(summationCorrect, remainderLessThanDivisor)));
 
-                return (_returnRemainder ? remainder : out);
+                return (_returnRemainder ? remainder : quotient);
             }
 
             Bits encodeDivS(const Bits& _first, const Bits& _second)
@@ -486,7 +442,7 @@ namespace smtrat
 
                 Bits u = encodeModU(absFirst, absSecond);
 
-                return encodeIte(encodeEq(u, encodeConstant(carl::BVValue(_first.size(), 0))),
+                return encodeIte(boolNot(boolOr(u)),
                                  u,
                                  encodeIte(msbFirst,
                                            encodeIte(msbSecond,
@@ -522,7 +478,7 @@ namespace smtrat
 
                 for(std::size_t stage=0;stage<=highestRelevantPos && stage<_second.size();++stage)
                 {
-                    Bits currentStage = createBits(lastStage.size());
+                    Bits currentStage;
 
                     for(std::size_t pos=0;pos<lastStage.size();++pos)
                     {
@@ -538,12 +494,7 @@ namespace smtrat
                             shifted = _arithmetic ? _first[_first.size() - 1] : const0();
                         }
 
-                        addEncoding(Formula(carl::FormulaType::IFF,
-                                            Formula(currentStage[pos]),
-                                            Formula(carl::FormulaType::ITE,
-                                                    Formula(_second[stage]),
-                                                    Formula(shifted),
-                                                    Formula(notShifted))));
+                        currentStage.push_back(createBit(boolIte(_second[stage], shifted, notShifted)));
                     }
 
                     currentShiftBy *= 2;
@@ -556,27 +507,16 @@ namespace smtrat
                 }
                 else
                 {
-                    Bits out = createBits(_first.size());
+                    Bits overshiftBits(&_second[highestRelevantPos+1], &_second[_second.size()]);
+                    Bit overshift = boolOr(overshiftBits);
 
-                    std::vector<Formula> subFormulas;
-                    for(std::size_t pos=highestRelevantPos+1;pos<_second.size();++pos)
+                    Bits out;
+
+                    for(std::size_t i=0;i<_first.size();++i)
                     {
-                        subFormulas.push_back(Formula(_second[pos]));
-                    }
-
-                    Bit shiftOut = createBit();
-                    addEncoding(Formula(carl::FormulaType::IFF,
-                                        Formula(shiftOut),
-                                        Formula(carl::FormulaType::OR, subFormulas)));
-
-                    for(std::size_t i=0;i<out.size();++i)
-                    {
-                        addEncoding(Formula(carl::FormulaType::IFF,
-                                            Formula(out[i]),
-                                            Formula(carl::FormulaType::ITE,
-                                                    Formula(shiftOut),
-                                                    Formula(_arithmetic ? _first[_first.size()-1] : const0()),
-                                                    Formula(lastStage[i]))));
+                        out.push_back(createBit(
+                            boolIte(overshift, (_arithmetic ? _first[_first.size()-1] : const0()), lastStage[i])
+                        ));
                     }
 
                     return out;
@@ -595,52 +535,63 @@ namespace smtrat
 
             Bits encodeLrotate(const Bits& _operand, std::size_t _index)
             {
-                Bits out(_operand);
-                std::rotate(out.begin(),
-                            out.begin() + (Bits::difference_type)(
+                Bits rotated(_operand);
+                std::rotate(rotated.begin(),
+                            rotated.begin() + (Bits::difference_type)(
                                 (_operand.size() -
                                     (_index % _operand.size()))
                                 % _operand.size()),
-                            out.end());
-                return out;
+                            rotated.end());
+                return createBits(rotated);
             }
 
             Bits encodeRrotate(const Bits& _operand, std::size_t _index)
             {
-                Bits out(_operand);
-                std::rotate(out.begin(),
-                            out.begin() + (Bits::difference_type)(
+                Bits rotated(_operand);
+                std::rotate(rotated.begin(),
+                            rotated.begin() + (Bits::difference_type)(
                                 _index % _operand.size()),
-                            out.end());
-                return out;
+                            rotated.end());
+                return createBits(rotated);
             }
 
             Bits encodeExtU(const Bits& _operand, std::size_t _index)
             {
-                Bits out(_operand);
-                out.insert(out.end(), _index, const0());
+                Bits out = createBits(_operand);
+                for(std::size_t i=0;i<_index;++i) {
+                    out.push_back(const0());
+                }
                 return out;
             }
 
             Bits encodeExtS(const Bits& _operand, std::size_t _index)
             {
-                Bits out(_operand);
-                out.insert(out.end(), _index, _operand[_operand.size()-1]);
+                Bits out = createBits(_operand);
+                for(std::size_t i=0;i<_index;++i) {
+                    out.push_back(createBit(_operand[_operand.size()-1]));
+                }
                 return out;
             }
 
             Bits encodeRepeat(const Bits& _operand, std::size_t _index)
             {
-                Bits out;
+                Bits repeated;
                 for(std::size_t i=0;i<_index;++i)
                 {
-                    out.insert(out.end(), _operand.begin(), _operand.end());
+                    repeated.insert(repeated.end(), _operand.begin(), _operand.end());
                 }
-                return out;
+                return createBits(repeated);
             }
 
             Bits encodeTerm(const BitVecTerm& _term)
             {
+                #ifndef SMTRAT_BV_INCREMENTAL_MODE
+                auto it = mTermBits.find(_term);
+                if(it != mTermBits.end()) {
+                    return it->second;
+                }
+                #endif
+
                 Bits subTerm1;
                 Bits subTerm2;
                 carl::BVTermType type = _term.type();
@@ -653,12 +604,14 @@ namespace smtrat
                     subTerm2 = encodeTerm(_term.second());
                 }
 
+                #ifdef SMTRAT_BV_INCREMENTAL_MODE
                 auto it = mTermEncodings.find(_term);
                 if(it != mTermEncodings.end())
                 {
-                    mCurrentEncodings.insert(mCurrentEncodings.end(), it->second.begin(), it->second.end());
+                    mCurrentEncodings.insert(it->second.begin(), it->second.end());
                     return mTermBits[_term];
                 }
+                #endif
 
                 // The term has not been encoded yet. Encode it now
                 mCurrentTerm = _term;
@@ -735,18 +688,28 @@ namespace smtrat
 
             Bit encodeConstraint(const BitVecConstr& _constraint)
             {
-                // Always call encodeTerm() on both subterms, even if we have
+                #ifndef SMTRAT_BV_INCREMENTAL_MODE
+                auto it = mConstraintBits.find(_constraint);
+                if(it != mConstraintBits.end()) {
+                    return it->second;
+                }
+                #endif
+
+                // In incremental mode,
+                // always call encodeTerm() on both subterms, even if we have
                 // already encoded _constraint. This way the mCurrentEncodings
                 // set is built correctly.
                 Bits lhs = encodeTerm(_constraint.lhs());
                 Bits rhs = encodeTerm(_constraint.rhs());
 
+                #ifdef SMTRAT_BV_INCREMENTAL_MODE
                 auto it = mConstraintEncodings.find(_constraint);
                 if(it != mConstraintEncodings.end())
                 {
-                    mCurrentEncodings.insert(mCurrentEncodings.end(), it->second.begin(), it->second.end());
+                    mCurrentEncodings.insert(it->second.begin(), it->second.end());
                     return mConstraintBits[_constraint];
                 }
+                #endif
 
                 // The constraint has not been encoded yet. Encode it now
                 mCurrentConstraint = _constraint;
@@ -786,48 +749,37 @@ namespace smtrat
 
             Bit encodeEq(const Bits& _lhs, const Bits& _rhs)
             {
-                Bit out = createBit();
-                std::vector<Formula> subFormulas;
+                Bits comparisons;
 
                 for(std::size_t i=0;i<_lhs.size();++i)
                 {
-                    subFormulas.push_back(Formula(carl::FormulaType::IFF,
-                                                  Formula(_lhs[i]),
-                                                  Formula(_rhs[i])));
+                    comparisons.push_back(boolIff(_lhs[i], _rhs[i]));
                 }
 
-                addEncoding(Formula(carl::FormulaType::IFF,
-                                    Formula(out),
-                                    Formula(carl::FormulaType::AND, subFormulas)));
-                return out;
+                return createBit(boolAnd(comparisons));
             }
 
             Bit encodeNeq(const Bits& _lhs, const Bits& _rhs)
             {
-                return encodeInverse(encodeEq(_lhs, _rhs));
+                return createBit(boolNot(encodeEq(_lhs, _rhs)));
             }
 
             Bit encodeUlt(const Bits& _lhs, const Bits& _rhs)
             {
-                return encodeInverse(encodeUge(_lhs, _rhs));
+                return createBit(boolNot(encodeUge(_lhs, _rhs)));
             }
 
             Bit encodeUle(const Bits& _lhs, const Bits& _rhs)
             {
                 Bit ult = encodeUlt(_lhs, _rhs);
                 Bit eq = encodeEq(_lhs, _rhs);
-                Bit out = createBit();
-                addEncoding(Formula(carl::FormulaType::IFF,
-                                    Formula(out),
-                                    Formula(carl::FormulaType::OR,
-                                            Formula(eq),
-                                            Formula(ult))));
-                return out;
+
+                return createBit(boolOr(eq, ult));
             }
 
             Bit encodeUgt(const Bits& _lhs, const Bits& _rhs)
             {
-                return encodeInverse(encodeUle(_lhs, _rhs));
+                return createBit(boolNot(encodeUle(_lhs, _rhs)));
             }
 
             Bit encodeUge(const Bits& _lhs, const Bits& _rhs)
@@ -848,20 +800,11 @@ namespace smtrat
                 Bit msbLhs = _lhs[_lhs.size()-1];
                 Bit msbRhs = _rhs[_rhs.size()-1];
                 Bit ult = encodeUlt(_lhs, _rhs);
-                Bit out = createBit();
 
-                addEncoding(Formula(carl::FormulaType::IFF,
-                                    Formula(out),
-                                    Formula(carl::FormulaType::OR,
-                                            Formula(carl::FormulaType::AND,
-                                                    Formula(msbLhs),
-                                                    Formula(carl::FormulaType::NOT, Formula(msbRhs))),
-                                            Formula(carl::FormulaType::AND,
-                                                    Formula(carl::FormulaType::IFF,
-                                                            Formula(msbLhs),
-                                                            Formula(msbRhs)),
-                                                    Formula(ult)))));
-                return out;
+                return createBit(boolOr(
+                    boolAnd(msbLhs, boolNot(msbRhs)),
+                    boolAnd(boolIff(msbLhs, msbRhs), ult)
+                ));
             }
 
             Bit encodeSle(const Bits& _lhs, const Bits& _rhs)
@@ -876,55 +819,132 @@ namespace smtrat
                 Bit msbLhs = _lhs[_lhs.size()-1];
                 Bit msbRhs = _rhs[_rhs.size()-1];
                 Bit ule = encodeUle(_lhs, _rhs);
-                Bit out = createBit();
 
-                addEncoding(Formula(carl::FormulaType::IFF,
-                                    Formula(out),
-                                    Formula(carl::FormulaType::OR,
-                                            Formula(carl::FormulaType::AND,
-                                                    Formula(msbLhs),
-                                                    Formula(carl::FormulaType::NOT, Formula(msbRhs))),
-                                            Formula(carl::FormulaType::AND,
-                                                    Formula(carl::FormulaType::IFF,
-                                                            Formula(msbLhs),
-                                                            Formula(msbRhs)),
-                                                    Formula(ule)))));
-                return out;
+                return createBit(boolOr(
+                    boolAnd(msbLhs, boolNot(msbRhs)),
+                    boolAnd(boolIff(msbLhs, msbRhs), ule)
+                ));
             }
 
             Bit encodeSgt(const Bits& _lhs, const Bits& _rhs)
             {
-                return encodeInverse(encodeSle(_lhs, _rhs));
+                return createBit(boolNot(encodeSle(_lhs, _rhs)));
             }
 
             Bit encodeSge(const Bits& _lhs, const Bits& _rhs)
             {
-                return encodeInverse(encodeSlt(_lhs, _rhs));
+                return createBit(boolNot(encodeSlt(_lhs, _rhs)));
             }
 
-            Bit encodeInverse(const Bit& _original)
+            Bit createBit(const FormulaT& _formula)
             {
-                Bit out = createBit();
-                addEncoding(Formula(carl::FormulaType::XOR, Formula(_original), Formula(out)));
-                return out;
-            }
+                if(_formula.isAtom() || (_formula.getType() == carl::FormulaType::NOT && _formula.subformula().isAtom())) {
+                    return _formula;
+                }
 
-            Bit createBit()
-            {
-                Bit bit = carl::VariablePool::getInstance().getFreshVariable(carl::VariableType::VT_BOOL);
-                mIntroducedBits.insert(bit);
-                return bit;
+                Bit freshBit = Bit(createVariable());
+                boolAssert(boolIff(freshBit, _formula));
+                return freshBit;
             }
 
             Bits createBits(std::size_t _n)
             {
-                Bits out(_n);
+                return createBits(createVariables(_n));
+            }
 
+            Variable createVariable()
+            {
+                Variable var = carl::VariablePool::getInstance().getFreshVariable(carl::VariableType::VT_BOOL);
+                mIntroducedVariables.insert(var);
+                return var;
+            }
+
+            Variables createVariables(std::size_t _n) {
+                Variables out;
                 for(std::size_t i=0;i<_n;++i) {
-                    out[i] = createBit();
+                    out.push_back(createVariable());
+                }
+                return out;
+            }
+
+            Bits createBits(const Bits& _original) {
+                /*
+                 * return _original;
+                 */
+                Bits out;
+                for(const Bit& bit : _original) {
+                    out.push_back(createBit(bit));
+                }
+                return out;
+            }
+
+            Bits createBits(const Variables& _variables) {
+                Bits out;
+                for(const Variable& var : _variables) {
+                    out.push_back(Bit(var));
+                }
+                return out;
+            }
+
+            Bit boolNot(const Bit& _operand) {
+                return Formula(carl::FormulaType::NOT, _operand);
+            }
+
+            Bit boolImplies(const Bit& _first, const Bit& _second) {
+                return Formula(carl::FormulaType::IMPLIES, _first, _second);
+            }
+
+            Bit boolAnd(const Bit& _first, const Bit& _second) {
+                return Formula(carl::FormulaType::AND, _first, _second);
+            }
+
+            Bit boolAnd(const Bits& _operands) {
+                return Formula(carl::FormulaType::AND, _operands);
+            }
+
+            Bit boolOr(const Bit& _first, const Bit& _second) {
+                return Formula(carl::FormulaType::OR, _first, _second);
+            }
+
+            Bit boolOr(const Bits& _operands) {
+                return Formula(carl::FormulaType::OR, _operands);
+            }
+
+            Bit boolXor(const Bit& _first, const Bit& _second) {
+
+                /*
+                 * carl Formula simplification for xor is currently broken, so we do it ourselves for n=2.
+                 * (Not very elegant, but should be correct.)
+                 */
+                if(_first == _second) {
+                    return Formula(carl::FormulaType::FALSE);
+                }
+                if(carl::FormulaPool<Poly>::getInstance().formulasInverse(_first, _second)) {
+                    return Formula(carl::FormulaType::TRUE);
+                }
+                if(_first.getType() == carl::FormulaType::TRUE) {
+                    return boolNot(_second);
+                }
+                if(_first.getType() == carl::FormulaType::FALSE) {
+                    return _second;
+                }
+                if(_second.getType() == carl::FormulaType::TRUE) {
+                    return boolNot(_first);
+                }
+                if(_second.getType() == carl::FormulaType::FALSE) {
+                    return _first;
                 }
 
-                return out;
+                // No simplification possible, fall back to the regular XOR construction.
+                return Formula(carl::FormulaType::XOR, _first, _second);
+            }
+
+            Bit boolIff(const Bit& _first, const Bit& _second) {
+                return Formula(carl::FormulaType::IFF, _first, _second);
+            }
+
+            Bit boolIte(const Bit& _condition, const Bit& _then, const Bit& _else) {
+                return Formula(carl::FormulaType::ITE, _condition, _then, _else);
             }
 
             FormulaT encodeBVConstraints(const FormulaT _original)
@@ -932,37 +952,38 @@ namespace smtrat
                 if(_original.getType() == carl::FormulaType::BITVECTOR)
                 {
                     Bit substitute = encodeConstraint(_original.bvConstraint());
-                    return Formula(substitute);
+                    return substitute;
                 }
                 return _original;
             }
 
         public:
 
-            const FormulasT& encode(const FormulaT& _inputFormula)
+            const FormulaSetT& encode(const FormulaT& _inputFormula)
             {
                 mCurrentEncodings.clear();
                 carl::FormulaVisitor<FormulaT> visitor;
                 std::function<FormulaT(FormulaT)> encodeConstraints = std::bind(&BVDirectEncoder::encodeBVConstraints, this, std::placeholders::_1);
                 FormulaT passedFormula = visitor.visit(_inputFormula, encodeConstraints);
-                mCurrentEncodings.push_back(passedFormula);
+                mCurrentEncodings.insert(passedFormula);
                 return mCurrentEncodings;
             }
 
-            const std::set<Bit>& introducedBits() const
+            const std::set<carl::Variable>& introducedVariables() const
             {
-                return mIntroducedBits;
+                return mIntroducedVariables;
             }
 
-            const std::map<BitVec, Bits> bitvectorBlastings() const
+            const carl::FastMap<BitVec, Variables> bitvectorBlastings() const
             {
                 return mBitVecBits;
             }
 
             BVDirectEncoder()
             {
-                mConst0 = createBit();
-                mConst1 = createBit();
+                /* Bits consts = createBits(2);
+                mConst0 = consts[0];
+                mConst1 = consts[1]; */
             }
 
             ~BVDirectEncoder()

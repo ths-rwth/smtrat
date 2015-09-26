@@ -11,5 +11,5 @@
 
 namespace smtrat
 {
-    template class CADModule<CADSettings1>;
+    template class CADModule<CADSettings@SMTRAT_CAD_SETTINGS@>;
 }
