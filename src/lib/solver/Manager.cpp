@@ -103,6 +103,15 @@ namespace smtrat
     
     bool Manager::add( const FormulaT& _subformula )
     {
+        if( _subformula.getType() == carl::FormulaType::CONSTRAINT )
+            mpPrimaryBackend->inform( _subformula );
+        else if( _subformula.isNary() )
+        {
+            vector<FormulaT> constraints;
+            _subformula.getConstraints( constraints );
+            for( auto& c : constraints )
+                mpPrimaryBackend->inform( c );
+        }
         auto res = mpPassedFormula->add( _subformula );
         if( res.second )
         {
