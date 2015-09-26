@@ -8,8 +8,8 @@
 namespace smtrat
 {
 
-    RatIntBlast::RatIntBlast():
-        Manager()
+    RatIntBlast::RatIntBlast( bool _externalModuleFactoryAdding ):
+        Manager( _externalModuleFactoryAdding )
     {
         size_t position = 0;
         #ifdef SMTRAT_ENABLE_PreprocessingModule

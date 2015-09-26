@@ -1,5 +1,5 @@
 /**
- * @file IntBlastModule.cpp
+ * @file IntBlastModule.tpp
  * @author Andreas Krueger <andreas.krueger@rwth-aachen.de>
  *
  * @version 2015-05-12
@@ -9,7 +9,7 @@
 #include "IntBlastModule.h"
 #include "../AddModules.h"
 
-#define INTBLAST_DEBUG_ENABLED 0
+#define INTBLAST_DEBUG_ENABLED 1
 #define INTBLAST_DEBUG(x) do { \
   if (INTBLAST_DEBUG_ENABLED) { std::cerr << "[IntBlast] " << x << std::endl; } \
 } while (0)
@@ -20,7 +20,8 @@ namespace smtrat
      * Constructors.
      */
 
-    IntBlastModule::IntBlastModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
+    template<class Settings>
+    IntBlastModule<Settings>::IntBlastModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
     Module( _type, _formula, _conditionals, _manager ),
     mBoundsFromInput(),
     mBoundsInRestriction(),
@@ -49,7 +50,8 @@ namespace smtrat
      * Destructor.
      */
 
-    IntBlastModule::~IntBlastModule()
+    template<class Settings>
+    IntBlastModule<Settings>::~IntBlastModule()
     {
         delete mpICPInput;
         while( !mICPFoundAnswer.empty() )
@@ -65,16 +67,19 @@ namespace smtrat
         delete mpBVInput;
     };
 
-    bool IntBlastModule::informCore( const FormulaT& _constraint )
+    template<class Settings>
+    bool IntBlastModule<Settings>::informCore( const FormulaT& _constraint )
     {
         informBackends(_constraint);
         return true;
     }
 
-    void IntBlastModule::init()
+    template<class Settings>
+    void IntBlastModule<Settings>::init()
     {}
 
-    bool IntBlastModule::addCore( ModuleInput::const_iterator _subformula )
+    template<class Settings>
+    bool IntBlastModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
         const FormulaT& formula = _subformula->formula();
         INTBLAST_DEBUG("ADD " << formula);
@@ -115,7 +120,8 @@ namespace smtrat
         return ! mBoundsFromInput.isConflicting();
     }
 
-    void IntBlastModule::removeCore( ModuleInput::const_iterator _subformula )
+    template<class Settings>
+    void IntBlastModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
         const FormulaT& formula = _subformula->formula();
         INTBLAST_DEBUG("REMOVE " << formula);
@@ -132,7 +138,8 @@ namespace smtrat
         mFormulasToEncode.erase(formula);
     }
 
-    void IntBlastModule::updateModel() const
+    template<class Settings>
+    void IntBlastModule<Settings>::updateModel() const
     {
         mModel.clear();
         if(solverState() == True)
@@ -153,14 +160,16 @@ namespace smtrat
         }
     }
 
-    carl::BVTerm IntBlastModule::encodeBVConstant(const Integer& _constant, const BlastedType& _type) const
+    template<class Settings>
+    carl::BVTerm IntBlastModule<Settings>::encodeBVConstant(const Integer& _constant, const BlastedType& _type) const
     {
         assert(_constant >= _type.lowerBound() && _constant <= _type.upperBound());
         carl::BVValue constValue(_type.width(), _constant - _type.offset());
         return carl::BVTerm(carl::BVTermType::CONSTANT, constValue);
     }
 
-    Integer IntBlastModule::decodeBVConstant(const carl::BVValue& _value, const BlastedType& _type) const
+    template<class Settings>
+    Integer IntBlastModule<Settings>::decodeBVConstant(const carl::BVValue& _value, const BlastedType& _type) const
     {
         Integer summand(1);
         Integer converted(0);
@@ -181,7 +190,8 @@ namespace smtrat
         return converted + _type.offset();
     }
 
-    carl::BVTerm IntBlastModule::resizeBVTerm(const BlastedTerm& _term, std::size_t _width) const
+    template<class Settings>
+    carl::BVTerm IntBlastModule<Settings>::resizeBVTerm(const BlastedTerm& _term, std::size_t _width) const
     {
         assert(_width >= _term.type().width());
 
@@ -193,7 +203,8 @@ namespace smtrat
         }
     }
 
-    BlastedPoly IntBlastModule::blastSum(const BlastedPoly& _summand1, const BlastedPoly& _summand2)
+    template<class Settings>
+    BlastedPoly IntBlastModule<Settings>::blastSum(const BlastedPoly& _summand1, const BlastedPoly& _summand2)
     {
         if(_summand1.isConstant() && _summand2.isConstant()) {
             return BlastedPoly(_summand1.constant() + _summand2.constant());
@@ -217,7 +228,8 @@ namespace smtrat
         }
     }
 
-    BlastedPoly IntBlastModule::blastProduct(const BlastedPoly& _factor1, const BlastedPoly& _factor2)
+    template<class Settings>
+    BlastedPoly IntBlastModule<Settings>::blastProduct(const BlastedPoly& _factor1, const BlastedPoly& _factor2)
     {
         if(_factor1.isConstant() && _factor2.isConstant()) {
             return BlastedPoly(_factor1.constant() * _factor2.constant());
@@ -252,7 +264,8 @@ namespace smtrat
         }
     }
 
-    const BlastedConstr& IntBlastModule::blastConstrTree(const ConstrTree& _constraint, FormulasT& _collectedFormulas)
+    template<class Settings>
+    const BlastedConstr& IntBlastModule<Settings>::blastConstrTree(const ConstrTree& _constraint, FormulasT& _collectedFormulas)
     {
         const BlastedPoly& left = blastPolyTree(_constraint.left(), _collectedFormulas);
         const BlastedPoly& right = blastPolyTree(_constraint.right(), _collectedFormulas);
@@ -341,7 +354,8 @@ namespace smtrat
         return mConstrBlastings.insert(std::make_pair(_constraint.constraint(), blasted)).first->second;
     }
 
-    bool IntBlastModule::evaluateRelation(carl::Relation _relation, const Integer& _first, const Integer& _second) const
+    template<class Settings>
+    bool IntBlastModule<Settings>::evaluateRelation(carl::Relation _relation, const Integer& _first, const Integer& _second) const
     {
         switch(_relation) {
             case carl::Relation::EQ:      return _first == _second;
@@ -354,7 +368,8 @@ namespace smtrat
         assert(false);
     }
 
-    const BlastedPoly& IntBlastModule::blastPolyTree(const PolyTree& _poly, FormulasT& _collectedFormulas)
+    template<class Settings>
+    const BlastedPoly& IntBlastModule<Settings>::blastPolyTree(const PolyTree& _poly, FormulasT& _collectedFormulas)
     {
         const BlastedPoly* left = nullptr;
         const BlastedPoly* right = nullptr;
@@ -417,7 +432,8 @@ namespace smtrat
         return mPolyBlastings.insert(std::make_pair(_poly.poly(), blasted)).first->second;
     }
 
-    BlastedPoly IntBlastModule::reduceToRange(const BlastedPoly& _input, const IntegerInterval& _interval) const
+    template<class Settings>
+    BlastedPoly IntBlastModule<Settings>::reduceToRange(const BlastedPoly& _input, const IntegerInterval& _interval) const
     {
         if(_interval.lowerBoundType() != carl::BoundType::WEAK || _interval.upperBoundType() != carl::BoundType::WEAK) {
             assert(false);
@@ -477,7 +493,8 @@ namespace smtrat
         return BlastedPoly(newTerm, constraints);
     }
 
-    FormulasT IntBlastModule::blastConstraint(const ConstraintT& _constraint)
+    template<class Settings>
+    FormulasT IntBlastModule<Settings>::blastConstraint(const ConstraintT& _constraint)
     {
         ConstrTree constraintTree(_constraint);
         FormulasT blastedFormulas;
@@ -486,7 +503,8 @@ namespace smtrat
         return blastedFormulas;
     }
 
-    Answer IntBlastModule::checkCore(bool _full)
+    template<class Settings>
+    Answer IntBlastModule<Settings>::checkCore(bool _full)
     {
         mSolutionOrigin = SolutionOrigin::NONE;
 
@@ -600,7 +618,8 @@ namespace smtrat
         return backendAnswer;
     }
 
-    bool IntBlastModule::reblastingNeeded(const BlastedPoly& _previousBlasting, const IntegerInterval& _interval, bool _linear) const
+    template<class Settings>
+    bool IntBlastModule<Settings>::reblastingNeeded(const BlastedPoly& _previousBlasting, const IntegerInterval& _interval, bool _linear) const
     {
         if(_previousBlasting.isConstant()) {
             return ! _interval.isPointInterval() || _interval.lower() != _previousBlasting.constant();
@@ -617,7 +636,8 @@ namespace smtrat
         return ! previousType.bounds().intersectsWith(_interval);
     }
 
-    void IntBlastModule::unblastVariable(const carl::Variable& _variable)
+    template<class Settings>
+    void IntBlastModule<Settings>::unblastVariable(const carl::Variable& _variable)
     {
         removeBoundRestrictionsFromICP(_variable);
 
@@ -642,7 +662,8 @@ namespace smtrat
         }
     }
 
-    void IntBlastModule::blastVariable(const carl::Variable& _variable, const IntegerInterval& _interval, bool _allowOffset)
+    template<class Settings>
+    void IntBlastModule<Settings>::blastVariable(const carl::Variable& _variable, const IntegerInterval& _interval, bool _allowOffset)
     {
         Poly variablePoly(_variable);
         if(_interval.isPointInterval()) {
@@ -704,13 +725,15 @@ namespace smtrat
         mPolyBlastings[variablePoly] = BlastedPoly(BlastedTerm(blastedType));
     }
 
-    void IntBlastModule::addBoundRestrictionsToICP(carl::Variable _variable, const BlastedType& blastedType)
+    template<class Settings>
+    void IntBlastModule<Settings>::addBoundRestrictionsToICP(carl::Variable _variable, const BlastedType& blastedType)
     {
         addFormulaToICP(FormulaT(ConstraintT(_variable, carl::Relation::GEQ, blastedType.lowerBound())), mConstraintFromBounds);
         addFormulaToICP(FormulaT(ConstraintT(_variable, carl::Relation::LEQ, blastedType.upperBound())), mConstraintFromBounds);
     }
 
-    void IntBlastModule::removeBoundRestrictionsFromICP(carl::Variable _variable)
+    template<class Settings>
+    void IntBlastModule<Settings>::removeBoundRestrictionsFromICP(carl::Variable _variable)
     {
         auto& blastedVariable = mPolyBlastings.at(Poly(_variable));
 
@@ -722,7 +745,8 @@ namespace smtrat
         }
     }
 
-    std::size_t IntBlastModule::chooseWidth(const Integer& _numberToCover, std::size_t _maxWidth, bool _signed) const
+    template<class Settings>
+    std::size_t IntBlastModule<Settings>::chooseWidth(const Integer& _numberToCover, std::size_t _maxWidth, bool _signed) const
     {
         assert(_numberToCover >= 0 || _signed);
         std::size_t width = 1;
@@ -736,7 +760,8 @@ namespace smtrat
         return width;
     }
 
-    void IntBlastModule::updateBoundsFromICP()
+    template<class Settings>
+    void IntBlastModule<Settings>::updateBoundsFromICP()
     {
         // TODO: This is not very incremental
         for(const FormulaT formula : mProcessedFormulasFromICP) {
@@ -749,7 +774,8 @@ namespace smtrat
         }
     }
 
-    void IntBlastModule::updateOutsideRestrictionConstraint(bool _fromICPOnly)
+    template<class Settings>
+    void IntBlastModule<Settings>::updateOutsideRestrictionConstraint(bool _fromICPOnly)
     {
         FormulasT outsideConstraints;
 
@@ -823,10 +849,10 @@ namespace smtrat
         FormulaSetT origins;
 
         if(_fromICPOnly) {
-            const std::vector<FormulasT>& infeasibleInRestriction = mICP.infeasibleSubsets();
+            const std::vector<FormulaSetT>& infeasibleInRestriction = mICP.infeasibleSubsets();
             ModuleInput* restrictionInput = mpICPInput;
 
-            for(const FormulasT& infeasibleSubset : infeasibleInRestriction) {
+            for(const FormulaSetT& infeasibleSubset : infeasibleInRestriction) {
                 FormulasT originsOfInfSubset;
                 for(const FormulaT& infSubsetElement : infeasibleSubset) {
                     // Collect origins of element (i.e. subformulas of the received formula of IntBlastModule)
@@ -866,7 +892,8 @@ namespace smtrat
         addSubformulaToPassedFormula(newOutsideConstraint, std::make_shared<std::vector<FormulaT>>(origins.begin(), origins.end()));
     }
 
-    void IntBlastModule::addFormulaToICP(const FormulaT& _formula, const FormulaT& _origin)
+    template<class Settings>
+    void IntBlastModule<Settings>::addFormulaToICP(const FormulaT& _formula, const FormulaT& _origin)
     {
         INTBLAST_DEBUG("-[ICP+]-> " << _formula);
         INTBLAST_DEBUG("          (origin: " << _origin << ")");
@@ -878,7 +905,8 @@ namespace smtrat
         }
     }
 
-    void IntBlastModule::addConstraintToICP(FormulaT _formula)
+    template<class Settings>
+    void IntBlastModule<Settings>::addConstraintToICP(FormulaT _formula)
     {
         // First, add the formula itself to ICP
         addFormulaToICP(_formula, _formula);
@@ -930,7 +958,8 @@ namespace smtrat
         }
     }
 
-    void IntBlastModule::removeFormulaFromICP(const FormulaT& _formula, const FormulaT& _origin)
+    template<class Settings>
+    void IntBlastModule<Settings>::removeFormulaFromICP(const FormulaT& _formula, const FormulaT& _origin)
     {
         auto formulaInInput = mpICPInput->find(_formula);
         if(formulaInInput != mpICPInput->end()) {
@@ -942,7 +971,8 @@ namespace smtrat
         }
     }
 
-    void IntBlastModule::removeOriginFromICP(const FormulaT& _origin)
+    template<class Settings>
+    void IntBlastModule<Settings>::removeOriginFromICP(const FormulaT& _origin)
     {
         mSubstitutedPolys.removeOrigin(_origin);
 
@@ -960,7 +990,8 @@ namespace smtrat
         }
     }
 
-    void IntBlastModule::addFormulaToBV(const FormulaT& _formula, const FormulaT& _origin)
+    template<class Settings>
+    void IntBlastModule<Settings>::addFormulaToBV(const FormulaT& _formula, const FormulaT& _origin)
     {
         INTBLAST_DEBUG("-[BV +]-> " << _formula);
         INTBLAST_DEBUG("          (origin: " << _origin << ")");
@@ -972,7 +1003,8 @@ namespace smtrat
         }
     }
 
-    void IntBlastModule::removeOriginFromBV(const FormulaT& _origin)
+    template<class Settings>
+    void IntBlastModule<Settings>::removeOriginFromBV(const FormulaT& _origin)
     {
         ModuleInput::iterator bvFormula = mpBVInput->begin();
         while(bvFormula != mpBVInput->end())
@@ -987,14 +1019,16 @@ namespace smtrat
         }
     }
 
-    void IntBlastModule::updateModelFromICP() const
+    template<class Settings>
+    void IntBlastModule<Settings>::updateModelFromICP() const
     {
         clearModel();
         mICP.updateModel();
         mModel = mICP.model();
     }
 
-    void IntBlastModule::updateModelFromBV() const
+    template<class Settings>
+    void IntBlastModule<Settings>::updateModelFromBV() const
     {
         clearModel();
         const Model& bvModel = mpBVSolver->model();
@@ -1037,7 +1071,8 @@ namespace smtrat
         }
     }
 
-    IntBlastModule::IntegerInterval IntBlastModule::getNum(const RationalInterval& _interval) const
+    template<class Settings>
+    typename IntBlastModule<Settings>::IntegerInterval IntBlastModule<Settings>::getNum(const RationalInterval& _interval) const
     {
         return IntegerInterval(
             carl::getNum(_interval.lower()), _interval.lowerBoundType(),

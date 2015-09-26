@@ -11,6 +11,7 @@
 #include "../../solver/Module.h"
 #include "../ICPModule/ICPModule.h"
 #include "../../datastructures/VariableBounds.h"
+#include "IntBlastSettings.h"
 #include "IntBlastStatistics.h"
 #include "BVSolver.h"
 
@@ -551,7 +552,7 @@ namespace smtrat
 
     };
 
-
+    template<class Settings>
     class IntBlastModule : public Module
     {
         private:
@@ -672,3 +673,6 @@ namespace smtrat
             IntegerInterval getNum(const RationalInterval& _interval) const;
     };
 }
+
+#include "IntBlastModule.tpp"
+#include "IntBlastModuleInstantiation.h"

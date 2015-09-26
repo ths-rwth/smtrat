@@ -19,7 +19,7 @@ namespace smtrat
         public Manager
     {
         public:
-            RatIntBlast();
+            RatIntBlast( bool _externalModuleFactoryAdding = false );
             ~RatIntBlast();
 
     };
