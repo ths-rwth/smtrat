@@ -316,6 +316,7 @@ namespace smtrat
         std::cout << "Start consistency check with the ICPModule on the constraints " << std::endl;
         for( const auto& f : rReceivedFormula() )
             std::cout << "    " << f.formula().constraint() << std::endl;
+        debugPrint();
         #endif
         if( !mFoundSolution.empty() )
         {
@@ -3061,7 +3062,7 @@ namespace smtrat
             s2 << _afterA << " or " << _afterB;
         }
         _out << "  ->  " << std::setw(20) << std::left << s2.str();
-        _out << std::right << " with " << _cc.rhs() << std::endl;
+        _out << std::right << " with " << _cc.contractor().polynomial() << std::endl;
     }
     #endif
 } // namespace smtrat
