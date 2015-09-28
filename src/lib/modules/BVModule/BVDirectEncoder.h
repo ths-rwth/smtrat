@@ -916,23 +916,22 @@ namespace smtrat
                  * carl Formula simplification for xor is currently broken, so we do it ourselves for n=2.
                  * (Not very elegant, but should be correct.)
                  */
-                if(_first == _second) {
+                const Bit& lower = _first < _second ? _first : _second;
+                const Bit& upper = _first < _second ? _second : _first;
+
+                // TRUE < FALSE < ... < a < NOT(a) < ...
+
+                if(lower == upper) {
                     return Formula(carl::FormulaType::FALSE);
                 }
-                if(carl::FormulaPool<Poly>::getInstance().formulasInverse(_first, _second)) {
+                if(carl::FormulaPool<Poly>::getInstance().formulasInverse(lower, upper)) {
                     return Formula(carl::FormulaType::TRUE);
                 }
-                if(_first.getType() == carl::FormulaType::TRUE) {
+                if(lower.getType() == carl::FormulaType::TRUE) {
                     return boolNot(_second);
                 }
-                if(_first.getType() == carl::FormulaType::FALSE) {
+                if(lower.getType() == carl::FormulaType::FALSE) {
                     return _second;
-                }
-                if(_second.getType() == carl::FormulaType::TRUE) {
-                    return boolNot(_first);
-                }
-                if(_second.getType() == carl::FormulaType::FALSE) {
-                    return _first;
                 }
 
                 // No simplification possible, fall back to the regular XOR construction.
