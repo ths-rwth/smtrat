@@ -29,6 +29,7 @@
 #pragma once
 
 #define SMTRAT_BV_INCREMENTAL_MODE
+// define SMTRAT_BV_ENCODER_DEBUG
 
 #include "boost/optional/optional.hpp"
 #include "../../Common.h"
@@ -106,6 +107,9 @@ namespace smtrat
                 }
                 #endif
 
+                #ifdef SMTRAT_BV_ENCODER_DEBUG
+                std::cerr << " -> " << _formula << std::endl;
+                #endif
                 mCurrentEncodings.insert(_formula);
             }
 
@@ -615,6 +619,9 @@ namespace smtrat
 
                 // The term has not been encoded yet. Encode it now
                 mCurrentTerm = _term;
+                #ifdef SMTRAT_BV_ENCODER_DEBUG
+                std::cerr << "[BV] Encoding term: " << _term << std::endl;
+                #endif
                 Bits out;
 
                 switch(type) {
@@ -683,6 +690,14 @@ namespace smtrat
                 mTermBits[_term] = out;
                 mCurrentTerm = boost::none;
 
+                #ifdef SMTRAT_BV_ENCODER_DEBUG
+                std::cerr << "Encoded into:";
+                for(auto bIt = out.crbegin(); bIt != out.crend(); ++bIt) {
+                    std::cerr << " <" << *bIt << ">";
+                }
+                std::cerr << std::endl;
+                #endif
+
                 return out;
             }
 
@@ -716,6 +731,10 @@ namespace smtrat
                 carl::BVCompareRelation relation = _constraint.relation();
                 Bit out;
 
+                #ifdef SMTRAT_BV_ENCODER_DEBUG
+                std::cerr << "[BV] Encoding constraint: " << _constraint << std::endl;
+                #endif
+
                 switch(relation)
                 {
                     case carl::BVCompareRelation::EQ:
@@ -744,6 +763,11 @@ namespace smtrat
 
                 mConstraintBits[_constraint] = out;
                 mCurrentConstraint = boost::none;
+
+                #ifdef SMTRAT_BV_ENCODER_DEBUG
+                std::cerr << "Encoded into: <" << out << ">" << std::endl;
+                #endif
+
                 return out;
             }
 
@@ -855,7 +879,9 @@ namespace smtrat
             Variable createVariable()
             {
                 Variable var = carl::VariablePool::getInstance().getFreshVariable(carl::VariableType::VT_BOOL);
+                #ifndef SMTRAT_BV_ENCODER_DEBUG
                 mIntroducedVariables.insert(var);
+                #endif
                 return var;
             }
 
@@ -940,6 +966,11 @@ namespace smtrat
                 carl::FormulaVisitor<FormulaT> visitor;
                 std::function<FormulaT(FormulaT)> encodeConstraints = std::bind(&BVDirectEncoder::encodeBVConstraints, this, std::placeholders::_1);
                 FormulaT passedFormula = visitor.visit(_inputFormula, encodeConstraints);
+
+                #ifdef SMTRAT_BV_ENCODER_DEBUG
+                std::cerr << "Formula encoded into: " << passedFormula << std::endl;
+                #endif
+
                 mCurrentEncodings.insert(passedFormula);
                 return mCurrentEncodings;
             }
