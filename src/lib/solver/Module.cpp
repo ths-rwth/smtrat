@@ -1020,7 +1020,7 @@ namespace smtrat
         return true;
     }
     
-    void Module::checkInfSubsetForMinimality( std::vector<FormulasT>::const_iterator _infsubset, const string& _filename, unsigned _maxSizeDifference ) const
+    void Module::checkInfSubsetForMinimality( std::vector<FormulaSetT>::const_iterator _infsubset, const string& _filename, unsigned _maxSizeDifference ) const
     {
         stringstream filename;
         filename << _filename << "_" << moduleName(mType) << "_" << mSmallerMusesCheckCounter << ".smt2";
