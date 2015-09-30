@@ -117,24 +117,25 @@ namespace smtrat
 	{
 		SMTRAT_LOG_FUNC("smtrat.cad", _subformula->formula());
 		switch (_subformula->formula().getType()) {
-                    case carl::FormulaType::TRUE: 
+        case carl::FormulaType::TRUE: 
 			return true;
-                    case carl::FormulaType::FALSE: {
+        case carl::FormulaType::FALSE: {
 			this->hasFalse = true;
 			FormulaSetT infSubSet;
 			infSubSet.insert(_subformula->formula());
 			mInfeasibleSubsets.push_back(infSubSet);
 			return false;
-                    }
-                    case carl::FormulaType::CONSTRAINT: {
+        }
+        case carl::FormulaType::CONSTRAINT: {
+			SMTRAT_LOG_FUNC("smtrat.cad", _subformula->formula().constraint());
 			if (this->hasFalse) {
 				this->subformulaQueue.push_back(_subformula->formula());
 				return false;
 			} else {
 				return this->addConstraintFormula(_subformula->formula());
 			}
-                    }
-                    default:
+        }
+        default:
 			SMTRAT_LOG_ERROR("smtrat.cad", "Asserted " << _subformula->formula());
 			assert(false);
 			return true;
@@ -152,6 +153,10 @@ namespace smtrat
 	Answer CADModule<Settings>::checkCore( bool _full )
 	{
 		SMTRAT_LOG_FUNC("smtrat.cad", _full);
+		assert(mConstraints.size() == mConstraintsMap.size());
+		SMTRAT_LOG_TRACE("smtrat.cad", "Current Constraints: " << mConstraints);
+		SMTRAT_LOG_TRACE("smtrat.cad", "as Map: " << mConstraintsMap);
+		mConflictGraph.print();
             #ifdef SMTRAT_DEVOPTION_Statistics
             mStats->addCall();
             #endif
@@ -199,6 +204,8 @@ namespace smtrat
 			
 			cad::MISGeneration<Settings::mis_heuristic> mis;
 			mis(*this, mInfeasibleSubsets);
+			//std::cout << "Infeasible Subset: " << *mInfeasibleSubsets.begin() << std::endl;
+			//std::cout << "From " << constraints() << std::endl;
 
 			if (Settings::checkMISForMinimality) {
 				Module::checkInfSubsetForMinimality(mInfeasibleSubsets.begin());
@@ -242,12 +249,13 @@ namespace smtrat
 	{
 		SMTRAT_LOG_FUNC("smtrat.cad", _subformula->formula());
 		switch (_subformula->formula().getType()) {
-                    case carl::FormulaType::TRUE:
+        case carl::FormulaType::TRUE:
 			return;
-                    case carl::FormulaType::FALSE:
+        case carl::FormulaType::FALSE:
 			this->hasFalse = false;
 			return;
-                    case carl::FormulaType::CONSTRAINT: {
+        case carl::FormulaType::CONSTRAINT: {
+			SMTRAT_LOG_FUNC("smtrat.cad", _subformula->formula().constraint());
 			auto it = std::find(this->subformulaQueue.begin(), this->subformulaQueue.end(), _subformula->formula());
 			if (it != this->subformulaQueue.end()) {
 				this->subformulaQueue.erase(it);
@@ -259,7 +267,7 @@ namespace smtrat
 			ConstraintIndexMap::iterator constraintIt = mConstraintsMap.find(_subformula->formula());
 			if (constraintIt == mConstraintsMap.end())
 				return; // there is nothing to remove
-			carl::cad::Constraint<smtrat::Rational> constraint = mConstraints[constraintIt->second];
+			const carl::cad::Constraint<smtrat::Rational>& constraint = mConstraints[constraintIt->second];
 
 			SMTRAT_LOG_TRACE("smtrat.cad", "---- Constraint removal (before) ----");
 			SMTRAT_LOG_TRACE("smtrat.cad", "Elimination sets:");
@@ -273,26 +281,28 @@ namespace smtrat
 			unsigned constraintIndex = constraintIt->second;
 			// remove the constraint in mConstraintsMap
 			mConstraintsMap.erase(constraintIt);
-			// remove the constraint from the list of constraints
-			assert(mConstraints.size() > constraintIndex); // the constraint to be removed should be stored in the local constraint list
-			mConstraints.erase(mConstraints.begin() + constraintIndex);	// erase the (constraintIt->second)-th element
 			// update the constraint / index map, i.e., decrement all indices above the removed one
 			updateConstraintMap(constraintIndex, true);
 			// remove the corresponding constraint node with index constraintIndex
-			mConflictGraph.removeConstraintVertex(constraintIndex);
+			mConflictGraph.removeConstraint(constraint);
+
 			// remove the corresponding polynomial from the CAD if it is not occurring in another constraint
 			bool doDelete = true;
-
-			///@todo Why was this iteration reversed?
-			for (auto c: mConstraints) {
+			for (const auto& c: mConstraints) {
 				if (constraint.getPolynomial() == c.getPolynomial()) {
 					doDelete = false;
 					break;
 				}
 			}
-			if (doDelete) // no other constraint claims the polynomial, hence remove it from the list and the cad
+			if (doDelete) {
+				// no other constraint claims the polynomial, hence remove it from the list and the cad
 				mCAD.removePolynomial(constraint.getPolynomial());
+			}	
 
+			// remove the constraint from the list of constraints
+			assert(mConstraints.size() > constraintIndex); // the constraint to be removed should be stored in the local constraint list
+			mConstraints.erase(mConstraints.begin() + constraintIndex);	// erase the (constraintIt->second)-th element
+			
 			SMTRAT_LOG_TRACE("smtrat.cad", "---- Constraint removal (afterwards) ----");
 			SMTRAT_LOG_TRACE("smtrat.cad", "New constraint set: " << mConstraints);
 			SMTRAT_LOG_TRACE("smtrat.cad", "Elimination sets:");

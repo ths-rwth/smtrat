@@ -1,11 +1,11 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #                                                             #
-# File: src/cli/CMakeLists.txt                             #
+# File: src/cli/CMakeLists.txt                                #
 #                                                             #
 # Project name: SMT-RAT                                       #
 # Contact: Florian Corzilius <corzilius@cs.rwth-aachen.de>,   #
 #          Ulrich Loup <loup@cs.rwth-aachen.de>               #
-# Project sourceforge page: http://smtrat.sourceforge.net/    #
+# Project page: https://github.com/smtrat/smtrat/wiki         #
 # Development status: beta                                    #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Version: 2012-10-10                                         #
