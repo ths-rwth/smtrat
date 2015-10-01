@@ -8,6 +8,7 @@
 #pragma once
 
 #include "Tableau.h"
+#include "TableauSettings.h"
 
 //#define DEBUG_METHODS_TABLEAU
 //#define LRA_DEBUG_CUTS_FROM_PROOFS
@@ -592,7 +593,10 @@ namespace smtrat
         void Tableau<Settings,T1,T2>::storeAssignment()
         {
             for( Variable<T1, T2>* basicVar : mRows )
+            {
+                assert( basicVar != NULL );
                 basicVar->storeAssignment();
+            }
             for( Variable<T1, T2>* nonbasicVar : mColumns )
                 nonbasicVar->storeAssignment();
         }
@@ -601,7 +605,10 @@ namespace smtrat
         void Tableau<Settings,T1,T2>::resetAssignment()
         {
             for( Variable<T1, T2>* basicVar : mRows )
+            {
+                assert( basicVar != NULL );
                 basicVar->resetAssignment();
+            }
             for( Variable<T1, T2>* nonbasicVar : mColumns )
                 nonbasicVar->resetAssignment();
         }
@@ -1049,12 +1056,33 @@ namespace smtrat
             }
             else
             {
-                size_t valueA = boundedVariables( isBetterNbVar );
-                size_t valueB = boundedVariables( thanColumnNbVar, valueA );
-                if( valueA < valueB  ) return true;
-                else if( valueA == valueB )
+                switch( Settings::nonbasic_var_choice_strategy )
                 {
-                    if( isBetterNbVar.size() < thanColumnNbVar.size() ) return true;
+                    case NBCS::LESS_BOUNDED_VARIABLES:
+                    {
+                        size_t valueA = boundedVariables( isBetterNbVar );
+                        size_t valueB = boundedVariables( thanColumnNbVar, valueA );
+                        if( valueA < valueB  ) return true;
+                        else if( valueA == valueB )
+                        {
+                            if( isBetterNbVar.size() < thanColumnNbVar.size() ) return true;
+                        }
+                        break;
+                    }
+                    case NBCS::LESS_COLUMN_ENTRIES:
+                    {
+                        if( isBetterNbVar.size() < thanColumnNbVar.size() )
+                            return true;
+                        else if( isBetterNbVar.size() == thanColumnNbVar.size() )
+                        {
+                            size_t valueA = boundedVariables( isBetterNbVar );
+                            size_t valueB = boundedVariables( thanColumnNbVar, valueA );
+                            if( valueA < valueB  ) return true;
+                        }
+                        break;
+                    }
+                    default:
+                        assert( false );
                 }
             }
             return false;
@@ -1156,8 +1184,13 @@ namespace smtrat
             bool posOfFirstConflictFound = false;
             for( Variable<T1,T2>* rowElement : mRows )
             {
-                if( !posOfFirstConflictFound && rowElement != firstConflictingVar )
-                    continue;
+                if( !posOfFirstConflictFound )
+                {
+                    if( rowElement == firstConflictingVar )
+                        posOfFirstConflictFound = true;
+                    else
+                        continue;
+                }
                 assert( rowElement != NULL );
                 // Upper bound is violated
                 const Variable<T1,T2>& basicVar = *rowElement;

@@ -17,15 +17,15 @@ namespace smtrat
         /**
          * 
          */
-        static const bool simple_theory_propagation = false;
+        static const bool simple_theory_propagation = true;
         /**
          * 
          */
-        static const bool simple_conflict_search = false;
+        static const bool simple_conflict_search = true;
         /**
          * 
          */
-        static const bool simple_conflicts_and_propagation_on_demand = false;
+        static const bool simple_conflicts_and_propagation_on_demand = true;
         /**
          * 
          */

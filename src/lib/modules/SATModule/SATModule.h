@@ -392,6 +392,12 @@ namespace smtrat
             Minisat::vec<unsigned> mNonTseitinShadowedOccurrences;
             ///
             std::map<signed,std::set<signed>> mTseitinVarShadows;
+            ///
+            std::vector<Minisat::vec<Minisat::Lit>> mCurrentTheoryConflicts;
+            std::map<std::pair<size_t,size_t>,size_t> mCurrentTheoryConflictEvaluations;
+            std::unordered_set<int> mLevelCounter;
+            ///
+            size_t mTheoryConflictIdCounter;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
             SATModuleStatistics* mpStatistics;
@@ -936,6 +942,8 @@ namespace smtrat
              * @return A reference to the clause representing the best infeasible subset.
              */
             Minisat::CRef learnTheoryConflict();
+            
+            void adaptConflictEvaluation( size_t& _clauseEvaluation, Minisat::Lit _lit, bool _firstLiteral );
             
             /**
              * Propagate and check the consistency of the constraints, whose abstraction literals have been assigned to true.
