@@ -17,11 +17,11 @@ namespace smtrat
         /**
          * 
          */
-        static const bool simple_theory_propagation = true;
+        static const bool simple_theory_propagation = false;
         /**
          * 
          */
-        static const bool simple_conflict_search = true;
+        static const bool simple_conflict_search = false;
         /**
          * 
          */
