@@ -51,7 +51,7 @@ namespace smtrat
         /**
          * 
          */
-        static constexpr double percentage_of_conflicts_to_add = 0.0;
+        static constexpr double percentage_of_conflicts_to_add = 1.0;
         /**
          *
          */
