@@ -36,6 +36,7 @@
 #include "SolverTypes.h"
 #include "Sort.h"
 #include <math.h>
+#include <carl/formula/DIMACSExporter.h>
 #include "../../solver/Module.h"
 #include "../../solver/RuntimeSettings.h"
 
@@ -195,10 +196,10 @@ namespace smtrat
              * Maps the constraints occurring in the SAT module to their abstractions. We store a vector of literals
              * for each constraints, which is only used in the optimization, which applies valid substitutions.
              */
-            typedef std::map<FormulaT, std::vector<Minisat::Lit>> ConstraintLiteralsMap; // @todo use hashing if possible
+            typedef carl::FastMap<FormulaT, std::vector<Minisat::Lit>> ConstraintLiteralsMap; // @todo use hashing if possible
             
             /// Maps the Boolean variables to their corresponding Minisat variable.
-            typedef std::map<const carl::Variable, Minisat::Var> BooleanVarMap;
+            typedef carl::FastMap<carl::Variable, Minisat::Var> BooleanVarMap;
             
             /**
              * Maps each Minisat variable to a pair of Abstractions, one contains the abstraction information of the literal
@@ -207,7 +208,7 @@ namespace smtrat
             typedef Minisat::vec<std::pair<Abstraction*,Abstraction*>> BooleanConstraintMap;
             
             /// Maps the clauses in the received formula to the corresponding Minisat clause.
-            typedef std::map<FormulaT, Minisat::CRef> FormulaClauseMap;
+            typedef carl::FastMap<FormulaT, Minisat::CRef> FormulaClauseMap;
             
             /// A vector of vectors of literals representing a vector of clauses.
             typedef std::vector<std::vector<Minisat::Lit>> ClauseVector;
@@ -377,7 +378,7 @@ namespace smtrat
             /// Stores all clauses in which the activities have been changed.
             std::vector<Minisat::CRef> mChangedActivities;
             /// Maps arithmetic variables to the constraints they occur in (only used by the valid-substitutions optimization).
-            std::map<carl::Variable,FormulaSetT> mVarOccurrences;
+            carl::FastMap<carl::Variable,FormulaSetT> mVarOccurrences;
             /// Maps Minisat variables to the clauses they occur in (only used by the valid-substitutions optimization).
             std::vector<std::set<Minisat::CRef>> mVarClausesMap;
             /// Maps the arithmetic variables to the terms they have been replaced by a valid substitution (only used by the valid-substitutions optimization).
@@ -391,13 +392,15 @@ namespace smtrat
             ///
             Minisat::vec<unsigned> mNonTseitinShadowedOccurrences;
             ///
-            std::map<signed,std::set<signed>> mTseitinVarShadows;
+            carl::FastMap<signed,std::set<signed>> mTseitinVarShadows;
             ///
             std::vector<Minisat::vec<Minisat::Lit>> mCurrentTheoryConflicts;
             std::map<std::pair<size_t,size_t>,size_t> mCurrentTheoryConflictEvaluations;
             std::unordered_set<int> mLevelCounter;
             ///
             size_t mTheoryConflictIdCounter;
+            ///
+            carl::DIMACSExporter<smtrat::Poly> dimacs;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
             SATModuleStatistics* mpStatistics;

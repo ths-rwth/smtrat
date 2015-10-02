@@ -27,6 +27,7 @@
 
 #include "SATModule.h"
 #include <iomanip>
+#include <carl/formula/DIMACSExporter.h>
 
 //#define DEBUG_METHODS_SATMODULE
 //#define DEBUG_SATMODULE
@@ -167,6 +168,7 @@ namespace smtrat
     template<class Settings>
     bool SATModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
+//        std::cout << dimacs(_subformula->formula()) << std::endl;
         if( _subformula->formula().isFalse() )
         {
             return false;
@@ -347,6 +349,7 @@ namespace smtrat
     template<class Settings>
     Answer SATModule<Settings>::checkCore( bool )
     {
+//        std::cout << dimacs << std::endl;
         #ifdef SMTRAT_DEVOPTION_Statistics
         mpStatistics->rNrTotalVariablesBefore() = (size_t) nVars();
         mpStatistics->rNrClauses() = (size_t) nClauses();
@@ -740,21 +743,22 @@ namespace smtrat
             {
                 Var var = newVar( true, _decisionRelevant, content.activity(), Settings::formula_guided_decision_heuristic && _tseitinShadowed );
                 mBooleanVarMap[content.boolean()] = var;
-                mBooleanConstraintMap.push( std::make_pair( 
-                    new Abstraction( passedFormulaEnd(), content ), 
-                    new Abstraction( passedFormulaEnd(), negated ? _formula : FormulaT( carl::FormulaType::NOT, _formula ) ) ) );
+                mBooleanConstraintMap.push( std::make_pair( nullptr, nullptr ) );
+//                mBooleanConstraintMap.push( std::make_pair( 
+//                    new Abstraction( passedFormulaEnd(), content ), 
+//                    new Abstraction( passedFormulaEnd(), negated ? _formula : FormulaT( carl::FormulaType::NOT, _formula ) ) ) );
                 l = mkLit( var, negated );
             }
-            if( !_origin.isTrue() )
-            {
-                assert( mBooleanConstraintMap[var(l)].first != nullptr && mBooleanConstraintMap[var(l)].second != nullptr );
-                Abstraction& abstr = negated ? *mBooleanConstraintMap[var(l)].second : *mBooleanConstraintMap[var(l)].first;
-                if( abstr.origins == nullptr )
-                {
-                    abstr.origins = std::shared_ptr<std::vector<FormulaT>>( new std::vector<FormulaT>() );
-                }
-                abstr.origins->push_back( _origin );
-            }
+//            if( !_origin.isTrue() )
+//            {
+//                assert( mBooleanConstraintMap[var(l)].first != nullptr && mBooleanConstraintMap[var(l)].second != nullptr );
+//                Abstraction& abstr = negated ? *mBooleanConstraintMap[var(l)].second : *mBooleanConstraintMap[var(l)].first;
+//                if( abstr.origins == nullptr )
+//                {
+//                    abstr.origins = std::shared_ptr<std::vector<FormulaT>>( new std::vector<FormulaT>() );
+//                }
+//                abstr.origins->push_back( _origin );
+//            }
             return l;
         }
         else
@@ -1729,11 +1733,14 @@ SetWatches:
                     return l_Undef;
                 }
                 // TODO: must be adapted. Currently it does not forget clauses with premises so easily, but it forgets unequal-constraint-splittings, which causes problems.
+                if( learnts.size() - nAssigns() >= max_learnts && rReceivedFormula().isOnlyPropositional() )
+                {
 //                if( mCurrentAssignmentConsistent != Unknown && learnts.size() - nAssigns() >= max_learnts )
 //                {
-//                     // Reduce the set of learned clauses:
-//                     reduceDB(); 
+                     // Reduce the set of learned clauses:
+                     reduceDB(); 
 //                }
+                }
                 
                 Lit next = lit_Undef;
                 while( decisionLevel() < assumptions.size() )
