@@ -241,7 +241,7 @@ namespace smtrat
                 ///
                 Value<T1>* mpTheta;
                 ///
-                std::map<carl::Variable, Variable<T1,T2>*> mOriginalVars;
+                carl::FastMap<carl::Variable, Variable<T1,T2>*> mOriginalVars;
                 ///
                 carl::FastPointerMap<typename Poly::PolyType, Variable<T1,T2>*> mSlackVars;
                 ///
@@ -423,7 +423,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                const std::map< carl::Variable, Variable<T1,T2>*>& originalVars() const
+                const carl::FastMap< carl::Variable, Variable<T1,T2>*>& originalVars() const
                 {
                     return mOriginalVars;
                 }
@@ -542,7 +542,7 @@ namespace smtrat
                  * @param _isInteger
                  * @return 
                  */
-                Variable<T1, T2>* newBasicVariable( const typename Poly::PolyType* _poly, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars, bool _isInteger );
+                Variable<T1, T2>* newBasicVariable( const typename Poly::PolyType* _poly, bool _isInteger );
                 
                 /**
                  * 
@@ -618,7 +618,7 @@ namespace smtrat
                  * @param _rowEntry
                  * @return 
                  */
-                std::vector< std::set< const Bound<T1, T2>* > > getConflictsFrom( EntryID _rowEntry ) const;
+                std::vector< std::vector< const Bound<T1, T2>* > > getConflictsFrom( EntryID _rowEntry ) const;
                 
                 /**
                  * 

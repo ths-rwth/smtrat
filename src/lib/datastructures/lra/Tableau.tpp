@@ -176,7 +176,7 @@ namespace smtrat
                 T1 primCoeff = T1( term->coeff() ) * constraint.lhs().coefficient();
                 negative = (primCoeff < T1( 0 ));
                 boundValue = T1( -constraint.constantPart() )/primCoeff;
-                typename std::map<carl::Variable, Variable<T1, T2>*>::iterator basicIter = mOriginalVars.find( var );
+                auto basicIter = mOriginalVars.find( var );
                 // constraint not found, add new nonbasic variable
                 if( basicIter == mOriginalVars.end() )
                 {
@@ -207,7 +207,7 @@ namespace smtrat
                 typename carl::FastPointerMap<typename Poly::PolyType, Variable<T1, T2>*>::iterator slackIter = mSlackVars.find( linearPart );
                 if( slackIter == mSlackVars.end() )
                 {
-                    newVar = newBasicVariable( linearPart, mOriginalVars, constraint.integerValued() );
+                    newVar = newBasicVariable( linearPart, constraint.integerValued() );
                     mSlackVars.insert( std::pair<const typename Poly::PolyType*, Variable<T1, T2>*>( linearPart, newVar ) );
                 }
                 else
@@ -353,7 +353,7 @@ namespace smtrat
         }
 
         template<class Settings, typename T1, typename T2>
-        Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( const typename Poly::PolyType* _poly, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars, bool _isInteger )
+        Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( const typename Poly::PolyType* _poly, bool _isInteger )
         {
             mNonActiveBasics.emplace_front();
             Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), _poly, mDefaultBoundPosition, _isInteger );
@@ -363,12 +363,12 @@ namespace smtrat
                 assert( carl::isInteger( term->coeff() ) );
 				carl::Variable var = term->monomial()->begin()->first;
                 Variable<T1, T2>* nonBasic;
-                auto nonBasicIter = _originalVars.find( var );
-                if( _originalVars.end() == nonBasicIter )
+                auto nonBasicIter = mOriginalVars.find( var );
+                if( mOriginalVars.end() == nonBasicIter )
                 {
                     typename Poly::PolyType* varPoly = new typename Poly::PolyType( var );
                     nonBasic = newNonbasicVariable( varPoly, var.getType() == carl::VariableType::VT_INT );
-                    _originalVars.insert( std::pair<carl::Variable, Variable<T1, T2>*>( var, nonBasic ) );
+                    mOriginalVars.insert( std::pair<carl::Variable, Variable<T1, T2>*>( var, nonBasic ) );
                 }
                 else
                 {
@@ -1177,9 +1177,9 @@ namespace smtrat
         }
 
         template<class Settings, typename T1, typename T2>
-        std::vector< std::set< const Bound<T1, T2>* > > Tableau<Settings,T1,T2>::getConflictsFrom( EntryID _rowEntry ) const
+        std::vector< std::vector< const Bound<T1, T2>* > > Tableau<Settings,T1,T2>::getConflictsFrom( EntryID _rowEntry ) const
         {
-            std::vector< std::set< const Bound<T1, T2>* > > conflicts = std::vector< std::set< const Bound<T1, T2>* > >();
+            std::vector< std::vector< const Bound<T1, T2>* > > conflicts;
             const Variable<T1,T2>* firstConflictingVar = (*mpEntries)[_rowEntry].rowVar();
             bool posOfFirstConflictFound = false;
             for( Variable<T1,T2>* rowElement : mRows )
@@ -1196,8 +1196,8 @@ namespace smtrat
                 const Variable<T1,T2>& basicVar = *rowElement;
                 if( basicVar.supremum() < basicVar.assignment() )
                 {
-                    conflicts.push_back( std::set< const Bound<T1, T2>* >() );
-                    conflicts.back().insert( basicVar.pSupremum() );
+                    conflicts.emplace_back();
+                    conflicts.back().push_back( basicVar.pSupremum() );
                     // Check all entries in the row / basic variables
                     Iterator rowIter = Iterator( basicVar.startEntry(), mpEntries );
                     while( true )
@@ -1216,7 +1216,7 @@ namespace smtrat
                             }
                             else
                             {
-                                conflicts.back().insert( (*rowIter).columnVar()->pSupremum() );
+                                conflicts.back().push_back( (*rowIter).columnVar()->pSupremum() );
                             }
                         }
                         else
@@ -1229,7 +1229,7 @@ namespace smtrat
                             }
                             else
                             {
-                                conflicts.back().insert( (*rowIter).columnVar()->pInfimum() );
+                                conflicts.back().push_back( (*rowIter).columnVar()->pInfimum() );
                             }
                         }
                         if( rowIter.hEnd( false ) )
@@ -1245,8 +1245,8 @@ namespace smtrat
                 // Lower bound is violated
                 else if( basicVar.infimum() > basicVar.assignment() )
                 {
-                    conflicts.push_back( std::set< const Bound<T1, T2>* >() );
-                    conflicts.back().insert( basicVar.pInfimum() );
+                    conflicts.emplace_back();
+                    conflicts.back().push_back( basicVar.pInfimum() );
                     // Check all entries in the row / basic variables
                     Iterator rowIter = Iterator( basicVar.startEntry(), mpEntries );
                     while( true )
@@ -1265,7 +1265,7 @@ namespace smtrat
                             }
                             else
                             {
-                                conflicts.back().insert( (*rowIter).columnVar()->pSupremum() );
+                                conflicts.back().push_back( (*rowIter).columnVar()->pSupremum() );
                             }
                         }
                         else
@@ -1278,7 +1278,7 @@ namespace smtrat
                             }
                             else
                             {
-                                conflicts.back().insert( (*rowIter).columnVar()->pInfimum() );
+                                conflicts.back().push_back( (*rowIter).columnVar()->pInfimum() );
                             }
                         }
                         if( rowIter.hEnd( false ) )
@@ -1292,7 +1292,7 @@ namespace smtrat
                     }
                 }
             }
-            return conflicts;
+            return std::move(conflicts);
         }
 
         template<class Settings, typename T1, typename T2>
