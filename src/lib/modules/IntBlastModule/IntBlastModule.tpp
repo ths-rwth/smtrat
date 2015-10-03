@@ -9,7 +9,7 @@
 #include "IntBlastModule.h"
 #include "../AddModules.h"
 
-#define INTBLAST_DEBUG_ENABLED 1
+#define INTBLAST_DEBUG_ENABLED 0
 #define INTBLAST_DEBUG(x) do { \
   if (INTBLAST_DEBUG_ENABLED) { std::cerr << "[IntBlast] " << x << std::endl; } \
 } while (0)
