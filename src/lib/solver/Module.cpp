@@ -503,13 +503,13 @@ namespace smtrat
         subformulas.push_back( FormulaT( FormulaType::NOT, _unequalConstraint ) );
         subformulas.push_back( lessConstraint );
         subformulas.push_back( greaterConstraint );
-        addDeduction( FormulaT( FormulaType::OR, std::move( subformulas ) ) );
+        addDeduction( FormulaT( FormulaType::OR, std::move( subformulas ) ), DeductionType::PERMANENT );
         // (not p<0 or p!=0)
-        addDeduction( FormulaT( FormulaType::OR, notLessConstraint, _unequalConstraint ) );
+        addDeduction( FormulaT( FormulaType::OR, notLessConstraint, _unequalConstraint ), DeductionType::PERMANENT );
         // (not p>0 or p!=0)
-        addDeduction( FormulaT( FormulaType::OR, notGreaterConstraint, _unequalConstraint ) );
+        addDeduction( FormulaT( FormulaType::OR, notGreaterConstraint, _unequalConstraint ), DeductionType::PERMANENT );
         // (not p>0 or not p<0)
-        addDeduction( FormulaT( FormulaType::OR, notGreaterConstraint, notLessConstraint ) );
+        addDeduction( FormulaT( FormulaType::OR, notGreaterConstraint, notLessConstraint ), DeductionType::PERMANENT );
     }
     
     unsigned Module::checkModel() const

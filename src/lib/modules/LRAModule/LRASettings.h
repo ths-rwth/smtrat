@@ -25,7 +25,7 @@ namespace smtrat
         /**
          * 
          */
-        static const bool simple_conflicts_and_propagation_on_demand = false;
+        static const bool simple_conflicts_and_propagation_on_demand = true;
         /**
          * 
          */

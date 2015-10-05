@@ -602,7 +602,7 @@ namespace smtrat
                 }
                 else
                 {
-                    std::vector< std::set< const LRABound* > > conflictingBounds = mTableau.getConflictsFrom( pivotingElement.first );
+                    std::vector< std::vector< const LRABound* > > conflictingBounds = mTableau.getConflictsFrom( pivotingElement.first );
                     for( auto conflict = conflictingBounds.begin(); conflict != conflictingBounds.end(); ++conflict )
                     {
                         FormulaSetT infSubSet;

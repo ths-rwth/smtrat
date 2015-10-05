@@ -125,6 +125,7 @@ typedef RegionAllocator<uint32_t>::Ref CRef;
 static const unsigned NORMAL_CLAUSE = 0;
 static const unsigned DEDUCTED_CLAUSE = 1;
 static const unsigned CONFLICT_CLAUSE = 2;
+static const unsigned PERMANENT_CLAUSE = 3;
 
 #define BITMASK_MARK 0x03
 #define BITMASK_TYPE 0x03

@@ -211,6 +211,18 @@ namespace smtrat
         }
         
         /**
+         * @return true, if this formula is propositional;
+         *         false, otherwise.
+         */
+        bool isOnlyPropositional() const
+        {
+            return !(carl::PROP_CONTAINS_BITVECTOR <= mProperties) 
+                && !(carl::PROP_CONTAINS_UNINTERPRETED_EQUATIONS <= mProperties)
+                && !(carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= mProperties)
+                && !(carl::PROP_CONTAINS_REAL_VALUED_VARS <= mProperties);
+        }
+        
+        /**
          * @param _assignment The model to check conjunction of the stored formulas against.
          * @return 1, if the conjunction of the stored formulas is satisfied by the given model;
          *         0, if the given model conflicts the conjunction of the stored formulas;

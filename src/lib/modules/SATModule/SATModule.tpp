@@ -27,6 +27,7 @@
 
 #include "SATModule.h"
 #include <iomanip>
+#include <carl/formula/DIMACSExporter.h>
 
 //#define DEBUG_METHODS_SATMODULE
 //#define DEBUG_SATMODULE
@@ -128,8 +129,13 @@ namespace smtrat
         mOldSplittingVars(),
         mNewSplittingVars(),
         mNonTseitinShadowedOccurrences(),
-        mTseitinVarShadows()
+        mTseitinVarShadows(),
+        mCurrentTheoryConflicts(),
+        mCurrentTheoryConflictEvaluations(),
+        mTheoryConflictIdCounter( 0 ),
+        mLevelCounter()
     {
+        mCurrentTheoryConflicts.reserve(100);
         #ifdef SMTRAT_DEVOPTION_Statistics
         stringstream s;
         s << moduleName( type() ) << "_" << id();
@@ -162,6 +168,7 @@ namespace smtrat
     template<class Settings>
     bool SATModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
+//        std::cout << dimacs(_subformula->formula()) << std::endl;
         if( _subformula->formula().isFalse() )
         {
             return false;
@@ -342,6 +349,7 @@ namespace smtrat
     template<class Settings>
     Answer SATModule<Settings>::checkCore( bool )
     {
+//        std::cout << dimacs << std::endl;
         #ifdef SMTRAT_DEVOPTION_Statistics
         mpStatistics->rNrTotalVariablesBefore() = (size_t) nVars();
         mpStatistics->rNrClauses() = (size_t) nClauses();
@@ -487,7 +495,7 @@ namespace smtrat
     template<class Settings>
     CRef SATModule<Settings>::addFormula( const FormulaT& _formula, unsigned _type )
     {
-        assert( _type < 2 );
+        assert( _type < 4 );
         FormulaT formulaInCnf = _formula.toCNF( true, _type == NORMAL_CLAUSE );
         if( formulaInCnf.getType() == carl::FormulaType::AND )
         {
@@ -735,21 +743,22 @@ namespace smtrat
             {
                 Var var = newVar( true, _decisionRelevant, content.activity(), Settings::formula_guided_decision_heuristic && _tseitinShadowed );
                 mBooleanVarMap[content.boolean()] = var;
-                mBooleanConstraintMap.push( std::make_pair( 
-                    new Abstraction( passedFormulaEnd(), content ), 
-                    new Abstraction( passedFormulaEnd(), negated ? _formula : FormulaT( carl::FormulaType::NOT, _formula ) ) ) );
+                mBooleanConstraintMap.push( std::make_pair( nullptr, nullptr ) );
+//                mBooleanConstraintMap.push( std::make_pair( 
+//                    new Abstraction( passedFormulaEnd(), content ), 
+//                    new Abstraction( passedFormulaEnd(), negated ? _formula : FormulaT( carl::FormulaType::NOT, _formula ) ) ) );
                 l = mkLit( var, negated );
             }
-            if( !_origin.isTrue() )
-            {
-                assert( mBooleanConstraintMap[var(l)].first != nullptr && mBooleanConstraintMap[var(l)].second != nullptr );
-                Abstraction& abstr = negated ? *mBooleanConstraintMap[var(l)].second : *mBooleanConstraintMap[var(l)].first;
-                if( abstr.origins == nullptr )
-                {
-                    abstr.origins = std::shared_ptr<std::vector<FormulaT>>( new std::vector<FormulaT>() );
-                }
-                abstr.origins->push_back( _origin );
-            }
+//            if( !_origin.isTrue() )
+//            {
+//                assert( mBooleanConstraintMap[var(l)].first != nullptr && mBooleanConstraintMap[var(l)].second != nullptr );
+//                Abstraction& abstr = negated ? *mBooleanConstraintMap[var(l)].second : *mBooleanConstraintMap[var(l)].first;
+//                if( abstr.origins == nullptr )
+//                {
+//                    abstr.origins = std::shared_ptr<std::vector<FormulaT>>( new std::vector<FormulaT>() );
+//                }
+//                abstr.origins->push_back( _origin );
+//            }
             return l;
         }
         else
@@ -1063,7 +1072,7 @@ namespace smtrat
             }
         }
         assert( _clause.size() != 0 );
-        assert(_type <= 2);
+        assert(_type < 4);
         add_tmp.clear();
         _clause.copyTo( add_tmp );
 
@@ -1125,7 +1134,7 @@ namespace smtrat
             else
             {
                 // Store it as normal clause
-                cr = ca.alloc( add_tmp, false );
+                cr = ca.alloc( add_tmp, NORMAL_CLAUSE );
                 clauses.push( cr );
             }
             Clause& c = ca[cr];
@@ -1724,11 +1733,14 @@ SetWatches:
                     return l_Undef;
                 }
                 // TODO: must be adapted. Currently it does not forget clauses with premises so easily, but it forgets unequal-constraint-splittings, which causes problems.
+                if( learnts.size() - nAssigns() >= max_learnts && rReceivedFormula().isOnlyPropositional() )
+                {
 //                if( mCurrentAssignmentConsistent != Unknown && learnts.size() - nAssigns() >= max_learnts )
 //                {
-                    // Reduce the set of learned clauses:
-                    // reduceDB(); 
+                     // Reduce the set of learned clauses:
+                     reduceDB(); 
 //                }
+                }
                 
                 Lit next = lit_Undef;
                 while( decisionLevel() < assumptions.size() )
@@ -2347,7 +2359,7 @@ NextClause:
         for( i = j = 0; i < learnts.size(); i++ )
         {
             Clause& c = ca[learnts[i]];
-            if( c.type() != CONFLICT_CLAUSE && c.size() > 2 && !locked( c ) && (i < learnts.size() / 2 || c.activity() < extra_lim) )
+            if( c.type() != PERMANENT_CLAUSE && c.size() > 2 && !locked( c ) && (i < learnts.size() / 2 || c.activity() < extra_lim) )
 //            if( c.size() > 2 && !locked( c ) && (i < learnts.size() / 2 || c.activity() < extra_lim) )
             {
                 removeClause( learnts[i] );
@@ -2822,7 +2834,7 @@ NextClause:
                     cout << "Learned a theory deduction from a backend module!" << endl;
                     cout << ded.first.toString( false, 0, "", true, true, true ) << endl;
                     #endif
-                    if( addFormula( ded.first, DEDUCTED_CLAUSE ) != CRef_Undef )
+                    if( addFormula( ded.first, ded.second == DeductionType::PERMANENT ? PERMANENT_CLAUSE : DEDUCTED_CLAUSE ) != CRef_Undef )
                     {
                         deductionsLearned = true;
                     }
@@ -2843,7 +2855,6 @@ NextClause:
     CRef SATModule<Settings>::learnTheoryConflict()
     {
         CRef conflictClause = CRef_Undef;
-        int lowestLevel = decisionLevel()+1;
         std::vector<Module*>::const_iterator backend = usedBackends().begin();
         while( backend != usedBackends().end() )
         {
@@ -2854,57 +2865,95 @@ NextClause:
                 assert( !infsubset->empty() );
                 #ifdef SMTRAT_DEVOPTION_Validation
                 if( validationSettings->logInfSubsets() )
-                {
                     addAssumptionToCheck( *infsubset, false, moduleName( (*backend)->type() ) + "_infeasible_subset" );
-                }
                 #endif
                 #ifdef DEBUG_SATMODULE
                 (*backend)->printInfeasibleSubsets();
                 #endif
                 // Add the according literals to the conflict clause.
-                bool betterConflict = false;
                 vec<Lit> learnt_clause;
-                if( infsubset->size() == 1 )
+                size_t conflictEvaluation;
+                for( auto subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                 {
-                    ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( *infsubset->begin() );
+                    // Add literal to clause
+                    ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( *subformula );
                     assert( constraintLiteralPair != mConstraintLiteralMap.end() );
                     Lit lit = mkLit( var( constraintLiteralPair->second.front() ), !sign( constraintLiteralPair->second.front() ) );
-                    if( level( var( lit ) ) <= lowestLevel )
-                    {
-                        lowestLevel = level( var( lit ) );
-                        betterConflict = true;
-                    }
                     learnt_clause.push( lit );
+                    // Update quality of clause regarding this literal
+                    adaptConflictEvaluation( conflictEvaluation, lit, subformula == infsubset->begin() );
                 }
-                else
-                {
-                    int clauseLevel = 0;
-                    for( auto subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
-                    {
-                        ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( *subformula );
-                        assert( constraintLiteralPair != mConstraintLiteralMap.end() );
-                        Lit lit = mkLit( var( constraintLiteralPair->second.front() ), !sign( constraintLiteralPair->second.front() ) );
-                        int litLevel = level( var( lit ) ) ;
-                        if( litLevel > clauseLevel )
-                        {
-                            clauseLevel = level( var( lit ) );
-                        }
-                        learnt_clause.push( lit );
-                    }
-                    if( clauseLevel < lowestLevel )
-                    {
-                        lowestLevel = clauseLevel;
-                        betterConflict = true;
-                    }
-                }
-                if( addClause( learnt_clause, CONFLICT_CLAUSE ) && betterConflict )
-                {
-                    conflictClause = learnts.last();
-                }
+                mCurrentTheoryConflictEvaluations[std::make_pair( conflictEvaluation, ++mTheoryConflictIdCounter )] = mCurrentTheoryConflicts.size();
+                mCurrentTheoryConflicts.push_back( std::move( learnt_clause ) );
             }
             ++backend;
         }
+        addClause( mCurrentTheoryConflicts[mCurrentTheoryConflictEvaluations.begin()->second], CONFLICT_CLAUSE );
+        conflictClause = learnts.last();
+        auto tcIter = mCurrentTheoryConflictEvaluations.begin();
+        ++tcIter;
+        size_t addedClauses = 1;
+        size_t threshold = (size_t)(Settings::percentage_of_conflicts_to_add * (double) mCurrentTheoryConflictEvaluations.size());
+        for( ; tcIter != mCurrentTheoryConflictEvaluations.end(); ++tcIter )
+        {
+            if( addedClauses > threshold )
+                break;
+            addClause( mCurrentTheoryConflicts[tcIter->second], CONFLICT_CLAUSE );
+            ++addedClauses;
+        }
+        mCurrentTheoryConflicts.clear();
+        mCurrentTheoryConflictEvaluations.clear();
+        mTheoryConflictIdCounter = 0;
         return conflictClause;
+    }
+    
+    template<class Settings>
+    void SATModule<Settings>::adaptConflictEvaluation( size_t& _clauseEvaluation, Lit _lit, bool _firstLiteral )
+    {
+        switch( Settings::conflict_clause_evaluation_strategy )
+        {
+            case CCES::SECOND_LEVEL_MINIMIZER:
+            {
+                size_t litLevel = (size_t) level( var( _lit ) );
+                if( _firstLiteral || litLevel > _clauseEvaluation )
+                    _clauseEvaluation = litLevel;
+                break;
+            }
+            case CCES::LITERALS_BLOCKS_DISTANCE:
+            {
+                if( _firstLiteral )
+                {
+                    mLevelCounter.clear();
+                    _clauseEvaluation = 0;
+                }
+                if( mLevelCounter.insert( level( var( _lit ) ) ).second )
+                    ++_clauseEvaluation;
+                break;
+            }
+            case CCES::SECOND_LEVEL_MINIMIZER_PLUS_LBD:
+            {
+                size_t litLevel = (size_t) level( var( _lit ) ) * decisionLevel();
+                if( _firstLiteral )
+                {
+                    mLevelCounter.clear();
+                    mLevelCounter.insert( level( var( _lit ) ) );
+                    _clauseEvaluation = litLevel + 1;
+                }
+                else
+                {
+                    bool levelAdded = mLevelCounter.insert( level( var( _lit ) ) ).second;
+                    if( litLevel > _clauseEvaluation )
+                        _clauseEvaluation = litLevel + mLevelCounter.size();
+                    else if( levelAdded )
+                        ++_clauseEvaluation;
+                }
+                break;
+            }
+            default:
+            {
+                assert( false );
+            }
+        }
     }
 
     template<class Settings>
