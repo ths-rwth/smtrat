@@ -57,11 +57,11 @@ namespace smtrat
         }
 
         PolyTreeContent(carl::Variable::Arg _variable) :
-        mPoly(Poly(_variable)), mType(PolyTree::Type::VARIABLE), mLeft(), mRight()
+        mPoly(_variable), mType(PolyTree::Type::VARIABLE), mVariable(_variable), mLeft(), mRight()
         { }
 
         PolyTreeContent(Integer _constant) :
-        mPoly(Poly(_constant)), mType(PolyTree::Type::CONSTANT), mLeft(), mRight()
+        mPoly(_constant), mType(PolyTree::Type::CONSTANT), mConstant(_constant), mLeft(), mRight()
         { }
 
         ~PolyTreeContent()

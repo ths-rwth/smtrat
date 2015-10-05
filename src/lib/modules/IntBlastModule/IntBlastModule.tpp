@@ -6,7 +6,7 @@
 #include "IntBlastModule.h"
 #include "../AddModules.h"
 
-#define INTBLAST_DEBUG_ENABLED 0
+#define INTBLAST_DEBUG_ENABLED 1
 #define INTBLAST_DEBUG(x) do { \
   if (INTBLAST_DEBUG_ENABLED) { std::cerr << "[IntBlast] " << x << std::endl; } \
 } while (0)
@@ -98,7 +98,7 @@ namespace smtrat
         for(auto& variable : variablesInFormula) {
             mInputVariables.add(variable, formula);
         }
-        for(auto& variable : variablesInFormula) {
+        for(auto& variable : nonlinearVariablesInFormula) {
             mNonlinearInputVariables.add(variable, formula);
         }
 
@@ -474,18 +474,13 @@ namespace smtrat
                                                                   carl::BVTerm(carl::BVTermType::EXTRACT, _input.term().term(), newWidth-1, 0),
                                                                   newTerm.term())));
 
-        // add constraints which ensure a safe resizing
-        if(inputType.isSigned()) {
-            // All removed bits must equal the msb of newTerm.term()
-            constraints.push_back(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                      carl::BVTerm(carl::BVTermType::EXTRACT, _input.term().term(), inputType.width()-1, newWidth),
-                                                                      carl::BVTerm(carl::BVTermType::EXTRACT, _input.term().term(), inputType.width()-2, newWidth-1))));
-        } else { // type is unsigned
-            // All removed bits must be zero
-            constraints.push_back(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                      carl::BVTerm(carl::BVTermType::EXTRACT, _input.term().term(), inputType.width()-1, newWidth),
-                                                                      carl::BVTerm(carl::BVTermType::CONSTANT, carl::BVValue(inputType.width() - newWidth, 0)))));
-        }
+        // add constraint which ensures a safe resizing
+        carl::BVTermType extend = inputType.isSigned() ? carl::BVTermType::EXT_S : carl::BVTermType::EXT_U;
+        constraints.push_back(FormulaT(carl::BVConstraint::create(
+            carl::BVCompareRelation::EQ,
+            carl::BVTerm(extend, newTerm.term(), inputType.width() - newWidth),
+            _input.term().term()
+        )));
 
         return BlastedPoly(newTerm, constraints);
     }
@@ -905,11 +900,7 @@ namespace smtrat
     template<class Settings>
     void IntBlastModule<Settings>::addConstraintToICP(FormulaT _formula)
     {
-        // First, add the formula itself to ICP
-        addFormulaToICP(_formula, _formula);
-
-        // Now we create a substitute for every node of the constraint tree of _formula
-        // (except for the root, variable nodes and constant nodes)
+        // Create a substitute for every node of the constraint tree of _formula
         // in order to receive bounds from ICP for these expressions
 
         const ConstraintT& constraint = _formula.constraint();
@@ -922,37 +913,57 @@ namespace smtrat
 
         while(! nodesForSubstitution.empty()) {
             const PolyTree& currentPoly = nodesForSubstitution.front();
-            nodesForSubstitution.pop_front();
+
+            Poly substituteEq;
+
+            switch(currentPoly.type()) {
+                case PolyTree::Type::SUM:
+                    substituteEq = Poly(getICPSubstitute(currentPoly.left().poly()))
+                                      + getICPSubstitute(currentPoly.right().poly());
+                    break;
+                case PolyTree::Type::PRODUCT:
+                    substituteEq = Poly(getICPSubstitute(currentPoly.left().poly()))
+                                      * getICPSubstitute(currentPoly.right().poly());
+                    break;
+                default:
+                    substituteEq = currentPoly.poly();
+            }
+
+            substituteEq -= getICPSubstitute(currentPoly.poly());
+            FormulaT constraintForICP(substituteEq, carl::Relation::EQ);
+            addFormulaToICP(constraintForICP, _formula);
+
+            // Remember that the polynome originates from _formula
+            mSubstitutedPolys.add(currentPoly.poly(), _formula);
 
             if(currentPoly.type() == PolyTree::Type::SUM || currentPoly.type() == PolyTree::Type::PRODUCT) {
-                // Find or create new substitute for the polynomial
-                carl::Variable substitute;
-
-                auto substituteLookup = mSubstitutes.find(currentPoly.poly());
-                if(substituteLookup != mSubstitutes.end()) {
-                    substitute = substituteLookup->second;
-                } else {
-                    substitute = carl::VariablePool::getInstance().getFreshVariable(carl::VariableType::VT_INT);
-                    mSubstitutes[currentPoly.poly()] = substitute;
-                }
-
-                // pass "substitute_variable = polynome" equation to ICP
-                // (normalized: polynome - substitute_variable = 0)
-                Poly polyMinusSubstitute(currentPoly.poly());
-                polyMinusSubstitute -= substitute;
-                FormulaT constraintForICP(polyMinusSubstitute, carl::Relation::EQ);
-
-                addFormulaToICP(constraintForICP, _formula);
-
-                // Remember that the polynome originates from _formula
-                mSubstitutedPolys.add(currentPoly.poly(), _formula);
-
                 // Schedule left and right subtree of current PolyTree
                 // for being visited in the breadth-first search
                 nodesForSubstitution.push_back(currentPoly.left());
                 nodesForSubstitution.push_back(currentPoly.right());
             }
+
+            nodesForSubstitution.pop_front();
         }
+
+        // Finally, add the root (the constraint itself) to ICP
+        Poly rootPoly(getICPSubstitute(constraintTree.left().poly()));
+        rootPoly -= getICPSubstitute(constraintTree.right().poly());
+        ConstraintT rootConstraint(rootPoly, constraintTree.relation());
+
+        addFormulaToICP(FormulaT(rootConstraint), _formula);
+    }
+
+    template<class Settings>
+    carl::Variable::Arg IntBlastModule<Settings>::getICPSubstitute(const Poly& _poly)
+    {
+        auto substituteLookup = mSubstitutes.find(_poly);
+        if(substituteLookup != mSubstitutes.end()) {
+            return substituteLookup->second;
+        }
+
+        mSubstitutes[_poly] = carl::VariablePool::getInstance().getFreshVariable(carl::VariableType::VT_INT);
+        return mSubstitutes[_poly];
     }
 
     template<class Settings>

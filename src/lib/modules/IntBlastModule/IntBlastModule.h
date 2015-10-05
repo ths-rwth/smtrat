@@ -552,6 +552,7 @@ namespace smtrat
             void updateOutsideRestrictionConstraint(bool _fromICPOnly);
             void addFormulaToICP(const FormulaT& _formula, const FormulaT& _origin);
             void addConstraintToICP(FormulaT _formula);
+            carl::Variable::Arg getICPSubstitute(const Poly& _poly);
             void removeFormulaFromICP(const FormulaT& _formula, const FormulaT& _origin);
             void removeOriginFromICP(const FormulaT& _origin);
             void addFormulaToBV(const FormulaT& _formula, const FormulaT& _origin);
