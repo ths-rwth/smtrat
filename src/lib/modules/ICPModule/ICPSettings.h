@@ -71,7 +71,7 @@ namespace smtrat
         /**
          * 
          */
-        static constexpr bool original_polynomial_contraction = true;
+        static constexpr bool original_polynomial_contraction = false;
         /**
          * 
          */
