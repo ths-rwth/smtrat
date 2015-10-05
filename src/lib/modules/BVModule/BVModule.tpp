@@ -51,8 +51,6 @@ namespace smtrat
     template<class Settings>
     bool BVModule<Settings>::informCore( const FormulaT& /* _constraint */ )
     {
-        /* const smtrat::ConstraintT& constraint = _constraint.constraint(); // Constraint pointer for the passed formula.
-        return constraint.isConsistent() != 0; */
         return true;
     }
 
