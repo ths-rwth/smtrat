@@ -151,7 +151,21 @@ namespace smtrat
             }
             case carl::FormulaType::BITVECTOR:
             {
-                ///@todo do something here
+                std::map<carl::BVVariable, carl::BVTerm> replacements;
+                for(auto& varAndValue : _model) {
+                    if(varAndValue.first.isBVVariable()) {
+                        assert(varAndValue.second.isBVValue());
+                        carl::BVTerm replacement(carl::BVTermType::CONSTANT, varAndValue.second.asBVValue());
+                        replacements[varAndValue.first.asBVVariable()] = replacement;
+                    }
+                }
+
+                carl::FormulaSubstitutor<FormulaT> substitutor;
+                FormulaT substituted = substitutor.substitute(_formula, replacements);
+                if(substituted.isTrue())
+                    return 1;
+                else if(substituted.isFalse())
+                    return 0;
                 return 2;
             }
             case carl::FormulaType::NOT:
