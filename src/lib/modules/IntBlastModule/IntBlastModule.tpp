@@ -222,16 +222,20 @@ namespace smtrat
 
             return BlastedPoly(AnnotatedBVTerm(termType.withOffset(termType.offset() + constantSummand.constant()), termSummand.term().term()));
         } else {
-            FormulasT constraints;
-            AnnotatedBVTerm sum(BVAnnotation::forSum(_summand1.term().type(), _summand2.term().type()));
+            BVAnnotation annotation = BVAnnotation::forSum(_summand1.term().type(), _summand2.term().type());
 
-            carl::BVTerm bvSummand1 = resizeBVTerm(_summand1.term(), sum.type().width());
-            carl::BVTerm bvSummand2 = resizeBVTerm(_summand2.term(), sum.type().width());
+            carl::BVTerm bvSummand1 = resizeBVTerm(_summand1.term(), annotation.width());
+            carl::BVTerm bvSummand2 = resizeBVTerm(_summand2.term(), annotation.width());
+            carl::BVTerm bvSum(carl::BVTermType::ADD, bvSummand1, bvSummand2);
 
-            constraints.push_back(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                      carl::BVTerm(carl::BVTermType::ADD, bvSummand1, bvSummand2),
-                                                                      sum.term())));
-            return BlastedPoly(sum, constraints);
+            if(Settings::allow_encoding_into_complex_bvterms) {
+                return BlastedPoly(AnnotatedBVTerm(annotation, bvSum), FormulasT());
+            } else {
+                AnnotatedBVTerm sum(annotation);
+                FormulasT constraints;
+                constraints.push_back(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ, bvSum, sum.term())));
+                return BlastedPoly(sum, constraints);
+            }
         }
     }
 
@@ -247,27 +251,35 @@ namespace smtrat
 
             bool constantNegative = constantFactor.constant() < 0;
             BVAnnotation constantType(chooseWidth(constantFactor.constant(), 0, constantNegative), constantNegative, 0);
-            AnnotatedBVTerm product(BVAnnotation::forProduct(variableType.withOffset(0), constantType).withOffset(variableType.offset() * constantFactor.constant()));
+            BVAnnotation annotation = BVAnnotation::forProduct(variableType.withOffset(0), constantType).withOffset(variableType.offset() * constantFactor.constant());
 
-            carl::BVTerm bvConstantFactor = encodeBVConstant(constantFactor.constant(), product.type());
-            carl::BVTerm bvVariableFactor = resizeBVTerm(variableFactor.term(), product.type().width());
+            carl::BVTerm bvConstantFactor = encodeBVConstant(constantFactor.constant(), annotation);
+            carl::BVTerm bvVariableFactor = resizeBVTerm(variableFactor.term(), annotation.width());
+            carl::BVTerm bvProduct(carl::BVTermType::MUL, bvConstantFactor, bvVariableFactor);
 
-            FormulasT constraints;
-            constraints.push_back(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                      carl::BVTerm(carl::BVTermType::MUL, bvConstantFactor, bvVariableFactor),
-                                                                      product.term())));
-            return BlastedPoly(product, constraints);
+            if(Settings::allow_encoding_into_complex_bvterms) {
+                return BlastedPoly(AnnotatedBVTerm(annotation, bvProduct), FormulasT());
+            } else {
+                AnnotatedBVTerm product(annotation);
+                FormulasT constraints;
+                constraints.push_back(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ, bvProduct, product.term())));
+                return BlastedPoly(product, constraints);
+            }
         } else {
-            FormulasT constraints;
-            AnnotatedBVTerm product(BVAnnotation::forProduct(_factor1.term().type(), _factor2.term().type()));
+            BVAnnotation annotation = BVAnnotation::forProduct(_factor1.term().type(), _factor2.term().type());
 
-            carl::BVTerm bvFactor1 = resizeBVTerm(_factor1.term(), product.type().width());
-            carl::BVTerm bvFactor2 = resizeBVTerm(_factor2.term(), product.type().width());
+            carl::BVTerm bvFactor1 = resizeBVTerm(_factor1.term(), annotation.width());
+            carl::BVTerm bvFactor2 = resizeBVTerm(_factor2.term(), annotation.width());
+            carl::BVTerm bvProduct(carl::BVTermType::MUL, bvFactor1, bvFactor2);
 
-            constraints.push_back(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
-                                                                      carl::BVTerm(carl::BVTermType::MUL, bvFactor1, bvFactor2),
-                                                                      product.term())));
-            return BlastedPoly(product, constraints);
+            if(Settings::allow_encoding_into_complex_bvterms) {
+                return BlastedPoly(AnnotatedBVTerm(annotation, bvProduct), FormulasT());
+            } else {
+                AnnotatedBVTerm product(annotation);
+                FormulasT constraints;
+                constraints.push_back(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ, bvProduct, product.term())));
+                return BlastedPoly(product, constraints);
+            }
         }
     }
 

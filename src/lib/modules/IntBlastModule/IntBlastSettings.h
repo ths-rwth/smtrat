@@ -38,5 +38,14 @@ namespace smtrat
          * sufficiently high width.
          */
         static const std::size_t max_variable_encoding_width = 8;
+
+        /**
+         * Whether to allow the encoding into complex bitvector terms.
+         * When set to false, an own bitvector variable is introduced for
+         * each encoded polynome.
+         * When set to true, polynomes may also be encoded by bitvector terms
+         * that consist of bitvector function symbols.
+         */
+        static const bool allow_encoding_into_complex_bvterms = true;
     };
 }
