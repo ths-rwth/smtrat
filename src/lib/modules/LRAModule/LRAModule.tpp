@@ -1567,13 +1567,14 @@ Return:
     bool LRAModule<Settings>::most_infeasible_var( bool _gc_support ) 
     {
         EvalRationalMap _rMap = getRationalModel();
-        auto map_iterator = _rMap.begin();
+        
         auto branch_var = mTableau.originalVars().begin();
         Rational ass_;
         bool result = false;
         Rational diff = ONE_RATIONAL;
-        for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
+        for( auto map_iterator = _rMap.begin(); map_iterator != _rMap.end(); ++map_iterator )
         {
+            auto var = mTableau.originalVars().find( map_iterator->first );
             assert( var->first == map_iterator->first );
             Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
@@ -1615,9 +1616,9 @@ Return:
     bool LRAModule<Settings>::first_var( bool _gc_support )
     {
         EvalRationalMap _rMap = getRationalModel();
-        auto map_iterator = _rMap.begin();
-        for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
+        for( auto map_iterator = _rMap.begin(); map_iterator != _rMap.end(); ++map_iterator )
         {
+            auto var = mTableau.originalVars().find( map_iterator->first );
             assert( var->first == map_iterator->first );
             Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
@@ -1645,13 +1646,13 @@ Return:
     bool LRAModule<Settings>::pseudo_cost_branching( bool _gc_support, BRANCH_STRATEGY strat )
     {
         EvalRationalMap _rMap = getRationalModel();
-        auto map_iterator = _rMap.begin();
         auto branch_var = mTableau.originalVars().begin();
         Rational ass_;
         Rational min_score;
         bool result = false, first_round = true, at_least_one = false;
-        for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
+        for( auto map_iterator = _rMap.begin(); map_iterator != _rMap.end(); ++map_iterator )
         {
+            auto var = mTableau.originalVars().find( map_iterator->first );
             assert( var->first == map_iterator->first );
             Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
