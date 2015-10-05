@@ -480,7 +480,9 @@ namespace smtrat
             std::map<Poly, BlastedPoly> mPolyBlastings; // Map from polynomials to bit-vector terms representing them in the blasted output
             std::map<ConstraintT, BlastedConstr> mConstrBlastings;
             std::map<Poly, carl::Variable> mSubstitutes; // Map from polynomials to integer variables representing them in the ICP input
-            CollectionWithOrigins<Poly, FormulaT> mSubstitutedPolys;
+
+            std::map<Poly, std::set<Poly>> mPolyParents;
+            std::set<Poly> mShrunkPolys;
 
         public:
             IntBlastModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
@@ -562,7 +564,7 @@ namespace smtrat
             carl::BVTerm encodeBVConstant(const Integer& _constant, const BVAnnotation& _type) const;
             Integer decodeBVConstant(const carl::BVValue& _value, const BVAnnotation& _type) const;
             carl::BVTerm resizeBVTerm(const AnnotatedBVTerm& _term, std::size_t _width) const;
-            BlastedPoly reduceToRange(const BlastedPoly& _input, const IntegerInterval& _interval) const;
+            std::pair<BlastedPoly, bool> shrinkToRange(const BlastedPoly& _input, const IntegerInterval& _interval) const;
             bool evaluateRelation(carl::Relation _relation, const Integer& _first, const Integer& _second) const;
             FormulasT blastConstraint(const ConstraintT& _constraint);
             const BlastedPoly& blastPolyTree(const PolyTree& _poly, FormulasT& _collectedFormulas);
@@ -570,6 +572,12 @@ namespace smtrat
             void addBoundRestrictionsToICP(carl::Variable _variable, const BVAnnotation& blastedType);
             void removeBoundRestrictionsFromICP(carl::Variable _variable);
             IntegerInterval getNum(const RationalInterval& _interval) const;
+            void addPolyParents(const ConstraintT& _constraint);
+            void addPolyParent(const Poly& _child, const Poly& _parent);
+            std::set<Poly> parentalClosure(std::set<Poly> _children);
+            void recheckShrunkPolys();
+            void unblastPoly(const Poly& _polys);
+            void unblastPolys(const std::set<Poly>& _polys);
     };
 }
 

@@ -11,6 +11,8 @@
   if (INTBLAST_DEBUG_ENABLED) { std::cerr << "[IntBlast] " << x << std::endl; } \
 } while (0)
 
+#define INTBLAST_ICP_ENABLED
+
 namespace smtrat
 {
     /**
@@ -37,7 +39,8 @@ namespace smtrat
     mPolyBlastings(),
     mConstrBlastings(),
     mSubstitutes(),
-    mSubstitutedPolys()
+    mPolyParents(),
+    mShrunkPolys()
     {
         smtrat::addModules(mpBVSolver);
         // TODO: Do we have to do some more initialization stuff here? Settings?
@@ -102,6 +105,9 @@ namespace smtrat
             mNonlinearInputVariables.add(variable, formula);
         }
 
+        // Update mPolyParents (child->parent relationship)
+        addPolyParents(formula.constraint());
+
         // Update mBoundsFromInput using the new formula
         mBoundsFromInput.addBound(formula.constraint(), formula);
 
@@ -109,7 +115,9 @@ namespace smtrat
         mFormulasToEncode.insert(formula);
 
         // Pass new formula to ICP, generating substitutes
+        #ifdef INTBLAST_ICP_ENABLED
         addConstraintToICP(formula);
+        #endif
 
         // Add new formula to backend
         addReceivedSubformulaToPassedFormula(_subformula);
@@ -129,7 +137,9 @@ namespace smtrat
         mBoundsFromInput.removeBound(formula.constraint(), formula);
         // mBoundsInRestriction: updated by updateBoundsFromICP() in next check
 
+        #ifdef INTBLAST_ICP_ENABLED
         removeOriginFromICP(formula);
+        #endif
         removeOriginFromBV(formula);
 
         mFormulasToEncode.erase(formula);
@@ -407,16 +417,24 @@ namespace smtrat
                                             blastSum(*left, *right) :
                                             blastProduct(*left, *right);
 
+                #ifdef INTBLAST_ICP_ENABLED
                 // Obtain range from ICP substitute
                 carl::Variable substitute = mSubstitutes.at(_poly.poly());
                 IntegerInterval interval = getNum(mBoundsInRestriction.getInterval(substitute));
                 if(interval.lowerBoundType() == carl::BoundType::WEAK && interval.upperBoundType() == carl::BoundType::WEAK) {
-                    blasted = reduceToRange(intermediate, interval);
+                    auto shrunk = shrinkToRange(intermediate, interval);
+                    blasted = shrunk.first;
+                    if(shrunk.second) {
+                        mShrunkPolys.insert(_poly.poly());
+                    }
                 } else {
                     INTBLAST_DEBUG("Bad ICP interval for " << _poly.poly() << ": " << interval);
                     // assert(false);
                     blasted = intermediate;
                 }
+                #else
+                blasted = intermediate;
+                #endif
 
                 break;
             }
@@ -430,7 +448,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    BlastedPoly IntBlastModule<Settings>::reduceToRange(const BlastedPoly& _input, const IntegerInterval& _interval) const
+    std::pair<BlastedPoly, bool> IntBlastModule<Settings>::shrinkToRange(const BlastedPoly& _input, const IntegerInterval& _interval) const
     {
         if(_interval.lowerBoundType() != carl::BoundType::WEAK || _interval.upperBoundType() != carl::BoundType::WEAK) {
             assert(false);
@@ -440,12 +458,12 @@ namespace smtrat
 
         if(_interval.isPointInterval()) {
             if(_input.isConstant()) {
-                return _input;
+                return std::make_pair(_input, false);
             } else {
                 FormulasT constraints(_input.constraints());
                 carl::BVTerm bvConstant = encodeBVConstant(_interval.lower(), _input.term().type());
                 constraints.push_back(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ, _input.term().term(), bvConstant)));
-                return BlastedPoly(_interval.lower(), constraints);
+                return std::make_pair(BlastedPoly(_interval.lower(), constraints), true);
             }
         }
 
@@ -463,7 +481,7 @@ namespace smtrat
         assert(newWidth <= inputType.width());
         if(newWidth == inputType.width()) {
             // Resizing is not possible, return _input without modifications
-            return _input;
+            return std::make_pair(_input, false);
         }
 
         // Resize to a new, smaller BlastedPoly
@@ -482,7 +500,7 @@ namespace smtrat
             _input.term().term()
         )));
 
-        return BlastedPoly(newTerm, constraints);
+        return std::make_pair(BlastedPoly(newTerm, constraints), true);
     }
 
     template<class Settings>
@@ -517,11 +535,6 @@ namespace smtrat
             {
                 if(blastingIt != mPolyBlastings.end()) {
                     unblastVariable(variable);
-
-                    // Schedule all formulas containing the updated variable for re-encoding
-                    for(const auto& formulaToReencode : variableWO.origins()) {
-                        mFormulasToEncode.insert(formulaToReencode);
-                    }
                 }
                 blastVariable(variable, interval, linear);
             }
@@ -539,6 +552,7 @@ namespace smtrat
             }
         }
 
+        #ifdef INTBLAST_ICP_ENABLED
         // Run ICP
         if(INTBLAST_DEBUG_ENABLED) {
             INTBLAST_DEBUG("Running ICP on these formulas:");
@@ -557,8 +571,13 @@ namespace smtrat
             mSolutionOrigin = SolutionOrigin::ICP;
             return True;
         }
+        #else
+        Answer icpAnswer = Unknown;
+        #endif
+
 
         if(icpAnswer == Unknown) {
+            #ifdef INTBLAST_ICP_ENABLED
             INTBLAST_DEBUG("Updating bounds from ICP.");
 
             if(INTBLAST_DEBUG_ENABLED) {
@@ -568,6 +587,7 @@ namespace smtrat
             }
 
             updateBoundsFromICP();
+            #endif
 
             while(! mFormulasToEncode.empty()) {
                 auto firstFormulaToEncode = mFormulasToEncode.begin();
@@ -631,27 +651,10 @@ namespace smtrat
     template<class Settings>
     void IntBlastModule<Settings>::unblastVariable(const carl::Variable& _variable)
     {
+        #ifdef INTBLAST_ICP_ENABLED
         removeBoundRestrictionsFromICP(_variable);
-
-        // Remove all blastings of polynomes in which _variable occurs
-        auto polyIt = mPolyBlastings.begin();
-        while(polyIt != mPolyBlastings.end()) {
-            if(polyIt->first.has(_variable)) {
-                polyIt = mPolyBlastings.erase(polyIt);
-            } else {
-                ++polyIt;
-            }
-        }
-
-        // Remove all blastings of constraints in which _variable occurs
-        auto constrIt = mConstrBlastings.begin();
-        while(constrIt != mConstrBlastings.end()) {
-            if(constrIt->first.lhs().has(_variable)) {
-                constrIt = mConstrBlastings.erase(constrIt);
-            } else {
-                ++constrIt;
-            }
-        }
+        #endif
+        unblastPoly(Poly(_variable));
     }
 
     template<class Settings>
@@ -712,7 +715,9 @@ namespace smtrat
             }
         }
 
+        #ifdef INTBLAST_ICP_ENABLED
         addBoundRestrictionsToICP(_variable, blastedType);
+        #endif
 
         mPolyBlastings[variablePoly] = BlastedPoly(AnnotatedBVTerm(blastedType));
     }
@@ -755,7 +760,6 @@ namespace smtrat
     template<class Settings>
     void IntBlastModule<Settings>::updateBoundsFromICP()
     {
-        // TODO: This is not very incremental
         for(const FormulaT formula : mProcessedFormulasFromICP) {
             mBoundsInRestriction.removeBound(formula.constraint(), formula);
         }
@@ -764,6 +768,7 @@ namespace smtrat
             mBoundsInRestriction.addBound(fwo->formula().constraint(), fwo->formula());
             mProcessedFormulasFromICP.push_back(fwo->formula());
         }
+        recheckShrunkPolys();
     }
 
     template<class Settings>
@@ -785,38 +790,6 @@ namespace smtrat
 
             if(inputBoundsIt == inputBounds.end() || getNum(inputBoundsIt->second).contains(blastedUpperBound + 1)) {
                 outsideConstraints.push_back(FormulaT(ConstraintT(variable, carl::Relation::GREATER, blastedUpperBound)));
-            }
-        }
-
-        if(! _fromICPOnly) {
-            auto& icpBounds = mBoundsInRestriction.getEvalIntervalMap();
-
-            for(auto& polyWithOrigins : mSubstitutedPolys) {
-                const Poly& poly = polyWithOrigins.element();
-
-                // Compare "natural" bounds (bounds from ICP) to encoding bounds
-                // (bounds from BV encodings).
-                // Usually, the encoding bounds contain the natural bounds.
-                // However, due to incrementality, the natural bounds may broaden
-                // after the corresponding encoding bounds have been set. In this case,
-                // we need to add further constraints to the backend.
-
-                auto& blastedPoly = mPolyBlastings.at(poly);
-                auto& substitute = mSubstitutes.at(poly);
-
-                Integer blastedLowerBound = (blastedPoly.isConstant() ? blastedPoly.constant() : blastedPoly.term().type().lowerBound());
-                Integer blastedUpperBound = (blastedPoly.isConstant() ? blastedPoly.constant() : blastedPoly.term().type().upperBound());
-                auto icpBoundsIt = icpBounds.find(substitute);
-
-                if(icpBoundsIt == icpBounds.end() || getNum(icpBoundsIt->second).contains(blastedLowerBound - 1)) {
-                    // poly < blastedLowerBound  <=>  poly - blastedLowerBound < 0
-                    outsideConstraints.push_back(FormulaT(ConstraintT(poly - Poly(blastedLowerBound), carl::Relation::LESS)));
-                }
-
-                if(icpBoundsIt == icpBounds.end() || getNum(icpBoundsIt->second).contains(blastedUpperBound + 1)) {
-                    // poly > blastedUpperBound  <=>  poly - blastedUpperBound > 0
-                    outsideConstraints.push_back(FormulaT(ConstraintT(poly - Poly(blastedUpperBound), carl::Relation::GREATER)));
-                }
             }
         }
 
@@ -933,9 +906,6 @@ namespace smtrat
             FormulaT constraintForICP(substituteEq, carl::Relation::EQ);
             addFormulaToICP(constraintForICP, _formula);
 
-            // Remember that the polynome originates from _formula
-            mSubstitutedPolys.add(currentPoly.poly(), _formula);
-
             if(currentPoly.type() == PolyTree::Type::SUM || currentPoly.type() == PolyTree::Type::PRODUCT) {
                 // Schedule left and right subtree of current PolyTree
                 // for being visited in the breadth-first search
@@ -982,8 +952,6 @@ namespace smtrat
     template<class Settings>
     void IntBlastModule<Settings>::removeOriginFromICP(const FormulaT& _origin)
     {
-        mSubstitutedPolys.removeOrigin(_origin);
-
         ModuleInput::iterator icpFormula = mpICPInput->begin();
         while(icpFormula != mpICPInput->end())
         {
@@ -1086,5 +1054,121 @@ namespace smtrat
             carl::getNum(_interval.lower()), _interval.lowerBoundType(),
             carl::getNum(_interval.upper()), _interval.upperBoundType()
         );
+    }
+
+    template<class Settings>
+    void IntBlastModule<Settings>::addPolyParents(const ConstraintT& _constraint)
+    {
+        ConstrTree constraintTree(_constraint);
+
+        // Perform a BFS
+        std::list<PolyTree> nodes;
+        nodes.push_back(constraintTree.left());
+        nodes.push_back(constraintTree.right());
+
+        while(! nodes.empty()) {
+            const PolyTree& current = nodes.front();
+
+            if(current.type() == PolyTree::Type::SUM || current.type() == PolyTree::Type::PRODUCT) {
+                addPolyParent(current.left().poly(), current.poly());
+                addPolyParent(current.right().poly(), current.poly());
+                nodes.push_back(current.left());
+                nodes.push_back(current.right());
+            }
+
+            nodes.pop_front();
+        }
+    }
+
+    template<class Settings>
+    void IntBlastModule<Settings>::addPolyParent(const Poly& _child, const Poly& _parent)
+    {
+        auto inserted = mPolyParents.insert(std::make_pair(_child, std::set<Poly>()));
+        inserted.first->second.insert(_parent);
+    }
+
+    template<class Settings>
+    std::set<Poly> IntBlastModule<Settings>::parentalClosure(std::set<Poly> _children)
+    {
+        std::set<Poly> closure(_children);
+        std::list<Poly> incomplete(_children.begin(), _children.end());
+
+        while(! incomplete.empty()) {
+            const Poly& current = incomplete.front();
+            for(auto parent : mPolyParents[current]) {
+                auto parentInserted = closure.insert(parent);
+                if(parentInserted.second) {
+                    incomplete.push_back(parent);
+                }
+            }
+            incomplete.pop_front();
+        }
+
+        return closure;
+    }
+
+    template<class Settings>
+    void IntBlastModule<Settings>::recheckShrunkPolys()
+    {
+        auto& icpBounds = mBoundsInRestriction.getEvalIntervalMap();
+        std::set<Poly> polysToReencode;
+
+        for(const Poly& shrunkPoly : mShrunkPolys) {
+            auto& blastedPoly = mPolyBlastings.at(shrunkPoly);
+            auto& substitute = mSubstitutes.at(shrunkPoly);
+
+            IntegerInterval encodedBounds = IntegerInterval(blastedPoly.lowerBound(), blastedPoly.upperBound());
+            auto icpBoundsIt = icpBounds.find(substitute);
+
+            if(icpBoundsIt == icpBounds.end() || ! encodedBounds.contains(getNum(icpBoundsIt->second))) {
+                polysToReencode.insert(shrunkPoly);
+            }
+        }
+
+        if(! polysToReencode.empty()) {
+            unblastPolys(polysToReencode);
+        }
+    }
+
+    template<class Settings>
+    void IntBlastModule<Settings>::unblastPoly(const Poly& _polys)
+    {
+        std::set<Poly> polySet;
+        polySet.insert(_polys);
+        unblastPolys(polySet);
+    }
+
+    template<class Settings>
+    void IntBlastModule<Settings>::unblastPolys(const std::set<Poly>& _polys)
+    {
+        std::set<Poly> obsolete = parentalClosure(_polys);
+
+        auto polyIt = mPolyBlastings.begin();
+        while(polyIt != mPolyBlastings.end()) {
+            if(obsolete.find(polyIt->first) != obsolete.end()) {
+                mShrunkPolys.erase(polyIt->first);
+                polyIt = mPolyBlastings.erase(polyIt);
+            } else {
+                ++polyIt;
+            }
+        }
+
+        auto constrIt = mConstrBlastings.begin();
+        while(constrIt != mConstrBlastings.end()) {
+            ConstrTree constrTree(constrIt->first);
+            if(obsolete.find(constrTree.left().poly()) != obsolete.end()) {
+                constrIt = mConstrBlastings.erase(constrIt);
+            } else {
+                ++constrIt;
+            }
+        }
+
+        for(const auto& inputFormula : rReceivedFormula()) {
+            ConstrTree constrTree(inputFormula.formula().constraint());
+            if(obsolete.find(constrTree.left().poly()) != obsolete.end()) {
+                removeOriginFromBV(inputFormula.formula());
+                mFormulasToEncode.insert(inputFormula.formula());
+            }
+        }
     }
 }
