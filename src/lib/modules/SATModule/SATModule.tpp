@@ -979,7 +979,7 @@ namespace smtrat
         else if( _abstr.updateInfo > 0 )
         {
             assert( !_abstr.reabstraction.isTrue() );
-            assert( _abstr.reabstraction.getType() == carl::FormulaType::UEQ || (_abstr.reabstraction.getType() == carl::FormulaType::CONSTRAINT && _abstr.reabstraction.constraint().isConsistent() == 2) );
+            assert( _abstr.reabstraction.getType() == carl::FormulaType::UEQ || content.getType() == carl::FormulaType::BITVECTOR || (_abstr.reabstraction.getType() == carl::FormulaType::CONSTRAINT && _abstr.reabstraction.constraint().isConsistent() == 2) );
             auto res = addSubformulaToPassedFormula( _abstr.reabstraction, _abstr.origins );
             _abstr.position = res.first;
             _abstr.position->setDeducted( _abstr.isDeduction );
@@ -999,7 +999,7 @@ namespace smtrat
                 {
                     assert( mBooleanConstraintMap[k].second != nullptr );
                     const Abstraction& abstr = assigns[k] == l_False ? *mBooleanConstraintMap[k].second : *mBooleanConstraintMap[k].first;
-                    if( !abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (abstr.reabstraction.getType() == carl::FormulaType::UEQ || abstr.reabstraction.constraint().isConsistent() != 1)) 
+                    if( !abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (abstr.reabstraction.getType() == carl::FormulaType::UEQ || content.getType() == carl::FormulaType::BITVECTOR || abstr.reabstraction.constraint().isConsistent() != 1)) 
                     {
                         if( !rPassedFormula().contains( abstr.reabstraction ) )
                         {
