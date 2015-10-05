@@ -1,9 +1,6 @@
 /**
  * @file IntBlastModule.h
  * @author Andreas Krueger <andreas.krueger@rwth-aachen.de>
- *
- * @version 2015-05-12
- * Created on 2015-05-12.
  */
 
 #pragma once
@@ -13,11 +10,12 @@
 #include "../../datastructures/VariableBounds.h"
 #include "IntBlastSettings.h"
 #include "IntBlastStatistics.h"
+#include "PolyTreePool.h"
 #include "BVSolver.h"
 
 namespace smtrat
 {
-    class BlastedType
+    class BVAnnotation
     {
     private:
         std::size_t mWidth;
@@ -26,11 +24,11 @@ namespace smtrat
         carl::Interval<Integer> mBounds;
 
     public:
-        BlastedType() :
+        BVAnnotation() :
         mWidth(0), mSigned(false), mBounds(0, 0)
         {}
 
-        BlastedType(std::size_t _width, bool _signed, Integer _offset = 0) :
+        BVAnnotation(std::size_t _width, bool _signed, Integer _offset = 0) :
         mWidth(_width), mSigned(_signed), mOffset(_offset),
         mBounds(_offset + (_signed ? carl::pow(Integer(2), _width-1)*(-1) : Integer(0)), _offset + (_signed ? carl::pow(Integer(2), _width-1)-1 : carl::pow(Integer(2), _width)-1))
         {}
@@ -51,12 +49,12 @@ namespace smtrat
             return ! carl::isZero(mOffset);
         }
 
-        BlastedType withOffset(Integer _newOffset) const {
-            return BlastedType(mWidth, mSigned, _newOffset);
+        BVAnnotation withOffset(Integer _newOffset) const {
+            return BVAnnotation(mWidth, mSigned, _newOffset);
         }
 
-        BlastedType withWidth(std::size_t _width) const {
-            return BlastedType(_width, mSigned, mOffset);
+        BVAnnotation withWidth(std::size_t _width) const {
+            return BVAnnotation(_width, mSigned, mOffset);
         }
 
         const Integer& offset() const {
@@ -75,7 +73,7 @@ namespace smtrat
             return mBounds.upper();
         }
 
-        static BlastedType forSum(BlastedType _summand1, BlastedType _summand2) {
+        static BVAnnotation forSum(BVAnnotation _summand1, BVAnnotation _summand2) {
             std::size_t safeWidth1 = _summand1.width();
             std::size_t safeWidth2 = _summand2.width();
             bool makeSigned = (_summand1.isSigned() || _summand2.isSigned());
@@ -89,43 +87,43 @@ namespace smtrat
             }
 
             std::size_t width = ((safeWidth1 > safeWidth2) ? safeWidth1 : safeWidth2) + 1;
-            return BlastedType(width, makeSigned, _summand1.offset() + _summand2.offset());
+            return BVAnnotation(width, makeSigned, _summand1.offset() + _summand2.offset());
         }
 
-        static BlastedType forProduct(BlastedType _factor1, BlastedType _factor2) {
+        static BVAnnotation forProduct(BVAnnotation _factor1, BVAnnotation _factor2) {
             assert(! _factor1.hasOffset() && ! _factor2.hasOffset());
             bool makeSigned = _factor1.isSigned() || _factor2.isSigned();
             std::size_t width = _factor1.width() + _factor2.width();
-            return BlastedType(width, makeSigned);
+            return BVAnnotation(width, makeSigned);
         }
 
-        friend std::ostream& operator<<( std::ostream& _out, const BlastedType& _type ) {
+        friend std::ostream& operator<<( std::ostream& _out, const BVAnnotation& _type ) {
             return (_out << "[" << (_type.mSigned ? "s" : "u") << _type.mWidth << "+" << _type.mOffset << "]");
         }
     };
 
-    class BlastedTerm
+    class AnnotatedBVTerm
     {
     private:
-        BlastedType mType;
+        BVAnnotation mType;
         carl::BVTerm mTerm;
 
     public:
-        BlastedTerm() :
+        AnnotatedBVTerm() :
         mType(), mTerm()
         {}
 
-        BlastedTerm(const BlastedType& _type, const carl::BVTerm& _term) :
+        AnnotatedBVTerm(const BVAnnotation& _type, const carl::BVTerm& _term) :
         mType(_type), mTerm(_term)
         {
             assert(_type.width() == _term.width());
         }
 
-        BlastedTerm(std::size_t _width, bool _signed, Integer _offset = 0) :
-        BlastedTerm(BlastedType(_width, _signed, _offset))
+        AnnotatedBVTerm(std::size_t _width, bool _signed, Integer _offset = 0) :
+        AnnotatedBVTerm(BVAnnotation(_width, _signed, _offset))
         { }
 
-        BlastedTerm(const BlastedType& _type) :
+        AnnotatedBVTerm(const BVAnnotation& _type) :
         mType(_type), mTerm()
         {
             carl::Variable var = carl::VariablePool::getInstance().getFreshVariable(carl::VariableType::VT_BITVECTOR);
@@ -134,7 +132,7 @@ namespace smtrat
             mTerm = carl::BVTerm(carl::BVTermType::VARIABLE, bvVar);
         }
 
-        const BlastedType& type() const {
+        const BVAnnotation& type() const {
             return mType;
         }
 
@@ -147,7 +145,7 @@ namespace smtrat
             return mTerm;
         }
 
-        friend std::ostream& operator<<( std::ostream& _out, const BlastedTerm& _term ) {
+        friend std::ostream& operator<<( std::ostream& _out, const AnnotatedBVTerm& _term ) {
             return (_out << _term.mTerm << " " << _term.mType);
         }
     };
@@ -157,7 +155,7 @@ namespace smtrat
     private:
         bool mIsConstant;
         Integer mConstant;
-        BlastedTerm mTerm;
+        AnnotatedBVTerm mTerm;
         FormulasT mConstraints;
 
     public:
@@ -173,11 +171,11 @@ namespace smtrat
         mIsConstant(true), mConstant(_constant), mTerm(), mConstraints(_constraints)
         { }
 
-        BlastedPoly(BlastedTerm _term) :
+        BlastedPoly(AnnotatedBVTerm _term) :
         mIsConstant(false), mConstant(), mTerm(_term), mConstraints()
         { }
 
-        BlastedPoly(BlastedTerm _term, FormulasT _constraints) :
+        BlastedPoly(AnnotatedBVTerm _term, FormulasT _constraints) :
         mIsConstant(false), mConstant(), mTerm(_term), mConstraints(_constraints)
         { }
 
@@ -190,7 +188,7 @@ namespace smtrat
             return mConstant;
         }
 
-        const BlastedTerm& term() const {
+        const AnnotatedBVTerm& term() const {
             assert(! mIsConstant);
             return mTerm;
         }
@@ -259,114 +257,6 @@ namespace smtrat
         }
     };
 
-    class PolyTree
-    {
-    public:
-        enum class Type : unsigned { VARIABLE, CONSTANT, SUM, PRODUCT };
-
-    private:
-        // TODO: Union
-        Type mType;
-        carl::Variable mVariable;
-        Integer mConstant;
-        const PolyTree* mLeft;
-        const PolyTree* mRight;
-        Poly mPoly;
-
-    public:
-        PolyTree( const Poly& _poly ) : mType(Type::VARIABLE), mVariable(), mConstant(), mLeft(nullptr), mRight(nullptr), mPoly(_poly) {
-            Poly poly(_poly);
-            poly.makeOrdered();
-
-            std::size_t nrTerms = poly.nrTerms();
-
-            if(nrTerms == 0) {
-                mType = Type::CONSTANT;
-                mConstant = 0;
-                return;
-            }
-            if(nrTerms > 1) {
-                auto lastTerm = poly.rbegin();
-                mType = Type::SUM;
-                mLeft = new PolyTree(poly - *lastTerm);
-                mRight = new PolyTree(Poly(*lastTerm));
-                return;
-            }
-
-            const TermT& term = poly[0];
-            Rational coeff = term.coeff();
-
-            if(term.isConstant()) {
-                mType = Type::CONSTANT;
-                mConstant = coeff;
-                return;
-            }
-
-            const carl::Monomial::Arg monomial = term.monomial();
-
-            if(! carl::isOne(coeff)) {
-                mType = Type::PRODUCT;
-                mLeft = new PolyTree(Poly(coeff));
-                mRight = new PolyTree(Poly(monomial));
-                return;
-            }
-
-            auto variableAndExponent = *(monomial->begin());
-
-            if(monomial->nrVariables() > 1) {
-                carl::Monomial::Arg head = carl::MonomialPool::getInstance().create(variableAndExponent.first, variableAndExponent.second);
-                carl::Monomial::Arg tail = monomial->dropVariable(variableAndExponent.first);
-                mType = Type::PRODUCT;
-                mLeft = new PolyTree(Poly(head));
-                mRight = new PolyTree(Poly(tail));
-                return;
-            }
-
-            if(variableAndExponent.second > 1) {
-                carl::Monomial::Arg remainder = carl::MonomialPool::getInstance().create(variableAndExponent.first, variableAndExponent.second - 1);
-                mType = Type::PRODUCT;
-                mLeft = new PolyTree(Poly(remainder));
-                mRight = new PolyTree(Poly(variableAndExponent.first));
-                return;
-            }
-
-            mType = Type::VARIABLE;
-            mVariable = variableAndExponent.first;
-        }
-
-        ~PolyTree() {
-            delete mLeft;
-            delete mRight;
-        }
-
-        const PolyTree& left() const {
-            assert(mLeft != nullptr);
-            return *mLeft;
-        }
-
-        const PolyTree& right() const {
-            assert(mRight != nullptr);
-            return *mRight;
-        }
-
-        carl::Variable::Arg variable() const {
-            assert(mType == Type::VARIABLE);
-            return mVariable;
-        }
-
-        const Integer& constant() const {
-            assert(mType == Type::CONSTANT);
-            return mConstant;
-        }
-
-        Type type() const {
-            return mType;
-        }
-
-        const Poly& poly() const {
-            return mPoly;
-        }
-    };
 
     class ConstrTree
     {
@@ -464,16 +354,20 @@ namespace smtrat
             typedef std::list<ElementWO> Super;
 
             Super mItems;
-            carl::FastMap<Element, typename Super::iterator> mElementPositions;
-            carl::FastMap<Origin, std::list<typename Super::iterator> > mOriginOccurings;
+            std::map<Element, typename Super::iterator> mElementPositions;
+            std::map<Origin, std::list<typename Super::iterator> > mOriginOccurings;
+
+            bool mTrackElementsWithoutOrigins;
             std::set<Element> mElementsWithoutOrigins;
 
         public:
             typedef typename Super::iterator iterator;
             typedef typename Super::const_iterator const_iterator;
 
-            CollectionWithOrigins() :
-            mItems(), mElementPositions(), mOriginOccurings()
+            CollectionWithOrigins(bool _trackElementsWithoutOrigins = true) :
+            mItems(), mElementPositions(), mOriginOccurings(),
+            mTrackElementsWithoutOrigins(_trackElementsWithoutOrigins),
+            mElementsWithoutOrigins()
             { }
 
             bool contains(const Element& _element) {
@@ -505,7 +399,9 @@ namespace smtrat
 
                     for(auto& item : occurings) {
                         if(item->removeOrigin(_origin)) {
-                            mElementsWithoutOrigins.insert(item->element());
+                            if(mTrackElementsWithoutOrigins) {
+                                mElementsWithoutOrigins.insert(item->element());
+                            }
                             mElementPositions.erase(item->element());
                             mItems.erase(item);
                         }
@@ -543,10 +439,12 @@ namespace smtrat
             }
 
             const std::set<Element>& elementsWithoutOrigins() const {
+                assert(mTrackElementsWithoutOrigins);
                 return mElementsWithoutOrigins;
             }
 
             void clearElementsWithoutOrigins() {
+                assert(mTrackElementsWithoutOrigins);
                 mElementsWithoutOrigins.clear();
             }
 
@@ -660,15 +558,15 @@ namespace smtrat
             void removeOriginFromBV(const FormulaT& _origin);
             void updateModelFromICP() const;
             void updateModelFromBV() const;
-            carl::BVTerm encodeBVConstant(const Integer& _constant, const BlastedType& _type) const;
-            Integer decodeBVConstant(const carl::BVValue& _value, const BlastedType& _type) const;
-            carl::BVTerm resizeBVTerm(const BlastedTerm& _term, std::size_t _width) const;
+            carl::BVTerm encodeBVConstant(const Integer& _constant, const BVAnnotation& _type) const;
+            Integer decodeBVConstant(const carl::BVValue& _value, const BVAnnotation& _type) const;
+            carl::BVTerm resizeBVTerm(const AnnotatedBVTerm& _term, std::size_t _width) const;
             BlastedPoly reduceToRange(const BlastedPoly& _input, const IntegerInterval& _interval) const;
             bool evaluateRelation(carl::Relation _relation, const Integer& _first, const Integer& _second) const;
             FormulasT blastConstraint(const ConstraintT& _constraint);
             const BlastedPoly& blastPolyTree(const PolyTree& _poly, FormulasT& _collectedFormulas);
             const BlastedConstr& blastConstrTree(const ConstrTree& _constraint, FormulasT& _collectedFormulas);
-            void addBoundRestrictionsToICP(carl::Variable _variable, const BlastedType& blastedType);
+            void addBoundRestrictionsToICP(carl::Variable _variable, const BVAnnotation& blastedType);
             void removeBoundRestrictionsFromICP(carl::Variable _variable);
             IntegerInterval getNum(const RationalInterval& _interval) const;
     };

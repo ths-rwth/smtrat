@@ -31,8 +31,12 @@ namespace smtrat
     struct IntBlastSettings1
     {
         /**
-         * Example for a setting.
+         * Maximum width used for encoding an integer variable as bitvector.
+         *
+         * Note that this only applies to the encoding of variables.
+         * Intermediate terms (polynomes) are always encoded using a
+         * sufficiently high width.
          */
-        static const bool example_setting = true;
+        static const std::size_t max_variable_encoding_width = 8;
     };
 }

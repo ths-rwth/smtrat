@@ -1,9 +1,6 @@
 /**
  * @file IntBlastModule.tpp
  * @author Andreas Krueger <andreas.krueger@rwth-aachen.de>
- *
- * @version 2015-05-12
- * Created on 2015-05-12.
  */
 
 #include "IntBlastModule.h"
@@ -161,7 +158,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    carl::BVTerm IntBlastModule<Settings>::encodeBVConstant(const Integer& _constant, const BlastedType& _type) const
+    carl::BVTerm IntBlastModule<Settings>::encodeBVConstant(const Integer& _constant, const BVAnnotation& _type) const
     {
         assert(_constant >= _type.lowerBound() && _constant <= _type.upperBound());
         carl::BVValue constValue(_type.width(), _constant - _type.offset());
@@ -169,7 +166,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Integer IntBlastModule<Settings>::decodeBVConstant(const carl::BVValue& _value, const BlastedType& _type) const
+    Integer IntBlastModule<Settings>::decodeBVConstant(const carl::BVValue& _value, const BVAnnotation& _type) const
     {
         Integer summand(1);
         Integer converted(0);
@@ -191,7 +188,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    carl::BVTerm IntBlastModule<Settings>::resizeBVTerm(const BlastedTerm& _term, std::size_t _width) const
+    carl::BVTerm IntBlastModule<Settings>::resizeBVTerm(const AnnotatedBVTerm& _term, std::size_t _width) const
     {
         assert(_width >= _term.type().width());
 
@@ -211,12 +208,12 @@ namespace smtrat
         } else if(_summand1.isConstant() || _summand2.isConstant()) {
             const BlastedPoly& constantSummand = (_summand1.isConstant() ? _summand1 : _summand2);
             const BlastedPoly& termSummand     = (_summand1.isConstant() ? _summand2 : _summand1);
-            const BlastedType& termType        = termSummand.term().type();
+            const BVAnnotation& termType        = termSummand.term().type();
 
-            return BlastedPoly(BlastedTerm(termType.withOffset(termType.offset() + constantSummand.constant()), termSummand.term().term()));
+            return BlastedPoly(AnnotatedBVTerm(termType.withOffset(termType.offset() + constantSummand.constant()), termSummand.term().term()));
         } else {
             FormulasT constraints;
-            BlastedTerm sum(BlastedType::forSum(_summand1.term().type(), _summand2.term().type()));
+            AnnotatedBVTerm sum(BVAnnotation::forSum(_summand1.term().type(), _summand2.term().type()));
 
             carl::BVTerm bvSummand1 = resizeBVTerm(_summand1.term(), sum.type().width());
             carl::BVTerm bvSummand2 = resizeBVTerm(_summand2.term(), sum.type().width());
@@ -236,11 +233,11 @@ namespace smtrat
         } else if(_factor1.isConstant() || _factor2.isConstant()) {
             const BlastedPoly& constantFactor = (_factor1.isConstant() ? _factor1 : _factor2);
             const BlastedPoly& variableFactor = (_factor1.isConstant() ? _factor2 : _factor1);
-            const BlastedType& variableType   = variableFactor.term().type();
+            const BVAnnotation& variableType   = variableFactor.term().type();
 
             bool constantNegative = constantFactor.constant() < 0;
-            BlastedType constantType(chooseWidth(constantFactor.constant(), 0, constantNegative), constantNegative, 0);
-            BlastedTerm product(BlastedType::forProduct(variableType.withOffset(0), constantType).withOffset(variableType.offset() * constantFactor.constant()));
+            BVAnnotation constantType(chooseWidth(constantFactor.constant(), 0, constantNegative), constantNegative, 0);
+            AnnotatedBVTerm product(BVAnnotation::forProduct(variableType.withOffset(0), constantType).withOffset(variableType.offset() * constantFactor.constant()));
 
             carl::BVTerm bvConstantFactor = encodeBVConstant(constantFactor.constant(), product.type());
             carl::BVTerm bvVariableFactor = resizeBVTerm(variableFactor.term(), product.type().width());
@@ -252,7 +249,7 @@ namespace smtrat
             return BlastedPoly(product, constraints);
         } else {
             FormulasT constraints;
-            BlastedTerm product(BlastedType::forProduct(_factor1.term().type(), _factor2.term().type()));
+            AnnotatedBVTerm product(BVAnnotation::forProduct(_factor1.term().type(), _factor2.term().type()));
 
             carl::BVTerm bvFactor1 = resizeBVTerm(_factor1.term(), product.type().width());
             carl::BVTerm bvFactor2 = resizeBVTerm(_factor2.term(), product.type().width());
@@ -456,7 +453,7 @@ namespace smtrat
         // This also implies that _input is not constant.
         // Let's see whether resizing actually has any benefits.
 
-        const BlastedType& inputType = _input.term().type();
+        const BVAnnotation& inputType = _input.term().type();
 
         std::size_t newWidth = std::max(
             chooseWidth(_interval.lower() - inputType.offset(), 0, inputType.isSigned()),
@@ -471,7 +468,7 @@ namespace smtrat
 
         // Resize to a new, smaller BlastedPoly
         FormulasT constraints(_input.constraints());
-        BlastedTerm newTerm(inputType.withWidth(newWidth));
+        AnnotatedBVTerm newTerm(inputType.withWidth(newWidth));
 
         constraints.push_back(FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::EQ,
                                                                   carl::BVTerm(carl::BVTermType::EXTRACT, _input.term().term(), newWidth-1, 0),
@@ -625,7 +622,7 @@ namespace smtrat
             return ! _interval.isPointInterval() || _interval.lower() != _previousBlasting.constant();
         }
 
-        const BlastedType previousType = _previousBlasting.term().type();
+        const BVAnnotation previousType = _previousBlasting.term().type();
 
         if(previousType.hasOffset() && ! _linear) {
             return true;
@@ -670,7 +667,7 @@ namespace smtrat
             mPolyBlastings[variablePoly] = BlastedPoly(_interval.lower());
         }
 
-        std::size_t maxWidth = 8; // TODO: Extract to a constant/setting
+        std::size_t maxWidth = Settings::max_variable_encoding_width;
 
         // If interval is unbounded:
         //   Start with no offset, signed, maximum width (tempType)
@@ -687,18 +684,18 @@ namespace smtrat
         //     Make signed iff interval not semipositive
         //     Width "as small as possible" (at most maximum width)
 
-        BlastedType blastedType;
+        BVAnnotation blastedType;
 
         if(_interval.lowerBoundType() == carl::BoundType::INFTY || _interval.upperBoundType() == carl::BoundType::INFTY) {
             if(! _allowOffset) {
-                blastedType = BlastedType(maxWidth, ! _interval.isSemiPositive(), 0);
+                blastedType = BVAnnotation(maxWidth, ! _interval.isSemiPositive(), 0);
             } else {
-                BlastedType tempType(maxWidth, true, 0);
+                BVAnnotation tempType(maxWidth, true, 0);
 
                 if(_interval.lowerBoundType() != carl::BoundType::INFTY && _interval.lower() > tempType.lowerBound()) {
-                    blastedType = BlastedType(maxWidth, false, _interval.lower());
+                    blastedType = BVAnnotation(maxWidth, false, _interval.lower());
                 } else if(_interval.upperBoundType() != carl::BoundType::INFTY && _interval.upper() < tempType.upperBound()) {
-                    blastedType = BlastedType(maxWidth, false, _interval.upper() - (tempType.upperBound() - tempType.lowerBound()));
+                    blastedType = BVAnnotation(maxWidth, false, _interval.upper() - (tempType.upperBound() - tempType.lowerBound()));
                 } else {
                     blastedType = tempType;
                 }
@@ -707,26 +704,26 @@ namespace smtrat
             // interval is bounded
             if(_allowOffset) {
                 std::size_t width = chooseWidth(_interval.upper() - _interval.lower(), maxWidth, false);
-                blastedType = BlastedType(width, false, _interval.lower());
+                blastedType = BVAnnotation(width, false, _interval.lower());
             } else {
                 if(_interval.isSemiPositive()) {
                     std::size_t width = chooseWidth(_interval.upper(), maxWidth, false);
-                    blastedType = BlastedType(width, false, 0);
+                    blastedType = BVAnnotation(width, false, 0);
                 } else {
                     std::size_t widthForUpper = chooseWidth(_interval.upper(), maxWidth, true);
                     std::size_t widthForLower = chooseWidth(_interval.lower(), maxWidth, true);
-                    blastedType = BlastedType(std::max(widthForUpper, widthForLower), true, 0);
+                    blastedType = BVAnnotation(std::max(widthForUpper, widthForLower), true, 0);
                 }
             }
         }
 
         addBoundRestrictionsToICP(_variable, blastedType);
 
-        mPolyBlastings[variablePoly] = BlastedPoly(BlastedTerm(blastedType));
+        mPolyBlastings[variablePoly] = BlastedPoly(AnnotatedBVTerm(blastedType));
     }
 
     template<class Settings>
-    void IntBlastModule<Settings>::addBoundRestrictionsToICP(carl::Variable _variable, const BlastedType& blastedType)
+    void IntBlastModule<Settings>::addBoundRestrictionsToICP(carl::Variable _variable, const BVAnnotation& blastedType)
     {
         addFormulaToICP(FormulaT(ConstraintT(_variable, carl::Relation::GEQ, blastedType.lowerBound())), mConstraintFromBounds);
         addFormulaToICP(FormulaT(ConstraintT(_variable, carl::Relation::LEQ, blastedType.upperBound())), mConstraintFromBounds);
@@ -738,7 +735,7 @@ namespace smtrat
         auto& blastedVariable = mPolyBlastings.at(Poly(_variable));
 
         if(! blastedVariable.isConstant()) {
-            const BlastedType& blastedType = blastedVariable.term().type();
+            const BVAnnotation& blastedType = blastedVariable.term().type();
 
             removeFormulaFromICP(FormulaT(ConstraintT(_variable, carl::Relation::GEQ, blastedType.lowerBound())), mConstraintFromBounds);
             removeFormulaFromICP(FormulaT(ConstraintT(_variable, carl::Relation::LEQ, blastedType.upperBound())), mConstraintFromBounds);
@@ -919,12 +916,12 @@ namespace smtrat
         ConstrTree constraintTree(constraint);
 
         // Walk through the ConstraintTree in a breadth-first search
-        std::list<const PolyTree*> nodesForSubstitution;
-        nodesForSubstitution.push_back(&(constraintTree.left()));
-        nodesForSubstitution.push_back(&(constraintTree.right()));
+        std::list<PolyTree> nodesForSubstitution;
+        nodesForSubstitution.push_back(constraintTree.left());
+        nodesForSubstitution.push_back(constraintTree.right());
 
         while(! nodesForSubstitution.empty()) {
-            const PolyTree& currentPoly = *(nodesForSubstitution.front());
+            const PolyTree& currentPoly = nodesForSubstitution.front();
             nodesForSubstitution.pop_front();
 
             if(currentPoly.type() == PolyTree::Type::SUM || currentPoly.type() == PolyTree::Type::PRODUCT) {
@@ -952,8 +949,8 @@ namespace smtrat
 
                 // Schedule left and right subtree of current PolyTree
                 // for being visited in the breadth-first search
-                nodesForSubstitution.push_back(&(currentPoly.left()));
-                nodesForSubstitution.push_back(&(currentPoly.right()));
+                nodesForSubstitution.push_back(currentPoly.left());
+                nodesForSubstitution.push_back(currentPoly.right());
             }
         }
     }
