@@ -47,6 +47,10 @@ namespace smtrat
         /**
          * 
          */
+        static const bool check_for_satisfied_clauses = false;
+        /**
+         * 
+         */
         static constexpr TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic = TheoryGuidedDecisionHeuristicLevel::DISABLED;
         /**
          * 

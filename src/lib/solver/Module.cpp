@@ -107,13 +107,19 @@ namespace smtrat
         cout << "))\n";
         #endif
         clearDeductions();
-        if( rReceivedFormula().empty() ) return foundAnswer( True );
-        Answer result = foundAnswer( checkCore( _full ) );
-        assert(result == Unknown || result == False || result == True);
-        assert( result != False || hasValidInfeasibleSubset() );
+        if( rReceivedFormula().empty() )
+        {
+            #ifdef SMTRAT_DEVOPTION_MeasureTime
+            stopCheckTimer();
+            #endif
+            return foundAnswer( True );
+        }
+        Answer result = checkCore( _full );
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         stopCheckTimer();
         #endif
+        assert(result == Unknown || result == False || result == True);
+        assert( result != False || hasValidInfeasibleSubset() );
         #ifdef SMTRAT_DEVOPTION_Validation
         if( validationSettings->logTCalls() )
         {
@@ -124,7 +130,7 @@ namespace smtrat
             }
         }
         #endif
-        return result;
+        return foundAnswer( result );
     }
 
     bool Module::inform( const FormulaT& _constraint )

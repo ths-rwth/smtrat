@@ -130,10 +130,11 @@ namespace smtrat
         mNewSplittingVars(),
         mNonTseitinShadowedOccurrences(),
         mTseitinVarShadows(),
+        mVarConnections(),
         mCurrentTheoryConflicts(),
         mCurrentTheoryConflictEvaluations(),
-        mTheoryConflictIdCounter( 0 ),
-        mLevelCounter()
+        mLevelCounter(),
+        mTheoryConflictIdCounter( 0 )
     {
         mCurrentTheoryConflicts.reserve(100);
         #ifdef SMTRAT_DEVOPTION_Statistics
@@ -171,6 +172,8 @@ namespace smtrat
 //        std::cout << dimacs(_subformula->formula()) << std::endl;
         if( _subformula->formula().isFalse() )
         {
+            mInfeasibleSubsets.emplace_back();
+            mInfeasibleSubsets.back().insert( _subformula->formula() );
             return false;
         }
         else if( !_subformula->formula().isTrue() )
@@ -249,8 +252,8 @@ namespace smtrat
             cancelUntil(pos, true);
             adaptPassedFormula();
             ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( _subformula->formula() );
-            assert( constraintLiteralPair != mConstraintLiteralMap.end() );
-            removeLiteralOrigin( constraintLiteralPair->second.front(), _subformula->formula() );
+            if( constraintLiteralPair != mConstraintLiteralMap.end() )
+                removeLiteralOrigin( constraintLiteralPair->second.front(), _subformula->formula() );
         }
         else if( _subformula->formula().propertyHolds( carl::PROP_IS_A_CLAUSE ) )
         {
@@ -454,6 +457,7 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::updateInfeasibleSubset()
     {
+        std::cout << __func__ << std::endl;
         assert( !ok );
         mInfeasibleSubsets.clear();
         // Set the infeasible subset to the set of all clauses.
@@ -979,7 +983,7 @@ namespace smtrat
         else if( _abstr.updateInfo > 0 )
         {
             assert( !_abstr.reabstraction.isTrue() );
-            assert( _abstr.reabstraction.getType() == carl::FormulaType::UEQ || content.getType() == carl::FormulaType::BITVECTOR || (_abstr.reabstraction.getType() == carl::FormulaType::CONSTRAINT && _abstr.reabstraction.constraint().isConsistent() == 2) );
+            assert( _abstr.reabstraction.getType() == carl::FormulaType::UEQ || _abstr.reabstraction.getType() == carl::FormulaType::BITVECTOR || (_abstr.reabstraction.getType() == carl::FormulaType::CONSTRAINT && _abstr.reabstraction.constraint().isConsistent() == 2) );
             auto res = addSubformulaToPassedFormula( _abstr.reabstraction, _abstr.origins );
             _abstr.position = res.first;
             _abstr.position->setDeducted( _abstr.isDeduction );
@@ -999,7 +1003,7 @@ namespace smtrat
                 {
                     assert( mBooleanConstraintMap[k].second != nullptr );
                     const Abstraction& abstr = assigns[k] == l_False ? *mBooleanConstraintMap[k].second : *mBooleanConstraintMap[k].first;
-                    if( !abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (abstr.reabstraction.getType() == carl::FormulaType::UEQ || content.getType() == carl::FormulaType::BITVECTOR || abstr.reabstraction.constraint().isConsistent() != 1)) 
+                    if( !abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (abstr.reabstraction.getType() == carl::FormulaType::UEQ || abstr.reabstraction.getType() == carl::FormulaType::BITVECTOR || abstr.reabstraction.constraint().isConsistent() != 1))
                     {
                         if( !rPassedFormula().contains( abstr.reabstraction ) )
                         {
@@ -1037,6 +1041,10 @@ namespace smtrat
         polarity.push( sign );
         decision.push();
         trail.capacity( v + 1 );
+        if( Settings::check_for_satisfied_clauses )
+        {
+            mVarConnections[v] = std::make_pair(std::move(VarConnection()),std::move(VarConnection()));
+        }
         if( Settings::formula_guided_decision_heuristic )
         {
             if( _tseitinShadowed )
@@ -1413,6 +1421,23 @@ SetWatches:
             for( int i = 0; i < c.size(); ++i )
                 mVarClausesMap[(size_t)var(c[i])].insert( cr );
         }
+        if( Settings::check_for_satisfied_clauses )
+        {
+            for( int i = 0; i < c.size(); ++i )
+            {
+                auto& vc = i > 0 ? mVarConnections[var(c[i])].first : mVarConnections[var(c[i])].second;
+                vc.mNumConnections += ((size_t)c.size() - 1);
+                for( int j = 0; j < c.size(); ++j )
+                {
+                    if( i != j )
+                    {
+                        auto ret = vc.mConnections.insert( std::make_pair( j, 1 ) );
+                        if( !ret.second )
+                            ++ret.first->second;
+                    }
+                }
+            }
+        }
         assert( c.size() > 1 );
         watches[~c[0]].push( Watcher( cr, c[1] ) );
         watches[~c[1]].push( Watcher( cr, c[0] ) );
@@ -1432,6 +1457,24 @@ SetWatches:
         {
             for( int i = 0; i < c.size(); ++i )
                 mVarClausesMap[(size_t)var(c[i])].erase( cr );
+        }
+        if( Settings::check_for_satisfied_clauses )
+        {
+            for( int i = 0; i < c.size(); ++i )
+            {
+                auto& vc = i > 0 ? mVarConnections[var(c[i])].first : mVarConnections[var(c[i])].second;
+                vc.mNumConnections -= ((size_t)c.size() - 1);
+                for( int j = 0; j < c.size(); ++j )
+                {
+                    if( i != j )
+                    {
+                        auto iter = vc.mConnections.find( j );
+                        assert( iter != vc.mConnections.end() );
+                        if( --(iter->second) == 0 )
+                            vc.mConnections.erase( iter );
+                    }
+                }
+            }
         }
         assert( c.size() > 1 );
 
@@ -1919,7 +1962,6 @@ SetWatches:
     Lit SATModule<Settings>::pickBranchLit()
     {
         Var next = var_Undef;
-
         // Random decision:
         //        if( drand( random_seed ) < random_var_freq &&!order_heap.empty() )
         //        {
@@ -1930,9 +1972,7 @@ SetWatches:
         // Check first, if a splitting decision has to be made.
         next = pickSplittingVar();
         if( next != var_Undef )
-        {
             mNewSplittingVars.pop_back();
-        }
         else
         {
             if( Settings::theory_conflict_guided_decision_heuristic == TheoryGuidedDecisionHeuristicLevel::DISABLED || mCurrentAssignmentConsistent != True )
@@ -1946,15 +1986,11 @@ SetWatches:
                         break;
                     }
                     else
-                    {
                         next = order_heap.removeMin();
-                    }
                 }
             }
             else
-            {
                 return bestBranchLit( Settings::theory_conflict_guided_decision_heuristic == TheoryGuidedDecisionHeuristicLevel::CONFLICT_FIRST );
-            }
         }
         return next == var_Undef ? lit_Undef : mkLit( next, polarity[next] );
         //return next == var_Undef ? lit_Undef : mkLit( next, rnd_pol ? drand( random_seed ) < 0.5 : polarity[next] );
@@ -2245,6 +2281,10 @@ SetWatches:
                     incrementTseitinShadowOccurrences(v);
                 }
             }
+        }
+        if( Settings::check_for_satisfied_clauses )
+        {
+            
         }
     }
 
@@ -2932,7 +2972,7 @@ NextClause:
             }
             case CCES::SECOND_LEVEL_MINIMIZER_PLUS_LBD:
             {
-                size_t litLevel = (size_t) level( var( _lit ) ) * decisionLevel();
+                size_t litLevel = (size_t) level( var( _lit ) ) * (size_t) decisionLevel();
                 if( _firstLiteral )
                 {
                     mLevelCounter.clear();

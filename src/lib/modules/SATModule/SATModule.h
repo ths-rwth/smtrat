@@ -127,6 +127,31 @@ namespace smtrat
                 
                 Abstraction( const Abstraction& ) = delete;
             };
+            
+            struct VarConnection
+            {
+                size_t mNumConnections;
+                std::unordered_map<int,size_t> mConnections;
+                
+                VarConnection():
+                    mNumConnections(0),
+                    mConnections()
+                {};
+                
+                VarConnection( VarConnection&& _toMove ):
+                    mNumConnections( _toMove.mNumConnections ),
+                    mConnections( std::move( _toMove.mConnections ) )
+                {};
+                
+                VarConnection( const VarConnection& ) = delete;
+                
+                VarConnection& operator=( VarConnection&& _toMove )
+                {
+                    mNumConnections = _toMove.mNumConnections;
+                    mConnections = std::move( _toMove.mConnections );
+                    return *this;
+                }
+            };
 
             /// [Minisat related code]
             struct Watcher
@@ -393,6 +418,8 @@ namespace smtrat
             Minisat::vec<unsigned> mNonTseitinShadowedOccurrences;
             ///
             carl::FastMap<signed,std::set<signed>> mTseitinVarShadows;
+            ///
+            Minisat::vec<std::pair<VarConnection,VarConnection>> mVarConnections;
             ///
             std::vector<Minisat::vec<Minisat::Lit>> mCurrentTheoryConflicts;
             std::map<std::pair<size_t,size_t>,size_t> mCurrentTheoryConflictEvaluations;
