@@ -9,15 +9,15 @@ os:
 env:
   global:
     - secure: "mLSkH+V7W0F0GLxSgtJWUKlQu67aDdnvDpDIsR9n+1J0ECRDYcOpLa67OuILlYlZTYE84zEuQOPrRlldayPYdM5ZRRsdRHPrBukNB3kOPn2MsHh+xn2AGgaZduZMNgXpFDmkNOj8mkveJfKRjNcooYiQaXKJJXYjUrt3J+UTxUMBqfgdDHDHjCjPPviI1oxDVtbD15U6jcaKD7KdmLF+A1oHbZTlLbzhBP8JbQO4lJ28HVXBUZF+cjpDzlThHubB6KOhPB3CeVR1jwdcV1/HjYhWLNCFrui7EfjNl18hRsDdeFR0O77iJV6ktlzaccwamgUI+/SDk/2zrP2L7yf4hLtLjDbAxawDEVju+rrmPbHrvbS1D1iaYdJ4MqqKBja+hnQQueJFS4adYLNWKLgDHZwDFo6CFIeAIa+VE3xzh7/Qa+sXYRljqZlXuaFYL1Ra6+kRe5O3xztvwo2s8W59MjyQgwaR9YDzE7aXI6nyZH3ktqrbbTwVIUyTHt7qDFmuWo1YpHxI1Owwzgvn64t1zGD+Mo3pzGaZbJSlql0yC4bbMH47Ay6hRmsU4dwz8+R4o99xN+oJiBzebh7plkHpWlP5xzmjs3tAv51Afb6SLI3F45qm1qMj6x1T1tiq2d5GzWKDlz1URjhsCj6g1M8zOTj1mmFMqxvw2bHiy1gTIG4="
-matrix:
-  - USE=g++-4.8
-  - USE=g++-4.9
-  - USE=g++-5.1
-  - USE=clang++-3.4
-  - USE=clang++-3.5
-  - USE=clang++-3.6
-  - USE=clang++-3.7
-  - USE=clang++-3.5 TASK=doxygen
+  matrix:
+    - USE=g++-4.8
+    - USE=g++-4.9
+    - USE=g++-5.1
+    - USE=clang++-3.4
+    - USE=clang++-3.5
+    - USE=clang++-3.6
+    - USE=clang++-3.7
+    - USE=clang++-3.5 TASK=doxygen
 
 matrix:
   exclude:
