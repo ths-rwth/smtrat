@@ -153,6 +153,11 @@ MACRO(EndDefineModule enabled)
 	if(SMTRAT_ENABLE_${mod_name})
 		# Number of modules (for determining this modules number)
 		list(LENGTH moduleTypes mod_index)
+        
+        FILE(GLOB_RECURSE sources *.cpp)
+        foreach(src ${sources})
+            AddModuleSource(${src})
+        endforeach()
 
 		set(moduleMainHeaders ${moduleMainHeaders} ${mod_header} PARENT_SCOPE)
 		set(moduleSources ${moduleSources} PARENT_SCOPE)
