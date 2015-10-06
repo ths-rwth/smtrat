@@ -316,7 +316,6 @@ namespace smtrat
         std::cout << "Start consistency check with the ICPModule on the constraints " << std::endl;
         for( const auto& f : rReceivedFormula() )
             std::cout << "    " << f.formula().constraint() << std::endl;
-        debugPrint();
         #endif
         if( !mFoundSolution.empty() )
         {
