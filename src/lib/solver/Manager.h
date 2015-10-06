@@ -148,7 +148,7 @@ namespace smtrat
                 if( mBacktrackPoints.empty() ) return false;
                 auto subFormula = mBacktrackPoints.back();
                 while( subFormula != mpPassedFormula->end() )
-                    subFormula = remove( subFormula );
+                    subFormula = remove( subFormula, false );
                 mBacktrackPoints.pop_back();
                 return true;
             }
@@ -314,8 +314,6 @@ namespace smtrat
              *         solver's input formula, if the Boolean is true.
              */
             std::pair<bool,FormulaT> getInputSimplified();
-            
-        protected:
 
             /**
              * Removes the formula at the given position in the conjunction of formulas,
@@ -326,7 +324,9 @@ namespace smtrat
              *          end of the conjunction of formulas, which will be considered for the 
              *          next satisfiability check is returned.
              */
-            ModuleInput::iterator remove( ModuleInput::iterator _subformula );
+            ModuleInput::iterator remove( ModuleInput::iterator _subformula, bool _repairBT = true );
+            
+        protected:
 
             /**
              * @return A reference to the graph representing the solving strategy.
