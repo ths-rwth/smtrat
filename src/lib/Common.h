@@ -146,7 +146,7 @@ namespace smtrat
     
     inline carl::UninterpretedFunction newUF( const std::string& _name, const std::vector<carl::Sort>& _dom, const carl::Sort& _codom )
     {
-        return newUF( _name, std::move( std::vector<carl::Sort>( _dom ) ), _codom );
+        return newUF( _name, std::vector<carl::Sort>( _dom ), _codom );
     }
     
     inline carl::UninterpretedFunction newUF( const std::string& _name, const carl::Sort& _dom, const carl::Sort& _codom )
@@ -171,7 +171,7 @@ namespace smtrat
     
     inline carl::UFInstance newUFInstance( const carl::UninterpretedFunction& _function, const std::vector<carl::UVariable>& _args )
     {
-        return smtrat::newUFInstance( _function, std::move(std::vector<carl::UVariable>(_args)) );
+        return smtrat::newUFInstance( _function, std::vector<carl::UVariable>(_args));
     }
     
     inline carl::UFInstance newUFInstance( const carl::UninterpretedFunction& _function, const carl::UVariable& _arg )

@@ -1,25 +1,5 @@
 #!/usr/bin/env bash
 
-if [[ ${TASK} == "doxygen" ]]; then
-	export TASK="clang++-3.5"
-	export USE="clang++-3.5"
-	git clone https://github.com/smtrat/carl.git
-	cd carl/.travis/
-	source setup_travis.sh || return 1
-	cd ../
-	source .travis/build.sh || return 1
-	cd ../
-	export TASK="doxygen"
-	export USE="doxygen"
-else
-	git clone https://github.com/smtrat/carl.git
-	cd carl/.travis/
-	source setup_travis.sh || return 1
-	cd ../
-	source .travis/build.sh || return 1
-	cd ../
-fi
-
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
 
 	source setup_ubuntu1204.sh
@@ -29,3 +9,12 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
 	source setup_osx.sh
 
 fi
+
+git clone https://github.com/smtrat/carl.git
+mkdir carl/build || return 1
+cd carl/build/ || return 1
+cmake -D DEVELOPER=ON ../ || return 1
+make resources -j1 || return 1
+make -j1 lib_carl || return 1
+
+cd ../../
