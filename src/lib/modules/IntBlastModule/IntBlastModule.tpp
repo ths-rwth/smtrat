@@ -81,41 +81,63 @@ namespace smtrat
     {
         const FormulaT& formula = _subformula->formula();
         INTBLAST_DEBUG("ADD " << formula);
-        assert(formula.getType() == carl::FormulaType::CONSTRAINT);
-        assert(formula.constraint().integerValued());
 
-        // Retrieve all integer-valued variables in formula
-        carl::Variables variablesInFormula;
-        carl::Variables nonlinearVariablesInFormula;
-        const Poly& poly = formula.constraint().lhs();
-        formula.integerValuedVars(variablesInFormula);
-        for(auto termIt = poly.begin();termIt != poly.end();++termIt) {
-            if(termIt->getNrVariables() > 1 || ! termIt->isLinear()) {
-                termIt->gatherVariables(nonlinearVariablesInFormula);
+        std::vector<ConstraintT> containedConstraints;
+        formula.getConstraints(containedConstraints);
+
+        /*
+         * Steps that are applied for every constraint in formula
+         */
+
+        for(const ConstraintT& constraint : containedConstraints) {
+            // Retrieve all integer-valued variables in formula
+            carl::Variables variablesInFormula;
+            carl::Variables nonlinearVariablesInFormula;
+            const Poly& poly = formula.constraint().lhs();
+            formula.integerValuedVars(variablesInFormula);
+            for(auto termIt = poly.begin();termIt != poly.end();++termIt) {
+                if(termIt->getNrVariables() > 1 || ! termIt->isLinear()) {
+                    termIt->gatherVariables(nonlinearVariablesInFormula);
+                }
+            }
+
+            // Update 'mInputVariables' and 'mNonlinearInputVariables' sets
+            for(auto& variable : variablesInFormula) {
+                mInputVariables.add(variable, formula);
+            }
+            for(auto& variable : nonlinearVariablesInFormula) {
+                mNonlinearInputVariables.add(variable, formula);
+            }
+
+            // Introduce substitutes in ICP
+            if(Settings::apply_icp) {
+                addSubstitutesToICP(constraint, formula);
+            }
+
+            // Update mPolyParents (child->parent relationship)
+            addPolyParents(formula.constraint());
+        }
+
+        /*
+         * Steps that are applied if the formula is only a single constraint
+         */
+
+        if(formula.getType() == carl::FormulaType::CONSTRAINT && formula.constraint().integerValued()) {
+            // Update mBoundsFromInput using the new formula
+            mBoundsFromInput.addBound(formula.constraint(), formula);
+
+            // Pass global formula to ICP
+            if(Settings::apply_icp) {
+                addConstraintFormulaToICP(formula);
             }
         }
 
-        // Update 'mInputVariables' and 'mNonlinearInputVariables' sets
-        for(auto& variable : variablesInFormula) {
-            mInputVariables.add(variable, formula);
-        }
-        for(auto& variable : nonlinearVariablesInFormula) {
-            mNonlinearInputVariables.add(variable, formula);
-        }
-
-        // Update mPolyParents (child->parent relationship)
-        addPolyParents(formula.constraint());
-
-        // Update mBoundsFromInput using the new formula
-        mBoundsFromInput.addBound(formula.constraint(), formula);
+        /*
+         * Steps that are applied for the whole formula
+         */
 
         // Schedule formula for encoding to BV logic
         mFormulasToEncode.insert(formula);
-
-        // Pass new formula to ICP, generating substitutes
-        if(Settings::apply_icp) {
-            addConstraintToICP(formula);
-        }
 
         // Add new formula to backend
         addReceivedSubformulaToPassedFormula(_subformula);
@@ -132,7 +154,9 @@ namespace smtrat
         mInputVariables.removeOrigin(formula);
         mNonlinearInputVariables.removeOrigin(formula);
 
-        mBoundsFromInput.removeBound(formula.constraint(), formula);
+        if(formula.getType() == carl::FormulaType::CONSTRAINT && formula.constraint().integerValued()) {
+            mBoundsFromInput.removeBound(formula.constraint(), formula);
+        }
         // mBoundsInRestriction: updated by updateBoundsFromICP() in next check
 
         if(Settings::apply_icp) {
@@ -601,12 +625,7 @@ namespace smtrat
             while(! mFormulasToEncode.empty()) {
                 auto firstFormulaToEncode = mFormulasToEncode.begin();
                 const FormulaT& formulaToEncode = *firstFormulaToEncode;
-                INTBLAST_DEBUG("Formula " << formulaToEncode << " encoded to BV:");
-
-                FormulasT blastedFormulas = blastConstraint(formulaToEncode.constraint());
-                for(auto blastedFormula : blastedFormulas) {
-                    addFormulaToBV(blastedFormula, formulaToEncode);
-                }
+                encodeFormulaToBV(formulaToEncode);
                 mFormulasToEncode.erase(firstFormulaToEncode);
             }
 
@@ -637,6 +656,36 @@ namespace smtrat
         }
 
         return backendAnswer;
+    }
+
+
+    template<class Settings>
+    void IntBlastModule<Settings>::encodeFormulaToBV(const FormulaT& _formula)
+    {
+        INTBLAST_DEBUG("Formula " << _formula << " encoded to BV:");
+
+        FormulasT bitvectorConstraints;
+        carl::FormulaVisitor<FormulaT> visitor;
+        std::function<FormulaT(FormulaT)> encodeConstraints = std::bind(&IntBlastModule::encodeConstraintToBV, this, std::placeholders::_1, bitvectorConstraints);
+        FormulaT bitvectorFormula = visitor.visit(_formula, encodeConstraints);
+
+        addFormulaToBV(bitvectorFormula, _formula);
+
+        for(const FormulaT& bitvectorConstraint : bitvectorConstraints) {
+            addFormulaToBV(bitvectorConstraint, _formula);
+        }
+    }
+
+    template<class Settings>
+    FormulaT IntBlastModule<Settings>::encodeConstraintToBV(const FormulaT& _original, FormulasT& _collectedBitvectorConstraints)
+    {
+        if(_original.getType() == carl::FormulaType::CONSTRAINT && _original.constraint().integerValued())
+        {
+            ConstrTree constraintTree(_original.constraint());
+            const BlastedConstr& blastedConstraint = blastConstrTree(constraintTree, _collectedBitvectorConstraints);
+            return blastedConstraint.formula();
+        }
+        return _original;
     }
 
     template<class Settings>
@@ -880,13 +929,12 @@ namespace smtrat
     }
 
     template<class Settings>
-    void IntBlastModule<Settings>::addConstraintToICP(FormulaT _formula)
+    void IntBlastModule<Settings>::addSubstitutesToICP(const ConstraintT& _constraint, const FormulaT& _origin)
     {
         // Create a substitute for every node of the constraint tree of _formula
         // in order to receive bounds from ICP for these expressions
 
-        const ConstraintT& constraint = _formula.constraint();
-        ConstrTree constraintTree(constraint);
+        ConstrTree constraintTree(_constraint);
 
         // Walk through the ConstraintTree in a breadth-first search
         std::list<PolyTree> nodesForSubstitution;
@@ -913,7 +961,7 @@ namespace smtrat
 
             substituteEq -= getICPSubstitute(currentPoly.poly());
             FormulaT constraintForICP(substituteEq, carl::Relation::EQ);
-            addFormulaToICP(constraintForICP, _formula);
+            addFormulaToICP(constraintForICP, _origin);
 
             if(currentPoly.type() == PolyTree::Type::SUM || currentPoly.type() == PolyTree::Type::PRODUCT) {
                 // Schedule left and right subtree of current PolyTree
@@ -924,8 +972,15 @@ namespace smtrat
 
             nodesForSubstitution.pop_front();
         }
+    }
 
-        // Finally, add the root (the constraint itself) to ICP
+    template<class Settings>
+    void IntBlastModule<Settings>::addConstraintFormulaToICP(const FormulaT& _formula)
+    {
+        assert(_formula.getType() == carl::FormulaType::CONSTRAINT);
+        ConstrTree constraintTree(_formula.constraint());
+
+        // Add the root (the constraint itself) to ICP
         Poly rootPoly(getICPSubstitute(constraintTree.left().poly()));
         rootPoly -= getICPSubstitute(constraintTree.right().poly());
         ConstraintT rootConstraint(rootPoly, constraintTree.relation());
@@ -1152,6 +1207,7 @@ namespace smtrat
     {
         std::set<Poly> obsolete = parentalClosure(_polys);
 
+        // Erase all PolyBlastings belonging to the polynomials in 'obsolete'
         auto polyIt = mPolyBlastings.begin();
         while(polyIt != mPolyBlastings.end()) {
             if(obsolete.find(polyIt->first) != obsolete.end()) {
@@ -1162,6 +1218,7 @@ namespace smtrat
             }
         }
 
+        // Erase all ConstrBlastings which used a PolyBlasting that is now deleted
         auto constrIt = mConstrBlastings.begin();
         while(constrIt != mConstrBlastings.end()) {
             ConstrTree constrTree(constrIt->first);
@@ -1172,9 +1229,21 @@ namespace smtrat
             }
         }
 
+        // Reencode all formulas which contain constraints whose
+        // ConstrBlastings is now deleted
         for(const auto& inputFormula : rReceivedFormula()) {
-            ConstrTree constrTree(inputFormula.formula().constraint());
-            if(obsolete.find(constrTree.left().poly()) != obsolete.end()) {
+            std::vector<ConstraintT> constraintsInFormula;
+            inputFormula.formula().getConstraints(constraintsInFormula);
+
+            bool needsReencoding = false;
+            for(const ConstraintT& constraint : constraintsInFormula) {
+                if(mConstrBlastings.find(constraint) == mConstrBlastings.end()) {
+                    needsReencoding = true;
+                    break;
+                }
+            }
+
+            if(needsReencoding) {
                 removeOriginFromBV(inputFormula.formula());
                 mFormulasToEncode.insert(inputFormula.formula());
             }
