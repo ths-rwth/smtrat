@@ -7,5 +7,5 @@
  */
 
 namespace smtrat {
-    extern template class IntEqModule<IntEqSettings@SMTRAT_IntEq_Settings@>;
+    extern template class IntEqModule<IntEqSettings@SMTRAT_IntEq_SETTINGS@>;
 }

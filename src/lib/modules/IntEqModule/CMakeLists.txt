@@ -1,16 +1,11 @@
 set(SMTRAT_IntEq_SETTINGS "1" CACHE STRING "Number of setting used for IntEqModule")
+
+configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/IntEqModule/IntEqModule.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/IntEqModule/IntEqModule.cpp )
+configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/IntEqModule/IntEqModuleInstantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/IntEqModule/IntEqModuleInstantiation.h )
+
 BeginDefineModule()
 ModuleMainHeader(IntEqModule/IntEqModule.h)
-FILE(GLOB_RECURSE sources *.cpp)
-foreach(src ${sources})
-    AddModuleSource(${src})
-endforeach()
 ModuleName(IntEqModule)
 ModuleClass(IntEqModule<IntEqSettings${SMTRAT_IntEq_SETTINGS}>)
 ModuleVersion(0 0 1)
-EndDefineModule(moduleEnabled)
-
-if(${moduleEnabled})
-    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/IntEqModule/IntEqModule.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/IntEqModule/IntEqModule.cpp )
-    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/IntEqModule/IntEqModuleInstantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/IntEqModule/IntEqModuleInstantiation.h )
-endif()
+EndDefineModule()
