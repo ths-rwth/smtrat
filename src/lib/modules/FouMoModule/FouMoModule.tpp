@@ -1209,7 +1209,7 @@ namespace smtrat
                 {
                     if( mDom == INT )
                     {
-                        if( carl::ceil( Rational( to_be_substituted_lower.constantPart() )/coeff_lower ) > highest_lower )
+                        if( carl::ceil( Rational( to_be_substituted_lower.constantPart()/coeff_lower) ) > highest_lower )
                         {
                             highest_lower = carl::ceil( Rational( to_be_substituted_lower.constantPart()/coeff_lower) );
                         }
