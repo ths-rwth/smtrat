@@ -1,18 +1,11 @@
 set(SMTRAT_SplitSOS_SETTINGS "1" CACHE STRING "Number of setting used for SplitSOSModule")
+
+configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/SplitSOSModule/SplitSOSModule.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/SplitSOSModule/SplitSOSModule.cpp )
+configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/SplitSOSModule/SplitSOSModuleInstantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/SplitSOSModule/SplitSOSModuleInstantiation.h )
+
 BeginDefineModule()
 ModuleMainHeader(SplitSOSModule/SplitSOSModule.h)
-FILE(GLOB_RECURSE sources *.cpp)
-foreach(src ${sources})
-    AddModuleSource(${src})
-endforeach()
 ModuleName(SplitSOSModule)
 ModuleClass(SplitSOSModule<SplitSOSSettings${SMTRAT_SplitSOS_SETTINGS}>)
 ModuleVersion(0 0 1)
-ModuleDefaultEnabled()
-EndDefineModule(moduleEnabled)
-
-if(${moduleEnabled})
-    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/SplitSOSModule/SplitSOSModule.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/SplitSOSModule/SplitSOSModule.cpp )
-    configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/SplitSOSModule/SplitSOSModuleInstantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/SplitSOSModule/SplitSOSModuleInstantiation.h )
-    # do something
-endif()
+EndDefineModule()

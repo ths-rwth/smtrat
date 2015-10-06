@@ -63,8 +63,8 @@ namespace smtrat
             #ifdef DEBUG_FouMoModule
             cout << "Asserted formula: " << _subformula->formula().constraint() << "is false" << endl;
             #endif
-            FormulasT infSubSet;
-            infSubSet.push_back( _subformula->formula() );
+            FormulaSetT infSubSet;
+            infSubSet.insert( _subformula->formula() );
             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
             return false;            
         }
@@ -186,7 +186,7 @@ namespace smtrat
                                             cout << "The obtained formula is unsatisfiable" << endl;
                                             #endif
                                             size_t i = determine_smallest_origin( *origins_new );
-                                            FormulasT infSubSet;
+                                            FormulaSetT infSubSet;
                                             collectOrigins( origins_new->at(i), infSubSet );
                                             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
                                             return false;
@@ -239,7 +239,7 @@ namespace smtrat
                                             cout << "The obtained formula is unsatisfiable" << endl;
                                             #endif
                                             size_t i = determine_smallest_origin( *origins_new );
-                                            FormulasT infSubSet;
+                                            FormulaSetT infSubSet;
                                             collectOrigins( origins_new->at(i), infSubSet );
                                             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
                                             return false;
@@ -811,7 +811,7 @@ namespace smtrat
                         cout << "The obtained formula is unsatisfiable" << endl;
                         #endif
                         size_t i = determine_smallest_origin( *origins_new );
-                        FormulasT infSubSet;
+                        FormulaSetT infSubSet;
                         collectOrigins( origins_new->at(i), infSubSet );
                         mInfeasibleSubsets.push_back( std::move( infSubSet ) );
                         return False;
