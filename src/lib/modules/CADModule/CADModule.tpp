@@ -156,7 +156,7 @@ namespace smtrat
 		assert(mConstraints.size() == mConstraintsMap.size());
 		SMTRAT_LOG_TRACE("smtrat.cad", "Current Constraints: " << mConstraints);
 		SMTRAT_LOG_TRACE("smtrat.cad", "as Map: " << mConstraintsMap);
-		mConflictGraph.print();
+		//mConflictGraph.print();
             #ifdef SMTRAT_DEVOPTION_Statistics
             mStats->addCall();
             #endif
