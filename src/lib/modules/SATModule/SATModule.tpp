@@ -285,8 +285,8 @@ namespace smtrat
                 for( auto subformula = _subformula->formula().subformulas().begin(); subformula != _subformula->formula().subformulas().end(); ++subformula )
                 {
                     ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( *subformula );
-                    assert( constraintLiteralPair != mConstraintLiteralMap.end() );
-                    removeLiteralOrigin( constraintLiteralPair->second.front(), _subformula->formula() );
+                    if( constraintLiteralPair != mConstraintLiteralMap.end() )
+                        removeLiteralOrigin( constraintLiteralPair->second.front(), _subformula->formula() );
                 }
                     
             }
@@ -457,7 +457,6 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::updateInfeasibleSubset()
     {
-        std::cout << __func__ << std::endl;
         assert( !ok );
         mInfeasibleSubsets.clear();
         // Set the infeasible subset to the set of all clauses.
