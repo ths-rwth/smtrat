@@ -47,5 +47,13 @@ namespace smtrat
          * that consist of bitvector function symbols.
          */
         static const bool allow_encoding_into_complex_bvterms = true;
+
+        /**
+         * Whether to apply ICP to optain smaller bounds for the
+         * term encodings.
+         * If set to false, the widths for the encoded bitvector terms
+         * are chosen conservatively.
+         */
+        static const bool apply_icp = false;
     };
 }

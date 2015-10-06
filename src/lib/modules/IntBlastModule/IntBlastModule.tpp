@@ -6,12 +6,10 @@
 #include "IntBlastModule.h"
 #include "../AddModules.h"
 
-#define INTBLAST_DEBUG_ENABLED 1
+#define INTBLAST_DEBUG_ENABLED 0
 #define INTBLAST_DEBUG(x) do { \
   if (INTBLAST_DEBUG_ENABLED) { std::cerr << "[IntBlast] " << x << std::endl; } \
 } while (0)
-
-#define INTBLAST_ICP_ENABLED
 
 namespace smtrat
 {
@@ -115,9 +113,9 @@ namespace smtrat
         mFormulasToEncode.insert(formula);
 
         // Pass new formula to ICP, generating substitutes
-        #ifdef INTBLAST_ICP_ENABLED
-        addConstraintToICP(formula);
-        #endif
+        if(Settings::apply_icp) {
+            addConstraintToICP(formula);
+        }
 
         // Add new formula to backend
         addReceivedSubformulaToPassedFormula(_subformula);
@@ -137,9 +135,9 @@ namespace smtrat
         mBoundsFromInput.removeBound(formula.constraint(), formula);
         // mBoundsInRestriction: updated by updateBoundsFromICP() in next check
 
-        #ifdef INTBLAST_ICP_ENABLED
-        removeOriginFromICP(formula);
-        #endif
+        if(Settings::apply_icp) {
+            removeOriginFromICP(formula);
+        }
         removeOriginFromBV(formula);
 
         mFormulasToEncode.erase(formula);
@@ -429,24 +427,24 @@ namespace smtrat
                                             blastSum(*left, *right) :
                                             blastProduct(*left, *right);
 
-                #ifdef INTBLAST_ICP_ENABLED
-                // Obtain range from ICP substitute
-                carl::Variable substitute = mSubstitutes.at(_poly.poly());
-                IntegerInterval interval = getNum(mBoundsInRestriction.getInterval(substitute));
-                if(interval.lowerBoundType() == carl::BoundType::WEAK && interval.upperBoundType() == carl::BoundType::WEAK) {
-                    auto shrunk = shrinkToRange(intermediate, interval);
-                    blasted = shrunk.first;
-                    if(shrunk.second) {
-                        mShrunkPolys.insert(_poly.poly());
+                if(Settings::apply_icp) {
+                    // Obtain range from ICP substitute
+                    carl::Variable substitute = mSubstitutes.at(_poly.poly());
+                    IntegerInterval interval = getNum(mBoundsInRestriction.getInterval(substitute));
+                    if(interval.lowerBoundType() == carl::BoundType::WEAK && interval.upperBoundType() == carl::BoundType::WEAK) {
+                        auto shrunk = shrinkToRange(intermediate, interval);
+                        blasted = shrunk.first;
+                        if(shrunk.second) {
+                            mShrunkPolys.insert(_poly.poly());
+                        }
+                    } else {
+                        INTBLAST_DEBUG("Bad ICP interval for " << _poly.poly() << ": " << interval);
+                        // assert(false);
+                        blasted = intermediate;
                     }
                 } else {
-                    INTBLAST_DEBUG("Bad ICP interval for " << _poly.poly() << ": " << interval);
-                    // assert(false);
                     blasted = intermediate;
                 }
-                #else
-                blasted = intermediate;
-                #endif
 
                 break;
             }
@@ -564,42 +562,41 @@ namespace smtrat
             }
         }
 
-        #ifdef INTBLAST_ICP_ENABLED
-        // Run ICP
-        if(INTBLAST_DEBUG_ENABLED) {
-            INTBLAST_DEBUG("Running ICP on these formulas:");
+        Answer icpAnswer = Unknown;
 
-            for(const auto& formulaWO : *mpICPInput) {
-                INTBLAST_DEBUG(" - " << formulaWO.formula());
-                for(const auto& origin : formulaWO.origins()) {
-                    INTBLAST_DEBUG("    (o) " << origin);
+        if(Settings::apply_icp) {
+            // Run ICP
+            if(INTBLAST_DEBUG_ENABLED) {
+                INTBLAST_DEBUG("Running ICP on these formulas:");
+
+                for(const auto& formulaWO : *mpICPInput) {
+                    INTBLAST_DEBUG(" - " << formulaWO.formula());
+                    for(const auto& origin : formulaWO.origins()) {
+                        INTBLAST_DEBUG("    (o) " << origin);
+                    }
                 }
             }
-        }
-        Answer icpAnswer = mICP.check();
-        INTBLAST_DEBUG("icpAnswer: " << (icpAnswer == True ? "True" : (icpAnswer == False ? "False" : "Unknown")));
+            icpAnswer = mICP.check();
+            INTBLAST_DEBUG("icpAnswer: " << (icpAnswer == True ? "True" : (icpAnswer == False ? "False" : "Unknown")));
 
-        if(icpAnswer == True) {
-            mSolutionOrigin = SolutionOrigin::ICP;
-            return True;
+            if(icpAnswer == True) {
+                mSolutionOrigin = SolutionOrigin::ICP;
+                return True;
+            }
         }
-        #else
-        Answer icpAnswer = Unknown;
-        #endif
-
 
         if(icpAnswer == Unknown) {
-            #ifdef INTBLAST_ICP_ENABLED
-            INTBLAST_DEBUG("Updating bounds from ICP.");
+            if(Settings::apply_icp) {
+                INTBLAST_DEBUG("Updating bounds from ICP.");
 
-            if(INTBLAST_DEBUG_ENABLED) {
-                for(ModuleInput::const_iterator fwo=mICP.rPassedFormula().begin(); fwo != mICP.rPassedFormula().end(); fwo++) {
-                    INTBLAST_DEBUG("from ICP: " << fwo->formula());
+                if(INTBLAST_DEBUG_ENABLED) {
+                    for(ModuleInput::const_iterator fwo=mICP.rPassedFormula().begin(); fwo != mICP.rPassedFormula().end(); fwo++) {
+                        INTBLAST_DEBUG("from ICP: " << fwo->formula());
+                    }
                 }
-            }
 
-            updateBoundsFromICP();
-            #endif
+                updateBoundsFromICP();
+            }
 
             while(! mFormulasToEncode.empty()) {
                 auto firstFormulaToEncode = mFormulasToEncode.begin();
@@ -663,9 +660,9 @@ namespace smtrat
     template<class Settings>
     void IntBlastModule<Settings>::unblastVariable(const carl::Variable& _variable)
     {
-        #ifdef INTBLAST_ICP_ENABLED
-        removeBoundRestrictionsFromICP(_variable);
-        #endif
+        if(Settings::apply_icp) {
+            removeBoundRestrictionsFromICP(_variable);
+        }
         unblastPoly(Poly(_variable));
     }
 
@@ -727,9 +724,9 @@ namespace smtrat
             }
         }
 
-        #ifdef INTBLAST_ICP_ENABLED
-        addBoundRestrictionsToICP(_variable, blastedType);
-        #endif
+        if(Settings::apply_icp) {
+            addBoundRestrictionsToICP(_variable, blastedType);
+        }
 
         mPolyBlastings[variablePoly] = BlastedPoly(AnnotatedBVTerm(blastedType));
     }
