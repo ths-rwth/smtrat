@@ -1120,27 +1120,27 @@ namespace smtrat
                     first_iter_upper = false;     
                     if( mDom == INT )
                     {
-                        lowest_upper = carl::floor( Rational( to_be_substituted_upper.constantPart() )/(Rational(-1)*coeff_upper ) );         
+                        lowest_upper = carl::floor( Rational( to_be_substituted_upper.constantPart()/(Rational(-1)*coeff_upper)) );
                     }
                     else
                     {
-                        lowest_upper = Rational(-1)*Rational( to_be_substituted_upper.constantPart() )/coeff_upper;
+                        lowest_upper = Rational(-1)*to_be_substituted_upper.constantPart()/coeff_upper;
                     }
                 }
                 else
                 {                    
                     if( mDom == INT )
                     {                        
-                        if( carl::floor( Rational( Rational(-1)*(Rational)to_be_substituted_upper.constantPart() )/coeff_upper ) < lowest_upper )
+                        if( carl::floor( Rational( Rational(-1)*to_be_substituted_upper.constantPart()/coeff_upper) ) < lowest_upper )
                         {
-                            lowest_upper = carl::floor( Rational( Rational(-1)*(Rational)to_be_substituted_upper.constantPart() )/coeff_upper );
+                            lowest_upper = carl::floor( Rational( Rational(-1)*to_be_substituted_upper.constantPart()/coeff_upper) );
                         }
                     }
                     else
                     {                        
-                        if( Rational(-1)*Rational( to_be_substituted_upper.constantPart() )/coeff_upper < lowest_upper )
+                        if( Rational(-1)*to_be_substituted_upper.constantPart()/coeff_upper < lowest_upper )
                         {
-                            lowest_upper = Rational(-1)*Rational( to_be_substituted_upper.constantPart() )/coeff_upper;
+                            lowest_upper = Rational(-1)*to_be_substituted_upper.constantPart()/coeff_upper;
                         }
                     }    
                 }
@@ -1198,11 +1198,11 @@ namespace smtrat
                     first_iter_lower = false;
                     if( mDom == INT )
                     {
-                        highest_lower = carl::ceil( Rational( to_be_substituted_lower.constantPart() )/coeff_lower );
+                        highest_lower = carl::ceil( Rational(to_be_substituted_lower.constantPart()/coeff_lower) );
                     }
                     else
                     {
-                        highest_lower = Rational( to_be_substituted_lower.constantPart() )/coeff_lower;
+                        highest_lower = to_be_substituted_lower.constantPart()/coeff_lower;
                     }
                 }
                 else
@@ -1211,14 +1211,14 @@ namespace smtrat
                     {
                         if( carl::ceil( Rational( to_be_substituted_lower.constantPart() )/coeff_lower ) > highest_lower )
                         {
-                            highest_lower = carl::ceil( Rational( to_be_substituted_lower.constantPart() )/coeff_lower );
+                            highest_lower = carl::ceil( Rational( to_be_substituted_lower.constantPart()/coeff_lower) );
                         }
                     }
                     else
                     {
-                        if( Rational( to_be_substituted_lower.constantPart() )/coeff_lower > highest_lower )
+                        if( to_be_substituted_lower.constantPart()/coeff_lower > highest_lower )
                         {
-                            highest_lower = Rational( to_be_substituted_lower.constantPart() )/coeff_lower;
+                            highest_lower = to_be_substituted_lower.constantPart()/coeff_lower;
                         }
                     }
                 }
@@ -1230,7 +1230,7 @@ namespace smtrat
             {
                 if( mNonLinear )
                 {
-                    mVarAss[ *iter_elim ] = Rational(highest_lower+lowest_upper)/2; 
+                    mVarAss[ *iter_elim ] = (highest_lower+lowest_upper)/2; 
                 }
                 else
                 {
