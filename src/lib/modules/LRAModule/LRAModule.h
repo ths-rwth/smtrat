@@ -399,6 +399,10 @@ namespace smtrat
             bool first_var( bool _gc_support );
             
             /**
+             */
+            void calculatePseudoCosts();
+            
+            /**
              * @param gc_support true, if gomory cut construction is enabled.
              * @return true,  if a branching occured with the first original variable that has to be fixed.
              *         false, if no branching occured.
