@@ -9,5 +9,5 @@
 #include "IntEqModule.h"
 
 namespace smtrat {
-    template class IntEqModule<IntEqSettings@SMTRAT_IntEq_SETTINGS@>;
+    template class IntEqModule<IntEqSettings1>;
 }

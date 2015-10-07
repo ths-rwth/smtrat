@@ -1,13 +1,13 @@
 /**
- * @file IntEqModule.cpp
+ * @file FouMoModule.cpp
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  *
  * @version 2015-08-27
  * Created on 2015-08-27.
  */
 
-#include "IntEqModule.h"
+#include "FouMoModule.h"
 
 namespace smtrat {
-    template class IntEqModule<IntEqSettings@SMTRAT_IntEq_SETTINGS@>;
+    template class FouMoModule<FouMoSettings1>;
 }
