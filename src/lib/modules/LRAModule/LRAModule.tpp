@@ -1471,13 +1471,13 @@ Return:
     bool LRAModule<Settings>::minimal_row_var( bool _gc_support )
     {
         EvalRationalMap _rMap = getRationalModel();
-        auto map_iterator = _rMap.begin();
         auto branch_var = mTableau.originalVars().begin();
         Rational ass_;
         Rational row_count_min = mTableau.columns().size()+1;
         bool result = false;
-        for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
+        for( auto map_iterator = _rMap.begin(); map_iterator != _rMap.end(); ++map_iterator )
         {
+            auto var = mTableau.originalVars().find( map_iterator->first );
             assert( var->first == map_iterator->first );
             Rational& ass = map_iterator->second;
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
@@ -1491,7 +1491,6 @@ Return:
                     ass_ = ass; 
                 }
             }
-            ++map_iterator;
         }
         if( result )
         {
@@ -1519,13 +1518,13 @@ Return:
     bool LRAModule<Settings>::most_feasible_var( bool _gc_support )
     {
         EvalRationalMap _rMap = getRationalModel();
-        auto map_iterator = _rMap.begin();
         auto branch_var = mTableau.originalVars().begin();
         Rational ass_;
         bool result = false;
         Rational diff = MINUS_ONE_RATIONAL;
-        for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
+        for( auto map_iterator = _rMap.begin(); map_iterator != _rMap.end(); ++map_iterator )
         {
+            auto var = mTableau.originalVars().find( map_iterator->first );
             assert( var->first == map_iterator->first );
             Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
@@ -1539,7 +1538,6 @@ Return:
                     ass_ = ass;                   
                 }
             }
-            ++map_iterator;
         }
         if( result )
         {
@@ -1588,7 +1586,6 @@ Return:
                     ass_ = ass;                   
                 }
             }
-            ++map_iterator;
         }
         if( result )
         {
@@ -1637,7 +1634,6 @@ Return:
                 branchAt( var->second->expression(), true, ass );
                 return true;           
             }
-            ++map_iterator;
         } 
         return false;
     }
@@ -1665,7 +1661,6 @@ Return:
                 auto iter_succ = mBranch_Success.find( var->first );
                 if( iter_succ == mBranch_Success.end() )
                 {
-                    ++map_iterator;
                     continue;
                 }
                 at_least_one = true;
@@ -1733,7 +1728,6 @@ Return:
                     }
                 }
             }
-            ++map_iterator;
         }
         if( !at_least_one && result )
         {

@@ -173,11 +173,24 @@ namespace smtrat
         mpPrimaryBackend->printModel( _out );
     }
     
-    ModuleInput::iterator Manager::remove( ModuleInput::iterator _subformula )
+    ModuleInput::iterator Manager::remove( ModuleInput::iterator _subformula, bool _repairBT )
     {
         assert( _subformula != mpPassedFormula->end() );
         mpPrimaryBackend->remove( _subformula );
-        return mpPassedFormula->erase( _subformula );
+        if( _repairBT )
+        {
+            auto iter = mpPassedFormula->erase( _subformula );
+            for( auto& it : mBacktrackPoints )
+            {
+                if( it == _subformula )
+                {
+                    it = iter;
+                    break;
+                }
+            }
+        }
+        else
+            return mpPassedFormula->erase( _subformula );
     }
     
     void Manager::reset()
