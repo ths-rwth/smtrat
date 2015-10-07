@@ -37,11 +37,11 @@ namespace vs
              */
             SqrtEx( smtrat::Poly&& _poly );
             SqrtEx( const smtrat::Poly& _poly ) : 
-                SqrtEx::SqrtEx( std::move( smtrat::Poly( _poly ) ) )
+                SqrtEx::SqrtEx( smtrat::Poly( _poly ) )
             {}
             
             SqrtEx( carl::Variable::Arg _var ) : 
-                SqrtEx( std::move( carl::makePolynomial<smtrat::Poly>( _var ) ) )
+                SqrtEx( carl::makePolynomial<smtrat::Poly>( _var ) )
             {}
             
             template<typename P = smtrat::Poly, typename = typename std::enable_if<carl::needs_cache<P>::value>::type>
@@ -56,7 +56,7 @@ namespace vs
              * @param _radicand The radicand of the square root expression to construct.
              */
             SqrtEx( const smtrat::Poly& _constantPart, const smtrat::Poly& _factor, const smtrat::Poly& _denominator, const smtrat::Poly& _radicand ):
-                SqrtEx( std::move( smtrat::Poly( _constantPart ) ), std::move( smtrat::Poly( _factor ) ), std::move( smtrat::Poly( _denominator ) ), std::move( smtrat::Poly( _radicand ) ) )
+                SqrtEx( smtrat::Poly( _constantPart ), smtrat::Poly( _factor ), smtrat::Poly( _denominator ), smtrat::Poly( _radicand ) )
             {}
             
             SqrtEx( smtrat::Poly&& _constantPart, smtrat::Poly&& _factor, smtrat::Poly&& _denominator, smtrat::Poly&& _radicand );
@@ -238,4 +238,3 @@ namespace std
         }
     };
 } // namespace std
-
