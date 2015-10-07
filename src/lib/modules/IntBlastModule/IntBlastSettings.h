@@ -37,7 +37,7 @@ namespace smtrat
          * Intermediate terms (polynomes) are always encoded using a
          * sufficiently high width.
          */
-        static const std::size_t max_variable_encoding_width = 8;
+        static const std::size_t max_variable_encoding_width = 4;
 
         /**
          * Whether to allow the encoding into complex bitvector terms.
@@ -54,6 +54,6 @@ namespace smtrat
          * If set to false, the widths for the encoded bitvector terms
          * are chosen conservatively.
          */
-        static const bool apply_icp = false;
+        static const bool apply_icp = true;
     };
 }
