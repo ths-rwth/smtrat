@@ -34,7 +34,7 @@ namespace smtrat
          * Maximum width used for encoding an integer variable as bitvector.
          *
          * Note that this only applies to the encoding of variables.
-         * Intermediate terms (polynomes) are always encoded using a
+         * Intermediate terms (polynomials) are always encoded using a
          * sufficiently high width.
          */
         static const std::size_t max_variable_encoding_width = 4;
@@ -42,8 +42,8 @@ namespace smtrat
         /**
          * Whether to allow the encoding into complex bitvector terms.
          * When set to false, an own bitvector variable is introduced for
-         * each encoded polynome.
-         * When set to true, polynomes may also be encoded by bitvector terms
+         * each encoded polynomial.
+         * When set to true, polynomials may also be encoded by bitvector terms
          * that consist of bitvector function symbols.
          */
         static const bool allow_encoding_into_complex_bvterms = true;
@@ -54,6 +54,13 @@ namespace smtrat
          * If set to false, the widths for the encoded bitvector terms
          * are chosen conservatively.
          */
-        static const bool apply_icp = true;
+        static const bool apply_icp = false;
+
+        /**
+         * Whether to use offsets for annotated bitvector terms.
+         * For nonlinear variables, no offset is used (independent of this
+         * configuration setting).
+         */
+        static const bool use_offsets_in_encoding = true;
     };
 }

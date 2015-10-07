@@ -222,7 +222,7 @@ namespace smtrat
 		SMTRAT_LOG_TRACE("smtrat.cad", "CAD complete: " << mCAD.isComplete());
 		SMTRAT_LOG_TRACE("smtrat.cad", "Solution point: " << mRealAlgebraicSolution);
 		mInfeasibleSubsets.clear();
-		if (Settings::integer_handling == IntegerHandling::SPLIT_SOLUTION) {
+		if (Settings::integerHandling == carl::cad::IntegerHandling::SPLIT_SOLUTION) {
 			// Check whether the found assignment is integer.
 			const std::vector<carl::Variable>& vars = mCAD.getVariables();
 			for (unsigned d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
