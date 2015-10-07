@@ -11,9 +11,6 @@
 # Version: 2013-03-31                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-foreach(name datastructures solver strategies utilities)
-  collect_files(lib ${name})
-endforeach()
 
 include_directories( ${carl_INCLUDE_DIR} )
 
@@ -36,6 +33,10 @@ add_subdirectory(modules)
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/config.h.in ${CMAKE_SOURCE_DIR}/src/lib/config.h )
 
 add_subdirectory(utilities)
+
+foreach(name datastructures solver strategies utilities)
+  collect_files(lib ${name})
+endforeach()
 
 set(lib_${PROJECT_NAME}_SRCS
     ${lib_core_src}

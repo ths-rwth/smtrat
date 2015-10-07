@@ -329,6 +329,21 @@ namespace smtrat
         protected:
 
             /**
+             * Temporarily added: (TODO: Discuss with Gereon)
+             * Removes the given formula in the conjunction of formulas,
+             * which will be considered for the next satisfiability check.
+             * @param _subformula The formula to remove.
+             * @return An iterator to the formula after the position of the just removed
+             *          formula. If the removed formula has been the last element, the
+             *          end of the conjunction of formulas, which will be considered for the
+             *          next satisfiability check is returned.
+             */
+            ModuleInput::iterator remove( const FormulaT& _subformula )
+            {
+                return remove( mpPassedFormula->find( _subformula ) );
+            }
+
+            /**
              * @return A reference to the graph representing the solving strategy.
              */
             StrategyGraph& rStrategyGraph()

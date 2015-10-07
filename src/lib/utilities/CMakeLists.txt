@@ -11,6 +11,9 @@
 # Version: 2013-03-31                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+configure_file( ${CMAKE_SOURCE_DIR}/src/lib/utilities/CMakeOptions.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/utilities/CMakeOptions.cpp )
+configure_file( ${CMAKE_SOURCE_DIR}/src/lib/utilities/CompileInfo.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/utilities/CompileInfo.cpp )
+
 get_cmake_property(variableNames VARIABLES)
 set(VARLIST "")
 foreach (variableName ${variableNames})

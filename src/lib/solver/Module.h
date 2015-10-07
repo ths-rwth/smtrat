@@ -94,7 +94,7 @@ namespace smtrat
         {}
         
         Splitting( const FormulaT& _leftCase, const FormulaT& _rightCase, const std::vector<FormulaT>& _premise = std::vector<FormulaT>(), bool _preferLeftCase = true ):
-            Splitting( _leftCase, _rightCase, std::move( std::vector<FormulaT>( _premise ) ), _preferLeftCase )
+            Splitting( _leftCase, _rightCase, std::vector<FormulaT>( _premise ), _preferLeftCase )
         {}
     };
     
@@ -982,7 +982,7 @@ namespace smtrat
             
             bool branchAt( const Poly& _polynomial, bool _integral, const Rational& _value, bool _leftCaseWeak = true, bool _preferLeftCase = true, const std::vector<FormulaT>& _premise = std::vector<FormulaT>() )
             {
-                return branchAt( _polynomial, _integral, _value, std::move( std::vector<FormulaT>( _premise ) ), _leftCaseWeak, _preferLeftCase );
+                return branchAt( _polynomial, _integral, _value, std::vector<FormulaT>( _premise ), _leftCaseWeak, _preferLeftCase );
             }
             
             bool branchAt( carl::Variable::Arg _var, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak = true, bool _preferLeftCase = true )
@@ -992,7 +992,7 @@ namespace smtrat
             
             bool branchAt( carl::Variable::Arg _var, const Rational& _value, bool _leftCaseWeak = true, bool _preferLeftCase = true, const std::vector<FormulaT>& _premise = std::vector<FormulaT>() )
             {
-                return branchAt( carl::makePolynomial<Poly>( _var ), _var.getType() == carl::VariableType::VT_INT, _value, std::move( std::vector<FormulaT>( _premise ) ), _leftCaseWeak, _preferLeftCase );
+                return branchAt( carl::makePolynomial<Poly>( _var ), _var.getType() == carl::VariableType::VT_INT, _value, std::vector<FormulaT>( _premise ), _leftCaseWeak, _preferLeftCase );
             }
             
             template<typename P = Poly, carl::EnableIf<carl::needs_cache<P>> = carl::dummy>

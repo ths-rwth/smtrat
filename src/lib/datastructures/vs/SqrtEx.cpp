@@ -353,10 +353,10 @@ namespace vs
         smtrat::Rational sqrtExValue;
         if( radicandEvaluated.isConstant() && carl::sqrtp( radicandEvaluated.constantPart(), sqrtExValue ) )
         {
-            return SqrtEx(std::move(smtrat::Poly(constantPartEvaluated + factorEvaluated * sqrtExValue)), 
-                    std::move(smtrat::Poly(smtrat::ZERO_POLYNOMIAL)), 
+            return SqrtEx(smtrat::Poly(constantPartEvaluated + factorEvaluated * sqrtExValue), 
+                    smtrat::Poly(smtrat::ZERO_POLYNOMIAL), 
                     std::move(denomEvaluated), 
-                    std::move(smtrat::Poly(smtrat::ZERO_POLYNOMIAL)));
+                    smtrat::Poly(smtrat::ZERO_POLYNOMIAL));
         }
         return SqrtEx( std::move(constantPartEvaluated), std::move(factorEvaluated), std::move(denomEvaluated), std::move(radicandEvaluated) );
     }
@@ -419,4 +419,3 @@ namespace vs
         return SqrtEx( resConstantPart, resFactor, sk.back(), _substituteBy.radicand() );
     }
 }    // end namspace vs
-

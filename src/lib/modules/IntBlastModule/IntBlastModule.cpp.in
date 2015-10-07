@@ -1,0 +1,10 @@
+/**
+ * @file IntBlastModule.cpp
+ * @author Andreas Krueger <andreas.krueger@rwth-aachen.de>
+ */
+
+#include "IntBlastModule.h"
+
+namespace smtrat {
+    template class IntBlastModule<IntBlastSettings@SMTRAT_IntBlast_SETTINGS@>;
+}
