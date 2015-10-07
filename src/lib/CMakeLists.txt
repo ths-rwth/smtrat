@@ -34,6 +34,10 @@ configure_file( ${CMAKE_SOURCE_DIR}/src/lib/config.h.in ${CMAKE_SOURCE_DIR}/src/
 
 add_subdirectory(utilities)
 
+foreach(name datastructures solver strategies utilities)
+  collect_files(lib ${name})
+endforeach()
+
 set(lib_${PROJECT_NAME}_SRCS
     ${lib_core_src}
     ${lib_datastructures_src}
@@ -42,10 +46,6 @@ set(lib_${PROJECT_NAME}_SRCS
     ${lib_strategies_src}
     ${lib_utilities_src}
 )
-
-foreach(name datastructures solver strategies utilities)
-  collect_files(lib ${name})
-endforeach()
 
 # set linking flags
 # # # # # # # # # #
