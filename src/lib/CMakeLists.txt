@@ -11,9 +11,6 @@
 # Version: 2013-03-31                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-foreach(name datastructures solver strategies utilities)
-  collect_files(lib ${name})
-endforeach()
 
 include_directories( ${carl_INCLUDE_DIR} )
 
@@ -45,6 +42,10 @@ set(lib_${PROJECT_NAME}_SRCS
     ${lib_strategies_src}
     ${lib_utilities_src}
 )
+
+foreach(name datastructures solver strategies utilities)
+  collect_files(lib ${name})
+endforeach()
 
 # set linking flags
 # # # # # # # # # #
