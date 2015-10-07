@@ -309,8 +309,8 @@ namespace smtrat
     template<class Settings>
     Answer ICPModule<Settings>::checkCore( bool _full )
     {
-        if( !rReceivedFormula().isConstraintConjunction() )
-			return Unknown;
+//        if( !rReceivedFormula().isConstraintConjunction() )
+//			return Unknown;
         #ifdef ICP_MODULE_DEBUG_0
         std::cout << "##############################################################" << std::endl;
         std::cout << "Start consistency check with the ICPModule on the constraints " << std::endl;
