@@ -20,7 +20,7 @@
 #include "../lib/modules/Modules.h"
 #include "../lib/config.h"
 #include "config.h"
-#include "../lib/solver/CompileInfo.h"
+#include "../lib/utilities/CompileInfo.h"
 
 #include "carl/util/CMakeOptions.h"
 #include "../lib/utilities/CMakeOptions.h"
