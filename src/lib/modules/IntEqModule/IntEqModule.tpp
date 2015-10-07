@@ -716,7 +716,7 @@ namespace smtrat
             }
             else
             {
-                auto to_delete = iter_ass;
+                Model::const_iterator to_delete = iter_ass;
                 ++iter_ass;
                 mTemp_Model.erase( to_delete );
             }

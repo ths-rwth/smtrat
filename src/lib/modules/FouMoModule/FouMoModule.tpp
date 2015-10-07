@@ -610,7 +610,7 @@ namespace smtrat
     }    
 
     template<class Settings>
-    void FouMoModule<Settings>::updateModel() 
+    void FouMoModule<Settings>::updateModel() const
     {
         mModel.clear();
         if( solverState() == True )
@@ -1049,7 +1049,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    bool FouMoModule<Settings>::constructSolution( std::map< carl::Variable, Rational > temp_solution )
+    bool FouMoModule<Settings>::constructSolution( std::map< carl::Variable, Rational > temp_solution ) const
     {
         if( mElim_Order.empty() )
         {
