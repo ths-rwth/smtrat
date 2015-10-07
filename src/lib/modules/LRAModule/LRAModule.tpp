@@ -341,6 +341,7 @@ namespace smtrat
         printReceivedFormula();
         #endif
         bool backendsResultUnknown = true;
+        bool containsIntegerValuedVariables = true;
         Answer result = Unknown;
         if( !rReceivedFormula().isConstraintConjunction() )
         {
@@ -351,6 +352,8 @@ namespace smtrat
             result = False;
             goto Return;
         }
+        if( rReceivedFormula().isRealConstraintConjunction() )
+            containsIntegerValuedVariables = false;
         assert( !mTableau.isConflicting() );
         #ifdef LRA_USE_PIVOTING_STRATEGY
         mTableau.setBlandsRuleStart( 1000 );//(unsigned) mTableau.columns().size() );
@@ -389,88 +392,20 @@ namespace smtrat
                     // If the current assignment also fulfills the nonlinear constraints.
                     if( checkAssignmentForNonlinearConstraint() )
                     {
-                        if( Settings::use_gomory_cuts && gomory_cut() )
+                        if( containsIntegerValuedVariables )
                         {
-                            goto Return; // Unknown
-                        }
-                        if( !Settings::use_gomory_cuts && Settings::use_cuts_from_proofs && cuts_from_proofs() )
-                        {
-                            goto Return; // Unknown
-                        }
-                        if( !Settings::use_gomory_cuts && !Settings::use_cuts_from_proofs && branch_and_bound() )
-                        {
-                            if( Settings::pseudo_cost_branching )
-                            {                                
-                                // Count how many integer variables violate their domain
-                                EvalRationalMap _rMap = getRationalModel();
-                                auto map_iterator = _rMap.begin();
-                                unsigned count = 0;
-                                for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
-                                {
-                                    assert( var->first == map_iterator->first );
-                                    Rational& ass = map_iterator->second;
-                                    if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
-                                    {
-                                        count++;
-                                    }
-                                    ++map_iterator;
-                                }    
-                                // Go through the received constraints and store for which variables we branch 'left' 
-                                // resp. 'right'
-                                auto iter_constr = rReceivedFormula().begin();
-                                while( iter_constr != rReceivedFormula().end() )
-                                {
-                                    Poly branching_poly = iter_constr->formula().constraint().lhs();
-                                    std::set< carl::Variable > occ_vars;
-                                    branching_poly.gatherVariables( occ_vars );
-                                    // Check whether the current constraint is a branching constraint
-                                    if( occ_vars.size() == 1 )
-                                    {
-                                        auto iter_poly = branching_poly.begin();
-                                        while( iter_poly != branching_poly.end() )
-                                        {
-                                            if( !iter_poly->isConstant() )
-                                            {    
-                                                if( iter_poly->isLinear() )
-                                                {
-                                                    // Update mBranch_Success
-                                                    auto iter_help = mBranch_Success.find( *( occ_vars.begin() ) );
-                                                    if( iter_help == mBranch_Success.end() )
-                                                    {
-                                                        std::pair< carl::Variable, std::pair< std::vector< unsigned >, std::vector< unsigned > > > to_be_ins;
-                                                        to_be_ins.first = *( occ_vars.begin() );
-                                                        std::pair< std::vector< unsigned >, std::vector< unsigned > > new_pair;
-                                                        if( branching_poly.begin()->coeff() < 0 )
-                                                        {                               
-                                                            new_pair.first = std::vector< unsigned >();
-                                                            new_pair.second = std::vector< unsigned >( count );
-                                                        }
-                                                        else
-                                                        {
-                                                            new_pair.second = std::vector< unsigned >();
-                                                            new_pair.first = std::vector< unsigned >( count );                                                                                                
-                                                        }
-                                                    }
-                                                    else
-                                                    {
-                                                        if( branching_poly.begin()->coeff() < 0 )
-                                                        {
-                                                            iter_help->second.second.push_back( count );
-                                                        }
-                                                        else
-                                                        {
-                                                            iter_help->second.first.push_back( count );                                                    
-                                                        }                                                
-                                                    }
-                                                }
-                                            }
-                                            ++iter_poly;
-                                        }    
-                                    }
-                                    ++iter_constr;
-                                }
-                            }    
-                            goto Return; // Unknown
+                            if( Settings::use_gomory_cuts && gomory_cut() )
+                            {
+                                goto Return; // Unknown
+                            }
+                            if( !Settings::use_gomory_cuts && Settings::use_cuts_from_proofs && cuts_from_proofs() )
+                            {
+                                goto Return; // Unknown
+                            }
+                            if( !Settings::use_gomory_cuts && !Settings::use_cuts_from_proofs && branch_and_bound() )
+                            {
+                                goto Return; // Unknown
+                            }
                         }
                         result = True;
                         if( Settings::restore_previous_consistent_assignment )
@@ -1639,6 +1574,79 @@ Return:
     }
     
     template<class Settings>
+    void LRAModule<Settings>::calculatePseudoCosts()
+    {
+        // Count how many integer variables violate their domain
+        EvalRationalMap _rMap = getRationalModel();
+        auto map_iterator = _rMap.begin();
+        unsigned count = 0;
+        for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
+        {
+            assert( var->first == map_iterator->first );
+            Rational& ass = map_iterator->second;
+            if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
+            {
+                count++;
+            }
+            ++map_iterator;
+        }    
+        // Go through the received constraints and store for which variables we branch 'left' 
+        // resp. 'right'
+        auto iter_constr = rReceivedFormula().begin();
+        while( iter_constr != rReceivedFormula().end() )
+        {
+            Poly branching_poly = iter_constr->formula().constraint().lhs();
+            std::set< carl::Variable > occ_vars;
+            branching_poly.gatherVariables( occ_vars );
+            // Check whether the current constraint is a branching constraint
+            if( occ_vars.size() == 1 )
+            {
+                auto iter_poly = branching_poly.begin();
+                while( iter_poly != branching_poly.end() )
+                {
+                    if( !iter_poly->isConstant() )
+                    {    
+                        if( iter_poly->isLinear() )
+                        {
+                            // Update mBranch_Success
+                            auto iter_help = mBranch_Success.find( *( occ_vars.begin() ) );
+                            if( iter_help == mBranch_Success.end() )
+                            {
+                                std::pair< carl::Variable, std::pair< std::vector< unsigned >, std::vector< unsigned > > > to_be_ins;
+                                to_be_ins.first = *( occ_vars.begin() );
+                                std::pair< std::vector< unsigned >, std::vector< unsigned > > new_pair;
+                                if( branching_poly.begin()->coeff() < 0 )
+                                {                               
+                                    new_pair.first = std::vector< unsigned >();
+                                    new_pair.second = std::vector< unsigned >( count );
+                                }
+                                else
+                                {
+                                    new_pair.second = std::vector< unsigned >();
+                                    new_pair.first = std::vector< unsigned >( count );                                                                                                
+                                }
+                            }
+                            else
+                            {
+                                if( branching_poly.begin()->coeff() < 0 )
+                                {
+                                    iter_help->second.second.push_back( count );
+                                }
+                                else
+                                {
+                                    iter_help->second.first.push_back( count );                                                    
+                                }                                                
+                            }
+                        }
+                    }
+                    ++iter_poly;
+                }    
+            }
+            ++iter_constr;
+        }
+    }
+    
+    template<class Settings>
     bool LRAModule<Settings>::pseudo_cost_branching( bool _gc_support, BRANCH_STRATEGY strat )
     {
         EvalRationalMap _rMap = getRationalModel();
@@ -1755,7 +1763,10 @@ Return:
         {
             if( _gc_support )
             {
-                return maybeGomoryCut( branch_var->second, ass_ );
+                result = maybeGomoryCut( branch_var->second, ass_ );
+                if( result )
+                    calculatePseudoCosts();
+                return result;
             }
 //            FormulasT premises;
 //            mTableau.collect_premises( branch_var->second , premises  );
@@ -1765,6 +1776,7 @@ Return:
 //                collectOrigins( pf, premisesOrigins );
 //            }            
             branchAt( branch_var->second->expression(), true, ass_ );
+            calculatePseudoCosts();
             return true;         
         }
         else
