@@ -724,6 +724,7 @@ namespace smtrat
         }
 
         std::size_t maxWidth = Settings::max_variable_encoding_width;
+        _allowOffset = _allowOffset && Settings::use_offsets_in_encoding;
 
         // If interval is unbounded:
         //   Start with no offset, signed, maximum width (tempType)
