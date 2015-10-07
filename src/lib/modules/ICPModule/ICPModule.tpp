@@ -346,11 +346,8 @@ namespace smtrat
             Answer lraAnswer = Unknown;
             if( initialLinearCheck( lraAnswer ) )
             {
-                if( lraAnswer == True ) {
-                    carl::Variables originalRealVariables;
-                    rReceivedFormula().realValuedVars(originalRealVariables); // TODO: store original variables as member, updating them efficiently with assert and remove
-                    for( auto var : originalRealVariables )
-                        mFoundSolution.emplace( var, ZERO_RATIONAL ); // Note, that it is only stored 0 as solution, if the variable has not yet a solution
+                if( lraAnswer == True )
+                {
                     if( checkNotEqualConstraints() )
                     {
                         #ifdef ICP_MODULE_DEBUG_0
@@ -2315,8 +2312,8 @@ namespace smtrat
             {
                 assert( rf.formula().getType() == carl::FormulaType::CONSTRAINT );
                 const ConstraintT& cons = rf.formula().constraint();
-                assert( !cons.lhs().isLinear() || cons.satisfiedBy( sol ) == 1 );
-                if( !cons.lhs().isLinear() && cons.satisfiedBy( sol ) != 1 )
+                assert( !cons.lhs().isLinear() || cons.relation() == carl::Relation::NEQ || cons.satisfiedBy( sol ) == 1 );
+                if( (!cons.lhs().isLinear() || cons.relation() == carl::Relation::NEQ) && cons.satisfiedBy( sol ) != 1 )
                 {
                     solutionFound = false;
                     break;
