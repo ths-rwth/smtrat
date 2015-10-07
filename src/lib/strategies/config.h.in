@@ -9,3 +9,4 @@
 #cmakedefine SMTRAT_ENABLE_LRAModule
 #cmakedefine SMTRAT_ENABLE_SATModule
 #cmakedefine SMTRAT_ENABLE_ICPModule
+#cmakedefine SMTRAT_ENABLE_IntBlastModule
