@@ -61,6 +61,6 @@ namespace smtrat
          * For nonlinear variables, no offset is used (independent of this
          * configuration setting).
          */
-        static const bool use_offsets_in_encoding = false;
+        static const bool use_offsets_in_encoding = true;
     };
 }

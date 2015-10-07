@@ -666,7 +666,7 @@ namespace smtrat
 
         FormulasT bitvectorConstraints;
         carl::FormulaVisitor<FormulaT> visitor;
-        std::function<FormulaT(FormulaT)> encodeConstraints = std::bind(&IntBlastModule::encodeConstraintToBV, this, std::placeholders::_1, bitvectorConstraints);
+        std::function<FormulaT(FormulaT)> encodeConstraints = std::bind(&IntBlastModule::encodeConstraintToBV, this, std::placeholders::_1, &bitvectorConstraints);
         FormulaT bitvectorFormula = visitor.visit(_formula, encodeConstraints);
 
         addFormulaToBV(bitvectorFormula, _formula);
@@ -677,12 +677,12 @@ namespace smtrat
     }
 
     template<class Settings>
-    FormulaT IntBlastModule<Settings>::encodeConstraintToBV(const FormulaT& _original, FormulasT& _collectedBitvectorConstraints)
+    FormulaT IntBlastModule<Settings>::encodeConstraintToBV(const FormulaT& _original, FormulasT* _collectedBitvectorConstraints)
     {
         if(_original.getType() == carl::FormulaType::CONSTRAINT && _original.constraint().integerValued())
         {
             ConstrTree constraintTree(_original.constraint());
-            const BlastedConstr& blastedConstraint = blastConstrTree(constraintTree, _collectedBitvectorConstraints);
+            const BlastedConstr& blastedConstraint = blastConstrTree(constraintTree, *_collectedBitvectorConstraints);
             return blastedConstraint.formula();
         }
         return _original;

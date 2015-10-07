@@ -559,7 +559,7 @@ namespace smtrat
             void removeFormulaFromICP(const FormulaT& _formula, const FormulaT& _origin);
             void removeOriginFromICP(const FormulaT& _origin);
             void encodeFormulaToBV(const FormulaT& _formula);
-            FormulaT encodeConstraintToBV(const FormulaT& _original, FormulasT& _collectedBitvectorConstraints);
+            FormulaT encodeConstraintToBV(const FormulaT& _original, FormulasT* _collectedBitvectorConstraints);
             void addFormulaToBV(const FormulaT& _formula, const FormulaT& _origin);
             void removeOriginFromBV(const FormulaT& _origin);
             void updateModelFromICP() const;
