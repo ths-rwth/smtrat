@@ -1592,7 +1592,7 @@ SetWatches:
         {
             deductionsLearned = false;
             // Simplify the set of problem clauses:
-            if( decisionLevel() <= assumptions.size() )
+            if( decisionLevel() == assumptions.size() )
             {
                 simplify();
                 if( !ok )
@@ -2554,7 +2554,7 @@ NextClause:
     template<class Settings>
     void SATModule<Settings>::simplify()
     {
-        assert( decisionLevel() <= assumptions.size() );
+        assert( decisionLevel() == assumptions.size() );
         #ifdef DEBUG_SATMODULE
         std::cout << __func__ << std::endl;
         #endif
