@@ -388,9 +388,6 @@ namespace smtrat
             }
         }
 
-        if(! blasted.formula().isTrue()) {
-            _collectedFormulas.push_back(blasted.formula());
-        }
         _collectedFormulas.insert(_collectedFormulas.end(), blasted.constraints().begin(), blasted.constraints().end());
         return mConstrBlastings.insert(std::make_pair(_constraint.constraint(), blasted)).first->second;
     }
