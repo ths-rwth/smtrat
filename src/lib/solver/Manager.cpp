@@ -188,6 +188,7 @@ namespace smtrat
                     break;
                 }
             }
+            return iter;
         }
         else
             return mpPassedFormula->erase( _subformula );
