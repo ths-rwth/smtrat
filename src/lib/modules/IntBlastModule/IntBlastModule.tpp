@@ -93,7 +93,7 @@ namespace smtrat
             // Retrieve all integer-valued variables in formula
             carl::Variables variablesInFormula;
             carl::Variables nonlinearVariablesInFormula;
-            const Poly& poly = formula.constraint().lhs();
+            const Poly& poly = constraint.lhs();
             formula.integerValuedVars(variablesInFormula);
             for(auto termIt = poly.begin();termIt != poly.end();++termIt) {
                 if(termIt->getNrVariables() > 1 || ! termIt->isLinear()) {
@@ -115,7 +115,7 @@ namespace smtrat
             }
 
             // Update mPolyParents (child->parent relationship)
-            addPolyParents(formula.constraint());
+            addPolyParents(constraint);
         }
 
         /*
@@ -211,7 +211,7 @@ namespace smtrat
             summand *= 2;
         }
 
-        // For negative numbers in two's complement, substract 2^width from result
+        // For negative numbers in two's complement, subtract 2^width from result
         if(_type.isSigned() && _value[_value.width()-1]) {
             converted -= summand;
         }
