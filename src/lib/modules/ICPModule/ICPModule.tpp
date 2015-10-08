@@ -170,10 +170,10 @@ namespace smtrat
                 #ifdef ICP_MODULE_DEBUG_1
                 std::cout << "[ICP] Assertion: " << constr << std::endl;
                 #endif
+                addSubformulaToPassedFormula( _formula->formula(), _formula->formula() );
                 if( !_formula->formula().constraint().isBound() )
                 {
                     // TODO: here or somewhere later in isConsistent: remove constraints from passed formula which are implied by the current box
-                    addSubformulaToPassedFormula( _formula->formula(), _formula->formula() );
                     for( auto& var : _formula->formula().constraint().variables() )
                     {
                         auto iter = mVariables.find( var );
