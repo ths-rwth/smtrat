@@ -610,12 +610,6 @@ namespace smtrat
             if(Settings::apply_icp) {
                 INTBLAST_DEBUG("Updating bounds from ICP.");
 
-                if(INTBLAST_DEBUG_ENABLED) {
-                    for(ModuleInput::const_iterator fwo=mICP.rPassedFormula().begin(); fwo != mICP.rPassedFormula().end(); fwo++) {
-                        INTBLAST_DEBUG("from ICP: " << fwo->formula());
-                    }
-                }
-
                 updateBoundsFromICP();
             }
 
@@ -820,9 +814,18 @@ namespace smtrat
             mBoundsInRestriction.removeBound(formula.constraint(), formula);
         }
         mProcessedFormulasFromICP.clear();
+
         for(ModuleInput::const_iterator fwo=mICP.rPassedFormula().begin(); fwo != mICP.rPassedFormula().end(); fwo++) {
-            mBoundsInRestriction.addBound(fwo->formula().constraint(), fwo->formula());
-            mProcessedFormulasFromICP.push_back(fwo->formula());
+           if(INTBLAST_DEBUG_ENABLED) INTBLAST_DEBUG("from ICP: " << fwo->formula());
+           mBoundsInRestriction.addBound(fwo->formula().constraint(), fwo->formula());
+           mProcessedFormulasFromICP.push_back(fwo->formula());
+        }
+        
+        FormulasT icpBounds = mICP.getCurrentBoxAsFormulas();
+        for( auto& f : icpBounds ) {
+            if(INTBLAST_DEBUG_ENABLED) INTBLAST_DEBUG("from ICP: " << f);
+            mBoundsInRestriction.addBound(f.constraint(), f);
+            mProcessedFormulasFromICP.push_back(f);
         }
         recheckShrunkPolys();
     }

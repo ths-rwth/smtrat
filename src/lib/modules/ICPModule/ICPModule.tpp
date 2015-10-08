@@ -170,10 +170,10 @@ namespace smtrat
                 #ifdef ICP_MODULE_DEBUG_1
                 std::cout << "[ICP] Assertion: " << constr << std::endl;
                 #endif
-                addSubformulaToPassedFormula( _formula->formula(), _formula->formula() );
                 if( !_formula->formula().constraint().isBound() )
                 {
                     // TODO: here or somewhere later in isConsistent: remove constraints from passed formula which are implied by the current box
+                    addSubformulaToPassedFormula( _formula->formula(), _formula->formula() );
                     for( auto& var : _formula->formula().constraint().variables() )
                     {
                         auto iter = mVariables.find( var );
@@ -390,8 +390,6 @@ namespace smtrat
             }
             else
             {
-                if( Settings::push_bounds_to_passed_formula_anyway )
-                    pushBoundsToPassedFormula();
                 assert( !intervalsEmpty() );
                 if( mSplitOccurred )
                 {
@@ -412,8 +410,7 @@ namespace smtrat
                 else
                 {
                     // create Bounds and set them, add to passedFormula
-                    if( !Settings::push_bounds_to_passed_formula_anyway )
-                        pushBoundsToPassedFormula();
+                    pushBoundsToPassedFormula();
                     // lazy call of the backends on found box
                     Answer lazyResult = callBackends( false );
                     // if it led to a result or the backends require a splitting
@@ -2534,32 +2531,8 @@ namespace smtrat
                     icp::Updated icpVarExUpdated = icpVar.isExternalUpdated();
                     // generate both bounds, left first
                     if( icpVarExUpdated == icp::Updated::BOTH || icpVarExUpdated == icp::Updated::LEFT )
-                    {
-                        Rational bound = carl::rationalize<Rational>( interval.lower() );
-                        carl::BoundType boundType = interval.lowerBoundType();
-                        if( lraVarBoundsIter != lraVarBounds.end() )
-                        {
-                            const RationalInterval& varBounds = lraVarBoundsIter->second;
-                            if( varBounds.lowerBoundType() != carl::BoundType::INFTY && bound < varBounds.lower() )
-                            {
-                                bound = varBounds.lower();
-                                boundType = varBounds.lowerBoundType();
-                            }
-                        }
-                        Poly leftEx = carl::makePolynomial<Poly>( tmpSymbol ) - Poly(bound);
-
-                        FormulaT leftTmp = FormulaT( carl::FormulaType::TRUE );
-                        switch( boundType )
-                        {
-                            case carl::BoundType::STRICT:
-                                leftTmp = FormulaT( leftEx, carl::Relation::GREATER );
-                                break;
-                            case carl::BoundType::WEAK:
-                                leftTmp = FormulaT( leftEx, carl::Relation::GEQ );
-                                break;
-                            default:
-                                break;
-                        }
+                    {   
+                        FormulaT leftTmp = intervalBoundToFormula( tmpSymbol, interval, lraVarBounds, lraVarBoundsIter, false );
                         if( icpVar.externalLeftBound() != passedFormulaEnd() )
                         {
                             Module::eraseSubformulaFromPassedFormula( icpVar.externalLeftBound(), true );
@@ -2582,30 +2555,7 @@ namespace smtrat
                     if( icpVarExUpdated == icp::Updated::BOTH || icpVarExUpdated == icp::Updated::RIGHT )
                     {
                         // right:
-                        Rational bound = carl::rationalize<Rational>( interval.upper() );
-                        carl::BoundType boundType = interval.upperBoundType();
-                        if( lraVarBoundsIter != lraVarBounds.end() )
-                        {
-                            const RationalInterval& varBounds = lraVarBoundsIter->second;
-                            if( varBounds.upperBoundType() != carl::BoundType::INFTY && bound > varBounds.upper() )
-                            {
-                                bound = varBounds.upper();
-                                boundType = varBounds.upperBoundType();
-                            }
-                        }
-                        Poly rightEx = carl::makePolynomial<Poly>( tmpSymbol ) - Poly( bound );
-                        FormulaT rightTmp = FormulaT( carl::FormulaType::TRUE );
-                        switch( boundType )
-                        {
-                            case carl::BoundType::STRICT:
-                                rightTmp = FormulaT( rightEx, carl::Relation::LESS );
-                                break;
-                            case carl::BoundType::WEAK:
-                                rightTmp = FormulaT( rightEx, carl::Relation::LEQ );
-                                break;
-                            default:
-                                break;
-                        }
+                        FormulaT rightTmp = intervalBoundToFormula( tmpSymbol, interval, lraVarBounds, lraVarBoundsIter, true );
                         if( icpVar.externalRightBound() != passedFormulaEnd() )
                         {
                             Module::eraseSubformulaFromPassedFormula( icpVar.externalRightBound(), true );
@@ -2628,6 +2578,66 @@ namespace smtrat
                 }
             }
         }
+    }
+    
+    template<class Settings>
+    FormulasT ICPModule<Settings>::getCurrentBoxAsFormulas() const
+    {
+        FormulasT result;
+        carl::Variables originalRealVariables;
+        rReceivedFormula().realValuedVars( originalRealVariables ); // TODO: store original variables as member, updating them efficiently with assert and remove
+        EvalRationalIntervalMap lraVarBounds = mLRA.getVariableBounds();
+        for( std::map<carl::Variable, icp::IcpVariable*>::const_iterator iter = mVariables.begin(); iter != mVariables.end(); ++iter )
+        {
+            carl::Variable::Arg tmpSymbol = iter->first;
+            const icp::IcpVariable& icpVar = *iter->second;
+            if( icpVar.isOriginal() && originalRealVariables.find( tmpSymbol ) != originalRealVariables.end() )
+            {
+                auto varIntervalPair = mIntervals.find( tmpSymbol );
+                assert( varIntervalPair != mIntervals.end() );
+                const DoubleInterval& interval = varIntervalPair->second;
+                auto lraVarBoundsIter = lraVarBounds.find( tmpSymbol );
+                FormulaT leftTmp = intervalBoundToFormula( tmpSymbol, interval, lraVarBounds, lraVarBoundsIter, false );
+                if( !leftTmp.isTrue() )
+                    result.push_back( leftTmp );
+                FormulaT rightTmp = intervalBoundToFormula( tmpSymbol, interval, lraVarBounds, lraVarBoundsIter, true );
+                if( !rightTmp.isTrue() )
+                    result.push_back( rightTmp );
+            }
+        }
+        return result;
+    }
+    
+    template<class Settings>
+    FormulaT ICPModule<Settings>::intervalBoundToFormula( carl::Variable::Arg _var, const DoubleInterval& _interval, const EvalRationalIntervalMap& _lraVarBounds, EvalRationalIntervalMap::const_iterator _lraBoundsIter, bool _upper ) const
+    {
+        Rational bound = carl::rationalize<Rational>( _upper ? _interval.upper() : _interval.lower() );
+        carl::BoundType boundType = _upper ? _interval.upperBoundType() : _interval.lowerBoundType();
+        if( _lraBoundsIter != _lraVarBounds.end() )
+        {
+            const RationalInterval& varBounds = _lraBoundsIter->second;
+            if( (_upper ? varBounds.upperBoundType() : varBounds.lowerBoundType()) != carl::BoundType::INFTY 
+                    && (boundType == carl::BoundType::INFTY || bound < (_upper ? varBounds.upper() : varBounds.lower())) )
+            {
+                bound = _upper ? varBounds.upper() : varBounds.lower();
+                boundType = _upper ? varBounds.upperBoundType() : varBounds.lowerBoundType();
+            }
+        }
+        Poly p = carl::makePolynomial<Poly>( _var ) - Poly(bound);
+
+        FormulaT result( carl::FormulaType::TRUE );
+        switch( boundType )
+        {
+            case carl::BoundType::STRICT:
+                result = FormulaT( p, _upper ? carl::Relation::LESS : carl::Relation::GREATER );
+                break;
+            case carl::BoundType::WEAK:
+                result = FormulaT( p, _upper ? carl::Relation::LEQ : carl::Relation::GEQ );
+                break;
+            default:
+                break;
+        }
+        return result;
     }
 
     template<class Settings>
