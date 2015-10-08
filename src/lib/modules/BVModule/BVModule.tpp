@@ -27,6 +27,7 @@
  */
 
 #include "BVModule.h"
+#include <limits>
 
 namespace smtrat
 {
@@ -133,35 +134,105 @@ namespace smtrat
     template<class Settings>
     Answer BVModule<Settings>::checkCore( bool _full )
     {
-        auto receivedSubformula = firstUncheckedReceivedSubformula();
-        while(receivedSubformula != rReceivedFormula().end())
+        if( Settings::incremental_flattening )
         {
-            const FormulaWithOrigins& fwo = *receivedSubformula;
-            const FormulaT& formula = fwo.formula();
-
-            // std::cerr << "Encoding: " << formula << std::endl;
-            const FormulaSetT& formulasToPass = mEncoder.encode(formula);
-
-            for(const FormulaT& formulaToPass : formulasToPass)
+            auto receivedSubformula = firstUncheckedReceivedSubformula();
+            while(receivedSubformula != rReceivedFormula().end())
             {
-                // std::cerr << "-> " << formulaToPass << std::endl;
-                addSubformulaToPassedFormula(formulaToPass, formula);
+                const FormulaWithOrigins& fwo = *receivedSubformula;
+                const FormulaT& formula = fwo.formula();
+
+                // std::cerr << "Encoding: " << formula << std::endl;
+                const FormulaSetT& formulasToPass = mEncoder.encode(formula);
+
+                for(const FormulaT& formulaToPass : formulasToPass)
+                    addSubformulaToPassedFormula(formulaToPass, formula);
+                ++receivedSubformula;
             }
-            ++receivedSubformula;
-        }
 
-        Answer backendAnswer = runBackends(_full);
-        if(backendAnswer == False)
+            Answer backendAnswer = runBackends(_full);
+            if(backendAnswer == False)
+            {
+                getInfeasibleSubsets();
+            }
+
+            return backendAnswer;
+        }
+        else
         {
-            getInfeasibleSubsets();
+            if( !mFormulasToBlast.empty() )
+            {
+                FormulaT origin = mFormulasToBlast.begin()->second;
+                const FormulaSetT& formulasToPass = mEncoder.encode( origin );
+                mFormulasToBlast.erase( mFormulasToBlast.begin() );
+                for( const FormulaT& formulaToPass : formulasToPass )
+                    addSubformulaToPassedFormula( formulaToPass, origin );
+            }
+            while( !mFormulasToBlast.empty() )
+            {
+                Answer backendAnswer = runBackends(_full);
+                switch( backendAnswer )
+                {
+                    case False:
+                    {
+                        getInfeasibleSubsets();
+                        return False;
+                    }
+                    case True:
+                    {
+                        Model currentModel = model();
+                        FormulaT nextFormulaToAdd( carl::FormulaType::TRUE );
+                        std::pair<double,size_t> bestEvaluation = std::make_pair( std::numeric_limits<double>::max(), std::numeric_limits<size_t>::max() );
+                        EvalRationalMap rationalAssigns;
+                        getRationalAssignmentsFromModel( currentModel, rationalAssigns );
+                        for( const auto& rf : rReceivedFormula() )
+                        {
+                            if( mBlastedFormulas.find( rf.formula() ) != mBlastedFormulas.end() )
+                                continue;
+                            if( !nextFormulaToAdd.isTrue() )
+                            {
+                                auto iter = mPositionInFormulasToBlast.find( rf.formula() );
+                                assert( iter != mPositionInFormulasToBlast.end() );
+                                if( iter->second->first >= bestEvaluation )
+                                    continue;
+                            }
+                            if( satisfies( currentModel, rationalAssigns, rf.formula() ) == 0 )
+                            {
+                                auto iter = mPositionInFormulasToBlast.find( rf.formula() );
+                                assert( iter != mPositionInFormulasToBlast.end() );
+                                if( iter->second->first < bestEvaluation )
+                                {
+                                    nextFormulaToAdd = iter->second->second;
+                                    bestEvaluation = iter->second->first;
+                                }
+                            }
+                        }
+                        if( nextFormulaToAdd.isTrue() )
+                            return True;
+                        else
+                        {
+                            assert( !nextFormulaToAdd.isFalse() );
+                            const FormulaSetT& formulasToPass = mEncoder.encode( nextFormulaToAdd );
+                            auto iter = mPositionInFormulasToBlast.find( nextFormulaToAdd );
+                            mFormulasToBlast.erase( iter->second );
+                            mPositionInFormulasToBlast.erase( iter );
+                            for( const FormulaT& formulaToPass : formulasToPass )
+                                addSubformulaToPassedFormula( formulaToPass, nextFormulaToAdd );
+                        }
+                    }
+                    default:
+                        assert( backendAnswer == Unknown );
+                        return Unknown;
+                }
+            }
+            assert( false ); 
+            return True;
         }
-
-        return backendAnswer;
     }
     
     template<class Settings>
     double BVModule<Settings>::evaluateBVFormula( const FormulaT& _formula )
     {
-        return 0.0;
+        return (double) _formula.size();
     }
 }
