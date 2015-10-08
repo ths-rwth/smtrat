@@ -371,6 +371,11 @@ namespace smtrat
              */
             void pushBoundsToPassedFormula();
             
+        public:
+            FormulasT getCurrentBoxAsFormulas() const;
+        private:
+            FormulaT intervalBoundToFormula( carl::Variable::Arg _var, const DoubleInterval& _interval, const EvalRationalIntervalMap& _lraVarBounds, EvalRationalIntervalMap::const_iterator _lraBoundsIter, bool _upper ) const;
+            
             /**
              * Compute hull of defining origins for set of icpVariables.
              * @param _reasons

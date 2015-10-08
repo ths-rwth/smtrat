@@ -41,7 +41,14 @@ namespace smtrat
     class BVModule : public Module
     {
         private:
+            ///
             BVDirectEncoder mEncoder;
+            ///
+            std::unordered_set<FormulaT> mBlastedFormulas;
+            ///
+            std::unordered_map<FormulaT,std::map<std::pair<double,size_t>,FormulaT>::iterator> mPositionInFormulasToBlast;
+            ///
+            std::map<std::pair<double,size_t>,FormulaT> mFormulasToBlast;
 
         public:
             BVModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
@@ -100,6 +107,8 @@ namespace smtrat
              *         Unknown, otherwise.
              */
             Answer checkCore( bool _full = true );
+            
+            static double evaluateBVFormula( const FormulaT& _formula );
 
     };
 }

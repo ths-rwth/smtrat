@@ -36,7 +36,11 @@ namespace smtrat
 
     template<class Settings>
     BVModule<Settings>::BVModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-        Module( _type, _formula, _conditionals, _manager )
+        Module( _type, _formula, _conditionals, _manager ),
+        mEncoder(),
+        mBlastedFormulas(),
+        mPositionInFormulasToBlast(),
+        mFormulasToBlast()
     {}
 
     /**
@@ -59,14 +63,39 @@ namespace smtrat
     {}
 
     template<class Settings>
-    bool BVModule<Settings>::addCore( ModuleInput::const_iterator /* _subformula */ )
+    bool BVModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
+        if( _subformula->formula().isTrue() )
+            return true;
+        if( _subformula->formula().isFalse() )
+        {
+            receivedFormulasAsInfeasibleSubset( _subformula );
+            return false;
+        }
+        auto sortKey = std::make_pair( evaluateBVFormula(_subformula->formula()), _subformula->formula().getId() );
+        auto ret = mFormulasToBlast.insert( std::make_pair(sortKey, _subformula->formula() ) );
+        assert( ret.second );
+        assert( mPositionInFormulasToBlast.find( _subformula->formula() ) == mPositionInFormulasToBlast.end() );
+        mPositionInFormulasToBlast[_subformula->formula()] = ret.first;
         return true;
     }
 
     template<class Settings>
-    void BVModule<Settings>::removeCore( ModuleInput::const_iterator /* _subformula */ )
-    {}
+    void BVModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
+    {
+        auto iterA = mBlastedFormulas.find( _subformula->formula() );
+        if( iterA != mBlastedFormulas.end() )
+        {
+            mBlastedFormulas.erase( iterA );
+        }
+        else
+        {
+            auto iterB = mPositionInFormulasToBlast.find( _subformula->formula() );
+            assert( iterB != mPositionInFormulasToBlast.end() );
+            mFormulasToBlast.erase( iterB->second );
+            mPositionInFormulasToBlast.erase( iterB );
+        }
+    }
 
     template<class Settings>
     void BVModule<Settings>::updateModel() const
@@ -113,7 +142,7 @@ namespace smtrat
             // std::cerr << "Encoding: " << formula << std::endl;
             const FormulaSetT& formulasToPass = mEncoder.encode(formula);
 
-            for(const FormulaT formulaToPass : formulasToPass)
+            for(const FormulaT& formulaToPass : formulasToPass)
             {
                 // std::cerr << "-> " << formulaToPass << std::endl;
                 addSubformulaToPassedFormula(formulaToPass, formula);
@@ -128,5 +157,11 @@ namespace smtrat
         }
 
         return backendAnswer;
+    }
+    
+    template<class Settings>
+    double BVModule<Settings>::evaluateBVFormula( const FormulaT& _formula )
+    {
+        return 0.0;
     }
 }
