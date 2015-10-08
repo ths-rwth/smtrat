@@ -609,7 +609,7 @@ namespace smtrat
             }
         }
 
-        if(icpAnswer == Unknown) {
+        if(icpAnswer != False) {
             if(Settings::apply_icp) {
                 INTBLAST_DEBUG("Updating bounds from ICP.");
 
@@ -644,7 +644,7 @@ namespace smtrat
         // (determined either by the ICP module or by the BV solver).
         // Call backend
 
-        updateOutsideRestrictionConstraint(icpAnswer != Unknown);
+        updateOutsideRestrictionConstraint(icpAnswer == False);
 
         INTBLAST_DEBUG("Running backend.");
         Answer backendAnswer = runBackends(_full);
