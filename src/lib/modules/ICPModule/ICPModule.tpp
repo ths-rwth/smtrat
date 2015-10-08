@@ -390,6 +390,8 @@ namespace smtrat
             }
             else
             {
+                if( Settings::push_bounds_to_passed_formula_anyway )
+                    pushBoundsToPassedFormula();
                 assert( !intervalsEmpty() );
                 if( mSplitOccurred )
                 {
@@ -410,7 +412,8 @@ namespace smtrat
                 else
                 {
                     // create Bounds and set them, add to passedFormula
-                    pushBoundsToPassedFormula();
+                    if( !Settings::push_bounds_to_passed_formula_anyway )
+                        pushBoundsToPassedFormula();
                     // lazy call of the backends on found box
                     Answer lazyResult = callBackends( false );
                     // if it led to a result or the backends require a splitting

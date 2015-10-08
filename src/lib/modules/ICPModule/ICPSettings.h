@@ -76,6 +76,9 @@ namespace smtrat
          * 
          */
         static constexpr bool use_propagation = true;
+        /**
+         */
+        static constexpr bool push_bounds_to_passed_formula_anyway = true;
         
     };
 }

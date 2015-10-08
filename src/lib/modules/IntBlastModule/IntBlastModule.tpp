@@ -603,7 +603,7 @@ namespace smtrat
             icpAnswer = mICP.check();
             INTBLAST_DEBUG("icpAnswer: " << (icpAnswer == True ? "True" : (icpAnswer == False ? "False" : "Unknown")));
 
-            if(icpAnswer == True) {
+            if(icpAnswer == True && rReceivedFormula().satisfiedBy( mICP.model() ) == 1) {
                 mSolutionOrigin = SolutionOrigin::ICP;
                 return True;
             }
