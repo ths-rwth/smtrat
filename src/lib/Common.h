@@ -197,14 +197,14 @@ extern template class carl::Constraint<smtrat::Poly>;
 extern template class carl::Formula<smtrat::Poly>;
 extern template class carl::Interval<smtrat::Rational>;
 extern template class carl::Interval<double>;
-
-extern template class std::set<carl::Constraint<smtrat::Poly>, carl::less<carl::Constraint<smtrat::Poly>, false>>;
-extern template class std::vector<carl::Formula<smtrat::Poly>>;
-extern template class std::set<carl::Formula<smtrat::Poly>>;
-extern template class std::multiset<carl::Formula<smtrat::Poly>, carl::less<carl::Formula<smtrat::Poly>>>;
-extern template class std::map<carl::Variable,smtrat::Rational>;
-extern template class std::map<carl::Variable,smtrat::RationalInterval>;
-extern template class std::map<carl::Variable,smtrat::DoubleInterval>;
 extern template class carl::VariableInformation<true, smtrat::Poly>;
-extern template class std::map<carl::Variable, carl::VariableInformation<true, smtrat::Poly>>;
-extern template class std::map<smtrat::Poly,carl::exponent>;
+
+//extern template class std::set<carl::Constraint<smtrat::Poly>, carl::less<carl::Constraint<smtrat::Poly>, false>>;
+//extern template class std::vector<carl::Formula<smtrat::Poly>>;
+//extern template class std::set<carl::Formula<smtrat::Poly>>;
+//extern template class std::multiset<carl::Formula<smtrat::Poly>, carl::less<carl::Formula<smtrat::Poly>>>;
+//extern template class std::map<carl::Variable,smtrat::Rational>;
+//extern template class std::map<carl::Variable,smtrat::RationalInterval>;
+//extern template class std::map<carl::Variable,smtrat::DoubleInterval>;
+//extern template class std::map<carl::Variable, carl::VariableInformation<true, smtrat::Poly>>;
+//extern template class std::map<smtrat::Poly,carl::exponent>;
