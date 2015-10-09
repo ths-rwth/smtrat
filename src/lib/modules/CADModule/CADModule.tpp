@@ -56,6 +56,7 @@ namespace smtrat
 		setting.simplifyByFactorization = true;
 		setting.simplifyByRootcounting  = true;
 		setting.splitInteger = false;
+		setting.integerHandling = Settings::integerHandling;
 
 		#ifdef SMTRAT_CAD_DISABLE_MIS
 			setting.computeConflictGraph = false;
