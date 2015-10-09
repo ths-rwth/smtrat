@@ -19,7 +19,7 @@ if [[ ${TASK} == "doxygen" ]]; then
 	git push origin master || return 1
 
 else
-	make -j1 || return 1
+	/usr/bin/time make -j1 || return 1
 fi
 
 cd ../
