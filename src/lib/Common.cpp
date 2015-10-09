@@ -19,14 +19,14 @@ template class carl::Constraint<smtrat::Poly>;
 template class carl::Formula<smtrat::Poly>;
 template class carl::Interval<smtrat::Rational>;
 template class carl::Interval<double>;
-
-template class std::set<carl::Constraint<smtrat::Poly>, carl::less<carl::Constraint<smtrat::Poly>, false>>;
-template class std::vector<carl::Formula<smtrat::Poly>>;
-template class std::set<carl::Formula<smtrat::Poly>>;
-template class std::multiset<carl::Formula<smtrat::Poly>, carl::less<carl::Formula<smtrat::Poly>>>;
-template class std::map<carl::Variable,smtrat::Rational>;
-template class std::map<carl::Variable,smtrat::RationalInterval>;
-template class std::map<carl::Variable,smtrat::DoubleInterval>;
 template class carl::VariableInformation<true, smtrat::Poly>;
-template class std::map<carl::Variable, carl::VariableInformation<true, smtrat::Poly>>;
-template class std::map<smtrat::Poly,carl::exponent>;
+
+//template class std::set<carl::Constraint<smtrat::Poly>, carl::less<carl::Constraint<smtrat::Poly>, false>>;
+//template class std::vector<carl::Formula<smtrat::Poly>>;
+//template class std::set<carl::Formula<smtrat::Poly>>;
+//template class std::multiset<carl::Formula<smtrat::Poly>, carl::less<carl::Formula<smtrat::Poly>>>;
+//template class std::map<carl::Variable,smtrat::Rational>;
+//template class std::map<carl::Variable,smtrat::RationalInterval>;
+//template class std::map<carl::Variable,smtrat::DoubleInterval>;
+//template class std::map<carl::Variable, carl::VariableInformation<true, smtrat::Poly>>;
+//template class std::map<smtrat::Poly,carl::exponent>;
