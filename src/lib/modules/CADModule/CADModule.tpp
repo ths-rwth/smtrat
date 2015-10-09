@@ -217,7 +217,7 @@ namespace smtrat
 			assert(vars[d].getType() == carl::VariableType::VT_INT);
 			auto r = mRealAlgebraicSolution[d]->branchingPoint();
 			assert(!carl::isInteger(r));
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Branching at " << vars[d] << " = " << r << std::endl;
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Branching at " << vars[d] << " = " << r);
 			branchAt(vars[d], r);
 			return Unknown;
 		}
