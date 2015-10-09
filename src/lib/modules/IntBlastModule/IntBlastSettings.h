@@ -54,13 +54,13 @@ namespace smtrat
          * If set to false, the widths for the encoded bitvector terms
          * are chosen conservatively.
          */
-        static const bool apply_icp = true;
+        static const bool apply_icp = false;
 
         /**
          * Whether to use offsets for annotated bitvector terms.
          * For nonlinear variables, no offset is used (independent of this
          * configuration setting).
          */
-        static const bool use_offsets_in_encoding = true;
+        static const bool use_offsets_in_encoding = false;
     };
 }

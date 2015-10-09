@@ -73,35 +73,47 @@ namespace smtrat
             receivedFormulasAsInfeasibleSubset( _subformula );
             return false;
         }
-        auto sortKey = std::make_pair( evaluateBVFormula(_subformula->formula()), _subformula->formula().getId() );
-        auto ret = mFormulasToBlast.insert( std::make_pair(sortKey, _subformula->formula() ) );
-        assert( ret.second );
-        assert( mPositionInFormulasToBlast.find( _subformula->formula() ) == mPositionInFormulasToBlast.end() );
-        mPositionInFormulasToBlast[_subformula->formula()] = ret.first;
+        if( Settings::incremental_flattening )
+        {
+            auto sortKey = std::make_pair( evaluateBVFormula(_subformula->formula()), _subformula->formula().getId() );
+            std::cout << std::endl << std::endl << "add formula" << std::endl;
+            std::cout << _subformula->formula() << std::endl;
+            std::cout << "Evaluation: " << sortKey << std::endl;
+            auto ret = mFormulasToBlast.insert( std::make_pair(sortKey, _subformula->formula() ) );
+            assert( ret.second );
+            assert( mPositionInFormulasToBlast.find( _subformula->formula() ) == mPositionInFormulasToBlast.end() );
+            mPositionInFormulasToBlast[_subformula->formula()] = ret.first;
+        }
         return true;
     }
 
     template<class Settings>
     void BVModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
-        auto iterA = mBlastedFormulas.find( _subformula->formula() );
-        if( iterA != mBlastedFormulas.end() )
+        if( Settings::incremental_flattening )
         {
-            mBlastedFormulas.erase( iterA );
-        }
-        else
-        {
-            auto iterB = mPositionInFormulasToBlast.find( _subformula->formula() );
-            assert( iterB != mPositionInFormulasToBlast.end() );
-            mFormulasToBlast.erase( iterB->second );
-            mPositionInFormulasToBlast.erase( iterB );
+            auto iterA = mBlastedFormulas.find( _subformula->formula() );
+            if( iterA != mBlastedFormulas.end() )
+            {
+                std::cout << std::endl << std::endl << "remove formula" << std::endl;
+                std::cout << _subformula->formula() << std::endl;
+                mBlastedFormulas.erase( iterA );
+            }
+            else
+            {
+                std::cout << std::endl << std::endl << "remove formula" << std::endl;
+                std::cout << _subformula->formula() << std::endl;
+                auto iterB = mPositionInFormulasToBlast.find( _subformula->formula() );
+                assert( iterB != mPositionInFormulasToBlast.end() );
+                mFormulasToBlast.erase( iterB->second );
+                mPositionInFormulasToBlast.erase( iterB );
+            }
         }
     }
 
     template<class Settings>
     void BVModule<Settings>::updateModel() const
     {
-        clearModel();
         if(solverState() == True)
         {
             getBackendsModel();
@@ -136,13 +148,143 @@ namespace smtrat
     {
         if( Settings::incremental_flattening )
         {
+            std::cout << "Check in BVModule" << std::endl;
+            carl::Variables allVars;
+            rReceivedFormula().vars( allVars );
+            auto allVarsIter = allVars.begin();
+            auto oldModelIter = mModel.begin();
+            while( allVarsIter != allVars.end() && oldModelIter != mModel.end() )
+            {
+                ModelVariable mv( *allVarsIter );
+                if( mv == oldModelIter->first )
+                {
+                    ++allVarsIter;
+                    ++oldModelIter;
+                }
+                else if( mv < oldModelIter->first )
+                {
+                    oldModelIter = mModel.insert( oldModelIter, std::make_pair( mv, 0 ) );
+                    ++oldModelIter;
+                    ++allVarsIter;
+                }
+                else
+                {
+                    oldModelIter = mModel.erase( oldModelIter );
+                }
+            }
+            if( oldModelIter != mModel.end() )
+                mModel.erase( oldModelIter, mModel.end() );
+            else
+            {
+                for( ; allVarsIter != allVars.end(); ++allVarsIter )
+                    mModel.insert( mModel.end(), std::make_pair( ModelVariable(*allVarsIter), 0 ) );
+            }
+            std::cout << "initial model:" << std::endl;
+            std::cout << mModel << std::endl << std::endl;
+            if( !mFormulasToBlast.empty() )
+            {
+                FormulaT origin = mFormulasToBlast.begin()->second;
+                std::cout << std::endl << std::endl << "Take into account: " << std::endl;
+                std::cout << origin << std::endl;
+                const FormulaSetT& formulasToPass = mEncoder.encode( origin );
+                mFormulasToBlast.erase( mFormulasToBlast.begin() );
+                for( const FormulaT& formulaToPass : formulasToPass )
+                    addSubformulaToPassedFormula( formulaToPass, origin );
+            }
+            while( !mFormulasToBlast.empty() )
+            {
+                std::cout << std::endl << "Run backends" << std::endl;
+                Answer backendAnswer = runBackends(_full);
+                std::cout << " --> " << ANSWER_TO_STRING(backendAnswer) << std::endl << std::endl;
+                switch( backendAnswer )
+                {
+                    case False:
+                    {
+                        getInfeasibleSubsets();
+                        return False;
+                    }
+                    case True:
+                    {
+                        updateModel();
+                        Model currentModel = model();
+                        std::cout << "current model: " << std::endl;
+                        std::cout << currentModel << std::endl;
+                        FormulaT nextFormulaToAdd( carl::FormulaType::TRUE );
+                        std::pair<size_t,size_t> bestEvaluation = std::make_pair( std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max() );
+                        EvalRationalMap rationalAssigns;
+                        getRationalAssignmentsFromModel( currentModel, rationalAssigns );
+                        for( const auto& rf : rReceivedFormula() )
+                        {
+                            if( mBlastedFormulas.find( rf.formula() ) != mBlastedFormulas.end() )
+                            {
+                                std::cout << __LINE__ << std::endl;
+                                continue;
+                            }
+                            if( !nextFormulaToAdd.isTrue() )
+                            {
+                                std::cout << __LINE__ << std::endl;
+                                auto iter = mPositionInFormulasToBlast.find( rf.formula() );
+                                assert( iter != mPositionInFormulasToBlast.end() );
+                                if( iter->second->first >= bestEvaluation )
+                                {
+                                    std::cout << __LINE__ << std::endl;
+                                    continue;
+                                }
+                            }
+                            unsigned tmp = satisfies( currentModel, rationalAssigns, rf.formula() );
+                            std::cout << "satisfies( currentModel, rationalAssigns, rf.formula() ) = " << tmp << std::endl; 
+                            assert( tmp != 2 );
+                            if( tmp == 0 )
+                            {
+                                std::cout << __LINE__ << std::endl;
+                                std::cout << std::endl << std::endl << "Not yet satisfied: " << std::endl;
+                                std::cout << rf.formula() << std::endl;
+                                auto iter = mPositionInFormulasToBlast.find( rf.formula() );
+                                assert( iter != mPositionInFormulasToBlast.end() );
+                                if( iter->second->first < bestEvaluation )
+                                {
+                                    std::cout << __LINE__ << std::endl;
+                                    nextFormulaToAdd = iter->second->second;
+                                    bestEvaluation = iter->second->first;
+                                }
+                            }
+                        }
+                        if( nextFormulaToAdd.isTrue() )
+                        {
+                            std::cout << __LINE__ << std::endl;
+                            return True;
+                        }
+                        else
+                        {
+                            std::cout << __LINE__ << std::endl;
+                            assert( !nextFormulaToAdd.isFalse() );
+                            const FormulaSetT& formulasToPass = mEncoder.encode( nextFormulaToAdd );
+                            std::cout << std::endl << std::endl << "Take into account: " << std::endl;
+                            std::cout << nextFormulaToAdd << std::endl;
+                            auto iter = mPositionInFormulasToBlast.find( nextFormulaToAdd );
+                            mFormulasToBlast.erase( iter->second );
+                            mPositionInFormulasToBlast.erase( iter );
+                            for( const FormulaT& formulaToPass : formulasToPass )
+                                addSubformulaToPassedFormula( formulaToPass, nextFormulaToAdd );
+                        }
+                        break;
+                    }
+                    default:
+                        assert( backendAnswer == Unknown );
+                        return Unknown;
+                }
+            }
+            assert( false ); 
+            return True;
+        }
+        else
+        {
             auto receivedSubformula = firstUncheckedReceivedSubformula();
             while(receivedSubformula != rReceivedFormula().end())
             {
                 const FormulaWithOrigins& fwo = *receivedSubformula;
                 const FormulaT& formula = fwo.formula();
 
-                // std::cerr << "Encoding: " << formula << std::endl;
                 const FormulaSetT& formulasToPass = mEncoder.encode(formula);
 
                 for(const FormulaT& formulaToPass : formulasToPass)
@@ -158,81 +300,13 @@ namespace smtrat
 
             return backendAnswer;
         }
-        else
-        {
-            if( !mFormulasToBlast.empty() )
-            {
-                FormulaT origin = mFormulasToBlast.begin()->second;
-                const FormulaSetT& formulasToPass = mEncoder.encode( origin );
-                mFormulasToBlast.erase( mFormulasToBlast.begin() );
-                for( const FormulaT& formulaToPass : formulasToPass )
-                    addSubformulaToPassedFormula( formulaToPass, origin );
-            }
-            while( !mFormulasToBlast.empty() )
-            {
-                Answer backendAnswer = runBackends(_full);
-                switch( backendAnswer )
-                {
-                    case False:
-                    {
-                        getInfeasibleSubsets();
-                        return False;
-                    }
-                    case True:
-                    {
-                        Model currentModel = model();
-                        FormulaT nextFormulaToAdd( carl::FormulaType::TRUE );
-                        std::pair<size_t,size_t> bestEvaluation = std::make_pair( std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max() );
-                        EvalRationalMap rationalAssigns;
-                        getRationalAssignmentsFromModel( currentModel, rationalAssigns );
-                        for( const auto& rf : rReceivedFormula() )
-                        {
-                            if( mBlastedFormulas.find( rf.formula() ) != mBlastedFormulas.end() )
-                                continue;
-                            if( !nextFormulaToAdd.isTrue() )
-                            {
-                                auto iter = mPositionInFormulasToBlast.find( rf.formula() );
-                                assert( iter != mPositionInFormulasToBlast.end() );
-                                if( iter->second->first >= bestEvaluation )
-                                    continue;
-                            }
-                            if( satisfies( currentModel, rationalAssigns, rf.formula() ) == 0 )
-                            {
-                                auto iter = mPositionInFormulasToBlast.find( rf.formula() );
-                                assert( iter != mPositionInFormulasToBlast.end() );
-                                if( iter->second->first < bestEvaluation )
-                                {
-                                    nextFormulaToAdd = iter->second->second;
-                                    bestEvaluation = iter->second->first;
-                                }
-                            }
-                        }
-                        if( nextFormulaToAdd.isTrue() )
-                            return True;
-                        else
-                        {
-                            assert( !nextFormulaToAdd.isFalse() );
-                            const FormulaSetT& formulasToPass = mEncoder.encode( nextFormulaToAdd );
-                            auto iter = mPositionInFormulasToBlast.find( nextFormulaToAdd );
-                            mFormulasToBlast.erase( iter->second );
-                            mPositionInFormulasToBlast.erase( iter );
-                            for( const FormulaT& formulaToPass : formulasToPass )
-                                addSubformulaToPassedFormula( formulaToPass, nextFormulaToAdd );
-                        }
-                    }
-                    default:
-                        assert( backendAnswer == Unknown );
-                        return Unknown;
-                }
-            }
-            assert( false ); 
-            return True;
-        }
     }
     
     template<class Settings>
     size_t BVModule<Settings>::evaluateBVFormula( const FormulaT& _formula )
     {
-        return _formula.complexity();
+        if( _formula.getType() == carl::FormulaType::CONSTRAINT && _formula.constraint().relation() == carl::Relation::EQ )
+            return _formula.complexity();
+        return Settings::equation_preference_weight * _formula.complexity();
     }
 }

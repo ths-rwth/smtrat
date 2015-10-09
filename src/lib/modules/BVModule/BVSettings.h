@@ -38,5 +38,9 @@ namespace smtrat
          * found model in the satisfiable case satisfies all remaining received formulas.
          */
         static const bool incremental_flattening = true;
+        /**
+         * This weight specifies how much more preference a received formula being an equation should have.
+         */
+        static const size_t equation_preference_weight = 10;
     };
 }

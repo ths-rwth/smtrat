@@ -294,6 +294,16 @@ namespace smtrat
         void updateProperties();
         
         /**
+         * Collects all variables occurring in this formula.
+         * @param _vars The container to collect the variables in.
+         */
+        void vars( carl::Variables& _vars ) const
+        {
+            for( const FormulaWithOrigins& fwo : *this )
+                fwo.formula().collectVariables( _vars, carl::VariableType::VT_REAL, false );
+        }
+        
+        /**
          * Collects all real valued variables occurring in this formula.
          * @param _realVars The container to collect the real valued variables in.
          */
