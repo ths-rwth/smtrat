@@ -954,7 +954,7 @@ Return:
                     {
                         FormulasT subformulas
                         {
-                            std::move(FormulaT(carl::FormulaType::NOT, (*currentBound)->asConstraint())), 
+                            FormulaT(carl::FormulaType::NOT, (*currentBound)->asConstraint()), 
                             (_boundNeq ? _bound->neqRepresentation() : _bound->asConstraint())
                         };
                         addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
@@ -974,7 +974,7 @@ Return:
                     {
                         FormulasT subformulas
                         {
-                            std::move( FormulaT( carl::FormulaType::NOT, _bound->asConstraint() ) ),
+                            FormulaT( carl::FormulaType::NOT, _bound->asConstraint() ),
                             (*currentBound)->asConstraint()
                         };
                         addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
@@ -1004,7 +1004,7 @@ Return:
                     {
                         FormulasT subformulas
                         {
-                            std::move( FormulaT( carl::FormulaType::NOT, _bound->asConstraint() ) ),
+                            FormulaT( carl::FormulaType::NOT, _bound->asConstraint() ),
                             (*currentBound)->asConstraint()
                         };
                         addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
@@ -1025,7 +1025,7 @@ Return:
                     {
                         FormulasT subformulas
                         {
-                            std::move( FormulaT( carl::FormulaType::NOT, (*currentBound)->asConstraint() ) ),
+                            FormulaT( carl::FormulaType::NOT, (*currentBound)->asConstraint() ),
                             ( _boundNeq ? _bound->neqRepresentation() : _bound->asConstraint() )
                         };
                         addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
@@ -1044,8 +1044,8 @@ Return:
     {
         FormulasT subformulas
         {
-            std::move( FormulaT( carl::FormulaType::NOT, _caseA.asConstraint() ) ),
-            std::move( FormulaT( carl::FormulaType::NOT, _caseBneq ? _caseB.neqRepresentation() : _caseB.asConstraint() ) )
+            FormulaT( carl::FormulaType::NOT, _caseA.asConstraint() ),
+            FormulaT( carl::FormulaType::NOT, _caseBneq ? _caseB.neqRepresentation() : _caseB.asConstraint() )
         };
         addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
         #ifdef SMTRAT_DEVOPTION_Statistics
@@ -1335,9 +1335,9 @@ Return:
                     cons1.setActivity( -numeric_limits<double>::infinity() );
                     FormulaT cons2 = FormulaT( cut_constraint2 );
                     cons2.setActivity( -numeric_limits<double>::infinity() );
-                    addDeduction( FormulaT( carl::FormulaType::OR, std::move( FormulasT{ cons1, cons2 } ) ) );   
+                    addDeduction( FormulaT( carl::FormulaType::OR, FormulasT{ cons1, cons2 } ) );   
                     // (not(p<=I-1) or not(p>=I))
-                    FormulasT subformulasB{ std::move(FormulaT( carl::FormulaType::NOT, cons1 )), std::move(FormulaT( carl::FormulaType::NOT, cons2 )) };
+                    FormulasT subformulasB{ FormulaT( carl::FormulaType::NOT, cons1 ), FormulaT( carl::FormulaType::NOT, cons2 ) };
                     addDeduction( FormulaT( carl::FormulaType::OR, std::move( subformulasB ) ) );
                     #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                     cout << "After adding proof of unsatisfiability:" << endl;
