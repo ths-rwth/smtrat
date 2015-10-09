@@ -14,7 +14,7 @@ sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
 sudo apt-get -qq update
 
 sudo apt-get purge cmake
-install cmake libboost1.48-all-dev libcln-dev libeigen3-dev libgtest-dev libstdc++-4.9-dev
+install cmake libboost1.48-all-dev libcln-dev libeigen3-dev libgtest-dev libstdc++-4.9-dev time
 
 if [[ ${TASK} == "doxygen" ]]; then
 	install doxygen biblatex

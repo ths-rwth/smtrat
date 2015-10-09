@@ -823,7 +823,7 @@ namespace smtrat
                             if( cons != ConstraintT( true ) )
                                 sideCond.insert( cons );
                             SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, coeffs.rbegin()->second, ZERO_POLYNOMIAL );
-                            Substitution sub = Substitution( _eliminationVar, sqEx, subType, std::move(carl::PointerSet<vs::Condition>(oConditions)), std::move(sideCond) );
+                            Substitution sub = Substitution( _eliminationVar, sqEx, subType, carl::PointerSet<vs::Condition>(oConditions), std::move(sideCond) );
                             std::vector<State*> addedChildren = _currentState->addChild( sub );
                             if( !addedChildren.empty() )
                             {
@@ -870,7 +870,7 @@ namespace smtrat
                                 if( cons12 != ConstraintT( true ) )
                                     sideCond.insert( cons12 );
                                 SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, linearCoeff, ZERO_POLYNOMIAL );
-                                Substitution sub = Substitution( _eliminationVar, sqEx, subType, std::move(carl::PointerSet<vs::Condition>(oConditions)), std::move(sideCond) );
+                                Substitution sub = Substitution( _eliminationVar, sqEx, subType, carl::PointerSet<vs::Condition>(oConditions), std::move(sideCond) );
                                 std::vector<State*> addedChildren = _currentState->addChild( sub );
                                 if( !addedChildren.empty() )
                                 {
@@ -906,7 +906,7 @@ namespace smtrat
                                     sideCond.insert( cons22 );
                                 // Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b+sqrt(b^2-4ac))/2a]):
                                 SqrtEx sqExA = SqrtEx( -linearCoeff, ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
-                                Substitution subA = Substitution( _eliminationVar, sqExA, subType, std::move(carl::PointerSet<vs::Condition>(oConditions)), std::move(ConstraintsT(sideCond)) );
+                                Substitution subA = Substitution( _eliminationVar, sqExA, subType, carl::PointerSet<vs::Condition>(oConditions), ConstraintsT(sideCond) );
                                 std::vector<State*> addedChildrenA = _currentState->addChild( subA );
                                 if( !addedChildrenA.empty() )
                                 {
@@ -928,7 +928,7 @@ namespace smtrat
                                 }
                                 // Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b-sqrt(b^2-4ac))/2a]):
                                 SqrtEx sqExB = SqrtEx( -linearCoeff, MINUS_ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
-                                Substitution subB = Substitution( _eliminationVar, sqExB, subType, std::move(carl::PointerSet<vs::Condition>(oConditions)), std::move(sideCond) );
+                                Substitution subB = Substitution( _eliminationVar, sqExB, subType, carl::PointerSet<vs::Condition>(oConditions), std::move(sideCond) );
                                 std::vector<State*> addedChildrenB = _currentState->addChild( subB );
                                 if( !addedChildrenB.empty() )
                                 {
@@ -969,7 +969,7 @@ namespace smtrat
         if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
         {
             // Create state ( Conditions, [x -> -infinity]):
-            Substitution sub = Substitution( _eliminationVar, Substitution::MINUS_INFINITY, std::move(carl::PointerSet<vs::Condition>(oConditions)) );
+            Substitution sub = Substitution( _eliminationVar, Substitution::MINUS_INFINITY, carl::PointerSet<vs::Condition>(oConditions) );
             std::vector<State*> addedChildren = _currentState->addChild( sub );
             if( !addedChildren.empty() )
             {
@@ -990,7 +990,7 @@ namespace smtrat
             if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
             {
                 // Create state ( Conditions, [x -> -infinity]):
-                Substitution sub = Substitution( _eliminationVar, Substitution::PLUS_INFINITY, std::move(carl::PointerSet<vs::Condition>(oConditions)) );
+                Substitution sub = Substitution( _eliminationVar, Substitution::PLUS_INFINITY, carl::PointerSet<vs::Condition>(oConditions) );
                 std::vector<State*> addedChildren = _currentState->addChild( sub );
                 if( !addedChildren.empty() )
                 {

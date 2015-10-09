@@ -86,7 +86,7 @@ namespace parser {
 			} else if (const carl::UFInstance* uf = boost::get<carl::UFInstance>(&v)) {
 				carl::Variable tmp = carl::freshUninterpretedVariable();
 				vars.push_back(carl::UVariable(tmp, uf->uninterpretedFunction().codomain()));
-				state->global_formulas.emplace_back(FormulaT(std::move(carl::UEquality(vars.back(), *uf, false))));
+				state->global_formulas.emplace_back(FormulaT(carl::UEquality(vars.back(), *uf, false)));
 			} else {
 				SMTRAT_LOG_ERROR("smtrat.parser", "The function argument type for function " << f << " was invalid.");
 				continue;
@@ -101,17 +101,17 @@ namespace parser {
 				SMTRAT_LOG_ERROR("smtrat.parser", "Boolan functions should be abstracted to be of sort " << mBoolSort);
 			} else {
 				carl::Variable var = carl::freshVariable(type);
-				state->global_formulas.emplace_back(FormulaT(std::move(carl::UEquality(carl::UVariable(var), ufi, false))));
+				state->global_formulas.emplace_back(FormulaT(carl::UEquality(carl::UVariable(var), ufi, false)));
 				result = var;
 			}
 		} else if (f.codomain() == mBoolSort) {
 			carl::UVariable uvar(carl::freshVariable(carl::VariableType::VT_UNINTERPRETED), mBoolSort);
 			state->global_formulas.emplace_back(std::move(carl::UEquality(uvar, ufi, false)));
 			state->global_formulas.push_back(FormulaT(carl::FormulaType::OR, {
-				FormulaT(std::move(carl::UEquality(uvar, mTrue, false))),
-				FormulaT(std::move(carl::UEquality(uvar, mFalse, false)))
+				FormulaT(carl::UEquality(uvar, mTrue, false)),
+				FormulaT(carl::UEquality(uvar, mFalse, false))
 			}));
-			result = FormulaT(std::move(carl::UEquality(uvar, mTrue, false)));
+			result = FormulaT(carl::UEquality(uvar, mTrue, false));
 		} else {
 			result = ufi;
 		}
