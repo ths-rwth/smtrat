@@ -12,7 +12,6 @@ namespace smtrat
         Manager( _externalModuleFactoryAdding )
     {
         size_t position = 0;
-        position = addBackendIntoStrategyGraph( position, MT_BVModule );
         position = addBackendIntoStrategyGraph( position, MT_PreprocessingModule );
         position = addBackendIntoStrategyGraph( position, MT_SATModule );
         position = addBackendIntoStrategyGraph( position, MT_LRAModule );
