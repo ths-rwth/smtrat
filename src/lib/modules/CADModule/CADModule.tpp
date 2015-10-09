@@ -147,35 +147,31 @@ namespace smtrat
 	 * All constraints asserted (and not removed)  so far are now added to the CAD object and checked for consistency.
 	 * If the result is false, a minimal infeasible subset of the original constraint set is computed.
 	 * Otherwise a sample value is available.
-         * @param false, if this module should avoid too expensive procedures and rather return unknown instead.
+	 * @param false, if this module should avoid too expensive procedures and rather return unknown instead.
 	 * @return True if consistent, False otherwise
 	 */
 	template<typename Settings>
 	Answer CADModule<Settings>::checkCore( bool _full )
 	{
 		SMTRAT_LOG_FUNC("smtrat.cad", _full);
+		if (!_full) {
+			SMTRAT_LOG_WARN("smtrat.cad", "Unknown due to !_full");
+			return Unknown;
+		}
+		
 		assert(mConstraints.size() == mConstraintsMap.size());
-		SMTRAT_LOG_TRACE("smtrat.cad", "Current Constraints: " << mConstraints);
-		SMTRAT_LOG_TRACE("smtrat.cad", "as Map: " << mConstraintsMap);
-		//mConflictGraph.print();
-            #ifdef SMTRAT_DEVOPTION_Statistics
-            mStats->addCall();
-            #endif
-            if( !_full )
-            {
-                return Unknown;
-            }
+#ifdef SMTRAT_DEVOPTION_Statistics
+		mStats->addCall();
+#endif
 		if (this->hasFalse) return False;
 		else {
-			for (auto f: this->subformulaQueue) {
+			for (const auto& f: this->subformulaQueue) {
 				this->addConstraintFormula(f);
 			}
 			this->subformulaQueue.clear();
 		}
-		//std::cout << "CAD has:" << std::endl;
-		//for (auto c: this->mConstraints) std::cout << "\t\t" << c << std::endl;
-		//this->printReceivedFormula();
 		if (!rReceivedFormula().isRealConstraintConjunction() && !rReceivedFormula().isIntegerConstraintConjunction()) {
+			SMTRAT_LOG_WARN("smtrat.cad", "Unknown due to invalid constraints");
 			return Unknown;
 		}
 		if (!mInfeasibleSubsets.empty())
