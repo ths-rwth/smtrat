@@ -93,7 +93,7 @@ namespace smtrat
             // Retrieve all integer-valued variables in formula
             carl::Variables variablesInFormula;
             carl::Variables nonlinearVariablesInFormula;
-            const Poly& poly = formula.constraint().lhs();
+            const Poly& poly = constraint.lhs();
             formula.integerValuedVars(variablesInFormula);
             for(auto termIt = poly.begin();termIt != poly.end();++termIt) {
                 if(termIt->getNrVariables() > 1 || ! termIt->isLinear()) {
@@ -115,7 +115,7 @@ namespace smtrat
             }
 
             // Update mPolyParents (child->parent relationship)
-            addPolyParents(formula.constraint());
+            addPolyParents(constraint);
         }
 
         /*
@@ -211,7 +211,7 @@ namespace smtrat
             summand *= 2;
         }
 
-        // For negative numbers in two's complement, substract 2^width from result
+        // For negative numbers in two's complement, subtract 2^width from result
         if(_type.isSigned() && _value[_value.width()-1]) {
             converted -= summand;
         }
@@ -388,9 +388,6 @@ namespace smtrat
             }
         }
 
-        if(! blasted.formula().isTrue()) {
-            _collectedFormulas.push_back(blasted.formula());
-        }
         _collectedFormulas.insert(_collectedFormulas.end(), blasted.constraints().begin(), blasted.constraints().end());
         return mConstrBlastings.insert(std::make_pair(_constraint.constraint(), blasted)).first->second;
     }
@@ -603,21 +600,15 @@ namespace smtrat
             icpAnswer = mICP.check();
             INTBLAST_DEBUG("icpAnswer: " << (icpAnswer == True ? "True" : (icpAnswer == False ? "False" : "Unknown")));
 
-            if(icpAnswer == True) {
+            if(icpAnswer == True && rReceivedFormula().satisfiedBy( mICP.model() ) == 1) {
                 mSolutionOrigin = SolutionOrigin::ICP;
                 return True;
             }
         }
 
-        if(icpAnswer == Unknown) {
+        if(icpAnswer != False) {
             if(Settings::apply_icp) {
                 INTBLAST_DEBUG("Updating bounds from ICP.");
-
-                if(INTBLAST_DEBUG_ENABLED) {
-                    for(ModuleInput::const_iterator fwo=mICP.rPassedFormula().begin(); fwo != mICP.rPassedFormula().end(); fwo++) {
-                        INTBLAST_DEBUG("from ICP: " << fwo->formula());
-                    }
-                }
 
                 updateBoundsFromICP();
             }
@@ -644,7 +635,7 @@ namespace smtrat
         // (determined either by the ICP module or by the BV solver).
         // Call backend
 
-        updateOutsideRestrictionConstraint(icpAnswer != Unknown);
+        updateOutsideRestrictionConstraint(icpAnswer == False);
 
         INTBLAST_DEBUG("Running backend.");
         Answer backendAnswer = runBackends(_full);
@@ -666,7 +657,7 @@ namespace smtrat
 
         FormulasT bitvectorConstraints;
         carl::FormulaVisitor<FormulaT> visitor;
-        std::function<FormulaT(FormulaT)> encodeConstraints = std::bind(&IntBlastModule::encodeConstraintToBV, this, std::placeholders::_1, bitvectorConstraints);
+        std::function<FormulaT(FormulaT)> encodeConstraints = std::bind(&IntBlastModule::encodeConstraintToBV, this, std::placeholders::_1, &bitvectorConstraints);
         FormulaT bitvectorFormula = visitor.visit(_formula, encodeConstraints);
 
         addFormulaToBV(bitvectorFormula, _formula);
@@ -677,12 +668,12 @@ namespace smtrat
     }
 
     template<class Settings>
-    FormulaT IntBlastModule<Settings>::encodeConstraintToBV(const FormulaT& _original, FormulasT& _collectedBitvectorConstraints)
+    FormulaT IntBlastModule<Settings>::encodeConstraintToBV(const FormulaT& _original, FormulasT* _collectedBitvectorConstraints)
     {
         if(_original.getType() == carl::FormulaType::CONSTRAINT && _original.constraint().integerValued())
         {
             ConstrTree constraintTree(_original.constraint());
-            const BlastedConstr& blastedConstraint = blastConstrTree(constraintTree, _collectedBitvectorConstraints);
+            const BlastedConstr& blastedConstraint = blastConstrTree(constraintTree, *_collectedBitvectorConstraints);
             return blastedConstraint.formula();
         }
         return _original;
@@ -823,9 +814,18 @@ namespace smtrat
             mBoundsInRestriction.removeBound(formula.constraint(), formula);
         }
         mProcessedFormulasFromICP.clear();
+
         for(ModuleInput::const_iterator fwo=mICP.rPassedFormula().begin(); fwo != mICP.rPassedFormula().end(); fwo++) {
-            mBoundsInRestriction.addBound(fwo->formula().constraint(), fwo->formula());
-            mProcessedFormulasFromICP.push_back(fwo->formula());
+           if(INTBLAST_DEBUG_ENABLED) INTBLAST_DEBUG("from ICP: " << fwo->formula());
+           mBoundsInRestriction.addBound(fwo->formula().constraint(), fwo->formula());
+           mProcessedFormulasFromICP.push_back(fwo->formula());
+        }
+        
+        FormulasT icpBounds = mICP.getCurrentBoxAsFormulas();
+        for( auto& f : icpBounds ) {
+            if(INTBLAST_DEBUG_ENABLED) INTBLAST_DEBUG("from ICP: " << f);
+            mBoundsInRestriction.addBound(f.constraint(), f);
+            mProcessedFormulasFromICP.push_back(f);
         }
         recheckShrunkPolys();
     }
