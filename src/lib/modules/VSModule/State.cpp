@@ -1237,9 +1237,9 @@ namespace vs
         for( auto var = _allVariables.begin(); var != _allVariables.end(); ++var )
         {
             if( var->getType() == carl::VariableType::VT_INT )
-                mIntVarVals.push_back( pair<carl::Variable, multiset<double> >( *var, std::move(multiset<double>()) ) );
+                mIntVarVals.push_back( pair<carl::Variable, multiset<double> >( *var, multiset<double>() ) );
             else
-                mRealVarVals.push_back( pair<carl::Variable, multiset<double> >( *var, std::move(multiset<double>()) ) );
+                mRealVarVals.push_back( pair<carl::Variable, multiset<double> >( *var, multiset<double>() ) );
         }
         vector<pair<carl::Variable, multiset<double>>>& varValsB = mRealVarVals.empty() ? mIntVarVals : mRealVarVals;
         // Find for each variable the highest valuation of all conditions' constraints.
