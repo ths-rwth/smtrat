@@ -182,7 +182,7 @@ namespace smtrat
                     {
                         Model currentModel = model();
                         FormulaT nextFormulaToAdd( carl::FormulaType::TRUE );
-                        std::pair<double,size_t> bestEvaluation = std::make_pair( std::numeric_limits<double>::max(), std::numeric_limits<size_t>::max() );
+                        std::pair<size_t,size_t> bestEvaluation = std::make_pair( std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max() );
                         EvalRationalMap rationalAssigns;
                         getRationalAssignmentsFromModel( currentModel, rationalAssigns );
                         for( const auto& rf : rReceivedFormula() )
@@ -231,8 +231,8 @@ namespace smtrat
     }
     
     template<class Settings>
-    double BVModule<Settings>::evaluateBVFormula( const FormulaT& _formula )
+    size_t BVModule<Settings>::evaluateBVFormula( const FormulaT& _formula )
     {
-        return (double) _formula.size();
+        return _formula.complexity();
     }
 }
