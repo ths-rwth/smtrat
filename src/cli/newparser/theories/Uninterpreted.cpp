@@ -106,7 +106,7 @@ namespace parser {
 			}
 		} else if (f.codomain() == mBoolSort) {
 			carl::UVariable uvar(carl::freshVariable(carl::VariableType::VT_UNINTERPRETED), mBoolSort);
-			state->global_formulas.emplace_back(std::move(carl::UEquality(uvar, ufi, false)));
+			state->global_formulas.emplace_back(carl::UEquality(uvar, ufi, false));
 			state->global_formulas.push_back(FormulaT(carl::FormulaType::OR, {
 				FormulaT(carl::UEquality(uvar, mTrue, false)),
 				FormulaT(carl::UEquality(uvar, mFalse, false))
