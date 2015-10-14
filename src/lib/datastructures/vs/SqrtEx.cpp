@@ -61,7 +61,7 @@ namespace vs
                 assert( !radicand().isZero() );
                 smtrat::Rational absOfLCoeff = abs( radicand().coprimeFactor() );
                 smtrat::Rational sqrtResult;
-                if( carl::sqrtp( absOfLCoeff, sqrtResult ) )
+                if( carl::sqrt_exact( absOfLCoeff, sqrtResult ) )
                 {
                     mFactor *= (smtrat::Rational)1/sqrtResult;
                     mRadicand *= absOfLCoeff;
@@ -296,7 +296,7 @@ namespace vs
         // Check whether the resulting assignment is integer.
         bool rounded = true;
         smtrat::Rational sqrtExValue;
-        if( !carl::sqrtp( radicandValue, sqrtExValue ) )
+        if( !carl::sqrt_exact( radicandValue, sqrtExValue ) )
         {
             assert( _rounding != 0 );
             rounded = false;
@@ -351,7 +351,7 @@ namespace vs
         smtrat::Poly denomEvaluated = denominator().substitute( _evalMap );
         assert( !denomEvaluated.isConstant() || !carl::isZero( denomEvaluated.constantPart() ) );
         smtrat::Rational sqrtExValue;
-        if( radicandEvaluated.isConstant() && carl::sqrtp( radicandEvaluated.constantPart(), sqrtExValue ) )
+        if( radicandEvaluated.isConstant() && carl::sqrt_exact( radicandEvaluated.constantPart(), sqrtExValue ) )
         {
             return SqrtEx(smtrat::Poly(constantPartEvaluated + factorEvaluated * sqrtExValue), 
                     smtrat::Poly(smtrat::ZERO_POLYNOMIAL), 
