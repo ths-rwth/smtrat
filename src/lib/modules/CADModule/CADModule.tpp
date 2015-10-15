@@ -210,10 +210,12 @@ namespace smtrat
 		if (status == carl::cad::Answer::Unknown) {
 			// Pass on branch from CAD.
 			const std::vector<carl::Variable>& vars = mCAD.getVariables();
-			std::size_t d = mRealAlgebraicSolution.dim()-1;
+			std::size_t rasid = mRealAlgebraicSolution.dim() - 1;
+			std::size_t d = vars.size() - mRealAlgebraicSolution.dim();
 			assert(vars[d].getType() == carl::VariableType::VT_INT);
-			auto r = mRealAlgebraicSolution[d]->branchingPoint();
+			auto r = mRealAlgebraicSolution[rasid]->branchingPoint();
 			assert(!carl::isInteger(r));
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Variables: " << vars);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Branching at " << vars[d] << " = " << r);
 			branchAt(vars[d], r);
 			return Unknown;
