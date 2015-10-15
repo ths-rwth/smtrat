@@ -176,9 +176,6 @@ namespace smtrat
 		}
 		if (!mInfeasibleSubsets.empty())
 			return False; // there was no constraint removed which was in a previously generated infeasible subset
-		// perform the scheduled elimination and see if there were new variables added
-		if (mCAD.prepareElimination())
-			mConflictGraph.clearSampleVertices(); // all sample vertices are now invalid, thus remove them
 		// check the extended constraints for satisfiability
 
 		if (variableBounds().isConflicting()) {
@@ -382,7 +379,6 @@ namespace smtrat
 		mConstraintsMap[f] = (unsigned)(mConstraints.size() - 1);
 		mCFMap[constraint] = f;
 		mCAD.addPolynomial(typename Poly::PolyType(constraint.getPolynomial()), constraint.getVariables());
-		mConflictGraph.addConstraintVertex(); // increases constraint index internally what corresponds to adding a new constraint node with index mConstraints.size()-1
 
 		return solverState() != False;
 	}
@@ -452,43 +448,6 @@ namespace smtrat
 			default: assert(false);
 		}
 		return ConstraintT(c.getPolynomial(), relation);
-	}
-
-	/**
-	 * Computes an infeasible subset of the current set of constraints by approximating a vertex cover of the given conflict graph.
-	 * 
-	 * Caution! The method is destructive with regard to the conflict graph.
-	 *
-	 * Heuristics:
-	 * Select the highest-degree vertex for the vertex cover and remove it as long as we have edges in the graph.
-	 *
-	 * @param conflictGraph the conflict graph is destroyed during the computation
-	 * @return an infeasible subset of the current set of constraints
-	 */
-	template<typename Settings>
-	inline std::vector<FormulaSetT> CADModule<Settings>::extractMinimalInfeasibleSubsets_GreedyHeuristics( ConflictGraph<smtrat::Rational>& conflictGraph )
-	{
-		// initialize MIS with the last constraint
-		std::vector<FormulaSetT> mis = std::vector<FormulaSetT>(1, FormulaSetT());
-		mis.front().insert(getConstraintAt((unsigned)(mConstraints.size() - 1)));	// the last constraint is assumed to be always in the MIS
-		if (mConstraints.size() > 1) {
-			// construct set cover by greedy heuristic
-			std::list<ConflictGraph<smtrat::Rational>::Vertex> setCover;
-			long unsigned vertex = conflictGraph.maxDegreeVertex();
-			while (conflictGraph.degree(vertex) > 0) {
-				// add v to the setCover
-				setCover.push_back(vertex);
-				// remove coverage information of v from conflictGraph
-				conflictGraph.invertConflictingVertices(vertex);
-				SMTRAT_LOG_TRACE("smtrat.cad", "Conflict graph after removal of " << vertex << ": " << endl << conflictGraph);
-				// get the new vertex with the biggest number of adjacent solution point vertices
-				vertex = conflictGraph.maxDegreeVertex();
-			}
-			// collect constraints according to the vertex cover
-			for (auto v: setCover)
-				mis.front().insert(getConstraintAt((unsigned)(v)));
-		}
-		return mis;
 	}
 
 	/**

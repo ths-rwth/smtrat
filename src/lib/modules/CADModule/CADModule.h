@@ -102,7 +102,6 @@ namespace smtrat
 			bool addConstraintFormula(const FormulaT& f);
             const carl::cad::Constraint<smtrat::Rational> convertConstraint(const ConstraintT&);
             ConstraintT convertConstraint(const carl::cad::Constraint<smtrat::Rational>&);
-            std::vector<FormulaSetT> extractMinimalInfeasibleSubsets_GreedyHeuristics(carl::cad::ConflictGraph<smtrat::Rational>& conflictGraph);
             const FormulaT& getConstraintAt(unsigned index);
             void updateConstraintMap(unsigned index, bool decrement = true);
 #ifdef SMTRAT_DEVOPTION_Statistics
