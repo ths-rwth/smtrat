@@ -177,6 +177,7 @@ namespace smtrat
 		if (!mInfeasibleSubsets.empty())
 			return False; // there was no constraint removed which was in a previously generated infeasible subset
 		// check the extended constraints for satisfiability
+		mCAD.prepareElimination();
 
 		if (variableBounds().isConflicting()) {
 			mInfeasibleSubsets.push_back(variableBounds().getConflict());
