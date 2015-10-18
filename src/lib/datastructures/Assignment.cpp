@@ -101,7 +101,17 @@ namespace smtrat
     {
         EvalRationalMap rationalAssigns;
         getRationalAssignmentsFromModel( _assignment, rationalAssigns );
-        return satisfies( _assignment, rationalAssigns, _formula );
+        std::map<carl::BVVariable, carl::BVTerm> bvAssigns;
+        for( auto& varAndValue : _assignment )
+        {
+            if( varAndValue.first.isBVVariable() )
+            {
+                assert(varAndValue.second.isBVValue());
+                carl::BVTerm replacement(carl::BVTermType::CONSTANT, varAndValue.second.asBVValue());
+                bvAssigns[varAndValue.first.asBVVariable()] = replacement;
+            }
+        }
+        return satisfies( _assignment, rationalAssigns, bvAssigns, _formula );
     }
     
     bool isPartOf( const EvalRationalMap& _assignment, const Model& _model )
@@ -127,7 +137,7 @@ namespace smtrat
         return assIter == _assignment.end();
     }
     
-    unsigned satisfies( const Model& _model, const EvalRationalMap& _assignment, const FormulaT& _formula )
+    unsigned satisfies( const Model& _model, const EvalRationalMap& _assignment, const std::map<carl::BVVariable, carl::BVTerm>& _bvAssigns, const FormulaT& _formula )
     {
         assert( isPartOf( _assignment, _model ) );
         switch( _formula.getType() )
@@ -151,17 +161,8 @@ namespace smtrat
             }
             case carl::FormulaType::BITVECTOR:
             {
-                std::map<carl::BVVariable, carl::BVTerm> replacements;
-                for(auto& varAndValue : _model) {
-                    if(varAndValue.first.isBVVariable()) {
-                        assert(varAndValue.second.isBVValue());
-                        carl::BVTerm replacement(carl::BVTermType::CONSTANT, varAndValue.second.asBVValue());
-                        replacements[varAndValue.first.asBVVariable()] = replacement;
-                    }
-                }
-
                 carl::FormulaSubstitutor<FormulaT> substitutor;
-                FormulaT substituted = substitutor.substitute(_formula, replacements);
+                FormulaT substituted = substitutor.substitute(_formula, _bvAssigns);
                 if(substituted.isTrue())
                     return 1;
                 else if(substituted.isFalse())
@@ -170,7 +171,7 @@ namespace smtrat
             }
             case carl::FormulaType::NOT:
             {
-                switch( satisfies( _model, _assignment, _formula.subformula() ) )
+                switch( satisfies( _model, _assignment, _bvAssigns, _formula.subformula() ) )
                 {
                     case 0:
                         return 1;
@@ -185,7 +186,7 @@ namespace smtrat
                 unsigned result = 0;
                 for( const FormulaT& subFormula : _formula.subformulas() )
                 {
-                    switch( satisfies( _model, _assignment, subFormula ) )
+                    switch( satisfies( _model, _assignment, _bvAssigns, subFormula ) )
                     {
                         case 0:
                             break;
@@ -202,7 +203,7 @@ namespace smtrat
                 unsigned result = 1;
                 for( const FormulaT& subFormula : _formula.subformulas() )
                 {
-                    switch( satisfies( _model, _assignment, subFormula ) )
+                    switch( satisfies( _model, _assignment, _bvAssigns, subFormula ) )
                     {
                         case 0:
                             return 0;
@@ -216,9 +217,9 @@ namespace smtrat
             }
             case carl::FormulaType::IMPLIES:
             {
-                unsigned result = satisfies( _model, _assignment, _formula.premise() );
+                unsigned result = satisfies( _model, _assignment, _bvAssigns, _formula.premise() );
                 if( result == 0 ) return 1;
-                switch( satisfies( _model, _assignment, _formula.conclusion() ) )
+                switch( satisfies( _model, _assignment, _bvAssigns, _formula.conclusion() ) )
                 {
                     case 0:
                         return result == 1 ? 0 : 2;
@@ -230,13 +231,13 @@ namespace smtrat
             }
             case carl::FormulaType::ITE:
             {
-                unsigned result = satisfies( _model, _assignment, _formula.condition() );
+                unsigned result = satisfies( _model, _assignment, _bvAssigns, _formula.condition() );
                 switch( result )
                 {
                     case 0:
-                        return satisfies( _model, _assignment, _formula.secondCase() );
+                        return satisfies( _model, _assignment, _bvAssigns, _formula.secondCase() );
                     case 1:
-                        return satisfies( _model, _assignment, _formula.firstCase() );
+                        return satisfies( _model, _assignment, _bvAssigns, _formula.firstCase() );
                     default:
                         return 2;
                 }
@@ -244,13 +245,13 @@ namespace smtrat
             case carl::FormulaType::IFF:
             {
                 auto subFormula = _formula.subformulas().begin();
-                unsigned result = satisfies( _model, _assignment, *subFormula );
+                unsigned result = satisfies( _model, _assignment, _bvAssigns, *subFormula );
                 bool containsTrue = (result == 1 ? true : false);
                 bool containsFalse = (result == 0 ? true : false);
                 ++subFormula;
                 while( subFormula != _formula.subformulas().end() )
                 {
-                    unsigned resultTmp = satisfies( _model, _assignment, *subFormula );
+                    unsigned resultTmp = satisfies( _model, _assignment, _bvAssigns, *subFormula );
                     switch( resultTmp )
                     {
                         case 0:
@@ -270,12 +271,12 @@ namespace smtrat
             case carl::FormulaType::XOR:
             {
                 auto subFormula = _formula.subformulas().begin();
-                unsigned result = satisfies( _model, _assignment, *subFormula );
+                unsigned result = satisfies( _model, _assignment, _bvAssigns, *subFormula );
                 if( result == 2 ) return 2;
                 ++subFormula;
                 while( subFormula != _formula.subformulas().end() )
                 {
-                    unsigned resultTmp = satisfies( _model, _assignment, *subFormula );
+                    unsigned resultTmp = satisfies( _model, _assignment, _bvAssigns, *subFormula );
                     if( resultTmp == 2 ) return 2;
                     result = resultTmp != result;
                     ++subFormula;
@@ -365,6 +366,88 @@ namespace smtrat
                 std::cerr << "Undefined operator!" << std::endl;
                 return 2;
             }
+        }
+    }
+    
+    void getDefaultModel( Model& _defaultModel, const carl::UEquality& _constraint, size_t _seed )
+    {
+        
+    }
+    
+    void getDefaultModel( Model& _defaultModel, const carl::BVTerm& _bvTerm, size_t _seed )
+    {
+        if( _bvTerm.type() == carl::BVTermType::VARIABLE )
+        {
+            auto ass = _defaultModel.find( _bvTerm.variable() );
+            if( ass == _defaultModel.end() )
+            {
+                _defaultModel[_bvTerm.variable()] = carl::BVValue(_bvTerm.variable().width());
+            }
+            else
+            {
+                // TODO: something with the seed
+            }
+        }
+        else if( carl::typeIsUnary( _bvTerm.type() ) )
+            getDefaultModel( _defaultModel, _bvTerm.operand(), _seed );
+        else if( carl::typeIsBinary( _bvTerm.type() ) )
+        {
+            getDefaultModel( _defaultModel, _bvTerm.first(), _seed );
+            getDefaultModel( _defaultModel, _bvTerm.second(), _seed );
+        }
+        else if( _bvTerm.type() == carl::BVTermType::EXTRACT )
+            getDefaultModel( _defaultModel, _bvTerm.operand(), _seed );
+    }
+    
+    void getDefaultModel( Model& _defaultModel, const ConstraintT& _constraint, size_t _seed )
+    {
+        for( carl::Variable::Arg var : _constraint.variables() )
+        {
+            auto ass = _defaultModel.find( var );
+            if( ass == _defaultModel.end() )
+            {
+                _defaultModel[var] = 0;
+            }
+            else
+            {
+                // TODO: something with the seed
+            }
+        }
+    }
+    
+    void getDefaultModel( Model& _defaultModel, const FormulaT& _formula, size_t _seed )
+    {
+        switch( _formula.getType() )
+        {
+            case carl::FormulaType::TRUE:
+            case carl::FormulaType::FALSE:
+            case carl::FormulaType::BOOL:
+            {
+                auto ass = _defaultModel.find( _formula.boolean() );
+                if( ass == _defaultModel.end() )
+                {
+                    _defaultModel[_formula.boolean()] = false;
+                }
+                else
+                {
+                    // TODO: something with the seed
+                }
+                return;
+            }
+            case carl::FormulaType::CONSTRAINT:
+                getDefaultModel( _defaultModel, _formula.constraint(), _seed ); return;
+            case carl::FormulaType::BITVECTOR:
+                getDefaultModel( _defaultModel, _formula.bvConstraint().lhs(), _seed );
+                getDefaultModel( _defaultModel, _formula.bvConstraint().rhs(), _seed );
+                return;
+            case carl::FormulaType::UEQ:
+                getDefaultModel( _defaultModel, _formula.uequality(), _seed ); return;
+            case carl::FormulaType::NOT:
+                getDefaultModel( _defaultModel, _formula.subformula(), _seed ); return;
+            default:
+                assert( _formula.isNary() );
+                for( const FormulaT& subFormula : _formula.subformulas() )
+                    getDefaultModel( _defaultModel, subFormula, _seed );
         }
     }
     

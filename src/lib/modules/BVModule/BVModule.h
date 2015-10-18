@@ -42,6 +42,8 @@ namespace smtrat
     {
         private:
             ///
+            mutable bool mModelComputed;
+            ///
             BVDirectEncoder mEncoder;
             ///
             std::unordered_set<FormulaT> mBlastedFormulas;
@@ -108,8 +110,11 @@ namespace smtrat
              */
             Answer checkCore( bool _full = true );
             
+        protected:
+                
 			size_t evaluateBVFormula( const FormulaT& formula );
-
+            
+            void transferBackendModel() const;
     };
 }
 

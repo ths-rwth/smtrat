@@ -29,6 +29,8 @@
 #include "BVModule.h"
 #include <limits>
 
+//#define DEBUG_BVMODULE
+
 namespace smtrat
 {
     /**
@@ -38,6 +40,7 @@ namespace smtrat
     template<class Settings>
     BVModule<Settings>::BVModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
         Module( _type, _formula, _conditionals, _manager ),
+        mModelComputed( true ),
         mEncoder(),
         mBlastedFormulas(),
         mPositionInFormulasToBlast(),
@@ -68,6 +71,7 @@ namespace smtrat
     {
         if( _subformula->formula().isTrue() )
             return true;
+        mModelComputed = false;
         if( _subformula->formula().isFalse() )
         {
             receivedFormulasAsInfeasibleSubset( _subformula );
@@ -76,9 +80,11 @@ namespace smtrat
         if( Settings::incremental_flattening )
         {
             auto sortKey = std::make_pair( evaluateBVFormula(_subformula->formula()), _subformula->formula().getId() );
+            #ifdef DEBUG_BVMODULE
             std::cout << std::endl << std::endl << "add formula" << std::endl;
             std::cout << _subformula->formula() << std::endl;
             std::cout << "Evaluation: " << sortKey << std::endl;
+            #endif
             auto ret = mFormulasToBlast.insert( std::make_pair(sortKey, _subformula->formula() ) );
             assert( ret.second );
             assert( mPositionInFormulasToBlast.find( _subformula->formula() ) == mPositionInFormulasToBlast.end() );
@@ -95,14 +101,18 @@ namespace smtrat
             auto iterA = mBlastedFormulas.find( _subformula->formula() );
             if( iterA != mBlastedFormulas.end() )
             {
+                #ifdef DEBUG_BVMODULE
                 std::cout << std::endl << std::endl << "remove formula" << std::endl;
                 std::cout << _subformula->formula() << std::endl;
+                #endif
                 mBlastedFormulas.erase( iterA );
             }
             else
             {
+                #ifdef DEBUG_BVMODULE
                 std::cout << std::endl << std::endl << "remove formula" << std::endl;
                 std::cout << _subformula->formula() << std::endl;
+                #endif
                 auto iterB = mPositionInFormulasToBlast.find( _subformula->formula() );
                 assert( iterB != mPositionInFormulasToBlast.end() );
                 mFormulasToBlast.erase( iterB->second );
@@ -114,10 +124,19 @@ namespace smtrat
     template<class Settings>
     void BVModule<Settings>::updateModel() const
     {
-        if(solverState() == True)
-        {
-            getBackendsModel();
-        }
+        if( solverState() == True )
+            return;
+        if( !Settings::incremental_flattening || !mModelComputed )
+            transferBackendModel();
+        if( Settings::incremental_flattening && !mModelComputed )
+            mModelComputed = true;
+    }
+    
+
+    template<class Settings>
+    void BVModule<Settings>::transferBackendModel() const
+    {
+        getBackendsModel();
 
         // Build bitvector values from the values of the single bits
         auto& blastings = mEncoder.bitvectorBlastings();
@@ -128,7 +147,9 @@ namespace smtrat
 
             for(std::size_t i=0;i<bitvectorToBits.second.size();++i)
             {
-                composedValue[i] = mModel[bitvectorToBits.second[i]].asBool();
+                auto iter = mModel.find( bitvectorToBits.second[i] );
+                assert( iter != mModel.end() );
+                composedValue[i] = iter->second.asBool();
             }
 
             mModel[bitvectorToBits.first] = composedValue;
@@ -148,54 +169,35 @@ namespace smtrat
     {
         if( Settings::incremental_flattening )
         {
+            #ifdef DEBUG_BVMODULE
             std::cout << "Check in BVModule" << std::endl;
-            carl::Variables allVars;
-            rReceivedFormula().vars( allVars );
-            auto allVarsIter = allVars.begin();
-            auto oldModelIter = mModel.begin();
-            while( allVarsIter != allVars.end() && oldModelIter != mModel.end() )
-            {
-                ModelVariable mv( *allVarsIter );
-                if( mv == oldModelIter->first )
-                {
-                    ++allVarsIter;
-                    ++oldModelIter;
-                }
-                else if( mv < oldModelIter->first )
-                {
-                    oldModelIter = mModel.insert( oldModelIter, std::make_pair( mv, 0 ) );
-                    ++oldModelIter;
-                    ++allVarsIter;
-                }
-                else
-                {
-                    oldModelIter = mModel.erase( oldModelIter );
-                }
-            }
-            if( oldModelIter != mModel.end() )
-                mModel.erase( oldModelIter, mModel.end() );
-            else
-            {
-                for( ; allVarsIter != allVars.end(); ++allVarsIter )
-                    mModel.insert( mModel.end(), std::make_pair( ModelVariable(*allVarsIter), 0 ) );
-            }
+            #endif
+            getDefaultModel( mModel, (FormulaT) rReceivedFormula() );
+            #ifdef DEBUG_BVMODULE
             std::cout << "initial model:" << std::endl;
             std::cout << mModel << std::endl << std::endl;
+            #endif
             if( !mFormulasToBlast.empty() )
             {
                 FormulaT origin = mFormulasToBlast.begin()->second;
+                #ifdef DEBUG_BVMODULE
                 std::cout << std::endl << std::endl << "Take into account: " << std::endl;
                 std::cout << origin << std::endl;
+                #endif
                 const FormulaSetT& formulasToPass = mEncoder.encode( origin );
                 mFormulasToBlast.erase( mFormulasToBlast.begin() );
                 for( const FormulaT& formulaToPass : formulasToPass )
                     addSubformulaToPassedFormula( formulaToPass, origin );
             }
-            while( !mFormulasToBlast.empty() )
+            while( true )
             {
+                #ifdef DEBUG_BVMODULE
                 std::cout << std::endl << "Run backends" << std::endl;
+                #endif
                 Answer backendAnswer = runBackends(_full);
+                #ifdef DEBUG_BVMODULE
                 std::cout << " --> " << ANSWER_TO_STRING(backendAnswer) << std::endl << std::endl;
+                #endif
                 switch( backendAnswer )
                 {
                     case False:
@@ -205,67 +207,48 @@ namespace smtrat
                     }
                     case True:
                     {
-                        updateModel();
+                        transferBackendModel();
                         Model currentModel = model();
+                        #ifdef DEBUG_BVMODULE
                         std::cout << "current model: " << std::endl;
                         std::cout << currentModel << std::endl;
-                        FormulaT nextFormulaToAdd( carl::FormulaType::TRUE );
-                        std::pair<size_t,size_t> bestEvaluation = std::make_pair( std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max() );
-                        EvalRationalMap rationalAssigns;
-                        getRationalAssignmentsFromModel( currentModel, rationalAssigns );
-                        for( const auto& rf : rReceivedFormula() )
+                        #endif
+                        auto iter = mFormulasToBlast.begin();
+                        for( ; iter != mFormulasToBlast.end(); ++iter )
                         {
-                            if( mBlastedFormulas.find( rf.formula() ) != mBlastedFormulas.end() )
-                            {
-                                std::cout << __LINE__ << std::endl;
-                                continue;
-                            }
-                            if( !nextFormulaToAdd.isTrue() )
-                            {
-                                std::cout << __LINE__ << std::endl;
-                                auto iter = mPositionInFormulasToBlast.find( rf.formula() );
-                                assert( iter != mPositionInFormulasToBlast.end() );
-                                if( iter->second->first >= bestEvaluation )
-                                {
-                                    std::cout << __LINE__ << std::endl;
-                                    continue;
-                                }
-                            }
-                            unsigned tmp = satisfies( currentModel, rationalAssigns, rf.formula() );
-                            std::cout << "satisfies( currentModel, rationalAssigns, rf.formula() ) = " << tmp << std::endl; 
+                            unsigned tmp = satisfies( currentModel, iter->second );
+                            #ifdef DEBUG_BVMODULE
+                            std::cout << "currentModel satisfies" << std::endl << iter->second << std::endl << "  ->  " << tmp << std::endl;
+                            #endif
                             assert( tmp != 2 );
                             if( tmp == 0 )
                             {
-                                std::cout << __LINE__ << std::endl;
+                                #ifdef DEBUG_BVMODULE
                                 std::cout << std::endl << std::endl << "Not yet satisfied: " << std::endl;
-                                std::cout << rf.formula() << std::endl;
-                                auto iter = mPositionInFormulasToBlast.find( rf.formula() );
-                                assert( iter != mPositionInFormulasToBlast.end() );
-                                if( iter->second->first < bestEvaluation )
-                                {
-                                    std::cout << __LINE__ << std::endl;
-                                    nextFormulaToAdd = iter->second->second;
-                                    bestEvaluation = iter->second->first;
-                                }
+                                std::cout << iter->second << std::endl;
+                                #endif
+                                break;
                             }
                         }
-                        if( nextFormulaToAdd.isTrue() )
+                        if( iter == mFormulasToBlast.end() )
                         {
-                            std::cout << __LINE__ << std::endl;
+                            #ifdef DEBUG_BVMODULE
+                            std::cout << "All formulas satisfied!" << std::endl;
+                            #endif
+                            mModelComputed = true;
                             return True;
                         }
                         else
                         {
-                            std::cout << __LINE__ << std::endl;
-                            assert( !nextFormulaToAdd.isFalse() );
-                            const FormulaSetT& formulasToPass = mEncoder.encode( nextFormulaToAdd );
+                            #ifdef DEBUG_BVMODULE
                             std::cout << std::endl << std::endl << "Take into account: " << std::endl;
-                            std::cout << nextFormulaToAdd << std::endl;
-                            auto iter = mPositionInFormulasToBlast.find( nextFormulaToAdd );
-                            mFormulasToBlast.erase( iter->second );
-                            mPositionInFormulasToBlast.erase( iter );
+                            std::cout << iter->second << std::endl;
+                            #endif
+                            const FormulaSetT& formulasToPass = mEncoder.encode( iter->second );
                             for( const FormulaT& formulaToPass : formulasToPass )
-                                addSubformulaToPassedFormula( formulaToPass, nextFormulaToAdd );
+                                addSubformulaToPassedFormula( formulaToPass, iter->second );
+                            mPositionInFormulasToBlast.erase( iter->second );
+                            mFormulasToBlast.erase( iter );
                         }
                         break;
                     }

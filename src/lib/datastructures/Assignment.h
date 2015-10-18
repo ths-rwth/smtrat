@@ -453,7 +453,12 @@ namespace smtrat
      *         1, if this formula is satisfied by the given assignment;
      *         2, otherwise.
      */
-    unsigned satisfies( const Model& _model, const EvalRationalMap& _assignment, const FormulaT& _formula );
+    unsigned satisfies( const Model& _model, const EvalRationalMap& _assignment, const std::map<carl::BVVariable, carl::BVTerm>& bvAssigns, const FormulaT& _formula );
+    
+    void getDefaultModel( Model& _defaultModel, const carl::UEquality& _constraint, size_t _seed = 0 );
+    void getDefaultModel( Model& _defaultModel, const carl::BVTerm& _constraint, size_t _seed = 0 );
+    void getDefaultModel( Model& _defaultModel, const ConstraintT& _constraint, size_t _seed = 0 );
+    void getDefaultModel( Model& _defaultModel, const FormulaT& _formula, size_t _seed = 0 );
     
     std::ostream& operator<<( std::ostream& _out, const Model& _model );
 }

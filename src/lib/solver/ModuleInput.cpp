@@ -34,19 +34,14 @@ namespace smtrat
     
     unsigned ModuleInput::satisfiedBy( const Model& _assignment ) const
     {
-        EvalRationalMap rationalAssigns;
-        getRationalAssignmentsFromModel( _assignment, rationalAssigns );
         unsigned result = 1;
 //        std::cout << "Assignment:" << std::endl;
 //        for( const auto& a : _assignment )
 //            std::cout << a.first << " -> " << a.second << std::endl;
-//        std::cout << "Rational assignment:" << std::endl;
-//        for( const auto& ra : rationalAssigns )
-//            std::cout << ra.first << " -> " << ra.second << std::endl;
         for( const FormulaWithOrigins& fwo : *this )
         {
 //            std::cout << fwo.formula() << " satisfied = ";
-            switch( satisfies( _assignment, rationalAssigns, fwo.formula() ) )
+            switch( satisfies( _assignment, fwo.formula() ) )
             {
                 case 0:
                 {
