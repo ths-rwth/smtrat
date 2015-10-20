@@ -181,12 +181,12 @@ namespace smtrat
             else 
             {
                 assert( mFormulaClausesMap.find( _subformula->formula() ) == mFormulaClausesMap.end() );
-                auto ret = mFormulaClausesMap.emplace( _subformula->formula(), carl::FastSet<Minisat::CRef>() );
+                auto ret = mFormulaClausesMap.emplace( _subformula->formula(), std::vector<Minisat::CRef>() );
                 int pos = clauses.size();
                 addClauses( _subformula->formula(), NORMAL_CLAUSE, true, _subformula->formula() );
                 for( ; pos < clauses.size(); ++pos )
                 {
-                    ret.first->second.insert( ret.first->second.end(), clauses[pos] );
+                    ret.first->second.push_back( clauses[pos] );
                     mClauseInformation.emplace( clauses[pos], ClauseInformation( pos ) );
                 }
             }
@@ -2491,7 +2491,7 @@ NextClause:
         // relocate clauses in mFormulaClausesMap
         for( auto& iter : mFormulaClausesMap )
         {
-            carl::FastSet<Minisat::CRef> tmp;
+            std::vector<Minisat::CRef> tmp;
             for( Minisat::CRef c : iter.second )
             {
                 ca.reloc( c, to );
