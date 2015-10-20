@@ -37,7 +37,7 @@ namespace smtrat
          * Add the received formulas incrementally, each time checking and testing if the 
          * found model in the satisfiable case satisfies all remaining received formulas.
          */
-        static const bool incremental_flattening = true;
+        static const bool incremental_flattening = false;
         /**
          * This weight specifies how much more preference a received formula being an equation should have.
          */
