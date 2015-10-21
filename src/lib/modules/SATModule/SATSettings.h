@@ -23,15 +23,7 @@ namespace smtrat
         /**
          * 
          */
-        static const bool detect_deductions = false;
-        /**
-         * 
-         */
         static const bool try_full_lazy_call_first = false;
-        /**
-         * 
-         */
-        static const bool apply_valid_substitutions = false;
         /**
          * 
          */
@@ -43,11 +35,7 @@ namespace smtrat
         /**
          * 
          */
-        static const bool formula_guided_decision_heuristic = false;
-        /**
-         * 
-         */
-        static const bool check_for_satisfied_clauses = false;
+        static const bool internal_cnf_transformation = false;
         /**
          * 
          */
@@ -60,11 +48,6 @@ namespace smtrat
          *
          */
         static constexpr CCES conflict_clause_evaluation_strategy = CCES::SECOND_LEVEL_MINIMIZER_PLUS_LBD;
-    };
-    
-    struct SATSettings2 : SATSettings1
-    {
-        static const bool detect_deductions = true;
     };
 }
 

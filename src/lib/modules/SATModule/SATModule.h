@@ -128,6 +128,20 @@ namespace smtrat
                 Abstraction( const Abstraction& ) = delete;
             };
             
+            struct ClauseInformation
+            {
+                bool mStoredInSatisfied;
+                int mPosition;
+                
+                ClauseInformation() = delete;
+                ClauseInformation( int _position ):
+                    mStoredInSatisfied( false ),
+                    mPosition( _position )
+                {}
+                ClauseInformation( const ClauseInformation& ) = default;
+                ClauseInformation( ClauseInformation&& ) = default;
+            };
+            
             struct VarConnection
             {
                 size_t mNumConnections;
@@ -233,7 +247,7 @@ namespace smtrat
             typedef Minisat::vec<std::pair<Abstraction*,Abstraction*>> BooleanConstraintMap;
             
             /// Maps the clauses in the received formula to the corresponding Minisat clause.
-            typedef carl::FastMap<FormulaT, Minisat::CRef> FormulaClauseMap;
+            typedef carl::FastMap<FormulaT, std::vector<Minisat::CRef>> FormulaClausesMap;
             
             /// A vector of vectors of literals representing a vector of clauses.
             typedef std::vector<std::vector<Minisat::Lit>> ClauseVector;
@@ -297,6 +311,8 @@ namespace smtrat
             bool ok;
             /// List of problem clauses.
             Minisat::vec<Minisat::CRef> clauses;
+            /// List of problem clauses.
+            Minisat::vec<Minisat::CRef> satisfiedClauses;
             /// List of learned clauses.
             Minisat::vec<Minisat::CRef> learnts;
             /// List of clauses which exclude a call resulted in unknown.
@@ -370,14 +386,14 @@ namespace smtrat
              * current assignment is consistent, this member is True, if we know that it is inconsistent it is False, otherwise Unknown.
              */
             Answer mCurrentAssignmentConsistent;
-            /// The number of satisfied clauses (for debug purpose).
-            mutable double mSatisfiedClauses;
             /// The number of full laze calls made.
             size_t mNumberOfFullLazyCalls;
             /// The number of restarts made.
             int mCurr_Restarts;
             /// The number of theory calls made.
             unsigned mNumberOfTheoryCalls;
+            ///
+            bool mReceivedFormulaPurelyPropositional;
             /**
              * Maps each Minisat variable to a pair of Abstractions, one contains the abstraction information of the literal
              * being the variable and one contains the abstraction information of the literal being the variables negation.
@@ -393,19 +409,14 @@ namespace smtrat
             ///
             carl::FastMap<FormulaT, Minisat::Lit> mFormulaAssumptionMap;
             /// Maps the clauses in the received formula to the corresponding Minisat clause.
-            FormulaClauseMap mFormulaClauseMap;
-            /// If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
-            ClauseSet mLearntDeductions;
+            FormulaClausesMap mFormulaClausesMap;
+            carl::FastMap<Minisat::CRef,ClauseInformation> mClauseInformation;
             /// Stores all Literals for which the abstraction information might be changed.
             std::vector<signed> mChangedBooleans;
             /// Is true, if we have to communicate all activities to the backends. (This might be the case after rescaling the activities.)
             bool mAllActivitiesChanged;
             /// Stores all clauses in which the activities have been changed.
             std::vector<Minisat::CRef> mChangedActivities;
-            /// Maps arithmetic variables to the constraints they occur in (only used by the valid-substitutions optimization).
-            carl::FastMap<carl::Variable,FormulaSetT> mVarOccurrences;
-            /// Maps Minisat variables to the clauses they occur in (only used by the valid-substitutions optimization).
-            std::vector<std::set<Minisat::CRef>> mVarClausesMap;
             /// Maps the arithmetic variables to the terms they have been replaced by a valid substitution (only used by the valid-substitutions optimization).
             std::map<carl::Variable,Poly> mVarReplacements;
             /// Stores all Boolean variables introduced for theory splitting decisions.
@@ -415,19 +426,13 @@ namespace smtrat
             /// Stores the just introduced Boolean variables for theory splitting decisions.
             std::vector<signed> mNewSplittingVars;
             ///
-            Minisat::vec<unsigned> mNonTseitinShadowedOccurrences;
-            ///
-            carl::FastMap<signed,std::set<signed>> mTseitinVarShadows;
-            ///
-            Minisat::vec<std::pair<VarConnection,VarConnection>> mVarConnections;
-            ///
             std::vector<Minisat::vec<Minisat::Lit>> mCurrentTheoryConflicts;
             std::map<std::pair<size_t,size_t>,size_t> mCurrentTheoryConflictEvaluations;
             std::unordered_set<int> mLevelCounter;
             ///
             size_t mTheoryConflictIdCounter;
             ///
-            carl::DIMACSExporter<smtrat::Poly> dimacs;
+            
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
             SATModuleStatistics* mpStatistics;
@@ -595,7 +600,7 @@ namespace smtrat
              * @param _tseitinShadowed A flag, which is true, if the variable to create is a sub-formula of a formula represented by a Tseitin variable.
              * @return The created Minisat variable.
              */
-            Minisat::Var newVar( bool polarity = true, bool dvar = true, double _activity = 0, bool _tseitinShadowed = false );
+            Minisat::Var newVar( bool polarity = true, bool dvar = true, double _activity = 0 );
 
             // Solving:
             
@@ -605,36 +610,13 @@ namespace smtrat
             void simplify();
             
             /**
-             * Applies all valid substitutions resulting of equations containing at least one variable only linearly.
-             * @return true, if a valid substitution took place;
-             *         false, otherwise.
-             */
-            bool applyValidSubstitutionsOnClauses();
-            
-            /**
-             * 
-             * @param _toReplace
-             * @param _replaceBy
-             * @param _subOrigins
-             */
-            void replaceConstraint( const FormulaT& _toReplace, const FormulaT& _replaceBy, const std::vector<FormulaT>& _subOrigins );
-            
-            /**
              * Adds the clause of the given type with the given literals to the clauses managed by Minisat.
              * @param _clause The clause to add.
              * @param _type The type of the clause (NORMAL_CLAUSE, DEDUCTED_CLAUSE or CONFLICT_CLAUSE).
              * @return  true, if a clause has been added;
              *          false, otherwise.
              */
-            bool addClause( Minisat::vec<Minisat::Lit>& _clause, unsigned _type = 0 );
-            
-            /**
-             * Checks the correctness of the watches in a clause.
-             * @param The clause to check the watches for.
-             * @return true, if the literals are ordered correctly according to the watches;
-             *         false, otherwise.
-             */
-            bool watchesCorrect( const Minisat::Clause& _clause ) const;
+            bool addClause( const Minisat::vec<Minisat::Lit>& _clause, unsigned _type = 0 );
             
             /**
              * Moves two literals which are not assigned to false to the beginning of the clause.
@@ -858,27 +840,6 @@ namespace smtrat
                 trail_lim.push( trail.size() );
             }
             
-            void decrementTseitinShadowOccurrences( signed _var )
-            {
-                unsigned& ntso = mNonTseitinShadowedOccurrences[_var];
-                assert( ntso > 0 );
-                --ntso;
-                if( ntso == 0 )
-                {
-                    setDecisionVar( _var, false );
-                }
-            }
-            
-            void incrementTseitinShadowOccurrences( signed _var )
-            {
-                unsigned& ntso = mNonTseitinShadowedOccurrences[_var];
-                if( ntso == 0 )
-                {
-                    setDecisionVar( _var, true );
-                }
-                ++ntso;
-            }
-            
             /**
              * Enqueue a literal. Assumes value of literal is undefined.
              * @param p The literal to enqueue. (The variable in the literal is set to true, if the literal is positive,
@@ -1022,24 +983,6 @@ namespace smtrat
              * Removes all splitting variables, which are either assigned to true of false in decision level 0.
              */
             void removeAssignedSplittingVars();
-            
-            /**
-             * Replaces the variable in the literal _var by the variable in the literal _by, such that _var is replaced by _by 
-             * and ~_var is replaced by ~by.
-             * @param _var The literal containing the variable to replace.
-             * @param _by The literal containing the variable to replace by.
-             */
-            void replaceVariable( Minisat::Lit _var, Minisat::Lit _by );
-            
-            /**
-             * Replaces the variable in the literal _var by the variable in the literal _by, such that _var is replaced by _by 
-             * and ~_var is replaced by ~by.
-             * @param _cr A reference to the clause where _var should be replaced.
-             * @param _var The literal containing the variable to replace.
-             * @param _by The literal containing the variable to replace by.
-             * @return true, if the resulting clause could be removed, because of bein valid according to the assignments of decision level 0.
-             */
-            bool replaceVariable( Minisat::CRef _cr, Minisat::Lit _var, Minisat::Lit _by );
             
             /**
              * [Minisat related code]
@@ -1276,23 +1219,9 @@ namespace smtrat
             {
                 return (int)(drand( seed ) * size);
             }
-
-            /**
-             * Adds the Boolean abstraction of the given formula in CNF to the SAT solver.
-             * @param _formula The formula to add clauses for.
-             * @return The reference to the first clause which has been added.
-             */
-            Minisat::CRef addFormula( const FormulaT&, unsigned _type );
             
-            bool isTseitinShadowed( const FormulaT& _var, const FormulaT& _clause ) const;
-            
-            /**
-             * Adds the Boolean abstraction of the given formula being a clause to the SAT solver.
-             * @param _formula  The formula to abstract and add to the SAT solver. Note, that the
-             *                  formula is expected to be a clause.
-             * @return The reference to the added clause, if any has been added; otherwise CRef_Undef.
-             */
-            Minisat::CRef addClause( const FormulaT&, unsigned _type = 0 );
+            Minisat::Lit addClauses( const FormulaT& _formula, unsigned _type, bool _outermost = true, const FormulaT& _original = FormulaT( carl::FormulaType::TRUE ) );
+            void addXorClauses( const Minisat::vec<Minisat::Lit>& _literals, int _from, bool _numOfNegatedLitsEven, unsigned _type, Minisat::vec<Minisat::Lit>& _clause );
             
             /**
              * Stores the given splitting to the set of learned clauses
@@ -1307,7 +1236,7 @@ namespace smtrat
              * @param _decisionRelevant true, if the variable of the literal needs to be involved in the decision process of the SAT solving.
              * @return The corresponding literal.
              */
-            Minisat::Lit getLiteral( const FormulaT& _formula, const FormulaT& _origin, bool _decisionRelevant = true, bool _tseitinShadowed = false );
+            Minisat::Lit getLiteral( const FormulaT& _formula, const FormulaT& _origin, bool _decisionRelevant = true );
             
             /**
              * Adapts the passed formula according to the current assignment within the SAT solver.
