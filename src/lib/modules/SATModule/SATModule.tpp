@@ -450,14 +450,15 @@ namespace smtrat
                 return getLiteral( _formula, _original, true );
             case carl::FormulaType::NOT:
             {
+                Lit l = _formula.isLiteral() ? getLiteral( _formula, _original, true ) : neg( addClauses( _formula.subformula(), _type, false, _original ) );
                 if( _outermost )
                 {
-                    assumptions.push( neg( addClauses( _formula.subformula(), _type, false, _original ) ) );
+                    assumptions.push( l );
                     assert( mFormulaAssumptionMap.find( _formula ) == mFormulaAssumptionMap.end() );
                     mFormulaAssumptionMap.emplace( _formula, assumptions.last() );
                     return lit_Undef;
                 }
-                return neg( addClauses( _formula.subformula(), _type, false, _original ) );
+                return l;
             }
             case carl::FormulaType::ITE:
             {
