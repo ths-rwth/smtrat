@@ -392,6 +392,8 @@ namespace smtrat
             int mCurr_Restarts;
             /// The number of theory calls made.
             unsigned mNumberOfTheoryCalls;
+            ///
+            bool mReceivedFormulaPurelyPropositional;
             /**
              * Maps each Minisat variable to a pair of Abstractions, one contains the abstraction information of the literal
              * being the variable and one contains the abstraction information of the literal being the variables negation.
