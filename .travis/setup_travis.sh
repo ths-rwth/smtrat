@@ -11,6 +11,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
 fi
 
 git clone https://github.com/smtrat/carl.git
+(cd carl && echo "Checked out CArL version $(git describe --always)")
 mkdir carl/build || return 1
 cd carl/build/ || return 1
 cmake -D DEVELOPER=ON ../ || return 1
