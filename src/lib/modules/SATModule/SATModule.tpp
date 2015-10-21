@@ -112,6 +112,7 @@ namespace smtrat
         mNumberOfFullLazyCalls( 0 ),
         mCurr_Restarts( 0 ),
         mNumberOfTheoryCalls( 0 ),
+        mReceivedFormulaPurelyPropositional(false),
         mConstraintLiteralMap(),
         mBooleanVarMap(),
         mFormulaAssumptionMap(),
@@ -181,12 +182,12 @@ namespace smtrat
             else 
             {
                 assert( mFormulaClausesMap.find( _subformula->formula() ) == mFormulaClausesMap.end() );
-                auto ret = mFormulaClausesMap.emplace( _subformula->formula(), carl::FastSet<Minisat::CRef>() );
+                auto ret = mFormulaClausesMap.emplace( _subformula->formula(), std::vector<Minisat::CRef>() );
                 int pos = clauses.size();
                 addClauses( _subformula->formula(), NORMAL_CLAUSE, true, _subformula->formula() );
                 for( ; pos < clauses.size(); ++pos )
                 {
-                    ret.first->second.insert( ret.first->second.end(), clauses[pos] );
+                    ret.first->second.push_back( clauses[pos] );
                     mClauseInformation.emplace( clauses[pos], ClauseInformation( pos ) );
                 }
             }
@@ -337,6 +338,7 @@ namespace smtrat
             #endif
             return False;
         }
+        mReceivedFormulaPurelyPropositional = rReceivedFormula().isOnlyPropositional();
 
         lbool result = l_Undef;
         if( Settings::use_restarts )
@@ -1185,7 +1187,8 @@ namespace smtrat
                 cr = ca.alloc( add_tmp, _type );
                 learnts.push( cr );
                 decrementLearntSizeAdjustCnt();
-                mChangedActivities.push_back( cr );
+                if( !mReceivedFormulaPurelyPropositional )
+                    mChangedActivities.push_back( cr );
                 claBumpActivity( ca[cr] );
             }
             else
@@ -1455,7 +1458,8 @@ SetWatches:
             vardata[var( c[0] )].reason = CRef_Undef;
         c.mark( 1 );
         ca.free( cr );
-        mChangedActivities.clear();
+        if( !mReceivedFormulaPurelyPropositional )
+            mChangedActivities.clear();
         mAllActivitiesChanged = true;
     }
 
@@ -1483,7 +1487,7 @@ SetWatches:
             for( int c = trail.size() - 1; c >= trail_lim[level]; --c )
             {
                 Var x       = var( trail[c] );
-                if( mBooleanConstraintMap[x].first != nullptr )
+                if( !mReceivedFormulaPurelyPropositional && mBooleanConstraintMap[x].first != nullptr )
                 {
                     assert( mBooleanConstraintMap[x].second != nullptr );
                     Abstraction& abstr = sign( trail[c] ) ? *mBooleanConstraintMap[x].second : *mBooleanConstraintMap[x].first;
@@ -1541,7 +1545,12 @@ SetWatches:
                 if( Settings::try_full_lazy_call_first && trail.size() == assigns.size() )
                     ++mNumberOfFullLazyCalls;
                 // Check constraints corresponding to the positively assigned Boolean variables for consistency.
-                adaptPassedFormula();
+                assert( !mReceivedFormulaPurelyPropositional || mChangedActivities.empty() );
+                assert( !mReceivedFormulaPurelyPropositional || mChangedBooleans.empty() );
+                assert( !mReceivedFormulaPurelyPropositional || !mAllActivitiesChanged );
+                if( !mReceivedFormulaPurelyPropositional )
+                    adaptPassedFormula();
+                assert( !mReceivedFormulaPurelyPropositional || !mChangedPassedFormula );
                 if( mChangedPassedFormula )
                 {
                     _madeTheoryCall = true;
@@ -1766,7 +1775,8 @@ SetWatches:
                     CRef cr = ca.alloc( learnt_clause, CONFLICT_CLAUSE );
                     learnts.push( cr );
                     attachClause( cr );
-                    mChangedActivities.push_back( cr );
+                    if( mReceivedFormulaPurelyPropositional )
+                        mChangedActivities.push_back( cr );
                     claBumpActivity( ca[cr] );
                     uncheckedEnqueue( learnt_clause[0], cr );
                     decrementLearntSizeAdjustCnt();
@@ -2090,8 +2100,7 @@ SetWatches:
         #endif
         assert( value( p ) == l_Undef );
         assigns[var( p )] = lbool( !sign( p ) );
-        bool hasAbstraction = mBooleanConstraintMap[var( p )].first != nullptr;
-        if( hasAbstraction )
+        if( !mReceivedFormulaPurelyPropositional && mBooleanConstraintMap[var( p )].first != nullptr )
         {
             assert( mBooleanConstraintMap[var( p )].second != nullptr );
             Abstraction& abstr = sign( p ) ? *mBooleanConstraintMap[var( p )].second : *mBooleanConstraintMap[var( p )].first;
@@ -2492,7 +2501,7 @@ NextClause:
         // relocate clauses in mFormulaClausesMap
         for( auto& iter : mFormulaClausesMap )
         {
-            carl::FastSet<Minisat::CRef> tmp;
+            std::vector<Minisat::CRef> tmp;
             for( Minisat::CRef c : iter.second )
             {
                 ca.reloc( c, to );

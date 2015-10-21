@@ -247,7 +247,7 @@ namespace smtrat
             typedef Minisat::vec<std::pair<Abstraction*,Abstraction*>> BooleanConstraintMap;
             
             /// Maps the clauses in the received formula to the corresponding Minisat clause.
-            typedef carl::FastMap<FormulaT, carl::FastSet<Minisat::CRef>> FormulaClausesMap;
+            typedef carl::FastMap<FormulaT, std::vector<Minisat::CRef>> FormulaClausesMap;
             
             /// A vector of vectors of literals representing a vector of clauses.
             typedef std::vector<std::vector<Minisat::Lit>> ClauseVector;
@@ -392,6 +392,8 @@ namespace smtrat
             int mCurr_Restarts;
             /// The number of theory calls made.
             unsigned mNumberOfTheoryCalls;
+            ///
+            bool mReceivedFormulaPurelyPropositional;
             /**
              * Maps each Minisat variable to a pair of Abstractions, one contains the abstraction information of the literal
              * being the variable and one contains the abstraction information of the literal being the variables negation.
