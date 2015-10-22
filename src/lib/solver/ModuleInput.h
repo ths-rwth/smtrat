@@ -209,6 +209,24 @@ namespace smtrat
         {
             return isConstraintConjunction() && !(carl::PROP_CONTAINS_REAL_VALUED_VARS <= mProperties);
         }
+
+        /**
+         * @return true, if this formula contains bit vector constraints;
+         *         false, otherwise.
+         */
+        bool containsBitVectorConstraints() const
+        {
+            return carl::PROP_CONTAINS_BITVECTOR <= mProperties;
+        }
+
+        /**
+         * @return true, if this formula contains uninterpreted equations;
+         *         false, otherwise.
+         */
+        bool containsUninterpretedEquations() const
+        {
+            return carl::PROP_CONTAINS_UNINTERPRETED_EQUATIONS <= mProperties;
+        }
         
         /**
          * @return true, if this formula is propositional;
@@ -300,7 +318,7 @@ namespace smtrat
         void vars( carl::Variables& _vars ) const
         {
             for( const FormulaWithOrigins& fwo : *this )
-                fwo.formula().collectVariables( _vars, carl::VariableType::VT_REAL, false );
+                fwo.formula().allVars( _vars );
         }
         
         /**

@@ -254,31 +254,7 @@ namespace smtrat
         if( mSolverState == True )
         {
             getBackendsModel();
-            carl::Variables receivedVariables;
-            mpReceivedFormula->arithmeticVars( receivedVariables );
-            mpReceivedFormula->booleanVars( receivedVariables );
-            // TODO: Do the same for bv and uninterpreted variables and functions 
-            auto iterRV = receivedVariables.begin();
-            if( iterRV != receivedVariables.end() )
-            {
-                for( std::map<ModelVariable,ModelValue>::const_iterator iter = mModel.begin(); iter != mModel.end(); )
-                {
-                    if( iter->first.isVariable() )
-                    {
-                        auto tmp = std::find( iterRV, receivedVariables.end(), iter->first.asVariable() );
-                        if( tmp == receivedVariables.end() )
-                        {
-                            iter = mModel.erase( iter );
-                            continue;
-                        }
-                        else
-                        {   
-                            iterRV = tmp;
-                        }
-                    }
-                    ++iter;
-                }
-            }
+            excludeNotReceivedVariablesFromModel();
         }
     }
 
@@ -830,6 +806,76 @@ namespace smtrat
         // We can give the hint that this constraint will probably be inserted in the end of this container,
         // as it is compared by an id which gets incremented every time a new constraint is constructed.
         mConstraintsToInform.insert( mConstraintsToInform.end(), constraint );
+    }
+    
+    void Module::excludeNotReceivedVariablesFromModel() const
+    {
+        if( mModel.empty() )
+            return;
+        // collect all variables, bit-vector variables and uninterpreted variables occurring in the received formula
+        carl::Variables receivedVariables;
+        std::set<BVVariable>* bvVars = nullptr;
+        std::set<UVariable>* ueVars = nullptr;
+        bool containtsBVConstraints = mpReceivedFormula->containsBitVectorConstraints();
+        bool containtsUEquality = mpReceivedFormula->containsUninterpretedEquations();
+        if( containtsBVConstraints )
+            bvVars = new std::set<BVVariable>();
+        if( containtsUEquality )
+            ueVars = new std::set<UVariable>();
+        for( auto& fwo : *mpReceivedFormula )
+            fwo.formula().collectVariables_( receivedVariables, bvVars, ueVars, true, true, true, containtsUEquality, containtsBVConstraints );
+        // initialize iterators of variable containers
+        carl::Variables::const_iterator iterRV = receivedVariables.begin();
+        std::set<BVVariable>::const_iterator bvVarsIter;
+        if( containtsBVConstraints )
+            bvVarsIter = bvVars->begin();
+        std::set<UVariable>::const_iterator ueVarsIter;
+        if( containtsUEquality )
+            ueVarsIter = ueVars->begin();
+        // remove the variables, which do not occur in the one of these containers
+        for( std::map<ModelVariable,ModelValue>::const_iterator iter = mModel.begin(); iter != mModel.end(); )
+        {
+            if( iter->first.isVariable() )
+            {
+                auto tmp = std::find( iterRV, receivedVariables.end(), iter->first.asVariable() );
+                if( tmp == receivedVariables.end() )
+                {
+                    iter = mModel.erase( iter );
+                    continue;
+                }
+                else
+                    iterRV = tmp;
+            }
+            else if( containtsBVConstraints && iter->first.isBVVariable() )
+            {
+                assert( bvVars != nullptr );
+                auto tmp = std::find( bvVarsIter, bvVars->end(), iter->first.asBVVariable() );
+                if( tmp == bvVars->end() )
+                {
+                    iter = mModel.erase( iter );
+                    continue;
+                }
+                else
+                    bvVarsIter = tmp;
+            }
+            else if( containtsUEquality && iter->first.isUVariable() )
+            {
+                assert( ueVars != nullptr );
+                auto tmp = std::find( ueVarsIter, ueVars->end(), iter->first.asUVariable() );
+                if( tmp == ueVars->end() )
+                {
+                    iter = mModel.erase( iter );
+                    continue;
+                }
+                else
+                    ueVarsIter = tmp;
+            }
+            ++iter;
+        }
+        if( containtsBVConstraints )
+            delete bvVars;
+        if( containtsUEquality )
+            delete ueVars;
     }
 
     void Module::updateDeductions()

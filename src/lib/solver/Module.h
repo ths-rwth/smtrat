@@ -517,6 +517,11 @@ namespace smtrat
             }
             
             /**
+             * Excludes all variables from the current model, which do not occur in the received formula.
+             */
+            void excludeNotReceivedVariablesFromModel() const;
+            
+            /**
              * Stores all deductions of any backend of this module in its own deduction vector.
              */
             void updateDeductions();
