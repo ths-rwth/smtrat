@@ -259,6 +259,7 @@ namespace smtrat
                             break;
                         case 1:
                             containsTrue = true;
+                            break;
                         default:
                             result = 2;
                     }
