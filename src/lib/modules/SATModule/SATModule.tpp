@@ -339,6 +339,12 @@ namespace smtrat
             return False;
         }
         mReceivedFormulaPurelyPropositional = rReceivedFormula().isOnlyPropositional();
+        if( mReceivedFormulaPurelyPropositional )
+        {
+            mAllActivitiesChanged = false;
+            mChangedBooleans.clear();
+            mChangedActivities.clear();
+        }
 
         lbool result = l_Undef;
         if( Settings::use_restarts )
@@ -1459,8 +1465,10 @@ SetWatches:
         c.mark( 1 );
         ca.free( cr );
         if( !mReceivedFormulaPurelyPropositional )
+        {
             mChangedActivities.clear();
-        mAllActivitiesChanged = true;
+            mAllActivitiesChanged = true;
+        }
     }
 
     template<class Settings>
@@ -1775,7 +1783,7 @@ SetWatches:
                     CRef cr = ca.alloc( learnt_clause, CONFLICT_CLAUSE );
                     learnts.push( cr );
                     attachClause( cr );
-                    if( mReceivedFormulaPurelyPropositional )
+                    if( !mReceivedFormulaPurelyPropositional )
                         mChangedActivities.push_back( cr );
                     claBumpActivity( ca[cr] );
                     uncheckedEnqueue( learnt_clause[0], cr );
