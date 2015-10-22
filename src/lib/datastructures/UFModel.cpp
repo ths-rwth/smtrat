@@ -32,16 +32,10 @@ namespace smtrat
     {
         std::hash<SortValue> h;
         std::size_t result = 0;
-        for( auto& instance : *this )
-        {
-            // perform a circular shift by 5 bits.
-            CIRCULAR_SHIFT( size_t, result, 5 );
-            result ^= h( instance.second );
-            for( auto& arg: instance.first )
-            {
-                // perform a circular shift by 5 bits.
-                CIRCULAR_SHIFT( size_t, result, 5 );
-                result ^= h( arg );
+        for (const auto& instance: *this) {
+			carl::hash_add(result, h(instance.second));
+            for (const auto& arg: instance.first) {
+				carl::hash_add(result, h(arg));
             }
         }
         return result;
