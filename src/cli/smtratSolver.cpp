@@ -25,7 +25,7 @@
 #endif //SMTRAT_DEVOPTION_Statistics
 
 
-#include "newparser/Parser.h"
+#include "parser/Parser.h"
 #include "../lib/Common.h"
 #include <carl/formula/DIMACSExporter.h>
 #include <carl/formula/DIMACSImporter.h>
@@ -106,9 +106,11 @@ public:
 		this->solver->printAssertions(std::cout);
 	}
 	void getAssignment() {
-		if (this->lastAnswer == smtrat::True) {
-			this->solver->printAssignment(std::cout);
-		}
+            if (this->lastAnswer == smtrat::True) {
+                smtrat::Model m = this->solver->model();
+                this->cleanModel( m );
+                std::cout << std::endl << m;
+            }
 	}
 	void getProof() {
 		error() << "(get-proof) is not implemented.";
@@ -156,26 +158,27 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
 
 	std::ifstream infile(pathToInputFile);
 	if (!infile.good()) {
-		std::cerr << "Could not open file: " << pathToInputFile << std::endl;
-		exit(SMTRAT_EXIT_NOSUCHFILE);
+            std::cerr << "Could not open file: " << pathToInputFile << std::endl;
+            exit(SMTRAT_EXIT_NOSUCHFILE);
 	}
 	Executor* e = new Executor(solver);
 	if (settingsManager.exportDIMACS()) e->exportDIMACS = true;
 	{
-		smtrat::parser::SMTLIBParser parser(e, true);
-		bool parsingSuccessful = parser.parse(infile);
-		if (!parsingSuccessful) {
-			std::cerr << "Parse error" << std::endl;
-			delete e;
-			exit(SMTRAT_EXIT_PARSERFAILURE);
-		}
+            smtrat::parser::SMTLIBParser parser(e, true);
+            bool parsingSuccessful = parser.parse(infile);
+            if (!parsingSuccessful) {
+                std::cerr << "Parse error" << std::endl;
+                delete e;
+                exit(SMTRAT_EXIT_PARSERFAILURE);
+            }
 	}
 	if (e->hasInstructions()) e->runInstructions();
 	unsigned exitCode = e->getExitCode();
 	if( settingsManager.printModel() && e->lastAnswer == smtrat::True )
 	{
-		std::cout << std::endl;
-		solver->printAssignment( std::cout );
+            smtrat::Model m = solver->model();
+            e->cleanModel( m );
+            std::cout << std::endl << m;
 	}
 	delete e;
 	return exitCode;

@@ -28,7 +28,7 @@ file(STRINGS ${CMAKE_SOURCE_DIR}/LICENSE LICENSE_CONTENT_IN)
 
 configure_file( ${CMAKE_SOURCE_DIR}/src/cli/config.h.in ${CMAKE_SOURCE_DIR}/src/cli/config.h )
 
-foreach(name newparser parser)
+foreach(name parser)
   collect_files(cli ${name})
 endforeach()
 
@@ -36,12 +36,12 @@ endforeach()
 # # # # # # # # # #
 
 add_executable( smtrat
-    newparser/theories/Arithmetic.cpp
-	newparser/theories/Bitvector.cpp
-    newparser/theories/Core.cpp
-    newparser/theories/Uninterpreted.cpp
-	smtratSolver.cpp
-	RuntimeSettingsManager.cpp
+    parser/theories/Arithmetic.cpp
+    parser/theories/Bitvector.cpp
+    parser/theories/Core.cpp
+    parser/theories/Uninterpreted.cpp
+    smtratSolver.cpp
+    RuntimeSettingsManager.cpp
 )
 
 target_link_libraries( smtrat
