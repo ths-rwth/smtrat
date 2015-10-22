@@ -124,7 +124,7 @@ namespace smtrat
     template<class Settings>
     void BVModule<Settings>::updateModel() const
     {
-        if( solverState() == True )
+        if( solverState() != True )
             return;
         if( !Settings::incremental_flattening || !mModelComputed )
             transferBackendModel();
