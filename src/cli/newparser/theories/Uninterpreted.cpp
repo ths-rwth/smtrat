@@ -35,6 +35,8 @@ namespace parser {
 		mTrue(carl::freshVariable("UF_TRUE", carl::VariableType::VT_UNINTERPRETED), mBoolSort),
 		mFalse(carl::freshVariable("UF_FALSE", carl::VariableType::VT_UNINTERPRETED), mBoolSort)
 	{
+		state->artificialVariables.emplace_back(mTrue);
+		state->artificialVariables.emplace_back(mFalse);
 	}
 
 	bool UninterpretedTheory::declareVariable(const std::string& name, const carl::Sort& sort, types::VariableType& result, TheoryError& errors) {

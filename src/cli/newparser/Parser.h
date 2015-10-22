@@ -48,6 +48,7 @@ public:
 		Iterator begin(basebegin);
 		Iterator end;
 		if (qi::phrase_parse(begin, end, parser, skipper)) {
+			handler->setArtificialVariables(std::move(state.artificialVariables));
 			return true;
 		} else {
 			//std::cout << "Remaining to parse:" << std::endl;

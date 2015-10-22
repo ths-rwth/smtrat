@@ -6,6 +6,7 @@
 #pragma once
 
 #include "../../lib/Common.h"
+#include "../../lib/datastructures/Assignment.h"
 
 #include <functional>
 #include <iostream>

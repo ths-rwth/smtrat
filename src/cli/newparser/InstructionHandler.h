@@ -34,6 +34,7 @@ public:
 
 private:
 	std::queue<std::function<void()>> instructionQueue;
+	std::vector<smtrat::ModelVariable> mArtificialVariables;
 public:
 	void addInstruction(std::function<void()> bind) {
 		this->instructionQueue.push(bind);
@@ -45,6 +46,14 @@ public:
 		while (!this->instructionQueue.empty()) {
 			this->instructionQueue.front()();
 			this->instructionQueue.pop();
+		}
+	}
+	void setArtificialVariables(std::vector<smtrat::ModelVariable>&& vars) {
+		mArtificialVariables = std::move(vars);
+	}
+	void cleanModel(smtrat::Model& model) const {
+		for (const auto& v: mArtificialVariables) {
+			model.erase(v);
 		}
 	}
 protected:

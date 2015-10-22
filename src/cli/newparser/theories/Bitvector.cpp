@@ -211,6 +211,7 @@ namespace parser {
 		if (ifterm.isFalse()) { result = elset; return true; }
 		carl::SortManager& sm = carl::SortManager::getInstance();
 		carl::Variable var = carl::freshVariable(carl::VariableType::VT_BITVECTOR);
+		state->artificialVariables.emplace_back(var);
 		carl::BVVariable bvvar(var, sm.index(this->bvSort, {thent.width()}));
 		state->auxiliary_variables.insert(bvvar);
 		types::BVTerm vart = types::BVTerm(carl::BVTermType::VARIABLE, bvvar);
