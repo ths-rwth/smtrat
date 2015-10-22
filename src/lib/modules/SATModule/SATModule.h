@@ -1058,10 +1058,11 @@ namespace smtrat
             {
                 if( (c.activity() += (float)cla_inc) > 1e20 )
                 {
+                    if( !mReceivedFormulaPurelyPropositional )
+                        mAllActivitiesChanged = true;
                     // Rescale:
                     for( int i = 0; i < learnts.size(); i++ )
                     {
-                        mAllActivitiesChanged = true;
                         ca[learnts[i]].activity() *= (float)1e-20;
                     }
                     cla_inc *= 1e-20;
