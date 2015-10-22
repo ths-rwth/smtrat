@@ -370,7 +370,7 @@ print('Writing ' + moduleDirectory + '/' + moduleNamePref + 'Statistics.h ...')
 statisticsFile.write(statisticsContent(moduleName,moduleNamePref))
 statisticsFile.close()
 
-print('\nPlease remove the File CMakeCache.txt in your build directory and set the compiler flag SMTRAT_ENABLE_' + moduleNamePref + 'Module to ON (for instance by the use of ccmake ..)')
+print('\nPlease remove the File CMakeCache.txt in your build directory!')
 
 sys.exit(1)
 
