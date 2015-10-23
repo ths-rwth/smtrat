@@ -105,7 +105,6 @@ namespace smtrat {
                 formula = FormulaT( carl::FormulaType::AND, std::move( bounds ) );
             }
             SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Checked bounds  " << formula);
-            formula = formula.toCNF( true, true, false );
 			if (Settings::printChanges) {
 				std::cout << (FormulaT)rReceivedFormula() << " -> " << formula << std::endl;
 			}
@@ -157,7 +156,6 @@ namespace smtrat {
                 }
                 SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Checked bounds  " << formula);
 
-                formula = formula.toCNF( true, true, false );
                 FormulaT origins(carl::FormulaType::AND, tmpOrigins);
 
 				if (Settings::printChanges) {

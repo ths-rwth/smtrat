@@ -1222,7 +1222,7 @@ namespace smtrat
             }
             
             Minisat::Lit addClauses( const FormulaT& _formula, unsigned _type, bool _outermost = true, const FormulaT& _original = FormulaT( carl::FormulaType::TRUE ) );
-            void addXorClauses( const Minisat::vec<Minisat::Lit>& _literals, int _from, bool _numOfNegatedLitsEven, unsigned _type, Minisat::vec<Minisat::Lit>& _clause );
+            void addXorClauses( const Minisat::vec<Minisat::Lit>& _literals, const Minisat::vec<Minisat::Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, Minisat::vec<Minisat::Lit>& _clause );
             
             /**
              * Stores the given splitting to the set of learned clauses

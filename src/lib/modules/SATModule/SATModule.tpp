@@ -469,25 +469,28 @@ namespace smtrat
             case carl::FormulaType::ITE:
             {
                 Lit condLit = addClauses( _formula.condition(), _type, false, _original );
+                Lit negCondLit = _formula.condition().isLiteral() ? addClauses( _formula.condition().negated(), _type, false, _original ) : neg( condLit );
                 Lit thenLit = addClauses( _formula.firstCase(), _type, false, _original );
                 Lit elseLit = addClauses( _formula.secondCase(), _type, false, _original );
                 vec<Lit> lits;
                 if( _outermost )
                 {
                     // (or -cond then)
-                    lits.push( neg( condLit ) ); lits.push( thenLit ); addClause( lits, _type );
+                    lits.push( negCondLit ); lits.push( thenLit ); addClause( lits, _type );
                     // (or cond else)
                     lits.clear(); lits.push( condLit ); lits.push( elseLit ); addClause( lits, _type );
                     return lit_Undef;
                 }
+                Lit negThenLit = _formula.firstCase().isLiteral() ? addClauses( _formula.firstCase().negated(), _type, false, _original ) : neg( thenLit );
+                Lit negElseLit = _formula.secondCase().isLiteral() ? addClauses( _formula.secondCase().negated(), _type, false, _original ) : neg( elseLit );
                 FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
                 Lit tsLit = getLiteral( tsVar, _original, true );
                 // (or ts -cond -then)
-                lits.push( tsLit ); lits.push( neg( condLit ) ); lits.push( neg( thenLit ) ); addClause( lits, _type );
+                lits.push( tsLit ); lits.push( negCondLit ); lits.push( negThenLit ); addClause( lits, _type );
                 // (or ts cond -else)
-                lits.clear(); lits.push( tsLit ); lits.push( condLit ); lits.push( neg( elseLit ) ); addClause( lits, _type );
+                lits.clear(); lits.push( tsLit ); lits.push( condLit ); lits.push( negElseLit ); addClause( lits, _type );
                 // (or -ts -cond then)
-                lits.clear(); lits.push( neg( tsLit ) ); lits.push( neg( condLit ) ); lits.push( thenLit ); addClause( lits, _type );
+                lits.clear(); lits.push( neg( tsLit ) ); lits.push( negCondLit ); lits.push( thenLit ); addClause( lits, _type );
                 // (or -ts cond else)
                 lits.clear(); lits.push( neg( tsLit ) ); lits.push( condLit ); lits.push( elseLit ); addClause( lits, _type );
                 #ifdef SMTRAT_DEVOPTION_Validation
@@ -507,6 +510,7 @@ namespace smtrat
             {
                 vec<Lit> lits;
                 Lit premLit = addClauses( _formula.premise(), _type, false, _original );
+                Lit negPremLit = _formula.premise().isLiteral() ? addClauses( _formula.premise().negated(), _type, false, _original ) : neg( premLit );
                 Lit conLit = addClauses( _formula.conclusion(), _type, false, _original );
                 if( _outermost )
                 {
@@ -514,14 +518,15 @@ namespace smtrat
                     lits.push( neg( premLit ) ); lits.push( conLit ); addClause( lits, _type );
                     return lit_Undef;
                 }
+                Lit negConLit = _formula.conclusion().isLiteral() ? addClauses( _formula.conclusion().negated(), _type, false, _original ) : neg( conLit );
                 FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
                 Lit tsLit = getLiteral( tsVar, _original, true );
                 // (or -ts -prem con)
-                lits.push( neg( tsLit ) ); lits.push( neg( premLit ) ); lits.push( conLit ); addClause( lits, _type );
+                lits.push( neg( tsLit ) ); lits.push( negPremLit ); lits.push( conLit ); addClause( lits, _type );
                 // (or ts prem)
                 lits.clear(); lits.push( tsLit ); lits.push( premLit ); addClause( lits, _type );
                 // (or ts -con)
-                lits.clear(); lits.push( tsLit ); lits.push( neg( conLit ) ); addClause( lits, _type );
+                lits.clear(); lits.push( tsLit ); lits.push( negConLit ); addClause( lits, _type );
                 #ifdef SMTRAT_DEVOPTION_Validation
                 FormulasT equivalentSubs;
                 equivalentSubs.emplace_back( carl::FormulaType::OR, tsVar.negated(), _formula.premise().negated(), _formula.conclusion() );
@@ -541,6 +546,7 @@ namespace smtrat
                     lits.push( addClauses( sf, _type, false, _original ) );
                 if( _outermost )
                 {
+                    // (or a1 .. an)
                     addClause( lits, _type );
                     return lit_Undef;
                 }
@@ -553,11 +559,14 @@ namespace smtrat
                 // (or ts -a1) .. (or ts -an)
                 vec<Lit> litsTmp;
                 litsTmp.push( tsLit );
-                for( int i = 0; i < lits.size(); ++i )
+                int i = 0;
+                for( const auto& sf : _formula.subformulas() )
                 {
-                    litsTmp.push( neg( lits[i] ) );
+                    assert( i < lits.size() );
+                    litsTmp.push( sf.isLiteral() ? addClauses( sf.negated(), _type, false, _original ) : neg( lits[i] ) );
                     addClause( litsTmp, _type );
                     litsTmp.pop();
+                    ++i;
                 }
                 #ifdef SMTRAT_DEVOPTION_Validation
                 FormulasT equivalentSubs;
@@ -578,22 +587,22 @@ namespace smtrat
                 assert( !_outermost ); // because, this should be split in the module input
                 FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
                 Lit tsLit = getLiteral( tsVar, _original, true );
-                vec<Lit> lits;
-                // (or ts -a1 .. -an)
-                for( const auto& sf : _formula.subformulas() )
-                    lits.push( neg( addClauses( sf, _type, false, _original ) ) );
-                lits.push( tsLit );
-                addClause( lits, _type );
-                lits.pop();
                 // (or -ts a1) .. (or -ts an)
+                // (or ts -a1 .. -an)
+                vec<Lit> lits;
                 vec<Lit> litsTmp;
                 litsTmp.push( neg( tsLit ) );
-                for( int i = 0; i < lits.size(); ++i )
+                for( const auto& sf : _formula.subformulas() )
                 {
-                    litsTmp.push( neg( lits[i] ) );
+                    Lit l = addClauses( sf, _type, false, _original );
+                    litsTmp.push( l );
                     addClause( litsTmp, _type );
                     litsTmp.pop();
+                    Lit negL = sf.isLiteral() ? addClauses( sf.negated(), _type, false, _original ) : neg( l );
+                    lits.push( negL );
                 }
+                lits.push( tsLit );
+                addClause( lits, _type );
                 #ifdef SMTRAT_DEVOPTION_Validation
                 FormulasT equivalentSubs;
                 FormulasT clauseSubs;
@@ -613,29 +622,33 @@ namespace smtrat
             }
             case carl::FormulaType::IFF: 
             {
-                vec<Lit> lits;
                 vec<Lit> tmp;
                 if( _outermost )
                 {
                     auto sfIter = _formula.subformulas().begin();
                     Lit l = addClauses( *sfIter, _type, false, _original );
+                    Lit negL = sfIter->isLiteral() ? addClauses( sfIter->negated(), _type, false, _original ) : neg( l );
                     ++sfIter;
                     for( ; sfIter != _formula.subformulas().end(); ++sfIter )
                     {
                         Lit k = addClauses( *sfIter, _type, false, _original );
+                        Lit negK = sfIter->isLiteral() ? addClauses( sfIter->negated(), _type, false, _original ) : neg( k );
                         // (or -l k)
-                        tmp.clear(); tmp.push( neg( l ) ); tmp.push( k ); addClause( tmp, _type );
+                        tmp.clear(); tmp.push( negL ); tmp.push( k ); addClause( tmp, _type );
                         // (or l -k)
-                        tmp.clear(); tmp.push( l ); tmp.push( neg( k ) ); addClause( tmp, _type );
+                        tmp.clear(); tmp.push( l ); tmp.push( negK ); addClause( tmp, _type );
                         l = k;
+                        negL = negK;
                     }
                     return lit_Undef;
                 }
+                vec<Lit> lits;
                 for( const auto& sf : _formula.subformulas() )
                 {
                     Lit l = addClauses( sf, _type, false, _original );
+                    Lit negL = sf.isLiteral() ? addClauses( sf.negated(), _type, false, _original ) : neg( l );
                     lits.push( l );
-                    tmp.push( neg( l ) );
+                    tmp.push( negL );
                 }
                 FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
                 Lit tsLit = getLiteral( tsVar, _original, true );
@@ -645,10 +658,11 @@ namespace smtrat
                 // (or -a1 .. -an h)
                 tmp.push( tsLit ); addClause( tmp, _type );
                 // (or -a1 a2 -h) (or a1 -a2 -h) .. (or -a{n-1} an -h) (or a{n-1} -an -h)
+                vec<Lit> tmpB;
                 for( int i = 1; i < lits.size(); ++i )
                 {
-                    tmp.clear(); tmp.push( neg( lits[i-1] ) ); tmp.push( lits[i] ); tmp.push( neg( tsLit ) ); addClause( tmp, _type );
-                    tmp.clear(); tmp.push( lits[i-1] ); tmp.push( neg( lits[i] ) ); tmp.push( neg( tsLit ) ); addClause( tmp, _type );
+                    tmpB.clear(); tmpB.push( tmp[i-1] ); tmpB.push( lits[i] ); tmpB.push( neg( tsLit ) ); addClause( tmpB, _type );
+                    tmpB.clear(); tmpB.push( lits[i-1] ); tmpB.push( tmp[i] ); tmpB.push( neg( tsLit ) ); addClause( tmpB, _type );
                 }
                 #ifdef SMTRAT_DEVOPTION_Validation
                 FormulasT equivalentSubs;
@@ -675,17 +689,22 @@ namespace smtrat
             case carl::FormulaType::XOR:
             {
                 vec<Lit> lits;
+                vec<Lit> negLits;
                 vec<Lit> tmp;
                 for( const auto& sf : _formula.subformulas() )
+                {
                     lits.push( addClauses( sf, _type, false, _original ) );
+                    negLits.push( sf.isLiteral() ? addClauses( sf.negated(), _type, false, _original ) : neg( lits.last() ) );
+                }
                 if( _outermost )
                 {
-                    addXorClauses( lits, 0, true, _type, tmp );
+                    addXorClauses( lits, negLits, 0, true, _type, tmp );
                     return lit_Undef;
                 }
                 Lit tsLit = getLiteral( carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula ), _original, true );
                 lits.push( neg( tsLit ) );
-                addXorClauses( lits, 0, true, _type, tmp );
+                negLits.push( tsLit );
+                addXorClauses( lits, negLits, 0, true, _type, tmp );
                 return tsLit;
             }
             case carl::FormulaType::EXISTS:
@@ -701,21 +720,21 @@ namespace smtrat
     }
     
     template<class Settings>
-    void SATModule<Settings>::addXorClauses( const vec<Lit>& _literals, int _from, bool _numOfNegatedLitsEven, unsigned _type, vec<Lit>& _clause )
+    void SATModule<Settings>::addXorClauses( const vec<Lit>& _literals, const vec<Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, vec<Lit>& _clause )
     {
         if( _from == _literals.size() - 1 )
         {
-            _clause.push( _numOfNegatedLitsEven ? _literals[_from] : neg( _literals[_from] ) );
+            _clause.push( _numOfNegatedLitsEven ? _literals[_from] : _negLiterals[_from] );
             addClause( _clause, _type );
             _clause.pop();
         }
         else
         {
             _clause.push( _literals[_from] );
-            addXorClauses( _literals, _from+1, _numOfNegatedLitsEven, _type, _clause );
+            addXorClauses( _literals, _negLiterals, _from+1, _numOfNegatedLitsEven, _type, _clause );
             _clause.pop();
-            _clause.push( neg( _literals[_from] ) );
-            addXorClauses( _literals, _from+1, !_numOfNegatedLitsEven, _type, _clause );
+            _clause.push( _negLiterals[_from] );
+            addXorClauses( _literals, _negLiterals, _from+1, !_numOfNegatedLitsEven, _type, _clause );
             _clause.pop();
         }
     }
