@@ -520,6 +520,20 @@ namespace smtrat
             void printConstraintLiteralMap( std::ostream& _out = std::cout, const std::string _init = "" ) const;
             
             /**
+             * Prints the formulas to clauses map.
+             * @param _out  The output stream where the answer should be printed.
+             * @param _init The line initiation.
+             */
+            void printFormulaClausesMap( std::ostream& _out = std::cout, const std::string _init = "" ) const;
+            
+            /**
+             * Prints the clause information.
+             * @param _out  The output stream where the answer should be printed.
+             * @param _init The line initiation.
+             */
+            void printClauseInformation( std::ostream& _out = std::cout, const std::string _init = "" ) const;
+            
+            /**
              * Prints map of the Boolean within the SAT solver to the given Booleans.
              * @param _out  The output stream where the answer should be printed.
              * @param _init The line initiation.

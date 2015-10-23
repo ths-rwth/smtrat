@@ -29,7 +29,7 @@
 #include <iomanip>
 #include <carl/formula/DIMACSExporter.h>
 
-//#define DEBUG_METHODS_SATMODULE
+#define DEBUG_METHODS_SATMODULE
 #ifdef DEBUG_METHODS_SATMODULE
 //#define DEBUG_SATMODULE
 #endif
@@ -188,6 +188,7 @@ namespace smtrat
                 for( ; pos < clauses.size(); ++pos )
                 {
                     ret.first->second.push_back( clauses[pos] );
+                    assert( mClauseInformation.find( clauses[pos] ) == mClauseInformation.end() );
                     mClauseInformation.emplace( clauses[pos], ClauseInformation( pos ) );
                 }
             }
@@ -207,6 +208,7 @@ namespace smtrat
         cancelUntil( assumptions.size() );  // can we do better than this?
         adaptPassedFormula();
         learnts.clear();
+        ok = true;
         if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
         {
             auto iter = mFormulaAssumptionMap.find( _subformula->formula() );
@@ -237,11 +239,28 @@ namespace smtrat
                 auto ciIter = mClauseInformation.find( cref );
                 assert( ciIter != mClauseInformation.end() );
                 vec<CRef>& cls = ciIter->second.mStoredInSatisfied ? satisfiedClauses : clauses;
-                cls[ciIter->second.mPosition] = cls.last();
-                cls.pop();
-                cls.shrink( 1 );
-                auto ciIterB = mClauseInformation.find( cls[ciIter->second.mPosition] );
-                ciIterB->second.mPosition = ciIter->second.mPosition;
+                if( ciIter->second.mPosition < cls.size() - 1 )
+                {
+                    cls[ciIter->second.mPosition] = cls.last();
+                    auto ciIterB = mClauseInformation.find( cls[ciIter->second.mPosition] );
+                    if( ciIterB == mClauseInformation.end() )
+                    {
+                        std::cout << "error" << std::endl;
+                        cout << "###" << endl; printClauses( clauses, "Clauses", cout, "### " );
+                        cout << "###" << endl;
+                        printClauseInformation();
+                        printFormulaClausesMap();
+                        std::cout << "removing: " << cref << ", swapping: " << ciIter->second.mPosition << " and " << (cls.size()-1) << std::endl;
+                        exit(1478);
+                    }
+                    assert( ciIterB != mClauseInformation.end() );
+                    ciIterB->second.mPosition = ciIter->second.mPosition;
+                    cls.pop();
+                }
+                else
+                {
+                    cls.pop();
+                }
                 mClauseInformation.erase( ciIter );
                 removeClause( cref );
             }
@@ -2248,6 +2267,7 @@ NextClause:
     template<class Settings>
     void SATModule<Settings>::reduceDB()
     {
+        std::cout << "reduceDB" << std::endl;
         int    i, j;
         double extra_lim = cla_inc / learnts.size();    // Remove any clause below this activity
 
@@ -2528,14 +2548,23 @@ NextClause:
         // relocate clauses in mFormulaClausesMap
         for( auto& iter : mFormulaClausesMap )
         {
-            std::vector<Minisat::CRef> tmp;
-            for( Minisat::CRef c : iter.second )
+            std::vector<CRef> tmp;
+            for( CRef c : iter.second )
             {
                 ca.reloc( c, to );
                 tmp.insert( tmp.end(), c );
             }
             iter.second = std::move( tmp );
         }
+        
+        carl::FastMap<Minisat::CRef,ClauseInformation> tmp;
+        for( auto& ciPair : mClauseInformation )
+        {
+            CRef c = ciPair.first;
+            ca.reloc( c, to );
+            tmp.emplace( c, ciPair.second );
+        }
+        mClauseInformation = std::move( tmp );
         
         // All watchers:
         //
@@ -2633,6 +2662,30 @@ NextClause:
                 _out << var( *litIter );
             }
             _out << " ]" << endl;
+        }
+    }
+    
+    template<class Settings>
+    void SATModule<Settings>::printFormulaClausesMap( ostream& _out, const string _init ) const
+    {
+        _out << _init << " FormulaClausesMap" << endl;
+        for( auto& fcsPair : mFormulaClausesMap )
+        {
+            _out << _init << "    " << fcsPair.first << std::endl;
+            _out << _init << "        {";
+            for( auto cref : fcsPair.second )
+                _out << " " << cref;
+            _out << " }" << std::endl;
+        }
+    }
+    
+    template<class Settings>
+    void SATModule<Settings>::printClauseInformation( ostream& _out, const string _init ) const
+    {
+        _out << _init << " ClauseInformation" << endl;
+        for( auto& ciPair : mClauseInformation )
+        {
+            _out << _init << "    " << ciPair.first << " -> (stored in satisfied: " << (ciPair.second.mStoredInSatisfied ? "yes" : "no") << ", position: " << ciPair.second.mPosition << ")" << std::endl;
         }
     }
 
@@ -2752,6 +2805,7 @@ NextClause:
 
         for( int i = _from; i < _clauses.size(); i++ )
         {
+            _out << i << ": ";
             printClause( _clauses[i], _withAssignment, _out, _init  );
         }
 
