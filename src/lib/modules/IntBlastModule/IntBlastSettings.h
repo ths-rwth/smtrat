@@ -36,6 +36,8 @@ namespace smtrat
          * Note that this only applies to the encoding of variables.
          * Intermediate terms (polynomials) are always encoded using a
          * sufficiently high width.
+         * 
+         * If this value is set to zero, there is no maximal width. Choose this option only if all variables are bounded.
          */
         static const std::size_t max_variable_encoding_width = 4;
 
