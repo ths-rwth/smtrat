@@ -160,7 +160,7 @@ namespace smtrat
         for(;;)
         {
             // Check if we exceed the maximally allowed width
-            if( mHalfOfCurrentWidth > Settings::half_of_max_width )
+            if( Settings::half_of_max_width > 0 && mHalfOfCurrentWidth > Settings::half_of_max_width )
             {
                 #ifdef DEBUG_INC_WIDTH_MODULE
                 std::cout << "Reached maximal width" << std::endl;
