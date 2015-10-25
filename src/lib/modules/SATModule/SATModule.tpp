@@ -2603,8 +2603,8 @@ NextClause:
         {
             for( auto& lcsPair : mLiteralClausesMap )
             {
-                carl::FastSet<Minisat::CRef>& cls = lcsPair.second;
-                carl::FastSet<Minisat::CRef> tmp;
+                std::unordered_set<CRef>& cls = lcsPair.second;
+                std::unordered_set<CRef> tmp;
                 for( CRef c : cls )
                 {
                     ca.reloc( c, to );
