@@ -117,10 +117,12 @@ namespace smtrat
         mBooleanVarMap(),
         mFormulaAssumptionMap(),
         mFormulaClausesMap(),
+        mClauseInformation(),
+        mLiteralClausesMap(),
+        mNumberOfSatisfiedClauses( 0 ),
         mChangedBooleans(),
         mAllActivitiesChanged( false ),
         mChangedActivities(),
-        mVarReplacements(),
         mSplittingVars(),
         mOldSplittingVars(),
         mNewSplittingVars(),
@@ -243,16 +245,6 @@ namespace smtrat
                 {
                     cls[ciIter->second.mPosition] = cls.last();
                     auto ciIterB = mClauseInformation.find( cls[ciIter->second.mPosition] );
-                    if( ciIterB == mClauseInformation.end() )
-                    {
-                        std::cout << "error" << std::endl;
-                        cout << "###" << endl; printClauses( clauses, "Clauses", cout, "### " );
-                        cout << "###" << endl;
-                        printClauseInformation();
-                        printFormulaClausesMap();
-                        std::cout << "removing: " << cref << ", swapping: " << ciIter->second.mPosition << " and " << (cls.size()-1) << std::endl;
-                        exit(1478);
-                    }
                     assert( ciIterB != mClauseInformation.end() );
                     ciIterB->second.mPosition = ciIter->second.mPosition;
                     cls.pop();
@@ -262,6 +254,12 @@ namespace smtrat
                     cls.pop();
                 }
                 mClauseInformation.erase( ciIter );
+                if( Settings::check_if_all_clauses_are_satisfied )
+                {
+                    const Clause& c = ca[cref];
+                    for( int i = 0; i < c.size(); ++i )
+                        mLiteralClausesMap[Minisat::toInt(c[i])].erase( cref );
+                }
                 removeClause( cref );
             }
             mFormulaClausesMap.erase( iter );
@@ -410,9 +408,9 @@ namespace smtrat
                 mModel.insert(std::make_pair(bVar->first, assignment));
             }
             Module::getBackendsModel();
-            for( auto varReplacement = mVarReplacements.begin(); varReplacement != mVarReplacements.end(); ++varReplacement )
+            if( Settings::check_if_all_clauses_are_satisfied && trail.size() < assigns.size() )
             {
-                mModel[varReplacement->first] = varReplacement->second;
+                getDefaultModel( mModel, (FormulaT)rReceivedFormula(), false );
             }
         }
     }
@@ -962,19 +960,9 @@ namespace smtrat
                 FormulaT invertedConstraint;
                 if( content.getType() == carl::FormulaType::CONSTRAINT )
                 {
-                    if( mVarReplacements.empty() )
-                    {
-                        constraint = content;
-                        const ConstraintT& cons = content.constraint();
-                        invertedConstraint = FormulaT( cons.lhs(), carl::invertRelation( cons.relation() ) );
-                    }
-                    else
-                    {
-                        const ConstraintT& cons = content.constraint();
-                        Poly constraintLhs = cons.lhs().substitute( mVarReplacements );
-                        constraint = FormulaT( constraintLhs, cons.relation() );
-                        invertedConstraint = FormulaT( constraintLhs, carl::invertRelation( cons.relation() ) );
-                    }
+                    constraint = content;
+                    const ConstraintT& cons = content.constraint();
+                    invertedConstraint = FormulaT( cons.lhs(), carl::invertRelation( cons.relation() ) );
                 }
                 else if( content.getType() == carl::FormulaType::UEQ )
                 {
@@ -1240,6 +1228,11 @@ namespace smtrat
                 // Store it as normal clause
                 cr = ca.alloc( add_tmp, NORMAL_CLAUSE );
                 clauses.push( cr );
+                if( Settings::check_if_all_clauses_are_satisfied )
+                {
+                    for( int i = 0; i < add_tmp.size(); ++i )
+                        mLiteralClausesMap[Minisat::toInt(add_tmp[i])].insert( cr );
+                }
             }
             Clause& c = ca[cr];
             arrangeForWatches( c );
@@ -1532,7 +1525,7 @@ SetWatches:
         {
             for( int c = trail.size() - 1; c >= trail_lim[level]; --c )
             {
-                Var x       = var( trail[c] );
+                Var x = var( trail[c] );
                 if( !mReceivedFormulaPurelyPropositional && mBooleanConstraintMap[x].first != nullptr )
                 {
                     assert( mBooleanConstraintMap[x].second != nullptr );
@@ -1544,7 +1537,22 @@ SetWatches:
                     }
                     else if( abstr.consistencyRelevant ) abstr.updateInfo = 0;
                 }
-                assigns[x]  = l_Undef;
+                assigns[x] = l_Undef;
+                if( Settings::check_if_all_clauses_are_satisfied && !mReceivedFormulaPurelyPropositional && mNumberOfSatisfiedClauses > 0 )
+                {
+                    auto litClausesIter = mLiteralClausesMap.find( Minisat::toInt( trail[c] ) );
+                    if( litClausesIter != mLiteralClausesMap.end() )
+                    {
+                        for( CRef cl : litClausesIter->second )
+                        {
+                            if( !satisfied( ca[cl] ) )
+                            {
+                                assert( mNumberOfSatisfiedClauses > 0 );
+                                --mNumberOfSatisfiedClauses;
+                            }
+                        }
+                    }
+                }
                 if( (phase_saving > 1 || (phase_saving == 1)) && c > trail_lim.last() )
                     polarity[x] = sign( trail[c] );
                 insertVarOrder( x );
@@ -1676,6 +1684,16 @@ SetWatches:
             if( confl == CRef_Undef )
             {
                 // NO CONFLICT
+                if( Settings::check_if_all_clauses_are_satisfied && !mReceivedFormulaPurelyPropositional )
+                {
+//                    std::cout << "\r" << std::setw(30) << mNumberOfSatisfiedClauses << " from " << clauses.size() << " clauses are satisfied";
+//                    std::cout.flush();
+                    if( mNumberOfSatisfiedClauses == (size_t)clauses.size() )
+                    {
+//                        std::cout << "terminate early saving " << (assigns.size()-trail.size()) << " assignments!" << std::endl;
+                        return l_True;
+                    }
+                }
                 if( Settings::use_restarts && nof_conflicts >= 0 && (conflictC >= nof_conflicts) ) // ||!withinBudget()) )
                 {
                     #ifdef DEBUG_SATMODULE
@@ -2145,6 +2163,21 @@ SetWatches:
         cout << __func__ << " " << (sign(p) ? "-" : "") << var(p) << "  from " << from << endl;
         #endif
         assert( value( p ) == l_Undef );
+        if( Settings::check_if_all_clauses_are_satisfied && !mReceivedFormulaPurelyPropositional && mNumberOfSatisfiedClauses < (size_t)clauses.size() )
+        {
+            auto litClausesIter = mLiteralClausesMap.find( Minisat::toInt( p ) );
+            if( litClausesIter != mLiteralClausesMap.end() )
+            {
+                for( CRef cl : litClausesIter->second )
+                {
+                    if( !satisfied( ca[cl] ) )
+                    {
+                        assert( mNumberOfSatisfiedClauses < (size_t)clauses.size() );
+                        ++mNumberOfSatisfiedClauses;
+                    }
+                }
+            }
+        }
         assigns[var( p )] = lbool( !sign( p ) );
         if( !mReceivedFormulaPurelyPropositional && mBooleanConstraintMap[var( p )].first != nullptr )
         {
@@ -2565,6 +2598,21 @@ NextClause:
             tmp.emplace( c, ciPair.second );
         }
         mClauseInformation = std::move( tmp );
+        
+        if( Settings::check_if_all_clauses_are_satisfied )
+        {
+            for( auto& lcsPair : mLiteralClausesMap )
+            {
+                carl::FastSet<Minisat::CRef>& cls = lcsPair.second;
+                carl::FastSet<Minisat::CRef> tmp;
+                for( CRef c : cls )
+                {
+                    ca.reloc( c, to );
+                    tmp.insert( tmp.end(), c );
+                }
+                cls = std::move(tmp);
+            }
+        }
         
         // All watchers:
         //

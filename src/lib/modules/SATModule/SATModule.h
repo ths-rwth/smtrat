@@ -410,15 +410,18 @@ namespace smtrat
             carl::FastMap<FormulaT, Minisat::Lit> mFormulaAssumptionMap;
             /// Maps the clauses in the received formula to the corresponding Minisat clause.
             FormulaClausesMap mFormulaClausesMap;
+            ///
             carl::FastMap<Minisat::CRef,ClauseInformation> mClauseInformation;
+            ///
+            carl::FastMap<int,carl::FastSet<Minisat::CRef>> mLiteralClausesMap;
+            ///
+            size_t mNumberOfSatisfiedClauses;
             /// Stores all Literals for which the abstraction information might be changed.
             std::vector<signed> mChangedBooleans;
             /// Is true, if we have to communicate all activities to the backends. (This might be the case after rescaling the activities.)
             bool mAllActivitiesChanged;
             /// Stores all clauses in which the activities have been changed.
             std::vector<Minisat::CRef> mChangedActivities;
-            /// Maps the arithmetic variables to the terms they have been replaced by a valid substitution (only used by the valid-substitutions optimization).
-            std::map<carl::Variable,Poly> mVarReplacements;
             /// Stores all Boolean variables introduced for theory splitting decisions.
             std::vector<signed> mSplittingVars;
             /// Stores all Boolean variables which once had been used for theory splitting decisions.
@@ -431,7 +434,6 @@ namespace smtrat
             std::unordered_set<int> mLevelCounter;
             ///
             size_t mTheoryConflictIdCounter;
-            ///
             
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
@@ -582,20 +584,6 @@ namespace smtrat
              * @param _init The line initiation.
              */
             void printDecisions( std::ostream& _out = std::cout, std::string _init = "" ) const;
-            
-            /**
-             * Prints the occurrences of arithmetic variables in constraints the SAT solver has contains.
-             * @param _out  The output stream where the answer should be printed.
-             * @param _init The line initiation.
-             */
-            void printVariableOccurrences( std::ostream& _out = std::cout, std::string _init = "" ) const;
-            
-            /**
-             * Prints the mapping of variable managed by the SAT solver to the clauses they occur.
-             * @param _out  The output stream where the answer should be printed.
-             * @param _init The line initiation.
-             */
-            void printVariableClausesMap( std::ostream& _out = std::cout, std::string _init = "" ) const;
 
             /**
              * Collects the taken statistics.
