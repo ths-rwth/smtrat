@@ -455,10 +455,10 @@ namespace smtrat
      */
     unsigned satisfies( const Model& _model, const EvalRationalMap& _assignment, const std::map<carl::BVVariable, carl::BVTerm>& bvAssigns, const FormulaT& _formula );
     
-    void getDefaultModel( Model& _defaultModel, const carl::UEquality& _constraint, size_t _seed = 0 );
-    void getDefaultModel( Model& _defaultModel, const carl::BVTerm& _constraint, size_t _seed = 0 );
-    void getDefaultModel( Model& _defaultModel, const ConstraintT& _constraint, size_t _seed = 0 );
-    void getDefaultModel( Model& _defaultModel, const FormulaT& _formula, size_t _seed = 0 );
+    void getDefaultModel( Model& _defaultModel, const carl::UEquality& _constraint, bool _overwrite = true, size_t _seed = 0 );
+    void getDefaultModel( Model& _defaultModel, const carl::BVTerm& _constraint, bool _overwrite = true, size_t _seed = 0 );
+    void getDefaultModel( Model& _defaultModel, const ConstraintT& _constraint, bool _overwrite = true, size_t _seed = 0 );
+    void getDefaultModel( Model& _defaultModel, const FormulaT& _formula, bool _overwrite = true, size_t _seed = 0 );
     
     std::ostream& operator<<( std::ostream& _out, const Model& _model );
 }
