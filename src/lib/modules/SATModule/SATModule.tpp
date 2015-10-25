@@ -1688,7 +1688,7 @@ SetWatches:
                 {
 //                    std::cout << "\r" << std::setw(30) << mNumberOfSatisfiedClauses << " from " << clauses.size() << " clauses are satisfied";
 //                    std::cout.flush();
-                    if( mNumberOfSatisfiedClauses == (size_t)clauses.size() )
+                    if( decisionLevel() >= assumptions.size() && mNumberOfSatisfiedClauses == (size_t)clauses.size() )
                     {
 //                        std::cout << "terminate early saving " << (assigns.size()-trail.size()) << " assignments!" << std::endl;
                         return l_True;
