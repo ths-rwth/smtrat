@@ -1,5 +1,6 @@
 #pragma once
 
+#include <boost/version.hpp>
 #include "Common.h"
 #include "theories/TheoryTypes.h"
 
@@ -120,12 +121,22 @@ struct KeywordParser: public qi::grammar<Iterator, std::string(), Skipper> {
 }
 
 namespace boost { namespace spirit { namespace traits {
+#if BOOST_VERSION >= 105900
+    template<> inline bool scale(int exp, smtrat::Rational& r, smtrat::Rational rin) {
+        if (exp >= 0)
+            r = rin * carl::pow(smtrat::Rational(10), (unsigned)exp);
+        else
+            r = rin / carl::pow(smtrat::Rational(10), (unsigned)(-exp));
+		return true;
+    }
+#else
     template<> inline void scale(int exp, smtrat::Rational& r) {
         if (exp >= 0)
             r *= carl::pow(smtrat::Rational(10), (unsigned)exp);
         else
             r /= carl::pow(smtrat::Rational(10), (unsigned)(-exp));
     }
+#endif
     template<> inline bool is_equal_to_one(const smtrat::Rational& value) {
         return value == 1;
     }
