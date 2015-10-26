@@ -70,8 +70,12 @@ namespace smtrat
     {
         bool result = true;
         for( auto ass = _model.begin(); ass != _model.end(); ++ass )
-        {   
-            if (ass->second.isSqrtEx())
+        {
+            if (ass->second.isRational())
+            {
+                _rationalAssigns.insert( _rationalAssigns.end(), std::make_pair(ass->first.asVariable(), ass->second.asRational()));
+            }
+            else if (ass->second.isSqrtEx())
             {
                 if( ass->second.asSqrtEx().isConstant() && !ass->second.asSqrtEx().hasSqrt() )
                 {
@@ -370,12 +374,12 @@ namespace smtrat
         }
     }
     
-    void getDefaultModel( Model& _defaultModel, const carl::UEquality& _constraint, size_t _seed )
+    void getDefaultModel( Model& _defaultModel, const carl::UEquality& _constraint, bool _overwrite, size_t _seed )
     {
-        
+        assert(false);
     }
     
-    void getDefaultModel( Model& _defaultModel, const carl::BVTerm& _bvTerm, size_t _seed )
+    void getDefaultModel( Model& _defaultModel, const carl::BVTerm& _bvTerm, bool _overwrite, size_t _seed )
     {
         if( _bvTerm.type() == carl::BVTermType::VARIABLE )
         {
@@ -390,17 +394,17 @@ namespace smtrat
             }
         }
         else if( carl::typeIsUnary( _bvTerm.type() ) )
-            getDefaultModel( _defaultModel, _bvTerm.operand(), _seed );
+            getDefaultModel( _defaultModel, _bvTerm.operand(), _overwrite, _seed );
         else if( carl::typeIsBinary( _bvTerm.type() ) )
         {
-            getDefaultModel( _defaultModel, _bvTerm.first(), _seed );
-            getDefaultModel( _defaultModel, _bvTerm.second(), _seed );
+            getDefaultModel( _defaultModel, _bvTerm.first(), _overwrite, _seed );
+            getDefaultModel( _defaultModel, _bvTerm.second(), _overwrite, _seed );
         }
         else if( _bvTerm.type() == carl::BVTermType::EXTRACT )
-            getDefaultModel( _defaultModel, _bvTerm.operand(), _seed );
+            getDefaultModel( _defaultModel, _bvTerm.operand(), _overwrite, _seed );
     }
     
-    void getDefaultModel( Model& _defaultModel, const ConstraintT& _constraint, size_t _seed )
+    void getDefaultModel( Model& _defaultModel, const ConstraintT& _constraint, bool _overwrite, size_t _seed )
     {
         for( carl::Variable::Arg var : _constraint.variables() )
         {
@@ -416,7 +420,7 @@ namespace smtrat
         }
     }
     
-    void getDefaultModel( Model& _defaultModel, const FormulaT& _formula, size_t _seed )
+    void getDefaultModel( Model& _defaultModel, const FormulaT& _formula, bool _overwrite, size_t _seed )
     {
         switch( _formula.getType() )
         {
@@ -436,19 +440,19 @@ namespace smtrat
                 return;
             }
             case carl::FormulaType::CONSTRAINT:
-                getDefaultModel( _defaultModel, _formula.constraint(), _seed ); return;
+                getDefaultModel( _defaultModel, _formula.constraint(), _overwrite, _seed ); return;
             case carl::FormulaType::BITVECTOR:
-                getDefaultModel( _defaultModel, _formula.bvConstraint().lhs(), _seed );
-                getDefaultModel( _defaultModel, _formula.bvConstraint().rhs(), _seed );
+                getDefaultModel( _defaultModel, _formula.bvConstraint().lhs(), _overwrite, _seed );
+                getDefaultModel( _defaultModel, _formula.bvConstraint().rhs(), _overwrite, _seed );
                 return;
             case carl::FormulaType::UEQ:
-                getDefaultModel( _defaultModel, _formula.uequality(), _seed ); return;
+                getDefaultModel( _defaultModel, _formula.uequality(), _overwrite, _seed ); return;
             case carl::FormulaType::NOT:
-                getDefaultModel( _defaultModel, _formula.subformula(), _seed ); return;
+                getDefaultModel( _defaultModel, _formula.subformula(), _overwrite, _seed ); return;
             default:
                 assert( _formula.isNary() );
                 for( const FormulaT& subFormula : _formula.subformulas() )
-                    getDefaultModel( _defaultModel, subFormula, _seed );
+                    getDefaultModel( _defaultModel, subFormula, _overwrite, _seed );
         }
     }
     

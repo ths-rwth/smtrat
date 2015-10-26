@@ -66,8 +66,12 @@ namespace smtrat
                 auto varShiftIter = mVariableShifts.find( ass.first.asVariable() );
                 if( varShiftIter != mVariableShifts.end() )
                 {
-                    assert( ass.second.isSqrtEx() || ass.second.isRAN() );
-                    if( ass.second.isSqrtEx() )
+                    assert( ass.second.isRational() || ass.second.isSqrtEx() || ass.second.isRAN() );
+                    if( ass.second.isRational() )
+                    {
+                        ass.second = ass.second.asRational() - varShiftIter->second.constantPart();
+                    }
+                    else if( ass.second.isSqrtEx() )
                     {
                         ass.second = ass.second.asSqrtEx() - vs::SqrtEx( Poly( varShiftIter->second.constantPart() ) );
                     }
@@ -101,7 +105,7 @@ namespace smtrat
             {
                 auto it = varBounds.find( v );
                 if( it == varBounds.end() )
-                    std::cout << "   " << v << " in (-oo,oo)" << std::endl;
+                    std::cout << "   " << v << " in (-INF,INF)" << std::endl;
                 else
                     std::cout << "   " << v << " in " << it->second << std::endl;
             }
@@ -115,52 +119,30 @@ namespace smtrat
                 if( vb.second.lowerBoundType() != carl::BoundType::INFTY )
                 {
                     // (a,b) -> (0,b-a)  or  (a,oo) -> (0,oo)
-//                    if( vb.second.lower() < ZERO_RATIONAL )
-//                    {
-//                        mVariableShifts[vb.first] = carl::makePolynomial<smtrat::Poly>( vb.first ) + vb.second.lower();
-//                        #ifdef DEBUG_INC_WIDTH_MODULE
-//                        std::cout << "   " << mVariableShifts[vb.first] << std::endl;
-//                        #endif
-//                    }
-//                    else if( vb.second.lower() > ZERO_RATIONAL )
-//                    {
-                        mVariableShifts[vb.first] = carl::makePolynomial<smtrat::Poly>( vb.first ) - vb.second.lower();
-                        #ifdef DEBUG_INC_WIDTH_MODULE
-                        std::cout << "   " << mVariableShifts[vb.first] << std::endl;
-                        #endif
-//                    }
+                    mVariableShifts[vb.first] = carl::makePolynomial<smtrat::Poly>( vb.first ) - vb.second.lower();
+                    #ifdef DEBUG_INC_WIDTH_MODULE
+                    std::cout << "   " << vb.first << " -> " << mVariableShifts[vb.first] << std::endl;
+                    #endif
                 }
                 else if( vb.second.upperBoundType() != carl::BoundType::INFTY )
                 {
                     // (-oo,b) -> (-oo,0)
-//                    if( vb.second.upper() < ZERO_RATIONAL )
-//                    {
-//                        mVariableShifts[vb.first] = carl::makePolynomial<smtrat::Poly>( vb.first ) + vb.second.upper();
-//                        #ifdef DEBUG_INC_WIDTH_MODULE
-//                        std::cout << "   " << mVariableShifts[vb.first] << std::endl;
-//                        #endif
-//                    }
-//                    else if( vb.second.upper() > ZERO_RATIONAL )
-//                    {
-                        mVariableShifts[vb.first] = carl::makePolynomial<smtrat::Poly>( vb.first ) - vb.second.upper();
-                        #ifdef DEBUG_INC_WIDTH_MODULE
-                        std::cout << "   " << mVariableShifts[vb.first] << std::endl;
-                        #endif
-//                    }
+                    mVariableShifts[vb.first] = carl::makePolynomial<smtrat::Poly>( vb.first ) - vb.second.upper();
+                    #ifdef DEBUG_INC_WIDTH_MODULE
+                    std::cout << "   " << vb.first << " -> " << mVariableShifts[vb.first] << std::endl;
+                    #endif
                 }
             }
         }
         // add all received formula after performing the shift to the passed formula
         for( ; rf != rReceivedFormula().end(); ++rf )
-        {
             addSubformulaToPassedFormula( rf->formula().substitute( mVariableShifts ), rf->formula() );
-        }
         vector<ModuleInput::iterator> addedBounds;
         // For all variables add bounds (incrementally widening) until a solution is found or a certain width is reached
         for(;;)
         {
             // Check if we exceed the maximally allowed width
-            if( mHalfOfCurrentWidth > Settings::half_of_max_width )
+            if( Settings::half_of_max_width > 0 && mHalfOfCurrentWidth > Settings::half_of_max_width )
             {
                 #ifdef DEBUG_INC_WIDTH_MODULE
                 std::cout << "Reached maximal width" << std::endl;

@@ -24,6 +24,6 @@ namespace smtrat
         /**
          * The half of the maximal width of the intervals specifying the variable domains.
          */
-        static constexpr unsigned half_of_max_width = 1000;
+        static constexpr unsigned half_of_max_width = 0;
     };
 }

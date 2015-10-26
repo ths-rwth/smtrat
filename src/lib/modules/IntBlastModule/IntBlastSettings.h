@@ -39,7 +39,7 @@ namespace smtrat
          * 
          * If this value is set to zero, there is no maximal width. Choose this option only if all variables are bounded.
          */
-        static const std::size_t max_variable_encoding_width = 4;
+        static const std::size_t max_variable_encoding_width = 0;
 
         /**
          * Whether to allow the encoding into complex bitvector terms.

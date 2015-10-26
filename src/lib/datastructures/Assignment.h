@@ -249,12 +249,12 @@ namespace smtrat
      * It is implemented as subclass of a boost::variant.
      * Possible value types are bool, vs::SqrtEx and carl::RealAlgebraicNumberPtr.
      */
-    class ModelValue : public boost::variant<bool, vs::SqrtEx, carl::RealAlgebraicNumberPtr<smtrat::Rational>, carl::BVValue, SortValue, UFModel>
+    class ModelValue : public boost::variant<bool, Rational, vs::SqrtEx, carl::RealAlgebraicNumberPtr<smtrat::Rational>, carl::BVValue, SortValue, UFModel>
     {
         /**
          * Base type we are deriving from.
          */
-        typedef boost::variant<bool, vs::SqrtEx, carl::RealAlgebraicNumberPtr<smtrat::Rational>, carl::BVValue, SortValue, UFModel> Super;
+        typedef boost::variant<bool, Rational, vs::SqrtEx, carl::RealAlgebraicNumberPtr<smtrat::Rational>, carl::BVValue, SortValue, UFModel> Super;
         
     public:
         /**
@@ -269,6 +269,11 @@ namespace smtrat
         template<typename T>
         ModelValue(const T& _t): Super(_t)
         {}
+//        template<>
+//        ModelValue(const vs::SqrtEx& _se)
+//        {
+//            Super(_se);
+//        }
 
         /**
          * Assign some value to the underlying variant.
@@ -298,6 +303,10 @@ namespace smtrat
             {
                 return asBool() == _mval.asBool();
             }
+            else if( isRational() && _mval.isRational() )
+            {
+                return asRational() == _mval.asRational();
+            } 
             else if( isSqrtEx() && _mval.isSqrtEx() )
             {
                 return asSqrtEx() == _mval.asSqrtEx();
@@ -327,6 +336,14 @@ namespace smtrat
         bool isBool() const
         {
             return type() == typeid(bool);
+        }
+        
+        /**
+         * @return true, if the stored value is a rational.
+         */
+        bool isRational() const
+        {
+            return type() == typeid(Rational);
         }
         
         /**
@@ -375,6 +392,15 @@ namespace smtrat
         {
             assert( isBool() );
             return boost::get<bool>(*this);
+        }
+        
+        /**
+         * @return The stored value as a rational.
+         */
+        const Rational& asRational() const
+        {
+            assert( isRational() );
+            return boost::get<Rational>(*this);
         }
         
         /**
@@ -455,10 +481,10 @@ namespace smtrat
      */
     unsigned satisfies( const Model& _model, const EvalRationalMap& _assignment, const std::map<carl::BVVariable, carl::BVTerm>& bvAssigns, const FormulaT& _formula );
     
-    void getDefaultModel( Model& _defaultModel, const carl::UEquality& _constraint, size_t _seed = 0 );
-    void getDefaultModel( Model& _defaultModel, const carl::BVTerm& _constraint, size_t _seed = 0 );
-    void getDefaultModel( Model& _defaultModel, const ConstraintT& _constraint, size_t _seed = 0 );
-    void getDefaultModel( Model& _defaultModel, const FormulaT& _formula, size_t _seed = 0 );
+    void getDefaultModel( Model& _defaultModel, const carl::UEquality& _constraint, bool _overwrite = true, size_t _seed = 0 );
+    void getDefaultModel( Model& _defaultModel, const carl::BVTerm& _constraint, bool _overwrite = true, size_t _seed = 0 );
+    void getDefaultModel( Model& _defaultModel, const ConstraintT& _constraint, bool _overwrite = true, size_t _seed = 0 );
+    void getDefaultModel( Model& _defaultModel, const FormulaT& _formula, bool _overwrite = true, size_t _seed = 0 );
     
     std::ostream& operator<<( std::ostream& _out, const Model& _model );
 }

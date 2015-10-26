@@ -35,7 +35,11 @@ namespace smtrat
         /**
          * 
          */
-        static const bool internal_cnf_transformation = false;
+        static const bool formula_guided_decision_heuristic = false;
+        /**
+         * 
+         */
+        static const bool check_if_all_clauses_are_satisfied = false;
         /**
          * 
          */
