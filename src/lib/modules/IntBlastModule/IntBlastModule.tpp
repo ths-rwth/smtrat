@@ -4,7 +4,6 @@
  */
 
 #include "IntBlastModule.h"
-#include "../AddModules.h"
 
 #define INTBLAST_DEBUG_ENABLED 0
 #define INTBLAST_DEBUG(x) do { \
@@ -40,7 +39,6 @@ namespace smtrat
     mPolyParents(),
     mShrunkPolys()
     {
-        smtrat::addModules(mpBVSolver);
         // TODO: Do we have to do some more initialization stuff here? Settings?
     }
 

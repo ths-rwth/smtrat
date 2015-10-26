@@ -50,11 +50,6 @@ foreach(modIndex RANGE ${maxModIndex})
   list(GET moduleSettingsClasses ${modIndex} modSettClass)
 
   if( modSettClass STREQUAL " ")
-	# no settings instances
-	set(addModuleList "${addModuleList}
-		manager->addModuleType( MT_${modType}, new StandardModuleFactory< ${modClass} >( ) ); \n")
-	set(addModuleListNoSettings "${addModuleListNoSettings}
-		manager.addModuleType( MT_${modType}, new StandardModuleFactory< ${modClass} >( ) ); \n")
     # modType unchanged
 	set(moduleTypesSettings ${moduleTypesSettings} ${modType})
   else()
@@ -62,9 +57,6 @@ foreach(modIndex RANGE ${maxModIndex})
 	if( modNrSettings GREATER 1 )
 		# multiple settings instances
 		foreach(modSettingsName ${moduleSettingsList_${modIndex}})
-			set(addModuleList "${addModuleList}
-			settingsObjects.push_back(NameAndSettings(\"${modType}_${modSettingsName}\" ,new ${modSettClass}(\"${modSettingsName}\") ) );
-			manager->addModuleType( MT_${modType}_${modSettingsName}, new StandardModuleFactory< ${modClass} >(settingsObjects.back().second) ); \n")
 			# modType changed
 			set(moduleTypesSettings ${moduleTypesSettings} ${modType}_${modSettingsName})
 		endforeach()
@@ -73,39 +65,21 @@ foreach(modIndex RANGE ${maxModIndex})
 		# exactly one settings instance
 		list(GET moduleSettingsList_${modIndex} 0 modSettingsName)
 
-		set(addModuleList "${addModuleList}
-		settingsObjects.push_back(NameAndSettings(\"${modType}\" ,new ${modSettClass}(\"${modSettingsName}\") ) );
-		manager->addModuleType( MT_${modType}, new StandardModuleFactory< ${modClass} >(settingsObjects.back().second) ); \n")
 		# modType unchanged
 		set(moduleTypesSettings ${moduleTypesSettings} ${modType})
 	endif()
   endif()
 endforeach()
-configure_file ( ${CMAKE_SOURCE_DIR}/src/lib/modules/AddModules.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/AddModules.h )
-configure_file ( ${CMAKE_SOURCE_DIR}/src/lib/modules/AddModules.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/AddModules.cpp )
 
-# write ModuleType.h
-foreach(moduleType ${allModuleTypes})
-	set(moduleTypeList "${moduleTypeList} MT_${moduleType},\n")
-endforeach()
-configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/ModuleType.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/ModuleType.h )
 #write MODULETYPES.TXT
 foreach(moduleType ${moduleTypesSettings})
 	set(moduleTypeListTXT "${moduleTypeListTXT}\nMT_${moduleType}")
 endforeach()
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/MODULETYPES.txt.in ${CMAKE_SOURCE_DIR}/src/lib/modules/MODULETYPES.txt )
 
-# write ModuleType.cpp
-foreach(moduleType ${moduleTypesSettings})
-	set(moduleTypeToStringCases "${moduleTypeToStringCases} \tcase MT_${moduleType}: \n\t{\n\t\t return \"${moduleType}\";\n\t}\n")
-endforeach()
-configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/ModuleType.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/ModuleType.cpp )
-
 # propagate and enhance source file definitions
 set(lib_modules_src
 	${moduleSources}
-	modules/AddModules.cpp
-	modules/ModuleType.cpp
 	modules/Modules.cpp
 	PARENT_SCOPE)
 
