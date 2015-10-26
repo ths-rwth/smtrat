@@ -120,7 +120,7 @@ namespace smtrat
         // Members.
         private:
             /// A unique ID to identify this module instance. (Could be useful but currently nowhere used)
-            unsigned mId;
+            std::size_t mId;
             /// The priority of this module to get a thread for running its check procedure.
             thread_priority mThreadPriority;
             /// The formula passed to this module.
@@ -271,7 +271,7 @@ namespace smtrat
             /**
              * @return A unique ID to identify this module instance.
              */
-            inline unsigned id() const
+            inline std::size_t id() const
             {
                 return mId;
             }
@@ -280,7 +280,7 @@ namespace smtrat
              * Sets this modules unique ID to identify itself.
              * @param _id The id to set this module's id to.
              */
-            void setId( unsigned _id )
+            void setId( std::size_t _id )
             {
                 assert( mId == 0 && _id != 0 );
                 mId = _id;

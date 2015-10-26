@@ -56,7 +56,7 @@ namespace smtrat
                         return mQueue.empty();
                     }
 
-                    bool higherPriority( unsigned _priority ) const
+                    bool higherPriority( std::size_t _priority ) const
                     {
                         return empty() || mQueue.top()->second>_priority;
                     }
@@ -84,9 +84,9 @@ namespace smtrat
             std::mutex mMutex;
             std::atomic_bool mDone;
             std::atomic_bool mPossibleOversubscription;
-            unsigned mNumberOfCores;
-            size_t mNumberOfThreads;
-            unsigned mNumberOfRunningThreads;
+            std::size_t mNumberOfCores;
+            std::size_t mNumberOfThreads;
+            std::size_t mNumberOfRunningThreads;
             std::vector<std::thread*> mThreads;
             std::vector<std::condition_variable> mConditionVariables;
             // Used as protection against spurious wake ups of condition variables
@@ -95,11 +95,11 @@ namespace smtrat
             ThreadPriorityQueue mThreadPriorityQueue;
 
             // Private methods.
-            void consumeBackend( unsigned );
+            void consumeBackend( std::size_t );
 
         public:
             // Constructor and destructor.
-            ThreadPool( size_t, unsigned );
+            ThreadPool( size_t, std::size_t );
             ~ThreadPool();
 
             // Public methods.
