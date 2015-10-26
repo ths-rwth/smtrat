@@ -70,8 +70,12 @@ namespace smtrat
     {
         bool result = true;
         for( auto ass = _model.begin(); ass != _model.end(); ++ass )
-        {   
-            if (ass->second.isSqrtEx())
+        {
+            if (ass->second.isRational())
+            {
+                _rationalAssigns.insert( _rationalAssigns.end(), std::make_pair(ass->first.asVariable(), ass->second.asRational()));
+            }
+            else if (ass->second.isSqrtEx())
             {
                 if( ass->second.asSqrtEx().isConstant() && !ass->second.asSqrtEx().hasSqrt() )
                 {

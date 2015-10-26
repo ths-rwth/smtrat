@@ -1106,8 +1106,7 @@ namespace smtrat
                 // BV solver, the BV solver has not received any constraints
                 // containing this variable. This implies that an arbitrary value is allowed.
                 // We simply use constant 0.
-                auto modelValue = carl::RealAlgebraicNumberNR<Rational>::create(integerValue, false);
-                mModel[ModelVariable(variable)] = ModelValue(modelValue);
+                mModel[ModelVariable(variable)] = ModelValue(integerValue);
             }
         }
     }
