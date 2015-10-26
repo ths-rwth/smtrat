@@ -4,6 +4,7 @@
 #pragma once
 
 #include "../solver/Manager.h"
+#include "../modules/Modules.h"
 
 namespace smtrat
 {

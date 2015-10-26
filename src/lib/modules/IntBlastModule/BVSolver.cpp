@@ -3,7 +3,7 @@
  */
 
 #include "BVSolver.h"
-#include "../../strategies/config.h"
+#include "../../modules/Modules.h"
 
 namespace smtrat
 {
@@ -11,9 +11,11 @@ namespace smtrat
     BVSolver::BVSolver():
         Manager()
     {
-        size_t position = 0;
-        position = addBackendIntoStrategyGraph( position, MT_BVModule );
-        position = addBackendIntoStrategyGraph( position, MT_SATModule );
+		setStrategy({
+			addBackend<BVModule<BVSettings1>>({
+				addBackend<SATModule<SATSettings1>>()
+			})
+		});
     }
 
     BVSolver::~BVSolver(){}

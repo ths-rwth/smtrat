@@ -3,7 +3,7 @@
  */
 
 #include "PureSAT.h"
-#include "config.h"
+#include "../modules/Modules.h"
 
 namespace smtrat
 {
@@ -11,7 +11,9 @@ namespace smtrat
     PureSAT::PureSAT( bool _externalModuleFactoryAdding ):
         Manager( _externalModuleFactoryAdding )
     {
-        addBackendIntoStrategyGraph( 0, MT_SATModule );
+		setStrategy({
+			addBackend<SATModule<SATSettings1>>()
+		});
     }
 
     PureSAT::~PureSAT(){}

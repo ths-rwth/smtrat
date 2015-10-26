@@ -3,7 +3,7 @@
  */
 
 #include "CADOnly.h"
-#include "config.h"
+#include "../modules/Modules.h"
 
 namespace smtrat
 {
@@ -11,10 +11,18 @@ namespace smtrat
     CADOnly::CADOnly( bool _externalModuleFactoryAdding ):
         Manager( _externalModuleFactoryAdding )
     {
-        size_t position = 0;
-        position = addBackendIntoStrategyGraph( position, MT_CNFerModule );
-        position = addBackendIntoStrategyGraph( position, MT_SATModule );
-        position = addBackendIntoStrategyGraph( position, MT_CADModule );
+        //size_t position = 0;
+        //position = addBackendIntoStrategyGraph( position, MT_CNFerModule );
+        //position = addBackendIntoStrategyGraph( position, MT_SATModule );
+        //position = addBackendIntoStrategyGraph( position, MT_CADModule );
+		
+		setStrategy({
+			addBackend<CNFerModule>({
+				addBackend<SATModule<SATSettings1>>({
+					addBackend<CADModule<CADSettings1>>()
+				})
+			})
+		});
     }
 
     CADOnly::~CADOnly(){}
