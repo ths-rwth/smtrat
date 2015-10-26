@@ -77,7 +77,7 @@ protected:
     FormulasT mGbEqualities;
 
 public:
-    GBModule( ModuleType _type, const ModuleInput* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+    GBModule( const ModuleInput* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
     virtual ~GBModule( );
 
     bool addCore( ModuleInput::const_iterator _formula );

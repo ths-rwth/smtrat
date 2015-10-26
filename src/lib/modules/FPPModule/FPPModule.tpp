@@ -9,8 +9,8 @@
 namespace smtrat
 {
     template<class Settings>
-    FPPModule<Settings>::FPPModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-        PModule( _type, _formula, _conditionals, _manager ),
+    FPPModule<Settings>::FPPModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
+        PModule( _formula, _conditionals, _manager ),
         mIterations( 0 ),
         mFormulaAfterPreprocessing( carl::FormulaType::TRUE ),
         mPreprocessor()

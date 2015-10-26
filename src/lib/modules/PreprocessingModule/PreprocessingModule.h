@@ -59,7 +59,7 @@ namespace smtrat
 
         public:
 
-            PreprocessingModule( ModuleType _type, const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = nullptr );
+            PreprocessingModule( const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = nullptr );
 
             /**
              * Destructor:

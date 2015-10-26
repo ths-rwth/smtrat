@@ -14,9 +14,9 @@ namespace smtrat
 	 * Constructors.
 	 */
 	template<class Settings>
-		EQPreprocessingModule<Settings>::EQPreprocessingModule(ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager) :
-			Module(_type, _formula, _conditionals, _manager),
-			mEQHelper(MT_EQModule),
+		EQPreprocessingModule<Settings>::EQPreprocessingModule(const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager) :
+			Module(_formula, _conditionals, _manager),
+			mEQHelper(),
 			mBoolRewriter(nullptr)
 #ifdef SMTRAT_DEVOPTION_Statistics
 			,mStatistics(new EQPreprocessingStatistics())

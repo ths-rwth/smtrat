@@ -19,8 +19,8 @@ using namespace smtrat::lra;
 namespace smtrat
 {
     template<class Settings>
-    LRAModule<Settings>::LRAModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-        Module( _type, _formula, _conditionals, _manager ),
+    LRAModule<Settings>::LRAModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
+        Module( _formula, _conditionals, _manager ),
         mInitialized( false ),
         mAssignmentFullfilsNonlinearConstraints( false ),
         mStrongestBoundsRemoved( false ),

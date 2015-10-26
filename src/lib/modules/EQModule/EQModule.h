@@ -771,7 +771,7 @@ namespace smtrat
 			bool P_check_model_extension(UFModel& model, g_iterator term, const std::vector<SortValue>& args, const SortValue& result) const;
 
 		public:
-			EQModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
+			EQModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
 			~EQModule();
 

@@ -132,7 +132,7 @@ namespace smtrat
             /**
              * Constructors:
              */
-            ICPModule( ModuleType _type, const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            ICPModule( const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             /**
             * Destructor:

@@ -24,4 +24,3 @@ namespace smtrat
     }
 
 }    // namespace smtrat
-

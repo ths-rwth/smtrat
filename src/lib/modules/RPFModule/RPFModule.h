@@ -29,7 +29,7 @@ namespace smtrat
 			vb::VariableBounds<FormulaT> varbounds;
 
         public:
-            RPFModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
+            RPFModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~RPFModule();
 

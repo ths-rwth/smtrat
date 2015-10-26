@@ -28,8 +28,8 @@ namespace smtrat
 {
 
 template<class Settings>
-GBModule<Settings>::GBModule( ModuleType _type, const ModuleInput* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
-        Module( _type, _formula, _conditionals, _manager ),
+GBModule<Settings>::GBModule( const ModuleInput* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+        Module( _formula, _conditionals, _manager ),
     mBasis( ),
     mInequalities( this ),
     mStateHistory( ),

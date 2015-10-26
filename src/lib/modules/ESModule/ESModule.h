@@ -27,7 +27,7 @@ namespace smtrat
             std::map<carl::Variable,Poly> mArithSubs;
 
         public:
-            ESModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
+            ESModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~ESModule();
 

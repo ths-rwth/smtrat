@@ -29,7 +29,7 @@ namespace smtrat
 			vb::VariableBounds<FormulaT> mVarBounds;
 
         public:
-            IncWidthModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
+            IncWidthModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~IncWidthModule();
 

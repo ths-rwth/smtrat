@@ -77,7 +77,7 @@ namespace smtrat
 
         public:
 
-            CADModule( ModuleType _type, const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            CADModule( const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             ~CADModule();
 

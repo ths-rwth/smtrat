@@ -25,7 +25,7 @@ namespace smtrat
 			carl::FormulaVisitor<FormulaT> mVisitor;
 
         public:
-            BEModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
+            BEModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~BEModule();
 

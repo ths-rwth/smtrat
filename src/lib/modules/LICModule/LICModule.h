@@ -108,7 +108,7 @@ namespace smtrat
             Answer analyzeCycle(const Graph& g, const Vertex& root);
             
         public:
-            LICModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
+            LICModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~LICModule();
 

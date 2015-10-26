@@ -33,7 +33,7 @@ namespace smtrat
 			FormulaSetT tmpOrigins;
 
         public:
-            CBModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
+            CBModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~CBModule();
 

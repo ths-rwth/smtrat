@@ -10,8 +10,8 @@
 namespace smtrat
 {
     template<class Settings>
-    EMModule<Settings>::EMModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-        PModule( _type, _formula, _conditionals, _manager ),
+    EMModule<Settings>::EMModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
+        PModule( _formula, _conditionals, _manager ),
         mVisitor()
     {
 		eliminateMonomialEquationFunction = std::bind(&EMModule<Settings>::eliminateMonomialEquation, this, std::placeholders::_1);

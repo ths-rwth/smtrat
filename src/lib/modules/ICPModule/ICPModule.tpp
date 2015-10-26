@@ -33,8 +33,8 @@
 namespace smtrat
 {
     template<class Settings>
-    ICPModule<Settings>::ICPModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* , Conditionals& _conditionals, Manager* const _manager ):
-        Module( _type, _formula, _conditionals, _manager ),
+    ICPModule<Settings>::ICPModule( const ModuleInput* _formula, RuntimeSettings* , Conditionals& _conditionals, Manager* const _manager ):
+        Module( _formula, _conditionals, _manager ),
         mContractors(),
         mCandidateManager(),
         mActiveNonlinearConstraints(),
@@ -54,7 +54,7 @@ namespace smtrat
         mValidationFormula(new ModuleInput()),
         mLRAFoundAnswer( std::vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
         mLraRuntimeSettings(new RuntimeSettings),
-        mLRA(MT_LRAModule, mValidationFormula, mLraRuntimeSettings, mLRAFoundAnswer),
+        mLRA(mValidationFormula, mLraRuntimeSettings, mLRAFoundAnswer),
         mBoxStorage(),
         mIsIcpInitialized(false),
         mSplitOccurred(false),

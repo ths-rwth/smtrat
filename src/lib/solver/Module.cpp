@@ -43,10 +43,9 @@ namespace smtrat
 
     // Constructor.
     
-    Module::Module( ModuleType type, const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager ):
+    Module::Module( const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager ):
         mId( 0 ),
         mThreadPriority( thread_priority( 0 , 0 ) ),
-        mType( type ),
         mpReceivedFormula( _formula ),
         mpPassedFormula( new ModuleInput() ),
         mInfeasibleSubsets(),
@@ -93,7 +92,7 @@ namespace smtrat
     Answer Module::check( bool _full )
     {
         #ifdef MODULE_VERBOSE
-        cout << endl << "Check " << (_full ? "full" : "lazy" ) << " with " << moduleName( type() ) << endl;
+        cout << endl << "Check " << (_full ? "full" : "lazy" ) << " with " << moduleName() << endl;
         print( cout, " ");
         #endif
         #ifdef SMTRAT_DEVOPTION_MeasureTime
@@ -136,7 +135,7 @@ namespace smtrat
     bool Module::inform( const FormulaT& _constraint )
     {
         #ifdef MODULE_VERBOSE
-        cout << __func__ << " in " << this << " with name " << moduleName( mType ) << ": " << _constraint << endl;
+        cout << __func__ << " in " << this << " with name " << moduleName() << ": " << _constraint << endl;
         #endif
         addConstraintToInform( _constraint );
         return informCore( _constraint );
@@ -145,7 +144,7 @@ namespace smtrat
     bool Module::add( ModuleInput::const_iterator _receivedSubformula )
     {
         #ifdef MODULE_VERBOSE
-        cout << __func__ << " in " << this << " with name " << moduleName( mType ) << ":" << endl << endl;
+        cout << __func__ << " in " << this << " with name " << moduleName() << ":" << endl << endl;
         cout << " " << _receivedSubformula->formula() << endl << endl;
         #endif
         if( mFirstUncheckedReceivedSubformula == mpReceivedFormula->end() )
@@ -161,7 +160,7 @@ namespace smtrat
     void Module::remove( ModuleInput::const_iterator _receivedSubformula )
     {
         #ifdef MODULE_VERBOSE
-        cout << __func__ << " in " << this << " with name " << moduleName( mType ) << ":" << endl << endl;
+        cout << __func__ << " in " << this << " with name " << moduleName() << ":" << endl << endl;
         cout << " " << _receivedSubformula->formula() << endl << endl;
         #endif
         removeCore( _receivedSubformula );
@@ -907,15 +906,12 @@ namespace smtrat
     {
         if( mSolverState == False )
             return make_pair( true, FormulaT( carl::FormulaType::FALSE ) );
-        if( mType == MT_Module )
+        for( auto& backend : usedBackends() )
         {
-            for( auto& backend : usedBackends() )
+            pair<bool,FormulaT> simplifiedPassedFormula = backend->getReceivedFormulaSimplified();
+            if( simplifiedPassedFormula.first )
             {
-                pair<bool,FormulaT> simplifiedPassedFormula = backend->getReceivedFormulaSimplified();
-                if( simplifiedPassedFormula.first )
-                {
-                    return simplifiedPassedFormula;
-                }
+                return simplifiedPassedFormula;
             }
         }
         return make_pair( false, FormulaT( carl::FormulaType::TRUE ) );
@@ -1075,7 +1071,7 @@ namespace smtrat
     void Module::checkInfSubsetForMinimality( std::vector<FormulaSetT>::const_iterator _infsubset, const string& _filename, unsigned _maxSizeDifference ) const
     {
         stringstream filename;
-        filename << _filename << "_" << moduleName(mType) << "_" << mSmallerMusesCheckCounter << ".smt2";
+        filename << _filename << "_" << moduleName() << "_" << mSmallerMusesCheckCounter << ".smt2";
         ofstream smtlibFile;
         smtlibFile.open( filename.str() );
         for( size_t size = _infsubset->size() - _maxSizeDifference; size < _infsubset->size(); ++size )
@@ -1123,7 +1119,7 @@ namespace smtrat
     void Module::print( ostream& _out, const string _initiation ) const
     {
         _out << _initiation << "********************************************************************************" << endl;
-        _out << _initiation << " Solver with stored at " << this << " with name " << moduleName( type() ) << endl;
+        _out << _initiation << " Solver with stored at " << this << " with name " << moduleName() << endl;
         _out << _initiation << endl;
         _out << _initiation << " Current solver state" << endl;
         _out << _initiation << endl;

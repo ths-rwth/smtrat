@@ -21,7 +21,7 @@ namespace smtrat
             bool mAppliedPreprocessing;
         public:
             
-            PModule( ModuleType _type, const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager = NULL );
+            PModule( const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager = NULL );
 
             /**
              * @return true, if this module is a preprocessor that is a module, which simplifies

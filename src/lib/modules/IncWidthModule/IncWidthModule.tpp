@@ -17,8 +17,8 @@ namespace smtrat
      */
 
     template<class Settings>
-    IncWidthModule<Settings>::IncWidthModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-        Module( _type, _formula, _conditionals, _manager ),
+    IncWidthModule<Settings>::IncWidthModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
+        Module( _formula, _conditionals, _manager ),
         mRestartCheck( true ),
         mHalfOfCurrentWidth( Settings::half_of_start_width ),
         mVariableShifts(),

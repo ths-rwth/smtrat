@@ -68,7 +68,7 @@ namespace smtrat
         public:
 
             // Constructors.
-            VSModule( ModuleType _type, const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            VSModule( const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             // Destructor.
             ~VSModule();

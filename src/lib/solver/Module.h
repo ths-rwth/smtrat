@@ -10,7 +10,7 @@
 #pragma once
 
 /// Flag activating some informative and not exaggerated output about module calls.
-//#define MODULE_VERBOSE
+#define MODULE_VERBOSE
 //#define GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
 #ifdef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
 #ifndef SMTRAT_DEVOPTION_Validation
@@ -24,7 +24,6 @@
 #include <string>
 #include <chrono>
 #include <atomic>
-#include "../modules/ModuleType.h"
 #include "ModuleInput.h"
 #include "ValidationSettings.h"
 #include "../datastructures/Assignment.h"
@@ -124,8 +123,6 @@ namespace smtrat
             unsigned mId;
             /// The priority of this module to get a thread for running its check procedure.
             thread_priority mThreadPriority;
-            /// The type of this module.
-            ModuleType mType;
             /// The formula passed to this module.
             const ModuleInput* mpReceivedFormula;
             /// The formula passed to the backends of this module.
@@ -173,7 +170,7 @@ namespace smtrat
              * @param _foundAnswer Vector of Booleans: If any of them is true, we have to terminate a running check procedure.
              * @param _manager A reference to the manager of the solver using this module.
              */
-            Module( ModuleType type, const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager = NULL );
+            Module( const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager = NULL );
             
             /**
              * Destructs a module.
@@ -356,14 +353,6 @@ namespace smtrat
             }
 
             /**
-             * @return The type of this module.
-             */
-            const ModuleType& type() const
-            {
-                return mType;
-            }
-
-            /**
              * @return The backends of this module which are currently used (conditions to use this module are fulfilled for the passed formula).
              */
             const std::vector<Module*>& usedBackends() const
@@ -508,12 +497,11 @@ namespace smtrat
             }
             
             /**
-             * @param _moduleType The module type to return the name as string for. 
              * @return The name of the given module type as name.
              */
-            static const std::string moduleName( const ModuleType _moduleType )
+            const std::string moduleName() const
             {
-                return moduleTypeToString( _moduleType );
+                return typeid(*this).name();
             }
             
             /**

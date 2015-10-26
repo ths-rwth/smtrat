@@ -53,7 +53,7 @@ namespace smtrat
             std::map<std::pair<size_t,size_t>,FormulaT> mFormulasToBlast;
 
         public:
-            BVModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
+            BVModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~BVModule();
 

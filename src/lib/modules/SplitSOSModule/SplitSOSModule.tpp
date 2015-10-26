@@ -9,8 +9,8 @@
 namespace smtrat
 {
     template<class Settings>
-    SplitSOSModule<Settings>::SplitSOSModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-        PModule( _type, _formula, _conditionals, _manager ),
+    SplitSOSModule<Settings>::SplitSOSModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
+        PModule( _formula, _conditionals, _manager ),
         mVisitor()
     {
 		splitSOSFunction = std::bind(&SplitSOSModule<Settings>::splitSOS, this, std::placeholders::_1);

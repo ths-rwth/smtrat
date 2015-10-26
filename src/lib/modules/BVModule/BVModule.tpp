@@ -38,8 +38,8 @@ namespace smtrat
      */
 
     template<class Settings>
-    BVModule<Settings>::BVModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-        Module( _type, _formula, _conditionals, _manager ),
+    BVModule<Settings>::BVModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
+        Module( _formula, _conditionals, _manager ),
         mModelComputed( true ),
         mEncoder(),
         mBlastedFormulas(),

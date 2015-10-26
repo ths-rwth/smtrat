@@ -10,8 +10,8 @@
 namespace smtrat
 {
     template<class Settings>
-    RPFModule<Settings>::RPFModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-        PModule( _type, _formula, _conditionals, _manager ),
+    RPFModule<Settings>::RPFModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
+        PModule( _formula, _conditionals, _manager ),
         visitor(),
         varbounds()
     {   

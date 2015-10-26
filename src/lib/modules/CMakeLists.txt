@@ -22,7 +22,7 @@ math(EXPR maxModIndex "${nrModules} - 1")
 
 # write Modules.h
 foreach(header ${moduleMainHeaders})
-	set(includeHeaders "${includeHeaders} #include \"${header}\" \n")
+	set(includeHeaders "${includeHeaders}#include \"${header}\"\n")
 endforeach()
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/Modules.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/Modules.h )
 

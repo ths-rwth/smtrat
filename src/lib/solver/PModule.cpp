@@ -13,8 +13,8 @@ using namespace carl;
 
 namespace smtrat
 {
-    PModule::PModule( ModuleType _type, const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager ):
-        Module( _type, _formula, _foundAnswer, _manager ),
+    PModule::PModule( const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager ):
+        Module( _formula, _foundAnswer, _manager ),
         mAppliedPreprocessing( false )
     {
     }

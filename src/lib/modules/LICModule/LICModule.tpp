@@ -15,8 +15,8 @@ namespace smtrat
      */
 
     template<class Settings>
-    LICModule<Settings>::LICModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-        PModule( _type, _formula, _conditionals, _manager ) 
+    LICModule<Settings>::LICModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
+        PModule( _formula, _conditionals, _manager ) 
     {}
 
     /**
