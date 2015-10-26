@@ -14,7 +14,6 @@
 #include <vector>
 
 #include "StrategyGraph.h"
-#include "../modules/ModuleType.h"
 #include "../config.h"
 #include "ModuleInput.h"
 #include "GeneralStatistics.h"
@@ -23,7 +22,7 @@
 namespace smtrat
 {   
     class Module; // forward declaration
-    class ModuleFactory; // forward declaration
+    //class ModuleFactory; // forward declaration
     class Model; // forward declaration
     
     /**
@@ -50,10 +49,8 @@ namespace smtrat
             Module* mpPrimaryBackend;
             /// a Boolean showing whether the manager has received new constraint after the last consistency check
             bool mBackendsUptodate;
-            /// modules we can use
-            std::map<const ModuleType, ModuleFactory*>* mpModuleFactories;
             /// primary strategy
-            StrategyGraph mStrategyGraph;
+			StrategyGraph mStrategyGraph;
             /// channel to write debug output
             std::ostream mDebugOutputChannel;
 			/// quantified variables
@@ -230,30 +227,11 @@ namespace smtrat
             // Internally used interfaces
             
             /**
-             * Adds a module type to this manager, for which modules can be instantiated in order to be part of the solving procedure.
-             * @param _moduleType The module type to add to the module types for which modules can be instantiated in order to be 
-             *                     part of the solving procedure.
-             * @param _factory The factory to instantiate modules of this type.
-             */
-            void addModuleType( const ModuleType _moduleType, ModuleFactory* _factory )
-            {
-                mpModuleFactories->insert( std::pair<const ModuleType, ModuleFactory*>( _moduleType, _factory ) );
-            }
-
-            /**
              * @return All instantiated modules of the solver belonging to this manager.
              */
             const std::vector<Module*>& getAllGeneratedModules() const
             {
                 return mGeneratedModules;
-            }
-            
-            /**
-             * @return A constant reference to the mapping of module types to the factories to instantiate the modules of this type.
-             */
-            const std::map<const ModuleType, ModuleFactory*>& rModuleFactories() const
-            {
-                return *mpModuleFactories;
             }
             
             /**
@@ -342,15 +320,26 @@ namespace smtrat
             {
                 return remove( mpPassedFormula->find( _subformula ) );
             }
-
-            /**
-             * @return A reference to the graph representing the solving strategy.
-             */
-            StrategyGraph& rStrategyGraph()
-            {
-                return mStrategyGraph;
-            }
-
+			
+		 	void setStrategy(const std::initializer_list<BackendLink>& backends) {
+				std::size_t id = mStrategyGraph.addRoot(backends);
+				std::size_t priority = mpPrimaryBackend->threadPriority().first;
+				mpPrimaryBackend->setThreadPriority(thread_priority(priority, id));
+			}
+			void setStrategy(const BackendLink& backend) {
+				setStrategy({backend});
+			}
+			template<typename Module>
+			BackendLink addBackend(const std::initializer_list<BackendLink>& backends = {}) {
+				return mStrategyGraph.addBackend<Module>(backends);
+			}
+			template<typename Module>
+			BackendLink addBackend(const BackendLink& backend) {
+				return mStrategyGraph.addBackend<Module>({backend});
+			}
+			BackendLink& addEdge(std::size_t from, std::size_t to) {
+				return mStrategyGraph.addEdge(from, to);
+			}
             /**
              * Gets all backends so far instantiated according the strategy and all previous enquiries of the given module.
              * @param _module The module to get all backends so far instantiated according the strategy and all previous enquiries of this module. 
@@ -366,36 +355,7 @@ namespace smtrat
                 std::vector<Module*> result = iter->second;
                 return result;
             }
-            
-            /**
-             * Adds the module type of a backend for the module of the type given by the given position in the manager's strategy graph. 
-             * Backends of the given type will be instantiated if a module corresponding to the given position in the strategy graph asks 
-             * for backends with a formula fulfilling the given conditions.
-             * @param _at The position in the strategy graph to add a backend's module type.
-             * @param _moduleType The module type of the backend to instantiate for modules corresponding to the given position in the 
-             *                     managers strategy graph.
-             * @param _conditionEvaluation A function which evaluates whether the properties of a given formula fulfill certain conditions.
-             * @return The position in this managers strategy graph corresponding to the added module type.
-             */
-            size_t addBackendIntoStrategyGraph( size_t _at, ModuleType _moduleType, ConditionEvaluation _conditionEvaluation = isCondition )
-            {
-                return mStrategyGraph.addBackend( _at, _moduleType, _conditionEvaluation );
-            }
-
-            /**
-             * Extends the strategy graph of this manager such that if a module corresponding to the first given position in the
-             * strategy graph asks for backends for a formula whose properties satisfy the conditions checked by the given function pointer,
-             * the this manager instantiates (if not yet instantiated) a backend corresponding to the second given position in the 
-             * strategy graph.
-             * @param _from The position in the strategy graph to which the enquiring module corresponds to.
-             * @param _to The position in the strategy graph to which the instantiated backend for this enquiry corresponds to.
-             * @param _conditionEvaluation A function which evaluates whether the properties of a given formula fulfill certain conditions.
-             */
-            void addBacklinkIntoStrategyGraph( size_t _from, size_t _to, ConditionEvaluation _conditionEvaluation = isCondition )
-            {
-                mStrategyGraph.addBacklink( _from, _to, _conditionEvaluation );
-            }
-
+			
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
             /**
              * @return true, if we might run in parallel eventually;
