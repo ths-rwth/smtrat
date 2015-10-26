@@ -69,16 +69,16 @@ namespace smtrat
                     assert( ass.second.isRational() || ass.second.isSqrtEx() || ass.second.isRAN() );
                     if( ass.second.isRational() )
                     {
-                        ass.second = ass.second.asRational() - varShiftIter->second.constantPart();
+                        ass.second = ass.second.asRational() + varShiftIter->second.constantPart();
                     }
                     else if( ass.second.isSqrtEx() )
                     {
-                        ass.second = ass.second.asSqrtEx() - vs::SqrtEx( Poly( varShiftIter->second.constantPart() ) );
+                        ass.second = ass.second.asSqrtEx() + vs::SqrtEx( Poly( varShiftIter->second.constantPart() ) );
                     }
                     else // ass.second.isRAN()
                     {
                         assert(false); // TODO: How to add a value to a RAN
-                        carl::RealAlgebraicNumberPtr<smtrat::Rational> bound = carl::RealAlgebraicNumberNR<smtrat::Rational>::create(-varShiftIter->second.constantPart());
+                        carl::RealAlgebraicNumberPtr<smtrat::Rational> bound = carl::RealAlgebraicNumberNR<smtrat::Rational>::create(varShiftIter->second.constantPart());
 //                        ass.second = ass.second.asRAN()->add( bound );
                     }
                 }
@@ -119,7 +119,7 @@ namespace smtrat
                 if( vb.second.lowerBoundType() != carl::BoundType::INFTY )
                 {
                     // (a,b) -> (0,b-a)  or  (a,oo) -> (0,oo)
-                    mVariableShifts[vb.first] = carl::makePolynomial<smtrat::Poly>( vb.first ) - vb.second.lower();
+                    mVariableShifts[vb.first] = carl::makePolynomial<smtrat::Poly>( vb.first ) + vb.second.lower();
                     #ifdef DEBUG_INC_WIDTH_MODULE
                     std::cout << "   " << vb.first << " -> " << mVariableShifts[vb.first] << std::endl;
                     #endif
@@ -127,7 +127,7 @@ namespace smtrat
                 else if( vb.second.upperBoundType() != carl::BoundType::INFTY )
                 {
                     // (-oo,b) -> (-oo,0)
-                    mVariableShifts[vb.first] = carl::makePolynomial<smtrat::Poly>( vb.first ) - vb.second.upper();
+                    mVariableShifts[vb.first] = carl::makePolynomial<smtrat::Poly>( vb.first ) + vb.second.upper();
                     #ifdef DEBUG_INC_WIDTH_MODULE
                     std::cout << "   " << vb.first << " -> " << mVariableShifts[vb.first] << std::endl;
                     #endif

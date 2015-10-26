@@ -415,7 +415,7 @@ namespace smtrat
             ///
             carl::FastMap<Minisat::CRef,ClauseInformation> mClauseInformation;
             ///
-            carl::FastMap<int,carl::FastSet<Minisat::CRef>> mLiteralClausesMap;
+            std::unordered_map<int,std::unordered_set<Minisat::CRef>> mLiteralClausesMap;
             ///
             size_t mNumberOfSatisfiedClauses;
             /// Stores all Literals for which the abstraction information might be changed.
