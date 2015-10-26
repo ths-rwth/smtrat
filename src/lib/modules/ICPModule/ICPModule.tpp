@@ -1469,9 +1469,7 @@ namespace smtrat
                     auto varIt = mVariables.find((*assignmentIt).first);
                     if(  varIt != mVariables.end() && (*varIt).second->isOriginal() )
                     {
-                        Poly value = Poly( assignmentIt->second );
-                        ModelValue assignment = vs::SqrtEx(value);
-                        mModel.insert(std::make_pair(assignmentIt->first, assignment));
+                        mModel.emplace( assignmentIt->first, assignmentIt->second );
                     }
                 }
             }
@@ -1482,9 +1480,7 @@ namespace smtrat
                     auto varIt = mVariables.find((*assignmentIt).first);
                     if( varIt != mVariables.end() && (*varIt).second->isOriginal() )
                     {
-                        Poly value = Poly( assignmentIt->second );
-                        ModelValue assignment = vs::SqrtEx(value);
-                        mModel.insert( std::make_pair( assignmentIt->first, assignment ) );
+                        mModel.emplace( assignmentIt->first, assignmentIt->second );
                     }
                 }
             }

@@ -66,8 +66,12 @@ namespace smtrat
                 auto varShiftIter = mVariableShifts.find( ass.first.asVariable() );
                 if( varShiftIter != mVariableShifts.end() )
                 {
-                    assert( ass.second.isSqrtEx() || ass.second.isRAN() );
-                    if( ass.second.isSqrtEx() )
+                    assert( ass.second.isRational() || ass.second.isSqrtEx() || ass.second.isRAN() );
+                    if( ass.second.isRational() )
+                    {
+                        ass.second = ass.second.asRational() - varShiftIter->second.constantPart();
+                    }
+                    else if( ass.second.isSqrtEx() )
                     {
                         ass.second = ass.second.asSqrtEx() - vs::SqrtEx( Poly( varShiftIter->second.constantPart() ) );
                     }

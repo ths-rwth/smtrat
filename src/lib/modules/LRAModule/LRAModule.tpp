@@ -625,9 +625,7 @@ Return:
                 EvalRationalMap rationalAssignment = getRationalModel();
                 for( auto ratAss = rationalAssignment.begin(); ratAss != rationalAssignment.end(); ++ratAss )
                 {
-                    Poly value = Poly( ratAss->second );
-                    ModelValue assignment = vs::SqrtEx(value);
-                    mModel.insert(mModel.end(), std::make_pair(ratAss->first, assignment));
+                    mModel.insert(mModel.end(), std::make_pair(ratAss->first, ratAss->second) );
                 }
             }
             else
