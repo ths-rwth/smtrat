@@ -98,7 +98,8 @@ namespace smtrat
     
     typedef carl::Factors<Poly> Factorization;
     
-    typedef std::pair<unsigned, unsigned> thread_priority;
+	// Pair of priority and module id (within the respective strategy graph)
+    typedef std::pair<std::size_t, std::size_t> thread_priority;
     
     // Constants.
     ///@todo move static variables to own cpp
