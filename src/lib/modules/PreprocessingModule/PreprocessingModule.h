@@ -130,4 +130,4 @@ return SettingsType::moduleName;
 }    // namespace smtrat
 
 #include "PreprocessingModule.tpp"
-#include "PreprocessingModuleInstantiation.h"
+

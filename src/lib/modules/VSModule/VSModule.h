@@ -257,4 +257,4 @@ namespace smtrat
 }    // end namespace smtrat
 
 #include "VSModule.tpp"
-#include "VSModuleInstantiation.h"
+

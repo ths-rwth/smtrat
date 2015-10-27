@@ -139,4 +139,4 @@ return SettingsType::moduleName;
 }
 
 #include "FouMoModule.tpp"
-#include "FouMoModuleInstantiation.h"
+

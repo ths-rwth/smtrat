@@ -1,8 +1,0 @@
-/**
- * @file IntBlastModuleInstantiation.h
- * @author Andreas Krueger <andreas.krueger@rwth-aachen.de>
- */
-
-namespace smtrat {
-    extern template class IntBlastModule<IntBlastSettings@SMTRAT_IntBlast_SETTINGS@>;
-}

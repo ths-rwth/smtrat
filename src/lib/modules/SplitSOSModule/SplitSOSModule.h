@@ -56,4 +56,4 @@ return SettingsType::moduleName;
 
 #include "SplitSOSModule.tpp"
 
-#include "SplitSOSModuleInstantiation.h"
+

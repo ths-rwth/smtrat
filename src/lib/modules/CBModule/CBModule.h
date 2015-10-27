@@ -101,5 +101,3 @@ return SettingsType::moduleName;
 }
 
 #include "CBModule.tpp"
-
-#include "CBModuleInstantiation.h"

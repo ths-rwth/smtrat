@@ -442,9 +442,9 @@ namespace smtrat
 
         public:
 			typedef Settings SettingsType;
-std::string moduleName() const {
-return SettingsType::moduleName;
-}
+			std::string moduleName() const {
+				return SettingsType::moduleName;
+			}
 
             /**
              * Constructs a SATModule.
@@ -1268,4 +1268,3 @@ return SettingsType::moduleName;
 }    // namespace smtrat
 
 #include "SATModule.tpp"
-#include "SATModuleInstantiation.h"

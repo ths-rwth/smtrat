@@ -51,5 +51,3 @@ namespace smtrat
 }
 
 #include "BEModule.tpp"
-
-#include "BEModuleInstantiation.h"

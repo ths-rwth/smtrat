@@ -80,4 +80,4 @@ return SettingsType::moduleName;
 }
 
 #include "IncWidthModule.tpp"
-#include "IncWidthModuleInstantiation.h"
+

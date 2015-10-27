@@ -589,4 +589,4 @@ return SettingsType::moduleName;
 }
 
 #include "IntBlastModule.tpp"
-#include "IntBlastModuleInstantiation.h"
+

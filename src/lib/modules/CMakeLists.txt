@@ -29,13 +29,11 @@ configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/Modules.h.in ${CMAKE_SOURCE_
 # write Modules.cpp
 foreach(modIndex RANGE ${maxModIndex})
   list(GET moduleTypes ${modIndex} modType)
-  list(GET moduleClasses ${modIndex} modClass)
   list(GET moduleVersions ${modIndex} modVersion)
   list(GET moduleSettingsClasses ${modIndex} modSettingsClass)
   set(moduleInfoString "${moduleInfoString} \\
 ---------------------------------- \\n \\
 Module name: ${modType} \\n \\
-Module classname: ${modClass} \\n \\
 Module version: ${modVersion} \\n \\
 Module settings classname: ${modSettingsClass} \\n \\
 Module settings: ${moduleSettingsList_${modIndex}} \\n")
@@ -45,7 +43,6 @@ configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/Modules.cpp.in ${CMAKE_SOURC
 
 foreach(modIndex RANGE ${maxModIndex})
   list(GET moduleTypes ${modIndex} modType)
-  list(GET moduleClasses ${modIndex} modClass)
   list(GET moduleSettingsClasses ${modIndex} modSettClass)
 
   if( modSettClass STREQUAL " ")
