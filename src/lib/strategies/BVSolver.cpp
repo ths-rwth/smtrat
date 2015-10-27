@@ -3,13 +3,13 @@
  */
 
 #include "BVSolver.h"
-#include "../../strategies/config.h"
+#include "config.h"
 
 namespace smtrat
 {
 
-    BVSolver::BVSolver():
-        Manager()
+    BVSolver::BVSolver( bool _externalModuleFactoryAdding ):
+        Manager( _externalModuleFactoryAdding )
     {
         size_t position = 0;
         position = addBackendIntoStrategyGraph( position, MT_BVModule );

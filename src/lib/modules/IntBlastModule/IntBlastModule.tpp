@@ -1,6 +1,7 @@
 /**
  * @file IntBlastModule.tpp
  * @author Andreas Krueger <andreas.krueger@rwth-aachen.de>
+ * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  */
 
 #include "IntBlastModule.h"
