@@ -9,8 +9,6 @@
 
 #pragma once 
 
-@includeHeaders@
-
 namespace smtrat
 {
 	void printModulesInfo();

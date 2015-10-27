@@ -1847,7 +1847,7 @@ namespace smtrat
                                 smtrat::ConstraintsT constraints;
                                 for( auto cond = conflict.begin(); cond != conflict.end(); ++cond )
                                     constraints.insert( (**cond).constraint() );
-                                smtrat::Module::addAssumptionToCheck( constraints, false, moduleName( (*backend)->type() ) + "_infeasible_subset" );
+                                smtrat::Module::addAssumptionToCheck( constraints, false, (*backend)->moduleName() + "_infeasible_subset" );
                             }
                             #endif
                             assert( conflict.size() == infsubset->size() );

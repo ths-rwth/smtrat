@@ -19,8 +19,19 @@ namespace smtrat
         public Manager
     {
         public:
-            RatOne( bool _externalModuleFactoryAdding = false );
-            ~RatOne();
+            RatOne(): Manager() {
+				setStrategy({
+					addBackend<PreprocessingModule<PreprocessingSettings1>>({
+						addBackend<SATModule<SATSettings1>>({
+							addBackend<LRAModule<LRASettings1>>({
+								addBackend<VSModule<VSSettings1>>({
+									addBackend<CADModule<CADSettings1>>()
+								})
+							})
+						})
+					})
+				});
+			}
 
     };
 

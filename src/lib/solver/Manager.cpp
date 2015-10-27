@@ -11,7 +11,6 @@
 
 #include "Manager.h"
 #include "StrategyGraph.h"
-#include "../modules/Modules.h"
 #include <functional>
 
 #include <typeinfo>
@@ -23,7 +22,7 @@ namespace smtrat
     
     // Constructor.
     
-    Manager::Manager( bool _externalModuleFactoryAdding ):
+    Manager::Manager():
         mPrimaryBackendFoundAnswer( std::vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
         mpPassedFormula( new ModuleInput() ),
         mBacktrackPoints(),

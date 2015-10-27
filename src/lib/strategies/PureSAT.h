@@ -5,6 +5,8 @@
 
 #include "../solver/Manager.h"
 
+#include "../modules/SATModule/SATModule.h"
+
 namespace smtrat
 {
     /**
@@ -19,8 +21,11 @@ namespace smtrat
         public Manager
     {
         public:
-            PureSAT( bool _externalModuleFactoryAdding = false );
-            ~PureSAT();
+            PureSAT(): Manager() {
+				setStrategy({
+					addBackend<SATModule<SATSettings1>>()
+				});
+			}
 
     };
 

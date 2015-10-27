@@ -17,7 +17,7 @@ namespace smtrat
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
         stringstream s;
-        s << moduleName( type() ) << "_" << id();
+        s << moduleName() << "_" << id();
         mpStatistics = new CNFerModuleStatistics( s.str() );
         #endif
     }

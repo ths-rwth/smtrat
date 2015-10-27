@@ -43,7 +43,6 @@ endforeach()
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/Modules.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/Modules.cpp )
 
 
-# write AddModules.h
 foreach(modIndex RANGE ${maxModIndex})
   list(GET moduleTypes ${modIndex} modType)
   list(GET moduleClasses ${modIndex} modClass)
@@ -70,12 +69,6 @@ foreach(modIndex RANGE ${maxModIndex})
 	endif()
   endif()
 endforeach()
-
-#write MODULETYPES.TXT
-foreach(moduleType ${moduleTypesSettings})
-	set(moduleTypeListTXT "${moduleTypeListTXT}\nMT_${moduleType}")
-endforeach()
-configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/MODULETYPES.txt.in ${CMAKE_SOURCE_DIR}/src/lib/modules/MODULETYPES.txt )
 
 # propagate and enhance source file definitions
 set(lib_modules_src

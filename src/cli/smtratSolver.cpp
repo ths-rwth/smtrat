@@ -248,7 +248,7 @@ int main( int argc, char* argv[] )
     #endif
 
     // Construct solver.
-    CMakeStrategySolver* solver = new CMakeStrategySolver( true );
+    CMakeStrategySolver* solver = new CMakeStrategySolver();
 	    
     #ifdef SMTRAT_DEVOPTION_Statistics
     //smtrat::CollectStatistics::settings->rOutputChannel().rdbuf( parser.rDiagnosticOutputChannel().rdbuf() );

@@ -7,7 +7,7 @@
  */
 
 #pragma once
-#include "../../strategies/strategies.h"
+#include "../../strategies/PreprocessingOne.h"
 
 namespace smtrat
 {

@@ -600,7 +600,7 @@ namespace smtrat
             assert( !infSubSet->empty() );
             #ifdef SMTRAT_DEVOPTION_Validation
             if( validationSettings->logInfSubsets() )
-                addAssumptionToCheck( *infSubSet, false, moduleName( _backend.type() ) + "_infeasible_subset" );
+                addAssumptionToCheck( *infSubSet, false, _backend.moduleName() + "_infeasible_subset" );
             #endif
             result.emplace_back();
             for( const auto& cons : *infSubSet )
@@ -886,7 +886,7 @@ namespace smtrat
             if( validationSettings->logLemmata() )
             {
                 for( const auto& ded : (*module)->deductions() )
-                    addAssumptionToCheck( FormulaT( FormulaType::NOT, ded.first ), false, moduleName( (*module)->type() ) + "_lemma" );
+                    addAssumptionToCheck( FormulaT( FormulaType::NOT, ded.first ), false, (*module)->moduleName() + "_lemma" );
             }
             #endif
             mDeductions.insert( mDeductions.end(), (*module)->mDeductions.begin(), (*module)->mDeductions.end() );

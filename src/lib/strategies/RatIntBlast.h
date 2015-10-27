@@ -19,9 +19,13 @@ namespace smtrat
         public Manager
     {
         public:
-            RatIntBlast( bool _externalModuleFactoryAdding = false );
-            ~RatIntBlast();
-
+            RatIntBlast(): Manager() {
+				setStrategy({
+					addBackend<IncWidthModule<IncWidthSettings1>>({
+						addBackend<IntBlastModule<IntBlastSettings1>>()
+					})
+				});
+			}
     };
 
 }    // namespace smtrat

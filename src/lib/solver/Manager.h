@@ -83,7 +83,7 @@ namespace smtrat
             /**
              * Constructs a manager.
              */
-            Manager( bool _externalModuleFactoryAdding = false );
+            Manager();
             
             /**
              * Destructs a manager.

@@ -134,7 +134,7 @@ namespace smtrat
         mCurrentTheoryConflicts.reserve(100);
         #ifdef SMTRAT_DEVOPTION_Statistics
         stringstream s;
-        s << moduleName( type() ) << "_" << id();
+        s << moduleName() << "_" << id();
         mpStatistics = new SATModuleStatistics( s.str() );
         #endif
     }
@@ -2469,7 +2469,7 @@ NextClause:
                 assert( !infsubset->empty() );
                 #ifdef SMTRAT_DEVOPTION_Validation
                 if( validationSettings->logInfSubsets() )
-                    addAssumptionToCheck( *infsubset, false, moduleName( (*backend)->type() ) + "_infeasible_subset" );
+                    addAssumptionToCheck( *infsubset, false, (*backend)->moduleName() + "_infeasible_subset" );
                 #endif
                 #ifdef DEBUG_SATMODULE
                 (*backend)->printInfeasibleSubsets();

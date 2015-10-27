@@ -5,6 +5,10 @@
 
 #include "../solver/Manager.h"
 
+#include "../modules/ICPModule/ICPModule.h"
+#include "../modules/PreprocessingModule/PreprocessingModule.h"
+#include "../modules/SATModule/SATModule.h"
+
 namespace smtrat
 {
     /**
@@ -15,13 +19,18 @@ namespace smtrat
      * @version
      *
      */
-    class RatICP:
-        public Manager
+    class RatICP: public Manager
     {
         public:
-            RatICP( bool _externalModuleFactoryAdding = false );
-            ~RatICP();
-
+            RatICP(): Manager() {
+				setStrategy({
+					addBackend<PreprocessingModule<PreprocessingSettings1>>({
+						addBackend<SATModule<SATSettings1>>({
+							addBackend<ICPModule<ICPSettings1>>()
+						})
+					})
+				});
+			}
     };
 
 }    // namespace smtrat

@@ -3,7 +3,8 @@
  */
 
 #include "BVSolver.h"
-#include "../../modules/Modules.h"
+#include "../../modules/BVModule/BVModule.h"
+#include "../../modules/SATModule/SATModule.h"
 
 namespace smtrat
 {

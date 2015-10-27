@@ -4,7 +4,9 @@
 #pragma once
 
 #include "../solver/Manager.h"
-#include "../modules/Modules.h"
+
+#include "../modules/CADModule/CADModule.h"
+#include "../modules/SATModule/SATModule.h"
 
 namespace smtrat
 {
@@ -16,13 +18,16 @@ namespace smtrat
      * @version
      *
      */
-    class CADOnly:
-        public Manager
+    class CADOnly: public Manager
     {
         public:
-            CADOnly( bool _externalModuleFactoryAdding = false );
-            ~CADOnly();
-
+            CADOnly(): Manager() {
+				setStrategy({
+					addBackend<SATModule<SATSettings1>>({
+						addBackend<CADModule<CADSettings1>>()
+					})
+				});
+			}
     };
 
 }    // namespace smtrat
