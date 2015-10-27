@@ -2269,7 +2269,6 @@ NextClause:
     template<class Settings>
     void SATModule<Settings>::reduceDB()
     {
-        std::cout << "reduceDB" << std::endl;
         int    i, j;
         double extra_lim = cla_inc / learnts.size();    // Remove any clause below this activity
 
