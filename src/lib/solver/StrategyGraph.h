@@ -16,6 +16,7 @@ namespace smtrat {
 	struct AbstractModuleFactory {
 		virtual ~AbstractModuleFactory() {}
 		virtual Module* create(const ModuleInput* _formula, Conditionals& _conditionals, Manager* const _manager) = 0;
+		virtual std::string moduleName() const = 0;
 	};
 
 	template<typename Module>
@@ -29,6 +30,9 @@ namespace smtrat {
 		}
 		Module* create(const ModuleInput* _formula, Conditionals& _conditionals, Manager* const _manager) {
 			return new Module(_formula, mSettings, _conditionals, _manager);
+		}
+		std::string moduleName() const {
+			return Module::SettingsType::moduleName;
 		}
 	};
 	
@@ -100,6 +104,21 @@ namespace smtrat {
 			if (priority >= nextPriority) nextPriority = priority + 1;
 			return priority;
 		}
+		
+		void printAsTree(std::ostream& os, std::size_t vertex, std::set<std::size_t>& history, const std::string& indent = "") const {
+			std::string moduleName = "Module";
+			if (mVertices[vertex] != nullptr) moduleName = mVertices[vertex]->moduleName();
+			if (history.count(vertex) > 0) {
+				os << indent << moduleName << " (" << vertex << ") Backlink"<< std::endl;
+			} else {
+				os << indent << moduleName << " (" << vertex << ")"<< std::endl;
+				history.insert(vertex);
+				for (const auto& backend: mEdges[vertex]) {
+					printAsTree(os, backend.getTarget(), history, indent + "\t");
+				}
+			}
+		}
+		
 	public:
 		StrategyGraph(): mVertices(), mEdges() {
 			assert(mVertices.size() == mEdges.size());
@@ -108,14 +127,17 @@ namespace smtrat {
 		template<typename Module>
 		BackendLink addBackend(const std::initializer_list<BackendLink>& backends) {
 			std::size_t id = newVertex(new ModuleFactory<Module>(), backends);
-			SMTRAT_LOG_DEBUG("smtrat.strategygraph", "Adding backend " << id << std::endl << *this);
-			return BackendLink(id, getPriority(0), TrueCondition);
+			for (auto& backend: mEdges[id]) {
+				backend.priority(getPriority(backend.getPriority()));
+			}
+			SMTRAT_LOG_DEBUG("smtrat.strategygraph", "Adding backend " << id);
+			return BackendLink(id, 0, TrueCondition);
 		}
 		
 		BackendLink& addEdge(std::size_t from, std::size_t to) {
 			assert(from < mEdges.size());
 			if (!mEdges[from].empty()) mHasBranches = true;
-			mEdges[from].emplace_back(to, getPriority(0), TrueCondition);
+			mEdges[from].emplace_back(to, 0, TrueCondition);
 			return mEdges[from].back();
 		}
 		
@@ -132,7 +154,7 @@ namespace smtrat {
 		
 		std::set<std::pair<thread_priority,AbstractModuleFactory*>> getBackends(std::size_t vertex, const carl::Condition& condition) const {
 			std::set<std::pair<thread_priority,AbstractModuleFactory*>> res;
-			SMTRAT_LOG_DEBUG("smtrat.strategygraph", "Getting backends for vertex " << vertex << std::endl << *this);
+			SMTRAT_LOG_DEBUG("smtrat.strategygraph", "Getting backends for vertex " << vertex);
 			assert(vertex < mEdges.size());
 			for (const auto& it: mEdges[vertex]) {
 				if (it.checkCondition(condition)) {
@@ -145,14 +167,8 @@ namespace smtrat {
 		}
 		
 		friend std::ostream& operator<<(std::ostream& os, const StrategyGraph& sg) {
-			os << "StrategyGraph (root = " << sg.mRoot << "):" << std::endl;
-			for (std::size_t i = 0; i < sg.mVertices.size(); i++) {
-				os << "\t" << i << " -> ";
-				for (const auto& e: sg.mEdges[i]) {
-					os << e.getTarget() << " (" << e.getPriority() << "), ";
-				}
-				os << std::endl;
-			}
+			std::set<std::size_t> history;
+			sg.printAsTree(os, sg.mRoot, history);
 			return os;
 		}
 	};
