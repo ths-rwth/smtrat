@@ -39,6 +39,7 @@ namespace smtrat
     
     struct GBSettings5
     {
+		static constexpr auto moduleName = "GBModule<GBSettings5>";
         static const unsigned                            identifier                              = 5;
         
         typedef carl::GrLexOrdering											 Order;
@@ -71,6 +72,7 @@ namespace smtrat
     
     struct GBSettings3
     {
+		static constexpr auto moduleName = "GBModule<GBSettings3>";
         static const unsigned                            identifier                              = 3;
         
 		typedef carl::GrLexOrdering											 Order;
@@ -104,6 +106,7 @@ namespace smtrat
    
     struct GBSettings1
     {
+		static constexpr auto moduleName = "GBModule<GBSettings1>";
         static const unsigned                            identifier                              = 1;
         
 		typedef carl::GrLexOrdering											 Order;
@@ -499,4 +502,3 @@ namespace smtrat
 	};
     
 }
-

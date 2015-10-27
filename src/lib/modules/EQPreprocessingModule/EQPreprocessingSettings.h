@@ -30,6 +30,7 @@
 
 namespace smtrat {
 	struct EQPreprocessingSettings1 {
+		static constexpr auto moduleName = "EQPreprocessingModule<EQPreprocessingSettings1>";
 		static constexpr bool printFormulas = false;
 
 		static constexpr bool rewriteFunctionInstances = false;
@@ -42,6 +43,7 @@ namespace smtrat {
 	};
 
 	struct EQPreprocessingSettings2 {
+		static constexpr auto moduleName = "EQPreprocessingModule<EQPreprocessingSettings2>";
 		static constexpr bool printFormulas = false;
 
 		static constexpr bool rewriteFunctionInstances = true;

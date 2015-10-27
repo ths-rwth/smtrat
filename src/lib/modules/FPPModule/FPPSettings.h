@@ -13,6 +13,7 @@ namespace smtrat
 {
     struct FPPSettings1
     {
+		static constexpr auto moduleName = "FPPModule<FPPSettings1>";
         /**
          * The maximum number of iterations in order to reach a fix point during the repeated application of preprocessing.
          * If this number is negative, this procedure stops only if it indeed reached a fix point.

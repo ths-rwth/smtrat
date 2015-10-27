@@ -14,6 +14,7 @@ namespace smtrat
 {
     struct LRASettings1
     {
+		static constexpr auto moduleName = "LRAModule<LRASettings1>";
         /**
          * 
          */
@@ -56,4 +57,3 @@ namespace smtrat
         struct Tableau_settings : lra::TableauSettings1 {};
     };
 }
-

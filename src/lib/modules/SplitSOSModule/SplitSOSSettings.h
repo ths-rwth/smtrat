@@ -12,6 +12,7 @@ namespace smtrat
 {
     struct SplitSOSSettings1
     {
+		static constexpr auto moduleName = "SplitSOSModule<SplitSOSSettings1>";
         /**
          * Example for a setting.
          */

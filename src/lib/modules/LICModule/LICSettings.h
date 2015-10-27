@@ -12,6 +12,7 @@ namespace smtrat
 {
     struct LICSettings1
     {
+		static constexpr auto moduleName = "LICModule<LICSettings1>";
         /**
          * Example for a setting.
          */

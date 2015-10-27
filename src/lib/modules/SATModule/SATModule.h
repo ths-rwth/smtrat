@@ -441,6 +441,10 @@ namespace smtrat
             #endif
 
         public:
+			typedef Settings SettingsType;
+std::string moduleName() const {
+return SettingsType::moduleName;
+}
 
             /**
              * Constructs a SATModule.

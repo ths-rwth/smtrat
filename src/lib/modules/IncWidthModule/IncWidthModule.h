@@ -29,6 +29,10 @@ namespace smtrat
 			vb::VariableBounds<FormulaT> mVarBounds;
 
         public:
+			typedef Settings SettingsType;
+std::string moduleName() const {
+return SettingsType::moduleName;
+}
             IncWidthModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~IncWidthModule();

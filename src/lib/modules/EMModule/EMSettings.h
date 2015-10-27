@@ -12,6 +12,7 @@ namespace smtrat
 {
     struct EMSettings1
     {
+		static constexpr auto moduleName = "EMModule<EMSettings1>";
         /**
          * Example for a setting.
          */

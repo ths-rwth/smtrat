@@ -499,10 +499,9 @@ namespace smtrat
             /**
              * @return The name of the given module type as name.
              */
-            const std::string moduleName() const
-            {
-                return typeid(*this).name();
-            }
+            virtual std::string moduleName() const {
+				return "Module";
+			}
             
             /**
              * Excludes all variables from the current model, which do not occur in the received formula.

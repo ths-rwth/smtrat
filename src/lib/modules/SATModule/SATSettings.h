@@ -16,6 +16,7 @@ namespace smtrat
     
     struct SATSettings1
     {
+		static constexpr auto moduleName = "SATModule<SATSettings1>";
         /**
          * 
          */
@@ -54,4 +55,3 @@ namespace smtrat
         static constexpr CCES conflict_clause_evaluation_strategy = CCES::SECOND_LEVEL_MINIMIZER_PLUS_LBD;
     };
 }
-

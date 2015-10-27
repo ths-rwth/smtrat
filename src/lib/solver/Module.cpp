@@ -125,7 +125,7 @@ namespace smtrat
             if( result != Unknown && !mpReceivedFormula->empty() )
             {
 //                std::cout  << "Add assumption to check in Line " << __LINE__ << " from " << moduleName( type() ) << ": " << ((FormulaT)*mpReceivedFormula) << std::endl;
-                addAssumptionToCheck( *mpReceivedFormula, result == True, moduleName( type() ) );
+                addAssumptionToCheck( *mpReceivedFormula, result == True, moduleName() );
             }
         }
         #endif

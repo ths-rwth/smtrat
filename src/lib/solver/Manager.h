@@ -325,6 +325,7 @@ namespace smtrat
 				std::size_t id = mStrategyGraph.addRoot(backends);
 				std::size_t priority = mpPrimaryBackend->threadPriority().first;
 				mpPrimaryBackend->setThreadPriority(thread_priority(priority, id));
+				SMTRAT_LOG_INFO("smtrat.strategygraph", "Strategygraph:" << std::endl << mStrategyGraph);
 			}
 			void setStrategy(const BackendLink& backend) {
 				setStrategy({backend});

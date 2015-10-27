@@ -16,6 +16,7 @@ namespace smtrat
             
     struct ICPSettings1
     {
+		static constexpr auto moduleName = "ICPModule<ICPSettings1>";
         /**
          * 
          */

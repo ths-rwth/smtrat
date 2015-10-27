@@ -29,6 +29,10 @@ namespace smtrat
 			vb::VariableBounds<FormulaT> varbounds;
 
         public:
+			typedef Settings SettingsType;
+std::string moduleName() const {
+return SettingsType::moduleName;
+}
             RPFModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~RPFModule();

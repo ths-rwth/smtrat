@@ -21,6 +21,10 @@ namespace smtrat
             CNFerModuleStatistics* mpStatistics;
             #endif
         public:
+			
+			struct SettingsType {
+				static constexpr auto moduleName = "CNFerModule";
+			};
 
             /**
              * Constructs a CNFerModule.

@@ -22,6 +22,7 @@ namespace smtrat
     
     struct CADSettings1
     {
+		static constexpr auto moduleName = "CADModule<CADSettings1>";
         static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::SPLIT_EARLY;
         
         static constexpr MISHeuristic mis_heuristic = MISHeuristic::GREEDY;

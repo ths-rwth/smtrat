@@ -30,6 +30,7 @@ namespace smtrat
 {
     struct IntBlastSettings1
     {
+		static constexpr auto moduleName = "IntBlastModule<IntBlastSettings1>";
         /**
          * Maximum width used for encoding an integer variable as bitvector.
          *

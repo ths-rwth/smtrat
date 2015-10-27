@@ -12,6 +12,7 @@ namespace smtrat
 {
     struct ESSettings1
     {
+		static constexpr auto moduleName = "ESModule<ESSettings1>";
         /**
          * Example for a setting.
          */

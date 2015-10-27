@@ -66,6 +66,10 @@ namespace smtrat
             mutable VarPairVector mVariableVector;
 
         public:
+			typedef Settings SettingsType;
+			std::string moduleName() const {
+				return SettingsType::moduleName;
+			}
 
             // Constructors.
             VSModule( const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );

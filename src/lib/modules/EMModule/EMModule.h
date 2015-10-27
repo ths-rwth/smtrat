@@ -24,6 +24,10 @@ namespace smtrat
 			carl::FormulaVisitor<FormulaT> mVisitor;
 
         public:
+			typedef Settings SettingsType;
+			std::string moduleName() const {
+				return SettingsType::moduleName;
+			}
             EMModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~EMModule();

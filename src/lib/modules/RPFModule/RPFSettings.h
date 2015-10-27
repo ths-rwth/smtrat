@@ -12,6 +12,7 @@ namespace smtrat
 {
     struct RPFSettings1
     {
+		static constexpr auto moduleName = "RPFModule<RPFSettings1>";
         /**
          * Example for a setting.
          */

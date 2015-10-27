@@ -33,6 +33,7 @@ namespace smtrat
 {
     struct BVSettings1
     {
+		static constexpr auto moduleName = "BVModule<BVSettings1>";
         /**
          * Add the received formulas incrementally, each time checking and testing if the 
          * found model in the satisfiable case satisfies all remaining received formulas.

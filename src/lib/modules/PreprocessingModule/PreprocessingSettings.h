@@ -12,6 +12,7 @@
 namespace smtrat 
 {
 struct PreprocessingSettings1 {
+	static constexpr auto moduleName = "PreprocessingModule<PreprocessingSettings1>";
 	static constexpr bool printChanges = false;
 	/**
 	 * Enables removing of redundant or obsolete factors.

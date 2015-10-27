@@ -13,6 +13,7 @@ namespace smtrat
 {
     struct IncWidthSettings1
     {
+		static constexpr auto moduleName = "IncWidthModule<IncWidthSettings1>";
         /**
          * The increment of the width of the intervals specifying the variable domains.
          */

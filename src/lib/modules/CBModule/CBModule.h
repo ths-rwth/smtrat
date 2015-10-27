@@ -33,6 +33,10 @@ namespace smtrat
 			FormulaSetT tmpOrigins;
 
         public:
+			typedef Settings SettingsType;
+std::string moduleName() const {
+return SettingsType::moduleName;
+}
             CBModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~CBModule();

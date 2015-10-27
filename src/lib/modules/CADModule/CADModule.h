@@ -76,7 +76,10 @@ namespace smtrat
 		VariableBounds mVariableBounds;
 
         public:
-
+			typedef Settings SettingsType;
+std::string moduleName() const {
+return SettingsType::moduleName;
+}
             CADModule( const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             ~CADModule();

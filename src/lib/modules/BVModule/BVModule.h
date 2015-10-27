@@ -53,6 +53,10 @@ namespace smtrat
             std::map<std::pair<size_t,size_t>,FormulaT> mFormulasToBlast;
 
         public:
+			typedef Settings SettingsType;
+			std::string moduleName() const {
+				return SettingsType::moduleName;
+			}
             BVModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~BVModule();

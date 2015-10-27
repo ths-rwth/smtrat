@@ -88,6 +88,10 @@ namespace smtrat
 			inline std::pair<bool,bool> P_collect_fact(const FormulaT& origin, const FormulaT& fact, bool negated);
 
 		public:
+			typedef Settings SettingsType;
+std::string moduleName() const {
+return SettingsType::moduleName;
+}
 			EQPreprocessingModule(const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL);
 			~EQPreprocessingModule();
 

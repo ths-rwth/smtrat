@@ -48,6 +48,10 @@ class GBModule : public Module
 {
     friend class InequalitiesTable<Settings>;
 public:
+	typedef Settings SettingsType;
+	std::string moduleName() const {
+		return SettingsType::moduleName;
+	}
     typedef typename Settings::Order Order;
     typedef typename Settings::PolynomialWithReasons GBPolynomial;
     typedef typename Settings::MultivariateIdeal Ideal;

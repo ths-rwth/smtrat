@@ -128,6 +128,10 @@ namespace smtrat
             static const unsigned mSplittingStrategy = 0;
 
         public:
+			typedef Settings SettingsType;
+std::string moduleName() const {
+return SettingsType::moduleName;
+}
 
             /**
              * Constructors:

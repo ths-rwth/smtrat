@@ -27,6 +27,10 @@ namespace smtrat
             typename Settings::Preprocessor mPreprocessor;
 
         public:
+			typedef Settings SettingsType;
+std::string moduleName() const {
+return SettingsType::moduleName;
+}
             FPPModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~FPPModule();

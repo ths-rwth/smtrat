@@ -485,6 +485,10 @@ namespace smtrat
             std::set<Poly> mShrunkPolys;
 
         public:
+			typedef Settings SettingsType;
+std::string moduleName() const {
+return SettingsType::moduleName;
+}
             IntBlastModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~IntBlastModule();
