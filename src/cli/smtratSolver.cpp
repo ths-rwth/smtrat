@@ -15,7 +15,6 @@
 #include "config.h"
 #include CMakeStrategyHeader
 #include "RuntimeSettingsManager.h"
-#include "../lib/modules/AddModules.h"
 #include "../lib/solver/Module.h"
 #include "../lib/Common.h"
 
@@ -192,7 +191,7 @@ void printTimings(smtrat::Manager* solver)
     std::cout << "\t\tAdd \t\tCheck \t (calls) \tRemove" << std::endl;
     for(std::vector<smtrat::Module*>::const_iterator it =  solver->getAllGeneratedModules().begin(); it != solver->getAllGeneratedModules().end(); ++it)
     {
-        std::cout << smtrat::moduleTypeToString((*it)->type()) << ":\t" << (*it)->getAddTimerMS() << "\t\t" << (*it)->getCheckTimerMS() << "\t(" << (*it)->getNrConsistencyChecks() << ")\t\t" << (*it)->getRemoveTimerMS() << std::endl;
+        std::cout << (*it)->moduleName() << ":\t" << (*it)->getAddTimerMS() << "\t\t" << (*it)->getCheckTimerMS() << "\t(" << (*it)->getNrConsistencyChecks() << ")\t\t" << (*it)->getRemoveTimerMS() << std::endl;
 
     }
     std::cout << "**********************************************" << std::endl;
@@ -223,6 +222,7 @@ int main( int argc, char* argv[] )
 		("smtrat.parser", carl::logging::LogLevel::LVL_INFO)
 		("smtrat.cad", carl::logging::LogLevel::LVL_DEBUG)
 		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
+		("smtrat.strategygraph", carl::logging::LogLevel::LVL_DEBUG)
 	;
 #endif
 	SMTRAT_LOG_INFO("smtrat", "Starting smtrat.");
@@ -249,16 +249,14 @@ int main( int argc, char* argv[] )
 
     // Construct solver.
     CMakeStrategySolver* solver = new CMakeStrategySolver( true );
-	
-    std::list<std::pair<std::string, smtrat::RuntimeSettings*> > settingsObjects = smtrat::addModules( solver );
-    
+	    
     #ifdef SMTRAT_DEVOPTION_Statistics
     //smtrat::CollectStatistics::settings->rOutputChannel().rdbuf( parser.rDiagnosticOutputChannel().rdbuf() );
     #endif
     
     // Introduce the settingsObjects from the modules to the manager.
-    settingsManager.addSettingsObject( settingsObjects );
-    settingsObjects.clear();
+    //settingsManager.addSettingsObject( settingsObjects );
+    //settingsObjects.clear();
 	
 	
 	unsigned exitCode = 0;
