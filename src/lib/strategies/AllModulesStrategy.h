@@ -24,7 +24,6 @@
 #include "../modules/RPFModule/RPFModule.h"
 #include "../modules/SATModule/SATModule.h"
 #include "../modules/SplitSOSModule/SplitSOSModule.h"
-#include "../modules/TestModule/TestModule.h"
 #include "../modules/VSModule/VSModule.h"
 
 namespace smtrat
@@ -57,7 +56,6 @@ namespace smtrat
 					addBackend<RPFModule<RPFSettings1>>(),
 					addBackend<SATModule<SATSettings1>>(),
 					addBackend<SplitSOSModule<SplitSOSSettings1>>(),
-					addBackend<TestModule<TestSettings1>>(),
 					addBackend<VSModule<VSSettings1>>(),
 				});
 			}
