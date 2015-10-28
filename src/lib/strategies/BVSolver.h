@@ -5,6 +5,9 @@
 
 #include "../solver/Manager.h"
 
+#include "../modules/BVModule/BVModule.h"
+#include "../modules/SATModule/SATModule.h"
+
 namespace smtrat
 {
     /**
@@ -19,10 +22,19 @@ namespace smtrat
         public Manager
     {
         public:
-            BVSolver( bool _externalModuleFactoryAdding = false );
-            ~BVSolver();
+            BVSolver(): Manager()
+		    {
+				setStrategy({
+					addBackend<BVModule<BVSettings1>>({
+						addBackend<SATModule<SATSettings1>>()
+					})
+				});
+			}
 
-            void removeFormula( const FormulaT& _subformula );
+			void removeFormula( const FormulaT& _subformula )
+			{
+				remove( _subformula );
+			}
 
     };
 
