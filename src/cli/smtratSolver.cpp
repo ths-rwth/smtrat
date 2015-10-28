@@ -24,7 +24,7 @@
 #endif //SMTRAT_DEVOPTION_Statistics
 
 
-#include "parser/Parser.h"
+#include "parser/ParserWrapper.h"
 #include "../lib/Common.h"
 #include <carl/formula/DIMACSExporter.h>
 #include <carl/formula/DIMACSImporter.h>
@@ -163,13 +163,11 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
 	Executor* e = new Executor(solver);
 	if (settingsManager.exportDIMACS()) e->exportDIMACS = true;
 	{
-            smtrat::parser::SMTLIBParser parser(e, true);
-            bool parsingSuccessful = parser.parse(infile);
-            if (!parsingSuccessful) {
-                std::cerr << "Parse error" << std::endl;
-                delete e;
-                exit(SMTRAT_EXIT_PARSERFAILURE);
-            }
+		if (!smtrat::parseSMT2File(e, true, infile)) {
+            std::cerr << "Parse error" << std::endl;
+            delete e;
+            exit(SMTRAT_EXIT_PARSERFAILURE);
+        }
 	}
 	if (e->hasInstructions()) e->runInstructions();
 	unsigned exitCode = e->getExitCode();

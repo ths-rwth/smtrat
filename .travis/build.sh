@@ -2,7 +2,7 @@
 
 mkdir build || return 1
 cd build/ || return 1
-cmake -D DEVELOPER=ON ../ || return 1
+cmake -D DEVELOPER=ON -D SMTRAT_Strategy=AllModulesStrategy ../ || return 1
 
 if [[ ${TASK} == "doxygen" ]]; then
 	make doc

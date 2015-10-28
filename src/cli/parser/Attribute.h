@@ -3,7 +3,7 @@
 #include "Common.h"
 #include "Lexicon.h"
 #include "SExpression.h"
-#include "theories/Theories.h"
+#include "theories/TheoryTypes.h"
 
 namespace smtrat {
 namespace parser {

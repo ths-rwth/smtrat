@@ -40,6 +40,7 @@ add_executable( smtrat
     parser/theories/Bitvector.cpp
     parser/theories/Core.cpp
     parser/theories/Uninterpreted.cpp
+	parser/ParserWrapper.cpp
     smtratSolver.cpp
     RuntimeSettingsManager.cpp
 )
